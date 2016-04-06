@@ -1054,12 +1054,11 @@ combinedScenarios.each { scenario ->
                                     // Debug runs take too long to run.
                                     if (lowerConfiguration != "debug") {
                                        buildCommands += "Z:\\arm64\\common\\scripts\\arm64PostBuild.cmd %WORKSPACE% ${architecture} ${lowerConfiguration}"
+                                       Utilities.addXUnitDotNETResults(newJob, 'bin/tests/testResults.xml')
                                     }
                                     
                                     // Add archival.
                                     Utilities.addArchival(newJob, "bin/Product/**")
-
-                                    Utilities.addXUnitDotNETResults(newJob, 'bin/tests/testResults.xml')
                                     break
                                 default:
                                     println("Unknown architecture: ${architecture}");
