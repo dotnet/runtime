@@ -9,6 +9,8 @@
  */
 #include <config.h>
 
+#include <mono/utils/mono-logger-internals.h>
+
 /*
  * Attempt to handle native SIGSEGVs with libunwind or libcorkscrew.
  */
