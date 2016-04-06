@@ -178,6 +178,8 @@ typedef enum {
 	MONO_MARSHAL_CONV_HANDLEREF
 } MonoMarshalConv;
 
+#define MONO_MARSHAL_CONV_INVALID ((MonoMarshalConv)-1)
+
 typedef struct {
 	MonoMarshalNative native;
 	union {
