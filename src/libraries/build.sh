@@ -7,7 +7,7 @@ usage()
     echo "native - optional argument to build the native code"
     echo "The following arguments affect native builds only:"
     echo "BuildArch can be: x64, x86, arm, arm64"
-    echo "BuildType can be: Debug, Release"
+    echo "BuildType can be: debug, release"
     echo "clean - optional argument to force a clean build."
     echo "verbose - optional argument to enable verbose build output."
     echo "clangx.y - optional argument to build using clang version x.y."
