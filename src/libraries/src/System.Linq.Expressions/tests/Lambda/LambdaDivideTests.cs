@@ -11,119 +11,119 @@ namespace System.Linq.Expressions.Tests
     {
         #region Test methods
 
-        [Fact]
-        public static void LambdaDivideDecimalTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void LambdaDivideDecimalTest(bool useInterpreter)
         {
             decimal[] values = new decimal[] { decimal.Zero, decimal.One, decimal.MinusOne, decimal.MinValue, decimal.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
                 for (int j = 0; j < values.Length; j++)
                 {
-                    VerifyDivideDecimal(values[i], values[j]);
+                    VerifyDivideDecimal(values[i], values[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void LambdaDivideDoubleTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void LambdaDivideDoubleTest(bool useInterpreter)
         {
             double[] values = new double[] { 0, 1, -1, double.MinValue, double.MaxValue, double.Epsilon, double.NegativeInfinity, double.PositiveInfinity, double.NaN };
             for (int i = 0; i < values.Length; i++)
             {
                 for (int j = 0; j < values.Length; j++)
                 {
-                    VerifyDivideDouble(values[i], values[j]);
+                    VerifyDivideDouble(values[i], values[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void LambdaDivideFloatTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void LambdaDivideFloatTest(bool useInterpreter)
         {
             float[] values = new float[] { 0, 1, -1, float.MinValue, float.MaxValue, float.Epsilon, float.NegativeInfinity, float.PositiveInfinity, float.NaN };
             for (int i = 0; i < values.Length; i++)
             {
                 for (int j = 0; j < values.Length; j++)
                 {
-                    VerifyDivideFloat(values[i], values[j]);
+                    VerifyDivideFloat(values[i], values[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void LambdaDivideIntTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void LambdaDivideIntTest(bool useInterpreter)
         {
             int[] values = new int[] { 0, 1, -1, int.MinValue, int.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
                 for (int j = 0; j < values.Length; j++)
                 {
-                    VerifyDivideInt(values[i], values[j]);
+                    VerifyDivideInt(values[i], values[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void LambdaDivideLongTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void LambdaDivideLongTest(bool useInterpreter)
         {
             long[] values = new long[] { 0, 1, -1, long.MinValue, long.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
                 for (int j = 0; j < values.Length; j++)
                 {
-                    VerifyDivideLong(values[i], values[j]);
+                    VerifyDivideLong(values[i], values[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void LambdaDivideShortTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void LambdaDivideShortTest(bool useInterpreter)
         {
             short[] values = new short[] { 0, 1, -1, short.MinValue, short.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
                 for (int j = 0; j < values.Length; j++)
                 {
-                    VerifyDivideShort(values[i], values[j]);
+                    VerifyDivideShort(values[i], values[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void LambdaDivideUIntTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void LambdaDivideUIntTest(bool useInterpreter)
         {
             uint[] values = new uint[] { 0, 1, uint.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
                 for (int j = 0; j < values.Length; j++)
                 {
-                    VerifyDivideUInt(values[i], values[j]);
+                    VerifyDivideUInt(values[i], values[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void LambdaDivideULongTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void LambdaDivideULongTest(bool useInterpreter)
         {
             ulong[] values = new ulong[] { 0, 1, ulong.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
                 for (int j = 0; j < values.Length; j++)
                 {
-                    VerifyDivideULong(values[i], values[j]);
+                    VerifyDivideULong(values[i], values[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void LambdaDivideUShortTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void LambdaDivideUShortTest(bool useInterpreter)
         {
             ushort[] values = new ushort[] { 0, 1, ushort.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
                 for (int j = 0; j < values.Length; j++)
                 {
-                    VerifyDivideUShort(values[i], values[j]);
+                    VerifyDivideUShort(values[i], values[j], useInterpreter);
                 }
             }
         }
@@ -132,10 +132,30 @@ namespace System.Linq.Expressions.Tests
 
         #region Test verifiers
 
+        private enum ResultType
+        {
+            Success,
+            DivideByZero,
+            Overflow
+        }
+
         #region Verify decimal
 
-        private static void VerifyDivideDecimal(decimal a, decimal b)
+        private static void VerifyDivideDecimal(decimal a, decimal b, bool useInterpreter)
         {
+            bool divideByZero;
+            decimal expected;
+            if (b == 0)
+            {
+                divideByZero = true;
+                expected = 0;
+            }
+            else
+            {
+                divideByZero = false;
+                expected = a / b;
+            }
+
             ParameterExpression p0 = Expression.Parameter(typeof(decimal), "p0");
             ParameterExpression p1 = Expression.Parameter(typeof(decimal), "p1");
 
@@ -152,17 +172,15 @@ namespace System.Linq.Expressions.Tests
                     Expression.Constant(b, typeof(decimal))
                 }),
                     Enumerable.Empty<ParameterExpression>());
-            Func<decimal> f1 = e1.Compile();
+            Func<decimal> f1 = e1.Compile(useInterpreter);
 
-            decimal f1Result = default(decimal);
-            Exception f1Ex = null;
-            try
+            if (divideByZero)
             {
-                f1Result = f1();
+                Assert.Throws<DivideByZeroException>(() => f1());
             }
-            catch (Exception ex)
+            else
             {
-                f1Ex = ex;
+                Assert.Equal(expected, f1());
             }
 
             // verify with values passed to make parameters
@@ -172,17 +190,15 @@ namespace System.Linq.Expressions.Tests
                         Expression.Divide(p0, p1),
                         Enumerable.Empty<ParameterExpression>()),
                     new ParameterExpression[] { p0, p1 });
-            Func<decimal, decimal, Func<decimal>> f2 = e2.Compile();
+            Func<decimal, decimal, Func<decimal>> f2 = e2.Compile(useInterpreter);
 
-            decimal f2Result = default(decimal);
-            Exception f2Ex = null;
-            try
+            if (divideByZero)
             {
-                f2Result = f2(a, b)();
+                Assert.Throws<DivideByZeroException>(() => f2(a, b)());
             }
-            catch (Exception ex)
+            else
             {
-                f2Ex = ex;
+                Assert.Equal(expected, f2(a, b)());
             }
 
             // verify with values directly passed
@@ -196,17 +212,15 @@ namespace System.Linq.Expressions.Tests
                             Enumerable.Empty<ParameterExpression>()),
                         Enumerable.Empty<Expression>()),
                     Enumerable.Empty<ParameterExpression>());
-            Func<decimal, decimal, decimal> f3 = e3.Compile()();
+            Func<decimal, decimal, decimal> f3 = e3.Compile(useInterpreter)();
 
-            decimal f3Result = default(decimal);
-            Exception f3Ex = null;
-            try
+            if (divideByZero)
             {
-                f3Result = f3(a, b);
+                Assert.Throws<DivideByZeroException>(() => f3(a, b));
             }
-            catch (Exception ex)
+            else
             {
-                f3Ex = ex;
+                Assert.Equal(expected, f3(a, b));
             }
 
             // verify as a function generator
@@ -216,17 +230,15 @@ namespace System.Linq.Expressions.Tests
                         Expression.Divide(p0, p1),
                         new ParameterExpression[] { p0, p1 }),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Func<decimal, decimal, decimal>> f4 = e4.Compile();
+            Func<Func<decimal, decimal, decimal>> f4 = e4.Compile(useInterpreter);
 
-            decimal f4Result = default(decimal);
-            Exception f4Ex = null;
-            try
+            if (divideByZero)
             {
-                f4Result = f4()(a, b);
+                Assert.Throws<DivideByZeroException>(() => f4()(a, b));
             }
-            catch (Exception ex)
+            else
             {
-                f4Ex = ex;
+                Assert.Equal(expected, f4()(a, b));
             }
 
             // verify with currying
@@ -236,17 +248,15 @@ namespace System.Linq.Expressions.Tests
                         Expression.Divide(p0, p1),
                         new ParameterExpression[] { p1 }),
                     new ParameterExpression[] { p0 });
-            Func<decimal, Func<decimal, decimal>> f5 = e5.Compile();
+            Func<decimal, Func<decimal, decimal>> f5 = e5.Compile(useInterpreter);
 
-            decimal f5Result = default(decimal);
-            Exception f5Ex = null;
-            try
+            if (divideByZero)
             {
-                f5Result = f5(a)(b);
+                Assert.Throws<DivideByZeroException>(() => f5(a)(b));
             }
-            catch (Exception ex)
+            else
             {
-                f5Ex = ex;
+                Assert.Equal(expected, f5(a)(b));
             }
 
             // verify with one parameter
@@ -260,56 +270,15 @@ namespace System.Linq.Expressions.Tests
                             new ParameterExpression[] { p0 }),
                         new Expression[] { Expression.Constant(a, typeof(decimal)) }),
                     Enumerable.Empty<ParameterExpression>());
-            Func<decimal, decimal> f6 = e6.Compile()();
+            Func<decimal, decimal> f6 = e6.Compile(useInterpreter)();
 
-            decimal f6Result = default(decimal);
-            Exception f6Ex = null;
-            try
+            if (divideByZero)
             {
-                f6Result = f6(b);
-            }
-            catch (Exception ex)
-            {
-                f6Ex = ex;
-            }
-
-            // verify with regular IL
-            decimal csResult = default(decimal);
-            Exception csEx = null;
-            try
-            {
-                csResult = (decimal)(a / b);
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            // either all should have failed the same way or they should all produce the same result
-            if (f1Ex != null || f2Ex != null || f3Ex != null || f4Ex != null || f5Ex != null || f6Ex != null || csEx != null)
-            {
-                Assert.NotNull(f1Ex);
-                Assert.NotNull(f2Ex);
-                Assert.NotNull(f3Ex);
-                Assert.NotNull(f4Ex);
-                Assert.NotNull(f5Ex);
-                Assert.NotNull(f6Ex);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), f1Ex.GetType());
-                Assert.Equal(csEx.GetType(), f2Ex.GetType());
-                Assert.Equal(csEx.GetType(), f3Ex.GetType());
-                Assert.Equal(csEx.GetType(), f4Ex.GetType());
-                Assert.Equal(csEx.GetType(), f5Ex.GetType());
-                Assert.Equal(csEx.GetType(), f6Ex.GetType());
+                Assert.Throws<DivideByZeroException>(() => f6(b));
             }
             else
             {
-                Assert.Equal(csResult, f1Result);
-                Assert.Equal(csResult, f2Result);
-                Assert.Equal(csResult, f3Result);
-                Assert.Equal(csResult, f4Result);
-                Assert.Equal(csResult, f5Result);
-                Assert.Equal(csResult, f6Result);
+                Assert.Equal(expected, f6(b));
             }
         }
 
@@ -318,8 +287,10 @@ namespace System.Linq.Expressions.Tests
 
         #region Verify double
 
-        private static void VerifyDivideDouble(double a, double b)
+        private static void VerifyDivideDouble(double a, double b, bool useInterpreter)
         {
+            double expected = a / b;
+
             ParameterExpression p0 = Expression.Parameter(typeof(double), "p0");
             ParameterExpression p1 = Expression.Parameter(typeof(double), "p1");
 
@@ -336,18 +307,9 @@ namespace System.Linq.Expressions.Tests
                     Expression.Constant(b, typeof(double))
                 }),
                     Enumerable.Empty<ParameterExpression>());
-            Func<double> f1 = e1.Compile();
+            Func<double> f1 = e1.Compile(useInterpreter);
 
-            double f1Result = default(double);
-            Exception f1Ex = null;
-            try
-            {
-                f1Result = f1();
-            }
-            catch (Exception ex)
-            {
-                f1Ex = ex;
-            }
+            Assert.Equal(expected, f1());
 
             // verify with values passed to make parameters
             Expression<Func<double, double, Func<double>>> e2 =
@@ -356,18 +318,9 @@ namespace System.Linq.Expressions.Tests
                         Expression.Divide(p0, p1),
                         Enumerable.Empty<ParameterExpression>()),
                     new ParameterExpression[] { p0, p1 });
-            Func<double, double, Func<double>> f2 = e2.Compile();
+            Func<double, double, Func<double>> f2 = e2.Compile(useInterpreter);
 
-            double f2Result = default(double);
-            Exception f2Ex = null;
-            try
-            {
-                f2Result = f2(a, b)();
-            }
-            catch (Exception ex)
-            {
-                f2Ex = ex;
-            }
+            Assert.Equal(expected, f2(a, b)());
 
             // verify with values directly passed
             Expression<Func<Func<double, double, double>>> e3 =
@@ -380,18 +333,9 @@ namespace System.Linq.Expressions.Tests
                             Enumerable.Empty<ParameterExpression>()),
                         Enumerable.Empty<Expression>()),
                     Enumerable.Empty<ParameterExpression>());
-            Func<double, double, double> f3 = e3.Compile()();
+            Func<double, double, double> f3 = e3.Compile(useInterpreter)();
 
-            double f3Result = default(double);
-            Exception f3Ex = null;
-            try
-            {
-                f3Result = f3(a, b);
-            }
-            catch (Exception ex)
-            {
-                f3Ex = ex;
-            }
+            Assert.Equal(expected, f3(a, b));
 
             // verify as a function generator
             Expression<Func<Func<double, double, double>>> e4 =
@@ -400,18 +344,9 @@ namespace System.Linq.Expressions.Tests
                         Expression.Divide(p0, p1),
                         new ParameterExpression[] { p0, p1 }),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Func<double, double, double>> f4 = e4.Compile();
+            Func<Func<double, double, double>> f4 = e4.Compile(useInterpreter);
 
-            double f4Result = default(double);
-            Exception f4Ex = null;
-            try
-            {
-                f4Result = f4()(a, b);
-            }
-            catch (Exception ex)
-            {
-                f4Ex = ex;
-            }
+            Assert.Equal(expected, f4()(a, b));
 
             // verify with currying
             Expression<Func<double, Func<double, double>>> e5 =
@@ -420,18 +355,9 @@ namespace System.Linq.Expressions.Tests
                         Expression.Divide(p0, p1),
                         new ParameterExpression[] { p1 }),
                     new ParameterExpression[] { p0 });
-            Func<double, Func<double, double>> f5 = e5.Compile();
+            Func<double, Func<double, double>> f5 = e5.Compile(useInterpreter);
 
-            double f5Result = default(double);
-            Exception f5Ex = null;
-            try
-            {
-                f5Result = f5(a)(b);
-            }
-            catch (Exception ex)
-            {
-                f5Ex = ex;
-            }
+            Assert.Equal(expected, f5(a)(b));
 
             // verify with one parameter
             Expression<Func<Func<double, double>>> e6 =
@@ -444,57 +370,10 @@ namespace System.Linq.Expressions.Tests
                             new ParameterExpression[] { p0 }),
                         new Expression[] { Expression.Constant(a, typeof(double)) }),
                     Enumerable.Empty<ParameterExpression>());
-            Func<double, double> f6 = e6.Compile()();
+            Func<double, double> f6 = e6.Compile(useInterpreter)();
 
-            double f6Result = default(double);
-            Exception f6Ex = null;
-            try
-            {
-                f6Result = f6(b);
-            }
-            catch (Exception ex)
-            {
-                f6Ex = ex;
-            }
+            Assert.Equal(expected, f6(b));
 
-            // verify with regular IL
-            double csResult = default(double);
-            Exception csEx = null;
-            try
-            {
-                csResult = (double)(a / b);
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            // either all should have failed the same way or they should all produce the same result
-            if (f1Ex != null || f2Ex != null || f3Ex != null || f4Ex != null || f5Ex != null || f6Ex != null || csEx != null)
-            {
-                Assert.NotNull(f1Ex);
-                Assert.NotNull(f2Ex);
-                Assert.NotNull(f3Ex);
-                Assert.NotNull(f4Ex);
-                Assert.NotNull(f5Ex);
-                Assert.NotNull(f6Ex);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), f1Ex.GetType());
-                Assert.Equal(csEx.GetType(), f2Ex.GetType());
-                Assert.Equal(csEx.GetType(), f3Ex.GetType());
-                Assert.Equal(csEx.GetType(), f4Ex.GetType());
-                Assert.Equal(csEx.GetType(), f5Ex.GetType());
-                Assert.Equal(csEx.GetType(), f6Ex.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, f1Result);
-                Assert.Equal(csResult, f2Result);
-                Assert.Equal(csResult, f3Result);
-                Assert.Equal(csResult, f4Result);
-                Assert.Equal(csResult, f5Result);
-                Assert.Equal(csResult, f6Result);
-            }
         }
 
         #endregion
@@ -502,8 +381,10 @@ namespace System.Linq.Expressions.Tests
 
         #region Verify float
 
-        private static void VerifyDivideFloat(float a, float b)
+        private static void VerifyDivideFloat(float a, float b, bool useInterpreter)
         {
+            float expected = a / b;
+
             ParameterExpression p0 = Expression.Parameter(typeof(float), "p0");
             ParameterExpression p1 = Expression.Parameter(typeof(float), "p1");
 
@@ -520,18 +401,9 @@ namespace System.Linq.Expressions.Tests
                     Expression.Constant(b, typeof(float))
                 }),
                     Enumerable.Empty<ParameterExpression>());
-            Func<float> f1 = e1.Compile();
+            Func<float> f1 = e1.Compile(useInterpreter);
 
-            float f1Result = default(float);
-            Exception f1Ex = null;
-            try
-            {
-                f1Result = f1();
-            }
-            catch (Exception ex)
-            {
-                f1Ex = ex;
-            }
+            Assert.Equal(expected, f1());
 
             // verify with values passed to make parameters
             Expression<Func<float, float, Func<float>>> e2 =
@@ -540,18 +412,9 @@ namespace System.Linq.Expressions.Tests
                         Expression.Divide(p0, p1),
                         Enumerable.Empty<ParameterExpression>()),
                     new ParameterExpression[] { p0, p1 });
-            Func<float, float, Func<float>> f2 = e2.Compile();
+            Func<float, float, Func<float>> f2 = e2.Compile(useInterpreter);
 
-            float f2Result = default(float);
-            Exception f2Ex = null;
-            try
-            {
-                f2Result = f2(a, b)();
-            }
-            catch (Exception ex)
-            {
-                f2Ex = ex;
-            }
+            Assert.Equal(expected, f2(a, b)());
 
             // verify with values directly passed
             Expression<Func<Func<float, float, float>>> e3 =
@@ -564,18 +427,9 @@ namespace System.Linq.Expressions.Tests
                             Enumerable.Empty<ParameterExpression>()),
                         Enumerable.Empty<Expression>()),
                     Enumerable.Empty<ParameterExpression>());
-            Func<float, float, float> f3 = e3.Compile()();
+            Func<float, float, float> f3 = e3.Compile(useInterpreter)();
 
-            float f3Result = default(float);
-            Exception f3Ex = null;
-            try
-            {
-                f3Result = f3(a, b);
-            }
-            catch (Exception ex)
-            {
-                f3Ex = ex;
-            }
+            Assert.Equal(expected, f3(a, b));
 
             // verify as a function generator
             Expression<Func<Func<float, float, float>>> e4 =
@@ -584,18 +438,9 @@ namespace System.Linq.Expressions.Tests
                         Expression.Divide(p0, p1),
                         new ParameterExpression[] { p0, p1 }),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Func<float, float, float>> f4 = e4.Compile();
+            Func<Func<float, float, float>> f4 = e4.Compile(useInterpreter);
 
-            float f4Result = default(float);
-            Exception f4Ex = null;
-            try
-            {
-                f4Result = f4()(a, b);
-            }
-            catch (Exception ex)
-            {
-                f4Ex = ex;
-            }
+            Assert.Equal(expected, f4()(a, b));
 
             // verify with currying
             Expression<Func<float, Func<float, float>>> e5 =
@@ -604,18 +449,9 @@ namespace System.Linq.Expressions.Tests
                         Expression.Divide(p0, p1),
                         new ParameterExpression[] { p1 }),
                     new ParameterExpression[] { p0 });
-            Func<float, Func<float, float>> f5 = e5.Compile();
+            Func<float, Func<float, float>> f5 = e5.Compile(useInterpreter);
 
-            float f5Result = default(float);
-            Exception f5Ex = null;
-            try
-            {
-                f5Result = f5(a)(b);
-            }
-            catch (Exception ex)
-            {
-                f5Ex = ex;
-            }
+            Assert.Equal(expected, f5(a)(b));
 
             // verify with one parameter
             Expression<Func<Func<float, float>>> e6 =
@@ -628,57 +464,9 @@ namespace System.Linq.Expressions.Tests
                             new ParameterExpression[] { p0 }),
                         new Expression[] { Expression.Constant(a, typeof(float)) }),
                     Enumerable.Empty<ParameterExpression>());
-            Func<float, float> f6 = e6.Compile()();
+            Func<float, float> f6 = e6.Compile(useInterpreter)();
 
-            float f6Result = default(float);
-            Exception f6Ex = null;
-            try
-            {
-                f6Result = f6(b);
-            }
-            catch (Exception ex)
-            {
-                f6Ex = ex;
-            }
-
-            // verify with regular IL
-            float csResult = default(float);
-            Exception csEx = null;
-            try
-            {
-                csResult = (float)(a / b);
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            // either all should have failed the same way or they should all produce the same result
-            if (f1Ex != null || f2Ex != null || f3Ex != null || f4Ex != null || f5Ex != null || f6Ex != null || csEx != null)
-            {
-                Assert.NotNull(f1Ex);
-                Assert.NotNull(f2Ex);
-                Assert.NotNull(f3Ex);
-                Assert.NotNull(f4Ex);
-                Assert.NotNull(f5Ex);
-                Assert.NotNull(f6Ex);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), f1Ex.GetType());
-                Assert.Equal(csEx.GetType(), f2Ex.GetType());
-                Assert.Equal(csEx.GetType(), f3Ex.GetType());
-                Assert.Equal(csEx.GetType(), f4Ex.GetType());
-                Assert.Equal(csEx.GetType(), f5Ex.GetType());
-                Assert.Equal(csEx.GetType(), f6Ex.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, f1Result);
-                Assert.Equal(csResult, f2Result);
-                Assert.Equal(csResult, f3Result);
-                Assert.Equal(csResult, f4Result);
-                Assert.Equal(csResult, f5Result);
-                Assert.Equal(csResult, f6Result);
-            }
+            Assert.Equal(expected, f6(b));
         }
 
         #endregion
@@ -686,8 +474,24 @@ namespace System.Linq.Expressions.Tests
 
         #region Verify int
 
-        private static void VerifyDivideInt(int a, int b)
+        private static void VerifyDivideInt(int a, int b, bool useInterpreter)
         {
+            ResultType outcome;
+            int expected = 0;
+            if (b == 0)
+            {
+                outcome = ResultType.DivideByZero;
+            }
+            else if (a == int.MinValue && b == -1)
+            {
+                outcome = ResultType.Overflow;
+            }
+            else
+            {
+                expected = a / b;
+                outcome = ResultType.Success;
+            }
+
             ParameterExpression p0 = Expression.Parameter(typeof(int), "p0");
             ParameterExpression p1 = Expression.Parameter(typeof(int), "p1");
 
@@ -704,17 +508,19 @@ namespace System.Linq.Expressions.Tests
                     Expression.Constant(b, typeof(int))
                 }),
                     Enumerable.Empty<ParameterExpression>());
-            Func<int> f1 = e1.Compile();
+            Func<int> f1 = e1.Compile(useInterpreter);
 
-            int f1Result = default(int);
-            Exception f1Ex = null;
-            try
+            switch (outcome)
             {
-                f1Result = f1();
-            }
-            catch (Exception ex)
-            {
-                f1Ex = ex;
+                case ResultType.DivideByZero:
+                    Assert.Throws<DivideByZeroException>(() => f1());
+                    break;
+                case ResultType.Overflow:
+                    Assert.Throws<OverflowException>(() => f1());
+                    break;
+                default:
+                    Assert.Equal(expected, f1());
+                    break;
             }
 
             // verify with values passed to make parameters
@@ -724,17 +530,19 @@ namespace System.Linq.Expressions.Tests
                         Expression.Divide(p0, p1),
                         Enumerable.Empty<ParameterExpression>()),
                     new ParameterExpression[] { p0, p1 });
-            Func<int, int, Func<int>> f2 = e2.Compile();
+            Func<int, int, Func<int>> f2 = e2.Compile(useInterpreter);
 
-            int f2Result = default(int);
-            Exception f2Ex = null;
-            try
+            switch (outcome)
             {
-                f2Result = f2(a, b)();
-            }
-            catch (Exception ex)
-            {
-                f2Ex = ex;
+                case ResultType.DivideByZero:
+                    Assert.Throws<DivideByZeroException>(() => f2(a, b)());
+                    break;
+                case ResultType.Overflow:
+                    Assert.Throws<OverflowException>(() => f2(a, b)());
+                    break;
+                default:
+                    Assert.Equal(expected, f2(a, b)());
+                    break;
             }
 
             // verify with values directly passed
@@ -748,17 +556,19 @@ namespace System.Linq.Expressions.Tests
                             Enumerable.Empty<ParameterExpression>()),
                         Enumerable.Empty<Expression>()),
                     Enumerable.Empty<ParameterExpression>());
-            Func<int, int, int> f3 = e3.Compile()();
+            Func<int, int, int> f3 = e3.Compile(useInterpreter)();
 
-            int f3Result = default(int);
-            Exception f3Ex = null;
-            try
+            switch (outcome)
             {
-                f3Result = f3(a, b);
-            }
-            catch (Exception ex)
-            {
-                f3Ex = ex;
+                case ResultType.DivideByZero:
+                    Assert.Throws<DivideByZeroException>(() => f3(a, b));
+                    break;
+                case ResultType.Overflow:
+                    Assert.Throws<OverflowException>(() => f3(a, b));
+                    break;
+                default:
+                    Assert.Equal(expected, f3(a, b));
+                    break;
             }
 
             // verify as a function generator
@@ -768,17 +578,19 @@ namespace System.Linq.Expressions.Tests
                         Expression.Divide(p0, p1),
                         new ParameterExpression[] { p0, p1 }),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Func<int, int, int>> f4 = e4.Compile();
+            Func<Func<int, int, int>> f4 = e4.Compile(useInterpreter);
 
-            int f4Result = default(int);
-            Exception f4Ex = null;
-            try
+            switch (outcome)
             {
-                f4Result = f4()(a, b);
-            }
-            catch (Exception ex)
-            {
-                f4Ex = ex;
+                case ResultType.DivideByZero:
+                    Assert.Throws<DivideByZeroException>(() => f4()(a, b));
+                    break;
+                case ResultType.Overflow:
+                    Assert.Throws<OverflowException>(() => f4()(a, b));
+                    break;
+                default:
+                    Assert.Equal(expected, f4()(a, b));
+                    break;
             }
 
             // verify with currying
@@ -788,17 +600,19 @@ namespace System.Linq.Expressions.Tests
                         Expression.Divide(p0, p1),
                         new ParameterExpression[] { p1 }),
                     new ParameterExpression[] { p0 });
-            Func<int, Func<int, int>> f5 = e5.Compile();
+            Func<int, Func<int, int>> f5 = e5.Compile(useInterpreter);
 
-            int f5Result = default(int);
-            Exception f5Ex = null;
-            try
+            switch (outcome)
             {
-                f5Result = f5(a)(b);
-            }
-            catch (Exception ex)
-            {
-                f5Ex = ex;
+                case ResultType.DivideByZero:
+                    Assert.Throws<DivideByZeroException>(() => f5(a)(b));
+                    break;
+                case ResultType.Overflow:
+                    Assert.Throws<OverflowException>(() => f5(a)(b));
+                    break;
+                default:
+                    Assert.Equal(expected, f5(a)(b));
+                    break;
             }
 
             // verify with one parameter
@@ -812,56 +626,19 @@ namespace System.Linq.Expressions.Tests
                             new ParameterExpression[] { p0 }),
                         new Expression[] { Expression.Constant(a, typeof(int)) }),
                     Enumerable.Empty<ParameterExpression>());
-            Func<int, int> f6 = e6.Compile()();
+            Func<int, int> f6 = e6.Compile(useInterpreter)();
 
-            int f6Result = default(int);
-            Exception f6Ex = null;
-            try
+            switch (outcome)
             {
-                f6Result = f6(b);
-            }
-            catch (Exception ex)
-            {
-                f6Ex = ex;
-            }
-
-            // verify with regular IL
-            int csResult = default(int);
-            Exception csEx = null;
-            try
-            {
-                csResult = (int)(a / b);
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            // either all should have failed the same way or they should all produce the same result
-            if (f1Ex != null || f2Ex != null || f3Ex != null || f4Ex != null || f5Ex != null || f6Ex != null || csEx != null)
-            {
-                Assert.NotNull(f1Ex);
-                Assert.NotNull(f2Ex);
-                Assert.NotNull(f3Ex);
-                Assert.NotNull(f4Ex);
-                Assert.NotNull(f5Ex);
-                Assert.NotNull(f6Ex);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), f1Ex.GetType());
-                Assert.Equal(csEx.GetType(), f2Ex.GetType());
-                Assert.Equal(csEx.GetType(), f3Ex.GetType());
-                Assert.Equal(csEx.GetType(), f4Ex.GetType());
-                Assert.Equal(csEx.GetType(), f5Ex.GetType());
-                Assert.Equal(csEx.GetType(), f6Ex.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, f1Result);
-                Assert.Equal(csResult, f2Result);
-                Assert.Equal(csResult, f3Result);
-                Assert.Equal(csResult, f4Result);
-                Assert.Equal(csResult, f5Result);
-                Assert.Equal(csResult, f6Result);
+                case ResultType.DivideByZero:
+                    Assert.Throws<DivideByZeroException>(() => f6(b));
+                    break;
+                case ResultType.Overflow:
+                    Assert.Throws<OverflowException>(() => f6(b));
+                    break;
+                default:
+                    Assert.Equal(expected, f6(b));
+                    break;
             }
         }
 
@@ -870,8 +647,24 @@ namespace System.Linq.Expressions.Tests
 
         #region Verify long
 
-        private static void VerifyDivideLong(long a, long b)
+        private static void VerifyDivideLong(long a, long b, bool useInterpreter)
         {
+            ResultType outcome;
+            long expected = 0;
+            if (b == 0)
+            {
+                outcome = ResultType.DivideByZero;
+            }
+            else if (a == long.MinValue && b == -1)
+            {
+                outcome = ResultType.Overflow;
+            }
+            else
+            {
+                expected = a / b;
+                outcome = ResultType.Success;
+            }
+
             ParameterExpression p0 = Expression.Parameter(typeof(long), "p0");
             ParameterExpression p1 = Expression.Parameter(typeof(long), "p1");
 
@@ -888,17 +681,19 @@ namespace System.Linq.Expressions.Tests
                     Expression.Constant(b, typeof(long))
                 }),
                     Enumerable.Empty<ParameterExpression>());
-            Func<long> f1 = e1.Compile();
+            Func<long> f1 = e1.Compile(useInterpreter);
 
-            long f1Result = default(long);
-            Exception f1Ex = null;
-            try
+            switch (outcome)
             {
-                f1Result = f1();
-            }
-            catch (Exception ex)
-            {
-                f1Ex = ex;
+                case ResultType.DivideByZero:
+                    Assert.Throws<DivideByZeroException>(() => f1());
+                    break;
+                case ResultType.Overflow:
+                    Assert.Throws<OverflowException>(() => f1());
+                    break;
+                default:
+                    Assert.Equal(expected, f1());
+                    break;
             }
 
             // verify with values passed to make parameters
@@ -908,17 +703,19 @@ namespace System.Linq.Expressions.Tests
                         Expression.Divide(p0, p1),
                         Enumerable.Empty<ParameterExpression>()),
                     new ParameterExpression[] { p0, p1 });
-            Func<long, long, Func<long>> f2 = e2.Compile();
+            Func<long, long, Func<long>> f2 = e2.Compile(useInterpreter);
 
-            long f2Result = default(long);
-            Exception f2Ex = null;
-            try
+            switch (outcome)
             {
-                f2Result = f2(a, b)();
-            }
-            catch (Exception ex)
-            {
-                f2Ex = ex;
+                case ResultType.DivideByZero:
+                    Assert.Throws<DivideByZeroException>(() => f2(a, b)());
+                    break;
+                case ResultType.Overflow:
+                    Assert.Throws<OverflowException>(() => f2(a, b)());
+                    break;
+                default:
+                    Assert.Equal(expected, f2(a, b)());
+                    break;
             }
 
             // verify with values directly passed
@@ -932,17 +729,19 @@ namespace System.Linq.Expressions.Tests
                             Enumerable.Empty<ParameterExpression>()),
                         Enumerable.Empty<Expression>()),
                     Enumerable.Empty<ParameterExpression>());
-            Func<long, long, long> f3 = e3.Compile()();
+            Func<long, long, long> f3 = e3.Compile(useInterpreter)();
 
-            long f3Result = default(long);
-            Exception f3Ex = null;
-            try
+            switch (outcome)
             {
-                f3Result = f3(a, b);
-            }
-            catch (Exception ex)
-            {
-                f3Ex = ex;
+                case ResultType.DivideByZero:
+                    Assert.Throws<DivideByZeroException>(() => f3(a, b));
+                    break;
+                case ResultType.Overflow:
+                    Assert.Throws<OverflowException>(() => f3(a, b));
+                    break;
+                default:
+                    Assert.Equal(expected, f3(a, b));
+                    break;
             }
 
             // verify as a function generator
@@ -952,17 +751,19 @@ namespace System.Linq.Expressions.Tests
                         Expression.Divide(p0, p1),
                         new ParameterExpression[] { p0, p1 }),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Func<long, long, long>> f4 = e4.Compile();
+            Func<Func<long, long, long>> f4 = e4.Compile(useInterpreter);
 
-            long f4Result = default(long);
-            Exception f4Ex = null;
-            try
+            switch (outcome)
             {
-                f4Result = f4()(a, b);
-            }
-            catch (Exception ex)
-            {
-                f4Ex = ex;
+                case ResultType.DivideByZero:
+                    Assert.Throws<DivideByZeroException>(() => f4()(a, b));
+                    break;
+                case ResultType.Overflow:
+                    Assert.Throws<OverflowException>(() => f4()(a, b));
+                    break;
+                default:
+                    Assert.Equal(expected, f4()(a, b));
+                    break;
             }
 
             // verify with currying
@@ -972,17 +773,19 @@ namespace System.Linq.Expressions.Tests
                         Expression.Divide(p0, p1),
                         new ParameterExpression[] { p1 }),
                     new ParameterExpression[] { p0 });
-            Func<long, Func<long, long>> f5 = e5.Compile();
+            Func<long, Func<long, long>> f5 = e5.Compile(useInterpreter);
 
-            long f5Result = default(long);
-            Exception f5Ex = null;
-            try
+            switch (outcome)
             {
-                f5Result = f5(a)(b);
-            }
-            catch (Exception ex)
-            {
-                f5Ex = ex;
+                case ResultType.DivideByZero:
+                    Assert.Throws<DivideByZeroException>(() => f5(a)(b));
+                    break;
+                case ResultType.Overflow:
+                    Assert.Throws<OverflowException>(() => f5(a)(b));
+                    break;
+                default:
+                    Assert.Equal(expected, f5(a)(b));
+                    break;
             }
 
             // verify with one parameter
@@ -996,56 +799,19 @@ namespace System.Linq.Expressions.Tests
                             new ParameterExpression[] { p0 }),
                         new Expression[] { Expression.Constant(a, typeof(long)) }),
                     Enumerable.Empty<ParameterExpression>());
-            Func<long, long> f6 = e6.Compile()();
+            Func<long, long> f6 = e6.Compile(useInterpreter)();
 
-            long f6Result = default(long);
-            Exception f6Ex = null;
-            try
+            switch (outcome)
             {
-                f6Result = f6(b);
-            }
-            catch (Exception ex)
-            {
-                f6Ex = ex;
-            }
-
-            // verify with regular IL
-            long csResult = default(long);
-            Exception csEx = null;
-            try
-            {
-                csResult = (long)(a / b);
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            // either all should have failed the same way or they should all produce the same result
-            if (f1Ex != null || f2Ex != null || f3Ex != null || f4Ex != null || f5Ex != null || f6Ex != null || csEx != null)
-            {
-                Assert.NotNull(f1Ex);
-                Assert.NotNull(f2Ex);
-                Assert.NotNull(f3Ex);
-                Assert.NotNull(f4Ex);
-                Assert.NotNull(f5Ex);
-                Assert.NotNull(f6Ex);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), f1Ex.GetType());
-                Assert.Equal(csEx.GetType(), f2Ex.GetType());
-                Assert.Equal(csEx.GetType(), f3Ex.GetType());
-                Assert.Equal(csEx.GetType(), f4Ex.GetType());
-                Assert.Equal(csEx.GetType(), f5Ex.GetType());
-                Assert.Equal(csEx.GetType(), f6Ex.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, f1Result);
-                Assert.Equal(csResult, f2Result);
-                Assert.Equal(csResult, f3Result);
-                Assert.Equal(csResult, f4Result);
-                Assert.Equal(csResult, f5Result);
-                Assert.Equal(csResult, f6Result);
+                case ResultType.DivideByZero:
+                    Assert.Throws<DivideByZeroException>(() => f6(b));
+                    break;
+                case ResultType.Overflow:
+                    Assert.Throws<OverflowException>(() => f6(b));
+                    break;
+                default:
+                    Assert.Equal(expected, f6(b));
+                    break;
             }
         }
 
@@ -1054,8 +820,21 @@ namespace System.Linq.Expressions.Tests
 
         #region Verify short
 
-        private static void VerifyDivideShort(short a, short b)
+        private static void VerifyDivideShort(short a, short b, bool useInterpreter)
         {
+            bool divideByZero;
+            short expected;
+            if (b == 0)
+            {
+                divideByZero = true;
+                expected = 0;
+            }
+            else
+            {
+                divideByZero = false;
+                expected = (short)(a / b);
+            }
+
             ParameterExpression p0 = Expression.Parameter(typeof(short), "p0");
             ParameterExpression p1 = Expression.Parameter(typeof(short), "p1");
 
@@ -1072,17 +851,15 @@ namespace System.Linq.Expressions.Tests
                     Expression.Constant(b, typeof(short))
                 }),
                     Enumerable.Empty<ParameterExpression>());
-            Func<short> f1 = e1.Compile();
+            Func<short> f1 = e1.Compile(useInterpreter);
 
-            short f1Result = default(short);
-            Exception f1Ex = null;
-            try
+            if (divideByZero)
             {
-                f1Result = f1();
+                Assert.Throws<DivideByZeroException>(() => f1());
             }
-            catch (Exception ex)
+            else
             {
-                f1Ex = ex;
+                Assert.Equal(expected, f1());
             }
 
             // verify with values passed to make parameters
@@ -1092,17 +869,15 @@ namespace System.Linq.Expressions.Tests
                         Expression.Divide(p0, p1),
                         Enumerable.Empty<ParameterExpression>()),
                     new ParameterExpression[] { p0, p1 });
-            Func<short, short, Func<short>> f2 = e2.Compile();
+            Func<short, short, Func<short>> f2 = e2.Compile(useInterpreter);
 
-            short f2Result = default(short);
-            Exception f2Ex = null;
-            try
+            if (divideByZero)
             {
-                f2Result = f2(a, b)();
+                Assert.Throws<DivideByZeroException>(() => f2(a, b)());
             }
-            catch (Exception ex)
+            else
             {
-                f2Ex = ex;
+                Assert.Equal(expected, f2(a, b)());
             }
 
             // verify with values directly passed
@@ -1116,17 +891,15 @@ namespace System.Linq.Expressions.Tests
                             Enumerable.Empty<ParameterExpression>()),
                         Enumerable.Empty<Expression>()),
                     Enumerable.Empty<ParameterExpression>());
-            Func<short, short, short> f3 = e3.Compile()();
+            Func<short, short, short> f3 = e3.Compile(useInterpreter)();
 
-            short f3Result = default(short);
-            Exception f3Ex = null;
-            try
+            if (divideByZero)
             {
-                f3Result = f3(a, b);
+                Assert.Throws<DivideByZeroException>(() => f3(a, b));
             }
-            catch (Exception ex)
+            else
             {
-                f3Ex = ex;
+                Assert.Equal(expected, f3(a, b));
             }
 
             // verify as a function generator
@@ -1136,17 +909,15 @@ namespace System.Linq.Expressions.Tests
                         Expression.Divide(p0, p1),
                         new ParameterExpression[] { p0, p1 }),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Func<short, short, short>> f4 = e4.Compile();
+            Func<Func<short, short, short>> f4 = e4.Compile(useInterpreter);
 
-            short f4Result = default(short);
-            Exception f4Ex = null;
-            try
+            if (divideByZero)
             {
-                f4Result = f4()(a, b);
+                Assert.Throws<DivideByZeroException>(() => f4()(a, b));
             }
-            catch (Exception ex)
+            else
             {
-                f4Ex = ex;
+                Assert.Equal(expected, f4()(a, b));
             }
 
             // verify with currying
@@ -1156,17 +927,15 @@ namespace System.Linq.Expressions.Tests
                         Expression.Divide(p0, p1),
                         new ParameterExpression[] { p1 }),
                     new ParameterExpression[] { p0 });
-            Func<short, Func<short, short>> f5 = e5.Compile();
+            Func<short, Func<short, short>> f5 = e5.Compile(useInterpreter);
 
-            short f5Result = default(short);
-            Exception f5Ex = null;
-            try
+            if (divideByZero)
             {
-                f5Result = f5(a)(b);
+                Assert.Throws<DivideByZeroException>(() => f5(a)(b));
             }
-            catch (Exception ex)
+            else
             {
-                f5Ex = ex;
+                Assert.Equal(expected, f5(a)(b));
             }
 
             // verify with one parameter
@@ -1180,56 +949,15 @@ namespace System.Linq.Expressions.Tests
                             new ParameterExpression[] { p0 }),
                         new Expression[] { Expression.Constant(a, typeof(short)) }),
                     Enumerable.Empty<ParameterExpression>());
-            Func<short, short> f6 = e6.Compile()();
+            Func<short, short> f6 = e6.Compile(useInterpreter)();
 
-            short f6Result = default(short);
-            Exception f6Ex = null;
-            try
+            if (divideByZero)
             {
-                f6Result = f6(b);
-            }
-            catch (Exception ex)
-            {
-                f6Ex = ex;
-            }
-
-            // verify with regular IL
-            short csResult = default(short);
-            Exception csEx = null;
-            try
-            {
-                csResult = (short)(a / b);
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            // either all should have failed the same way or they should all produce the same result
-            if (f1Ex != null || f2Ex != null || f3Ex != null || f4Ex != null || f5Ex != null || f6Ex != null || csEx != null)
-            {
-                Assert.NotNull(f1Ex);
-                Assert.NotNull(f2Ex);
-                Assert.NotNull(f3Ex);
-                Assert.NotNull(f4Ex);
-                Assert.NotNull(f5Ex);
-                Assert.NotNull(f6Ex);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), f1Ex.GetType());
-                Assert.Equal(csEx.GetType(), f2Ex.GetType());
-                Assert.Equal(csEx.GetType(), f3Ex.GetType());
-                Assert.Equal(csEx.GetType(), f4Ex.GetType());
-                Assert.Equal(csEx.GetType(), f5Ex.GetType());
-                Assert.Equal(csEx.GetType(), f6Ex.GetType());
+                Assert.Throws<DivideByZeroException>(() => f6(b));
             }
             else
             {
-                Assert.Equal(csResult, f1Result);
-                Assert.Equal(csResult, f2Result);
-                Assert.Equal(csResult, f3Result);
-                Assert.Equal(csResult, f4Result);
-                Assert.Equal(csResult, f5Result);
-                Assert.Equal(csResult, f6Result);
+                Assert.Equal(expected, f6(b));
             }
         }
 
@@ -1238,8 +966,21 @@ namespace System.Linq.Expressions.Tests
 
         #region Verify uint
 
-        private static void VerifyDivideUInt(uint a, uint b)
+        private static void VerifyDivideUInt(uint a, uint b, bool useInterpreter)
         {
+            bool divideByZero;
+            uint expected;
+            if (b == 0)
+            {
+                divideByZero = true;
+                expected = 0;
+            }
+            else
+            {
+                divideByZero = false;
+                expected = a / b;
+            }
+
             ParameterExpression p0 = Expression.Parameter(typeof(uint), "p0");
             ParameterExpression p1 = Expression.Parameter(typeof(uint), "p1");
 
@@ -1256,17 +997,15 @@ namespace System.Linq.Expressions.Tests
                     Expression.Constant(b, typeof(uint))
                 }),
                     Enumerable.Empty<ParameterExpression>());
-            Func<uint> f1 = e1.Compile();
+            Func<uint> f1 = e1.Compile(useInterpreter);
 
-            uint f1Result = default(uint);
-            Exception f1Ex = null;
-            try
+            if (divideByZero)
             {
-                f1Result = f1();
+                Assert.Throws<DivideByZeroException>(() => f1());
             }
-            catch (Exception ex)
+            else
             {
-                f1Ex = ex;
+                Assert.Equal(expected, f1());
             }
 
             // verify with values passed to make parameters
@@ -1276,17 +1015,15 @@ namespace System.Linq.Expressions.Tests
                         Expression.Divide(p0, p1),
                         Enumerable.Empty<ParameterExpression>()),
                     new ParameterExpression[] { p0, p1 });
-            Func<uint, uint, Func<uint>> f2 = e2.Compile();
+            Func<uint, uint, Func<uint>> f2 = e2.Compile(useInterpreter);
 
-            uint f2Result = default(uint);
-            Exception f2Ex = null;
-            try
+            if (divideByZero)
             {
-                f2Result = f2(a, b)();
+                Assert.Throws<DivideByZeroException>(() => f2(a, b)());
             }
-            catch (Exception ex)
+            else
             {
-                f2Ex = ex;
+                Assert.Equal(expected, f2(a, b)());
             }
 
             // verify with values directly passed
@@ -1300,17 +1037,15 @@ namespace System.Linq.Expressions.Tests
                             Enumerable.Empty<ParameterExpression>()),
                         Enumerable.Empty<Expression>()),
                     Enumerable.Empty<ParameterExpression>());
-            Func<uint, uint, uint> f3 = e3.Compile()();
+            Func<uint, uint, uint> f3 = e3.Compile(useInterpreter)();
 
-            uint f3Result = default(uint);
-            Exception f3Ex = null;
-            try
+            if (divideByZero)
             {
-                f3Result = f3(a, b);
+                Assert.Throws<DivideByZeroException>(() => f3(a, b));
             }
-            catch (Exception ex)
+            else
             {
-                f3Ex = ex;
+                Assert.Equal(expected, f3(a, b));
             }
 
             // verify as a function generator
@@ -1320,17 +1055,15 @@ namespace System.Linq.Expressions.Tests
                         Expression.Divide(p0, p1),
                         new ParameterExpression[] { p0, p1 }),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Func<uint, uint, uint>> f4 = e4.Compile();
+            Func<Func<uint, uint, uint>> f4 = e4.Compile(useInterpreter);
 
-            uint f4Result = default(uint);
-            Exception f4Ex = null;
-            try
+            if (divideByZero)
             {
-                f4Result = f4()(a, b);
+                Assert.Throws<DivideByZeroException>(() => f4()(a, b));
             }
-            catch (Exception ex)
+            else
             {
-                f4Ex = ex;
+                Assert.Equal(expected, f4()(a, b));
             }
 
             // verify with currying
@@ -1340,17 +1073,15 @@ namespace System.Linq.Expressions.Tests
                         Expression.Divide(p0, p1),
                         new ParameterExpression[] { p1 }),
                     new ParameterExpression[] { p0 });
-            Func<uint, Func<uint, uint>> f5 = e5.Compile();
+            Func<uint, Func<uint, uint>> f5 = e5.Compile(useInterpreter);
 
-            uint f5Result = default(uint);
-            Exception f5Ex = null;
-            try
+            if (divideByZero)
             {
-                f5Result = f5(a)(b);
+                Assert.Throws<DivideByZeroException>(() => f5(a)(b));
             }
-            catch (Exception ex)
+            else
             {
-                f5Ex = ex;
+                Assert.Equal(expected, f5(a)(b));
             }
 
             // verify with one parameter
@@ -1364,56 +1095,15 @@ namespace System.Linq.Expressions.Tests
                             new ParameterExpression[] { p0 }),
                         new Expression[] { Expression.Constant(a, typeof(uint)) }),
                     Enumerable.Empty<ParameterExpression>());
-            Func<uint, uint> f6 = e6.Compile()();
+            Func<uint, uint> f6 = e6.Compile(useInterpreter)();
 
-            uint f6Result = default(uint);
-            Exception f6Ex = null;
-            try
+            if (divideByZero)
             {
-                f6Result = f6(b);
-            }
-            catch (Exception ex)
-            {
-                f6Ex = ex;
-            }
-
-            // verify with regular IL
-            uint csResult = default(uint);
-            Exception csEx = null;
-            try
-            {
-                csResult = (uint)(a / b);
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            // either all should have failed the same way or they should all produce the same result
-            if (f1Ex != null || f2Ex != null || f3Ex != null || f4Ex != null || f5Ex != null || f6Ex != null || csEx != null)
-            {
-                Assert.NotNull(f1Ex);
-                Assert.NotNull(f2Ex);
-                Assert.NotNull(f3Ex);
-                Assert.NotNull(f4Ex);
-                Assert.NotNull(f5Ex);
-                Assert.NotNull(f6Ex);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), f1Ex.GetType());
-                Assert.Equal(csEx.GetType(), f2Ex.GetType());
-                Assert.Equal(csEx.GetType(), f3Ex.GetType());
-                Assert.Equal(csEx.GetType(), f4Ex.GetType());
-                Assert.Equal(csEx.GetType(), f5Ex.GetType());
-                Assert.Equal(csEx.GetType(), f6Ex.GetType());
+                Assert.Throws<DivideByZeroException>(() => f6(b));
             }
             else
             {
-                Assert.Equal(csResult, f1Result);
-                Assert.Equal(csResult, f2Result);
-                Assert.Equal(csResult, f3Result);
-                Assert.Equal(csResult, f4Result);
-                Assert.Equal(csResult, f5Result);
-                Assert.Equal(csResult, f6Result);
+                Assert.Equal(expected, f6(b));
             }
         }
 
@@ -1422,8 +1112,21 @@ namespace System.Linq.Expressions.Tests
 
         #region Verify ulong
 
-        private static void VerifyDivideULong(ulong a, ulong b)
+        private static void VerifyDivideULong(ulong a, ulong b, bool useInterpreter)
         {
+            bool divideByZero;
+            ulong expected;
+            if (b == 0)
+            {
+                divideByZero = true;
+                expected = 0;
+            }
+            else
+            {
+                divideByZero = false;
+                expected = a / b;
+            }
+
             ParameterExpression p0 = Expression.Parameter(typeof(ulong), "p0");
             ParameterExpression p1 = Expression.Parameter(typeof(ulong), "p1");
 
@@ -1440,17 +1143,15 @@ namespace System.Linq.Expressions.Tests
                     Expression.Constant(b, typeof(ulong))
                 }),
                     Enumerable.Empty<ParameterExpression>());
-            Func<ulong> f1 = e1.Compile();
+            Func<ulong> f1 = e1.Compile(useInterpreter);
 
-            ulong f1Result = default(ulong);
-            Exception f1Ex = null;
-            try
+            if (divideByZero)
             {
-                f1Result = f1();
+                Assert.Throws<DivideByZeroException>(() => f1());
             }
-            catch (Exception ex)
+            else
             {
-                f1Ex = ex;
+                Assert.Equal(expected, f1());
             }
 
             // verify with values passed to make parameters
@@ -1460,17 +1161,15 @@ namespace System.Linq.Expressions.Tests
                         Expression.Divide(p0, p1),
                         Enumerable.Empty<ParameterExpression>()),
                     new ParameterExpression[] { p0, p1 });
-            Func<ulong, ulong, Func<ulong>> f2 = e2.Compile();
+            Func<ulong, ulong, Func<ulong>> f2 = e2.Compile(useInterpreter);
 
-            ulong f2Result = default(ulong);
-            Exception f2Ex = null;
-            try
+            if (divideByZero)
             {
-                f2Result = f2(a, b)();
+                Assert.Throws<DivideByZeroException>(() => f2(a, b)());
             }
-            catch (Exception ex)
+            else
             {
-                f2Ex = ex;
+                Assert.Equal(expected, f2(a, b)());
             }
 
             // verify with values directly passed
@@ -1484,17 +1183,15 @@ namespace System.Linq.Expressions.Tests
                             Enumerable.Empty<ParameterExpression>()),
                         Enumerable.Empty<Expression>()),
                     Enumerable.Empty<ParameterExpression>());
-            Func<ulong, ulong, ulong> f3 = e3.Compile()();
+            Func<ulong, ulong, ulong> f3 = e3.Compile(useInterpreter)();
 
-            ulong f3Result = default(ulong);
-            Exception f3Ex = null;
-            try
+            if (divideByZero)
             {
-                f3Result = f3(a, b);
+                Assert.Throws<DivideByZeroException>(() => f3(a, b));
             }
-            catch (Exception ex)
+            else
             {
-                f3Ex = ex;
+                Assert.Equal(expected, f3(a, b));
             }
 
             // verify as a function generator
@@ -1504,17 +1201,15 @@ namespace System.Linq.Expressions.Tests
                         Expression.Divide(p0, p1),
                         new ParameterExpression[] { p0, p1 }),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Func<ulong, ulong, ulong>> f4 = e4.Compile();
+            Func<Func<ulong, ulong, ulong>> f4 = e4.Compile(useInterpreter);
 
-            ulong f4Result = default(ulong);
-            Exception f4Ex = null;
-            try
+            if (divideByZero)
             {
-                f4Result = f4()(a, b);
+                Assert.Throws<DivideByZeroException>(() => f4()(a, b));
             }
-            catch (Exception ex)
+            else
             {
-                f4Ex = ex;
+                Assert.Equal(expected, f4()(a, b));
             }
 
             // verify with currying
@@ -1524,17 +1219,15 @@ namespace System.Linq.Expressions.Tests
                         Expression.Divide(p0, p1),
                         new ParameterExpression[] { p1 }),
                     new ParameterExpression[] { p0 });
-            Func<ulong, Func<ulong, ulong>> f5 = e5.Compile();
+            Func<ulong, Func<ulong, ulong>> f5 = e5.Compile(useInterpreter);
 
-            ulong f5Result = default(ulong);
-            Exception f5Ex = null;
-            try
+            if (divideByZero)
             {
-                f5Result = f5(a)(b);
+                Assert.Throws<DivideByZeroException>(() => f5(a)(b));
             }
-            catch (Exception ex)
+            else
             {
-                f5Ex = ex;
+                Assert.Equal(expected, f5(a)(b));
             }
 
             // verify with one parameter
@@ -1548,56 +1241,15 @@ namespace System.Linq.Expressions.Tests
                             new ParameterExpression[] { p0 }),
                         new Expression[] { Expression.Constant(a, typeof(ulong)) }),
                     Enumerable.Empty<ParameterExpression>());
-            Func<ulong, ulong> f6 = e6.Compile()();
+            Func<ulong, ulong> f6 = e6.Compile(useInterpreter)();
 
-            ulong f6Result = default(ulong);
-            Exception f6Ex = null;
-            try
+            if (divideByZero)
             {
-                f6Result = f6(b);
-            }
-            catch (Exception ex)
-            {
-                f6Ex = ex;
-            }
-
-            // verify with regular IL
-            ulong csResult = default(ulong);
-            Exception csEx = null;
-            try
-            {
-                csResult = (ulong)(a / b);
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            // either all should have failed the same way or they should all produce the same result
-            if (f1Ex != null || f2Ex != null || f3Ex != null || f4Ex != null || f5Ex != null || f6Ex != null || csEx != null)
-            {
-                Assert.NotNull(f1Ex);
-                Assert.NotNull(f2Ex);
-                Assert.NotNull(f3Ex);
-                Assert.NotNull(f4Ex);
-                Assert.NotNull(f5Ex);
-                Assert.NotNull(f6Ex);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), f1Ex.GetType());
-                Assert.Equal(csEx.GetType(), f2Ex.GetType());
-                Assert.Equal(csEx.GetType(), f3Ex.GetType());
-                Assert.Equal(csEx.GetType(), f4Ex.GetType());
-                Assert.Equal(csEx.GetType(), f5Ex.GetType());
-                Assert.Equal(csEx.GetType(), f6Ex.GetType());
+                Assert.Throws<DivideByZeroException>(() => f6(b));
             }
             else
             {
-                Assert.Equal(csResult, f1Result);
-                Assert.Equal(csResult, f2Result);
-                Assert.Equal(csResult, f3Result);
-                Assert.Equal(csResult, f4Result);
-                Assert.Equal(csResult, f5Result);
-                Assert.Equal(csResult, f6Result);
+                Assert.Equal(expected, f6(b));
             }
         }
 
@@ -1606,8 +1258,22 @@ namespace System.Linq.Expressions.Tests
 
         #region Verify ushort
 
-        private static void VerifyDivideUShort(ushort a, ushort b)
+        private static void VerifyDivideUShort(ushort a, ushort b, bool useInterpreter)
         {
+            bool divideByZero;
+            ushort expected;
+
+            if (b == 0)
+            {
+                divideByZero = true;
+                expected = 0;
+            }
+            else
+            {
+                divideByZero = false;
+                expected = (ushort)(a / b);
+            }
+
             ParameterExpression p0 = Expression.Parameter(typeof(ushort), "p0");
             ParameterExpression p1 = Expression.Parameter(typeof(ushort), "p1");
 
@@ -1624,17 +1290,15 @@ namespace System.Linq.Expressions.Tests
                     Expression.Constant(b, typeof(ushort))
                 }),
                     Enumerable.Empty<ParameterExpression>());
-            Func<ushort> f1 = e1.Compile();
+            Func<ushort> f1 = e1.Compile(useInterpreter);
 
-            ushort f1Result = default(ushort);
-            Exception f1Ex = null;
-            try
+            if (divideByZero)
             {
-                f1Result = f1();
+                Assert.Throws<DivideByZeroException>(() => f1());
             }
-            catch (Exception ex)
+            else
             {
-                f1Ex = ex;
+                Assert.Equal(expected, f1());
             }
 
             // verify with values passed to make parameters
@@ -1644,17 +1308,15 @@ namespace System.Linq.Expressions.Tests
                         Expression.Divide(p0, p1),
                         Enumerable.Empty<ParameterExpression>()),
                     new ParameterExpression[] { p0, p1 });
-            Func<ushort, ushort, Func<ushort>> f2 = e2.Compile();
+            Func<ushort, ushort, Func<ushort>> f2 = e2.Compile(useInterpreter);
 
-            ushort f2Result = default(ushort);
-            Exception f2Ex = null;
-            try
+            if (divideByZero)
             {
-                f2Result = f2(a, b)();
+                Assert.Throws<DivideByZeroException>(() => f2(a, b)());
             }
-            catch (Exception ex)
+            else
             {
-                f2Ex = ex;
+                Assert.Equal(expected, f2(a, b)());
             }
 
             // verify with values directly passed
@@ -1668,17 +1330,15 @@ namespace System.Linq.Expressions.Tests
                             Enumerable.Empty<ParameterExpression>()),
                         Enumerable.Empty<Expression>()),
                     Enumerable.Empty<ParameterExpression>());
-            Func<ushort, ushort, ushort> f3 = e3.Compile()();
+            Func<ushort, ushort, ushort> f3 = e3.Compile(useInterpreter)();
 
-            ushort f3Result = default(ushort);
-            Exception f3Ex = null;
-            try
+            if (divideByZero)
             {
-                f3Result = f3(a, b);
+                Assert.Throws<DivideByZeroException>(() => f3(a, b));
             }
-            catch (Exception ex)
+            else
             {
-                f3Ex = ex;
+                Assert.Equal(expected, f3(a, b));
             }
 
             // verify as a function generator
@@ -1688,17 +1348,15 @@ namespace System.Linq.Expressions.Tests
                         Expression.Divide(p0, p1),
                         new ParameterExpression[] { p0, p1 }),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Func<ushort, ushort, ushort>> f4 = e4.Compile();
+            Func<Func<ushort, ushort, ushort>> f4 = e4.Compile(useInterpreter);
 
-            ushort f4Result = default(ushort);
-            Exception f4Ex = null;
-            try
+            if (divideByZero)
             {
-                f4Result = f4()(a, b);
+                Assert.Throws<DivideByZeroException>(() => f4()(a, b));
             }
-            catch (Exception ex)
+            else
             {
-                f4Ex = ex;
+                Assert.Equal(expected, f4()(a, b));
             }
 
             // verify with currying
@@ -1708,17 +1366,15 @@ namespace System.Linq.Expressions.Tests
                         Expression.Divide(p0, p1),
                         new ParameterExpression[] { p1 }),
                     new ParameterExpression[] { p0 });
-            Func<ushort, Func<ushort, ushort>> f5 = e5.Compile();
+            Func<ushort, Func<ushort, ushort>> f5 = e5.Compile(useInterpreter);
 
-            ushort f5Result = default(ushort);
-            Exception f5Ex = null;
-            try
+            if (divideByZero)
             {
-                f5Result = f5(a)(b);
+                Assert.Throws<DivideByZeroException>(() => f5(a)(b));
             }
-            catch (Exception ex)
+            else
             {
-                f5Ex = ex;
+                Assert.Equal(expected, f5(a)(b));
             }
 
             // verify with one parameter
@@ -1732,56 +1388,15 @@ namespace System.Linq.Expressions.Tests
                             new ParameterExpression[] { p0 }),
                         new Expression[] { Expression.Constant(a, typeof(ushort)) }),
                     Enumerable.Empty<ParameterExpression>());
-            Func<ushort, ushort> f6 = e6.Compile()();
+            Func<ushort, ushort> f6 = e6.Compile(useInterpreter)();
 
-            ushort f6Result = default(ushort);
-            Exception f6Ex = null;
-            try
+            if (divideByZero)
             {
-                f6Result = f6(b);
-            }
-            catch (Exception ex)
-            {
-                f6Ex = ex;
-            }
-
-            // verify with regular IL
-            ushort csResult = default(ushort);
-            Exception csEx = null;
-            try
-            {
-                csResult = (ushort)(a / b);
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            // either all should have failed the same way or they should all produce the same result
-            if (f1Ex != null || f2Ex != null || f3Ex != null || f4Ex != null || f5Ex != null || f6Ex != null || csEx != null)
-            {
-                Assert.NotNull(f1Ex);
-                Assert.NotNull(f2Ex);
-                Assert.NotNull(f3Ex);
-                Assert.NotNull(f4Ex);
-                Assert.NotNull(f5Ex);
-                Assert.NotNull(f6Ex);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), f1Ex.GetType());
-                Assert.Equal(csEx.GetType(), f2Ex.GetType());
-                Assert.Equal(csEx.GetType(), f3Ex.GetType());
-                Assert.Equal(csEx.GetType(), f4Ex.GetType());
-                Assert.Equal(csEx.GetType(), f5Ex.GetType());
-                Assert.Equal(csEx.GetType(), f6Ex.GetType());
+                Assert.Throws<DivideByZeroException>(() => f6(b));
             }
             else
             {
-                Assert.Equal(csResult, f1Result);
-                Assert.Equal(csResult, f2Result);
-                Assert.Equal(csResult, f3Result);
-                Assert.Equal(csResult, f4Result);
-                Assert.Equal(csResult, f5Result);
-                Assert.Equal(csResult, f6Result);
+                Assert.Equal(expected, f6(b));
             }
         }
 
