@@ -39,11 +39,16 @@ and then also build the Nuget package for it.   The Nuget package ends up in the
 
 ### Building other OSes
 
-By default building from the root will only build the libraries for the OS you are running on. One can
+By default, building from the root will only build the libraries for the OS you are running on. One can
 build for another OS by specifying `/p:FilterToOSGroup=[Windows_NT|Linux|OSX|FreeBSD]` or build for all by specifying
 `/p:BuildAllOSGroups=true`.
 
 [Building CoreFX on FreeBSD, Linux and OS X](unix-instructions.md)
+
+### Building in Release or Debug
+
+By default, building from the root or within a project will build the libraries in Debug mode. One can build in Debug or Release mode by specifying `/p:ConfigurationGroup=[Debug|Release]` after the `msbuild` command.
+
 ## Tests
 
 We use the OSS testing framework [xunit](http://xunit.github.io/).
