@@ -10,23 +10,23 @@
     "keyFile": "../../tools/Key.snk"
   },
   "dependencies": {
-    "Microsoft.Extensions.HashCodeCombiner.Sources": {
-      "type": "build",
-      "version": "1.0.0-rc2-16054"
-    },
     "Microsoft.DotNet.InternalAbstractions": {
       "target": "project",
       "version": "1.0.0-*"
     },
-    "Newtonsoft.Json": "7.0.1",
-    "Microsoft.Extensions.PlatformAbstractions": "1.0.0-rc2-20100"
+    "Microsoft.Extensions.HashCodeCombiner.Sources": {
+      "type": "build",
+      "version": "1.0.0-rc2-20459"
+    },
+    "Microsoft.Extensions.PlatformAbstractions": "1.0.0-rc2-20459",
+    "Newtonsoft.Json": "7.0.1"
   },
   "frameworks": {
     "net451": {},
     "netstandard1.5": {
-      "imports": "dnxcore50",
+      "imports": "portable-net45+wp80+win8+wpa81+dnxcore50",
       "dependencies": {
-        "NETStandard.Library": "1.5.0-rc2-23931",
+        "System.Diagnostics.Debug": "4.0.11-rc2-23931",
         "System.Dynamic.Runtime": "4.0.11-rc2-23931"
       }
     }
