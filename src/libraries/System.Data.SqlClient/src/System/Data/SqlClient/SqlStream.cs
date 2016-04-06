@@ -316,7 +316,7 @@ namespace System.Data.SqlClient
     sealed internal class SqlCachedStream : Stream
     {
         private int _currentPosition;   // Position within the current array byte
-        private int _currentArrayIndex; // Index into the _cachedBytes ArrayList
+        private int _currentArrayIndex; // Index into the _cachedBytes List
         private List<byte[]> _cachedBytes;
         private long _totalLength;
 
