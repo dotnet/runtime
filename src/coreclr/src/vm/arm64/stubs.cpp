@@ -641,6 +641,8 @@ void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegis
     pRD->pCurrentContext->X26 = pCalleeSaved->x26;
     pRD->pCurrentContext->X27 = pCalleeSaved->x27;
     pRD->pCurrentContext->X28 = pCalleeSaved->x28;
+    pRD->pCurrentContext->Fp  = pCalleeSaved->x29;
+    pRD->pCurrentContext->Lr  = pCalleeSaved->x30;
 
     T_KNONVOLATILE_CONTEXT_POINTERS * pContextPointers = pRD->pCurrentContextPointers;
     pContextPointers->X19 = (PDWORD64)&pCalleeSaved->x19;
@@ -653,6 +655,8 @@ void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegis
     pContextPointers->X26 = (PDWORD64)&pCalleeSaved->x26;
     pContextPointers->X27 = (PDWORD64)&pCalleeSaved->x27;
     pContextPointers->X28 = (PDWORD64)&pCalleeSaved->x28;
+    pContextPointers->Fp  = (PDWORD64)&pCalleeSaved->x29;
+    pContextPointers->Lr  = (PDWORD64)&pCalleeSaved->x30;
 }
 
 #ifndef CROSSGEN_COMPILE
