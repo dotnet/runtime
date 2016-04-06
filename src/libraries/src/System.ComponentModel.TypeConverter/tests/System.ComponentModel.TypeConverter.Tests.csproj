@@ -50,6 +50,7 @@
     <Compile Include="MultilineStringConverterTests.cs" />
     <Compile Include="NullableConverterTests.cs" />
     <Compile Include="PropertyDescriptorCollectionTests.cs" />
+    <Compile Include="PropertyDescriptorTests.cs" />
     <Compile Include="ProvidePropertyAttributeTests.cs" />
     <Compile Include="SampleClasses.cs" />
     <Compile Include="SByteConverterTests.cs" />
