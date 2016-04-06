@@ -748,6 +748,8 @@ finalize_domain_objects (DomainFinalizationReq *req)
 static guint32
 finalizer_thread (gpointer unused)
 {
+	mono_thread_set_name_internal (mono_thread_internal_current (), mono_string_new (mono_get_root_domain (), "Finalizer"), FALSE);
+
 	gboolean wait = TRUE;
 
 	/* Register a hazard free queue pump callback */
@@ -823,7 +825,6 @@ void
 mono_gc_init_finalizer_thread (void)
 {
 	gc_thread = mono_thread_create_internal (mono_domain_get (), finalizer_thread, NULL, FALSE, 0);
-	ves_icall_System_Threading_Thread_SetName_internal (gc_thread, mono_string_new (mono_domain_get (), "Finalizer"));
 }
 
 void

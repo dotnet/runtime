@@ -2431,6 +2431,7 @@ unload_thread_main (void *arg)
 	/* Force it to be attached to avoid racing during shutdown. */
 	thread = mono_thread_attach_full (mono_get_root_domain (), TRUE, &error);
 	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	mono_thread_set_name_internal (thread->internal_thread, mono_string_new (mono_get_root_domain (), "Domain unloader"), TRUE);
 
 	/* 
 	 * FIXME: Abort our parent thread last, so we can return a failure 

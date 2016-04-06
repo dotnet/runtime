@@ -454,7 +454,9 @@ static void thread_cleanup (MonoInternalThread *thread)
 	}
 	mono_release_type_locks (thread);
 
-	mono_profiler_thread_end (thread->tid);
+	/* Can happen when we attach the profiler helper thread in order to heapshot. */
+	if (!mono_thread_info_lookup (thread->tid)->tools_thread)
+		mono_profiler_thread_end (thread->tid);
 
 	if (thread == mono_thread_internal_current ()) {
 		/*
@@ -725,6 +727,7 @@ static guint32 WINAPI start_wrapper_internal(void *data)
 	if (internal->name && (internal->flags & MONO_THREAD_FLAG_NAME_SET)) {
 		char *tname = g_utf16_to_utf8 (internal->name, internal->name_len, NULL, NULL, NULL);
 		mono_profiler_thread_name (internal->tid, tname);
+		mono_thread_info_set_name (internal->tid, tname);
 		g_free (tname);
 	}
 	/* start_func is set only for unmanaged start functions */
@@ -1036,8 +1039,10 @@ mono_thread_attach_full (MonoDomain *domain, gboolean force_attach, MonoError *e
 			mono_thread_attach_cb (MONO_NATIVE_THREAD_ID_TO_UINT (tid), staddr + stsize);
 	}
 
-	// FIXME: Need a separate callback
-	mono_profiler_thread_start (MONO_NATIVE_THREAD_ID_TO_UINT (tid));
+	/* Can happen when we attach the profiler helper thread in order to heapshot. */
+	if (!info->tools_thread)
+		// FIXME: Need a separate callback
+		mono_profiler_thread_start (MONO_NATIVE_THREAD_ID_TO_UINT (tid));
 
 	return current_thread;
 }

@@ -2298,6 +2298,7 @@ void
 sgen_client_thread_register_worker (void)
 {
 	mono_thread_info_register_small_id ();
+	mono_thread_info_set_name (mono_native_thread_id_get (), "SGen worker");
 }
 
 /* Variables holding start/end nursery so it won't have to be passed at every call */
@@ -2938,9 +2939,14 @@ sgen_client_describe_invalid_pointer (GCObject *ptr)
 	sgen_bridge_describe_pointer (ptr);
 }
 
+static gboolean gc_inited;
+
 void
 mono_gc_base_init (void)
 {
+	if (gc_inited)
+		return;
+
 	mono_counters_init ();
 
 #ifdef HEAVY_STATISTICS
@@ -2963,6 +2969,8 @@ mono_gc_base_init (void)
 	if (mono_tls_key_get_offset (TLS_KEY_SGEN_TLAB_NEXT_ADDR) == -1)
 		sgen_set_use_managed_allocator (FALSE);
 #endif
+
+	gc_inited = TRUE;
 }
 
 void
