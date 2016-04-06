@@ -14,7 +14,9 @@ param(
     [string]$GitHubUpstreamOwner='dotnet', 
     [string]$GitHubOriginOwner=$GitHubUser,
     [string]$GitHubProject='corefx',
-    [string]$GitHubUpstreamBranch='master')
+    [string]$GitHubUpstreamBranch='master',
+    # a semi-colon delimited list of GitHub users to notify on the PR
+    [string]$GitHubPullRequestNotifications='')
 
 $CoreFxLatestVersion = Invoke-WebRequest $CoreFxVersionUrl -UseBasicParsing
 $CoreFxLatestVersion = $CoreFxLatestVersion.ToString().Trim()
@@ -70,11 +72,22 @@ function CreatePullRequest
     # pipe this to null so the password secret isn't in the logs
     git push "https://$($GitHubUser):$GitHubPassword@$RemoteUrl" $RefSpec 2>&1 | Out-Null
 
+    if ($GitHubPullRequestNotifications)
+    {
+        $PRNotifications = $GitHubPullRequestNotifications.Split(';', [StringSplitOptions]::RemoveEmptyEntries) -join ' @'
+        $PRBody = "/cc @$PRNotifications"
+    }
+    else
+    {
+        $PRBody = ''
+    }
+
     $CreatePRBody = @"
     {
-        "title": "$CommitMessage", 
-        "head": "$($GitHubOriginOwner):$RemoteBranchName", 
-        "base": "$GitHubUpstreamBranch" 
+        "title": "$CommitMessage",
+        "body": "$PRBody",
+        "head": "$($GitHubOriginOwner):$RemoteBranchName",
+        "base": "$GitHubUpstreamBranch"
     }
 "@
 
