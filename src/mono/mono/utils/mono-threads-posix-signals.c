@@ -182,7 +182,8 @@ suspend_signal_handler (int _dummy, siginfo_t *info, void *context)
 
 	/* This thread is doomed, all we can do is give up and let the suspender recover. */
 	if (!ret) {
-		THREADS_SUSPEND_DEBUG ("\tThread is dying, failed to capture state %p\n", mono_thread_info_get_tid (current));
+		THREADS_SUSPEND_DEBUG ("\tThread is starting or detaching, failed to capture state %p\n", mono_thread_info_get_tid (current));
+
 		mono_threads_transition_async_suspend_compensation (current);
 
 		/* We're done suspending */
