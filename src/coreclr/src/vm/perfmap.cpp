@@ -9,6 +9,7 @@
 
 #if defined(FEATURE_PERFMAP) && !defined(DACCESS_COMPILE)
 #include "perfmap.h"
+#include "perfinfo.h"
 #include "pal.h"
 
 PerfMap * PerfMap::s_Current = NULL;
@@ -61,6 +62,8 @@ PerfMap::PerfMap(int pid)
 
     // Open the map file for writing.
     OpenFile(path);
+
+    m_PerfInfo = new PerfInfo(pid);
 }
 
 // Construct a new map without a specified file name.
@@ -77,6 +80,9 @@ PerfMap::~PerfMap()
 
     delete m_FileStream;
     m_FileStream = NULL;
+
+    delete m_PerfInfo;
+    m_PerfInfo = NULL;
 }
 
 // Open the specified destination map file.
@@ -159,8 +165,17 @@ void PerfMap::LogMethod(MethodDesc * pMethod, PCODE pCode, size_t codeSize)
     EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
 }
 
-// Log a native image to the map.
-void PerfMap::LogNativeImage(PEFile * pFile)
+
+void PerfMap::LogImageLoad(PEFile * pFile)
+{
+    if (s_Current != NULL)
+    {
+        s_Current->LogImage(pFile);
+    }
+}
+
+// Log an image load to the map.
+void PerfMap::LogImage(PEFile * pFile)
 {
     CONTRACTL{
         THROWS;
@@ -169,52 +184,23 @@ void PerfMap::LogNativeImage(PEFile * pFile)
         PRECONDITION(pFile != NULL);
     } CONTRACTL_END;
 
+
     if (m_FileStream == NULL || m_ErrorEncountered)
     {
         // A failure occurred, do not log.
         return;
     }
 
-    // Logging failures should not cause any exceptions to flow upstream.
     EX_TRY
     {
-        // Get the native image name.
-        LPCUTF8 lpcSimpleName = pFile->GetSimpleName();
-
-        // Get the native image signature.
         WCHAR wszSignature[39];
         GetNativeImageSignature(pFile, wszSignature, lengthof(wszSignature));
 
-        SString strNativeImageSymbol;
-        strNativeImageSymbol.Printf("%s.ni.%S", lpcSimpleName, wszSignature);
-
-        // Get the base addess of the native image.
-        SIZE_T baseAddress = (SIZE_T)pFile->GetLoaded()->GetBase();
-
-        // Get the image size
-        COUNT_T imageSize = pFile->GetLoaded()->GetVirtualSize();
-
-        // Log baseAddress imageSize strNativeImageSymbol
-        StackScratchBuffer scratch;
-        SString line;
-        line.Printf("%p %x %s\n", baseAddress, imageSize, strNativeImageSymbol.GetANSI(scratch));
-
-        // Write the line.
-        WriteLine(line);
+        m_PerfInfo->LogImage(pFile, wszSignature);
     }
     EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
 }
 
-// Log a native image load to the map.
-void PerfMap::LogNativeImageLoad(PEFile * pFile)
-{
-    STANDARD_VM_CONTRACT;
-
-    if (s_Current != NULL)
-    {
-        s_Current->LogNativeImage(pFile);
-    }
-}
 
 // Log a method to the map.
 void PerfMap::LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t codeSize)
