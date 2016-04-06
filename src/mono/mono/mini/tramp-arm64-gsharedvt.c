@@ -562,21 +562,4 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 
 #endif
 
-#else
-
-gpointer
-mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
-{
-	if (info)
-		*info = NULL;
-	return NULL;
-}
-
-gpointer
-mono_arch_get_gsharedvt_arg_trampoline (MonoDomain *domain, gpointer arg, gpointer addr)
-{
-	g_assert_not_reached ();
-	return NULL;
-}
-
 #endif /* MONO_ARCH_GSHAREDVT_SUPPORTED */
