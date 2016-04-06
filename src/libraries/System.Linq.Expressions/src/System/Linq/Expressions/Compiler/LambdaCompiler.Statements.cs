@@ -391,7 +391,7 @@ namespace System.Linq.Expressions.Compiler
             var labels = new Label[node.Cases.Count];
             var isGoto = new bool[node.Cases.Count];
 
-            var uniqueKeys = new Set<decimal>();
+            var uniqueKeys = new HashSet<decimal>();
             var keys = new List<SwitchLabel>();
             for (int i = 0; i < node.Cases.Count; i++)
             {
@@ -407,10 +407,9 @@ namespace System.Linq.Expressions.Compiler
 
                     // Only add each key once. If it appears twice, it's
                     // allowed, but can't be reached.
-                    if (!uniqueKeys.Contains(key))
+                    if (uniqueKeys.Add(key))
                     {
                         keys.Add(new SwitchLabel(key, test.Value, labels[i]));
-                        uniqueKeys.Add(key);
                     }
                 }
             }
