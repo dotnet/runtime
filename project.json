@@ -10,16 +10,11 @@
     "keyFile": "../../tools/Key.snk"
   },
   "dependencies": {
-    "Microsoft.Extensions.PlatformAbstractions": "1.0.0-rc2-20100"
+    "Microsoft.Extensions.PlatformAbstractions": "1.0.0-rc2-20459"
   },
   "frameworks": {
     "net451": {},
-    "netstandard1.3": {
-      "imports": "dnxcore50",
-      "dependencies": {
-        "NETStandard.Library": "1.5.0-rc2-23931"
-      }
-    }
+    "netstandard1.3": {}
   },
   "scripts": {}
 }
