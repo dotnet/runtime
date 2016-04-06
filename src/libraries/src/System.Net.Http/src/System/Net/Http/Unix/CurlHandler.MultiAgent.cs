@@ -25,7 +25,7 @@ namespace System.Net.Http
     internal partial class CurlHandler : HttpMessageHandler
     {
         /// <summary>Provides a multi handle and the associated processing for all requests on the handle.</summary>
-        private sealed class MultiAgent
+        private sealed class MultiAgent : IDisposable
         {
             /// <summary>
             /// Amount of time in milliseconds to keep a multiagent worker alive when there's no work to be done.
@@ -74,12 +74,27 @@ namespace System.Net.Http
             /// </summary>
             private Task _runningWorker;
 
+            /// <summary>
+            /// Multi handle used to service all requests on this agent.  It's lazily
+            /// created when it's first needed, so that it can utilize all of the settings
+            /// from the associated handler, and it's kept open for the duration of this
+            /// agent so that all of the resources it pools (connection pool, DNS cache, etc.)
+            /// can be used for all requests on this agent.
+            /// </summary>
+            private SafeCurlMultiHandle _multiHandle;
+
             /// <summary>Initializes the MultiAgent.</summary>
             /// <param name="handler">The handler that owns this agent.</param>
             public MultiAgent(CurlHandler handler)
             {
                 Debug.Assert(handler != null, "Expected non-null handler");
                 _associatedHandler = handler;
+            }
+
+            /// <summary>Disposes of the agent.</summary>
+            public void Dispose()
+            {
+                _multiHandle?.Dispose();
             }
 
             /// <summary>Queues a request for the multi handle to process.</summary>
@@ -118,7 +133,7 @@ namespace System.Net.Http
                         _requestWakeupPipeFd = new SafeFileHandle((IntPtr)fds[Interop.Sys.WriteEndOfPipe], true);
                     }
 
-                    // Kick off the processing task.  It's "DenyChildAttach" to avoid any surprises if
+                    // Create the processing task.  It's "DenyChildAttach" to avoid any surprises if
                     // code happens to create attached tasks, and it's LongRunning because this thread
                     // is likely going to sit around for a while in a wait loop (and the more requests
                     // are concurrently issued to the same agent, the longer the thread will be around).
@@ -139,6 +154,12 @@ namespace System.Net.Http
                         }
                         finally
                         {
+                            // The multi handle's reference count was increased prior to launching
+                            // this processing task.  Release that reference; any Dispose operations
+                            // that occurred during the worker's processing will now be allowed to
+                            // proceed to clean up the multi handle.
+                            _multiHandle.DangerousRelease();
+
                             thisRef.EventSourceTrace("MultiAgent worker shutting down");
                             lock (thisRef._incomingRequests)
                             {
@@ -162,6 +183,21 @@ namespace System.Net.Http
                             }
                         }
                     }, this, CancellationToken.None, Options);
+
+                    // Ensure we've created the multi handle for this agent.
+                    if (_multiHandle == null)
+                    {
+                        _multiHandle = CreateAndConfigureMultiHandle();
+                    }
+
+                    // We want to avoid situations where a Dispose occurs while we're in the middle
+                    // of processing requests and causes us to tear out the multi handle while it's
+                    // in active use.  To avoid that, we add-ref it here, and release it at the end
+                    // of the worker loop.
+                    bool ignored = false;
+                    _multiHandle.DangerousAddRef(ref ignored);
+
+                    // Kick off the processing task
                     _runningWorker.Start(TaskScheduler.Default); // started after _runningWorker field set to avoid race conditions
                 }
                 else // _workerRunning == true
@@ -256,13 +292,6 @@ namespace System.Net.Http
                 Debug.Assert(_runningWorker != null && _runningWorker.Id == Task.CurrentId, "This is the worker, so it must be running");
                 Debug.Assert(_wakeupRequestedPipeFd != null && !_wakeupRequestedPipeFd.IsInvalid, "Should have a valid pipe for wake ups");
 
-                // Create the multi handle to use for this round of processing.  This one handle will be used
-                // to service all easy requests currently available and all those that come in while
-                // we're processing other requests.  Once the work quiesces and there are no more requests
-                // to process, this multi handle will be released as the worker goes away.  The next
-                // time a request arrives and a new worker is spun up, a new multi handle will be created.
-                SafeCurlMultiHandle multiHandle = CreateAndConfigureMultiHandle();
-
                 // Clear our active operations table.  This should already be clear, either because
                 // all previous operations completed without unexpected exception, or in the case of an
                 // unexpected exception we should have cleaned up gracefully anyway.  But just in case...
@@ -284,7 +313,7 @@ namespace System.Net.Http
                                 if (_incomingRequests.Count == 0) break;
                                 request = _incomingRequests.Dequeue();
                             }
-                            HandleIncomingRequest(multiHandle, request);
+                            HandleIncomingRequest(request);
                         }
 
                         // If we have no active operations, there's no work to do right now.
@@ -311,14 +340,14 @@ namespace System.Net.Http
 
                         // We have one or more active operations. Run any work that needs to be run.
                         CURLMcode performResult;
-                        while ((performResult = Interop.Http.MultiPerform(multiHandle)) == CURLMcode.CURLM_CALL_MULTI_PERFORM);
+                        while ((performResult = Interop.Http.MultiPerform(_multiHandle)) == CURLMcode.CURLM_CALL_MULTI_PERFORM);
                         ThrowIfCURLMError(performResult);
 
                         // Complete and remove any requests that have finished being processed.
                         CURLMSG message;
                         IntPtr easyHandle;
                         CURLcode result;
-                        while (Interop.Http.MultiInfoRead(multiHandle, out message, out easyHandle, out result))
+                        while (Interop.Http.MultiInfoRead(_multiHandle, out message, out easyHandle, out result))
                         {
                             Debug.Assert(message == CURLMSG.CURLMSG_DONE, "CURLMSG_DONE is supposed to be the only message type");
 
@@ -334,7 +363,7 @@ namespace System.Net.Http
                                     Debug.Assert(gotActiveOp, "Expected to find GCHandle ptr in active operations table");
                                     if (gotActiveOp)
                                     {
-                                        DeactivateActiveRequest(multiHandle, completedOperation.Easy, gcHandlePtr, completedOperation.CancellationRegistration);
+                                        DeactivateActiveRequest(completedOperation.Easy, gcHandlePtr, completedOperation.CancellationRegistration);
                                         FinishRequest(completedOperation.Easy, result);
                                     }
                                 }
@@ -344,7 +373,7 @@ namespace System.Net.Http
                         // Wait for more things to do.
                         bool isWakeupRequestedPipeActive;
                         bool isTimeout;
-                        ThrowIfCURLMError(Interop.Http.MultiWait(multiHandle, _wakeupRequestedPipeFd, out isWakeupRequestedPipeActive, out isTimeout));
+                        ThrowIfCURLMError(Interop.Http.MultiWait(_multiHandle, _wakeupRequestedPipeFd, out isWakeupRequestedPipeActive, out isTimeout));
                         if (isWakeupRequestedPipeActive)
                         {
                             // We woke up (at least in part) because a wake-up was requested.  
@@ -386,7 +415,7 @@ namespace System.Net.Http
                             ActiveRequest failingOperation = pair.Value;
                             IntPtr failingOperationGcHandle = pair.Key;
 
-                            DeactivateActiveRequest(multiHandle, failingOperation.Easy, failingOperationGcHandle, failingOperation.CancellationRegistration);
+                            DeactivateActiveRequest(failingOperation.Easy, failingOperationGcHandle, failingOperation.CancellationRegistration);
 
                             // Complete the operation's task and clean up any of its resources
                             failingOperation.Easy.FailRequest(CreateHttpRequestException(eventLoopError));
@@ -396,13 +425,10 @@ namespace System.Net.Http
                         // Clear the table.
                         _activeOperations.Clear();
                     }
-
-                    // Finally, dispose of the multi handle.
-                    multiHandle.Dispose();
                 }
             }
 
-            private void HandleIncomingRequest(SafeCurlMultiHandle multiHandle, IncomingRequest request)
+            private void HandleIncomingRequest(IncomingRequest request)
             {
                 Debug.Assert(!Monitor.IsEntered(_incomingRequests), "Incoming requests lock should only be held while accessing the queue");
                 EventSourceTrace("Type: {0}", request.Type, easy: request.Easy);
@@ -411,13 +437,13 @@ namespace System.Net.Http
                 switch (request.Type)
                 {
                     case IncomingRequestType.New:
-                        ActivateNewRequest(multiHandle, easy);
+                        ActivateNewRequest(easy);
                         break;
 
                     case IncomingRequestType.Cancel:
                         Debug.Assert(easy._associatedMultiAgent == this, "Should only cancel associated easy requests");
                         Debug.Assert(easy._cancellationToken.IsCancellationRequested, "Cancellation should have been requested");
-                        FindAndFailActiveRequest(multiHandle, easy, new OperationCanceledException(easy._cancellationToken));
+                        FindAndFailActiveRequest(easy, new OperationCanceledException(easy._cancellationToken));
                         break;
 
                     case IncomingRequestType.Unpause:
@@ -435,7 +461,7 @@ namespace System.Net.Http
                             }
                             catch (Exception exc)
                             {
-                                FindAndFailActiveRequest(multiHandle, easy, exc);
+                                FindAndFailActiveRequest(easy, exc);
                             }
                         }
                         break;
@@ -446,7 +472,7 @@ namespace System.Net.Http
                 }
             }
 
-            private void ActivateNewRequest(SafeCurlMultiHandle multiHandle, EasyRequest easy)
+            private void ActivateNewRequest(EasyRequest easy)
             {
                 Debug.Assert(easy != null, "We should never get a null request");
                 Debug.Assert(easy._associatedMultiAgent == null, "New requests should not be associated with an agent yet");
@@ -470,7 +496,7 @@ namespace System.Net.Http
                     easy._associatedMultiAgent = this;
                     easy.SetCurlOption(CURLoption.CURLOPT_PRIVATE, gcHandlePtr);
                     easy.SetCurlCallbacks(gcHandlePtr, s_receiveHeadersCallback, s_sendCallback, s_seekCallback, s_receiveBodyCallback, s_debugCallback);
-                    ThrowIfCURLMError(Interop.Http.MultiAddHandle(multiHandle, easy._easyHandle));
+                    ThrowIfCURLMError(Interop.Http.MultiAddHandle(_multiHandle, easy._easyHandle));
                 }
                 catch (Exception exc)
                 {
@@ -503,11 +529,10 @@ namespace System.Net.Http
             }
 
             private void DeactivateActiveRequest(
-                SafeCurlMultiHandle multiHandle, EasyRequest easy, 
-                IntPtr gcHandlePtr, CancellationTokenRegistration cancellationRegistration)
+                EasyRequest easy, IntPtr gcHandlePtr, CancellationTokenRegistration cancellationRegistration)
             {
                 // Remove the operation from the multi handle so we can shut down the multi handle cleanly
-                CURLMcode removeResult = Interop.Http.MultiRemoveHandle(multiHandle, easy._easyHandle);
+                CURLMcode removeResult = Interop.Http.MultiRemoveHandle(_multiHandle, easy._easyHandle);
                 Debug.Assert(removeResult == CURLMcode.CURLM_OK, "Failed to remove easy handle"); // ignore cleanup errors in release
 
                 // Release the associated GCHandle so that it's not kept alive forever
@@ -547,7 +572,7 @@ namespace System.Net.Http
                 return false;
             }
 
-            private void FindAndFailActiveRequest(SafeCurlMultiHandle multiHandle, EasyRequest easy, Exception error)
+            private void FindAndFailActiveRequest(EasyRequest easy, Exception error)
             {
                 EventSourceTrace("Error: {0}", error, easy: easy);
 
@@ -555,7 +580,7 @@ namespace System.Net.Http
                 ActiveRequest activeRequest;
                 if (FindActiveRequest(easy, out gcHandlePtr, out activeRequest))
                 {
-                    DeactivateActiveRequest(multiHandle, easy, gcHandlePtr, activeRequest.CancellationRegistration);
+                    DeactivateActiveRequest(easy, gcHandlePtr, activeRequest.CancellationRegistration);
                     easy.FailRequest(error);
                     easy.Cleanup(); // no active processing remains, so we can cleanup
                 }
