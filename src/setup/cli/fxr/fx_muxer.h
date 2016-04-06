@@ -1,6 +1,7 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+class corehost_init_t;
 class runtime_config_t;
 struct fx_ver_t;
 
