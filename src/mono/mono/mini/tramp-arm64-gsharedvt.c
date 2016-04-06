@@ -16,7 +16,7 @@
 /*
  * GSHAREDVT
  */
-#ifdef MONO_ARCH_GSHARED_SUPPORTED
+#ifdef MONO_ARCH_GSHAREDVT_SUPPORTED
 
 /*
  * mono_arch_get_gsharedvt_arg_trampoline:
@@ -579,4 +579,4 @@ mono_arch_get_gsharedvt_arg_trampoline (MonoDomain *domain, gpointer arg, gpoint
 	return NULL;
 }
 
-#endif /* MONO_ARCH_GSHARED_SUPPORTED */
+#endif /* MONO_ARCH_GSHAREDVT_SUPPORTED */
