@@ -20,13 +20,16 @@ Build Status
 |**Ubuntu 15.10**|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/debug_ubuntu15.10.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/job/debug_ubuntu15.10)|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/release_ubuntu15.10.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/job/release_ubuntu15.10)|
 |**Windows 8.1**|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/debug_windows_nt.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/job/debug_windows_nt)<br/>[![arm64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/arm64_cross_debug_windows_nt.svg?label=arm64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/job/arm64_cross_debug_windows_nt)|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/release_windows_nt.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/job/release_windows_nt)<br/>[![arm64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/arm64_cross_release_windows_nt.svg?label=arm64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/job/arm64_cross_release_windows_nt)|
 
-Get .NET Core
+Building the Repo
 -------------
 
-|                     |Linux   |Windows |Mac OS X |FreeBSD  |
-|---------------------|--------|--------|---------|---------|
-|Build from **Source**| [Instructions](Documentation/building/linux-instructions.md) | [Instructions](Documentation/building/windows-instructions.md) | [Instructions](Documentation/building/osx-instructions.md) | [Instructions](Documentation/building/freebsd-instructions.md) |
-|Get **Binaries**     | [DNX SDK](Documentation/install/get-dotnetcore-dnx-linux.md)|[DNX SDK](Documentation/install/get-dotnetcore-dnx-windows.md) <br> [Raw](Documentation/install/get-dotnetcore-windows.md)|[DNX SDK](Documentation/install/get-dotnetcore-dnx-osx.md)||
+|Linux   |Windows |Mac OS X |FreeBSD  |
+|--------|--------|---------|---------|
+| [Instructions](Documentation/building/linux-instructions.md) | [Instructions](Documentation/building/windows-instructions.md) | [Instructions](Documentation/building/osx-instructions.md) | [Instructions](Documentation/building/freebsd-instructions.md) |
+
+Get .NET Core
+----------------------
+You can get the latest released .NET Core SDK from the [.NET Core Getting started](http://dotnet.github.io/getting-started/) page. You can also get the latest development builds of .NET Core and the SDK from the [dotnet/cli repo](https://github.com/dotnet/cli#installers-and-binaries).
 
 Chat Room
 ---------
@@ -88,3 +91,4 @@ There are many .NET projects on GitHub.
 [coreclr blog post]: http://blogs.msdn.com/b/dotnet/archive/2015/02/03/coreclr-is-now-open-source.aspx
 [corefx]: http://github.com/dotnet/corefx
 [coreclr]: http://github.com/dotnet/coreclr
+
