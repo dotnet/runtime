@@ -2274,8 +2274,9 @@ mono_thread_internal_reset_abort (MonoInternalThread *thread)
 MonoObject*
 ves_icall_System_Threading_Thread_GetAbortExceptionState (MonoThread *this_obj)
 {
+	MonoError error;
 	MonoInternalThread *thread = this_obj->internal_thread;
-	MonoObject *state, *deserialized = NULL, *exc;
+	MonoObject *state, *deserialized = NULL;
 	MonoDomain *domain;
 
 	if (!thread->abort_state_handle)
@@ -2288,12 +2289,14 @@ ves_icall_System_Threading_Thread_GetAbortExceptionState (MonoThread *this_obj)
 	if (mono_object_domain (state) == domain)
 		return state;
 
-	deserialized = mono_object_xdomain_representation (state, domain, &exc);
+	deserialized = mono_object_xdomain_representation (state, domain, &error);
 
 	if (!deserialized) {
 		MonoException *invalid_op_exc = mono_get_exception_invalid_operation ("Thread.ExceptionState cannot access an ExceptionState from a different AppDomain");
-		if (exc)
+		if (!is_ok (&error)) {
+			MonoObject *exc = (MonoObject*)mono_error_convert_to_exception (&error);
 			MONO_OBJECT_SETREF (invalid_op_exc, inner_ex, exc);
+		}
 		mono_set_pending_exception (invalid_op_exc);
 		return NULL;
 	}

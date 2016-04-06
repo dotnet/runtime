@@ -4180,40 +4180,37 @@ deserialize_object (MonoObject *obj, gboolean *failure, MonoObject **exc)
 
 #ifndef DISABLE_REMOTING
 static MonoObject*
-make_transparent_proxy (MonoObject *obj, gboolean *failure, MonoObject **exc)
+make_transparent_proxy (MonoObject *obj, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	static MonoMethod *get_proxy_method;
 
-	MonoError error;
 	MonoDomain *domain = mono_domain_get ();
 	MonoRealProxy *real_proxy;
 	MonoReflectionType *reflection_type;
 	MonoTransparentProxy *transparent_proxy;
+
+	mono_error_init (error);
 
 	if (!get_proxy_method)
 		get_proxy_method = mono_class_get_method_from_name (mono_defaults.real_proxy_class, "GetTransparentProxy", 0);
 
 	g_assert (mono_class_is_marshalbyref (obj->vtable->klass));
 
-	real_proxy = (MonoRealProxy*) mono_object_new_checked (domain, mono_defaults.real_proxy_class, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
-	reflection_type = mono_type_get_object_checked (domain, &obj->vtable->klass->byval_arg, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	real_proxy = (MonoRealProxy*) mono_object_new_checked (domain, mono_defaults.real_proxy_class, error);
+	return_val_if_nok (error, NULL);
+	reflection_type = mono_type_get_object_checked (domain, &obj->vtable->klass->byval_arg, error);
+	return_val_if_nok (error, NULL);
 
 	MONO_OBJECT_SETREF (real_proxy, class_to_proxy, reflection_type);
 	MONO_OBJECT_SETREF (real_proxy, unwrapped_server, obj);
 
-	*exc = NULL;
+	MonoObject *exc = NULL;
 
-	transparent_proxy = (MonoTransparentProxy*) mono_runtime_try_invoke (get_proxy_method, real_proxy, NULL, exc, &error);
-	if (*exc == NULL && !mono_error_ok (&error))
-		*exc = (MonoObject*) mono_error_convert_to_exception (&error); /* FIXME change make_transparent_proxy outarg to MonoError */
-	else
-		mono_error_cleanup (&error);
-	if (*exc)
-		*failure = TRUE;
+	transparent_proxy = (MonoTransparentProxy*) mono_runtime_try_invoke (get_proxy_method, real_proxy, NULL, &exc, error);
+	if (exc != NULL && is_ok (error))
+		mono_error_set_exception_instance (error, (MonoException*)exc);
 
 	return (MonoObject*) transparent_proxy;
 }
@@ -4223,7 +4220,7 @@ make_transparent_proxy (MonoObject *obj, gboolean *failure, MonoObject **exc)
  * mono_object_xdomain_representation
  * @obj: an object
  * @target_domain: a domain
- * @exc: pointer to a MonoObject*
+ * @error: set on error.
  *
  * Creates a representation of obj in the domain target_domain.  This
  * is either a copy of obj arrived through via serialization and
@@ -4231,36 +4228,37 @@ make_transparent_proxy (MonoObject *obj, gboolean *failure, MonoObject **exc)
  * serializable or marshal by ref.  obj must not be in target_domain.
  *
  * If the object cannot be represented in target_domain, NULL is
- * returned and *exc is set to an appropriate exception.
+ * returned and @error is set appropriately.
  */
 MonoObject*
-mono_object_xdomain_representation (MonoObject *obj, MonoDomain *target_domain, MonoObject **exc)
+mono_object_xdomain_representation (MonoObject *obj, MonoDomain *target_domain, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	mono_error_init (error);
 	MonoObject *deserialized = NULL;
-	gboolean failure = FALSE;
-
-	g_assert (exc != NULL);
-	*exc = NULL;
 
 #ifndef DISABLE_REMOTING
 	if (mono_class_is_marshalbyref (mono_object_class (obj))) {
-		deserialized = make_transparent_proxy (obj, &failure, exc);
+		deserialized = make_transparent_proxy (obj, error);
 	} 
 	else
 #endif
 	{
+		gboolean failure = FALSE;
 		MonoDomain *domain = mono_domain_get ();
 		MonoObject *serialized;
+		MonoObject *exc = NULL;
 
 		mono_domain_set_internal_with_options (mono_object_domain (obj), FALSE);
-		serialized = serialize_object (obj, &failure, exc);
+		serialized = serialize_object (obj, &failure, &exc);
 		mono_domain_set_internal_with_options (target_domain, FALSE);
 		if (!failure)
-			deserialized = deserialize_object (serialized, &failure, exc);
+			deserialized = deserialize_object (serialized, &failure, &exc);
 		if (domain != target_domain)
 			mono_domain_set_internal_with_options (domain, FALSE);
+		if (failure)
+			mono_error_set_exception_instance (error, (MonoException*)exc);
 	}
 
 	return deserialized;
@@ -4313,14 +4311,15 @@ call_unhandled_exception_delegate (MonoDomain *domain, MonoObject *delegate, Mon
 	g_assert (domain == mono_object_domain (domain->domain));
 
 	if (mono_object_domain (exc) != domain) {
-		MonoObject *serialization_exc;
+		MonoError error;
 
-		exc = mono_object_xdomain_representation (exc, domain, &serialization_exc);
+		exc = mono_object_xdomain_representation (exc, domain, &error);
 		if (!exc) {
-			if (serialization_exc) {
-				MonoObject *dummy;
-				exc = mono_object_xdomain_representation (serialization_exc, domain, &dummy);
-				g_assert (exc);
+			if (!is_ok (&error)) {
+				MonoError inner_error;
+				MonoException *serialization_exc = mono_error_convert_to_exception (&error);
+				exc = mono_object_xdomain_representation ((MonoObject*)serialization_exc, domain, &inner_error);
+				mono_error_assert_ok (&inner_error);
 			} else {
 				exc = (MonoObject*) mono_exception_from_name_msg (mono_get_corlib (),
 						"System.Runtime.Serialization", "SerializationException",
