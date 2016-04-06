@@ -11,6 +11,10 @@ if (CMAKE_SYSTEM_NAME STREQUAL Linux)
     set(PAL_UNIX_NAME \"LINUX\")
 elseif (CMAKE_SYSTEM_NAME STREQUAL Darwin)
     set(PAL_UNIX_NAME \"OSX\")
+
+    # Xcode's clang does not include /usr/local/include by default, but brew's does.
+    # This ensures an even playing field.
+    include_directories(SYSTEM /usr/local/include)
 elseif (CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
     set(PAL_UNIX_NAME \"FREEBSD\")
     include_directories(SYSTEM /usr/local/include)
