@@ -44,5 +44,46 @@ namespace System.IO.Tests
                 return SuccessExitCode;
             }).Dispose();
         }
+
+        public sealed class Directory_SetCurrentDirectory_SymLink : FileSystemTest
+        {
+            [ConditionalFact(nameof(CanCreateSymbolicLinks))]
+            public void SetToPathContainingSymLink()
+            {
+                var path = GetTestFilePath();
+                var linkPath = GetTestFilePath();
+
+                Directory.CreateDirectory(path);
+                Assert.True(MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: true));
+
+                // Both the symlink and the target exist
+                Assert.True(Directory.Exists(path), "path should exist");
+                Assert.True(Directory.Exists(linkPath), "linkPath should exist");
+
+                // Set Current Directory to symlink
+                string currentDir = Directory.GetCurrentDirectory();
+                try
+                {
+                    Directory.SetCurrentDirectory(linkPath);
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    {
+                        Assert.Equal(linkPath, Directory.GetCurrentDirectory());
+                    }
+                    else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                    {
+                        Assert.Equal("/private" + path, Directory.GetCurrentDirectory());
+                    }
+                    else
+                    {
+                        Assert.Equal(path, Directory.GetCurrentDirectory());
+                    }
+                }
+                finally
+                {
+                    Directory.SetCurrentDirectory(currentDir);
+                }
+                Assert.Equal(currentDir, Directory.GetCurrentDirectory());
+            }
+        }
     }
 }
