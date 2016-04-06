@@ -81,13 +81,9 @@
     <Compile Include="UnicodeEncoding\UnicodeEncodingGetMaxCharCount.cs" />
     <Compile Include="UnicodeEncoding\UnicodeEncodingGetPreamble.cs" />
     <Compile Include="UnicodeEncoding\UnicodeEncodingGetString.cs" />
-    <Compile Include="UTF7Encoding\UTF7EncodingCtor1.cs" />
-    <Compile Include="UTF7Encoding\UTF7EncodingCtor2.cs" />
     <Compile Include="UTF7Encoding\UTF7EncodingEquals.cs" />
-    <Compile Include="UTF7Encoding\UTF7EncodingGetByteCount1.cs" />
-    <Compile Include="UTF7Encoding\UTF7EncodingGetByteCount2.cs" />
-    <Compile Include="UTF7Encoding\UTF7EncodingGetBytes1.cs" />
-    <Compile Include="UTF7Encoding\UTF7EncodingGetBytes2.cs" />
+    <Compile Include="UTF7Encoding\UTF7EncodingGetByteCount.cs" />
+    <Compile Include="UTF7Encoding\UTF7EncodingGetBytes.cs" />
     <Compile Include="UTF7Encoding\UTF7EncodingGetCharCount.cs" />
     <Compile Include="UTF7Encoding\UTF7EncodingGetChars.cs" />
     <Compile Include="UTF7Encoding\UTF7EncodingGetDecoder.cs" />
