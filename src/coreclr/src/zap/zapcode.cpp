@@ -1263,10 +1263,10 @@ ZapGCInfo * ZapGCInfo::NewGCInfo(ZapWriter * pWriter, PVOID pGCInfo, SIZE_T cbGC
     memcpy(pZapGCInfo->GetGCInfo(), pGCInfo, cbGCInfo);
     memcpy(pZapGCInfo->GetUnwindInfo(), pUnwindInfo, cbUnwindInfo);
 
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM_)
+#if !defined(_TARGET_X86_)
     // Make sure the personality routine thunk is created
     pZapGCInfo->GetPersonalityRoutine(ZapImage::GetImage(pWriter));
-#endif // defined(_TARGET_AMD64_) || defined(_TARGET_ARM_)
+#endif // !defined(_TARGET_X86_)
     return pZapGCInfo;
 }
 #else
@@ -1293,7 +1293,7 @@ void ZapUnwindInfo::Save(ZapWriter * pZapWriter)
 {
     T_RUNTIME_FUNCTION runtimeFunction;
 
-#if defined(_TARGET_ARM_)
+#if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
     RUNTIME_FUNCTION__SetBeginAddress(&runtimeFunction, GetStartAddress());
     runtimeFunction.UnwindData = m_pUnwindData->GetRVA();
 #elif defined(_TARGET_AMD64_)
@@ -1388,7 +1388,7 @@ void ZapUnwindData::Save(ZapWriter * pZapWriter)
 #endif //REDHAWK
 }
 
-#elif defined(_TARGET_ARM_)
+#elif defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
 
 UINT ZapUnwindData::GetAlignment()
 {
@@ -1430,19 +1430,16 @@ void ZapUnwindData::Save(ZapWriter * pZapWriter)
 }
 
 #else
-
 UINT ZapUnwindData::GetAlignment()
 {
     PORTABILITY_ASSERT("ZapUnwindData::GetAlignment");
     return sizeof(ULONG);
 }
-
 DWORD ZapUnwindData::GetSize()
 {
     PORTABILITY_ASSERT("ZapUnwindData::GetSize");
     return -1;
 }
-
 void ZapUnwindData::Save(ZapWriter * pZapWriter)
 {
     PORTABILITY_ASSERT("ZapUnwindData::Save");
@@ -1475,10 +1472,10 @@ ZapUnwindData * ZapUnwindData::NewUnwindData(ZapWriter * pWriter, PVOID pData, S
 
     memcpy((void*)(pZapUnwindData + 1), pData, cbSize);
 
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM_)
+#if !defined(_TARGET_X86_)
     // Make sure the personality routine thunk is created
     pZapUnwindData->GetPersonalityRoutine(ZapImage::GetImage(pWriter));
-#endif // defined(_TARGET_AMD64_) || defined(_TARGET_ARM_)
+#endif // !defined(_TARGET_X86_)
 
     return pZapUnwindData;
 }
