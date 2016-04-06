@@ -165,23 +165,19 @@ namespace System.Net.Http
                 // by code reading data stored in the stream.
 
                 // Dispose of the input content stream if there was one.  Nothing should be using it any more.
-                if (_requestContentStream != null)
-                    _requestContentStream.Dispose();
+                _requestContentStream?.Dispose();
 
                 // Dispose of the underlying easy handle.  We're no longer processing it.
-                if (_easyHandle != null)
-                    _easyHandle.Dispose();
+                _easyHandle?.Dispose();
 
                 // Dispose of the request headers if we had any.  We had to keep this handle
                 // alive as long as the easy handle was using it.  We didn't need to do any
                 // ref counting on the safe handle, though, as the only processing happens
                 // in Process, which ensures the handle will be rooted while libcurl is
                 // doing any processing that assumes it's valid.
-                if (_requestHeaders != null)
-                    _requestHeaders.Dispose();
+                _requestHeaders?.Dispose();
 
-                if (_callbackHandle != null)
-                    _callbackHandle.Dispose();
+                _callbackHandle?.Dispose();
             }
 
             private void SetUrl()
