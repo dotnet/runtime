@@ -10,7 +10,6 @@
     <ProjectGuid>{F6D1C093-081D-46DE-B5A8-516533375FDD}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
-    <UnsupportedPlatforms>FreeBSD</UnsupportedPlatforms>
   </PropertyGroup>
   
   <!-- Help VS understand available configurations -->

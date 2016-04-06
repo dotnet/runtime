@@ -5,9 +5,6 @@
     <Project Include="System.IO.FileSystem.AccessControl.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
     </Project>
-    <Project Include="System.IO.FileSystem.AccessControl.Tests.csproj">
-      <OSGroup>Unix</OSGroup>
-    </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
