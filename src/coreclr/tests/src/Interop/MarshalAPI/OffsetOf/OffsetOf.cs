@@ -315,19 +315,21 @@ public class OffsetTest
             Assert.Fail(string.Format("Unexpected value '{0}' for IntPtr.Size", IntPtr.Size));
         }
     }
-    
-      public static int Main(String[] args) { 
-          TestFieldAlignment_Variant();
-          TestFieldAlignment_Guid();
-          TestFieldAlignment_Decimal();  
-          TestFieldAlignment();   
-          TestExplicitLayout(); 
-          ClassSequentialField();  
-          NullParameter(); 
-          NonExistField();
-          NoLayoutClass(); 
-          StructField();
-          ClassExplicitField(); 
-          return 100;         
-      }
+
+    public static int Main(String[] args)
+    {
+        //https://github.com/dotnet/coreclr/issues/2075  
+        //TestFieldAlignment_Variant();
+        TestFieldAlignment_Guid();
+        TestFieldAlignment_Decimal();
+        TestFieldAlignment();
+        TestExplicitLayout();
+        ClassSequentialField();
+        NullParameter();
+        NonExistField();
+        NoLayoutClass();
+        StructField();
+        ClassExplicitField();
+        return 100;
+    }
 }

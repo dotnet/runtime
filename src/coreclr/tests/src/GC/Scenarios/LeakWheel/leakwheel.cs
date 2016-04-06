@@ -22,6 +22,7 @@ namespace DefaultNamespace {
     using System.IO;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Runtime.CompilerServices;
 
     internal class LeakWheel
     {
@@ -112,21 +113,26 @@ namespace DefaultNamespace {
             return 1;
 
         }
+        
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public void DestroyLstNode() {
+            LstNode = null;
+        }
 
         public bool RunGame()
         {
             Dictionary<int, WeakReference> oTable = new Dictionary<int, WeakReference>(10);
-            LstNode = null; //the last node in the node chain//
+            DestroyLstNode(); //the last node in the node chain//
             Random  r = new Random (LeakWheel.iSeed);
 
             for(int i=0; i<iIter; i++)
             {
-                LstNode = SpinWheel(oTable, LstNode, r);
+                SpinWheel(oTable, LstNode, r);
                
                 if( GC.GetTotalMemory(false)/(1024*1024) >= iMem )
                 {
-                    LstNode = null;
-
+                    DestroyLstNode();
+                    
                     GC.Collect( );
                     GC.WaitForPendingFinalizers();
                     GC.Collect( );
@@ -135,7 +141,7 @@ namespace DefaultNamespace {
                 }
             }
 
-            LstNode = null;
+            DestroyLstNode();
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
@@ -161,7 +167,7 @@ namespace DefaultNamespace {
                     Node.iVarAryCreat == Node.iVarAryFinal);
         }
 
-        public Node SpinWheel( Dictionary<int, WeakReference> oTable,  Node LstNode, Random r )
+        public void SpinWheel( Dictionary<int, WeakReference> oTable,  Node node, Random r )
         {
             int iKey;//the index which the new node will be set at
             Node nValue;//the new node
@@ -186,7 +192,7 @@ namespace DefaultNamespace {
                 }
                 else
                 {
-                    LstNode = SetNodeInTable(iKey, nValue, LstNode, oTable);
+                    LstNode = SetNodeInTable(iKey, nValue, node, oTable);
                 }
             }
             else
@@ -197,7 +203,6 @@ namespace DefaultNamespace {
             //{
             //    Console.WriteLine("HeapSize: {0}", GC.GetTotalMemory(false));
             //}
-            return LstNode;
         }
 
         public void DeleteNode( int iKey, Dictionary<int, WeakReference> oTable)
@@ -337,17 +342,17 @@ namespace DefaultNamespace {
         public void ThreadNode()
         {
             Dictionary<int, WeakReference> oTable = new Dictionary<int, WeakReference>( 10);
-            Node LstNode = null; //the last node in the node chain//
+            DestroyLstNode(); //the last node in the node chain//
             Random  r = new Random (LeakWheel.iSeed);
             LeakWheel mv_obj = new LeakWheel();
 
             while (true)
             {
-                LstNode = mv_obj.SpinWheel( oTable, LstNode, r );
+                mv_obj.SpinWheel( oTable, LstNode, r );
 
                 if( GC.GetTotalMemory(false) >= LeakWheel.iMem*60 )
                 {
-                    LstNode = null;
+                    DestroyLstNode();
 
                     GC.Collect( );
                     GC.WaitForPendingFinalizers();

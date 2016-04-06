@@ -37,7 +37,9 @@
     <ProjectFile Include="genman32\genman32.csproj" />
     <ProjectFile Include="genpubcfg\genpubcfg.csproj" Condition="'$(BuildArchitecture)' == 'i386'" />
     <ProjectFile Include="glee\glee.nativeproj" />
-    <ProjectFile Include="ibcmerge\ibcmerge_msbuild.csproj" />
+    <ProjectFile Include="ibcmerge\ibcmerge_msbuild.csproj">
+        <ProductGroups>FX;PK</ProductGroups>
+    </ProjectFile>
     <ProjectFile Include="isymmanagedwrapper\isymwrapper.csproj" Condition="'$(BuildArchitecture)' == 'ppc'" />
     <ProjectFile Include="isymwrapper\isymwrapper.nativeproj" />
     <ProjectFile Include="locstudiomanagedparser\managedparser.csproj" />

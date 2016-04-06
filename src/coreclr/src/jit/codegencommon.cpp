@@ -7619,7 +7619,22 @@ void CodeGen::genPrologPadForReJit()
 
 #ifdef _TARGET_XARCH_
     if (!(compiler->opts.eeFlags & CORJIT_FLG_PROF_REJIT_NOPS))
+    {
         return;
+    }
+
+#if FEATURE_EH_FUNCLETS
+
+    // No need to generate pad (nops) for funclets.
+    // When compiling the main function (and not a funclet)
+    // the value of funCurrentFunc->funKind is equal to FUNC_ROOT.
+    if (compiler->funCurrentFunc()->funKind != FUNC_ROOT)
+    {
+        return;
+    }
+
+#endif // FEATURE_EH_FUNCLETS
+
     unsigned size = getEmitter()->emitGetPrologOffsetEstimate();
     if (size < 5)
     {
@@ -11275,6 +11290,26 @@ bool Compiler::IsRegisterPassable(CORINFO_CLASS_HANDLE hClass)
 bool Compiler::IsRegisterPassable(GenTreePtr tree)
 {
     return IsRegisterPassable(gtGetStructHandleIfPresent(tree));
+}
+
+//-----------------------------------------------------------------------------------
+// IsMultiRegReturnedType: Returns true if the type is returned in multiple registers
+// 
+// Arguments:
+//     hClass   -  type handle
+//
+// Return Value:
+//     true if type is returned in multiple registers, false otherwise.
+bool Compiler::IsMultiRegReturnedType(CORINFO_CLASS_HANDLE hClass)
+{
+    if (hClass == NO_CLASS_HANDLE)
+    {
+        return false;
+    }
+
+    SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
+    eeGetSystemVAmd64PassStructInRegisterDescriptor(hClass, &structDesc);
+    return structDesc.passedInRegisters && (structDesc.eightByteCount > 1);
 }
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
