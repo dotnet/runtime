@@ -20,7 +20,7 @@ namespace System.Data.Common
 
         internal NameValuePair(string name, string value, int length)
         {
-            System.Diagnostics.Debug.Assert(!ADP.IsEmpty(name), "empty keyname");
+            System.Diagnostics.Debug.Assert(!string.IsNullOrEmpty(name), "empty keyname");
             _name = name;
             _value = value;
             _length = length;

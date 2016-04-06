@@ -1017,7 +1017,7 @@ namespace System.Data.SqlClient
         // as native OleDb and Odbc.
         static internal string FixupDatabaseTransactionName(string name)
         {
-            if (!ADP.IsEmpty(name))
+            if (!string.IsNullOrEmpty(name))
             {
                 return SqlServerEscapeHelper.EscapeIdentifier(name);
             }

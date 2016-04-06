@@ -908,13 +908,13 @@ namespace System.Data.Common
         static internal string BuildQuotedString(string quotePrefix, string quoteSuffix, string unQuotedString)
         {
             StringBuilder resultString = new StringBuilder();
-            if (ADP.IsEmpty(quotePrefix) == false)
+            if (string.IsNullOrEmpty(quotePrefix) == false)
             {
                 resultString.Append(quotePrefix);
             }
 
             // Assuming that the suffix is escaped by doubling it. i.e. foo"bar becomes "foo""bar".
-            if (ADP.IsEmpty(quoteSuffix) == false)
+            if (string.IsNullOrEmpty(quoteSuffix) == false)
             {
                 resultString.Append(unQuotedString.Replace(quoteSuffix, quoteSuffix + quoteSuffix));
                 resultString.Append(quoteSuffix);
@@ -1020,12 +1020,6 @@ namespace System.Data.Common
             }
         }
 #endif
-
-        static internal bool IsEmpty(string str)
-        {
-            return ((null == str) || (0 == str.Length));
-        }
-
 
         static internal bool IsNull(object value)
         {

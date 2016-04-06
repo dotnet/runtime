@@ -24,7 +24,7 @@ namespace System.Data.SqlClient
             // env change.
             _failoverPartner = connectionOptions.FailoverPartner;
 
-            if (ADP.IsEmpty(_failoverPartner))
+            if (string.IsNullOrEmpty(_failoverPartner))
             {
                 _failoverPartner = null;
             }

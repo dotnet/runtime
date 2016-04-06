@@ -136,7 +136,7 @@ namespace System.Data.SqlClient
 
         protected override DbConnectionOptions CreateConnectionOptions(string connectionString, DbConnectionOptions previous)
         {
-            Debug.Assert(!ADP.IsEmpty(connectionString), "empty connectionString");
+            Debug.Assert(!string.IsNullOrEmpty(connectionString), "empty connectionString");
             SqlConnectionString result = new SqlConnectionString(connectionString);
             return result;
         }
