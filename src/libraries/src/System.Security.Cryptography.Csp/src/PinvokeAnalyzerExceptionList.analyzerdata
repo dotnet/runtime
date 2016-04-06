@@ -1,4 +1,4 @@
-<!-- This is a bug. This dll supports .Net Standard 1.5 and so should be using APISet dependencies -->
+<!-- This is a bug. This DLL supports .NET Standard 1.5 and so should be using APISet dependencies. -->
 Advapi32.dll!CryptGetDefaultProviderW
 Advapi32.dll!CryptAcquireContextW
 Advapi32.dll!CryptGetProvParam

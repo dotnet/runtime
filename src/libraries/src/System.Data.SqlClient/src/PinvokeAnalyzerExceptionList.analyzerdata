@@ -1,4 +1,4 @@
-<!-- Not a bug. Sni.dll is a native component that ship as part of the package -->
+<!-- Not a bug. sni.dll is a native component that ships as part of the package. -->
 sni.dll!SNIAddProviderWrapper
 sni.dll!SNICheckConnectionWrapper
 sni.dll!SNICloseWrapper
