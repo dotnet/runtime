@@ -410,11 +410,11 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                 case 'RHEL7.2':
                     if (scenario == 'default') {
                         assert !isFlowJob
-                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build", '(?i).*test\\W+${os}.*')
+                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build", "(?i).*test\\W+${os}.*")
                     }
                     else if (scenario == 'pri1' && isFlowJob) {
                         assert (configuration == 'Release')
-                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Pri 1 Build & Test", '(?i).*test\\W+${os}\\W+${scenario}.*')
+                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Pri 1 Build & Test", "(?i).*test\\W+${os}\\W+${scenario}.*")
                     }
                     break
                 case 'Ubuntu15.10':
