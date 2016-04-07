@@ -5219,7 +5219,7 @@ mono_object_clone_checked (MonoObject *obj, MonoError *error)
 	size = obj->vtable->klass->instance_size;
 
 	if (obj->vtable->klass->rank)
-		return (MonoObject*)mono_array_clone ((MonoArray*)obj);
+		return (MonoObject*)mono_array_clone_checked ((MonoArray*)obj, error);
 
 	o = (MonoObject *)mono_gc_alloc_obj (obj->vtable, size);
 
@@ -5274,25 +5274,27 @@ mono_array_full_copy (MonoArray *src, MonoArray *dest)
  * mono_array_clone_in_domain:
  * @domain: the domain in which the array will be cloned into
  * @array: the array to clone
+ * @error: set on error
  *
  * This routine returns a copy of the array that is hosted on the
- * specified MonoDomain.
+ * specified MonoDomain.  On failure returns NULL and sets @error.
  */
 MonoArray*
-mono_array_clone_in_domain (MonoDomain *domain, MonoArray *array)
+mono_array_clone_in_domain (MonoDomain *domain, MonoArray *array, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoError error;
 	MonoArray *o;
 	uintptr_t size, i;
 	uintptr_t *sizes;
 	MonoClass *klass = array->obj.vtable->klass;
 
+	mono_error_init (error);
+
 	if (array->bounds == NULL) {
 		size = mono_array_length (array);
-		o = mono_array_new_full_checked (domain, klass, &size, NULL, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		o = mono_array_new_full_checked (domain, klass, &size, NULL, error);
+		return_val_if_nok (error, NULL);
 
 		size *= mono_array_element_size (klass);
 #ifdef HAVE_SGEN_GC
@@ -5317,8 +5319,8 @@ mono_array_clone_in_domain (MonoDomain *domain, MonoArray *array)
 		size *= array->bounds [i].length;
 		sizes [i + klass->rank] = array->bounds [i].lower_bound;
 	}
-	o = mono_array_new_full_checked (domain, klass, sizes, (intptr_t*)sizes + klass->rank, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	o = mono_array_new_full_checked (domain, klass, sizes, (intptr_t*)sizes + klass->rank, error);
+	return_val_if_nok (error, NULL);
 #ifdef HAVE_SGEN_GC
 	if (klass->element_class->valuetype) {
 		if (klass->element_class->has_references)
@@ -5346,7 +5348,26 @@ mono_array_clone (MonoArray *array)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	return mono_array_clone_in_domain (((MonoObject *)array)->vtable->domain, array);
+	MonoError error;
+	MonoArray *result = mono_array_clone_checked (array, &error);
+	mono_error_cleanup (&error);
+	return result;
+}
+
+/**
+ * mono_array_clone_checked:
+ * @array: the array to clone
+ * @error: set on error
+ *
+ * Returns: A newly created array who is a shallow copy of @array.  On
+ * failure returns NULL and sets @error.
+ */
+MonoArray*
+mono_array_clone_checked (MonoArray *array, MonoError *error)
+{
+
+	MONO_REQ_GC_UNSAFE_MODE;
+	return mono_array_clone_in_domain (((MonoObject *)array)->vtable->domain, array, error);
 }
 
 /* helper macros to check for overflow when calculating the size of arrays */

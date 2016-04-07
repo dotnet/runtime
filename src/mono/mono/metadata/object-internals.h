@@ -1418,7 +1418,10 @@ mono_string_to_utf8_image (MonoImage *image, MonoString *s, MonoError *error);
 
 
 MonoArray*
-mono_array_clone_in_domain (MonoDomain *domain, MonoArray *array);
+mono_array_clone_in_domain (MonoDomain *domain, MonoArray *array, MonoError *error);
+
+MonoArray*
+mono_array_clone_checked (MonoArray *array, MonoError *error);
 
 void
 mono_array_full_copy (MonoArray *src, MonoArray *dest);

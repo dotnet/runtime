@@ -96,6 +96,7 @@ mono_array_new_full	    (MonoDomain *domain, MonoClass *array_class,
 MONO_API MonoArray *
 mono_array_new_specific	    (MonoVTable *vtable, uintptr_t n);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoArray*
 mono_array_clone	    (MonoArray *array);
 
