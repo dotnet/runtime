@@ -175,7 +175,7 @@ typedef struct {
 
 #endif
 
-#if defined(TARGET_APPLETVOS)
+#if defined(TARGET_APPLETVOS) || defined(TARGET_IOS)
 #define MONO_ARCH_HAVE_UNWIND_BACKTRACE 1
 #endif
 
