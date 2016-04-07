@@ -38,6 +38,41 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         }
 
         [Fact]
+        public void GroupsRuntimeAssets()
+        {
+            var context = Read(@"
+ {
+     ""targets"": {
+         "".NETStandard,Version=v1.5"": {
+             ""System.Banana/1.0.0"": {
+                 ""runtimeTargets"": {
+                     ""runtimes/unix/Banana.dll"": { ""rid"": ""unix"", ""assetType"": ""runtime"" },
+                     ""runtimes/win7/Banana.dll"": { ""rid"": ""win7"",  ""assetType"": ""runtime"" },
+
+                     ""runtimes/native/win7/Apple.dll"": { ""rid"": ""win7"",  ""assetType"": ""native"" },
+                     ""runtimes/native/unix/libapple.so"": { ""rid"": ""unix"",  ""assetType"": ""native"" }
+                 }
+             }
+         }
+     },
+     ""libraries"": {
+         ""System.Banana/1.0.0"": {
+             ""type"": ""package"",
+             ""serviceable"": false,
+             ""sha512"": ""HASH-System.Banana""
+         },
+     }
+ }");
+            context.RuntimeLibraries.Should().HaveCount(1);
+            var runtimeLib = context.RuntimeLibraries.Single();
+            runtimeLib.RuntimeAssemblyGroups.Should().HaveCount(2);
+            runtimeLib.RuntimeAssemblyGroups.All(g => g.AssetPaths.Count == 1).Should().BeTrue();
+
+            runtimeLib.NativeLibraryGroups.Should().HaveCount(2);
+            runtimeLib.NativeLibraryGroups.All(g => g.AssetPaths.Count == 1).Should().BeTrue();
+        }
+
+        [Fact]
         public void SetsPortableIfRuntimeTargetHasNoRid()
         {
             var context = Read(
