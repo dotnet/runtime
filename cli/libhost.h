@@ -25,7 +25,7 @@ class corehost_init_t
     // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 public:
-    static const int s_version = 0x8002;
+    static const int s_version = 0x8003;
 private:
     int m_version;
     std::vector<pal::string_t> m_probe_paths;
@@ -83,6 +83,7 @@ public:
 pal::string_t get_runtime_config_from_file(const pal::string_t& file, pal::string_t* dev_config_file);
 host_mode_t detect_operating_mode(const int argc, const pal::char_t* argv[], pal::string_t* own_dir = nullptr);
 
-void try_patch_roll_forward_in_dir(const pal::string_t& cur_dir, const fx_ver_t& start_ver, pal::string_t* max_str, bool only_production);
+void try_patch_roll_forward_in_dir(const pal::string_t& cur_dir, const fx_ver_t& start_ver, pal::string_t* max_str);
+void try_prerelease_roll_forward_in_dir(const pal::string_t& cur_dir, const fx_ver_t& start_ver, pal::string_t* max_str);
 
 #endif // __LIBHOST_H__
