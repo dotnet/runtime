@@ -72,13 +72,16 @@ MONO_API int            mono_string_length (MonoString *s);
 MONO_RT_EXTERNAL_ONLY MONO_API MonoObject *
 mono_object_new		    (MonoDomain *domain, MonoClass *klass);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoObject *
 mono_object_new_specific    (MonoVTable *vtable);
 
 /* can be used for classes without finalizer in non-profiling mode */
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoObject *
 mono_object_new_fast	    (MonoVTable *vtable);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoObject *
 mono_object_new_alloc_specific (MonoVTable *vtable);
 
@@ -89,10 +92,12 @@ mono_object_new_from_token  (MonoDomain *domain, MonoImage *image, uint32_t toke
 MONO_API MonoArray*
 mono_array_new		    (MonoDomain *domain, MonoClass *eclass, uintptr_t n);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoArray*
 mono_array_new_full	    (MonoDomain *domain, MonoClass *array_class,
 			     uintptr_t *lengths, intptr_t *lower_bounds);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoArray *
 mono_array_new_specific	    (MonoVTable *vtable, uintptr_t n);
 
@@ -106,9 +111,11 @@ mono_array_addr_with_size   (MonoArray *array, int size, uintptr_t idx);
 MONO_API uintptr_t
 mono_array_length           (MonoArray *array);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoString*
 mono_string_new_utf16	    (MonoDomain *domain, const mono_unichar2 *text, int32_t len);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoString*
 mono_string_new_size	    (MonoDomain *domain, int32_t len);
 
@@ -131,6 +138,7 @@ mono_string_new_wrapper	    (const char *text);
 MONO_API MonoString*
 mono_string_new_len	    (MonoDomain *domain, const char *text, unsigned int length);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoString*
 mono_string_new_utf32	    (MonoDomain *domain, const mono_unichar4 *text, int32_t len);
 
@@ -183,6 +191,7 @@ mono_object_get_class       (MonoObject *obj);
 MONO_API void*
 mono_object_unbox	    (MonoObject *obj);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoObject *
 mono_object_clone	    (MonoObject *obj);
 

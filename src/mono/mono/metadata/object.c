@@ -4833,7 +4833,7 @@ mono_object_new (MonoDomain *domain, MonoClass *klass)
 
 	MonoObject * result = mono_object_new_checked (domain, klass, &error);
 
-	mono_error_raise_exception (&error);
+	mono_error_cleanup (&error);
 	return result;
 }
 
@@ -4916,7 +4916,7 @@ mono_object_new_specific (MonoVTable *vtable)
 {
 	MonoError error;
 	MonoObject *o = mono_object_new_specific_checked (vtable, &error);
-	mono_error_raise_exception (&error);
+	mono_error_cleanup (&error);
 
 	return o;
 }
@@ -4994,7 +4994,7 @@ mono_object_new_alloc_specific (MonoVTable *vtable)
 {
 	MonoError error;
 	MonoObject *o = mono_object_new_alloc_specific_checked (vtable, &error);
-	mono_error_raise_exception (&error);
+	mono_error_cleanup (&error);
 
 	return o;
 }
@@ -5054,7 +5054,7 @@ mono_object_new_fast (MonoVTable *vtable)
 {
 	MonoError error;
 	MonoObject *o = mono_object_new_fast_checked (vtable, &error);
-	mono_error_raise_exception (&error);
+	mono_error_cleanup (&error);
 
 	return o;
 }
@@ -5184,7 +5184,7 @@ mono_object_new_from_token  (MonoDomain *domain, MonoImage *image, guint32 token
 	
 	result = mono_object_new_checked (domain, klass, &error);
 
-	mono_error_cleanup (&error); /* FIXME don't raise here */
+	mono_error_cleanup (&error);
 	return result;
 	
 }
@@ -5201,7 +5201,7 @@ mono_object_clone (MonoObject *obj)
 {
 	MonoError error;
 	MonoObject *o = mono_object_clone_checked (obj, &error);
-	mono_error_raise_exception (&error);
+	mono_error_cleanup (&error);
 
 	return o;
 }
@@ -5424,7 +5424,7 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class, uintptr_t *leng
 {
 	MonoError error;
 	MonoArray *array = mono_array_new_full_checked (domain, array_class, lengths, lower_bounds, &error);
-	mono_error_raise_exception (&error);
+	mono_error_cleanup (&error);
 
 	return array;
 }
@@ -5564,7 +5564,7 @@ mono_array_new_specific (MonoVTable *vtable, uintptr_t n)
 {
 	MonoError error;
 	MonoArray *arr = mono_array_new_specific_checked (vtable, n, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	mono_error_cleanup (&error);
 
 	return arr;
 }
@@ -5623,7 +5623,7 @@ mono_string_new_utf16 (MonoDomain *domain, const guint16 *text, gint32 len)
 	MonoError error;
 	MonoString *res = NULL;
 	res = mono_string_new_utf16_checked (domain, text, len, &error);
-	mono_error_raise_exception (&error);
+	mono_error_cleanup (&error);
 
 	return res;
 }
@@ -5657,21 +5657,22 @@ mono_string_new_utf16_checked (MonoDomain *domain, const guint16 *text, gint32 l
  * mono_string_new_utf32:
  * @text: a pointer to an utf32 string
  * @len: the length of the string
+ * @error: set on failure.
  *
- * Returns: A newly created string object which contains @text.
+ * Returns: A newly created string object which contains @text. On failure returns NULL and sets @error.
  */
-MonoString *
-mono_string_new_utf32 (MonoDomain *domain, const mono_unichar4 *text, gint32 len)
+static MonoString *
+mono_string_new_utf32_checked (MonoDomain *domain, const mono_unichar4 *text, gint32 len, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoError error;
 	MonoString *s;
 	mono_unichar2 *utf16_output = NULL;
 	gint32 utf16_len = 0;
 	GError *gerror = NULL;
 	glong items_written;
 	
+	mono_error_init (error);
 	utf16_output = g_ucs4_to_utf16 (text, len, NULL, &items_written, &gerror);
 	
 	if (gerror)
@@ -5679,14 +5680,30 @@ mono_string_new_utf32 (MonoDomain *domain, const mono_unichar4 *text, gint32 len
 
 	while (utf16_output [utf16_len]) utf16_len++;
 	
-	s = mono_string_new_size_checked (domain, utf16_len, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	s = mono_string_new_size_checked (domain, utf16_len, error);
+	return_val_if_nok (error, NULL);
 
 	memcpy (mono_string_chars (s), utf16_output, utf16_len * 2);
 
 	g_free (utf16_output);
 	
 	return s;
+}
+
+/**
+ * mono_string_new_utf32:
+ * @text: a pointer to an utf32 string
+ * @len: the length of the string
+ *
+ * Returns: A newly created string object which contains @text.
+ */
+MonoString *
+mono_string_new_utf32 (MonoDomain *domain, const mono_unichar4 *text, gint32 len)
+{
+	MonoError error;
+	MonoString *result = mono_string_new_utf32_checked (domain, text, len, &error);
+	mono_error_cleanup (&error);
+	return result;
 }
 
 /**
@@ -5701,7 +5718,7 @@ mono_string_new_size (MonoDomain *domain, gint32 len)
 {
 	MonoError error;
 	MonoString *str = mono_string_new_size_checked (domain, len, &error);
-	mono_error_raise_exception (&error);
+	mono_error_cleanup (&error);
 
 	return str;
 }
@@ -5823,7 +5840,6 @@ mono_string_new_checked (MonoDomain *domain, const char *text, MonoError *error)
         g_error_free (eg_error);
 
     g_free (ut);
-    mono_error_raise_exception (error);
     
 /*FIXME g_utf8_get_char, g_utf8_next_char and g_utf8_validate are not part of eglib.*/
 #if 0
