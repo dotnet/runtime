@@ -406,6 +406,7 @@ common_sources = \
 	seq-points.h	\
 	ir-emit.h		\
 	method-to-ir.c		\
+	cfgdump.c		\
 	decompose.c		\
 	mini.h			\
 	version.h		\
