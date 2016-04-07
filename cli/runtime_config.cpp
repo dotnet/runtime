@@ -96,9 +96,6 @@ bool runtime_config_t::ensure_dev_config_parsed()
         return true;
     }
 
-    // Set dev mode default values, if the file exists.
-    m_patch_roll_fwd = false;
-
     pal::ifstream_t file(m_dev_path);
     if (!file.good())
     {
