@@ -6,20 +6,23 @@
 #include "trace.h"
 #include "libhost.h"
 
-pal::string_t get_runtime_config_from_file(const pal::string_t& file, pal::string_t* dev_cfg)
+void get_runtime_config_paths_from_file(const pal::string_t& file, pal::string_t* cfg, pal::string_t* dev_cfg)
 {
     auto name = get_filename_without_ext(file);
+
     auto json_name = name + _X(".runtimeconfig.json");
     auto dev_json_name = name + _X(".runtimeconfig.dev.json");
+
     auto json_path = get_directory(file);
     auto dev_json_path = json_path;
 
     append_path(&json_path, json_name.c_str());
     append_path(&dev_json_path, dev_json_name.c_str());
+
     trace::verbose(_X("Runtime config is cfg=%s dev=%s"), json_path.c_str(), dev_json_path.c_str());
 
     dev_cfg->assign(dev_json_path);
-    return json_path;
+    cfg -> assign(json_path);
 }
 
 host_mode_t detect_operating_mode(const int argc, const pal::char_t* argv[], pal::string_t* p_own_dir)
