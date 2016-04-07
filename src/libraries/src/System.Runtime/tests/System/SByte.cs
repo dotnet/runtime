@@ -153,6 +153,9 @@ public static class SByteTests
         numberFormat.NumberDecimalSeparator = ".";
         sbyte i3 = 24;
         Assert.Equal("24.00", i3.ToString("N", numberFormat));
+
+        sbyte i4 = -10;
+        Assert.Equal("F6", i4.ToString("X", numberFormat));
     }
 
     public static IEnumerable<object[]> ParseValidData()
