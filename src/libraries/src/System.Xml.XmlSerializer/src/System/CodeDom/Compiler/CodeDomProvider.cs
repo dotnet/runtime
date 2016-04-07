@@ -27,8 +27,6 @@ namespace Microsoft.CSharp
     // Ported from \ndp\fx\src\CompMod\Microsoft\CSharp\CSharpCodeProvider.cs
     internal class CSharpCodeProvider : CodeDomProvider
     {
-        private static Dictionary<string, object> s_fixedStringLookup;
-
         public override string CreateEscapedIdentifier(string name)
         {
             // Any identifier started with two consecutive underscores are 
@@ -40,131 +38,97 @@ namespace Microsoft.CSharp
             return name;
         }
 
-        private static readonly string[][] s_keywords = new string[][] {
-            null,           // 1 character
-            new string[] {  // 2 characters
-                "as",
-                "do",
-                "if",
-                "in",
-                "is",
-            },
-            new string[] {  // 3 characters
-                "for",
-                "int",
-                "new",
-                "out",
-                "ref",
-                "try",
-            },
-            new string[] {  // 4 characters
-                "base",
-                "bool",
-                "byte",
-                "case",
-                "char",
-                "else",
-                "enum",
-                "goto",
-                "lock",
-                "long",
-                "null",
-                "this",
-                "true",
-                "uint",
-                "void",
-            },
-            new string[] {  // 5 characters
-                "break",
-                "catch",
-                "class",
-                "const",
-                "event",
-                "false",
-                "fixed",
-                "float",
-                "sbyte",
-                "short",
-                "throw",
-                "ulong",
-                "using",
-                "where",
-                "while",
-                "yield",
-            },
-            new string[] {  // 6 characters
-                "double",
-                "extern",
-                "object",
-                "params",
-                "public",
-                "return",
-                "sealed",
-                "sizeof",
-                "static",
-                "string",
-                "struct",
-                "switch",
-                "typeof",
-                "unsafe",
-                "ushort",
-            },
-            new string[] {  // 7 characters
-                "checked",
-                "decimal",
-                "default",
-                "finally",
-                "foreach",
-                "partial",
-                "private",
-                "virtual",
-            },
-            new string[] {  // 8 characters
-                "abstract",
-                "continue",
-                "delegate",
-                "explicit",
-                "implicit",
-                "internal",
-                "operator",
-                "override",
-                "readonly",
-                "volatile",
-            },
-            new string[] {  // 9 characters
-                "__arglist",
-                "__makeref",
-                "__reftype",
-                "interface",
-                "namespace",
-                "protected",
-                "unchecked",
-            },
-            new string[] {  // 10 characters
-                "__refvalue",
-                "stackalloc",
-            },
-        };
-
-        static CSharpCodeProvider()
-        {
-            s_fixedStringLookup = new Dictionary<string, object>();
-            for (int i = 0; i < s_keywords.Length; i++)
-            {
-                string[] values = s_keywords[i];
-                if (values != null)
-                {
-                    for (int j = 0; j < values.Length; j++)
-                    {
-                        s_fixedStringLookup.Add(values[j], null);
-                    }
-                }
-            }
-        }
-
         private static bool IsKeyword(string value)
         {
-            return s_fixedStringLookup.ContainsKey(value);
+            switch (value)
+            {
+                case "as":
+                case "do":
+                case "if":
+                case "in":
+                case "is":
+                case "for":
+                case "int":
+                case "new":
+                case "out":
+                case "ref":
+                case "try":
+                case "base":
+                case "bool":
+                case "byte":
+                case "case":
+                case "char":
+                case "else":
+                case "enum":
+                case "goto":
+                case "lock":
+                case "long":
+                case "null":
+                case "this":
+                case "true":
+                case "uint":
+                case "void":
+                case "break":
+                case "catch":
+                case "class":
+                case "const":
+                case "event":
+                case "false":
+                case "fixed":
+                case "float":
+                case "sbyte":
+                case "short":
+                case "throw":
+                case "ulong":
+                case "using":
+                case "where":
+                case "while":
+                case "yield":
+                case "double":
+                case "extern":
+                case "object":
+                case "params":
+                case "public":
+                case "return":
+                case "sealed":
+                case "sizeof":
+                case "static":
+                case "string":
+                case "struct":
+                case "switch":
+                case "typeof":
+                case "unsafe":
+                case "ushort":
+                case "checked":
+                case "decimal":
+                case "default":
+                case "finally":
+                case "foreach":
+                case "partial":
+                case "private":
+                case "virtual":
+                case "abstract":
+                case "continue":
+                case "delegate":
+                case "explicit":
+                case "implicit":
+                case "internal":
+                case "operator":
+                case "override":
+                case "readonly":
+                case "volatile":
+                case "__arglist":
+                case "__makeref":
+                case "__reftype":
+                case "interface":
+                case "namespace":
+                case "protected":
+                case "unchecked":
+                case "__refvalue":
+                case "stackalloc":
+                    return true;
+            }
+            return false;
         }
 
         private static bool IsPrefixTwoUnderscore(string value)
