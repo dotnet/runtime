@@ -248,6 +248,7 @@ int fx_muxer_t::parse_args_and_execute(const pal::string_t& own_dir, int argoff,
     if (exec_mode)
     {
         known_opts.push_back(_X("--depsfile"));
+        known_opts.push_back(_X("--runtimeconfig"));
     }
 
     // Parse the known muxer arguments if any.
