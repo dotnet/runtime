@@ -82,6 +82,7 @@ mono_object_new_fast	    (MonoVTable *vtable);
 MONO_API MonoObject *
 mono_object_new_alloc_specific (MonoVTable *vtable);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoObject *
 mono_object_new_from_token  (MonoDomain *domain, MonoImage *image, uint32_t token);
 

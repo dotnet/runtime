@@ -5180,11 +5180,11 @@ mono_object_new_from_token  (MonoDomain *domain, MonoImage *image, guint32 token
 	MonoClass *klass;
 
 	klass = mono_class_get_checked (image, token, &error);
-	g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
+	mono_error_assert_ok (&error);
 	
 	result = mono_object_new_checked (domain, klass, &error);
 
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	mono_error_cleanup (&error); /* FIXME don't raise here */
 	return result;
 	
 }
