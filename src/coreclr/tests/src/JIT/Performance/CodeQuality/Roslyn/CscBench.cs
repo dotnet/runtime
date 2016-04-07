@@ -32,6 +32,13 @@ public static class CscBench
     {
         string CoreRoot = System.Environment.GetEnvironmentVariable("CORE_ROOT");
         if (CoreRoot == null) { return false; }
+        // Some CoreCLR packages have mscorlib.ni.dll only
+        string nicorlib = Path.Combine(CoreRoot, "mscorlib.ni.dll");
+        if(File.Exists(nicorlib))
+        {
+            MscorlibPath = nicorlib;
+            return true;
+        }
         MscorlibPath = Path.Combine(CoreRoot, "mscorlib.dll");
         return File.Exists(MscorlibPath);
     }
