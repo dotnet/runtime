@@ -195,7 +195,8 @@ namespace Microsoft.Extensions.DependencyModel
                 var nativeLibraryGroups = new List<RuntimeAssetGroup>();
                 foreach (var ridGroup in entries.GroupBy(e => e.Rid))
                 {
-                    var groupRuntimeAssemblies = entries.Where(e => e.Type == DependencyContextStrings.RuntimeAssetType)
+                    var groupRuntimeAssemblies = ridGroup
+                        .Where(e => e.Type == DependencyContextStrings.RuntimeAssetType)
                         .Select(e => e.Path)
                         .ToArray();
 
@@ -206,7 +207,8 @@ namespace Microsoft.Extensions.DependencyModel
                             groupRuntimeAssemblies.Where(a => Path.GetFileName(a) != "_._")));
                     }
 
-                    var groupNativeLibraries = entries.Where(e => e.Type == DependencyContextStrings.NativeAssetType)
+                    var groupNativeLibraries = ridGroup
+                        .Where(e => e.Type == DependencyContextStrings.NativeAssetType)
                         .Select(e => e.Path)
                         .ToArray();
 
