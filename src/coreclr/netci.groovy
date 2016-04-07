@@ -1064,11 +1064,15 @@ combinedScenarios.each { scenario ->
 
                                     // Up the timeout for arm64 jobs.
                                     Utilities.setJobTimeout(newJob, 240);
-                                    buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${architecture} /toolset_dir C:\\ats"
 
-                                    // Debug runs take too long to run.
-                                    if (lowerConfiguration != "debug") {
-                                       buildCommands += "Z:\\arm64\\common\\scripts\\arm64PostBuild.cmd %WORKSPACE% ${architecture} ${lowerConfiguration}"
+                                    // Debug runs take too long to run. So build job only.
+                                    if (lowerConfiguration == "debug") {
+                                       buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${architecture} /toolset_dir C:\\ats"
+                                    }
+                                    else {
+                                       buildCommands += "set __TestIntermediateDir=int&&build.cmd skiptests ${lowerConfiguration} ${architecture} /toolset_dir C:\\ats"
+                                       // Test build and run are launched together.
+                                       buildCommands += "Z:\\arm64\\common\\scripts\\arm64PostLauncher.cmd %WORKSPACE% ${architecture} ${lowerConfiguration}"
                                        Utilities.addXUnitDotNETResults(newJob, 'bin/tests/testResults.xml')
                                     }
                                     
