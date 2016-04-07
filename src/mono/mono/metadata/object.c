@@ -4846,7 +4846,7 @@ ves_icall_object_new (MonoDomain *domain, MonoClass *klass)
 
 	MonoObject * result = mono_object_new_checked (domain, klass, &error);
 
-	mono_error_raise_exception (&error);
+	mono_error_set_pending_exception (&error);
 	return result;
 }
 
@@ -4970,7 +4970,7 @@ ves_icall_object_new_specific (MonoVTable *vtable)
 {
 	MonoError error;
 	MonoObject *o = mono_object_new_specific_checked (vtable, &error);
-	mono_error_raise_exception (&error);
+	mono_error_set_pending_exception (&error);
 
 	return o;
 }
@@ -5098,7 +5098,7 @@ ves_icall_object_new_fast (MonoVTable *vtable)
 {
 	MonoError error;
 	MonoObject *o = mono_object_new_fast_checked (vtable, &error);
-	mono_error_raise_exception (&error);
+	mono_error_set_pending_exception (&error);
 
 	return o;
 }
@@ -5582,7 +5582,7 @@ ves_icall_array_new_specific (MonoVTable *vtable, uintptr_t n)
 {
 	MonoError error;
 	MonoArray *arr = mono_array_new_specific_checked (vtable, n, &error);
-	mono_error_raise_exception (&error);
+	mono_error_set_pending_exception (&error);
 
 	return arr;
 }
@@ -6917,7 +6917,8 @@ ves_icall_System_Runtime_Remoting_Messaging_AsyncResult_Invoke (MonoAsyncResult 
 
 		if (ac->cb_method) {
 			mono_runtime_invoke_checked (ac->cb_method, ac->cb_target, (gpointer*) &ares, &error);
-			mono_error_raise_exception (&error);
+			if (mono_error_set_pending_exception (&error))
+				return NULL;
 		}
 	}
 
