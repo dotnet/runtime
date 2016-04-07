@@ -26,6 +26,7 @@
     </CodeAnalysisDependentAssemblyPaths>
   </ItemGroup>
   <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="compat_r8_r4.il" />
