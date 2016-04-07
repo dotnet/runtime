@@ -48,6 +48,8 @@
     <Compile Include="RegionInfo\RegionInfoTests.Methods.cs" />
     <Compile Include="RegionInfo\RegionInfoTests.Properties.cs" />
     <Compile Include="CultureInfo\CultureInfoAll.cs" />
+    <!-- async current cultures feature is supported on 4.6.1 and up on Windows desktop framework -->
+    <Compile Include="CultureInfo\CultureInfoAsync.cs" Condition="'$(TargetGroup)' != 'net46'" />
     <Compile Include="CultureInfo\CultureInfoCalendar.cs" />
     <Compile Include="CultureInfo\CultureInfoClone.cs" />
     <Compile Include="CultureInfo\CultureInfoCompareInfo.cs" />
@@ -139,7 +141,7 @@
     </Compile>
     <Compile Include="$(CommonTestPath)\System\RandomDataGenerator.cs">
       <Link>Common\System\RandomDataGenerator.cs</Link>
-    </Compile>
+    </Compile>  
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
     <TargetingPackReference Include="System" />
