@@ -228,6 +228,18 @@ def static getJobName(def configuration, def architecture, def os, def scenario,
     return baseName + suffix
 }
 
+static void addEmailPublisher(def job, def recipient) {
+    def recipients = '$DEFAULT_RECIPIENTS, ' + recipient
+    job.with {
+        publishers {
+            extendedEmail(recipients, '$DEFAULT_SUBJECT', '$DEFAULT_CONTENT') {
+                trigger('Aborted', '$PROJECT_DEFAULT_SUBJECT', '$PROJECT_DEFAULT_CONTENT', null, true, true, true, true)
+                trigger('Failure', '$PROJECT_DEFAULT_SUBJECT', '$PROJECT_DEFAULT_CONTENT', null, true, true, true, true)
+            }
+        }
+    }
+}
+
 // **************************
 // Define the basic inner loop builds for PR and commit.  This is basically just the set
 // of coreclr builds over linux/osx/freebsd/windows and debug/release/checked.  In addition, the windows
@@ -259,6 +271,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                         Utilities.addGithubPushTrigger(job)
                     case 'arm64':
                         Utilities.addGithubPushTrigger(job)
+                        addEmailPublisher(job, 'cc:dotnetonarm64@microsoft.com')
                         break
                     default:
                         println("Unknown architecture: ${architecture}");
@@ -744,11 +757,25 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                            Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build", "(?i).*test\\W+${os}\\W+${architecture}.*")
                            break
                     }
+					break
                 case 'Windows_NT':
-                    // Set up a private trigger
-                    Utilities.addPrivateGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build",
-                        "(?i).*test\\W+${os}\\W+${architecture}.*", null, ['erozenfeld', 'kyulee1', 'pgavlin', 'russellhadley', 'swaroop-sridhar', 'JosephTremoulet', 'jashook', 'RussKeldorph', 'gkhanna79', 'briansull', 'cmckinsey', 'jkotas', 'ramarag', 'markwilkie', 'rahku', 'tzwlai', 'weshaggard', 'LLITCHEV'])
-                    break
+				    switch(architecture) {
+					    case "arm":
+						    // Not yet supported.
+						    break
+                        case "arm64":
+                            // Set up a private trigger
+					        def contextString = "${os} ${architecture} Cross ${configuration} Build"
+							// Debug builds only.
+					        if (configuration != 'Debug') {
+					            contextString += " and Test"
+					        }
+                            Utilities.addPrivateGithubPRTriggerForBranch(job, branch, contextString,
+                            "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}.*", null, ['erozenfeld', 'kyulee1', 'pgavlin', 'russellhadley', 'swaroop-sridhar', 'JosephTremoulet', 'jashook', 'RussKeldorph', 'gkhanna79', 'briansull', 'cmckinsey', 'jkotas', 'ramarag', 'markwilkie', 'rahku', 'tzwlai', 'weshaggard', 'LLITCHEV'])
+					        addEmailPublisher(job, 'cc:dotnetonarm64@microsoft.com')
+                            break
+					}
+				    break
             }
             break
         case 'x86':
