@@ -672,15 +672,9 @@ endif()
 if(CLR_CMAKE_PLATFORM_UNIX)
   add_subdirectory(src/ToolBox/SOS/lldbplugin)
   add_subdirectory(src/pal)
-  add_subdirectory(src/coreclr/hosts/unixcoreruncommon)
-  add_subdirectory(src/coreclr/hosts/unixcorerun)
-  add_subdirectory(src/coreclr/hosts/unixcoreconsole)
+  add_subdirectory(src/coreclr/hosts)
   add_subdirectory(src/ildasm/unixcoreclrloader)
 endif(CLR_CMAKE_PLATFORM_UNIX)
-
-if(CLR_CMAKE_PLATFORM_DARWIN)
-  add_subdirectory(src/coreclr/hosts/osxbundlerun)
-endif(CLR_CMAKE_PLATFORM_DARWIN)
 
 # Add this subdir. We install the headers for the jit.
 add_subdirectory(src/pal/prebuilt/inc)
