@@ -132,7 +132,7 @@ namespace System.Security.Principal
 
             try
             {
-                if (TRUE != Interop.mincore.ConvertStringSidToSid(stringSid, out ByteArray))
+                if (FALSE == Interop.mincore.ConvertStringSidToSid(stringSid, out ByteArray))
                 {
                     ErrorCode = Marshal.GetLastWin32Error();
                     goto Error;
