@@ -5,7 +5,10 @@
     "keyFile": "../../tools/Key.snk"
   },
   "dependencies": {
-    "Microsoft.NETCore.App": "1.0.0-rc2-*",
+    "Microsoft.NETCore.App": {
+      "type": "platform",
+      "version": "1.0.0-rc2-*"
+    },
     "Microsoft.DotNet.Tools.Tests.Utilities": {
       "target": "project"
     },
@@ -18,8 +21,9 @@
     "dotnet-test-xunit": "1.0.0-dev-128011-22"
   },
   "frameworks": {
-    "netstandardapp1.5": {
+    "netcoreapp1.0": {
       "imports": [
+        "netstandardapp1.5",
         "dnxcore50",
         "portable-net45+win8"
       ]
