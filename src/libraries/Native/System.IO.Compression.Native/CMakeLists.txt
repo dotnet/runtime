@@ -9,6 +9,7 @@ set(NATIVECOMPRESSION_SOURCES
 add_library(System.IO.Compression.Native
     SHARED
     ${NATIVECOMPRESSION_SOURCES}
+    ${VERSION_FILE_PATH}
 )
 
 target_link_libraries(System.IO.Compression.Native
