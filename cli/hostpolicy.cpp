@@ -246,9 +246,11 @@ SHARED_API int corehost_main(const int argc, const pal::char_t* argv[])
     }
     else
     {
-        pal::string_t dev_config_file;
-        auto config_path = get_runtime_config_from_file(args.managed_application, &dev_config_file);
-        runtime_config_t config(config_path, dev_config_file);
+        pal::string_t config_file, dev_config_file;
+        
+        get_runtime_config_paths_from_file(args.managed_application, &config_file, &dev_config_file);
+        runtime_config_t config(config_file, dev_config_file);
+
         if (!config.is_valid())
         {
             trace::error(_X("Invalid runtimeconfig.json [%s] [%s]"), config.get_path().c_str(), config.get_dev_path().c_str());
