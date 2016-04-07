@@ -8629,6 +8629,7 @@ mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ig
 
 /**
  * mono_reflection_get_type_checked:
+ * @rootimage: the image of the currently active managed caller
  * @image: a metadata context
  * @info: type description structure
  * @ignorecase: flag for case-insensitive string compares
@@ -8639,9 +8640,9 @@ mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ig
  *
  */
 MonoType*
-mono_reflection_get_type_checked (MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean *type_resolve, MonoError *error) {
+mono_reflection_get_type_checked (MonoImage *rootimage, MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean *type_resolve, MonoError *error) {
 	mono_error_init (error);
-	return mono_reflection_get_type_with_rootimage (image, image, info, ignorecase, type_resolve, error);
+	return mono_reflection_get_type_with_rootimage (rootimage, image, info, ignorecase, type_resolve, error);
 }
 
 
