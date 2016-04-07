@@ -6,7 +6,7 @@
     <Version>$(HostPolicyVersion)</Version>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <SkipValidatePackage>true</SkipValidatePackage>
-    <PackagePlatforms>x64;x86</PackagePlatforms>
+    <PackagePlatforms>x64;x86;</PackagePlatforms>
     <OutputPath>$(PackagesOutputPath)</OutputPath>
     <IncludeRuntimeJson>true</IncludeRuntimeJson>
   </PropertyGroup>
