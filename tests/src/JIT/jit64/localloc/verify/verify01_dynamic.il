@@ -8,7 +8,6 @@
 .assembly extern mscorlib{}
 .assembly eh01
 {
-  .custom instance void [mscorlib]System.Security.SecurityRulesAttribute::.ctor(valuetype [mscorlib]System.Security.SecurityRuleSet) = ( 01 00 01 00 00 ) 
 }
 
 .class private auto ansi beforefieldinit LocallocTest
