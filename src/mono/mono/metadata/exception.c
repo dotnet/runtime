@@ -940,8 +940,10 @@ ves_icall_Mono_Runtime_GetNativeStackTrace (MonoException *exc)
 {
 	char *trace;
 	MonoString *res;
-	if (!exc)
-		mono_raise_exception (mono_get_exception_argument_null ("exception"));
+	if (!exc) {
+		mono_set_pending_exception (mono_get_exception_argument_null ("exception"));
+		return NULL;
+	}
 
 	trace = mono_exception_get_native_backtrace (exc);
 	res = mono_string_new (mono_domain_get (), trace);

@@ -475,6 +475,7 @@ transport_start_receive (void)
 static guint32 WINAPI
 receiver_thread (void *arg)
 {
+	MonoError error;
 	int res, content_len;
 	guint8 buffer [256];
 	guint8 *p, *p_end;
@@ -493,7 +494,8 @@ receiver_thread (void *arg)
 		printf ("attach: Connected.\n");
 
 		MonoThread *thread = mono_thread_attach (mono_get_root_domain ());
-		mono_thread_set_name_internal (thread->internal_thread, mono_string_new (mono_get_root_domain (), "Attach receiver"), TRUE);
+		mono_thread_set_name_internal (thread->internal_thread, mono_string_new (mono_get_root_domain (), "Attach receiver"), TRUE, &error);
+		mono_error_assert_ok (&error);
 		/* Ask the runtime to not abort this thread */
 		//mono_thread_current ()->flags |= MONO_THREAD_FLAG_DONT_MANAGE;
 		/* Ask the runtime to not wait for this thread */
