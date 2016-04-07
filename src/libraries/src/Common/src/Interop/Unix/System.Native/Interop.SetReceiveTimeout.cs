@@ -10,24 +10,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetReceiveTimeout")]
-        private static extern unsafe Error DangerousSetReceiveTimeout(int socket, int millisecondsTimeout);
-
-        internal static unsafe Error SetReceiveTimeout(SafeHandle socket, int millisecondsTimeout)
-        {
-            bool release = false;
-            try
-            {
-                socket.DangerousAddRef(ref release);
-                return DangerousSetReceiveTimeout((int)socket.DangerousGetHandle(), millisecondsTimeout);
-            }
-            finally
-            {
-                if (release)
-                {
-                    socket.DangerousRelease();
-                }
-            }
-        }
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetReceiveTimeout_IntPtr")]
+        internal static extern unsafe Error SetReceiveTimeout(SafeHandle socket, int millisecondsTimeout);
     }
 }
