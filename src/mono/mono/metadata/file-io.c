@@ -570,7 +570,7 @@ ves_icall_System_IO_MonoIO_GetCurrentDirectory (gint32 *io_error)
 	}
 
 	g_free (buf);
-	mono_error_raise_exception (&error);
+	mono_error_set_pending_exception (&error);
 	return result;
 }
 
