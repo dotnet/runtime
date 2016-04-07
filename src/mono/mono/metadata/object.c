@@ -3939,12 +3939,30 @@ MonoArray*
 mono_runtime_get_main_args (void)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
+	MonoError error;
+	MonoArray *result = mono_runtime_get_main_args_checked (&error);
+	mono_error_assert_ok (&error);
+	return result;
+}
 
+/**
+ * mono_runtime_get_main_args:
+ * @error: set on error
+ *
+ * Returns: a MonoArray with the arguments passed to the main
+ * program. On failure returns NULL and sets @error.
+ */
+MonoArray*
+mono_runtime_get_main_args_checked (MonoError *error)
+{
 	MonoArray *res;
 	int i;
 	MonoDomain *domain = mono_domain_get ();
 
-	res = (MonoArray*)mono_array_new (domain, mono_defaults.string_class, num_main_args);
+	mono_error_init (error);
+
+	res = (MonoArray*)mono_array_new_checked (domain, mono_defaults.string_class, num_main_args, error);
+	return_val_if_nok (error, NULL);
 
 	for (i = 0; i < num_main_args; ++i)
 		mono_array_setref (res, i, mono_string_new (domain, main_args [i]));
@@ -4020,6 +4038,7 @@ mono_runtime_run_main (MonoMethod *method, int argc, char* argv[],
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	MonoError error;
 	int i;
 	MonoArray *args = NULL;
 	MonoDomain *domain = mono_domain_get ();
@@ -4087,7 +4106,8 @@ mono_runtime_run_main (MonoMethod *method, int argc, char* argv[],
 	}
 
 	if (sig->param_count) {
-		args = (MonoArray*)mono_array_new (domain, mono_defaults.string_class, argc);
+		args = (MonoArray*)mono_array_new_checked (domain, mono_defaults.string_class, argc, &error);
+		mono_error_assert_ok (&error);
 		for (i = 0; i < argc; ++i) {
 			/* The encodings should all work, given that
 			 * we've checked all these args for the
@@ -4099,7 +4119,8 @@ mono_runtime_run_main (MonoMethod *method, int argc, char* argv[],
 			g_free (str);
 		}
 	} else {
-		args = (MonoArray*)mono_array_new (domain, mono_defaults.string_class, 0);
+		args = (MonoArray*)mono_array_new_checked (domain, mono_defaults.string_class, 0, &error);
+		mono_error_assert_ok (&error);
 	}
 	
 	mono_assembly_set_main (method->klass->image->assembly);
@@ -5536,17 +5557,43 @@ mono_array_new (MonoDomain *domain, MonoClass *eclass, uintptr_t n)
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	MonoError error;
+	MonoArray *result = mono_array_new_checked (domain, eclass, n, &error);
+	mono_error_cleanup (&error);
+	return result;
+}
+
+/**
+ * mono_array_new_checked:
+ * @domain: domain where the object is created
+ * @eclass: element class
+ * @n: number of array elements
+ * @error: set on error
+ *
+ * This routine creates a new szarray with @n elements of type @eclass.
+ * On failure returns NULL and sets @error.
+ */
+MonoArray *
+mono_array_new_checked (MonoDomain *domain, MonoClass *eclass, uintptr_t n, MonoError *error)
+{
 	MonoClass *ac;
-	MonoArray *arr;
+
+	mono_error_init (error);
 
 	ac = mono_array_class_get (eclass, 1);
 	g_assert (ac);
 
-	MonoVTable *vtable = mono_class_vtable_full (domain, ac, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	MonoVTable *vtable = mono_class_vtable_full (domain, ac, error);
+	return_val_if_nok (error, NULL);
 
-	arr = mono_array_new_specific_checked (vtable, n, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	return mono_array_new_specific_checked (vtable, n, error);
+}
+
+MonoArray*
+ves_icall_array_new (MonoDomain *domain, MonoClass *eclass, uintptr_t n)
+{
+	MonoError error;
+	MonoArray *arr = mono_array_new_checked (domain, eclass, n, &error);
+	mono_error_set_pending_exception (&error);
 
 	return arr;
 }
@@ -7551,7 +7598,8 @@ mono_load_remote_field_checked (MonoObject *this_obj, MonoClass *klass, MonoClas
 
 	msg = (MonoMethodMessage *)mono_object_new_checked (domain, mono_defaults.mono_method_message_class, error);
 	return_val_if_nok (error, NULL);
-	out_args = mono_array_new (domain, mono_defaults.object_class, 1);
+	out_args = mono_array_new_checked (domain, mono_defaults.object_class, 1, error);
+	return_val_if_nok (error, NULL);
 	MonoReflectionMethod *rm = mono_method_get_object_checked (domain, getter, NULL, error);
 	return_val_if_nok (error, NULL);
 	mono_message_init (domain, msg, rm, out_args);
@@ -7676,7 +7724,8 @@ mono_load_remote_field_new_checked (MonoObject *this_obj, MonoClass *klass, Mono
 	
 	msg = (MonoMethodMessage *)mono_object_new_checked (domain, mono_defaults.mono_method_message_class, error);
 	return_val_if_nok (error, NULL);
-	out_args = mono_array_new (domain, mono_defaults.object_class, 1);
+	out_args = mono_array_new_checked (domain, mono_defaults.object_class, 1, error);
+	return_val_if_nok (error, NULL);
 
 	MonoReflectionMethod *rm = mono_method_get_object_checked (domain, getter, NULL, error);
 	return_val_if_nok (error, NULL);
@@ -7993,17 +8042,19 @@ mono_array_addr_with_size (MonoArray *array, int size, uintptr_t idx)
 
 
 MonoArray *
-mono_glist_to_array (GList *list, MonoClass *eclass) 
+mono_glist_to_array (GList *list, MonoClass *eclass, MonoError *error) 
 {
 	MonoDomain *domain = mono_domain_get ();
 	MonoArray *res;
 	int len, i;
 
+	mono_error_init (error);
 	if (!list)
 		return NULL;
 
 	len = g_list_length (list);
-	res = mono_array_new (domain, eclass, len);
+	res = mono_array_new_checked (domain, eclass, len, error);
+	return_val_if_nok (error, NULL);
 
 	for (i = 0; list; list = list->next, i++)
 		mono_array_set (res, gpointer, i, list->data);

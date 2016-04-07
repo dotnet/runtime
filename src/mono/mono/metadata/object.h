@@ -89,6 +89,7 @@ MONO_RT_EXTERNAL_ONLY
 MONO_API MonoObject *
 mono_object_new_from_token  (MonoDomain *domain, MonoImage *image, uint32_t token);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoArray*
 mono_array_new		    (MonoDomain *domain, MonoClass *eclass, uintptr_t n);
 
@@ -261,6 +262,7 @@ mono_runtime_invoke_array   (MonoMethod *method, void *obj, MonoArray *params,
 MONO_API void*
 mono_method_get_unmanaged_thunk (MonoMethod *method);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoArray*
 mono_runtime_get_main_args  (void);
 

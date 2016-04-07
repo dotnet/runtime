@@ -601,7 +601,9 @@ ves_icall_System_Globalization_CultureInfo_internal_get_cultures (MonoBoolean ne
 	if (neutral)
 		len++;
 
-	ret = mono_array_new (domain, klass, len);
+	ret = mono_array_new_checked (domain, klass, len, &error);
+	if (!is_ok (&error))
+		goto fail;
 
 	if (len == 0)
 		return ret;
@@ -642,13 +644,17 @@ int ves_icall_System_Globalization_CompareInfo_internal_compare (MonoCompareInfo
 
 void ves_icall_System_Globalization_CompareInfo_assign_sortkey (MonoCompareInfo *this_obj, MonoSortKey *key, MonoString *source, gint32 options)
 {
+	MonoError error;
 	MonoArray *arr;
 	gint32 keylen, i;
 
 	keylen=mono_string_length (source);
 	
-	arr=mono_array_new (mono_domain_get (), mono_get_byte_class (),
-			    keylen);
+	arr=mono_array_new_checked (mono_domain_get (), mono_get_byte_class (),
+				    keylen, &error);
+	if (mono_error_set_pending_exception (&error))
+		return;
+
 	for(i=0; i<keylen; i++) {
 		mono_array_set (arr, guint8, i, mono_string_chars (source)[i]);
 	}

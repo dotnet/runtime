@@ -1140,7 +1140,7 @@ load_agent (MonoDomain *domain, char *desc)
 
 	method = mono_get_method_checked (image, entry, NULL, NULL, &error);
 	if (method == NULL){
-		g_print ("The entry point method of assembly '%s' could not be loaded due to %s\n", agent, &error);
+		g_print ("The entry point method of assembly '%s' could not be loaded due to %s\n", agent, mono_error_get_message (&error));
 		mono_error_cleanup (&error);
 		g_free (agent);
 		return 1;
@@ -1149,12 +1149,19 @@ load_agent (MonoDomain *domain, char *desc)
 	mono_thread_set_main (mono_thread_current ());
 
 	if (args) {
-		main_args = (MonoArray*)mono_array_new (domain, mono_defaults.string_class, 1);
-		mono_array_set (main_args, MonoString*, 0, mono_string_new (domain, args));
+		main_args = (MonoArray*)mono_array_new_checked (domain, mono_defaults.string_class, 1, &error);
+		if (main_args)
+			mono_array_set (main_args, MonoString*, 0, mono_string_new (domain, args));
 	} else {
-		main_args = (MonoArray*)mono_array_new (domain, mono_defaults.string_class, 0);
+		main_args = (MonoArray*)mono_array_new_checked (domain, mono_defaults.string_class, 0, &error);
 	}
-
+	if (!main_args) {
+		g_print ("Could not allocate array for main args of assembly '%s' due to %s\n", agent, mono_error_get_message (&error));
+		mono_error_cleanup (&error);
+		g_free (agent);
+		return 1;
+	}
+	
 	g_free (agent);
 
 	pa [0] = main_args;

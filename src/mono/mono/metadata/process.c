@@ -507,7 +507,9 @@ ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject *this_obj, 
 	}
 
 	count = module_count + assembly_count; 
-	temp_arr = mono_array_new (mono_domain_get (), mono_class_get_process_module_class (), count);
+	temp_arr = mono_array_new_checked (mono_domain_get (), mono_class_get_process_module_class (), count, &error);
+	if (mono_error_set_pending_exception (&error))
+		return NULL;
 
 	for (i = 0; i < module_count; i++) {
 		if (GetModuleBaseName (process, mods[i], modname, MAX_PATH) &&
@@ -539,7 +541,9 @@ ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject *this_obj, 
 		arr = temp_arr;
 	} else {
 		/* shorter version of the array */
-		arr = mono_array_new (mono_domain_get (), mono_class_get_process_module_class (), num_added);
+		arr = mono_array_new_checked (mono_domain_get (), mono_class_get_process_module_class (), num_added, &error);
+		if (mono_error_set_pending_exception (&error))
+			return NULL;
 
 		for (i = 0; i < num_added; i++)
 			mono_array_setref (arr, i, mono_array_get (temp_arr, MonoObject*, i));
@@ -850,6 +854,7 @@ MonoArray *
 ves_icall_System_Diagnostics_Process_GetProcesses_internal (void)
 {
 #if !defined(HOST_WIN32)
+	MonoError error;
 	MonoArray *procs;
 	gpointer *pidarray;
 	int i, count;
@@ -859,7 +864,11 @@ ves_icall_System_Diagnostics_Process_GetProcesses_internal (void)
 		mono_set_pending_exception (mono_get_exception_not_supported ("This system does not support EnumProcesses"));
 		return NULL;
 	}
-	procs = mono_array_new (mono_domain_get (), mono_get_int32_class (), count);
+	procs = mono_array_new_checked (mono_domain_get (), mono_get_int32_class (), count, &error);
+	if (mono_error_set_pending_exception (&error)) {
+		g_free (pidarray);
+		return NULL;
+	}
 	if (sizeof (guint32) == sizeof (gpointer)) {
 		memcpy (mono_array_addr (procs, guint32, 0), pidarray, count * sizeof (gint32));
 	} else {
@@ -870,6 +879,7 @@ ves_icall_System_Diagnostics_Process_GetProcesses_internal (void)
 
 	return procs;
 #else
+	MonoError error;
 	MonoArray *procs;
 	gboolean ret;
 	DWORD needed;
@@ -897,7 +907,12 @@ ves_icall_System_Diagnostics_Process_GetProcesses_internal (void)
 	} while (TRUE);
 
 	count = needed / sizeof (guint32);
-	procs = mono_array_new (mono_domain_get (), mono_get_int32_class (), count);
+	procs = mono_array_new_checked (mono_domain_get (), mono_get_int32_class (), count, &error);
+	if (mono_error_set_pending_exception (&error)) {
+		g_free (pids);
+		return NULL;
+	}
+
 	memcpy (mono_array_addr (procs, guint32, 0), pids, needed);
 	g_free (pids);
 	pids = NULL;

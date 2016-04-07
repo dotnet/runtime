@@ -4050,7 +4050,7 @@ register_icalls (void)
 	register_icall (mono_helper_stelem_ref_check, "mono_helper_stelem_ref_check", "void object object", FALSE);
 	register_icall (ves_icall_object_new, "ves_icall_object_new", "object ptr ptr", FALSE);
 	register_icall (ves_icall_object_new_specific, "ves_icall_object_new_specific", "object ptr", FALSE);
-	register_icall (mono_array_new, "mono_array_new", "object ptr ptr int32", FALSE);
+	register_icall (ves_icall_array_new, "ves_icall_array_new", "object ptr ptr int32", FALSE);
 	register_icall (ves_icall_array_new_specific, "ves_icall_array_new_specific", "object ptr int32", FALSE);
 	register_icall (ves_icall_runtime_class_init, "ves_icall_runtime_class_init", "void ptr", FALSE);
 	register_icall (mono_ldftn, "mono_ldftn", "ptr ptr", FALSE);

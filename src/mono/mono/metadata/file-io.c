@@ -394,31 +394,38 @@ MonoArray *
 ves_icall_System_IO_MonoIO_GetFileSystemEntries (MonoString *path,
 						 MonoString *path_with_pattern,
 						 gint attrs, gint mask,
-						 gint32 *error)
+						 gint32 *ioerror)
 {
+	MonoError error;
 	MonoDomain *domain = mono_domain_get ();
 	MonoArray *result;
 	int i;
 	GPtrArray *names;
 	
-	*error = ERROR_SUCCESS;
+	*ioerror = ERROR_SUCCESS;
 
 	MONO_PREPARE_BLOCKING;
-	names = get_filesystem_entries (mono_string_chars (path), mono_string_chars (path_with_pattern), attrs, mask, error);
+	names = get_filesystem_entries (mono_string_chars (path), mono_string_chars (path_with_pattern), attrs, mask, ioerror);
 	MONO_FINISH_BLOCKING;
 
 	if (!names) {
 		// If there's no array and no error, then return an empty array.
-		if (*error == ERROR_SUCCESS)
-			return mono_array_new (domain, mono_defaults.string_class, 0);
+		if (*ioerror == ERROR_SUCCESS) {
+			MonoArray *arr = mono_array_new_checked (domain, mono_defaults.string_class, 0, &error);
+			mono_error_set_pending_exception (&error);
+			return arr;
+		}
 		return NULL;
 	}
 
-	result = mono_array_new (domain, mono_defaults.string_class, names->len);
+	result = mono_array_new_checked (domain, mono_defaults.string_class, names->len, &error);
+	if (mono_error_set_pending_exception (&error))
+		goto leave;
 	for (i = 0; i < names->len; i++) {
 		mono_array_setref (result, i, mono_string_new (domain, (const char *)g_ptr_array_index (names, i)));
 		g_free (g_ptr_array_index (names, i));
 	}
+leave:
 	g_ptr_array_free (names, TRUE);
 	return result;
 }
@@ -1168,13 +1175,16 @@ invalid_path_chars [] = {
 MonoArray *
 ves_icall_System_IO_MonoIO_get_InvalidPathChars ()
 {
+	MonoError error;
 	MonoArray *chars;
 	MonoDomain *domain;
 	int i, n;
 
 	domain = mono_domain_get ();
 	n = sizeof (invalid_path_chars) / sizeof (gunichar2);
-	chars = mono_array_new (domain, mono_defaults.char_class, n);
+	chars = mono_array_new_checked (domain, mono_defaults.char_class, n, &error);
+	if (mono_error_set_pending_exception (&error))
+		return NULL;
 
 	for (i = 0; i < n; ++ i)
 		mono_array_set (chars, gunichar2, i, invalid_path_chars [i]);

@@ -989,7 +989,9 @@ ves_icall_System_AppDomain_GetAssemblies (MonoAppDomain *ad, MonoBoolean refonly
 	}
 	mono_domain_assemblies_unlock (domain);
 
-	res = mono_array_new (domain, mono_class_get_assembly_class (), assemblies->len);
+	res = mono_array_new_checked (domain, mono_class_get_assembly_class (), assemblies->len, &error);
+	if (!is_ok (&error))
+		goto leave;
 	for (i = 0; i < assemblies->len; ++i) {
 		ass = (MonoAssembly *)g_ptr_array_index (assemblies, i);
 		MonoReflectionAssembly *ass_obj = mono_assembly_get_object_checked (domain, ass, &error);
@@ -2206,8 +2208,10 @@ ves_icall_System_AppDomain_ExecuteAssembly (MonoAppDomain *ad,
 	if (!method)
 		g_error ("No entry point method found in %s due to %s", image->name, mono_error_get_message (&error));
 
-	if (!args)
-		args = (MonoArray *) mono_array_new (ad->data, mono_defaults.string_class, 0);
+	if (!args) {
+		args = (MonoArray *) mono_array_new_checked (ad->data, mono_defaults.string_class, 0, &error);
+		mono_error_assert_ok (&error);
+	}
 
 	return mono_runtime_exec_main (method, (MonoArray *)args, NULL);
 }

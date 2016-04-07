@@ -1430,10 +1430,16 @@ gboolean
 mono_array_calc_byte_len (MonoClass *klass, uintptr_t len, uintptr_t *res);
 
 MonoArray*
+mono_array_new_checked (MonoDomain *domain, MonoClass *eclass, uintptr_t n, MonoError *error);
+
+MonoArray*
 mono_array_new_full_checked (MonoDomain *domain, MonoClass *array_class, uintptr_t *lengths, intptr_t *lower_bounds, MonoError *error);
 
 MonoArray*
 mono_array_new_specific_checked (MonoVTable *vtable, uintptr_t n, MonoError *error);
+
+MonoArray*
+ves_icall_array_new (MonoDomain *domain, MonoClass *eclass, uintptr_t n);
 
 MonoArray*
 ves_icall_array_new_specific (MonoVTable *vtable, uintptr_t n);
@@ -1649,7 +1655,7 @@ gboolean
 mono_error_set_pending_exception (MonoError *error);
 
 MonoArray *
-mono_glist_to_array (GList *list, MonoClass *eclass);
+mono_glist_to_array (GList *list, MonoClass *eclass, MonoError *error);
 
 MonoObject *
 mono_object_new_checked (MonoDomain *domain, MonoClass *klass, MonoError *error);
@@ -1690,6 +1696,9 @@ mono_runtime_try_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 MonoObject*
 mono_runtime_invoke_checked (MonoMethod *method, void *obj, void **params, MonoError *error);
 
+
+MonoArray*
+mono_runtime_get_main_args_checked (MonoError *error);
 
 #endif /* __MONO_OBJECT_INTERNALS_H__ */
 
