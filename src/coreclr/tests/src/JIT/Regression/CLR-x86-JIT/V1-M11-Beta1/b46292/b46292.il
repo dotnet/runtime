@@ -22,7 +22,6 @@
 .class private auto ansi Mod1
        extends [mscorlib]System.Object
 {
-  .custom instance void ['mscorlib']Microsoft.VisualBasic.Globals$StandardModuleAttribute::.ctor() = ( 01 00 00 00 ) 
   .method public static void Main() il managed
   {
     // Code size       26 (0x1a)
@@ -76,7 +75,6 @@
 .class private auto ansi _vbProject
        extends [mscorlib]System.Object
 {
-  .custom instance void ['mscorlib']Microsoft.VisualBasic.Globals$StandardModuleAttribute::.ctor() = ( 01 00 00 00 ) 
   .method public static int32  _main(class [mscorlib]System.String[] _s) il managed
   {
     .entrypoint
