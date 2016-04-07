@@ -229,10 +229,9 @@ def static getJobName(def configuration, def architecture, def os, def scenario,
 }
 
 static void addEmailPublisher(def job, def recipient) {
-    def recipients = '$DEFAULT_RECIPIENTS, ' + recipient
     job.with {
         publishers {
-            extendedEmail(recipients, '$DEFAULT_SUBJECT', '$DEFAULT_CONTENT') {
+            extendedEmail(recipient, '$DEFAULT_SUBJECT', '$DEFAULT_CONTENT') {
                 trigger('Aborted', '$PROJECT_DEFAULT_SUBJECT', '$PROJECT_DEFAULT_CONTENT', null, true, true, true, true)
                 trigger('Failure', '$PROJECT_DEFAULT_SUBJECT', '$PROJECT_DEFAULT_CONTENT', null, true, true, true, true)
             }
@@ -273,7 +272,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     case 'arm64':
                         Utilities.addGithubPushTrigger(job)
                         if (os == 'Windows_NT') {
-                            addEmailPublisher(job, 'cc:dotnetonarm64@microsoft.com')
+                            addEmailPublisher(job, 'to:dotnetonarm64@microsoft.com')
                         }
                         break
                     default:
@@ -775,6 +774,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
 					        }
                             Utilities.addPrivateGithubPRTriggerForBranch(job, branch, contextString,
                             "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}.*", null, ['erozenfeld', 'kyulee1', 'pgavlin', 'russellhadley', 'swaroop-sridhar', 'JosephTremoulet', 'jashook', 'RussKeldorph', 'gkhanna79', 'briansull', 'cmckinsey', 'jkotas', 'ramarag', 'markwilkie', 'rahku', 'tzwlai', 'weshaggard', 'LLITCHEV'])
+                            addEmailPublisher(job, 'to:dotnetonarm64@microsoft.com')
                             break
 					}
 				    break
