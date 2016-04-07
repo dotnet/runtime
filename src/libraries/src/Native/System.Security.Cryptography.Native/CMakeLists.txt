@@ -41,6 +41,7 @@ set(NATIVECRYPTO_SOURCES
 add_library(System.Security.Cryptography.Native
     SHARED
     ${NATIVECRYPTO_SOURCES}
+    ${VERSION_FILE_PATH}
 )
 
 # Disable the "lib" prefix.
