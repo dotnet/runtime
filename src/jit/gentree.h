@@ -184,7 +184,7 @@ struct FieldSeqNode
 // This class canonicalizes field sequences.
 class FieldSeqStore
 {
-    typedef SimplerHashTable<FieldSeqNode, /*KeyFuncs*/FieldSeqNode, FieldSeqNode*, DefaultSimplerHashBehavior> FieldSeqNodeCanonMap;
+    typedef SimplerHashTable<FieldSeqNode, /*KeyFuncs*/FieldSeqNode, FieldSeqNode*, JitSimplerHashBehavior> FieldSeqNodeCanonMap;
 
     IAllocator*           m_alloc;
     FieldSeqNodeCanonMap* m_canonMap;
