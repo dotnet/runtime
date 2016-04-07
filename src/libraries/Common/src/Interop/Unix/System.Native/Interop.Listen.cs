@@ -9,24 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_Listen")]
-        private static extern Error DangerousListen(int socket, int backlog);
-
-        internal static Error Listen(SafeHandle socket, int backlog)
-        {
-            bool release = false;
-            try
-            {
-                socket.DangerousAddRef(ref release);
-                return DangerousListen((int)socket.DangerousGetHandle(), backlog);
-            }
-            finally
-            {
-                if (release)
-                {
-                    socket.DangerousRelease();
-                }
-            }
-        }
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_Listen_IntPtr")]
+        internal static extern Error Listen(SafeHandle socket, int backlog);
     }
 }

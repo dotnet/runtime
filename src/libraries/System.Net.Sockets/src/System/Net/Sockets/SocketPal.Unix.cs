@@ -357,9 +357,9 @@ namespace System.Net.Sockets
             return checked((int)received);
         }
 
-        public static unsafe bool TryCompleteAccept(SafeCloseSocket socket, byte[] socketAddress, ref int socketAddressLen, out int acceptedFd, out SocketError errorCode)
+        public static unsafe bool TryCompleteAccept(SafeCloseSocket socket, byte[] socketAddress, ref int socketAddressLen, out IntPtr acceptedFd, out SocketError errorCode)
         {
-            int fd;
+            IntPtr fd;
             Interop.Error errno;
             int sockAddrLen = socketAddressLen;
             fixed (byte* rawSocketAddress = socketAddress)
@@ -372,14 +372,14 @@ namespace System.Net.Sockets
                 {
                     // The socket was closed, or is closing.
                     errorCode = SocketError.OperationAborted;
-                    acceptedFd = -1;
+                    acceptedFd = (IntPtr)(-1);
                     return true;
                 }
             }
 
             if (errno == Interop.Error.SUCCESS)
             {
-                Debug.Assert(fd != -1, "Expected fd != -1");
+                Debug.Assert(fd != (IntPtr)(-1), "Expected fd != -1");
 
                 socketAddressLen = sockAddrLen;
                 errorCode = SocketError.Success;
@@ -388,7 +388,7 @@ namespace System.Net.Sockets
                 return true;
             }
 
-            acceptedFd = -1;
+            acceptedFd = (IntPtr)(-1);
             if (errno != Interop.Error.EAGAIN && errno != Interop.Error.EWOULDBLOCK)
             {
                 errorCode = GetSocketErrorForErrorCode(errno);
