@@ -1,6 +1,6 @@
 {
   "frameworks": {
-    "netstandard1.3": {
+    "netstandard1.5": {
       "dependencies": {
         "Microsoft.NETCore.Platforms": "1.0.1-rc3-24007-00",
         "System.Collections": "4.0.10",
@@ -53,7 +53,7 @@
         "System.Threading.Tasks": "4.0.10"
       }
     },
-    "net46": {
+    "net462": {
       "dependencies": {
         "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
       }
