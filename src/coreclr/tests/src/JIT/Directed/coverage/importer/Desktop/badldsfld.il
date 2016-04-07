@@ -1,6 +1,6 @@
 
 .assembly extern mscorlib {}
-.assembly badldslfd {.custom instance void [mscorlib]System.Security.SecurityRulesAttribute::.ctor(valuetype [mscorlib]System.Security.SecurityRuleSet) = ( 01 00 01 00 00 ) }
+.assembly badldslfd { }
 .class Test extends [mscorlib]System.Object
 {
 .field int32 i
