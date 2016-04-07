@@ -59,6 +59,20 @@ pal::string_t fx_ver_t::as_str() const
     return stream.str();
 }
 
+pal::string_t fx_ver_t::prerelease_glob() const
+{
+    pal::stringstream_t stream;
+    stream << m_major << _X(".") << m_minor << _X(".") << m_patch << _X("-*");
+    return stream.str();
+}
+
+pal::string_t fx_ver_t::patch_glob() const
+{
+    pal::stringstream_t stream;
+    stream << m_major << _X(".") << m_minor << _X(".*");
+    return stream.str();
+}
+
 /* static */
 int fx_ver_t::compare(const fx_ver_t&a, const fx_ver_t& b)
 {
