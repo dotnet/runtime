@@ -3516,7 +3516,7 @@ count_queue (MonoLockFreeQueue *queue)
 
 	while ((node = mono_lock_free_queue_dequeue (queue))) {
 		count++;
-		mono_lock_free_queue_node_free (node);
+		mono_thread_hazardous_try_free (node, free);
 	}
 
 	return count;
@@ -4352,7 +4352,7 @@ handle_writer_queue_entry (MonoProfiler *prof)
 
 		dump_buffer (prof, entry->buffer);
 
-		free (entry);
+		mono_thread_hazardous_try_free (entry, free);
 
 		return TRUE;
 	}
