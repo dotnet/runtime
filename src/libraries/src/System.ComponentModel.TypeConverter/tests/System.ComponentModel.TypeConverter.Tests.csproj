@@ -42,6 +42,8 @@
     <Compile Include="Int32ConverterTests.cs" />
     <Compile Include="Int64ConverterTests.cs" />
     <Compile Include="MemberDescriptorTests.cs" />
+    <Compile Include="DescriptorTestAttribute.cs" />
+    <Compile Include="DescriptorTestComponent.cs" />
     <Compile Include="Mocks\MockEventDescriptor.cs" />
     <Compile Include="Mocks\MockPropertyDescriptor.cs" />
     <Compile Include="MultilineStringConverterTests.cs" />
