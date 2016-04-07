@@ -1234,7 +1234,7 @@ struct TestLabelAndNum
     TestLabelAndNum() : m_tl(TestLabel(0)), m_num(0) {}
 };
 
-typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, TestLabelAndNum, DefaultSimplerHashBehavior> NodeToTestDataMap;
+typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, TestLabelAndNum, JitSimplerHashBehavior> NodeToTestDataMap;
 
 
 //XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -1598,7 +1598,7 @@ public:
     flowList*           BlockPredsWithEH(BasicBlock* blk);
 
     // This table is useful for memoization of the method above.
-    typedef SimplerHashTable<BasicBlock*, PtrKeyFuncs<BasicBlock>, flowList*, DefaultSimplerHashBehavior> BlockToFlowListMap;
+    typedef SimplerHashTable<BasicBlock*, PtrKeyFuncs<BasicBlock>, flowList*, JitSimplerHashBehavior> BlockToFlowListMap;
     BlockToFlowListMap* m_blockToEHPreds;
     BlockToFlowListMap* GetBlockToEHPreds()
     {
@@ -3553,7 +3553,7 @@ public :
     // "x", and a def of a new SSA name for "x".  The tree only has one local variable for "x", so it has to choose whether
     // to treat that as the use or def.  It chooses the "use", and thus the old SSA name.  This map allows us to record/recover
     // the "def" SSA number, given the lcl var node for "x" in such a tree.
-    typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, unsigned, DefaultSimplerHashBehavior> NodeToUnsignedMap;
+    typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, unsigned, JitSimplerHashBehavior> NodeToUnsignedMap;
     NodeToUnsignedMap*  m_opAsgnVarDefSsaNums;
     NodeToUnsignedMap*  GetOpAsgnVarDefSsaNums()
     {
@@ -3615,7 +3615,7 @@ public :
         {}
 
     };
-    typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, IndirectAssignmentAnnotation*, DefaultSimplerHashBehavior> NodeToIndirAssignMap;
+    typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, IndirectAssignmentAnnotation*, JitSimplerHashBehavior> NodeToIndirAssignMap;
     NodeToIndirAssignMap* m_indirAssignMap;
     NodeToIndirAssignMap* GetIndirAssignMap()
     {
@@ -3939,7 +3939,7 @@ public:
         void UpdateTarget(IAllocator* alloc, BasicBlock* switchBlk, BasicBlock* from, BasicBlock* to);
     };
 
-    typedef SimplerHashTable<BasicBlock*, PtrKeyFuncs<BasicBlock>, SwitchUniqueSuccSet, DefaultSimplerHashBehavior> BlockToSwitchDescMap;
+    typedef SimplerHashTable<BasicBlock*, PtrKeyFuncs<BasicBlock>, SwitchUniqueSuccSet, JitSimplerHashBehavior> BlockToSwitchDescMap;
 
     private:
     // Maps BasicBlock*'s that end in switch statements to SwitchUniqueSuccSets that allow
@@ -4748,7 +4748,7 @@ protected:
     void                optHoistLoopCode();
 
     // To represent sets of VN's that have already been hoisted in outer loops.
-    typedef SimplerHashTable<ValueNum, SmallPrimitiveKeyFuncs<ValueNum>, bool, DefaultSimplerHashBehavior> VNToBoolMap;
+    typedef SimplerHashTable<ValueNum, SmallPrimitiveKeyFuncs<ValueNum>, bool, JitSimplerHashBehavior> VNToBoolMap;
     typedef VNToBoolMap VNSet;
 
     struct LoopHoistContext
@@ -4967,11 +4967,11 @@ public:
         int                 lpLoopVarFPCount;           // The register count for the FP LclVars that are read/written inside this loop
         int                 lpVarInOutFPCount;          // The register count for the FP LclVars that are alive inside or accross this loop
 
-        typedef SimplerHashTable<CORINFO_FIELD_HANDLE, PtrKeyFuncs<struct CORINFO_FIELD_STRUCT_>, bool, DefaultSimplerHashBehavior> FieldHandleSet;
+        typedef SimplerHashTable<CORINFO_FIELD_HANDLE, PtrKeyFuncs<struct CORINFO_FIELD_STRUCT_>, bool, JitSimplerHashBehavior> FieldHandleSet;
         FieldHandleSet*     lpFieldsModified;           // This has entries (mappings to "true") for all static field and object instance fields modified
                                                         // in the loop.
         
-        typedef SimplerHashTable<CORINFO_CLASS_HANDLE, PtrKeyFuncs<struct CORINFO_CLASS_STRUCT_>, bool, DefaultSimplerHashBehavior> ClassHandleSet;
+        typedef SimplerHashTable<CORINFO_CLASS_HANDLE, PtrKeyFuncs<struct CORINFO_CLASS_STRUCT_>, bool, JitSimplerHashBehavior> ClassHandleSet;
         ClassHandleSet*     lpArrayElemTypesModified;   // Bits set indicate the set of sz array element types such that arrays of that type are modified
                                                         // in the loop.
 
@@ -5406,7 +5406,7 @@ protected :
 public:
     // VN based copy propagation.
     typedef ArrayStack<GenTreePtr> GenTreePtrStack;
-    typedef SimplerHashTable<unsigned, SmallPrimitiveKeyFuncs<unsigned>, GenTreePtrStack*, DefaultSimplerHashBehavior> LclNumToGenTreePtrStack;
+    typedef SimplerHashTable<unsigned, SmallPrimitiveKeyFuncs<unsigned>, GenTreePtrStack*, JitSimplerHashBehavior> LclNumToGenTreePtrStack;
 
     // Kill set to track variables with intervening definitions.
     VARSET_TP optCopyPropKillSet;
@@ -5737,7 +5737,7 @@ public :
         return optAssertionCount;
     }
     ASSERT_TP* bbJtrueAssertionOut;
-    typedef SimplerHashTable<ValueNum, SmallPrimitiveKeyFuncs<ValueNum>, ASSERT_TP, DefaultSimplerHashBehavior> ValueNumToAssertsMap;
+    typedef SimplerHashTable<ValueNum, SmallPrimitiveKeyFuncs<ValueNum>, ASSERT_TP, JitSimplerHashBehavior> ValueNumToAssertsMap;
     ValueNumToAssertsMap* optValueNumToAsserts;
 
     static const AssertionIndex NO_ASSERTION_INDEX = 0;
@@ -6573,7 +6573,7 @@ public :
     // whose return type is other than TYP_VOID. 2) GT_CALL node is a frequently used
     // structure and IL offset is needed only when generating debuggable code. Therefore
     // it is desirable to avoid memory size penalty in retail scenarios.
-    typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, IL_OFFSETX, DefaultSimplerHashBehavior> CallSiteILOffsetTable;
+    typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, IL_OFFSETX, JitSimplerHashBehavior> CallSiteILOffsetTable;
     CallSiteILOffsetTable *  genCallSite2ILOffsetMap;
 #endif // DEBUGGING_SUPPORT
 
@@ -8153,7 +8153,7 @@ public :
     // Max value of scope count for which we would use linear search; for larger values we would use hashtable lookup.
     static const unsigned MAX_LINEAR_FIND_LCL_SCOPELIST = 32;
 
-    typedef SimplerHashTable<unsigned, SmallPrimitiveKeyFuncs<unsigned>, VarScopeMapInfo*, DefaultSimplerHashBehavior> VarNumToScopeDscMap;
+    typedef SimplerHashTable<unsigned, SmallPrimitiveKeyFuncs<unsigned>, VarScopeMapInfo*, JitSimplerHashBehavior> VarNumToScopeDscMap;
 
     // Map to keep variables' scope indexed by varNum containing it's scope dscs at the index.
     VarNumToScopeDscMap*  compVarScopeMap;
@@ -8688,7 +8688,7 @@ public:
         return compRoot->m_nodeTestData;
     }
 
-    typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, int, DefaultSimplerHashBehavior> NodeToIntMap;
+    typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, int, JitSimplerHashBehavior> NodeToIntMap;
     
     // Returns the set (i.e., the domain of the result map) of nodes that are keys in m_nodeTestData, and
     // currently occur in the AST graph.
@@ -8724,7 +8724,7 @@ public:
         return compRoot->m_fieldSeqStore;
     }
 
-    typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, FieldSeqNode*, DefaultSimplerHashBehavior> NodeToFieldSeqMap;
+    typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, FieldSeqNode*, JitSimplerHashBehavior> NodeToFieldSeqMap;
 
     // Some nodes of "TYP_BYREF" or "TYP_I_IMPL" actually represent the address of a field within a struct, but since the offset of
     // the field is zero, there's no "GT_ADD" node.  We normally attach a field sequence to the constant that is
@@ -8757,7 +8757,7 @@ public:
     void fgAddFieldSeqForZeroOffset(GenTreePtr op1, FieldSeqNode* fieldSeq);
 
 
-    typedef SimplerHashTable<const GenTree*, PtrKeyFuncs<GenTree>, ArrayInfo, DefaultSimplerHashBehavior> NodeToArrayInfoMap;
+    typedef SimplerHashTable<const GenTree*, PtrKeyFuncs<GenTree>, ArrayInfo, JitSimplerHashBehavior> NodeToArrayInfoMap;
     NodeToArrayInfoMap* m_arrayInfoMap;
 
     NodeToArrayInfoMap* GetArrayInfoMap()
