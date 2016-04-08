@@ -22,7 +22,7 @@ void get_runtime_config_paths_from_app(const pal::string_t& app, pal::string_t* 
     trace::verbose(_X("Runtime config is cfg=%s dev=%s"), json_path.c_str(), dev_json_path.c_str());
 
     dev_cfg->assign(dev_json_path);
-    cfg -> assign(json_path);
+    cfg->assign(json_path);
 }
 
 void get_runtime_config_paths_from_arg(const pal::string_t& arg, pal::string_t* cfg, pal::string_t* dev_cfg)
@@ -41,29 +41,11 @@ void get_runtime_config_paths_from_arg(const pal::string_t& arg, pal::string_t* 
     trace::verbose(_X("Runtime config is cfg=%s dev=%s"), json_path.c_str(), dev_json_path.c_str());
 
     dev_cfg->assign(dev_json_path);
-    cfg -> assign(json_path);
+    cfg->assign(json_path);
 }
 
-host_mode_t detect_operating_mode(const int argc, const pal::char_t* argv[], pal::string_t* p_own_dir)
+host_mode_t detect_operating_mode(const pal::string_t& own_dir, const pal::string_t& own_dll, const pal::string_t& own_name)
 {
-    pal::string_t own_path;
-    if (!pal::get_own_executable_path(&own_path) || !pal::realpath(&own_path))
-    {
-        trace::error(_X("Failed to locate current executable"));
-        return host_mode_t::invalid;
-    }
-
-    pal::string_t own_name = get_filename(own_path);
-    pal::string_t own_dir = get_directory(own_path);
-    if (p_own_dir)
-    {
-        p_own_dir->assign(own_dir);
-    }
-
-    pal::string_t own_dll_filename = get_executable(own_name) + _X(".dll");
-    pal::string_t own_dll = own_dir;
-    append_path(&own_dll, own_dll_filename.c_str());
-    trace::info(_X("Own DLL path=[%s]"), own_dll.c_str());
     if (coreclr_exists_in_dir(own_dir) || pal::file_exists(own_dll))
     {
         pal::string_t own_deps_json = own_dir;
@@ -116,7 +98,6 @@ void try_patch_roll_forward_in_dir(const pal::string_t& cur_dir, const fx_ver_t&
         trace::verbose(_X("Patch roll forwarded [%s] -> [%s] in [%s]"), start_str.c_str(), max_str->c_str(), path.c_str());
     }
 }
-
 
 void try_prerelease_roll_forward_in_dir(const pal::string_t& cur_dir, const fx_ver_t& start_ver, pal::string_t* max_str)
 {

@@ -1,6 +1,9 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#ifndef __RUNTIME_CONFIG_H__
+#define __RUNTIME_CONFIG_H__
+
 #include <list>
 
 #include "pal.h"
@@ -10,11 +13,6 @@ typedef web::json::value json_value;
 
 class runtime_config_t
 {
-    // // WARNING // WARNING // WARNING // WARNING // WARNING // WARNING //
-    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    // !! If you change this class layout increment the                  !!
-    // !!        corehost_init_t::s_version field;                       !!
-    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 public:
     runtime_config_t(const pal::string_t& path, const pal::string_t& dev_path);
     bool is_valid() { return m_valid; }
@@ -28,7 +26,7 @@ public:
     bool get_prerelease_roll_fwd() const;
     bool get_portable() const;
     bool parse_opts(const json_value& opts);
-    void config_kv(std::vector<std::string>*, std::vector<std::string>*) const;
+    void config_kv(std::vector<pal::string_t>*, std::vector<pal::string_t>*) const;
 
 private:
     bool ensure_parsed();
@@ -48,3 +46,4 @@ private:
     bool m_portable;
     bool m_valid;
 };
+#endif // __RUNTIME_CONFIG_H__

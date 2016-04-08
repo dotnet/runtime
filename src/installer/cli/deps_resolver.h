@@ -24,20 +24,20 @@ struct probe_paths_t
 class deps_resolver_t
 {
 public:
-    deps_resolver_t(const corehost_init_t* init, const runtime_config_t& config, const arguments_t& args)
+    deps_resolver_t(const hostpolicy_init_t& init, const arguments_t& args)
         // Important: FX dir should come from "init" than "config",
         //            since the host could be launching from FX dir.
-        : m_fx_dir(init->fx_dir())
+        : m_fx_dir(init.fx_dir)
         , m_app_dir(args.app_dir)
         , m_coreclr_index(-1)
-        , m_portable(config.get_portable())
+        , m_portable(init.is_portable)
         , m_deps(nullptr)
         , m_fx_deps(nullptr)
     {
         m_deps_file = args.deps_path;
         if (m_portable)
         {
-            m_fx_deps_file = get_fx_deps(m_fx_dir, config.get_fx_name());
+            m_fx_deps_file = get_fx_deps(m_fx_dir, init.fx_name);
             trace::verbose(_X("Using %s FX deps file"), m_fx_deps_file.c_str());
             trace::verbose(_X("Using %s deps file"), m_deps_file.c_str());
             m_fx_deps = std::unique_ptr<deps_json_t>(new deps_json_t(false, m_fx_deps_file));
@@ -49,14 +49,13 @@ public:
         }
 
         setup_additional_probes(args.probe_paths);
-        setup_probe_config(init, config, args);
+        setup_probe_config(init, args);
     }
 
     bool valid() { return m_deps->is_valid() && (!m_portable || m_fx_deps->is_valid());  }
 
     void setup_probe_config(
-        const corehost_init_t* init,
-        const runtime_config_t& config,
+        const hostpolicy_init_t& init,
         const arguments_t& args);
 
     void setup_additional_probes(const std::vector<pal::string_t>& probe_paths);
