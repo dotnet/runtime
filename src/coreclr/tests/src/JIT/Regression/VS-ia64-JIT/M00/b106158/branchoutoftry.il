@@ -14,8 +14,6 @@
 // Metadata version: v1.1.904.chk
 .assembly extern mscorlib
 {
-  .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
-  .ver 1:1:3102:0
 }
 .assembly testit
 {

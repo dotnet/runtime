@@ -480,11 +480,11 @@ public:
         Location();
     };   
 
-    typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, bool, DefaultSimplerHashBehavior> OverflowMap;
-    typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, Range*, DefaultSimplerHashBehavior> RangeMap;
-    typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, BasicBlock*, DefaultSimplerHashBehavior> SearchPath;
-    typedef SimplerHashTable<INT64, LargePrimitiveKeyFuncs<INT64>, Location*, DefaultSimplerHashBehavior> VarToLocMap;
-    typedef SimplerHashTable<INT64, LargePrimitiveKeyFuncs<INT64>, ExpandArrayStack<Location*>*, DefaultSimplerHashBehavior> VarToLocArrayMap;
+    typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, bool, JitSimplerHashBehavior> OverflowMap;
+    typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, Range*, JitSimplerHashBehavior> RangeMap;
+    typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, BasicBlock*, JitSimplerHashBehavior> SearchPath;
+    typedef SimplerHashTable<INT64, LargePrimitiveKeyFuncs<INT64>, Location*, JitSimplerHashBehavior> VarToLocMap;
+    typedef SimplerHashTable<INT64, LargePrimitiveKeyFuncs<INT64>, ExpandArrayStack<Location*>*, JitSimplerHashBehavior> VarToLocArrayMap;
 
     // Generate a hashcode unique for this ssa var.
     UINT64 HashCode(unsigned lclNum, unsigned ssaNum);

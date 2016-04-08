@@ -181,6 +181,8 @@
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)Tools\Versioning\GenerateVersionInfo.targets"/>
+  <!-- Override versioning targets -->
+  <Import Condition="Exists('$(ToolsDir)versioning.targets')" Project="$(ToolsDir)versioning.targets" />
   <Import Project="GenerateSplitStringResources.targets"/>
   <Import Project="GenerateCompilerResponseFile.targets"/>
   <Import Project="$(PostProcessingToolsPath)" />

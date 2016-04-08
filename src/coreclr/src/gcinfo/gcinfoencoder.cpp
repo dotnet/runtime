@@ -294,7 +294,28 @@ public:
     }
 };
 
-typedef SimplerHashTable< const BitArray *, LiveStateFuncs, UINT32, DefaultSimplerHashBehavior > LiveStateHashTable;
+class GcInfoNoMemoryException
+{
+};
+
+class GcInfoHashBehavior
+{
+public:
+    static const unsigned s_growth_factor_numerator = 3;
+    static const unsigned s_growth_factor_denominator = 2;
+
+    static const unsigned s_density_factor_numerator = 3;
+    static const unsigned s_density_factor_denominator = 4;
+
+    static const unsigned s_minimum_allocation = 7;
+
+    inline static void DECLSPEC_NORETURN NoMemory()
+    {
+        throw GcInfoNoMemoryException();
+    }
+};
+
+typedef SimplerHashTable<const BitArray *, LiveStateFuncs, UINT32, GcInfoHashBehavior> LiveStateHashTable;
 
 #ifdef MEASURE_GCINFO
 // Fi = fully-interruptible; we count any method that has one or more interruptible ranges
@@ -412,7 +433,8 @@ inline BOOL IsEssential(EE_ILEXCEPTION_CLAUSE *pClause)
 GcInfoEncoder::GcInfoEncoder(
             ICorJitInfo*                pCorJitInfo,
             CORINFO_METHOD_INFO*        pMethodInfo,
-            IAllocator*                 pJitAllocator
+            IAllocator*                 pJitAllocator,
+            NoMemoryFunction            pNoMem
             )
     :   m_Info1( pJitAllocator ),
         m_Info2( pJitAllocator ),
@@ -430,10 +452,12 @@ GcInfoEncoder::GcInfoEncoder(
     _ASSERTE( pCorJitInfo != NULL );
     _ASSERTE( pMethodInfo != NULL );
     _ASSERTE( pJitAllocator != NULL );
+    _ASSERTE( pNoMem != NULL );
 
     m_pCorJitInfo = pCorJitInfo;
     m_pMethodInfo = pMethodInfo;
     m_pAllocator = pJitAllocator;
+    m_pNoMem = pNoMem;
 
 #ifdef _DEBUG
     CORINFO_METHOD_HANDLE methodHandle = pMethodInfo->ftn;
@@ -785,58 +809,52 @@ void GcInfoEncoder::SetSizeOfStackOutgoingAndScratchArea( UINT32 size )
 }
 #endif // FIXED_STACK_PARAMETER_SCRATCH_AREA
 
-class SlotTableIndexesQuickSort : public CQuickSort<UINT32>
+
+struct GcSlotDescAndId
 {
-    GcSlotDesc* m_SlotTable;
-    
-public:
-    SlotTableIndexesQuickSort(
-        GcSlotDesc*   slotTable,
-        UINT32*   pBase,
-        size_t               count
-        )
-        : CQuickSort<UINT32>( pBase, count ), m_SlotTable(slotTable)
-    {}
-
-    int Compare( UINT32* a, UINT32* b )
-    {
-        GcSlotDesc* pFirst = &(m_SlotTable[*a]);
-        GcSlotDesc* pSecond = &(m_SlotTable[*b]);
-
-        int firstFlags = pFirst->Flags ^ GC_SLOT_UNTRACKED;
-        int secondFlags = pSecond->Flags ^ GC_SLOT_UNTRACKED;
-
-        // All registers come before all stack slots
-        // All untracked come last
-        // Then sort them by flags, ensuring that the least-frequent interior/pinned flag combinations are first
-        // This is accomplished in the comparison of flags, since we encode IsRegister in the highest flag bit
-        // And we XOR the UNTRACKED flag to place them last in the second highest flag bit
-        if( firstFlags > secondFlags ) return -1;
-        if( firstFlags < secondFlags ) return 1;
-        
-        // Then sort them by slot
-        if( pFirst->IsRegister() )
-        {
-            _ASSERTE( pSecond->IsRegister() );
-            if( pFirst->Slot.RegisterNumber < pSecond->Slot.RegisterNumber ) return -1;
-            if( pFirst->Slot.RegisterNumber > pSecond->Slot.RegisterNumber ) return 1;
-        }
-        else
-        {
-            _ASSERTE( !pSecond->IsRegister() );
-            if( pFirst->Slot.Stack.SpOffset < pSecond->Slot.Stack.SpOffset ) return -1;
-            if( pFirst->Slot.Stack.SpOffset > pSecond->Slot.Stack.SpOffset ) return 1;
-
-            // This is arbitrary, but we want to make sure they are considered separate slots
-            if( pFirst->Slot.Stack.Base < pSecond->Slot.Stack.Base ) return -1;
-            if( pFirst->Slot.Stack.Base > pSecond->Slot.Stack.Base ) return 1;
-        }
-
-        // If we get here, the slots are identical
-        _ASSERTE(!"Duplicate slots definitions found in GC information!");
-        return 0;
-    }
+    GcSlotDesc m_SlotDesc;
+    UINT32 m_SlotId;
 };
+
+
+int __cdecl CompareSlotDescAndIdBySlotDesc(const void* p1, const void* p2)
+{
+    const GcSlotDesc* pFirst = &reinterpret_cast<const GcSlotDescAndId*>(p1)->m_SlotDesc;
+    const GcSlotDesc* pSecond = &reinterpret_cast<const GcSlotDescAndId*>(p2)->m_SlotDesc;
+
+    int firstFlags = pFirst->Flags ^ GC_SLOT_UNTRACKED;
+    int secondFlags = pSecond->Flags ^ GC_SLOT_UNTRACKED;
+
+    // All registers come before all stack slots
+    // All untracked come last
+    // Then sort them by flags, ensuring that the least-frequent interior/pinned flag combinations are first
+    // This is accomplished in the comparison of flags, since we encode IsRegister in the highest flag bit
+    // And we XOR the UNTRACKED flag to place them last in the second highest flag bit
+    if( firstFlags > secondFlags ) return -1;
+    if( firstFlags < secondFlags ) return 1;
+    
+    // Then sort them by slot
+    if( pFirst->IsRegister() )
+    {
+        _ASSERTE( pSecond->IsRegister() );
+        if( pFirst->Slot.RegisterNumber < pSecond->Slot.RegisterNumber ) return -1;
+        if( pFirst->Slot.RegisterNumber > pSecond->Slot.RegisterNumber ) return 1;
+    }
+    else
+    {
+        _ASSERTE( !pSecond->IsRegister() );
+        if( pFirst->Slot.Stack.SpOffset < pSecond->Slot.Stack.SpOffset ) return -1;
+        if( pFirst->Slot.Stack.SpOffset > pSecond->Slot.Stack.SpOffset ) return 1;
+
+        // This is arbitrary, but we want to make sure they are considered separate slots
+        if( pFirst->Slot.Stack.Base < pSecond->Slot.Stack.Base ) return -1;
+        if( pFirst->Slot.Stack.Base > pSecond->Slot.Stack.Base ) return 1;
+    }
+
+    // If we get here, the slots are identical
+    _ASSERTE(!"Duplicate slots definitions found in GC information!");
+    return 0;
+}
 
 
 int __cdecl CompareLifetimeTransitionsByOffsetThenSlot(const void* p1, const void* p2)
@@ -1278,31 +1296,26 @@ void GcInfoEncoder::Build()
     ///////////////////////////////////////////////////////////////////////
 
     {
-        UINT32* sortedSlotIndexes = (UINT32*) m_pAllocator->Alloc(m_NumSlots * sizeof(UINT32));
+        GcSlotDescAndId* sortedSlots = (GcSlotDescAndId*) m_pAllocator->Alloc(m_NumSlots * sizeof(GcSlotDescAndId));
         UINT32* sortOrder = (UINT32*) m_pAllocator->Alloc(m_NumSlots * sizeof(UINT32));
 
         for(UINT32 i = 0; i < m_NumSlots; i++)
         {
-            sortedSlotIndexes[i] = i;
+            sortedSlots[i].m_SlotDesc = m_SlotTable[i];
+            sortedSlots[i].m_SlotId = i;
         }
-        
-        SlotTableIndexesQuickSort slotTableIndexesQuickSort(
-            m_SlotTable,
-            sortedSlotIndexes,
-            m_NumSlots
-            );
-        slotTableIndexesQuickSort.Sort();
+
+        qsort(sortedSlots, m_NumSlots, sizeof(GcSlotDescAndId), CompareSlotDescAndIdBySlotDesc);
 
         for(UINT32 i = 0; i < m_NumSlots; i++)
         {
-            sortOrder[sortedSlotIndexes[i]] = i;
+            sortOrder[sortedSlots[i].m_SlotId] = i;
         }
 
         // Re-order the slot table
-        GcSlotDesc* pNewSlotTable = (GcSlotDesc*) m_pAllocator->Alloc(sizeof(GcSlotDesc) * m_NumSlots);
         for(UINT32 i = 0; i < m_NumSlots; i++)
         {
-            pNewSlotTable[i] = m_SlotTable[sortedSlotIndexes[i]];
+            m_SlotTable[i] = sortedSlots[i].m_SlotDesc;
         }
 
         // Update transitions to assign new slot ids
@@ -1313,12 +1326,9 @@ void GcInfoEncoder::Build()
         }
 
 #ifdef MUST_CALL_JITALLOCATOR_FREE
-        m_pAllocator->Free( m_SlotTable );
-        m_pAllocator->Free( sortedSlotIndexes );
+        m_pAllocator->Free( sortedSlots );
         m_pAllocator->Free( sortOrder );
 #endif
-
-        m_SlotTable = pNewSlotTable;
     }
 
 
@@ -1773,13 +1783,44 @@ void GcInfoEncoder::Build()
         // Create a hash table for storing the locations of the live sets
         LiveStateHashTable hashMap(m_pAllocator);
 
-        for(pCurrent = pTransitions; pCurrent < pEndTransitions; )
+        bool outOfMemory = false;
+        try
         {
-            if(pCurrent->CodeOffset > callSite)
+            for(pCurrent = pTransitions; pCurrent < pEndTransitions; )
             {
-                // Time to record the call site
+                if(pCurrent->CodeOffset > callSite)
+                {
+                    // Time to record the call site
 
-                // Add it to the table if it doesn't exist
+                    // Add it to the table if it doesn't exist
+                    UINT32 liveStateOffset = 0;
+                    if (!hashMap.Lookup(&liveState, &liveStateOffset))
+                    {
+                        BitArray * newLiveState = new (m_pAllocator->Alloc(sizeof(BitArray))) BitArray(m_pAllocator, size_tCount);
+                        *newLiveState = liveState;
+                        hashMap.Set(newLiveState, (UINT32)(-1));
+                    }
+
+
+                    if(++callSiteIndex == m_NumCallSites)
+                        break;
+                
+                    callSite = m_pCallSites[callSiteIndex];
+                }
+                else
+                {
+                    UINT32 slotIndex = pCurrent->SlotId;
+                    BYTE becomesLive = pCurrent->BecomesLive;
+                    _ASSERTE((liveState.ReadBit(slotIndex) && !becomesLive)
+                            || (!liveState.ReadBit(slotIndex) && becomesLive));
+                    liveState.WriteBit(slotIndex, becomesLive);
+                    pCurrent++;
+                }
+            }
+
+            // Check for call sites at offsets past the last transition
+            if (callSiteIndex < m_NumCallSites)
+            {
                 UINT32 liveStateOffset = 0;
                 if (!hashMap.Lookup(&liveState, &liveStateOffset))
                 {
@@ -1787,34 +1828,16 @@ void GcInfoEncoder::Build()
                     *newLiveState = liveState;
                     hashMap.Set(newLiveState, (UINT32)(-1));
                 }
-
-
-                if(++callSiteIndex == m_NumCallSites)
-                    break;
-            
-                callSite = m_pCallSites[callSiteIndex];
-            }
-            else
-            {
-                UINT32 slotIndex = pCurrent->SlotId;
-                BYTE becomesLive = pCurrent->BecomesLive;
-                _ASSERTE((liveState.ReadBit(slotIndex) && !becomesLive)
-                        || (!liveState.ReadBit(slotIndex) && becomesLive));
-                liveState.WriteBit(slotIndex, becomesLive);
-                pCurrent++;
             }
         }
-
-        // Check for call sites at offsets past the last transition
-        if (callSiteIndex < m_NumCallSites)
+        catch (GcInfoNoMemoryException& e)
         {
-            UINT32 liveStateOffset = 0;
-            if (!hashMap.Lookup(&liveState, &liveStateOffset))
-            {
-                BitArray * newLiveState = new (m_pAllocator->Alloc(sizeof(BitArray))) BitArray(m_pAllocator, size_tCount);
-                *newLiveState = liveState;
-                hashMap.Set(newLiveState, (UINT32)(-1));
-            }
+            outOfMemory = true;
+        }
+
+        if (outOfMemory)
+        {
+            m_pNoMem();
         }
 
         // Figure out the largest offset, and total size of the sets

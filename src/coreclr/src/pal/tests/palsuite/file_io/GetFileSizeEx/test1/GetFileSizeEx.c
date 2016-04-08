@@ -19,13 +19,15 @@ void CleanUp(HANDLE hFile)
 {
     if (CloseHandle(hFile) != TRUE)
     {
-        Fail("GetFileSizeEx: ERROR -> Unable to close file \"%s\".\n", 
-            szTextFile);
+        Fail("GetFileSizeEx: ERROR -> Unable to close file \"%s\".\n"
+             " Error is %d\n", 
+            szTextFile, GetLastError());
     }
     if (!DeleteFileA(szTextFile))
     {
-        Fail("GetFileSizeEx: ERROR -> Unable to delete file \"%s\".\n", 
-            szTextFile);
+        Fail("GetFileSizeEx: ERROR -> Unable to delete file \"%s\".\n"
+             " Error is %d\n", 
+            szTextFile, GetLastError());
     }
 }
 

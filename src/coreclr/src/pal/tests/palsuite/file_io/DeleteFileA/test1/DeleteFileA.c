@@ -41,17 +41,22 @@ int __cdecl main(int argc, char *argv[])
     if (tempFile == NULL)
     {
         Fail ("DeleteFileA: ERROR: Couldn't create \"DeleteFileA's"
-            " testFile.txt\"\n");
+            " testFile01.txt\"\n");
     }
 
     fprintf(tempFile, "DeleteFileA test file.\n");
-    fclose(tempFile);
+    if (fclose(tempFile) != 0)
+    {
+        Fail ("DeleteFileA: ERROR: Couldn't close \"DeleteFileA's"
+            " testFile01.txt\"\n");
+    }
 
     bRc = DeleteFileA("testFile01.txt");
     if (bRc != TRUE)
     {
         Fail ("DeleteFileA: ERROR: Couldn't delete DeleteFileA's"
-            " \"testFile01.txt\"\n");
+            " \"testFile01.txt\"\n"
+            " Error is %d\n", GetLastError());
     }
 
 
@@ -76,17 +81,22 @@ int __cdecl main(int argc, char *argv[])
     if (tempFile == NULL)
     {
         Fail("DeleteFileA: ERROR: Couldn't create \"DeleteFileA's"
-            " testFile.txt\"\n");
+            " testFile03.txt\"\n");
     }
 
     fprintf(tempFile, "DeleteFileA test file.\n");
-    fclose(tempFile);
+    if (fclose(tempFile) != 0)
+    {
+        Fail ("DeleteFileA: ERROR: Couldn't close \"DeleteFileA's"
+        " testFile03.txt\"\n");   
+    }
 
     bRc = DeleteFileA("testFile03.txt");
     if (bRc != TRUE)
     {
         Fail("DeleteFileA: ERROR: Couldn't delete DeleteFileA's"
-            " \"testFile01.txt\"\n");
+            " \"testFile03.txt\"\n"
+            " Error is %d\n", GetLastError());
     }
     bRc = DeleteFileA("testFile03.txt");
 
@@ -105,7 +115,11 @@ int __cdecl main(int argc, char *argv[])
             " \"testFile04.txt\"\n");
     }
     fprintf(tempFile, "DeleteFileA test file.\n");
-    fclose(tempFile);
+    if (fclose(tempFile) != 0)
+    {
+        Fail ("DeleteFileA: ERROR: Couldn't close \"DeleteFileA's"
+        " testFile04.txt\"\n");   
+    }
 
     // delete using '?'
     bRc = DeleteFileA("testFile0?.txt");
@@ -127,7 +141,8 @@ int __cdecl main(int argc, char *argv[])
     if (bRc != TRUE)
     {
         Fail ("DeleteFileA: ERROR: Couldn't delete DeleteFileA's"
-            " \"testFile04.txt\"\n");
+            " \"testFile04.txt\"\n"
+            " Error is %d\n", GetLastError());
     }
 
     PAL_Terminate();  

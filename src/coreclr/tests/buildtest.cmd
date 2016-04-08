@@ -68,6 +68,10 @@ if /i "%1" == "gcstresslevel"       (set __GCStressLevel=%2&shift&shift&goto Arg
 
 if /i "%1" == "verbose"             (set __verbosity=detailed&shift&goto Arg_Loop)
 
+@REM It was initially /toolset_dir. Not sure why, since it doesn't match the other usage.
+if /i "%1" == "/toolset_dir"        (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&shift&shift&goto Arg_Loop)
+if /i "%1" == "toolset_dir"         (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&shift&shift&goto Arg_Loop)
+
 if /i not "%1" == "msbuildargs" goto SkipMsbuildArgs
 :: All the rest of the args will be collected and passed directly to msbuild.
 :CollectMsbuildArgs
@@ -81,6 +85,10 @@ echo Invalid command-line argument: %1
 goto Usage
 
 :ArgsDone
+
+rem arm64 builds currently use private toolset which has not been released yet
+REM TODO, remove once the toolset is open.
+if /i "%__BuildArch%" == "arm64" call :PrivateToolSet
 
 if %__verbosity%==detailed (
     echo Enabling verbose file logging
@@ -150,7 +158,6 @@ if not exist %_msbuildexe% set _msbuildexe="%ProgramFiles(x86)%\MSBuild\14.0\Bin
 goto :CheckMSBuild14
 :MSBuild14
 set _msbuildexe="%ProgramFiles(x86)%\MSBuild\14.0\Bin\MSBuild.exe"
-set UseRoslynCompiler=true
 :CheckMSBuild14
 if not exist %_msbuildexe% set _msbuildexe="%ProgramFiles%\MSBuild\14.0\Bin\MSBuild.exe"
 if not exist %_msbuildexe% echo Error: Could not find MSBuild.exe.  Please see https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md for build instructions. && exit /b 1
@@ -372,3 +379,23 @@ echo Visual Studio 2013 Express does not include the DIA SDK. ^
 You need Visual Studio 2013+ (Community is free).
 echo See: https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md#prerequisites
 exit /b 1
+
+
+:PrivateToolSet
+
+echo %__MsgPrefix% Setting Up the usage of __ToolsetDir:%__ToolsetDir%
+
+if /i "%__ToolsetDir%" == "" (
+    echo %__MsgPrefix%Error: A toolset directory is required for the Arm64 Windows build. Use the toolset_dir argument.
+    exit /b 1
+)
+
+set PATH=%__ToolsetDir%\cpp\bin;%PATH%
+set LIB=%__ToolsetDir%\cpp\libWin9CoreSystem;%__ToolsetDir%\OS\lib;%__ToolsetDir%\cpp\lib
+set INCLUDE=^
+%__ToolsetDir%\cpp\inc;^
+%__ToolsetDir%\OS\inc\Windows;^
+%__ToolsetDir%\OS\inc\Windows\crt;^
+%__ToolsetDir%\cpp\inc\vc;^
+%__ToolsetDir%\OS\inc\win8
+exit /b 0

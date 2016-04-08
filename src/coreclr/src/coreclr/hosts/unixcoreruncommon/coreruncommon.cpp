@@ -7,6 +7,7 @@
 //
 
 #include <cstdlib>
+#include <cstring>
 #include <assert.h>
 #include <dirent.h>
 #include <dlfcn.h>
@@ -16,6 +17,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include "coreruncommon.h"
+#include "coreclrhost.h"
 #include <unistd.h>
 
 #define SUCCEEDED(Status) ((Status) >= 0)
@@ -28,30 +30,6 @@ static const char* serverGcVar = "CORECLR_SERVER_GC";
 // Name of the environment variable controlling concurrent GC,
 // used in the same way as serverGcVar. Concurrent GC is on by default.
 static const char* concurrentGcVar = "CORECLR_CONCURRENT_GC";
-
-// Prototype of the coreclr_initialize function from the libcoreclr.so
-typedef int (*InitializeCoreCLRFunction)(
-            const char* exePath,
-            const char* appDomainFriendlyName,
-            int propertyCount,
-            const char** propertyKeys,
-            const char** propertyValues,
-            void** hostHandle,
-            unsigned int* domainId);
-
-// Prototype of the coreclr_shutdown function from the libcoreclr.so
-typedef int (*ShutdownCoreCLRFunction)(
-            void* hostHandle,
-            unsigned int domainId);
-
-// Prototype of the coreclr_execute_assembly function from the libcoreclr.so
-typedef int (*ExecuteAssemblyFunction)(
-            void* hostHandle,
-            unsigned int domainId,
-            int argc,
-            const char** argv,
-            const char* managedAssemblyPath,
-            unsigned int* exitCode);
 
 #if defined(__linux__)
 #define symlinkEntrypointExecutable "/proc/self/exe"
@@ -306,9 +284,9 @@ int ExecuteManagedAssembly(
     void* coreclrLib = dlopen(coreClrDllPath.c_str(), RTLD_NOW | RTLD_LOCAL);
     if (coreclrLib != nullptr)
     {
-        InitializeCoreCLRFunction initializeCoreCLR = (InitializeCoreCLRFunction)dlsym(coreclrLib, "coreclr_initialize");
-        ExecuteAssemblyFunction executeAssembly = (ExecuteAssemblyFunction)dlsym(coreclrLib, "coreclr_execute_assembly");
-        ShutdownCoreCLRFunction shutdownCoreCLR = (ShutdownCoreCLRFunction)dlsym(coreclrLib, "coreclr_shutdown");
+        coreclr_initialize_ptr initializeCoreCLR = (coreclr_initialize_ptr)dlsym(coreclrLib, "coreclr_initialize");
+        coreclr_execute_assembly_ptr executeAssembly = (coreclr_execute_assembly_ptr)dlsym(coreclrLib, "coreclr_execute_assembly");
+        coreclr_shutdown_ptr shutdownCoreCLR = (coreclr_shutdown_ptr)dlsym(coreclrLib, "coreclr_shutdown");
 
         if (initializeCoreCLR == nullptr)
         {
@@ -338,6 +316,10 @@ int ExecuteManagedAssembly(
             {
                 useConcurrentGc = "1";
             }
+
+            // CoreCLR expects strings "true" and "false" instead of "1" and "0".
+            useServerGc = std::strcmp(useServerGc, "1") == 0 ? "true" : "false";
+            useConcurrentGc = std::strcmp(useConcurrentGc, "1") == 0 ? "true" : "false";
             
             // Allowed property names:
             // APPBASE
@@ -361,8 +343,8 @@ int ExecuteManagedAssembly(
                 "APP_NI_PATHS",
                 "NATIVE_DLL_SEARCH_DIRECTORIES",
                 "AppDomainCompatSwitch",
-                "SERVER_GC",
-                "CONCURRENT_GC"
+                "System.GC.Server",
+                "System.GC.Concurrent"
             };
             const char *propertyValues[] = {
                 // TRUSTED_PLATFORM_ASSEMBLIES
@@ -375,9 +357,9 @@ int ExecuteManagedAssembly(
                 nativeDllSearchDirs.c_str(),
                 // AppDomainCompatSwitch
                 "UseLatestBehaviorWhenTFMNotSpecified",
-                // SERVER_GC
+                // System.GC.Server
                 useServerGc,
-                // CONCURRENT_GC
+                // System.GC.Concurrent
                 useConcurrentGc
             };
 
