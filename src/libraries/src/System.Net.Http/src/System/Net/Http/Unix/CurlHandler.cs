@@ -350,6 +350,10 @@ namespace System.Net.Http
         protected override void Dispose(bool disposing)
         {
             _disposed = true;
+            if (disposing)
+            {
+                _agent.Dispose();
+            }
             base.Dispose(disposing);
         }
 
