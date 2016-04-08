@@ -248,7 +248,7 @@ SHARED_API int corehost_main(const int argc, const pal::char_t* argv[])
     {
         pal::string_t config_file, dev_config_file;
         
-        get_runtime_config_paths_from_file(args.managed_application, &config_file, &dev_config_file);
+        get_runtime_config_paths_from_app(args.managed_application, &config_file, &dev_config_file);
         runtime_config_t config(config_file, dev_config_file);
 
         if (!config.is_valid())

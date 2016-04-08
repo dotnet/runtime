@@ -314,11 +314,18 @@ int fx_muxer_t::parse_args_and_execute(const pal::string_t& own_dir, int argoff,
     trace::verbose(_X("Current argv is %s"), app_candidate.c_str());
 
     pal::string_t app_or_deps = deps_file.empty() ? app_candidate : deps_file;
-    pal::string_t app_or_runtime_config = runtime_config.empty() ? app_candidate : runtime_config;
     pal::string_t config_file, dev_config_file;
 
-    trace::error(_X("Finding runtimeconfig.json from [%s]"), app_or_runtime_config.c_str());
-    get_runtime_config_paths_from_file(app_or_runtime_config, &config_file, &dev_config_file);
+    if(runtime_config.empty())
+    {
+        trace::verbose(_X("Finding runtimeconfig.json from [%s]"), app_candidate.c_str());
+        get_runtime_config_paths_from_app(app_candidate, &config_file, &dev_config_file);   
+    }
+    else
+    {
+        trace::verbose(_X("Finding runtimeconfig.json from [%s]"), runtime_config.c_str());
+        get_runtime_config_paths_from_arg(runtime_config, &config_file, &dev_config_file);   
+    }
 
     runtime_config_t config(config_file, dev_config_file);
     for (const auto& path : config.get_probe_paths())
