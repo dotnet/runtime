@@ -3685,55 +3685,73 @@ inline GenTreePtr GenTree::MoveNext()
 }
 
 #ifdef DEBUG
+//------------------------------------------------------------------------
+// IsListForMultiRegArg: Given an GenTree node that represents an argument
+//                       enforce (or don't enforce) the following invariant.
+//
+// For LEGACY_BACKEND or architectures that don't support MultiReg args
+// we don't allow a GT_LIST at all.
+//
+// Currently for AMD64 UNIX we allow a limited case where a GT_LIST is 
+// allowed but every element must be a GT_LCL_FLD.
+//
+// For the future targets that allow for Multireg args (and this includes
+//  the current ARM64 target) we allow a GT_LIST of arbitrary nodes, these
+//  would typically start out as GT_LCL_VARs or GT_LCL_FLDS or GT_INDs, 
+//  but could be changed into constants or GT_COMMA trees by the later 
+//  optimization phases.
+// 
+// Arguments:
+//    instance method for a GenTree node
+//
+// Return values:
+//    true:      the GenTree node is accepted as a valid argument
+//    false:     the GenTree node is not accepted as a valid argumeny
+//
 inline bool GenTree::IsListForMultiRegArg()
 {
     if (!IsList())
     {
-        return false;
+        // We don't have a GT_LIST, so just return true.
+        return true;
     }
-
-#if FEATURE_MULTIREG_ARGS
-    // We allow a GT_LIST of some nodes as an argument 
-    GenTree* gtListPtr = this;
-    while (gtListPtr != nullptr) 
+    else  // We do have a GT_LIST
     {
-        bool allowed = false;
+#if defined(LEGACY_BACKEND) || !FEATURE_MULTIREG_ARGS
+
+        // Not allowed to have a GT_LIST for an argument 
+        // unless we have a RyuJIT backend and FEATURE_MULTIREG_ARGS
+
+        return false;
+
+#else  // we have RyuJIT backend and FEATURE_MULTIREG_ARGS
+
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-        // ToDo: fix UNIX_AMD64 so that we do not generate this kind of a List
-        if (gtListPtr->Current() == nullptr)
-            break;
+        // For UNIX ABI we currently only allow a GT_LIST of GT_LCL_FLDs nodes 
+        GenTree* gtListPtr = this;
+        while (gtListPtr != nullptr) 
+        {
+            // ToDo: fix UNIX_AMD64 so that we do not generate this kind of a List
+            //  Note the list as currently created is malformed, as the last entry is a nullptr
+            if (gtListPtr->Current() == nullptr)
+                break;
 
-        // Only a list of GT_LCL_FLDs is allowed
-        if (gtListPtr->Current()->OperGet() == GT_LCL_FLD)
-        {
-            allowed = true;
+            // Only a list of GT_LCL_FLDs is allowed
+            if (gtListPtr->Current()->OperGet() != GT_LCL_FLD)
+            {
+                return false;
+            }
+            gtListPtr = gtListPtr->MoveNext();
         }
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
-#ifdef _TARGET_ARM64_
-        // A list of GT_LCL_VARs is allowed
-        if (gtListPtr->Current()->OperGet() == GT_LCL_VAR)
-        {
-            allowed = true;
-        }
-        // A list of GT_LCL_FLDs is allowed
-        else if (gtListPtr->Current()->OperGet() == GT_LCL_FLD)
-        {
-            allowed = true;
-        }
-#endif
-        if (!allowed)
-        {
-            return false;
-        }
+#endif  // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
-        gtListPtr = gtListPtr->MoveNext();
+        // Note that for non-UNIX ABI the GT_LIST may contain any node
+        //
+        // We allow this GT_LIST as an argument 
+        return true;
+
+#endif  // RyuJIT backend and FEATURE_MULTIREG_ARGS
     }
-
-    return true;
-#else // FEATURE_MULTIREG_ARGS
-    // Not allowed to have a GT_LIST here unless we have FEATURE_MULTIREG_ARGS
-    return false;
-#endif
 }
 #endif // DEBUG
 
