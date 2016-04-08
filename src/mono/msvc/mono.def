@@ -496,7 +496,7 @@ mono_load_remote_field_new
 mono_lock_free_queue_dequeue
 mono_lock_free_queue_enqueue
 mono_lock_free_queue_init
-mono_lock_free_queue_node_free
+mono_lock_free_queue_node_unpoison
 mono_lock_free_queue_node_init
 mono_locks_dump
 mono_lookup_icall_symbol

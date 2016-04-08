@@ -277,7 +277,7 @@ desc_put_partial (gpointer _desc)
 
 	g_assert (desc->anchor.data.state != STATE_FULL);
 
-	mono_lock_free_queue_node_free (&desc->node);
+	mono_lock_free_queue_node_unpoison (&desc->node);
 	mono_lock_free_queue_enqueue (&desc->heap->sc->partial, &desc->node);
 }
 
