@@ -145,10 +145,10 @@ CodeGen::CodeGen(Compiler * theCompiler) :
     // Shouldn't be used before it is set in genFnProlog()
     compiler->compCalleeRegsPushed = UninitializedWord<unsigned>();
 
-#ifdef _TARGET_AMD64_
+#if defined(_TARGET_XARCH_) && !FEATURE_STACK_FP_X87
     // Shouldn't be used before it is set in genFnProlog()
     compiler->compCalleeFPRegsSavedMask = (regMaskTP)-1;
-#endif // _TARGET_AMD64_
+#endif // defined(_TARGET_XARCH_) && !FEATURE_STACK_FP_X87
 #endif // DEBUG
 
 #ifdef _TARGET_AMD64_
