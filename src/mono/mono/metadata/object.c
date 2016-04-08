@@ -53,7 +53,7 @@ static void
 get_default_field_value (MonoDomain* domain, MonoClassField *field, void *value);
 
 static MonoString*
-mono_ldstr_metadata_sig (MonoDomain *domain, const char* sig);
+mono_ldstr_metadata_sig (MonoDomain *domain, const char* sig, MonoError *error);
 
 static void
 free_main_args (void);
@@ -3527,6 +3527,7 @@ mono_get_constant_value_from_blob (MonoDomain* domain, MonoTypeEnum type, const 
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	MonoError error;
 	int retval = 0;
 	const char *p = blob;
 	mono_metadata_decode_blob_size (p, &p);
@@ -3557,7 +3558,8 @@ mono_get_constant_value_from_blob (MonoDomain* domain, MonoTypeEnum type, const 
 		readr8 (p, (double*) value);
 		break;
 	case MONO_TYPE_STRING:
-		*(gpointer*) value = mono_ldstr_metadata_sig (domain, blob);
+		*(gpointer*) value = mono_ldstr_metadata_sig (domain, blob, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
 		break;
 	case MONO_TYPE_CLASS:
 		*(gpointer*) value = NULL;
@@ -6464,7 +6466,9 @@ mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 idx)
 	} else {
 		if (!mono_verifier_verify_string_signature (image, idx, NULL))
 			return NULL; /*FIXME we should probably be raising an exception here*/
-		return mono_ldstr_metadata_sig (domain, mono_metadata_user_string (image, idx));
+		MonoString *str = mono_ldstr_metadata_sig (domain, mono_metadata_user_string (image, idx), &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		return str;
 	}
 }
 
@@ -6472,15 +6476,17 @@ mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 idx)
  * mono_ldstr_metadata_sig
  * @domain: the domain for the string
  * @sig: the signature of a metadata string
+ * @error: set on error
  *
- * Returns: a MonoString for a string stored in the metadata
+ * Returns: a MonoString for a string stored in the metadata. On
+ * failure returns NULL and sets @error.
  */
 static MonoString*
-mono_ldstr_metadata_sig (MonoDomain *domain, const char* sig)
+mono_ldstr_metadata_sig (MonoDomain *domain, const char* sig, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoError error;
+	mono_error_init (error);
 	const char *str = sig;
 	MonoString *o, *interned;
 	size_t len2;
@@ -6488,8 +6494,8 @@ mono_ldstr_metadata_sig (MonoDomain *domain, const char* sig)
 	len2 = mono_metadata_decode_blob_size (str, &str);
 	len2 >>= 1;
 
-	o = mono_string_new_utf16_checked (domain, (guint16*)str, len2, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	o = mono_string_new_utf16_checked (domain, (guint16*)str, len2, error);
+	return_val_if_nok (error, NULL);
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
 	{
 		int i;
@@ -6506,8 +6512,7 @@ mono_ldstr_metadata_sig (MonoDomain *domain, const char* sig)
 	if (interned)
 		return interned; /* o will get garbage collected */
 
-	o = mono_string_get_pinned (o, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	o = mono_string_get_pinned (o, error);
 	if (o) {
 		ldstr_lock ();
 		interned = (MonoString *)mono_g_hash_table_lookup (domain->ldstr_table, o);
