@@ -730,7 +730,7 @@ static guint32 WINAPI start_wrapper_internal(void *data)
 	if (internal->name && (internal->flags & MONO_THREAD_FLAG_NAME_SET)) {
 		char *tname = g_utf16_to_utf8 (internal->name, internal->name_len, NULL, NULL, NULL);
 		mono_profiler_thread_name (internal->tid, tname);
-		mono_thread_info_set_name (MONO_UINT_TO_NATIVE_THREAD_ID (internal->tid), tname);
+		mono_native_thread_set_name (MONO_UINT_TO_NATIVE_THREAD_ID (internal->tid), tname);
 		g_free (tname);
 	}
 	/* start_func is set only for unmanaged start functions */
@@ -1396,7 +1396,7 @@ mono_thread_set_name_internal (MonoInternalThread *this_obj, MonoString *name, g
 	if (this_obj->name && this_obj->tid) {
 		char *tname = mono_string_to_utf8 (name);
 		mono_profiler_thread_name (this_obj->tid, tname);
-		mono_thread_info_set_name (thread_get_tid (this_obj), tname);
+		mono_native_thread_set_name (thread_get_tid (this_obj), tname);
 		mono_free (tname);
 	}
 }

@@ -1990,7 +1990,7 @@ mono_main (int argc, char* argv[])
 	 * We only set the native name of the thread since MS.NET leaves the
 	 * managed thread name for the main thread as null.
 	 */
-	mono_thread_info_set_name (mono_native_thread_id_get (), "Main");
+	mono_native_thread_set_name (mono_native_thread_id_get (), "Main");
 
 	if (enable_profile) {
 		mono_profiler_load (profile_options);

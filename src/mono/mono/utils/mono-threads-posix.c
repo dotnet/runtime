@@ -277,7 +277,7 @@ mono_native_thread_create (MonoNativeThreadId *tid, gpointer func, gpointer arg)
 }
 
 void
-mono_threads_core_set_name (MonoNativeThreadId tid, const char *name)
+mono_native_thread_set_name (MonoNativeThreadId tid, const char *name)
 {
 #ifdef __MACH__
 	/*

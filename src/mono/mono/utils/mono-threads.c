@@ -1310,12 +1310,6 @@ mono_threads_open_thread_handle (HANDLE handle, MonoNativeThreadId tid)
 	return mono_threads_core_open_thread_handle (handle, tid);
 }
 
-void
-mono_thread_info_set_name (MonoNativeThreadId tid, const char *name)
-{
-	mono_threads_core_set_name (tid, name);
-}
-
 #define INTERRUPT_STATE ((MonoThreadInfoInterruptToken*) (size_t) -1)
 
 struct _MonoThreadInfoInterruptToken {

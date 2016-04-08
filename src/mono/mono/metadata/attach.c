@@ -493,7 +493,7 @@ receiver_thread (void *arg)
 	guint8 *p, *p_end;
 	MonoObject *exc;
 
-	mono_thread_info_set_name (mono_native_thread_id_get (), "Attach receiver");
+	mono_native_thread_set_name (mono_native_thread_id_get (), "Attach receiver");
 
 	printf ("attach: Listening on '%s'...\n", server_uri);
 
