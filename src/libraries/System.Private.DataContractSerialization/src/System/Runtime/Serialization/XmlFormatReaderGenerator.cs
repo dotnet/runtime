@@ -30,6 +30,19 @@ namespace System.Runtime.Serialization
     internal sealed class XmlFormatReaderGenerator
 #endif
     {
+        private static MethodInfo s_getUninitializedObjectMethodInfo;
+        private static Dictionary<Type, bool> s_typeHasDefaultConstructorMap;
+
+        static XmlFormatReaderGenerator()
+        {
+            var formatterServiceType = typeof(string).GetTypeInfo().Assembly.GetType("System.Runtime.Serialization.FormatterServices");
+            if (formatterServiceType != null)
+            {
+                s_getUninitializedObjectMethodInfo = formatterServiceType.GetMethod("GetUninitializedObject", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
+            }
+            s_typeHasDefaultConstructorMap = new Dictionary<Type, bool>();
+        }
+
 #if !NET_NATIVE
         [SecurityCritical]
         /// <SecurityNote>
@@ -856,7 +869,13 @@ namespace System.Runtime.Serialization
         static internal object UnsafeGetUninitializedObject(Type type)
         {
 #if !NET_NATIVE
-            return TryGetUninitializedObjectWithFormatterServices(type) ?? Activator.CreateInstance(type);
+            bool hasDefaultConstructor;
+            if (!s_typeHasDefaultConstructorMap.TryGetValue(type, out hasDefaultConstructor))
+            {
+                hasDefaultConstructor = type.GetConstructor(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, Array.Empty<Type>()) != null;
+                s_typeHasDefaultConstructorMap[type] = hasDefaultConstructor;
+            }
+            return hasDefaultConstructor ? Activator.CreateInstance(type) : TryGetUninitializedObjectWithFormatterServices(type) ?? Activator.CreateInstance(type);
 #else
             return RuntimeAugments.NewObject(type.TypeHandle);
 #endif
@@ -881,14 +900,9 @@ namespace System.Runtime.Serialization
         static internal object TryGetUninitializedObjectWithFormatterServices(Type type)
         {
             object obj = null;
-            var formatterServiceType = typeof(string).GetTypeInfo().Assembly.GetType("System.Runtime.Serialization.FormatterServices");
-            if (formatterServiceType != null)
+            if (s_getUninitializedObjectMethodInfo != null)
             {
-                var methodInfo = formatterServiceType.GetMethod("GetUninitializedObject", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
-                if (methodInfo != null)
-                {
-                    obj = methodInfo.Invoke(null, new object[] { type });
-                }
+                obj = s_getUninitializedObjectMethodInfo.Invoke(null, new object[] { type });
             }
             return obj;
         }
