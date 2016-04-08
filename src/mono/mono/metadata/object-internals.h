@@ -80,18 +80,16 @@
 			}; \
 			tmp_klass; })
 /* eclass should be a run-time constant */
-#define mono_array_new_cached(domain, eclass, size) ({	\
-			MonoError __error;	\
+#define mono_array_new_cached(domain, eclass, size, error) ({	\
 			MonoVTable *__vtable = mono_class_vtable ((domain), mono_array_class_get_cached ((eclass), 1));	\
-			MonoArray *__arr = mono_array_new_specific_checked (__vtable, (size), &__error);	\
-			mono_error_raise_exception (&__error); /* FIXME don't raise here */	\
+			MonoArray *__arr = mono_array_new_specific_checked (__vtable, (size), (error)); \
 			__arr; })
 
 #else
 
 #define mono_class_get_field_from_name_cached(klass,name) mono_class_get_field_from_name ((klass), (name))
 #define mono_array_class_get_cached(eclass,rank) mono_array_class_get ((eclass), (rank))
-#define mono_array_new_cached(domain, eclass, size) mono_array_new_specific (mono_class_vtable ((domain), mono_array_class_get_cached ((eclass), 1)), (size))
+#define mono_array_new_cached(domain, eclass, size, error) mono_array_new_specific_checked (mono_class_vtable ((domain), mono_array_class_get_cached ((eclass), 1)), (size), (error))
 
 #endif
 

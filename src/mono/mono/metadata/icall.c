@@ -2427,12 +2427,17 @@ ves_icall_Type_GetInterfaces (MonoReflectionType* type)
 	len = g_hash_table_size (iface_hash);
 	if (len == 0) {
 		g_hash_table_destroy (iface_hash);
-		if (!data.domain->empty_types)
-			data.domain->empty_types = mono_array_new_cached (data.domain, mono_defaults.monotype_class, 0);
+		if (!data.domain->empty_types) {
+			data.domain->empty_types = mono_array_new_cached (data.domain, mono_defaults.monotype_class, 0, &error);
+			if (!is_ok (&error))
+				goto fail;
+		}
 		return data.domain->empty_types;
 	}
 
-	data.iface_array = mono_array_new_cached (data.domain, mono_defaults.monotype_class, len);
+	data.iface_array = mono_array_new_cached (data.domain, mono_defaults.monotype_class, len, &error);
+	if (!is_ok (&error))
+		goto fail;
 	g_hash_table_foreach (iface_hash, fill_iface_array, &data);
 	if (!mono_error_ok (&error))
 		goto fail;
@@ -3842,7 +3847,9 @@ handle_parent:
 	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
 		goto handle_parent;
 
-	res = mono_array_new_cached (domain, mono_defaults.field_info_class, mono_ptr_array_size (tmp_array));
+	res = mono_array_new_cached (domain, mono_defaults.field_info_class, mono_ptr_array_size (tmp_array), &error);
+	if (!is_ok (&error))
+		goto fail;
 
 	for (i = 0; i < mono_ptr_array_size (tmp_array); ++i)
 		mono_array_setref (res, i, mono_ptr_array_get (tmp_array, i));
@@ -4059,7 +4066,7 @@ ves_icall_Type_GetConstructors_internal (MonoReflectionType *type, guint32 bflag
 {
 	MonoDomain *domain; 
 	MonoClass *startklass, *klass, *refklass;
-	MonoArray *res;
+	MonoArray *res = NULL;
 	MonoMethod *method;
 	MonoObject *member;
 	int i, match;
@@ -4067,18 +4074,23 @@ ves_icall_Type_GetConstructors_internal (MonoReflectionType *type, guint32 bflag
 	MonoPtrArray tmp_array;
 	MonoError error;
 	
+	domain = ((MonoObject *)type)->vtable->domain;
+	if (type->type->byref) {
+		res = mono_array_new_cached (domain, mono_defaults.method_info_class, 0, &error);
+		mono_error_set_pending_exception (&error);
+		return res;
+	}
+
 	mono_ptr_array_init (tmp_array, 4, MONO_ROOT_SOURCE_REFLECTION, "temporary reflection constructors list"); /*FIXME, guestimating*/
 
-	domain = ((MonoObject *)type)->vtable->domain;
-	if (type->type->byref)
-		return mono_array_new_cached (domain, mono_defaults.method_info_class, 0);
+
 	klass = startklass = mono_class_from_mono_type (type->type);
 	refklass = mono_class_from_mono_type (reftype->type);
 
 	mono_class_setup_methods (klass);
 	if (mono_class_has_failure (klass)) {
 		mono_set_pending_exception (mono_class_get_exception_for_failure (klass));
-		return NULL;
+		goto leave;
 	}
 
 	iter = NULL;
@@ -4108,19 +4120,20 @@ ves_icall_Type_GetConstructors_internal (MonoReflectionType *type, guint32 bflag
 		if (!match)
 			continue;
 		member = (MonoObject*)mono_method_get_object_checked (domain, method, refklass, &error);
-		if (!mono_error_ok (&error)) {
-			mono_error_set_pending_exception (&error);
-			return NULL;
-		}
+		if (mono_error_set_pending_exception (&error))
+			goto leave;
 
 		mono_ptr_array_append (tmp_array, member);
 	}
 
-	res = mono_array_new_cached (domain, mono_class_get_constructor_info_class (), mono_ptr_array_size (tmp_array));
+	res = mono_array_new_cached (domain, mono_class_get_constructor_info_class (), mono_ptr_array_size (tmp_array), &error);
+	if (mono_error_set_pending_exception (&error))
+		goto leave;
 
 	for (i = 0; i < mono_ptr_array_size (tmp_array); ++i)
 		mono_array_setref (res, i, mono_ptr_array_get (tmp_array, i));
 
+leave:
 	mono_ptr_array_destroy (tmp_array);
 
 	return res;
@@ -4203,11 +4216,15 @@ ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, 
 
 	mono_error_init (&error);
 	
+	domain = ((MonoObject *)type)->vtable->domain;
+	if (type->type->byref) {
+		res = mono_array_new_cached (domain, mono_class_get_property_info_class (), 0, &error);
+		mono_error_set_pending_exception (&error);
+		return res;
+	}
+
 	mono_ptr_array_init (tmp_array, 8, MONO_ROOT_SOURCE_REFLECTION, "temporary reflection properties list"); /*This the average for ASP.NET types*/
 
-	domain = ((MonoObject *)type)->vtable->domain;
-	if (type->type->byref)
-		return mono_array_new_cached (domain, mono_class_get_property_info_class (), 0);
 	klass = startklass = mono_class_from_mono_type (type->type);
 
 	if (name != NULL) {
@@ -4279,7 +4296,9 @@ handle_parent:
 	g_hash_table_destroy (properties);
 	g_free (propname);
 
-	res = mono_array_new_cached (domain, mono_class_get_property_info_class (), mono_ptr_array_size (tmp_array));
+	res = mono_array_new_cached (domain, mono_class_get_property_info_class (), mono_ptr_array_size (tmp_array), &error);
+	if (!is_ok (&error))
+		goto failure;
 	for (i = 0; i < mono_ptr_array_size (tmp_array); ++i)
 		mono_array_setref (res, i, mono_ptr_array_get (tmp_array, i));
 
@@ -4339,11 +4358,15 @@ ves_icall_Type_GetEvents_internal (MonoReflectionType *type, MonoString *name, g
 
 	mono_error_init (&error);
 	
+	domain = mono_object_domain (type);
+	if (type->type->byref) {
+		res = mono_array_new_cached (domain, mono_class_get_event_info_class (), 0, &error);
+		mono_error_set_pending_exception (&error);
+		return res;
+	}
+
 	mono_ptr_array_init (tmp_array, 4, MONO_ROOT_SOURCE_REFLECTION, "temporary reflection events list");
 
-	domain = mono_object_domain (type);
-	if (type->type->byref)
-		return mono_array_new_cached (domain, mono_class_get_event_info_class (), 0);
 	klass = startklass = mono_class_from_mono_type (type->type);
 
 	events = g_hash_table_new (event_hash, (GEqualFunc)event_equal);
@@ -4418,7 +4441,9 @@ handle_parent:
 
 	g_hash_table_destroy (events);
 
-	res = mono_array_new_cached (domain, mono_class_get_event_info_class (), mono_ptr_array_size (tmp_array));
+	res = mono_array_new_cached (domain, mono_class_get_event_info_class (), mono_ptr_array_size (tmp_array), &error);
+	if (!is_ok (&error))
+		goto failure;
 
 	for (i = 0; i < mono_ptr_array_size (tmp_array); ++i)
 		mono_array_setref (res, i, mono_ptr_array_get (tmp_array, i));
@@ -4466,7 +4491,7 @@ ves_icall_Type_GetNestedTypes (MonoReflectionType *type, MonoString *name, guint
 
 	domain = ((MonoObject *)type)->vtable->domain;
 	if (type->type->byref) {
-		MonoArray *result = mono_array_new_checked (domain, mono_defaults.monotype_class, 0, &error);
+		MonoArray *result = mono_array_new_cached (domain, mono_defaults.monotype_class, 0, &error);
 		mono_error_set_pending_exception (&error);
 		return result;
 	}
@@ -4515,7 +4540,9 @@ ves_icall_Type_GetNestedTypes (MonoReflectionType *type, MonoString *name, guint
 		mono_ptr_array_append (tmp_array, (MonoObject*) rt);
 	}
 
-	res = mono_array_new_cached (domain, mono_defaults.monotype_class, mono_ptr_array_size (tmp_array));
+	res = mono_array_new_cached (domain, mono_defaults.monotype_class, mono_ptr_array_size (tmp_array), &error);
+	if (!is_ok (&error))
+		goto leave;
 
 	for (i = 0; i < mono_ptr_array_size (tmp_array); ++i)
 		mono_array_setref (res, i, mono_ptr_array_get (tmp_array, i));

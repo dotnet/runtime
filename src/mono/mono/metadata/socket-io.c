@@ -847,7 +847,8 @@ create_object_from_sockaddr (struct sockaddr *saddr, int sa_size, gint32 *werror
 	 * the length of the entire sockaddr_in/in6, including
 	 * sizeof (unsigned short) of the family */
 	/* We can't really avoid the +2 as all code below depends on this size - INCLUDING unix domain sockets.*/
-	data = mono_array_new_cached (domain, mono_get_byte_class (), sa_size + 2);
+	data = mono_array_new_cached (domain, mono_get_byte_class (), sa_size + 2, error);
+	return_val_if_nok (error, NULL);
 
 	/* The data buffer is laid out as follows:
 	 * bytes 0 and 1 are the address family
