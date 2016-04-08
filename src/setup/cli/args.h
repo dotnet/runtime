@@ -115,6 +115,6 @@ struct arguments_t
     }
 };
 
-bool parse_arguments(const pal::string_t& deps_path, const std::vector<pal::string_t>& probe_paths, host_mode_t mode, const int argc, const pal::char_t* argv[], pal::string_t* runtime_config, arguments_t* args);
+bool parse_arguments(const pal::string_t& deps_path, const std::vector<pal::string_t>& probe_paths, host_mode_t mode, const int argc, const pal::char_t* argv[], arguments_t* args);
 
 #endif // ARGS_H
