@@ -2799,8 +2799,9 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
         // this can't be a struct.
         assert(argx->gtType != TYP_STRUCT);
 
+        // FIXME: Issue #4025 Why do we need floating type for 'this' argument
         /* Increment the argument register count and argument index */
-        if (!varTypeIsFloating(argx->gtType))
+        if (!varTypeIsFloating(argx->gtType) || opts.compUseSoftFP)
         {
             intArgRegNum++;
 #if defined(_TARGET_AMD64_) && !defined(UNIX_AMD64_ABI)
@@ -2950,7 +2951,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
 #ifdef _TARGET_ARM_
 
         bool passUsingIntRegs;
-
         if (lateArgsComputed)
         {
             passUsingFloatRegs = isValidFloatArgReg(argEntry->regNum);
@@ -2958,7 +2958,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
         }
         else
         {
-            passUsingFloatRegs = !callIsVararg && (isHfaArg || varTypeIsFloating(argx));
+            passUsingFloatRegs = !callIsVararg && (isHfaArg || varTypeIsFloating(argx)) && !opts.compUseSoftFP;
             passUsingIntRegs   =  passUsingFloatRegs ? false : (intArgRegNum < MAX_REG_ARG);
         }
 
@@ -8212,12 +8212,7 @@ GenTreePtr          Compiler::fgMorphCopyBlock(GenTreePtr tree)
             // Spill the (complex) address to a BYREF temp.
             // Note, at most one address may need to be spilled.
             addrSpillTemp = lvaGrabTemp(true DEBUGARG("BlockOp address local"));
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-            lvaTable[addrSpillTemp].lvType = TYP_I_IMPL;
 
-            tree = gtNewAssignNode(gtNewLclvNode(addrSpillTemp, TYP_I_IMPL),
-                                   addrSpill);
-#else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
             lvaTable[addrSpillTemp].lvType = TYP_BYREF;
 
             if (addrSpillIsStackDest)
@@ -8227,7 +8222,6 @@ GenTreePtr          Compiler::fgMorphCopyBlock(GenTreePtr tree)
 
             tree = gtNewAssignNode(gtNewLclvNode(addrSpillTemp, TYP_BYREF),
                                    addrSpill);
-#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
 
 #ifndef LEGACY_BACKEND
             // If we are assigning the address of a LclVar here 

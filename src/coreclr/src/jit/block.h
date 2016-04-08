@@ -1009,13 +1009,13 @@ public:
 };
 
 // A set of blocks.
-typedef SimplerHashTable<BasicBlock*, PtrKeyFuncs<BasicBlock>, bool, DefaultSimplerHashBehavior> BlkSet;
+typedef SimplerHashTable<BasicBlock*, PtrKeyFuncs<BasicBlock>, bool, JitSimplerHashBehavior> BlkSet;
 
 // A map of block -> set of blocks, can be used as sparse block trees.
-typedef SimplerHashTable<BasicBlock*, PtrKeyFuncs<BasicBlock>, BlkSet*, DefaultSimplerHashBehavior> BlkToBlkSetMap;
+typedef SimplerHashTable<BasicBlock*, PtrKeyFuncs<BasicBlock>, BlkSet*, JitSimplerHashBehavior> BlkToBlkSetMap;
 
 // Map from Block to Block.  Used for a variety of purposes.
-typedef SimplerHashTable<BasicBlock*, PtrKeyFuncs<BasicBlock>, BasicBlock*, DefaultSimplerHashBehavior> BlockToBlockMap;
+typedef SimplerHashTable<BasicBlock*, PtrKeyFuncs<BasicBlock>, BasicBlock*, JitSimplerHashBehavior> BlockToBlockMap;
 
 // In compiler terminology the control flow between two BasicBlocks
 // is typically referred to as an "edge".  Most well known are the

@@ -97,6 +97,7 @@ $(_XunitEpilog)
     <Compile Include="$(XunitWrapper).cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="%24(TestWrappersPackagesConfigFileDirectory)project.json" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
@@ -113,6 +114,10 @@ $(_XunitEpilog)
     <Reference Include="System.Runtime" />
     <Reference Include="mscorlib" />
   </ItemGroup>
+  <PropertyGroup>
+    <ProjectJson>%24(TestWrappersPackagesConfigFileDirectory)project.json</ProjectJson>
+    <ProjectLockJson>%24(TestWrappersPackagesConfigFileDirectory)project.lock.json</ProjectLockJson>
+  </PropertyGroup>
   <Import Project="%24([MSBuild]::GetDirectoryNameOfFileAbove(%24(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <Import Project="%24([MSBuild]::GetDirectoryNameOfFileAbove(%24(MSBuildThisFileDirectory), helix.targets))\helix.targets" />
   <PropertyGroup>
@@ -121,22 +126,6 @@ $(_XunitEpilog)
 </Project>
         ]]>
       </XunitWrapperGenCsProj>
-      <XunitWrapperGenPackConfig>
-        <![CDATA[
-{
-  "dependencies": {
-    "xunit" : "2.1.0",
-    "xunit.assert" : "2.1.0",
-    "xunit.core" : "2.1.0",
-  },
-  "frameworks": {
-    "net45": {
-      "imports": "portable-net45+win8"
-    }
-  }
-}
-      ]]>
-      </XunitWrapperGenPackConfig>
 
     </PropertyGroup>
 
@@ -153,12 +142,6 @@ $(_XunitEpilog)
     <WriteLinesToFile
       File="$(XunitWrapperSrcDir)\$(XunitWrapper).csproj"
       Lines="$(XunitWrapperGenCsProj)"
-      Overwrite="true" />
-
-    <!-- Write the file -->
-    <WriteLinesToFile
-      File="$(XunitWrapperSrcDir)\project.json"
-      Lines="$(XunitWrapperGenPackConfig)"
       Overwrite="true" />
   </Target>
   
@@ -326,15 +309,13 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
   <Target Name="CreateAllWrappers" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="CreateXunitWrapper" Properties="_CMDDIR=%(TestDirectories.Identity)" />
 
-    <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages..." />
-
     <!--
       Contents of a project.json that will be restored once with errors turned off. This works
       around the package being incompatible with dotnet restore. Only the package contents are
       required so the compatibility errors can be ignored.
     -->
     <PropertyGroup>
-      <XunitRunnerRestoreGenConfig>{ "dependencies": { "xunit.runner.msbuild": "2.1.0" }, "frameworks": { "net45": {} } }</XunitRunnerRestoreGenConfig>
+      <XunitRunnerRestoreGenConfig>{ "dependencies": { "xunit.runner.msbuild": "$(XunitPackageVersion)" }, "frameworks": { "net45": {} } }</XunitRunnerRestoreGenConfig>
       <XunitRunnerRestoreProjectDir>$(BaseOutputPath)\tempRestoreProject</XunitRunnerRestoreProjectDir>
       <XunitRunnerRestoreProjectJsonPath>$(XunitRunnerRestoreProjectDir)\project.json</XunitRunnerRestoreProjectJsonPath>
     </PropertyGroup>
@@ -349,12 +330,6 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
           CustomErrorRegularExpression="^Unable to resolve .*"
           IgnoreExitCode="true" 
           IgnoreStandardErrorWarningFormat="true" />
-    
-    <!-- Restore all wrapper projects' project.jsons in one pass for perf & to avoid concurrency problems -->
-    <Exec Command="$(DnuRestoreCommand) &quot;$(XunitWrapperGeneratedCSDirBase.TrimEnd('\\'))&quot;"
-          StandardOutputImportance="Low" />
-    
-    <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages...Done." />
 
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="BuildXunitWrapper" Properties="_CMDDIR=%(TestDirectories.Identity)" />
   </Target>
@@ -393,7 +368,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 {
   "dependencies": {
     "Microsoft.NETCore.Runtime.CoreCLR": "$(CoreclrPackageVersion)",
-    "Microsoft.NETCore.TestHost": "1.0.0-rc2-23816",
+    "Microsoft.NETCore.TestHost": "1.0.0-rc2-23816"
   },
   "frameworks": {
     "dnxcore50": {}

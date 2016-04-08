@@ -1,5 +1,5 @@
 .assembly extern mscorlib {}
-.assembly ldvirtftnsideeffect {.custom instance void [mscorlib]System.Security.SecurityRulesAttribute::.ctor(valuetype [mscorlib]System.Security.SecurityRuleSet) = ( 01 00 01 00 00 ) }
+.assembly ldvirtftnsideeffect { }
 .method public static class MyTest f(class MyTest)
 {
 ldarg.0

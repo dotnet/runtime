@@ -6,7 +6,7 @@
 }
 .assembly extern legacy library mscorlib {}
 
-.assembly legacy library ldfldr4 {.custom instance void [mscorlib]System.Security.SecurityRulesAttribute::.ctor(valuetype [mscorlib]System.Security.SecurityRuleSet) = ( 01 00 01 00 00 ) }
+.assembly legacy library ldfldr4 { }
 .class sealed private auto ansi beforefieldinit Test
        extends [mscorlib]System.Object
 {

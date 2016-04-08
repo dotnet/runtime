@@ -5,7 +5,7 @@
   .ver 4:0:0:0
 }
 .assembly extern legacy library mscorlib {}
-.assembly legacy library ldfldunboxedvt {.custom instance void [mscorlib]System.Security.SecurityRulesAttribute::.ctor(valuetype [mscorlib]System.Security.SecurityRuleSet) = ( 01 00 01 00 00 ) }
+.assembly legacy library ldfldunboxedvt { }
 .class public sequential ansi sealed beforefieldinit VT
        extends [mscorlib]System.ValueType
 {
