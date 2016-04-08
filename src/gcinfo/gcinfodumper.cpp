@@ -667,7 +667,7 @@ PORTABILITY_ASSERT("GcInfoDumper::EnumerateStateChanges is not implemented on th
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
         UINT32 safePointOffset = offset;
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM_) 
+#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM_) || defined(_TARGET_ARM64_) 
         safePointOffset++;
 #endif
         if(safePointDecoder.IsSafePoint(safePointOffset))
