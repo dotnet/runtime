@@ -322,17 +322,25 @@ per_thread_profiler_hit (void *ctx)
 	}
 }
 
+static gint32 profiler_signals_sent;
+static gint32 profiler_signals_received;
+static gint32 profiler_signals_accepted;
+
 MONO_SIG_HANDLER_FUNC (static, profiler_signal_handler)
 {
 	int old_errno = errno;
 	int hp_save_index;
 	MONO_SIG_HANDLER_GET_CONTEXT;
 
+	InterlockedIncrement (&profiler_signals_received);
+
 	if (mono_thread_info_get_small_id () == -1)
 		return; //an non-attached thread got the signal
 
 	if (!mono_domain_get () || !mono_native_tls_get_value (mono_jit_tls_id))
 		return; //thread in the process of dettaching
+
+	InterlockedIncrement (&profiler_signals_accepted);
 
 	hp_save_index = mono_hazard_pointer_save_for_signal_handler ();
 
@@ -718,6 +726,7 @@ sampling_thread_func (void *data)
 			g_assert (mono_thread_info_get_tid (info) != mono_native_thread_id_get ());
 
 			mono_threads_pthread_kill (info, profiler_signal);
+			InterlockedIncrement (&profiler_signals_sent);
 		} FOREACH_THREAD_SAFE_END
 
 		clock_sleep_ns_abs (sleep);
@@ -768,6 +777,10 @@ mono_runtime_setup_stat_profiler (void)
 #endif
 
 	add_signal_handler (profiler_signal, profiler_signal_handler, SA_RESTART);
+
+	mono_counters_register ("Sampling signals sent", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &profiler_signals_sent);
+	mono_counters_register ("Sampling signals received", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &profiler_signals_received);
+	mono_counters_register ("Sampling signals accepted", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &profiler_signals_accepted);
 
 	InterlockedWrite (&sampling_thread_running, 1);
 	mono_native_thread_create (&sampling_thread, sampling_thread_func, NULL);
