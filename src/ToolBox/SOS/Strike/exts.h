@@ -218,8 +218,15 @@ inline void DACMessage(HRESULT Status)
     ExtOut("If you are debugging a minidump, you need to make sure that your executable\n");
     ExtOut("path is pointing to coreclr.dll as well.\n");
 #else // FEATURE_PAL
-    ExtOut("You can run the debugger command 'setclrpath' to control the load of %s.\n", MAKEDLLNAME_A("mscordaccore"));
-    ExtOut("If that succeeds, the SOS command should work on retry.\n");
+    if (Status == CORDBG_E_MISSING_DEBUGGER_EXPORTS)
+    {
+        ExtOut("You can run the debugger command 'setclrpath' to control the load of %s.\n", MAKEDLLNAME_A("mscordaccore"));
+        ExtOut("If that succeeds, the SOS command should work on retry.\n");
+    }
+    else
+    {
+        ExtOut("Can not load or initialize %s. The target runtime may not be initialized.\n", MAKEDLLNAME_A("mscordaccore"));
+    }
 #endif // FEATURE_PAL
 }
 
