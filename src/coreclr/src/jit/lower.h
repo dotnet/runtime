@@ -151,7 +151,9 @@ private:
 #ifdef FEATURE_SIMD
     void TreeNodeInfoInitSIMD(GenTree* tree, LinearScan* lsra);
 #endif // FEATURE_SIMD
-
+#ifdef _TARGET_ARM64_
+    void TreeNodeInfoInitPutArgStk(GenTree* argNode, fgArgTabEntryPtr info);
+#endif // _TARGET_ARM64_
 #if defined(_TARGET_XARCH_)
     void TreeNodeInfoInitSimple(GenTree* tree, TreeNodeInfo* info, unsigned kind);
 #endif // defined(_TARGET_XARCH_)
