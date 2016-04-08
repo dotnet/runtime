@@ -274,7 +274,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     case 'arm64':
                         Utilities.addGithubPushTrigger(job)
                         if (os == 'Windows_NT') {
-                            addEmailPublisher(job, 'to:dotnetonarm64@microsoft.com')
+                            addEmailPublisher(job, 'dotnetonarm64@microsoft.com')
                         }
                         break
                     default:
@@ -776,7 +776,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
 					        }
                             Utilities.addPrivateGithubPRTriggerForBranch(job, branch, contextString,
                             "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}.*", null, ['erozenfeld', 'kyulee1', 'pgavlin', 'russellhadley', 'swaroop-sridhar', 'JosephTremoulet', 'jashook', 'RussKeldorph', 'gkhanna79', 'briansull', 'cmckinsey', 'jkotas', 'ramarag', 'markwilkie', 'rahku', 'tzwlai', 'weshaggard', 'LLITCHEV'])
-                            addEmailPublisher(job, 'to:dotnetonarm64@microsoft.com')
+                            addEmailPublisher(job, 'dotnetonarm64@microsoft.com')
                             break
 					}
 				    break
