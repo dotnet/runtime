@@ -58,31 +58,42 @@ def static getJobName(def name, def branchName) {
 // **************************
 
 branchList.each { branchName ->
-    def isPR = (branchName == 'pr') 
-    def newJob = job(getJobName(Utilities.getFullJobName(project, 'code_coverage_windows', isPR), branchName)) {
-        steps {
-            batchFile('call "C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\Common7\\Tools\\VsDevCmd.bat" && build.cmd /p:Coverage=true /p:Outerloop=true')
-        }
-    }
-    
+    ['local', 'nonlocal'].each { localType ->
+		def isPR = (branchName == 'pr') 
+		def isLocal = (localType == 'local')
 
-    // Set up standard options
-    Utilities.standardJobSetup(newJob, project, isPR, getFullBranchName(branchName))
-    // Set the machine affinity to windows machines
-    Utilities.setMachineAffinity(newJob, 'Windows_NT', 'latest-or-auto')
-    // Publish reports
-    Utilities.addHtmlPublisher(newJob, 'bin/tests/coverage', 'Code Coverage Report', 'index.htm')
-    // Archive results.
-    Utilities.addArchival(newJob, '**/coverage/*,msbuild.log')
-    // Set triggers
-    if (isPR) {
-        // Set PR trigger
-        Utilities.addGithubPRTrigger(newJob, 'Code Coverage Windows Debug', '(?i).*test\\W+code\\W+coverage.*')
-    }
-    else {
-        // Set a periodic trigger
-        Utilities.addPeriodicTrigger(newJob, '@daily')
-    }
+		def newJobName = 'code_coverage_windows'
+		def batchCommand = 'call "C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\Common7\\Tools\\VsDevCmd.bat" && build.cmd /p:Coverage=true /p:Outerloop=true'
+		if (isLocal) {
+			newJobName = "${newJobName}_local"
+			batchCommand = "${batchCommand} /p:TestWithLocalLibraries=true"
+		}
+		def newJob = job(getJobName(Utilities.getFullJobName(project, newJobName, isPR), branchName)) {
+			steps {
+				batchFile(batchCommand)
+			}
+		}
+
+		// Set up standard options
+		Utilities.standardJobSetup(newJob, project, isPR, getFullBranchName(branchName))
+		// Set the machine affinity to windows machines
+		Utilities.setMachineAffinity(newJob, 'Windows_NT', 'latest-or-auto')
+		// Publish reports
+		Utilities.addHtmlPublisher(newJob, 'bin/tests/coverage', 'Code Coverage Report', 'index.htm')
+		// Archive results.
+		Utilities.addArchival(newJob, '**/coverage/*,msbuild.log')
+		// Set triggers
+		if (isPR) {
+			if (!isLocal) {
+				// Set PR trigger
+				Utilities.addGithubPRTrigger(newJob, 'Code Coverage Windows Debug', '(?i).*test\\W+code\\W+coverage.*')
+			}
+		}
+		else {
+			// Set a periodic trigger
+			Utilities.addPeriodicTrigger(newJob, '@daily')
+		}
+	}
 }
 
 // **************************
