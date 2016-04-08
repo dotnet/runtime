@@ -67,6 +67,7 @@
     <Compile Include="System\MissingMethodException.cs" />
     <Compile Include="System\MulticastDelegate.cs" />
     <Compile Include="System\Nullable.cs" />
+    <Compile Include="System\ExceptionTests.cs" />
     <Compile Include="System\Object.cs" />
     <Compile Include="System\Runtime\CompilerServices\ConditionalWeakTable.cs" />
     <Compile Include="System\Runtime\CompilerServices\StrongBox.cs" />
@@ -116,7 +117,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Compile tests against the System.Runtime contract, but copy our local-built implementation for testing -->
-	<ProjectReference Include="..\ref\System.Runtime.csproj">
+    <ProjectReference Include="..\ref\System.Runtime.csproj">
       <Project>{446de6f0-47a0-4c2f-a918-768a76ccf461}</Project>
       <Name>System.Runtime</Name>
       <!-- Don't copy the reference assembly to output -->
