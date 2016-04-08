@@ -10,6 +10,7 @@
 #include <glib.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-membar.h>
+#include <mono/utils/mono-publib.h>
 
 #define HAZARD_POINTER_COUNT 3
 
@@ -29,7 +30,7 @@ typedef enum {
 	HAZARD_FREE_ASYNC_CTX,
 } HazardFreeContext;
 
-gboolean mono_thread_hazardous_try_free (gpointer p, MonoHazardousFreeFunc free_func);
+MONO_API gboolean mono_thread_hazardous_try_free (gpointer p, MonoHazardousFreeFunc free_func);
 void mono_thread_hazardous_queue_free (gpointer p, MonoHazardousFreeFunc free_func);
 
 void mono_thread_hazardous_try_free_all (void);
