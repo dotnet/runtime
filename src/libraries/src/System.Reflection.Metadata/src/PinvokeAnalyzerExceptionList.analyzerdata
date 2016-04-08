@@ -1,3 +1,0 @@
-<!-- This PInvoke is allowed on Windows, however the DLL is built as AnyCPU. -->
-<!-- To remove the error, consider building only for Windows, or remove the PInvoke dependency. -->
-api-ms-win-core-file-l1-1-0.dll!ReadFile
