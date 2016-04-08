@@ -1148,6 +1148,7 @@ public static class ArrayTests
         yield return new object[] { nullableArray, 100, 4, 5, -1 };
 
         yield return new object[] { new int[0], 0, 0, 0, -1 };
+        yield return new object[] { new int[0], 0, -1, 0, -1 };
     }
 
     public static IEnumerable<object[]> LastIndexOf_Generic_TestData()
@@ -1158,6 +1159,8 @@ public static class ArrayTests
         yield return new object[] { intArray, 8, 3, 3, 3 };
         yield return new object[] { intArray, 7, 3, 2, -1 };
         yield return new object[] { intArray, 7, 3, 3, 1 };
+        yield return new object[] { new int[0], 0, 0, 0, -1 };
+        yield return new object[] { new int[0], 0, -1, 0, -1 };
     }
 
     [Theory]
@@ -1233,6 +1236,26 @@ public static class ArrayTests
         // Count < 0
         Assert.Throws<ArgumentOutOfRangeException>("count", () => Array.LastIndexOf(intArray, "", 0, -1));
         Assert.Throws<ArgumentOutOfRangeException>("count", () => Array.LastIndexOf(stringArray, "", 0, -1));
+    }
+    
+    public static IEnumerable<object[]> IStructuralComparable_TestData()
+    {
+        var intArray = new int[] { 2, 3, 4, 5 };
+
+        yield return new object[] { intArray, intArray, new IntegerComparer(), 0 };
+        yield return new object[] { intArray, new int[] { 2, 3, 4, 5 }, new IntegerComparer(), 0 };
+
+        yield return new object[] { intArray, new int[] { 1, 3, 4, 5 }, new IntegerComparer(), 1 };
+        yield return new object[] { intArray, new int[] { 2, 2, 4, 5 }, new IntegerComparer(), 1 };
+        yield return new object[] { intArray, new int[] { 2, 3, 3, 5 }, new IntegerComparer(), 1 };
+        yield return new object[] { intArray, new int[] { 2, 3, 4, 4 }, new IntegerComparer(), 1 };
+
+        yield return new object[] { intArray, new int[] { 3, 3, 4, 5 }, new IntegerComparer(), -1 };
+        yield return new object[] { intArray, new int[] { 2, 4, 4, 5 }, new IntegerComparer(), -1 };
+        yield return new object[] { intArray, new int[] { 2, 3, 5, 5 }, new IntegerComparer(), -1 };
+        yield return new object[] { intArray, new int[] { 2, 3, 4, 6 }, new IntegerComparer(), -1 };
+
+        yield return new object[] { intArray, null, new IntegerComparer(), 1 };
     }
 
     [Theory]
@@ -1988,26 +2011,6 @@ public static class ArrayTests
 
         Assert.Throws<ArgumentOutOfRangeException>("dstIndex", () => iList.CopyTo(new int[7], -1)); // Index < 0
         Assert.Throws<ArgumentException>("", () => iList.CopyTo(new int[7], 8)); // Index > destinationArray.Length
-    }
-
-    public static IEnumerable<object[]> IStructuralComparable_TestData()
-    {
-        var intArray = new int[] { 2, 3, 4, 5 };
-
-        yield return new object[] { intArray, intArray, new IntegerComparer(), 0 };
-        yield return new object[] { intArray, new int[] { 2, 3, 4, 5 }, new IntegerComparer(), 0 };
-
-        yield return new object[] { intArray, new int[] { 1, 3, 4, 5 }, new IntegerComparer(), 1 };
-        yield return new object[] { intArray, new int[] { 2, 2, 4, 5 }, new IntegerComparer(), 1 };
-        yield return new object[] { intArray, new int[] { 2, 3, 3, 5 }, new IntegerComparer(), 1 };
-        yield return new object[] { intArray, new int[] { 2, 3, 4, 4 }, new IntegerComparer(), 1 };
-
-        yield return new object[] { intArray, new int[] { 3, 3, 4, 5 }, new IntegerComparer(), -1 };
-        yield return new object[] { intArray, new int[] { 2, 4, 4, 5 }, new IntegerComparer(), -1 };
-        yield return new object[] { intArray, new int[] { 2, 3, 5, 5 }, new IntegerComparer(), -1 };
-        yield return new object[] { intArray, new int[] { 2, 3, 4, 6 }, new IntegerComparer(), -1 };
-
-        yield return new object[] { intArray, null, new IntegerComparer(), 1 };
     }
 
     private static void VerifyArray(Array array, int rank, int[] lengths, int[] lowerBounds, int[] upperBounds, bool checkIList)
