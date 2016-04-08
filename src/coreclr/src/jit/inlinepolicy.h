@@ -13,6 +13,7 @@
 // LegacyPolicy        - policy that provides legacy inline behavior
 // RandomPolicy        - randomized inlining
 // DiscretionaryPolicy - legacy variant with uniform size policy
+// ModelPolicy         - policy based on statistical modelling
 
 #ifndef _INLINE_POLICY_H_
 #define _INLINE_POLICY_H_
@@ -115,13 +116,13 @@ public:
 
 protected:
 
+    // Constants
+    enum { MAX_BASIC_BLOCKS = 5, SIZE_SCALE = 10 };
+
     // Helper methods
     double DetermineMultiplier();
     int DetermineNativeSizeEstimate();
     int DetermineCallsiteNativeSizeEstimate(CORINFO_METHOD_INFO* methodInfo);
-
-    // Constants
-    const unsigned MAX_BASIC_BLOCKS = 5;
 
     // Data members
     Compiler*               m_RootCompiler;                      // root compiler instance
@@ -215,10 +216,12 @@ public:
     // Miscellaneous
     const char* GetName() const override { return "DiscretionaryPolicy"; }
 
-private:
+protected:
     
     void ComputeOpcodeBin(OPCODE opcode);
-    enum { MAX_ARGS = 4 };
+    void EstimateCodeSize();
+    void MethodInfoObservations(CORINFO_METHOD_INFO* methodInfo);
+    enum { MAX_ARGS = 6 };
 
     unsigned    m_Depth;
     unsigned    m_BlockCount;
@@ -257,6 +260,24 @@ private:
     unsigned    m_LoadAddressCount;
     unsigned    m_ThrowCount;
     unsigned    m_CallCount;
+    int         m_ModelCodeSizeEstimate;
+};
+
+// ModelPolicy is an experimental policy that uses the results
+// of data modelling to make estimates.
+
+class ModelPolicy : public DiscretionaryPolicy
+{
+public:
+
+    // Construct a ModelPolicy
+    ModelPolicy(Compiler* compiler, bool isPrejitRoot);
+
+    // Policy determinations
+    void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo) override;
+
+    // Miscellaneous
+    const char* GetName() const override { return "ModelPolicy"; }
 };
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
