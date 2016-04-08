@@ -448,6 +448,8 @@ constant_pool_hash (ConstantPoolEntry *entry)
 		case PT_ENUMKLASS:
 			return (guint) entry->data;
 	}
+	g_assert (FALSE);
+	return FALSE;
 }
 
 static gboolean
@@ -471,6 +473,8 @@ constant_pool_equal (gconstpointer v1, gconstpointer v2)
 		case PT_ENUMKLASS:
 			return TRUE;
 	}
+	g_assert (FALSE);
+	return FALSE;
 }
 
 
