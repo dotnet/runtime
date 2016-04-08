@@ -67,7 +67,7 @@ int32_t GetLocale(
         char language[ULOC_LANG_CAPACITY];
         uloc_getLanguage(localeNameTemp, language, ULOC_LANG_CAPACITY, err);
 
-        if (*err == U_STRING_NOT_TERMINATED_WARNING)
+        if (*err == U_BUFFER_OVERFLOW_ERROR || *err == U_STRING_NOT_TERMINATED_WARNING)
         {
             // ULOC_LANG_CAPACITY includes the null terminator, so if we couldn't extract the language with the null
             // terminator, the language must be invalid.

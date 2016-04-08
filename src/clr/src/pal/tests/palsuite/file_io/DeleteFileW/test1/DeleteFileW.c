@@ -42,11 +42,15 @@ int __cdecl main(int argc, char *argv[])
     if (tempFile == NULL)
     {
         Fail ("DeleteFileW: ERROR: Couldn't create \"DeleteFileW's"
-            " testFile.tmp\"\n");
+            " testFile01.tmp\"\n");
     }
 
     fprintf(tempFile, "DeleteFileW test file.\n");
-    fclose(tempFile);
+    if (fclose(tempFile) != 0)
+    {
+        Fail ("DeleteFileA: ERROR: Couldn't close \"DeleteFileW's"
+        " testFile01.tmp\"\n");   
+    }
 
     pTemp = convert("testFile01.tmp");
     bRc = DeleteFileW(pTemp);
@@ -54,7 +58,8 @@ int __cdecl main(int argc, char *argv[])
     if (bRc != TRUE)
     {
         Fail ("DeleteFileW: ERROR: Couldn't delete DeleteFileW's"
-            " \"testFile01.tmp\"\n");
+            " \"testFile01.tmp\"\n"
+            " Error is %d\n", GetLastError());
     }
 
 
@@ -81,18 +86,23 @@ int __cdecl main(int argc, char *argv[])
     if (tempFile == NULL)
     {
         Fail("DeleteFileW: ERROR: Couldn't create \"DeleteFileW's"
-            " testFile.tmp\"\n");
+            " testFile03.tmp\"\n");
     }
 
     fprintf(tempFile, "DeleteFileW test file.\n");
-    fclose(tempFile);
+    if (fclose(tempFile) != 0)
+    {
+        Fail ("DeleteFileA: ERROR: Couldn't close \"DeleteFileW's"
+        " testFile03.tmp\"\n");   
+    }
 
     pTemp = convert("testFile03.tmp");
     bRc = DeleteFileW(pTemp);
     if (bRc != TRUE)
     {
         Fail("DeleteFileW: ERROR: Couldn't delete DeleteFileW's"
-            " \"testFile01.tmp\"\n");
+            " \"testFile03.tmp\"\n"
+            " Error is %d\n", GetLastError());
         free(pTemp);
     }
     bRc = DeleteFileW(pTemp);
@@ -113,7 +123,11 @@ int __cdecl main(int argc, char *argv[])
             " \"testFile04.tmp\"\n");
     }
     fprintf(tempFile, "DeleteFileW test file.\n");
-    fclose(tempFile);
+    if (fclose(tempFile) != 0)
+    {
+        Fail ("DeleteFileA: ERROR: Couldn't close \"DeleteFileW's"
+        " testFile04.tmp\"\n");   
+    }
 
     // delete using '?'
     pTemp = convert("testFile0?.tmp");
@@ -141,7 +155,8 @@ int __cdecl main(int argc, char *argv[])
     if (bRc != TRUE)
     {
         Fail ("DeleteFileW: ERROR: Couldn't delete DeleteFileW's"
-            " \"testFile04.tmp\"\n");
+            " \"testFile04.tmp\"\n"
+            " Error is %d\n", GetLastError());
     }
 
     PAL_Terminate();  

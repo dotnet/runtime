@@ -1,5 +1,5 @@
 .assembly extern mscorlib {}
-.assembly volatilstind {.custom instance void [mscorlib]System.Security.SecurityRulesAttribute::.ctor(valuetype [mscorlib]System.Security.SecurityRuleSet) = ( 01 00 01 00 00 ) }
+.assembly volatilstind { }
 .method public static void f()
 {
 .locals init (int32* V_0)

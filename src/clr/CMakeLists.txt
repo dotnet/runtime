@@ -35,9 +35,14 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
         set(CLR_CMAKE_PLATFORM_UNIX_TARGET_ARM 1)
         # Because we don't use CMAKE_C_COMPILER/CMAKE_CXX_COMPILER to use clang
         # we have to set the triple by adding a compiler argument
-        add_compile_options(-target armv7-linux-gnueabihf)
         add_compile_options(-mthumb)
         add_compile_options(-mfpu=vfpv3)
+        if(ARM_SOFTFP)
+            add_compile_options(-mfloat-abi=softfp)
+            add_compile_options(-target armv7-linux-gnueabi)
+        else()
+            add_compile_options(-target armv7-linux-gnueabihf)
+        endif(ARM_SOFTFP)
     elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64)
         set(CLR_CMAKE_PLATFORM_UNIX_TARGET_ARM64 1)
     else()
@@ -667,15 +672,9 @@ endif()
 if(CLR_CMAKE_PLATFORM_UNIX)
   add_subdirectory(src/ToolBox/SOS/lldbplugin)
   add_subdirectory(src/pal)
-  add_subdirectory(src/coreclr/hosts/unixcoreruncommon)
-  add_subdirectory(src/coreclr/hosts/unixcorerun)
-  add_subdirectory(src/coreclr/hosts/unixcoreconsole)
+  add_subdirectory(src/coreclr/hosts)
   add_subdirectory(src/ildasm/unixcoreclrloader)
 endif(CLR_CMAKE_PLATFORM_UNIX)
-
-if(CLR_CMAKE_PLATFORM_DARWIN)
-  add_subdirectory(src/coreclr/hosts/osxbundlerun)
-endif(CLR_CMAKE_PLATFORM_DARWIN)
 
 # Add this subdir. We install the headers for the jit.
 add_subdirectory(src/pal/prebuilt/inc)
@@ -698,6 +697,7 @@ set(CMAKE_CXX_STANDARD_LIBRARIES "") # do not link against standard win32 libs i
 
 # Include the basic prebuilt headers - required for getting fileversion resource details.
 include_directories("src/pal/prebuilt/inc")
+include_directories("bin/obj")
 
 if (CLR_CMAKE_PLATFORM_UNIX)
   include_directories("src/pal/inc")

@@ -783,12 +783,12 @@ class Test
         S_INTPTRArray_Seq s11 = new S_INTPTRArray_Seq();
         s11.arr = InitIntPtrArray(ARRAY_SIZE);
         TestHelper.Assert(TakeIntPtrArraySeqStructByVal(s11, s11.arr.Length), "TakeIntPtrArraySeqStructByVal");
-             
 
+#if NONWINDOWS_BUG
         S_StructArray_Seq s14 = new S_StructArray_Seq();
         s14.arr = InitStructArray(ARRAY_SIZE);
         TestHelper.Assert(TakeStructArraySeqStructByVal(s14, s14.arr.Length),"TakeStructArraySeqStructByVal");
-
+#endif
         return true;
     }
 
@@ -842,12 +842,12 @@ class Test
         C_LPCSTRArray_Seq c12 = new C_LPCSTRArray_Seq();
         c12.arr = InitArray<string>(ARRAY_SIZE);
         TestHelper.Assert(TakeLPCSTRArraySeqClassByVal(c12, c12.arr.Length));
-              
 
+#if NONWINDOWS_BUG
         C_StructArray_Seq c14 = new C_StructArray_Seq();
         c14.arr = InitStructArray(ARRAY_SIZE);
         TestHelper.Assert(TakeStructArraySeqClassByVal(c14, c14.arr.Length));
-
+#endif
         return true;
     }
 
@@ -903,11 +903,12 @@ class Test
         S_LPCSTRArray_Exp s12 = new S_LPCSTRArray_Exp();
         s12.arr = InitArray<string>(ARRAY_SIZE);
         TestHelper.Assert(TakeLPCSTRArrayExpStructByVal(s12, s12.arr.Length));
-            
 
+#if NONWINDOWS_BUG
         S_StructArray_Exp s14 = new S_StructArray_Exp();
         s14.arr = InitStructArray(ARRAY_SIZE);
         TestHelper.Assert(TakeStructArrayExpStructByVal(s14, s14.arr.Length));
+#endif
 
         return true;
     }
@@ -965,12 +966,11 @@ class Test
         c12.arr = InitArray<string>(ARRAY_SIZE);
         TestHelper.Assert(TakeLPCSTRArrayExpClassByVal(c12, c12.arr.Length));
 
-     
-
+#if NONWINDOWS_BUG
         C_StructArray_Exp c14 = new C_StructArray_Exp();
         c14.arr = InitStructArray(ARRAY_SIZE);
         TestHelper.Assert(TakeStructArrayExpClassByVal(c14, c14.arr.Length));
-
+#endif
         return true;
     }
 
@@ -1010,11 +1010,11 @@ class Test
         C_LPSTRArray_Seq retval11 = S_LPSTRArray_Ret();
         TestHelper.Assert(Equals(InitArray<string>(ARRAY_SIZE), retval11.arr));
 
-      
+#if NONWINDOWS_BUG
 
         C_StructArray_Seq retval13 = S_StructArray_Ret();
         TestHelper.Assert(TestStructEquals(InitStructArray(ARRAY_SIZE), retval13.arr));
-                
+#endif     
         return true;
     }
 
@@ -1054,20 +1054,18 @@ class Test
         C_LPSTRArray_Exp retval11 = S_LPSTRArray_Ret2();
         TestHelper.Assert(Equals(InitArray<string>(ARRAY_SIZE), retval11.arr));
 
-     
-
+#if NONWINDOWS_BUG
         C_StructArray_Exp retval13 = S_StructArray_Ret2();
         TestHelper.Assert(TestStructEquals(InitStructArray(ARRAY_SIZE), retval13.arr));
-
+#endif
         return true;
     }
 
     static int Main(string[] args)
     {
         RunTest1("RunTest1 : Marshal array as field as ByValArray in sequential struct as parameter.");
-        RunTest3("RunTest3 : Marshal array as field as ByValArray in explicit struct as parameter.");
-
         RunTest2("RunTest2 : Marshal array as field as ByValArray in sequential class as parameter.");
+        RunTest3("RunTest3 : Marshal array as field as ByValArray in explicit struct as parameter.");        
         RunTest4("RunTest4 : Marshal array as field as ByValArray in explicit class as parameter.");
         RunTest5("RunTest5 : Marshal array as field as ByValArray in sequential class as return type.");
         RunTest6("RunTest6 : Marshal array as field as ByValArray in explicit class as return type.");

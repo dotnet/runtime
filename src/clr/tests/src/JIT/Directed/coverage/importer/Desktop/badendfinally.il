@@ -1,5 +1,5 @@
 .assembly extern mscorlib {}
-.assembly badendfinally {.custom instance void [mscorlib]System.Security.SecurityRulesAttribute::.ctor(valuetype [mscorlib]System.Security.SecurityRuleSet) = ( 01 00 01 00 00 ) }
+.assembly badendfinally { }
 .method public static int32 f() noinlining
 {
 endfinally
