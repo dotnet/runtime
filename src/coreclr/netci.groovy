@@ -877,9 +877,11 @@ combinedScenarios.each { scenario ->
                             return
                         }
                         
+                        enableCorefxTesting = isCorefxTesting(scenario)
+                        
                         // Since these are just execution time differences,
                         // skip platforms that don't execute the tests here (Windows_NT only)
-                        def isEnabledOS = os == 'Windows_NT' || os == 'Ubuntu'
+                        def isEnabledOS = os == 'Windows_NT' || (os == 'Ubuntu' && enableCorefxTesting)
                         if (!isEnabledOS || isBuildOnly) {
                             return
                         }
@@ -888,16 +890,15 @@ combinedScenarios.each { scenario ->
                         if (architecture != 'x64') {
                             return
                         }
-                        
-                        enableCorefxTesting = isCorefxTesting(scenario)
                     }
                     else {
                         def basicCrossList = ['Ubuntu', 'OSX', 'CentOS7.1']
                         // Skip scenarios
                         switch (scenario) {
                             case 'pri1':
-                                // The pri1 build isn't necessary except for os's in the cross list or Windows_NT (native OS runs)
-                                if (os != 'Windows_NT' && !(os in Constants.crossList)) {
+                                // The pri1 build isn't necessary except for Windows_NT.  Non-Windows NT uses
+                                // the default scenario build
+                                if (os != 'Windows_NT') {
                                     return
                                 }
                                 // Only x64 for now
@@ -906,8 +907,9 @@ combinedScenarios.each { scenario ->
                                 }
                                 break
                             case 'ilrt':
-                                // The ilrt build isn't necessary except for os's in the basic cross list or Windows_NT (native OS runs)
-                                if (os != 'Windows_NT' && !(os in basicCrossList)) {
+                                // The ilrt build isn't necessary except for Windows_NT.  Non-Windows NT uses
+                                // the default scenario build
+                                if (os != 'Windows_NT') {
                                     return
                                 }
                                 // Only x64 for now
@@ -916,8 +918,9 @@ combinedScenarios.each { scenario ->
                                 }
                                 break
                             case 'r2r':
-                                // The r2r build isn't necessary except for os's in the basic cross list or Windows_NT (native OS runs)
-                                if (os != 'Windows_NT' && !(os in basicCrossList)) {
+                                // The r2r build isn't necessary except for Windows_NT.  Non-Windows NT uses
+                                // the default scenario build
+                                if (os != 'Windows_NT') {
                                     return
                                 }
                                 // only x64 or x86 for now
@@ -926,8 +929,9 @@ combinedScenarios.each { scenario ->
                                 }
                                 break
                             case 'pri1r2r':
-                                // The pri1 r2r build isn't necessary except for os's in the cross list or Windows_NT (native OS runs)
-                                if (os != 'Windows_NT' && !(os in basicCrossList)) {
+                                // The pri1r2r build isn't necessary except for Windows_NT.  Non-Windows NT uses
+                                // the default scenario build
+                                if (os != 'Windows_NT') {
                                     return
                                 }
                                 // only x64 or x86 for now
@@ -936,8 +940,9 @@ combinedScenarios.each { scenario ->
                                 }
                                 break
                             case 'gcstress15_pri1r2r':
-                                // The GC stress r2r build isn't necessary except for os's in the cross list or Windows_NT (native OS runs)
-                                if (os != 'Windows_NT' && !(os in basicCrossList)) {
+                                // The gcstress15_pri1r2r build isn't necessary except for Windows_NT.  Non-Windows NT uses
+                                // the default scenario build
+                                if (os != 'Windows_NT') {
                                     return
                                 }
                                 // only x64 or x86 for now
