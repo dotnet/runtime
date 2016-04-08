@@ -34,7 +34,7 @@
 				br equal_types
 						       	
 	  bad:
-      			newobj     instance void [mscorlib]System.ApplicationException::.ctor()
+      			newobj     instance void [mscorlib]System.Exception::.ctor()
       			throw
       
 equal_types:

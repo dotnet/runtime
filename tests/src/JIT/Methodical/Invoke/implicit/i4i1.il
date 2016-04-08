@@ -53,7 +53,7 @@
   			ldc.i4	   0xffffff00
   			beq.s      looks_good
   throwex:
-  			newobj     instance void ['mscorlib']System.ApplicationException::.ctor()
+  			newobj     instance void ['mscorlib']System.Exception::.ctor()
   			throw
   looks_good:
 
@@ -102,7 +102,7 @@
                 ldc.i4.0
                 ceq
                 brtrue check_done
-                newobj	instance void [mscorlib]System.ApplicationException::.ctor()
+                newobj	instance void [mscorlib]System.Exception::.ctor()
                 throw
 		check_done:
 		
