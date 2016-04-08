@@ -17,6 +17,7 @@
   <ItemGroup>
     <Compile Include="ExceptionTest.cs" />
     <Compile Include="SqlBulkCopyColumnMappingCollectionTest.cs" />
+    <Compile Include="SqlStringTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.Data.SqlClient.csproj"> 
