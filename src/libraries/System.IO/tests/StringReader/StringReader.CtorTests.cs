@@ -56,8 +56,17 @@ namespace System.IO.Tests
         public static void ReadLine()
         {
             string str1 = "Hello\0\t\v   \\ World";
-            StringReader sr = new StringReader(str1);
-            Assert.Equal(str1, sr.ReadLine());
+            string str2 = str1 + Environment.NewLine + str1;
+
+            using (StringReader sr = new StringReader(str1))
+            {
+                Assert.Equal(str1, sr.ReadLine());
+            }
+            using (StringReader sr = new StringReader(str2))
+            {
+                Assert.Equal(str1, sr.ReadLine());
+                Assert.Equal(str1, sr.ReadLine());
+            }
         }
 
         [Fact]

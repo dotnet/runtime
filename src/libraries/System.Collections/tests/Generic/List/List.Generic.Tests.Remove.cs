@@ -54,7 +54,7 @@ namespace System.Collections.Tests
         [Fact]
         public void RemoveAll_NullMatchPredicate()
         {
-            Assert.Throws<ArgumentNullException>(() => new List<T>().RemoveAll(null));
+            Assert.Throws<ArgumentNullException>("match", () => new List<T>().RemoveAll(null));
         }
 
         #endregion
