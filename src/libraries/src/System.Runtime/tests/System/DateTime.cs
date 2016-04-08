@@ -646,7 +646,6 @@ public static class DateTimeTests
     [Fact]
     public static void InvalidDateTimeStyles()
     {
-        CultureInfo culture = new CultureInfo("en-US");
         string strDateTime = "Thursday, August 31, 2006 1:14";
         string[] formats = new string[] { "f" };
         IFormatProvider provider = new CultureInfo("en-US");
