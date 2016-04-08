@@ -24,11 +24,11 @@
 //  include 
 #ifdef _WIN32
 	#include <windows.h>
-	#include <wchar.h>
 	#include <tchar.h>
 #else
 	#include "types.h"
 #endif
+#include <wchar.h>
 
 
 // dllexport
