@@ -164,10 +164,6 @@ public:
     void                setFrameRequired(bool value)    { m_cgFrameRequired = value; }
 
 public:
-    regNumber           getFramePointerReg()            { if (isFramePointerUsed())
-                                                              return REG_FPBASE;
-                                                          else
-                                                              return REG_SPBASE; }
 
     int                 genCallerSPtoFPdelta();
     int                 genCallerSPtoInitialSPdelta();
