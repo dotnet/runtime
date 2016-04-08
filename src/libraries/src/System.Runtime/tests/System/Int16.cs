@@ -167,6 +167,9 @@ public static class Int16Tests
         numberFormat.NumberNegativePattern = 0;
         short i3 = -2468;
         Assert.Equal("(2*468.00)", i3.ToString("N", numberFormat));
+
+        short i4 = -10;
+        Assert.Equal("FFF6", i4.ToString("X", numberFormat));
     }
 
     public static IEnumerable<object[]> ParseValidData()

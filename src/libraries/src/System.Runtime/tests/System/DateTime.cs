@@ -208,6 +208,13 @@ public static class DateTimeTests
     }
 
     [Fact]
+    public static void TestLeapYears_Invalid()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>("year", () => DateTime.IsLeapYear(0));
+        Assert.Throws<ArgumentOutOfRangeException>("year", () => DateTime.IsLeapYear(10000));
+    }
+
+    [Fact]
     public static void TestAddition()
     {
         var dateTime = new DateTime(1986, 8, 15, 10, 20, 5, 70);
@@ -241,6 +248,13 @@ public static class DateTimeTests
     }
 
     [Fact]
+    public static void TestDayOfYear()
+    {
+        var dateTime = new DateTime(2012, 6, 18);
+        Assert.Equal(170, dateTime.DayOfYear);
+    }
+
+    [Fact]
     public static void TestTimeOfDay()
     {
         var dateTime = new DateTime(2012, 6, 18, 10, 5, 1, 0);
@@ -269,6 +283,9 @@ public static class DateTimeTests
         DateTime today = DateTime.Today;
         long dateTimeRaw = today.ToBinary();
         Assert.Equal(today, DateTime.FromBinary(dateTimeRaw));
+
+        dateTimeRaw = today.ToUniversalTime().ToBinary();
+        Assert.Equal(today.ToUniversalTime(), DateTime.FromBinary(dateTimeRaw));
 
         dateTimeRaw = today.ToFileTime();
         Assert.Equal(today, DateTime.FromFileTime(dateTimeRaw));
@@ -624,5 +641,15 @@ public static class DateTimeTests
         {
             return typeof(IFormatProvider) == formatType ? this : null;
         }
+    }
+
+    [Fact]
+    public static void InvalidDateTimeStyles()
+    {
+        string strDateTime = "Thursday, August 31, 2006 1:14";
+        string[] formats = new string[] { "f" };
+        IFormatProvider provider = new CultureInfo("en-US");
+        DateTimeStyles style = DateTimeStyles.AssumeLocal | DateTimeStyles.AssumeUniversal;
+        Assert.Throws<ArgumentException>(() => DateTime.ParseExact(strDateTime, formats, provider, style));
     }
 }
