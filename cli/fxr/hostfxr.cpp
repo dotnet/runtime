@@ -11,7 +11,7 @@
 #include "libhost.h"
 #include "runtime_config.h"
 
-typedef int(*corehost_load_fn) (const corehost_init_t* init);
+typedef int(*corehost_load_fn) (const host_interface_t* init);
 typedef int(*corehost_main_fn) (const int argc, const pal::char_t* argv[]);
 typedef int(*corehost_unload_fn) ();
 
@@ -47,7 +47,7 @@ int load_host_library(
 
 int execute_app(
     const pal::string_t& impl_dll_dir,
-    const corehost_init_t* init,
+    corehost_init_t* init,
     const int argc,
     const pal::char_t* argv[])
 {
@@ -63,15 +63,16 @@ int execute_app(
         trace::error(_X("Could not load host policy library from [%s]"), impl_dll_dir.c_str());
         if (init->fx_dir() == impl_dll_dir)
         {
-            pal::string_t name = init->runtime_config()->get_fx_name();
-            pal::string_t version = init->runtime_config()->get_fx_version();
-            trace::error(_X("This may be because the targeted framework [%s %s] was not found."),
+            pal::string_t name = init->fx_name();
+            pal::string_t version = init->fx_version();
+            trace::error(_X("This may be because the targeted framework [\"%s\": \"%s\"] was not found."),
                 name.c_str(), version.c_str());
         }
         return code;
     }
 
-    if ((code = host_load(init)) == 0)
+    const host_interface_t& intf = init->get_host_init_data();
+    if ((code = host_load(&intf)) == 0)
     {
         code = host_main(argc, argv);
         (void)host_unload();
@@ -100,7 +101,7 @@ bool hostpolicy_exists_in_svc(pal::string_t* resolved_dir)
     {
         replace_char(&rel_dir, '/', DIR_SEPARATOR);
     }
-    
+
     pal::string_t path = svc_dir;
     append_path(&path, _STRINGIFY(HOST_POLICY_PKG_NAME));
 
@@ -113,8 +114,8 @@ bool hostpolicy_exists_in_svc(pal::string_t* resolved_dir)
     {
         try_patch_roll_forward_in_dir(path, lib_ver, &max_ver);
     }
-    
-    
+
+
     append_path(&path, max_ver.c_str());
     append_path(&path, rel_dir.c_str());
 
@@ -132,38 +133,7 @@ SHARED_API int hostfxr_main(const int argc, const pal::char_t* argv[])
 {
     trace::setup();
 
-    pal::string_t own_dir;
-    auto mode = detect_operating_mode(argc, argv, &own_dir);
-
-    switch (mode)
-    {
-    case muxer:
-        {
-            trace::info(_X("Host operating in Muxer mode"));
-            fx_muxer_t muxer;
-            return muxer.execute(argc, argv);
-        }
-
-    case split_fx:
-        {
-            trace::info(_X("Host operating in split mode; own dir=[%s]"), own_dir.c_str());
-            corehost_init_t init(_X(""), std::vector<pal::string_t>(), own_dir, host_mode_t::split_fx, nullptr);
-            return execute_app(own_dir, &init, argc, argv);
-        }
-
-    case standalone:
-        {
-            trace::info(_X("Host operating from standalone app dir %s"), own_dir.c_str());
-
-            pal::string_t svc_dir;
-            corehost_init_t init(_X(""), std::vector<pal::string_t>(), _X(""), host_mode_t::standalone, nullptr);
-            return execute_app(
-                hostpolicy_exists_in_svc(&svc_dir) ? svc_dir : own_dir, &init, argc, argv);
-        }
-
-    default:
-        trace::error(_X("Unknown mode detected or could not resolve the mode."));
-        return StatusCode::CoreHostResolveModeFailure;
-    }
+    fx_muxer_t muxer;
+    return muxer.execute(argc, argv);
 }
 

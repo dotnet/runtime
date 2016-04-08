@@ -184,8 +184,7 @@ bool deps_resolver_t::try_roll_forward(const deps_entry_t& entry,
 }
 
 void deps_resolver_t::setup_probe_config(
-    const corehost_init_t* init,
-    const runtime_config_t& config,
+    const hostpolicy_init_t& init,
     const arguments_t& args)
 {
     if (pal::directory_exists(args.dotnet_extensions))
@@ -195,11 +194,11 @@ void deps_resolver_t::setup_probe_config(
         if (pal::directory_exists(ext_ni))
         {
             // Servicing NI probe.
-            m_probes.push_back(probe_config_t::svc_ni(ext_ni, config.get_patch_roll_fwd(), config.get_prerelease_roll_fwd()));
+            m_probes.push_back(probe_config_t::svc_ni(ext_ni, init.patch_roll_forward, init.prerelease_roll_forward));
         }
 
         // Servicing normal probe.
-        m_probes.push_back(probe_config_t::svc(args.dotnet_extensions, config.get_patch_roll_fwd(), config.get_prerelease_roll_fwd()));
+        m_probes.push_back(probe_config_t::svc(args.dotnet_extensions, init.patch_roll_forward, init.prerelease_roll_forward));
     }
 
     if (pal::directory_exists(args.dotnet_packages_cache))
