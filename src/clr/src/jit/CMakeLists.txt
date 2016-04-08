@@ -72,32 +72,30 @@ set( JIT_SOURCES
 
 if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
   set( ARCH_SOURCES
-    targetamd64.cpp
-    unwindamd64.cpp
+    codegenxarch.cpp
     emitxarch.cpp
     lowerxarch.cpp
-    codegenxarch.cpp
-    simdcodegenxarch.cpp
     simd.cpp
+    simdcodegenxarch.cpp
+    targetamd64.cpp
+    unwindamd64.cpp
   )
 elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
   set( ARCH_SOURCES
-    emitarm.cpp
-    targetarm.cpp
-    lowerarm.cpp
     codegenarm.cpp
+    emitarm.cpp
+    lowerarm.cpp
+    targetarm.cpp
     unwindarm.cpp
-    codegenlegacy.cpp
-    registerfp.cpp
   )
 elseif(CLR_CMAKE_PLATFORM_ARCH_I386)
   set( ARCH_SOURCES
-    emitxarch.cpp
-    targetx86.cpp
-    lowerxarch.cpp
     codegenxarch.cpp
-    codegenlegacy.cpp
-    stackfp.cpp
+    emitxarch.cpp
+    lowerxarch.cpp
+    simd.cpp
+    simdcodegenxarch.cpp
+    targetx86.cpp
   )
 elseif(CLR_CMAKE_PLATFORM_ARCH_ARM64)
   set( ARCH_SOURCES
@@ -112,10 +110,36 @@ else()
   clr_unknown_arch()
 endif()
 
+# The following defines all the source files used by the "legacy" back-end (#ifdef LEGACY_BACKEND).
+# It is always safe to include both legacy and non-legacy files in the build, as everything is properly
+# #ifdef'ed, though it makes the build slightly slower to do so. Note there is only a legacy backend for
+# x86 and ARM.
+
+if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
+  set( ARCH_LEGACY_SOURCES
+  )
+elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
+  set( ARCH_LEGACY_SOURCES
+    codegenlegacy.cpp
+    registerfp.cpp
+  )
+elseif(CLR_CMAKE_PLATFORM_ARCH_I386)
+  set( ARCH_LEGACY_SOURCES
+    codegenlegacy.cpp
+    stackfp.cpp
+  )
+elseif(CLR_CMAKE_PLATFORM_ARCH_ARM64)
+  set( ARCH_LEGACY_SOURCES
+  )
+else()
+  clr_unknown_arch()
+endif()
+
 set( SOURCES
   ${JIT_SOURCES}
   ${ARCH_SOURCES}
- )
+  ${ARCH_LEGACY_SOURCES}
+)
 
 convert_to_absolute_path(SOURCES ${SOURCES})
 
