@@ -183,7 +183,7 @@ get_dummy (MonoLockFreeQueue *q)
 static gboolean
 is_dummy (MonoLockFreeQueue *q, MonoLockFreeQueueNode *n)
 {
-	return n >= &q->dummies [0].node && n < &q->dummies [MONO_LOCK_FREE_QUEUE_NUM_DUMMIES].node;
+	return n >= &q->dummies [0].node && n <= &q->dummies [MONO_LOCK_FREE_QUEUE_NUM_DUMMIES-1].node;
 }
 
 static gboolean
