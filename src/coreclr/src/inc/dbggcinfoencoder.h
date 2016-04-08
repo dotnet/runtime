@@ -24,7 +24,8 @@
 #include "utilcode.h"
 #include "corjit.h"
 #include "list.h"     // for SList
-#include "arraylist.h"
+#include "iallocator.h"
+#include "gcinfoarraylist.h"
 
 #include "stdmacros.h"
 #include "gcinfotypes.h"
@@ -343,14 +344,6 @@ private:
         bool BecomesLive;
     };
 
-    class LifetimeTransitionAllocator
-    {
-    public:
-
-        static void *Alloc (void *context, SIZE_T cb);
-        static void Free (void *context, void *pv);
-    };
-
     ICorJitInfo*                m_pCorJitInfo;
     CORINFO_METHOD_INFO*        m_pMethodInfo;
     IJitAllocator*              m_pAllocator;
@@ -367,7 +360,7 @@ private:
 #endif
     BitStreamWriter     m_FullyInterruptibleInfoWriter;
 
-    StructArrayList<LifetimeTransition, 64, 2, LifetimeTransitionAllocator> m_LifetimeTransitions;
+    GcInfoArrayList<LifetimeTransition, 64> m_LifetimeTransitions;
     LifetimeTransition *m_rgSortedTransitions;
 
     bool   m_IsVarArg;
