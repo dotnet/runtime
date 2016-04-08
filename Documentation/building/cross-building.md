@@ -34,7 +34,7 @@ For example, to generate an arm rootfs:
 
 and if you wanted to generate the rootfs elsewhere:
 
-    ben@ubuntu ~/git/coreclr/ $ sudo ROOTFS_DIR=/home/ben/coreclr-cross/arm ./build-rootfs.sh arm
+    ben@ubuntu ~/git/coreclr/ $ sudo ROOTFS_DIR=/home/ben/coreclr-cross/arm ./cross/build-rootfs.sh arm
 
 
 Cross compiling CoreCLR
