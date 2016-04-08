@@ -2,25 +2,25 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Text.Tests
 {
-    // GetString(System.Byte[],System.Int32,System.Int32)
     public class UTF8EncodingGetString
     {
-        #region Positive Test Cases
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> GetString_TestData()
         {
-            Byte[] bytes = new Byte[] {
-                             85,  84,  70,  56,  32,  69, 110,
-                             99, 111, 100, 105, 110, 103,  32,
-                             69, 120,  97, 109, 112, 108, 101};
-
-            UTF8Encoding utf8 = new UTF8Encoding();
-            string str = utf8.GetString(bytes, 0, bytes.Length);
+            byte[] bytes = new byte[] { 85, 84, 70, 56, 32, 69, 110, 99, 111, 100, 105, 110, 103, 32, 69, 120, 97, 109, 112, 108, 101 };
+            string expected = "UTF8 Encoding Example";
+            yield return new object[] { bytes, 0, bytes.Length, expected };
         }
-        #endregion
+
+        [Theory]
+        [MemberData(nameof(GetString_TestData))]
+        public void GetString(byte[] bytes, int index, int count, string expected)
+        {
+            EncodingHelpers.GetString(new UTF8Encoding(), bytes, index, count, expected);
+        }
     }
 }

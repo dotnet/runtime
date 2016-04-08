@@ -6,18 +6,14 @@ using Xunit;
 
 namespace System.Text.Tests
 {
-    // GetMaxByteCount(System.Int32)
     public class UTF8EncodingGetMaxByteCount
     {
-        #region Positive Test Cases
-        // PosTest1: Verify method GetMaxByteCount
-        [Fact]
-        public void PosTest1()
+        [Theory]
+        [InlineData(0, 3)]
+        [InlineData(8, 27)]
+        public void GetMaxByteCount(int charCount, int expected)
         {
-            UTF8Encoding utf8 = new UTF8Encoding();
-            int charCount = 0;
-            int maxByteCount = utf8.GetMaxByteCount(charCount);
+            Assert.Equal(expected, new UTF8Encoding().GetMaxByteCount(charCount));
         }
-        #endregion
     }
 }

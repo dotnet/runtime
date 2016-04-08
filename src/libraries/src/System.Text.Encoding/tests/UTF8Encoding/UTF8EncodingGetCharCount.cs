@@ -6,33 +6,14 @@ using Xunit;
 
 namespace System.Text.Tests
 {
-    // GetByteCount(System.Char[],System.Int32,System.Int32)
     public class UTF8EncodingGetCharCount
     {
-        #region Positive Test Cases
-        // PosTest1: Verify method GetByteCount with a non-null Byte[]
-        [Fact]
-        public void PosTest1()
+        [Theory]
+        [InlineData(new byte[] { 85, 84, 70, 56, 32, 69, 110, 99, 111, 100, 105, 110, 103, 32, 69, 120, 97, 109, 112, 108, 101 }, 2, 8, 8)]
+        [InlineData(new byte[0], 0, 0, 0)]
+        public void GetCharCount(byte[] bytes, int index, int count, int expected)
         {
-            Byte[] bytes = new Byte[] {
-                                         85,  84,  70,  56,  32,  69, 110,
-                                         99, 111, 100, 105, 110, 103,  32,
-                                         69, 120,  97, 109, 112, 108, 101};
-
-            UTF8Encoding utf8 = new UTF8Encoding();
-            int charCount = utf8.GetCharCount(bytes, 2, 8);
-            Assert.Equal(8, charCount);
+            EncodingHelpers.GetCharCount(new UTF8Encoding(), bytes, index, count, expected);
         }
-
-        // PosTest2: Verify method GetByteCount with a null Byte[]
-        [Fact]
-        public void PosTest2()
-        {
-            Byte[] bytes = new Byte[] { };
-            UTF8Encoding utf8 = new UTF8Encoding();
-            int charCount = utf8.GetCharCount(bytes, 0, 0);
-            Assert.Equal(0, charCount);
-        }
-        #endregion
     }
 }
