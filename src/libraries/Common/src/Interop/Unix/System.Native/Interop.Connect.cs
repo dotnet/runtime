@@ -9,7 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_Connect_IntPtr")]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_Connect")]
         internal static extern unsafe Error Connect(SafeHandle socket, byte* socketAddress, int socketAddressLen);
     }
 }
