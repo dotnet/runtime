@@ -41,7 +41,7 @@
 			call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle )
 			ceq
 			brtrue OK
-			newobj		instance void [mscorlib]System.ApplicationException::.ctor()
+			newobj		instance void [mscorlib]System.Exception::.ctor()
 			throw
 		OK:
 			ldarg.1

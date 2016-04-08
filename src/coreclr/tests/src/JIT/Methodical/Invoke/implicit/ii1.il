@@ -51,7 +51,7 @@
   			ldc.i4	   0xffffff00
   			beq.s      looks_good
   throwex:
-  			newobj     instance void ['mscorlib']System.ApplicationException::.ctor()
+  			newobj     instance void ['mscorlib']System.Exception::.ctor()
   			throw
   looks_good:
       	

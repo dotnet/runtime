@@ -281,7 +281,7 @@
 } 
 
 .class private auto ansi beforefieldinit MyException
-       extends [mscorlib]System.ApplicationException
+       extends [mscorlib]System.Exception
 {
   .method public hidebysig specialname rtspecialname 
           instance void  .ctor(string msg) cil managed
@@ -289,7 +289,7 @@
     .maxstack  2
     IL_0000:  ldarg.0
     IL_0001:  ldarg.1
-    IL_0002:  call       instance void [mscorlib]System.ApplicationException::.ctor(string)
+    IL_0002:  call       instance void [mscorlib]System.Exception::.ctor(string)
     IL_0007:  ldarg.0
     IL_0008:  ldstr      "http://NotARealURL.Microsoft.com/help.html"
     IL_000d:  callvirt   instance void [mscorlib]System.Exception::set_HelpLink(string)

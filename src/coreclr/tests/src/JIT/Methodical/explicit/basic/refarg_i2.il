@@ -41,7 +41,7 @@
       IL_0013:  ldc.i4.s   11
       IL_0015:  beq.s      IL_001d
 
-      IL_0017:  newobj     instance void ['mscorlib']System.ApplicationException::.ctor()
+      IL_0017:  newobj     instance void ['mscorlib']System.Exception::.ctor()
       IL_001c:  throw
 
       IL_001d:  ldarg.0
@@ -58,7 +58,7 @@
       IL_0038:  ldc.i4.s   11
       IL_003a:  beq.s      IL_0042
 
-      IL_003c:  newobj     instance void ['mscorlib']System.ApplicationException::.ctor()
+      IL_003c:  newobj     instance void ['mscorlib']System.Exception::.ctor()
       IL_0041:  throw
 
       IL_0042:  ret
