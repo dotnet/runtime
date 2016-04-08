@@ -4488,7 +4488,7 @@ create_profiler (const char *filename, GPtrArray *filters)
 #endif
 
 	mono_lock_free_queue_init (&prof->writer_queue);
-	mono_os_sem_init (&prof->writer_queue_sem, 1);
+	mono_os_sem_init (&prof->writer_queue_sem, 0);
 
 	mono_os_mutex_init (&prof->method_table_mutex);
 	prof->method_table = mono_conc_hashtable_new (NULL, NULL);
