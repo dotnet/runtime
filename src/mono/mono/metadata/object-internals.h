@@ -600,7 +600,7 @@ MonoObject *
 ves_icall_System_Runtime_Remoting_Messaging_AsyncResult_Invoke (MonoAsyncResult *ares);
 
 MonoWaitHandle *
-mono_wait_handle_new	    (MonoDomain *domain, HANDLE handle);
+mono_wait_handle_new	    (MonoDomain *domain, HANDLE handle, MonoError *error);
 
 HANDLE
 mono_wait_handle_get_handle (MonoWaitHandle *handle);

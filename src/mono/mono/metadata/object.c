@@ -6863,21 +6863,23 @@ mono_raise_exception_with_context (MonoException *ex, MonoContext *ctx)
  * mono_wait_handle_new:
  * @domain: Domain where the object will be created
  * @handle: Handle for the wait handle
+ * @error: set on error.
  *
- * Returns: A new MonoWaitHandle created in the given domain for the given handle
+ * Returns: A new MonoWaitHandle created in the given domain for the
+ * given handle.  On failure returns NULL and sets @rror.
  */
 MonoWaitHandle *
-mono_wait_handle_new (MonoDomain *domain, HANDLE handle)
+mono_wait_handle_new (MonoDomain *domain, HANDLE handle, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoError error;
 	MonoWaitHandle *res;
 	gpointer params [1];
 	static MonoMethod *handle_set;
 
-	res = (MonoWaitHandle *)mono_object_new_checked (domain, mono_defaults.manualresetevent_class, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	mono_error_init (error);
+	res = (MonoWaitHandle *)mono_object_new_checked (domain, mono_defaults.manualresetevent_class, error);
+	return_val_if_nok (error, NULL);
 
 	/* Even though this method is virtual, it's safe to invoke directly, since the object type matches.  */
 	if (!handle_set)
@@ -6885,9 +6887,7 @@ mono_wait_handle_new (MonoDomain *domain, HANDLE handle)
 
 	params [0] = &handle;
 
-	mono_runtime_invoke_checked (handle_set, res, params, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
-
+	mono_runtime_invoke_checked (handle_set, res, params, error);
 	return res;
 }
 
@@ -6959,8 +6959,10 @@ mono_async_result_new (MonoDomain *domain, HANDLE handle, MonoObject *state, gpo
 	res->data = (void **)data;
 	MONO_OBJECT_SETREF (res, object_data, object_data);
 	MONO_OBJECT_SETREF (res, async_state, state);
+	MonoWaitHandle *wait_handle = mono_wait_handle_new (domain, handle, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	if (handle != NULL)
-		MONO_OBJECT_SETREF (res, handle, (MonoObject *) mono_wait_handle_new (domain, handle));
+		MONO_OBJECT_SETREF (res, handle, (MonoObject *) wait_handle);
 
 	res->sync_completed = FALSE;
 	res->completed = FALSE;
