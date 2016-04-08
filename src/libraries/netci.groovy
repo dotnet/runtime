@@ -82,6 +82,10 @@ branchList.each { branchName ->
 		Utilities.addHtmlPublisher(newJob, 'bin/tests/coverage', 'Code Coverage Report', 'index.htm')
 		// Archive results.
 		Utilities.addArchival(newJob, '**/coverage/*,msbuild.log')
+		// Timeout. TestWithLocalLibraries=true runs take longer under code coverage, so we set the timeout to be longer.
+		if (isLocal) {
+			Utilities.setJobTimeout(newJob, 180)
+		}
 		// Set triggers
 		if (isPR) {
 			if (!isLocal) {
