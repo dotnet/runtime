@@ -149,23 +149,23 @@ struct GcSlotDesc
     } Slot;
     GcSlotFlags Flags;
 
-    BOOL IsRegister()
+    BOOL IsRegister() const
     {
         return (Flags & GC_SLOT_IS_REGISTER);
     }
-    BOOL IsInterior()
+    BOOL IsInterior() const
     {
         return (Flags & GC_SLOT_INTERIOR);
     }
-    BOOL IsPinned()
+    BOOL IsPinned() const
     {
         return (Flags & GC_SLOT_PINNED);
     }    
-    BOOL IsUntracked()
+    BOOL IsUntracked() const
     {
         return (Flags & GC_SLOT_UNTRACKED);
     }    
-    BOOL IsDeleted()
+    BOOL IsDeleted() const
     {
         return (Flags & GC_SLOT_IS_DELETED);
     }
