@@ -5816,23 +5816,41 @@ mono_string_new_len (MonoDomain *domain, const char *text, guint length)
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	MonoError error;
+	MonoString *result = mono_string_new_len_checked (domain, text, length, &error);
+	mono_error_cleanup (&error);
+	return result;
+}
+
+/**
+ * mono_string_new_len_checked:
+ * @text: a pointer to an utf8 string
+ * @length: number of bytes in @text to consider
+ * @error: set on error
+ *
+ * Returns: A newly created string object which contains @text. On
+ * failure returns NULL and sets @error.
+ */
+MonoString*
+mono_string_new_len_checked (MonoDomain *domain, const char *text, guint length, MonoError *error)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
+	mono_error_init (error);
+
 	GError *eg_error = NULL;
 	MonoString *o = NULL;
-	guint16 *ut;
+	guint16 *ut = NULL;
 	glong items_written;
-
-	mono_error_init (&error);
 
 	ut = eg_utf8_to_utf16_with_nuls (text, length, NULL, &items_written, &eg_error);
 
 	if (!eg_error)
-		o = mono_string_new_utf16_checked (domain, ut, items_written, &error);
+		o = mono_string_new_utf16_checked (domain, ut, items_written, error);
 	else 
 		g_error_free (eg_error);
 
 	g_free (ut);
 
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	return o;
 }
 

@@ -9066,7 +9066,7 @@ handle_enum:
 		}
 		slen = mono_metadata_decode_value (p, &p);
 		*end = p + slen;
-		return mono_string_new_len (mono_domain_get (), p, slen);
+		return mono_string_new_len_checked (mono_domain_get (), p, slen, error);
 	case MONO_TYPE_CLASS: {
 		MonoReflectionType *rt;
 		char *n;

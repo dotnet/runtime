@@ -606,9 +606,11 @@ mono_delegate_free_ftnptr (MonoDelegate *delegate)
 	}
 }
 
+/* This is a JIT icall, it sets the pending exception and returns NULL on error */
 static MonoString *
 mono_string_from_byvalstr (const char *data, int max_len)
 {
+	MonoError error;
 	MonoDomain *domain = mono_domain_get ();
 	int len = 0;
 
@@ -618,7 +620,9 @@ mono_string_from_byvalstr (const char *data, int max_len)
 	while (len < max_len - 1 && data [len])
 		len++;
 
-	return mono_string_new_len (domain, data, len);
+	MonoString *result = mono_string_new_len_checked (domain, data, len, &error);
+	mono_error_set_pending_exception (&error);
+	return result;
 }
 
 /* This is a JIT icall, it sets the pending exception and return NULL on error */
@@ -1126,10 +1130,14 @@ mono_string_to_byvalwstr (gpointer dst, MonoString *src, int size)
 	*((gunichar2 *) dst + len) = 0;
 }
 
+/* this is an icall, it sets the pending exception and returns NULL on error */
 static MonoString*
 mono_string_new_len_wrapper (const char *text, guint length)
 {
-	return mono_string_new_len (mono_domain_get (), text, length);
+	MonoError error;
+	MonoString *result = mono_string_new_len_checked (mono_domain_get (), text, length, &error);
+	mono_error_set_pending_exception (&error);
+	return result;
 }
 
 #ifndef DISABLE_JIT
@@ -10507,12 +10515,15 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi (char *ptr)
 MonoString *
 ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi_len (char *ptr, gint32 len)
 {
-	if (ptr == NULL) {
-		mono_set_pending_exception (mono_get_exception_argument_null ("ptr"));
-		return NULL;
-	} else {
-		return mono_string_new_len (mono_domain_get (), ptr, len);
-	}
+	MonoError error;
+	MonoString *result = NULL;
+	mono_error_init (&error);
+	if (ptr == NULL)
+		mono_error_set_argument_null (&error, "ptr", "");
+	else
+		result = mono_string_new_len_checked (mono_domain_get (), ptr, len, &error);
+	mono_error_set_pending_exception (&error);
+	return result;
 }
 
 MonoString *

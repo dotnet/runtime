@@ -136,6 +136,7 @@ mono_string_new		    (MonoDomain *domain, const char *text);
 MONO_API MonoString*
 mono_string_new_wrapper	    (const char *text);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoString*
 mono_string_new_len	    (MonoDomain *domain, const char *text, unsigned int length);
 
