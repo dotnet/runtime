@@ -140,6 +140,38 @@ namespace System.Threading.Tests
             Assert.Throws<PlatformNotSupportedException>(() => EventWaitHandle.TryOpenExisting("anything", out ewh));
         }
 
+        [PlatformSpecific(PlatformID.Windows)]
+        [Fact]
+        public void OpenExisting_InvalidNames_Windows()
+        {
+            Assert.Throws<ArgumentNullException>("name", () => EventWaitHandle.OpenExisting(null));
+            Assert.Throws<ArgumentException>(() => EventWaitHandle.OpenExisting(string.Empty));
+            Assert.Throws<ArgumentException>(() => EventWaitHandle.OpenExisting(new string('a', 10000)));
+        }
+
+        [PlatformSpecific(PlatformID.Windows)]
+        [Fact]
+        public void OpenExisting_UnavailableName_Windows()
+        {
+            string name = Guid.NewGuid().ToString("N");
+            Assert.Throws<WaitHandleCannotBeOpenedException>(() => EventWaitHandle.OpenExisting(name));
+            EventWaitHandle ignored;
+            Assert.False(EventWaitHandle.TryOpenExisting(name, out ignored));
+        }
+
+        [PlatformSpecific(PlatformID.Windows)]
+        [Fact]
+        public void OpenExisting_NameUsedByOtherSynchronizationPrimitive_Windows()
+        {
+            string name = Guid.NewGuid().ToString("N");
+            using (Mutex mtx = new Mutex(true, name))
+            {
+                Assert.Throws<WaitHandleCannotBeOpenedException>(() => EventWaitHandle.OpenExisting(name));
+                EventWaitHandle ignored;
+                Assert.False(EventWaitHandle.TryOpenExisting(name, out ignored));
+            }
+        }
+
         [PlatformSpecific(PlatformID.Windows)] // names aren't supported on Unix
         [Theory]
         [InlineData(EventResetMode.ManualReset)]
