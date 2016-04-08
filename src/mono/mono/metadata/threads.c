@@ -1384,12 +1384,13 @@ mono_thread_set_name_internal (MonoInternalThread *this_obj, MonoString *name, g
 		this_obj->name = g_new (gunichar2, mono_string_length (name));
 		memcpy (this_obj->name, mono_string_chars (name), mono_string_length (name) * 2);
 		this_obj->name_len = mono_string_length (name);
+
+		if (managed)
+			this_obj->flags |= MONO_THREAD_FLAG_NAME_SET;
 	}
 	else
 		this_obj->name = NULL;
 
-	if (managed)
-		this_obj->flags |= MONO_THREAD_FLAG_NAME_SET;
 	
 	UNLOCK_THREAD (this_obj);
 
