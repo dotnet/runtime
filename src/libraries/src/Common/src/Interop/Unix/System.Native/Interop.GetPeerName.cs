@@ -9,7 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetPeerName_IntPtr")]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetPeerName")]
         internal static extern unsafe Error GetPeerName(SafeHandle socket, byte* socketAddress, int* socketAddressLen);
     }
 }
