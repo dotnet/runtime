@@ -122,7 +122,6 @@
     <Compile Include="Directory\Delete_MountVolume.cs" />
     <Compile Include="Directory\Delete.cs" />
     <Compile Include="Directory\Exists.cs" />
-    <Compile Include="Directory\GetCurrentDirectory.cs" />
     <Compile Include="Directory\GetDirectories.cs" />
     <Compile Include="Directory\GetDirectoryRoot.cs" />
     <Compile Include="Directory\GetFiles.cs" />
