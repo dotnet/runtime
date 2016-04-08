@@ -1,6 +1,6 @@
 
 .assembly extern legacy library mscorlib {}
-.assembly refanytype1 {.custom instance void [mscorlib]System.Security.SecurityRulesAttribute::.ctor(valuetype [mscorlib]System.Security.SecurityRuleSet) = ( 01 00 01 00 00 ) }
+.assembly refanytype1 { }
 .method public static int32 f()
 {
 ldc.i4 100
