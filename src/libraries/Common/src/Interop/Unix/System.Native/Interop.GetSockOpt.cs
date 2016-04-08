@@ -10,7 +10,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetSockOpt_IntPtr")]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetSockOpt")]
         internal static extern unsafe Error GetSockOpt(SafeHandle socket, SocketOptionLevel optionLevel, SocketOptionName optionName, byte* optionValue, int* optionLen);
     }
 }
