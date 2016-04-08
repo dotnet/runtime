@@ -21,6 +21,7 @@
     <Compile Include="CountdownEventTests.cs" />
     <Compile Include="EtwTests.cs" />
     <Compile Include="EventWaitHandleTests.cs" />
+    <Compile Include="InterlockedTests.cs" />
     <Compile Include="ManualResetEventTests.cs" />
     <Compile Include="ManualResetEventSlimCancellationTests.cs" />
     <Compile Include="ManualResetEventSlimTests.cs" />
