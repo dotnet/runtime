@@ -19,27 +19,28 @@ namespace System.Text.Tests
 
         public static IEnumerable<object[]> GetChars_TestData()
         {
-            yield return new object[] { new byte[0], 0, 0, new char[0], 0 };
+            yield return new object[] { new byte[0], 0, 0 };
+            yield return new object[] { new byte[10], 5, 0 };
+            yield return new object[] { new byte[10], 10, 0 };
 
             string randomString = s_randomDataGenerator.GetString(-55, false, MinStringLength, MaxStringLength);
             byte[] randomBytes = new ASCIIEncoding().GetBytes(randomString);
             int randomByteIndex = s_randomDataGenerator.GetInt32(-55) % randomBytes.Length;
             int randomByteCount = s_randomDataGenerator.GetInt32(-55) % (randomBytes.Length - randomByteIndex) + 1;
-            char[] chars = new char[randomByteCount + s_randomDataGenerator.GetInt32(-55) % MaxStringLength];
-            int randomCharIndex = s_randomDataGenerator.GetInt32(-55) % (chars.Length - randomByteCount + 1);
-            yield return new object[] { randomBytes, randomByteIndex, randomByteCount, chars, randomCharIndex };
+            yield return new object[] { randomBytes, 0, randomBytes.Length };
+            yield return new object[] { randomBytes, randomByteIndex, randomByteCount };
         }
 
         [Theory]
         [MemberData(nameof(GetChars_TestData))]
-        public void GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
+        public void GetChars(byte[] bytes, int index, int count)
         {
-            char[] expectedChars = new char[byteCount];
-            for (int i = 0; i < byteCount; i++)
+            char[] expectedChars = new char[count];
+            for (int i = 0; i < count; i++)
             {
-                expectedChars[i] = (char)bytes[i + byteIndex]; 
+                expectedChars[i] = (char)bytes[i + index]; 
             }
-            EncodingHelpers.GetChars(new ASCIIEncoding(), bytes, byteIndex, byteCount, chars, charIndex, expectedChars);
+            EncodingHelpers.Decode(new ASCIIEncoding(), bytes, index, count, expectedChars);
         }
     }
 }
