@@ -30,6 +30,7 @@ enum PAL_CURLoption : int32_t
     PAL_CURLOPT_MAXREDIRS = CurlOptionLongBase + 68,
     PAL_CURLOPT_SSL_VERIFYHOST = CurlOptionLongBase + 81,
     PAL_CURLOPT_HTTP_VERSION = CurlOptionLongBase + 84,
+    PAL_CURLOPT_DNS_CACHE_TIMEOUT = CurlOptionLongBase + 92,
     PAL_CURLOPT_NOSIGNAL = CurlOptionLongBase + 99,
     PAL_CURLOPT_PROXYTYPE = CurlOptionLongBase + 101,
     PAL_CURLOPT_HTTPAUTH = CurlOptionLongBase + 107,
