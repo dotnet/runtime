@@ -203,6 +203,7 @@ load_file (const char *name) {
 		if (is_template && !desc->name)
 			g_error ("Template without name at line %d in %s\n", line, name);
 	}
+	g_string_free (comment,TRUE);
 	fclose (f);
 	return 0;
 }
