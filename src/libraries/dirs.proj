@@ -19,8 +19,6 @@
     </TraversalBuildDependsOn>
   </PropertyGroup>
 
-  <Import Project="$(ToolsDir)PerfTesting.targets" Condition="Exists('$(ToolsDir)PerfTesting.targets')" />
-
   <PropertyGroup Condition="Exists('$(ToolsDir)toolruntime.targets')">
     <TraversalBuildDependsOn>
       EnsureBuildToolsRuntime;
