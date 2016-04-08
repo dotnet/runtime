@@ -1,7 +1,7 @@
 {
   "dependencies": {
-    "Microsoft.CodeAnalysis.CSharp": "1.3.0-beta1-20160405-05",
-    "Microsoft.CodeAnalysis.VisualBasic": "1.3.0-beta1-20160405-05",
+    "Microsoft.CodeAnalysis.CSharp": "1.3.0-beta1-20160406-08",
+    "Microsoft.CodeAnalysis.VisualBasic": "1.3.0-beta1-20160406-08",
     "Microsoft.CSharp": "4.0.1-rc2-24008",
     "Microsoft.VisualBasic": "10.0.1-rc2-24008",
     "NETStandard.Library": "1.5.0-rc2-24008",
