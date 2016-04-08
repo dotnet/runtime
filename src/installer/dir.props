@@ -1,4 +1,4 @@
-<Project ToolsVersion="12.0" DefaultTargets="Build" InitialTargets="ValidateArgs" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project ToolsVersion="12.0" DefaultTargets="Build" InitialTargets="ValidateArgs" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
 
@@ -23,7 +23,7 @@
 
   <PropertyGroup>
     <PackageOutputPath>$(PackagesOutDir)</PackageOutputPath>
-    <RuntimeIdGraphDefinitionFile>$(ProjectDir)packages\Microsoft.NETCore.Platforms\1.0.1-rc2-23931\runtime.json</RuntimeIdGraphDefinitionFile>
+    <RuntimeIdGraphDefinitionFile>$(ProjectDir)packages\Microsoft.NETCore.Platforms\1.0.1-rc2-24008\runtime.json</RuntimeIdGraphDefinitionFile>
     <PackageLicenseFile>$(ProjectDir)projects/dotnet_library_license.txt</PackageLicenseFile>
     <PackageThirdPartyNoticesFile>$(ProjectDir)projects/ThirdPartyNotices.txt</PackageThirdPartyNoticesFile>
     <PackageDescriptionFile>$(ProjectDir)projects/descriptions.json</PackageDescriptionFile>
