@@ -5,7 +5,7 @@
     "keyFile": "../../tools/Key.snk"
   },
   "dependencies": {
-    "Microsoft.NETCore.App": "1.0.0-rc2-23931",
+    "Microsoft.NETCore.App": "1.0.0-rc2-24008",
     "Microsoft.DotNet.Tools.Tests.Utilities": {
       "target": "project"
     },
