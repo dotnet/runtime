@@ -503,6 +503,7 @@ public static class EnumTests
         
         Assert.Throws<ArgumentException>(null, () => Enum.Format(typeof(SimpleEnum), (short)1, "F")); // Value is of the wrong integral
         Assert.Throws<ArgumentException>(null, () => Enum.Format(typeof(SimpleEnum), "Red", "F")); // Value is of the wrong integral
+        Assert.Throws<FormatException>(() => SimpleEnum.Red.ToString("t")); // Invalid format type
     }
 
     private enum SimpleEnum

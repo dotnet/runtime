@@ -330,6 +330,16 @@ public static class DateTimeTests
     }
 
     [Fact]
+    public static void TestSubtract_DateTime_Invalid()
+    {
+        DateTime date1 = DateTime.MinValue.ToLocalTime();
+        Assert.Throws<ArgumentOutOfRangeException>(() => date1.Subtract(new TimeSpan(365, 0, 0, 0)));
+
+        DateTime date2 = DateTime.MaxValue.ToLocalTime();
+        Assert.Throws<ArgumentOutOfRangeException>(() => date2.Subtract(new TimeSpan(-365, 0, 0, 0)));
+    }
+
+    [Fact]
     public static void TestParse_String()
     {
         DateTime expected = DateTime.MaxValue;
@@ -367,6 +377,12 @@ public static class DateTimeTests
 
         string expectedString = string.Format(cultureInfo, "{0}", expected);
         Assert.Equal(expected, DateTime.Parse(expectedString, cultureInfo));
+    }
+
+    [Fact]
+    public static void TestParse_Invalid()
+    {
+        Assert.Throws<ArgumentNullException>(() => DateTime.Parse(null, new MyFormatter(), DateTimeStyles.NoCurrentDateDefault));
     }
 
     [Fact]
