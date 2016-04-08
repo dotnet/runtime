@@ -4364,7 +4364,6 @@ static void *
 writer_thread (void *arg)
 {
 	MonoProfiler *prof = (MonoProfiler *)arg;
-	WriterQueueEntry *entry;
 
 	mono_threads_attach_tools_thread ();
 	mono_thread_info_set_name (mono_native_thread_id_get (), "Profiler writer");
