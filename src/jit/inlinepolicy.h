@@ -216,13 +216,45 @@ public:
     const char* GetName() const override { return "DiscretionaryPolicy"; }
 
 private:
+    
+    void ComputeOpcodeBin(OPCODE opcode);
+    enum { MAX_ARGS = 4 };
 
     unsigned    m_Depth;
     unsigned    m_BlockCount;
     unsigned    m_Maxstack;
     unsigned    m_ArgCount;
+    CorInfoType m_ArgType[MAX_ARGS];
+    size_t      m_ArgSize[MAX_ARGS];
     unsigned    m_LocalCount;
     CorInfoType m_ReturnType;
+    size_t      m_ReturnSize;
+    unsigned    m_ArgAccessCount;
+    unsigned    m_LocalAccessCount;
+    unsigned    m_IntConstantCount;
+    unsigned    m_FloatConstantCount;
+    unsigned    m_IntLoadCount;
+    unsigned    m_FloatLoadCount;
+    unsigned    m_IntStoreCount;
+    unsigned    m_FloatStoreCount;
+    unsigned    m_SimpleMathCount;
+    unsigned    m_ComplexMathCount;
+    unsigned    m_OverflowMathCount;
+    unsigned    m_IntArrayLoadCount;
+    unsigned    m_FloatArrayLoadCount;
+    unsigned    m_RefArrayLoadCount;
+    unsigned    m_StructArrayLoadCount;
+    unsigned    m_IntArrayStoreCount;
+    unsigned    m_FloatArrayStoreCount;
+    unsigned    m_RefArrayStoreCount;
+    unsigned    m_StructArrayStoreCount;
+    unsigned    m_StructOperationCount;
+    unsigned    m_ObjectModelCount;
+    unsigned    m_FieldLoadCount;
+    unsigned    m_FieldStoreCount;
+    unsigned    m_StaticFieldLoadCount;
+    unsigned    m_StaticFieldStoreCount;
+    unsigned    m_LoadAddressCount;
     unsigned    m_ThrowCount;
     unsigned    m_CallCount;
 };

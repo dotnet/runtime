@@ -149,23 +149,23 @@ struct GcSlotDesc
     } Slot;
     GcSlotFlags Flags;
 
-    BOOL IsRegister()
+    BOOL IsRegister() const
     {
         return (Flags & GC_SLOT_IS_REGISTER);
     }
-    BOOL IsInterior()
+    BOOL IsInterior() const
     {
         return (Flags & GC_SLOT_INTERIOR);
     }
-    BOOL IsPinned()
+    BOOL IsPinned() const
     {
         return (Flags & GC_SLOT_PINNED);
     }    
-    BOOL IsUntracked()
+    BOOL IsUntracked() const
     {
         return (Flags & GC_SLOT_UNTRACKED);
     }    
-    BOOL IsDeleted()
+    BOOL IsDeleted() const
     {
         return (Flags & GC_SLOT_IS_DELETED);
     }
@@ -308,10 +308,13 @@ enum GENERIC_CONTEXTPARAM_TYPE
 class GcInfoEncoder
 {
 public:
+    typedef void (*NoMemoryFunction)(void);
+
     GcInfoEncoder(
             ICorJitInfo*                pCorJitInfo,
             CORINFO_METHOD_INFO*        pMethodInfo,
-            IAllocator*                 pJitAllocator
+            IAllocator*                 pJitAllocator,
+            NoMemoryFunction            pNoMem = ThrowOutOfMemory
             );
 
     struct LifetimeTransition
@@ -476,6 +479,7 @@ private:
     ICorJitInfo*                m_pCorJitInfo;
     CORINFO_METHOD_INFO*        m_pMethodInfo;
     IAllocator*                 m_pAllocator;
+    NoMemoryFunction            m_pNoMem;
 
 #ifdef _DEBUG
     const char *m_MethodName, *m_ModuleName;

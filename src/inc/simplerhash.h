@@ -2,22 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// ==++==
-// 
-
-//
-
-// 
-// ==--==
-
-
 #ifndef _SIMPLERHASHTABLE_H_
 #define _SIMPLERHASHTABLE_H_
 
-// #include "utilcode.h" // for string hash functions
-// #include "clrtypes.h"
-// #include "check.h"
-// #include "iterator.h"
 #include "iallocator.h"
 
 // SimplerHashTable implements a mapping from a Key type to a Value type,
@@ -43,11 +30,6 @@
 // 
 // The "Behavior" argument provides the following static members:
 //
-// static const bool s_NoThrow                  true if GetKey, Equals, and hash are NOTHROW functions.  
-//                                              Affects the THROWS clauses of several SHash functions.
-//                                              (Note that the Null- and Deleted-related functions below 
-//                                              are not affected by this and must always be NOTHROW.)
-//
 // s_growth_factor_numerator
 // s_growth_factor_denominator                  Factor to grow allocation (numerator/denominator).  
 //                                              Typically inherited from default traits (3/2)
@@ -60,12 +42,14 @@
 //                                              probably preferable to call Reallocate on initialization rather
 //                                              than override his from the default traits. (7)
 //
+// NoMemory()                                   Called when the hash table is unable to grow due to potential
+//                                              overflow or the lack of a sufficiently large prime.
 
-
+void DECLSPEC_NORETURN ThrowOutOfMemory();
 
 class DefaultSimplerHashBehavior
 {
-  public:
+public:
     static const unsigned s_growth_factor_numerator = 3;
     static const unsigned s_growth_factor_denominator = 2;
 
@@ -74,13 +58,14 @@ class DefaultSimplerHashBehavior
 
     static const unsigned s_minimum_allocation = 7;
 
-    static const bool s_NoThrow = true;
+    inline static void DECLSPEC_NORETURN NoMemory()
+    {
+        ::ThrowOutOfMemory();
+    }
 };
 
-
-// stores info about primes, including the magic number and shift amount needed
+// Stores info about primes, including the magic number and shift amount needed
 // to implement a divide without using the divide instruction
-
 class PrimeInfo
 {
 public:
@@ -97,8 +82,7 @@ public:
 template <typename Key, typename KeyFuncs, typename Value, typename Behavior>
 class SimplerHashTable
 {
-  public:
-
+public:
     // Forward declaration.
     class KeyIterator;
 
@@ -109,56 +93,6 @@ class SimplerHashTable
 
     SimplerHashTable(IAllocator* alloc);
     ~SimplerHashTable();
-
-    // We wish to provide overloaded operator new/deletes that take an
-    // "IAllocator", so that an shash may be dynamically allocated
-    // using a non-standard allocator.  If we do so, and in some
-    // contexts still want to use the default operator new, C++ also requires us
-    // to declare overloads for the standard new and delete operators.
-
-    void * operator new(size_t sz)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_NOTRIGGER;
-        }
-        CONTRACTL_END;
-        return ::operator new(sz);
-    }
-
-    void * operator new(size_t sz, const NoThrow& tothrow)
-    {
-        CONTRACTL
-        {
-            if (nothrow.x== tothrow.x)NOTHROW; else THROWS;
-            GC_NOTRIGGER;
-        }
-        CONTRACTL_END;
-        return ::operator new(sz, tothrow);
-    }
-
-    void   operator delete(void* p)
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-        }
-        CONTRACTL_END;
-        ::operator delete(p);
-    }
-
-    void   operator delete[](void* p)
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-        }
-        CONTRACTL_END;
-        ::operator delete[](p);
-    }
 
     // operators new/delete when an IAllocator is to be used.
     void * operator new(size_t sz, IAllocator * alloc);
@@ -173,8 +107,6 @@ class SimplerHashTable
 
     Value *LookupPointer(Key k) const;
 
-    unsigned GetIndexForKey(Key k) const;
-
     // Causes the table to map "key" to "val".  Returns "true" if
     // "key" had already been mapped by the table, "false" otherwise.
     bool Set(Key k, Value val);
@@ -182,10 +114,6 @@ class SimplerHashTable
     // Ensures that "key" is not mapped to a value by the "table."
     // Returns "true" iff it had been mapped.
     bool Remove(Key k);
-
-    // Remove the mapping to which the current iterator "points"
-    // (i.e., will yield).
-    void Remove(KeyIterator& i);
 
     // Remove all mappings in the table.
     void RemoveAll();
@@ -197,10 +125,11 @@ class SimplerHashTable
     // Return the number of elements currently stored in the table
     unsigned GetCount() const; 
 
-  private:
-
+private:
     // Forward declaration of the linked-list node class.
     struct Node;
+
+    unsigned GetIndexForKey(Key k) const;
 
     // If the table has a mapping for "k", return the node containing
     // that mapping, else "NULL".
@@ -214,8 +143,7 @@ class SimplerHashTable
     // the hash table.
     void CheckGrowth();
 
-  public:
-
+public:
     // Reallocates a hash table to a specific size.  The size must be big enough
     // to hold all elements in the table appropriately.  
     //
@@ -234,10 +162,9 @@ class SimplerHashTable
     // }
     // iter.Get() will yield (a reference to) the
     // current key.  It will assert the equivalent of "iter != end."
-    //
-
     class KeyIterator
     {
+    private:
         friend class SimplerHashTable;
 
         // The method implementations have to be here for portability.
@@ -248,15 +175,13 @@ class SimplerHashTable
         unsigned    m_tableSize;
         unsigned    m_index;
 
-      public:
-
+    public:
         KeyIterator(const SimplerHashTable *hash, BOOL begin)
         : m_table(hash->m_table),
           m_node(NULL),
           m_tableSize(hash->m_tableSizeInfo.prime),
           m_index(begin ? 0 : m_tableSize)
         {
-            LIMITED_METHOD_CONTRACT;
             if (begin && hash->m_tableCount > 0)
             {
                 assert(m_table != NULL);
@@ -277,8 +202,6 @@ class SimplerHashTable
 
         const Key& Get() const
         {
-            LIMITED_METHOD_CONTRACT;
-
             assert(m_node != NULL);
 
             return m_node->m_key;
@@ -286,8 +209,6 @@ class SimplerHashTable
 
         const Value& GetValue() const
         {
-            LIMITED_METHOD_CONTRACT;
-
             assert(m_node != NULL);
 
             return m_node->m_val;
@@ -295,8 +216,6 @@ class SimplerHashTable
 
         void SetValue(const Value & value) const
         {
-            LIMITED_METHOD_CONTRACT;
-
             assert(m_node != NULL);
 
             m_node->m_val = value;
@@ -304,8 +223,6 @@ class SimplerHashTable
 
         void Next()
         {
-            LIMITED_METHOD_CONTRACT;
-
             if (m_node != NULL)
             {
                 m_node = m_node->m_next;
@@ -334,18 +251,13 @@ class SimplerHashTable
 
         bool Equal(const KeyIterator &i) const
         { 
-            LIMITED_METHOD_CONTRACT;
             return i.m_node == m_node; 
-        }
-
-        CHECK DoCheck() const
-        {
-            CHECK_OK;
         }
 
         void operator++() {
             Next();
         }
+
         void operator++(int) {
             Next();
         }
@@ -392,13 +304,10 @@ class SimplerHashTable
     }
 
   private:
-
     // Find the next prime number >= the given value.  
-
     static PrimeInfo NextPrime(unsigned number);
 
     // Instance members
-
     IAllocator*   m_alloc;                // IAllocator to use in this
                                           // table.
     // The node type.
@@ -450,8 +359,6 @@ public:
         return static_cast<unsigned>(reinterpret_cast<uintptr_t>(ptr));
     }
 };
-
-
 
 template<typename T> // Must be coercable to "unsigned" with no loss of information.
 struct SmallPrimitiveKeyFuncs: public KeyFuncsDefEquals<T>

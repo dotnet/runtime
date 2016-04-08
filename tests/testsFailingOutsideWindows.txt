@@ -1,8 +1,6 @@
 baseservices/threading/paramthreadstart/ThreadStartString_1/ThreadStartString_1.sh
 CoreMangLib/cti/system/multicastdelegate/MulticastDelegateCtor/MulticastDelegateCtor.sh
 CoreMangLib/cti/system/runtime/interopservices/marshal/MarshalGetLastWin32Error_PSC/MarshalGetLastWin32Error_PSC.sh
-Interop/ICastable/Castable/Castable.sh
-Interop/ReversePInvoke/Marshalling/MarshalBoolArray/MarshalBoolArray.sh
 JIT/Directed/PREFIX/unaligned/1/arglist/arglist.sh
 JIT/Directed/PREFIX/unaligned/2/arglist/arglist.sh
 JIT/Directed/PREFIX/unaligned/4/arglist/arglist.sh
@@ -170,10 +168,11 @@ JIT/Methodical/Boxing/xlang/_orelsin_cs_il/_orelsin_cs_il.sh
 JIT/Methodical/Boxing/xlang/_relsin_cs_il/_relsin_cs_il.sh
 JIT/Methodical/localloc/call/call01_small/call01_small.sh
 JIT/Regression/Dev11/External/dev11_145295/CSharpPart/CSharpPart.sh
+Interop/SimpleStruct/SimpleStruct/SimpleStruct.sh
+Interop/StructMarshalling/PInvoke/MarshalStructAsLayoutExp/MarshalStructAsLayoutExp.sh
+Interop/StructMarshalling/PInvoke/MarshalStructAsLayoutSeq/MarshalStructAsLayoutSeq.sh
 Interop/ArrayMarshalling/ByValArray/MarshalArrayByValTest/MarshalArrayByValTest.sh
-Interop/StringMarshalling/LPSTR/LPSTRTest/LPSTRTest.sh
 Interop/StringMarshalling/LPTSTR/LPTSTRTest/LPTSTRTest.sh
-Interop/MarshalAPI/Miscellaneous/MarshalClassTests/MarshalClassTests.sh
 GC/LargeMemory/Allocation/finalizertest/finalizertest.sh
 GC/LargeMemory/API/gc/reregisterforfinalize/reregisterforfinalize.sh
 GC/LargeMemory/API/gc/collect/collect.sh

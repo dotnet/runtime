@@ -133,6 +133,19 @@ namespace System.Globalization
         //The parent culture.
         private CultureInfo m_parent;
 
+        static AsyncLocal<CultureInfo> s_asyncLocalCurrentCulture; 
+        static AsyncLocal<CultureInfo> s_asyncLocalCurrentUICulture;
+
+        static void AsyncLocalSetCurrentCulture(AsyncLocalValueChangedArgs<CultureInfo> args)
+        {
+            s_currentThreadCulture = args.CurrentValue;
+        }
+
+        static void AsyncLocalSetCurrentUICulture(AsyncLocalValueChangedArgs<CultureInfo> args)
+        {
+            s_currentThreadUICulture = args.CurrentValue;
+        }
+
         //
         // The CultureData  instance that reads the data provided by our CultureData class.
         //
@@ -311,7 +324,13 @@ namespace System.Globalization
                 {
                     throw new ArgumentNullException("value");
                 }
-                s_currentThreadCulture = value;
+                
+                if (s_asyncLocalCurrentCulture == null)
+                {
+                    Interlocked.CompareExchange(ref s_asyncLocalCurrentCulture, new AsyncLocal<CultureInfo>(AsyncLocalSetCurrentCulture), null);
+                }
+                // this one will set s_currentThreadCulture too
+                s_asyncLocalCurrentCulture.Value = value;
             }
         }
 
@@ -355,8 +374,14 @@ namespace System.Globalization
                 }
 
                 CultureInfo.VerifyCultureName(value, true);
+                
+                if (s_asyncLocalCurrentUICulture == null)
+                {
+                    Interlocked.CompareExchange(ref s_asyncLocalCurrentUICulture, new AsyncLocal<CultureInfo>(AsyncLocalSetCurrentUICulture), null);
+                }
 
-                s_currentThreadUICulture = value;
+                // this one will set s_currentThreadUICulture too
+                s_asyncLocalCurrentUICulture.Value = value;               
             }
         }
 

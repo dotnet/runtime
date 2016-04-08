@@ -19,8 +19,6 @@ set __ThisScriptPath="%~dp0"
 ::      __TestWorkingDir    -- default: %__RootBinDir%\tests\%__BuildOS%.%__BuildArch.%__BuildType%\
 ::
 :: Thus, these variables are not simply internal to this script!
-::
-:: The UseRoslynCompiler variable is used by src\mscorlib\GenerateCompilerResponseFile.targets.
 
 :: Set the default arguments for build
 set __BuildArch=x64
@@ -240,7 +238,6 @@ if not exist "%__VSToolsRoot%\VsDevCmd.bat"           goto NoVS
 
 :MSBuild14
 set _msbuildexe="%ProgramFiles(x86)%\MSBuild\14.0\Bin\MSBuild.exe"
-set UseRoslynCompiler=true
 :CheckMSBuild14
 if not exist %_msbuildexe% set _msbuildexe="%ProgramFiles%\MSBuild\14.0\Bin\MSBuild.exe"
 if not exist %_msbuildexe% echo %__MsgPrefix%Error: Could not find MSBuild.exe.  Please see https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md for build instructions. && exit /b 1
@@ -268,6 +265,9 @@ REM === Start the build steps
 REM ===
 REM =========================================================================================
 
+:: Generate _version.h
+if exist "%__RootBinDir%\obj\_version.h" del "%__RootBinDir%\obj\_version.h"
+%_msbuildexe% "%__ProjectFilesDir%\build.proj" /t:GenerateVersionHeader /p:NativeVersionHeaderFile="%__RootBinDir%\obj\_version.h" /p:GenerateVersionHeader=true
 if defined __MscorlibOnly goto PerformMScorlibBuild
 
 if defined __SkipNativeBuild (
