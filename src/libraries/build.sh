@@ -103,6 +103,20 @@ prepare_native_build()
     if [ $__buildmanaged == true ]; then
         __generateversionsource=true
     fi
+
+    # Ensure tools are present if we will generate version.c
+    if [ $__generateversionsource == true ]; then
+        $__scriptpath/init-tools.sh
+    fi
+
+    # Generate version.c if specified, else have an empty one.
+    __versionSourceFile=$__scriptpath/bin/obj/version.c
+    if [ $__generateversionsource == true ]; then
+        $__scriptpath/Tools/corerun $__scriptpath/Tools/MSBuild.exe "$__scriptpath/build.proj" /t:GenerateVersionSourceFile /p:NativeVersionSourceFile=$__scriptpath/bin/obj/version.c /p:GenerateVersionSourceFile=true /v:minimal
+    else
+        __versionSourceLine="static char sccsid[] __attribute__((used)) = \"@(#)No version information produced\";"
+        echo $__versionSourceLine > $__versionSourceFile
+    fi
 }
 
 build_managed()
@@ -128,15 +142,6 @@ build_native()
 
     echo "Commencing build of corefx native components for $__BuildOS.$__BuildArch.$__BuildType"
     cd "$__IntermediatesDir"
-
-    # Generate version.c if specified, else have an empty one.
-    __versionSourceFile=$__scriptpath/bin/obj/version.c
-    if [ $__generateversionsource == true ]; then
-        $__scriptpath/Tools/corerun $__scriptpath/Tools/MSBuild.exe "$__scriptpath/build.proj" /t:GenerateVersionSourceFile /p:NativeVersionSourceFile=$__scriptpath/bin/obj/version.c /p:GenerateVersionSourceFile=true /v:minimal
-    else
-        __versionSourceLine="static char sccsid[] __attribute__((used)) = \"@(#)No version information produced\";"
-        echo $__versionSourceLine > $__versionSourceFile
-    fi
 
     # Regenerate the CMake solution
     echo "Invoking cmake with arguments: \"$__nativeroot\" $__CMakeArgs $__CMakeExtraArgs"
