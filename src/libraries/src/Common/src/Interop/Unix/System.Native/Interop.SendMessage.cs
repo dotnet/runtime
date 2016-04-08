@@ -10,24 +10,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SendMessage")]
-        private static extern unsafe Error DangerousSendMessage(int socket, MessageHeader* messageHeader, SocketFlags flags, long* sent);
-
-        internal static unsafe Error SendMessage(SafeHandle socket, MessageHeader* messageHeader, SocketFlags flags, long* sent)
-        {
-            bool release = false;
-            try
-            {
-                socket.DangerousAddRef(ref release);
-                return DangerousSendMessage((int)socket.DangerousGetHandle(), messageHeader, flags, sent);
-            }
-            finally
-            {
-                if (release)
-                {
-                    socket.DangerousRelease();
-                }
-            }
-        }
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SendMessage_IntPtr")]
+        internal static extern unsafe Error SendMessage(SafeHandle socket, MessageHeader* messageHeader, SocketFlags flags, long* sent);
     }
 }

@@ -57,7 +57,7 @@ namespace System.Net.Sockets
         //
         private static SocketAsyncEngine s_currentEngine;
 
-        private readonly int _port;
+        private readonly IntPtr _port;
         private readonly Interop.Sys.SocketEvent* _buffer;
 
         //
@@ -205,7 +205,7 @@ namespace System.Net.Sockets
 
         private SocketAsyncEngine()
         {
-            _port = -1;
+            _port = (IntPtr)(-1);
             _shutdownReadPipe = -1;
             _shutdownWritePipe = -1;
             try
@@ -234,7 +234,7 @@ namespace System.Net.Sockets
                 _shutdownReadPipe = pipeFds[Interop.Sys.ReadEndOfPipe];
                 _shutdownWritePipe = pipeFds[Interop.Sys.WriteEndOfPipe];
 
-                if (Interop.Sys.DangerousTryChangeSocketEventRegistration(_port, _shutdownReadPipe, Interop.Sys.SocketEvents.None, Interop.Sys.SocketEvents.Read, ShutdownHandle) != Interop.Error.SUCCESS)
+                if (Interop.Sys.TryChangeSocketEventRegistration(_port, (IntPtr)_shutdownReadPipe, Interop.Sys.SocketEvents.None, Interop.Sys.SocketEvents.Read, ShutdownHandle) != Interop.Error.SUCCESS)
                 {
                     throw new InternalException();
                 }
@@ -325,7 +325,7 @@ namespace System.Net.Sockets
             {
                 Interop.Sys.FreeSocketEventBuffer(_buffer);
             }
-            if (_port != -1)
+            if (_port != (IntPtr)(-1))
             {
                 Interop.Sys.CloseSocketEventPort(_port);
             }
