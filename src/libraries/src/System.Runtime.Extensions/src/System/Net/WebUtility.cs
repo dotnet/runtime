@@ -331,13 +331,28 @@ namespace System.Net
 
             // expand not 'safe' characters into %XX, spaces to +s
             byte[] expandedBytes = new byte[count + cUnsafe * 2];
+            GetEncodedBytes(bytes, offset, count, expandedBytes);
+            return expandedBytes;
+        }
+
+        private static void GetEncodedBytes(byte[] originalBytes, int offset, int count, byte[] expandedBytes)
+        {
             int pos = 0;
-
-            for (int i = 0; i < count; i++)
+            int end = offset + count;
+            Debug.Assert(offset < end && end <= originalBytes.Length);
+            for (int i = offset; i < end; i++)
             {
-                byte b = bytes[offset + i];
-                char ch = (char)b;
+#if DEBUG
+                // Make sure we never overwrite any bytes if originalBytes and
+                // expandedBytes refer to the same array
+                if (originalBytes == expandedBytes)
+                {
+                    Debug.Assert(i >= pos);
+                }
+#endif
 
+                byte b = originalBytes[i];
+                char ch = (char)b;
                 if (IsUrlSafeChar(ch))
                 {
                     expandedBytes[pos++] = b;
@@ -353,13 +368,11 @@ namespace System.Net
                     expandedBytes[pos++] = (byte)IntToHex(b & 0x0f);
                 }
             }
-
-            return expandedBytes;
         }
 
-        #endregion
+#endregion
 
-        #region UrlEncode public methods
+#region UrlEncode public methods
 
         [SuppressMessage("Microsoft.Design", "CA1055:UriReturnValuesShouldNotBeStrings", Justification = "Already shipped public API; code moved here as part of API consolidation")]
         public static string UrlEncode(string value)
@@ -367,9 +380,43 @@ namespace System.Net
             if (string.IsNullOrEmpty(value))
                 return value;
 
-            byte[] bytes = Encoding.UTF8.GetBytes(value);
-            byte[] encodedBytes = UrlEncode(bytes, 0, bytes.Length, false /* alwaysCreateNewReturnValue */);
-            return Encoding.UTF8.GetString(encodedBytes, 0, encodedBytes.Length);
+            int cSafe = 0;
+            int cSpaces = 0;
+            for (int i = 0; i < value.Length; i++)
+            {
+                char ch = value[i];
+                if (IsUrlSafeChar(ch))
+                {
+                    cSafe++;
+                }
+                else if (ch == ' ')
+                {
+                    cSpaces++;
+                }
+            }
+
+            if (cSafe == value.Length)
+            {
+                // Nothing to expand
+                return value;
+            }
+
+            int unsafeByteCount = Encoding.UTF8.GetByteCount(value) - cSafe - cSpaces;
+            int byteIndex = unsafeByteCount * 2;
+
+            // Instead of allocating one array of length Encoding.UTF8.GetByteCount(value) to store
+            // the UTF8 encoded bytes and then a second array of length 
+            // cSafe + cSpaces + 3 * (Encoding.UTF8.GetByteCount(value) - cSafe - cSpaces) 
+            // to store the URL encoded UTF8 bytes, we allocate a single array of length
+            // cSafe + cSpaces + 3 * Encoding.UTF8.GetByteCount(value), 
+            // saving Encoding.UTF8.GetByteCount(value) - 3 * (cSafe +cSpaces) bytes allocated.
+            // We encode the UTF8 to the end of this array, and then URL encode to the
+            // beginning of the array.
+            byte[] newBytes = new byte[cSafe + cSpaces + unsafeByteCount + byteIndex];
+            Encoding.UTF8.GetBytes(value, 0, value.Length, newBytes, byteIndex);
+            
+            GetEncodedBytes(newBytes, byteIndex, newBytes.Length - byteIndex, newBytes);
+            return Encoding.UTF8.GetString(newBytes);
         }
 
         public static byte[] UrlEncodeToBytes(byte[] value, int offset, int count)
@@ -377,9 +424,9 @@ namespace System.Net
             return UrlEncode(value, offset, count, true /* alwaysCreateNewReturnValue */);
         }
 
-        #endregion
+#endregion
 
-        #region UrlDecode implementation
+#region UrlDecode implementation
 
         private static string UrlDecodeInternal(string value, Encoding encoding)
         {
@@ -485,9 +532,9 @@ namespace System.Net
             return decodedBytes;
         }
 
-        #endregion
+#endregion
 
-        #region UrlDecode public methods
+#region UrlDecode public methods
 
 
         [SuppressMessage("Microsoft.Design", "CA1055:UriReturnValuesShouldNotBeStrings", Justification = "Already shipped public API; code moved here as part of API consolidation")]
@@ -501,9 +548,9 @@ namespace System.Net
             return UrlDecodeInternal(encodedValue, offset, count);
         }
 
-        #endregion
+#endregion
 
-        #region Helper methods
+#region Helper methods
 
         // similar to Char.ConvertFromUtf32, but doesn't check arguments or generate strings
         // input is assumed to be an SMP character
@@ -620,7 +667,7 @@ namespace System.Net
             return false;
         }
 
-        #endregion
+#endregion
 
         // Internal struct to facilitate URL decoding -- keeps char buffer and byte buffer, allows appending of either chars or bytes
         private struct UrlDecoder

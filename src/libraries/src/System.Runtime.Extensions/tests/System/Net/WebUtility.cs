@@ -69,6 +69,7 @@ namespace System.Net.Tests
 
             // No escaping needed
             yield return Tuple.Create("abc", "abc");
+            yield return Tuple.Create("", "");
             yield return Tuple.Create("Hello, world", "Hello, world");
             yield return Tuple.Create("\u1234\u2345", "\u1234\u2345");
             yield return Tuple.Create("abc\u1234\u2345def\u1234", "abc\u1234\u2345def\u1234");
@@ -86,7 +87,16 @@ namespace System.Net.Tests
             yield return Tuple.Create("/\\\"\tHello! \u2665?/\\\"\tWorld! \u2665?\u2665", "%2F%5C%22%09Hello!+%E2%99%A5%3F%2F%5C%22%09World!+%E2%99%A5%3F%E2%99%A5");
             yield return Tuple.Create("'", "%27");
             yield return Tuple.Create("\uD800\uDFFF", "%F0%90%8F%BF"); // Surrogate pairs should be encoded as 4 bytes together
-            
+
+            // No escaping needed
+            yield return Tuple.Create("abc", "abc");
+            yield return Tuple.Create("", "");
+
+            // Spaces
+            yield return Tuple.Create("abc def", "abc+def");
+            yield return Tuple.Create("    ", "++++");
+            yield return Tuple.Create("++++", "%2B%2B%2B%2B");
+
             // TODO: Uncomment this block out when dotnet/corefx#7166 is fixed.
 
             /*
@@ -237,6 +247,10 @@ namespace System.Net.Tests
                 byte[] output = Encoding.UTF8.GetBytes(tuple.Item2);
                 yield return new object[] { input, 0, input.Length, output };
             }
+            // Mixture of ASCII and non-URL safe chars (full and in a range)
+            yield return new object[] { new byte[] { 97, 225, 136, 180, 98 }, 0, 5, new byte[] { 97, 37, 69, 49, 37, 56, 56, 37, 66, 52, 98 } };
+            yield return new object[] { new byte[] { 97, 225, 136, 180, 98 }, 1, 3, new byte[] { 37, 69, 49, 37, 56, 56, 37, 66, 52 } };
+
             yield return new object[] { null, 0, 0, null };
         }
 
