@@ -39,7 +39,7 @@
       IL_000b:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(value class [mscorlib]System.RuntimeTypeHandle)
       IL_0010:  beq.s      IL_0018
 
-      IL_0012:  newobj     instance void [mscorlib]System.ApplicationException::.ctor()
+      IL_0012:  newobj     instance void [mscorlib]System.Exception::.ctor()
       IL_0017:  throw
 
       IL_0018:  ldarg.0

@@ -203,7 +203,7 @@
       IL_00c0:  stloc.3
       IL_00c1:  br.s       IL_00c9
 
-      IL_00c3:  newobj     instance void ['mscorlib']System.ApplicationException::.ctor()
+      IL_00c3:  newobj     instance void ['mscorlib']System.Exception::.ctor()
       IL_00c8:  throw
 
       IL_00c9:  ldloc.3
@@ -451,7 +451,7 @@
       IL_0108:  ldc.i4.0
       IL_0109:  bge.s      IL_0111
 
-      IL_010b:  newobj     instance void ['mscorlib']System.ApplicationException::.ctor()
+      IL_010b:  newobj     instance void ['mscorlib']System.Exception::.ctor()
       IL_0110:  throw
 
       IL_0111:  ldarg.0
