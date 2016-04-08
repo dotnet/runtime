@@ -51,6 +51,12 @@ namespace System.Collections.Tests
             Assert.Equal(expectedCount, removedCount);
         }
 
+        [Fact]
+        public void RemoveAll_NullMatchPredicate()
+        {
+            Assert.Throws<ArgumentNullException>("match", () => new List<T>().RemoveAll(null));
+        }
+
         #endregion
 
         #region RemoveRange

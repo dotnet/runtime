@@ -19,7 +19,6 @@ namespace System.IO.Tests
         [Fact]
         public static void StringReaderWithEmptyString()
         {
-
             // [] Check vanilla construction
             //-----------------------------------------------------------
             StringReader sr = new StringReader(string.Empty);
@@ -51,7 +50,23 @@ namespace System.IO.Tests
             {
                 Assert.Equal((int)str1[i], sr.Read());
             }
+        }
 
+        [Fact]
+        public static void ReadLine()
+        {
+            string str1 = "Hello\0\t\v   \\ World";
+            string str2 = str1 + Environment.NewLine + str1;
+
+            using (StringReader sr = new StringReader(str1))
+            {
+                Assert.Equal(str1, sr.ReadLine());
+            }
+            using (StringReader sr = new StringReader(str2))
+            {
+                Assert.Equal(str1, sr.ReadLine());
+                Assert.Equal(str1, sr.ReadLine());
+            }
         }
 
         [Fact]
