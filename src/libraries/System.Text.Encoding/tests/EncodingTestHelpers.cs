@@ -10,7 +10,26 @@ namespace System.Text.Tests
     {
         private static readonly RandomDataGenerator s_randomGenerator = new RandomDataGenerator();
 
-        public static void GetByteCount(Encoding encoding, string chars, int index, int count, int expected)
+        public static void Encode(Encoding encoding, string chars, int index, int count, byte[] expected)
+        {
+            byte[] fullArray = new byte[expected.Length + 4];
+            for (int i = 0; i < fullArray.Length; i++)
+            {
+                fullArray[i] = (byte)i;
+            }
+
+            GetByteCount(encoding, chars, index, count, expected.Length);
+            GetBytes(encoding, chars, index, count, new byte[expected.Length], 0, expected);
+            GetBytes(encoding, chars, index, count, fullArray, 2, expected);
+
+            if (count == 0)
+            {
+                // If count == 0 should not throw even though the byteIndex is invalid
+                GetBytes(encoding, chars, index, count, new byte[10], 10, expected);
+            }
+        }
+
+        private static void GetByteCount(Encoding encoding, string chars, int index, int count, int expected)
         {
             char[] charArray = chars.ToCharArray();
             if (index == 0 && count == chars.Length)
@@ -23,7 +42,7 @@ namespace System.Text.Tests
             Assert.Equal(expected, encoding.GetByteCount(charArray, index, count));
         }
         
-        public static void GetBytes(Encoding encoding, string source, int index, int count, byte[] bytes, int byteIndex, byte[] expectedBytes)
+        private static void GetBytes(Encoding encoding, string source, int index, int count, byte[] bytes, int byteIndex, byte[] expectedBytes)
         {
             byte[] originalBytes = (byte[])bytes.Clone();
 
@@ -71,8 +90,30 @@ namespace System.Text.Tests
                 Assert.Equal(originalBytes[i], bytes[i]);
             }
         }
+        
+        public static void Decode(Encoding encoding, byte[] bytes, int index, int count, char[] expected)
+        {
+            char[] fullArray = new char[expected.Length + 2];
+            for (int i = 0; i < fullArray.Length; i++)
+            {
+                fullArray[i] = (char)i;
+            }
 
-        public static void GetCharCount(Encoding encoding, byte[] bytes, int index, int count, int expected)
+            GetCharCount(encoding, bytes, index, count, expected.Length);
+
+            GetChars(encoding, bytes, index, count, new char[expected.Length], 0, expected);
+            GetChars(encoding, bytes, index, count, fullArray, 2, expected);
+
+            if (count == 0)
+            {
+                // If count == 0 should not throw even though the byteIndex is invalid
+                GetChars(encoding, bytes, index, count, new char[10], 10, expected);
+            }
+
+            GetString(encoding, bytes, index, count, new string(expected));
+        }
+
+        private static void GetCharCount(Encoding encoding, byte[] bytes, int index, int count, int expected)
         {
             if (index == 0 && count == bytes.Length)
             {
@@ -83,7 +124,7 @@ namespace System.Text.Tests
             Assert.Equal(expected, encoding.GetCharCount(bytes, index, count));
         }
 
-        public static void GetChars(Encoding encoding, byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex, char[] expectedChars)
+        private static void GetChars(Encoding encoding, byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex, char[] expectedChars)
         {
             char[] originalChars = (char[])chars.Clone();
 
@@ -93,10 +134,11 @@ namespace System.Text.Tests
                 char[] resultBasic = encoding.GetChars(bytes);
                 VerifyGetChars(resultBasic, 0, resultBasic.Length, originalChars, expectedChars);
             }
+
             // Use GetChars(byte[], int, int)
             char[] resultAdvanced = encoding.GetChars(bytes, byteIndex, byteCount);
             VerifyGetChars(resultAdvanced, 0, resultAdvanced.Length, originalChars, expectedChars);
-
+            
             // Use GetChars(byte[], int, int, char[], int)
             int charCount = encoding.GetChars(bytes, byteIndex, byteCount, chars, charIndex);
             VerifyGetChars(chars, charIndex, charCount, originalChars, expectedChars);
@@ -121,7 +163,7 @@ namespace System.Text.Tests
             }
         }
         
-        public static void GetString(Encoding encoding, byte[] bytes, int index, int count, string expected)
+        private static void GetString(Encoding encoding, byte[] bytes, int index, int count, string expected)
         {
             if (index == 0 && count == bytes.Length)
             {
