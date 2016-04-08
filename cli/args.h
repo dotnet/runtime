@@ -55,34 +55,34 @@ struct probe_config_t
         assert(!match_hash || probe_deps_json == nullptr);
     }
 
-    static probe_config_t svc_ni(const pal::string_t dir, bool patch_roll_fwd, bool prerelease_roll_fwd)
+    static probe_config_t svc_ni(const pal::string_t& dir, bool patch_roll_fwd, bool prerelease_roll_fwd)
     {
         return probe_config_t(dir, false, patch_roll_fwd, prerelease_roll_fwd, nullptr, true, true);
     }
 
-    static probe_config_t svc(const pal::string_t dir, bool patch_roll_fwd, bool prerelease_roll_fwd)
+    static probe_config_t svc(const pal::string_t& dir, bool patch_roll_fwd, bool prerelease_roll_fwd)
     {
         return probe_config_t(dir, false, patch_roll_fwd, prerelease_roll_fwd, nullptr, true, false);
     }
 
-    static probe_config_t cache_ni(const pal::string_t dir)
+    static probe_config_t cache_ni(const pal::string_t& dir)
     {
         return probe_config_t(dir, true, false, false, nullptr, false, true);
     }
     
-    static probe_config_t cache(const pal::string_t dir)
+    static probe_config_t cache(const pal::string_t& dir)
     {
         return probe_config_t(dir, true, false, false, nullptr, false, false);
     }
 
-    static probe_config_t fx(const pal::string_t dir, const deps_json_t* deps)
+    static probe_config_t fx(const pal::string_t& dir, const deps_json_t* deps)
     {
         return probe_config_t(dir, false, false, false, deps, false, false);
     }
 
-    static probe_config_t additional(const pal::string_t dir, bool patch_roll_fwd, bool prerelease_roll_fwd)
+    static probe_config_t additional(const pal::string_t& dir)
     {
-        return probe_config_t(dir, false, patch_roll_fwd, prerelease_roll_fwd, nullptr, false, false);
+        return probe_config_t(dir, false, false, false, nullptr, false, false);
     }
 };
 

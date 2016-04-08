@@ -225,9 +225,7 @@ void deps_resolver_t::setup_probe_config(
     for (const auto& probe : m_additional_probes)
     {
         // Additional paths
-        bool patch_roll_fwd = config.get_patch_roll_fwd();
-        bool prerelease_roll_fwd = config.get_prerelease_roll_fwd();
-        m_probes.push_back(probe_config_t::additional(probe, patch_roll_fwd, prerelease_roll_fwd));
+        m_probes.push_back(probe_config_t::additional(probe));
     }
 
     if (trace::is_enabled())
