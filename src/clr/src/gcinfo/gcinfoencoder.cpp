@@ -809,58 +809,52 @@ void GcInfoEncoder::SetSizeOfStackOutgoingAndScratchArea( UINT32 size )
 }
 #endif // FIXED_STACK_PARAMETER_SCRATCH_AREA
 
-class SlotTableIndexesQuickSort : public CQuickSort<UINT32>
+
+struct GcSlotDescAndId
 {
-    GcSlotDesc* m_SlotTable;
-    
-public:
-    SlotTableIndexesQuickSort(
-        GcSlotDesc*   slotTable,
-        UINT32*   pBase,
-        size_t               count
-        )
-        : CQuickSort<UINT32>( pBase, count ), m_SlotTable(slotTable)
-    {}
-
-    int Compare( UINT32* a, UINT32* b )
-    {
-        GcSlotDesc* pFirst = &(m_SlotTable[*a]);
-        GcSlotDesc* pSecond = &(m_SlotTable[*b]);
-
-        int firstFlags = pFirst->Flags ^ GC_SLOT_UNTRACKED;
-        int secondFlags = pSecond->Flags ^ GC_SLOT_UNTRACKED;
-
-        // All registers come before all stack slots
-        // All untracked come last
-        // Then sort them by flags, ensuring that the least-frequent interior/pinned flag combinations are first
-        // This is accomplished in the comparison of flags, since we encode IsRegister in the highest flag bit
-        // And we XOR the UNTRACKED flag to place them last in the second highest flag bit
-        if( firstFlags > secondFlags ) return -1;
-        if( firstFlags < secondFlags ) return 1;
-        
-        // Then sort them by slot
-        if( pFirst->IsRegister() )
-        {
-            _ASSERTE( pSecond->IsRegister() );
-            if( pFirst->Slot.RegisterNumber < pSecond->Slot.RegisterNumber ) return -1;
-            if( pFirst->Slot.RegisterNumber > pSecond->Slot.RegisterNumber ) return 1;
-        }
-        else
-        {
-            _ASSERTE( !pSecond->IsRegister() );
-            if( pFirst->Slot.Stack.SpOffset < pSecond->Slot.Stack.SpOffset ) return -1;
-            if( pFirst->Slot.Stack.SpOffset > pSecond->Slot.Stack.SpOffset ) return 1;
-
-            // This is arbitrary, but we want to make sure they are considered separate slots
-            if( pFirst->Slot.Stack.Base < pSecond->Slot.Stack.Base ) return -1;
-            if( pFirst->Slot.Stack.Base > pSecond->Slot.Stack.Base ) return 1;
-        }
-
-        // If we get here, the slots are identical
-        _ASSERTE(!"Duplicate slots definitions found in GC information!");
-        return 0;
-    }
+    GcSlotDesc m_SlotDesc;
+    UINT32 m_SlotId;
 };
+
+
+int __cdecl CompareSlotDescAndIdBySlotDesc(const void* p1, const void* p2)
+{
+    const GcSlotDesc* pFirst = &reinterpret_cast<const GcSlotDescAndId*>(p1)->m_SlotDesc;
+    const GcSlotDesc* pSecond = &reinterpret_cast<const GcSlotDescAndId*>(p2)->m_SlotDesc;
+
+    int firstFlags = pFirst->Flags ^ GC_SLOT_UNTRACKED;
+    int secondFlags = pSecond->Flags ^ GC_SLOT_UNTRACKED;
+
+    // All registers come before all stack slots
+    // All untracked come last
+    // Then sort them by flags, ensuring that the least-frequent interior/pinned flag combinations are first
+    // This is accomplished in the comparison of flags, since we encode IsRegister in the highest flag bit
+    // And we XOR the UNTRACKED flag to place them last in the second highest flag bit
+    if( firstFlags > secondFlags ) return -1;
+    if( firstFlags < secondFlags ) return 1;
+    
+    // Then sort them by slot
+    if( pFirst->IsRegister() )
+    {
+        _ASSERTE( pSecond->IsRegister() );
+        if( pFirst->Slot.RegisterNumber < pSecond->Slot.RegisterNumber ) return -1;
+        if( pFirst->Slot.RegisterNumber > pSecond->Slot.RegisterNumber ) return 1;
+    }
+    else
+    {
+        _ASSERTE( !pSecond->IsRegister() );
+        if( pFirst->Slot.Stack.SpOffset < pSecond->Slot.Stack.SpOffset ) return -1;
+        if( pFirst->Slot.Stack.SpOffset > pSecond->Slot.Stack.SpOffset ) return 1;
+
+        // This is arbitrary, but we want to make sure they are considered separate slots
+        if( pFirst->Slot.Stack.Base < pSecond->Slot.Stack.Base ) return -1;
+        if( pFirst->Slot.Stack.Base > pSecond->Slot.Stack.Base ) return 1;
+    }
+
+    // If we get here, the slots are identical
+    _ASSERTE(!"Duplicate slots definitions found in GC information!");
+    return 0;
+}
 
 
 int __cdecl CompareLifetimeTransitionsByOffsetThenSlot(const void* p1, const void* p2)
@@ -1302,31 +1296,26 @@ void GcInfoEncoder::Build()
     ///////////////////////////////////////////////////////////////////////
 
     {
-        UINT32* sortedSlotIndexes = (UINT32*) m_pAllocator->Alloc(m_NumSlots * sizeof(UINT32));
+        GcSlotDescAndId* sortedSlots = (GcSlotDescAndId*) m_pAllocator->Alloc(m_NumSlots * sizeof(GcSlotDescAndId));
         UINT32* sortOrder = (UINT32*) m_pAllocator->Alloc(m_NumSlots * sizeof(UINT32));
 
         for(UINT32 i = 0; i < m_NumSlots; i++)
         {
-            sortedSlotIndexes[i] = i;
+            sortedSlots[i].m_SlotDesc = m_SlotTable[i];
+            sortedSlots[i].m_SlotId = i;
         }
-        
-        SlotTableIndexesQuickSort slotTableIndexesQuickSort(
-            m_SlotTable,
-            sortedSlotIndexes,
-            m_NumSlots
-            );
-        slotTableIndexesQuickSort.Sort();
+
+        qsort(sortedSlots, m_NumSlots, sizeof(GcSlotDescAndId), CompareSlotDescAndIdBySlotDesc);
 
         for(UINT32 i = 0; i < m_NumSlots; i++)
         {
-            sortOrder[sortedSlotIndexes[i]] = i;
+            sortOrder[sortedSlots[i].m_SlotId] = i;
         }
 
         // Re-order the slot table
-        GcSlotDesc* pNewSlotTable = (GcSlotDesc*) m_pAllocator->Alloc(sizeof(GcSlotDesc) * m_NumSlots);
         for(UINT32 i = 0; i < m_NumSlots; i++)
         {
-            pNewSlotTable[i] = m_SlotTable[sortedSlotIndexes[i]];
+            m_SlotTable[i] = sortedSlots[i].m_SlotDesc;
         }
 
         // Update transitions to assign new slot ids
@@ -1337,12 +1326,9 @@ void GcInfoEncoder::Build()
         }
 
 #ifdef MUST_CALL_JITALLOCATOR_FREE
-        m_pAllocator->Free( m_SlotTable );
-        m_pAllocator->Free( sortedSlotIndexes );
+        m_pAllocator->Free( sortedSlots );
         m_pAllocator->Free( sortOrder );
 #endif
-
-        m_SlotTable = pNewSlotTable;
     }
 
 

@@ -420,56 +420,48 @@ void GcInfoEncoder::SetSizeOfStackOutgoingAndScratchArea( UINT32 size )
 #endif // FIXED_STACK_PARAMETER_SCRATCH_AREA
 
 
-class LifetimeTransitionsQuickSort : public CQuickSort<GcInfoEncoder::LifetimeTransition>
+int __cdecl CompareLifetimeTransitionsForQsort(const void* p1, const void* p2)
 {
-public:
-    LifetimeTransitionsQuickSort(
-        GcInfoEncoder::LifetimeTransition*   pBase,
-        size_t               count
-        )
-        : CQuickSort<GcInfoEncoder::LifetimeTransition>( pBase, count )
-    {}
+    const GcInfoEncoder::LifetimeTransition* pFirst = (const GcInfoEncoder::LifetimeTransition*) p1;
+    const GcInfoEncoder::LifetimeTransition* pSecond = (const GcInfoEncoder::LifetimeTransition*) p2;
 
-    int Compare( GcInfoEncoder::LifetimeTransition* pFirst, GcInfoEncoder::LifetimeTransition* pSecond )
+    // All registers come before all stack slots
+    if( pFirst->SlotDesc.IsRegister && !pSecond->SlotDesc.IsRegister ) return -1;
+    if( !pFirst->SlotDesc.IsRegister && pSecond->SlotDesc.IsRegister ) return 1;
+
+    // Then sort them by slot
+    if( pFirst->SlotDesc.IsRegister )
     {
-        // All registers come before all stack slots
-        if( pFirst->SlotDesc.IsRegister && !pSecond->SlotDesc.IsRegister ) return -1;
-        if( !pFirst->SlotDesc.IsRegister && pSecond->SlotDesc.IsRegister ) return 1;
-
-        // Then sort them by slot
-        if( pFirst->SlotDesc.IsRegister )
-        {
-            _ASSERTE( pSecond->SlotDesc.IsRegister );
-            if( pFirst->SlotDesc.Slot.RegisterNumber < pSecond->SlotDesc.Slot.RegisterNumber ) return -1;
-            if( pFirst->SlotDesc.Slot.RegisterNumber > pSecond->SlotDesc.Slot.RegisterNumber ) return 1;
-        }
-        else
-        {
-            _ASSERTE( !pSecond->SlotDesc.IsRegister );
-            if( pFirst->SlotDesc.Slot.Stack.SpOffset < pSecond->SlotDesc.Slot.Stack.SpOffset ) return -1;
-            if( pFirst->SlotDesc.Slot.Stack.SpOffset > pSecond->SlotDesc.Slot.Stack.SpOffset ) return 1;
-
-            // This is arbitrary, but we want to make sure they are considered separate slots
-            if( pFirst->SlotDesc.Slot.Stack.Base < pSecond->SlotDesc.Slot.Stack.Base ) return -1;
-            if( pFirst->SlotDesc.Slot.Stack.Base > pSecond->SlotDesc.Slot.Stack.Base ) return 1;
-        }
-
-        // Then sort them by code offset
-        size_t firstOffset  = pFirst->CodeOffset;
-        size_t secondOffset = pSecond->CodeOffset;
-        if( firstOffset < secondOffset ) return -1;
-        if( firstOffset > secondOffset ) return 1;
-
-        //
-        // Same slot and offset. We put all the going-live transition first
-        //  so that the encoder will skip the remaining transitions and 
-        //  the going-live transitions take precedence
-        //
-        _ASSERTE( ( pFirst->BecomesLive == 0 ) || ( pFirst->BecomesLive == 1 ) );
-        _ASSERTE( ( pSecond->BecomesLive == 0 ) || ( pSecond->BecomesLive == 1 ) );
-        return ( pSecond->BecomesLive - pFirst->BecomesLive );
+        _ASSERTE( pSecond->SlotDesc.IsRegister );
+        if( pFirst->SlotDesc.Slot.RegisterNumber < pSecond->SlotDesc.Slot.RegisterNumber ) return -1;
+        if( pFirst->SlotDesc.Slot.RegisterNumber > pSecond->SlotDesc.Slot.RegisterNumber ) return 1;
     }
-};
+    else
+    {
+        _ASSERTE( !pSecond->SlotDesc.IsRegister );
+        if( pFirst->SlotDesc.Slot.Stack.SpOffset < pSecond->SlotDesc.Slot.Stack.SpOffset ) return -1;
+        if( pFirst->SlotDesc.Slot.Stack.SpOffset > pSecond->SlotDesc.Slot.Stack.SpOffset ) return 1;
+
+        // This is arbitrary, but we want to make sure they are considered separate slots
+        if( pFirst->SlotDesc.Slot.Stack.Base < pSecond->SlotDesc.Slot.Stack.Base ) return -1;
+        if( pFirst->SlotDesc.Slot.Stack.Base > pSecond->SlotDesc.Slot.Stack.Base ) return 1;
+    }
+
+    // Then sort them by code offset
+    size_t firstOffset  = pFirst->CodeOffset;
+    size_t secondOffset = pSecond->CodeOffset;
+    if( firstOffset < secondOffset ) return -1;
+    if( firstOffset > secondOffset ) return 1;
+
+    //
+    // Same slot and offset. We put all the going-live transition first
+    //  so that the encoder will skip the remaining transitions and 
+    //  the going-live transitions take precedence
+    //
+    _ASSERTE( ( pFirst->BecomesLive == 0 ) || ( pFirst->BecomesLive == 1 ) );
+    _ASSERTE( ( pSecond->BecomesLive == 0 ) || ( pSecond->BecomesLive == 1 ) );
+    return ( pSecond->BecomesLive - pFirst->BecomesLive );
+}
 
 
 void GcInfoEncoder::Build()
@@ -585,13 +577,8 @@ void GcInfoEncoder::Build()
     m_LifetimeTransitions.CopyTo(m_rgSortedTransitions);
 
     // Sort them first
-    LifetimeTransitionsQuickSort lifetimeTransitionsQSort(
-        m_rgSortedTransitions,
-        m_LifetimeTransitions.Count()
-        );
-    lifetimeTransitionsQSort.Sort();
-
     size_t numTransitions = m_LifetimeTransitions.Count();
+    qsort(m_rgSortedTransitions, numTransitions, sizeof(LifetimeTransition), CompareLifetimeTransitionsForQsort);
 
     //------------------------------------------------------------------
     // Count registers and stack slots
