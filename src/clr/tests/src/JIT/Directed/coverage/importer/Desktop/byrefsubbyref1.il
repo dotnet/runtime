@@ -9,7 +9,7 @@
   .ver 4:0:0:0
 }
 .assembly extern legacy library mscorlib {}
-.assembly byrefsubbyref1 {.custom instance void [mscorlib]System.Security.SecurityRulesAttribute::.ctor(valuetype [mscorlib]System.Security.SecurityRuleSet) = ( 01 00 01 00 00 ) }
+.assembly byrefsubbyref1 { }
 .class a extends [mscorlib]System.Object
 {
 .field static class ctest S_1

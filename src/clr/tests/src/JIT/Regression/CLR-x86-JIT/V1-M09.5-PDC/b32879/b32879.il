@@ -8,7 +8,6 @@
 .assembly 'bug' { }
 .class public auto ansi HiDad extends [mscorlib]System.Object
 {
-  .custom instance void [mscorlib]Microsoft.VisualBasic.Globals.StandardModuleAttribute::.ctor() = ( 01 00 00 00 ) 
   .method public static void main() il managed forwardref
   {
     .maxstack  8
