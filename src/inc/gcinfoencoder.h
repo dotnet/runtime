@@ -81,8 +81,8 @@
 #include "utilcode.h"
 #include "corjit.h"
 #include "slist.h"     // for SList
-#include "arraylist.h"
 #include "iallocator.h"
+#include "gcinfoarraylist.h"
 #include "stdmacros.h"
 #include "eexcp.h"
 #endif
@@ -438,44 +438,6 @@ private:
         UINT32 NormStopOffset;
     };
 
-    class InterruptibleRangeAllocator
-    {
-    public:
-
-        static void *Alloc (void *context, SIZE_T cb)
-        {
-            GcInfoEncoder *pGcInfoEncoder = CONTAINING_RECORD(context, GcInfoEncoder, m_InterruptibleRanges);
-            return pGcInfoEncoder->m_pAllocator->Alloc(cb);
-        }
-
-        static void Free (void *context, void *pv)
-        {
-        #ifdef MUST_CALL_IALLOCATOR_FREE
-            GcInfoEncoder *pGcInfoEncoder = CONTAINING_RECORD(context, GcInfoEncoder, m_InterruptibleRanges);
-            pGcInfoEncoder->m_pAllocator->Free(pv);
-        #endif
-        }
-    };
-
-    class LifetimeTransitionAllocator
-    {
-    public:
-
-        static void *Alloc (void *context, SIZE_T cb)
-        {
-            GcInfoEncoder *pGcInfoEncoder = CONTAINING_RECORD(context, GcInfoEncoder, m_LifetimeTransitions);
-            return pGcInfoEncoder->m_pAllocator->Alloc(cb);
-        }
-
-        static void Free (void *context, void *pv)
-        {
-        #ifdef MUST_CALL_IALLOCATOR_FREE
-            GcInfoEncoder *pGcInfoEncoder = CONTAINING_RECORD(context, GcInfoEncoder, m_LifetimeTransitions);
-            pGcInfoEncoder->m_pAllocator->Free(pv);
-        #endif
-        }
-    };
-
     ICorJitInfo*                m_pCorJitInfo;
     CORINFO_METHOD_INFO*        m_pMethodInfo;
     IAllocator*                 m_pAllocator;
@@ -488,8 +450,8 @@ private:
     BitStreamWriter     m_Info1;    // Used for everything except for chunk encodings
     BitStreamWriter     m_Info2;    // Used for chunk encodings
 
-    StructArrayList<InterruptibleRange, 8, 2, InterruptibleRangeAllocator> m_InterruptibleRanges;
-    StructArrayList<LifetimeTransition, 64, 2, LifetimeTransitionAllocator> m_LifetimeTransitions;
+    GcInfoArrayList<InterruptibleRange, 8> m_InterruptibleRanges;
+    GcInfoArrayList<LifetimeTransition, 64> m_LifetimeTransitions;
 
     bool   m_IsVarArg;
     bool   m_WantsReportOnlyLeaf;
