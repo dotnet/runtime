@@ -27,7 +27,7 @@
       			pop
       			br      further
 
-      bad:  	newobj     instance void [mscorlib]System.ApplicationException::.ctor()
+      bad:  	newobj     instance void [mscorlib]System.Exception::.ctor()
       			throw
 
 	  further:

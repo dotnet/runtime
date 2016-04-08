@@ -36,7 +36,7 @@ loop_begin:
 	ldloc.3
 	switch (err1,a1,a1,a1,a1,a2,a2,a2,a2)
 err1:
-	newobj instance void [mscorlib]System.ApplicationException::.ctor()
+	newobj instance void [mscorlib]System.Exception::.ctor()
 	throw
 a1:
 	ldloc.0
@@ -54,7 +54,7 @@ end_a:
 	dup
 	switch (err2,b1,b2,b1,b2,b1,b2,b1,b2)
 err2:
-	newobj instance void [mscorlib]System.ApplicationException::.ctor()
+	newobj instance void [mscorlib]System.Exception::.ctor()
 	throw
 b1:
 	stelem.i
@@ -73,10 +73,10 @@ end_b:
 	dup
 	switch (err3,c1,c1,c2,c2,c1,c1,c2,c2)
 err3:
-	newobj instance void [mscorlib]System.ApplicationException::.ctor()
+	newobj instance void [mscorlib]System.Exception::.ctor()
 	throw
 err4:
-	newobj instance void [mscorlib]System.ApplicationException::.ctor()
+	newobj instance void [mscorlib]System.Exception::.ctor()
 	throw
 c1:
 	ldelem.i
