@@ -214,7 +214,6 @@ namespace System.Diagnostics.Tests
             Assert.NotNull(_process.MachineName);
         }
 
-        [ActiveIssue(6677, PlatformID.OSX)]
         [Fact]
         public void TestMainModuleOnNonOSX()
         {
@@ -299,7 +298,6 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ActiveIssue(6677, PlatformID.OSX)]
         [Fact]
         public void TestModules()
         {
@@ -308,12 +306,12 @@ namespace System.Diagnostics.Tests
             {
                 // Validated that we can get a value for each of the following.
                 Assert.NotNull(pModule);
-                Assert.NotEqual(IntPtr.Zero, pModule.BaseAddress);
                 Assert.NotNull(pModule.FileName);
                 Assert.NotNull(pModule.ModuleName);
 
                 // Just make sure these don't throw
-                IntPtr addr = pModule.EntryPointAddress;
+                IntPtr baseAddr = pModule.BaseAddress;
+                IntPtr entryAddr = pModule.EntryPointAddress;
                 int memSize = pModule.ModuleMemorySize;
             }
         }
