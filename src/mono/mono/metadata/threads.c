@@ -727,12 +727,13 @@ static guint32 WINAPI start_wrapper_internal(void *data)
 	mono_profiler_thread_start (tid);
 
 	/* if the name was set before starting, we didn't invoke the profiler callback */
-	if (internal->name && (internal->flags & MONO_THREAD_FLAG_NAME_SET)) {
+	if (internal->name) {
 		char *tname = g_utf16_to_utf8 (internal->name, internal->name_len, NULL, NULL, NULL);
 		mono_profiler_thread_name (internal->tid, tname);
 		mono_native_thread_set_name (MONO_UINT_TO_NATIVE_THREAD_ID (internal->tid), tname);
 		g_free (tname);
 	}
+
 	/* start_func is set only for unmanaged start functions */
 	if (start_func) {
 		start_func (start_arg);
