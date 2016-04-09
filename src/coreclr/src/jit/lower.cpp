@@ -1268,35 +1268,8 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
             }
         }
         else
-#else // not defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-#if FEATURE_MULTIREG_ARGS 
-        if ((info->numRegs > 1) && (arg->OperGet() == GT_LIST))
-        {
-            assert(arg->OperGet() == GT_LIST);
-            GenTreeArgList* argListPtr = arg->AsArgList();
+#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
-            for (unsigned ctr = 0; argListPtr != nullptr; argListPtr = argListPtr->Rest(), ctr++)
-            {
-                GenTreePtr curOp  = argListPtr->gtOp.gtOp1;
-                var_types  curTyp = curOp->TypeGet();
-
-                // Create a new GT_PUTARG_REG node with op1 
-                GenTreePtr newOper = comp->gtNewOperNode(GT_PUTARG_REG, curTyp, curOp);
-
-                // CopyCosts
-                newOper->CopyCosts(argListPtr->gtOp.gtOp1);
-
-                // Splice in the new GT_PUTARG_REG node in the GT_LIST
-                SpliceInUnary(argListPtr, &argListPtr->gtOp.gtOp1, newOper);
-            }
-
-            // Just return arg. The GT_LIST is not replaced.
-            // Nothing more to do.
-            return arg;
-        }
-        else
-#endif // FEATURE_MULTIREG_ARGS 
-#endif // not defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
         {
             putArg = comp->gtNewOperNode(GT_PUTARG_REG, type, arg);
         }
