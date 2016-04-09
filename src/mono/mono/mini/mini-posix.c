@@ -322,15 +322,30 @@ per_thread_profiler_hit (void *ctx)
 	}
 }
 
+static MonoNativeThreadId sampling_thread;
+
 static gint32 profiler_signals_sent;
 static gint32 profiler_signals_received;
 static gint32 profiler_signals_accepted;
+static gint32 profiler_interrupt_signals_received;
 
 MONO_SIG_HANDLER_FUNC (static, profiler_signal_handler)
 {
 	int old_errno = errno;
 	int hp_save_index;
 	MONO_SIG_HANDLER_GET_CONTEXT;
+
+	/* See the comment in mono_runtime_shutdown_stat_profiler (). */
+	if (mono_native_thread_id_get () == sampling_thread) {
+#ifdef HAVE_CLOCK_NANOSLEEP
+		if (mono_profiler_get_sampling_mode () == MONO_PROFILER_STAT_MODE_PROCESS) {
+			InterlockedIncrement (&profiler_interrupt_signals_received);
+			return;
+		}
+#endif
+
+		g_error ("%s: Unexpected profiler signal received by the sampler thread", __func__);
+	}
 
 	InterlockedIncrement (&profiler_signals_received);
 
@@ -516,6 +531,8 @@ mono_runtime_cleanup_handlers (void)
 
 #ifdef HAVE_PROFILER_SIGNAL
 
+static volatile gint32 sampling_thread_running;
+
 #ifdef PLATFORM_MACOSX
 
 static clock_serv_t sampling_clock_service;
@@ -573,11 +590,10 @@ clock_sleep_ns_abs (guint64 ns_abs)
 
 	do {
 		ret = clock_sleep (sampling_clock_service, TIME_ABSOLUTE, then, &remain_unused);
-	} while (ret == KERN_ABORTED);
 
-	if (ret != KERN_SUCCESS)
-		g_error ("%s: clock_sleep () returned %d", __func__, ret);
-
+		if (ret != KERN_SUCCESS && ret != KERN_ABORTED)
+			g_error ("%s: clock_sleep () returned %d", __func__, ret);
+	} while (ret == KERN_ABORTED && InterlockedRead (&sampling_thread_running));
 }
 
 #else
@@ -634,7 +650,7 @@ clock_sleep_ns_abs (guint64 ns_abs)
 
 		if (ret != 0 && ret != EINTR)
 			g_error ("%s: clock_nanosleep () returned %d", __func__, ret);
-	} while (ret == EINTR);
+	} while (ret == EINTR && InterlockedRead (&sampling_thread_running));
 #else
 	int ret;
 	gint64 diff;
@@ -675,15 +691,14 @@ clock_sleep_ns_abs (guint64 ns_abs)
 
 		if ((ret = nanosleep (&req, NULL)) == -1 && errno != EINTR)
 			g_error ("%s: nanosleep () returned -1, errno = %d", __func__, errno);
-	} while (ret == -1);
+	} while (ret == -1 && InterlockedRead (&sampling_thread_running));
 #endif
 }
 
 #endif
 
 static int profiler_signal;
-static MonoNativeThreadId sampling_thread;
-static volatile gint32 sampling_thread_running;
+static volatile gint32 sampling_thread_exiting;
 
 static mono_native_thread_return_t
 sampling_thread_func (void *data)
@@ -732,6 +747,8 @@ sampling_thread_func (void *data)
 		clock_sleep_ns_abs (sleep);
 	}
 
+	InterlockedWrite (&sampling_thread_exiting, 1);
+
 	clock_cleanup ();
 
 	pthread_setschedparam (pthread_self (), old_policy, &old_sched);
@@ -745,6 +762,41 @@ void
 mono_runtime_shutdown_stat_profiler (void)
 {
 	InterlockedWrite (&sampling_thread_running, 0);
+
+#ifdef HAVE_CLOCK_NANOSLEEP
+	/*
+	 * There is a slight problem when we're using CLOCK_PROCESS_CPUTIME_ID: If
+	 * we're shutting down and there's largely no activity in the process other
+	 * than waiting for the sampler thread to shut down, it can take upwards of
+	 * 20 seconds (depending on a lot of factors) for us to shut down because
+	 * the sleep progresses very slowly as a result of the low CPU activity.
+	 *
+	 * We fix this by repeatedly sending the profiler signal to the sampler
+	 * thread in order to interrupt the sleep. clock_sleep_ns_abs () will check
+	 * sampling_thread_running upon an interrupt and return immediately if it's
+	 * zero. profiler_signal_handler () has a special case to ignore the signal
+	 * for the sampler thread.
+	 *
+	 * We do not need to do this on platforms where we use a regular sleep
+	 * based on a monotonic clock. The sleep will return in a reasonable amount
+	 * of time in those cases.
+	 */
+	if (mono_profiler_get_sampling_mode () == MONO_PROFILER_STAT_MODE_PROCESS) {
+		MonoThreadInfo *info;
+
+		// Did it shut down already?
+		if ((info = mono_thread_info_lookup (sampling_thread))) {
+			while (!InterlockedRead (&sampling_thread_exiting)) {
+				mono_threads_pthread_kill (info, profiler_signal);
+				mono_thread_info_usleep (10 * 1000 /* 10ms */);
+			}
+
+			// Make sure info can be freed.
+			mono_hazard_pointer_clear (mono_hazard_pointer_get (), 1);
+		}
+	}
+#endif
+
 	pthread_join (sampling_thread, NULL);
 
 	/*
@@ -781,6 +833,7 @@ mono_runtime_setup_stat_profiler (void)
 	mono_counters_register ("Sampling signals sent", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &profiler_signals_sent);
 	mono_counters_register ("Sampling signals received", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &profiler_signals_received);
 	mono_counters_register ("Sampling signals accepted", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &profiler_signals_accepted);
+	mono_counters_register ("Shutdown signals received", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &profiler_interrupt_signals_received);
 
 	InterlockedWrite (&sampling_thread_running, 1);
 	mono_native_thread_create (&sampling_thread, sampling_thread_func, NULL);
