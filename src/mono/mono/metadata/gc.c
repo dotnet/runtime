@@ -453,6 +453,8 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 		mono_gc_finalize_threadpool_threads ();
 	}
 
+	mono_profiler_appdomain_event (domain, MONO_PROFILE_END_UNLOAD);
+
 	return TRUE;
 }
 

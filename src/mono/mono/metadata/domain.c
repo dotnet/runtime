@@ -1169,12 +1169,6 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	g_slist_free (domain->domain_assemblies);
 	domain->domain_assemblies = NULL;
 
-	/* 
-	 * Send this after the assemblies have been unloaded and the domain is still in a 
-	 * usable state.
-	 */
-	mono_profiler_appdomain_event (domain, MONO_PROFILE_END_UNLOAD);
-
 	if (free_domain_hook)
 		free_domain_hook (domain);
 
