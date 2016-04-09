@@ -130,6 +130,18 @@ static gint32 sample_hits;
 static gint32 sample_flushes;
 static gint32 sample_allocations;
 static gint32 buffer_allocations;
+static gint32 thread_starts;
+static gint32 thread_ends;
+static gint32 domain_loads;
+static gint32 domain_unloads;
+static gint32 context_loads;
+static gint32 context_unloads;
+static gint32 assembly_loads;
+static gint32 assembly_unloads;
+static gint32 image_loads;
+static gint32 image_unloads;
+static gint32 class_loads;
+static gint32 class_unloads;
 
 typedef struct _LogBuffer LogBuffer;
 
@@ -1338,6 +1350,8 @@ image_loaded (MonoProfiler *prof, MonoImage *image, int result)
 	if (logbuffer->next)
 		safe_send (prof, logbuffer);
 	process_requests (prof);
+
+	InterlockedIncrement (&image_loads);
 }
 
 static void
@@ -1369,6 +1383,8 @@ image_unloaded (MonoProfiler *prof, MonoImage *image)
 		safe_send (prof, logbuffer);
 
 	process_requests (prof);
+
+	InterlockedIncrement (&image_unloads);
 }
 
 static void
@@ -1405,6 +1421,8 @@ assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly, int result)
 		safe_send (prof, logbuffer);
 
 	process_requests (prof);
+
+	InterlockedIncrement (&assembly_loads);
 }
 
 static void
@@ -1438,6 +1456,8 @@ assembly_unloaded (MonoProfiler *prof, MonoAssembly *assembly)
 		safe_send (prof, logbuffer);
 
 	process_requests (prof);
+
+	InterlockedIncrement (&assembly_unloads);
 }
 
 static void
@@ -1484,6 +1504,8 @@ class_loaded (MonoProfiler *prof, MonoClass *klass, int result)
 	if (logbuffer->next)
 		safe_send (prof, logbuffer);
 	process_requests (prof);
+
+	InterlockedIncrement (&class_loads);
 }
 
 static void
@@ -1529,6 +1551,8 @@ class_unloaded (MonoProfiler *prof, MonoClass *klass)
 		safe_send (prof, logbuffer);
 
 	process_requests (prof);
+
+	InterlockedIncrement (&class_unloads);
 }
 
 #ifndef DISABLE_HELPER_THREAD
@@ -1769,6 +1793,8 @@ thread_start (MonoProfiler *prof, uintptr_t tid)
 		safe_send (prof, logbuffer);
 
 	process_requests (prof);
+
+	InterlockedIncrement (&thread_starts);
 }
 
 static void
@@ -1799,6 +1825,8 @@ thread_end (MonoProfiler *prof, uintptr_t tid)
 
 	TLS_SET (tlsbuffer, NULL);
 	TLS_SET (tlsmethodlist, NULL);
+
+	InterlockedIncrement (&thread_ends);
 }
 
 static void
@@ -1828,6 +1856,8 @@ domain_loaded (MonoProfiler *prof, MonoDomain *domain, int result)
 		safe_send (prof, logbuffer);
 
 	process_requests (prof);
+
+	InterlockedIncrement (&domain_loads);
 }
 
 static void
@@ -1854,6 +1884,8 @@ domain_unloaded (MonoProfiler *prof, MonoDomain *domain)
 		safe_send (prof, logbuffer);
 
 	process_requests (prof);
+
+	InterlockedIncrement (&domain_unloads);
 }
 
 static void
@@ -1912,6 +1944,8 @@ context_loaded (MonoProfiler *prof, MonoAppContext *context)
 		safe_send (prof, logbuffer);
 
 	process_requests (prof);
+
+	InterlockedIncrement (&context_loads);
 }
 
 static void
@@ -1940,6 +1974,8 @@ context_unloaded (MonoProfiler *prof, MonoAppContext *context)
 		safe_send (prof, logbuffer);
 
 	process_requests (prof);
+
+	InterlockedIncrement (&context_unloads);
 }
 
 static void
@@ -4692,6 +4728,18 @@ mono_profiler_startup (const char *desc)
 	mono_counters_register ("Sample flushes", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &sample_flushes);
 	mono_counters_register ("Sample events allocated", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &sample_allocations);
 	mono_counters_register ("Log buffers allocated", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &buffer_allocations);
+	mono_counters_register ("Thread start events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &thread_starts);
+	mono_counters_register ("Thread stop events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &thread_ends);
+	mono_counters_register ("Domain load events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &domain_loads);
+	mono_counters_register ("Domain unload events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &domain_unloads);
+	mono_counters_register ("Context load events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &context_loads);
+	mono_counters_register ("Context unload events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &context_unloads);
+	mono_counters_register ("Assembly load events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &assembly_loads);
+	mono_counters_register ("Assembly unload events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &assembly_unloads);
+	mono_counters_register ("Image load events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &image_loads);
+	mono_counters_register ("Image unload events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &image_unloads);
+	mono_counters_register ("Class load events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &class_loads);
+	mono_counters_register ("Class unload events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &class_unloads);
 
 	p = desc;
 	if (strncmp (p, "log", 3))
@@ -4879,6 +4927,7 @@ mono_profiler_startup (const char *desc)
 	prof = create_profiler (filename, filters);
 	if (!prof)
 		return;
+
 	init_thread ();
 
 	mono_profiler_install (prof, log_shutdown);
