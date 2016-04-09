@@ -87,7 +87,7 @@
       IL_0017:  ldc.r8     11.314
       IL_0020:  beq.s      IL_0028
 
-      IL_0022:  newobj     instance void ['mscorlib']System.ApplicationException::.ctor()
+      IL_0022:  newobj     instance void ['mscorlib']System.Exception::.ctor()
       IL_0027:  throw
 
       IL_0028:  ret

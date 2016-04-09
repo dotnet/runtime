@@ -221,7 +221,7 @@
     IL_00f7:  ldc.i4     0xc822
     IL_00fc:  beq.s      IL_0104
 
-    IL_00fe:  newobj     instance void [mscorlib]System.ApplicationException::.ctor()
+    IL_00fe:  newobj     instance void [mscorlib]System.Exception::.ctor()
     IL_0103:  throw
 
     IL_0104:  ret

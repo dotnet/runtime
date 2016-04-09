@@ -24,7 +24,7 @@
 	again:
 		ldloc i
 		switch (case1,case2,case3,stop)
-		newobj instance void [mscorlib]System.ApplicationException::.ctor()
+		newobj instance void [mscorlib]System.Exception::.ctor()
 		throw
 	case1:
 		ldloca i

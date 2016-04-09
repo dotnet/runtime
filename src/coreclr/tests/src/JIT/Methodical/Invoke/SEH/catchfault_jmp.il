@@ -58,7 +58,7 @@
         IL_0024:  stelem.i4
         IL_0025:  ldstr      "Shouldn't have reached here."
         IL_002a:  call       void [System.Console]System.Console::WriteLine(class System.String)
-        IL_002f:  newobj     instance void ['mscorlib']System.ApplicationException::.ctor()
+        IL_002f:  newobj     instance void ['mscorlib']System.Exception::.ctor()
         IL_0034:  throw
 
       }  // end .try
@@ -121,7 +121,7 @@
           IL_0026:  stelem.i4
           IL_0027:  ldstr      "Shouldn't have reached here."
           IL_002c:  call       void [System.Console]System.Console::WriteLine(class System.String)
-          IL_0031:  newobj     instance void ['mscorlib']System.ApplicationException::.ctor()
+          IL_0031:  newobj     instance void ['mscorlib']System.Exception::.ctor()
           IL_0036:  throw
 
         }  // end .try
