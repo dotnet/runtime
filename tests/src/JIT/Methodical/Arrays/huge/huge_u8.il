@@ -332,7 +332,7 @@
       			ceq
       			brtrue pass1_5
       		throw0:
-      			newobj		instance void [mscorlib]System.ApplicationException::.ctor()
+      			newobj		instance void [mscorlib]System.Exception::.ctor()
       		throw1:
 				throw
 				
@@ -451,7 +451,7 @@
      			call void [mscorlib]System.GC::Collect()
       			brtrue pass2
       			
-      			newobj		instance void [mscorlib]System.ApplicationException::.ctor()
+      			newobj		instance void [mscorlib]System.Exception::.ctor()
 				br throw1
     } // end of method 'Test::Main'
 

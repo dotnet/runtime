@@ -21,10 +21,10 @@
       IL_TRY:
       			ldstr      "in try."
       			call       void [System.Console]System.Console::WriteLine(string)
-      			newobj     instance void [mscorlib]System.ApplicationException::.ctor()
+      			newobj     instance void [mscorlib]System.ArgumentException::.ctor()
       			throw
       IL_FILTER:
-      			castclass  [mscorlib]System.ApplicationException
+      			castclass  [mscorlib]System.ArgumentException
       			pop
       			ldstr      "in filter."
       			call       void [System.Console]System.Console::WriteLine(string)

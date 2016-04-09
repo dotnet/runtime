@@ -792,7 +792,7 @@
                                                                 object)
     IL_004c:  stloc.0
     IL_004d:  ldloc.0
-    IL_004e:  newobj     instance void [mscorlib]System.ApplicationException::.ctor(string)
+    IL_004e:  newobj     instance void [mscorlib]System.ArgumentException::.ctor(string)
     IL_0053:  throw
 
     IL_0054:  ret
