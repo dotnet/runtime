@@ -52,7 +52,7 @@
       IL_001b:  ldelem.i4
       IL_001c:  bgt.s      IL_0024
 
-      IL_001e:  newobj     instance void [mscorlib]System.ApplicationException::.ctor()
+      IL_001e:  newobj     instance void [mscorlib]System.Exception::.ctor()
       IL_0023:  throw
 
       IL_0024:  ldloc.1

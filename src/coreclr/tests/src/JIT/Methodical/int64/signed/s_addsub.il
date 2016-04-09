@@ -139,7 +139,7 @@
         IL_008c:  ldc.i8     0x100000000
         IL_0095:  blt.un.s   IL_009d
 
-        IL_0097:  newobj     instance void ['mscorlib']System.ApplicationException::.ctor()
+        IL_0097:  newobj     instance void ['mscorlib']System.ArgumentException::.ctor()
         IL_009c:  throw
 
         IL_009d:  ldloc.s    V_8
@@ -151,7 +151,7 @@
         IL_00a6:  sub.ovf.un
         IL_00a7:  bgt.un.s   IL_00af
 
-        IL_00a9:  newobj     instance void ['mscorlib']System.ApplicationException::.ctor()
+        IL_00a9:  newobj     instance void ['mscorlib']System.ArgumentException::.ctor()
         IL_00ae:  throw
 
         IL_00af:  leave.s    IL_00c3
@@ -169,7 +169,7 @@
       IL_00ba:  ldarg.1
       IL_00bb:  beq.s      IL_00c3
 
-      IL_00bd:  newobj     instance void ['mscorlib']System.ApplicationException::.ctor()
+      IL_00bd:  newobj     instance void ['mscorlib']System.ArgumentException::.ctor()
       IL_00c2:  throw
 
       IL_00c3:  ret

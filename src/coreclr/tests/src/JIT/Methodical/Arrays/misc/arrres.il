@@ -64,7 +64,7 @@
       IL_000c:  ldarg.0
       IL_000d:  beq.s      IL_0015
 
-      IL_000f:  newobj     instance void [mscorlib]System.ApplicationException::.ctor()
+      IL_000f:  newobj     instance void [mscorlib]System.Exception::.ctor()
       IL_0014:  throw
 
       IL_0015:  ret
@@ -95,7 +95,7 @@
       IL_000b:  callvirt   instance class GCTest.Test class GCTest.Test[-100...100]::Get(int32)
       IL_000c:  brfalse.s  IL_0014
 
-      IL_000e:  newobj     instance void [mscorlib]System.ApplicationException::.ctor()
+      IL_000e:  newobj     instance void [mscorlib]System.Exception::.ctor()
       			throw
 
       IL_0014:  ldsfld     class GCTest.Test[-100...100] GCTest.Test::arr
