@@ -53,6 +53,10 @@
     void                genCompareLong(GenTreePtr treeNode);
 #endif
 
+#ifdef _TARGET_ARM64_
+    void                genCodeForObj(GenTreeObj* treeNode);
+#endif
+
 #ifdef FEATURE_SIMD
     enum SIMDScalarMoveType
     {

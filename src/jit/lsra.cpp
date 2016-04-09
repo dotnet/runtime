@@ -2543,6 +2543,33 @@ LinearScan::getKillSetForNode(GenTree* tree)
         break;
 #endif // PROFILING_SUPPORTED && _TARGET_AMD64_
 
+#if FEATURE_MULTIREG_ARGS
+#ifdef _TARGET_ARM64_
+    case GT_PUTARG_REG:
+        // TODO-Cleanup: Remove this code after Issue #3524 is complete
+        // 
+        // Handle the 16-byte pass-by-value TYP_STRUCT for ARM64
+        // We actually write a second register that isn't being properly tracked
+        // We can prevent anyone else from being alive at this point by adding
+        // an extra RefTypeKill for the second register.
+        //
+        if (tree->TypeGet() == TYP_STRUCT)
+        {
+            TreeNodeInfo info    = tree->gtLsraInfo;
+            regMaskTP    dstMask = info.getDstCandidates(this);
+
+            // Make sure that the dstMask represents two consecutive registers
+            regMaskTP lowRegBit  = genFindLowestBit(dstMask);
+            regMaskTP nextRegBit = lowRegBit << 1;
+            regMaskTP regPairMask = (lowRegBit | nextRegBit);
+
+            assert(dstMask == regPairMask); 
+
+            killMask = nextRegBit;  // setup killMask to be the mask for the second register.
+        }
+#endif // _TARGET_ARM64_
+#endif  // FEATURE_MULTIREG_ARGS
+
     default:
         // for all other 'tree->OperGet()' kinds, leave 'killMask' = RBM_NONE
         break;
@@ -4540,6 +4567,54 @@ LinearScan::tryAllocateFreeReg(Interval *currentInterval, RefPosition *refPositi
         singleReg = genRegNumFromMask(candidates);
         regOrder = &singleReg;
     }
+#if FEATURE_MULTIREG_ARGS
+#ifdef _TARGET_ARM64_
+    // TODO-Cleanup: Remove this code after Issue #3524 is complete
+    //
+    // Handle the 16-byte pass-by-value TYP_STRUCT for ARM64
+    if (regType == TYP_STRUCT)
+    {
+        // We currently use two consecutive registers:
+        //    to pass in argument registers or
+        //    to load and the store into the outgoing arg space
+
+        // TODO: revisit this and remove the limitation that we use two consecutive registers.
+
+        // Make sure that we have two consecutive registers available
+        regMaskTP lowRegBit  = genFindLowestBit(candidates);
+        regMaskTP nextRegBit = lowRegBit << 1;
+        regMaskTP regPairMask = (lowRegBit | nextRegBit);
+        
+        do {
+            // Are there two consecutive register bits available?
+            if ((candidates & regPairMask) == regPairMask)
+            {
+                // We use the same trick as above when regOrderSize, singleReg and regOrder are set 
+                regOrderSize = 1;
+                singleReg = genRegNumFromMask(lowRegBit);
+                regOrder = &singleReg;
+                break;
+            }
+            // setup the next register pair bit
+            lowRegBit  = nextRegBit;
+            nextRegBit = lowRegBit << 1;  // shift left by one bit
+            regPairMask = (lowRegBit | nextRegBit);
+
+        } while (nextRegBit != 0);  // If we shifted out all of the bits then nextRegBit will become zero
+        // Note that shifting out all of the bits is an error, and we catch it with the following noway_assert
+
+        // Make sure we took the break to exit the while loop            
+        noway_assert(singleReg != REG_NA);
+
+        // Unless we setup singleReg we have to issue an NYI error here
+        if (singleReg == REG_NA)
+        {
+            // Need support for MultiReg sized structs
+            NYI("Multireg struct - LinearScan::tryAllocateFreeReg");
+        }
+    }
+#endif  // _TARGET_ARM64_
+#endif // FEATURE_MULTIREG_ARGS
     
     for (unsigned i = 0; i < regOrderSize && (candidates != RBM_NONE); i++)
     {
@@ -5041,6 +5116,23 @@ void LinearScan::assignPhysReg( RegRecord * regRec, Interval * interval)
     }
 #endif // _TARGET_ARM_
 
+#if FEATURE_MULTIREG_ARGS_OR_RET
+#ifdef _TARGET_ARM64_
+    // TODO-Cleanup: Remove this code after Issue #3524 is complete
+    // Handle the 16-byte pass-by-value TYP_STRUCT for ARM64
+    if (interval->registerType == TYP_STRUCT)
+    {
+        // We use two consecutive registers:
+        //    to pass in argument registers or
+        //    to load and the store into the outgoing arg space
+        regNumber   nextRegNum = REG_NEXT(regRec->regNum);
+        RegRecord * nextRegRec = getRegisterRecord(nextRegNum);
+
+        checkAndAssignInterval(nextRegRec, interval);
+    }
+#endif //  _TARGET_ARM64_
+#endif // FEATURE_MULTIREG_ARGS_OR_RET
+
     interval->physReg = regRec->regNum;
     interval->isActive = true;
     if (interval->isLocalVar)
@@ -5200,6 +5292,24 @@ void LinearScan::unassignPhysReg( RegRecord * regRec, RefPosition* spillRefPosit
         checkAndClearInterval(nextRegRec, spillRefPosition);
     }
 #endif // _TARGET_ARM_
+
+#if FEATURE_MULTIREG_ARGS_OR_RET
+#ifdef _TARGET_ARM64_
+    // TODO-Cleanup: Remove this code after Issue #3524 is complete
+    // Handle the 16-byte pass-by-value TYP_STRUCT for ARM64
+    if (assignedInterval->registerType == TYP_STRUCT)
+    {
+
+        // We use two consecutive registers:
+        //    to pass in argument registers or
+        //    to load and the store into the outgoing arg space
+
+        regNumber   nextRegNum = REG_NEXT(regRec->regNum);
+        RegRecord * nextRegRec = getRegisterRecord(nextRegNum);
+        checkAndClearInterval(nextRegRec, spillRefPosition);
+    }
+#endif //  _TARGET_ARM64_
+#endif // FEATURE_MULTIREG_ARGS_OR_RET
 
 #ifdef DEBUG
     if (VERBOSE && !dumpTerse)
