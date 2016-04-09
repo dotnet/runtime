@@ -1104,6 +1104,7 @@ FaultingExceptionFrame_FrameOffset        SETA  SIZEOF__GSCookie
 ; On Exit (to ResolveWorkerAsmStub):  
 ;   x11       contains the address of the indirection and the flags in the low two bits.
 ;   x12       contains our contract (DispatchToken)
+;   x16,x17   will be trashed
 ; 
     GBLA BACKPATCH_FLAG      ; two low bit flags used by ResolveWorkerAsmStub
     GBLA PROMOTE_CHAIN_FLAG  ; two low bit flags used by ResolveWorkerAsmStub
@@ -1121,12 +1122,11 @@ MainLoop
         cmp     x9, #0
         beq     Fail
 
-        ldr     x9,  [x9, #0]
-        cmp     x9, x13           ; compare our MT with the one in the ResolveCacheElem
+        ldp     x16, x17, [x9]
+        cmp     x16, x13          ; compare our MT with the one in the ResolveCacheElem
         bne     MainLoop
         
-        ldr     x9,  [x9, #8]
-        cmp     x8, x12           ; compare our DispatchToken with one in the ResolveCacheElem
+        cmp     x17, x12          ; compare our DispatchToken with one in the ResolveCacheElem
         bne     MainLoop
         
 Success         
