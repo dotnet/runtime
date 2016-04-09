@@ -125,6 +125,11 @@ static int do_coverage = 0;
 static gboolean debug_coverage = FALSE;
 static MonoProfileSamplingMode sampling_mode = MONO_PROFILER_STAT_MODE_PROCESS;
 
+static gint32 sample_hits;
+static gint32 sample_flushes;
+static gint32 sample_allocations;
+static gint32 buffer_allocations;
+
 typedef struct _LogBuffer LogBuffer;
 
 /*
@@ -548,6 +553,9 @@ static LogBuffer*
 create_buffer (void)
 {
 	LogBuffer* buf = (LogBuffer *)alloc_buffer (BUFFER_SIZE);
+
+	InterlockedIncrement (&buffer_allocations);
+
 	buf->size = BUFFER_SIZE;
 	buf->time_base = current_time ();
 	buf->last_time = buf->time_base;
@@ -2011,6 +2019,8 @@ enqueue_sample_hit (gpointer p)
 	mono_lock_free_queue_node_unpoison (&sample->node);
 	mono_lock_free_queue_enqueue (&sample->prof->dumper_queue, &sample->node);
 	mono_os_sem_post (&sample->prof->dumper_queue_sem);
+
+	InterlockedIncrement (&sample_flushes);
 }
 
 static void
@@ -2019,6 +2029,8 @@ mono_sample_hit (MonoProfiler *profiler, unsigned char *ip, void *context)
 	if (in_shutdown)
 		return;
 
+	InterlockedIncrement (&sample_hits);
+
 	uint64_t now = current_time ();
 
 	SampleHit *sample = (SampleHit *) mono_lock_free_queue_dequeue (&profiler->sample_reuse_queue);
@@ -2026,6 +2038,8 @@ mono_sample_hit (MonoProfiler *profiler, unsigned char *ip, void *context)
 	if (!sample) {
 		sample = mono_lock_free_alloc (&profiler->sample_allocator);
 		sample->prof = profiler;
+
+		InterlockedIncrement (&sample_allocations);
 	}
 
 	mono_lock_free_queue_node_init (&sample->node, TRUE);
@@ -4663,6 +4677,11 @@ mono_profiler_startup (const char *desc)
 		MONO_PROFILE_MONITOR_EVENTS|MONO_PROFILE_MODULE_EVENTS|MONO_PROFILE_GC_ROOTS|
 		MONO_PROFILE_INS_COVERAGE|MONO_PROFILE_APPDOMAIN_EVENTS|MONO_PROFILE_CONTEXT_EVENTS|
 		MONO_PROFILE_ASSEMBLY_EVENTS;
+
+	mono_counters_register ("Sample hits", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &sample_hits);
+	mono_counters_register ("Sample flushes", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &sample_flushes);
+	mono_counters_register ("Sample events allocated", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &sample_allocations);
+	mono_counters_register ("Log buffers allocated", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &buffer_allocations);
 
 	p = desc;
 	if (strncmp (p, "log", 3))
