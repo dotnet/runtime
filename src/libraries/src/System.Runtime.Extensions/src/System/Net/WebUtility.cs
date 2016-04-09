@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace System.Net
@@ -612,9 +613,11 @@ namespace System.Net
                 return (char)(n - 10 + (int)'A');
         }
 
-        // Set of safe chars, from RFC 1738.4 minus '+'
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool IsUrlSafeChar(char ch)
         {
+            // Set of safe chars, from RFC 1738.4 minus '+'
+            /*
             if (ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch >= '0' && ch <= '9')
                 return true;
 
@@ -631,6 +634,23 @@ namespace System.Net
             }
 
             return false;
+            */
+            // Optimized version of the above:
+
+            int code = (int)ch;
+
+            const int safeSpecialCharMask = 0x03FF0000 | // 0..9
+                1 << ((int)'!' - 0x20) | // 0x21
+                1 << ((int)'(' - 0x20) | // 0x28
+                1 << ((int)')' - 0x20) | // 0x29
+                1 << ((int)'*' - 0x20) | // 0x2A
+                1 << ((int)'-' - 0x20) | // 0x2D
+                1 << ((int)'.' - 0x20); // 0x2E
+
+            return ((uint)(code - 'a') <= (uint)('z' - 'a')) ||
+                   ((uint)(code - 'A') <= (uint)('Z' - 'A')) ||
+                   ((uint)(code - 0x20) <= (uint)('9' - 0x20) && ((1 << (code - 0x20)) & safeSpecialCharMask) != 0) ||
+                   (code == (int)'_');
         }
 
         private static bool ValidateUrlEncodingParameters(byte[] bytes, int offset, int count)
