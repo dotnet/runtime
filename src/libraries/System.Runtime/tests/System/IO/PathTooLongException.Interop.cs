@@ -4,18 +4,16 @@
 
 using System.IO;
 using System.Runtime.InteropServices;
-
 using Xunit;
 
-public partial class PathTooLongException_Interop_40100_Tests
+public static class PathTooLongExceptionInteropTests
 {
     [Fact]
-    public static void PathTooLongException_from_HR()
+    public static void TestFrom_HR()
     {
         int hr = HResults.COR_E_PATHTOOLONG;
-        var e = Marshal.GetExceptionForHR(hr);
-        var ptle = e as PathTooLongException;
-        Assert.NotNull(ptle);
-        Utility.ValidateExceptionProperties(ptle, hResult: hr, validateMessage: false);
+        PathTooLongException exception = Marshal.GetExceptionForHR(hr) as PathTooLongException;
+        Assert.NotNull(exception);
+        ExceptionUtility.ValidateExceptionProperties(exception, hResult: hr, validateMessage: false);
     }
 }

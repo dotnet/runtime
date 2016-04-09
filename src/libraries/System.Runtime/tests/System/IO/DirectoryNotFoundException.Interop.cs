@@ -4,23 +4,20 @@
 
 using System.IO;
 using System.Runtime.InteropServices;
-
 using Xunit;
 
-public partial class DirectoryNotFoundException_Interop_40100_Tests
+public static class DirectoryNotFoundExceptionInteropTests
 {
-    [Fact]
-    public static void DirectoryNotFoundException_from_HR()
+    [Theory]
+    [InlineData(HResults.COR_E_DIRECTORYNOTFOUND)]
+    [InlineData(HResults.STG_E_PATHNOTFOUND)]
+    [InlineData(HResults.CTL_E_PATHNOTFOUND)]
+    public static void TestFrom_HR(int hr)
     {
-        int[] hrs = { HResults.COR_E_DIRECTORYNOTFOUND, HResults.STG_E_PATHNOTFOUND, HResults.CTL_E_PATHNOTFOUND };
-        foreach (var hr in hrs)
-        {
-            var e = Marshal.GetExceptionForHR(hr);
-            var dnfe = e as DirectoryNotFoundException;
-            Assert.NotNull(dnfe);
+        DirectoryNotFoundException exception = Marshal.GetExceptionForHR(hr) as DirectoryNotFoundException;
+        Assert.NotNull(exception);
 
-            // Don't validate the message.  Currently .NET Native does not produce HR-specific messages
-            Utility.ValidateExceptionProperties(dnfe, hResult: hr, validateMessage: false);
-        }
+        // Don't validate the message.  Currently .NET Native does not produce HR-specific messages
+        ExceptionUtility.ValidateExceptionProperties(exception, hResult: hr, validateMessage: false);
     }
 }
