@@ -59,6 +59,15 @@ public class GetObjectForNativeVariantTest
         Assert.Throws<ArgumentNullException>(() => Marshal.GetObjectForNativeVariant<int>(IntPtr.Zero));
     }
     
+    [DllImport(@"oleaut32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall)]
+    static extern Int32 VariantClear(IntPtr pvarg);
+    
+    private static void DeleteVariant(IntPtr pVariant)
+    {
+        VariantClear(pVariant);
+        Marshal.FreeHGlobal(pVariant);
+    }
+
     public static void Decimal()
     {
         Variant v = new Variant();
@@ -66,6 +75,8 @@ public class GetObjectForNativeVariantTest
         Marshal.GetNativeVariantForObject(3.14m, pNative);
         decimal d = Marshal.GetObjectForNativeVariant<decimal>(pNative);
         Assert.AreEqual(3.14m, d);
+
+        DeleteVariant(pNative);
     }
         
     public static void PrimitiveType()
@@ -75,6 +86,8 @@ public class GetObjectForNativeVariantTest
         Marshal.GetNativeVariantForObject<ushort>(99, pNative);
         ushort actual = Marshal.GetObjectForNativeVariant<ushort>(pNative);
         Assert.AreEqual(99, actual);
+
+        DeleteVariant(pNative);
     }
         
     public static void StringType()
@@ -84,6 +97,8 @@ public class GetObjectForNativeVariantTest
         Marshal.GetNativeVariantForObject<string>("99", pNative);
         string actual = Marshal.GetObjectForNativeVariant<string>(pNative);
         Assert.AreEqual("99", actual);
+
+        DeleteVariant(pNative);
     }
         
     public static void DoubleType()
@@ -93,21 +108,30 @@ public class GetObjectForNativeVariantTest
         Marshal.GetNativeVariantForObject<double>(3.14, pNative);
         double actual = Marshal.GetObjectForNativeVariant<double>(pNative);
         Assert.AreEqual(3.14, actual);
+
+        DeleteVariant(pNative);
     }
         
     public static void IUnknownType()
     {
         Variant v = new Variant();
-        IntPtr pObj = Marshal.GetIUnknownForObject(new object());
+        object obj = new object();
+
+        // Technically we don't need this - but this is necessary for forcing
+        // COM initialization
+        IntPtr pUnk = Marshal.GetIUnknownForObject(obj);
         IntPtr pNative = Marshal.AllocHGlobal(Marshal.SizeOf(v));
-        Marshal.GetNativeVariantForObject<IntPtr>(pObj, pNative);
-        IntPtr pActualObj = Marshal.GetObjectForNativeVariant<IntPtr>(pNative);
-        Assert.AreEqual(pObj, pActualObj);
+        Marshal.GetNativeVariantForObject<object>(obj, pNative);
+        object actual = Marshal.GetObjectForNativeVariant<object>(pNative);
+        Assert.AreEqual(obj, actual);
+        Marshal.Release(pUnk);
+
+        DeleteVariant(pNative);
     }
 
     public static int Main(String[] unusedArgs)
     {
-        //IUnknownType();
+        IUnknownType();
         DoubleType();
         StringType();
         PrimitiveType();
