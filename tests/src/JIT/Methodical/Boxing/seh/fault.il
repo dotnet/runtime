@@ -15,7 +15,7 @@
 }
 .namespace SinCalc
 {
-  .class auto ansi MistakeException extends [mscorlib]System.ApplicationException
+  .class auto ansi MistakeException extends [mscorlib]System.Exception
   {
     .field public class System.Object mistake
     .method public hidebysig specialname rtspecialname 
@@ -24,7 +24,7 @@
       .maxstack  8
       IL_0000:  ldarg.0
       IL_0001:  ldstr      "Mistake!"
-      IL_0006:  call       instance void [mscorlib]System.ApplicationException::.ctor(class System.String)
+      IL_0006:  call       instance void [mscorlib]System.Exception::.ctor(class System.String)
       IL_000b:  ldarg.0
       IL_000c:  ldarg.s   m
       IL_000e:  box        [mscorlib]System.Double

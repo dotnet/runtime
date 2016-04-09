@@ -65,7 +65,7 @@
                                                                   class System.String)
       IL_001a:  brtrue.s   IL_0022
 
-      IL_001c:  newobj     instance void ['mscorlib']System.ApplicationException::.ctor()
+      IL_001c:  newobj     instance void ['mscorlib']System.Exception::.ctor()
       IL_0021:  throw
 
       IL_0022:  ldarg.0
@@ -84,7 +84,7 @@
                                                                   class System.String)
       IL_0044:  brtrue.s   IL_004c
 
-      IL_0046:  newobj     instance void ['mscorlib']System.ApplicationException::.ctor()
+      IL_0046:  newobj     instance void ['mscorlib']System.Exception::.ctor()
       IL_004b:  throw
 
       IL_004c:  ret
