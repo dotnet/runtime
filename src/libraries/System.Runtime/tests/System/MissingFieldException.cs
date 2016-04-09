@@ -3,40 +3,38 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-
 using Xunit;
 
 public static class MissingFieldExceptionTests
 {
-    internal const int COR_E_MISSINGMETHOD = unchecked((int)0x80131513);
-    internal const int COR_E_MISSINGFIELD = unchecked((int)0x80131511);
+    private const int COR_E_MISSINGFIELD = unchecked((int)0x80131511);
 
     [Fact]
-    public static void MissingFieldException_Ctor1()
+    public static void TestCtor_Empty()
     {
-        MissingFieldException i = new MissingFieldException();
-        //Assert.Equal("Attempted to access a non-existing field.", i.Message, "TestCtor1_001 failed");
-        Assert.Equal(COR_E_MISSINGFIELD, i.HResult);
+        var exception = new MissingFieldException();
+        Assert.NotEmpty(exception.Message);
+        Assert.Equal(COR_E_MISSINGFIELD, exception.HResult);
     }
 
     [Fact]
-    public static void MissingFieldException_Ctor2()
+    public static void TestCtor_String()
     {
-        MissingFieldException i = new MissingFieldException("Created MissingFieldException");
-
-        Assert.Equal("Created MissingFieldException", i.Message);
-        Assert.Equal(COR_E_MISSINGFIELD, i.HResult);
+        string message = "Created MissingFieldException";
+        var exception = new MissingFieldException(message);
+        Assert.Equal(message, exception.Message);
+        Assert.Equal(COR_E_MISSINGFIELD, exception.HResult);
     }
 
     [Fact]
-    public static void MissingFieldException_Ctor3()
+    public static void TestCtor_String_Exception()
     {
-        Exception ex = new Exception("Created inner exception");
-        MissingFieldException i = new MissingFieldException("Created MissingFieldException", ex);
-
-        Assert.Equal("Created MissingFieldException", i.Message);
-        Assert.Equal(COR_E_MISSINGFIELD, i.HResult);
-        Assert.Equal(i.InnerException.Message, "Created inner exception");
-        Assert.Equal(i.InnerException.HResult, ex.HResult);
+        string message = "Created MissingFieldException";
+        var innerException = new Exception("Created inner exception");
+        var exception = new MissingFieldException(message, innerException);
+        Assert.Equal(message, exception.Message);
+        Assert.Equal(COR_E_MISSINGFIELD, exception.HResult);
+        Assert.Same(innerException, exception.InnerException);
+        Assert.Equal(innerException.HResult, exception.InnerException.HResult);
     }
 }
