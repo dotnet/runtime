@@ -4513,7 +4513,7 @@ usage (int do_exit)
 	printf ("\theapshot[=MODE]      record heap shot info (by default at each major collection)\n");
 	printf ("\t                     MODE: every XXms milliseconds, every YYgc collections, ondemand\n");
 	printf ("\tcounters             sample counters every 1s\n");
-	printf ("\tsample[=TYPE]        use statistical sampling mode (by default cycles/1000)\n");
+	printf ("\tsample[=TYPE]        use statistical sampling mode (by default cycles/100)\n");
 	printf ("\t                     TYPE: cycles,instr,cacherefs,cachemiss,branches,branchmiss\n");
 	printf ("\t                     TYPE can be followed by /FREQUENCY\n");
 	printf ("\ttime=fast            use a faster (but more inaccurate) timer\n");
@@ -4598,7 +4598,7 @@ set_sample_mode (char* val, int allow_empty)
 #endif
 	if (allow_empty && !val) {
 		sample_type = SAMPLE_CYCLES;
-		sample_freq = 1000;
+		sample_freq = 100;
 		return;
 	}
 	if (strcmp (val, "mono") == 0) {
@@ -4625,7 +4625,7 @@ set_sample_mode (char* val, int allow_empty)
 	} else if (*maybe_freq != 0) {
 		usage (1);
 	} else {
-		sample_freq = 1000;
+		sample_freq = 100;
 	}
 	free (val);
 }
@@ -4898,7 +4898,7 @@ mono_profiler_startup (const char *desc)
 
 	if (do_mono_sample && sample_type == SAMPLE_CYCLES && !only_counters) {
 		events |= MONO_PROFILE_STATISTICAL;
-		mono_profiler_set_statistical_mode (sampling_mode, 1000000 / sample_freq);
+		mono_profiler_set_statistical_mode (sampling_mode, sample_freq);
 		mono_profiler_install_statistical (mono_sample_hit);
 	}
 

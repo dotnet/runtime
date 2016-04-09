@@ -283,7 +283,7 @@ mono_profiler_install_monitor  (MonoProfileMonitorFunc callback)
 }
 
 static MonoProfileSamplingMode sampling_mode = MONO_PROFILER_STAT_MODE_PROCESS;
-static int64_t sampling_frequency = 1000; //1ms
+static int64_t sampling_frequency = 100; // Hz
 
 /**
  * mono_profiler_set_statistical_mode:
@@ -298,10 +298,10 @@ static int64_t sampling_frequency = 1000; //1ms
  * Said that, when using statistical sampling, always assume variable rate sampling as all sort of external factors can interfere.
  */
 void
-mono_profiler_set_statistical_mode (MonoProfileSamplingMode mode, int64_t sampling_frequency_is_us)
+mono_profiler_set_statistical_mode (MonoProfileSamplingMode mode, int64_t sampling_frequency_hz)
 {
 	sampling_mode = mode;
-	sampling_frequency = sampling_frequency_is_us;
+	sampling_frequency = sampling_frequency_hz;
 }
 
 void 
