@@ -84,7 +84,7 @@
         IL_0034:  ldc.i4.s   11
         IL_0036:  beq.s      IL_003e
 
-        IL_0038:  newobj     instance void ['mscorlib']System.ApplicationException::.ctor()
+        IL_0038:  newobj     instance void ['mscorlib']System.Exception::.ctor()
         IL_003d:  throw
 
         IL_003e:  leave.s    IL_004d

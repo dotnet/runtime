@@ -176,7 +176,7 @@
         IL_00d8:  ldfld      int32 Rotate.App/App$Node::m_weight
         IL_00dd:  beq.s      IL_00e5
 
-        IL_00df:  newobj     instance void ['mscorlib']System.ApplicationException::.ctor()
+        IL_00df:  newobj     instance void ['mscorlib']System.Exception::.ctor()
         IL_00e4:  throw
 
         IL_00e5:  ldarg.0
@@ -193,7 +193,7 @@
         IL_0100:  ldfld      int32 Rotate.App/App$Node::m_weight
         IL_0105:  beq.s      IL_010d
 
-        IL_0107:  newobj     instance void ['mscorlib']System.ApplicationException::.ctor()
+        IL_0107:  newobj     instance void ['mscorlib']System.Exception::.ctor()
         IL_010c:  throw
 
         IL_010d:  ret
