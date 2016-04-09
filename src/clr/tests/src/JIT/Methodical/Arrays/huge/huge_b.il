@@ -325,7 +325,7 @@
       					int32, int32, int32, int32)
 				brtrue pass1_5
       		throw0:
-      			newobj		instance void [mscorlib]System.ApplicationException::.ctor()
+      			newobj		instance void [mscorlib]System.Exception::.ctor()
       		throw1:
 				throw
 				
@@ -439,7 +439,7 @@
       			ldind.i1
       			brtrue pass2
       			
-      			newobj		instance void [mscorlib]System.ApplicationException::.ctor()
+      			newobj		instance void [mscorlib]System.Exception::.ctor()
 				br throw1
     } // end of method 'Test::Main'
 

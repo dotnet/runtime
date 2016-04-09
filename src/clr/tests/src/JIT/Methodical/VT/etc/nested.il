@@ -36,7 +36,7 @@
         IL_000f:  conv.i8
         IL_0010:  beq.s      IL_0018
 
-        IL_0012:  newobj     instance void [mscorlib]System.ApplicationException::.ctor()
+        IL_0012:  newobj     instance void [mscorlib]System.Exception::.ctor()
         IL_0017:  throw
 
         IL_0018:  ret
@@ -61,7 +61,7 @@
       IL_000f:  conv.i8
       IL_0010:  beq.s      IL_0018
 
-      IL_0012:  newobj     instance void [mscorlib]System.ApplicationException::.ctor()
+      IL_0012:  newobj     instance void [mscorlib]System.Exception::.ctor()
       IL_0017:  throw
 
       IL_0018:  ldarg.0

@@ -34,7 +34,7 @@
     	unbox [mscorlib]System.UIntPtr
     	ldind.i
     	beq go
-    	newobj instance void [mscorlib]System.ApplicationException::.ctor()
+    	newobj instance void [mscorlib]System.Exception::.ctor()
     	throw
     go:
     	ldarg.1

@@ -47,7 +47,7 @@
       			brfalse		story_about_good
       		
       	story_about_bad:
-      			newobj		instance void [mscorlib]System.ApplicationException::.ctor()
+      			newobj		instance void [mscorlib]System.Exception::.ctor()
       			throw
       	story_about_good:
      IL_0000:  ldarg.0
