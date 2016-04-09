@@ -139,26 +139,27 @@ public static class UInt64Tests
 
     public static IEnumerable<object[]> Parse_Valid_TestData()
     {
-        NumberFormatInfo nullFormat = null;
         NumberStyles defaultStyle = NumberStyles.Integer;
         NumberFormatInfo emptyFormat = new NumberFormatInfo();
 
         NumberFormatInfo customFormat = new NumberFormatInfo();
         customFormat.CurrencySymbol = "$";
 
-        yield return new object[] { "0", defaultStyle, nullFormat, (ulong)0 };
-        yield return new object[] { "123", defaultStyle, nullFormat, (ulong)123 };
-        yield return new object[] { "  123  ", defaultStyle, nullFormat, (ulong)123 };
-        yield return new object[] { "18446744073709551615", defaultStyle, nullFormat, 18446744073709551615 };
+        yield return new object[] { "0", defaultStyle, null, (ulong)0 };
+        yield return new object[] { "123", defaultStyle, null, (ulong)123 };
+        yield return new object[] { "+123", defaultStyle, null, (ulong)123 };
+        yield return new object[] { "  123  ", defaultStyle, null, (ulong)123 };
+        yield return new object[] { "18446744073709551615", defaultStyle, null, 18446744073709551615 };
 
-        yield return new object[] { "12", NumberStyles.HexNumber, nullFormat, (ulong)0x12 };
-        yield return new object[] { "1000", NumberStyles.AllowThousands, nullFormat, (ulong)1000 };
+        yield return new object[] { "12", NumberStyles.HexNumber, null, (ulong)0x12 };
+        yield return new object[] { "1000", NumberStyles.AllowThousands, null, (ulong)1000 };
 
         yield return new object[] { "123", defaultStyle, emptyFormat, (ulong)123 };
 
         yield return new object[] { "123", NumberStyles.Any, emptyFormat, (ulong)123 };
         yield return new object[] { "12", NumberStyles.HexNumber, emptyFormat, (ulong)0x12 };
         yield return new object[] { "abc", NumberStyles.HexNumber, emptyFormat, (ulong)0xabc };
+        yield return new object[] { "ABC", NumberStyles.HexNumber, null, (ulong)0xabc };
         yield return new object[] { "$1,000", NumberStyles.Currency, customFormat, (ulong)1000 };
     }
 
@@ -196,33 +197,39 @@ public static class UInt64Tests
 
     public static IEnumerable<object[]> Parse_Invalid_TestData()
     {
-        NumberFormatInfo nullFormat = null;
         NumberStyles defaultStyle = NumberStyles.Integer;
 
         NumberFormatInfo customFormat = new NumberFormatInfo();
         customFormat.CurrencySymbol = "$";
         customFormat.NumberDecimalSeparator = ".";
 
-        yield return new object[] { null, defaultStyle, nullFormat, typeof(ArgumentNullException) };
-        yield return new object[] { "", defaultStyle, nullFormat, typeof(FormatException) };
-        yield return new object[] { " ", defaultStyle, nullFormat, typeof(FormatException) };
-        yield return new object[] { "Garbage", defaultStyle, nullFormat, typeof(FormatException) };
+        yield return new object[] { null, defaultStyle, null, typeof(ArgumentNullException) };
+        yield return new object[] { "", defaultStyle, null, typeof(FormatException) };
+        yield return new object[] { " \t \n \r ", defaultStyle, null, typeof(FormatException) };
+        yield return new object[] { "Garbage", defaultStyle, null, typeof(FormatException) };
 
-        yield return new object[] { "abc", defaultStyle, nullFormat, typeof(FormatException) }; // Hex value
-        yield return new object[] { "1E23", defaultStyle, nullFormat, typeof(FormatException) }; // Exponent
-        yield return new object[] { "(123)", defaultStyle, nullFormat, typeof(FormatException) }; // Parentheses
-        yield return new object[] { 100.ToString("C0"), defaultStyle, nullFormat, typeof(FormatException) }; // Currency
-        yield return new object[] { 1000.ToString("N0"), defaultStyle, nullFormat, typeof(FormatException) }; // Thousands
-        yield return new object[] { 678.90.ToString("F2"), defaultStyle, nullFormat, typeof(FormatException) }; // Decimal
+        yield return new object[] { "abc", defaultStyle, null, typeof(FormatException) }; // Hex value
+        yield return new object[] { "1E23", defaultStyle, null, typeof(FormatException) }; // Exponent
+        yield return new object[] { "(123)", defaultStyle, null, typeof(FormatException) }; // Parentheses
+        yield return new object[] { 100.ToString("C0"), defaultStyle, null, typeof(FormatException) }; // Currency
+        yield return new object[] { 1000.ToString("N0"), defaultStyle, null, typeof(FormatException) }; // Thousands
+        yield return new object[] { 678.90.ToString("F2"), defaultStyle, null, typeof(FormatException) }; // Decimal
+        yield return new object[] { "+-123", defaultStyle, null, typeof(FormatException) };
+        yield return new object[] { "-+123", defaultStyle, null, typeof(FormatException) };
+        yield return new object[] { "+abc", NumberStyles.HexNumber, null, typeof(FormatException) };
+        yield return new object[] { "-abc", NumberStyles.HexNumber, null, typeof(FormatException) };
 
-        yield return new object[] { "abc", NumberStyles.None, nullFormat, typeof(FormatException) }; // Negative hex value
-        yield return new object[] { "  123  ", NumberStyles.None, nullFormat, typeof(FormatException) }; // Trailing and leading whitespace
+        yield return new object[] { "- 123", defaultStyle, null, typeof(FormatException) };
+        yield return new object[] { "+ 123", defaultStyle, null, typeof(FormatException) };
+
+        yield return new object[] { "abc", NumberStyles.None, null, typeof(FormatException) }; // Hex value
+        yield return new object[] { "  123  ", NumberStyles.None, null, typeof(FormatException) }; // Trailing and leading whitespace
 
         yield return new object[] { "678.90", defaultStyle, customFormat, typeof(FormatException) }; // Decimal
 
-        yield return new object[] { "-1", defaultStyle, nullFormat, typeof(OverflowException) }; // < min value
-        yield return new object[] { "18446744073709551616", defaultStyle, nullFormat, typeof(OverflowException) }; // > max value
-        yield return new object[] { "(123)", NumberStyles.AllowParentheses, nullFormat, typeof(OverflowException) }; // Parentheses = negative
+        yield return new object[] { "-1", defaultStyle, null, typeof(OverflowException) }; // < min value
+        yield return new object[] { "18446744073709551616", defaultStyle, null, typeof(OverflowException) }; // > max value
+        yield return new object[] { "(123)", NumberStyles.AllowParentheses, null, typeof(OverflowException) }; // Parentheses = negative
     }
 
     [Theory]
@@ -255,5 +262,18 @@ public static class UInt64Tests
             Assert.Throws(exceptionType, () => ulong.Parse(value, style));
         }
         Assert.Throws(exceptionType, () => ulong.Parse(value, style, provider ?? new NumberFormatInfo()));
+    }
+
+    [Theory]
+    [InlineData(NumberStyles.HexNumber | NumberStyles.AllowParentheses)]
+    [InlineData(unchecked((NumberStyles)0xFFFFFC00))]
+    public static void TestTryParse_InvalidNumberStyle_ThrowsArgumentException(NumberStyles style)
+    {
+        ulong result = 0;
+        Assert.Throws<ArgumentException>(() => ulong.TryParse("1", style, null, out result));
+        Assert.Equal(default(ulong), result);
+
+        Assert.Throws<ArgumentException>(() => ulong.Parse("1", style));
+        Assert.Throws<ArgumentException>(() => ulong.Parse("1", style, null));
     }
 }

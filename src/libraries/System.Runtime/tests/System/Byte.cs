@@ -139,26 +139,27 @@ public static class ByteTests
 
     public static IEnumerable<object[]> Parse_Valid_TestData()
     {
-        NumberFormatInfo nullFormat = null;
         NumberStyles defaultStyle = NumberStyles.Integer;
         NumberFormatInfo emptyFormat = new NumberFormatInfo();
 
         NumberFormatInfo customFormat = new NumberFormatInfo();
         customFormat.CurrencySymbol = "$";
 
-        yield return new object[] { "0", defaultStyle, nullFormat, (byte)0 };
-        yield return new object[] { "123", defaultStyle, nullFormat, (byte)123 };
-        yield return new object[] { "  123  ", defaultStyle, nullFormat, (byte)123 };
-        yield return new object[] { "255", defaultStyle, nullFormat, (byte)255 };
+        yield return new object[] { "0", defaultStyle, null, (byte)0 };
+        yield return new object[] { "123", defaultStyle, null, (byte)123 };
+        yield return new object[] { "+123", defaultStyle, null, (byte)123 };
+        yield return new object[] { "  123  ", defaultStyle, null, (byte)123 };
+        yield return new object[] { "255", defaultStyle, null, (byte)255 };
 
-        yield return new object[] { "12", NumberStyles.HexNumber, nullFormat, (byte)0x12 };
-        yield return new object[] { "10", NumberStyles.AllowThousands, nullFormat, (byte)10 };
+        yield return new object[] { "12", NumberStyles.HexNumber, null, (byte)0x12 };
+        yield return new object[] { "10", NumberStyles.AllowThousands, null, (byte)10 };
 
         yield return new object[] { "123", defaultStyle, emptyFormat, (byte)123 };
 
         yield return new object[] { "123", NumberStyles.Any, emptyFormat, (byte)123 };
         yield return new object[] { "12", NumberStyles.HexNumber, emptyFormat, (byte)0x12 };
         yield return new object[] { "ab", NumberStyles.HexNumber, emptyFormat, (byte)0xab };
+        yield return new object[] { "AB", NumberStyles.HexNumber, null, (byte)0xab };
         yield return new object[] { "$100", NumberStyles.Currency, customFormat, (byte)100 };
     }
 
@@ -196,35 +197,41 @@ public static class ByteTests
 
     public static IEnumerable<object[]> Parse_Invalid_TestData()
     {
-        NumberFormatInfo nullFormat = null;
         NumberStyles defaultStyle = NumberStyles.Integer;
 
         NumberFormatInfo customFormat = new NumberFormatInfo();
         customFormat.CurrencySymbol = "$";
         customFormat.NumberDecimalSeparator = ".";
 
-        yield return new object[] { null, defaultStyle, nullFormat, typeof(ArgumentNullException) };
-        yield return new object[] { "", defaultStyle, nullFormat, typeof(FormatException) };
-        yield return new object[] { " ", defaultStyle, nullFormat, typeof(FormatException) };
-        yield return new object[] { "Garbage", defaultStyle, nullFormat, typeof(FormatException) };
+        yield return new object[] { null, defaultStyle, null, typeof(ArgumentNullException) };
+        yield return new object[] { "", defaultStyle, null, typeof(FormatException) };
+        yield return new object[] { " \t \n \r ", defaultStyle, null, typeof(FormatException) };
+        yield return new object[] { "Garbage", defaultStyle, null, typeof(FormatException) };
 
-        yield return new object[] { "ab", defaultStyle, nullFormat, typeof(FormatException) }; // Hex value
-        yield return new object[] { "1E23", defaultStyle, nullFormat, typeof(FormatException) }; // Exponent
-        yield return new object[] { "(123)", defaultStyle, nullFormat, typeof(FormatException) }; // Parentheses
-        yield return new object[] { 100.ToString("C0"), defaultStyle, nullFormat, typeof(FormatException) }; // Currency
-        yield return new object[] { 1000.ToString("N0"), defaultStyle, nullFormat, typeof(FormatException) }; // Thousands
-        yield return new object[] { 67.90.ToString("F2"), defaultStyle, nullFormat, typeof(FormatException) }; // Decimal
+        yield return new object[] { "ab", defaultStyle, null, typeof(FormatException) }; // Hex value
+        yield return new object[] { "1E23", defaultStyle, null, typeof(FormatException) }; // Exponent
+        yield return new object[] { "(123)", defaultStyle, null, typeof(FormatException) }; // Parentheses
+        yield return new object[] { 100.ToString("C0"), defaultStyle, null, typeof(FormatException) }; // Currency
+        yield return new object[] { 1000.ToString("N0"), defaultStyle, null, typeof(FormatException) }; // Thousands
+        yield return new object[] { 67.90.ToString("F2"), defaultStyle, null, typeof(FormatException) }; // Decimal
+        yield return new object[] { "+-123", defaultStyle, null, typeof(FormatException) };
+        yield return new object[] { "-+123", defaultStyle, null, typeof(FormatException) };
+        yield return new object[] { "+abc", NumberStyles.HexNumber, null, typeof(FormatException) };
+        yield return new object[] { "-abc", NumberStyles.HexNumber, null, typeof(FormatException) };
 
-        yield return new object[] { "ab", NumberStyles.None, nullFormat, typeof(FormatException) }; // Negative hex value
-        yield return new object[] { "  123  ", NumberStyles.None, nullFormat, typeof(FormatException) }; // Trailing and leading whitespace
+        yield return new object[] { "- 123", defaultStyle, null, typeof(FormatException) };
+        yield return new object[] { "+ 123", defaultStyle, null, typeof(FormatException) };
+
+        yield return new object[] { "ab", NumberStyles.None, null, typeof(FormatException) }; // Hex value
+        yield return new object[] { "  123  ", NumberStyles.None, null, typeof(FormatException) }; // Trailing and leading whitespace
 
         yield return new object[] { "67.90", defaultStyle, customFormat, typeof(FormatException) }; // Decimal
 
-        yield return new object[] { "-1", defaultStyle, nullFormat, typeof(OverflowException) }; // < min value
-        yield return new object[] { "256", defaultStyle, nullFormat, typeof(OverflowException) }; // > max value
-        yield return new object[] { "(123)", NumberStyles.AllowParentheses, nullFormat, typeof(OverflowException) }; // Parentheses = negative
+        yield return new object[] { "-1", defaultStyle, null, typeof(OverflowException) }; // < min value
+        yield return new object[] { "256", defaultStyle, null, typeof(OverflowException) }; // > max value
+        yield return new object[] { "(123)", NumberStyles.AllowParentheses, null, typeof(OverflowException) }; // Parentheses = negative
 
-        yield return new object[] { "2147483648", defaultStyle, nullFormat, typeof(OverflowException) }; // Internally, Parse pretends we are inputting an Int32, so this overflows
+        yield return new object[] { "2147483648", defaultStyle, null, typeof(OverflowException) }; // Internally, Parse pretends we are inputting an Int32, so this overflows
     }
 
     [Theory]
@@ -257,5 +264,18 @@ public static class ByteTests
             Assert.Throws(exceptionType, () => byte.Parse(value, style));
         }
         Assert.Throws(exceptionType, () => byte.Parse(value, style, provider ?? new NumberFormatInfo()));
+    }
+
+    [Theory]
+    [InlineData(NumberStyles.HexNumber | NumberStyles.AllowParentheses)]
+    [InlineData(unchecked((NumberStyles)0xFFFFFC00))]
+    public static void TestTryParse_InvalidNumberStyle_ThrowsArgumentException(NumberStyles style)
+    {
+        byte result = 0;
+        Assert.Throws<ArgumentException>(() => byte.TryParse("1", style, null, out result));
+        Assert.Equal(default(byte), result);
+
+        Assert.Throws<ArgumentException>(() => byte.Parse("1", style));
+        Assert.Throws<ArgumentException>(() => byte.Parse("1", style, null));
     }
 }
