@@ -2829,7 +2829,7 @@ namespace System.Globalization {
                 }
                 previousNode = temp;
             } ;
-            Contract.Assert(true, "The hashtable is full.  This should not happen.");
+            Contract.Assert(false, "The hashtable is full.  This should not happen.");
         }
 
         void InsertHash(TokenHashValue[] hashTable, String str, TokenType tokenType, int tokenValue) {
@@ -2922,7 +2922,7 @@ namespace System.Globalization {
                 hashcode += hashProbe;
                 if (hashcode >= TOKEN_HASH_SIZE) hashcode -= TOKEN_HASH_SIZE;
             } while (i < TOKEN_HASH_SIZE);
-            Contract.Assert(true, "The hashtable is full.  This should not happen.");
+            Contract.Assert(false, "The hashtable is full.  This should not happen.");
         }
     }   // class DateTimeFormatInfo
 
