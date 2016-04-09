@@ -62,7 +62,7 @@
 
         IL_0025:  ldstr      "READ-WRITE FAILED"
         IL_002a:  call       void [System.Console]System.Console::WriteLine(string)
-        IL_002f:  newobj     instance void [mscorlib]System.ApplicationException::.ctor()
+        IL_002f:  newobj     instance void [mscorlib]System.Exception::.ctor()
         IL_0034:  throw
 
         IL_0035:  ldstr      ": OK"

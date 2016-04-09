@@ -280,7 +280,7 @@
 
         IL_0144:  ldstr      "left weight do not match."
         IL_0149:  call       void [System.Console]System.Console::WriteLine(class System.String)
-        IL_014e:  newobj     instance void ['mscorlib']System.ApplicationException::.ctor()
+        IL_014e:  newobj     instance void ['mscorlib']System.Exception::.ctor()
         IL_0153:  throw
 
         IL_0154:  ldarg.0
@@ -330,7 +330,7 @@
 
         IL_01d5:  ldstr      "right weight do not match."
         IL_01da:  call       void [System.Console]System.Console::WriteLine(class System.String)
-        IL_01df:  newobj     instance void ['mscorlib']System.ApplicationException::.ctor()
+        IL_01df:  newobj     instance void ['mscorlib']System.Exception::.ctor()
         IL_01e4:  throw
 
         IL_01e5:  ret

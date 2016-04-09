@@ -95,7 +95,7 @@
       IL_0053:  ldloc.0
       IL_0054:  blt.s      IL_005c
 
-      IL_0056:  newobj     instance void [mscorlib]System.ApplicationException::.ctor()
+      IL_0056:  newobj     instance void [mscorlib]System.Exception::.ctor()
       IL_005b:  throw
 
       IL_005c:  ldc.i4.0
@@ -122,7 +122,7 @@
       IL_0084:  ldloc.0
       IL_0085:  blt.s      IL_008d
 
-      IL_0087:  newobj     instance void [mscorlib]System.ApplicationException::.ctor()
+      IL_0087:  newobj     instance void [mscorlib]System.Exception::.ctor()
       IL_008c:  throw
 
       IL_008d:  ldloc.3
@@ -133,7 +133,7 @@
       IL_0092:  ldc.i4.1
       IL_0093:  bne.un.s   IL_009b
 
-      IL_0095:  newobj     instance void [mscorlib]System.ApplicationException::.ctor()
+      IL_0095:  newobj     instance void [mscorlib]System.Exception::.ctor()
       IL_009a:  throw
 
       IL_009b:  ldloc.1
@@ -166,7 +166,7 @@
       IL_00ed:  ldobj [mscorlib]System.Boolean
       IL_00ee:  brfalse.s  IL_00f6
 
-      IL_00f0:  newobj     instance void [mscorlib]System.ApplicationException::.ctor()
+      IL_00f0:  newobj     instance void [mscorlib]System.Exception::.ctor()
       IL_00f5:  throw
 
       IL_00f6:  ldarg.1
@@ -176,7 +176,7 @@
       IL_0103:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(value class [mscorlib]System.RuntimeTypeHandle)
       IL_0108:  beq.s      IL_0110
 
-      IL_010a:  newobj     instance void [mscorlib]System.ApplicationException::.ctor()
+      IL_010a:  newobj     instance void [mscorlib]System.Exception::.ctor()
       IL_010f:  throw
 
       IL_0110:  ldarg.1
@@ -210,7 +210,7 @@
       IL_0152:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(value class [mscorlib]System.RuntimeTypeHandle)
       IL_0157:  beq.s      IL_015f
 
-      IL_0159:  newobj     instance void [mscorlib]System.ApplicationException::.ctor()
+      IL_0159:  newobj     instance void [mscorlib]System.Exception::.ctor()
       IL_015e:  throw
 
       IL_015f:  ldloc.2
@@ -229,7 +229,7 @@
       IL_0183:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(value class [mscorlib]System.RuntimeTypeHandle)
       IL_0188:  beq.s      IL_0190
 
-      IL_018a:  newobj     instance void [mscorlib]System.ApplicationException::.ctor()
+      IL_018a:  newobj     instance void [mscorlib]System.Exception::.ctor()
       IL_018f:  throw
 
       IL_0190:  ldloc.2
@@ -253,7 +253,7 @@
       IL_01be:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(value class [mscorlib]System.RuntimeTypeHandle)
       IL_01c3:  beq.s      IL_01cb
 
-      IL_01c5:  newobj     instance void [mscorlib]System.ApplicationException::.ctor()
+      IL_01c5:  newobj     instance void [mscorlib]System.Exception::.ctor()
       IL_01ca:  throw
 
       IL_01cb:  ldloc.2
@@ -272,7 +272,7 @@
       IL_01ef:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(value class [mscorlib]System.RuntimeTypeHandle)
       IL_01f4:  beq.s      IL_01fc
 
-      IL_01f6:  newobj     instance void [mscorlib]System.ApplicationException::.ctor()
+      IL_01f6:  newobj     instance void [mscorlib]System.Exception::.ctor()
       IL_01fb:  throw
 
       IL_01fc:  ldloc.2
@@ -296,7 +296,7 @@
       IL_022a:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(value class [mscorlib]System.RuntimeTypeHandle)
       IL_022f:  beq.s      IL_0237
 
-      IL_0231:  newobj     instance void [mscorlib]System.ApplicationException::.ctor()
+      IL_0231:  newobj     instance void [mscorlib]System.Exception::.ctor()
       IL_0236:  throw
 
       IL_0237:  ldloc.2
@@ -315,7 +315,7 @@
       IL_025b:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(value class [mscorlib]System.RuntimeTypeHandle)
       IL_0260:  beq.s      IL_0268
 
-      IL_0262:  newobj     instance void [mscorlib]System.ApplicationException::.ctor()
+      IL_0262:  newobj     instance void [mscorlib]System.Exception::.ctor()
       IL_0267:  throw
 
       IL_0268:  ldloc.2
@@ -332,7 +332,7 @@
       IL_0286:  ldobj [mscorlib]System.Boolean
       IL_0287:  brfalse.s  IL_028f
 
-      IL_0289:  newobj     instance void [mscorlib]System.ApplicationException::.ctor()
+      IL_0289:  newobj     instance void [mscorlib]System.Exception::.ctor()
       IL_028e:  throw
 
       IL_028f:  ldarg.1
@@ -342,7 +342,7 @@
       IL_029c:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(value class [mscorlib]System.RuntimeTypeHandle)
       IL_02a1:  beq.s      IL_02a9
 
-      IL_02a3:  newobj     instance void [mscorlib]System.ApplicationException::.ctor()
+      IL_02a3:  newobj     instance void [mscorlib]System.Exception::.ctor()
       IL_02a8:  throw
 
       IL_02a9:  ldloc.2
@@ -367,7 +367,7 @@
       IL_02d3:  ldobj [mscorlib]System.Boolean
       IL_02d4:  brfalse.s  IL_02dc
 
-      IL_02d6:  newobj     instance void [mscorlib]System.ApplicationException::.ctor()
+      IL_02d6:  newobj     instance void [mscorlib]System.Exception::.ctor()
       IL_02db:  throw
 
       IL_02dc:  ldarg.1
@@ -377,7 +377,7 @@
       IL_02e9:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(value class [mscorlib]System.RuntimeTypeHandle)
       IL_02ee:  beq.s      IL_02f6
 
-      IL_02f0:  newobj     instance void [mscorlib]System.ApplicationException::.ctor()
+      IL_02f0:  newobj     instance void [mscorlib]System.Exception::.ctor()
       IL_02f5:  throw
 
       IL_02f6:  ldloc.2
@@ -394,7 +394,7 @@
       IL_0314:  ldobj [mscorlib]System.Boolean
       IL_0315:  brfalse.s  IL_031d
 
-      IL_0317:  newobj     instance void [mscorlib]System.ApplicationException::.ctor()
+      IL_0317:  newobj     instance void [mscorlib]System.Exception::.ctor()
       IL_031c:  throw
 
       IL_031d:  ldarg.1
@@ -404,7 +404,7 @@
       IL_032a:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(value class [mscorlib]System.RuntimeTypeHandle)
       IL_032f:  beq.s      IL_0337
 
-      IL_0331:  newobj     instance void [mscorlib]System.ApplicationException::.ctor()
+      IL_0331:  newobj     instance void [mscorlib]System.Exception::.ctor()
       IL_0336:  throw
 
       IL_0337:  ldloc.2
@@ -423,7 +423,7 @@
       IL_0357:  ldobj [mscorlib]System.Boolean
       IL_0358:  brfalse.s  IL_0360
 
-      IL_035a:  newobj     instance void [mscorlib]System.ApplicationException::.ctor()
+      IL_035a:  newobj     instance void [mscorlib]System.Exception::.ctor()
       IL_035f:  throw
 
       IL_0360:  ldarg.1
@@ -433,7 +433,7 @@
       IL_036d:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(value class [mscorlib]System.RuntimeTypeHandle)
       IL_0372:  beq.s      IL_037a
 
-      IL_0374:  newobj     instance void [mscorlib]System.ApplicationException::.ctor()
+      IL_0374:  newobj     instance void [mscorlib]System.Exception::.ctor()
       IL_0379:  throw
 
       IL_037a:  ldarg.1
@@ -468,10 +468,10 @@
       IL_03bf:  stloc.2
       IL_03c0:  br.s       IL_03ce
 
-      IL_03c2:  newobj     instance void [mscorlib]System.ApplicationException::.ctor()
+      IL_03c2:  newobj     instance void [mscorlib]System.Exception::.ctor()
       IL_03c7:  throw
 
-      IL_03c8:  newobj     instance void [mscorlib]System.ApplicationException::.ctor()
+      IL_03c8:  newobj     instance void [mscorlib]System.Exception::.ctor()
       IL_03cd:  throw
 
       IL_03ce:  ldloc.s    V_4
@@ -532,7 +532,7 @@
       IL_003e:  ldloc.1
       IL_003f:  call       string [mscorlib]System.String::Concat(string[])
       IL_0044:  call       void [System.Console]System.Console::WriteLine(string)
-      IL_0049:  newobj     instance void [mscorlib]System.ApplicationException::.ctor()
+      IL_0049:  newobj     instance void [mscorlib]System.Exception::.ctor()
       IL_004e:  throw
 
       IL_004f:  ret

@@ -62,7 +62,7 @@
 			
         	ldstr      "READ-WRITE FAILED"
         	call       void [System.Console]System.Console::WriteLine(string)
-        	newobj		instance void [mscorlib]System.ApplicationException::.ctor()
+        	newobj		instance void [mscorlib]System.Exception::.ctor()
         	throw
         	
 		aaa:

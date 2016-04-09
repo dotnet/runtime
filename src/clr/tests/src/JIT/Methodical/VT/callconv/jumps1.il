@@ -42,7 +42,7 @@
       			ldarg.0
       			ldfld      int32 MS.VT::target
       			switch     (case0, case1, case2)
-      			newobj     instance void [mscorlib]System.ApplicationException::.ctor()
+      			newobj     instance void [mscorlib]System.Exception::.ctor()
       			throw
 
       case0:	ldstr      "VT"
@@ -76,7 +76,7 @@
       			ldarg.0
       			ldfld      int32 MS.VT::target
       			switch     (case0, case1, case2)
-      			newobj     instance void [mscorlib]System.ApplicationException::.ctor()
+      			newobj     instance void [mscorlib]System.Exception::.ctor()
       			throw
 
       case0:	ldstr      "VT"

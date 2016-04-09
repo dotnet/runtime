@@ -34,7 +34,7 @@
       IL_0006:  ldc.i4     0x12345678
       IL_000b:  beq.s      IL_0013
 
-      IL_000d:  newobj     instance void [mscorlib]System.ApplicationException::.ctor()
+      IL_000d:  newobj     instance void [mscorlib]System.Exception::.ctor()
       IL_0012:  throw
 
       IL_0013:  ret

@@ -15,14 +15,14 @@
 }
 .namespace VATestLib
 {
-  .class public auto ansi FormatSpecException extends [mscorlib]System.ApplicationException
+  .class public auto ansi FormatSpecException extends [mscorlib]System.Exception
   {
     .method public specialname rtspecialname instance void .ctor() il managed
     {
       .maxstack  8
       IL_0000:  ldarg.0
       IL_0001:  ldstr      "Invalid format spec"
-      IL_0006:  call       instance void [mscorlib]System.ApplicationException::.ctor(class System.String)
+      IL_0006:  call       instance void [mscorlib]System.Exception::.ctor(class System.String)
       IL_000b:  ret
     } 
 
