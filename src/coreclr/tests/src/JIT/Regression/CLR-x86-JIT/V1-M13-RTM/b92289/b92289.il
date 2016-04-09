@@ -57,7 +57,7 @@
 	start_try1: 
 		call void EHTest::f3()
 	try1_out:
-	newobj instance void [mscorlib]System.ApplicationException::.ctor()
+	newobj instance void [mscorlib]System.Exception::.ctor()
 	throw
 	end_try1: 
 	OUT: ret

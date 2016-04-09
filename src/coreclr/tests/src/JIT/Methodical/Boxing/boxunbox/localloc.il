@@ -170,7 +170,7 @@
       IL_01dc:  beq.s      IL_01e9
 
       IL_01de:  ldstr      "Loss of precision or unbox error"
-      IL_01e3:  newobj     instance void [mscorlib]System.ApplicationException::.ctor(string)
+      IL_01e3:  newobj     instance void [mscorlib]System.Exception::.ctor(string)
       IL_01e8:  throw
 
       IL_01e9:  ret

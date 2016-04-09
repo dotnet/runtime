@@ -69,7 +69,7 @@
       IL_0040:  stelem.ref
       IL_0041:  ldloc.0
       IL_0042:  call       string [mscorlib]System.String::Concat(string[])
-      IL_0047:  newobj     instance void [mscorlib]System.ApplicationException::.ctor(string)
+      IL_0047:  newobj     instance void [mscorlib]System.Exception::.ctor(string)
       IL_004c:  throw
     } // end of method Test::Fail
 
@@ -127,7 +127,7 @@
       IL_0053:  stelem.ref
       IL_0054:  ldloc.0
       IL_0055:  call       string [mscorlib]System.String::Concat(string[])
-      IL_005a:  newobj     instance void [mscorlib]System.ApplicationException::.ctor(string)
+      IL_005a:  newobj     instance void [mscorlib]System.Exception::.ctor(string)
       IL_005f:  throw
     } // end of method Test::Fail2
 

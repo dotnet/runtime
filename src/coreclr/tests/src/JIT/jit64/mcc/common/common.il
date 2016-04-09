@@ -63,7 +63,7 @@
 } // end of class MCCTest.FormatUtils
 
 .class public auto ansi beforefieldinit MCCTest.ResultVerificationException
-       extends [mscorlib]System.ApplicationException
+       extends [mscorlib]System.Exception
 {
   .method public hidebysig specialname rtspecialname 
           instance void  .ctor(string fieldName,
@@ -163,7 +163,7 @@
     IL_0000:  ldarg.0
     IL_0001:  ldarg.1
     IL_0002:  ldarg.2
-    IL_0003:  call       instance void [mscorlib]System.ApplicationException::.ctor(string,
+    IL_0003:  call       instance void [mscorlib]System.Exception::.ctor(string,
                                                                                     class [mscorlib]System.Exception)
     IL_0008:  nop
     IL_0009:  nop

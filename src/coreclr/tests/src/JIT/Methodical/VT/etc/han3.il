@@ -121,7 +121,7 @@
       IL_0023:  ldfld      int32 JitTest.Ring::size
       IL_0028:  bgt.s      IL_0030
 
-      IL_002a:  newobj     instance void [mscorlib]System.ApplicationException::.ctor()
+      IL_002a:  newobj     instance void [mscorlib]System.Exception::.ctor()
       IL_002f:  throw
 
       IL_0030:  ldloc.0

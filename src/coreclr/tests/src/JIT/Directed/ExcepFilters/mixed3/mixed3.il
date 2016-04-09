@@ -65,7 +65,7 @@ filter_begin:
                int32 V_2,
                int32 V_3,
                class [mscorlib]System.DivideByZeroException V_4,
-               class [mscorlib]System.ApplicationException V_5)
+               class [mscorlib]System.ArgumentException V_5)
 
       IL_0000:  ldc.i4.0
       IL_0001:  stloc.0
@@ -104,7 +104,7 @@ filter_begin:
       IL_002d:  mul
       IL_002e:  stloc.3
       IL_002f:  ldstr      "Something wrong."
-      IL_0034:  newobj     instance void [mscorlib]System.ApplicationException::.ctor(string)
+      IL_0034:  newobj     instance void [mscorlib]System.ArgumentException::.ctor(string)
       IL_0039:  throw
 
       IL_003a:  leave.s    IL_0074
@@ -139,7 +139,7 @@ filter_begin:
       IL_007b:  ldloc.0
       IL_007c:  ret
       .try IL_0002 to IL_003c catch [mscorlib]System.DivideByZeroException handler IL_003c to IL_0056
-      .try IL_0002 to IL_003c catch [mscorlib]System.ApplicationException handler IL_0056 to IL_0074
+      .try IL_0002 to IL_003c catch [mscorlib]System.ArgumentException handler IL_0056 to IL_0074
       .try IL_0002 to IL_0076 finally handler IL_0076 to IL_007b
     } // end of method 'ZZ::Filter'
 

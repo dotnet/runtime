@@ -52,7 +52,7 @@
 
 		throwex:
 				pop
-      			newobj     instance void ['mscorlib']System.ApplicationException::.ctor()
+      			newobj     instance void ['mscorlib']System.Exception::.ctor()
       			throw
     } // end of method 'Test::MulTest'
 

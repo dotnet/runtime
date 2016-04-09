@@ -22,7 +22,6 @@
       .locals (int32 V_0,
                int32 V_1,
                class [mscorlib]System.Exception V_2,
-               class [mscorlib]System.ApplicationException V_3,
                int32 V_4)
       .try
       {
@@ -46,7 +45,7 @@
         }
         catch [mscorlib]System.Exception 
         {
-          IL_0020:  castclass  [mscorlib]System.ApplicationException
+          IL_0020:  castclass  [mscorlib]System.ArgumentException
           IL_0027:  call       void [System.Console]System.Console::WriteLine(object)
           IL_002c:  ldstr      "failed (2)"
           IL_0031:  call       void [System.Console]System.Console::WriteLine(string)

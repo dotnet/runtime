@@ -183,7 +183,7 @@
                                                                      typedref)
       IL_00ee:  ret
 
-      IL_00ef:  newobj     instance void [mscorlib]System.ApplicationException::.ctor()
+      IL_00ef:  newobj     instance void [mscorlib]System.Exception::.ctor()
       IL_00f4:  throw
     } // end of method LCS::buildLCS
 
@@ -457,7 +457,7 @@
       IL_0132:  ldc.i4.0
       IL_0133:  bge.s      IL_013b
 
-      IL_0135:  newobj     instance void [mscorlib]System.ApplicationException::.ctor()
+      IL_0135:  newobj     instance void [mscorlib]System.Exception::.ctor()
       IL_013a:  throw
 
       IL_013b:  ldarg.0

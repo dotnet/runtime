@@ -80,7 +80,7 @@
         IL_003b:  ldarg.0
         IL_003c:  beq.s      IL_0044
 
-        IL_003e:  newobj     instance void ['mscorlib']System.ApplicationException::.ctor()
+        IL_003e:  newobj     instance void ['mscorlib']System.Exception::.ctor()
         IL_0043:  throw
 
         IL_0044:  ldloc.3
@@ -91,7 +91,7 @@
         IL_0052:  ldarg.1
         IL_0053:  beq.s      IL_005b
 
-        IL_0055:  newobj     instance void ['mscorlib']System.ApplicationException::.ctor()
+        IL_0055:  newobj     instance void ['mscorlib']System.Exception::.ctor()
         IL_005a:  throw
 
         IL_005b:  ldloc.1
@@ -129,7 +129,7 @@
         IL_0092:  sub.ovf.un
         IL_0093:  bgt.un.s   IL_009b
 
-        IL_0095:  newobj     instance void ['mscorlib']System.ApplicationException::.ctor()
+        IL_0095:  newobj     instance void ['mscorlib']System.Exception::.ctor()
         IL_009a:  throw
 
         IL_009b:  leave.s    IL_00d5
@@ -143,7 +143,7 @@
         IL_00a0:  ldarg.0
         IL_00a1:  beq.s      IL_00a9
 
-        IL_00a3:  newobj     instance void ['mscorlib']System.ApplicationException::.ctor()
+        IL_00a3:  newobj     instance void ['mscorlib']System.Exception::.ctor()
         IL_00a8:  throw
 
         IL_00a9:  leave.s    IL_00b9
@@ -157,7 +157,7 @@
         IL_00ae:  conv.i8
         IL_00af:  beq.s      IL_00b7
 
-        IL_00b1:  newobj     instance void ['mscorlib']System.ApplicationException::.ctor()
+        IL_00b1:  newobj     instance void ['mscorlib']System.Exception::.ctor()
         IL_00b6:  throw
 
         IL_00b7:  leave.s    IL_00b9
@@ -171,7 +171,7 @@
         IL_00bc:  ldarg.1
         IL_00bd:  beq.s      IL_00c5
 
-        IL_00bf:  newobj     instance void ['mscorlib']System.ApplicationException::.ctor()
+        IL_00bf:  newobj     instance void ['mscorlib']System.Exception::.ctor()
         IL_00c4:  throw
 
         IL_00c5:  leave.s    IL_00d5
@@ -185,7 +185,7 @@
         IL_00ca:  conv.i8
         IL_00cb:  beq.s      IL_00d3
 
-        IL_00cd:  newobj     instance void ['mscorlib']System.ApplicationException::.ctor()
+        IL_00cd:  newobj     instance void ['mscorlib']System.Exception::.ctor()
         IL_00d2:  throw
 
         IL_00d3:  leave.s    IL_00d5
