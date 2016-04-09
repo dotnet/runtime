@@ -91,7 +91,7 @@ public class CopySingleArrayTest
 
     private void OutOfRangeTests()
     {
-        int sizeOfArray = Marshal.SizeOf(TestArray[0]) * TestArray.Length;
+        int sizeOfArray = sizeof(float) * TestArray.Length;
 
         IntPtr ptr = Marshal.AllocCoTaskMem(sizeOfArray);
 
@@ -144,7 +144,7 @@ public class CopySingleArrayTest
 
     private void CopyRoundTripTests()
     {
-        int sizeOfArray = Marshal.SizeOf(TestArray[0]) * TestArray.Length;
+        int sizeOfArray = sizeof(float) * TestArray.Length;
 
         IntPtr ptr = Marshal.AllocCoTaskMem(sizeOfArray);
 
