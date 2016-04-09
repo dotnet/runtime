@@ -124,6 +124,7 @@ static int do_counters = 0;
 static int do_coverage = 0;
 static gboolean debug_coverage = FALSE;
 static MonoProfileSamplingMode sampling_mode = MONO_PROFILER_STAT_MODE_PROCESS;
+static int max_allocated_sample_hits;
 
 static gint32 sample_hits;
 static gint32 sample_flushes;
@@ -2036,6 +2037,13 @@ mono_sample_hit (MonoProfiler *profiler, unsigned char *ip, void *context)
 	SampleHit *sample = (SampleHit *) mono_lock_free_queue_dequeue (&profiler->sample_reuse_queue);
 
 	if (!sample) {
+		/*
+		 * If we're out of reusable sample events and we're not allowed to
+		 * allocate more, we have no choice but to drop the event.
+		 */
+		if (InterlockedRead (&sample_allocations) >= max_allocated_sample_hits)
+			return;
+
 		sample = mono_lock_free_alloc (&profiler->sample_allocator);
 		sample->prof = profiler;
 
@@ -2401,8 +2409,6 @@ dump_unmanaged_coderefs (MonoProfiler *prof)
 	}
 }
 
-#if USE_PERF_EVENTS
-
 static int
 mono_cpu_count (void)
 {
@@ -2480,6 +2486,8 @@ mono_cpu_count (void)
 	/* FIXME: warn */
 	return 1;
 }
+
+#if USE_PERF_EVENTS
 
 typedef struct {
 	int perf_fd;
@@ -4678,6 +4686,8 @@ mono_profiler_startup (const char *desc)
 		MONO_PROFILE_INS_COVERAGE|MONO_PROFILE_APPDOMAIN_EVENTS|MONO_PROFILE_CONTEXT_EVENTS|
 		MONO_PROFILE_ASSEMBLY_EVENTS;
 
+	max_allocated_sample_hits = mono_cpu_count () * 1000;
+
 	mono_counters_register ("Sample hits", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &sample_hits);
 	mono_counters_register ("Sample flushes", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &sample_flushes);
 	mono_counters_register ("Sample events allocated", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &sample_allocations);
@@ -4783,6 +4793,14 @@ mono_profiler_startup (const char *desc)
 				num_frames = MAX_FRAMES;
 			free (val);
 			notraces = num_frames == 0;
+			continue;
+		}
+		if ((opt = match_option (p, "maxsamples", &val)) != p) {
+			char *end;
+			max_allocated_sample_hits = strtoul (val, &end, 10);
+			if (!max_allocated_sample_hits)
+				max_allocated_sample_hits = G_MAXINT32;
+			free (val);
 			continue;
 		}
 		if ((opt = match_option (p, "calldepth", &val)) != p) {
