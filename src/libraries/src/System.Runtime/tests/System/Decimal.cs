@@ -627,7 +627,7 @@ public static class DecimalTests
         yield return new object[] { "123.456   ", NumberStyles.None, nullFormat, typeof(FormatException) }; // Leading space
         yield return new object[] { "1E23", NumberStyles.None, nullFormat, typeof(FormatException) }; // Exponent
 
-        yield return new object[] { "ab", NumberStyles.None, nullFormat, typeof(FormatException) }; // Negative hex value
+        yield return new object[] { "ab", NumberStyles.None, nullFormat, typeof(FormatException) }; // Hex value
         yield return new object[] { "  123  ", NumberStyles.None, nullFormat, typeof(FormatException) }; // Trailing and leading whitespace
     }
 

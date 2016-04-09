@@ -67,6 +67,8 @@ public static class SByteTests
     [InlineData((sbyte)78, (sbyte)-78, false)]
     [InlineData((sbyte)78, (sbyte)0, false)]
     [InlineData((sbyte)0, (sbyte)0, true)]
+    [InlineData((sbyte)-78, (sbyte)-78, true)]
+    [InlineData((sbyte)-78, (sbyte)78, false)]
     [InlineData((sbyte)78, null, false)]
     [InlineData((sbyte)78, "78", false)]
     [InlineData((sbyte)78, 78, false)]
@@ -183,27 +185,29 @@ public static class SByteTests
 
     public static IEnumerable<object[]> Parse_Valid_TestData()
     {
-        NumberFormatInfo nullFormat = null;
         NumberStyles defaultStyle = NumberStyles.Integer;
         NumberFormatInfo emptyFormat = new NumberFormatInfo();
 
         NumberFormatInfo customFormat = new NumberFormatInfo();
         customFormat.CurrencySymbol = "$";
 
-        yield return new object[] { "-123", defaultStyle, nullFormat, (sbyte)-123 };
-        yield return new object[] { "0", defaultStyle, nullFormat, (sbyte)0 };
-        yield return new object[] { "123", defaultStyle, nullFormat, (sbyte)123 };
-        yield return new object[] { "  123  ", defaultStyle, nullFormat, (sbyte)123 };
-        yield return new object[] { "127", defaultStyle, nullFormat, (sbyte)127 };
+        yield return new object[] { "-123", defaultStyle, null, (sbyte)-123 };
+        yield return new object[] { "0", defaultStyle, null, (sbyte)0 };
+        yield return new object[] { "123", defaultStyle, null, (sbyte)123 };
+        yield return new object[] { "+123", defaultStyle, null, (sbyte)123 };
+        yield return new object[] { "  123  ", defaultStyle, null, (sbyte)123 };
+        yield return new object[] { "127", defaultStyle, null, (sbyte)127 };
 
-        yield return new object[] { "12", NumberStyles.HexNumber, nullFormat, (sbyte)0x12 };
-        yield return new object[] { "10", NumberStyles.AllowThousands, nullFormat, (sbyte)10 };
-        yield return new object[] { "(123)", NumberStyles.AllowParentheses, nullFormat, (sbyte)-123 }; // Parentheses = negative
+        yield return new object[] { "12", NumberStyles.HexNumber, null, (sbyte)0x12 };
+        yield return new object[] { "10", NumberStyles.AllowThousands, null, (sbyte)10 };
+        yield return new object[] { "(123)", NumberStyles.AllowParentheses, null, (sbyte)-123 }; // Parentheses = negative
 
         yield return new object[] { "123", defaultStyle, emptyFormat, (sbyte)123 };
 
         yield return new object[] { "123", NumberStyles.Any, emptyFormat, (sbyte)123 };
         yield return new object[] { "12", NumberStyles.HexNumber, emptyFormat, (sbyte)0x12 };
+        yield return new object[] { "a", NumberStyles.HexNumber, null, (sbyte)0xa };
+        yield return new object[] { "A", NumberStyles.HexNumber, null, (sbyte)0xa };
         yield return new object[] { "$100", NumberStyles.Currency, customFormat, (sbyte)100 };
     }
 
@@ -241,32 +245,38 @@ public static class SByteTests
 
     public static IEnumerable<object[]> Parse_Invalid_TestData()
     {
-        NumberFormatInfo nullFormat = null;
         NumberStyles defaultStyle = NumberStyles.Integer;
 
         NumberFormatInfo customFormat = new NumberFormatInfo();
         customFormat.CurrencySymbol = "$";
         customFormat.NumberDecimalSeparator = ".";
 
-        yield return new object[] { null, defaultStyle, nullFormat, typeof(ArgumentNullException) };
-        yield return new object[] { "", defaultStyle, nullFormat, typeof(FormatException) };
-        yield return new object[] { " ", defaultStyle, nullFormat, typeof(FormatException) };
-        yield return new object[] { "Garbage", defaultStyle, nullFormat, typeof(FormatException) };
+        yield return new object[] { null, defaultStyle, null, typeof(ArgumentNullException) };
+        yield return new object[] { "", defaultStyle, null, typeof(FormatException) };
+        yield return new object[] { " \t \n \r ", defaultStyle, null, typeof(FormatException) };
+        yield return new object[] { "Garbage", defaultStyle, null, typeof(FormatException) };
 
-        yield return new object[] { "ab", defaultStyle, nullFormat, typeof(FormatException) }; // Hex value
-        yield return new object[] { "1E23", defaultStyle, nullFormat, typeof(FormatException) }; // Exponent
-        yield return new object[] { "(123)", defaultStyle, nullFormat, typeof(FormatException) }; // Parentheses
-        yield return new object[] { 100.ToString("C0"), defaultStyle, nullFormat, typeof(FormatException) }; // Currency
-        yield return new object[] { 1000.ToString("N0"), defaultStyle, nullFormat, typeof(FormatException) }; // Thousands
-        yield return new object[] { 67.90.ToString("F2"), defaultStyle, nullFormat, typeof(FormatException) }; // Decimal
+        yield return new object[] { "ab", defaultStyle, null, typeof(FormatException) }; // Hex value
+        yield return new object[] { "1E23", defaultStyle, null, typeof(FormatException) }; // Exponent
+        yield return new object[] { "(123)", defaultStyle, null, typeof(FormatException) }; // Parentheses
+        yield return new object[] { 100.ToString("C0"), defaultStyle, null, typeof(FormatException) }; // Currency
+        yield return new object[] { 1000.ToString("N0"), defaultStyle, null, typeof(FormatException) }; // Thousands
+        yield return new object[] { 67.90.ToString("F2"), defaultStyle, null, typeof(FormatException) }; // Decimal
+        yield return new object[] { "+-123", defaultStyle, null, typeof(FormatException) };
+        yield return new object[] { "-+123", defaultStyle, null, typeof(FormatException) };
+        yield return new object[] { "+abc", NumberStyles.HexNumber, null, typeof(FormatException) };
+        yield return new object[] { "-abc", NumberStyles.HexNumber, null, typeof(FormatException) };
 
-        yield return new object[] { "ab", NumberStyles.None, nullFormat, typeof(FormatException) }; // Hex value
-        yield return new object[] { "  123  ", NumberStyles.None, nullFormat, typeof(FormatException) }; // Trailing and leading whitespace
+        yield return new object[] { "- 123", defaultStyle, null, typeof(FormatException) };
+        yield return new object[] { "+ 123", defaultStyle, null, typeof(FormatException) };
+
+        yield return new object[] { "ab", NumberStyles.None, null, typeof(FormatException) }; // Hex value
+        yield return new object[] { "  123  ", NumberStyles.None, null, typeof(FormatException) }; // Trailing and leading whitespace
 
         yield return new object[] { "67.90", defaultStyle, customFormat, typeof(FormatException) }; // Decimal
 
-        yield return new object[] { "-129", defaultStyle, nullFormat, typeof(OverflowException) }; // < min value
-        yield return new object[] { "128", defaultStyle, nullFormat, typeof(OverflowException) }; // > max value
+        yield return new object[] { "-129", defaultStyle, null, typeof(OverflowException) }; // < min value
+        yield return new object[] { "128", defaultStyle, null, typeof(OverflowException) }; // > max value
     }
 
     [Theory]
@@ -299,5 +309,18 @@ public static class SByteTests
             Assert.Throws(exceptionType, () => sbyte.Parse(value, style));
         }
         Assert.Throws(exceptionType, () => sbyte.Parse(value, style, provider ?? new NumberFormatInfo()));
+    }
+
+    [Theory]
+    [InlineData(NumberStyles.HexNumber | NumberStyles.AllowParentheses)]
+    [InlineData(unchecked((NumberStyles)0xFFFFFC00))]
+    public static void TestTryParse_InvalidNumberStyle_ThrowsArgumentException(NumberStyles style)
+    {
+        sbyte result = 0;
+        Assert.Throws<ArgumentException>(() => sbyte.TryParse("1", style, null, out result));
+        Assert.Equal(default(sbyte), result);
+
+        Assert.Throws<ArgumentException>(() => sbyte.Parse("1", style));
+        Assert.Throws<ArgumentException>(() => sbyte.Parse("1", style, null));
     }
 }
