@@ -3,124 +3,104 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using Xunit;
 
-public static unsafe class ObjectTests
+public static class ObjectTests
 {
-    [Fact]
-    public static void TestEqualsAndHashCode()
+    public static IEnumerable<object[]> Equals_TestData()
     {
-        object o1 = new object();
-        int h1 = o1.GetHashCode();
-        int h2 = o1.GetHashCode();
-        Assert.Equal(h1, h2);
+        var obj1 = new object();
+        var obj2 = new object();
 
-        bool b;
+        yield return new object[] { obj1, obj1, true };
+        yield return new object[] { obj1, null, false };
+        yield return new object[] { obj1, obj2, false };
 
-        b = o1.Equals(o1);
-        Assert.True(b);
-        b = o1.Equals(null);
-        Assert.False(b);
+        yield return new object[] { null, null, true };
+        yield return new object[] { null, obj1, false };
+    }
 
-        object o2 = new object();
-        b = o1.Equals(o2);
-        Assert.False(b);
-
-        b = Object.Equals(o1, o1);
-        Assert.True(b);
-
-        b = Object.Equals(null, null);
-        Assert.True(b);
-
-        b = Object.Equals(o1, null);
-        Assert.False(b);
-
-        b = Object.Equals(null, o1);
-        Assert.False(b);
-
-        b = Object.Equals(o1, o2);
-        Assert.False(b);
-
-        EOverrider e1 = new EOverrider(7);
-        EOverrider e2 = new EOverrider(8);
-
-        EOverrider.s_EqualsCalled = false;
-        b = Object.Equals(e1, e2);
-        Assert.True(EOverrider.s_EqualsCalled);
-        Assert.False(b);
-
-        EOverrider.s_EqualsCalled = false;
-        b = Object.ReferenceEquals(e1, e2);
-        Assert.False(EOverrider.s_EqualsCalled);
-        Assert.False(b);
-
-        EOverrider.s_EqualsCalled = false;
-        b = Object.ReferenceEquals(e1, e1);
-        Assert.False(EOverrider.s_EqualsCalled);
-        Assert.True(b);
-
-        EOverrider.s_EqualsCalled = false;
-        b = Object.ReferenceEquals(e1, e1);
-        Assert.False(EOverrider.s_EqualsCalled);
-        Assert.True(b);
-
-        EOverrider.s_EqualsCalled = false;
-        b = Object.ReferenceEquals(e1, null);
-        Assert.False(EOverrider.s_EqualsCalled);
-        Assert.False(b);
-
-        EOverrider.s_EqualsCalled = false;
-        b = Object.ReferenceEquals(null, e1);
-        Assert.False(EOverrider.s_EqualsCalled);
-        Assert.False(b);
+    [Theory]
+    [MemberData(nameof(Equals_TestData))]
+    public static void TestEquals(object obj1, object obj2, bool expected)
+    {
+        if (obj1 != null)
+        {
+            Assert.Equal(expected, obj1.Equals(obj2));
+            Assert.True(obj1.Equals(obj1));
+            Assert.Equal(obj1.GetHashCode(), obj1.GetHashCode());
+            if (obj2 != null)
+            {
+                Assert.Equal(expected, obj1.GetHashCode().Equals(obj2.GetHashCode()));
+            }
+        }
+        Assert.Equal(expected, Equals(obj1, obj2));
     }
 
     [Fact]
-    public static void TestGetType()
+    public static void TestReferenceEquals()
     {
-        object o1 = new object();
-        object o2 = new object();
-        Type t1 = o1.GetType();
-        Type t2 = o2.GetType();
-        Assert.Equal(t1, typeof(object));
-        Assert.Equal(t1, t2);
-        Assert.Equal(t1.ToString(), o1.ToString());
+        var e1 = new EOverrider(7);
+        var e2 = new EOverrider(8);
 
-        C c = new C("Hello", 7, 9);
-        Type t3 = c.GetType();
-        Assert.Equal(t3, typeof(C));
+        EOverrider.s_EqualsCalled = false;
+        Assert.True(Equals(e1, e1));
+        Assert.False(EOverrider.s_EqualsCalled);
 
-        Generic<string> l = new Generic<string>();
-        Type t4 = l.GetType();
-        Assert.Equal(t4, typeof(Generic<string>));
+        // ReferenceEquals should not call Equals
+        EOverrider.s_EqualsCalled = false;
+        Assert.False(ReferenceEquals(e1, e2));
+        Assert.False(EOverrider.s_EqualsCalled);
 
-        int[] i = new int[3];
-        Type t5 = i.GetType();
-        Assert.Equal(t5, typeof(int[]));
+        EOverrider.s_EqualsCalled = false;
+        Assert.True(ReferenceEquals(e1, e1));
+        Assert.False(EOverrider.s_EqualsCalled);
+
+        EOverrider.s_EqualsCalled = false;
+        Assert.True(ReferenceEquals(e1, e1));
+        Assert.False(EOverrider.s_EqualsCalled);
+
+        EOverrider.s_EqualsCalled = false;
+        Assert.False(ReferenceEquals(e1, null));
+        Assert.False(EOverrider.s_EqualsCalled);
+
+        EOverrider.s_EqualsCalled = false;
+        Assert.False(ReferenceEquals(null, e1));
+        Assert.False(EOverrider.s_EqualsCalled);
     }
 
-    private class Generic<T>
+    public static IEnumerable<object[]> GetType_TestData()
     {
+        yield return new object[] { new object(), typeof(object) };
+        yield return new object[] { new C("Hello", 7, 9), typeof(C) };
+        yield return new object[] { new Generic<string>(), typeof(Generic<string>) };
+        yield return new object[] { new int[3], typeof(int[]) };
+    }
+
+    [Theory]
+    [MemberData(nameof(GetType_TestData))]
+    public static void TestGetType(object obj, Type expected)
+    {
+        Assert.Equal(expected, obj.GetType());
     }
 
     [Fact]
     public static void TestToString()
     {
-        object o = new object();
-        string s = o.ToString();
-        Assert.Equal(s, "System.Object");
-        string s1 = o.GetType().ToString();
-        Assert.Equal(s, s1);
+        var obj = new object();
+        Assert.Equal("System.Object", obj.ToString());
+        Assert.Equal(obj.ToString(), obj.GetType().ToString());
     }
 
     [Fact]
     public static void TestMemberwiseClone()
     {
-        C c1 = new C("Hello", 7, 8);
-        C c2 = c1.CallMemberwiseClone();
-        Assert.Equal(c2.s, "Hello");
-        Assert.Equal(c2.x, 7);
-        Assert.Equal(c2.y, 8);
+        var c1 = new C("Hello", 7, 8);
+        var c2 = c1.CallMemberwiseClone();
+        Assert.Equal("Hello", c2.s);
+        Assert.Equal(7, c2.x);
+        Assert.Equal(8, c2.y);
     }
 
     private class C
@@ -131,15 +111,15 @@ public static unsafe class ObjectTests
             this.x = x;
             this.y = y;
         }
+
         public string s;
         public int x;
         public int y;
 
-        public C CallMemberwiseClone()
-        {
-            return (C)(this.MemberwiseClone());
-        }
+        public C CallMemberwiseClone() => (C)MemberwiseClone();
     }
+
+    private class Generic<T> { }
 
     private class EOverrider
     {
@@ -155,13 +135,10 @@ public static unsafe class ObjectTests
             EOverrider eo = obj as EOverrider;
             if (eo == null)
                 return false;
-            return eo.X == this.X;
+            return eo.X == X;
         }
 
-        public override int GetHashCode()
-        {
-            return 42;
-        }
+        public override int GetHashCode() => 42;
 
         public int X;
 

@@ -8,29 +8,38 @@ namespace System.ComponentModel.Tests
 {
     public static class EditorBrowsableAttributeTests
     {
-        [Fact]
-        public static void TestCtor()
+        [Theory]
+        [InlineData(EditorBrowsableState.Advanced)]
+        [InlineData(EditorBrowsableState.Always)]
+        [InlineData(EditorBrowsableState.Never)]
+        [InlineData((EditorBrowsableState)12345)]
+        public static void TestCtor_EditableBrowserState(EditorBrowsableState state)
         {
-            Assert.Equal(EditorBrowsableState.Advanced, new EditorBrowsableAttribute(EditorBrowsableState.Advanced).State);
-            Assert.Equal(EditorBrowsableState.Always, new EditorBrowsableAttribute(EditorBrowsableState.Always).State);
-            Assert.Equal(EditorBrowsableState.Never, new EditorBrowsableAttribute(EditorBrowsableState.Never).State);
-            Assert.Equal((EditorBrowsableState)12345, new EditorBrowsableAttribute((EditorBrowsableState)12345).State);
+            Assert.Equal(state, new EditorBrowsableAttribute(state).State);
+        }
+
+        [Theory]
+        [InlineData(EditorBrowsableState.Advanced, EditorBrowsableState.Advanced, true)]
+        [InlineData(EditorBrowsableState.Always, EditorBrowsableState.Always, true)]
+        [InlineData(EditorBrowsableState.Never, EditorBrowsableState.Never, true)]
+        [InlineData((EditorBrowsableState)12345, (EditorBrowsableState)12345, true)]
+        [InlineData(EditorBrowsableState.Advanced, EditorBrowsableState.Always, false)]
+        [InlineData(EditorBrowsableState.Advanced, EditorBrowsableState.Never, false)]
+        public static void TestEquals(EditorBrowsableState state1, EditorBrowsableState state2, bool equal)
+        {
+            var attr1 = new EditorBrowsableAttribute(state1);
+            var attr2 = new EditorBrowsableAttribute(state2);
+
+            Assert.True(attr1.Equals(attr1));
+            Assert.Equal(equal, attr1.Equals(attr2));
+            Assert.Equal(equal, attr2.Equals(attr1));
+            Assert.Equal(equal, attr1.GetHashCode().Equals(attr2.GetHashCode()));
         }
 
         [Fact]
-        public static void TestEqual()
+        public static void TestEquals_Null()
         {
-            var attr = new EditorBrowsableAttribute(EditorBrowsableState.Advanced);
-            Assert.Equal(attr, attr);
-            Assert.True(attr.Equals(attr));
-            Assert.Equal(attr.GetHashCode(), attr.GetHashCode());
-
-            Assert.Equal(new EditorBrowsableAttribute(EditorBrowsableState.Advanced), attr);
-            Assert.Equal(new EditorBrowsableAttribute(EditorBrowsableState.Advanced).GetHashCode(), attr.GetHashCode());
-
-            Assert.NotEqual(new EditorBrowsableAttribute(EditorBrowsableState.Always), attr);
-            Assert.NotEqual(new EditorBrowsableAttribute(EditorBrowsableState.Never).GetHashCode(), attr.GetHashCode());
-            Assert.False(attr.Equals(null));
+            Assert.False(new EditorBrowsableAttribute(EditorBrowsableState.Advanced).Equals(null));
         }
 
         [Fact]
