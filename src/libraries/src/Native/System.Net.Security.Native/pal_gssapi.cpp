@@ -44,7 +44,7 @@ static void NetSecurityNative_MoveBuffer(gss_buffer_t gssBuffer, struct PAL_GssB
     assert(gssBuffer != nullptr);
     assert(targetBuffer != nullptr);
 
-    targetBuffer->length = gssBuffer->length;
+    targetBuffer->length = static_cast<uint64_t>(gssBuffer->length);
     targetBuffer->data = static_cast<uint8_t*>(gssBuffer->value);
 }
 
