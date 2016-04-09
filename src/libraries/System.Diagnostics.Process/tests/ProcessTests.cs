@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -492,7 +493,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestProcessName()
         {
-            Assert.Equal(_process.ProcessName, HostRunner, StringComparer.OrdinalIgnoreCase);
+            Assert.Equal(Path.GetFileNameWithoutExtension(_process.ProcessName), Path.GetFileNameWithoutExtension(HostRunner), StringComparer.OrdinalIgnoreCase);
         }
 
         [Fact]

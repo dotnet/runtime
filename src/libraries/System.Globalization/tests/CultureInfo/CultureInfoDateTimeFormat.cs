@@ -3,11 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using Xunit;
 
 namespace System.Globalization.Tests
 {
-    public class CultureInfoDateTimeFormat
+    public class CultureInfoDateTimeFormat : RemoteExecutorTestBase
     {
         public static IEnumerable<object[]> DateTimeFormatInfo_Set_TestData()
         {
@@ -29,6 +30,20 @@ namespace System.Globalization.Tests
             CultureInfo culture = new CultureInfo(name);
             culture.DateTimeFormat = newDateTimeFormatInfo;
             Assert.Equal(newDateTimeFormatInfo, culture.DateTimeFormat);
+        }
+
+        [Fact]
+        public void TestSettingThreadCultures()
+        {
+            RemoteInvoke(() =>
+            {
+                CultureInfo culture = new CultureInfo("ja-JP");
+                CultureInfo.CurrentCulture = culture;
+                DateTime dt = new DateTime(2014, 3, 14, 3, 14, 0);
+                Assert.Equal(dt.ToString(), dt.ToString(culture));
+                Assert.Equal(dt.ToString(), dt.ToString(culture.DateTimeFormat));
+                return SuccessExitCode;
+            }).Dispose();
         }
 
         [Fact]
