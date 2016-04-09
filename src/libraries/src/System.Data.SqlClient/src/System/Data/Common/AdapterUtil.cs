@@ -43,18 +43,6 @@ namespace System.Data.Common
         // location so that the catcher of the exception will have the appropriate call stack.
         // This class is used so that there will be compile time checking of error messages.
 
-        static internal Task<T> CreatedTaskWithException<T>(Exception ex)
-        {
-            return Task.FromException<T>(ex);
-        }
-
-        static internal Task<T> CreatedTaskWithCancellation<T>()
-        {
-            TaskCompletionSource<T> completion = new TaskCompletionSource<T>();
-            completion.SetCanceled();
-            return completion.Task;
-        }
-
         static internal Exception ExceptionWithStackTrace(Exception e)
         {
             try

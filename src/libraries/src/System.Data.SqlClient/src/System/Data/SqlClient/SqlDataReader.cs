@@ -3655,16 +3655,12 @@ namespace System.Data.SqlClient
             bytesRead = 0;
             if (IsClosed)
             {
-                TaskCompletionSource<int> source = new TaskCompletionSource<int>();
-                source.SetException(ADP.ExceptionWithStackTrace(ADP.DataReaderClosed()));
-                return source.Task;
+                return Task.FromException<int>(ADP.ExceptionWithStackTrace(ADP.DataReaderClosed()));
             }
 
             if (_currentTask != null)
             {
-                TaskCompletionSource<int> source = new TaskCompletionSource<int>();
-                source.SetException(ADP.ExceptionWithStackTrace(ADP.AsyncOperationPending()));
-                return source.Task;
+                return Task.FromException<int>(ADP.ExceptionWithStackTrace(ADP.AsyncOperationPending()));
             }
 
             if (cancellationToken.CanBeCanceled)
@@ -3718,12 +3714,12 @@ namespace System.Data.SqlClient
                         if (cancellationToken.IsCancellationRequested)
                         {
                             // User requested cancellation
-                            return ADP.CreatedTaskWithCancellation<int>();
+                            return Task.FromCanceled<int>(cancellationToken);
                         }
                         else if (timeoutToken.IsCancellationRequested)
                         {
                             // Timeout
-                            return ADP.CreatedTaskWithException<int>(ADP.ExceptionWithStackTrace(ADP.IO(SQLMessage.Timeout())));
+                            return Task.FromException<int>(ADP.ExceptionWithStackTrace(ADP.IO(SQLMessage.Timeout())));
                         }
                         else
                         {
@@ -3821,12 +3817,12 @@ namespace System.Data.SqlClient
                     if (cancellationToken.IsCancellationRequested)
                     {
                         // User requested cancellation
-                        return ADP.CreatedTaskWithCancellation<int>();
+                        return Task.FromCanceled<int>(cancellationToken);
                     }
                     else if (timeoutToken.IsCancellationRequested)
                     {
                         // Timeout
-                        return ADP.CreatedTaskWithException<int>(ADP.ExceptionWithStackTrace(ADP.IO(SQLMessage.Timeout())));
+                        return Task.FromException<int>(ADP.ExceptionWithStackTrace(ADP.IO(SQLMessage.Timeout())));
                     }
                     else
                     {
@@ -3876,19 +3872,19 @@ namespace System.Data.SqlClient
         {
             if (IsClosed)
             {
-                return ADP.CreatedTaskWithException<bool>(ADP.ExceptionWithStackTrace(ADP.DataReaderClosed()));
+                return Task.FromException<bool>(ADP.ExceptionWithStackTrace(ADP.DataReaderClosed()));
             }
 
             // If user's token is canceled, return a canceled task
             if (cancellationToken.IsCancellationRequested)
             {
-                return ADP.CreatedTaskWithCancellation<bool>();
+                return Task.FromCanceled<bool>(cancellationToken);
             }
 
             // Check for existing async
             if (_currentTask != null)
             {
-                return ADP.CreatedTaskWithException<bool>(ADP.ExceptionWithStackTrace(SQL.PendingBeginXXXExists()));
+                return Task.FromException<bool>(ADP.ExceptionWithStackTrace(SQL.PendingBeginXXXExists()));
             }
 
             // These variables will be captured in moreFunc so that we can skip searching for a row token once one has been read
@@ -3958,7 +3954,7 @@ namespace System.Data.SqlClient
                 {
                     throw;
                 }
-                return ADP.CreatedTaskWithException<bool>(ex);
+                return Task.FromException<bool>(ex);
             }
 
             TaskCompletionSource<bool> source = new TaskCompletionSource<bool>();
@@ -4038,7 +4034,7 @@ namespace System.Data.SqlClient
                 {
                     throw;
                 }
-                return ADP.CreatedTaskWithException<bool>(ex);
+                return Task.FromException<bool>(ex);
             }
 
             // Shortcut - if there are no issues and the data is already read, then just return the value
@@ -4052,7 +4048,7 @@ namespace System.Data.SqlClient
                 else
                 {
                     // Reader was closed between the CheckHeaderIsReady and accessing _data - throw closed exception
-                    return ADP.CreatedTaskWithException<bool>(ADP.ExceptionWithStackTrace(ADP.DataReaderClosed()));
+                    return Task.FromException<bool>(ADP.ExceptionWithStackTrace(ADP.DataReaderClosed()));
                 }
             }
             else
@@ -4060,13 +4056,13 @@ namespace System.Data.SqlClient
                 // Throw if there is any current task
                 if (_currentTask != null)
                 {
-                    return ADP.CreatedTaskWithException<bool>(ADP.ExceptionWithStackTrace(ADP.AsyncOperationPending()));
+                    return Task.FromException<bool>(ADP.ExceptionWithStackTrace(ADP.AsyncOperationPending()));
                 }
 
                 // If user's token is canceled, return a canceled task
                 if (cancellationToken.IsCancellationRequested)
                 {
-                    return ADP.CreatedTaskWithCancellation<bool>();
+                    return Task.FromCanceled<bool>(cancellationToken);
                 }
 
                 // Shortcut - if we have enough data, then run sync
@@ -4096,7 +4092,7 @@ namespace System.Data.SqlClient
                     {
                         throw;
                     }
-                    return ADP.CreatedTaskWithException<bool>(ex);
+                    return Task.FromException<bool>(ex);
                 }
 
                 // Setup and check for pending task
@@ -4168,7 +4164,7 @@ namespace System.Data.SqlClient
                     else
                     {
                         // Reader was closed between the CheckDataIsReady and accessing _data\_metaData - throw closed exception
-                        return ADP.CreatedTaskWithException<T>(ADP.ExceptionWithStackTrace(ADP.DataReaderClosed()));
+                        return Task.FromException<T>(ADP.ExceptionWithStackTrace(ADP.DataReaderClosed()));
                     }
                 }
             }
@@ -4178,19 +4174,19 @@ namespace System.Data.SqlClient
                 {
                     throw;
                 }
-                return ADP.CreatedTaskWithException<T>(ex);
+                return Task.FromException<T>(ex);
             }
 
             // Throw if there is any current task
             if (_currentTask != null)
             {
-                return ADP.CreatedTaskWithException<T>(ADP.ExceptionWithStackTrace(ADP.AsyncOperationPending()));
+                return Task.FromException<T>(ADP.ExceptionWithStackTrace(ADP.AsyncOperationPending()));
             }
 
             // If user's token is canceled, return a canceled task
             if (cancellationToken.IsCancellationRequested)
             {
-                return ADP.CreatedTaskWithCancellation<T>();
+                return Task.FromCanceled<T>(cancellationToken);
             }
 
             // Shortcut - if we have enough data, then run sync
@@ -4219,7 +4215,7 @@ namespace System.Data.SqlClient
                 {
                     throw;
                 }
-                return ADP.CreatedTaskWithException<T>(ex);
+                return Task.FromException<T>(ex);
             }
 
             // Setup and check for pending task
@@ -4322,9 +4318,7 @@ namespace System.Data.SqlClient
             if (_cancelAsyncOnCloseToken.IsCancellationRequested || completionSource == null)
             {
                 // Cancellation requested due to datareader being closed
-                TaskCompletionSource<T> source = new TaskCompletionSource<T>();
-                source.TrySetException(ADP.ExceptionWithStackTrace(ADP.ClosedConnectionError()));
-                return source.Task;
+                return Task.FromException<T>(ADP.ExceptionWithStackTrace(ADP.ClosedConnectionError()));
             }
             else
             {
@@ -4333,9 +4327,7 @@ namespace System.Data.SqlClient
                     if (retryTask.IsFaulted)
                     {
                         // Somehow the network task faulted - return the exception
-                        TaskCompletionSource<T> exceptionSource = new TaskCompletionSource<T>();
-                        exceptionSource.TrySetException(retryTask.Exception.InnerException);
-                        return exceptionSource.Task;
+                        return Task.FromException<T>(retryTask.Exception.InnerException);
                     }
                     else if (!_cancelAsyncOnCloseToken.IsCancellationRequested)
                     {
@@ -4378,9 +4370,7 @@ namespace System.Data.SqlClient
                     }
                     // if stateObj is null, or we closed the connection or the connection was already closed,
                     // then mark this operation as cancelled.
-                    TaskCompletionSource<T> source = new TaskCompletionSource<T>();
-                    source.SetException(ADP.ExceptionWithStackTrace(ADP.ClosedConnectionError()));
-                    return source.Task;
+                    return Task.FromException<T>(ADP.ExceptionWithStackTrace(ADP.ClosedConnectionError()));
                 }, TaskScheduler.Default).Unwrap();
             }
         }
@@ -4396,7 +4386,7 @@ namespace System.Data.SqlClient
                 }
                 catch (Exception ex)
                 {
-                    task = ADP.CreatedTaskWithException<T>(ex);
+                    task = Task.FromException<T>(ex);
                 }
 
                 if (task.IsCompleted)

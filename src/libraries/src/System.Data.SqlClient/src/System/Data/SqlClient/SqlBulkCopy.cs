@@ -995,9 +995,7 @@ namespace System.Data.SqlClient
                 {
                     if (_isAsyncBulkCopy)
                     {
-                        TaskCompletionSource<bool> tcs = new TaskCompletionSource<bool>();
-                        tcs.SetException(ex);
-                        return tcs.Task;
+                        return Task.FromException<bool>(ex);
                     }
                     else
                     {
