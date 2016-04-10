@@ -47,12 +47,10 @@ JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b57367/b57367/b57367.sh
 JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b66533/b66533/b66533.sh
 JIT/Regression/CLR-x86-JIT/V1-M13-RTM/b88793/b88793/b88793.sh
 JIT/Regression/CLR-x86-JIT/V1-M13-RTM/b91248/b91248/b91248.sh
-JIT/Regression/CLR-x86-JIT/V1.2-Beta1/b101136/b101136/b101136.sh
 JIT/Regression/CLR-x86-JIT/V1.2-M02/b20785/b20785/b20785.sh
 JIT/Regression/CLR-x86-JIT/V2.0-Beta2/b399444/b399444a/b399444a.sh
 JIT/Regression/CLR-x86-JIT/V2.0-Beta2/b409748/b409748/b409748.sh
 JIT/Regression/VS-ia64-JIT/V1.2-Beta1/b302509/b302509/b302509.sh
-JIT/Regression/VS-ia64-JIT/V1.2-M02/b108129/b108129/b108129.sh
 JIT/Regression/VS-ia64-JIT/V1.2-M02/b12011/b12011/b12011.sh
 JIT/opt/Tailcall/TailcallVerifyWithPrefix/TailcallVerifyWithPrefix.sh
 Loader/NativeLibs/FromNativePaths/FromNativePaths.sh
