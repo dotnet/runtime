@@ -17,6 +17,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
 
   <ItemGroup>
+    <Compile Include="CharUnicodeInfo\CharUnicodeInfoTestData.cs" />
+    <Compile Include="CharUnicodeInfo\CharUnicodeInfoTests.cs" />
     <Compile Include="CompareInfo\CompareInfoTests.cs" />
     <Compile Include="CompareInfo\CompareInfoTests.IndexOf.cs" />
     <Compile Include="CompareInfo\CompareInfoTests.IsPrefix.cs" />
@@ -162,6 +164,12 @@
   </ItemGroup>  
   <ItemGroup>
     <None Include="project.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="$(CommonTestPath)\Data\UnicodeData.8.0.txt">
+        <Link>CharUnicodeInfo\UnicodeData8.0.txt</Link>
+        <LogicalName>UnicodeData.8.0.txt</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 
