@@ -93,6 +93,10 @@ public class VersionTests
         yield return new object[] { new Version(1, 2), new Version(1, 0, 1), 1 };
         yield return new object[] { new Version(1, 2), new Version(1, 0, 0, 1), 1 };
 
+        yield return new object[] { new Version(3, 2, 1), new Version(2, 2, 1), 1 };
+        yield return new object[] { new Version(3, 2, 1), new Version(3, 1, 1), 1 };
+        yield return new object[] { new Version(3, 2, 1), new Version(3, 2, 0), 1 };
+
         yield return new object[] { new Version(1, 2, 3, 4), new Version(1, 2, 3, 4), 0 };
         yield return new object[] { new Version(1, 2, 3, 4), new Version(1, 2, 3, 5), -1 };
         yield return new object[] { new Version(1, 2, 3, 4), new Version(1, 2, 3, 3), 1 };
@@ -100,10 +104,8 @@ public class VersionTests
 
     [Theory]
     [MemberData(nameof(CompareToTestData))]
-    public static void TestCompareTo(Version version1, Version obj, int expectedSign)
+    public static void TestCompareTo(Version version1, Version version2, int expectedSign)
     {
-        Version version2 = obj as Version;
-
         Assert.Equal(expectedSign, Math.Sign(version1.CompareTo(version2)));
         if (version1 != null && version2 != null)
         {
@@ -130,7 +132,7 @@ public class VersionTests
         }
 
         IComparable comparable = version1;
-        Assert.Equal(expectedSign, Math.Sign(comparable.CompareTo(obj)));
+        Assert.Equal(expectedSign, Math.Sign(comparable.CompareTo(version2)));
     }
 
     [Fact]
@@ -166,6 +168,7 @@ public class VersionTests
         yield return new object[] { new Version(2, 3, 0), new Version(2, 3), false };
         yield return new object[] { new Version(2, 3, 4, 0), new Version(2, 3, 4), false };
 
+        yield return new object[] { new Version(2, 3, 4, 5), new TimeSpan(), false };
         yield return new object[] { new Version(2, 3, 4, 5), null, false };
     }
 
@@ -193,6 +196,8 @@ public class VersionTests
         yield return new object[] { "1.2.3", new Version(1, 2, 3) };
         yield return new object[] { "1.2.3.4", new Version(1, 2, 3, 4) };
         yield return new object[] { "2  .3.    4.  \t\r\n15  ", new Version(2, 3, 4, 15) };
+        yield return new object[] { "   2  .3.    4.  \t\r\n15  ", new Version(2, 3, 4, 15) };
+        yield return new object[] { "+1.+2.+3.+4", new Version(1, 2, 3, 4) };
     }
 
     [Theory]
@@ -229,6 +234,12 @@ public class VersionTests
         yield return new object[] { "1.2147483648.3.4", typeof(OverflowException) }; // Input contains a value > int.MaxValue
         yield return new object[] { "1.2.2147483648.4", typeof(OverflowException) }; // Input contains a value > int.MaxValue
         yield return new object[] { "1.2.3.2147483648", typeof(OverflowException) }; // Input contains a value > int.MaxValue
+
+        // Input contains a value < 0
+        yield return new object[] { "-1.2.3.4", typeof(ArgumentOutOfRangeException) };
+        yield return new object[] { "1.-2.3.4", typeof(ArgumentOutOfRangeException) };
+        yield return new object[] { "1.2.-3.4", typeof(ArgumentOutOfRangeException) };
+        yield return new object[] { "1.2.3.-4", typeof(ArgumentOutOfRangeException) };
     }
 
     [Theory]
@@ -238,6 +249,7 @@ public class VersionTests
         Assert.Throws(exceptionType, () => Version.Parse(input));
         Version version;
         Assert.False(Version.TryParse(input, out version));
+        Assert.Null(version);
     }
 
     public static IEnumerable<object[]> ToStringTestData()
