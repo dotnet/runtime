@@ -94,6 +94,10 @@ else ()
    add_compile_options(-fstack-protector-strong)  
 endif ()
 
+if (CMAKE_SYSTEM_NAME STREQUAL Linux)
+   set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Wa,--noexecstack")
+endif ()
+
 include(configure.cmake)
 
 add_subdirectory(System.IO.Compression.Native)
