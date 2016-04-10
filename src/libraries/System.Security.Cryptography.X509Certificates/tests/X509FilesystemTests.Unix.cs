@@ -66,6 +66,68 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [Fact]
+        [OuterLoop(/* Alters user/machine state */)]
+        private static void X509Store_AddOne()
+        {
+            RunX509StoreTest(
+                (store, storeDirectory) =>
+                {
+                    using (var cert = new X509Certificate2(TestData.MsCertificate))
+                    {
+                        store.Open(OpenFlags.ReadWrite);
+
+                        store.Add(cert);
+                        Assert.True(Directory.Exists(storeDirectory), "Directory.Exists(storeDirectory)");
+                        Assert.Equal(1, Directory.GetFiles(storeDirectory).Length);
+
+                        X509Certificate2Collection storeCerts = store.Certificates;
+
+                        Assert.Equal(1, storeCerts.Count);
+
+                        using (X509Certificate2 storeCert = storeCerts[0])
+                        {
+                            Assert.Equal(cert, storeCert);
+                            Assert.NotSame(cert, storeCert);
+                        }
+                    }
+                });
+        }
+
+        private static void RunX509StoreTest(Action<X509Store, string> testAction)
+        {
+            string certStoresFeaturePath = PersistedFiles.GetUserFeatureDirectory("cryptography", "x509stores");
+            string storeName = "TestStore" + Guid.NewGuid().ToString("N");
+            string storeDirectory = Path.Combine(certStoresFeaturePath, storeName.ToLowerInvariant());
+
+            if (Directory.Exists(storeDirectory))
+            {
+                Directory.Delete(storeDirectory, true);
+            }
+
+            try
+            {
+                using (X509Store store = new X509Store(storeName, StoreLocation.CurrentUser))
+                {
+                    testAction(store, storeDirectory);
+                }
+            }
+            finally
+            {
+                try
+                {
+                    if (Directory.Exists(storeDirectory))
+                    {
+                        Directory.Delete(storeDirectory, true);
+                    }
+                }
+                catch
+                {
+                    // Don't allow any (additional?) I/O errors to propagate.
+                }
+            }
+        }
+
         // `openssl crl -in [MicrosoftDotComRootCrlPem] -noout -hash`.crl
         private const string MicrosoftDotComRootCrlFilename = "b204d74a.crl";
 

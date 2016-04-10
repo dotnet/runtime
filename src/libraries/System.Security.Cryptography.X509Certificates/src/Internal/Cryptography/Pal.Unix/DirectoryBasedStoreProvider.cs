@@ -448,7 +448,7 @@ namespace Internal.Cryptography.Pal
                 throw new CryptographicException(SR.Format(SR.Cryptography_OwnerNotCurrentUser, path));
             }
 
-            if ((dirStat.Mode & (int)Interop.Sys.Permissions.Mask) != (int)Interop.Sys.Permissions.S_IRWXU)
+            if ((dirStat.Mode & (int)Interop.Sys.Permissions.S_IRWXU) != (int)Interop.Sys.Permissions.S_IRWXU)
             {
                 throw new CryptographicException(SR.Format(SR.Cryptography_InvalidDirectoryPermissions, path));
             }
