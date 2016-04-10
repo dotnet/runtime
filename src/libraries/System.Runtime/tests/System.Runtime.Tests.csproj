@@ -31,7 +31,6 @@
     <Compile Include="System\ArraySegment.cs" />
     <Compile Include="System\Boolean.cs" />
     <Compile Include="System\Buffer.cs" />
-    <Compile Include="System\Buffer.MemoryCopy.cs" />
     <Compile Include="System\Byte.cs" />
     <Compile Include="System\Char.cs" />
     <Compile Include="System\Collections\ObjectModel\Collection.cs" />
