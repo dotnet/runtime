@@ -8,16 +8,16 @@ namespace JitTest.HFA
 {
     public class TestCase
     {
-        [DllImport("test2.dll", EntryPoint = "GetInt32Const")]
+        [DllImport("test2", EntryPoint = "GetInt32Const")]
         public static extern int GetInt32Const();
 
-        [DllImport("test2.dll", EntryPoint = "GetInt64Const")]
+        [DllImport("test2", EntryPoint = "GetInt64Const")]
         public static extern long GetInt64Const();
 
-        [DllImport("test2.dll", EntryPoint = "GetFloatConst")]
+        [DllImport("test2", EntryPoint = "GetFloatConst")]
         public static extern float GetFloatConst();
 
-        [DllImport("test2.dll", EntryPoint = "GetDoubleConst")]
+        [DllImport("test2", EntryPoint = "GetDoubleConst")]
         public static extern double GetDoubleConst();
 
         private static int Main()
