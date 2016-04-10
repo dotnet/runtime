@@ -14,66 +14,64 @@ namespace System.Data.SqlTypes
 {
     using Res = System.SR;
 
-    internal sealed class SQLResource
+    internal static class SQLResource
     {
-        private SQLResource() { /* prevent utility class from being instantiated*/ }
+        internal static string NullString => Res.SqlMisc_NullString;
 
-        internal static readonly String NullString = Res.GetString(Res.SqlMisc_NullString);
+        internal static string MessageString => Res.SqlMisc_MessageString;
 
-        internal static readonly String MessageString = Res.GetString(Res.SqlMisc_MessageString);
+        internal static string ArithOverflowMessage => Res.SqlMisc_ArithOverflowMessage;
 
-        internal static readonly String ArithOverflowMessage = Res.GetString(Res.SqlMisc_ArithOverflowMessage);
+        internal static string DivideByZeroMessage => Res.SqlMisc_DivideByZeroMessage;
 
-        internal static readonly String DivideByZeroMessage = Res.GetString(Res.SqlMisc_DivideByZeroMessage);
+        internal static string NullValueMessage => Res.SqlMisc_NullValueMessage;
 
-        internal static readonly String NullValueMessage = Res.GetString(Res.SqlMisc_NullValueMessage);
+        internal static string TruncationMessage => Res.SqlMisc_TruncationMessage;
 
-        internal static readonly String TruncationMessage = Res.GetString(Res.SqlMisc_TruncationMessage);
+        internal static string DateTimeOverflowMessage => Res.SqlMisc_DateTimeOverflowMessage;
 
-        internal static readonly String DateTimeOverflowMessage = Res.GetString(Res.SqlMisc_DateTimeOverflowMessage);
+        internal static string ConcatDiffCollationMessage => Res.SqlMisc_ConcatDiffCollationMessage;
 
-        internal static readonly String ConcatDiffCollationMessage = Res.GetString(Res.SqlMisc_ConcatDiffCollationMessage);
+        internal static string CompareDiffCollationMessage => Res.SqlMisc_CompareDiffCollationMessage;
 
-        internal static readonly String CompareDiffCollationMessage = Res.GetString(Res.SqlMisc_CompareDiffCollationMessage);
+        internal static string InvalidFlagMessage => Res.SqlMisc_InvalidFlagMessage;
 
-        internal static readonly String InvalidFlagMessage = Res.GetString(Res.SqlMisc_InvalidFlagMessage);
+        internal static string NumeToDecOverflowMessage => Res.SqlMisc_NumeToDecOverflowMessage;
 
-        internal static readonly String NumeToDecOverflowMessage = Res.GetString(Res.SqlMisc_NumeToDecOverflowMessage);
+        internal static string ConversionOverflowMessage => Res.SqlMisc_ConversionOverflowMessage;
 
-        internal static readonly String ConversionOverflowMessage = Res.GetString(Res.SqlMisc_ConversionOverflowMessage);
+        internal static string InvalidDateTimeMessage => Res.SqlMisc_InvalidDateTimeMessage;
 
-        internal static readonly String InvalidDateTimeMessage = Res.GetString(Res.SqlMisc_InvalidDateTimeMessage);
+        internal static string TimeZoneSpecifiedMessage => Res.SqlMisc_TimeZoneSpecifiedMessage;
 
-        internal static readonly String TimeZoneSpecifiedMessage = Res.GetString(Res.SqlMisc_TimeZoneSpecifiedMessage);
+        internal static string InvalidArraySizeMessage => Res.SqlMisc_InvalidArraySizeMessage;
 
-        internal static readonly String InvalidArraySizeMessage = Res.GetString(Res.SqlMisc_InvalidArraySizeMessage);
+        internal static string InvalidPrecScaleMessage => Res.SqlMisc_InvalidPrecScaleMessage;
 
-        internal static readonly String InvalidPrecScaleMessage = Res.GetString(Res.SqlMisc_InvalidPrecScaleMessage);
+        internal static string FormatMessage => Res.SqlMisc_FormatMessage;
 
-        internal static readonly String FormatMessage = Res.GetString(Res.SqlMisc_FormatMessage);
+        internal static string NotFilledMessage => Res.SqlMisc_NotFilledMessage;
 
-        internal static readonly String NotFilledMessage = Res.GetString(Res.SqlMisc_NotFilledMessage);
+        internal static string AlreadyFilledMessage => Res.SqlMisc_AlreadyFilledMessage;
 
-        internal static readonly String AlreadyFilledMessage = Res.GetString(Res.SqlMisc_AlreadyFilledMessage);
+        internal static string ClosedXmlReaderMessage => Res.SqlMisc_ClosedXmlReaderMessage;
 
-        internal static readonly String ClosedXmlReaderMessage = Res.GetString(Res.SqlMisc_ClosedXmlReaderMessage);
-
-        internal static String InvalidOpStreamClosed(String method)
+        internal static string InvalidOpStreamClosed(string method)
         {
             return Res.GetString(Res.SqlMisc_InvalidOpStreamClosed, method);
         }
 
-        internal static String InvalidOpStreamNonWritable(String method)
+        internal static string InvalidOpStreamNonWritable(string method)
         {
             return Res.GetString(Res.SqlMisc_InvalidOpStreamNonWritable, method);
         }
 
-        internal static String InvalidOpStreamNonReadable(String method)
+        internal static string InvalidOpStreamNonReadable(string method)
         {
             return Res.GetString(Res.SqlMisc_InvalidOpStreamNonReadable, method);
         }
 
-        internal static String InvalidOpStreamNonSeekable(String method)
+        internal static string InvalidOpStreamNonSeekable(string method)
         {
             return Res.GetString(Res.SqlMisc_InvalidOpStreamNonSeekable, method);
         }
