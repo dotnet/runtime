@@ -1,78 +1,83 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Runtime.Tests.Common;
-
 using Xunit;
 
 public static class EnumTests
 {
     [Theory]
-    [InlineData("Red", false, true, SimpleEnum.Red)]
-    [InlineData(" Red", false, true, SimpleEnum.Red)]
-    [InlineData("Red ", false, true, SimpleEnum.Red)]
-    [InlineData(" red ", true, true, SimpleEnum.Red)]
-    [InlineData(" Red , Blue ", false, true, SimpleEnum.Red | SimpleEnum.Blue)]
-    [InlineData("Blue,Red,Green", false, true, SimpleEnum.Red | SimpleEnum.Blue | SimpleEnum.Green)]
-    [InlineData("Blue,Red,Red,Red,Green", false, true, SimpleEnum.Red | SimpleEnum.Blue | SimpleEnum.Green)]
-    [InlineData("Red,Blue,   Green", false, true, SimpleEnum.Red | SimpleEnum.Blue | SimpleEnum.Green)]
-    [InlineData("B", false, true, SimpleEnum.B)]
-    [InlineData("B,B", false, true, SimpleEnum.B)]
-
-    [InlineData("1", false, true, SimpleEnum.Red)]
-    [InlineData(" 1 ", false, true, SimpleEnum.Red)]
-    [InlineData("2", false, true, SimpleEnum.Blue)]
-    [InlineData("99", false, true, (SimpleEnum)99)]
-    [InlineData("-42", false, true, (SimpleEnum)(-42))]
-    [InlineData("   -42", false, true, (SimpleEnum)(-42))]
-    [InlineData("   -42 ", false, true, (SimpleEnum)(-42))]
-
-    [InlineData(" red ", false, false, default(SimpleEnum))] // Expect default result due to parse failure
-    [InlineData("Purple", false, false, default(SimpleEnum))]
-    [InlineData("", false, false, default(SimpleEnum))]
-    [InlineData(",Red", false, false, default(SimpleEnum))]
-    [InlineData("Red,", false, false, default(SimpleEnum))]
-    [InlineData("B,", false, false, default(SimpleEnum))]
-    [InlineData(" , , ,", false, false, default(SimpleEnum))]
-    [InlineData("Red,Blue,", false, false, default(SimpleEnum))]
-    [InlineData("Red,,Blue", false, false, default(SimpleEnum))]
-    [InlineData("Red,Blue, ", false, false, default(SimpleEnum))]
-    [InlineData("Red Blue", false, false, default(SimpleEnum))]
-    [InlineData("1,Blue", false, false, default(SimpleEnum))]
-    [InlineData("Blue,1", false, false, default(SimpleEnum))]
-    [InlineData("Blue, 1", false, false, default(SimpleEnum))]
-    public static void TestParse(string value, bool ignoreCase, bool expectedCanParse, Enum expectedParseResult)
+    [InlineData("Red", false, SimpleEnum.Red)]
+    [InlineData(" Red", false, SimpleEnum.Red)]
+    [InlineData("Red ", false, SimpleEnum.Red)]
+    [InlineData(" red ", true, SimpleEnum.Red)]
+    [InlineData("B", false, SimpleEnum.B)]
+    [InlineData("B,B", false, SimpleEnum.B)]
+    [InlineData(" Red , Blue ", false, SimpleEnum.Red | SimpleEnum.Blue)]
+    [InlineData("Blue,Red,Green", false, SimpleEnum.Red | SimpleEnum.Blue | SimpleEnum.Green)]
+    [InlineData("Blue,Red,Red,Red,Green", false, SimpleEnum.Red | SimpleEnum.Blue | SimpleEnum.Green)]
+    [InlineData("Red,Blue,   Green", false, SimpleEnum.Red | SimpleEnum.Blue | SimpleEnum.Green)]
+    [InlineData("1", false, SimpleEnum.Red)]
+    [InlineData(" 1 ", false, SimpleEnum.Red)]
+    [InlineData("2", false, SimpleEnum.Blue)]
+    [InlineData("99", false, (SimpleEnum)99)]
+    [InlineData("-42", false, (SimpleEnum)(-42))]
+    [InlineData("   -42", false, (SimpleEnum)(-42))]
+    [InlineData("   -42 ", false, (SimpleEnum)(-42))]
+    public static void TestParse(string value, bool ignoreCase, Enum expected)
     {
-        SimpleEnum e;
-
+        SimpleEnum result;
         if (!ignoreCase)
         {
-            Assert.Equal(expectedCanParse, Enum.TryParse(value, out e));
-            Assert.Equal(expectedParseResult, e);
+            Assert.True(Enum.TryParse(value, out result));
+            Assert.Equal(expected, result);
 
-            if (expectedCanParse)
-            {
-                Assert.Equal(expectedParseResult, Enum.Parse(typeof(SimpleEnum), value));
-            }
-            else
-            {
-                Assert.Throws<ArgumentException>(() => Enum.Parse(typeof(SimpleEnum), value));
-            }
+            Assert.Equal(expected, Enum.Parse(expected.GetType(), value));
         }
 
-        Assert.Equal(expectedCanParse, Enum.TryParse(value, ignoreCase, out e));
-        Assert.Equal(expectedParseResult, e);
+        Assert.True(Enum.TryParse(value, ignoreCase, out result));
+        Assert.Equal(expected, result);
 
-        if (expectedCanParse)
+        Assert.Equal(expected, Enum.Parse(expected.GetType(), value, ignoreCase));
+    }
+
+    [Theory]
+    [InlineData(null, "", false, typeof(ArgumentNullException))]
+    [InlineData(typeof(SimpleEnum), null, false, typeof(ArgumentNullException))]
+    [InlineData(typeof(object), "", false, typeof(ArgumentException))]
+    [InlineData(typeof(SimpleEnum), "", false, typeof(ArgumentException))]
+    [InlineData(typeof(SimpleEnum), "    \t", false, typeof(ArgumentException))]
+    [InlineData(typeof(SimpleEnum), " red ", false, typeof(ArgumentException))]
+    [InlineData(typeof(SimpleEnum), "Purple", false, typeof(ArgumentException))]
+    [InlineData(typeof(SimpleEnum), ",Red", false, typeof(ArgumentException))]
+    [InlineData(typeof(SimpleEnum), "Red,", false, typeof(ArgumentException))]
+    [InlineData(typeof(SimpleEnum), "B,", false, typeof(ArgumentException))]
+    [InlineData(typeof(SimpleEnum), " , , ,", false, typeof(ArgumentException))]
+    [InlineData(typeof(SimpleEnum), "Red,Blue,", false, typeof(ArgumentException))]
+    [InlineData(typeof(SimpleEnum), "Red,,Blue", false, typeof(ArgumentException))]
+    [InlineData(typeof(SimpleEnum), "Red,Blue, ", false, typeof(ArgumentException))]
+    [InlineData(typeof(SimpleEnum), "Red Blue", false, typeof(ArgumentException))]
+    [InlineData(typeof(SimpleEnum), "1,Blue", false, typeof(ArgumentException))]
+    [InlineData(typeof(SimpleEnum), "Blue,1", false, typeof(ArgumentException))]
+    [InlineData(typeof(SimpleEnum), "Blue, 1", false, typeof(ArgumentException))]
+    [InlineData(typeof(SimpleEnum), "2147483649", false, typeof(ArgumentException))]
+    [InlineData(typeof(SimpleEnum), "2147483648", false, typeof(OverflowException))]
+    public static void TestParse_Invalid(Type enumType, string value, bool ignoreCase, Type exceptionType)
+    {
+        SimpleEnum result;
+        if (!ignoreCase)
         {
-            Assert.Equal(expectedParseResult, Enum.Parse(typeof(SimpleEnum), value, ignoreCase));
+            Assert.False(Enum.TryParse(value, out result));
+            Assert.Equal(default(SimpleEnum), result);
+
+            Assert.Throws(exceptionType, () => Enum.Parse(enumType, value));
         }
-        else
-        {
-            Assert.Throws<ArgumentException>(() => Enum.Parse(typeof(SimpleEnum), value, ignoreCase));
-        }
+
+        Assert.False(Enum.TryParse(value, ignoreCase, out result));
+        Assert.Equal(default(SimpleEnum), result);
+
+        Assert.Throws(exceptionType, () => Enum.Parse(enumType, value, ignoreCase));
     }
 
     [Theory]
@@ -86,7 +91,7 @@ public static class EnumTests
     }
 
     [Fact]
-    public static void TestGetNameMultipleMatches()
+    public static void TestGetName_MultipleMatches()
     {
         // In the case of multiple matches, GetName returns one of them (which one is an implementation detail.)
         string s = Enum.GetName(typeof(SimpleEnum), 3);
@@ -94,7 +99,7 @@ public static class EnumTests
     }
 
     [Fact]
-    public static void TestGetNameInvalid()
+    public static void TestGetName_Invalid()
     {
         Type t = typeof(SimpleEnum);
         Assert.Throws<ArgumentNullException>("enumType", () => Enum.GetName(null, 1)); // Enum type is null
@@ -106,61 +111,53 @@ public static class EnumTests
     }
 
     [Theory]
-    [InlineData(0xffffffffffffff80LU, "Min")]
-    [InlineData(0xffffff80u, null)]
-    [InlineData(unchecked((int)(0xffffff80u)), "Min")]
-    [InlineData(true, "One")]
-    [InlineData((char)1, "One")]
-    [InlineData(SimpleEnum.Red, "One")] // API doesn't care if you pass in a completely different enum
-    public static void TestGetNameNonIntegralTypes(object value, string expected)
+    [InlineData(typeof(SByteEnum), 0xffffffffffffff80LU, "Min")]
+    [InlineData(typeof(SByteEnum), 0xffffff80u, null)]
+    [InlineData(typeof(SByteEnum), unchecked((int)(0xffffff80u)), "Min")]
+    [InlineData(typeof(SByteEnum), true, "One")]
+    [InlineData(typeof(SByteEnum), (char)1, "One")]
+    [InlineData(typeof(SByteEnum), SimpleEnum.Red, "One")] // API doesn't care if you pass in a completely different enum
+    public static void TestGetName_NonIntegralTypes(Type enumType, object value, string expected)
     {
-        /*
-            * Despite what MSDN says, GetName() does not require passing in the exact integral type.
-            * 
-            * For the purposes of comparison:
-            * 
-            *  - The enum member value are normalized as follows:
-            *    - unsigned ints zero-extended to 64-bits
-            *    - signed ints sign-extended to 64-bits
-            *
-            *  - The value passed in as an argument to GetNames() is normalized as follows:
-            *    - unsigned ints zero-extended to 64-bits
-            *    - signed ints sign-extended to 64-bits
-            *
-            *  Then comparison is done on all 64 bits.
-            */
-        string s = Enum.GetName(typeof(SByteEnum), value);
-        Assert.Equal(expected, s);
+        // Despite what MSDN says, GetName() does not require passing in the exact integral type. 
+        // For the purposes of comparison: 
+        //  - The enum member value are normalized as follows:
+        //      - unsigned ints zero-extended to 64-bits
+        //      - signed ints sign-extended to 64-bits
+        //  - The value passed in as an argument to GetNames() is normalized as follows:
+        //      - unsigned ints zero-extended to 64-bits
+        //      - signed ints sign-extended to 64-bits
+        // Then comparison is done on all 64 bits.
+        Assert.Equal(expected, Enum.GetName(enumType, value));
     }
 
     [Theory]
-    [InlineData(typeof(SimpleEnum), "Red", true)] //string
+    [InlineData(typeof(SimpleEnum), "Red", true)] // String
     [InlineData(typeof(SimpleEnum), "Green", true)]
     [InlineData(typeof(SimpleEnum), "Blue", true)]
     [InlineData(typeof(SimpleEnum), " Blue", false)]
     [InlineData(typeof(SimpleEnum), "blue", false)]
     [InlineData(typeof(SimpleEnum), "", false)]
-    [InlineData(typeof(SimpleEnum), SimpleEnum.Red, true)] //Enum
+    [InlineData(typeof(SimpleEnum), SimpleEnum.Red, true)] // Enum
     [InlineData(typeof(SimpleEnum), (SimpleEnum)99, false)]
     [InlineData(typeof(SimpleEnum), 1, true)] // Integer
     [InlineData(typeof(SimpleEnum), 99, false)]
     [InlineData(typeof(Int32Enum), 0x1 | 0x02, false)] // "Combos" do not pass
-    public static void TestIsDefined(Type t, object value, bool expected)
+    public static void TestIsDefined(Type enumType, object value, bool expected)
     {
-        bool b = Enum.IsDefined(t, value);
-        Assert.Equal(expected, b);
+        Assert.Equal(expected, Enum.IsDefined(enumType, value));
     }
 
     [Fact]
-    public static void TestIsDefinedInvalid()
+    public static void TestIsDefined_Invalid()
     {
         Type t = typeof(SimpleEnum);
-        
+
         Assert.Throws<ArgumentNullException>("enumType", () => Enum.IsDefined(null, 1)); // Enum type is null
         Assert.Throws<ArgumentNullException>("value", () => Enum.IsDefined(t, null)); // Value is null
 
         Assert.Throws<ArgumentException>(null, () => Enum.IsDefined(t, Int32Enum.One)); // Value is different enum type
-                                                                                           
+
         // Value is not a valid type (MSDN claims this should throw InvalidOperationException)
         Assert.Throws<ArgumentException>(null, () => Enum.IsDefined(t, true));
         Assert.Throws<ArgumentException>(null, () => Enum.IsDefined(t, 'a'));
@@ -170,102 +167,83 @@ public static class EnumTests
         Assert.Throws<InvalidOperationException>(() => Enum.IsDefined(t, 5.5));
         Assert.Throws<InvalidOperationException>(() => Enum.IsDefined(t, 5.5f));
     }
-    
+
+    [Theory]
+    [InlineData((Int32Enum)0x3f06, (Int32Enum)0x3000, true)]
+    [InlineData((Int32Enum)0x3f06, (Int32Enum)0x1000, true)]
+    [InlineData((Int32Enum)0x3f06, (Int32Enum)0x0000, true)]
+    [InlineData((Int32Enum)0x3f06, (Int32Enum)0x3f06, true)]
+    [InlineData((Int32Enum)0x3f06, (Int32Enum)0x0010, false)]
+    [InlineData((Int32Enum)0x3f06, (Int32Enum)0x3f16, false)]
+    public static void TestHasFlag(Enum e, Enum flag, bool expected)
+    {
+        Assert.Equal(expected, e.HasFlag(flag));
+    }
+
     [Fact]
-    public static void TestHasFlagInvalid()
+    public static void TestHasFlag_Invalid()
     {
         Int32Enum e = (Int32Enum)0x3f06;
 
         Assert.Throws<ArgumentNullException>("flag", () => e.HasFlag(null)); // Flag is null
-        Assert.Throws<ArgumentException>(null, () => e.HasFlag((SimpleEnum)0x2)); // Different enum type
+        Assert.Throws<ArgumentException>(null, () => e.HasFlag((SimpleEnum)0x3000)); // Enum is not the same type as the instance
     }
 
     [Theory]
-    [InlineData((Int32Enum)0x3000, true)]
-    [InlineData((Int32Enum)0x1000, true)]
-    [InlineData((Int32Enum)0x0000, true)]
-    [InlineData((Int32Enum)0x3f06, true)]
-    [InlineData((Int32Enum)0x0010, false)]
-    [InlineData((Int32Enum)0x3f16, false)]    
-    public static void TestHasFlag(Enum flag, bool expected)
+    [InlineData(typeof(SByteEnum), (sbyte)42, (SByteEnum)42)]
+    [InlineData(typeof(SByteEnum), (SByteEnum)0x42, (SByteEnum)0x42)]
+    [InlineData(typeof(UInt64Enum), (ulong)0x0123456789abcdefL, (UInt64Enum)0x0123456789abcdefL)]
+    [InlineData(typeof(ByteEnum), (ulong)0x0ccccccccccccc2aL, (ByteEnum)0x2a)] // Value overflows
+    [InlineData(typeof(Int32Enum), false, (Int32Enum)0)] // Value is a bool
+    [InlineData(typeof(Int32Enum), true, (Int32Enum)1)] // Value is a bool
+    [InlineData(typeof(Int32Enum), 'a', (Int32Enum)97)] // Value is a char
+    [InlineData(typeof(Int32Enum), 'b', (Int32Enum)98)] // Value is a char
+    public static void TestToObject(Type enumType, object value, object expected)
     {
-        Int32Enum e = (Int32Enum)0x3f06;
-
-        bool b = e.HasFlag(flag);
-        Assert.Equal(expected, b);
+        Assert.Equal(expected, Enum.ToObject(enumType, value));
     }
 
     [Fact]
-    public static void TestToObject()
-    {
-        TestToObjectVerifySuccess<SByteEnum, sbyte>(42);
-        TestToObjectVerifySuccess<SByteEnum, SByteEnum>((SByteEnum)0x42);
-        TestToObjectVerifySuccess<UInt64Enum, ulong>(0x0123456789abcdefL);
-
-        ulong l = 0x0ccccccccccccc2aL;
-        ByteEnum e = (ByteEnum)(Enum.ToObject(typeof(ByteEnum), l));
-        Assert.True((sbyte)e == 0x2a);
-    }
-
-    private static void TestToObjectVerifySuccess<E, T>(T value)
-    {
-        object oValue = value;
-        object e = Enum.ToObject(typeof(E), oValue);
-        Assert.Equal(e.GetType(), typeof(E));
-        E expected = (E)(object)(value);
-        object oExpected = (object)expected; // Workaround for Bartok codegen bug: Calling Object methods on enum through type variable fails (due to missing box)
-        Assert.True(oExpected.Equals(e));
-    }
-
-    [Fact]
-    public static void TestToObjectInvalid()
+    public static void TestToObject_Invalid()
     {
         Assert.Throws<ArgumentNullException>("enumType", () => Enum.ToObject(null, 3)); // Enum type is null
         Assert.Throws<ArgumentNullException>("value", () => Enum.ToObject(typeof(SimpleEnum), null)); // Value is null
-
         Assert.Throws<ArgumentException>("enumType", () => Enum.ToObject(typeof(Enum), 1)); // Enum type is simply an enum
-        Assert.Throws<ArgumentException>("value", () => Enum.ToObject(typeof(SimpleEnum), "Hello")); //Value is not a supported enum type
+        Assert.Throws<ArgumentException>("value", () => Enum.ToObject(typeof(SimpleEnum), "Hello")); // Value is not a supported enum type
     }
-
-    [Fact]
-    public static void TestHashCode()
+    
+    [Theory]
+    [InlineData((Int64Enum)42, (Int64Enum)42, true, true)]
+    [InlineData((Int64Enum)42, null, false, false)]
+    [InlineData((Int64Enum)42, (long)42, false, true)]
+    [InlineData((Int64Enum)42, (Int32Enum)42, false, true)]
+    [InlineData((Int64Enum)42, (Int64Enum)43, false, false)]
+    [InlineData((Int64Enum)42, (Int64Enum)0x700000000000002aL, false, false)]
+    public static void TestEquals(Enum e, object obj, bool expected, bool hashExpected)
     {
-        SimpleEnum e = (SimpleEnum)42;
-        int h = e.GetHashCode();
-        int h2 = e.GetHashCode();
-        Assert.Equal(h, h2);
+        Assert.Equal(expected, e.Equals(obj));
+        Assert.Equal(e.GetHashCode(), e.GetHashCode());
+        if (obj != null)
+        {
+            Assert.Equal(hashExpected, e.GetHashCode().Equals(obj.GetHashCode()));
+        }
     }
 
     [Theory]
-    [InlineData(null, false)]
-    [InlineData((long)42, false)]
-    [InlineData((Int32Enum)42, false)]
-    [InlineData((Int64Enum)43, false)]
-    [InlineData((Int64Enum)0x700000000000002aL, false)]
-    [InlineData((Int64Enum)42, true)]
-    public static void TestEquals(object obj, bool expected)
+    [InlineData(SimpleEnum.Red, SimpleEnum.Red, 0)]
+    [InlineData(SimpleEnum.Red, (SimpleEnum)0, 1)]
+    [InlineData(SimpleEnum.Red, (SimpleEnum)2, -1)]
+    [InlineData(SimpleEnum.Green, SimpleEnum.Green_a, 0)]
+    [InlineData(SimpleEnum.Red, null, 1)]
+    public static void TestCompareTo(Enum e, object target, int expected)
     {
-        Int64Enum e = (Int64Enum)42;
-        bool b = e.Equals(obj);
-        Assert.Equal(expected, b);
-    }
-
-    [Theory]
-    [InlineData(null, 1)] // Special case: All values are "greater than" null
-    [InlineData(SimpleEnum.Red, 0)]
-    [InlineData((SimpleEnum)0, 1)]
-    [InlineData((SimpleEnum)2, -1)]
-    public static void TestCompareTo(object target, int expected)
-    {
-        SimpleEnum e = SimpleEnum.Red;
-        int i = CompareHelper.NormalizeCompare(e.CompareTo(target));
-        Assert.Equal(expected, i);
+        Assert.Equal(expected, Math.Sign(e.CompareTo(target)));
     }
 
     [Fact]
-    public static void TestCompareToInvalid()
+    public static void TestCompareTo_Invalid()
     {
-        Assert.Throws<ArgumentException>(null, () => SimpleEnum.Red.CompareTo((sbyte)1)); //Target is an enum type
+        Assert.Throws<ArgumentException>(null, () => SimpleEnum.Red.CompareTo((sbyte)1)); // Target is not an enum type
         Assert.Throws<ArgumentException>(null, () => SimpleEnum.Red.CompareTo(Int32Enum.One)); //Target is a different enum type
     }
 
@@ -284,61 +262,68 @@ public static class EnumTests
     }
 
     [Fact]
-    public static void TestGetUnderlyingTypeInvalid()
+    public static void TestGetUnderlyingType_Invalid()
     {
         Assert.Throws<ArgumentNullException>("enumType", () => Enum.GetUnderlyingType(null)); // Enum type is null
         Assert.Throws<ArgumentException>("enumType", () => Enum.GetUnderlyingType(typeof(Enum))); // Enum type is simply an enum
     }
 
     [Theory]
-    [InlineData(typeof(SimpleEnum), 
-        new[] { "Red", "Blue", "Green", "Green_a", "Green_b", "B" },
-        new object[] { SimpleEnum.Red, SimpleEnum.Blue, SimpleEnum.Green, SimpleEnum.Green_a, SimpleEnum.Green_b, SimpleEnum.B })]
+    [InlineData(typeof(SimpleEnum),
+            new string[] { "Red", "Blue", "Green", "Green_a", "Green_b", "B" },
+            new SimpleEnum[] { SimpleEnum.Red, SimpleEnum.Blue, SimpleEnum.Green, SimpleEnum.Green_a, SimpleEnum.Green_b, SimpleEnum.B })]
 
     [InlineData(typeof(ByteEnum),
-        new[] { "Min", "One", "Two", "Max" },
-        new object[] { ByteEnum.Min, ByteEnum.One, ByteEnum.Two, ByteEnum.Max })]
+            new string[] { "Min", "One", "Two", "Max" },
+            new ByteEnum[] { ByteEnum.Min, ByteEnum.One, ByteEnum.Two, ByteEnum.Max })]
 
     [InlineData(typeof(SByteEnum),
-        new[] { "One", "Two", "Max", "Min" },
-        new object[] { SByteEnum.One, SByteEnum.Two, SByteEnum.Max, SByteEnum.Min })]
+            new string[] { "One", "Two", "Max", "Min" },
+            new SByteEnum[] { SByteEnum.One, SByteEnum.Two, SByteEnum.Max, SByteEnum.Min })]
 
     [InlineData(typeof(UInt16Enum),
-        new[] { "Min", "One", "Two", "Max" },
-        new object[] { UInt16Enum.Min, UInt16Enum.One, UInt16Enum.Two, UInt16Enum.Max })]
+            new string[] { "Min", "One", "Two", "Max" },
+            new UInt16Enum[] { UInt16Enum.Min, UInt16Enum.One, UInt16Enum.Two, UInt16Enum.Max })]
 
     [InlineData(typeof(Int16Enum),
-        new[] { "One", "Two", "Max", "Min" },
-        new object[] { Int16Enum.One, Int16Enum.Two, Int16Enum.Max, Int16Enum.Min })]
+            new string[] { "One", "Two", "Max", "Min" },
+            new Int16Enum[] { Int16Enum.One, Int16Enum.Two, Int16Enum.Max, Int16Enum.Min })]
 
     [InlineData(typeof(UInt32Enum),
-        new[] { "Min", "One", "Two", "Max" },
-        new object[] { UInt32Enum.Min, UInt32Enum.One, UInt32Enum.Two, UInt32Enum.Max })]
+            new string[] { "Min", "One", "Two", "Max" },
+            new UInt32Enum[] { UInt32Enum.Min, UInt32Enum.One, UInt32Enum.Two, UInt32Enum.Max })]
 
     [InlineData(typeof(Int32Enum),
-        new[] { "One", "Two", "Max", "Min" },
-        new object[] { Int32Enum.One, Int32Enum.Two, Int32Enum.Max, Int32Enum.Min })]
+            new string[] { "One", "Two", "Max", "Min" },
+            new Int32Enum[] { Int32Enum.One, Int32Enum.Two, Int32Enum.Max, Int32Enum.Min })]
 
     [InlineData(typeof(UInt64Enum),
-        new[] { "Min", "One", "Two", "Max" },
-        new object[] { UInt64Enum.Min, UInt64Enum.One, UInt64Enum.Two, UInt64Enum.Max })]
+            new string[] { "Min", "One", "Two", "Max" },
+            new UInt64Enum[] { UInt64Enum.Min, UInt64Enum.One, UInt64Enum.Two, UInt64Enum.Max })]
 
     [InlineData(typeof(Int64Enum),
-        new[] { "One", "Two", "Max", "Min" },
-        new object[] { Int64Enum.One, Int64Enum.Two, Int64Enum.Max, Int64Enum.Min })]
-
-    public static void TestGetNamesAndValues(Type t, string[] expectedNames, object[] expectedValues)
+            new string[] { "One", "Two", "Max", "Min" },
+            new Int64Enum[] { Int64Enum.One, Int64Enum.Two, Int64Enum.Max, Int64Enum.Min })]
+    public static void TestGetNames_GetValues(Type enumType, string[] expectedNames, Array expectedValues)
     {
-        string[] names = Enum.GetNames(t);
-        Array values = Enum.GetValues(t);
-        Assert.Equal(names.Length, values.Length);
-
-        for (int i = 0; i < names.Length; i++)
-        {
-            Assert.Equal(expectedNames[i], names[i]);
-            Assert.Equal(expectedValues[i], values.GetValue(i));
-        }
+        Assert.Equal(expectedNames, Enum.GetNames(enumType));
+        Assert.Equal(expectedValues, Enum.GetValues(enumType));
     }
+
+    [Fact]
+    public static void TestGetNames_Invalid()
+    {
+        Assert.Throws<ArgumentNullException>("enumType", () => Enum.GetNames(null)); // Enum type is null
+        Assert.Throws<ArgumentException>("enumType", () => Enum.GetNames(typeof(object))); // Enum type is not an enum
+    }
+
+    [Fact]
+    public static void TestGetValues_Invalid()
+    {
+        Assert.Throws<ArgumentNullException>("enumType", () => Enum.GetValues(null)); // Enum type is null
+        Assert.Throws<ArgumentException>("enumType", () => Enum.GetValues(typeof(object))); // Enum type is not an enum
+    }
+
 
     [Theory]
     // Format: "D"
@@ -389,7 +374,8 @@ public static class EnumTests
     [InlineData(Int64Enum.Two, "D", "2")]
     [InlineData((Int64Enum)99, "D", "99")]
     [InlineData(Int64Enum.Max, "D", "9223372036854775807")]
-    //Format "X": value in hex form without a leading "0x"
+
+    // Format "X": value in hex form without a leading "0x"
     [InlineData(ByteEnum.Min, "X", "00")]
     [InlineData(ByteEnum.One, "X", "01")]
     [InlineData(ByteEnum.Two, "X", "02")]
@@ -454,7 +440,7 @@ public static class EnumTests
     [InlineData((ByteEnum)0, "F", "Min")]
     [InlineData((ByteEnum)3, "F", "One, Two")]
     [InlineData((ByteEnum)0xff, "F", "Max")] // Larger values take precedence (and remove the bits from consideration.)
-                                             
+
     // Format "G": If value is equal to a named enumerated constant, the name of that constant is returned.
     // Otherwise, if "[Flags]" present, do as Format "F" - else return the decimal value of "value".
     [InlineData(SimpleEnum.Red, "G", "Red")]
@@ -466,14 +452,22 @@ public static class EnumTests
     [InlineData((ByteEnum)3, "G", "3")] // No [Flags] attribute
     [InlineData((ByteEnum)0xff, "F", "Max")] // Larger values take precedence (and remove the bits from consideration.)
     [InlineData(AttributeTargets.Class | AttributeTargets.Delegate, "F", "Class, Delegate")] // [Flags] attribute
-    public static void TestFormat(Enum e, string format, string expected)
+    public static void TestToString_Format(Enum e, string format, string expected)
     {
-        string s = e.ToString(format);
-        Assert.Equal(expected, s);
+        if (format.ToUpperInvariant() == "G")
+        {
+            Assert.Equal(expected, e.ToString());
+            Assert.Equal(expected, e.ToString(""));
+            Assert.Equal(expected, e.ToString(null));
+        }
+        // Format string is non-case-sensitive
+        Assert.Equal(expected, e.ToString(format));
+        Assert.Equal(expected, e.ToString(format.ToUpperInvariant()));
+        Assert.Equal(expected, e.ToString(format.ToLowerInvariant()));
     }
 
     [Fact]
-    public static void TestFormatMultipleMatches()
+    public static void TestToString_Format_MultipleMatches()
     {
         string s = ((SimpleEnum)3).ToString("F");
         Assert.True(s == "Green" || s == "Green_a" || s == "Green_b");
@@ -482,28 +476,52 @@ public static class EnumTests
         Assert.True(s == "Green" || s == "Green_a" || s == "Green_b");
     }
 
-    [Theory]
-    [InlineData(SimpleEnum.Red, "Red")]
-    [InlineData(1, "Red")] // Underlying integral
-    public static void TestFormat(object value, string expected)
+    [Fact]
+    public static void TestToString_Format_Invalid()
     {
-        string s = Enum.Format(typeof(SimpleEnum), value, "F");
-        Assert.Equal(expected, s);
+        SimpleEnum e = SimpleEnum.Red;
+
+        Assert.Throws<FormatException>(() => e.ToString("   \t")); // Format is whitepsace
+        Assert.Throws<FormatException>(() => e.ToString("y")); // No such format
+    }
+
+    [Theory]
+    // Format: D
+    [InlineData(typeof(SimpleEnum), SimpleEnum.Red, "D", "1")]
+    [InlineData(typeof(SimpleEnum), 1, "D", "1")]
+    // Format: X
+    [InlineData(typeof(SimpleEnum), SimpleEnum.Red, "X", "00000001")]
+    [InlineData(typeof(SimpleEnum), 1, "X", "00000001")]
+    // Format: G
+    [InlineData(typeof(SimpleEnum), SimpleEnum.Red, "G", "Red")]
+    [InlineData(typeof(SimpleEnum), 1, "G", "Red")]
+    // Format: F
+    [InlineData(typeof(SimpleEnum), SimpleEnum.Red, "F", "Red")]
+    [InlineData(typeof(SimpleEnum), 1, "F", "Red")]
+    public static void TestFormat(Type enumType, object value, string format, string expected)
+    {
+        // Format string is case insensitive
+        Assert.Equal(expected, Enum.Format(enumType, value, format.ToUpperInvariant()));
+        Assert.Equal(expected, Enum.Format(enumType, value, format.ToLowerInvariant()));
     }
 
     [Fact]
-    public static void TestFormatInvalid()
+    public static void TestFormat_Invalid()
     {
         Assert.Throws<ArgumentNullException>("enumType", () => Enum.Format(null, (Int32Enum)1, "F")); // Enum type is null
         Assert.Throws<ArgumentNullException>("value", () => Enum.Format(typeof(SimpleEnum), null, "F")); // Value is null
-        
+        Assert.Throws<ArgumentNullException>("format", () => Enum.Format(typeof(SimpleEnum), SimpleEnum.Red, null)); // Format is null
+
         Assert.Throws<ArgumentException>("enumType", () => Enum.Format(typeof(object), 1, "F")); // Enum type is not an enum type
-        
+
         Assert.Throws<ArgumentException>(null, () => Enum.Format(typeof(SimpleEnum), (Int32Enum)1, "F")); // Value is of the wrong enum type
-        
+
         Assert.Throws<ArgumentException>(null, () => Enum.Format(typeof(SimpleEnum), (short)1, "F")); // Value is of the wrong integral
         Assert.Throws<ArgumentException>(null, () => Enum.Format(typeof(SimpleEnum), "Red", "F")); // Value is of the wrong integral
-        Assert.Throws<FormatException>(() => SimpleEnum.Red.ToString("t")); // Invalid format type
+
+        Assert.Throws<FormatException>(() => Enum.Format(typeof(SimpleEnum), SimpleEnum.Red, "")); // Format is empty
+        Assert.Throws<FormatException>(() => Enum.Format(typeof(SimpleEnum), SimpleEnum.Red, "   \t")); // Format is whitespace
+        Assert.Throws<FormatException>(() => Enum.Format(typeof(SimpleEnum), SimpleEnum.Red, "t")); // No such format
     }
 
     private enum SimpleEnum
