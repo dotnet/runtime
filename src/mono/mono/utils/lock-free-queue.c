@@ -61,6 +61,9 @@
 #define END_MARKER	((MonoLockFreeQueueNode *volatile)-2)
 #define FREE_NEXT	((MonoLockFreeQueueNode *volatile)-3)
 
+/*
+ * Initialize a lock-free queue in-place at @q.
+ */
 void
 mono_lock_free_queue_init (MonoLockFreeQueue *q)
 {
@@ -77,17 +80,30 @@ mono_lock_free_queue_init (MonoLockFreeQueue *q)
 	q->has_dummy = 1;
 }
 
+/*
+ * Initialize @node's state. If @poison is TRUE, @node may not be enqueued to a
+ * queue - @mono_lock_free_queue_node_unpoison must be called first; otherwise,
+ * the node can be enqueued right away.
+ *
+ * The poisoning feature is mainly intended for ensuring correctness in complex
+ * lock-free code that uses the queue. For example, in some code that reuses
+ * nodes, nodes can be poisoned when they're dequeued, and then unpoisoned and
+ * enqueued in their hazard free callback.
+ */
 void
-mono_lock_free_queue_node_init (MonoLockFreeQueueNode *node, gboolean to_be_freed)
+mono_lock_free_queue_node_init (MonoLockFreeQueueNode *node, gboolean poison)
 {
-	node->next = to_be_freed ? INVALID_NEXT : FREE_NEXT;
+	node->next = poison ? INVALID_NEXT : FREE_NEXT;
 #ifdef QUEUE_DEBUG
 	node->in_queue = FALSE;
 #endif
 }
 
+/*
+ * Unpoisons @node so that it may be enqueued.
+ */
 void
-mono_lock_free_queue_node_free (MonoLockFreeQueueNode *node)
+mono_lock_free_queue_node_unpoison (MonoLockFreeQueueNode *node)
 {
 	g_assert (node->next == INVALID_NEXT);
 #ifdef QUEUE_DEBUG
@@ -96,6 +112,10 @@ mono_lock_free_queue_node_free (MonoLockFreeQueueNode *node)
 	node->next = FREE_NEXT;
 }
 
+/*
+ * Enqueue @node to @q. @node must have been initialized by a prior call to
+ * @mono_lock_free_queue_node_init, and must not be in a poisoned state.
+ */
 void
 mono_lock_free_queue_enqueue (MonoLockFreeQueue *q, MonoLockFreeQueueNode *node)
 {
@@ -158,7 +178,7 @@ static void
 free_dummy (gpointer _dummy)
 {
 	MonoLockFreeQueueDummy *dummy = (MonoLockFreeQueueDummy *) _dummy;
-	mono_lock_free_queue_node_free (&dummy->node);
+	mono_lock_free_queue_node_unpoison (&dummy->node);
 	g_assert (dummy->in_use);
 	mono_memory_write_barrier ();
 	dummy->in_use = 0;
@@ -208,6 +228,11 @@ try_reenqueue_dummy (MonoLockFreeQueue *q)
 	return TRUE;
 }
 
+/*
+ * Dequeues a node from @q. Returns NULL if no nodes are available. The returned
+ * node is hazardous and must be freed with @mono_thread_hazardous_try_free or
+ * @mono_thread_hazardous_queue_free - it must not be freed directly.
+ */
 MonoLockFreeQueueNode*
 mono_lock_free_queue_dequeue (MonoLockFreeQueue *q)
 {
