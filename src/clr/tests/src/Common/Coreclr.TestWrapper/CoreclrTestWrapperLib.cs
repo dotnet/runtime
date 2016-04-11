@@ -16,13 +16,19 @@ namespace CoreclrTestLib
     public class CoreclrTestWrapperLib
     {
         public const int EXIT_SUCCESS_CODE = 0;
+        public const string TIMEOUT_ENVIRONMENT_VAR = "__TestTimeout";
+        public const int DEFAULT_TIMEOUT = 1000 * 60*10;
 
         public int RunTest(string executable, string outputFile, string errorFile)
         {
             Debug.Assert(outputFile != errorFile);
 
             int exitCode = -100;
-            int timeout = 1000 * 60*10;
+            
+            // If a timeout was given to us by an environment variable, use it instead of the default
+            // timeout.
+            string environmentVar = Environment.GetEnvironmentVariable(TIMEOUT_ENVIRONMENT_VAR);
+            int timeout = environmentVar != null ? int.Parse(environmentVar) : DEFAULT_TIMEOUT;
 
             var outputStream = new FileStream(outputFile, FileMode.Create);
             var errorStream = new FileStream(errorFile, FileMode.Create);

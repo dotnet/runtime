@@ -490,9 +490,6 @@
     <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\BaseFinal\basefinal\*">
       <Issue>3392</Issue>
     </ExcludeList>
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Coverage\concurrentspin2\*">
-      <Issue>3392</Issue>
-    </ExcludeList>
     <ExcludeList Include="$(XunitTestBinBase)\GC\Coverage\smalloom\*">
       <Issue>3392</Issue>
     </ExcludeList>
