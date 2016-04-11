@@ -136,6 +136,7 @@ namespace System.Globalization.Tests
         public void ToFourDigitYear(int year, int expected)
         {
             PersianCalendar calendar = new PersianCalendar();
+            calendar.TwoDigitYearMax = 1410; // Set to the default
             Assert.Equal(expected, calendar.ToFourDigitYear(year));
         }
 
