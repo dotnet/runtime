@@ -296,7 +296,7 @@ protected:
     // Prolog functions and data (there are a few exceptions for more generally used things)
     //
 
-
+    void                genEstablishFramePointer(int delta, bool reportUnwindData);
     void                genFnPrologCalleeRegArgs(regNumber xtraReg,                                            
                                                  bool *    pXtraRegClobbered,
                                                  RegState *regState);
