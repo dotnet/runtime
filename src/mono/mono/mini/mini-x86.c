@@ -1142,8 +1142,8 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		if (inst->opcode != OP_REGVAR) {
 			inst->opcode = OP_REGOFFSET;
 			inst->inst_basereg = X86_EBP;
+			inst->inst_offset = ainfo->offset + ARGS_OFFSET;
 		}
-		inst->inst_offset = ainfo->offset + ARGS_OFFSET;
 	}
 
 	cfg->stack_offset = offset;
@@ -5133,6 +5133,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	MonoBasicBlock *bb;
 	MonoMethodSignature *sig;
 	MonoInst *inst;
+	CallInfo *cinfo;
+	ArgInfo *ainfo;
 	int alloc_size, pos, max_offset, i, cfa_offset;
 	guint8 *code;
 	gboolean need_stack_frame;
@@ -5392,11 +5394,14 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	sig = mono_method_signature (method);
 	pos = 0;
 
+	cinfo = (CallInfo *)cfg->arch.cinfo;
+
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		inst = cfg->args [pos];
+		ainfo = &cinfo->args [pos];
 		if (inst->opcode == OP_REGVAR) {
 			g_assert (need_stack_frame);
-			x86_mov_reg_membase (code, inst->dreg, X86_EBP, inst->inst_offset, 4);
+			x86_mov_reg_membase (code, inst->dreg, X86_EBP, ainfo->offset + ARGS_OFFSET, 4);
 			if (cfg->verbose_level > 2)
 				g_print ("Argument %d assigned to register %s\n", pos, mono_arch_regname (inst->dreg));
 		}
