@@ -14,7 +14,6 @@
       <TargetFramework>netstandard1.0</TargetFramework>
     </ProjectReference>
     <ProjectReference Include="@(Package->'$(SourceDir)%(Identity)/pkg/%(Identity).pkgproj')" />
-    <!--ProjectReference Include="..\Microsoft.NETCore.Runtime\Microsoft.NETCore.Runtime.nuproj" /-->
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
