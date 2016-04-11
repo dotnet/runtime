@@ -72,18 +72,21 @@ if(PAL_CMAKE_PLATFORM_ARCH_AMD64)
   set(ARCH_SOURCES
     arch/i386/context2.S
     arch/i386/debugbreak.S
+    arch/i386/exceptionhelper.S
     arch/i386/processor.cpp
   )
 elseif(PAL_CMAKE_PLATFORM_ARCH_ARM)
   set(ARCH_SOURCES
     arch/arm/context2.S
     arch/arm/debugbreak.S
+    arch/arm/exceptionhelper.S
     arch/arm/processor.cpp
   )
 elseif(PAL_CMAKE_PLATFORM_ARCH_ARM64)
   set(ARCH_SOURCES
     arch/arm64/context2.S
     arch/arm64/debugbreak.S
+    arch/arm64/exceptionhelper.S
     arch/arm64/processor.cpp
   )
 endif()
