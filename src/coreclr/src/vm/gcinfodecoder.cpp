@@ -1169,7 +1169,7 @@ void GcSlotDecoder::DecodeSlotTable(BitStreamReader& reader)
         m_SlotArray[0].Slot.RegisterNumber = regNum;
         m_SlotArray[0].Flags = flags;
 
-        UINT32 loopEnd = min(m_NumRegisters, MAX_PREDECODED_SLOTS);
+        UINT32 loopEnd = _min(m_NumRegisters, MAX_PREDECODED_SLOTS);
         for(i++; i < loopEnd; i++)
         {
             if(flags)
@@ -1203,7 +1203,7 @@ void GcSlotDecoder::DecodeSlotTable(BitStreamReader& reader)
         m_SlotArray[i].Slot.Stack.Base = spBase;
         m_SlotArray[i].Flags = flags;
 
-        UINT32 loopEnd = min(m_NumRegisters + numStackSlots, MAX_PREDECODED_SLOTS);
+        UINT32 loopEnd = _min(m_NumRegisters + numStackSlots, MAX_PREDECODED_SLOTS);
         for(i++; i < loopEnd; i++)
         {
             spBase = (GcStackSlotBase) reader.Read(2);
@@ -1240,7 +1240,7 @@ void GcSlotDecoder::DecodeSlotTable(BitStreamReader& reader)
         m_SlotArray[i].Slot.Stack.Base = spBase;
         m_SlotArray[i].Flags = flags;
 
-        UINT32 loopEnd = min(m_NumSlots, MAX_PREDECODED_SLOTS);
+        UINT32 loopEnd = _min(m_NumSlots, MAX_PREDECODED_SLOTS);
         for(i++; i < loopEnd; i++)
         {
             spBase = (GcStackSlotBase) reader.Read(2);
@@ -1539,8 +1539,7 @@ void GcInfoDecoder::ReportRegisterToGC(  // AMD64
     LOG((LF_GCROOTS, LL_INFO1000, "Reporting " FMT_REG, regNum ));
 
     OBJECTREF* pObjRef = GetRegisterSlot( regNum, pRD );
-
-#ifdef FEATURE_PAL
+#if defined(FEATURE_PAL) && !defined(SOS_TARGET_AMD64) 
     // On PAL, we don't always have the context pointers available due to
     // a limitation of an unwinding library. In such case, the context
     // pointers for some nonvolatile registers are NULL.
@@ -1560,7 +1559,7 @@ void GcInfoDecoder::ReportRegisterToGC(  // AMD64
 
         gcFlags |= GC_CALL_PINNED;
     }
-#endif // FEATURE_PAL
+#endif // FEATURE_PAL && !SOS_TARGET_AMD64
 
 #ifdef _DEBUG
     if(IsScratchRegister(regNum, pRD))
