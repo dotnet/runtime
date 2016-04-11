@@ -11,6 +11,7 @@
     <ProjectReference Include="..\src\System.Reflection.Context.builds" />
     <InboxOnTargetFramework Include="net45" />
     <InboxOnTargetFramework Include="win8" />
+    <InboxOnTargetFramework Include="portable-net45+win8" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

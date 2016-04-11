@@ -11,6 +11,7 @@
     <ProjectReference Include="..\src\System.Reflection.Emit.ILGeneration.builds" />
     <InboxOnTargetFramework Include="net45" />
     <InboxOnTargetFramework Include="wp80" />
+    <InboxOnTargetFramework Include="portable-net45+wp8" />
     <!-- ensure that no lib is in scope for AOT since this isn't supported -->
     <File Include="$(PlaceholderFile)">
       <TargetPath>runtimes/aot/lib/netcore50</TargetPath>

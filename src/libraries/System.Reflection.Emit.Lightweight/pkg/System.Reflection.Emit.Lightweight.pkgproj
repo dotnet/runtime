@@ -11,6 +11,7 @@
     <ProjectReference Include="..\src\System.Reflection.Emit.Lightweight.builds" />
     <InboxOnTargetFramework Include="net45" />
     <InboxOnTargetFramework Include="wp80" />
+    <InboxOnTargetFramework Include="portable-net45+wp8" />
     <!-- This dependency is not suported on AOT, but that is OK since this package is
          restricted from AOT via runtime.json -->
     <SuppressDependencyError Include="System.Reflection.Emit.ILGeneration">
