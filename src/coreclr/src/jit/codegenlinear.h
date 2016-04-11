@@ -189,7 +189,7 @@
     
     void                genJmpMethod(GenTreePtr jmp);
 
-    bool                genStoreRegisterReturnInLclVar(GenTreePtr treeNode);
+    void                genMultiRegCallStoreToLocal(GenTreePtr treeNode);
 
     // Deals with codegen for muti-register struct returns.
     bool                isStructReturn(GenTreePtr treeNode);
@@ -197,19 +197,6 @@
 
     // Codegen for GT_RETURN.
     void                genReturn(GenTreePtr treeNode);
-
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-    void                getStructTypeOffset(const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR& structDesc,
-                                            var_types* type0,
-                                            var_types* type1,
-                                            unsigned __int8* offset0,
-                                            unsigned __int8* offset1);
-
-    void                getStructReturnRegisters(var_types type0,
-                                                 var_types type1,
-                                                 regNumber* retRegPtr0,
-                                                 regNumber* retRegPtr1);
-#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
     void                genLclHeap(GenTreePtr tree);
 

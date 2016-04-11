@@ -182,35 +182,21 @@ void                CodeGen::genEmitGSCookieCheck(bool pushReg)
     // a GC object pointed by RDX will not be collected.
     if (!pushReg)
     {
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-        // Handling struct returned in two registers (only applicable to System V systems)...
+        // Handle multi-reg return type values
         if (compiler->compMethodReturnsMultiRegRetType())
         {
-            // Get the return tye of the struct.
-            SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR retStructDesc;
-            compiler->eeGetSystemVAmd64PassStructInRegisterDescriptor(compiler->info.compMethodInfo->args.retTypeClass, &retStructDesc);
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+            ReturnTypeDesc retTypeDesc;
+            retTypeDesc.Initialize(compiler, compiler->info.compMethodInfo->args.retTypeClass);
 
-            assert(retStructDesc.passedInRegisters);
-
-            // In case the return type is a two-register-return, the native return type should be a struct
-            assert(varTypeIsStruct(compiler->info.compRetNativeType));
-
-            assert(retStructDesc.eightByteCount == CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
-
-            unsigned __int8 offset0 = 0;
-            unsigned __int8 offset1 = 0;
-
-            var_types type0 = TYP_UNKNOWN;
-            var_types type1 = TYP_UNKNOWN;
+            assert(retTypeDesc.GetReturnRegCount() == CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_RETURN_IN_REGISTERS);
 
             // Set the GC-ness of the struct return registers.
-            getStructTypeOffset(retStructDesc, &type0, &type1, &offset0, &offset1);
-            gcInfo.gcMarkRegPtrVal(REG_INTRET, type0);
-            gcInfo.gcMarkRegPtrVal(REG_INTRET_1, type1);
+            gcInfo.gcMarkRegPtrVal(REG_INTRET, retTypeDesc.GetReturnRegType(0));
+            gcInfo.gcMarkRegPtrVal(REG_INTRET_1, retTypeDesc.GetReturnRegType(1));
+#endif 
         }
-        else
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
-        if (compiler->compMethodReturnsRetBufAddr())
+        else if (compiler->compMethodReturnsRetBufAddr())
         {
             // This is for returning in an implicit RetBuf.
             // If the address of the buffer is returned in REG_INTRET, mark the content of INTRET as ByRef.
@@ -1528,43 +1514,35 @@ CodeGen::genStructReturn(GenTreePtr treeNode)
     {
         assert(op1->isContained());
 
-        GenTreeLclVarCommon* lclVarPtr = op1->AsLclVarCommon();
-        LclVarDsc* varDsc = &(compiler->lvaTable[lclVarPtr->gtLclNum]);
+        GenTreeLclVarCommon* lclVar = op1->AsLclVarCommon();
+        LclVarDsc* varDsc = &(compiler->lvaTable[lclVar->gtLclNum]);
         assert(varDsc->lvIsMultiRegArgOrRet);
 
-        CORINFO_CLASS_HANDLE typeHnd = varDsc->lvVerTypeInfo.GetClassHandle();
-        assert(typeHnd != nullptr);
+        ReturnTypeDesc retTypeDesc;
+        retTypeDesc.Initialize(compiler, varDsc->lvVerTypeInfo.GetClassHandle());
+        assert(retTypeDesc.GetReturnRegCount() == CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_RETURN_IN_REGISTERS);
 
-        SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
-        compiler->eeGetSystemVAmd64PassStructInRegisterDescriptor(typeHnd, &structDesc);
-        assert(structDesc.passedInRegisters);
-        assert(structDesc.eightByteCount == CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
+        var_types type0 = retTypeDesc.GetReturnRegType(0);
+        var_types type1 = retTypeDesc.GetReturnRegType(1);
 
-        regNumber retReg0 = REG_NA;
-        unsigned __int8 offset0 = 0;
-        regNumber retReg1 = REG_NA;
-        unsigned __int8 offset1 = 0;
+        regNumber reg0 = retTypeDesc.GetABIReturnReg(0);
+        regNumber reg1 = retTypeDesc.GetABIReturnReg(1);
+        assert(reg0 != REG_NA && reg1 != REG_NA);
 
-        var_types type0 = TYP_UNKNOWN;
-        var_types type1 = TYP_UNKNOWN;
+        // Move the values into the return registers     
+        getEmitter()->emitIns_R_S(ins_Load(type0), emitTypeSize(type0), reg0, lclVar->gtLclNum, 0);
+        getEmitter()->emitIns_R_S(ins_Load(type1), emitTypeSize(type1), reg1, lclVar->gtLclNum, 8);
+    }
+    else
+    {
+        // Assumption: multi-reg return value of a GT_CALL node is never spilled.
+        // TODO-BUG: support for multi-reg call nodes.
 
-        getStructTypeOffset(structDesc, &type0, &type1, &offset0, &offset1);
-        getStructReturnRegisters(type0, type1, &retReg0, &retReg1);
-
-        // Move the values into the return registers.
-        // 
-
-        assert(retReg0 != REG_NA && retReg1 != REG_NA);
-
-        getEmitter()->emitIns_R_S(ins_Load(type0), emitTypeSize(type0), retReg0, lclVarPtr->gtLclNum, offset0);
-        getEmitter()->emitIns_R_S(ins_Load(type1), emitTypeSize(type1), retReg1, lclVarPtr->gtLclNum, offset1);
+        assert(op1->OperGet() == GT_CALL);
+        assert((op1->gtFlags & GTF_SPILLED) == 0);
     }
 
-    // Nothing to do if the op1 of the return statement is a GT_CALL. The call already has the return
-    // registers in the proper return registers. 
-    // This assumes that registers never get spilled. There is an Issue 2966 created to track the need 
-    // for handling the GT_CALL case of two register returns and handle it properly for stress modes 
-    // and potential other changes that may break this assumption.
+
 #else
     assert("!unreached");
 #endif   
@@ -1948,32 +1926,34 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
         break;
 
     case GT_STORE_LCL_FLD:
-        {
-            if (!genStoreRegisterReturnInLclVar(treeNode))
-            {
-                noway_assert(targetType != TYP_STRUCT);
-                noway_assert(!treeNode->InReg());
-                assert(!varTypeIsFloating(targetType) || (targetType == treeNode->gtGetOp1()->TypeGet()));
+        {            
+            noway_assert(targetType != TYP_STRUCT);
+            noway_assert(!treeNode->InReg());
+            assert(!varTypeIsFloating(targetType) || (targetType == treeNode->gtGetOp1()->TypeGet()));
 
 #ifdef FEATURE_SIMD
-                // storing of TYP_SIMD12 (i.e. Vector3) field
-                if (treeNode->TypeGet() == TYP_SIMD12)
-                {
-                    genStoreLclFldTypeSIMD12(treeNode);
-                    break;
-                }
-#endif
-
-                GenTreePtr op1 = treeNode->gtOp.gtOp1;
-                genConsumeRegs(op1);
-                emit->emitInsBinary(ins_Store(targetType), emitTypeSize(treeNode), treeNode, op1);
+            // storing of TYP_SIMD12 (i.e. Vector3) field
+            if (treeNode->TypeGet() == TYP_SIMD12)
+            {
+                genStoreLclFldTypeSIMD12(treeNode);
+                break;
             }
+#endif                
+            GenTreePtr op1 = treeNode->gtGetOp1();
+            genConsumeRegs(op1);
+            emit->emitInsBinary(ins_Store(targetType), emitTypeSize(treeNode), treeNode, op1);
         }
         break;
 
     case GT_STORE_LCL_VAR:
-        {
-            if (!genStoreRegisterReturnInLclVar(treeNode))
+        {  
+            // var = call, where call returns a multi-reg return value
+            // case is handled separately.
+            if (treeNode->IsMultiRegCallStoreToLocal())
+            {
+                genMultiRegCallStoreToLocal(treeNode);
+            }
+            else
             {
                 noway_assert(targetType != TYP_STRUCT);
                 assert(!varTypeIsFloating(targetType) || (targetType == treeNode->gtGetOp1()->TypeGet()));
@@ -1992,7 +1972,7 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
                 }
 #endif // !defined(_TARGET_64BIT_)
 
-                GenTreePtr op1 = treeNode->gtOp.gtOp1;
+                GenTreePtr op1 = treeNode->gtGetOp1();
                 genConsumeRegs(op1);
 
                 if (treeNode->gtRegNum == REG_NA)
@@ -2033,6 +2013,7 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
                         emit->emitInsBinary(ins_Move_Extend(targetType, true), emitTypeSize(treeNode), treeNode, op1);
                     }
                 }
+
                 if (treeNode->gtRegNum != REG_NA)
                 {
                     genProduceReg(treeNode);
@@ -2631,159 +2612,67 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
     }
 }
 
-//------------------------------------------------------------------------
-// genStoreRegisterReturnInLclVar: This method handles storing double register return struct value to a 
-// local homing stack location.
+//----------------------------------------------------------------------------------
+// genMultiRegCallStoreToLocal: store multi-reg return value of a call node to a local
 //
 // Arguments:
-//    treeNode  - the tree which should be homed in local frame stack location.
+//    treeNode  -  Gentree of GT_STORE_LCL_VAR
 //
 // Return Value:
-//    For System V AMD64 sistems it returns true if this is a struct and storing of the returned
-//    register value is handled. It returns false otherwise.
-//    For all other targets returns false.
-
-bool
-CodeGen::genStoreRegisterReturnInLclVar(GenTreePtr treeNode)
-{
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-    if (varTypeIsStruct(treeNode))
-    {
-        GenTreeLclVarCommon* lclVarPtr = treeNode->AsLclVarCommon();
-
-        // TODO-Cleanup: It is not reasonable to assume that a local store of TYP_STRUCT is always a register return.
-        // There can be local SIMD references that are NOT args or returns.
-        // Furthermore, this means that there are contextual semantics for these nodes,
-        // which is very undesirable.
-
-        if (varTypeIsSIMD(treeNode))
-        {
-            noway_assert(treeNode->OperIsLocalStore());
-            if (treeNode->gtGetOp1()->OperGet() != GT_CALL)
-            {
-                return false;
-            }
-        }
-
-        noway_assert(!treeNode->InReg());
-
-        LclVarDsc * varDsc = &(compiler->lvaTable[lclVarPtr->gtLclNum]);
-
-        CORINFO_CLASS_HANDLE typeHnd = varDsc->lvVerTypeInfo.GetClassHandle();
-        assert(typeHnd != nullptr);
-        SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
-        compiler->eeGetSystemVAmd64PassStructInRegisterDescriptor(typeHnd, &structDesc);
-
-        assert(structDesc.passedInRegisters);
-
-        // The type of LclVars of TYP_STRUCT with one eightbyte is normalized.
-        assert(structDesc.eightByteCount == CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
-
-        GenTreePtr op1 = treeNode->gtOp.gtOp1;
-        genConsumeRegs(op1);
-
-        regNumber retReg0 = REG_NA;
-        regNumber retReg1 = REG_NA;
-
-        unsigned __int8 offset0 = 0;
-        unsigned __int8 offset1 = 0;
-
-        var_types type0 = TYP_UNKNOWN;
-        var_types type1 = TYP_UNKNOWN;
-
-        getStructTypeOffset(structDesc, &type0, &type1, &offset0, &offset1);
-        getStructReturnRegisters(type0, type1, &retReg0, &retReg1);
-
-        assert(retReg0 != REG_NA && retReg1 != REG_NA);
-
-        // Nothing to do if the op1 of the return statement is a GT_CALL. The call already has the return
-        // registers in the proper return registers.
-        // This assumes that registers never get spilled. There is an Issue 2966 created to track the need   
-        // for handling the GT_CALL case of two register returns and handle it properly for stress modes   
-        // and potential other changes that may break this assumption.  
-
-        getEmitter()->emitIns_S_R(ins_Store(type0), emitTypeSize(type0), retReg0, lclVarPtr->gtLclNum, offset0);
-        getEmitter()->emitIns_S_R(ins_Store(type1), emitTypeSize(type1), retReg1, lclVarPtr->gtLclNum, offset1);
-
-        return true;
-    }
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
-
-    return false;
-}
-
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-//------------------------------------------------------------------------
-// getStructReturnRegisters: Returns the return registers for a specific struct types.
+//    None
 //
-// Arguments:
-//    type0         - the type of the first eightbyte to be returned.
-//    type1         - the type of the second eightbyte to be returned.
-//    retRegPtr0    - returns the register for the first eightbyte.
-//    retRegPtr1    - returns the register for the second eightbyte.
+// Assumption:
+//    The child of store is a GT_CALL node.
 //
-
 void
-CodeGen::getStructReturnRegisters(var_types type0,
-                                  var_types type1,
-                                  regNumber* retRegPtr0,
-                                  regNumber* retRegPtr1)
+CodeGen::genMultiRegCallStoreToLocal(GenTreePtr treeNode)
 {
-    *retRegPtr0 = REG_NA;
-    *retRegPtr1 = REG_NA;
+    assert(treeNode->IsMultiRegCallStoreToLocal());
 
-    bool firstIntUsed = false;
-    bool firstFloatUsed = false;
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+    // Structs of size >=9 and <=16 are returned in two return registers on x64 Unix.
+    assert(varTypeIsStruct(treeNode));
 
-    if (type0 != TYP_UNKNOWN)
-    {
-        if (varTypeIsIntegralOrI(type0))
-        {
-            *retRegPtr0 = REG_INTRET;
-            firstIntUsed = true;
-        }
-        else if (varTypeIsFloating(type0))
-        {
-            *retRegPtr0 = REG_FLOATRET;
-            firstFloatUsed = true;
-        }
-        else
-        {
-            unreached();
-        }
-    }
+    // Assumption: struct local var needs to be in memory
+    noway_assert(!treeNode->InReg());
 
-    if (type1 != TYP_UNKNOWN)
-    {
-        if (varTypeIsIntegralOrI(type1))
-        {
-            if (firstIntUsed)
-            {
-                *retRegPtr1 = REG_INTRET_1;
-            }
-            else
-            {
-                *retRegPtr1 = REG_INTRET;
-            }
-        }
-        else if (varTypeIsFloating(type1))
-        {
-            if (firstFloatUsed)
-            {
-                *retRegPtr1 = REG_FLOATRET_1;
-            }
-            else
-            {
-                *retRegPtr1 = REG_FLOATRET;
-            }
-        }
-        else
-        {
-            unreached();
-        }
-    }
+    GenTree* op1 = treeNode->gtGetOp1();
+    GenTreeCall* actualOp1 = op1->gtSkipReloadOrCopy()->AsCall();
+    assert(actualOp1->HasMultiRegRetVal());
+
+    genConsumeRegs(op1);
+
+    ReturnTypeDesc* retTypeDesc = actualOp1->GetReturnTypeDesc();
+    assert(retTypeDesc->GetReturnRegCount() == CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_RETURN_IN_REGISTERS); 
+
+    var_types type0 = retTypeDesc->GetReturnRegType(0);
+    var_types type1 = retTypeDesc->GetReturnRegType(1);
+
+    regNumber reg0 = retTypeDesc->GetABIReturnReg(0);
+    regNumber reg1 = retTypeDesc->GetABIReturnReg(1);
+
+    assert(reg0 != REG_NA && reg1 != REG_NA);
+
+    // Assumption: multi-reg return value of a GT_CALL node never gets spilled.
+    // TODO-BUG: support for multi-reg GT_CALL nodes.
+
+    unsigned lclNum = treeNode->AsLclVarCommon()->gtLclNum;
+    LclVarDsc* varDsc = &(compiler->lvaTable[lclNum]);
+
+    // Assumption: current x64 Unix implementation requires that a multi-reg struct
+    // var in 'var = call' is flagged as lvIsMultiRegArgOrRet to prevent it from
+    // being struct poromoted.  
+    //
+    // TODO-BUG: Crossgen of mscorlib fires the below assert.
+    // A git issue is opened for investigating this.
+    // noway_assert(varDsc->lvIsMultiRegArgOrRet);
+
+    getEmitter()->emitIns_S_R(ins_Store(type0), emitTypeSize(type0), reg0, lclNum, 0);
+    getEmitter()->emitIns_S_R(ins_Store(type1), emitTypeSize(type1), reg1, lclNum, 8);
+#else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
+    assert(!"Unreached");
+#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
 }
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
 // Generate code for division (or mod) by power of two
 // or negative powers of two.  (meaning -1 * a power of two, not 2^(-1))
@@ -5729,9 +5618,9 @@ void CodeGen::genCallInstruction(GenTreePtr node)
     if (varTypeIsStruct(call->gtType))
     {
         assert(call->HasMultiRegRetVal());
-        ReturnTypeDesc* retTypeDesc = &(call->gtReturnTypeDesc);
-        retSize = emitTypeSize(retTypeDesc->GetReturnRegType(1));
-        secondRetSize = emitTypeSize(retTypeDesc->GetReturnRegType(2));
+        ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
+        retSize = emitTypeSize(retTypeDesc->GetReturnRegType(0));
+        secondRetSize = emitTypeSize(retTypeDesc->GetReturnRegType(1));
     }
     else
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING  
@@ -6003,44 +5892,6 @@ void CodeGen::genCallInstruction(GenTreePtr node)
 #endif // _TARGET_X86_
 }
 
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-//------------------------------------------------------------------------
-// getStructTypeOffset: Gets the type, size and offset of the eightbytes of a struct for System V systems.
-//
-// Arguments:
-//    'structDesc' struct description
-//    'type0'   returns the type of the first eightbyte.
-//    'type1'   returns the type of the second eightbyte.
-//    'offset0' returns the offset of the first eightbyte.
-//    'offset1' returns the offset of the second eightbyte.
-//
-
-void CodeGen::getStructTypeOffset(const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR& structDesc,
-                                         var_types* type0, 
-                                         var_types* type1, 
-                                         unsigned __int8* offset0,
-                                         unsigned __int8* offset1)
-{
-    *offset0 = structDesc.eightByteOffsets[0];
-    *offset1 = structDesc.eightByteOffsets[1];
-
-    *type0 = TYP_UNKNOWN;
-    *type1 = TYP_UNKNOWN;
-
-    // Set the first eightbyte data
-    if (structDesc.eightByteCount >= 1)
-    {
-        *type0 = compiler->getEightByteType(structDesc, 0);
-    }
-
-    // Set the second eight byte data
-    if (structDesc.eightByteCount == 2)
-    {
-        *type1 = compiler->getEightByteType(structDesc, 1);
-    }
-}
-#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-
 // Produce code for a GT_JMP node.
 // The arguments of the caller needs to be transferred to the callee before exiting caller.
 // The actual jump to callee is generated as part of caller epilog sequence.
@@ -6169,7 +6020,7 @@ void CodeGen::genJmpMethod(GenTreePtr jmp)
             var_types type1 = TYP_UNKNOWN;
 
             // Get the eightbyte data
-            getStructTypeOffset(structDesc, &type0, &type1, &offset0, &offset1);
+            compiler->GetStructTypeOffset(structDesc, &type0, &type1, &offset0, &offset1);
 
             // Move the values into the right registers.
             // 
