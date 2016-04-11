@@ -9,7 +9,7 @@
         "System.Runtime.WindowsRuntime": "4.0.0.0"
       },
       "imports": [
-        "dotnet5.3"
+        "dotnet5.4"
       ]
     }
   }
