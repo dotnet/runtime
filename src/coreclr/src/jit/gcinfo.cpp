@@ -86,7 +86,7 @@ void                GCInfo::gcResetForBB()
  *  Print the changes in the gcRegGCrefSetCur sets.
  */
 
-void                GCInfo::gcDspGCrefSetChanges(regMaskTP gcRegGCrefSetNew DEBUG_ARG(bool forceOutput))
+void                GCInfo::gcDspGCrefSetChanges(regMaskTP gcRegGCrefSetNew DEBUGARG(bool forceOutput))
 {
     if (compiler->verbose)
     {
@@ -115,7 +115,7 @@ void                GCInfo::gcDspGCrefSetChanges(regMaskTP gcRegGCrefSetNew DEBU
  *  Print the changes in the gcRegByrefSetCur sets.
  */
 
-void                GCInfo::gcDspByrefSetChanges(regMaskTP gcRegByrefSetNew DEBUG_ARG(bool forceOutput))
+void                GCInfo::gcDspByrefSetChanges(regMaskTP gcRegByrefSetNew DEBUGARG(bool forceOutput))
 {
     if (compiler->verbose)
     {
@@ -147,7 +147,7 @@ void                GCInfo::gcDspByrefSetChanges(regMaskTP gcRegByrefSetNew DEBU
  *  GCref pointer values.
  */
 
-void                GCInfo::gcMarkRegSetGCref(regMaskTP regMask DEBUG_ARG(bool forceOutput))
+void                GCInfo::gcMarkRegSetGCref(regMaskTP regMask DEBUGARG(bool forceOutput))
 {
 #ifdef DEBUG    
     if (compiler->compRegSetCheckLevel == 0)
@@ -174,7 +174,7 @@ void                GCInfo::gcMarkRegSetGCref(regMaskTP regMask DEBUG_ARG(bool f
  *  Byref pointer values.
  */
 
-void                GCInfo::gcMarkRegSetByref(regMaskTP regMask DEBUG_ARG(bool forceOutput))
+void                GCInfo::gcMarkRegSetByref(regMaskTP regMask DEBUGARG(bool forceOutput))
 {
     regMaskTP gcRegByrefSetNew = gcRegByrefSetCur | regMask;   // Set it in Byref mask
     regMaskTP gcRegGCrefSetNew = gcRegGCrefSetCur & ~regMask;  // Clear it if set in GCref mask
@@ -192,7 +192,7 @@ void                GCInfo::gcMarkRegSetByref(regMaskTP regMask DEBUG_ARG(bool f
  *  non-pointer values.
  */
 
-void                GCInfo::gcMarkRegSetNpt(regMaskTP regMask DEBUG_ARG(bool forceOutput))
+void                GCInfo::gcMarkRegSetNpt(regMaskTP regMask DEBUGARG(bool forceOutput))
 {
     /* NOTE: don't unmark any live register variables */
 

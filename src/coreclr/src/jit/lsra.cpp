@@ -1685,7 +1685,7 @@ LinearScan::identifyCandidatesExceptionDataflow()
         unsigned varNum = compiler->lvaTrackedToVarNum[varIndex];
         LclVarDsc* varDsc = compiler->lvaTable + varNum;
 
-        compiler->lvaSetVarDoNotEnregister(varNum DEBUG_ARG(Compiler::DNER_LiveInOutOfHandler));
+        compiler->lvaSetVarDoNotEnregister(varNum DEBUGARG(Compiler::DNER_LiveInOutOfHandler));
 
         if (varTypeIsGC(varDsc))
         {
@@ -1841,13 +1841,13 @@ void LinearScan::identifyCandidates()
                 dner = Compiler::DNER_IsStruct;
             }
 #endif // DEBUG
-            compiler->lvaSetVarDoNotEnregister(lclNum DEBUG_ARG(dner));
+            compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(dner));
         }
         else if (varDsc->lvPinned)
         {
             varDsc->lvTracked  = 0;
 #ifdef JIT32_GCENCODER
-            compiler->lvaSetVarDoNotEnregister(lclNum DEBUG_ARG(Compiler::DNER_PinningRef));
+            compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(Compiler::DNER_PinningRef));
 #endif // JIT32_GCENCODER
         }
 
@@ -1857,7 +1857,7 @@ void LinearScan::identifyCandidates()
         //
         if  (compiler->opts.MinOpts() && compiler->compHndBBtabCount > 0)
         {
-            compiler->lvaSetVarDoNotEnregister(lclNum DEBUG_ARG(Compiler::DNER_LiveInOutOfHandler));
+            compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(Compiler::DNER_LiveInOutOfHandler));
             varDsc->lvLRACandidate = 0;
             continue;
         }
@@ -2612,7 +2612,7 @@ LinearScan::buildKillPositionsForNode(GenTree*     tree,
         // CORINFO_HELP_ASSIGN_BYREF helper, which kills callee-saved RSI and RDI, if
         // LSRA doesn't assign RSI/RDI, they wouldn't get marked as modified until codegen,
         // which is too late.
-        compiler->codeGen->regSet.rsSetRegsModified(killMask DEBUG_ARG(dumpTerse));
+        compiler->codeGen->regSet.rsSetRegsModified(killMask DEBUGARG(dumpTerse));
 
         addRefsForPhysRegMask(killMask, currentLoc, RefTypeKill, true);
 
@@ -3483,7 +3483,7 @@ LinearScan::updateRegStateForArg(LclVarDsc* argDsc)
 //                                    the register locations will be "rotated" to stress the resolution and allocation code.
 
 BasicBlock*
-LinearScan::findPredBlockForLiveIn(BasicBlock* block, BasicBlock* prevBlock DEBUG_ARG(bool* pPredBlockIsAllocated))
+LinearScan::findPredBlockForLiveIn(BasicBlock* block, BasicBlock* prevBlock DEBUGARG(bool* pPredBlockIsAllocated))
 {
     BasicBlock* predBlock = nullptr;
 #ifdef DEBUG
@@ -3729,7 +3729,7 @@ LinearScan::buildIntervals()
         JITDUMP("\nNEW BLOCK BB%02u\n", block->bbNum);
 
         bool predBlockIsAllocated = false;
-        predBlock = findPredBlockForLiveIn(block, prevBlock DEBUG_ARG(&predBlockIsAllocated));
+        predBlock = findPredBlockForLiveIn(block, prevBlock DEBUGARG(&predBlockIsAllocated));
 
         if (block == compiler->fgFirstBB)
         {
@@ -5101,7 +5101,7 @@ void LinearScan::checkAndAssignInterval( RegRecord * regRec, Interval * interval
 void LinearScan::assignPhysReg( RegRecord * regRec, Interval * interval)
 {
     regMaskTP assignedRegMask = genRegMask(regRec->regNum);
-    compiler->codeGen->regSet.rsSetRegsModified(assignedRegMask DEBUG_ARG(dumpTerse));
+    compiler->codeGen->regSet.rsSetRegsModified(assignedRegMask DEBUGARG(dumpTerse));
 
     checkAndAssignInterval(regRec, interval);
     interval->assignedReg = regRec;
@@ -8771,7 +8771,7 @@ LinearScan::resolveEdge(BasicBlock*      fromBlock,
                 }
                 else
                 {
-                    compiler->codeGen->regSet.rsSetRegsModified(genRegMask(tempReg) DEBUG_ARG(dumpTerse));
+                    compiler->codeGen->regSet.rsSetRegsModified(genRegMask(tempReg) DEBUGARG(dumpTerse));
                     assert(sourceIntervals[targetReg] != nullptr);
                     addResolution(block, insertionPoint, sourceIntervals[targetReg], tempReg, targetReg);
                     JITDUMP(" (%s)\n", resolveTypeName[resolveType]);

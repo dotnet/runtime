@@ -20800,17 +20800,17 @@ void*
 #else
 void
 #endif
-CodeGen::genCreateAndStoreGCInfo(unsigned codeSize, unsigned prologSize, unsigned epilogSize DEBUG_ARG(void* codePtr))
+CodeGen::genCreateAndStoreGCInfo(unsigned codeSize, unsigned prologSize, unsigned epilogSize DEBUGARG(void* codePtr))
 {
 #ifdef JIT32_GCENCODER
-    return genCreateAndStoreGCInfoJIT32(codeSize, prologSize, epilogSize DEBUG_ARG(codePtr));
+    return genCreateAndStoreGCInfoJIT32(codeSize, prologSize, epilogSize DEBUGARG(codePtr));
 #else
-    genCreateAndStoreGCInfoX64(codeSize, prologSize DEBUG_ARG(codePtr));
+    genCreateAndStoreGCInfoX64(codeSize, prologSize DEBUGARG(codePtr));
 #endif
 }
 
 #ifdef JIT32_GCENCODER
-void*  CodeGen::genCreateAndStoreGCInfoJIT32(unsigned codeSize, unsigned prologSize, unsigned epilogSize DEBUG_ARG(void* codePtr))
+void*  CodeGen::genCreateAndStoreGCInfoJIT32(unsigned codeSize, unsigned prologSize, unsigned epilogSize DEBUGARG(void* codePtr))
 {
     BYTE            headerBuf[64];
     InfoHdr         header;
@@ -20966,7 +20966,7 @@ void*  CodeGen::genCreateAndStoreGCInfoJIT32(unsigned codeSize, unsigned prologS
 
 #else // JIT32_GCENCODER
 
-void                CodeGen::genCreateAndStoreGCInfoX64(unsigned codeSize, unsigned prologSize DEBUG_ARG(void* codePtr))
+void                CodeGen::genCreateAndStoreGCInfoX64(unsigned codeSize, unsigned prologSize DEBUGARG(void* codePtr))
 {
     IAllocator* allowZeroAlloc = new (compiler, CMK_GC) AllowZeroAllocator(compiler->getAllocatorGC());
     GcInfoEncoder* gcInfoEncoder = new (compiler, CMK_GC) GcInfoEncoder(compiler->info.compCompHnd, compiler->info.compMethodInfo, allowZeroAlloc, NOMEM);

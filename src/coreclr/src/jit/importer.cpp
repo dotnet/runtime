@@ -10067,7 +10067,7 @@ MATH_OP2_FLAGS: // If 'ovfl' and 'callNode' have already been set
                 // That said, as of now it *is* a large node, so we'll do this with an assert rather
                 // than an "if".
                 assert(GenTree::s_gtNodeSizes[GT_CALL] == TREE_NODE_SZ_LARGE);
-                op1 = new (this, GT_CALL) GenTreeOp(oper, type, op1, op2 DEBUG_ARG(/*largeNode*/true));
+                op1 = new (this, GT_CALL) GenTreeOp(oper, type, op1, op2 DEBUGARG(/*largeNode*/true));
             }
             else
 #endif // SMALL_TREE_NODES
