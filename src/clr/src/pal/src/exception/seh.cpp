@@ -149,6 +149,48 @@ PAL_SetGetGcMarkerExceptionCode(
     g_getGcMarkerExceptionCode = getGcMarkerExceptionCode;
 }
 
+EXTERN_C void ThrowExceptionFromContextInternal(CONTEXT* context, PAL_SEHException* ex);
+
+/*++
+Function:
+    PAL_ThrowExceptionFromContext
+
+    This function creates a stack frame right below the target frame, restores all callee
+    saved registers from the passed in context, sets the RSP to that frame and sets the
+    return address to the target frame's RIP.
+    Then it uses the ThrowExceptionHelper to throw the passed in exception from that context.
+
+Parameters:
+    CONTEXT* context - context from which the exception will be thrown
+    PAL_SEHException* ex - the exception to throw.
+--*/
+VOID
+PALAPI 
+PAL_ThrowExceptionFromContext(CONTEXT* context, PAL_SEHException* ex)
+{
+    // We need to make a copy of the exception off stack, since the "ex" is located in one of the stack
+    // frames that will become obsolete by the ThrowExceptionFromContextInternal and the ThrowExceptionHelper
+    // could overwrite the "ex" object by stack e.g. when allocating the low level exception object for "throw".
+    static __thread BYTE threadLocalExceptionStorage[sizeof(PAL_SEHException)];
+    ThrowExceptionFromContextInternal(context, new (threadLocalExceptionStorage) PAL_SEHException(*ex));
+}
+
+/*++
+Function:
+    ThrowExceptionHelper
+
+    Helper function to throw the passed in exception.
+    It is called from the assembler function ThrowExceptionFromContextInternal
+
+Parameters:
+    PAL_SEHException* ex - the exception to throw.
+--*/
+extern "C"
+void ThrowExceptionHelper(PAL_SEHException* ex)
+{
+    throw *ex;
+}
+
 /*++
 Function:
     SEHProcessException
@@ -175,7 +217,7 @@ SEHProcessException(PEXCEPTION_POINTERS pointers)
 
         if (CatchHardwareExceptionHolder::IsEnabled())
         {
-            throw exception;
+            PAL_ThrowExceptionFromContext(&exception.ContextRecord, &exception);
         }
     }
 
