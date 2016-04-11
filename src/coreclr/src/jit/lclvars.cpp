@@ -1025,7 +1025,7 @@ void                Compiler::lvaInitVarArgsHandle(InitVarDscInfo * varDscInfo)
         varDsc->lvIsParam   = 1;
         // Make sure this lives in the stack -- address may be reported to the VM.
         // TODO-CQ: This should probably be:
-        //   lvaSetVarDoNotEnregister(varDscInfo->varNum DEBUG_ARG(DNER_VMNeedsStackAddr));
+        //   lvaSetVarDoNotEnregister(varDscInfo->varNum DEBUGARG(DNER_VMNeedsStackAddr));
         // But that causes problems, so, for expedience, I switched back to this heavyweight
         // hammer.  But I think it should be possible to switch; it may just work now
         // that other problems are fixed.
@@ -1848,11 +1848,11 @@ void               Compiler::lvaSetVarAddrExposed(unsigned varNum)
         {        
             noway_assert(lvaTable[i].lvIsStructField);            
             lvaTable[i].lvAddrExposed = 1;   // Make field local as address-exposed.
-            lvaSetVarDoNotEnregister(i DEBUG_ARG(DNER_AddrExposed));
+            lvaSetVarDoNotEnregister(i DEBUGARG(DNER_AddrExposed));
         }
     }
 
-    lvaSetVarDoNotEnregister(varNum DEBUG_ARG(DNER_AddrExposed));
+    lvaSetVarDoNotEnregister(varNum DEBUGARG(DNER_AddrExposed));
 }
 
 
@@ -1861,7 +1861,7 @@ void               Compiler::lvaSetVarAddrExposed(unsigned varNum)
  *  Record that the local var "varNum" should not be enregistered (for one of several reasons.)
  */
 
-void               Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUG_ARG(DoNotEnregisterReason reason))
+void               Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregisterReason reason))
 {              
     noway_assert(varNum < lvaCount);
     LclVarDsc   *   varDsc = &lvaTable[varNum];
@@ -2642,7 +2642,7 @@ void                Compiler::lvaSortByRefCount()
             }
             else if ((varDsc->lvType == TYP_STRUCT) && !varDsc->lvRegStruct)
             {
-                lvaSetVarDoNotEnregister(lclNum DEBUG_ARG(DNER_IsStruct));
+                lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_IsStruct));
             }
         }
         else if (varDsc->lvIsStructField &&
@@ -2662,7 +2662,7 @@ void                Compiler::lvaSortByRefCount()
         {
             varDsc->lvTracked = 0;
 #ifdef JIT32_GCENCODER
-            lvaSetVarDoNotEnregister(lclNum DEBUG_ARG(DNER_PinningRef));
+            lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_PinningRef));
 #endif
         }
 
@@ -2671,7 +2671,7 @@ void                Compiler::lvaSortByRefCount()
         //
         if  (opts.MinOpts() && compHndBBtabCount > 0)
         {
-            lvaSetVarDoNotEnregister(lclNum DEBUG_ARG(DNER_LiveInOutOfHandler));
+            lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_LiveInOutOfHandler));
             continue;
         }
 

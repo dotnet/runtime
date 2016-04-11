@@ -1844,7 +1844,7 @@ public:
 
     GenTreePtr              gtNewAssignNode (GenTreePtr     dst,
                                              GenTreePtr     src
-                                             DEBUG_ARG(bool isPhiDefn = false));
+                                             DEBUGARG(bool isPhiDefn = false));
 
     GenTreePtr              gtNewTempAssign (unsigned       tmp,
                                              GenTreePtr     val);
@@ -2200,7 +2200,7 @@ public :
 #endif
     };
 #endif
-    void                lvaSetVarDoNotEnregister(unsigned varNum DEBUG_ARG(DoNotEnregisterReason reason));     
+    void                lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregisterReason reason));     
 
     unsigned            lvaVarargsHandleArg;
 #ifdef _TARGET_X86_
@@ -4558,7 +4558,7 @@ private:
 #endif
     void                fgMorphTreeDone     (GenTreePtr     tree,
                                              GenTreePtr     oldTree = NULL
-                                             DEBUG_ARG(int morphNum = 0));
+                                             DEBUGARG(int morphNum = 0));
 
     GenTreePtr          fgMorphStmt;
     

@@ -22766,6 +22766,6 @@ void Compiler::fgLclFldAssign(unsigned lclNum)
     assert(varTypeIsStruct(lvaTable[lclNum].lvType));
     if (lvaTable[lclNum].lvPromoted && lvaTable[lclNum].lvFieldCnt > 1)
     {
-        lvaSetVarDoNotEnregister(lclNum DEBUG_ARG(DNER_LocalField));
+        lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_LocalField));
     }
 }

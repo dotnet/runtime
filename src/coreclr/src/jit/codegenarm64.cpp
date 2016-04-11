@@ -1601,8 +1601,8 @@ void                CodeGen::genCodeForBBlist()
         }
 #endif // DEBUG
 
-        gcInfo.gcMarkRegSetGCref(newRegGCrefSet DEBUG_ARG(true));
-        gcInfo.gcMarkRegSetByref(newRegByrefSet DEBUG_ARG(true));
+        gcInfo.gcMarkRegSetGCref(newRegGCrefSet DEBUGARG(true));
+        gcInfo.gcMarkRegSetByref(newRegByrefSet DEBUGARG(true));
 
         /* Blocks with handlerGetsXcptnObj()==true use GT_CATCH_ARG to
            represent the exception object (TYP_REF).
@@ -6699,13 +6699,13 @@ void CodeGen::genCodeForObj(GenTreeObj* objNode)
  *  Create and record GC Info for the function.
  */
 void
-CodeGen::genCreateAndStoreGCInfo(unsigned codeSize, unsigned prologSize, unsigned epilogSize DEBUG_ARG(void* codePtr))
+CodeGen::genCreateAndStoreGCInfo(unsigned codeSize, unsigned prologSize, unsigned epilogSize DEBUGARG(void* codePtr))
 {
-    genCreateAndStoreGCInfoX64(codeSize, prologSize DEBUG_ARG(codePtr));
+    genCreateAndStoreGCInfoX64(codeSize, prologSize DEBUGARG(codePtr));
 }
 
 void
-CodeGen::genCreateAndStoreGCInfoX64(unsigned codeSize, unsigned prologSize DEBUG_ARG(void* codePtr))
+CodeGen::genCreateAndStoreGCInfoX64(unsigned codeSize, unsigned prologSize DEBUGARG(void* codePtr))
 {
     IAllocator* allowZeroAlloc = new (compiler, CMK_GC) AllowZeroAllocator(compiler->getAllocatorGC());
     GcInfoEncoder* gcInfoEncoder = new (compiler, CMK_GC) GcInfoEncoder(compiler->info.compCompHnd, compiler->info.compMethodInfo, allowZeroAlloc, NOMEM);
