@@ -54,6 +54,10 @@ namespace System.Diagnostics.Tracing
         public bool DisableEvent(int eventId) { return default(bool); }
         public bool EnableEvent(int eventId) { return default(bool); }
     }
+    public class EventCounter {
+        public EventCounter(string name, EventSource eventSource) { }
+        public void WriteMetric(float value) { }
+    }
     [System.AttributeUsageAttribute((System.AttributeTargets)(12), Inherited = false)]
     public partial class EventDataAttribute : System.Attribute
     {

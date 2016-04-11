@@ -269,7 +269,7 @@ namespace System.Diagnostics.Tracing
 
         internal static void AddEventCounter(EventSource eventSource, EventCounter eventCounter)
         {
-            int eventSourceIndex = EventListener.EventSourceIndex(eventSource);
+            int eventSourceIndex = EventListenerHelper.EventSourceIndex(eventSource);
 
             EventCounterGroup.EnsureEventSourceIndexAvailable(eventSourceIndex);
             EventCounterGroup eventCounterGroup = GetEventCounterGroup(eventSource);
@@ -292,7 +292,7 @@ namespace System.Diagnostics.Tracing
 
         private static EventCounterGroup GetEventCounterGroup(EventSource eventSource)
         {
-            int eventSourceIndex = EventListener.EventSourceIndex(eventSource);
+            int eventSourceIndex = EventListenerHelper.EventSourceIndex(eventSource);
             EventCounterGroup result = EventCounterGroup.s_eventCounterGroups[eventSourceIndex];
             if (result == null)
             {
@@ -430,6 +430,14 @@ namespace System.Diagnostics.Tracing
         }
 
         #endregion // Implementation of the IDisposable interface
+    }
+
+    // This class a work-around because .NET V4.6.2 did not make EventSourceIndex public (it was only protected)
+    // We make this helper class to get around that protection.   We want V4.6.3 to make this public at which
+    // point this class is no longer needed and can be removed.  
+    internal class EventListenerHelper : EventListener {
+        public new static int EventSourceIndex(EventSource eventSource) { return EventListener.EventSourceIndex(eventSource); }
+        protected override void OnEventWritten(EventWrittenEventArgs eventData) { } // override abstact methods to keep compiler happy
     }
 
     #endregion // internal supporting classes
