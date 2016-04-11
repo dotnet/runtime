@@ -724,7 +724,7 @@ bool ConfigMethodRange::contains(ICorJitInfo* info, CORINFO_METHOD_HANDLE method
 void ConfigMethodRange::initRanges(const wchar_t* rangeStr)
 {
     // make sure that the memory was zero initialized
-    _ASSERTE(m_inited == 0 || m_inited == 1);
+    assert(m_inited == 0 || m_inited == 1);
 
     if (rangeStr == nullptr)
     {
@@ -1052,10 +1052,10 @@ int SimpleSprintf_s(__in_ecount(cbBufSize - (pWriteStart- pBufStart)) char * pWr
                     __in_ecount(cbBufSize) char * pBufStart, size_t cbBufSize,
                     __in_z const char * fmt, ...)
 {
-    _ASSERTE(fmt);
-    _ASSERTE(pBufStart);
-    _ASSERTE(pWriteStart);
-    _ASSERTE((size_t)pBufStart <= (size_t)pWriteStart);
+    assert(fmt);
+    assert(pBufStart);
+    assert(pWriteStart);
+    assert((size_t)pBufStart <= (size_t)pWriteStart);
     int ret;
 
     //compute the space left in the buffer.
