@@ -80,7 +80,6 @@
 #include <stdio.h>
 #include "utilcode.h"
 #include "corjit.h"
-#include "slist.h"     // for SList
 #include "iallocator.h"
 #include "gcinfoarraylist.h"
 #include "stdmacros.h"
@@ -229,18 +228,19 @@ private:
     {
     public:
         size_t* StartAddress;
-        SLink m_Link;
+        MemoryBlockDesc* m_Next;
 
         inline void Init()
         {
-            m_Link.m_pNext = NULL;
+            m_Next = NULL;
         }
     };
 
     IAllocator* m_pAllocator;
     size_t m_BitCount;
     UINT32 m_FreeBitsInCurrentSlot;
-    SList<MemoryBlockDesc> m_MemoryBlocks;
+    MemoryBlockDesc* m_MemoryBlocksHead;
+    MemoryBlockDesc* m_MemoryBlocksTail;
     const static int m_MemoryBlockSize = 128;    // must be a multiple of the pointer size
     size_t* m_pCurrentSlot;            // bits are written through this pointer
     size_t* m_OutOfBlockSlot;        // sentinel value to determine when the block is full
@@ -268,7 +268,17 @@ private:
 
         pMemBlockDesc->Init();
         pMemBlockDesc->StartAddress = m_pCurrentSlot;
-        m_MemoryBlocks.InsertTail( pMemBlockDesc );
+        if (m_MemoryBlocksTail != NULL)
+        {
+            _ASSERTE(m_MemoryBlocksHead != NULL);
+            m_MemoryBlocksTail->m_Next = pMemBlockDesc;
+        }
+        else
+        {
+            _ASSERTE(m_MemoryBlocksHead == NULL);
+            m_MemoryBlocksHead = pMemBlockDesc;
+        }
+        m_MemoryBlocksTail = pMemBlockDesc;
 
 #ifdef _DEBUG
            m_MemoryBlocksCount++;

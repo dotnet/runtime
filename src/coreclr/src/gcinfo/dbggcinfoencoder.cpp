@@ -54,7 +54,17 @@ void BitStreamWriter::AllocMemoryBlock()
 
     pMemBlockDesc->Init();
     pMemBlockDesc->StartAddress = m_pCurrentSlot;
-    m_MemoryBlocks.InsertTail( pMemBlockDesc );
+    if (m_MemoryBlocksTail != NULL)
+    {
+        _ASSERTE(m_MemoryBlocksHead != NULL);
+        m_MemoryBlocksTail->m_Next = pMemBlockDesc;
+    }
+    else
+    {
+        _ASSERTE(m_MemoryBlocksHead == NULL);
+        m_MemoryBlocksHead = pMemBlockDesc;
+    }
+    m_MemoryBlocksTail = pMemBlockDesc;
 
 #ifdef _DEBUG
        m_MemoryBlocksCount++;
@@ -933,7 +943,7 @@ void BitStreamWriter::CopyTo( BYTE* buffer )
 
     MemoryBlockDesc* pMemBlockDesc = m_MemoryBlocks.GetHead();
     _ASSERTE( pMemBlockDesc != NULL );
-    while( m_MemoryBlocks.GetNext( pMemBlockDesc ) != NULL )
+    while (pMemBlockDesc->m_Next != NULL)
     {
         source = (BYTE*) pMemBlockDesc->StartAddress;
         // @TODO: use memcpy instead
@@ -942,8 +952,7 @@ void BitStreamWriter::CopyTo( BYTE* buffer )
             *( buffer++ ) = *( source++ );
         }
 
-        pMemBlockDesc = m_MemoryBlocks.GetNext( pMemBlockDesc );
-        _ASSERTE( pMemBlockDesc != NULL );
+        pMemBlockDesc = pMemBlockDesc->m_Next;
     }
 
     source = (BYTE*) pMemBlockDesc->StartAddress;
@@ -961,12 +970,14 @@ void BitStreamWriter::CopyTo( BYTE* buffer )
 void BitStreamWriter::Dispose()
 {
 #ifdef MUST_CALL_JITALLOCATOR_FREE
-    MemoryBlockDesc* pMemBlockDesc;
-    while( NULL != ( pMemBlockDesc = m_MemoryBlocks.RemoveHead() ) )
+    for (MemoryBlockDes* block = m_MemoryBlocksHead, *next; block != NULL; block = next)
     {
-        m_pAllocator->Free( pMemBlockDesc->StartAddress );
-        m_pAllocator->Free( pMemBlockDesc );
+        next = block->m_Next;
+        m_pAllocator->Free(block->StartAddress);
+        m_pAllocator->Free(block);
     }
+    m_MemoryBlocksHead = NULL;
+    m_MemoryBlocksTail = NULL;
 
     m_pAllocator->Free( m_SlotMappings );
 #endif
