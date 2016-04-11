@@ -103,7 +103,7 @@ namespace System.Diagnostics.Tracing
                 var newGroup = new FieldMetadata(
                     name,
                     TraceLoggingDataType.Struct,
-                    0,
+                    this.Tags,
                     this.BeginningBufferedArray);
                 this.AddField(newGroup);
                 result = new TraceLoggingMetadataCollector(this, newGroup);
