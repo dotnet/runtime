@@ -1637,19 +1637,6 @@ mono_main (int argc, char* argv[])
 			gc_descr = mono_gc_get_description ();
 			g_print ("\tGC:            %s\n", gc_descr);
 			g_free (gc_descr);
-			if (mini_verbose) {
-				const char *cerror;
-				const char *clibpath;
-				mono_init ("mono");
-				cerror = mono_check_corlib_version ();
-				clibpath = mono_defaults.corlib? mono_image_get_filename (mono_defaults.corlib): "unknown";
-				if (cerror) {
-					g_print ("The currently installed mscorlib doesn't match this runtime version.\n");
-					g_print ("The error is: %s\n", cerror);
-					g_print ("mscorlib.dll loaded at: %s\n", clibpath);
-					return 1;
-				}
-			}
 			return 0;
 		} else if (strcmp (argv [i], "--help") == 0 || strcmp (argv [i], "-h") == 0) {
 			mini_usage ();
