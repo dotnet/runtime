@@ -84,6 +84,7 @@ INLINE_OBSERVATION(IS_DISCRETIONARY_INLINE,   bool,   "can inline, check heurist
 INLINE_OBSERVATION(IS_FORCE_INLINE,           bool,   "aggressive inline attribute",   INFORMATION, CALLEE)
 INLINE_OBSERVATION(IS_INSTANCE_CTOR,          bool,   "instance constructor",          INFORMATION, CALLEE)
 INLINE_OBSERVATION(IS_PROFITABLE_INLINE,      bool,   "profitable inline",             INFORMATION, CALLEE)
+INLINE_OBSERVATION(IS_SIZE_DECREASING_INLINE, bool,   "size decreasing inline",        INFORMATION, CALLEE)
 INLINE_OBSERVATION(LOOKS_LIKE_WRAPPER,        bool,   "thin wrapper around a call",    INFORMATION, CALLEE)
 INLINE_OBSERVATION(MAXSTACK,                  int,    "maxstack",                      INFORMATION, CALLEE)
 INLINE_OBSERVATION(OPCODE,                    int,    "next opcode in IL stream",      INFORMATION, CALLEE)
@@ -153,6 +154,7 @@ INLINE_OBSERVATION(CONSTANT_ARG_FEEDS_TEST,   bool,   "constant argument feeds t
 INLINE_OBSERVATION(DEPTH,                     int,    "depth",                         INFORMATION, CALLSITE)
 INLINE_OBSERVATION(FREQUENCY,                 int,    "execution frequency",           INFORMATION, CALLSITE)
 INLINE_OBSERVATION(IS_PROFITABLE_INLINE,      bool,   "profitable inline",             INFORMATION, CALLSITE)
+INLINE_OBSERVATION(IS_SIZE_DECREASING_INLINE, bool,   "size decreasing inline",        INFORMATION, CALLSITE)
 INLINE_OBSERVATION(RANDOM_ACCEPT,             bool,   "random accept",                 INFORMATION, CALLSITE)
 
 // ------ Final Sentinel ------- 
