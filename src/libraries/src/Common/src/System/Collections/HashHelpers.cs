@@ -60,11 +60,6 @@ namespace System.Collections
             return min;
         }
 
-        public static int GetMinPrime()
-        {
-            return primes[0];
-        }
-
         // Returns size of hashtable to grow to.
         public static int ExpandPrime(int oldSize)
         {
