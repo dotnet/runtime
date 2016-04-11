@@ -145,16 +145,10 @@ namespace System.Data.ProviderBase
             return null;
         }
 
-        // GetCompletedTask must be called from within s_pendingOpenPooled lock
         private static Task<DbConnectionInternal> GetCompletedTask()
         {
-            if (s_completedTask == null)
-            {
-                TaskCompletionSource<DbConnectionInternal> source = new TaskCompletionSource<DbConnectionInternal>();
-                source.SetResult(null);
-                s_completedTask = source.Task;
-            }
-            return s_completedTask;
+            Debug.Assert(Monitor.IsEntered(s_pendingOpenNonPooled), $"Expected {nameof(s_pendingOpenNonPooled)} lock to be held.");
+            return s_completedTask ?? (s_completedTask = Task.FromResult<DbConnectionInternal>(null));
         }
 
         internal bool TryGetConnection(DbConnection owningConnection, TaskCompletionSource<DbConnectionInternal> retry, DbConnectionOptions userOptions, DbConnectionInternal oldConnection, out DbConnectionInternal connection)
