@@ -1639,6 +1639,8 @@ sweep_finish (void)
 		}
 	}
 
+	sgen_memgov_major_post_sweep ();
+
 	set_sweep_state (SWEEP_STATE_SWEPT, SWEEP_STATE_COMPACTING);
 }
 
