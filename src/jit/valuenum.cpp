@@ -437,7 +437,7 @@ ValueNumPair ValueNumStore::VNPExcSetSingleton(ValueNumPair xp)
                         VNExcSetSingleton(xp.GetConservative()));
 }
 
-ValueNum ValueNumStore::VNExcSetUnion(ValueNum xs0, ValueNum xs1 DEBUG_ARG(bool topLevel))
+ValueNum ValueNumStore::VNExcSetUnion(ValueNum xs0, ValueNum xs1 DEBUGARG(bool topLevel))
 {
     if (xs0 == VNForEmptyExcSet())
         return xs1;
@@ -456,7 +456,7 @@ ValueNum ValueNumStore::VNExcSetUnion(ValueNum xs0, ValueNum xs1 DEBUG_ARG(bool 
         {
             res = VNForFunc(TYP_REF, VNF_ExcSetCons, 
                             funcXs0.m_args[0],
-                            VNExcSetUnion(funcXs0.m_args[1], xs1 DEBUG_ARG(false)));
+                            VNExcSetUnion(funcXs0.m_args[1], xs1 DEBUGARG(false)));
         } 
         else if (funcXs0.m_args[0] == funcXs1.m_args[0])
         {
@@ -468,7 +468,7 @@ ValueNum ValueNumStore::VNExcSetUnion(ValueNum xs0, ValueNum xs1 DEBUG_ARG(bool 
             assert(funcXs0.m_args[0] > funcXs1.m_args[0]);
             res = VNForFunc(TYP_REF, VNF_ExcSetCons, 
                             funcXs1.m_args[0],
-                            VNExcSetUnion(xs0, funcXs1.m_args[1] DEBUG_ARG(false)));
+                            VNExcSetUnion(xs0, funcXs1.m_args[1] DEBUGARG(false)));
         }
 
         return res;
@@ -5494,7 +5494,7 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                             arg->ParseArrayAddress(this, &arrInfo, &arr, &inxVN, &fldSeq);
                             if (arr == nullptr)
                             {
-                                fgMutateHeap(tree DEBUG_ARG("assignment to unparseable array expression"));
+                                fgMutateHeap(tree DEBUGARG("assignment to unparseable array expression"));
                                 return;
                             }
                             // Otherwise, parsing succeeded.
