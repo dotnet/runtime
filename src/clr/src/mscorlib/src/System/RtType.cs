@@ -405,7 +405,7 @@ namespace System
                             list = PopulateInterfaces(filter);
                             break;
                         default:
-                            BCLDebug.Assert(true, "Invalid CacheType");
+                            BCLDebug.Assert(false, "Invalid CacheType");
                             break;
                     }
 
