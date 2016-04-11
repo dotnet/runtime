@@ -35,12 +35,6 @@ namespace System.Collections.Generic
         private ValueCollection values;
         private Object _syncRoot;
 
-        // constants for serialization
-        private const String VersionName = "Version";
-        private const String HashSizeName = "HashSize";  // Must save buckets.Length
-        private const String KeyValuePairsName = "KeyValuePairs";
-        private const String ComparerName = "Comparer";
-
         public Dictionary() : this(0, null) { }
 
         public Dictionary(int capacity) : this(capacity, null) { }
