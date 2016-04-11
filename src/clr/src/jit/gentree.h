@@ -1354,6 +1354,8 @@ public:
     // Return the child of this node if it is a GT_RELOAD or GT_COPY; otherwise simply return the node itself
     inline GenTree*   gtSkipReloadOrCopy();
 
+    inline bool     IsMultiRegCallStoreToLocal();
+
     bool            OperMayThrow();
 
     unsigned        GetScaleIndexMul();
@@ -2351,10 +2353,10 @@ enum class InlineObservation;
 //    - return register numbers in which the value is returned
 //    - a spill mask for lsra/codegen purpose
 //
-// TODO - Right now it is implemented to meet the needs of x64 unix.
-// Eventually it will be updated to meet the needs of Arm32/arm64/x86
+// TODO-ARM: Update this to meet the needs of Arm64 and Arm32
+// TODO-X86: Update this to meet the needs of x86
 //
-// TODO - Right now it is used for describing multi-reg returned types.
+// TODO-AllArch: Right now it is used for describing multi-reg returned types.
 // Eventually we would want to use it for describing even single-reg
 // returned types (e.g. structs returned in single register x64/arm).
 // This would allow us not to lie or normalize single struct return
@@ -2420,27 +2422,32 @@ public:
     // 
     // Arguments:
     //    index - Index of the return register.
-    //            First return register will have an index 1 and so on.
+    //            First return register will have an index 0 and so on.
     //
     // Return Value:
     //    var_type of the return register specified by its index.
-    //    Return TYP_UNKNOWN if index == 0 or > number of return registers.
+    //    Return TYP_UNKNOWN if index > number of return registers.
     var_types GetReturnRegType(unsigned index)
     {
-        assert(index > 0);
-        assert(index <= GetReturnRegCount());
+        assert(index < GetReturnRegCount());
 
-        if (index == 1)
+        if (index == 0)
         {
             return m_regType0;
         }
-        else if (index == 2)
+        else if (index == 1)
         {
             return m_regType1;
         }
 
         return TYP_UNKNOWN;
     }
+
+    // Get ith ABI return register 
+    regNumber GetABIReturnReg(unsigned idx);
+
+    // Get reg mask of ABI return registers 
+    regMaskTP GetABIReturnRegs();
 };
 
 struct GenTreeCall final : public GenTree
@@ -2463,9 +2470,39 @@ struct GenTreeCall final : public GenTree
 
     regMaskTP         gtCallRegUsedMask;      // mask of registers used to pass parameters
 
+    // For now Return Type Descriptor is enabled only for x64 unix.
+    // TODO-ARM: enable this for HFA returns on Arm64 and Arm32
+    // TODO-X86: enable this for long returns on x86
+    // TODO-AllArch: enable for all call nodes to unify single-reg and multi-reg returns.
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
     ReturnTypeDesc    gtReturnTypeDesc;
 #endif 
+
+    //-----------------------------------------------------------------------
+    // GetReturnTypeDesc: get the type descriptor of return value of the call
+    //
+    // Arguments:
+    //    None
+    //
+    // Returns
+    //    Type descriptor of the value returned by call
+    //
+    // Note:
+    //    Right now implemented only for x64 unix and yet to be 
+    //    implemented for other multi-reg target arch (Arm64/Arm32/x86).
+    //
+    // TODO-ARM: Implement this routine for Arm64 and Arm32
+    // TODO-X86: Implement this routine for x86
+    // TODO-AllArch: enable for all call nodes to unify single-reg and multi-reg returns.
+    ReturnTypeDesc*   GetReturnTypeDesc()
+    {
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+        return &gtReturnTypeDesc;
+#else
+        return nullptr;
+#endif
+    }
+
 
 #define     GTF_CALL_M_EXPLICIT_TAILCALL       0x0001  // GT_CALL -- the call is "tail" prefixed and importer has performed tail call checks
 #define     GTF_CALL_M_TAILCALL                0x0002  // GT_CALL -- the call is a tailcall
@@ -2538,10 +2575,30 @@ struct GenTreeCall final : public GenTree
     // Returns true if the call has retBuf argument
     bool HasRetBufArg() const { return (gtCallMoreFlags & GTF_CALL_M_RETBUFFARG) != 0; }
 
+    //-----------------------------------------------------------------------------------------
+    // HasMultiRegRetVal: whether the call node returns its value in multiple return registers.
+    //
+    // Arguments:
+    //     None
+
+    // Return Value:
+    //     True if the call is returning a multi-reg return value. False otherwise.
+    //
+    // Note:
+    //     This is implemented only for x64 Unix and yet to be implemented for
+    //     other multi-reg return target arch (arm64/arm32/x86).
+    //
+    // TODO-ARM: Implement this routine for Arm64 and Arm32
+    // TODO-X86: Implement this routine for x86
+    bool HasMultiRegRetVal() const 
+    { 
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-    // Returns true if the call is returning a multi-reg struct value
-    bool HasMultiRegRetVal() const { return varTypeIsStruct(gtType) && !HasRetBufArg(); }
+        return varTypeIsStruct(gtType) && !HasRetBufArg(); 
+#else
+        return false;
 #endif
+    }
+
 
     // Returns true if VM has flagged this method as CORINFO_FLG_PINVOKE.
     bool IsPInvoke()                { return (gtCallMoreFlags & GTF_CALL_M_PINVOKE) != 0; }
@@ -3851,6 +3908,27 @@ inline GenTree*         GenTree::gtSkipReloadOrCopy()
         return gtGetOp1();
     }
     return this;
+}
+
+//----------------------------------------------------------------------------------------
+// IsMultiRegCallStoreToLocal: Whether store op is storing multi-reg return value of call
+// to a local.
+//
+// Arguments:
+//    None
+//
+// Return Value:
+//    Returns true if store op is storing a multi-reg return value of a call into a local.
+//    False otherwise.
+// 
+inline bool GenTree::IsMultiRegCallStoreToLocal()
+{
+    assert(OperGet() == GT_STORE_LCL_VAR);
+
+    GenTreePtr op1 = gtGetOp1();
+    GenTreePtr actualOperand = op1->gtSkipReloadOrCopy();
+
+    return (actualOperand->OperGet() == GT_CALL) && actualOperand->AsCall()->HasMultiRegRetVal();
 }
 
 inline bool GenTree::IsCnsIntOrI() const

@@ -975,7 +975,7 @@ void                CodeGen::psiBegProlog()
                             assert(false && "Invalid eightbyte number.");
                         }
 
-                        regType = compiler->getEightByteType(structDesc, nCnt);
+                        regType = compiler->GetEightByteType(structDesc, nCnt);
 #ifdef DEBUG
                         regType = compiler->mangleVarArgsType(regType);
                         assert(genMapRegNumToRegArgNum((nCnt == 0 ? regNum : otherRegNum), regType) != (unsigned)-1);
