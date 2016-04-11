@@ -4467,11 +4467,7 @@ VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartConte
 
             // Now we need to unwind the native frames until we reach managed frames again or the exception is
             // handled in the native code.
-            // We need to make a copy of the exception off stack, since the "ex" is located in one of the stack
-            // frames that will become obsolete by the StartUnwindingNativeFrames and the ThrowExceptionHelper 
-            // could overwrite the "ex" object by stack e.g. when allocating the low level exception object for "throw".
-            static __thread BYTE threadLocalExceptionStorage[sizeof(PAL_SEHException)];
-            StartUnwindingNativeFrames(currentFrameContext, new (threadLocalExceptionStorage) PAL_SEHException(ex));
+            PAL_ThrowExceptionFromContext(currentFrameContext, &ex);
             UNREACHABLE();
         }
 
@@ -4635,20 +4631,6 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
 
     _ASSERTE(!"UnwindManagedExceptionPass1: Failed to find a handler. Reached the end of the stack");
     EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
-}
-
-//---------------------------------------------------------------------------------------
-//
-// Helper function to throw the passed in exception.
-// It is called from the assembler function StartUnwindingNativeFrames 
-// Arguments:
-//
-//      ex - the exception to throw.
-//
-extern "C"
-void ThrowExceptionHelper(PAL_SEHException* ex)
-{
-    throw *ex;
 }
 
 VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex)
