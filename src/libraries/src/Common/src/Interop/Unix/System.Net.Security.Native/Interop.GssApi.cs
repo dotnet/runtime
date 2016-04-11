@@ -15,12 +15,13 @@ internal static partial class Interop
         internal static bool EstablishSecurityContext(
             ref SafeGssContextHandle context,
             SafeGssCredHandle credential,
-            bool isNtlm,
+            bool isNtlmOnly,
             SafeGssNameHandle targetName,
             Interop.NetSecurityNative.GssFlags inFlags,
             byte[] buffer,
             out byte[] outputBuffer,
-            out uint outFlags)
+            out uint outFlags,
+            out int isNtlmUsed)
         {
             outputBuffer = null;
             outFlags = 0;
@@ -42,13 +43,14 @@ internal static partial class Interop
                 status = NetSecurityNative.InitSecContext(out minorStatus,
                                                           credential,
                                                           ref context,
-                                                          isNtlm,
+                                                          isNtlmOnly,
                                                           targetName,
                                                           (uint)inFlags,
                                                           buffer,
                                                           (buffer == null) ? 0 : buffer.Length,
                                                           ref token,
-                                                          out outFlags);
+                                                          out outFlags,
+                                                          out isNtlmUsed);
 
                 if ((status != NetSecurityNative.Status.GSS_S_COMPLETE) && (status != NetSecurityNative.Status.GSS_S_CONTINUE_NEEDED))
                 {
