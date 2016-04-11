@@ -26,8 +26,9 @@ set "__LogsDir=%__RootBinDir%\Logs"
 :: Default __Exclude to issues.targets
 set __Exclude0=%~dp0\issues.targets
 
-set __BuildSequential=
+set __Sequential=
 set __msbuildExtraArgs=
+set __LongGCTests=
 
 :Arg_Loop
 if "%1" == "" goto ArgsDone
@@ -53,8 +54,9 @@ if /i "%1" == "SkipWrapperGeneration" (set __SkipWrapperGeneration=true&shift&go
 if /i "%1" == "Exclude"             (set __Exclude=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "Exclude0"            (set __Exclude0=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "TestEnv"             (set __TestEnv=%2&shift&shift&goto Arg_Loop)
-if /i "%1" == "sequential"          (set __BuildSequential=1&shift&goto Arg_Loop)
+if /i "%1" == "sequential"          (set __Sequential=1&shift&goto Arg_Loop)
 if /i "%1" == "crossgen"            (set __DoCrossgen=1&shift&goto Arg_Loop)
+if /i "%1" == "longgctests"         (set __LongGCTests=1&shift&goto Arg_Loop)
 if /i "%1" == "GenerateLayoutOnly"  (set __GenerateLayoutOnly=1&set __SkipWrapperGeneration=true&shift&goto Arg_Loop)
 if /i "%1" == "PerfTests"           (set __PerfTests=true&set __SkipWrapperGeneration=true&shift&goto Arg_Loop)
 
@@ -125,8 +127,10 @@ if not defined VSINSTALLDIR (
 ::       assembly. 
 set __msbuildCommonArgs=/nologo /nodeReuse:false %__msbuildExtraArgs%
 
-if not defined __BuildSequential (
+if not defined __Sequential (
     set __msbuildCommonArgs=%__msbuildCommonArgs% /maxcpucount
+) else (
+    set __msbuildCommonArgs=%__msbuildCommonArgs% /p:ParallelRun=false
 )
 
 if defined CORE_ROOT goto SkipCoreRootSetup
@@ -307,6 +311,14 @@ if "%__IsGCTest%"=="true" (
         echo Failed to donwload runtime packages
         exit /b 1
     )
+)
+
+:: Long GC tests take about 10 minutes per test on average, so
+:: they often bump up against the default 10 minute timeout.
+:: 20 minutes is more than enough time for a test to complete successfully.
+if defined __LongGCTests (
+    echo Running Long GC tests, extending timeout to 20 minutes
+    set __TestTimeout=1200000
 )
 
 set __BuildLogRootName=Tests_GenerateRuntimeLayout
