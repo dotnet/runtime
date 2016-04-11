@@ -1285,6 +1285,7 @@ ves_icall_System_Reflection_Emit_TypeBuilder_create_generic_class (MonoReflectio
 	mono_error_set_pending_exception (&error);
 }
 
+#ifndef DISABLE_REFLECTION_EMIT
 ICALL_EXPORT MonoArray*
 ves_icall_System_Reflection_Emit_CustomAttributeBuilder_GetBlob (MonoReflectionAssembly *assembly, MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *propValues, MonoArray *fields, MonoArray* fieldValues)
 {
@@ -1293,6 +1294,7 @@ ves_icall_System_Reflection_Emit_CustomAttributeBuilder_GetBlob (MonoReflectionA
 	mono_error_set_pending_exception (&error);
 	return result;
 }
+#endif
 
 static gboolean
 get_executing (MonoMethod *m, gint32 no, gint32 ilo, gboolean managed, gpointer data)
