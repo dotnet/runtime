@@ -1171,7 +1171,7 @@ size_t              GCInfo::gcInfoBlockHdrSave(BYTE*      dest,
     header->gsCookieOffset = INVALID_GS_COOKIE_OFFSET;
     if (compiler->getNeedsGSSecurityCookie())
     {
-        _ASSERTE(compiler->lvaGSSecurityCookie != BAD_VAR_NUM);
+        assert(compiler->lvaGSSecurityCookie != BAD_VAR_NUM);
         int stkOffs = compiler->lvaTable[compiler->lvaGSSecurityCookie].lvStkOffs;
         header->gsCookieOffset = compiler->isFramePointerUsed() ? -stkOffs : stkOffs;
         assert(header->gsCookieOffset != INVALID_GS_COOKIE_OFFSET);

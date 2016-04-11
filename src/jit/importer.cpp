@@ -1597,7 +1597,7 @@ GenTreePtr          Compiler::impLookupToTree(CORINFO_LOOKUP *pLookup, unsigned 
 
         CORINFO_GENERIC_HANDLE handle = 0;
         void *pIndirection = 0;
-        _ASSERTE(pLookup->constLookup.accessType != IAT_PPVALUE);
+        assert(pLookup->constLookup.accessType != IAT_PPVALUE);
 
         if (pLookup->constLookup.accessType == IAT_VALUE)
             handle = pLookup->constLookup.handle;
@@ -1821,7 +1821,7 @@ GenTreePtr          Compiler::impRuntimeLookupToTree(CORINFO_RUNTIME_LOOKUP_KIND
         return gtNewLclvNode(tmp, TYP_I_IMPL);
     }
 
-    _ASSERTE(pLookup->indirections != 0);
+    assert(pLookup->indirections != 0);
 
     impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("bubbling QMark1"));  
     
@@ -3274,7 +3274,7 @@ GenTreePtr      Compiler::impArrayAccessIntrinsic(CORINFO_CLASS_HANDLE  clsHnd,
         }
         else
         {
-            _ASSERTE(intrinsicID == CORINFO_INTRINSIC_Array_Address);
+            assert(intrinsicID == CORINFO_INTRINSIC_Array_Address);
 
             // Fetch the return type
             typeInfo retInfo = verMakeTypeInfo(LocalSig.retType, LocalSig.retTypeClass);
