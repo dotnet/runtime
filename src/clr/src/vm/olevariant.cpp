@@ -995,8 +995,8 @@ VariantArray:
             ClearLPWSTRArray
         );
 
-#ifdef FEATURE_CLASSIC_COMINTEROP
     case VT_RECORD:
+#ifdef FEATURE_CLASSIC_COMINTEROP
         RETURN_MARSHALER(
             MarshalRecordVariantOleToCom,
             MarshalRecordVariantComToOle,
@@ -1005,7 +1005,14 @@ VariantArray:
             MarshalRecordArrayComToOle,
             ClearRecordArray
         );
-#endif
+#else
+        RETURN_MARSHALER(
+            NULL, NULL, NULL,
+            MarshalRecordArrayOleToCom,
+            MarshalRecordArrayComToOle,
+            ClearRecordArray
+        );
+#endif // FEATURE_CLASSIC_COMINTEROP
 
     case VT_CARRAY:
     case VT_USERDEFINED:
