@@ -185,9 +185,11 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 #endif
 	}
 
+#ifndef DISABLE_JIT
 	/* Free the locals list so mono_mb_free () doesn't free the types twice */
 	g_list_free (mb->locals_list);
 	mb->locals_list = NULL;
+#endif
 
 	method->signature = signature;
 	if (!signature->hasthis)

@@ -670,6 +670,13 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 }
 
 gpointer
+mono_arch_create_handler_block_trampoline (MonoTrampInfo **info, gboolean aot)
+{
+        g_assert_not_reached ();
+        return NULL;
+}
+
+gpointer
 mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 {
 	g_assert_not_reached ();
