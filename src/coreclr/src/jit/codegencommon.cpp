@@ -236,6 +236,7 @@ int CodeGenInterface::genSPtoFPdelta()
 
     delta = -genCallerSPtoInitialSPdelta() + genCallerSPtoFPdelta();
 
+    assert(delta >= 0);
     return delta;
 }
 
