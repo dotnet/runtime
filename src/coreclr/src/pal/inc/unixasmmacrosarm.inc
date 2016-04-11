@@ -112,7 +112,7 @@ C_FUNC(\Name\()_End):
 // CalleeSavedRegisters::r10
 // CalleeSavedRegisters::r9
 // CalleeSavedRegisters::r8
-// CalleeSavedRegisters::r7
+// CalleeSavedRegisters::r7    <- r7
 // CalleeSavedRegisters::r6
 // CalleeSavedRegisters::r5
 // CalleeSavedRegisters::r4    <- __PWTB_StackAlloc, __PWTB_TransitionBlock
@@ -151,7 +151,10 @@ C_FUNC(\Name\()_End):
         .endif
 
         PUSH_CALLEE_SAVED_REGISTERS
-        
+        .setfp r7, sp, #(3 * 4)
+        // let r7 point the saved r7 in the stack (clang FP style)
+        add r7, sp, #(3 * 4)
+
         alloc_stack     __PWTB_StackAlloc
 
         .if (__PWTB_SaveFPArgs == 1)
@@ -184,7 +187,7 @@ C_FUNC(\Name\()_End):
         free_stack __PWTB_StackAlloc
         POP_CALLEE_SAVED_REGISTERS
         POP_ARGUMENT_REGISTERS
-        
+
 .endm
 
 .macro EMIT_BREAKPOINT

@@ -43,6 +43,14 @@ InlinePolicy* InlinePolicy::GetPolicy(Compiler* compiler, bool isPrejitRoot)
 
 #if defined(DEBUG) || defined(INLINE_DATA)
 
+    // Optionally install the ModelPolicy.
+    bool useModelPolicy = JitConfig.JitInlinePolicyModel() != 0;
+
+    if (useModelPolicy)
+    {
+        return new (compiler, CMK_Inlining) ModelPolicy(compiler, isPrejitRoot);
+    }
+
     // Optionally install the DiscretionaryPolicy.
     bool useDiscretionaryPolicy = JitConfig.JitInlinePolicyDiscretionary() != 0;
 
@@ -596,7 +604,7 @@ int LegacyPolicy::DetermineNativeSizeEstimate()
 //
 // Notes:
 //    Estimates the native size (in bytes, scaled up by 10x) for the
-//    call site. While the quiality of the estimate here is questionable
+//    call site. While the quality of the estimate here is questionable
 //    (especially for x64) it is being left as is for legacy compatibility.
 
 int LegacyPolicy::DetermineCallsiteNativeSizeEstimate(CORINFO_METHOD_INFO* methInfo)
@@ -674,15 +682,11 @@ void LegacyPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     m_Multiplier = DetermineMultiplier();
     const int threshold = (int)(m_CallsiteNativeSizeEstimate * m_Multiplier);
 
+    // Note the LegacyPolicy estimates are scaled up by SIZE_SCALE
     JITDUMP("calleeNativeSizeEstimate=%d\n", m_CalleeNativeSizeEstimate)
     JITDUMP("callsiteNativeSizeEstimate=%d\n", m_CallsiteNativeSizeEstimate);
     JITDUMP("benefit multiplier=%g\n", m_Multiplier);
     JITDUMP("threshold=%d\n", threshold);
-
-#if DEBUG
-    // Size estimates are in bytes * 10
-    const double sizeDescaler = 10.0;
-#endif
 
     // Reject if callee size is over the threshold
     if (m_CalleeNativeSizeEstimate > threshold)
@@ -692,8 +696,8 @@ void LegacyPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
                     (LL_INFO100000,
                      "Native estimate for function size exceeds threshold"
                      " for inlining %g > %g (multiplier = %g)\n",
-                     m_CalleeNativeSizeEstimate / sizeDescaler,
-                     threshold / sizeDescaler,
+                     m_CalleeNativeSizeEstimate / SIZE_SCALE,
+                     threshold / SIZE_SCALE,
                      m_Multiplier));
 
         // Fail the inline
@@ -713,8 +717,8 @@ void LegacyPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
                     (LL_INFO100000,
                      "Native estimate for function size is within threshold"
                      " for inlining %g <= %g (multiplier = %g)\n",
-                     m_CalleeNativeSizeEstimate / sizeDescaler,
-                     threshold / sizeDescaler,
+                     m_CalleeNativeSizeEstimate / SIZE_SCALE,
+                     threshold / SIZE_SCALE,
                      m_Multiplier));
 
         // Update candidacy
@@ -1010,6 +1014,7 @@ DiscretionaryPolicy::DiscretionaryPolicy(Compiler* compiler, bool isPrejitRoot)
     , m_LoadAddressCount(0)
     , m_ThrowCount(0)
     , m_CallCount(0)
+    , m_ModelCodeSizeEstimate(0)
 {
     // Empty
 }
@@ -1078,7 +1083,7 @@ void DiscretionaryPolicy::NoteInt(InlineObservation obs, int value)
 
     case InlineObservation::CALLEE_OPCODE:
         {
-            // This tries to do a rough binning of opcodes based 
+            // This tries to do a rough binning of opcodes based
             // on similarity of impact on codegen.
             OPCODE opcode = static_cast<OPCODE>(value);
             ComputeOpcodeBin(opcode);
@@ -1330,7 +1335,7 @@ void DiscretionaryPolicy::ComputeOpcodeBin(OPCODE opcode)
         case CEE_LDSFLD:
             m_StaticFieldLoadCount++;
             break;
-        
+
         case CEE_STSFLD:
             m_StaticFieldStoreCount++;
             break;
@@ -1388,15 +1393,34 @@ void DiscretionaryPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo
     int limit = JitConfig.JitInlineLimit();
 
     if (!m_IsPrejitRoot &&
-        (limit >= 0) && 
+        (limit >= 0) &&
         (m_RootCompiler->fgInlinedCount >= static_cast<unsigned>(limit)))
     {
         SetFailure(InlineObservation::CALLSITE_OVER_INLINE_LIMIT);
         return;
     }
 
-    // Make some additional observations
+    // Make additional observations based on the method info
+    MethodInfoObservations(methodInfo);
 
+    // Estimate the code size impact. This is just for model
+    // evaluation purposes -- we'll still use the legacy policy's
+    // model for actual inlining.
+    EstimateCodeSize();
+
+    // Delegate to LegacyPolicy for the rest
+    LegacyPolicy::DetermineProfitability(methodInfo);
+}
+
+//------------------------------------------------------------------------
+// MethodInfoObservations: make observations based on information from
+// the method info for the callee.
+//
+// Arguments:
+//    methodInfo -- method info for the callee
+
+void DiscretionaryPolicy::MethodInfoObservations(CORINFO_METHOD_INFO* methodInfo)
+{
     CORINFO_SIG_INFO& locals = methodInfo->locals;
     m_LocalCount = locals.numArgs;
 
@@ -1477,13 +1501,67 @@ void DiscretionaryPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo
     {
         m_ReturnSize = 0;
     }
-    else 
+    else
     {
         m_ReturnSize = pointerSize;
     }
+}
 
-    // Delegate to LegacyPolicy for the rest
-    LegacyPolicy::DetermineProfitability(methodInfo);
+//------------------------------------------------------------------------
+// EstimateCodeSize: produce (various) code size estimates based on
+// observations.
+//
+// The "Baseline" code size model used by the legacy policy is
+// effectively
+//
+//   0.100 * m_CalleeNativeSizeEstimate +
+//  -0.100 * m_CallsiteNativeSizeEstimate
+//
+// On the inlines in CoreCLR's mscorlib, release windows x64, this
+// yields scores of R=0.42, MSE=228, and MAE=7.25.
+//
+// This estimate can be improved slighly by refitting, resulting in
+//
+//  -1.451 +
+//   0.095 * m_CalleeNativeSizeEstimate +
+//  -0.104 * m_CallsiteNativeSizeEstimate
+//
+// With R=0.44, MSE=220, and MAE=6.93.
+
+void DiscretionaryPolicy::EstimateCodeSize()
+{
+    // Ensure we have this available.
+    m_CalleeNativeSizeEstimate = DetermineNativeSizeEstimate();
+
+    // Size estimate based on GLMNET model.
+    // R=0.55, MSE=177, MAE=6.59
+    //
+    // Suspect it doesn't handle factors properly...
+    double sizeEstimate =
+        -13.532 +
+          0.359 * (int) m_CallsiteFrequency +
+         -0.015 * m_ArgCount +
+         -1.553 * m_ArgSize[5] +
+          2.326 * m_LocalCount +
+          0.287 * m_ReturnSize +
+          0.561 * m_IntConstantCount +
+          1.932 * m_FloatConstantCount +
+         -0.822 * m_SimpleMathCount +
+         -7.591 * m_IntArrayLoadCount +
+          4.784 * m_RefArrayLoadCount +
+         12.778 * m_StructArrayLoadCount +
+          1.452 * m_FieldLoadCount +
+          8.811 * m_StaticFieldLoadCount +
+          2.752 * m_StaticFieldStoreCount +
+         -6.566 * m_ThrowCount +
+          6.021 * m_CallCount +
+         -0.238 * m_IsInstanceCtor +
+         -5.357 * m_IsFromPromotableValueClass +
+         -7.901 * m_ConstantFeedsConstantTest +
+          0.065 * m_CalleeNativeSizeEstimate;
+
+    // Scaled up and reported as an integer value.
+    m_ModelCodeSizeEstimate = (int) (SIZE_SCALE * sizeEstimate);
 }
 
 //------------------------------------------------------------------------
@@ -1556,6 +1634,7 @@ void DiscretionaryPolicy::DumpSchema(FILE* file) const
     fprintf(file, ",ConstantFeedsConstantTest");
     fprintf(file, ",CalleeNativeSizeEstimate");
     fprintf(file, ",CallsiteNativeSizeEstimate");
+    fprintf(file, ",ModelCodeSizeEstimate");
 }
 
 //------------------------------------------------------------------------
@@ -1628,6 +1707,97 @@ void DiscretionaryPolicy::DumpData(FILE* file) const
     fprintf(file, ",%u", m_ConstantFeedsConstantTest ? 1 : 0);
     fprintf(file, ",%d", m_CalleeNativeSizeEstimate);
     fprintf(file, ",%d", m_CallsiteNativeSizeEstimate);
+    fprintf(file, ",%d", m_ModelCodeSizeEstimate);
+}
+
+//------------------------------------------------------------------------/
+// ModelPolicy: construct a new ModelPolicy
+//
+// Arguments:
+//    compiler -- compiler instance doing the inlining (root compiler)
+//    isPrejitRoot -- true if this compiler is prejitting the root method
+
+ModelPolicy::ModelPolicy(Compiler* compiler, bool isPrejitRoot)
+    : DiscretionaryPolicy(compiler, isPrejitRoot)
+{
+    // Empty
+}
+
+//------------------------------------------------------------------------
+// DetermineProfitability: determine if this inline is profitable
+//
+// Arguments:
+//    methodInfo -- method info for the callee
+
+void ModelPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
+{
+    // Do some homework
+    MethodInfoObservations(methodInfo);
+    EstimateCodeSize();
+
+    // Preliminary inline model.
+    //
+    // If code size is estimated to increase, look at
+    // the profitability model for guidance.
+    //
+    // If code size will decrease, just inline.
+
+    if (m_ModelCodeSizeEstimate <= 0)
+    {
+        // Inline will likely decrease code size
+        JITLOG_THIS(m_RootCompiler,
+                    (LL_INFO100000,
+                     "Inline profitable, will decrease code size by %g bytes\n",
+                     -m_ModelCodeSizeEstimate / SIZE_SCALE));
+
+        if (m_IsPrejitRoot)
+        {
+            SetCandidate(InlineObservation::CALLEE_IS_SIZE_DECREASING_INLINE);
+        }
+        else
+        {
+            SetCandidate(InlineObservation::CALLSITE_IS_SIZE_DECREASING_INLINE);
+        }
+    }
+    else
+    {
+        // This is a very crude profitability model, based on what
+        // the LegacyPolicy does. It will be updated over time.
+        m_Multiplier = DetermineMultiplier();
+        double benefit = SIZE_SCALE * (m_Multiplier / m_ModelCodeSizeEstimate);
+        double threshold = 0.25;
+        bool shouldInline = (benefit > threshold);
+
+        JITLOG_THIS(m_RootCompiler,
+                    (LL_INFO100000,
+                     "Inline %s profitable: benefit=%g (mult=%g / size=%d)\n",
+                     shouldInline ? "is" : "is not",
+                     benefit, m_Multiplier, m_ModelCodeSizeEstimate / SIZE_SCALE));
+        if (!shouldInline)
+        {
+            // Fail the inline
+            if (m_IsPrejitRoot)
+            {
+                SetNever(InlineObservation::CALLEE_NOT_PROFITABLE_INLINE);
+            }
+            else
+            {
+                SetFailure(InlineObservation::CALLSITE_NOT_PROFITABLE_INLINE);
+            }
+        }
+        else
+        {
+            // Update candidacy
+            if (m_IsPrejitRoot)
+            {
+                SetCandidate(InlineObservation::CALLEE_IS_PROFITABLE_INLINE);
+            }
+            else
+            {
+                SetCandidate(InlineObservation::CALLSITE_IS_PROFITABLE_INLINE);
+            }
+        }
+    }
 }
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
