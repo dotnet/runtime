@@ -10,6 +10,24 @@ namespace System.ComponentModel.Tests
     public class MemberDescriptorTests
     {
         [Fact]
+        public void CopiedMemberDescriptorEqualsItsSource()
+        {
+            var attributes = new Attribute[]
+            {
+                new CategoryAttribute("category"),
+                new DescriptionAttribute("description")
+            };
+            var firstDescriptor = new MockMemberDescriptor(nameof(MemberDescriptor), attributes);
+            var copiedDescriptor = new MockMemberDescriptor(firstDescriptor);
+
+            // call getters to ensure their backing fields aren't null
+            Assert.Equal(firstDescriptor.Category, copiedDescriptor.Category);
+            Assert.Equal(firstDescriptor.Description, copiedDescriptor.Description);
+
+            Assert.True(firstDescriptor.Equals(copiedDescriptor));
+        }
+
+        [Fact]
         public void MemberDescriptorFromName()
         {
             Assert.Throws<ArgumentException>(() => new MockMemberDescriptor((string)null));
