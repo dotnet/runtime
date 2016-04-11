@@ -272,8 +272,6 @@ case "$host" in
 		need_link_unlink=yes
 		libmono_cflags="-D_REENTRANT"
 		libgc_threads=pthreads
-		# This doesn't seem to work on solaris/x86, but the configure test runs
-		with_tls=pthread
 		has_dtrace=yes
 		use_sigposix=yes
 		enable_solaris_tar_check=yes
