@@ -11177,7 +11177,7 @@ void gc_heap::adjust_limit_clr (uint8_t* start, size_t limit_size,
             b++;
             dprintf (3, ("Allocation Clearing bricks [%Ix, %Ix[",
                          b, brick_of (align_on_brick (start + limit_size))));
-            short* x = &brick_table [b];
+            volatile short* x = &brick_table [b];
             short* end_x = &brick_table [brick_of (align_on_brick (start + limit_size))];
 
             for (;x < end_x;x++)
