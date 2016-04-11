@@ -4,23 +4,19 @@
   <ItemGroup>
     <Project Include="runtime.native.System.Security.Cryptography.pkgproj"/>
     <Project Include="rhel\runtime.native.System.Security.Cryptography.pkgproj">
-      <!-- currently we build both "rhel" and "ubuntu" packages on Linux,
-           but will only publish one of the packages based on what OS we
-           were actually building on.  
-           Remove this when fixing https://github.com/dotnet/corefx/issues/5190 -->
-      <OSGroup>Linux</OSGroup>
+      <OSGroup>rhel.7</OSGroup>
       <Platform>amd64</Platform>
     </Project>
     <Project Include="debian\runtime.native.System.Security.Cryptography.pkgproj">
-      <OSGroup>Linux</OSGroup>
+      <OSGroup>debian.8</OSGroup>
       <Platform>amd64</Platform>
     </Project>
     <Project Include="ubuntu\runtime.native.System.Security.Cryptography.pkgproj">
-      <OSGroup>Linux</OSGroup>
+      <OSGroup>ubuntu.14.04</OSGroup>
       <Platform>amd64</Platform>
     </Project>
     <Project Include="osx\runtime.native.System.Security.Cryptography.pkgproj">
-      <OSGroup>OSX</OSGroup>
+      <OSGroup>osx.10.10</OSGroup>
       <Platform>amd64</Platform>
     </Project>
   </ItemGroup>
