@@ -1,0 +1,27 @@
+{
+    "supports": {
+        "uwp.10.0.app": {
+            "uap10.0": [
+                "win10-x86",
+                "win10-x86-aot",
+                "win10-x64",
+                "win10-x64-aot",
+                "win10-arm",
+                "win10-arm-aot"
+            ]
+        },
+        "net46.app": {
+            "net46": [
+                "win-x86",
+                "win-x64"
+            ]
+        },
+        "dnxcore50.app": {
+            "dnxcore50": [
+                "win7-x86",
+                "win7-x64"
+            ]
+        }
+    }
+ }
+
