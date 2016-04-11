@@ -4296,7 +4296,7 @@ getPath(
     {
         if (access (lpFileName, F_OK) == 0)
         {
-            if (lpPathFileName.Set(lpFileNameString))
+            if (!lpPathFileName.Set(lpFileNameString))
             {
                 TRACE("Set of StackString failed!\n");
                 return FALSE;
