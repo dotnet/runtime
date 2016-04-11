@@ -38,9 +38,10 @@ public class SpectralNorm
     public static void Bench()
     {
         int n = 100;
-        double a = 0;
         foreach (var iteration in Benchmark.Iterations)
         {
+            double a = 0;
+
             using (iteration.StartMeasurement())
             {
                 for (int i = 0; i < Iterations; i++)
@@ -49,13 +50,14 @@ public class SpectralNorm
                     a += s.Approximate(n);
                 }
             }
-        }
-        double norm = a / (n * Iterations);
-        double expected = 1.274219991;
-        bool valid = Math.Abs(norm - expected) < 1e-4;
-        if (!valid)
-        {
-            throw new Exception("Benchmark failed to validate");
+
+            double norm = a / Iterations;
+            double expected = 1.274219991;
+            bool valid = Math.Abs(norm - expected) < 1e-4;
+            if (!valid)
+            {
+                throw new Exception("Benchmark failed to validate");
+            }
         }
     }
 
