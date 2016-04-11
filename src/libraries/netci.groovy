@@ -398,7 +398,7 @@ branchList.each { branchName ->
             def newJob = job(getJobName(Utilities.getFullJobName(project, newJobName, isPR), branchName)) {
                 steps {
                     if (os == 'Windows 10' || os == 'Windows 7' || os == 'Windows_NT') {
-                        batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && Build.cmd /p:ConfigurationGroup=${configurationGroup} /p:Outerloop=true /p:TestWithLocalLibraries=true")
+                        batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && Build.cmd /p:ConfigurationGroup=${configurationGroup} /p:Outerloop=true")
                     }
                     else if (os == 'OSX') {
                         shell("HOME=\$WORKSPACE/tempHome ./build.sh /p:ConfigurationGroup=${configurationGroup} /p:Outerloop=true /p:TestWithLocalLibraries=true")
