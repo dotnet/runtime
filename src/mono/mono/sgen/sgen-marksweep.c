@@ -1783,8 +1783,8 @@ major_finish_nursery_collection (void)
 static int
 block_usage_comparer (const void *bl1, const void *bl2)
 {
-	const gint16 nused1 = ((MSBlockInfo*)bl1)->nused;
-	const gint16 nused2 = ((MSBlockInfo*)bl2)->nused;
+	const gint16 nused1 = (*(MSBlockInfo**)bl1)->nused;
+	const gint16 nused2 = (*(MSBlockInfo**)bl2)->nused;
 
 	return nused2 - nused1;
 }
