@@ -143,16 +143,17 @@ void                Compiler::lvaInitTypeRef()
         else
 #endif
         {
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-            SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
-            eeGetSystemVAmd64PassStructInRegisterDescriptor(info.compMethodInfo->args.retTypeClass, &structDesc);
-            if (structDesc.eightByteCount > 1)
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING            
+            ReturnTypeDesc retTypeDesc;
+            retTypeDesc.Initialize(this, info.compMethodInfo->args.retTypeClass);
+
+            if (retTypeDesc.GetReturnRegCount() > 1)
             {
                 info.compRetNativeType = TYP_STRUCT;
             }
             else
             {
-                info.compRetNativeType = getEightByteType(structDesc, 0);
+                info.compRetNativeType = retTypeDesc.GetReturnRegType(0);
             }
 #else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
             // Check for TYP_STRUCT argument that can fit into a single register
@@ -740,7 +741,7 @@ void                Compiler::lvaInitUserArgs(InitVarDscInfo *      varDscInfo)
             {
                 if (structDesc.eightByteCount >= 1)
                 {
-                    firstEightByteType = getEightByteType(structDesc, 0);
+                    firstEightByteType = GetEightByteType(structDesc, 0);
                     firstAllocatedRegArgNum = varDscInfo->allocRegArg(firstEightByteType, 1);
                 }
             }
@@ -770,7 +771,7 @@ void                Compiler::lvaInitUserArgs(InitVarDscInfo *      varDscInfo)
                 // If there is a second eightbyte, get a register for it too and map the arg to the reg number.
                 if (structDesc.eightByteCount >= 2)
                 {
-                    secondEightByteType = getEightByteType(structDesc, 1);
+                    secondEightByteType = GetEightByteType(structDesc, 1);
                     secondAllocatedRegArgNum = varDscInfo->allocRegArg(secondEightByteType, 1);
                 }
 
