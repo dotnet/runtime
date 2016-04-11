@@ -307,7 +307,8 @@ free_los_section_memory (LOSObject *obj, size_t size)
 void
 sgen_los_free_object (LOSObject *obj)
 {
-	SGEN_ASSERT (0, !obj->cardtable_mod_union, "We should never free a LOS object with a mod-union table.");
+	if (obj->cardtable_mod_union)
+		sgen_card_table_free_mod_union (obj->cardtable_mod_union, (char*)obj->data, sgen_los_object_size (obj));
 
 #ifndef LOS_DUMMY
 	mword size = sgen_los_object_size (obj);
@@ -433,12 +434,13 @@ sgen_los_sweep (void)
 	for (bigobj = los_object_list; bigobj;) {
 		SGEN_ASSERT (0, !SGEN_OBJECT_IS_PINNED (bigobj->data), "Who pinned a LOS object?");
 
-		if (bigobj->cardtable_mod_union) {
-			sgen_card_table_free_mod_union (bigobj->cardtable_mod_union, (char*)bigobj->data, sgen_los_object_size (bigobj));
-			bigobj->cardtable_mod_union = NULL;
-		}
-
 		if (sgen_los_object_is_pinned (bigobj->data)) {
+			if (bigobj->cardtable_mod_union) {
+				mword obj_size = sgen_los_object_size (bigobj);
+				mword num_cards = sgen_card_table_number_of_cards_in_range ((mword) bigobj->data, obj_size);
+				memset (bigobj->cardtable_mod_union, 0, num_cards);
+			}
+
 			sgen_los_unpin_object (bigobj->data);
 			sgen_update_heap_boundaries ((mword)bigobj->data, (mword)bigobj->data + sgen_los_object_size (bigobj));
 		} else {
