@@ -99,6 +99,7 @@ struct _MSBlockInfo {
 	guint16 obj_size_index;
 	/* FIXME: Reduce this - it only needs a byte. */
 	volatile gint32 state;
+	gint16 nused;
 	unsigned int pinned : 1;
 	unsigned int has_references : 1;
 	unsigned int has_pinned : 1;	/* means cannot evacuate */
@@ -1514,6 +1515,7 @@ ensure_block_is_checked_for_sweeping (guint32 block_index, gboolean wait, gboole
 	for (i = 0; i < MS_NUM_MARK_WORDS; ++i)
 		nused += bitcount (block->mark_words [i]);
 
+	block->nused = nused;
 	if (nused)
 		have_live = TRUE;
 	if (nused < count)
@@ -1778,6 +1780,67 @@ major_finish_nursery_collection (void)
 #endif
 }
 
+static int
+block_usage_comparer (const void *bl1, const void *bl2)
+{
+	const gint16 nused1 = ((MSBlockInfo*)bl1)->nused;
+	const gint16 nused2 = ((MSBlockInfo*)bl2)->nused;
+
+	return nused2 - nused1;
+}
+
+static void
+sgen_evacuation_freelist_blocks (MSBlockInfo * volatile *block_list, int size_index)
+{
+	MSBlockInfo **evacuated_blocks;
+	size_t index = 0, count, num_blocks = 0, num_used = 0;
+	MSBlockInfo *info;
+	MSBlockInfo * volatile *prev;
+
+	for (info = *block_list; info != NULL; info = info->next_free) {
+		num_blocks++;
+		num_used += info->nused;
+	}
+
+	/*
+	 * We have a set of blocks in the freelist which will be evacuated. Instead
+	 * of evacuating all of the blocks into new ones, we traverse the freelist
+	 * sorting it by the number of occupied slots, evacuating the objects from
+	 * blocks with fewer used slots into fuller blocks.
+	 *
+	 * The number of used slots is set at the end of the previous sweep. Since
+	 * we sequentially unlink slots from blocks, except for the head of the
+	 * freelist, for blocks on the freelist, the number of used slots is the same
+	 * as at the end of the previous sweep.
+	 */
+	evacuated_blocks = (MSBlockInfo**)sgen_alloc_internal_dynamic (sizeof (MSBlockInfo*) * num_blocks, INTERNAL_MEM_TEMPORARY, TRUE);
+
+	for (info = *block_list; info != NULL; info = info->next_free) {
+		evacuated_blocks [index++] = info;
+	}
+
+	SGEN_ASSERT (0, num_blocks == index, "Why did the freelist change ?");
+
+	qsort (evacuated_blocks, num_blocks, sizeof (gpointer), block_usage_comparer);
+
+	/*
+	 * Form a new freelist with the fullest blocks. These blocks will also be
+	 * marked as to_space so we don't evacuate from them.
+	 */
+	count = MS_BLOCK_FREE / block_obj_sizes [size_index];
+	prev = block_list;
+	for (index = 0; index < (num_used + count - 1) / count; index++) {
+		SGEN_ASSERT (0, index < num_blocks, "Why do we need more blocks for compaction than we already had ?");
+		info = evacuated_blocks [index];
+		info->is_to_space = TRUE;
+		*prev = info;
+		prev = &info->next_free;
+	}
+	*prev = NULL;
+
+	sgen_free_internal_dynamic (evacuated_blocks, sizeof (MSBlockInfo*) * num_blocks, INTERNAL_MEM_TEMPORARY);
+}
+
 static void
 major_start_major_collection (void)
 {
@@ -1796,8 +1859,8 @@ major_start_major_collection (void)
 
 		binary_protocol_evacuating_blocks (block_obj_sizes [i]);
 
-		free_block_lists [0][i] = NULL;
-		free_block_lists [MS_BLOCK_FLAG_REFS][i] = NULL;
+		sgen_evacuation_freelist_blocks (&free_block_lists [0][i], i);
+		sgen_evacuation_freelist_blocks (&free_block_lists [MS_BLOCK_FLAG_REFS][i], i);
 	}
 
 	if (lazy_sweep)
@@ -1809,6 +1872,13 @@ major_start_major_collection (void)
 			sweep_block (block);
 		SGEN_ASSERT (0, block->state == BLOCK_STATE_SWEPT, "All blocks must be swept when we're pinning.");
 		set_block_state (block, BLOCK_STATE_MARKING, BLOCK_STATE_SWEPT);
+		/*
+		 * Swept blocks that have a null free_list are full. Evacuation is not
+		 * effective on these blocks since we expect them to have high usage anyway,
+		 * given that the survival rate for majors is relatively high.
+		 */
+		if (evacuate_block_obj_sizes [block->obj_size_index] && !block->free_list)
+			block->is_to_space = TRUE;
 	} END_FOREACH_BLOCK_NO_LOCK;
 
 	if (lazy_sweep)
