@@ -145,10 +145,10 @@ CodeGen::CodeGen(Compiler * theCompiler) :
     // Shouldn't be used before it is set in genFnProlog()
     compiler->compCalleeRegsPushed = UninitializedWord<unsigned>();
 
-#ifdef _TARGET_AMD64_
+#if defined(_TARGET_XARCH_) && !FEATURE_STACK_FP_X87
     // Shouldn't be used before it is set in genFnProlog()
     compiler->compCalleeFPRegsSavedMask = (regMaskTP)-1;
-#endif // _TARGET_AMD64_
+#endif // defined(_TARGET_XARCH_) && !FEATURE_STACK_FP_X87
 #endif // DEBUG
 
 #ifdef _TARGET_AMD64_
@@ -236,6 +236,7 @@ int CodeGenInterface::genSPtoFPdelta()
 
     delta = -genCallerSPtoInitialSPdelta() + genCallerSPtoFPdelta();
 
+    assert(delta >= 0);
     return delta;
 }
 
@@ -7181,7 +7182,7 @@ void CodeGen::genProfilingEnterCallback(regNumber  initReg,
     //      of that offset to FramePointer to obtain caller's SP value.
     assert(compiler->lvaOutgoingArgSpaceVar != BAD_VAR_NUM);        
     int callerSPOffset = compiler->lvaToCallerSPRelativeOffset(0, isFramePointerUsed());
-    getEmitter()->emitIns_R_AR (INS_lea, EA_PTRSIZE, REG_ARG_1, getFramePointerReg(), -callerSPOffset);
+    getEmitter()->emitIns_R_AR (INS_lea, EA_PTRSIZE, REG_ARG_1, genFramePointerReg(), -callerSPOffset);
 
     // Can't have a call until we have enough padding for rejit
     genPrologPadForReJit();
@@ -7380,7 +7381,7 @@ void                CodeGen::genProfilingLeaveCallback(unsigned helper /*= CORIN
         // Caller's SP relative offset to FramePointer will be negative.  We need to add absolute
         // value of that offset to FramePointer to obtain caller's SP value.
         int callerSPOffset = compiler->lvaToCallerSPRelativeOffset(0, isFramePointerUsed());
-        getEmitter()->emitIns_R_AR (INS_lea, EA_PTRSIZE, REG_ARG_1, getFramePointerReg(), -callerSPOffset);
+        getEmitter()->emitIns_R_AR (INS_lea, EA_PTRSIZE, REG_ARG_1, genFramePointerReg(), -callerSPOffset);
     }
     else
     {
@@ -8355,6 +8356,51 @@ void                CodeGen::genFinalizeFrame()
 #endif
 }
 
+//------------------------------------------------------------------------
+// genEstablishFramePointer: Set up the frame pointer by adding an offset to the stack pointer.
+//
+// Arguments:
+//    delta - the offset to add to the current stack pointer to establish the frame pointer
+//    reportUnwindData - true if establishing the frame pointer should be reported in the OS unwind data.
+
+void                CodeGen::genEstablishFramePointer(int delta, bool reportUnwindData)
+{
+    assert(compiler->compGeneratingProlog);
+
+#if defined(_TARGET_XARCH_)
+
+    if (delta == 0)
+    {
+        getEmitter()->emitIns_R_R(INS_mov, EA_PTRSIZE, REG_FPBASE, REG_SPBASE);
+        psiMoveESPtoEBP();
+    }
+    else
+    {
+        getEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_FPBASE, REG_SPBASE, delta);
+        // We don't update prolog scope info (there is no function to handle lea), but that is currently dead code anyway.
+    }
+
+    if (reportUnwindData)
+    {
+        compiler->unwindSetFrameReg(REG_FPBASE, delta);
+    }
+
+#elif defined(_TARGET_ARM_)
+
+    assert(arm_Valid_Imm_For_Add_SP(delta));
+    getEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_FPBASE, REG_SPBASE, delta);
+
+    if (reportUnwindData)
+    {
+        compiler->unwindPadding();
+    }
+
+#else
+    NYI("establish frame pointer");
+#endif
+}
+
+
 
 /*****************************************************************************
  *
@@ -8658,7 +8704,7 @@ void                CodeGen::genFnProlog()
 
 #ifdef _TARGET_ARM_
     // If we have a variable sized frame (compLocallocUsed is true)
-    // then using REG_SAVED_LOCALALLOC_SP in the prolog is not allowed
+    // then using REG_SAVED_LOCALLOC_SP in the prolog is not allowed
     if (compiler->compLocallocUsed)
     {
         excludeMask |= RBM_SAVED_LOCALLOC_SP;
@@ -8738,9 +8784,8 @@ void                CodeGen::genFnProlog()
         psiAdjustStackLevel(REGSIZE_BYTES);
 
 #ifndef _TARGET_AMD64_ // On AMD64, establish the frame pointer after the "sub rsp"
-        inst_RV_RV(INS_mov, REG_FPBASE, REG_SPBASE);
-        compiler->unwindSetFrameReg(REG_FPBASE, 0);
-        psiMoveESPtoEBP();
+        genEstablishFramePointer(0, /*reportUnwindData*/ true);
+#endif // !_TARGET_AMD64_
 
 #if DOUBLE_ALIGN
         if  (compiler->genDoubleAlign())
@@ -8751,7 +8796,6 @@ void                CodeGen::genFnProlog()
             inst_RV_IV(INS_AND, REG_SPBASE, -8, EA_PTRSIZE);
         }
 #endif // DOUBLE_ALIGN
-#endif // !_TARGET_AMD64_
     }
 #endif // _TARGET_XARCH_
 
@@ -8779,8 +8823,7 @@ void                CodeGen::genFnProlog()
         if (!arm_Valid_Imm_For_Add_SP(afterLclFrameSPtoFPdelta))
         {
             // Oh well, it looks too big. Go ahead and establish the frame pointer here.
-            getEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_FPBASE, REG_SPBASE, SPtoFPdelta);
-            compiler->unwindPadding();
+            genEstablishFramePointer(SPtoFPdelta, /*reportUnwindData*/ true);
             needToEstablishFP = false;
         }
     }
@@ -8825,25 +8868,8 @@ void                CodeGen::genFnProlog()
     // Establish the AMD64 frame pointer after the OS-reported prolog.
     if  (doubleAlignOrFramePointerUsed())
     {
-        int delta = compiler->codeGen->genSPtoFPdelta();
-
-        if (delta == 0)
-        {
-            getEmitter()->emitIns_R_R(INS_mov, EA_PTRSIZE, REG_FPBASE, REG_SPBASE);
-        }
-        else
-        {
-            getEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_FPBASE, REG_SPBASE, delta);
-        }
-
-        if (compiler->compLocallocUsed || compiler->opts.compDbgEnC)
-        {
-            compiler->unwindSetFrameReg(REG_FPBASE, delta);
-        }
-
-#ifdef DEBUGGING_SUPPORT
-        // TODO-AMD64-Bug?: do we need to do something with debugging?
-#endif // DEBUGGING_SUPPORT  
+        bool reportUnwindData = compiler->compLocallocUsed || compiler->opts.compDbgEnC;
+        genEstablishFramePointer(compiler->codeGen->genSPtoFPdelta(), reportUnwindData);
     }
 #endif //_TARGET_AMD64_
 
@@ -8856,8 +8882,7 @@ void                CodeGen::genFnProlog()
 #ifdef _TARGET_ARM_
     if  (needToEstablishFP)
     {
-        assert(arm_Valid_Imm_For_Add_SP(afterLclFrameSPtoFPdelta));
-        getEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_FPBASE, REG_SPBASE, afterLclFrameSPtoFPdelta);
+        genEstablishFramePointer(afterLclFrameSPtoFPdelta, /*reportUnwindData*/ false);
         needToEstablishFP = false; // nobody uses this later, but set it anyway, just to be explicit
     }
 #endif // _TARGET_ARM_

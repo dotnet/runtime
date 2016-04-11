@@ -7951,7 +7951,7 @@ public :
     // In case of Amd64 this doesn't include float regs saved on stack.
     unsigned            compCalleeRegsPushed;
 
-#if defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
+#if defined(_TARGET_XARCH_) && !FEATURE_STACK_FP_X87
     // Mask of callee saved float regs on stack.
     regMaskTP           compCalleeFPRegsSavedMask;
 #endif

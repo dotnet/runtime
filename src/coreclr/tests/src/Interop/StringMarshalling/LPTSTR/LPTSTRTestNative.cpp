@@ -11,7 +11,7 @@ const WCHAR* strReturn = W("a\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0");
 
 const WCHAR* strErrReturn = W("Error");
 
-const WCHAR* strNative = W("Native\0String\0");
+const WCHAR* strNative = W(" Native\0String\0");
 size_t lenstrNative = 7; //the len of strNative
 
 extern "C" LPWSTR ReturnString()

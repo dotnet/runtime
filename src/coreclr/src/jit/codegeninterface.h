@@ -164,10 +164,6 @@ public:
     void                setFrameRequired(bool value)    { m_cgFrameRequired = value; }
 
 public:
-    regNumber           getFramePointerReg()            { if (isFramePointerUsed())
-                                                              return REG_FPBASE;
-                                                          else
-                                                              return REG_SPBASE; }
 
     int                 genCallerSPtoFPdelta();
     int                 genCallerSPtoInitialSPdelta();
@@ -215,14 +211,14 @@ public:
 // Arguments are accessed relative to the Frame Pointer (EBP), and
 // locals are accessed relative to the Stack Pointer (ESP).
 public:
-    bool                doDoubleAlign()                  { return m_cgDoubleAlign; }
-    void                setDoubleAlign(bool value)       { m_cgDoubleAlign = value; }
-    bool                doubleAlignOrFramePointerUsed()      { return isFramePointerUsed() || doDoubleAlign(); }
+    bool                doDoubleAlign() const                 { return m_cgDoubleAlign; }
+    void                setDoubleAlign(bool value)            { m_cgDoubleAlign = value; }
+    bool                doubleAlignOrFramePointerUsed() const { return isFramePointerUsed() || doDoubleAlign(); }
 private:
     bool                m_cgDoubleAlign;
 #else // !DOUBLE_ALIGN
 public:
-    bool                doubleAlignOrFramePointerUsed()      { return isFramePointerUsed(); }
+    bool                doubleAlignOrFramePointerUsed() const { return isFramePointerUsed(); }
 #endif // !DOUBLE_ALIGN
 
 
