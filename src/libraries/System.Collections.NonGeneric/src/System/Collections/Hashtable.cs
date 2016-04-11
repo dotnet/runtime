@@ -109,14 +109,6 @@ namespace System.Collections
 
         internal const Int32 HashPrime = 101;
         private const Int32 InitialSize = 3;
-        private const String LoadFactorName = "LoadFactor";
-        private const String VersionName = "Version";
-        private const String ComparerName = "Comparer";
-        private const String HashCodeProviderName = "HashCodeProvider";
-        private const String HashSizeName = "HashSize";  // Must save buckets.Length
-        private const String KeysName = "Keys";
-        private const String ValuesName = "Values";
-        private const String KeyComparerName = "KeyComparer";
 
         // Deleted entries have their key set to buckets
 
