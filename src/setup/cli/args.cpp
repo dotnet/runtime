@@ -19,7 +19,7 @@ arguments_t::arguments_t() :
 }
 
 bool parse_arguments(const pal::string_t& deps_path, const std::vector<pal::string_t>& probe_paths, host_mode_t mode,
-    const int argc, const pal::char_t* argv[], arguments_t* arg_out)
+    const int argc, const pal::char_t* argv[], pal::string_t* runtime_config, arguments_t* arg_out)
 {
     arguments_t& args = *arg_out;
     // Get the full name of the application
@@ -68,7 +68,7 @@ bool parse_arguments(const pal::string_t& deps_path, const std::vector<pal::stri
     }
 
     std::unordered_map<pal::string_t, std::vector<pal::string_t>> opts;
-    std::vector<pal::string_t> known_opts = { _X("--depsfile"), _X("--additionalprobingpath") };
+    std::vector<pal::string_t> known_opts = { _X("--depsfile"), _X("--additionalprobingpath"), _X("--runtimeconfig") };
     int num_args = 0;
     if (!parse_known_args(args.app_argc, args.app_argv, known_opts, &opts, &num_args))
     {
@@ -79,7 +79,9 @@ bool parse_arguments(const pal::string_t& deps_path, const std::vector<pal::stri
     args.app_argv += num_args;
     pal::string_t opts_deps_file = _X("--depsfile");
     pal::string_t opts_probe_path = _X("--additionalprobingpath");
+    pal::string_t opts_runtime_config = _X("--runtimeconfig");
     pal::string_t deps_file = get_last_known_arg(opts, opts_deps_file, deps_path);
+    *runtime_config = get_last_known_arg(opts, opts_runtime_config, _X(""));
     if (opts.count(opts_probe_path))
     {
         for (const auto& str : opts[opts_probe_path])

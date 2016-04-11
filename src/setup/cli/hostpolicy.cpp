@@ -231,7 +231,8 @@ SHARED_API int corehost_main(const int argc, const pal::char_t* argv[])
 
     // Take care of arguments
     arguments_t args;
-    if (!parse_arguments(g_init->deps_file(), g_init->probe_paths(), g_init->host_mode(), argc, argv, &args))
+    pal::string_t runtime_config;
+    if (!parse_arguments(g_init->deps_file(), g_init->probe_paths(), g_init->host_mode(), argc, argv, &runtime_config, &args))
     {
         return StatusCode::LibHostInvalidArgs;
     }
@@ -247,8 +248,14 @@ SHARED_API int corehost_main(const int argc, const pal::char_t* argv[])
     else
     {
         pal::string_t config_file, dev_config_file;
-        
-        get_runtime_config_paths_from_app(args.managed_application, &config_file, &dev_config_file);
+        if (runtime_config.empty())
+        {
+            get_runtime_config_paths_from_app(args.managed_application, &config_file, &dev_config_file);
+        }
+        else
+        {
+            get_runtime_config_paths_from_arg(runtime_config, &config_file, &dev_config_file);
+        }
         runtime_config_t config(config_file, dev_config_file);
 
         if (!config.is_valid())
