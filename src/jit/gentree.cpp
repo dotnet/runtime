@@ -13403,7 +13403,7 @@ bool GenTree::isCommutativeSIMDIntrinsic()
 #endif //FEATURE_SIMD
 
 //-------------------------------------------------------------------------
-// Initialize: Multi-reg Return Type Descriptor given type handle.
+// Initialize: Return Type Descriptor given type handle.
 // 
 // Arguments
 //    comp        -  Compiler Instance
@@ -13427,13 +13427,13 @@ void ReturnTypeDesc::Initialize(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd)
     {
         if (structDesc.eightByteCount == 1)
         {
-            m_regType0 = comp->getEightByteType(structDesc, 0);
+            m_regType0 = comp->GetEightByteType(structDesc, 0);
         }
         else
         {
             assert(structDesc.eightByteCount == 2);
-            m_regType0 = comp->getEightByteType(structDesc, 0);
-            m_regType1 = comp->getEightByteType(structDesc, 1);
+            m_regType0 = comp->GetEightByteType(structDesc, 0);
+            m_regType1 = comp->GetEightByteType(structDesc, 1);
         }
     }
 
@@ -13442,4 +13442,110 @@ void ReturnTypeDesc::Initialize(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd)
 #endif
 
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+}
+
+//-------------------------------------------------------------------
+// GetABIReturnReg:  Return ith return register as per target ABI
+//
+// Arguments:
+//     idx   -   Index of the return register.
+//               The first return register has an index of 0 and so on.
+//
+// Return Value:
+//     Returns ith return register as per target ABI.
+//
+// Notes:
+//     Right now this is implemented only for x64 Unix
+//     and yet to be implemented for other multi-reg return
+//     targets (Arm64/Arm32/x86).
+//
+// TODO-ARM: Implement this routine to support HFA returns.
+// TODO-X86: Implement this routine to support long returns.
+regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx)
+{
+    unsigned count = GetReturnRegCount();
+    assert(idx < count);
+
+    regNumber resultReg = REG_NA;
+
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+    var_types regType0 = GetReturnRegType(0);
+
+    if (idx == 0)
+    {
+        if (varTypeIsIntegralOrI(regType0))
+        {
+            resultReg = REG_INTRET;
+        }
+        else {
+            noway_assert(varTypeIsFloating(regType0));
+            resultReg = REG_FLOATRET;
+        }
+    }
+    else if (idx == 1)
+    {
+        var_types regType1 = GetReturnRegType(1);
+
+        if (varTypeIsIntegralOrI(regType1))
+        {
+            if (varTypeIsIntegralOrI(regType0))
+            {
+                resultReg = REG_INTRET_1;
+            }
+            else
+            {
+                resultReg = REG_INTRET;
+            }
+        }
+        else 
+        {
+            noway_assert(varTypeIsFloating(regType1));
+
+            if (varTypeIsFloating(regType0))
+            {
+                resultReg = REG_FLOATRET_1;
+            }
+            else
+            {
+                resultReg = REG_FLOATRET;
+            }
+        }
+    }
+#endif //FEATURE_UNIX_AMD64_STRUCT_PASSING
+
+    assert(resultReg != REG_NA);
+    return resultReg;
+}
+
+//--------------------------------------------------------------------------------
+// GetABIReturnRegs: get the mask of return registers as per target arch ABI.
+//
+// Arguments:
+//    None
+// 
+// Return Value:
+//    reg mask of return registers in which the return type is returned.
+//
+// Note:
+//    For now this is implemented only for x64 Unix and yet to be implemented
+//    for other multi-reg return targets (Arm64/Arm32x86).
+//
+//    This routine can be used when the caller is not particular about the order
+//    of return registers and wants to know the set of return registers.
+//
+// TODO-ARM: Implement this routine to support HFA returns.
+// TODO-X86: Implement this routine to support long returns.
+//
+//static
+regMaskTP ReturnTypeDesc::GetABIReturnRegs()
+{
+    regMaskTP resultMask = RBM_NONE;
+
+    unsigned count = GetReturnRegCount();
+    for (unsigned i = 0; i < count; ++i)
+    {
+        resultMask |= genRegMask(GetABIReturnReg(i));
+    }
+
+    return resultMask;
 }
