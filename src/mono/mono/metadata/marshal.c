@@ -7163,10 +7163,12 @@ emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 		return emit_marshal_string (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_OBJECT:
-#ifndef DISABLE_COM
+#if !defined(DISABLE_COM) && !defined(DISABLE_JIT)
 		if (spec && spec->native == MONO_NATIVE_STRUCT)
 			return emit_marshal_variant (m, argnum, t, spec, conv_arg, conv_arg_type, action);
+#endif
 
+#if !defined(DISABLE_COM)
 		if (spec && (spec->native == MONO_NATIVE_IUNKNOWN ||
 			spec->native == MONO_NATIVE_IDISPATCH ||
 			spec->native == MONO_NATIVE_INTERFACE))

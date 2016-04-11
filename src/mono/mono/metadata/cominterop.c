@@ -622,6 +622,7 @@ mono_cominterop_cleanup (void)
 void
 mono_mb_emit_cominterop_call (MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethod* method)
 {
+#ifndef DISABLE_JIT
 	// get function pointer from 1st arg, the COM interface pointer
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_icon (mb, cominterop_get_com_slot_for_method (method));
@@ -632,11 +633,13 @@ mono_mb_emit_cominterop_call (MonoMethodBuilder *mb, MonoMethodSignature *sig, M
 	mono_mb_emit_calli (mb, sig);
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_byte (mb, CEE_MONO_RESTORE_LMF);
+#endif /* DISABLE_JIT */
 }
 
 void
 mono_cominterop_emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv conv, MonoMarshalSpec *mspec)
 {
+#ifndef DISABLE_JIT
 	switch (conv) {
 	case MONO_MARSHAL_CONV_OBJECT_INTERFACE:
 	case MONO_MARSHAL_CONV_OBJECT_IUNKNOWN:
@@ -708,11 +711,13 @@ mono_cominterop_emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, 
 	default:
 		g_assert_not_reached ();
 	}
+#endif /* DISABLE_JIT */
 }
 
 void
 mono_cominterop_emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv conv, MonoMarshalSpec *mspec)
 {
+#ifndef DISABLE_JIT
 	switch (conv) {
 	case MONO_MARSHAL_CONV_OBJECT_INTERFACE:
 	case MONO_MARSHAL_CONV_OBJECT_IDISPATCH:
@@ -800,6 +805,7 @@ mono_cominterop_emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, 
 	default:
 		g_assert_not_reached ();
 	}
+#endif /* DISABLE_JIT */
 }
 
 /**
@@ -936,6 +942,7 @@ mono_cominterop_get_native_wrapper (MonoMethod *method)
 	sig = mono_method_signature (method);
 	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_COMINTEROP);
 
+#ifndef DISABLE_JIT
 	/* if method klass is import, that means method
 	 * is really a com call. let interop system emit it.
 	*/
@@ -1009,6 +1016,8 @@ mono_cominterop_get_native_wrapper (MonoMethod *method)
 			imported classes is not yet implemented.");
 		mono_mb_emit_exception (mb, "NotSupportedException", msg);
 	}
+#endif /* DISABLE_JIT */
+
 	csig = mono_metadata_signature_dup_full (method->klass->image, sig);
 	csig->pinvoke = 0;
 	res = mono_mb_create_and_cache (cache, method,
@@ -1048,6 +1057,7 @@ mono_cominterop_get_invoke (MonoMethod *method)
 
 	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_COMINTEROP_INVOKE);
 
+#ifndef DISABLE_JIT
 	/* get real proxy object, which is a ComInteropProxy in this case*/
 	mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
 	mono_mb_emit_ldarg (mb, 0);
@@ -1088,6 +1098,7 @@ mono_cominterop_get_invoke (MonoMethod *method)
 	mono_marshal_emit_thread_interrupt_checkpoint (mb);
 
 	mono_mb_emit_byte (mb, CEE_RET);
+#endif /* DISABLE_JIT */
 
 	res = mono_mb_create_and_cache (cache, method, mb, sig, sig->param_count + 16);
 	mono_mb_free (mb);
@@ -1142,6 +1153,18 @@ mono_cominterop_emit_marshal_com_interface (EmitMarshalContext *m, int argnum,
 	if (!marshal_release)
 		marshal_release = mono_class_get_method_from_name (mono_defaults.marshal_class, "Release", 1);
 
+#ifdef DISABLE_JIT
+	switch (action) {
+	case MARSHAL_ACTION_CONV_IN:
+		*conv_arg_type = &mono_defaults.int_class->byval_arg;
+		break;
+	case MARSHAL_ACTION_MANAGED_CONV_IN:
+		*conv_arg_type = &mono_defaults.int_class->byval_arg;
+		break;
+	default:
+		break;
+	}
+#else
 	switch (action) {
 	case MARSHAL_ACTION_CONV_IN: {
 		guint32 pos_null = 0;
@@ -1428,6 +1451,7 @@ mono_cominterop_emit_marshal_com_interface (EmitMarshalContext *m, int argnum,
 	default:
 		g_assert_not_reached ();
 	}
+#endif /* DISABLE_JIT */
 
 	return conv_arg;
 }
@@ -2077,8 +2101,10 @@ cominterop_get_ccw_checked (MonoObject* object, MonoClass* itf, MonoError *error
 				mspecs [0] = NULL;
 			}
 
+#ifndef DISABLE_JIT
 			/* skip visiblity since we call internal methods */
 			mb->skip_visibility = TRUE;
+#endif
 
 			cominterop_setup_marshal_context (&m, adjust_method);
 			m.mb = mb;
@@ -2089,7 +2115,6 @@ cominterop_get_ccw_checked (MonoObject* object, MonoClass* itf, MonoError *error
 
 			vtable [vtable_index--] = mono_compile_method (wrapper_method);
 
-			
 			for (param_index = sig_adjusted->param_count; param_index >= 0; param_index--)
 				if (mspecs [param_index])
 					mono_metadata_free_marshal_spec (mspecs [param_index]);
@@ -2249,9 +2274,9 @@ cominterop_get_managed_wrapper_adjusted (MonoMethod *method)
 
 	mspecs [0] = NULL;
 
-	if (!preserve_sig) {
+#ifndef DISABLE_JIT
+	if (!preserve_sig)
 		hr = mono_mb_add_local (mb, &mono_defaults.int32_class->byval_arg);
-	}
 	else if (!MONO_TYPE_IS_VOID (sig->ret))
 		hr = mono_mb_add_local (mb, sig->ret);
 
@@ -2315,6 +2340,7 @@ cominterop_get_managed_wrapper_adjusted (MonoMethod *method)
 		mono_mb_emit_ldloc (mb, hr);
 
 	mono_mb_emit_byte (mb, CEE_RET);
+#endif /* DISABLE_JIT */
 
 	mono_cominterop_lock ();
 	res = mono_mb_create_method (mb, sig_native, sig_native->param_count + 16);	
@@ -2806,10 +2832,9 @@ mono_cominterop_emit_marshal_safearray (EmitMarshalContext *m, int argnum, MonoT
 {
 	MonoMethodBuilder *mb = m->mb;
 
+#ifndef DISABLE_JIT
 	switch (action) {
-
 	case MARSHAL_ACTION_CONV_IN: {
-
 		if (t->attrs & PARAM_ATTRIBUTE_IN) {
 
 			/* Generates IL code for the following algorithm:
@@ -2923,7 +2948,6 @@ mono_cominterop_emit_marshal_safearray (EmitMarshalContext *m, int argnum, MonoT
 		break;
 
 	case MARSHAL_ACTION_CONV_OUT: {
-
 		if (t->attrs & PARAM_ATTRIBUTE_OUT) {
 			/* Generates IL code for the following algorithm:
 
@@ -3041,6 +3065,7 @@ mono_cominterop_emit_marshal_safearray (EmitMarshalContext *m, int argnum, MonoT
 	default:
 		g_assert_not_reached ();
 	}
+#endif /* DISABLE_JIT */
 
 	return conv_arg;
 }
