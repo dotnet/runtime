@@ -353,7 +353,7 @@ namespace System.ComponentModel
             }
 
             if ((mdObj._description == null) != (_description == null) ||
-                (_description != null && !mdObj._category.Equals(_description)))
+                (_description != null && !mdObj._description.Equals(_description)))
             {
                 return false;
             }
