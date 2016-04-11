@@ -640,3 +640,70 @@ branchList.each { branchName ->
         }
     }
 }
+
+// **************************
+// Do some cross platform runs with a debug CoreFX *and* a debug CoreCLR. This reuses some existing jobs we've defined above
+// **************************
+branchList.each { branchName ->
+    innerLoopNonWindowsOSs.each { os ->
+        def isPR = (branchName == 'pr')
+        def osGroup = osGroupMap[os]
+        def configurationGroup = 'Debug'
+
+        def fullNativeCompBuildJobName = Utilities.getFolderName(project) + '/' + getJobName(Utilities.getFullJobName("nativecomp_${os.toLowerCase()}_${configurationGroup.toLowerCase()}", isPR), branchName)
+        def fullCoreFXBuildJobName = Utilities.getFolderName(project) + '/' + getJobName(Utilities.getFullJobName("${os.toLowerCase()}_${configurationGroup.toLowerCase()}_bld", isPR), branchName)
+
+        def newTestJobName = "outerloop_${os.toLowerCase()}_${configurationGroup.toLowerCase()}_checked_coreclr_tst"
+
+        def newTestJob = job(getJobName(Utilities.getFullJobName(project, newTestJobName, isPR), branchName)) { }
+
+        addCopyCoreClrAndRunTestSteps(newTestJob, os, osGroup, fullNativeCompBuildJobName, fullCoreFXBuildJobName, configurationGroup, 'Checked', true, false)
+
+        // Set the affinity.  All of these run on the target
+        Utilities.setMachineAffinity(newTestJob, os, 'latest-or-auto')
+        // Set up standard options.
+        Utilities.standardJobSetup(newTestJob, project, isPR, getFullBranchName(branchName))
+        // Add the unit test results
+        Utilities.addXUnitDotNETResults(newTestJob, '**/testResults.xml')
+
+        //
+        // Then we set up a flow job that runs the build and the nativecomp build in parallel and then executes.
+        // the test job
+        //
+        def fullCoreFXTestJobName = Utilities.getFolderName(project) + '/' + newTestJob.name
+        def flowJobName = "outerloop_${os.toLowerCase()}_${configurationGroup.toLowerCase()}_checked_coreclr"
+        def newFlowJob = buildFlowJob(getJobName(Utilities.getFullJobName(project, flowJobName, isPR), branchName)) {
+            buildFlow("""
+                parallel (
+                    { nativeCompBuild = build(params, '${fullNativeCompBuildJobName}') },
+                    { coreFXBuild = build(params, '${fullCoreFXBuildJobName}') }
+                )
+
+                // Then run the test job
+                build(params +
+                    [COREFX_BUILD: coreFXBuild.build.number,
+                     COREFX_NATIVECOMP_BUILD : nativeCompBuild.build.number], '${fullCoreFXTestJobName}')
+            """)
+
+            // Needs a workspace
+            configure {
+                def buildNeedsWorkspace = it / 'buildNeedsWorkspace'
+                buildNeedsWorkspace.setValue('true')
+            }
+        }
+
+        // Set the affinity.  All of these run on the target
+        Utilities.setMachineAffinity(newFlowJob, os, 'latest-or-auto')
+        // Set up standard options.
+        Utilities.standardJobSetup(newFlowJob, project, isPR, getFullBranchName(branchName))
+
+        if (isPR) {
+            // Set PR trigger.
+            Utilities.addGithubPRTrigger(newFlowJob, "OuterLoop ${os} ${configurationGroup}", "(?i).*test\\W+checked\\W+coreclr\\W+outerloop\\W+${os}.*")
+        }
+        else {
+            // Set a periodic trigger
+            Utilities.addPeriodicTrigger(newFlowJob, '@daily')
+        }
+    }
+}
