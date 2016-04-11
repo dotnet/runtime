@@ -796,7 +796,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
             }
             break
         case 'x86':
-            assert (scenario == 'default' || scenario == 'r2r' || scenario == 'pri1r2r' || scenario == 'gcstress15_pri1r2r')
+            assert (scenario == 'default' || scenario == 'r2r' || scenario == 'pri1r2r' || scenario == 'gcstress15_pri1r2r' || scenario == 'longgc')
             // For windows, x86 runs by default
             if (scenario == 'default') {
                 if (os == 'Windows_NT') {
