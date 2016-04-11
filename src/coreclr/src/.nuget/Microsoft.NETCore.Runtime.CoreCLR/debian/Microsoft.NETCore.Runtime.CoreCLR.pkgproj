@@ -11,21 +11,20 @@
   </PropertyGroup>
   
   <ItemGroup>
-    
-    <ArchitectureSpecificNativeFile Include="$(BinDir)libcoreclr.so"/>
-    <ArchitectureSpecificNativeFile Include="$(BinDir)libcoreclrtraceptprovider.so"/>
-    <ArchitectureSpecificNativeFile Include="$(BinDir)libdbgshim.so"/>
-    <ArchitectureSpecificNativeFile Include="$(BinDir)libmscordaccore.so"/>
-    <ArchitectureSpecificNativeFile Include="$(BinDir)libmscordbi.so"/>
-    <ArchitectureSpecificNativeFile Include="$(BinDir)mscorlib.ni.dll"/>
-    <ArchitectureSpecificNativeFile Include="$(BinDir)libsos.so"/>
-    <ArchitectureSpecificNativeFile Include="$(BinDir)libsosplugin.so"/>
+    <NativeSplittableBinary Include="$(BinDir)libcoreclr.so"/>
+    <NativeSplittableBinary Include="$(BinDir)libcoreclrtraceptprovider.so"/>
+    <NativeSplittableBinary Include="$(BinDir)libdbgshim.so"/>
+    <NativeSplittableBinary Include="$(BinDir)libmscordaccore.so"/>
+    <NativeSplittableBinary Include="$(BinDir)libmscordbi.so"/>
+    <NativeSplittableBinary Include="$(BinDir)libsos.so"/>
+    <NativeSplittableBinary Include="$(BinDir)libsosplugin.so"/>
+    <NativeSplittableBinary Include="$(BinDir)System.Globalization.Native.so"/>
     <ArchitectureSpecificNativeFile Include="$(BinDir)sosdocsunix.txt"/>
-    <ArchitectureSpecificNativeFile Include="$(BinDir)System.Globalization.Native.so" />
-
+    <ArchitectureSpecificNativeFile Include="$(BinDir)mscorlib.ni.dll"/>
     <ArchitectureSpecificLibFile Include="$(BinDir)mscorlib.dll"/>
-
     <ArchitectureSpecificToolFile Include="$(BinDir)crossgen"/>
+
+    <ArchitectureSpecificNativeFile Include="@(NativeSplittableBinary)"/>
 
     <File Include="@(ArchitectureSpecificNativeFile)">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
@@ -43,6 +42,22 @@
 
     <File Include="@(ArchitectureSpecificToolFile)">
       <TargetPath>tools</TargetPath>
+    </File>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(__BuildType)' == 'Release'">
+    <ArchitectureSpecificNativeSymbol Include="@(NativeSplittableBinary -> '%(Identity).dbg')"/>
+
+    <AdditionalLibPackageExcludes Include="%2A%2A\%2A.dbg"/>
+    <AdditionalSymbolPackageExcludes Include="%2A%2A\%2A.so"/>
+    <AdditionalSymbolPackageExcludes Include="%2A%2A\%2A.dll"/>
+    <AdditionalSymbolPackageExcludes Include="%2A%2A\sosdocsunix.txt"/>
+    <AdditionalSymbolPackageExcludes Include="%2A%2A\crossgen"/>
+    <ArchitectureSpecificNativeSymbol Include="..\_.pdb"/>
+
+    <File Include="@(ArchitectureSpecificNativeSymbol)">
+      <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
+      <IsSymbolFile>true</IsSymbolFile>
     </File>
   </ItemGroup>
 
