@@ -1,9 +1,16 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory)\.., dir.props))\dir.props" />
+  <!-- coalesce RIDs into the correct build output directory -->
+  <PropertyGroup>
+    <OSGroupPath Condition="$(OSGroup.StartsWith('debian'))">Linux</OSGroupPath>
+    <OSGroupPath Condition="$(OSGroup.StartsWith('osx'))">OSX</OSGroupPath>
+    <OSGroupPath Condition="$(OSGroup.StartsWith('rhel'))">Linux</OSGroupPath>
+    <OSGroupPath Condition="$(OSGroup.StartsWith('ubuntu'))">Linux</OSGroupPath>
+  </PropertyGroup>
   <PropertyGroup>
     <!-- common properties that point to output of native build.  Can be overriden in case of 
          a coordinating build that produces all packages from OS-specific native builds -->
-    <BuildNativePath Condition="'$(BuildNativePath)' == ''">$(BinDir)$(OSGroup).$(PackagePlatform).$(ConfigurationGroup)\Native\</BuildNativePath>
+    <BuildNativePath Condition="'$(BuildNativePath)' == ''">$(BinDir)$(OSGroupPath).$(PackagePlatform).$(ConfigurationGroup)\Native\</BuildNativePath>
     <WinNativePath Condition="'$(WinNativePath)' == ''">$(BuildNativePath)</WinNativePath>
     <RHELNativePath Condition="'$(RHELNativePath)' == ''">$(BuildNativePath)</RHELNativePath>
     <DebianNativePath Condition="'$(DebianNativePath)' == ''">$(BuildNativePath)</DebianNativePath>

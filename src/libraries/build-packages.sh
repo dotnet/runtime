@@ -11,8 +11,41 @@ working_tree_root="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 build_packages_log=$working_tree_root/build-packages.log
 binclashlog=$working_tree_root/binclash.log
 binclashloggerdll=$working_tree_root/Tools/Microsoft.DotNet.Build.Tasks.dll
+RuntimeOS=ubuntu.$VERSION_ID
 
-options="/m /nologo /v:minimal /clp:Summary /flp:v=detailed;Append;LogFile=$build_packages_log /l:BinClashLogger,$binclashloggerdll;LogFile=$binclashlog"
+# Use uname to determine what the OS is.
+OSName=$(uname -s)
+case $OSName in
+    Darwin)
+        # Darwin version can be three sets of digits (e.g. 10.10.3), we want just the first two
+        DarwinVersion=$(sw_vers -productVersion | awk 'match($0, /[0-9]{2}\.[0-9]{2}/) { print substr($0, RSTART, RLENGTH) }')
+        RuntimeOS=osx.$DarwinVersion
+        ;;
+
+    FreeBSD|NetBSD)
+        # TODO this doesn't seem correct
+        RuntimeOS=osx.10.10
+        ;;
+
+    Linux)
+        source /etc/os-release
+        if [ "$ID" == "rhel" ]; then
+            RuntimeOS=rhel.$VERSION_ID
+        elif [ "$ID" == "debian" ]; then
+            RuntimeOS=debian.$VERSION_ID
+        elif [ "$ID" == "ubuntu" ]; then
+            RuntimeOS=ubuntu.$VERSION_ID
+        else
+            echo "Unsupported Linux distribution '$ID' detected. Configuring as if for Ubuntu."
+        fi
+        ;;
+
+    *)
+        echo "Unsupported OS '$OSName' detected. Configuring as if for Ubuntu."
+        ;;
+esac
+
+options="/m /nologo /v:minimal /clp:Summary /flp:v=diagnostic;Append;LogFile=$build_packages_log /l:BinClashLogger,$binclashloggerdll;LogFile=$binclashlog /p:FilterToOSGroup=$RuntimeOS"
 allargs="$@"
 
 echo -e "Running build-packages.sh $allargs" > $build_packages_log
