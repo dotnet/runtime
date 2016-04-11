@@ -405,6 +405,7 @@ void Lowering::DecomposeNode(GenTreePtr* pTree, Compiler::fgWalkData* data)
     // Binary operators. Those that require different computation for upper and lower half are
     // handled by the use of getHiOper().
     case GT_ADD:
+    case GT_SUB:
     case GT_OR:
     case GT_XOR:
     case GT_AND:
@@ -465,7 +466,6 @@ void Lowering::DecomposeNode(GenTreePtr* pTree, Compiler::fgWalkData* data)
             // general fgInsertTreeInListAfter() method.
         }
         break;
-    case GT_SUB:
     case GT_MUL:
     case GT_DIV:
     case GT_MOD:
