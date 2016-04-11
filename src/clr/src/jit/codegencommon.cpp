@@ -7182,7 +7182,7 @@ void CodeGen::genProfilingEnterCallback(regNumber  initReg,
     //      of that offset to FramePointer to obtain caller's SP value.
     assert(compiler->lvaOutgoingArgSpaceVar != BAD_VAR_NUM);        
     int callerSPOffset = compiler->lvaToCallerSPRelativeOffset(0, isFramePointerUsed());
-    getEmitter()->emitIns_R_AR (INS_lea, EA_PTRSIZE, REG_ARG_1, getFramePointerReg(), -callerSPOffset);
+    getEmitter()->emitIns_R_AR (INS_lea, EA_PTRSIZE, REG_ARG_1, genFramePointerReg(), -callerSPOffset);
 
     // Can't have a call until we have enough padding for rejit
     genPrologPadForReJit();
@@ -7381,7 +7381,7 @@ void                CodeGen::genProfilingLeaveCallback(unsigned helper /*= CORIN
         // Caller's SP relative offset to FramePointer will be negative.  We need to add absolute
         // value of that offset to FramePointer to obtain caller's SP value.
         int callerSPOffset = compiler->lvaToCallerSPRelativeOffset(0, isFramePointerUsed());
-        getEmitter()->emitIns_R_AR (INS_lea, EA_PTRSIZE, REG_ARG_1, getFramePointerReg(), -callerSPOffset);
+        getEmitter()->emitIns_R_AR (INS_lea, EA_PTRSIZE, REG_ARG_1, genFramePointerReg(), -callerSPOffset);
     }
     else
     {
