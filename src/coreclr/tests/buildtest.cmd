@@ -31,6 +31,7 @@ set __crossgen=
 set __ILAsmRoundtrip=
 set __BuildSequential=
 set __TestPriority=
+set __LongGCTests=
 set __msbuildCleanBuildArgs=
 set __msbuildExtraArgs=
 set __verbosity=normal
@@ -65,6 +66,7 @@ if /i "%1" == "ilasmroundtrip"      (set __ILAsmRoundtrip=true&shift&goto Arg_Lo
 if /i "%1" == "sequential"          (set __BuildSequential=1&shift&goto Arg_Loop)
 if /i "%1" == "priority"            (set __TestPriority=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "gcstresslevel"       (set __GCStressLevel=%2&shift&shift&goto Arg_Loop)
+if /i "%1" == "longgctests"         (set __LongGCTests=1&shift&goto Arg_Loop)
 
 if /i "%1" == "verbose"             (set __verbosity=detailed&shift&goto Arg_Loop)
 
@@ -273,6 +275,11 @@ if defined __TestPriority (
 if %__GCStressLevel% GTR 0 (
     echo Tests will run under GCStressLevel = %__GCStressLevel%
     set __msbuildManagedBuildArgs=%__msbuildManagedBuildArgs% /p:GCStressLevel=%__GCStressLevel%   
+)
+
+if defined __LongGCTests (
+    echo Building tests with Long GC tests enabled.
+    set __msbuildManagedBuildArgs=%__msbuildManagedBuildArgs% /p:GCLongRunning=true
 )
 
 set __BuildLogRootName=Tests_Managed
