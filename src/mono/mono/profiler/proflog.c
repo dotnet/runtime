@@ -4935,11 +4935,11 @@ mono_profiler_startup (const char *desc)
 	mono_profiler_install_allocation (gc_alloc);
 	mono_profiler_install_gc_moves (gc_moves);
 	mono_profiler_install_gc_roots (gc_handle, gc_roots);
-	mono_profiler_install_appdomain (NULL, domain_loaded, NULL, domain_unloaded);
+	mono_profiler_install_appdomain (NULL, domain_loaded, domain_unloaded, NULL);
 	mono_profiler_install_appdomain_name (domain_name);
 	mono_profiler_install_context (context_loaded, context_unloaded);
-	mono_profiler_install_class (NULL, class_loaded, NULL, class_unloaded);
-	mono_profiler_install_module (NULL, image_loaded, NULL, image_unloaded);
+	mono_profiler_install_class (NULL, class_loaded, class_unloaded, NULL);
+	mono_profiler_install_module (NULL, image_loaded, image_unloaded, NULL);
 	mono_profiler_install_assembly (NULL, assembly_loaded, assembly_unloaded, NULL);
 	mono_profiler_install_thread (thread_start, thread_end);
 	mono_profiler_install_thread_name (thread_name);
