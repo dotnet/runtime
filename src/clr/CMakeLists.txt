@@ -427,6 +427,10 @@ if (CLR_CMAKE_PLATFORM_UNIX)
     add_compile_options(-fstack-protector-strong)
   endif(CLR_CMAKE_PLATFORM_DARWIN)
 
+  if(CLR_CMAKE_PLATFORM_LINUX)
+    set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Wa,--noexecstack")
+  endif(CLR_CMAKE_PLATFORM_LINUX)
+
   # set the CLANG sanitizer flags for debug build
   if(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG OR UPPERCASE_CMAKE_BUILD_TYPE STREQUAL CHECKED)
     # obtain settings from running enablesanitizers.sh
