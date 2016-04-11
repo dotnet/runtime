@@ -14,6 +14,9 @@
     <Project Include="*\pkg\*.builds" Condition="'$(SkipManagedPackageBuild)' != 'true'">
       <AdditionalProperties>$(AdditionalProperties)</AdditionalProperties>
     </Project>
+    <Project Include="..\pkg\*\*.builds" Condition="'$(SkipManagedPackageBuild)' != 'true'">
+      <AdditionalProperties>$(AdditionalProperties)</AdditionalProperties>
+    </Project>
   </ItemGroup>
 
   <UsingTask TaskName="GenerateNetStandardSupportTable" AssemblyFile="$(PackagingTaskDir)Microsoft.DotNet.Build.Tasks.Packaging.dll" />
