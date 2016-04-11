@@ -659,6 +659,7 @@ mono_pagesize
 mono_param_get_objects
 mono_parse_default_optimizations
 mono_parse_env_options
+mono_parse_options_from
 mono_path_canonicalize
 mono_path_resolve_symlinks
 mono_pe_file_open

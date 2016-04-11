@@ -2377,83 +2377,154 @@ mono_set_crash_chaining (gboolean chain_crashes)
 	mono_do_crash_chaining = chain_crashes;
 }
 
-void
-mono_parse_env_options (int *ref_argc, char **ref_argv [])
+/**
+ * mono_parse_options_from:
+ * @options: string containing strings 
+ * @ref_argc: pointer to the argc variable that might be updated 
+ * @ref_argv: pointer to the argv string vector variable that might be updated
+ *
+ * This function parses the contents of the `MONO_ENV_OPTIONS`
+ * environment variable as if they were parsed by a command shell
+ * splitting the contents by spaces into different elements of the
+ * @argv vector.  This method supports quoting with both the " and '
+ * characters.  Inside quoting, spaces and tabs are significant,
+ * otherwise, they are considered argument separators.
+ *
+ * The \ character can be used to escape the next character which will
+ * be added to the current element verbatim.  Typically this is used
+ * inside quotes.   If the quotes are not balanced, this method 
+ *
+ * If the environment variable is empty, no changes are made
+ * to the values pointed by @ref_argc and @ref_argv.
+ *
+ * Otherwise the @ref_argv is modified to point to a new array that contains
+ * all the previous elements contained in the vector, plus the values parsed.
+ * The @argc is updated to match the new number of parameters.
+ *
+ * Returns: The value NULL is returned on success, otherwise a g_strdup allocated
+ * string is returned (this is an alias to malloc under normal circumstances) that
+ * contains the error message that happened during parsing.
+ */
+char *
+mono_parse_options_from (const char *options, int *ref_argc, char **ref_argv [])
 {
 	int argc = *ref_argc;
 	char **argv = *ref_argv;
+	GPtrArray *array = g_ptr_array_new ();
+	GString *buffer = g_string_new ("");
+	const char *p;
+	unsigned i;
+	gboolean in_quotes = FALSE;
+	char quote_char = '\0';
 
-	const char *env_options = g_getenv ("MONO_ENV_OPTIONS");
-	if (env_options != NULL){
-		GPtrArray *array = g_ptr_array_new ();
-		GString *buffer = g_string_new ("");
-		const char *p;
-		unsigned i;
-		gboolean in_quotes = FALSE;
-		char quote_char = '\0';
-
-		for (p = env_options; *p; p++){
-			switch (*p){
-			case ' ': case '\t':
-				if (!in_quotes) {
-					if (buffer->len != 0){
-						g_ptr_array_add (array, g_strdup (buffer->str));
-						g_string_truncate (buffer, 0);
-					}
-				} else {
-					g_string_append_c (buffer, *p);
+	if (options == NULL)
+		return NULL;
+	
+	for (p = options; *p; p++){
+		switch (*p){
+		case ' ': case '\t':
+			if (!in_quotes) {
+				if (buffer->len != 0){
+					g_ptr_array_add (array, g_strdup (buffer->str));
+					g_string_truncate (buffer, 0);
 				}
-				break;
-			case '\\':
-				if (p [1]){
-					g_string_append_c (buffer, p [1]);
-					p++;
-				}
-				break;
-			case '\'':
-			case '"':
-				if (in_quotes) {
-					if (quote_char == *p)
-						in_quotes = FALSE;
-					else
-						g_string_append_c (buffer, *p);
-				} else {
-					in_quotes = TRUE;
-					quote_char = *p;
-				}
-				break;
-			default:
+			} else {
 				g_string_append_c (buffer, *p);
-				break;
 			}
+			break;
+		case '\\':
+			if (p [1]){
+				g_string_append_c (buffer, p [1]);
+				p++;
+			}
+			break;
+		case '\'':
+		case '"':
+			if (in_quotes) {
+				if (quote_char == *p)
+					in_quotes = FALSE;
+				else
+					g_string_append_c (buffer, *p);
+			} else {
+				in_quotes = TRUE;
+				quote_char = *p;
+			}
+			break;
+		default:
+			g_string_append_c (buffer, *p);
+			break;
 		}
-		if (in_quotes) {
-			fprintf (stderr, "Unmatched quotes in value of MONO_ENV_OPTIONS: [%s]\n", env_options);
-			exit (1);
-		}
-			
-		if (buffer->len != 0)
-			g_ptr_array_add (array, g_strdup (buffer->str));
-		g_string_free (buffer, TRUE);
-
-		if (array->len > 0){
-			int new_argc = array->len + argc;
-			char **new_argv = g_new (char *, new_argc + 1);
-			int j;
-
-			new_argv [0] = argv [0];
-			
-			/* First the environment variable settings, to allow the command line options to override */
-			for (i = 0; i < array->len; i++)
-				new_argv [i+1] = (char *)g_ptr_array_index (array, i);
-			i++;
-			for (j = 1; j < argc; j++)
-				new_argv [i++] = argv [j];
-			new_argv [i] = NULL;
-
-			*ref_argc = new_argc;
-			*ref_argv = new_argv;
-		}
-		g_ptr_array_free (array, TRUE);
 	}
+	if (in_quotes) 
+		return g_strdup_printf ("Unmatched quotes in value: [%s]\n", options);
+		
+	if (buffer->len != 0)
+		g_ptr_array_add (array, g_strdup (buffer->str));
+	g_string_free (buffer, TRUE);
+
+	if (array->len > 0){
+		int new_argc = array->len + argc;
+		char **new_argv = g_new (char *, new_argc + 1);
+		int j;
+
+		new_argv [0] = argv [0];
+		
+		/* First the environment variable settings, to allow the command line options to override */
+		for (i = 0; i < array->len; i++)
+			new_argv [i+1] = (char *)g_ptr_array_index (array, i);
+		i++;
+		for (j = 1; j < argc; j++)
+			new_argv [i++] = argv [j];
+		new_argv [i] = NULL;
+
+		*ref_argc = new_argc;
+		*ref_argv = new_argv;
+	}
+	g_ptr_array_free (array, TRUE);
+	return NULL;
 }
+
+/**
+ * mono_parse_env_options:
+ * @ref_argc: pointer to the argc variable that might be updated 
+ * @ref_argv: pointer to the argv string vector variable that might be updated
+ *
+ * This function parses the contents of the `MONO_ENV_OPTIONS`
+ * environment variable as if they were parsed by a command shell
+ * splitting the contents by spaces into different elements of the
+ * @argv vector.  This method supports quoting with both the " and '
+ * characters.  Inside quoting, spaces and tabs are significant,
+ * otherwise, they are considered argument separators.
+ *
+ * The \ character can be used to escape the next character which will
+ * be added to the current element verbatim.  Typically this is used
+ * inside quotes.   If the quotes are not balanced, this method 
+ *
+ * If the environment variable is empty, no changes are made
+ * to the values pointed by @ref_argc and @ref_argv.
+ *
+ * Otherwise the @ref_argv is modified to point to a new array that contains
+ * all the previous elements contained in the vector, plus the values parsed.
+ * The @argc is updated to match the new number of parameters.
+ *
+ * If there is an error parsing, this method will terminate the process by
+ * calling exit(1).
+ *
+ * An alternative to this method that allows an arbitrary string to be parsed
+ * and does not exit on error is the `api:mono_parse_options_from`.
+ */
+void
+mono_parse_env_options (int *ref_argc, char **ref_argv [])
+{
+	char *ret;
+	
+	const char *env_options = g_getenv ("MONO_ENV_OPTIONS");
+	if (env_options == NULL)
+		return;
+	ret = mono_parse_options_from (env_options, ref_argc, ref_argv);
+	if (ret == NULL)
+		return;
+	fprintf (stderr, "%s", ret);
+	exit (1);
+}
+

@@ -2286,6 +2286,8 @@ mono_bb_last_inst (MonoBasicBlock *bb, int filter)
 MONO_API int         mono_main                      (int argc, char* argv[]);
 MONO_API void        mono_set_defaults              (int verbose_level, guint32 opts);
 MONO_API void        mono_parse_env_options         (int *ref_argc, char **ref_argv []);
+MONO_API char       *mono_parse_options_from        (const char *options, int *ref_argc, char **ref_argv []);
+
 MonoDomain* mini_init                      (const char *filename, const char *runtime_version);
 void        mini_cleanup                   (MonoDomain *domain);
 MONO_API MonoDebugOptions *mini_get_debug_options   (void);
