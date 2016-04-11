@@ -97,12 +97,12 @@ public:
     inline void ensureInit(const wchar_t* rangeStr)
     {
         // make sure that the memory was zero initialized
-        _ASSERTE(m_inited == 0 || m_inited == 1);
+        assert(m_inited == 0 || m_inited == 1);
 
         if (!m_inited)
         {
             initRanges(rangeStr);
-            _ASSERTE(m_inited == 1);
+            assert(m_inited == 1);
         }
     }
 

@@ -27,7 +27,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // free() is redefined to cause a runtime error instead of a compile time error.
 #undef free
 #ifdef DEBUG
-#define free(x) _ASSERTE(false && "Must not call free(). Use a ClrXXX function instead.")
+#define free(x) assert(false && "Must not call free(). Use a ClrXXX function instead.")
 #endif
 
 #if CHECK_STRUCT_PADDING

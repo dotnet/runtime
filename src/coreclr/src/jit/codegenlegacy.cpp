@@ -17655,7 +17655,7 @@ bool CodeGen::genFillSlotFromPromotedStruct(GenTreePtr        arg,
             noway_assert((curRegNum % 2) == 0);
             // We leave the fieldSize as EA_4BYTE; but we must do 2 reg moves.
             break;
-        default: _ASSERTE(fieldVarDsc->lvExactSize == 4); break;
+        default: assert(fieldVarDsc->lvExactSize == 4); break;
         }
     }
     else
