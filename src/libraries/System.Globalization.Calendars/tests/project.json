@@ -23,7 +23,11 @@
     },
     "net46": {
       "dependencies": {
-        "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
+        "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1",
+        "net46-test-runtime": {
+          "target": "project",
+          "exclude": "compile"
+        }
       }
     }
   },
