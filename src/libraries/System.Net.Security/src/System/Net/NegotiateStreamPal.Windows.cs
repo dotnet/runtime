@@ -312,7 +312,6 @@ namespace System.Net.Security
             resultSize += securityBuffer[2].size;
             unchecked
             {
-                // TODO (Issue #6063): Should be offset by offset
                 output[0] = (byte)((resultSize) & 0xFF);
                 output[1] = (byte)(((resultSize) >> 8) & 0xFF);
                 output[2] = (byte)(((resultSize) >> 16) & 0xFF);
@@ -396,7 +395,7 @@ namespace System.Net.Security
             return securityBuffer[1].size;
         }
 
-        internal static int DecryptNtlm(
+        private static int DecryptNtlm(
             SafeDeleteContext securityContext,
             byte[] buffer,
             int offset,
