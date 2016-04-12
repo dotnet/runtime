@@ -29,10 +29,6 @@ void                Compiler::fgInit()
 
     fgFirstBBScratch             = nullptr;
 
-#if defined(DEBUG) || defined(INLINE_DATA)
-    fgInlinedCount               = 0;
-#endif // defined(DEBUG) || defined(INLINE_DATA)
-
 #ifdef DEBUG
     fgPrintInlinedMethods = JitConfig.JitPrintInlinedMethods() == 1;
 #endif // DEBUG
@@ -21402,7 +21398,7 @@ void                Compiler::fgInline()
     noway_assert(block != nullptr);
 
     // Set the root inline context on all statements
-    InlineContext* rootContext = InlineContext::NewRoot(this);
+    InlineContext* rootContext = m_inlineStrategy->GetRootContext();
 
     for (; block != nullptr; block = block->bbNext)
     {
@@ -21510,7 +21506,7 @@ void                Compiler::fgInline()
     if  (verbose || fgPrintInlinedMethods)
     {
        printf("**************** Inline Tree\n");
-       rootContext->Dump(this);
+       m_inlineStrategy->Dump();
     }
 
 #endif // DEBUG
@@ -21595,7 +21591,7 @@ void Compiler::fgNoteNonInlineCandidate(GenTreePtr   tree,
     if (call->gtCallType == CT_USER_FUNC)
     {
         // Create InlineContext for the failure
-        InlineContext::NewFailure(this, tree, &inlineResult);
+        m_inlineStrategy->NewFailure(tree, &inlineResult);
     }
 }
 
@@ -22010,9 +22006,6 @@ void       Compiler::fgInvokeInlineeCompiler(GenTreeCall*  call,
 
     if (inlineResult->IsFailure())
     {
-#if defined(DEBUG) || MEASURE_INLINING
-        ++Compiler::jitInlineInitVarsFailureCount;
-#endif // defined(DEBUG) || MEASURE_INLINING
         return;
     }
 
@@ -22061,10 +22054,6 @@ void       Compiler::fgInvokeInlineeCompiler(GenTreeCall*  call,
     // We've successfully obtain the list of inlinee's basic blocks.
     // Let's insert it to inliner's basic block list.
     fgInsertInlineeBlocks(&inlineInfo);
-
-#if defined(DEBUG) || defined(INLINE_DATA)
-    ++fgInlinedCount;
-#endif // defined(DEBUG) || defined(INLINE_DATA)
 
 #ifdef DEBUG
 
@@ -22121,24 +22110,10 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
 
 #endif // DEBUG
 
-#if defined(DEBUG) || MEASURE_INLINING
-
-    if (iciStmt->gtNext == NULL)
-    {
-        ++Compiler::jitIciStmtIsTheLastInBB;
-    }
-
-    if (InlineeCompiler->fgBBcount == 1)
-    {
-        ++Compiler::jitInlineeContainsOnlyOneBB;
-    }
-
-#endif // defined(DEBUG) || MEASURE_INLINING
-
     //
     // Create a new inline context and mark the inlined statements with it
     //
-    InlineContext* calleeContext = InlineContext::NewSuccess(this, pInlineInfo);
+    InlineContext* calleeContext = m_inlineStrategy->NewSuccess(pInlineInfo);
 
     for (block = InlineeCompiler->fgFirstBB;
          block != nullptr;
