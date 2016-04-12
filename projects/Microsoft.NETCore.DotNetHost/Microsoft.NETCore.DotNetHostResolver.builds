@@ -27,6 +27,10 @@
       <OSGroup>Linux</OSGroup>
       <Platform>amd64</Platform>
     </Project>
+    <Project Condition="'$(TargetsLinux)' == 'true' and '$(DistroName)' == 'debian'" Include="debian/Microsoft.NETCore.DotNetHostResolver.pkgproj">
+      <OSGroup>Linux</OSGroup>
+      <Platform>amd64</Platform>
+    </Project>
     <Project Condition="'$(TargetsOSX)' == 'true'" Include="osx/Microsoft.NETCore.DotNetHostResolver.pkgproj">
       <OSGroup>OSX</OSGroup>
       <Platform>amd64</Platform>
