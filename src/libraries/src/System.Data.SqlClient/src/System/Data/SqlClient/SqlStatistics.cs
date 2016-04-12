@@ -223,7 +223,21 @@ namespace System.Data.SqlClient
         }
 
         // We subclass Dictionary to provide our own implementation of CopyTo, Keys.CopyTo, and
-        // Values.CopyTo to match the behavior of Hashtable, which is used in the full framework.
+        // Values.CopyTo to match the behavior of Hashtable, which is used in the full framework:
+        //
+        //  - When arrayIndex > array.Length, Hashtable throws ArgumentException whereas Dictionary
+        //    throws ArgumentOutOfRangeException.
+        //
+        //  - Hashtable specifies the ArgumentOutOfRangeException paramName as "arrayIndex" whereas
+        //    Dictionary uses "index".
+        //
+        //  - When the array is of a mismatched type, Hashtable throws InvalidCastException whereas
+        //    Dictionary throws ArrayTypeMismatchException.
+        //
+        //  - Hashtable allows copying values to a long[] array via Values.CopyTo, whereas Dictionary
+        //    throws ArgumentException due to the "Target array type is not compatible with type of
+        //    items in the collection" (when Dictionary<object, object> is used).
+        //
         // Ideally this would derive from Dictionary<string, long>, but that would break compatibility
         // with the full framework, which allows adding keys/values of any type.
         private sealed class StatisticsDictionary : Dictionary<object, object>, IDictionary
