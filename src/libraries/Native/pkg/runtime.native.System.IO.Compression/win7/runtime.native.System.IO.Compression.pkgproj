@@ -8,9 +8,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <File Include="$(WinNativePath)\clrcompression.dll">
+        <NativeFile Include="$(WinNativePath)\clrcompression.dll">
             <TargetPath>runtimes/win7-$(PackagePlatform)/native</TargetPath>
-        </File>
+        </NativeFile>
     </ItemGroup>
 
     <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

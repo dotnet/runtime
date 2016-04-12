@@ -10,12 +10,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <File Include="$(Ubuntu1404NativePath)System.Native.so">
+    <NativeFile Include="$(Ubuntu1404NativePath)System.Native.so">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
-    </File>
-    <File Include="$(Ubuntu1404NativePath)System.Native.a">
+    </NativeFile>
+    <NativeFile Include="$(Ubuntu1404NativePath)System.Native.a">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
-    </File>
+    </NativeFile>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
