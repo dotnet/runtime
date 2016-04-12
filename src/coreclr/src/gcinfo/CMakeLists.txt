@@ -22,5 +22,5 @@ endif(CLR_CMAKE_PLATFORM_UNIX)
 add_subdirectory(lib)
 add_subdirectory(crossgen)
 
-install (FILES gcinfoencoder.cpp
+_install (FILES gcinfoencoder.cpp
                DESTINATION gcinfo)
