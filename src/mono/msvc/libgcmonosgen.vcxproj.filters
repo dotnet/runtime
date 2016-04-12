@@ -76,6 +76,9 @@
     <ClCompile Include="..\mono\sgen\sgen-workers.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\mono\sgen\sgen-array-list.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\mono\sgen\gc-internal-agnostic.h">
@@ -154,6 +157,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\mono\sgen\sgen-workers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mono\sgen\sgen-array-list.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

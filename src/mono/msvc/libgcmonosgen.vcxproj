@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClCompile Include="..\mono\sgen\sgen-alloc.c" />
     <ClCompile Include="..\mono\metadata\sgen-bridge.c" />
+    <ClCompile Include="..\mono\sgen\sgen-array-list.c" />
     <ClCompile Include="..\mono\sgen\sgen-cardtable.c" />
     <ClCompile Include="..\mono\sgen\sgen-debug.c" />
     <ClCompile Include="..\mono\sgen\sgen-descriptor.c" />
@@ -48,6 +49,7 @@
   <ItemGroup>
     <ClInclude Include="..\mono\sgen\gc-internal-agnostic.h" />
     <ClInclude Include="..\mono\sgen\sgen-archdep.h" />
+    <ClInclude Include="..\mono\sgen\sgen-array-list.h" />
     <ClInclude Include="..\mono\sgen\sgen-cardtable.h" />
     <ClInclude Include="..\mono\sgen\sgen-client.h" />
     <ClInclude Include="..\mono\sgen\sgen-conf.h" />

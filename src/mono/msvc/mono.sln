@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.24720.0
+VisualStudioVersion = 14.0.25123.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Embedded Samples", "Embedded Samples", "{5FE09AA5-C3C9-45EA-A323-36A11B653CEC}"
 EndProject
@@ -154,6 +154,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libgcmonosgen", "libgcmonos
 	ProjectSection(ProjectDependencies) = postProject
 		{92AE7622-5F58-4234-9A26-9EC71876B3F4} = {92AE7622-5F58-4234-9A26-9EC71876B3F4}
 	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mono-mini-regression-test", "mono-mini-regression-test.vcxproj", "{3E0D229E-C39F-4EDA-9A6A-A33ECEA0322D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -329,6 +331,14 @@ Global
 		{C36612BD-22D3-4B95-85E2-7FDC4FC5D740}.Release|Win32.Build.0 = Release|Win32
 		{C36612BD-22D3-4B95-85E2-7FDC4FC5D740}.Release|x64.ActiveCfg = Release|x64
 		{C36612BD-22D3-4B95-85E2-7FDC4FC5D740}.Release|x64.Build.0 = Release|x64
+		{3E0D229E-C39F-4EDA-9A6A-A33ECEA0322D}.Debug|Win32.ActiveCfg = Debug|Win32
+		{3E0D229E-C39F-4EDA-9A6A-A33ECEA0322D}.Debug|Win32.Build.0 = Debug|Win32
+		{3E0D229E-C39F-4EDA-9A6A-A33ECEA0322D}.Debug|x64.ActiveCfg = Debug|x64
+		{3E0D229E-C39F-4EDA-9A6A-A33ECEA0322D}.Debug|x64.Build.0 = Debug|x64
+		{3E0D229E-C39F-4EDA-9A6A-A33ECEA0322D}.Release|Win32.ActiveCfg = Release|Win32
+		{3E0D229E-C39F-4EDA-9A6A-A33ECEA0322D}.Release|Win32.Build.0 = Release|Win32
+		{3E0D229E-C39F-4EDA-9A6A-A33ECEA0322D}.Release|x64.ActiveCfg = Release|x64
+		{3E0D229E-C39F-4EDA-9A6A-A33ECEA0322D}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -357,11 +367,12 @@ Global
 		{A9DC644B-9171-4FCD-BF21-2CC6D055FC40} = {DC782E23-920A-4873-82A7-37F195FB92C1}
 		{B6E563B8-7F57-4F7F-9439-F2405D4E2522} = {DC782E23-920A-4873-82A7-37F195FB92C1}
 		{C36612BD-22D3-4B95-85E2-7FDC4FC5D740} = {21DF4C80-0EC9-4BFE-8552-2D47FCEF419A}
+		{3E0D229E-C39F-4EDA-9A6A-A33ECEA0322D} = {ECA11C76-E192-4F67-A8FA-28B637D9716F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		AMDCaProjectFile = C:\Users\Owner\Development\monogit\mono\msvc\CodeAnalyst\mono.caw
-		AMDCaPersistentStartup = mono
 		AMDCaPersistentConfig = Debug|Win32
+		AMDCaPersistentStartup = mono
+		AMDCaProjectFile = C:\Users\Owner\Development\monogit\mono\msvc\CodeAnalyst\mono.caw
 	EndGlobalSection
 	GlobalSection(DPCodeReviewSolutionGUID) = preSolution
 		DPCodeReviewSolutionGUID = {00000000-0000-0000-0000-000000000000}
