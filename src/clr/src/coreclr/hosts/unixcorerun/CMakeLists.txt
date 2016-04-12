@@ -8,7 +8,7 @@ set(CORERUN_SOURCES
     corerun.cpp 
 )
 
-add_executable(corerun
+_add_executable(corerun
     ${CORERUN_SOURCES}
 )
 

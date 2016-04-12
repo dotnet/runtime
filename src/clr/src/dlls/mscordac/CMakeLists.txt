@@ -89,7 +89,7 @@ if(WIN32)
     )
 
     # ARM64_TODO: Enable this for Windows Arm64
-    if (NOT CLR_CMAKE_PLATFORM_ARCH_ARM64)
+    if (NOT CLR_CMAKE_TARGET_ARCH_ARM64)
         list(APPEND COREDAC_LIBRARIES 
           ${STATIC_MT_VCRT_LIB}
         )
