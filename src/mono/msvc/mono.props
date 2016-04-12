@@ -13,7 +13,7 @@
       <Value>$(MONO_USE_SGEN)</Value>
       <EnvironmentVariable>true</EnvironmentVariable>
     </BuildMacro>
-	<BuildMacro Include="MONO_USE_TARGET_SUFFIX">
+    <BuildMacro Include="MONO_USE_TARGET_SUFFIX">
       <Value>$(MONO_USE_TARGET_SUFFIX)</Value>
       <EnvironmentVariable>true</EnvironmentVariable>
     </BuildMacro>
@@ -22,7 +22,7 @@
     <MONO_BUILD_DIR_PREFIX>c:\mono-build\</MONO_BUILD_DIR_PREFIX>
     <MONO_INSTALL_DIR_PREFIX>c:\mono-dist\</MONO_INSTALL_DIR_PREFIX>
     <MONO_USE_SGEN>true</MONO_USE_SGEN>
-	<MONO_USE_TARGET_SUFFIX>true</MONO_USE_TARGET_SUFFIX>
+    <MONO_USE_TARGET_SUFFIX>true</MONO_USE_TARGET_SUFFIX>
   </PropertyGroup>
   <PropertyGroup Label="MonoDirectories">
     <top_srcdir>$(MSBuildProjectDirectory)\..</top_srcdir>
