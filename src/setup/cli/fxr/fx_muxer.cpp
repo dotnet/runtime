@@ -378,24 +378,32 @@ int fx_muxer_t::read_config_and_execute(
         trace::verbose(_X("Executing as a portable app as per config file [%s]"), config_file.c_str());
         pal::string_t fx_dir = (mode == host_mode_t::split_fx) ? own_dir : resolve_fx_dir(own_dir, &config);
         corehost_init_t init(deps_file, probe_paths, fx_dir, mode, config);
-        return execute_app(fx_dir, &init, new_argc, new_argv);
+
+        pal::string_t impl_dir;
+
+        // First lookup hostpolicy.dll in servicing with the version of hostpolicy.dll that was compiled lock step with hostfxr.
+        if (!hostpolicy_exists_in_svc(&impl_dir))
+        {
+            impl_dir = fx_dir;
+        }
+        return execute_app(impl_dir, &init, new_argc, new_argv);
     }
     else
     {
         pal::string_t impl_dir;
         trace::verbose(_X("Executing as a standalone app as per config file [%s]"), config_file.c_str());
-        if (mode == host_mode_t::standalone)
+
+        // First lookup hostpolicy.dll in servicing with the version of hostpolicy.dll that was compiled lock step with hostfxr.
+        if (!hostpolicy_exists_in_svc(&impl_dir))
         {
-            pal::string_t svc_dir;
-            impl_dir = hostpolicy_exists_in_svc(&svc_dir) ? svc_dir : own_dir;
-        }
-        else if (mode == host_mode_t::split_fx)
-        {
-            impl_dir = own_dir;
-        }
-        else if (mode == host_mode_t::muxer)
-        {
-            impl_dir = get_directory(app_or_deps);
+            if (mode == host_mode_t::standalone || mode == host_mode_t::split_fx)
+            {
+                impl_dir = own_dir;
+            }
+            else if (mode == host_mode_t::muxer)
+            {
+                impl_dir = get_directory(app_or_deps);
+            }
         }
         trace::verbose(_X("The host impl directory before probing deps is [%s]"), impl_dir.c_str());
         if (!library_exists_in_dir(impl_dir, LIBHOSTPOLICY_NAME, nullptr) && !probe_paths.empty() && !deps_file.empty())
