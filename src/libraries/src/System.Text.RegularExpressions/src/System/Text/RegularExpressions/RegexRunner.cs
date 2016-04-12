@@ -19,7 +19,7 @@ using System.Globalization;
 
 namespace System.Text.RegularExpressions
 {
-    abstract public class RegexRunner
+    public abstract class RegexRunner
     {
         protected internal int runtextbeg;         // beginning of text to search
         protected internal int runtextend;         // end of text to search
