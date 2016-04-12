@@ -4,6 +4,8 @@
 
 using System;
 
+[assembly: System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+
 namespace WebData.BaseLib
 {
     public class WebDataBaseLibException : System.Exception
