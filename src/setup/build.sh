@@ -18,7 +18,7 @@ init_distro_name_and_rid()
         export __rid_plat=rhel.7
     elif [ "$(cat /etc/*-release | grep -cim1 debian)" -eq 1 ]; then
         export __distro_name=debian
-        export __rid_plat=
+        export __rid_plat=debian.8
     else
         export __distro_name=""
         export __rid_plat=
