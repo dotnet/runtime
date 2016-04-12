@@ -972,7 +972,8 @@ UM2MThunk_WrapperHelper_RegArgumentsSetup
         ; X2 = address of X19 register in CONTEXT record; used to restore the non-volatile registers of CrawlFrame
         ; X3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
         ;
-        ; Save the SP of this function
+        ; Save the SP of this function. We cannot store SP directly.
+        mov fp, sp
         str fp, [x3]
 
         ldr fp, [x2, #80] ; offset of fp in CONTEXT relative to X19
