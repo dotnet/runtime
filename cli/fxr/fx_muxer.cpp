@@ -73,6 +73,7 @@ pal::string_t fx_muxer_t::resolve_fx_dir(const pal::string_t& muxer_dir, runtime
                 ver.is_prerelease() && // prevent roll forward to production.
                 ver.get_major() == specified.get_major() &&
                 ver.get_minor() == specified.get_minor() &&
+                ver.get_patch() == specified.get_patch() &&
                 ver > specified)
             {
                 // Pick the smallest prerelease that is greater than specified.
