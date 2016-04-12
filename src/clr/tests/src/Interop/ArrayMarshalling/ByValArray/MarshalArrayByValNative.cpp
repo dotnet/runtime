@@ -139,8 +139,8 @@ bool IsObjectEquals(LPSTR o1, LPSTR o2)
 template<>
 bool IsObjectEquals(LPCSTR o1, LPCSTR o2)
 {
-    int cLen1 = strlen(o1);
-    int cLen2 = strlen(o2);
+    size_t cLen1 = strlen(o1);
+    size_t cLen2 = strlen(o2);
 
     if (cLen1 != cLen2 )
     {
