@@ -4,6 +4,7 @@
 using System;
 using System.Security;
 using System.Runtime.InteropServices;
+#pragma warning disable 618
 
 partial class FunctionPtr
 {
@@ -83,3 +84,4 @@ partial class FunctionPtr
             throw new Exception("Failed multicast call");
     }
 }
+#pragma warning restore 618
