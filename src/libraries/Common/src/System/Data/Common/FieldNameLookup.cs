@@ -6,7 +6,7 @@
 
 //------------------------------------------------------------------------------
 
-using System.Collections;
+using System.Collections.Generic;
 using System.Data.Common;
 using System.Globalization;
 
@@ -14,8 +14,8 @@ namespace System.Data.ProviderBase
 {
     internal sealed class FieldNameLookup
     {
-        // hashtable stores the index into the _fieldNames, match via case-sensitive
-        private Hashtable _fieldNameLookup;
+        // Dictionary stores the index into the _fieldNames, match via case-sensitive
+        private Dictionary<string, int> _fieldNameLookup;
 
         // original names for linear searches when exact matches fail
         private string[] _fieldNames;
@@ -80,9 +80,10 @@ namespace System.Data.ProviderBase
             {
                 GenerateLookup();
             }
+
+            int value;
             // via case sensitive search, first match with lowest ordinal matches
-            object value = _fieldNameLookup[fieldName];
-            return ((null != value) ? (int)value : -1);
+            return _fieldNameLookup.TryGetValue(fieldName, out value) ? value : -1;
         }
 
         public int IndexOf(string fieldName)
@@ -92,13 +93,8 @@ namespace System.Data.ProviderBase
                 GenerateLookup();
             }
             int index;
-            object value = _fieldNameLookup[fieldName];
-            if (null != value)
-            {
-                // via case sensitive search, first match with lowest ordinal matches
-                index = (int)value;
-            }
-            else
+            // via case sensitive search, first match with lowest ordinal matches
+            if (!_fieldNameLookup.TryGetValue(fieldName, out index))
             {
                 // via case insensitive search, first match with lowest ordinal matches
                 index = LinearIndexOf(fieldName, CompareOptions.IgnoreCase);
@@ -108,6 +104,7 @@ namespace System.Data.ProviderBase
                     index = LinearIndexOf(fieldName, ADP.compareOptions);
                 }
             }
+
             return index;
         }
 
@@ -138,11 +135,11 @@ namespace System.Data.ProviderBase
             return -1;
         }
 
-        // RTM common code for generating Hashtable from array of column names
+        // RTM common code for generating Dictionary from array of column names
         private void GenerateLookup()
         {
             int length = _fieldNames.Length;
-            Hashtable hash = new Hashtable(length);
+            Dictionary<string, int> hash = new Dictionary<string, int>(length);
 
             // via case sensitive search, first match with lowest ordinal matches
             for (int i = length - 1; 0 <= i; --i)

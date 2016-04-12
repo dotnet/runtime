@@ -58,7 +58,9 @@
     <Compile Include="System\Data\Common\DbConnectionPoolKey.cs" />
     <Compile Include="System\Data\Common\DbConnectionStringCommon.cs" />
     <Compile Include="System\Data\Common\DbEnumerator.cs" />
-    <Compile Include="System\Data\Common\FieldNameLookup.cs" />
+    <Compile Include="$(CommonPath)\System\Data\Common\FieldNameLookup.cs">
+        <Link>System\Data\Common\FieldNameLookup.cs</Link>
+    </Compile>
     <Compile Include="System\Data\Common\MultipartIdentifier.cs" />
     <Compile Include="System\Data\Common\NameValuePair.cs" />
     <Compile Include="System\Data\ProviderBase\DbConnectionClosed.cs" />
@@ -147,16 +149,22 @@
     <Compile Include="System\Data\SqlTypes\SQLUtility.cs" />
     <Compile Include="System\Data\SqlTypes\SqlXml.cs" />
     <Compile Include="$(CommonPath)\System\NotImplemented.cs" />
-    <Compile Include="System\Data\Locale\Locale.cs" />
+    <Compile Include="$(CommonPath)\System\Data\Locale\Locale.cs">
+        <Link>System\Data\Locale\Locale.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(IsPartialFacadeAssembly)' != 'true' ">
-    <Compile Include="Interop\LocaleMapper.Windows.cs" />
+    <Compile Include="$(CommonPath)\System\Data\Locale\LocaleMapper.Windows.cs">
+        <Link>System\Data\Locale\LocaleMapper.Windows.cs</Link>
+    </Compile>
     <Compile Include="System\Data\ProviderBase\DbConnectionPoolIdentity.Windows.cs" />
     <Compile Include="Interop\SNINativeMethodWrapper.Windows.cs" />
     <Compile Include="System\Data\SqlClient\TdsParserSafeHandles.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' != 'true' And '$(IsPartialFacadeAssembly)' != 'true' ">
-    <Compile Include="System\Data\Locale\LocaleMapper.Unix.cs" />
+    <Compile Include="$(CommonPath)\System\Data\Locale\LocaleMapper.Unix.cs">
+        <Link>System\Data\Locale\LocaleMapper.Unix.cs</Link>
+    </Compile>
     <Compile Include="System\Data\ProviderBase\DbConnectionPoolIdentity.Unix.cs" />
     <Compile Include="Interop\SNINativeMethodWrapper.Unix.cs" />
     <Compile Include="System\Data\SqlClient\SNI\SNIError.cs" />
