@@ -2,20 +2,34 @@
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Label="MonoDefines">
     <top_srcdir>$(MSBuildProjectDirectory)\..</top_srcdir>
-    <LIBGC_CPPFLAGS_INCLUDE>$(top_srcdir)\libgc\include</LIBGC_CPPFLAGS_INCLUDE>
-    <GLIB_CFLAGS_INCLUDE>$(top_srcdir)\eglib\src</GLIB_CFLAGS_INCLUDE>
+    <MONO_DIR>$(top_srcdir)</MONO_DIR>
+    <MONO_INSTALL_PREFIX></MONO_INSTALL_PREFIX>
+    <MONO_INCLUDE_DIR>$(MONO_DIR)\mono</MONO_INCLUDE_DIR>
+    <MONO_EGLIB_INCLUDE_DIR>$(MONO_DIR)\eglib;$(MONO_DIR)\eglib\include;$(MONO_DIR)\eglib\test</MONO_EGLIB_INCLUDE_DIR>
+    <MONO_EGLIB_SOURCE_DIR>$(MONO_DIR)\eglib\src</MONO_EGLIB_SOURCE_DIR>
+    <MONO_LIBGC_INCLUDE_DIR>$(MONO_DIR)\libgc\include</MONO_LIBGC_INCLUDE_DIR>
+    <MONO_LIBGC_SOURCE_DIR>$(MONO_DIR)\libgc\src</MONO_LIBGC_SOURCE_DIR>
+    <MONO_JIT_INCLUDE_DIR>$(MONO_INCLUDE_DIR)\jit</MONO_JIT_INCLUDE_DIR>
+    <MONO_JIT_SOURCE_DIR>$(MONO_INCLUDE_DIR)\jit</MONO_JIT_SOURCE_DIR>
+    <LIBGC_CPPFLAGS_INCLUDE>$(MONO_LIBGC_INCLUDE_DIR)</LIBGC_CPPFLAGS_INCLUDE>
+    <GLIB_CFLAGS_INCLUDE>$(MONO_EGLIB_SOURCE_DIR)</GLIB_CFLAGS_INCLUDE>
     <BOEHM_DEFINES>HAVE_BOEHM_GC</BOEHM_DEFINES>
     <SGEN_DEFINES>HAVE_SGEN_GC;HAVE_MOVING_COLLECTOR;HAVE_WRITE_BARRIERS</SGEN_DEFINES>
+    <VTUNE_INCLUDE_DIR>$(ProgramFiles)\Intel\VTune Amplifier XE 2013\include</VTUNE_INCLUDE_DIR>
   </PropertyGroup>
+  <ItemGroup />
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup />
   <ItemDefinitionGroup>
     <ClCompile>
       <DllExportPreprocessorDefinitions>MONO_DLL_EXPORT</DllExportPreprocessorDefinitions>
       <DllImportPreprocessorDefinitions>MONO_DLL_IMPORT</DllImportPreprocessorDefinitions>
-      <PreprocessorDefinitions>__default_codegen__;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;HAVE_CONFIG_H;GC_NOT_DLL;WIN32_THREADS;WINVER=0x0600;_WIN32_WINNT=0x0600;_WIN32_IE=0x0501;_UNICODE;UNICODE;WIN32_THREADS;FD_SETSIZE=1024;$(PreprocessorDefinitions);_WINSOCKAPI_</PreprocessorDefinitions>
-	  <DisableSpecificWarnings>4273;4005</DisableSpecificWarnings>
+      <PreprocessorDefinitions>__default_codegen__;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;HAVE_CONFIG_H;GC_NOT_DLL;WIN32_THREADS;WINVER=0x0600;_WIN32_WINNT=0x0600;_WIN32_IE=0x0501;_UNICODE;UNICODE;FD_SETSIZE=1024;%(PreprocessorDefinitions);_WINSOCKAPI_</PreprocessorDefinitions>
+      <DisableSpecificWarnings>4273;4005</DisableSpecificWarnings>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>Mswsock.lib;ws2_32.lib;ole32.lib;oleaut32.lib;psapi.lib;version.lib;advapi32.lib;winmm.lib;kernel32.lib;$(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Mswsock.lib;ws2_32.lib;ole32.lib;oleaut32.lib;psapi.lib;version.lib;advapi32.lib;winmm.lib;kernel32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(Platform)\lib\$(Configuration)</AdditionalLibraryDirectories>
     </Link>
-    </ItemDefinitionGroup>
+  </ItemDefinitionGroup>
 </Project>
