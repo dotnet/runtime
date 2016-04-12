@@ -31,8 +31,6 @@ extern "C" int InitializeDllTest2();
 extern "C" int DllTest1();
 extern "C" int DllTest2();
 
-#if !defined(__FreeBSD__) && !defined(__NetBSD__)
-
 bool bSignal = false;
 bool bCatch = false;
 bool bHandler = false;
@@ -69,11 +67,8 @@ void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
     _exit(PASS);
 }
 
-#endif
-
 int main(int argc, char *argv[])
 {
-#if !defined(__FreeBSD__) && !defined(__NetBSD__)
     struct sigaction newAction;
     struct sigaction oldAction;
     newAction.sa_flags = SA_SIGINFO | SA_RESTART;
@@ -119,6 +114,4 @@ int main(int argc, char *argv[])
 
     printf("ERROR: code was executed after the access violation.\n");
     return FAIL;
-#endif
-    return PASS;
 }
