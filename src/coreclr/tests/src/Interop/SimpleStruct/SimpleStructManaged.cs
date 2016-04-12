@@ -180,7 +180,7 @@ namespace PInvokeTests
         public static Sstr_simple DoCdeclSimpleStruct(Sstr_simple p, ref bool retval)
         {
             IntPtr st = CdeclSimpleStruct(p, ref retval);
-            Sstr_simple simple = (Sstr_simple)Marshal.PtrToStructure(st, typeof(Sstr_simple));
+            Sstr_simple simple = Marshal.PtrToStructure<Sstr_simple>(st);
             return simple;
         }
 
@@ -189,7 +189,7 @@ namespace PInvokeTests
         public static ExplStruct DoCdeclSimpleExplStruct(ExplStruct p, ref bool retval)
         {
             IntPtr st = CdeclSimpleExplStruct(p, ref retval);
-            ExplStruct simple = (ExplStruct)Marshal.PtrToStructure(st, typeof(ExplStruct));
+            ExplStruct simple = Marshal.PtrToStructure<ExplStruct>(st);
             return simple;
         }
 
@@ -306,7 +306,7 @@ namespace PInvokeTests
                 CdeclSimpleStructDelegate std = GetFptrCdeclSimpleStruct(16);
 
                 IntPtr st = std(simple, ref retval);
-                simple = (Sstr_simple)Marshal.PtrToStructure(st, typeof(Sstr_simple));
+                simple = Marshal.PtrToStructure<Sstr_simple>(st);
                                
               
                 if (retval == false)
@@ -444,7 +444,7 @@ namespace PInvokeTests
                 CdeclSimpleExplStructDelegate std = GetFptrCdeclSimpleExplStruct(20);
 
                 IntPtr st = std(p, ref retval);
-                p = (ExplStruct)Marshal.PtrToStructure(st, typeof(ExplStruct));
+                p = Marshal.PtrToStructure<ExplStruct>(st);
 
                 if (retval == false)
                 {
@@ -476,7 +476,9 @@ namespace PInvokeTests
             retVal = retVal && PosTest1();
             retVal = retVal && PosTest2();
             retVal = retVal && PosTest3();
-            retVal = retVal && PosTest4();
+            
+            // https://github.com/dotnet/coreclr/issues/4193
+            // retVal = retVal && PosTest4();
 
             if (!retVal)
                 Console.WriteLine("FAIL");
