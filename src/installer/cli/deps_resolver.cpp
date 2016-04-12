@@ -194,11 +194,13 @@ void deps_resolver_t::setup_probe_config(
         if (pal::directory_exists(ext_ni))
         {
             // Servicing NI probe.
-            m_probes.push_back(probe_config_t::svc_ni(ext_ni, init.patch_roll_forward, init.prerelease_roll_forward));
+            m_probes.push_back(probe_config_t::svc_ni(ext_ni, false, false));
         }
 
         // Servicing normal probe.
-        m_probes.push_back(probe_config_t::svc(args.dotnet_extensions, init.patch_roll_forward, init.prerelease_roll_forward));
+        pal::string_t msil = args.dotnet_extensions;
+        append_path(&msil, _X("msil"));
+        m_probes.push_back(probe_config_t::svc(msil, false, false));
     }
 
     if (pal::directory_exists(args.dotnet_packages_cache))
