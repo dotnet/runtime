@@ -292,6 +292,30 @@ public class FileSystemWatcherTests
     }
 
     [Fact]
+    public static void FileSystemWatcher_OnChangedGivesExpectedFullPath()
+    {
+        using (var dir = Utility.CreateTestDirectory())
+        using (var fsw = new FileSystemWatcher(dir.Path))
+        {
+            AutoResetEvent are = new AutoResetEvent(false);
+            string fullPath = Path.Combine(dir.Path, "Foo.txt");
+
+            fsw.Created += (o, e) => 
+            {
+                Assert.Equal(e.FullPath, fullPath);
+                are.Set();
+            };
+
+            fsw.EnableRaisingEvents = true;
+            using (var file = Utility.CreateTestFile(fullPath))
+            {
+                File.SetLastWriteTime(file.Path, DateTime.Now + TimeSpan.FromSeconds(10));
+                are.WaitOne(Utility.WaitForExpectedEventTimeout);
+            }
+        }
+    }
+
+    [Fact]
     public static void FileSystemWatcher_OnCreated()
     {
         using (TestFileSystemWatcher watcher = new TestFileSystemWatcher())
@@ -315,6 +339,53 @@ public class FileSystemWatcherTests
     }
 
     [Fact]
+    public static void FileSystemWatcher_OnCreatedGivesExpectedFullPath()
+    {
+        using (var dir = Utility.CreateTestDirectory())
+        using (var fsw = new FileSystemWatcher(dir.Path))
+        {
+            AutoResetEvent are = new AutoResetEvent(false);
+            string fullPath = Path.Combine(dir.Path, "Foo.txt");
+
+            fsw.Created += (o, e) => 
+            {
+                Assert.Equal(e.FullPath, fullPath);
+                are.Set();
+            };
+
+            fsw.EnableRaisingEvents = true;
+            using (var file = Utility.CreateTestFile(fullPath))
+            {
+                are.WaitOne(Utility.WaitForExpectedEventTimeout);
+            }
+        }
+    }
+
+    [Fact]
+    [PlatformSpecific(PlatformID.OSX | PlatformID.Windows)]
+    public static void FileSystemWatcher_OnCreatedWithMismatchedCasingGivesExpectedFullPath()
+    {
+        using (var dir = Utility.CreateTestDirectory())
+        using (var fsw = new FileSystemWatcher(dir.Path))
+        {
+            AutoResetEvent are = new AutoResetEvent(false);
+            string fullPath = Path.Combine(dir.Path.ToUpper(), "Foo.txt");
+
+            fsw.Created += (o, e) => 
+            {
+                Assert.True(fullPath.Equals(e.FullPath, StringComparison.OrdinalIgnoreCase));
+                are.Set();
+            };
+
+            fsw.EnableRaisingEvents = true;
+            using (var file = Utility.CreateTestFile(fullPath))
+            {
+                are.WaitOne(Utility.WaitForExpectedEventTimeout);
+            }
+        }
+    }
+
+    [Fact]
     public static void FileSystemWatcher_OnDeleted()
     {
         using (TestFileSystemWatcher watcher = new TestFileSystemWatcher())
@@ -334,6 +405,27 @@ public class FileSystemWatcherTests
             Assert.True(eventOccurred, "Event should be invoked");
             Assert.Equal(watcher, obj);
             Assert.Equal(expectedArgs, actualArgs);
+        }
+    }
+
+    [Fact]
+    public static void FileSystemWatcher_OnDeletedGivesExpectedFullPath()
+    {
+        using (var dir = Utility.CreateTestDirectory())
+        using (var fsw = new FileSystemWatcher(dir.Path))
+        {
+            AutoResetEvent are = new AutoResetEvent(false);
+            string fullPath = Path.Combine(dir.Path, "Foo.txt");
+
+            fsw.Deleted += (o, e) => 
+            {
+                Assert.Equal(e.FullPath, fullPath);
+                are.Set();
+            };
+
+            fsw.EnableRaisingEvents = true;
+            using (var file = Utility.CreateTestFile(fullPath)) { }
+            are.WaitOne(Utility.WaitForExpectedEventTimeout);
         }
     }
 
@@ -380,6 +472,33 @@ public class FileSystemWatcherTests
             Assert.True(eventOccurred, "Event should be invoked");
             Assert.Equal(watcher, obj);
             Assert.Equal(expectedArgs, actualArgs);
+        }
+    }
+
+    [Fact]
+    public static void FileSystemWatcher_OnRenameGivesExpectedFullPath()
+    {
+        using (var dir = Utility.CreateTestDirectory())
+        using (var fsw = new FileSystemWatcher(dir.Path))
+        {
+            AutoResetEvent are = new AutoResetEvent(false);
+            string fullOriginalPath = Path.Combine(dir.Path, "Foo.txt");
+            string fullNewPath = Path.Combine(dir.Path, "Foo2.txt");
+
+            fsw.Renamed += (o, e) => 
+            {
+                Assert.Equal(e.OldFullPath, fullOriginalPath);
+                Assert.Equal(e.FullPath, fullNewPath);
+                are.Set();
+            };
+
+            fsw.EnableRaisingEvents = true;
+
+            using (var file = Utility.CreateTestFile(fullOriginalPath))
+            {
+                file.Move(fullNewPath);
+                are.WaitOne(Utility.WaitForExpectedEventTimeout);
+            }
         }
     }
 

@@ -172,16 +172,20 @@ namespace System.IO
 
             internal void Start()
             {
-                // Normalize the _fullDirectory path to have a trailing slash
-                if (_fullDirectory[_fullDirectory.Length - 1] != '/')
-                    _fullDirectory += "/";
-
                 // Make sure _fullPath doesn't contain a link or alias
                 // since the OS will give back the actual, non link'd or alias'd paths
                 _fullDirectory = Interop.Sys.RealPath(_fullDirectory);
                 if (_fullDirectory == null)
                 {
                     throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), _fullDirectory, true);
+                }
+
+                Debug.Assert(string.IsNullOrEmpty(_fullDirectory) == false, "Watch directory is null or empty");
+
+                // Normalize the _fullDirectory path to have a trailing slash
+                if (_fullDirectory[_fullDirectory.Length - 1] != '/')
+                {
+                    _fullDirectory += "/";
                 }
 
                 // Get the path to watch and verify we created the CFStringRef
@@ -305,9 +309,12 @@ namespace System.IO
 
                 for (long i = 0; i < numEvents.ToInt32(); i++)
                 {
+                    Debug.Assert(eventPaths[i].Length > 0, "Empty events are not supported");
+                    Debug.Assert(eventPaths[i][eventPaths[i].Length - 1] != '/', "Trailing slashes on events is not supported");
+
                     // Match Windows and don't notify us about changes to the Root folder
                     string path = eventPaths[i];
-                    if (path.Equals(_fullDirectory, StringComparison.OrdinalIgnoreCase))
+                    if (string.Compare(path, 0, _fullDirectory, 0, path.Length, StringComparison.OrdinalIgnoreCase) == 0)
                     {
                         continue;
                     }
@@ -376,7 +383,7 @@ namespace System.IO
                                     WatcherChangeTypes.Deleted;
                                 watcher.NotifyFileSystemEventArgs(wct, relativePath);
                             }
-    
+
                             if (IsFlagSet(eventFlags[i], Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemInodeMetaMod) ||
                             IsFlagSet(eventFlags[i], Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemModified) ||
                             IsFlagSet(eventFlags[i], Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemFinderInfoMod) ||
@@ -412,7 +419,7 @@ namespace System.IO
                     // Check if the parent is the root. If so, then we'll continue processing based on the name.
                     // If it isn't, then this will be set to false and we'll skip the name processing since it's irrelevant.
                     string parent = System.IO.Path.GetDirectoryName(eventPath);
-                    doesPathPass = (parent.Equals(_fullDirectory, StringComparison.OrdinalIgnoreCase));
+                    doesPathPass = (string.Compare(parent, 0, _fullDirectory, 0, parent.Length, StringComparison.OrdinalIgnoreCase) == 0);
                 }
 
                 return doesPathPass;
