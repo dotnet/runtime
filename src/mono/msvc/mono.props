@@ -1,28 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup Label="MonoDefines">
-    <top_srcdir>$(MSBuildProjectDirectory)\..</top_srcdir>
-    <MONO_DIR>$(top_srcdir)</MONO_DIR>
-    <MONO_INSTALL_PREFIX></MONO_INSTALL_PREFIX>
-    <MONO_INCLUDE_DIR>$(MONO_DIR)\mono</MONO_INCLUDE_DIR>
+  
+  <PropertyGroup Label="MonoBuild">
+	<top_srcdir>$(MSBuildProjectDirectory)\..</top_srcdir>
+	<MONO_DIR>$(top_srcdir)</MONO_DIR>
+	<MONO_BUILD_DIR_PREFIX>c:\mono-build\</MONO_BUILD_DIR_PREFIX>
+	<MONO_INSTALL_DIR_PREFIX>c:\mono-dist\</MONO_INSTALL_DIR_PREFIX>
+	<MONO_USE_SGEN>true</MONO_USE_SGEN>
+  </PropertyGroup>
+
+  <PropertyGroup Label="MonoIncludes">
+	<MONO_INCLUDE_DIR>$(MONO_DIR)\mono</MONO_INCLUDE_DIR>
     <MONO_EGLIB_INCLUDE_DIR>$(MONO_DIR)\eglib;$(MONO_DIR)\eglib\include;$(MONO_DIR)\eglib\test</MONO_EGLIB_INCLUDE_DIR>
     <MONO_EGLIB_SOURCE_DIR>$(MONO_DIR)\eglib\src</MONO_EGLIB_SOURCE_DIR>
-    <MONO_LIBGC_INCLUDE_DIR>$(MONO_DIR)\libgc\include</MONO_LIBGC_INCLUDE_DIR>
+	<MONO_LIBGC_INCLUDE_DIR>$(MONO_DIR)\libgc\include</MONO_LIBGC_INCLUDE_DIR>
     <MONO_LIBGC_SOURCE_DIR>$(MONO_DIR)\libgc\src</MONO_LIBGC_SOURCE_DIR>
-    <MONO_JIT_INCLUDE_DIR>$(MONO_INCLUDE_DIR)\jit</MONO_JIT_INCLUDE_DIR>
+	<MONO_JIT_INCLUDE_DIR>$(MONO_INCLUDE_DIR)\jit</MONO_JIT_INCLUDE_DIR>
     <MONO_JIT_SOURCE_DIR>$(MONO_INCLUDE_DIR)\jit</MONO_JIT_SOURCE_DIR>
-    <LIBGC_CPPFLAGS_INCLUDE>$(MONO_LIBGC_INCLUDE_DIR)</LIBGC_CPPFLAGS_INCLUDE>
+	<LIBGC_CPPFLAGS_INCLUDE>$(MONO_LIBGC_INCLUDE_DIR)</LIBGC_CPPFLAGS_INCLUDE>
     <GLIB_CFLAGS_INCLUDE>$(MONO_EGLIB_SOURCE_DIR)</GLIB_CFLAGS_INCLUDE>
-    <BOEHM_DEFINES>HAVE_BOEHM_GC</BOEHM_DEFINES>
+  </PropertyGroup>
+   
+  <PropertyGroup Label="MonoSGEN" Condition="$(MONO_USE_SGEN)==true">
     <SGEN_DEFINES>HAVE_SGEN_GC;HAVE_MOVING_COLLECTOR;HAVE_WRITE_BARRIERS</SGEN_DEFINES>
 	<GC_DEFINES>$(SGEN_DEFINES)</GC_DEFINES>
-	<GC_LIB>libmonosgen.lib</GC_LIB>
+    <GC_LIB>libgcmonosgen.lib</GC_LIB>
 	<MONO_DEF>monosgen.def</MONO_DEF>
-	<!--<GC_DEFINES>$(BOEHM_DEFINES)</GC_DEFINES>-->
-	<!--<GC_LIB>libgc.lib</GC_LIB>-->
-	<!--<MONO_DEF>mono.def</MONO_DEF>-->
+	<MONO_TARGET_SUFFIX>-sgen</MONO_TARGET_SUFFIX>
+  </PropertyGroup>
+
+  <PropertyGroup Label="MonoBOEHM" Condition="$(MONO_USE_SGEN)==false">
+	<BOEHM_DEFINES>HAVE_BOEHM_GC</BOEHM_DEFINES>
+    <GC_DEFINES>$(HAVE_BOEHM_GC)</GC_DEFINES>
+	<GC_LIB>libgc.lib</GC_LIB>
+	<MONO_DEF>mono.def</MONO_DEF>
+	<MONO_TARGET_SUFFIX></MONO_TARGET_SUFFIX>
+  </PropertyGroup>
+  
+  <PropertyGroup Label="MonoProfiler">
     <VTUNE_INCLUDE_DIR>$(ProgramFiles)\Intel\VTune Amplifier XE 2013\include</VTUNE_INCLUDE_DIR>
   </PropertyGroup>
+  
   <ItemGroup />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup />
@@ -35,7 +53,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>Mswsock.lib;ws2_32.lib;ole32.lib;oleaut32.lib;psapi.lib;version.lib;advapi32.lib;winmm.lib;kernel32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(Platform)\lib\$(Configuration)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(MONO_BUILD_DIR_PREFIX)$(Platform)\lib\$(Configuration)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
 </Project>
