@@ -181,6 +181,69 @@ mono_strength_reduction_ins (MonoCompile *cfg, MonoInst *ins, const char **spec)
 #endif
 		break;
 	}
+#if SIZEOF_REGISTER == 4
+	case OP_LSHR_IMM: {
+		if (ins->inst_c1 == 32) {
+			MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, MONO_LVREG_LS (ins->dreg), MONO_LVREG_MS (ins->sreg1));
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHR_IMM, MONO_LVREG_MS (ins->dreg), MONO_LVREG_MS (ins->sreg1), 31);
+		} else if (ins->inst_c1 == 0) {
+			MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, MONO_LVREG_LS (ins->dreg), MONO_LVREG_LS (ins->sreg1));
+			MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, MONO_LVREG_MS (ins->dreg), MONO_LVREG_MS (ins->sreg1));
+		} else if (ins->inst_c1 > 32) {
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHR_IMM, MONO_LVREG_LS (ins->dreg), MONO_LVREG_MS (ins->sreg1), ins->inst_c1 - 32);
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHR_IMM, MONO_LVREG_MS (ins->dreg), MONO_LVREG_MS (ins->sreg1), 31);
+		} else {
+			guint32 tmpreg = alloc_ireg (cfg);
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHL_IMM, tmpreg, MONO_LVREG_MS (ins->sreg1), 32 - ins->inst_c1);
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHR_IMM, MONO_LVREG_MS (ins->dreg), MONO_LVREG_MS (ins->sreg1), ins->inst_c1);
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHR_UN_IMM, MONO_LVREG_LS (ins->dreg), MONO_LVREG_LS (ins->sreg1), ins->inst_c1);
+			MONO_EMIT_NEW_BIALU (cfg, OP_IOR, MONO_LVREG_LS (ins->dreg), MONO_LVREG_LS (ins->dreg), tmpreg);
+			allocated_vregs = TRUE;
+		}
+		break;
+	}
+	case OP_LSHR_UN_IMM: {
+		if (ins->inst_c1 == 32) {
+			MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, MONO_LVREG_LS (ins->dreg), MONO_LVREG_MS (ins->sreg1));
+			MONO_EMIT_NEW_ICONST (cfg, MONO_LVREG_MS (ins->dreg), 0);
+		} else if (ins->inst_c1 == 0) {
+			MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, MONO_LVREG_LS (ins->dreg), MONO_LVREG_LS (ins->sreg1));
+			MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, MONO_LVREG_MS (ins->dreg), MONO_LVREG_MS (ins->sreg1));
+		} else if (ins->inst_c1 > 32) {
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHR_UN_IMM, MONO_LVREG_LS (ins->dreg), MONO_LVREG_MS (ins->sreg1), ins->inst_c1 - 32);
+			MONO_EMIT_NEW_ICONST (cfg, MONO_LVREG_MS (ins->dreg), 0);
+		} else {
+			guint32 tmpreg = alloc_ireg (cfg);
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHL_IMM, tmpreg, MONO_LVREG_MS (ins->sreg1), 32 - ins->inst_c1);
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHR_UN_IMM, MONO_LVREG_MS (ins->dreg), MONO_LVREG_MS (ins->sreg1), ins->inst_c1);
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHR_UN_IMM, MONO_LVREG_LS (ins->dreg), MONO_LVREG_LS (ins->sreg1), ins->inst_c1);
+			MONO_EMIT_NEW_BIALU (cfg, OP_IOR, MONO_LVREG_LS (ins->dreg), MONO_LVREG_LS (ins->dreg), tmpreg);
+			allocated_vregs = TRUE;
+		}
+		break;
+	}
+	case OP_LSHL_IMM: {
+		if (ins->inst_c1 == 32) {
+			/* just move the lower half to the upper and zero the lower word */
+			MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, MONO_LVREG_MS (ins->dreg), MONO_LVREG_LS (ins->sreg1));
+			MONO_EMIT_NEW_ICONST (cfg, MONO_LVREG_LS (ins->dreg), 0);
+		} else if (ins->inst_c1 == 0) {
+			MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, MONO_LVREG_LS (ins->dreg), MONO_LVREG_LS (ins->sreg1));
+			MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, MONO_LVREG_MS (ins->dreg), MONO_LVREG_MS (ins->sreg1));
+		} else if (ins->inst_c1 > 32) {
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHL_IMM, MONO_LVREG_MS (ins->dreg), MONO_LVREG_LS (ins->sreg1), ins->inst_c1 - 32);
+			MONO_EMIT_NEW_ICONST (cfg, MONO_LVREG_LS (ins->dreg), 0);
+		} else {
+			guint32 tmpreg = alloc_ireg (cfg);
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHR_UN_IMM, tmpreg, MONO_LVREG_LS (ins->sreg1), 32 - ins->inst_c1);
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHL_IMM, MONO_LVREG_MS (ins->dreg), MONO_LVREG_MS (ins->sreg1), ins->inst_c1);
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHL_IMM, MONO_LVREG_LS (ins->dreg), MONO_LVREG_LS (ins->sreg1), ins->inst_c1);
+			MONO_EMIT_NEW_BIALU (cfg, OP_IOR, MONO_LVREG_MS (ins->dreg), MONO_LVREG_MS (ins->dreg), tmpreg);
+			allocated_vregs = TRUE;
+		}
+		break;
+	}
+#endif
 
 	default:
 		break;
