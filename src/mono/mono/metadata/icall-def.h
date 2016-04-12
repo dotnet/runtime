@@ -502,9 +502,6 @@ ICALL(ASSEMB_2, "basic_init", mono_image_basic_init)
 #ifndef DISABLE_REFLECTION_EMIT
 ICALL_TYPE(CATTRB, "System.Reflection.Emit.CustomAttributeBuilder", CATTRB_1)
 ICALL(CATTRB_1, "GetBlob", ves_icall_System_Reflection_Emit_CustomAttributeBuilder_GetBlob)
-
-ICALL_TYPE(DERIVEDTYPE, "System.Reflection.Emit.DerivedType", DERIVEDTYPE_1)
-ICALL(DERIVEDTYPE_1, "create_unmanaged_type", mono_reflection_create_unmanaged_type)
 #endif
 
 ICALL_TYPE(DYNM, "System.Reflection.Emit.DynamicMethod", DYNM_1)
@@ -534,6 +531,11 @@ ICALL(MODULEB_9, "set_wrappers_type", mono_image_set_wrappers_type)
 ICALL_TYPE(SIGH, "System.Reflection.Emit.SignatureHelper", SIGH_1)
 ICALL(SIGH_1, "get_signature_field", mono_reflection_sighelper_get_signature_field)
 ICALL(SIGH_2, "get_signature_local", mono_reflection_sighelper_get_signature_local)
+
+#ifndef DISABLE_REFLECTION_EMIT
+ICALL_TYPE(SYMBOLTYPE, "System.Reflection.Emit.SymbolType", SYMBOLTYPE_1)
+ICALL(SYMBOLTYPE_1, "create_unmanaged_type", mono_reflection_create_unmanaged_type)
+#endif
 
 ICALL_TYPE(TYPEB, "System.Reflection.Emit.TypeBuilder", TYPEB_1)
 ICALL(TYPEB_1, "create_generic_class", ves_icall_System_Reflection_Emit_TypeBuilder_create_generic_class)
