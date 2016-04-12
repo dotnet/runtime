@@ -104,6 +104,23 @@ namespace System.Diagnostics.Tests
             Assert.True(p.WaitForExit(0));
         }
 
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(127)]
+        public async Task SingleProcess_EnableRaisingEvents_CorrectExitCode(int exitCode)
+        {
+            using (Process p = RemoteInvoke(exitCodeStr => int.Parse(exitCodeStr), exitCode.ToString(), new RemoteInvokeOptions { Start = false }).Process)
+            {
+                var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                p.EnableRaisingEvents = true;
+                p.Exited += delegate { tcs.SetResult(true); };
+                p.Start();
+                Assert.True(await tcs.Task);
+                Assert.Equal(exitCode, p.ExitCode);
+            }
+        }
+
         [Fact]
         public void SingleProcess_CopiesShareExitInformation()
         {
