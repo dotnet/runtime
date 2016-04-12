@@ -17,3 +17,4 @@ Advapi32.dll!CryptSignHashW
 Advapi32.dll!CryptVerifySignatureW
 Advapi32.dll!CryptDestroyKey
 Advapi32.dll!CryptDestroyHash
+Advapi32.dll!CryptSetProvParam
