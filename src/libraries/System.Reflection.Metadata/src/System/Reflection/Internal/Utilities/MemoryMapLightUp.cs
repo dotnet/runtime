@@ -53,8 +53,8 @@ namespace System.Reflection.Internal
 
         private static bool TryLoadTypes()
         {
-            const string systemIOMemoryMappedFiles = "System.IO.MemoryMappedFiles, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a";
-            const string systemRuntimeHandles = "System.Runtime.Handles, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a";
+            const string systemIOMemoryMappedFiles = "System.IO.MemoryMappedFiles, Version=0.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a";
+            const string systemRuntimeHandles = "System.Runtime.Handles, Version=0.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a";
             const string systemCore = "System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
 
             TryLoadType("System.IO.MemoryMappedFiles.MemoryMappedFileSecurity", systemIOMemoryMappedFiles, systemCore, out s_lazyMemoryMappedFileSecurityType);
