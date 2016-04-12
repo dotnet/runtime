@@ -11,6 +11,9 @@
         <AdditionalProperties Condition="'%(Project.TargetGroup)'!=''">TargetGroup=%(Project.TargetGroup);%(Project.AdditionalProperties)</AdditionalProperties>
       </Project>
       <Project>
+        <FilterToTargetGroup Condition="'$(FilterToTargetGroup)'!=''">$(FilterToTargetGroup)</FilterToTargetGroup>
+      </Project>
+      <Project>
         <FilterToOSGroup Condition="'$(FilterToOSGroup)'!=''">$(FilterToOSGroup)</FilterToOSGroup>
       </Project>
       <Project>
@@ -23,11 +26,20 @@
         <AdditionalProperties Condition="'%(Project.FilterToOSGroup)'!=''">FilterToOSGroup=%(Project.FilterToOSGroup);%(Project.AdditionalProperties)</AdditionalProperties>
       </Project>
       <Project>
+        <AdditionalProperties Condition="'%(Project.FilterToTargetGroup)'!=''">FilterToTargetGroup=%(Project.FilterToTargetGroup);%(Project.AdditionalProperties)</AdditionalProperties>
+      </Project>
+      <Project>
+        <AdditionalProperties Condition="'%(Project.InputOSGroup)' != ''">InputOSGroup=%(Project.InputOSGroup);%(Project.AdditionalProperties)</AdditionalProperties>
+      </Project>
+      <Project>
+        <AdditionalProperties Condition="'%(Project.BuildAllOSGroups)' != ''">BuildAllOSGroups=%(Project.BuildAllOSGroups);%(Project.AdditionalProperties)</AdditionalProperties>
+      </Project>
+      <Project>
         <!-- If a project isn't setting the OSGroup via metadata then undefine it so that the globally set OSGroup doesn't override empty OSGroup -->
         <UndefineProperties Condition="'%(Project.OSGroup)'==''">%(Project.UndefineProperties);OSGroup</UndefineProperties>
       </Project>
       <Project>
-        <UndefineProperties Condition="'%(Project.Extension)'!='.builds' and '%(Project.Extension)'!='.proj'">%(Project.UndefineProperties);FilterToOSGroup;DefaultBuildAllTarget</UndefineProperties>
+        <UndefineProperties Condition="'%(Project.Extension)'!='.builds' and '%(Project.Extension)'!='.proj'">%(Project.UndefineProperties);FilterToOSGroup;DefaultBuildAllTarget;SerializeProjects;BuildAllOSGroups</UndefineProperties>
       </Project>
     </ItemGroup>
 
@@ -38,11 +50,32 @@
       </Project>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(FilterToOSGroup)'!=''">
-      <ProjectsToBuild Include="@(Project)" Condition="'%(Project.OSGroup)'=='$(FilterToOSGroup)' or '%(Project.OSGroup)'=='AnyOS' or '%(Project.OSGroup)'==''" />
+    <PropertyGroup>
+      <OSGroupList>AnyOS;$(FilterToOSGroup);</OSGroupList>
+      <OSGroupList Condition="'$(FilterToOSGroup)'=='OSX'">$(OSGroupList);Unix;</OSGroupList>
+      <OSGroupList Condition="'$(FilterToOSGroup)'=='Linux'">$(OSGroupList);Unix;</OSGroupList>
+      <OSGroupList Condition="'$(FilterToOSGroup)'=='FreeBSD'">$(OSGroupList);Unix;</OSGroupList>
+      <OSGroupList Condition="'$(FilterToOSGroup)'=='NetBSD'">$(OSGroupList);Unix;</OSGroupList>
+    </PropertyGroup>
 
+    <ItemGroup Condition="'$(FilterToOSGroup)'!='' and '$(BuildAllOSGroups)' != 'true'">
+      <ProjectsToBuild Include="@(Project)" Condition="$(OSGroupList.Contains('%(Project.OSGroup);'))" />
+ 
       <Project Remove="@(Project)" />
       <Project Include="@(ProjectsToBuild)" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <TargetGroupList>;$(FilterToTargetGroup);</TargetGroupList>
+      <TargetGroupList Condition="'$(FilterToTargetGroup)'=='net46'">$(TargetGroupList)net461;net462;</TargetGroupList>
+      <TargetGroupList Condition="'$(FilterToTargetGroup)'=='net461'">$(TargetGroupList)net462;</TargetGroupList>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(FilterToTargetGroup)'!=''">
+      <FilteredProjectsToBuild Include="@(Project)" Condition="$(TargetGroupList.Contains(';%(Project.TargetGroup);')) Or '%(Project.Extension)' == '.proj' Or '%(Project.Extension)' == '.builds'" />
+
+      <Project Remove="@(Project)" />
+      <Project Include="@(FilteredProjectsToBuild)" />
     </ItemGroup>
   </Target>
 

@@ -12,6 +12,7 @@ enum
 {
     CurlOptionLongBase = 0,
     CurlOptionObjectPointBase = 10000,
+    CurlOptionOffTBase = 30000,
 };
 
 enum PAL_CURLoption : int32_t
@@ -25,11 +26,15 @@ enum PAL_CURLoption : int32_t
     PAL_CURLOPT_FOLLOWLOCATION = CurlOptionLongBase + 52,
     PAL_CURLOPT_PROXYPORT = CurlOptionLongBase + 59,
     PAL_CURLOPT_POSTFIELDSIZE = CurlOptionLongBase + 60,
+    PAL_CURLOPT_SSL_VERIFYPEER = CurlOptionLongBase + 64,
     PAL_CURLOPT_MAXREDIRS = CurlOptionLongBase + 68,
+    PAL_CURLOPT_SSL_VERIFYHOST = CurlOptionLongBase + 81,
     PAL_CURLOPT_HTTP_VERSION = CurlOptionLongBase + 84,
+    PAL_CURLOPT_DNS_CACHE_TIMEOUT = CurlOptionLongBase + 92,
     PAL_CURLOPT_NOSIGNAL = CurlOptionLongBase + 99,
     PAL_CURLOPT_PROXYTYPE = CurlOptionLongBase + 101,
     PAL_CURLOPT_HTTPAUTH = CurlOptionLongBase + 107,
+    PAL_CURLOPT_CONNECTTIMEOUT_MS = CurlOptionLongBase + 156,
     PAL_CURLOPT_PROTOCOLS = CurlOptionLongBase + 181,
     PAL_CURLOPT_REDIR_PROTOCOLS = CurlOptionLongBase + 182,
 
@@ -44,6 +49,9 @@ enum PAL_CURLoption : int32_t
     PAL_CURLOPT_COPYPOSTFIELDS = CurlOptionObjectPointBase + 165,
     PAL_CURLOPT_USERNAME = CurlOptionObjectPointBase + 173,
     PAL_CURLOPT_PASSWORD = CurlOptionObjectPointBase + 174,
+
+    PAL_CURLOPT_INFILESIZE_LARGE = CurlOptionOffTBase + 115,
+    PAL_CURLOPT_POSTFIELDSIZE_LARGE = CurlOptionOffTBase + 120,
 };
 
 enum class ReadWriteFunction : int32_t
@@ -61,6 +69,7 @@ enum PAL_CURLcode : int32_t
     PAL_CURLE_NOT_BUILT_IN = 4,
     PAL_CURLE_COULDNT_RESOLVE_HOST = 6,
     PAL_CURLE_OUT_OF_MEMORY = 27,
+    PAL_CURLE_OPERATION_TIMEDOUT = 28,
     PAL_CURLE_ABORTED_BY_CALLBACK = 42,
     PAL_CURLE_UNKNOWN_OPTION = 48,
 };
@@ -81,7 +90,10 @@ enum PAL_CURL_HTTP_VERSION
 
 enum PAL_CURL_SSLVERSION
 {
-    PAL_CURL_SSLVERSION_TLSv1 = 1
+    PAL_CURL_SSLVERSION_TLSv1 = 1,
+    PAL_CURL_SSLVERSION_TLSv1_0 = 4,
+    PAL_CURL_SSLVERSION_TLSv1_1 = 5,
+    PAL_CURL_SSLVERSION_TLSv1_2 = 6,
 };
 
 enum PAL_CURLINFO : int32_t

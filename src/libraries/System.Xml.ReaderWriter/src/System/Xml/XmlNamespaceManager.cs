@@ -142,7 +142,7 @@ namespace System.Xml
                 }
                 else
                 {
-                    // othewise link
+                    // otherwise link
                     previousDeclIndex = declIndex;
                 }
             }

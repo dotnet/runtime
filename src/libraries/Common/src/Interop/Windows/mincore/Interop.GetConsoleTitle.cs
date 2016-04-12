@@ -20,13 +20,22 @@ internal partial class Interop
         // throw.
         private const int MaxAllowedBufferSizeInChars = 24500;
 
+        // GetConsoleTitle sometimes interprets the second parameter (nSize) as number of bytes and sometimes as the number of chars.
+        // Instead of doing complicated and dangerous logic to determine if this may or may not occur,
+        // we simply assume the worst and reserve a bigger buffer. This way we may use a bit more memory,
+        // but we will always be safe.
+        private static int CharCountToByteCount(int numChars)
+        {
+            return numChars * 2;
+        }
+
         // 1. We first try to call the GetConsoleTitle with an InitialBufferSizeInChars of 256.
         // 2. Then based on the return value either increase the capacity or return failure.
         internal static int GetConsoleTitle(out string title, out int titleLength)
         {
             int lastError = 0;
-            StringBuilder sb = new StringBuilder(InitialBufferSizeInChars);
-            int len = GetConsoleTitle(sb, InitialBufferSizeInChars);
+            StringBuilder sb = new StringBuilder(CharCountToByteCount(InitialBufferSizeInChars + 1));
+            int len = GetConsoleTitle(sb, sb.Capacity);
 
             if (len <= 0)
             {
@@ -44,7 +53,7 @@ internal partial class Interop
                 if (len > InitialBufferSizeInChars)
                 {
                     // We need to increase the sb capacity and retry.
-                    sb.Capacity = len + 1;
+                    sb.Capacity = CharCountToByteCount(len + 1);
                     len = GetConsoleTitle(sb, sb.Capacity);
                     if (len <= 0)
                     {

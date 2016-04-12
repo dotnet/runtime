@@ -2,76 +2,44 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Globalization.Tests
 {
     public class NumberFormatInfoCurrencyPositivePattern
     {
-        // PosTest1: Verify default value of property CurrencyPositivePattern
-        [Fact]
-        public void TestDefault()
+        public static IEnumerable<object[]> CurrencyPositivePattern_TestData()
         {
-            NumberFormatInfo nfi = new NumberFormatInfo();
-
-            int expected = nfi.CurrencyPositivePattern;
-            Assert.Equal(0, expected);
+            yield return new object[] { NumberFormatInfo.InvariantInfo, 0 };
+            yield return new object[] { new CultureInfo("en-US").NumberFormat, 0 };
+            yield return new object[] { new CultureInfo("fr-FR").NumberFormat, 3 };
         }
 
-        // PosTest2: Verify set value of property CurrencyPositivePattern
-        [Fact]
-        public void TestSetValue()
-        {
-            NumberFormatInfo nfi = new NumberFormatInfo();
-            for (int i = 0; i <= 3; i++)
-            {
-                nfi.CurrencyPositivePattern = i;
-                Assert.Equal(i, nfi.CurrencyPositivePattern);
-            }
-        }
-
-        // TestArgumentOutOfRange: ArgumentOutOfRangeException is thrown
-        [Fact]
-        public void TestArgumentOutOfRange()
-        {
-            VerificationHelper<ArgumentOutOfRangeException>(-1);
-            VerificationHelper<ArgumentOutOfRangeException>(4);
-        }
-
-        // TestInvalidOperation: InvalidOperationException is thrown
-        [Fact]
-        public void TestInvalidOperation()
-        {
-            NumberFormatInfo nfi = new NumberFormatInfo();
-            NumberFormatInfo nfiReadOnly = NumberFormatInfo.ReadOnly(nfi);
-            Assert.Throws<InvalidOperationException>(() =>
-            {
-                nfiReadOnly.CurrencyPositivePattern = 1;
-            });
-        }
-
-        // TestCurrencyPositivePatternLocale: Verify value of property CurrencyPositivePattern for specific locales
         [Theory]
-        [InlineData("en-US", 0)]
-        [InlineData("fr-FR", 3)]
-        public void TestCurrencyPositivePatternLocale(string locale, int expected)
+        [MemberData(nameof(CurrencyPositivePattern_TestData))]
+        public void CurrencyPositivePattern_Get(NumberFormatInfo format, int expected)
         {
-            CultureInfo myTestCulture = new CultureInfo(locale);
-            NumberFormatInfo nfi = myTestCulture.NumberFormat;
-            int actual = nfi.CurrencyPositivePattern;
-            Assert.Equal(expected, actual);
+            Assert.Equal(expected, format.CurrencyPositivePattern);
         }
 
-        private void VerificationHelper<T>(int i) where T : Exception
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(3)]
+        public void CurrencyPositivePattern_Set(int newCurrencyPositivePattern)
         {
-            NumberFormatInfo nfi = new NumberFormatInfo();
-            Assert.Throws<T>(() =>
-            {
-                nfi.CurrencyPositivePattern = i;
-                int actual = nfi.CurrencyPositivePattern;
-            });
+            NumberFormatInfo format = new NumberFormatInfo();
+            format.CurrencyPositivePattern = newCurrencyPositivePattern;
+            Assert.Equal(newCurrencyPositivePattern, format.CurrencyPositivePattern);
+        }
+
+        [Fact]
+        public void CurrencyPositivePattern_Set_Invalid()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("CurrencyPositivePattern", () => new NumberFormatInfo().CurrencyPositivePattern = -1);
+            Assert.Throws<ArgumentOutOfRangeException>("CurrencyPositivePattern", () => new NumberFormatInfo().CurrencyPositivePattern = 4);
+            Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.CurrencyPositivePattern = 1);
         }
     }
 }

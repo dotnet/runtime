@@ -2,20 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//-----------------------------------------------------------------------------
-//
-// Description:
-//  TargetMode enumeration is used as an indication mechanism to interpret the 
-//  "base" uri of for the PackageRelationship target Uri. 
-//  Possible values - 
-//              0: "Internal" - target points to a part within the package
-//                              PackageRelationship target uri must be relative.
-//              1: "External" - target points to an external resource. The
-//                              resource can be relative to the package entity
-//                              or an absolute URI
-//
-//-----------------------------------------------------------------------------
-
 namespace System.IO.Packaging
 {
     /// <summary>

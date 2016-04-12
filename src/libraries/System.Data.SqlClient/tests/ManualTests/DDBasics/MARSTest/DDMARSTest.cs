@@ -11,7 +11,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public static void TestMain()
         {
-            string connstr = DataTestClass.SQL2005_Northwind + "multipleactiveresultsets=true;";
+            string connstr = DataTestClass.SQL2005_Northwind + ";multipleactiveresultsets=true;";
             string cmdText1 = "select * from Orders; select count(*) from Customers";
             string cmdText2 = "select * from Customers; select count(*) from Orders";
 

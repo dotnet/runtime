@@ -31,7 +31,7 @@ public partial class ErrorTests
             };
             watcher.EnableRaisingEvents = true;
 
-            // FSW works by calling ReadDirectoryChanges aynchronously, processing the changes
+            // FSW works by calling ReadDirectoryChanges asynchronously, processing the changes
             // in the callback and invoking event handlers from the callback serially.
             // After it processes all events for a particular callback it calls ReadDirectoryChanges
             // to queue another overlapped operation.

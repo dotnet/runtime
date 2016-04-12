@@ -77,7 +77,7 @@ namespace System.Linq.Parallel
         }
 
         //---------------------------------------------------------------------------------------
-        // Accessor the the key selector.
+        // Accessor the key selector.
         //
 
         internal Func<TInputOutput, TSortKey> KeySelector
@@ -86,7 +86,7 @@ namespace System.Linq.Parallel
         }
 
         //---------------------------------------------------------------------------------------
-        // Accessor the the key comparer.
+        // Accessor the key comparer.
         //
 
         internal IComparer<TSortKey> KeyComparer
@@ -147,7 +147,7 @@ namespace System.Linq.Parallel
         protected QueryResults<TInputOutput> _childQueryResults; // Results of the child query
         private SortQueryOperator<TInputOutput, TSortKey> _op; // Operator that generated these results
         private QuerySettings _settings; // Settings collected from the query
-        private bool _preferStriping; // If the results are indexible, should we use striping when partitioning them
+        private bool _preferStriping; // If the results are indexable, should we use striping when partitioning them
 
         internal SortQueryOperatorResults(
             QueryResults<TInputOutput> childQueryResults, SortQueryOperator<TInputOutput, TSortKey> op,

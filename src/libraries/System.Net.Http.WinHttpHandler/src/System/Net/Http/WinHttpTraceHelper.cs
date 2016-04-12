@@ -41,27 +41,77 @@ namespace System.Net.Http
                 return;
             }
             
-            Debug.WriteLine(message);
+            WriteLine(message);
         }
 
-        public static void Trace(string format, object arg0)
+        public static void Trace(string format, bool arg0)
         {
             if (!IsTraceEnabled())
             {
                 return;
             }
             
-            Debug.WriteLine(format, arg0);
+            WriteLine(format, arg0);
         }
 
-        public static void Trace(string format, object arg0, object arg1, object arg2)
+        public static void Trace(string format, int arg0)
         {
             if (!IsTraceEnabled())
             {
                 return;
             }
             
-            Debug.WriteLine(format, arg0, arg1, arg2);
+            WriteLine(format, arg0);
+        }
+
+        public static void Trace(string format, uint arg0)
+        {
+            if (!IsTraceEnabled())
+            {
+                return;
+            }
+            
+            WriteLine(format, arg0);
+        }
+
+        public static void Trace(string format, string arg0)
+        {
+            if (!IsTraceEnabled())
+            {
+                return;
+            }
+            
+            WriteLine(format, arg0);
+        }
+
+        public static void Trace(string format, string arg0, string arg1)
+        {
+            if (!IsTraceEnabled())
+            {
+                return;
+            }
+            
+            WriteLine(format, arg0, arg1);
+        }
+
+        public static void Trace(string format, IntPtr arg0, bool arg1, bool arg2)
+        {
+            if (!IsTraceEnabled())
+            {
+                return;
+            }
+            
+            WriteLine(format, arg0, arg1, arg2);
+        }
+
+        public static void Trace(string format, string arg0, bool arg1, string arg2, string arg3)
+        {
+            if (!IsTraceEnabled())
+            {
+                return;
+            }
+            
+            WriteLine(format, arg0, arg1, arg2, arg3);
         }
 
         public static void TraceCallbackStatus(string message, IntPtr handle, IntPtr context, uint status)
@@ -71,7 +121,7 @@ namespace System.Net.Http
                 return;
             }
 
-            Debug.WriteLine(
+            WriteLine(
                 "{0}: handle=0x{1:X}, context=0x{2:X}, {3}",
                 message,
                 handle,
@@ -89,13 +139,26 @@ namespace System.Net.Http
             uint apiIndex = (uint)asyncResult.dwResult.ToInt32();
             uint error = asyncResult.dwError;
 
-            Debug.WriteLine(
+            WriteLine(
                 "{0}: api={1}, error={2}({3}) \"{4}\"",
                 message,
                 GetNameFromApiIndex(apiIndex),
                 GetNameFromError(error),
                 error,
                 WinHttpException.GetErrorMessage((int)error));
+        }
+
+        private static void WriteLine(string message)
+        {
+            int id = Environment.CurrentManagedThreadId;
+            Debug.WriteLine("[{0}] {1}", id, message);
+        }
+
+        private static void WriteLine(string format, params object[] args)
+        {
+            string message = string.Format(format, args);
+            int id = Environment.CurrentManagedThreadId;
+            Debug.WriteLine("[{0}] {1}", id, message);
         }
 
         private static string GetNameFromApiIndex(uint index)

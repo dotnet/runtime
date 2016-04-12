@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
+using System.Text;
 using System.Threading;
 
 // The NETNative_SystemNetHttp #define is used in some source files to indicate we are compiling classes
@@ -13,7 +14,7 @@ using System.Threading;
 // methods. Internal methods are needed in order to map cookie response headers from the WinRT Windows.Web.Http APIs.
 // Windows.Web.Http is used underneath the System.Net.Http classes on .NET Native. Having other similarly
 // named classes would normally conflict with the public System.Net namespace classes that are also in the 
-// System.Private.Networking dll. So, we need to move the classes to a different namespace. Thoses classes are never
+// System.Private.Networking dll. So, we need to move the classes to a different namespace. Those classes are never
 // exposed up to user code so there isn't a problem.  In the future, we might expose some of the internal methods
 // as new public APIs and then we can remove this duplicate source code inclusion in the binaries.
 #if NETNative_SystemNetHttp
@@ -181,19 +182,6 @@ namespace System.Net
             }
         }
 
-        private string _Domain
-        {
-            get
-            {
-                return (Plain || _domainImplicit || (_domain.Length == 0))
-                    ? string.Empty
-                    : (SpecialAttributeLiteral
-                       + DomainAttributeName
-                       + EqualsLiteral + (IsQuotedDomain ? "\"" : string.Empty)
-                       + _domain + (IsQuotedDomain ? "\"" : string.Empty));
-            }
-        }
-
         internal bool DomainImplicit
         {
             get
@@ -272,19 +260,6 @@ namespace System.Net
             }
         }
 
-        private string _Path
-        {
-            get
-            {
-                return (Plain || _pathImplicit || (_path.Length == 0))
-                    ? string.Empty
-                    : (SpecialAttributeLiteral
-                       + PathAttributeName
-                       + EqualsLiteral
-                       + _path);
-            }
-        }
-
         internal bool Plain
         {
             get
@@ -336,7 +311,7 @@ namespace System.Net
 
         // According to spec we must assume default values for attributes but still
         // keep in mind that we must not include them into the requests.
-        // We also check the validiy of all attributes based on the version and variant (read RFC)
+        // We also check the validity of all attributes based on the version and variant (read RFC)
         //
         // To work properly this function must be called after cookie construction with
         // default (response) URI AND setDefault == true
@@ -468,7 +443,7 @@ namespace System.Net
                     }
                     else if (variant == CookieVariant.Plain)
                     {
-                        // We distiguish between Version0 cookie and other versions on domain issue.
+                        // We distinguish between Version0 cookie and other versions on domain issue.
                         // According to Version0 spec a domain must be just a substring of the hostname.
 
                         if (!IsDomainEqualToHost(domain, host))
@@ -558,7 +533,7 @@ namespace System.Net
 
             if (_portImplicit == false)
             {
-                // Port must match agaist the one from the uri.
+                // Port must match against the one from the uri.
                 valid = false;
                 foreach (int p in _portList)
                 {
@@ -661,19 +636,8 @@ namespace System.Net
         {
             get
             {
-                // PortList will be null if Port Attribute was ommitted in the response.
+                // PortList will be null if Port Attribute was omitted in the response.
                 return _portList;
-            }
-        }
-
-        private string _Port
-        {
-            get
-            {
-                return _portImplicit ? string.Empty :
-                      (SpecialAttributeLiteral
-                       + PortAttributeName
-                       + ((_port.Length == 0) ? string.Empty : (EqualsLiteral + _port)));
             }
         }
 
@@ -763,18 +727,6 @@ namespace System.Net
             }
         }
 
-        private string _Version
-        {
-            get
-            {
-                return (Version == 0) ? string.Empty :
-                                       (SpecialAttributeLiteral
-                                       + VersionAttributeName
-                                       + EqualsLiteral + (IsQuotedVersion ? "\"" : string.Empty)
-                                       + _version.ToString(NumberFormatInfo.InvariantInfo) + (IsQuotedVersion ? "\"" : string.Empty));
-            }
-        }
-
         public override bool Equals(object comparand)
         {
             Cookie other = comparand as Cookie;
@@ -794,22 +746,65 @@ namespace System.Net
 
         public override string ToString()
         {
-            string domain = _Domain;
-            string path = _Path;
-            string port = _Port;
-            string version = _Version;
+            StringBuilder sb = StringBuilderCache.Acquire();
+            ToString(sb);
+            return StringBuilderCache.GetStringAndRelease(sb);
+        }
 
-            string result =
-                    ((version.Length == 0) ? string.Empty : (version + SeparatorLiteral))
-                    + Name + EqualsLiteral + Value
-                    + ((path.Length == 0) ? string.Empty : (SeparatorLiteral + path))
-                    + ((domain.Length == 0) ? string.Empty : (SeparatorLiteral + domain))
-                    + ((port.Length == 0) ? string.Empty : (SeparatorLiteral + port));
-            if (result == "=")
+        internal void ToString(StringBuilder sb)
+        {
+            int beforeLength = sb.Length;
+
+            // Add the Cookie version if necessary.
+            if (Version != 0)
             {
-                return string.Empty;
+                sb.Append(SpecialAttributeLiteral + VersionAttributeName + EqualsLiteral); // const strings
+                if (IsQuotedVersion) sb.Append('"');
+                sb.Append(_version.ToString(NumberFormatInfo.InvariantInfo));
+                if (IsQuotedVersion) sb.Append('"');
+                sb.Append(SeparatorLiteral);
             }
-            return result;
+
+            // Add the Cookie Name=Value pair.
+            sb.Append(Name).Append(EqualsLiteral).Append(Value);
+
+            if (!Plain)
+            {
+                // Add the Path if necessary.
+                if (!_pathImplicit && _path.Length > 0)
+                {
+                    sb.Append(SeparatorLiteral + SpecialAttributeLiteral + PathAttributeName + EqualsLiteral); // const strings
+                    sb.Append(_path);
+                }
+
+                // Add the Domain if necessary.
+                if (!_domainImplicit && _domain.Length > 0)
+                {
+                    sb.Append(SeparatorLiteral + SpecialAttributeLiteral + DomainAttributeName + EqualsLiteral); // const strings
+                    if (IsQuotedDomain) sb.Append('"');
+                    sb.Append(_domain);
+                    if (IsQuotedDomain) sb.Append('"');
+                }
+            }
+
+            // Add the Port if necessary.
+            if (!_portImplicit)
+            {
+                sb.Append(SeparatorLiteral + SpecialAttributeLiteral + PortAttributeName); // const strings
+                if (_port.Length > 0)
+                {
+                    sb.Append(EqualsLiteral);
+                    sb.Append(_port);
+                }
+            }
+
+            // Check to see whether the only thing we added was "=", and if so,
+            // remove it so that we leave the StringBuilder unchanged in contents.
+            int afterLength = sb.Length;
+            if (afterLength == (1 + beforeLength) && sb[beforeLength] == '=')
+            {
+                sb.Length = beforeLength;
+            }
         }
 
         internal string ToServerString()
@@ -1614,7 +1609,7 @@ namespace System.Net
             Cookie cookie = _savedCookie;
             _savedCookie = null;
 
-            // Only the first occurence of an attribute value must be counted.
+            // Only the first occurrence of an attribute value must be counted.
             bool domainSet = false;
             bool pathSet = false;
             bool portSet = false; // Special case: may have no value in header.

@@ -275,7 +275,7 @@ namespace System.Data.ProviderBase
         {
             // Called when the cleanup-timer ticks over.
 
-            // This is the automatic prunning method.  Every period, we will
+            // This is the automatic pruning method.  Every period, we will
             // perform a two-step process:
             //
             // First, for each free object above MinPoolSize, we will obtain a
@@ -516,7 +516,7 @@ namespace System.Data.ProviderBase
                         {
                             // We must put this connection into the transacted pool
                             // while inside a lock to prevent a race condition with
-                            // the transaction asyncronously completing on a second
+                            // the transaction asynchronously completing on a second
                             // thread.
 
                             // return to general pool

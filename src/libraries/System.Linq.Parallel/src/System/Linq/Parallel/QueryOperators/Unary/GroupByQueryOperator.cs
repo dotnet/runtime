@@ -806,7 +806,7 @@ namespace System.Linq.Parallel
             // Sort the values by using the _orderComparer wrapped in a Tuple comparer
             sortedValues.Sort(0, _values.Count, _wrappedComparer);
 
-            // Un-pack the values from the list back into the 2 separate arrays
+            // Unpack the values from the list back into the 2 separate arrays
             for (int i = 0; i < _values.InternalArray.Length; i++)
             {
                 _orderKeys.InternalArray[i] = sortedValues[i].Key;

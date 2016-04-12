@@ -5,512 +5,508 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-
 using Xunit;
 
 public static class CharTests
 {
-    [Fact]
-    public static void TestCompareTo()
+    [Theory]
+    [InlineData('h', 'h', 0)]
+    [InlineData('h', 'a', 1)]
+    [InlineData('h', 'z', -1)]
+    [InlineData('h', null, 1)]
+    public static void TestCompareTo(char c, object value, int expected)
     {
-        // Int32 Char.CompareTo(Char)
-        char h = 'h';
-        Assert.True(h.CompareTo('h') == 0);
-        Assert.True(h.CompareTo('a') > 0);
-        Assert.True(h.CompareTo('z') < 0);
-    }
-
-    [Fact]
-    public static void TestSystemIComparableCompareTo()
-    {
-        // Int32 Char.System.IComparable.CompareTo(Object)
-        IComparable h = 'h';
-        Assert.True(h.CompareTo('h') == 0);
-        Assert.True(h.CompareTo('a') > 0);
-        Assert.True(h.CompareTo('z') < 0);
-        Assert.True(h.CompareTo(null) > 0);
-
-        Assert.Throws<ArgumentException>(() => h.CompareTo("H"));
-    }
-
-    private static void ValidateConvertFromUtf32(int i, string expected)
-    {
-        try
+        if (value is char)
         {
-            string s = char.ConvertFromUtf32(i);
-            Assert.Equal(expected, s);
+            Assert.Equal(expected, Math.Sign(c.CompareTo((char)value)));
         }
-        catch (ArgumentOutOfRangeException)
+        IComparable comparable = c;
+        Assert.Equal(expected, Math.Sign(comparable.CompareTo(value)));
+    }
+
+    [Fact]
+    public static void TestCompareTo_Invalid()
+    {
+        IComparable comparable = 'h';
+        Assert.Throws<ArgumentException>(null, () => comparable.CompareTo("H")); // Value not a char
+    }
+
+    [Fact]
+    public static void TestConvertFromUtf32_InvalidChar()
+    {
+        // TODO: add this as [InlineData] when #7166 is fixed
+        TestConvertFromUtf32(0xFFFF, "\uFFFF");
+    }
+
+    [Theory]
+    [InlineData(0x10000, "\uD800\uDC00")]
+    [InlineData(0x103FF, "\uD800\uDFFF")]
+    [InlineData(0xFFFFF, "\uDBBF\uDFFF")]
+    [InlineData(0x10FC00, "\uDBFF\uDC00")]
+    [InlineData(0x10FFFF, "\uDBFF\uDFFF")]
+    [InlineData(0, "\0")]
+    [InlineData(0x3FF, "\u03FF")]
+    [InlineData(0xE000, "\uE000")]
+    public static void TestConvertFromUtf32(int utf32, string expected)
+    {
+        // TODO: add this as [InlineData] when #7166 is fixed
+        Assert.Equal(expected, char.ConvertFromUtf32(utf32));
+    }
+
+    [Theory]
+    [InlineData(0xD800)]
+    [InlineData(0xDC00)]
+    [InlineData(0xDFFF)]
+    [InlineData(0x110000)]
+    [InlineData(-1)]
+    [InlineData(int.MaxValue)]
+    [InlineData(int.MinValue)]
+    public static void TestConvertFromUtf32_Invalid(int utf32)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>("utf32", () => char.ConvertFromUtf32(utf32));
+    }
+    
+    [Fact]
+    public static void TestConvertToUtf32_String_Int()
+    {
+        // TODO: add this as [InlineData] when #7166 is fixed
+        TestConvertToUtf32_String_Int("\uD800\uD800\uDFFF", 1, 0x103FF);
+        TestConvertToUtf32_String_Int("\uD800\uD7FF", 1, 0xD7FF);  // High, non-surrogate
+        TestConvertToUtf32_String_Int("\uD800\u0000", 1, 0);  // High, non-surrogate
+        TestConvertToUtf32_String_Int("\uDF01\u0000", 1, 0);  // Low, non-surrogate
+    }
+
+    [Theory]
+    [InlineData("\uD800\uDC00", 0, 0x10000)]
+    [InlineData("\uDBBF\uDFFF", 0, 0xFFFFF)]
+    [InlineData("\uDBBF\uDFFF", 0, 0xFFFFF)]
+    [InlineData("\uDBFF\uDC00", 0, 0x10FC00)]
+    [InlineData("\uDBFF\uDFFF", 0, 0x10FFFF)]
+    [InlineData("\u0000\u0001", 0, 0)]
+    [InlineData("\u0000\u0001", 1, 1)]
+    [InlineData("\u0000", 0, 0)]
+    [InlineData("\u0020\uD7FF", 0, 32)]
+    [InlineData("\u0020\uD7FF", 1, 0xD7FF)]
+    [InlineData("abcde", 4, 'e')]
+    public static void TestConvertToUtf32_String_Int(string s, int index, int expected)
+    {
+        Assert.Equal(expected, char.ConvertToUtf32(s, index));
+    }
+
+    [Fact]
+    public static void TestConvertToUtf32_String_Int_Invalid()
+    {
+        Assert.Throws<ArgumentNullException>("s", () => char.ConvertToUtf32(null, 0)); // String is null
+
+        Assert.Throws<ArgumentException>("s", () => char.ConvertToUtf32("\uD800\uD800", 0)); // High, high
+        Assert.Throws<ArgumentException>("s", () => char.ConvertToUtf32("\uD800\uD800", 1)); // High, high
+        Assert.Throws<ArgumentException>("s", () => char.ConvertToUtf32("\uD800\uD7FF", 0)); // High, non-surrogate
+        Assert.Throws<ArgumentException>("s", () => char.ConvertToUtf32("\uD800\u0000", 0)); // High, non-surrogate
+
+        Assert.Throws<ArgumentException>("s", () => char.ConvertToUtf32("\uDC01\uD940", 0)); // Low, high
+        Assert.Throws<ArgumentException>("s", () => char.ConvertToUtf32("\uDC01\uD940", 1)); // Low, high
+        Assert.Throws<ArgumentException>("s", () => char.ConvertToUtf32("\uDD00\uDE00", 0)); // Low, low
+        Assert.Throws<ArgumentException>("s", () => char.ConvertToUtf32("\uDD00\uDE00", 1)); // Low, hig
+        Assert.Throws<ArgumentException>("s", () => char.ConvertToUtf32("\uDF01\u0000", 0)); // Low, non-surrogateh
+
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => char.ConvertToUtf32("abcde", -1)); // Index < 0
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => char.ConvertToUtf32("abcde", 5)); // Index >= string.Length
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => char.ConvertToUtf32("", 0)); // Index >= string.Length
+    }
+
+    [Fact]
+    public static void TestConvertToUtf32_Char_Char()
+    {
+        // TODO: add this as [InlineData] when #7166 is fixed
+        TestConvertToUtf32_Char_Char('\uD800', '\uDC00', 0x10000);
+        TestConvertToUtf32_Char_Char('\uD800', '\uDC00', 0x10000);
+        TestConvertToUtf32_Char_Char('\uD800', '\uDFFF', 0x103FF);
+        TestConvertToUtf32_Char_Char('\uDBBF', '\uDFFF', 0xFFFFF);
+        TestConvertToUtf32_Char_Char('\uDBFF', '\uDC00', 0x10FC00);
+        TestConvertToUtf32_Char_Char('\uDBFF', '\uDFFF', 0x10FFFF);
+    }
+
+    private static void TestConvertToUtf32_Char_Char(char highSurrogate, char lowSurrogate, int expected)
+    {
+        Assert.Equal(expected, char.ConvertToUtf32(highSurrogate, lowSurrogate));
+    }
+
+    [Fact]
+    public static void TestConvertToUtf32_Char_Char_Invalid()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>("lowSurrogate", () => char.ConvertToUtf32('\uD800', '\uD800')); // High, high
+        Assert.Throws<ArgumentOutOfRangeException>("lowSurrogate", () => char.ConvertToUtf32('\uD800', '\uD7FF')); // High, non-surrogate
+        Assert.Throws<ArgumentOutOfRangeException>("lowSurrogate", () => char.ConvertToUtf32('\uD800', '\u0000')); // High, non-surrogate
+
+        Assert.Throws<ArgumentOutOfRangeException>("highSurrogate", () => char.ConvertToUtf32('\uDD00', '\uDE00')); // Low, low
+        Assert.Throws<ArgumentOutOfRangeException>("highSurrogate", () => char.ConvertToUtf32('\uDC01', '\uD940')); // Low, high
+        Assert.Throws<ArgumentOutOfRangeException>("highSurrogate", () => char.ConvertToUtf32('\uDF01', '\u0000')); // Low, non-surrogate
+
+        Assert.Throws<ArgumentOutOfRangeException>("highSurrogate", () => char.ConvertToUtf32('\u0032', '\uD7FF')); // Non-surrogate, non-surrogate
+        Assert.Throws<ArgumentOutOfRangeException>("highSurrogate", () => char.ConvertToUtf32('\u0000', '\u0000')); // Non-surrogate, non-surrogate
+    }
+
+    [Theory]
+    [InlineData('a', 'a', true)]
+    [InlineData('a', 'A', false)]
+    [InlineData('a', 'b', false)]
+    [InlineData('a', (int)'a', false)]
+    [InlineData('a', "a", false)]
+    [InlineData('a', null, false)]
+    public static void TestEquals(char c, object obj, bool expected)
+    {
+        if (obj is char)
         {
-            Assert.True(expected == null, "Expected an ArgumentOutOfRangeException");
+            Assert.Equal(expected, c.Equals((char)obj));
+            Assert.Equal(expected, c.GetHashCode().Equals(obj.GetHashCode()));
         }
+        Assert.Equal(expected, c.Equals(obj));
+    }
+
+    [Theory]
+    [InlineData('0', 0)]
+    [InlineData('9', 9)]
+    [InlineData('T', -1)]
+    public static void TestGetNumericValue_Char(char c, int expected)
+    {
+        Assert.Equal(expected, char.GetNumericValue(c));
+    }
+
+    [Theory]
+    [InlineData("\uD800\uDD07", 0, 1)]
+    [InlineData("9", 0, 9)]
+    [InlineData("99", 1, 9)]
+    [InlineData(" 7  ", 1, 7)]
+    [InlineData("Test 7", 5, 7)]
+    [InlineData("T", 0, -1)]
+    public static void TestGetNumericValue_String_Int(string s, int index, int expected)
+    {
+        Assert.Equal(expected, char.GetNumericValue(s, index));
     }
 
     [Fact]
-    public static void TestConvertFromUtf32()
+    public static void TestGetNumericValue_String_Int_Invalid()
     {
-        // String Char.ConvertFromUtf32(Int32)
-        ValidateConvertFromUtf32(0x10000, "\uD800\uDC00");
-        ValidateConvertFromUtf32(0x103FF, "\uD800\uDFFF");
-        ValidateConvertFromUtf32(0xFFFFF, "\uDBBF\uDFFF");
-        ValidateConvertFromUtf32(0x10FC00, "\uDBFF\uDC00");
-        ValidateConvertFromUtf32(0x10FFFF, "\uDBFF\uDFFF");
-        ValidateConvertFromUtf32(0, "\0");
-        ValidateConvertFromUtf32(0x3FF, "\u03FF");
-        ValidateConvertFromUtf32(0xE000, "\uE000");
-        ValidateConvertFromUtf32(0xFFFF, "\uFFFF");
-        ValidateConvertFromUtf32(0xD800, null);
-        ValidateConvertFromUtf32(0xDC00, null);
-        ValidateConvertFromUtf32(0xDFFF, null);
-        ValidateConvertFromUtf32(0x110000, null);
-        ValidateConvertFromUtf32(-1, null);
-        ValidateConvertFromUtf32(int.MaxValue, null);
-        ValidateConvertFromUtf32(int.MinValue, null);
-    }
-
-    private static void ValidateconverToUtf32<T>(string s, int i, int expected) where T : Exception
-    {
-        try
-        {
-            int result = char.ConvertToUtf32(s, i);
-            Assert.Equal(result, expected);
-        }
-        catch (T)
-        {
-            Assert.True(expected == int.MinValue, "Expected an exception to be thrown");
-        }
+        Assert.Throws<ArgumentNullException>("s", () => char.GetNumericValue(null, 0)); // String is null
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => char.GetNumericValue("abc", -1)); // Index < 0
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => char.GetNumericValue("abc", 3)); // Index >= string.Length
     }
 
     [Fact]
-    public static void TestConvertToUtf32StrInt()
+    public static void TestIsControl_Char()
     {
-        // Int32 Char.ConvertToUtf32(String, Int32)
-        ValidateconverToUtf32<Exception>("\uD800\uDC00", 0, 0x10000);
-        ValidateconverToUtf32<Exception>("\uD800\uD800\uDFFF", 1, 0x103FF);
-        ValidateconverToUtf32<Exception>("\uDBBF\uDFFF", 0, 0xFFFFF);
-        ValidateconverToUtf32<Exception>("\uDBFF\uDC00", 0, 0x10FC00);
-        ValidateconverToUtf32<Exception>("\uDBFF\uDFFF", 0, 0x10FFFF);
-        // Not surrogate pairs
-        ValidateconverToUtf32<Exception>("\u0000\u0001", 0, 0);
-        ValidateconverToUtf32<Exception>("\u0000\u0001", 1, 1);
-        ValidateconverToUtf32<Exception>("\u0000", 0, 0);
-        ValidateconverToUtf32<Exception>("\u0020\uD7FF", 0, 32);
-        ValidateconverToUtf32<Exception>("\u0020\uD7FF", 1, 0xD7FF);
-        ValidateconverToUtf32<Exception>("abcde", 4, (int)'e');
-        ValidateconverToUtf32<Exception>("\uD800\uD7FF", 1, 0xD7FF);  // high, non-surrogate
-        ValidateconverToUtf32<Exception>("\uD800\u0000", 1, 0);  // high, non-surrogate
-        ValidateconverToUtf32<Exception>("\uDF01\u0000", 1, 0);  // low, non-surrogate
-        // Invalid inputs
-        ValidateconverToUtf32<ArgumentException>("\uD800\uD800", 0, int.MinValue);  // high, high
-        ValidateconverToUtf32<ArgumentException>("\uD800\uD7FF", 0, int.MinValue);  // high, non-surrogate
-        ValidateconverToUtf32<ArgumentException>("\uD800\u0000", 0, int.MinValue);  // high, non-surrogate
-        ValidateconverToUtf32<ArgumentException>("\uDC01\uD940", 0, int.MinValue);  // low, high
-        ValidateconverToUtf32<ArgumentException>("\uDD00\uDE00", 0, int.MinValue);  // low, low
-        ValidateconverToUtf32<ArgumentException>("\uDF01\u0000", 0, int.MinValue);  // low, non-surrogate
-        ValidateconverToUtf32<ArgumentException>("\uD800\uD800", 1, int.MinValue);  // high, high
-        ValidateconverToUtf32<ArgumentException>("\uDC01\uD940", 1, int.MinValue);  // low, high
-        ValidateconverToUtf32<ArgumentException>("\uDD00\uDE00", 1, int.MinValue);  // low, low
-        ValidateconverToUtf32<ArgumentNullException>(null, 0, int.MinValue);  // null string
-        ValidateconverToUtf32<ArgumentOutOfRangeException>("", 0, int.MinValue);  // index out of range
-        ValidateconverToUtf32<ArgumentOutOfRangeException>("", -1, int.MinValue);  // index out of range
-        ValidateconverToUtf32<ArgumentOutOfRangeException>("abcde", -1, int.MinValue);  // index out of range
-        ValidateconverToUtf32<ArgumentOutOfRangeException>("abcde", 5, int.MinValue);  // index out of range
-    }
-
-    private static void ValidateconverToUtf32<T>(char c1, char c2, int expected) where T : Exception
-    {
-        try
-        {
-            int result = char.ConvertToUtf32(c1, c2);
-            Assert.Equal(result, expected);
-        }
-        catch (T)
-        {
-            Assert.True(expected == int.MinValue, "Expected an exception to be thrown");
-        }
-    }
-
-    [Fact]
-    public static void TestConvertToUtf32()
-    {
-        // Int32 Char.ConvertToUtf32(Char, Char)
-        ValidateconverToUtf32<Exception>('\uD800', '\uDC00', 0x10000);
-        ValidateconverToUtf32<Exception>('\uD800', '\uDFFF', 0x103FF);
-        ValidateconverToUtf32<Exception>('\uDBBF', '\uDFFF', 0xFFFFF);
-        ValidateconverToUtf32<Exception>('\uDBFF', '\uDC00', 0x10FC00);
-        ValidateconverToUtf32<Exception>('\uDBFF', '\uDFFF', 0x10FFFF);
-
-        ValidateconverToUtf32<ArgumentOutOfRangeException>('\uD800', '\uD800', int.MinValue);  // high, high
-        ValidateconverToUtf32<ArgumentOutOfRangeException>('\uD800', '\uD7FF', int.MinValue);  // high, non-surrogate
-        ValidateconverToUtf32<ArgumentOutOfRangeException>('\uD800', '\u0000', int.MinValue);  // high, non-surrogate
-        ValidateconverToUtf32<ArgumentOutOfRangeException>('\uDC01', '\uD940', int.MinValue);  // low, high
-        ValidateconverToUtf32<ArgumentOutOfRangeException>('\uDD00', '\uDE00', int.MinValue);  // low, low
-        ValidateconverToUtf32<ArgumentOutOfRangeException>('\uDF01', '\u0000', int.MinValue);  // low, non-surrogate
-        ValidateconverToUtf32<ArgumentOutOfRangeException>('\u0032', '\uD7FF', int.MinValue);  // both non-surrogate
-        ValidateconverToUtf32<ArgumentOutOfRangeException>('\u0000', '\u0000', int.MinValue);  // both non-surrogate
-    }
-
-    [Fact]
-    public static void TestEquals()
-    {
-        // Boolean Char.Equals(Char)
-        char a = 'a';
-
-        Assert.True(a.Equals('a'));
-        Assert.False(a.Equals('b'));
-        Assert.False(a.Equals('A'));
-    }
-
-    [Fact]
-    public static void TestEqualsObj()
-    {
-        // Boolean Char.Equals(Object)
-        char a = 'a';
-        Assert.True(a.Equals((object)'a'));
-        Assert.False(a.Equals((object)'b'));
-        Assert.False(a.Equals((object)'A'));
-        Assert.False(a.Equals(null));
-
-        int i = (int)'a';
-        Assert.False(a.Equals(i));
-        Assert.False(a.Equals("a"));
-    }
-
-    [Fact]
-    public static void TestGetHashCode()
-    {
-        // Int32 Char.GetHashCode()
-        char a = 'a';
-        char b = 'b';
-        Assert.NotEqual(a.GetHashCode(), b.GetHashCode());
-    }
-
-    [Fact]
-    public static void TestGetNumericValueStrInt()
-    {
-        Assert.Equal(Char.GetNumericValue("\uD800\uDD07", 0), 1);
-        Assert.Equal(Char.GetNumericValue("9", 0), 9);
-        Assert.Equal(Char.GetNumericValue("Test 7", 5), 7);
-        Assert.Equal(Char.GetNumericValue("T", 0), -1);
-    }
-
-    [Fact]
-    public static void TestGetNumericValue()
-    {
-        Assert.Equal(Char.GetNumericValue('9'), 9);
-        Assert.Equal(Char.GetNumericValue('z'), -1);
-    }
-
-    [Fact]
-    public static void TestIsControl()
-    {
-        // Boolean Char.IsControl(Char)
-        foreach (var c in GetTestChars(UnicodeCategory.Control))
+        foreach (char c in GetTestChars(UnicodeCategory.Control))
             Assert.True(char.IsControl(c));
 
-        foreach (var c in GetTestCharsNotInCategory(UnicodeCategory.Control))
+        foreach (char c in GetTestCharsNotInCategory(UnicodeCategory.Control))
             Assert.False(char.IsControl(c));
     }
 
     [Fact]
-    public static void TestIsControlStrInt()
+    public static void TestIsControl_String_Int()
     {
-        // Boolean Char.IsControl(String, Int32)
-        foreach (var c in GetTestChars(UnicodeCategory.Control))
+        foreach (char c in GetTestChars(UnicodeCategory.Control))
             Assert.True(char.IsControl(c.ToString(), 0));
 
-        foreach (var c in GetTestCharsNotInCategory(UnicodeCategory.Control))
+        foreach (char c in GetTestCharsNotInCategory(UnicodeCategory.Control))
             Assert.False(char.IsControl(c.ToString(), 0));
+    }
 
-        Assert.Throws<ArgumentNullException>(() => char.IsControl(null, 0));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => char.IsControl("abc", -1));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => char.IsControl("abc", 4));
+    [Fact]
+    public static void TestIsControl_String_Int_Invalid()
+    {
+        Assert.Throws<ArgumentNullException>("s", () => char.IsControl(null, 0)); // String is null
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => char.IsControl("abc", -1)); // Index < 0
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => char.IsControl("abc", 3)); // Index >= string.Length
     }
 
     [ActiveIssue(5645, PlatformID.Windows)]
     [Fact]
-    public static void TestIsDigit()
+    public static void TestIsDigit_Char()
     {
-        // Boolean Char.IsDigit(Char)
-        foreach (var c in GetTestChars(UnicodeCategory.DecimalDigitNumber))
+        foreach (char c in GetTestChars(UnicodeCategory.DecimalDigitNumber))
             Assert.True(char.IsDigit(c));
 
-        foreach (var c in GetTestCharsNotInCategory(UnicodeCategory.DecimalDigitNumber))
+        foreach (char c in GetTestCharsNotInCategory(UnicodeCategory.DecimalDigitNumber))
             Assert.False(char.IsDigit(c));
     }
 
     [ActiveIssue(5645, PlatformID.Windows)]
     [Fact]
-    public static void TestIsDigitStrInt()
+    public static void TestIsDigit_String_Int()
     {
-        // Boolean Char.IsDigit(String, Int32)
-        foreach (var c in GetTestChars(UnicodeCategory.DecimalDigitNumber))
+        foreach (char c in GetTestChars(UnicodeCategory.DecimalDigitNumber))
             Assert.True(char.IsDigit(c.ToString(), 0));
 
-        foreach (var c in GetTestCharsNotInCategory(UnicodeCategory.DecimalDigitNumber))
+        foreach (char c in GetTestCharsNotInCategory(UnicodeCategory.DecimalDigitNumber))
             Assert.False(char.IsDigit(c.ToString(), 0));
+    }
 
-        Assert.Throws<ArgumentNullException>(() => char.IsDigit(null, 0));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => char.IsDigit("abc", -1));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => char.IsDigit("abc", 4));
+    [Fact]
+    public static void TestIsDigit_String_Int_Invalid()
+    {
+        Assert.Throws<ArgumentNullException>("s", () => char.IsDigit(null, 0)); // String is null
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => char.IsDigit("abc", -1)); // Index < 0
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => char.IsDigit("abc", 3)); // Index >= string.Length
     }
 
     [ActiveIssue(5645, PlatformID.Windows)]
     [Fact]
-    public static void TestIsLetter()
+    public static void TestIsLetter_Char()
     {
-        // Boolean Char.IsLetter(Char)
-        foreach (var c in GetTestChars(UnicodeCategory.UppercaseLetter,
-                UnicodeCategory.LowercaseLetter,
-                UnicodeCategory.TitlecaseLetter,
-                UnicodeCategory.ModifierLetter,
-                UnicodeCategory.OtherLetter))
+        var categories = new UnicodeCategory[]
+        {
+            UnicodeCategory.UppercaseLetter,
+            UnicodeCategory.LowercaseLetter,
+            UnicodeCategory.TitlecaseLetter,
+            UnicodeCategory.ModifierLetter,
+            UnicodeCategory.OtherLetter
+        };
+        foreach (char c in GetTestChars(categories))
             Assert.True(char.IsLetter(c));
 
-        foreach (var c in GetTestCharsNotInCategory(UnicodeCategory.UppercaseLetter,
-                UnicodeCategory.LowercaseLetter,
-                UnicodeCategory.TitlecaseLetter,
-                UnicodeCategory.ModifierLetter,
-                UnicodeCategory.OtherLetter))
+        foreach (char c in GetTestCharsNotInCategory(categories))
             Assert.False(char.IsLetter(c));
     }
 
     [ActiveIssue(5645, PlatformID.Windows)]
     [Fact]
-    public static void TestIsLetterStrInt()
+    public static void TestIsLetter_String_Int()
     {
-        // Boolean Char.IsLetter(String, Int32)
-        foreach (var c in GetTestChars(UnicodeCategory.UppercaseLetter,
-                UnicodeCategory.LowercaseLetter,
-                UnicodeCategory.TitlecaseLetter,
-                UnicodeCategory.ModifierLetter,
-                UnicodeCategory.OtherLetter))
+        var categories = new UnicodeCategory[]
+        {
+            UnicodeCategory.UppercaseLetter,
+            UnicodeCategory.LowercaseLetter,
+            UnicodeCategory.TitlecaseLetter,
+            UnicodeCategory.ModifierLetter,
+            UnicodeCategory.OtherLetter
+        };
+        foreach (char c in GetTestChars(categories))
             Assert.True(char.IsLetter(c.ToString(), 0));
 
-        foreach (var c in GetTestCharsNotInCategory(UnicodeCategory.UppercaseLetter,
-                UnicodeCategory.LowercaseLetter,
-                UnicodeCategory.TitlecaseLetter,
-                UnicodeCategory.ModifierLetter,
-                UnicodeCategory.OtherLetter))
+        foreach (char c in GetTestCharsNotInCategory(categories))
             Assert.False(char.IsLetter(c.ToString(), 0));
+    }
 
-        Assert.Throws<ArgumentNullException>(() => char.IsLetter(null, 0));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => char.IsLetter("abc", -1));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => char.IsLetter("abc", 4));
+    [Fact]
+    public static void TestIsLetter_String_Int_Invalid()
+    {
+        Assert.Throws<ArgumentNullException>("s", () => char.IsLetter(null, 0)); // String is null
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => char.IsLetter("abc", -1)); // Index < 0
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => char.IsLetter("abc", 3)); // Index >= string.Length
     }
 
     [ActiveIssue(5645, PlatformID.Windows)]
     [Fact]
-    public static void TestIsLetterOrDigit()
+    public static void TestIsLetterOrDigit_Char()
     {
-        // Boolean Char.IsLetterOrDigit(Char)
-        foreach (var c in GetTestChars(UnicodeCategory.UppercaseLetter,
-                UnicodeCategory.LowercaseLetter,
-                UnicodeCategory.TitlecaseLetter,
-                UnicodeCategory.ModifierLetter,
-                UnicodeCategory.OtherLetter,
-                UnicodeCategory.DecimalDigitNumber))
+        var categories = new UnicodeCategory[]
+        {
+            UnicodeCategory.UppercaseLetter,
+            UnicodeCategory.LowercaseLetter,
+            UnicodeCategory.TitlecaseLetter,
+            UnicodeCategory.ModifierLetter,
+            UnicodeCategory.OtherLetter,
+            UnicodeCategory.DecimalDigitNumber
+        };
+        foreach (char c in GetTestChars(categories))
             Assert.True(char.IsLetterOrDigit(c));
 
-        foreach (var c in GetTestCharsNotInCategory(UnicodeCategory.UppercaseLetter,
-                UnicodeCategory.LowercaseLetter,
-                UnicodeCategory.TitlecaseLetter,
-                UnicodeCategory.ModifierLetter,
-                UnicodeCategory.OtherLetter,
-                UnicodeCategory.DecimalDigitNumber))
+        foreach (char c in GetTestCharsNotInCategory(categories))
             Assert.False(char.IsLetterOrDigit(c));
     }
 
     [ActiveIssue(5645, PlatformID.Windows)]
     [Fact]
-    public static void TestIsLetterOrDigitStrInt()
+    public static void TestIsLetterOrDigit_String_Int()
     {
-        // Boolean Char.IsLetterOrDigit(String, Int32)
-        foreach (var c in GetTestChars(UnicodeCategory.UppercaseLetter,
-                UnicodeCategory.LowercaseLetter,
-                UnicodeCategory.TitlecaseLetter,
-                UnicodeCategory.ModifierLetter,
-                UnicodeCategory.OtherLetter,
-                UnicodeCategory.DecimalDigitNumber))
+        var categories = new UnicodeCategory[]
+        {
+            UnicodeCategory.UppercaseLetter,
+            UnicodeCategory.LowercaseLetter,
+            UnicodeCategory.TitlecaseLetter,
+            UnicodeCategory.ModifierLetter,
+            UnicodeCategory.OtherLetter,
+            UnicodeCategory.DecimalDigitNumber
+        };
+        foreach (char c in GetTestChars(categories))
             Assert.True(char.IsLetterOrDigit(c.ToString(), 0));
 
-        foreach (var c in GetTestCharsNotInCategory(UnicodeCategory.UppercaseLetter,
-                UnicodeCategory.LowercaseLetter,
-                UnicodeCategory.TitlecaseLetter,
-                UnicodeCategory.ModifierLetter,
-                UnicodeCategory.OtherLetter,
-                UnicodeCategory.DecimalDigitNumber))
+        foreach (char c in GetTestCharsNotInCategory(categories))
             Assert.False(char.IsLetterOrDigit(c.ToString(), 0));
+    }
 
-        Assert.Throws<ArgumentNullException>(() => char.IsLetterOrDigit(null, 0));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => char.IsLetterOrDigit("abc", -1));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => char.IsLetterOrDigit("abc", 4));
+    [Fact]
+    public static void TestIsLetterOrDigit_String_Int_Invalid()
+    {
+        Assert.Throws<ArgumentNullException>("s", () => char.IsLetterOrDigit(null, 0)); // String is null
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => char.IsLetterOrDigit("abc", -1)); // Index < 0
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => char.IsLetterOrDigit("abc", 3)); // Index >= string.Length
     }
 
     [ActiveIssue(5645, PlatformID.Windows)]
     [Fact]
-    public static void TestIsLower()
+    public static void TestIsLower_Char()
     {
-        // Boolean Char.IsLower(Char)
-        foreach (var c in GetTestChars(UnicodeCategory.LowercaseLetter))
+        foreach (char c in GetTestChars(UnicodeCategory.LowercaseLetter))
             Assert.True(char.IsLower(c));
 
-        foreach (var c in GetTestCharsNotInCategory(UnicodeCategory.LowercaseLetter))
+        foreach (char c in GetTestCharsNotInCategory(UnicodeCategory.LowercaseLetter))
             Assert.False(char.IsLower(c));
     }
 
     [ActiveIssue(5645, PlatformID.Windows)]
     [Fact]
-    public static void TestIsLowerStrInt()
+    public static void TestIsLower_String_Int()
     {
-        // Boolean Char.IsLower(String, Int32)
-        foreach (var c in GetTestChars(UnicodeCategory.LowercaseLetter))
+        foreach (char c in GetTestChars(UnicodeCategory.LowercaseLetter))
             Assert.True(char.IsLower(c.ToString(), 0));
 
-        foreach (var c in GetTestCharsNotInCategory(UnicodeCategory.LowercaseLetter))
+        foreach (char c in GetTestCharsNotInCategory(UnicodeCategory.LowercaseLetter))
             Assert.False(char.IsLower(c.ToString(), 0));
+    }
 
-        Assert.Throws<ArgumentNullException>(() => char.IsLower(null, 0));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => char.IsLower("abc", -1));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => char.IsLower("abc", 4));
+    [Fact]
+    public static void TestIsLower_String_Int_Invalid()
+    {
+        Assert.Throws<ArgumentNullException>("s", () => char.IsLower(null, 0)); // String is null
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => char.IsLower("abc", -1)); // Index < 0
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => char.IsLower("abc", 3)); // Index >= string.Length
     }
 
     [ActiveIssue(5645, PlatformID.Windows)]
     [Fact]
-    public static void TestIsNumber()
+    public static void TestIsNumber_Char()
     {
-        // Boolean Char.IsNumber(Char)
-        foreach (var c in GetTestChars(UnicodeCategory.DecimalDigitNumber,
-            UnicodeCategory.LetterNumber, UnicodeCategory.OtherNumber))
+        var categories = new UnicodeCategory[]
+        {
+            UnicodeCategory.DecimalDigitNumber,
+            UnicodeCategory.LetterNumber,
+            UnicodeCategory.OtherNumber
+        };
+        foreach (char c in GetTestChars(categories))
             Assert.True(char.IsNumber(c));
 
-        foreach (var c in GetTestCharsNotInCategory(UnicodeCategory.DecimalDigitNumber,
-            UnicodeCategory.LetterNumber, UnicodeCategory.OtherNumber))
+        foreach (char c in GetTestCharsNotInCategory(categories))
             Assert.False(char.IsNumber(c));
     }
 
     [ActiveIssue(5645, PlatformID.Windows)]
     [Fact]
-    public static void TestIsNumberStrInt()
+    public static void TestIsNumber_String_Int()
     {
-        // Boolean Char.IsNumber(String, Int32)
-        foreach (var c in GetTestChars(UnicodeCategory.DecimalDigitNumber,
-            UnicodeCategory.LetterNumber, UnicodeCategory.OtherNumber))
+        var categories = new UnicodeCategory[]
+        {
+            UnicodeCategory.DecimalDigitNumber,
+            UnicodeCategory.LetterNumber,
+            UnicodeCategory.OtherNumber
+        };
+        foreach (char c in GetTestChars(categories))
             Assert.True(char.IsNumber(c.ToString(), 0));
 
-        foreach (var c in GetTestCharsNotInCategory(UnicodeCategory.DecimalDigitNumber,
-            UnicodeCategory.LetterNumber, UnicodeCategory.OtherNumber))
+        foreach (char c in GetTestCharsNotInCategory(categories))
             Assert.False(char.IsNumber(c.ToString(), 0));
-
-        Assert.Throws<ArgumentNullException>(() => char.IsNumber(null, 0));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => char.IsNumber("abc", -1));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => char.IsNumber("abc", 4));
     }
 
     [Fact]
-    public static void TestIsPunctuation()
+    public static void TestIsNumber_String_Int_Invalid()
     {
-        // Boolean Char.IsPunctuation(Char)
-        foreach (var c in GetTestChars(UnicodeCategory.ConnectorPunctuation,
-              UnicodeCategory.DashPunctuation,
-              UnicodeCategory.OpenPunctuation,
-              UnicodeCategory.ClosePunctuation,
-              UnicodeCategory.InitialQuotePunctuation,
-              UnicodeCategory.FinalQuotePunctuation,
-              UnicodeCategory.OtherPunctuation))
+        Assert.Throws<ArgumentNullException>("s", () => char.IsNumber(null, 0)); // String is null
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => char.IsNumber("abc", -1)); // Index < 0
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => char.IsNumber("abc", 3)); // Index >= string.Length
+    }
+
+    [Fact]
+    public static void TestIsPunctuation_Char()
+    {
+        var categories = new UnicodeCategory[]
+        {
+            UnicodeCategory.ConnectorPunctuation,
+            UnicodeCategory.DashPunctuation,
+            UnicodeCategory.OpenPunctuation,
+            UnicodeCategory.ClosePunctuation,
+            UnicodeCategory.InitialQuotePunctuation,
+            UnicodeCategory.FinalQuotePunctuation,
+            UnicodeCategory.OtherPunctuation
+        };
+        foreach (char c in GetTestChars(categories))
             Assert.True(char.IsPunctuation(c));
 
-        foreach (var c in GetTestCharsNotInCategory(UnicodeCategory.ConnectorPunctuation,
-              UnicodeCategory.DashPunctuation,
-              UnicodeCategory.OpenPunctuation,
-              UnicodeCategory.ClosePunctuation,
-              UnicodeCategory.InitialQuotePunctuation,
-              UnicodeCategory.FinalQuotePunctuation,
-              UnicodeCategory.OtherPunctuation))
+        foreach (char c in GetTestCharsNotInCategory(categories))
             Assert.False(char.IsPunctuation(c));
     }
 
     [Fact]
-    public static void TestIsPunctuationStrInt()
+    public static void TestIsPunctuation_String_Int()
     {
-        // Boolean Char.IsPunctuation(String, Int32)
-        foreach (var c in GetTestChars(UnicodeCategory.ConnectorPunctuation,
-              UnicodeCategory.DashPunctuation,
-              UnicodeCategory.OpenPunctuation,
-              UnicodeCategory.ClosePunctuation,
-              UnicodeCategory.InitialQuotePunctuation,
-              UnicodeCategory.FinalQuotePunctuation,
-              UnicodeCategory.OtherPunctuation))
+        var categories = new UnicodeCategory[]
+        {
+            UnicodeCategory.ConnectorPunctuation,
+            UnicodeCategory.DashPunctuation,
+            UnicodeCategory.OpenPunctuation,
+            UnicodeCategory.ClosePunctuation,
+            UnicodeCategory.InitialQuotePunctuation,
+            UnicodeCategory.FinalQuotePunctuation,
+            UnicodeCategory.OtherPunctuation
+        };
+        foreach (char c in GetTestChars(categories))
             Assert.True(char.IsPunctuation(c.ToString(), 0));
 
-        foreach (var c in GetTestCharsNotInCategory(UnicodeCategory.ConnectorPunctuation,
-              UnicodeCategory.DashPunctuation,
-              UnicodeCategory.OpenPunctuation,
-              UnicodeCategory.ClosePunctuation,
-              UnicodeCategory.InitialQuotePunctuation,
-              UnicodeCategory.FinalQuotePunctuation,
-              UnicodeCategory.OtherPunctuation))
+        foreach (char c in GetTestCharsNotInCategory(categories))
             Assert.False(char.IsPunctuation(c.ToString(), 0));
-
-        Assert.Throws<ArgumentNullException>(() => char.IsPunctuation(null, 0));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => char.IsPunctuation("abc", -1));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => char.IsPunctuation("abc", 4));
     }
 
     [Fact]
-    public static void TestIsSeparator()
+    public static void TestIsPunctuation_String_Int_Invalid()
     {
-        // Boolean Char.IsSeparator(Char)
-        foreach (var c in GetTestChars(UnicodeCategory.SpaceSeparator,
-                UnicodeCategory.LineSeparator,
-                UnicodeCategory.ParagraphSeparator))
+        Assert.Throws<ArgumentNullException>("s", () => char.IsPunctuation(null, 0)); // String is null
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => char.IsPunctuation("abc", -1)); // Index < 0
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => char.IsPunctuation("abc", 3)); // Index >= string.Length
+    }
+
+    [Fact]
+    public static void TestIsSeparator_Char()
+    {
+        var categories = new UnicodeCategory[]
+        {
+            UnicodeCategory.SpaceSeparator,
+            UnicodeCategory.LineSeparator,
+            UnicodeCategory.ParagraphSeparator
+        };
+        foreach (char c in GetTestChars(categories))
             Assert.True(char.IsSeparator(c));
 
-        foreach (var c in GetTestCharsNotInCategory(UnicodeCategory.SpaceSeparator,
-                UnicodeCategory.LineSeparator,
-                UnicodeCategory.ParagraphSeparator))
+        foreach (char c in GetTestCharsNotInCategory(categories))
             Assert.False(char.IsSeparator(c));
     }
 
     [Fact]
-    public static void TestIsSeparatorStrInt()
+    public static void TestIsSeparator_String_Int()
     {
-        // Boolean Char.IsSeparator(String, Int32)
-        foreach (var c in GetTestChars(UnicodeCategory.SpaceSeparator,
-                UnicodeCategory.LineSeparator,
-                UnicodeCategory.ParagraphSeparator))
+        var categories = new UnicodeCategory[]
+        {
+            UnicodeCategory.SpaceSeparator,
+            UnicodeCategory.LineSeparator,
+            UnicodeCategory.ParagraphSeparator
+        };
+        foreach (char c in GetTestChars(categories))
             Assert.True(char.IsSeparator(c.ToString(), 0));
 
-        foreach (var c in GetTestCharsNotInCategory(UnicodeCategory.SpaceSeparator,
-                UnicodeCategory.LineSeparator,
-                UnicodeCategory.ParagraphSeparator))
+        foreach (char c in GetTestCharsNotInCategory(categories))
             Assert.False(char.IsSeparator(c.ToString(), 0));
-
-        Assert.Throws<ArgumentNullException>(() => char.IsSeparator(null, 0));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => char.IsSeparator("abc", -1));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => char.IsSeparator("abc", 4));
     }
 
     [Fact]
-    public static void TestIsLowSurrogate()
+    public static void TestIsSeparator_String_Int_Invalid()
     {
-        // Boolean Char.IsLowSurrogate(Char)
+        Assert.Throws<ArgumentNullException>("s", () => char.IsSeparator(null, 0)); // String is null
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => char.IsSeparator("abc", -1)); // Index < 0
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => char.IsSeparator("abc", 3)); // Index >= string.Length
+    }
+    
+    [Fact]
+    public static void TestIsLowSurrogate_Char()
+    {
         foreach (char c in s_lowSurrogates)
             Assert.True(char.IsLowSurrogate(c));
 
@@ -522,9 +518,8 @@ public static class CharTests
     }
 
     [Fact]
-    public static void TestIsLowSurrogateStrInt()
+    public static void TestIsLowSurrogate_String_Int()
     {
-        // Boolean Char.IsLowSurrogate(String, Int32)
         foreach (char c in s_lowSurrogates)
             Assert.True(char.IsLowSurrogate(c.ToString(), 0));
 
@@ -533,18 +528,19 @@ public static class CharTests
 
         foreach (char c in s_nonSurrogates)
             Assert.False(char.IsLowSurrogate(c.ToString(), 0));
-
-        Assert.Throws<ArgumentNullException>(() => char.IsLowSurrogate(null, 0));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => char.IsLowSurrogate("abc", -1));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => char.IsLowSurrogate("abc", 4));
     }
 
     [Fact]
-    public static void TestIsHighSurrogate()
+    public static void TestIsLowSurrogate_String_Int_Invalid()
     {
-        // Boolean Char.IsHighSurrogate(Char)
+        Assert.Throws<ArgumentNullException>("s", () => char.IsLowSurrogate(null, 0)); // String is null
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => char.IsLowSurrogate("abc", -1)); // Index < 0
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => char.IsLowSurrogate("abc", 3)); // Index >= string.Length
+    }
+
+    [Fact]
+    public static void TestIsHighSurrogate_Char()
+    {
         foreach (char c in s_highSurrogates)
             Assert.True(char.IsHighSurrogate(c));
 
@@ -556,9 +552,8 @@ public static class CharTests
     }
 
     [Fact]
-    public static void TestIsHighSurrogateStrInt()
+    public static void TestIsHighSurrogate_String_Int()
     {
-        // Boolean Char.IsHighSurrogate(String, Int32)
         foreach (char c in s_highSurrogates)
             Assert.True(char.IsHighSurrogate(c.ToString(), 0));
 
@@ -567,18 +562,19 @@ public static class CharTests
 
         foreach (char c in s_nonSurrogates)
             Assert.False(char.IsHighSurrogate(c.ToString(), 0));
-
-        Assert.Throws<ArgumentNullException>(() => char.IsHighSurrogate(null, 0));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => char.IsHighSurrogate("abc", -1));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => char.IsHighSurrogate("abc", 4));
     }
 
     [Fact]
-    public static void TestIsSurrogate()
+    public static void TestIsHighSurrogate_String_Int_Invalid()
     {
-        // Boolean Char.IsSurrogate(Char)
+        Assert.Throws<ArgumentNullException>("s", () => char.IsHighSurrogate(null, 0)); // String is null
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => char.IsHighSurrogate("abc", -1)); // Index < 0
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => char.IsHighSurrogate("abc", 3)); // Index >= string.Length
+    }
+
+    [Fact]
+    public static void TestIsSurrogate_Char()
+    {
         foreach (char c in s_highSurrogates)
             Assert.True(char.IsSurrogate(c));
 
@@ -590,9 +586,8 @@ public static class CharTests
     }
 
     [Fact]
-    public static void TestIsSurrogateStrInt()
+    public static void TestIsSurrogate_String_Int()
     {
-        // Boolean Char.IsSurrogate(String, Int32)
         foreach (char c in s_highSurrogates)
             Assert.True(char.IsSurrogate(c.ToString(), 0));
 
@@ -601,133 +596,141 @@ public static class CharTests
 
         foreach (char c in s_nonSurrogates)
             Assert.False(char.IsSurrogate(c.ToString(), 0));
-
-        Assert.Throws<ArgumentNullException>(() => char.IsSurrogate(null, 0));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => char.IsSurrogate("abc", -1));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => char.IsSurrogate("abc", 4));
     }
 
     [Fact]
-    public static void TestIsSurrogatePair()
+    public static void TestIsSurrogate_String_Int_Invalid()
     {
-        // Boolean Char.IsSurrogatePair(Char, Char)
+        Assert.Throws<ArgumentNullException>("s", () => char.IsSurrogate(null, 0)); // String is null
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => char.IsSurrogate("abc", -1)); // Index < 0
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => char.IsSurrogate("abc", 3)); // Index >= string.Length
+    }
+
+    [Fact]
+    public static void TestIsSurrogatePair_Char()
+    {
         foreach (char hs in s_highSurrogates)
             foreach (char ls in s_lowSurrogates)
-                Assert.True(Char.IsSurrogatePair(hs, ls));
+                Assert.True(char.IsSurrogatePair(hs, ls));
 
         foreach (char hs in s_nonSurrogates)
             foreach (char ls in s_lowSurrogates)
-                Assert.False(Char.IsSurrogatePair(hs, ls));
+                Assert.False(char.IsSurrogatePair(hs, ls));
 
         foreach (char hs in s_highSurrogates)
             foreach (char ls in s_nonSurrogates)
-                Assert.False(Char.IsSurrogatePair(hs, ls));
+                Assert.False(char.IsSurrogatePair(hs, ls));
     }
 
     [Fact]
-    public static void TestIsSurrogatePairStrInt()
+    public static void TestIsSurrogatePair_String_Int()
     {
-        // Boolean Char.IsSurrogatePair(String, Int32)
         foreach (char hs in s_highSurrogates)
             foreach (char ls in s_lowSurrogates)
-                Assert.True(Char.IsSurrogatePair(hs.ToString() + ls, 0));
+                Assert.True(char.IsSurrogatePair(hs.ToString() + ls, 0));
 
         foreach (char hs in s_nonSurrogates)
             foreach (char ls in s_lowSurrogates)
-                Assert.False(Char.IsSurrogatePair(hs.ToString() + ls, 0));
+                Assert.False(char.IsSurrogatePair(hs.ToString() + ls, 0));
 
         foreach (char hs in s_highSurrogates)
             foreach (char ls in s_nonSurrogates)
-                Assert.False(Char.IsSurrogatePair(hs.ToString() + ls, 0));
+                Assert.False(char.IsSurrogatePair(hs.ToString() + ls, 0));
+
+        Assert.False(char.IsSurrogatePair("\ud800\udc00", 1)); // Index + 1 >= s.Length
     }
 
     [Fact]
-    public static void TestIsSymbol()
+    public static void TestIsSurrogatePair_String_Int_Invalid()
     {
-        // Boolean Char.IsSymbol(Char)
-        foreach (var c in GetTestChars(UnicodeCategory.MathSymbol,
-                UnicodeCategory.ModifierSymbol,
-                UnicodeCategory.CurrencySymbol,
-                UnicodeCategory.OtherSymbol))
+        Assert.Throws<ArgumentNullException>("s", () => char.IsSurrogatePair(null, 0)); // String is null
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => char.IsSurrogatePair("abc", -1)); // Index < 0
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => char.IsSurrogatePair("abc", 3)); // Index >= string.Length
+    }
+
+    [Fact]
+    public static void TestIsSymbol_Char()
+    {
+        var categories = new UnicodeCategory[]
+        {
+            UnicodeCategory.MathSymbol,
+            UnicodeCategory.ModifierSymbol,
+            UnicodeCategory.CurrencySymbol,
+            UnicodeCategory.OtherSymbol
+        };
+        foreach (char c in GetTestChars(categories))
             Assert.True(char.IsSymbol(c));
 
-        foreach (var c in GetTestCharsNotInCategory(UnicodeCategory.MathSymbol,
-                UnicodeCategory.ModifierSymbol,
-                UnicodeCategory.CurrencySymbol,
-                UnicodeCategory.OtherSymbol))
+        foreach (char c in GetTestCharsNotInCategory(categories))
             Assert.False(char.IsSymbol(c));
     }
 
     [Fact]
-    public static void TestIsSymbolStrInt()
+    public static void TestIsSymbol_String_Int()
     {
-        // Boolean Char.IsSymbol(String, Int32)
-        foreach (var c in GetTestChars(UnicodeCategory.MathSymbol,
-                UnicodeCategory.ModifierSymbol,
-                UnicodeCategory.CurrencySymbol,
-                UnicodeCategory.OtherSymbol))
+        var categories = new UnicodeCategory[]
+        {
+            UnicodeCategory.MathSymbol,
+            UnicodeCategory.ModifierSymbol,
+            UnicodeCategory.CurrencySymbol,
+            UnicodeCategory.OtherSymbol
+        };
+        foreach (char c in GetTestChars(categories))
             Assert.True(char.IsSymbol(c.ToString(), 0));
 
-        foreach (var c in GetTestCharsNotInCategory(UnicodeCategory.MathSymbol,
-                UnicodeCategory.ModifierSymbol,
-                UnicodeCategory.CurrencySymbol,
-                UnicodeCategory.OtherSymbol))
+        foreach (char c in GetTestCharsNotInCategory(categories))
             Assert.False(char.IsSymbol(c.ToString(), 0));
-
-        Assert.Throws<ArgumentNullException>(() => char.IsSymbol(null, 0));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => char.IsSymbol("abc", -1));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => char.IsSymbol("abc", 4));
     }
 
     [Fact]
-    public static void TestIsUpper()
+    public static void TestIsSymbol_String_Int_Invalid()
     {
-        // Boolean Char.IsUpper(Char)
-        foreach (var c in GetTestChars(UnicodeCategory.UppercaseLetter))
+        Assert.Throws<ArgumentNullException>("s", () => char.IsSymbol(null, 0)); // String is null
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => char.IsSymbol("abc", -1)); // Index < 0
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => char.IsSymbol("abc", 3)); // Index >= string.Length
+    }
+
+    [Fact]
+    public static void TestIsUpper_Char()
+    {
+        foreach (char c in GetTestChars(UnicodeCategory.UppercaseLetter))
             Assert.True(char.IsUpper(c));
 
-        foreach (var c in GetTestCharsNotInCategory(UnicodeCategory.UppercaseLetter))
+        foreach (char c in GetTestCharsNotInCategory(UnicodeCategory.UppercaseLetter))
             Assert.False(char.IsUpper(c));
     }
 
     [Fact]
-    public static void TestIsUpperStrInt()
+    public static void TestIsUpper_String_Int()
     {
-        // Boolean Char.IsUpper(String, Int32)
-        foreach (var c in GetTestChars(UnicodeCategory.UppercaseLetter))
+        foreach (char c in GetTestChars(UnicodeCategory.UppercaseLetter))
             Assert.True(char.IsUpper(c.ToString(), 0));
 
-        foreach (var c in GetTestCharsNotInCategory(UnicodeCategory.UppercaseLetter))
+        foreach (char c in GetTestCharsNotInCategory(UnicodeCategory.UppercaseLetter))
             Assert.False(char.IsUpper(c.ToString(), 0));
-
-        Assert.Throws<ArgumentNullException>(() => char.IsUpper(null, 0));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => char.IsUpper("abc", -1));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => char.IsUpper("abc", 4));
     }
 
     [Fact]
-    public static void TestIsWhiteSpace()
+    public static void TestIsUpper_String_Int_Invalid()
     {
-        // Boolean Char.IsWhiteSpace(Char)
-        foreach (var c in GetTestChars(UnicodeCategory.SpaceSeparator,
-                UnicodeCategory.LineSeparator,
-                UnicodeCategory.ParagraphSeparator))
+        Assert.Throws<ArgumentNullException>("s", () => char.IsUpper(null, 0)); // String is null
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => char.IsUpper("abc", -1)); // Index < 0
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => char.IsUpper("abc", 3)); // Index >= string.Length
+    }
+
+    [Fact]
+    public static void TestIsWhitespace_Char()
+    {
+        var categories = new UnicodeCategory[]
+        {
+            UnicodeCategory.SpaceSeparator,
+            UnicodeCategory.LineSeparator,
+            UnicodeCategory.ParagraphSeparator
+        };
+        foreach (char c in GetTestChars(categories))
             Assert.True(char.IsWhiteSpace(c));
 
-        // Some control chars are also considered whitespace for legacy reasons.
-        //if ((c >= '\x0009' && c <= '\x000d') || c == '\x0085')
-        Assert.True(char.IsWhiteSpace('\u000b'));
-        Assert.True(char.IsWhiteSpace('\u0085'));
-
-        foreach (var c in GetTestCharsNotInCategory(UnicodeCategory.SpaceSeparator,
-                UnicodeCategory.LineSeparator,
-                UnicodeCategory.ParagraphSeparator))
+        foreach (char c in GetTestCharsNotInCategory(categories))
         {
             // Need to special case some control chars that are treated as whitespace
             if ((c >= '\x0009' && c <= '\x000d') || c == '\x0085') continue;
@@ -736,53 +739,53 @@ public static class CharTests
     }
 
     [Fact]
-    public static void TestIsWhiteSpaceStrInt()
+    public static void TestIsWhiteSpace_String_Int()
     {
-        // Boolean Char.IsWhiteSpace(String, Int32)
-        foreach (var c in GetTestChars(UnicodeCategory.SpaceSeparator,
-                UnicodeCategory.LineSeparator,
-                UnicodeCategory.ParagraphSeparator))
+        var categories = new UnicodeCategory[]
+        {
+            UnicodeCategory.SpaceSeparator,
+            UnicodeCategory.LineSeparator,
+            UnicodeCategory.ParagraphSeparator
+        };
+        foreach (char c in GetTestChars(categories))
             Assert.True(char.IsWhiteSpace(c.ToString(), 0));
 
         // Some control chars are also considered whitespace for legacy reasons.
-        //if ((c >= '\x0009' && c <= '\x000d') || c == '\x0085')
-        Assert.True(char.IsWhiteSpace('\u000b'.ToString(), 0));
-        Assert.True(char.IsWhiteSpace('\u0085'.ToString(), 0));
+        // if ((c >= '\x0009' && c <= '\x000d') || c == '\x0085')
+        Assert.True(char.IsWhiteSpace("\u000b", 0));
+        Assert.True(char.IsWhiteSpace("\u0085", 0));
 
-        foreach (var c in GetTestCharsNotInCategory(UnicodeCategory.SpaceSeparator,
-                UnicodeCategory.LineSeparator,
-                UnicodeCategory.ParagraphSeparator))
+        foreach (char c in GetTestCharsNotInCategory(categories))
         {
             // Need to special case some control chars that are treated as whitespace
             if ((c >= '\x0009' && c <= '\x000d') || c == '\x0085') continue;
             Assert.False(char.IsWhiteSpace(c.ToString(), 0));
         }
+    }
 
-        Assert.Throws<ArgumentNullException>(() => char.IsWhiteSpace(null, 0));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => char.IsWhiteSpace("abc", -1));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => char.IsWhiteSpace("abc", 4));
+    [Fact]
+    public static void TestIsWhiteSpace_String_Int_Invalid()
+    {
+        Assert.Throws<ArgumentNullException>("s", () => char.IsWhiteSpace(null, 0)); // String is null
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => char.IsWhiteSpace("abc", -1)); // Index < 0
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => char.IsWhiteSpace("abc", 3)); // Index >= string.Length
     }
 
     [Fact]
     public static void TestMaxValue()
     {
-        // Char Char.MaxValue
         Assert.Equal(0xffff, char.MaxValue);
     }
 
     [Fact]
     public static void TestMinValue()
     {
-        // Char Char.MinValue
         Assert.Equal(0, char.MinValue);
     }
 
     [Fact]
     public static void TestToLower()
     {
-        // Char Char.ToLower(Char)
         Assert.Equal('a', char.ToLower('A'));
         Assert.Equal('a', char.ToLower('a'));
 
@@ -797,15 +800,13 @@ public static class CharTests
         // LetterNumber can have a lower case form (e.g. \u2162 'III' letter which will be 'iii')
         foreach (char c in GetTestCharsNotInCategory(UnicodeCategory.UppercaseLetter, UnicodeCategory.TitlecaseLetter, UnicodeCategory.LetterNumber))
         {
-            char lc = char.ToLower(c);
-            Assert.Equal(c, lc);
+            Assert.Equal(c, char.ToLower(c));
         }
     }
 
     [Fact]
     public static void TestToLowerInvariant()
     {
-        // Char Char.ToLowerInvariant(Char)
         Assert.Equal('a', char.ToLowerInvariant('A'));
         Assert.Equal('a', char.ToLowerInvariant('a'));
 
@@ -820,31 +821,22 @@ public static class CharTests
         // LetterNumber can have a lower case form (e.g. \u2162 'III' letter which will be 'iii')
         foreach (char c in GetTestCharsNotInCategory(UnicodeCategory.UppercaseLetter, UnicodeCategory.TitlecaseLetter, UnicodeCategory.LetterNumber))
         {
-            char lc = char.ToLowerInvariant(c);
-            Assert.Equal(c, lc);
+            Assert.Equal(c, char.ToLowerInvariant(c));
         }
     }
 
-    [Fact]
-    public static void TestToString()
+    [Theory]
+    [InlineData('a', "a")]
+    [InlineData('\uabcd', "\uabcd")]
+    public static void TestToString(char c, string expected)
     {
-        // String Char.ToString()
-        Assert.Equal(new string('a', 1), 'a'.ToString());
-        Assert.Equal(new string('\uabcd', 1), '\uabcd'.ToString());
-    }
-
-    [Fact]
-    public static void TestToStringChar()
-    {
-        // String Char.ToString(Char)
-        Assert.Equal(new string('a', 1), char.ToString('a'));
-        Assert.Equal(new string('\uabcd', 1), char.ToString('\uabcd'));
+        Assert.Equal(expected, c.ToString());
+        Assert.Equal(expected, char.ToString(c));
     }
 
     [Fact]
     public static void TestToUpper()
     {
-        // Char Char.ToUpper(Char)
         Assert.Equal('A', char.ToUpper('A'));
         Assert.Equal('A', char.ToUpper('a'));
 
@@ -859,15 +851,13 @@ public static class CharTests
         // LetterNumber can have a uppercase form (e.g. \u2172 'iii' letter which will be 'III')
         foreach (char c in GetTestCharsNotInCategory(UnicodeCategory.LowercaseLetter, UnicodeCategory.TitlecaseLetter, UnicodeCategory.LetterNumber))
         {
-            char lc = char.ToUpper(c);
-            Assert.Equal(c, lc);
+            Assert.Equal(c, char.ToUpper(c));
         }
     }
 
     [Fact]
     public static void TestToUpperInvariant()
     {
-        // Char Char.ToUpperInvariant(Char)
         Assert.Equal('A', char.ToUpperInvariant('A'));
         Assert.Equal('A', char.ToUpperInvariant('a'));
 
@@ -882,44 +872,54 @@ public static class CharTests
         // LetterNumber can have a uppercase form (e.g. \u2172 'iii' letter which will be 'III')
         foreach (char c in GetTestCharsNotInCategory(UnicodeCategory.LowercaseLetter, UnicodeCategory.TitlecaseLetter, UnicodeCategory.LetterNumber))
         {
-            char lc = char.ToUpperInvariant(c);
-            Assert.Equal(c, lc);
+            Assert.Equal(c, char.ToUpperInvariant(c));
         }
     }
 
-    private static void ValidateTryParse(string s, char expected, bool shouldSucceed)
+
+    [Theory]
+    [InlineData("a", 'a')]
+    [InlineData("4", '4')]
+    [InlineData(" ", ' ')]
+    [InlineData("\n", '\n')]
+    [InlineData("\0", '\0')]
+    [InlineData("\u0135", '\u0135')]
+    [InlineData("\u05d9", '\u05d9')]
+    [InlineData("\ue001", '\ue001')] // Private use codepoint
+    public static void TestParse(string s, char expected)
     {
-        char result;
-        Assert.Equal(shouldSucceed, char.TryParse(s, out result));
-        if (shouldSucceed)
-            Assert.Equal(expected, result);
+        char c;
+        Assert.True(char.TryParse(s, out c));
+        Assert.Equal(expected, c);
+
+        Assert.Equal(expected, char.Parse(s));
     }
 
     [Fact]
-    public static void TestTryParse()
+    public static void TestParse_Surrogate()
     {
-        // Boolean Char.TryParse(String, Char)
-        ValidateTryParse("a", 'a', true);
-        ValidateTryParse("4", '4', true);
-        ValidateTryParse(" ", ' ', true);
-        ValidateTryParse("\n", '\n', true);
-        ValidateTryParse("\0", '\0', true);
-        ValidateTryParse("\u0135", '\u0135', true);
-        ValidateTryParse("\u05d9", '\u05d9', true);
-        ValidateTryParse("\ud801", '\ud801', true);  // high surrogate
-        ValidateTryParse("\udc01", '\udc01', true);  // low surrogate
-        ValidateTryParse("\ue001", '\ue001', true);  // private use codepoint
+        // TODO: add this as [InlineData] when #7166 is fixed
+        TestParse("\ud801", '\ud801'); // High surrogate
+        TestParse("\udc01", '\udc01'); // Low surrogate
+    }
+    
+    [Theory]
+    [InlineData(null, typeof(ArgumentNullException))]
+    [InlineData("", typeof(FormatException))]
+    [InlineData("\n\r", typeof(FormatException))]
+    [InlineData("kj", typeof(FormatException))]
+    [InlineData(" a", typeof(FormatException))]
+    [InlineData("a ", typeof(FormatException))]
+    [InlineData("\\u0135", typeof(FormatException))]
+    [InlineData("\u01356", typeof(FormatException))]
+    [InlineData("\ud801\udc01", typeof(FormatException))] // Surrogate pair
+    public static void TestParse_Invalid(string s, Type exceptionType)
+    {
+        char c;
+        Assert.False(char.TryParse(s, out c));
+        Assert.Equal(default(char), c);
 
-        // Fail cases
-        ValidateTryParse(null, '\0', false);
-        ValidateTryParse("", '\0', false);
-        ValidateTryParse("\n\r", '\0', false);
-        ValidateTryParse("kj", '\0', false);
-        ValidateTryParse(" a", '\0', false);
-        ValidateTryParse("a ", '\0', false);
-        ValidateTryParse("\\u0135", '\0', false);
-        ValidateTryParse("\u01356", '\0', false);
-        ValidateTryParse("\ud801\udc01", '\0', false);   // surrogate pair
+        Assert.Throws(exceptionType, () => char.Parse(s));
     }
 
     private static IEnumerable<char> GetTestCharsNotInCategory(params UnicodeCategory[] categories)
@@ -955,7 +955,8 @@ public static class CharTests
         }
     }
 
-    private static char[][] s_latinTestSet = new char[][] {
+    private static char[][] s_latinTestSet = new char[][]
+    {
         new char[] {'\u0047','\u004c','\u0051','\u0056','\u00c0','\u00c5','\u00ca','\u00cf','\u00d4','\u00da'}, // UnicodeCategory.UppercaseLetter
         new char[] {'\u0062','\u0068','\u006e','\u0074','\u007a','\u00e1','\u00e7','\u00ed','\u00f3','\u00fa'}, // UnicodeCategory.LowercaseLetter
         new char[] {}, // UnicodeCategory.TitlecaseLetter
@@ -988,7 +989,8 @@ public static class CharTests
         new char[] {}, // UnicodeCategory.OtherNotAssigned
     };
 
-    private static char[][] s_unicodeTestSet = new char[][] {
+    private static char[][] s_unicodeTestSet = new char[][]
+    {
         new char[] {'\u0102','\u01ac','\u0392','\u0428','\u0508','\u10c4','\u1eb4','\u1fba','\u2c28','\ua668'}, // UnicodeCategory.UppercaseLetter
         new char[] { '\u0107', '\u012D', '\u0140', '\u0151', '\u013A', '\u01A1', '\u01F9', '\u022D', '\u1E09','\uFF45' }, // UnicodeCategory.LowercaseLetter
         new char[] {'\u01c8','\u1f88','\u1f8b','\u1f8e','\u1f99','\u1f9c','\u1f9f','\u1faa','\u1fad','\u1fbc'}, // UnicodeCategory.TitlecaseLetter
@@ -1021,7 +1023,7 @@ public static class CharTests
         new char[] {'\u09c6','\u0dfa','\u2e5c','\ua9f9','\uabbd'}, // UnicodeCategory.OtherNotAssigned
     };
 
-    private static char[] s_highSurrogates = new char[] { '\ud800', '\udaaa', '\udbff' }; // range from '\ud800' to '\udbff'
-    private static char[] s_lowSurrogates = new char[] { '\udc00', '\udeee', '\udfff' }; // range from '\udc00' to '\udfff'
+    private static char[] s_highSurrogates = new char[] { '\ud800', '\udaaa', '\udbff' }; // Range from '\ud800' to '\udbff'
+    private static char[] s_lowSurrogates = new char[] { '\udc00', '\udeee', '\udfff' }; // Range from '\udc00' to '\udfff'
     private static char[] s_nonSurrogates = new char[] { '\u0000', '\ud7ff', '\ue000', '\uffff' };
 }

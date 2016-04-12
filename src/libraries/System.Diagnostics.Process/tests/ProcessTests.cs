@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -51,7 +52,8 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact, PlatformSpecific(PlatformID.Windows)]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [PlatformSpecific(PlatformID.Windows)]
         public void TestBasePriorityOnWindows()
         {
             ProcessPriorityClass originalPriority = _process.PriorityClass;
@@ -213,7 +215,6 @@ namespace System.Diagnostics.Tests
             Assert.NotNull(_process.MachineName);
         }
 
-        [ActiveIssue(6677, PlatformID.OSX)]
         [Fact]
         public void TestMainModuleOnNonOSX()
         {
@@ -298,7 +299,6 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ActiveIssue(6677, PlatformID.OSX)]
         [Fact]
         public void TestModules()
         {
@@ -307,12 +307,12 @@ namespace System.Diagnostics.Tests
             {
                 // Validated that we can get a value for each of the following.
                 Assert.NotNull(pModule);
-                Assert.NotEqual(IntPtr.Zero, pModule.BaseAddress);
                 Assert.NotNull(pModule.FileName);
                 Assert.NotNull(pModule.ModuleName);
 
                 // Just make sure these don't throw
-                IntPtr addr = pModule.EntryPointAddress;
+                IntPtr baseAddr = pModule.BaseAddress;
+                IntPtr entryAddr = pModule.EntryPointAddress;
                 int memSize = pModule.ModuleMemorySize;
             }
         }
@@ -398,45 +398,17 @@ namespace System.Diagnostics.Tests
             Assert.InRange(processorTimeAtHalfSpin, processorTimeBeforeSpin, Process.GetCurrentProcess().TotalProcessorTime.TotalSeconds);
         }
 
-        [ActiveIssue(5805)]
         [Fact]
         public void TestProcessStartTime()
         {
-            DateTime systemBootTime = DateTime.UtcNow - TimeSpan.FromMilliseconds(Environment.TickCount);
-            Process p = CreateProcessLong();
-
-            Assert.Throws<InvalidOperationException>(() => p.StartTime);
-            try
+            TimeSpan allowedWindow = TimeSpan.FromSeconds(3);
+            DateTime testStartTime = DateTime.UtcNow;
+            using (var remote = RemoteInvoke(() => { Console.Write(Process.GetCurrentProcess().StartTime.ToUniversalTime()); return SuccessExitCode; },
+                new RemoteInvokeOptions { StartInfo = new ProcessStartInfo { RedirectStandardOutput = true } }))
             {
-                p.Start();
-
-                // Time in unix, is measured in jiffies, which is incremented by one for every timer interrupt since the boot time.
-                // Thus, because there are HZ timer interrupts in a second, there are HZ jiffies in a second. Hence 1\HZ, will
-                // be the resolution of system timer. The lowest value of HZ on unix is 100, hence the timer resolution is 10 ms.
-                // On Windows, timer resolution is 15 ms from MSDN DateTime.Now. Hence, allowing error in 15ms [max(10,15)].
-
-                long intervalTicks = new TimeSpan(0, 0, 0, 0, 15).Ticks;
-                long beforeTicks = systemBootTime.Ticks;
-
-                try
-                {
-                    // Ensure the process has started, p.id throws InvalidOperationException, if the process has not yet started.
-                    Assert.Equal(p.Id, Process.GetProcessById(p.Id).Id);
-                    long startTicks = p.StartTime.ToUniversalTime().Ticks;
-                    long afterTicks = DateTime.UtcNow.Ticks + intervalTicks;
-                    Assert.InRange(startTicks, beforeTicks, afterTicks);
-                }
-                catch (InvalidOperationException)
-                {
-                    Assert.True(p.StartTime.ToUniversalTime().Ticks > beforeTicks);
-                }
-            }
-            finally
-            {
-                if (!p.HasExited)
-                    p.Kill();
-
-                Assert.True(p.WaitForExit(WaitInMS));
+                DateTime remoteStartTime = DateTime.Parse(remote.Process.StandardOutput.ReadToEnd());
+                DateTime curTime = DateTime.UtcNow;
+                Assert.InRange(remoteStartTime, testStartTime - allowedWindow, curTime + allowedWindow);
             }
         }
 
@@ -521,7 +493,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestProcessName()
         {
-            Assert.Equal(_process.ProcessName, HostRunner, StringComparer.OrdinalIgnoreCase);
+            Assert.Equal(Path.GetFileNameWithoutExtension(_process.ProcessName), Path.GetFileNameWithoutExtension(HostRunner), StringComparer.OrdinalIgnoreCase);
         }
 
         [Fact]
@@ -603,7 +575,23 @@ namespace System.Diagnostics.Tests
             yield return new object[] { currentProcess, Process.GetProcessesByName(currentProcess.ProcessName, "127.0.0.1").Where(p => p.Id == currentProcess.Id).Single() };
         }
 
-        [Theory, PlatformSpecific(PlatformID.Windows)]
+        private static bool ProcessPeformanceCounterEnabled()
+        {
+            try
+            {
+                int? value = (int?)Microsoft.Win32.Registry.GetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\PerfProc\Performance", "Disable Performance Counters", null);
+                return !value.HasValue || value.Value == 0;
+            }
+            catch (Exception)
+            {
+                // Ignore exceptions, and just assume the counter is enabled.
+            }
+
+            return true;
+        }
+
+        [PlatformSpecific(PlatformID.Windows)]
+        [ConditionalTheory(nameof(ProcessPeformanceCounterEnabled))]
         [MemberData(nameof(GetTestProcess))]
         public void TestProcessOnRemoteMachineWindows(Process currentProcess, Process remoteProcess)
         {

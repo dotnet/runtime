@@ -1,8 +1,8 @@
 {
   "frameworks": {
-    "dnxcore50": {
+    "netstandard1.3": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23910",
+        "Microsoft.NETCore.Platforms": "1.0.1-rc3-24012-00",
         "System.Collections": "4.0.10",
         "System.Diagnostics.Debug": "4.0.10",
         "System.Linq": "4.0.0",
@@ -14,11 +14,15 @@
         "System.Resources.ResourceManager": "4.0.0",
         "System.Runtime": "4.0.20",
         "System.Threading": "4.0.10"
-      }
+      },
+      "imports": [
+        "dotnet5.4"
+      ]
     },
     "netcore50": {
       "dependencies": {
-        "Microsoft.TargetingPack.Private.NETNative": "1.0.0-rc3-23910"
+        "Microsoft.TargetingPack.Private.NETNative": "1.0.0-rc3-24012-00",
+        "System.Runtime": "4.0.20"
       }
     }
   }

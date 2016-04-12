@@ -5,52 +5,51 @@
 using System;
 using System.IO;
 using System.Text;
-
 using Xunit;
 
-public partial class PathTooLongException_40100_Tests
+public static class PathTooLongExceptionTests
 {
     [Fact]
-    public static void PathTooLongException_ctor()
+    public static void TestCtor_Empty()
     {
-        PathTooLongException plte = new PathTooLongException();
-        Utility.ValidateExceptionProperties(plte, hResult: HResults.COR_E_PATHTOOLONG, validateMessage: false);
+        var exception = new PathTooLongException();
+        ExceptionUtility.ValidateExceptionProperties(exception, hResult: HResults.COR_E_PATHTOOLONG, validateMessage: false);
     }
 
     [Fact]
-    public static void PathTooLongException_ctor_string()
-    {
-        string message = "This path is too long to hike in a single day.";
-        PathTooLongException plte = new PathTooLongException(message);
-        Utility.ValidateExceptionProperties(plte, hResult: HResults.COR_E_PATHTOOLONG, message: message);
-    }
-
-    [Fact]
-    public static void PathTooLongException_ctor_string_exception()
+    public static void TestCtor_String()
     {
         string message = "This path is too long to hike in a single day.";
-        Exception innerException = new Exception("Inner exception");
-        PathTooLongException plte = new PathTooLongException(message, innerException);
-        Utility.ValidateExceptionProperties(plte, hResult: HResults.COR_E_PATHTOOLONG, innerException: innerException, message: message);
+        var exception = new PathTooLongException(message);
+        ExceptionUtility.ValidateExceptionProperties(exception, hResult: HResults.COR_E_PATHTOOLONG, message: message);
     }
 
     [Fact]
-    public static void PathTooLongException_From_Path()
+    public static void TestCtor_String_Exception()
+    {
+        string message = "This path is too long to hike in a single day.";
+        var innerException = new Exception("Inner exception");
+        var exception = new PathTooLongException(message, innerException);
+        ExceptionUtility.ValidateExceptionProperties(exception, hResult: HResults.COR_E_PATHTOOLONG, innerException: innerException, message: message);
+    }
+
+    [Fact]
+    public static void TestIsThrownWhenPathIsTooLong()
     {
         // This test case ensures that the PathTooLongException defined in System.IO.Primitives is the same that
         // is thrown by Path.  The S.IO.FS.P implementation forwards to the core assembly to ensure this is true.
 
         // Build up a path until GetFullPath throws, and verify that the right exception type
         // emerges from it and related APIs.
-        var sb = new StringBuilder("directoryNameHere" + Path.DirectorySeparatorChar);
+        var builder = new StringBuilder("directoryNameHere" + Path.DirectorySeparatorChar);
         string path = null;
         Assert.Throws<PathTooLongException>(new Action(() =>
         {
             while (true)
             {
-                path = sb.ToString();
+                path = builder.ToString();
                 Path.GetFullPath(path); // will eventually throw when path is too long
-                sb.Append(path); // double the number of directories for the next time
+                builder.Append(path); // double the number of directories for the next time
             }
         }));
     }

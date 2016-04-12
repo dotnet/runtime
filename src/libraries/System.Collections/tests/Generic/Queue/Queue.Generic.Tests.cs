@@ -57,7 +57,7 @@ namespace System.Collections.Tests
         #region Constructor_IEnumerable
 
         [Theory]
-        [MemberData("EnumerableTestData")]
+        [MemberData(nameof(EnumerableTestData))]
         public void Queue_Generic_Constructor_IEnumerable(EnumerableType enumerableType, int setLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
         {
             IEnumerable<T> enumerable = CreateEnumerable(enumerableType, null, enumerableLength, 0, numberOfDuplicateElements);
@@ -76,7 +76,7 @@ namespace System.Collections.Tests
         #region Constructor_Capacity
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void Queue_Generic_Constructor_int(int count)
         {
             Queue<T> queue = new Queue<T>(count);
@@ -97,7 +97,7 @@ namespace System.Collections.Tests
         #region Dequeue
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void Queue_Generic_Dequeue_AllElements(int count)
         {
             Queue<T> queue = GenericQueueFactory(count);
@@ -153,7 +153,7 @@ namespace System.Collections.Tests
         #region ToArray
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void Queue_Generic_ToArray(int count)
         {
             Queue<T> queue = GenericQueueFactory(count);
@@ -161,7 +161,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void Queue_Generic_ToArray_NonWrappedQueue(int count)
         {
             Queue<T> collection = new Queue<T>(count + 1);
@@ -176,7 +176,7 @@ namespace System.Collections.Tests
         #region Peek
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void Queue_Generic_Peek_AllElements(int count)
         {
             Queue<T> queue = GenericQueueFactory(count);
@@ -199,7 +199,7 @@ namespace System.Collections.Tests
         #region TrimExcess
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void Queue_Generic_TrimExcess_OnValidQueueThatHasntBeenRemovedFrom(int count)
         {
             Queue<T> queue = GenericQueueFactory(count);
@@ -207,7 +207,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void Queue_Generic_TrimExcess_Repeatedly(int count)
         {
             Queue<T> queue = GenericQueueFactory(count); ;
@@ -219,7 +219,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void Queue_Generic_TrimExcess_AfterRemovingOneElement(int count)
         {
             if (count > 0)
@@ -236,7 +236,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void Queue_Generic_TrimExcess_AfterClearingAndAddingSomeElementsBack(int count)
         {
             if (count > 0)
@@ -254,7 +254,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void Queue_Generic_TrimExcess_AfterClearingAndAddingAllElementsBack(int count)
         {
             if (count > 0)

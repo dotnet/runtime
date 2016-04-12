@@ -80,7 +80,7 @@ namespace System.Data.SqlClient
             }
             if (!flag)
             {
-                throw ADP.OpenConnectionPropertySet(ADP.ConnectionString, connectionInternal.State);
+                throw ADP.OpenConnectionPropertySet(nameof(ConnectionString), connectionInternal.State);
             }
         }
 

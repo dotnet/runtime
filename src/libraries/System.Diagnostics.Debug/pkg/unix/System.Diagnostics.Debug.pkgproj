@@ -8,8 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\System.Diagnostics.Debug.builds" >
-      <AdditionalProperties>FilterToOSGroup=Linux</AdditionalProperties>
+    <ProjectReference Include="..\..\src\System.Diagnostics.Debug.csproj" >
+      <OSGroup>Linux</OSGroup>
     </ProjectReference>
 
     <ProjectReference Include="$(NativePackagePath)\runtime.native.System\runtime.native.System.pkgproj" />

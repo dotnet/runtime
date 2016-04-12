@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <File Include="$(UbuntuNativePath)\System.IO.Compression.Native.so">
+    <File Include="$(UbuntuNativePath)System.IO.Compression.Native.so">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
     </File>
   </ItemGroup>

@@ -1,23 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-  <ItemGroup>
-    <Project Include="System.Net.Ping.csproj">
-      <OSGroup>FreeBSD</OSGroup>
-    </Project>
-    <Project Include="System.Net.Ping.csproj">
-      <OSGroup>Linux</OSGroup>
-    </Project>
-    <Project Include="System.Net.Ping.csproj">
-      <OSGroup>OSX</OSGroup>
-    </Project>
-    <Project Include="System.Net.Ping.csproj">
-      <OSGroup>Windows_NT</OSGroup>
-    </Project>
-    <Project Include="System.Net.Ping.csproj">
-      <TargetGroup>net46</TargetGroup>
-    </Project>
-  </ItemGroup>
+  <ItemGroup> 
+    <Project Include="System.Net.Ping.csproj"> 
+      <OSGroup>Unix</OSGroup> 
+    </Project> 
+    <Project Include="System.Net.Ping.csproj"> 
+      <OSGroup>Windows_NT</OSGroup> 
+    </Project> 
+    <Project Include="System.Net.Ping.csproj"> 
+      <TargetGroup>net46</TargetGroup> 
+    </Project> 
+  </ItemGroup> 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
 

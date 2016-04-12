@@ -659,7 +659,7 @@ namespace System.Collections.Concurrent
 #pragma warning restore 0420
 
         /// <summary>
-        /// Local helper function to copy the poped elements into a given collection
+        /// Local helper function to copy the popped elements into a given collection
         /// </summary>
         /// <param name="head">The head of the list to be copied</param>
         /// <param name="collection">The collection to place the popped items in</param>

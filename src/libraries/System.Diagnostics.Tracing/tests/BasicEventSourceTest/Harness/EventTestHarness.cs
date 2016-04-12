@@ -164,7 +164,7 @@ namespace BasicEventSourceTests
 
         // This action cause the eventSource to emit an event (it is the test)
         public Action EventGenerator { get; private set; }
-        // This action is is given the resulting event and should Assert that it is correct
+        // This action is given the resulting event and should Assert that it is correct
         public Action<Event> EventValidator { get; private set; }
         public Action<List<Event>> EventListValidator { get; private set; }
         public string Name { get; private set; }

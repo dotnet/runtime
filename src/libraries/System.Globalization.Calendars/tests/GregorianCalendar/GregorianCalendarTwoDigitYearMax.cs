@@ -2,63 +2,33 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
 using Xunit;
 
-namespace System.Globalization.CalendarTests
+namespace System.Globalization.Tests
 {
-    // GregorianCalendar.TwoDigitYearMax
     public class GregorianCalendarTwoDigitYearMax
     {
-        private const int c_DEFAULT_TWO_DIGIT_YEAR_MAX = 2029;
-        private const int c_MAX_YEAR = 9999;
-        private const int c_MIN_TWO_DIGIT_YEAR = 99;
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
 
-        #region Positive tests
-        // PosTest1: get the TwoDigitYearMax of Gregorian calendar
-        [Fact]
-        public void Test1()
-        {
-            PosTest1(GregorianCalendarTypes.Arabic);
-            PosTest1(GregorianCalendarTypes.Localized);
-            PosTest1(GregorianCalendarTypes.MiddleEastFrench);
-            PosTest1(GregorianCalendarTypes.TransliteratedEnglish);
-            PosTest1(GregorianCalendarTypes.TransliteratedFrench);
-            PosTest1(GregorianCalendarTypes.USEnglish);
-        }
+        private const int DefaultTwoDigitMax = 2029;
+        private const int MaxYear = 9999;
+        private const int MinTwoDigitYear = 99;
 
-        // PosTest2: set the TwoDigitYearMax of Gregorian caleandar
-        [Fact]
-        public void Test2()
+        [Theory]
+        [InlineData(GregorianCalendarTypes.Arabic)]
+        [InlineData(GregorianCalendarTypes.Localized)]
+        [InlineData(GregorianCalendarTypes.MiddleEastFrench)]
+        [InlineData(GregorianCalendarTypes.TransliteratedEnglish)]
+        [InlineData(GregorianCalendarTypes.TransliteratedFrench)]
+        [InlineData(GregorianCalendarTypes.USEnglish)]
+        public void ToFourDigitYear(GregorianCalendarTypes calendarType)
         {
-            PosTest2(GregorianCalendarTypes.Arabic);
-            PosTest2(GregorianCalendarTypes.Localized);
-            PosTest2(GregorianCalendarTypes.MiddleEastFrench);
-            PosTest2(GregorianCalendarTypes.TransliteratedEnglish);
-            PosTest2(GregorianCalendarTypes.TransliteratedFrench);
-            PosTest2(GregorianCalendarTypes.USEnglish);
-        }
+            Calendar calendar = new GregorianCalendar(calendarType);
+            Assert.Equal(DefaultTwoDigitMax, calendar.TwoDigitYearMax);
 
-        private void PosTest1(GregorianCalendarTypes calendarType)
-        {
-            System.Globalization.Calendar myCalendar = new GregorianCalendar(calendarType);
-            int expectedTwoDigitYearMax, actualTwoDigitYearMax;
-            expectedTwoDigitYearMax = c_DEFAULT_TWO_DIGIT_YEAR_MAX;
-            actualTwoDigitYearMax = myCalendar.TwoDigitYearMax;
-            Assert.Equal(expectedTwoDigitYearMax, actualTwoDigitYearMax);
+            int randomTwoDigitYearMax = MinTwoDigitYear + s_randomDataGenerator.GetInt32(-55) % (MaxYear - MinTwoDigitYear + 1);
+            calendar.TwoDigitYearMax = randomTwoDigitYearMax;
+            Assert.Equal(randomTwoDigitYearMax, calendar.TwoDigitYearMax);
         }
-
-        private void PosTest2(GregorianCalendarTypes calendarType)
-        {
-            System.Globalization.Calendar myCalendar = new GregorianCalendar(calendarType);
-            int expectedTwoDigitYearMax, actualTwoDigitYearMax;
-            expectedTwoDigitYearMax = c_MIN_TWO_DIGIT_YEAR + _generator.GetInt32(-55) % (c_MAX_YEAR - c_MIN_TWO_DIGIT_YEAR + 1);
-            myCalendar.TwoDigitYearMax = expectedTwoDigitYearMax;
-            actualTwoDigitYearMax = myCalendar.TwoDigitYearMax;
-            Assert.Equal(expectedTwoDigitYearMax, actualTwoDigitYearMax);
-        }
-        #endregion
     }
 }

@@ -33,7 +33,7 @@ namespace System.Runtime.InteropServices
         /// <exception cref="ArgumentOutOfRangeException">Thrown if size is greater than the maximum memory size.</exception>
         public void Resize(ulong byteLength)
         {
-            if (IsClosed) throw new ObjectDisposedException("SafeHeapHandle");
+            if (IsClosed) throw new ObjectDisposedException(nameof(SafeHeapHandle));
 
             ulong originalLength = 0;
             if (handle == IntPtr.Zero)

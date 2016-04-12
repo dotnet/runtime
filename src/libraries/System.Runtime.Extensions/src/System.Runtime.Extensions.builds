@@ -15,11 +15,28 @@
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="System.Runtime.Extensions.csproj">
-      <TargetGroup>net46</TargetGroup>
+      <TargetGroup>net462</TargetGroup>
     </Project>
+    <!-- NETCore50 must redistribute binaries due to shared library
     <Project Include="System.Runtime.Extensions.csproj">
       <OSGroup>Windows_NT</OSGroup>
       <TargetGroup>netcore50aot</TargetGroup>
+    </Project> -->
+    <Project Include="redist\System.Runtime.Extensions.depproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>netcore50</TargetGroup>
+    </Project>
+    <Project Include="redist\System.Runtime.Extensions.depproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>netcore50aot</TargetGroup>
+    </Project>
+    <Project Include="System.Runtime.Extensions.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>netstandard15aot</TargetGroup>
+    </Project>
+    <Project Include="System.Runtime.Extensions.csproj">
+      <OSGroup>Linux</OSGroup>
+      <TargetGroup>netstandard15aot</TargetGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

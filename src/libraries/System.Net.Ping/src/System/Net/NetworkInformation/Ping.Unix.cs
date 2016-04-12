@@ -22,7 +22,7 @@ namespace System.Net.NetworkInformation
         {
             try
             {
-                Task<PingReply> t = RawSocketPermissions.CanUseRawSockets() ?
+                Task<PingReply> t = RawSocketPermissions.CanUseRawSockets(address.AddressFamily) ?
                     SendIcmpEchoRequestOverRawSocket(address, buffer, timeout, options) :
                     SendWithPingUtility(address, buffer, timeout, options);
                 return await t.ConfigureAwait(false);
@@ -176,7 +176,7 @@ namespace System.Net.NetworkInformation
                     long rtt = UnixCommandLinePing.ParseRoundTripTime(output);
                     return new PingReply(
                             address,
-                            null, // Ping utility cannot accomodate these, return null to indicate they were ignored.
+                            null, // Ping utility cannot accommodate these, return null to indicate they were ignored.
                             IPStatus.Success,
                             rtt,
                             Array.Empty<byte>()); // Ping utility doesn't deliver this info.

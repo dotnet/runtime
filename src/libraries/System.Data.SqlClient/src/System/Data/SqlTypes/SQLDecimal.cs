@@ -393,7 +393,7 @@ namespace System.Data.SqlTypes
                     // This can happen only if the actual value is greater than 1E+38,
                     // in which case, tableIndex starts at 33 and ends at 37.
                     // Note that in this case, the actual value will be out of SqlDeicmal's range,
-                    // and tableIndex is out of the array boudary. We'll throw later in ctors.
+                    // and tableIndex is out of the array boundary. We'll throw later in ctors.
                     tableIndex += 1;
                 }
             }
@@ -409,7 +409,7 @@ namespace System.Data.SqlTypes
                     precision -= 1;
                 }
             }
-            Debug.Assert((precision == MaxPrecision + 1) || VerifyPrecision(precision), "Calcualted precision too low?");
+            Debug.Assert((precision == MaxPrecision + 1) || VerifyPrecision(precision), "Calculated precision too low?");
             Debug.Assert((precision == 1) || !VerifyPrecision((byte)(precision - 1)), "Calculated precision too high?");
 
             // adjust the precision
@@ -489,7 +489,7 @@ namespace System.Data.SqlTypes
             // set the null bit
             m_bStatus = s_bNotNull;
 
-            // note: using usafe code we could get the data directly out of the structure like that:
+            // note: using unsafe code we could get the data directly out of the structure like that:
             // UInt32 * pInt = (UInt32*) &value;
             // UInt32 sgnscl = *pInt++;
 
@@ -1277,7 +1277,7 @@ namespace System.Data.SqlTypes
             fOpSignPos = y.IsPositive;
 
             //result scale = max(s1,s2)
-            //result precison = max(s1,s2) + max(p1-s1,p2-s2)
+            //result precision = max(s1,s2) + max(p1-s1,p2-s2)
             MyScale = x.m_bScale;
             OpScale = y.m_bScale;
 
@@ -1295,7 +1295,7 @@ namespace System.Data.SqlTypes
             ResPrec = Math.Min(MaxPrecision, ResPrec);
 
             // If precision adjusted, scale is reduced to keep the integer part untruncated.
-            // But discard the extra carry, only keep the interger part as ResInteger, not ResInteger + 1.
+            // But discard the extra carry, only keep the integer part as ResInteger, not ResInteger + 1.
             Debug.Assert(ResPrec - ResInteger >= 0);
             if (ResPrec - ResInteger < ResScale)
                 ResScale = ResPrec - ResInteger;
@@ -1425,7 +1425,7 @@ namespace System.Data.SqlTypes
         //
         //    Result scale and precision(same as in SQL Server Manual and Hydra):
         //        scale = s1 + s2
-        //        precison = s1 + s2 + (p1 - s1) + (p2 - s2) + 1
+        //        precision = s1 + s2 + (p1 - s1) + (p2 - s2) + 1
         //
         //    Overflow Rules:
         //        If scale is greater than NUMERIC_MAX_PRECISION it is set to
@@ -1466,7 +1466,7 @@ namespace System.Data.SqlTypes
 
             // Local variables for actual multiplication
             int iulPlier;           //index of UI4 in the Multiplier
-            uint ulPlier;            //current mutiplier UI4
+            uint ulPlier;            //current multiplier UI4
             ulong dwlAccum;           //accumulated sum
             ulong dwlNextAccum;       //overflow of accumulated sum
             int culCand = y.m_bLen; //length of multiplicand in UI4s
@@ -1487,7 +1487,7 @@ namespace System.Data.SqlTypes
             ResScale = ActualScale;
             ResInteger = (x.m_bPrec - x.m_bScale) + (y.m_bPrec - y.m_bScale) + 1;
 
-            //result precison = s1 + s2 + (p1 - s1) + (p2 - s2) + 1
+            //result precision = s1 + s2 + (p1 - s1) + (p2 - s2) + 1
             ResPrec = ResScale + ResInteger;
 
             // Downward adjust res prec,scale if either larger than NUMERIC_MAX_PRECISION
@@ -1621,7 +1621,7 @@ namespace System.Data.SqlTypes
                 }
 
                 // Otherwise call AdjustScale
-                if (culRes > s_cNumeMax)    // Do not fit now, so will not fit after asjustement
+                if (culRes > s_cNumeMax)    // Do not fit now, so will not fit after adjustment
                     throw new OverflowException(SQLResource.ArithOverflowMessage);
                 // NOTE: Have not check for value in the range (10**38..2**128),
                 // as we'll call AdjustScale with positive argument, and it'll
@@ -1667,7 +1667,7 @@ namespace System.Data.SqlTypes
         //  Divide numeric by numeric.
         //    The Quotient will be returned in *this
         //
-        //Result scale&precision:
+        //Result scale & precision:
         //    NOTE: same as in Hydra but different from SQL Server Manual,
         //            where scale = max(s1+p2-s2+1,x_cNumeDivScaleMin)):
         //        scale = max(s1 + p2 + 1, x_cNumeDivScaleMin);
@@ -1680,9 +1680,9 @@ namespace System.Data.SqlTypes
         //    integer part untruncated but keeping a minimum value of x_cNumeDivScaleMin.
         //    For example, if using the above formula, the resulting precision is 46 and
         //    scale is 10, the precision will be reduced to 38, to keep the integral part
-        //    untruncated the scale needs be recuded to 2, but since x_cNumeDivScaleMin
+        //    untruncated the scale needs be reduced to 2, but since x_cNumeDivScaleMin
         //    is set to 6 currently, resulting scale will be 6.
-        //        OverflowException is throwed only if the actual precision is greater than
+        //        OverflowException is thrown only if the actual precision is greater than
         //    NUMERIC_MAX_PRECISION or actual length is greater than x_cbNumeBuf
         //
         //Algorithm
@@ -2353,7 +2353,7 @@ namespace System.Data.SqlTypes
             if (lAdjust + m_bScale < 0)
                 throw new SqlTruncateException();
 
-            //If uphifting causes scale overflow
+            //If upshifting causes scale overflow
             if (lAdjust + m_bScale > s_NUMERIC_MAX_PRECISION)
                 throw new OverflowException(SQLResource.ArithOverflowMessage);
 
@@ -2800,7 +2800,7 @@ namespace System.Data.SqlTypes
                     // D5. Test remainder. Carry indicates result<0, therefore QH 1 too large
                     if (HI(dwlAccum) == 0)
                     {
-                        // D6. Add back - probabilty is 2**(-31). R += D. Q[digit] -= 1
+                        // D6. Add back - probability is 2**(-31). R += D. Q[digit] -= 1
                         uint ulCarry;
 
                         rgulQ[iulRindex - ciulD] = QH - 1;
@@ -2821,7 +2821,7 @@ namespace System.Data.SqlTypes
                 MpNormalize(rgulQ, ref ciulQ);
                 ciulR = ciulD;
                 MpNormalize(rgulR, ref ciulR);
-                // D8. Unnormalize: Divide D and R to get result
+                // D8. Denormalize: Divide D and R to get result
                 if (D1 > 1)
                 {
                     uint ret;
@@ -2858,7 +2858,7 @@ namespace System.Data.SqlTypes
             int Sign1;
             int Sign2;
 
-            int iFinalResult;   //Final result of comparision: positive = greater
+            int iFinalResult;   //Final result of comparison: positive = greater
                                 //than, 0 = equal, negative = less than
 
             //Initialize the sign values to be 1(positive) or -1(negative)

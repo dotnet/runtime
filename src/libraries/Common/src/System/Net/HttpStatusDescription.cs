@@ -8,85 +8,6 @@ namespace System.Net
 {
     internal static class HttpStatusDescription
     {
-        private static readonly string[][] s_httpStatusDescriptions = new string[][]
-        {
-            null,
-
-            new string[]
-            {
-                /* 100 */ "Continue",
-                /* 101 */ "Switching Protocols",
-                /* 102 */ "Processing"
-            },
-
-            new string[]
-            {
-                /* 200 */ "OK",
-                /* 201 */ "Created",
-                /* 202 */ "Accepted",
-                /* 203 */ "Non-Authoritative Information",
-                /* 204 */ "No Content",
-                /* 205 */ "Reset Content",
-                /* 206 */ "Partial Content",
-                /* 207 */ "Multi-Status"
-            },
-
-            new string[]
-            {
-                /* 300 */ "Multiple Choices",
-                /* 301 */ "Moved Permanently",
-                /* 302 */ "Found",
-                /* 303 */ "See Other",
-                /* 304 */ "Not Modified",
-                /* 305 */ "Use Proxy",
-                /* 306 */ null,
-                /* 307 */ "Temporary Redirect"
-            },
-
-            new string[]
-            {
-                /* 400 */ "Bad Request",
-                /* 401 */ "Unauthorized",
-                /* 402 */ "Payment Required",
-                /* 403 */ "Forbidden",
-                /* 404 */ "Not Found",
-                /* 405 */ "Method Not Allowed",
-                /* 406 */ "Not Acceptable",
-                /* 407 */ "Proxy Authentication Required",
-                /* 408 */ "Request Timeout",
-                /* 409 */ "Conflict",
-                /* 410 */ "Gone",
-                /* 411 */ "Length Required",
-                /* 412 */ "Precondition Failed",
-                /* 413 */ "Request Entity Too Large",
-                /* 414 */ "Request-Uri Too Long",
-                /* 415 */ "Unsupported Media Type",
-                /* 416 */ "Requested Range Not Satisfiable",
-                /* 417 */ "Expectation Failed",
-                /* 418 */ null,
-                /* 419 */ null,
-                /* 420 */ null,
-                /* 421 */ null,
-                /* 422 */ "Unprocessable Entity",
-                /* 423 */ "Locked",
-                /* 424 */ "Failed Dependency",
-                /* 425 */ null,
-                /* 426 */ "Upgrade Required", // RFC 2817
-            },
-
-            new string[]
-            {
-                /* 500 */ "Internal Server Error",
-                /* 501 */ "Not Implemented",
-                /* 502 */ "Bad Gateway",
-                /* 503 */ "Service Unavailable",
-                /* 504 */ "Gateway Timeout",
-                /* 505 */ "Http Version Not Supported",
-                /* 506 */ null,
-                /* 507 */ "Insufficient Storage"
-            }
-        };
-
         internal static string Get(HttpStatusCode code)
         {
             return Get((int)code);
@@ -94,14 +15,59 @@ namespace System.Net
 
         internal static string Get(int code)
         {
-            if (code >= 100 && code < 600)
+            switch (code)
             {
-                int i = code / 100;
-                int j = code % 100;
-                if (j < s_httpStatusDescriptions[i].Length)
-                {
-                    return s_httpStatusDescriptions[i][j];
-                }
+                case 100: return "Continue";
+                case 101: return "Switching Protocols";
+                case 102: return "Processing";
+                
+                case 200: return "OK";
+                case 201: return "Created";
+                case 202: return "Accepted";
+                case 203: return "Non-Authoritative Information";
+                case 204: return "No Content";
+                case 205: return "Reset Content";
+                case 206: return "Partial Content";
+                case 207: return "Multi-Status";
+                
+                case 300: return "Multiple Choices";
+                case 301: return "Moved Permanently";
+                case 302: return "Found";
+                case 303: return "See Other";
+                case 304: return "Not Modified";
+                case 305: return "Use Proxy";
+                case 307: return "Temporary Redirect";
+                
+                case 400: return "Bad Request";
+                case 401: return "Unauthorized";
+                case 402: return "Payment Required";
+                case 403: return "Forbidden";
+                case 404: return "Not Found";
+                case 405: return "Method Not Allowed";
+                case 406: return "Not Acceptable";
+                case 407: return "Proxy Authentication Required";
+                case 408: return "Request Timeout";
+                case 409: return "Conflict";
+                case 410: return "Gone";
+                case 411: return "Length Required";
+                case 412: return "Precondition Failed";
+                case 413: return "Request Entity Too Large";
+                case 414: return "Request-Uri Too Long";
+                case 415: return "Unsupported Media Type";
+                case 416: return "Requested Range Not Satisfiable";
+                case 417: return "Expectation Failed";
+                case 422: return "Unprocessable Entity";
+                case 423: return "Locked";
+                case 424: return "Failed Dependency";
+                case 426: return "Upgrade Required"; // RFC 2817
+                
+                case 500: return "Internal Server Error";
+                case 501: return "Not Implemented";
+                case 502: return "Bad Gateway";
+                case 503: return "Service Unavailable";
+                case 504: return "Gateway Timeout";
+                case 505: return "Http Version Not Supported";
+                case 507: return "Insufficient Storage";
             }
             return null;
         }

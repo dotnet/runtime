@@ -210,7 +210,7 @@ namespace System.Data.SqlClient.SNI
                 }
             }
 
-            // Propagate the last failure that occurrred
+            // Propagate the last failure that occurred
             if (lastException != null)
             {
                 lastException.Throw();

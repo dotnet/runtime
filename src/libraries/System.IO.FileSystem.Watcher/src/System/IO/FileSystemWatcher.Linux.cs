@@ -27,7 +27,7 @@ namespace System.IO
 
             // Open an inotify file descriptor. Ideally this would be a constrained execution region, but we don't have access to 
             // PrepareConstrainedRegions. We still use a finally block to house the code that opens the handle and stores it in 
-            // hopes of making it as non-interruptable as possible.  Ideally the SafeFileHandle would be allocated before the block, 
+            // hopes of making it as non-interruptible as possible.  Ideally the SafeFileHandle would be allocated before the block, 
             // but SetHandle is protected and SafeFileHandle is sealed, so we're stuck doing the allocation here.
             SafeFileHandle handle;
             try { } finally
@@ -189,7 +189,7 @@ namespace System.IO
             }
 
             // For the Rename event, we'll register for the corresponding move inotify events if the 
-            // caller's NotifyFilters asks for notications related to names.
+            // caller's NotifyFilters asks for notifications related to names.
             const NotifyFilters filtersForMoved =
                 NotifyFilters.FileName |
                 NotifyFilters.DirectoryName;
@@ -261,7 +261,7 @@ namespace System.IO
             /// Mapping from watch descriptor (as returned by inotify_add_watch) to state for
             /// the associated directory being watched.  Events from inotify include only relative
             /// names, so the watch descriptor in an event must be used to look up the associated
-            /// directory path in order to conver the relative filename into a full path.
+            /// directory path in order to convert the relative filename into a full path.
             /// </summary>
             private readonly Dictionary<int, WatchedDirectory> _wdToPathMap = new Dictionary<int, WatchedDirectory>();
             /// <summary>

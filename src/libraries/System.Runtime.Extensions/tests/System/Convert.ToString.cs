@@ -596,7 +596,7 @@ namespace System.Tests
         {
             Double[] testValues = new Double[] { Double.MinValue, 0.0, 1.0, 1000.0, Double.MaxValue, Double.NegativeInfinity, Double.PositiveInfinity, Double.Epsilon, Double.NaN };
 
-            // Vanila Test Cases
+            // Vanilla Test Cases
             for (int i = 0; i < testValues.Length; i++)
             {
                 String result = Convert.ToString(testValues[i]);

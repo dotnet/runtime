@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -124,6 +124,59 @@ namespace System.Net.Http.Functional.Tests
             outer.Dispose();
             // Inner content is discarded after first dispose.
             Assert.Equal(1, mock.DisposeCount);
+        }
+
+        [Fact]
+        public async Task ReadAsStringAsync_NoSubContent_MatchesExpected()
+        {
+            var mc = new MultipartContent("someSubtype", "theBoundary");
+
+            Assert.Equal(
+                "--theBoundary\r\n" +
+                "\r\n" +
+                "--theBoundary--\r\n", 
+                await mc.ReadAsStringAsync());
+        }
+
+        [Fact]
+        public async Task ReadAsStringAsync_OneSubContentWithHeaders_MatchesExpected()
+        {
+            var subContent = new ByteArrayContent(Encoding.UTF8.GetBytes("This is a ByteArrayContent"));
+            subContent.Headers.Add("someHeaderName", "andSomeHeaderValue");
+            subContent.Headers.Add("someOtherHeaderName", new[] { "withNotOne", "ButTwoValues" });
+            subContent.Headers.Add("oneMoreHeader", new[] { "withNotOne", "AndNotTwo", "butThreeValues" });
+
+            var mc = new MultipartContent("someSubtype", "theBoundary");
+            mc.Add(subContent);
+
+            Assert.Equal(
+                "--theBoundary\r\n" +
+                "someHeaderName: andSomeHeaderValue\r\n" +
+                "someOtherHeaderName: withNotOne, ButTwoValues\r\n" +
+                "oneMoreHeader: withNotOne, AndNotTwo, butThreeValues\r\n" +
+                "\r\n" +
+                "This is a ByteArrayContent\r\n" +
+                "--theBoundary--\r\n", 
+                await mc.ReadAsStringAsync());
+        }
+
+        [Fact]
+        public async Task ReadAsStringAsync_TwoSubContents_MatchesExpected()
+        {
+            var mc = new MultipartContent("someSubtype", "theBoundary");
+            mc.Add(new ByteArrayContent(Encoding.UTF8.GetBytes("This is a ByteArrayContent")));
+            mc.Add(new StringContent("This is a StringContent"));
+
+            Assert.Equal(
+                "--theBoundary\r\n" +
+                "\r\n" +
+                "This is a ByteArrayContent\r\n" +
+                "--theBoundary\r\n" +
+                "Content-Type: text/plain; charset=utf-8\r\n" +
+                "\r\n" +
+                "This is a StringContent\r\n" +
+                "--theBoundary--\r\n",
+                await mc.ReadAsStringAsync());
         }
 
         #region Helpers

@@ -34,7 +34,7 @@ namespace System.Diagnostics
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException("source");
+                    throw new ArgumentNullException(nameof(Source));
                 _src = value;
             }
         }

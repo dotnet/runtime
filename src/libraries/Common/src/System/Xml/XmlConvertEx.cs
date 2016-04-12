@@ -72,13 +72,13 @@ namespace System.Xml
                 s = TrimString(s);
                 if (s.Length == 0 || s.IndexOf("##", StringComparison.Ordinal) != -1)
                 {
-                    throw new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Uri"));
+                    throw new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, nameof(Uri)));
                 }
             }
             Uri uri;
             if (!Uri.TryCreate(s, UriKind.RelativeOrAbsolute, out uri))
             {
-                throw new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Uri"));
+                throw new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, nameof(Uri)));
             }
             return uri;
         }

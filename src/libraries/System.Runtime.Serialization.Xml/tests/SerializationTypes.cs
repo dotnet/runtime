@@ -1285,6 +1285,18 @@ namespace SerializationTypes
         }
     }
 
+    public class TypeWithDateTimePropertyAsXmlTime
+    {
+        DateTime _value;
+
+        [XmlText(DataType = "time")]
+        public DateTime Value
+        {
+            get { return _value; }
+            set { _value = value; }
+        }
+    }
+
     [DataContract(IsReference = false)]
     public class SimpleDC
     {
@@ -2368,6 +2380,15 @@ namespace SerializationTypes
     public class TypeMissingSerializationCodeDerived : TypeMissingSerializationCodeBase
     {
         public string Name { get; set; }
+    }
+
+    public class SimpleTypeWihtMoreProperties
+    {
+        public string StringProperty { get; set; }
+        public int IntProperty { get; set; }
+        public MyEnum EnumProperty { get; set; }
+        public List<string> CollectionProperty { get; set; }
+        public List<SimpleTypeWihtMoreProperties> SimpleTypeList { get; set; }
     }
 }
 

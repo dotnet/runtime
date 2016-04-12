@@ -20,7 +20,7 @@ namespace System.Diagnostics.TraceSourceTests
             Trace.IndentSize = 4;
             Trace.UseGlobalLock = true;
             // Trace holds on to instances through weak refs
-            // this is intented to clean those up.
+            // this is intended to clean those up.
             GC.Collect();
             Trace.Refresh();
         }

@@ -164,14 +164,14 @@ namespace System.Collections.Tests
 
             public void CopyTo(Array array, int index)
             {
-                ((ICollection)this).CopyTo(array, index);// Use the base class explicit implemenation of ICollection.CopyTo
+                ((ICollection)this).CopyTo(array, index);// Use the base class explicit implementation of ICollection.CopyTo
             }
 
             public virtual object SyncRoot
             {
                 get
                 {
-                    return ((ICollection)this).SyncRoot;// Use the base class explicit implemenation of ICollection.SyncRoot
+                    return ((ICollection)this).SyncRoot;// Use the base class explicit implementation of ICollection.SyncRoot
                 }
             }
 

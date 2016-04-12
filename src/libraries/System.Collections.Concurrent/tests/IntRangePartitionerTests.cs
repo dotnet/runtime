@@ -379,7 +379,7 @@ namespace System.Collections.Concurrent.Tests
         }
 
         /// <summary>
-        /// Helper function to validate the the range size of the partitioners match what the user specified 
+        /// Helper function to validate the range size of the partitioners match what the user specified 
         /// (desiredRangeSize).
         /// </summary>
         /// <param name="desiredRangeSize"></param>

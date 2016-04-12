@@ -11,7 +11,7 @@ namespace System.Security.Cryptography
 {
     public class CryptoStream : Stream, IDisposable
     {
-        // Member veriables
+        // Member variables
         private readonly Stream _stream;
         private readonly ICryptoTransform _transform;
         private readonly CryptoStreamMode _transformMode;

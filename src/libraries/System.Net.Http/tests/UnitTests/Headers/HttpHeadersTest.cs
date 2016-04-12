@@ -321,7 +321,7 @@ namespace System.Net.Http.Tests
             MockHeaders headers = new MockHeaders();
 
             // The header parser rejects both of the following values. Both values contain new line chars. According
-            // to the RFC, LWS supports newlines followed by whitespaces. I.e. the first value gets rejected by the
+            // to the RFC, LWS supports newlines followed by whitespace. I.e. the first value gets rejected by the
             // parser, but added to the list of invalid values.
             headers.TryAddWithoutValidation(knownHeader, invalidHeaderValue + "\r\n other: value"); // OK, LWS is allowed
             Assert.Equal(1, headers.Count());
@@ -329,7 +329,7 @@ namespace System.Net.Http.Tests
             Assert.Equal(invalidHeaderValue + "\r\n other: value", headers.First().Value.First());
             Assert.Equal(1, headers.Parser.TryParseValueCallCount);
 
-            // This value is considered invalid (newline char followed by non-whitepace). However, since
+            // This value is considered invalid (newline char followed by non-whitespace). However, since
             // TryAddWithoutValidation() only causes the header value to be analyzed when it gets actually accessed, no
             // exception is thrown. Instead the value is discarded and a warning is logged.
             headers.Clear();

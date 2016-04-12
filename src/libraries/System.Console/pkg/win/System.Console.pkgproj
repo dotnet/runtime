@@ -8,8 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\System.Console.builds" >
-      <AdditionalProperties>FilterToOSGroup=Windows_NT</AdditionalProperties>
+    <ProjectReference Include="..\..\src\System.Console.csproj" >
+      <OSGroup>Windows_NT</OSGroup>
     </ProjectReference>
     <ExternalOnTargetFramework Include="net" />
   </ItemGroup>

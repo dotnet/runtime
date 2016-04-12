@@ -2,97 +2,31 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Text.Tests
 {
     public class UTF7EncodingGetString
     {
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
 
-        // PosTest1: start index is zero and count of bytes decoded equals whole length of bytes array
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> GetString_TestData()
         {
-            Byte[] bytes = new Byte[] {
-                             85,  84,  70,  56,  32,  69, 110,
-                             99, 111, 100, 105, 110, 103,  32,
-                             69, 120,  97, 109, 112, 108, 101};
-            UTF7Encoding utf7 = new UTF7Encoding();
-            string str = utf7.GetString(bytes, 0, bytes.Length);
+            byte[] bytes = new byte[] { 85, 84, 70, 56, 32, 69, 110, 99, 111, 100, 105, 110, 103, 32, 69, 120, 97, 109, 112, 108, 101 };
+            string expected = "UTF8 Encoding Example";
+            yield return new object[] { bytes, 0, bytes.Length, expected };
+
+            int randomIndex = s_randomDataGenerator.GetInt32(-55) % bytes.Length;
+            int randomCount = s_randomDataGenerator.GetInt32(-55) % (bytes.Length - randomIndex) + 1;
+            yield return new object[] { bytes, randomIndex, randomCount, expected.Substring(randomIndex, randomCount) };
         }
 
-        // PosTest2: start index and count of bytes decoded are both random valid value
-        [Fact]
-        public void PosTest2()
+        [Theory]
+        [MemberData(nameof(GetString_TestData))]
+        public void GetString(byte[] bytes, int index, int count, string expected)
         {
-            int startIndex = 0;
-            int count = 0;
-            Byte[] bytes = new Byte[] {
-                             85,  84,  70,  56,  32,  69, 110,
-                             99, 111, 100, 105, 110, 103,  32,
-                             69, 120,  97, 109, 112, 108, 101};
-            startIndex = _generator.GetInt32(-55) % bytes.Length;
-            count = _generator.GetInt32(-55) % (bytes.Length - startIndex) + 1;
-            UTF7Encoding utf7 = new UTF7Encoding();
-            string str = utf7.GetString(bytes, startIndex, count);
-        }
-
-        // NegTest1: ArgumentNullException is not thrown when bytes is a null reference
-        [Fact]
-        public void NegTest1()
-        {
-            Byte[] bytes = null;
-            UTF7Encoding utf7 = new UTF7Encoding();
-            Assert.Throws<ArgumentNullException>(() =>
-            {
-                string str = utf7.GetString(bytes, 0, 2);
-            });
-        }
-
-        // NegTest2: ArgumentOutOfRangeException is not thrown when index is less than zero.
-        [Fact]
-        public void NegTest2()
-        {
-            Byte[] bytes = new Byte[] {
-                             85,  84,  70,  56,  32,  69, 110,
-                             99, 111, 100, 105, 110, 103,  32,
-                             69, 120,  97, 109, 112, 108, 101};
-            UTF7Encoding utf7 = new UTF7Encoding();
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                string str = utf7.GetString(bytes, -1, bytes.Length);
-            });
-        }
-
-        // NegTest3: ArgumentOutOfRangeException is not thrown when count is less than zero
-        [Fact]
-        public void NegTest3()
-        {
-            Byte[] bytes = new Byte[] {
-                             85,  84,  70,  56,  32,  69, 110,
-                             99, 111, 100, 105, 110, 103,  32,
-                             69, 120,  97, 109, 112, 108, 101};
-            UTF7Encoding utf7 = new UTF7Encoding();
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                string str = utf7.GetString(bytes, 0, -1);
-            });
-        }
-
-        // NegTest4: ArgumentOutOfRangeException is not thrown when index and count do not denote a valid range in bytes.
-        [Fact]
-        public void NegTest4()
-        {
-            Byte[] bytes = new Byte[] {
-                             85,  84,  70,  56,  32,  69, 110,
-                             99, 111, 100, 105, 110, 103,  32,
-                             69, 120,  97, 109, 112, 108, 101};
-            UTF7Encoding utf7 = new UTF7Encoding();
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                string str = utf7.GetString(bytes, 1, bytes.Length);
-            });
+            EncodingHelpers.GetString(new UTF7Encoding(), bytes, index, count, expected);
         }
     }
 }

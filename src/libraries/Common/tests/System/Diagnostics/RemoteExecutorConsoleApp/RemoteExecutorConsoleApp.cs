@@ -5,8 +5,6 @@
 using System;
 using System.Reflection;
 
-[assembly: System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-
 namespace RemoteExecutorConsoleApp
 {
     /// <summary>
@@ -41,7 +39,7 @@ namespace RemoteExecutorConsoleApp
             {
                 a = Assembly.Load(new AssemblyName(assemblyName));
                 t = a.GetType(typeName);
-                mi = t.GetMethod(methodName);
+                mi = t.GetTypeInfo().GetDeclaredMethod(methodName);
                 if (!mi.IsStatic)
                 {
                     instance = Activator.CreateInstance(t);

@@ -33,7 +33,7 @@ using System.Globalization;
 //
 // Regarding Normalization:
 //  Forms KC & KD are precluded because of things like halfwidth Katakana that has compatibility mappings
-//  Form D is precluded because of 0x00a8, which changes to space + dierises.
+//  Form D is precluded because of 0x00a8, which changes to space + dieresis.
 //
 // I think that IsAlwaysNormalized should probably return true for form C (but not certain)
 //

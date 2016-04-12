@@ -8,6 +8,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>BaseLibManaged</AssemblyName>
     <RootNamespace>WebData.BaseLib</RootNamespace>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.0</NuGetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
   </PropertyGroup>

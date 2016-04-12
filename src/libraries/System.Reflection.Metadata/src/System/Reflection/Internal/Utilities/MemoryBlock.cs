@@ -578,7 +578,7 @@ namespace System.Reflection.Internal
 
         /// <summary>
         /// In a table that specifies children via a list field (e.g. TypeDef.FieldList, TypeDef.MethodList), 
-        /// seaches for the parent given a reference to a child.
+        /// searches for the parent given a reference to a child.
         /// </summary>
         /// <returns>Returns row number [0..RowCount).</returns>
         internal int BinarySearchForSlot(
@@ -636,7 +636,7 @@ namespace System.Reflection.Internal
         }
 
         /// <summary>
-        /// In a table ordered by a column containing entity references seaches for a row with the specified reference.
+        /// In a table ordered by a column containing entity references searches for a row with the specified reference.
         /// </summary>
         /// <returns>Returns row number [0..RowCount) or -1 if not found.</returns>
         internal int BinarySearchReference(

@@ -12,7 +12,6 @@ def osGroupMap = ['Ubuntu':'Linux',
                   'Debian8.2':'Linux',
                   'OSX':'OSX',
                   'Windows_NT':'Windows_NT',
-                  'FreeBSD':'FreeBSD',
                   'CentOS7.1': 'Linux',
                   'OpenSUSE13.2': 'Linux',
                   'RHEL7.2': 'Linux']
@@ -21,7 +20,6 @@ def targetNugetRuntimeMap = ['OSX' : 'osx.10.10-x64',
                              'Ubuntu' : 'ubuntu.14.04-x64',
                              'Ubuntu15.10' : 'ubuntu.14.04-x64',
                              'Debian8.2' : 'ubuntu.14.04-x64',
-                             'FreeBSD' : 'ubuntu.14.04-x64',
                              'CentOS7.1' : 'centos.7-x64',
                              'OpenSUSE13.2' : 'ubuntu.14.04-x64',
                              'RHEL7.2': 'rhel.7-x64']
@@ -60,31 +58,46 @@ def static getJobName(def name, def branchName) {
 // **************************
 
 branchList.each { branchName ->
-    def isPR = (branchName == 'pr') 
-    def newJob = job(getJobName(Utilities.getFullJobName(project, 'code_coverage_windows', isPR), branchName)) {
-        steps {
-            batchFile('call "C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\Common7\\Tools\\VsDevCmd.bat" && build.cmd /p:Coverage=true')
-        }
-    }
-    
+    ['local', 'nonlocal'].each { localType ->
+		def isPR = (branchName == 'pr') 
+		def isLocal = (localType == 'local')
 
-    // Set up standard options
-    Utilities.standardJobSetup(newJob, project, isPR, getFullBranchName(branchName))
-    // Set the machine affinity to windows machines
-    Utilities.setMachineAffinity(newJob, 'Windows_NT', 'latest-or-auto')
-    // Publish reports
-    Utilities.addHtmlPublisher(newJob, 'bin/tests/coverage', 'Code Coverage Report', 'index.htm')
-    // Archive results.
-    Utilities.addArchival(newJob, '**/coverage/*,msbuild.log')
-    // Set triggers
-    if (isPR) {
-        // Set PR trigger
-        Utilities.addGithubPRTrigger(newJob, 'Code Coverage Windows Debug', '(?i).*test\\W+code\\W+coverage.*')
-    }
-    else {
-        // Set a periodic trigger
-        Utilities.addPeriodicTrigger(newJob, '@daily')
-    }
+		def newJobName = 'code_coverage_windows'
+		def batchCommand = 'call "C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\Common7\\Tools\\VsDevCmd.bat" && build.cmd /p:Coverage=true /p:Outerloop=true'
+		if (isLocal) {
+			newJobName = "${newJobName}_local"
+			batchCommand = "${batchCommand} /p:TestWithLocalLibraries=true"
+		}
+		def newJob = job(getJobName(Utilities.getFullJobName(project, newJobName, isPR), branchName)) {
+			steps {
+				batchFile(batchCommand)
+			}
+		}
+
+		// Set up standard options
+		Utilities.standardJobSetup(newJob, project, isPR, getFullBranchName(branchName))
+		// Set the machine affinity to windows machines
+		Utilities.setMachineAffinity(newJob, 'Windows_NT', 'latest-or-auto')
+		// Publish reports
+		Utilities.addHtmlPublisher(newJob, 'bin/tests/coverage', 'Code Coverage Report', 'index.htm')
+		// Archive results.
+		Utilities.addArchival(newJob, '**/coverage/*,msbuild.log')
+		// Timeout. TestWithLocalLibraries=true runs take longer under code coverage, so we set the timeout to be longer.
+		if (isLocal) {
+			Utilities.setJobTimeout(newJob, 180)
+		}
+		// Set triggers
+		if (isPR) {
+			if (!isLocal) {
+				// Set PR trigger
+				Utilities.addGithubPRTrigger(newJob, 'Code Coverage Windows Debug', '(?i).*test\\W+code\\W+coverage.*')
+			}
+		}
+		else {
+			// Set a periodic trigger
+			Utilities.addPeriodicTrigger(newJob, '@daily')
+		}
+	}
 }
 
 // **************************
@@ -127,7 +140,7 @@ branchList.each { branchName ->
 
 			def newBuildJob = job(getJobName(Utilities.getFullJobName(project, newBuildJobName, isPR), branchName)) {
         		steps {
-            		batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd /p:ConfigurationGroup=${configurationGroup} /p:SkipTests=true")
+            		batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd /p:OSGroup=Windows_NT /p:ConfigurationGroup=${configurationGroup} /p:SkipTests=true")
             		// Package up the results.
             		batchFile("C:\\Packer\\Packer.exe .\\bin\\build.pack .\\bin")
         		}
@@ -157,6 +170,8 @@ branchList.each { branchName ->
 	                batchFile("PowerShell -command \"\"C:\\Packer\\unpacker.ps1 .\\bin\\build.pack .\\bin > .\\bin\\unpacker.log\"\"")
 	                // Run the tests
 	                batchFile("run-test.cmd .\\bin\\tests\\Windows_NT.AnyCPU.${configurationGroup}")
+                    // Run the tests
+                    batchFile("run-test.cmd .\\bin\\tests\\AnyOS.AnyCPU.${configurationGroup}")
             	}
 
             	parameters {
@@ -180,8 +195,8 @@ branchList.each { branchName ->
                     """)
             }
 
-            // Set the machine affinity.
-            Utilities.setMachineAffinity(newJob, os)
+            // Set the machine affinity to windows_nt, since git fails on Nano.
+            Utilities.setMachineAffinity(newJob, 'Windows_NT', 'latest-or-auto')
             // Set up standard options.
             Utilities.standardJobSetup(newJob, project, isPR, getFullBranchName(branchName))
 
@@ -265,7 +280,7 @@ branchList.each { branchName ->
                     // TODO: Add a new job or allow for copying coreclr from debug build
                     
                     // CoreCLR
-                    copyArtifacts("dotnet_coreclr/release_${os.toLowerCase()}") {
+                    copyArtifacts("dotnet_coreclr/master/release_${os.toLowerCase()}") {
                         excludePatterns('**/testResults.xml', '**/*.ni.dll')
                         buildSelector {
                             latestSuccessful(true)
@@ -273,7 +288,7 @@ branchList.each { branchName ->
                     }
                     
                     // MSCorlib
-                    copyArtifacts("dotnet_coreclr/release_windows_nt") {
+                    copyArtifacts("dotnet_coreclr/master/release_windows_nt") {
                         includePatterns("bin/Product/${osGroup}*/**")
                         excludePatterns('**/testResults.xml', '**/*.ni.dll')
                         buildSelector {
@@ -304,7 +319,7 @@ branchList.each { branchName ->
                     sudo ./run-test.sh \\
                         --configurationGroup ${configurationGroup} \\
                         --os ${osGroup} \\
-                        --corefx-tests \${WORKSPACE}/bin/tests/${osGroup}.AnyCPU.${configurationGroup} \\
+                        --corefx-tests \${WORKSPACE}/bin/tests/ \\
                         --coreclr-bins \${WORKSPACE}/bin/Product/${osGroup}.x64.Release/ \\
                         --mscorlib-bins \${WORKSPACE}/bin/Product/${osGroup}.x64.Release/ \\
                         --outerloop
@@ -383,13 +398,13 @@ branchList.each { branchName ->
             def newJob = job(getJobName(Utilities.getFullJobName(project, newJobName, isPR), branchName)) {
                 steps {
                     if (os == 'Windows 10' || os == 'Windows 7' || os == 'Windows_NT') {
-                        batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && Build.cmd /p:ConfigurationGroup=${configurationGroup} /p:WithCategories=\"InnerLoop;OuterLoop\" /p:TestWithLocalLibraries=true")
+                        batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && Build.cmd /p:ConfigurationGroup=${configurationGroup} /p:Outerloop=true /p:TestWithLocalLibraries=true")
                     }
                     else if (os == 'OSX') {
-                        shell("HOME=\$WORKSPACE/tempHome ./build.sh /p:ConfigurationGroup=${configurationGroup} /p:WithCategories=\"\\\"InnerLoop;OuterLoop\\\"\" /p:TestWithLocalLibraries=true")
+                        shell("HOME=\$WORKSPACE/tempHome ./build.sh /p:ConfigurationGroup=${configurationGroup} /p:Outerloop=true /p:TestWithLocalLibraries=true")
                     }
                     else {
-                        shell("sudo HOME=\$WORKSPACE/tempHome ./build.sh /p:ConfigurationGroup=${configurationGroup} /p:WithCategories=\"\\\"InnerLoop;OuterLoop\\\"\" /p:TestWithLocalLibraries=true")    
+                        shell("sudo HOME=\$WORKSPACE/tempHome ./build.sh /p:ConfigurationGroup=${configurationGroup} /p:Outerloop=true /p:TestWithLocalLibraries=true")    
                     }
                 }
             }
@@ -450,6 +465,8 @@ branchList.each { branchName ->
         
         // Set a periodic trigger
         Utilities.addPeriodicTrigger(newJob, '@daily')
+
+        Utilities.addPrivatePermissions(newJob)
     }
 }
 
@@ -458,7 +475,7 @@ branchList.each { branchName ->
 // and then a build for the test of corefx on the target platform.  Then we link them with a build
 // flow job.
 
-def innerLoopNonWindowsOSs = ['Ubuntu', 'Ubuntu15.10', 'Debian8.2', 'OSX', 'FreeBSD', 'CentOS7.1', 'OpenSUSE13.2', 'RHEL7.2']
+def innerLoopNonWindowsOSs = ['Ubuntu', 'Ubuntu15.10', 'Debian8.2', 'OSX', 'CentOS7.1', 'OpenSUSE13.2', 'RHEL7.2']
 branchList.each { branchName ->
     ['Debug', 'Release'].each { configurationGroup ->
         innerLoopNonWindowsOSs.each { os ->
@@ -528,7 +545,7 @@ branchList.each { branchName ->
                     // TODO: Add a new job or allow for copying coreclr from debug build
                     
                     // CoreCLR
-                    copyArtifacts("dotnet_coreclr/release_${os.toLowerCase()}") {
+                    copyArtifacts("dotnet_coreclr/master/release_${os.toLowerCase()}") {
                         excludePatterns('**/testResults.xml', '**/*.ni.dll')
                         buildSelector {
                             latestSuccessful(true)
@@ -536,7 +553,7 @@ branchList.each { branchName ->
                     }
                     
                     // MSCorlib
-                    copyArtifacts("dotnet_coreclr/release_windows_nt") {
+                    copyArtifacts("dotnet_coreclr/master/release_windows_nt") {
                         includePatterns("bin/Product/${osGroup}*/**")
                         excludePatterns('**/testResults.xml', '**/*.ni.dll')
                         buildSelector {
@@ -567,7 +584,7 @@ branchList.each { branchName ->
                     ./run-test.sh \\
                         --configurationGroup ${configurationGroup} \\
                         --os ${osGroup} \\
-                        --corefx-tests \${WORKSPACE}/bin/tests/${osGroup}.AnyCPU.${configurationGroup} \\
+                        --corefx-tests \${WORKSPACE}/bin/tests/ \\
                         --coreclr-bins \${WORKSPACE}/bin/Product/${osGroup}.x64.Release/ \\
                         --mscorlib-bins \${WORKSPACE}/bin/Product/${osGroup}.x64.Release/ \\
                         ${serverGCString}

@@ -822,6 +822,11 @@ namespace System.Linq.Expressions.Interpreter
             Emit(new CastToEnumInstruction(toType));
         }
 
+        public void EmitCastReferenceToEnum(Type toType)
+        {
+            Emit(new CastReferenceToEnumInstruction(toType));
+        }
+
         #endregion
 
         #region Boolean Operators
@@ -1115,6 +1120,16 @@ namespace System.Linq.Expressions.Interpreter
         public void EmitLeaveFault(bool hasValue)
         {
             Emit(hasValue ? LeaveFaultInstruction.NonVoid : LeaveFaultInstruction.Void);
+        }
+
+        public void EmitEnterExceptionFilter()
+        {
+            Emit(EnterExceptionFilterInstruction.Instance);
+        }
+
+        public void EmitLeaveExceptionFilter()
+        {
+            Emit(LeaveExceptionFilterInstruction.Instance);
         }
 
         public void EmitEnterExceptionHandlerNonVoid()

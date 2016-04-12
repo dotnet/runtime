@@ -3,12 +3,6 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="System.Security.Cryptography.Algorithms.pkgproj"/>
-    <Project Include="win\System.Security.Cryptography.Algorithms.pkgproj">
-      <OSGroup>Windows_NT</OSGroup>
-    </Project>
-    <Project Include="unix\System.Security.Cryptography.Algorithms.pkgproj">
-      <OSGroup>Linux</OSGroup>
-    </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>

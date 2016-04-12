@@ -275,11 +275,11 @@ namespace System.Net.Primitives.Functional.Tests
             cc.Add(c3);
             Assert.Equal(c3.Port, cc.GetCookies(uri)[0].Port);
 
-            // Adding an older variant shold be rejected
+            // Adding an older variant should be rejected
             cc.Add(c4);
             Assert.Equal(c3.Port, cc.GetCookies(uri)[0].Port);
 
-            // Ensure that although we added 3 cookies, only 1 was actually added (the others were overriden or rejected)
+            // Ensure that although we added 3 cookies, only 1 was actually added (the others were overridden or rejected)
             Assert.Equal(1, cc.Count);
         }
 
@@ -311,13 +311,13 @@ namespace System.Net.Primitives.Functional.Tests
             yield return new[] { new Cookie(DefaultName, DefaultValue, DefaultPath, "П.com") }; // Invalid domain
 
             yield return new[] { new Cookie(DefaultName, DefaultValue, DefaultPath, "domain") }; // Plain cookie, explicit domain without version doesn't start with '.'
-            yield return new[] { new Cookie(DefaultName, DefaultValue, DefaultPath, "domain") { Version = 100 } }; // Rfc2965 cookie, explcit domain with version doesn't start with '.'
+            yield return new[] { new Cookie(DefaultName, DefaultValue, DefaultPath, "domain") { Version = 100 } }; // Rfc2965 cookie, explicit domain with version doesn't start with '.'
 
             yield return new[] { new Cookie(DefaultName, DefaultValue, DefaultPath, DefaultDomain) { Comment = ";" } }; // Comment contains reserved characters
         }
 
         [Theory]
-        [MemberData("InvalidCookies")]
+        [MemberData(nameof(InvalidCookies))]
         public static void Add_VerificationFailedCookie_Throws(Cookie c)
         {
             CookieContainer cc = new CookieContainer();
@@ -372,7 +372,7 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Theory]
-        [MemberData("GetCookiesData")]
+        [MemberData(nameof(GetCookiesData))]
         public static void GetCookies_Success(Uri uri, Cookie[] expected)
         {
             CookieContainer cc = CreateCount11Container();
@@ -446,7 +446,7 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Theory]
-        [MemberData("GetCookieHeaderData")]
+        [MemberData(nameof(GetCookieHeaderData))]
         public static void GetCookieHeader_Success(Uri uri, string expected)
         {
             CookieContainer cc = CreateCount11Container();
@@ -577,7 +577,7 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Theory]
-        [MemberData("SetCookiesData")]
+        [MemberData(nameof(SetCookiesData))]
         public static void SetCookies_Success(Uri uri, string cookieHeader, Cookie[] expected)
         {
             CookieContainer cc = CreateCount11Container();
@@ -603,7 +603,7 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Theory]
-        [MemberData("SetCookiesInvalidData")]
+        [MemberData(nameof(SetCookiesInvalidData))]
         public static void SetCookies_InvalidData_Throws(Uri uri, string cookieHeader)
         {
             CookieContainer cc = new CookieContainer();

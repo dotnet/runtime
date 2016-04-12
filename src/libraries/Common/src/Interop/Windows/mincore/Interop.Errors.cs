@@ -68,6 +68,7 @@ internal partial class Interop
             internal const int ERROR_TRUSTED_RELATIONSHIP_FAILURE = 0x6FD;
             internal const int ERROR_RESOURCE_LANG_NOT_FOUND = 0x717;
             internal const int EFail = unchecked((int)0x80004005);
+            internal const int E_FILENOTFOUND = unchecked((int)0x80070002);
         }
     }
 }

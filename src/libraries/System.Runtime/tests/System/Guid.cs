@@ -289,10 +289,19 @@ public static class GuidTests
     public static IEnumerable<object[]> GuidStrings_Valid_TestData()
     {
         yield return new object[] { "a8a110d5fc4943c5bf46802db8f843ff", "N", s_testGuid };
+        yield return new object[] { "  \r \n \t a8a110d5fc4943c5bf46802db8f843ff   \r \n \t  ", "N", s_testGuid };
+
         yield return new object[] { "a8a110d5-fc49-43c5-bf46-802db8f843ff", "D", s_testGuid };
+        yield return new object[] { "  \r \n \t a8a110d5-fc49-43c5-bf46-802db8f843ff   \r \n \t  ", "D", s_testGuid };
+
         yield return new object[] { "{a8a110d5-fc49-43c5-bf46-802db8f843ff}", "B", s_testGuid };
+        yield return new object[] { "  \r \n \t {a8a110d5-fc49-43c5-bf46-802db8f843ff}   \r \n \t  ", "B", s_testGuid };
+
         yield return new object[] { "(a8a110d5-fc49-43c5-bf46-802db8f843ff)", "P", s_testGuid };
+        yield return new object[] { "  \r \n \t (a8a110d5-fc49-43c5-bf46-802db8f843ff)   \r \n \t  ", "P", s_testGuid };
+
         yield return new object[] { "{0xa8a110d5,0xfc49,0x43c5,{0xbf,0x46,0x80,0x2d,0xb8,0xf8,0x43,0xff}}", "X", s_testGuid };
+        yield return new object[] { " { 0 x a 8\t a 1 1 0 d 5 , 0 x f c 4\r 9 , 0 x 4 3 c 5 , { 0 x b f , 0 x 4 6 , 0 x 8 0 , 0\n x 2 d , 0 x b 8 , 0 x f 8 , 0 x 4 3 , 0 x f f } }   ", "X", s_testGuid };
     }
 
     public static IEnumerable<object[]> GuidStrings_Invalid_TestData()
@@ -305,6 +314,11 @@ public static class GuidTests
         yield return new object[] { "ddddddddddddddddddddddddddddddd", typeof(FormatException) }; // Length < 32
         yield return new object[] { "ddddddddddddddddddddddddddddddddd", typeof(FormatException) }; // Length > 32
         yield return new object[] { "{dddddddddddddddddddddddddddddddd}", typeof(FormatException) }; // Surrounded by braces
+
+        // Can't contain inner whitespace
+        yield return new object[] { "d d d d d  dd d d d d d dd d d d dd d d dd d dd d d d d d d", typeof(FormatException) };
+        yield return new object[] { "{d d d d d  dd d d d d d dd d d d dd d d dd d dd d d d d d d}", typeof(FormatException) };
+        yield return new object[] { "(d d d d d  dd d d d d d dd d d d dd d d dd d dd d d d d d d)", typeof(FormatException) };
 
         yield return new object[] { "dddddddd-dddddddd-dddddddd", typeof(FormatException) }; // 8-8-8
         yield return new object[] { "dddddddd-dddddddd-dddddddd-ddddddddd", typeof(FormatException) }; // 8-8-8

@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Diagnostics;
 using System.Collections;
 
 namespace System.Security.Cryptography
@@ -16,26 +14,15 @@ namespace System.Security.Cryptography
             _current = -1;
         }
 
-        public Oid Current
-        {
-            get
-            {
-                return _oids[_current];
-            }
-        }
+        public Oid Current => _oids[_current];
 
-        Object IEnumerator.Current
-        {
-            get
-            {
-                return _oids[_current];
-            }
-        }
+        object IEnumerator.Current => Current;
 
         public bool MoveNext()
         {
-            if (_current == _oids.Count - 1)
+            if (_current >= _oids.Count - 1)
                 return false;
+
             _current++;
             return true;
         }
@@ -45,7 +32,7 @@ namespace System.Security.Cryptography
             _current = -1;
         }
 
-        private OidCollection _oids;
+        private readonly OidCollection _oids;
         private int _current;
     }
 }

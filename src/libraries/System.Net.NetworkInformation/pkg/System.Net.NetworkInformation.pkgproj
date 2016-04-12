@@ -8,12 +8,9 @@
     <ProjectReference Include="..\ref\System.Net.NetworkInformation.csproj">
       <SupportedFramework>net46;netcore50;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.Net.NetworkInformation.csproj">
-      <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
-    </ProjectReference>
-    <ProjectReference Include="win\System.Net.NetworkInformation.pkgproj" />
-    <ProjectReference Include="linux\System.Net.NetworkInformation.pkgproj" />
-    <ProjectReference Include="osx\System.Net.NetworkInformation.pkgproj" />
+    <ProjectReference Include="..\src\System.Net.NetworkInformation.builds" />
+
+    <ProjectReference Include="$(NativePackagePath)\runtime.native.System\runtime.native.System.pkgproj" />
   </ItemGroup>
   <ItemGroup>
     <InboxOnTargetFramework Include="MonoAndroid10" />

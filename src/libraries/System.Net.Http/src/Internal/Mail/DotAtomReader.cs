@@ -24,7 +24,7 @@ namespace System.Net.Mail
         //  - Index must be within the bounds of the data string.
         //
         // Return value: 
-        // - The first index of of a character not valid in a dot-atom.  It is then up to the caller to 
+        // - The first index of a character not valid in a dot-atom.  It is then up to the caller to 
         //   determine if the next character is a valid delimiter.
         //   e.g. "user.name@domain.com", starting at index 19 (m) returns 9 (@).
         //   e.g. "user.name@dom in.com", starting at index 19 (m) returns 13 (space).

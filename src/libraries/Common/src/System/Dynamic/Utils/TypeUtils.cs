@@ -66,7 +66,7 @@ namespace System.Dynamic.Utils
 
         /// <summary>
         /// We can cache references to types, as long as they aren't in
-        /// collectable assemblies. Unfortunately, we can't really distinguish
+        /// collectible assemblies. Unfortunately, we can't really distinguish
         /// between different flavors of assemblies. But, we can at least
         /// create a cache for types in mscorlib (so we get the primitives, etc).
         /// </summary>

@@ -91,7 +91,7 @@ namespace System.Text.Tests
             VerificationHelper(encoder, chars, 1, chars.Length - 1, false, chars.Length - 1, "003.4");
         }
 
-        // PosTest4: Call GetByteCount to get byte count of an ASCII character array by using unicode encoder
+        // PosTest4: Call GetByteCount to get byte count of an ASCII character array by using Unicode encoder
         [Fact]
         public void PosTest4()
         {
@@ -105,7 +105,7 @@ namespace System.Text.Tests
             VerificationHelper(encoder, chars, chars.Length - 1, 1, false, 2, "004.4");
         }
 
-        // PosTest5: Call GetByteCount to get byte count of an unicode character array by using unicode encoder
+        // PosTest5: Call GetByteCount to get byte count of an Unicode character array by using Unicode encoder
         [Fact]
         public void PosTest5()
         {
@@ -119,7 +119,7 @@ namespace System.Text.Tests
         }
         #endregion
 
-        #region Nagetive Test Cases
+        #region Negative Test Cases
         // NegTest1: ArgumentNullException should be thrown when chars is a null reference
         [Fact]
         public void NegTest1()

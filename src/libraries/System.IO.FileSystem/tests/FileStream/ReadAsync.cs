@@ -317,7 +317,7 @@ namespace System.IO.Tests
                 try
                 {
                     await readTask;
-                    // we may not have cancelled before the task completed.
+                    // we may not have canceled before the task completed.
                 }
                 catch(OperationCanceledException oce)
                 {

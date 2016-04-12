@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Threading;
 using Xunit;
 
 namespace System.Linq.Parallel.Tests
@@ -125,18 +124,30 @@ namespace System.Linq.Parallel.Tests
             FirstOrDefault_NoMatch(labeled, count, position);
         }
 
-        [Theory]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 1 }, MemberType = typeof(UnorderedSources))]
-        public static void First_OperationCanceledException_PreCanceled(Labeled<ParallelQuery<int>> labeled, int count)
+        [Fact]
+        public static void First_OperationCanceledException()
         {
-            CancellationTokenSource cs = new CancellationTokenSource();
-            cs.Cancel();
+            AssertThrows.EventuallyCanceled((source, canceler) => source.First(x => { canceler(); return false; }));
+            AssertThrows.EventuallyCanceled((source, canceler) => source.FirstOrDefault(x => { canceler(); return false; }));
+        }
 
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).First());
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).First(x => true));
+        [Fact]
+        public static void First_AggregateException_Wraps_OperationCanceledException()
+        {
+            AssertThrows.OtherTokenCanceled((source, canceler) => source.First(x => { canceler(); return false; }));
+            AssertThrows.OtherTokenCanceled((source, canceler) => source.FirstOrDefault(x => { canceler(); return false; }));
+            AssertThrows.SameTokenNotCanceled((source, canceler) => source.First(x => { canceler(); return false; }));
+            AssertThrows.SameTokenNotCanceled((source, canceler) => source.FirstOrDefault(x => { canceler(); return false; }));
+        }
 
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).FirstOrDefault());
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).FirstOrDefault(x => true));
+        [Fact]
+        public static void First_OperationCanceledException_PreCanceled()
+        {
+            AssertThrows.AlreadyCanceled(source => source.First());
+            AssertThrows.AlreadyCanceled(source => source.First(x => true));
+
+            AssertThrows.AlreadyCanceled(source => source.FirstOrDefault());
+            AssertThrows.AlreadyCanceled(source => source.FirstOrDefault(x => true));
         }
 
         [Theory]

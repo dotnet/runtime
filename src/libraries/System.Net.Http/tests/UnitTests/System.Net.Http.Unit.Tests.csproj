@@ -344,6 +344,7 @@
     <Compile Include="HttpContentTest.cs" />
     <Compile Include="HttpRuleParserTest.cs" />
     <Compile Include="MockContent.cs" />
+    <Compile Include="StreamToStreamCopyTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

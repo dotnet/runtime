@@ -12,17 +12,26 @@ namespace System.Globalization.Tests
         public static IEnumerable<object[]> ReadOnly_TestData()
         {
             yield return new object[] { DateTimeFormatInfo.InvariantInfo, true };
+            yield return new object[] { DateTimeFormatInfo.ReadOnly(new DateTimeFormatInfo()), true };
             yield return new object[] { new DateTimeFormatInfo(), false };
             yield return new object[] { new CultureInfo("en-US").DateTimeFormat, false };
         }
 
         [Theory]
         [MemberData(nameof(ReadOnly_TestData))]
-        public void ReadOnly(DateTimeFormatInfo format, bool expected)
+        public void ReadOnly(DateTimeFormatInfo format, bool originalFormatIsReadOnly)
         {
-            Assert.Equal(expected, format.IsReadOnly);
+            Assert.Equal(originalFormatIsReadOnly, format.IsReadOnly);
 
             DateTimeFormatInfo readOnlyFormat = DateTimeFormatInfo.ReadOnly(format);
+            if (originalFormatIsReadOnly) 
+            {
+            	Assert.Same(format, readOnlyFormat);
+            }
+            else 
+            {
+            	Assert.NotSame(format, readOnlyFormat);
+            }
             Assert.True(readOnlyFormat.IsReadOnly);
         }
 

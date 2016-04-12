@@ -23,7 +23,7 @@ namespace System.Text.Tests
         }
         #endregion
 
-        #region Nagetive Test Cases
+        #region Negative Test Cases
         // NegTest1: ArgumentNullException is not thrown.
         [Fact]
         public void NegTest1()

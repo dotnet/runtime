@@ -5,7 +5,7 @@
 namespace System.Xml
 {
     //
-    // NamespaceHandling speficies how should the XmlWriter handle namespaces.
+    // NamespaceHandling specifies how should the XmlWriter handle namespaces.
     //  
 
     [Flags]

@@ -289,7 +289,7 @@ namespace System.Linq.Tests
         public void ForcedToEnumeratorDoesntEnumerate()
         {
             var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).Union(Enumerable.Range(0, 3));
-            // Don't insist on this behaviour, but check its correct if it happens
+            // Don't insist on this behaviour, but check it's correct if it happens
             var en = iterator as IEnumerator<int>;
             Assert.False(en != null && en.MoveNext());
         }
@@ -298,7 +298,7 @@ namespace System.Linq.Tests
         public void ForcedToEnumeratorDoesntEnumerateMultipleUnions()
         {
             var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).Union(Enumerable.Range(0, 3)).Union(Enumerable.Range(2, 4)).Union(new[] { 9, 2, 4 });
-            // Don't insist on this behaviour, but check its correct if it happens
+            // Don't insist on this behaviour, but check it's correct if it happens
             var en = iterator as IEnumerator<int>;
             Assert.False(en != null && en.MoveNext());
         }

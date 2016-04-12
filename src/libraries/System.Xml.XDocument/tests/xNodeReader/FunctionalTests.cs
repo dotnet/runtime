@@ -879,7 +879,7 @@ namespace CoreXml.Test.XLinq
                     this.AddChild(new TestVariation(v) { Attribute = new VariationAttribute("Simple positive test") { Params = new object[] { "NNS" }, Priority = 0 } });
                     this.AddChild(new TestVariation(v) { Attribute = new VariationAttribute("Simple positive test") { Params = new object[] { "DNS" }, Priority = 0 } });
                     this.AddChild(new TestVariation(v) { Attribute = new VariationAttribute("Simple positive test") { Params = new object[] { "NS" }, Priority = 0 } });
-                    this.AddChild(new TestVariation(v2) { Attribute = new VariationAttribute("Read on a deep tree atleast more than 4K boundary") { Priority = 2 } });
+                    this.AddChild(new TestVariation(v2) { Attribute = new VariationAttribute("Read on a deep tree at least more than 4K boundary") { Priority = 2 } });
                     this.AddChild(new TestVariation(v3) { Attribute = new VariationAttribute("Read on descendant with same names") { Params = new object[] { "DNS" }, Priority = 1 } });
                     this.AddChild(new TestVariation(v3) { Attribute = new VariationAttribute("Read on descendant with same names") { Params = new object[] { "NNS" }, Priority = 1 } });
                     this.AddChild(new TestVariation(v3) { Attribute = new VariationAttribute("Read on descendant with same names") { Params = new object[] { "NS" }, Priority = 1 } });
@@ -936,7 +936,7 @@ namespace CoreXml.Test.XLinq
                     this.AddChild(new TestVariation(v) { Attribute = new VariationAttribute("Simple positive test 2") { Params = new object[] { "DNS" }, Priority = 0 } });
                     this.AddChild(new TestVariation(v) { Attribute = new VariationAttribute("Simple positive test 3") { Params = new object[] { "NS" }, Priority = 0 } });
                     this.AddChild(new TestVariation(v) { Attribute = new VariationAttribute("Simple positive test 1") { Params = new object[] { "NNS" }, Priority = 0 } });
-                    this.AddChild(new TestVariation(v2) { Attribute = new VariationAttribute("Read on a deep tree atleast more than 4K boundary") { Priority = 2 } });
+                    this.AddChild(new TestVariation(v2) { Attribute = new VariationAttribute("Read on a deep tree at least more than 4K boundary") { Priority = 2 } });
                     this.AddChild(new TestVariation(v3) { Attribute = new VariationAttribute("Read to next sibling with same names 1") { Params = new object[] { "NNS", "<root><a att='1'/><a att='2'/><a att='3'/></root>" }, Priority = 1 } });
                     this.AddChild(new TestVariation(v3) { Attribute = new VariationAttribute("Read on next sibling with same names 2") { Params = new object[] { "DNS", "<root xmlns='a'><a att='1'/><a att='2'/><a att='3'/></root>" }, Priority = 1 } });
                     this.AddChild(new TestVariation(v3) { Attribute = new VariationAttribute("Read on next sibling with same names 3") { Params = new object[] { "NS", "<root xmlns:a='a'><a:a att='1'/><a:a att='2'/><a:a att='3'/></root>" }, Priority = 1 } });

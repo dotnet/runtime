@@ -24,7 +24,7 @@ namespace System.Data.SqlClient
             // env change.
             _failoverPartner = connectionOptions.FailoverPartner;
 
-            if (ADP.IsEmpty(_failoverPartner))
+            if (string.IsNullOrEmpty(_failoverPartner))
             {
                 _failoverPartner = null;
             }
@@ -77,7 +77,7 @@ namespace System.Data.SqlClient
             // primary data source, not the failover partner.
             if (!_useFailoverPartner && _failoverPartner != actualFailoverPartner)
             {
-                // NOTE: we optimisitically generate the permission set to keep 
+                // NOTE: we optimistically generate the permission set to keep 
                 //       lock short, but we only do this when we get a new
                 //       failover partner.
 

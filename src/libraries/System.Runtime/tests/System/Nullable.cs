@@ -3,16 +3,16 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-
+using System.Collections.Generic;
 using Xunit;
 
-public static unsafe class NullableTests
+public static class NullableTests
 {
     [Fact]
     public static void TestBasics()
     {
         // Nullable and Nullable<T> are mostly verbatim ports so we don't test much here.
-        Nullable<int> n = default(Nullable<int>);
+        int? n = default(int?);
         Assert.False(n.HasValue);
         Assert.Throws<InvalidOperationException>(() => n.Value);
         Assert.Throws<InvalidOperationException>(() => (int)n);
@@ -23,7 +23,7 @@ public static unsafe class NullableTests
         Assert.Equal(default(int), n.GetValueOrDefault());
         Assert.Equal(999, n.GetValueOrDefault(999));
 
-        n = new Nullable<int>(42);
+        n = new int?(42);
         Assert.True(n.HasValue);
         Assert.Equal(42, n.Value);
         Assert.Equal(42, (int)n);
@@ -43,84 +43,49 @@ public static unsafe class NullableTests
     [Fact]
     public static void TestBoxing()
     {
-        Nullable<int> n = new Nullable<int>(42);
-        Foo(n);
+        int? n = new int?(42);
+        Unbox(n);
     }
 
-    private static void Foo(object o)
+    private static void Unbox(object o)
     {
         Type t = o.GetType();
-        Assert.IsNotType<Nullable<int>>(t);
+        Assert.IsNotType<int?>(t);
+        Assert.Equal(typeof(int), t);
+    }
 
-        Assert.Equal(t, typeof(int));
+    [Theory]
+    [InlineData(typeof(int?), typeof(int))]
+    [InlineData(typeof(int), null)]
+    [InlineData(typeof(G<int>), null)]
+    public static void TestGetUnderlyingType(Type nullableType, Type expected)
+    {
+        Assert.Equal(expected, Nullable.GetUnderlyingType(nullableType));
     }
 
     [Fact]
-    public static void TestGetUnderlyingType()
+    public static void TestGetUnderlyingType_NullType_ThrowsArgumentNullException()
     {
-        Type t;
-        Type u;
-
-        t = typeof(int);
-        u = Nullable.GetUnderlyingType(t);
-        Assert.Null(u);
-
-        t = typeof(Nullable<int>);
-        u = Nullable.GetUnderlyingType(t);
-        Assert.Equal(u, typeof(int));
-
-        t = typeof(G<int>);
-        u = Nullable.GetUnderlyingType(t);
-        Assert.Null(u);
-
-        return;
+        Assert.Throws<ArgumentNullException>("nullableType", () => Nullable.GetUnderlyingType((Type)null));
     }
 
-    [Fact]
-    public static void TestCompareAndEquals()
+    public static IEnumerable<object[]> CompareEquals_TestData()
     {
-        Nullable<int> n1;
-        Nullable<int> n2;
-        bool b;
-        int i;
-
-        n1 = default(Nullable<int>);
-        n2 = default(Nullable<int>);
-        b = Nullable.Equals<int>(n1, n2);
-        Assert.True(b);
-        i = Nullable.Compare<int>(n1, n2);
-        Assert.Equal(i, 0);
-
-        n1 = new Nullable<int>(7);
-        n2 = default(Nullable<int>);
-        b = Nullable.Equals<int>(n1, n2);
-        Assert.False(b);
-        i = Nullable.Compare<int>(n1, n2);
-        Assert.Equal(i, 1);
-
-        n1 = default(Nullable<int>);
-        n2 = new Nullable<int>(7);
-        b = Nullable.Equals<int>(n1, n2);
-        Assert.False(b);
-        i = Nullable.Compare<int>(n1, n2);
-        Assert.Equal(i, -1);
-
-        n1 = new Nullable<int>(5);
-        n2 = new Nullable<int>(7);
-        b = Nullable.Equals<int>(n1, n2);
-        Assert.False(b);
-        i = Nullable.Compare<int>(n1, n2);
-        Assert.Equal(i, -1);
-
-        n1 = new Nullable<int>(7);
-        n2 = new Nullable<int>(7);
-        b = Nullable.Equals<int>(n1, n2);
-        Assert.True(b);
-        i = Nullable.Compare<int>(n1, n2);
-        Assert.Equal(i, 0);
+        yield return new object[] { default(int?), default(int?), 0 };
+        yield return new object[] { new int?(7), default(int?), 1 };
+        yield return new object[] { default(int?), new int?(7), -1 };
+        yield return new object[] { new int?(7), new int?(7), 0 };
+        yield return new object[] { new int?(7), new int?(5), 1 };
+        yield return new object[] { new int?(5), new int?(7), -1 };
     }
 
-    private class G<T>
+    [Theory]
+    [MemberData(nameof(CompareEquals_TestData))]
+    public static void TestCompare_Equals(int? n1, int? n2, int expected)
     {
+        Assert.Equal(expected == 0, Nullable.Equals(n1, n2));
+        Assert.Equal(expected, Nullable.Compare(n1, n2));
     }
+
+    private class G<T> { }
 }

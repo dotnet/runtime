@@ -105,7 +105,7 @@ namespace System.Numerics.Tests
             yield return new object[] { RandomNegativeDouble(), RandomPositiveDouble(), RandomNegativeDouble(), RandomPositiveDouble() };
             // Second quadrant, third quadrant
             yield return new object[] { RandomNegativeDouble(), RandomPositiveDouble(), RandomNegativeDouble(), RandomNegativeDouble() };
-            // Second quadrant, fouth quadrant
+            // Second quadrant, fourth quadrant
             yield return new object[] { RandomNegativeDouble(), RandomPositiveDouble(), RandomPositiveDouble(), RandomNegativeDouble() };
             // Third quadrant, third quadrant
             yield return new object[] { RandomNegativeDouble(), RandomNegativeDouble(), RandomPositiveDouble(), RandomNegativeDouble() };
@@ -137,7 +137,7 @@ namespace System.Numerics.Tests
             yield return new object[] { SmallRandomNegativeDouble(), SmallRandomPositiveDouble(), SmallRandomNegativeDouble(), SmallRandomPositiveDouble() };
             // Second quadrant, third quadrant
             yield return new object[] { SmallRandomNegativeDouble(), SmallRandomPositiveDouble(), SmallRandomNegativeDouble(), SmallRandomNegativeDouble() };
-            // Second quadrant, fouth quadrant
+            // Second quadrant, fourth quadrant
             yield return new object[] { SmallRandomNegativeDouble(), SmallRandomPositiveDouble(), SmallRandomPositiveDouble(), SmallRandomNegativeDouble() };
             // Third quadrant, third quadrant
             yield return new object[] { SmallRandomNegativeDouble(), SmallRandomNegativeDouble(), SmallRandomPositiveDouble(), SmallRandomNegativeDouble() };
@@ -190,9 +190,9 @@ namespace System.Numerics.Tests
         }
 
         [Theory]
-        [MemberData("Valid_2_TestData")]
-        [MemberData("Random_2_TestData")]
-        [MemberData("Invalid_2_TestData")]
+        [MemberData(nameof(Valid_2_TestData))]
+        [MemberData(nameof(Random_2_TestData))]
+        [MemberData(nameof(Invalid_2_TestData))]
         public static void Ctor_Double_Double(double real, double imaginary)
         {
             var complex = new Complex(real, imaginary);
@@ -200,9 +200,9 @@ namespace System.Numerics.Tests
         }
         
         [Theory]
-        [MemberData("Primitives_2_TestData")]
-        [MemberData("Random_2_TestData")]
-        [MemberData("Boundaries_2_TestData")]
+        [MemberData(nameof(Primitives_2_TestData))]
+        [MemberData(nameof(Random_2_TestData))]
+        [MemberData(nameof(Boundaries_2_TestData))]
         public static void Abs(double real, double imaginary)
         {
             double expected = Math.Sqrt(real * real + imaginary * imaginary);
@@ -226,7 +226,7 @@ namespace System.Numerics.Tests
         }
 
         [Theory]
-        [MemberData("Abs_Advanced_TestData")]
+        [MemberData(nameof(Abs_Advanced_TestData))]
         public static void Abs_Advanced(double real, double imaginary, double expected)
         {
             var complex = new Complex(real, imaginary);
@@ -250,9 +250,9 @@ namespace System.Numerics.Tests
         }
 
         [Theory]
-        [MemberData("ACos_Basic_TestData")]
-        [MemberData("Primitives_2_TestData")]
-        [MemberData("SmallRandom_2_TestData")]
+        [MemberData(nameof(ACos_Basic_TestData))]
+        [MemberData(nameof(Primitives_2_TestData))]
+        [MemberData(nameof(SmallRandom_2_TestData))]
         public static void ACos_Basic(double real, double imaginary)
         {
             // Formula used in the feature: arccos(z) = -iln(z + iSqrt(value*value-1))
@@ -312,9 +312,9 @@ namespace System.Numerics.Tests
         }
 
         [Theory]
-        [MemberData("Add_TestData")]
-        [MemberData("Random_4_TestData")]
-        [MemberData("Invalid_4_TestData")]
+        [MemberData(nameof(Add_TestData))]
+        [MemberData(nameof(Random_4_TestData))]
+        [MemberData(nameof(Invalid_4_TestData))]
         public static void Add(double realLeft, double imaginaryLeft, double realRight, double imaginaryRight)
         {
             var left = new Complex(realLeft, imaginaryLeft);
@@ -334,8 +334,8 @@ namespace System.Numerics.Tests
         }
 
         [Theory]
-        [MemberData("Primitives_2_TestData")]
-        [MemberData("SmallRandom_2_TestData")]
+        [MemberData(nameof(Primitives_2_TestData))]
+        [MemberData(nameof(SmallRandom_2_TestData))]
         public static void ASin_Basic(double real, double imaginary)
         {
             // Formula used in the feature: arcsin(z) = -iln(iz + Sqrt(1-z*z))
@@ -380,8 +380,8 @@ namespace System.Numerics.Tests
         }
 
         [Theory]
-        [MemberData("Primitives_2_TestData")]
-        [MemberData("SmallRandom_2_TestData")]
+        [MemberData(nameof(Primitives_2_TestData))]
+        [MemberData(nameof(SmallRandom_2_TestData))]
         public static void ATan_Basic(double real, double imaginary)
         {
             // Formula used in the feature: Atan(z) = (i/2) * (log(1-iz) - log(1+iz))
@@ -423,11 +423,11 @@ namespace System.Numerics.Tests
         }
         
         [Theory]
-        [MemberData("Primitives_2_TestData")]
-        [MemberData("Boundaries_2_TestData")]
-        [MemberData("SmallRandom_2_TestData")]
-        [MemberData("Random_2_TestData")]
-        [MemberData("Invalid_2_TestData")]
+        [MemberData(nameof(Primitives_2_TestData))]
+        [MemberData(nameof(Boundaries_2_TestData))]
+        [MemberData(nameof(SmallRandom_2_TestData))]
+        [MemberData(nameof(Random_2_TestData))]
+        [MemberData(nameof(Invalid_2_TestData))]
         public static void Conjugate(double real, double imaginary)
         {
             var complex = new Complex(real, imaginary);
@@ -438,8 +438,8 @@ namespace System.Numerics.Tests
         }
 
         [Theory]
-        [MemberData("Primitives_2_TestData")]
-        [MemberData("SmallRandom_2_TestData")]
+        [MemberData(nameof(Primitives_2_TestData))]
+        [MemberData(nameof(SmallRandom_2_TestData))]
         public static void Cos_Basic(double real, double imaginary)
         {
             // The product formula: cos (x+iy) = cos(x)*cosh(y) - isin(x)sinh(y)
@@ -495,8 +495,8 @@ namespace System.Numerics.Tests
         }
 
         [Theory]
-        [MemberData("Primitives_2_TestData")]
-        [MemberData("SmallRandom_2_TestData")]
+        [MemberData(nameof(Primitives_2_TestData))]
+        [MemberData(nameof(SmallRandom_2_TestData))]
         public static void Cosh_Basic(double real, double imaginary)
         {
             // The product formula: cosh (x+iy) = cosh(x)*cos(y) + isinh(x)*sin(y) 
@@ -565,9 +565,9 @@ namespace System.Numerics.Tests
         }
 
         [Theory]
-        [MemberData("Divide_TestData")]
-        [MemberData("SmallRandom_4_TestData")]
-        [MemberData("Invalid_4_TestData")]
+        [MemberData(nameof(Divide_TestData))]
+        [MemberData(nameof(SmallRandom_4_TestData))]
+        [MemberData(nameof(Invalid_4_TestData))]
         public static void Divide(double realLeft, double imaginaryLeft, double realRight, double imaginaryRight)
         {
             var dividend = new Complex(realLeft, imaginaryLeft);
@@ -730,9 +730,9 @@ namespace System.Numerics.Tests
         }
 
         [Theory]
-        [MemberData("Exp_TestData")]
-        [MemberData("Primitives_2_TestData")]
-        [MemberData("SmallRandom_2_TestData")]
+        [MemberData(nameof(Exp_TestData))]
+        [MemberData(nameof(Primitives_2_TestData))]
+        [MemberData(nameof(SmallRandom_2_TestData))]
         public static void Exp(double real, double imaginary)
         {
             Complex expected;
@@ -768,7 +768,7 @@ namespace System.Numerics.Tests
         [Fact]
         public static void Exp_MaxReal()
         {
-            // On Windows, the result is {double.PostiveInfinity, double.NaN}
+            // On Windows, the result is {double.PositiveInfinity, double.NaN}
             // On Unix, the result is {double.NegativeInfinity, double.NaN}
             // Which one is incorrect should be determined.
             var complex = new Complex(double.MaxValue, 0);
@@ -793,8 +793,8 @@ namespace System.Numerics.Tests
         }
 
         [Theory]
-        [MemberData("FromPolarCoordinates_TestData")]
-        [MemberData("Invalid_2_TestData")]
+        [MemberData(nameof(FromPolarCoordinates_TestData))]
+        [MemberData(nameof(Invalid_2_TestData))]
         public static void FromPolarCoordinates(double magnitude, double phase)
         {
             Complex complex = Complex.FromPolarCoordinates(magnitude, phase);
@@ -832,8 +832,8 @@ namespace System.Numerics.Tests
         }
 
         [Theory]
-        [MemberData("Log_TestData")]
-        [MemberData("SmallRandom_4_TestData")]
+        [MemberData(nameof(Log_TestData))]
+        [MemberData(nameof(SmallRandom_4_TestData))]
         public static void Log(double real1, double imaginary1, double real2, double imaginary2)
         {
             var complex1 = new Complex(real1, imaginary1);
@@ -953,9 +953,9 @@ namespace System.Numerics.Tests
         }
 
         [Theory]
-        [MemberData("Multiply_TestData")]
-        [MemberData("SmallRandom_4_TestData")]
-        [MemberData("Invalid_4_TestData")]
+        [MemberData(nameof(Multiply_TestData))]
+        [MemberData(nameof(SmallRandom_4_TestData))]
+        [MemberData(nameof(Invalid_4_TestData))]
         public static void Multiply(double realLeft, double imaginaryLeft, double realRight, double imaginaryRight)
         {
             var left = new Complex(realLeft, imaginaryLeft);
@@ -974,9 +974,9 @@ namespace System.Numerics.Tests
         }
         
         [Theory]
-        [MemberData("Valid_2_TestData")]
-        [MemberData("Random_2_TestData")]
-        [MemberData("Invalid_2_TestData")]
+        [MemberData(nameof(Valid_2_TestData))]
+        [MemberData(nameof(Random_2_TestData))]
+        [MemberData(nameof(Invalid_2_TestData))]
         public static void Negate(double real, double imaginary)
         {
             var complex = new Complex(real, imaginary);
@@ -989,9 +989,9 @@ namespace System.Numerics.Tests
         }
         
         [Theory]
-        [MemberData("Boundaries_2_TestData")]
-        [MemberData("Primitives_2_TestData")]
-        [MemberData("Invalid_2_TestData")]
+        [MemberData(nameof(Boundaries_2_TestData))]
+        [MemberData(nameof(Primitives_2_TestData))]
+        [MemberData(nameof(Invalid_2_TestData))]
         private static void Pow(double real, double imaginary)
         {
             Pow_Complex_Double(real, imaginary);
@@ -1070,10 +1070,10 @@ namespace System.Numerics.Tests
         }
         
         [Theory]
-        [MemberData("Boundaries_2_TestData")]
-        [MemberData("Primitives_2_TestData")]
-        [MemberData("SmallRandom_2_TestData")]
-        [MemberData("Invalid_2_TestData")]
+        [MemberData(nameof(Boundaries_2_TestData))]
+        [MemberData(nameof(Primitives_2_TestData))]
+        [MemberData(nameof(SmallRandom_2_TestData))]
+        [MemberData(nameof(Invalid_2_TestData))]
         public static void Reciprocal(double real, double imaginary)
         {
             var complex = new Complex(real, imaginary);
@@ -1093,8 +1093,8 @@ namespace System.Numerics.Tests
         }
 
         [Theory]
-        [MemberData("Primitives_2_TestData")]
-        [MemberData("SmallRandom_2_TestData")]
+        [MemberData(nameof(Primitives_2_TestData))]
+        [MemberData(nameof(SmallRandom_2_TestData))]
         public static void Sin_Basic(double real, double imaginary)
         {
             // The product formula: sin (x+iy) = sin(x)*cosh(y) + icos(x)sinh(y)
@@ -1144,8 +1144,8 @@ namespace System.Numerics.Tests
         }
 
         [Theory]
-        [MemberData("Primitives_2_TestData")]
-        [MemberData("SmallRandom_2_TestData")]
+        [MemberData(nameof(Primitives_2_TestData))]
+        [MemberData(nameof(SmallRandom_2_TestData))]
         public static void Sinh_Basic(double real, double imaginary)
         {
             // The product formula: sinh (x+iy) = sinh(x)*cos(y) + icosh(x)*sin(y)
@@ -1213,9 +1213,9 @@ namespace System.Numerics.Tests
         }
 
         [Theory]
-        [MemberData("Subtract_TestData")]
-        [MemberData("Random_4_TestData")]
-        [MemberData("Invalid_4_TestData")]
+        [MemberData(nameof(Subtract_TestData))]
+        [MemberData(nameof(Random_4_TestData))]
+        [MemberData(nameof(Invalid_4_TestData))]
         public static void Subtract(double realLeft, double imaginaryLeft, double realRight, double imaginaryRight)
         {
             var left = new Complex(realLeft, imaginaryLeft);
@@ -1255,8 +1255,8 @@ namespace System.Numerics.Tests
         }
 
         [Theory]
-        [MemberData("Primitives_2_TestData")]
-        [MemberData("SmallRandom_2_TestData")]
+        [MemberData(nameof(Primitives_2_TestData))]
+        [MemberData(nameof(SmallRandom_2_TestData))]
         public static void Tan_Basic(double real, double imaginary)
         {
             double scale = Math.Cosh(2 * imaginary);
@@ -1313,9 +1313,9 @@ namespace System.Numerics.Tests
         }
 
         [Theory]
-        [MemberData("Tanh_Basic_TestData")]
-        [MemberData("Primitives_2_TestData")]
-        [MemberData("SmallRandom_2_TestData")]
+        [MemberData(nameof(Tanh_Basic_TestData))]
+        [MemberData(nameof(Primitives_2_TestData))]
+        [MemberData(nameof(SmallRandom_2_TestData))]
         public static void Tanh_Basic(double real, double imaginary)
         {
             // The product formula: cosh (x+iy) = sinh (x+iy) / cosh (x+iy)
@@ -1355,11 +1355,11 @@ namespace System.Numerics.Tests
         }
 
         [Theory]
-        [MemberData("Boundaries_2_TestData")]
-        [MemberData("Primitives_2_TestData")]
-        [MemberData("Random_2_TestData")]
-        [MemberData("SmallRandom_2_TestData")]
-        [MemberData("Invalid_2_TestData")]
+        [MemberData(nameof(Boundaries_2_TestData))]
+        [MemberData(nameof(Primitives_2_TestData))]
+        [MemberData(nameof(Random_2_TestData))]
+        [MemberData(nameof(SmallRandom_2_TestData))]
+        [MemberData(nameof(Invalid_2_TestData))]
         public static void ToString(double real, double imaginary)
         {
             var complex = new Complex(real, imaginary);

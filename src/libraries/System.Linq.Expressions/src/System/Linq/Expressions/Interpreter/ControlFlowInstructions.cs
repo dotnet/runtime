@@ -2,12 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq.Expressions;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using System.Threading;
 
 namespace System.Linq.Expressions.Interpreter
 {
@@ -385,6 +383,7 @@ namespace System.Linq.Expressions.Interpreter
 
             // Start to run the try/catch/finally blocks
             var instructions = frame.Interpreter.Instructions.Instructions;
+            ExceptionHandler exHandler;
             try
             {
                 // run the try block
@@ -399,7 +398,7 @@ namespace System.Linq.Expressions.Interpreter
                 if (index == _tryHandler.GotoEndTargetIndex)
                 {
                     // run the 'Goto' that jumps out of the try/catch/finally blocks
-                    Debug.Assert(instructions[index] is GotoInstruction, "should be the 'Goto' instruction that jumpes out the try/catch/finally");
+                    Debug.Assert(instructions[index] is GotoInstruction, "should be the 'Goto' instruction that jumps out the try/catch/finally");
                     frame.InstructionIndex += instructions[index].Run(frame);
                 }
             }
@@ -408,16 +407,9 @@ namespace System.Linq.Expressions.Interpreter
                 // a rethrow instruction in the try handler gets to run
                 throw;
             }
-            catch (Exception exception)
+            catch (Exception exception) when (_tryHandler.HasHandler(frame, ref exception, out exHandler))
             {
-                frame.SaveTraceToException(exception);
-                // rethrow if there is no catch blocks defined for this try block
-                if (!_tryHandler.IsCatchBlockExist) { throw; }
-
-                // Search for the best handler in the TryCatchFianlly block. If no suitable handler is found, rethrow
-                ExceptionHandler exHandler;
-                frame.InstructionIndex += _tryHandler.GotoHandler(frame, exception, out exHandler);
-                if (exHandler == null) { throw; }
+                frame.InstructionIndex += frame.Goto(exHandler.LabelIndex, exception, gotoExceptionHandler: true);
 
 #if FEATURE_THREAD_ABORT
                 // stay in the current catch so that ThreadAbortException is not rethrown by CLR:
@@ -444,7 +436,7 @@ namespace System.Linq.Expressions.Interpreter
                     if (index == _tryHandler.GotoEndTargetIndex)
                     {
                         // run the 'Goto' that jumps out of the try/catch/finally blocks
-                        Debug.Assert(instructions[index] is GotoInstruction, "should be the 'Goto' instruction that jumpes out the try/catch/finally");
+                        Debug.Assert(instructions[index] is GotoInstruction, "should be the 'Goto' instruction that jumps out the try/catch/finally");
                         frame.InstructionIndex += instructions[index].Run(frame);
                     }
                 }
@@ -528,7 +520,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             // If _pendingContinuation == -1 then we were getting into the finally block because an exception was thrown
             //      in this case we need to set the stack depth
-            // Else we were getting into this finnaly block from a 'Goto' jump, and the stack depth is alreayd set properly
+            // Else we were getting into this finally block from a 'Goto' jump, and the stack depth is already set properly
             if (!frame.IsJumpHappened())
             {
                 frame.SetStackDepth(GetLabel(frame).StackDepth);
@@ -561,11 +553,51 @@ namespace System.Linq.Expressions.Interpreter
             frame.PopPendingContinuation();
 
             // If _pendingContinuation == -1 then we were getting into the finally block because an exception was thrown
-            // In this case we just return 1, and the the real instruction index will be calculated by GotoHandler later
+            // In this case we just return 1, and the real instruction index will be calculated by GotoHandler later
             if (!frame.IsJumpHappened()) { return 1; }
             // jump to goto target or to the next finally:
             return frame.YieldToPendingContinuation();
         }
+    }
+
+    // no-op: we need this just to balance the stack depth and aid debugging of the instruction list.
+    internal sealed class EnterExceptionFilterInstruction : Instruction
+    {
+        internal static readonly EnterExceptionFilterInstruction Instance = new EnterExceptionFilterInstruction();
+
+        private EnterExceptionFilterInstruction()
+        {
+        }
+
+        public override string InstructionName => "EnterExceptionFilter";
+
+        public override int ConsumedStack => 0;
+
+        // The exception is pushed onto the stack in the filter runner.
+        public override int ProducedStack => 1;
+
+        [ExcludeFromCodeCoverage] // Known to be a no-op, this instruction is skipped on execution.
+        public override int Run(InterpretedFrame frame) => 1;
+    }
+
+    // no-op: we need this just to balance the stack depth and aid debugging of the instruction list.
+    internal sealed class LeaveExceptionFilterInstruction : Instruction
+    {
+        internal static readonly LeaveExceptionFilterInstruction Instance = new LeaveExceptionFilterInstruction();
+
+        private LeaveExceptionFilterInstruction()
+        {
+        }
+
+        public override string InstructionName => "LeaveExceptionFilter";
+
+        // The boolean result is popped from the stack in the filter runner.
+        public override int ConsumedStack => 1;
+
+        public override int ProducedStack => 0;
+
+        [ExcludeFromCodeCoverage] // Known to be a no-op, this instruction is skipped on execution.
+        public override int Run(InterpretedFrame frame) => 1;
     }
 
     // no-op: we need this just to balance the stack depth.
@@ -597,6 +629,7 @@ namespace System.Linq.Expressions.Interpreter
         // Fault handlers: The value is kept on stack during fault handler evaluation.
         public override int ProducedStack { get { return 1; } }
 
+        [ExcludeFromCodeCoverage] // Known to be a no-op, this instruction is skipped on execution.
         public override int Run(InterpretedFrame frame)
         {
             // nop (the exception value is pushed by the interpreter in HandleCatch)

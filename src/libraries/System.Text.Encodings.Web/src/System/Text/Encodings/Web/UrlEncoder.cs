@@ -35,7 +35,7 @@ namespace System.Text.Encodings.Web
         /// <summary>
         /// Creates a new instance of UrlEncoder specifying character to be encoded.
         /// </summary>
-        /// <param name="allowedRanges">Set of characters that the endoder is allowed to not encode.</param>
+        /// <param name="allowedRanges">Set of characters that the encoder is allowed to not encode.</param>
         /// <returns>A new instance of the <see cref="UrlEncoder"/>.</returns>
         /// <remarks>Some characters in <paramref name="allowedRanges"/> might still get encoded, i.e. this parameter is just telling the encoder what ranges it is allowed to not encode, not what characters it must not encode.</remarks> 
         public static UrlEncoder Create(params UnicodeRange[] allowedRanges)

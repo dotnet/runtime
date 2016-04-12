@@ -9,56 +9,58 @@ namespace System.Linq.Expressions.Tests
 {
     public static class BinaryLogicalTests
     {
+        //TODO: Need tests on the short-circuit and non-short-circuit nature of the two forms.
+
         #region Test methods
 
-        [Fact]
-        public static void CheckBoolAndTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckBoolAndTest(bool useInterpreter)
         {
             bool[] array = new bool[] { true, false };
             for (int i = 0; i < array.Length; i++)
             {
                 for (int j = 0; j < array.Length; j++)
                 {
-                    VerifyBoolAnd(array[i], array[j]);
+                    VerifyBoolAnd(array[i], array[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckBoolAndAlsoTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckBoolAndAlsoTest(bool useInterpreter)
         {
             bool[] array = new bool[] { true, false };
             for (int i = 0; i < array.Length; i++)
             {
                 for (int j = 0; j < array.Length; j++)
                 {
-                    VerifyBoolAndAlso(array[i], array[j]);
+                    VerifyBoolAndAlso(array[i], array[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckBoolOrTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckBoolOrTest(bool useInterpreter)
         {
             bool[] array = new bool[] { true, false };
             for (int i = 0; i < array.Length; i++)
             {
                 for (int j = 0; j < array.Length; j++)
                 {
-                    VerifyBoolOr(array[i], array[j]);
+                    VerifyBoolOr(array[i], array[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckBoolOrElseTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckBoolOrElseTest(bool useInterpreter)
         {
             bool[] array = new bool[] { true, false };
             for (int i = 0; i < array.Length; i++)
             {
                 for (int j = 0; j < array.Length; j++)
                 {
-                    VerifyBoolOrElse(array[i], array[j]);
+                    VerifyBoolOrElse(array[i], array[j], useInterpreter);
                 }
             }
         }
@@ -67,7 +69,7 @@ namespace System.Linq.Expressions.Tests
 
         #region Test verifiers
 
-        private static void VerifyBoolAnd(bool a, bool b)
+        private static void VerifyBoolAnd(bool a, bool b, bool useInterpreter)
         {
             Expression<Func<bool>> e =
                 Expression.Lambda<Func<bool>>(
@@ -75,46 +77,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(bool)),
                         Expression.Constant(b, typeof(bool))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<bool> f = e.Compile();
+            Func<bool> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            bool etResult = default(bool);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            bool csResult = default(bool);
-            Exception csException = null;
-            try
-            {
-                csResult = (bool)(a & b);
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a & b, f());
         }
 
-        private static void VerifyBoolAndAlso(bool a, bool b)
+        private static void VerifyBoolAndAlso(bool a, bool b, bool useInterpreter)
         {
             Expression<Func<bool>> e =
                 Expression.Lambda<Func<bool>>(
@@ -122,46 +90,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(bool)),
                         Expression.Constant(b, typeof(bool))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<bool> f = e.Compile();
+            Func<bool> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            bool etResult = default(bool);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            bool csResult = default(bool);
-            Exception csException = null;
-            try
-            {
-                csResult = (bool)(a && b);
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a && b, f());
         }
 
-        private static void VerifyBoolOr(bool a, bool b)
+        private static void VerifyBoolOr(bool a, bool b, bool useInterpreter)
         {
             Expression<Func<bool>> e =
                 Expression.Lambda<Func<bool>>(
@@ -169,46 +103,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(bool)),
                         Expression.Constant(b, typeof(bool))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<bool> f = e.Compile();
+            Func<bool> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            bool etResult = default(bool);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            bool csResult = default(bool);
-            Exception csException = null;
-            try
-            {
-                csResult = (bool)(a | b);
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a | b, f());
         }
 
-        private static void VerifyBoolOrElse(bool a, bool b)
+        private static void VerifyBoolOrElse(bool a, bool b, bool useInterpreter)
         {
             Expression<Func<bool>> e =
                 Expression.Lambda<Func<bool>>(
@@ -216,43 +116,9 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(bool)),
                         Expression.Constant(b, typeof(bool))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<bool> f = e.Compile();
+            Func<bool> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            bool etResult = default(bool);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            bool csResult = default(bool);
-            Exception csException = null;
-            try
-            {
-                csResult = (bool)(a || b);
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a || b, f());
         }
 
         #endregion

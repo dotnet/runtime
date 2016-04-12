@@ -74,7 +74,7 @@ namespace OLEDB.Test.ModuleCore
                         case PARSE.Keyword:
                             if (tokens.Equal.IndexOf(ch) >= 0)
                             {
-                                //Note: We have a case-insentive hashtable so we don't have to lowercase
+                                //Note: We have a case-insensitive hashtable so we don't have to lowercase
                                 key = str.Substring(keyStart, index - keyStart).Trim();
                                 state = PARSE.Equal;
                             }

@@ -4,7 +4,6 @@
   <ItemGroup>
     <Project Include="ref.builds" />
     <Project Include="src.builds" />
-    <Project Include="tests.builds" />
   </ItemGroup>
 
   <Import Project="..\dir.targets" />
@@ -19,12 +18,6 @@
       BuildPackages;
     </TraversalBuildDependsOn>
   </PropertyGroup>
-
-  <PropertyGroup>
-    <GenerateCodeCoverageReportForAll>true</GenerateCodeCoverageReportForAll>
-  </PropertyGroup>
-  <Import Project="$(ToolsDir)CodeCoverage.targets" Condition="Exists('$(ToolsDir)CodeCoverage.targets')" />
-  <Import Project="$(ToolsDir)PerfTesting.targets" Condition="Exists('$(ToolsDir)PerfTesting.targets')" />
 
   <PropertyGroup Condition="Exists('$(ToolsDir)toolruntime.targets')">
     <TraversalBuildDependsOn>

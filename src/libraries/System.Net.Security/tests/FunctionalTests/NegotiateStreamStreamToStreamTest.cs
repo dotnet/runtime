@@ -12,13 +12,13 @@ using Xunit;
 
 namespace System.Net.Security.Tests
 {
+    [PlatformSpecific(PlatformID.Windows)] // NegotiateStream only supports client-side functionality on Unix
     public class NegotiateStreamStreamToStreamTest
     {
         private readonly byte[] _sampleMsg = Encoding.UTF8.GetBytes("Sample Test Message");
 
-        [ActiveIssue(5284, PlatformID.Windows)]
+        [ActiveIssue(5284)]
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
         public void NegotiateStream_StreamToStream_Authentication_Success()
         {
             VirtualNetwork network = new VirtualNetwork();
@@ -69,9 +69,8 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ActiveIssue(5284, PlatformID.Windows)]
+        [ActiveIssue(5284)]
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
         public void NegotiateStream_StreamToStream_Authentication_TargetName_Success()
         {
             string targetName = "testTargetName";
@@ -125,9 +124,8 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ActiveIssue(5284, PlatformID.Windows)]
+        [ActiveIssue(5284)]
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
         public void NegotiateStream_StreamToStream_Authentication_EmptyCredentials_Fails()
         {
             string targetName = "testTargetName";
@@ -190,9 +188,8 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ActiveIssue(5283, PlatformID.Windows)]
+        [ActiveIssue(5283)]
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
         public void NegotiateStream_StreamToStream_Successive_ClientWrite_Sync_Success()
         {
             byte[] recvBuf = new byte[_sampleMsg.Length];
@@ -225,9 +222,8 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ActiveIssue(5284, PlatformID.Windows)]
+        [ActiveIssue(5284)]
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
         public void NegotiateStream_StreamToStream_Successive_ClientWrite_Async_Success()
         {
             byte[] recvBuf = new byte[_sampleMsg.Length];
@@ -260,13 +256,6 @@ namespace System.Net.Security.Tests
                 Assert.True(finished, "Send/receive completed in the allotted time");
                 Assert.True(_sampleMsg.SequenceEqual(recvBuf));
             }
-        }
-        
-        [Fact]
-        [PlatformSpecific(PlatformID.Linux | PlatformID.OSX)]
-        public void NegotiateStream_Ctor_Throws()
-        {
-            Assert.Throws<PlatformNotSupportedException>(() => new NegotiateStream(new VirtualNetworkStream(null, isServer: false)));
         }
     }
 }

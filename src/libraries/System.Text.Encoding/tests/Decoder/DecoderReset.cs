@@ -9,7 +9,7 @@ namespace System.Text.Tests
     public class DecoderReset
     {
         #region Positive Test Cases
-        // PosTest1: Call Reset to reset the decoder instance without perform any convertions
+        // PosTest1: Call Reset to reset the decoder instance without perform any conversions
         [Fact]
         public void PosTest1()
         {
@@ -17,7 +17,7 @@ namespace System.Text.Tests
             decoder.Reset();
         }
 
-        // PosTest2: Call Reset to reset the decoder instance after a valid convertions
+        // PosTest2: Call Reset to reset the decoder instance after a valid conversions
         [Fact]
         public void PosTest2()
         {
@@ -36,7 +36,7 @@ namespace System.Text.Tests
             decoder.Reset();
         }
 
-        // PosTest3: Call Reset to reset the decoder instance after a invalid convertions
+        // PosTest3: Call Reset to reset the decoder instance after a invalid conversions
         [Fact]
         public void PosTest3()
         {

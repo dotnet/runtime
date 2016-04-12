@@ -12,7 +12,7 @@ namespace Internal.Cryptography
 {
     //
     // Error codes for specific throw sites. Defined outside of Internal.Crytography.Pal.Native as some non-Pal code uses these.
-    // Since these error codes are publically surfaced through the Exception class, these hresults are effectively managed exchange values despite
+    // Since these error codes are publicly surfaced through the Exception class, these hresults are effectively managed exchange values despite
     // their Win32 origin.
     //
     internal static class ErrorCode

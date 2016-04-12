@@ -449,7 +449,7 @@ namespace System.IO.Compression
         {
             ThrowIfDisposed();
 
-            //assume writeable if not disposed
+            //assume writable if not disposed
             Debug.Assert(CanWrite);
 
             _baseStream.Flush();

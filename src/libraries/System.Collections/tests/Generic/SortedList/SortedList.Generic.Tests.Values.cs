@@ -39,7 +39,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public override void Enumerator_MoveNext_AfterDisposal(int count)
         {
             // Disposal of the enumerator is treated the same as a Reset call

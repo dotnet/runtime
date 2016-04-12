@@ -66,7 +66,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (X509Certificate2 c = LoadCertificateFromFile())
             {
                 string format = c.GetFormat();
-                Assert.Equal("X509", format);  // Only one format is supported so this is very predicatable api...
+                Assert.Equal("X509", format);  // Only one format is supported so this is very predictable api...
             }
         }
 

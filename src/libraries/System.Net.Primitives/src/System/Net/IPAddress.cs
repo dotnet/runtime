@@ -9,7 +9,7 @@ namespace System.Net
 {
     /// <devdoc>
     ///   <para>
-    ///     Provides an internet protocol (IP) address.
+    ///     Provides an Internet Protocol (IP) address.
     ///   </para>
     /// </devdoc>
     public class IPAddress

@@ -9,7 +9,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
     // This is the "controller" for compiler objects. The controller is the object
     // that exposes/implements ICSCompiler for external consumption.  Compiler
     // options are configured through this object, and for an actual compilation,
-    // this object instanciates a LangCompiler, feeds it the appropriate information,
+    // this object instantiates a LangCompiler, feeds it the appropriate information,
     // tells it to compile, and then destroys it.
 
     internal abstract class CController

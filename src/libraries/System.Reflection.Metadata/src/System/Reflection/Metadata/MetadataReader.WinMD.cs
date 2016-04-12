@@ -274,7 +274,7 @@ namespace System.Reflection.Metadata
 
                     // tomat: The CLR adapter implements a back-compat quirk: Enums exported with an older WinMDExp have only one version
                     // not marked with tdSpecialName. These enums should *not* be mangled and flipped to private.
-                    // We don't implement this flag since the WinMDs producted by the older WinMDExp are not used in the wild.
+                    // We don't implement this flag since the WinMDs produced by the older WinMDExp are not used in the wild.
 
                     treatment = TypeDefTreatment.PrefixWinRTName;
                 }

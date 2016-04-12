@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.Cng.Tests
             CngKeyCreationParameters p = new CngKeyCreationParameters();
             p.ExportPolicy = CngExportPolicies.AllowExport;
             p.KeyUsage = CngKeyUsages.KeyAgreement;
-            p.UIPolicy = new CngUIPolicy(CngUIProtectionLevels.ForceHighProtection, "MyFriendlyName", "MyDescription", "MyUseContext", "MyCreationTitle");
+            p.UIPolicy = new CngUIPolicy(CngUIProtectionLevels.None, "MyFriendlyName", "MyDescription", "MyUseContext", "MyCreationTitle");
             byte[] myPropValue1 = "23afbc".HexToByteArray();
             p.Parameters.Add(new CngProperty("MyProp1", myPropValue1, CngPropertyOptions.CustomProperty));
             byte[] myPropValue2 = "8765".HexToByteArray();
@@ -37,7 +37,7 @@ namespace System.Security.Cryptography.Cng.Tests
                 Assert.Equal(CngExportPolicies.AllowExport, key.ExportPolicy);
                 Assert.Equal(CngKeyUsages.KeyAgreement, key.KeyUsage);
                 CngUIPolicy uiPolicy = key.UIPolicy;
-                Assert.Equal(CngUIProtectionLevels.ForceHighProtection, uiPolicy.ProtectionLevel);
+                Assert.Equal(CngUIProtectionLevels.None, uiPolicy.ProtectionLevel);
                 Assert.Equal("MyFriendlyName", uiPolicy.FriendlyName);
                 Assert.Equal("MyDescription", uiPolicy.Description);
                 Assert.Equal("MyUseContext", uiPolicy.UseContext);

@@ -20,6 +20,8 @@ namespace System.Net.Http
         private static readonly TimeSpan s_infiniteTimeout = Threading.Timeout.InfiniteTimeSpan;
         private const HttpCompletionOption defaultCompletionOption = HttpCompletionOption.ResponseContentRead;
 
+        private static readonly Task<Stream> s_nullStreamTask = Task.FromResult(Stream.Null);
+
         private volatile bool _operationStarted;
         private volatile bool _disposed;
 
@@ -54,7 +56,7 @@ namespace System.Net.Http
                 CheckBaseAddress(value, "value");
                 CheckDisposedOrStarted();
 
-                if (HttpEventSource.Log.IsEnabled()) HttpEventSource.UriBaseAddress(this, _baseAddress.ToString());
+                if (HttpEventSource.Log.IsEnabled()) HttpEventSource.UriBaseAddress(this, value != null ? value.ToString() : string.Empty);
 
                 _baseAddress = value;
             }
@@ -133,8 +135,9 @@ namespace System.Net.Http
 
         public Task<string> GetStringAsync(Uri requestUri)
         {
-            return GetContentAsync(requestUri, HttpCompletionOption.ResponseContentRead, string.Empty,
-                content => content.ReadAsStringAsync());
+            return GetContentAsync(
+                GetAsync(requestUri, HttpCompletionOption.ResponseContentRead), 
+                content => content != null ? content.ReadBufferedContentAsString() : string.Empty);
         }
 
         public Task<byte[]> GetByteArrayAsync(string requestUri)
@@ -144,9 +147,11 @@ namespace System.Net.Http
 
         public Task<byte[]> GetByteArrayAsync(Uri requestUri)
         {
-            return GetContentAsync(requestUri, HttpCompletionOption.ResponseContentRead, Array.Empty<byte>(),
-                content => content.ReadAsByteArrayAsync());
+            return GetContentAsync(
+                GetAsync(requestUri, HttpCompletionOption.ResponseContentRead), 
+                content => content != null ? content.ReadBufferedContentAsByteArray() : Array.Empty<byte>());
         }
+
 
         // Unbuffered by default
         public Task<Stream> GetStreamAsync(string requestUri)
@@ -157,45 +162,23 @@ namespace System.Net.Http
         // Unbuffered by default
         public Task<Stream> GetStreamAsync(Uri requestUri)
         {
-            return GetContentAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, Stream.Null,
-                content => content.ReadAsStreamAsync());
+            return GetContentAsync(
+                GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead), 
+                content => content != null ? content.ReadAsStreamAsync() : s_nullStreamTask);
         }
 
-        private Task<T> GetContentAsync<T>(Uri requestUri, HttpCompletionOption completionOption, T defaultValue,
-            Func<HttpContent, Task<T>> readAs)
+        private async Task<T> GetContentAsync<T>(Task<HttpResponseMessage> getTask, Func<HttpContent, T> readAs)
         {
-            TaskCompletionSource<T> tcs = new TaskCompletionSource<T>();
+            HttpResponseMessage response = await getTask.ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
+            return readAs(response.Content);
+        }
 
-            GetAsync(requestUri, completionOption).ContinueWithStandard(requestTask =>
-            {
-                if (HandleRequestFaultsAndCancelation(requestTask, tcs))
-                {
-                    return;
-                }
-                HttpResponseMessage response = requestTask.Result;
-                if (response.Content == null)
-                {
-                    tcs.TrySetResult(defaultValue);
-                    return;
-                }
-
-                try
-                {
-                    readAs(response.Content).ContinueWithStandard(contentTask =>
-                    {
-                        if (!HttpUtilities.HandleFaultsAndCancelation(contentTask, tcs))
-                        {
-                            tcs.TrySetResult(contentTask.Result);
-                        }
-                    });
-                }
-                catch (Exception ex)
-                {
-                    tcs.TrySetException(ex);
-                }
-            });
-
-            return tcs.Task;
+        private async Task<T> GetContentAsync<T>(Task<HttpResponseMessage> getTask, Func<HttpContent, Task<T>> readAsAsync)
+        {
+            HttpResponseMessage response = await getTask.ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
+            return await readAsAsync(response.Content).ConfigureAwait(false);
         }
 
         #endregion Simple Get Overloads
@@ -351,56 +334,68 @@ namespace System.Net.Http
 
             SetTimeout(linkedCts);
 
-            TaskCompletionSource<HttpResponseMessage> tcs = new TaskCompletionSource<HttpResponseMessage>();
+            return FinishSendAsync(
+                base.SendAsync(request, linkedCts.Token), 
+                request, 
+                linkedCts, 
+                completionOption == HttpCompletionOption.ResponseContentRead);
+        }
 
-            base.SendAsync(request, linkedCts.Token).ContinueWithStandard(task =>
+        private async Task<HttpResponseMessage> FinishSendAsync(
+            Task<HttpResponseMessage> sendTask, HttpRequestMessage request, CancellationTokenSource linkedCts, bool bufferResponseContent)
+        {
+            HttpResponseMessage response = null;
+            try
             {
                 try
                 {
-                    // The request is completed. Dispose the request content.
-                    DisposeRequestContent(request);
-
-                    if (task.IsFaulted)
-                    {
-                        SetTaskFaulted(request, linkedCts, tcs, task.Exception.GetBaseException());
-                        return;
-                    }
-
-                    if (task.IsCanceled)
-                    {
-                        SetTaskCanceled(request, linkedCts, tcs);
-                        return;
-                    }
-
-                    HttpResponseMessage response = task.Result;
-                    if (response == null)
-                    {
-                        SetTaskFaulted(request, linkedCts, tcs,
-                            new InvalidOperationException(SR.net_http_handler_noresponse));
-                        return;
-                    }
-
-                    // If we don't have a response content, just return the response message.
-                    if ((response.Content == null) || (completionOption == HttpCompletionOption.ResponseHeadersRead))
-                    {
-                        SetTaskCompleted(request, linkedCts, tcs, response);
-                        return;
-                    }
-                    Debug.Assert(completionOption == HttpCompletionOption.ResponseContentRead,
-                        "Unknown completion option.");
-
-                    // We have an assigned content. Start loading it into a buffer and return response message once
-                    // the whole content is buffered.
-                    StartContentBuffering(request, linkedCts, tcs, response);
+                    // Wait for the send request to complete, getting back the response.
+                    response = await sendTask.ConfigureAwait(false);
                 }
-                catch (Exception e)
+                finally
                 {
-                    // Make sure we catch any exception, otherwise the task will catch it and throw in the finalizer.
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Exception(NetEventSource.ComponentType.Http, this, "SendAsync", e);
-                    tcs.TrySetException(e);
+                    // When a request completes, dispose the request content so the user doesn't have to. This also
+                    // ensures that a HttpContent object is only sent once using HttpClient (similar to HttpRequestMessages
+                    // that can also be sent only once).
+                    request.Content?.Dispose();
                 }
-            });
-            return tcs.Task;
+
+                if (response == null)
+                {
+                    throw new InvalidOperationException(SR.net_http_handler_noresponse);
+                }
+
+                // Buffer the response content if we've been asked to and we have a Content to buffer.
+                if (bufferResponseContent && response.Content != null)
+                {
+                    await response.Content.LoadIntoBufferAsync(_maxResponseContentBufferSize).ConfigureAwait(false);
+                }
+
+                if (HttpEventSource.Log.IsEnabled()) HttpEventSource.ClientSendCompleted(this, response, request);
+                return response;
+            }
+            catch (Exception e)
+            {
+                response?.Dispose();
+
+                // If the cancellation token was canceled, we consider the exception to be caused by the
+                // cancellation (e.g. WebException when reading from canceled response stream).
+                if (linkedCts.IsCancellationRequested && e is HttpRequestException)
+                {
+                    LogSendError(request, linkedCts, nameof(SendAsync), null);
+                    throw new OperationCanceledException(linkedCts.Token);
+                }
+                else
+                {
+                    LogSendError(request, linkedCts, nameof(SendAsync), e);
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Exception(NetEventSource.ComponentType.Http, this, nameof(SendAsync), e);
+                    throw;
+                }
+            }
+            finally
+            {
+                linkedCts.Dispose();
+            }
         }
 
         public void CancelPendingRequests()
@@ -444,70 +439,6 @@ namespace System.Net.Http
         #endregion
 
         #region Private Helpers
-
-        private void DisposeRequestContent(HttpRequestMessage request)
-        {
-            Contract.Requires(request != null);
-
-            // When a request completes, HttpClient disposes the request content so the user doesn't have to. This also
-            // ensures that a HttpContent object is only sent once using HttpClient (similar to HttpRequestMessages
-            // that can also be sent only once).
-            HttpContent content = request.Content;
-            if (content != null)
-            {
-                content.Dispose();
-            }
-        }
-
-        private void StartContentBuffering(HttpRequestMessage request, CancellationTokenSource cancellationTokenSource,
-            TaskCompletionSource<HttpResponseMessage> tcs, HttpResponseMessage response)
-        {
-            response.Content.LoadIntoBufferAsync(_maxResponseContentBufferSize).ContinueWithStandard(contentTask =>
-            {
-                try
-                {
-                    // Make sure to dispose the CTS _before_ setting TaskCompletionSource. Otherwise the task will be
-                    // completed and the user may dispose the user CTS on the continuation task leading to a race cond.
-                    bool isCancellationRequested = cancellationTokenSource.Token.IsCancellationRequested;
-
-                    // contentTask.Exception is always != null if IsFaulted is true. However, we need to access the
-                    // Exception property, otherwise the Task considers the excpetion as "unhandled" and will throw in
-                    // its finalizer.
-                    if (contentTask.IsFaulted)
-                    {
-                        response.Dispose();
-                        // If the cancellation token was canceled, we consider the exception to be caused by the
-                        // cancellation (e.g. WebException when reading from canceled response stream).
-                        if (isCancellationRequested && (contentTask.Exception.GetBaseException() is HttpRequestException))
-                        {
-                            SetTaskCanceled(request, cancellationTokenSource, tcs);
-                        }
-                        else
-                        {
-                            SetTaskFaulted(request, cancellationTokenSource, tcs, contentTask.Exception.GetBaseException());
-                        }
-                        return;
-                    }
-
-                    if (contentTask.IsCanceled)
-                    {
-                        response.Dispose();
-                        SetTaskCanceled(request, cancellationTokenSource, tcs);
-                        return;
-                    }
-
-                    // When buffering content is completed, set the Task as completed.
-                    SetTaskCompleted(request, cancellationTokenSource, tcs, response);
-                }
-                catch (Exception e)
-                {
-                    // Make sure we catch any exception, otherwise the task will catch it and throw in the finalizer.
-                    response.Dispose();
-                    tcs.TrySetException(e);
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Exception(NetEventSource.ComponentType.Http, this, "SendAsync", e);
-                }
-            });
-        }
 
         private void SetOperationStarted()
         {
@@ -603,30 +534,6 @@ namespace System.Net.Http
             }
         }
 
-        private void SetTaskFaulted(HttpRequestMessage request, CancellationTokenSource cancellationTokenSource,
-            TaskCompletionSource<HttpResponseMessage> tcs, Exception e)
-        {
-            LogSendError(request, cancellationTokenSource, "SendAsync", e);
-            tcs.TrySetException(e);
-            cancellationTokenSource.Dispose();
-        }
-
-        private void SetTaskCanceled(HttpRequestMessage request, CancellationTokenSource cancellationTokenSource,
-            TaskCompletionSource<HttpResponseMessage> tcs)
-        {
-            LogSendError(request, cancellationTokenSource, "SendAsync", null);
-            tcs.TrySetCanceled(cancellationTokenSource.Token);
-            cancellationTokenSource.Dispose();
-        }
-
-        private void SetTaskCompleted(HttpRequestMessage request, CancellationTokenSource cancellationTokenSource,
-            TaskCompletionSource<HttpResponseMessage> tcs, HttpResponseMessage response)
-        {
-            if (HttpEventSource.Log.IsEnabled()) HttpEventSource.ClientSendCompleted(this, response, request);
-            tcs.TrySetResult(response);
-            cancellationTokenSource.Dispose();
-        }
-
         private void SetTimeout(CancellationTokenSource cancellationTokenSource)
         {
             Contract.Requires(cancellationTokenSource != null);
@@ -660,33 +567,6 @@ namespace System.Net.Http
                 return null;
             }
             return new Uri(uri, UriKind.RelativeOrAbsolute);
-        }
-
-        // Returns true if the task was faulted or canceled and sets tcs accordingly. Non-success status codes count as
-        // faults in cases where the HttpResponseMessage object will not be returned to the developer.  
-        private static bool HandleRequestFaultsAndCancelation<T>(Task<HttpResponseMessage> task,
-            TaskCompletionSource<T> tcs)
-        {
-            if (HttpUtilities.HandleFaultsAndCancelation(task, tcs))
-            {
-                return true;
-            }
-
-            HttpResponseMessage response = task.Result;
-            if (!response.IsSuccessStatusCode)
-            {
-                if (response.Content != null)
-                {
-                    response.Content.Dispose();
-                }
-
-                tcs.TrySetException(new HttpRequestException(
-                    string.Format(System.Globalization.CultureInfo.InvariantCulture,
-                        SR.net_http_message_not_success_statuscode, (int)response.StatusCode,
-                        response.ReasonPhrase)));
-                return true;
-            }
-            return false;
         }
         #endregion Private Helpers
     }

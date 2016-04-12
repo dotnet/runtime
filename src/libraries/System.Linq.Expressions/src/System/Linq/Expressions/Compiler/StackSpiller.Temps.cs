@@ -90,7 +90,7 @@ namespace System.Linq.Expressions.Compiler
             }
 
             // Free temporaries created since the last marking. 
-            // This is a performance optimization to lower the overall number of tempories needed.
+            // This is a performance optimization to lower the overall number of temporaries needed.
             internal void Free(int mark)
             {
                 // (_usedTemps != null) ==> (mark <= _usedTemps.Count)
@@ -118,8 +118,8 @@ namespace System.Linq.Expressions.Compiler
 
         /// <summary>
         /// Rewrites child expressions, spilling them into temps if needed. The
-        /// stack starts in the inital state, and after the first subexpression
-        /// is added it is change to non-empty. This behavior can be overridden
+        /// stack starts in the initial state, and after the first subexpression
+        /// is added it is changed to non-empty. This behavior can be overridden
         /// by setting the stack manually between adds.
         /// 
         /// When all children have been added, the caller should rewrite the 

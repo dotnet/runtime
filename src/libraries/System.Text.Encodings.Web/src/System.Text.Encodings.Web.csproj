@@ -10,6 +10,7 @@
     <PackageTargetFramework>netstandard1.0</PackageTargetFramework>
     <UseOpenKey Condition="'$(UseOpenKey)'==''">true</UseOpenKey>
     <DocumentationFile>$(OutputPath)$(AssemblyName).xml</DocumentationFile>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.0</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -33,7 +34,7 @@
     <Compile Include="Properties\GlobalSuppressions.cs" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Resources\unicode-8.0.0-defined-characters.bin" />
+    <EmbeddedResource Include="Resources\unicode8definedcharacters.bin" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

@@ -11,8 +11,8 @@ namespace System.Linq.Expressions.Tests
     {
         #region Test methods
 
-        [Fact]
-        public static void CheckBoolCoalesceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckBoolCoalesceTest(bool useInterpreter)
         {
             bool?[] array1 = new bool?[] { null, true, false };
             bool[] array2 = new bool[] { true, false };
@@ -20,13 +20,13 @@ namespace System.Linq.Expressions.Tests
             {
                 for (int j = 0; j < array2.Length; j++)
                 {
-                    VerifyBoolCoalesce(array1[i], array2[j]);
+                    VerifyBoolCoalesce(array1[i], array2[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckByteCoalesceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckByteCoalesceTest(bool useInterpreter)
         {
             byte?[] array1 = new byte?[] { null, 0, 1, byte.MaxValue };
             byte[] array2 = new byte[] { 0, 1, byte.MaxValue };
@@ -34,13 +34,13 @@ namespace System.Linq.Expressions.Tests
             {
                 for (int j = 0; j < array2.Length; j++)
                 {
-                    VerifyByteCoalesce(array1[i], array2[j]);
+                    VerifyByteCoalesce(array1[i], array2[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckCustomCoalesceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckCustomCoalesceTest(bool useInterpreter)
         {
             C[] array1 = new C[] { null, new C(), new D(), new D(0), new D(5) };
             C[] array2 = new C[] { null, new C(), new D(), new D(0), new D(5) };
@@ -48,13 +48,13 @@ namespace System.Linq.Expressions.Tests
             {
                 for (int j = 0; j < array2.Length; j++)
                 {
-                    VerifyCustomCoalesce(array1[i], array2[j]);
+                    VerifyCustomCoalesce(array1[i], array2[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckCharCoalesceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckCharCoalesceTest(bool useInterpreter)
         {
             char?[] array1 = new char?[] { null, '\0', '\b', 'A', '\uffff' };
             char[] array2 = new char[] { '\0', '\b', 'A', '\uffff' };
@@ -62,13 +62,13 @@ namespace System.Linq.Expressions.Tests
             {
                 for (int j = 0; j < array2.Length; j++)
                 {
-                    VerifyCharCoalesce(array1[i], array2[j]);
+                    VerifyCharCoalesce(array1[i], array2[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckCustom2CoalesceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckCustom2CoalesceTest(bool useInterpreter)
         {
             D[] array1 = new D[] { null, new D(), new D(0), new D(5) };
             D[] array2 = new D[] { null, new D(), new D(0), new D(5) };
@@ -76,13 +76,13 @@ namespace System.Linq.Expressions.Tests
             {
                 for (int j = 0; j < array2.Length; j++)
                 {
-                    VerifyCustom2Coalesce(array1[i], array2[j]);
+                    VerifyCustom2Coalesce(array1[i], array2[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckDecimalCoalesceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckDecimalCoalesceTest(bool useInterpreter)
         {
             decimal?[] array1 = new decimal?[] { null, decimal.Zero, decimal.One, decimal.MinusOne, decimal.MinValue, decimal.MaxValue };
             decimal[] array2 = new decimal[] { decimal.Zero, decimal.One, decimal.MinusOne, decimal.MinValue, decimal.MaxValue };
@@ -90,13 +90,13 @@ namespace System.Linq.Expressions.Tests
             {
                 for (int j = 0; j < array2.Length; j++)
                 {
-                    VerifyDecimalCoalesce(array1[i], array2[j]);
+                    VerifyDecimalCoalesce(array1[i], array2[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckDelegateCoalesceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckDelegateCoalesceTest(bool useInterpreter)
         {
             Delegate[] array1 = new Delegate[] { null, (Func<object>)delegate () { return null; }, (Func<int, int>)delegate (int i) { return i + 1; }, (Action<object>)delegate { } };
             Delegate[] array2 = new Delegate[] { null, (Func<object>)delegate () { return null; }, (Func<int, int>)delegate (int i) { return i + 1; }, (Action<object>)delegate { } };
@@ -104,13 +104,13 @@ namespace System.Linq.Expressions.Tests
             {
                 for (int j = 0; j < array2.Length; j++)
                 {
-                    VerifyDelegateCoalesce(array1[i], array2[j]);
+                    VerifyDelegateCoalesce(array1[i], array2[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckDoubleCoalesceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckDoubleCoalesceTest(bool useInterpreter)
         {
             double?[] array1 = new double?[] { null, 0, 1, -1, double.MinValue, double.MaxValue, double.Epsilon, double.NegativeInfinity, double.PositiveInfinity, double.NaN };
             double[] array2 = new double[] { 0, 1, -1, double.MinValue, double.MaxValue, double.Epsilon, double.NegativeInfinity, double.PositiveInfinity, double.NaN };
@@ -118,13 +118,13 @@ namespace System.Linq.Expressions.Tests
             {
                 for (int j = 0; j < array2.Length; j++)
                 {
-                    VerifyDoubleCoalesce(array1[i], array2[j]);
+                    VerifyDoubleCoalesce(array1[i], array2[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckEnumCoalesceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckEnumCoalesceTest(bool useInterpreter)
         {
             E?[] array1 = new E?[] { null, (E)0, E.A, E.B, (E)int.MaxValue, (E)int.MinValue };
             E[] array2 = new E[] { (E)0, E.A, E.B, (E)int.MaxValue, (E)int.MinValue };
@@ -132,13 +132,13 @@ namespace System.Linq.Expressions.Tests
             {
                 for (int j = 0; j < array2.Length; j++)
                 {
-                    VerifyEnumCoalesce(array1[i], array2[j]);
+                    VerifyEnumCoalesce(array1[i], array2[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckEnumLongCoalesceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckEnumLongCoalesceTest(bool useInterpreter)
         {
             El?[] array1 = new El?[] { null, (El)0, El.A, El.B, (El)long.MaxValue, (El)long.MinValue };
             El[] array2 = new El[] { (El)0, El.A, El.B, (El)long.MaxValue, (El)long.MinValue };
@@ -146,13 +146,13 @@ namespace System.Linq.Expressions.Tests
             {
                 for (int j = 0; j < array2.Length; j++)
                 {
-                    VerifyEnumLongCoalesce(array1[i], array2[j]);
+                    VerifyEnumLongCoalesce(array1[i], array2[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckFloatCoalesceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckFloatCoalesceTest(bool useInterpreter)
         {
             float?[] array1 = new float?[] { null, 0, 1, -1, float.MinValue, float.MaxValue, float.Epsilon, float.NegativeInfinity, float.PositiveInfinity, float.NaN };
             float[] array2 = new float[] { 0, 1, -1, float.MinValue, float.MaxValue, float.Epsilon, float.NegativeInfinity, float.PositiveInfinity, float.NaN };
@@ -160,13 +160,13 @@ namespace System.Linq.Expressions.Tests
             {
                 for (int j = 0; j < array2.Length; j++)
                 {
-                    VerifyFloatCoalesce(array1[i], array2[j]);
+                    VerifyFloatCoalesce(array1[i], array2[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckFuncCoalesceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckFuncCoalesceTest(bool useInterpreter)
         {
             Func<object>[] array1 = new Func<object>[] { null, (Func<object>)delegate () { return null; } };
             Func<object>[] array2 = new Func<object>[] { null, (Func<object>)delegate () { return null; } };
@@ -174,13 +174,13 @@ namespace System.Linq.Expressions.Tests
             {
                 for (int j = 0; j < array2.Length; j++)
                 {
-                    VerifyFuncCoalesce(array1[i], array2[j]);
+                    VerifyFuncCoalesce(array1[i], array2[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckInterfaceCoalesceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckInterfaceCoalesceTest(bool useInterpreter)
         {
             I[] array1 = new I[] { null, new C(), new D(), new D(0), new D(5) };
             I[] array2 = new I[] { null, new C(), new D(), new D(0), new D(5) };
@@ -188,13 +188,13 @@ namespace System.Linq.Expressions.Tests
             {
                 for (int j = 0; j < array2.Length; j++)
                 {
-                    VerifyInterfaceCoalesce(array1[i], array2[j]);
+                    VerifyInterfaceCoalesce(array1[i], array2[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckIEquatableCustomCoalesceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckIEquatableCustomCoalesceTest(bool useInterpreter)
         {
             IEquatable<C>[] array1 = new IEquatable<C>[] { null, new C(), new D(), new D(0), new D(5) };
             IEquatable<C>[] array2 = new IEquatable<C>[] { null, new C(), new D(), new D(0), new D(5) };
@@ -202,13 +202,13 @@ namespace System.Linq.Expressions.Tests
             {
                 for (int j = 0; j < array2.Length; j++)
                 {
-                    VerifyIEquatableCustomCoalesce(array1[i], array2[j]);
+                    VerifyIEquatableCustomCoalesce(array1[i], array2[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckIEquatableCustom2CoalesceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckIEquatableCustom2CoalesceTest(bool useInterpreter)
         {
             IEquatable<D>[] array1 = new IEquatable<D>[] { null, new D(), new D(0), new D(5) };
             IEquatable<D>[] array2 = new IEquatable<D>[] { null, new D(), new D(0), new D(5) };
@@ -216,13 +216,13 @@ namespace System.Linq.Expressions.Tests
             {
                 for (int j = 0; j < array2.Length; j++)
                 {
-                    VerifyIEquatableCustom2Coalesce(array1[i], array2[j]);
+                    VerifyIEquatableCustom2Coalesce(array1[i], array2[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckIntCoalesceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckIntCoalesceTest(bool useInterpreter)
         {
             int?[] array1 = new int?[] { null, 0, 1, -1, int.MinValue, int.MaxValue };
             int[] array2 = new int[] { 0, 1, -1, int.MinValue, int.MaxValue };
@@ -230,13 +230,13 @@ namespace System.Linq.Expressions.Tests
             {
                 for (int j = 0; j < array2.Length; j++)
                 {
-                    VerifyIntCoalesce(array1[i], array2[j]);
+                    VerifyIntCoalesce(array1[i], array2[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckLongCoalesceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLongCoalesceTest(bool useInterpreter)
         {
             long?[] array1 = new long?[] { null, 0, 1, -1, long.MinValue, long.MaxValue };
             long[] array2 = new long[] { 0, 1, -1, long.MinValue, long.MaxValue };
@@ -244,13 +244,13 @@ namespace System.Linq.Expressions.Tests
             {
                 for (int j = 0; j < array2.Length; j++)
                 {
-                    VerifyLongCoalesce(array1[i], array2[j]);
+                    VerifyLongCoalesce(array1[i], array2[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckObjectCoalesceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckObjectCoalesceTest(bool useInterpreter)
         {
             object[] array1 = new object[] { null, new object(), new C(), new D(3) };
             object[] array2 = new object[] { null, new object(), new C(), new D(3) };
@@ -258,13 +258,13 @@ namespace System.Linq.Expressions.Tests
             {
                 for (int j = 0; j < array2.Length; j++)
                 {
-                    VerifyObjectCoalesce(array1[i], array2[j]);
+                    VerifyObjectCoalesce(array1[i], array2[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckStructCoalesceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructCoalesceTest(bool useInterpreter)
         {
             S?[] array1 = new S?[] { null, default(S), new S() };
             S[] array2 = new S[] { default(S), new S() };
@@ -272,13 +272,13 @@ namespace System.Linq.Expressions.Tests
             {
                 for (int j = 0; j < array2.Length; j++)
                 {
-                    VerifyStructCoalesce(array1[i], array2[j]);
+                    VerifyStructCoalesce(array1[i], array2[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckSByteCoalesceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckSByteCoalesceTest(bool useInterpreter)
         {
             sbyte?[] array1 = new sbyte?[] { null, 0, 1, -1, sbyte.MinValue, sbyte.MaxValue };
             sbyte[] array2 = new sbyte[] { 0, 1, -1, sbyte.MinValue, sbyte.MaxValue };
@@ -286,13 +286,13 @@ namespace System.Linq.Expressions.Tests
             {
                 for (int j = 0; j < array2.Length; j++)
                 {
-                    VerifySByteCoalesce(array1[i], array2[j]);
+                    VerifySByteCoalesce(array1[i], array2[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckStructWithStringCoalesceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructWithStringCoalesceTest(bool useInterpreter)
         {
             Sc?[] array1 = new Sc?[] { null, default(Sc), new Sc(), new Sc(null) };
             Sc[] array2 = new Sc[] { default(Sc), new Sc(), new Sc(null) };
@@ -300,13 +300,13 @@ namespace System.Linq.Expressions.Tests
             {
                 for (int j = 0; j < array2.Length; j++)
                 {
-                    VerifyStructWithStringCoalesce(array1[i], array2[j]);
+                    VerifyStructWithStringCoalesce(array1[i], array2[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckStructWithStringAndFieldCoalesceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructWithStringAndFieldCoalesceTest(bool useInterpreter)
         {
             Scs?[] array1 = new Scs?[] { null, default(Scs), new Scs(), new Scs(null, new S()) };
             Scs[] array2 = new Scs[] { default(Scs), new Scs(), new Scs(null, new S()) };
@@ -314,13 +314,13 @@ namespace System.Linq.Expressions.Tests
             {
                 for (int j = 0; j < array2.Length; j++)
                 {
-                    VerifyStructWithStringAndFieldCoalesce(array1[i], array2[j]);
+                    VerifyStructWithStringAndFieldCoalesce(array1[i], array2[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckShortCoalesceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckShortCoalesceTest(bool useInterpreter)
         {
             short?[] array1 = new short?[] { null, 0, 1, -1, short.MinValue, short.MaxValue };
             short[] array2 = new short[] { 0, 1, -1, short.MinValue, short.MaxValue };
@@ -328,13 +328,13 @@ namespace System.Linq.Expressions.Tests
             {
                 for (int j = 0; j < array2.Length; j++)
                 {
-                    VerifyShortCoalesce(array1[i], array2[j]);
+                    VerifyShortCoalesce(array1[i], array2[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckStructWithTwoValuesCoalesceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructWithTwoValuesCoalesceTest(bool useInterpreter)
         {
             Sp?[] array1 = new Sp?[] { null, default(Sp), new Sp(), new Sp(5, 5.0) };
             Sp[] array2 = new Sp[] { default(Sp), new Sp(), new Sp(5, 5.0) };
@@ -342,13 +342,13 @@ namespace System.Linq.Expressions.Tests
             {
                 for (int j = 0; j < array2.Length; j++)
                 {
-                    VerifyStructWithTwoValuesCoalesce(array1[i], array2[j]);
+                    VerifyStructWithTwoValuesCoalesce(array1[i], array2[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckStructWithValueCoalesceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructWithValueCoalesceTest(bool useInterpreter)
         {
             Ss?[] array1 = new Ss?[] { null, default(Ss), new Ss(), new Ss(new S()) };
             Ss[] array2 = new Ss[] { default(Ss), new Ss(), new Ss(new S()) };
@@ -356,13 +356,13 @@ namespace System.Linq.Expressions.Tests
             {
                 for (int j = 0; j < array2.Length; j++)
                 {
-                    VerifyStructWithValueCoalesce(array1[i], array2[j]);
+                    VerifyStructWithValueCoalesce(array1[i], array2[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckStringCoalesceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStringCoalesceTest(bool useInterpreter)
         {
             string[] array1 = new string[] { null, "", "a", "foo" };
             string[] array2 = new string[] { null, "", "a", "foo" };
@@ -370,13 +370,13 @@ namespace System.Linq.Expressions.Tests
             {
                 for (int j = 0; j < array2.Length; j++)
                 {
-                    VerifyStringCoalesce(array1[i], array2[j]);
+                    VerifyStringCoalesce(array1[i], array2[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckUIntCoalesceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckUIntCoalesceTest(bool useInterpreter)
         {
             uint?[] array1 = new uint?[] { null, 0, 1, uint.MaxValue };
             uint[] array2 = new uint[] { 0, 1, uint.MaxValue };
@@ -384,13 +384,13 @@ namespace System.Linq.Expressions.Tests
             {
                 for (int j = 0; j < array2.Length; j++)
                 {
-                    VerifyUIntCoalesce(array1[i], array2[j]);
+                    VerifyUIntCoalesce(array1[i], array2[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckULongCoalesceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckULongCoalesceTest(bool useInterpreter)
         {
             ulong?[] array1 = new ulong?[] { null, 0, 1, ulong.MaxValue };
             ulong[] array2 = new ulong[] { 0, 1, ulong.MaxValue };
@@ -398,13 +398,13 @@ namespace System.Linq.Expressions.Tests
             {
                 for (int j = 0; j < array2.Length; j++)
                 {
-                    VerifyULongCoalesce(array1[i], array2[j]);
+                    VerifyULongCoalesce(array1[i], array2[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckUShortCoalesceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckUShortCoalesceTest(bool useInterpreter)
         {
             ushort?[] array1 = new ushort?[] { null, 0, 1, ushort.MaxValue };
             ushort[] array2 = new ushort[] { 0, 1, ushort.MaxValue };
@@ -412,70 +412,70 @@ namespace System.Linq.Expressions.Tests
             {
                 for (int j = 0; j < array2.Length; j++)
                 {
-                    VerifyUShortCoalesce(array1[i], array2[j]);
+                    VerifyUShortCoalesce(array1[i], array2[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckGenericCustomWithClassRestrictionCoalesceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckGenericCustomWithClassRestrictionCoalesceTest(bool useInterpreter)
         {
-            CheckGenericWithClassRestrictionCoalesceHelper<C>();
+            CheckGenericWithClassRestrictionCoalesceHelper<C>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckGenericObjectWithClassRestrictionCoalesceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckGenericObjectWithClassRestrictionCoalesceTest(bool useInterpreter)
         {
-            CheckGenericWithClassRestrictionCoalesceHelper<object>();
+            CheckGenericWithClassRestrictionCoalesceHelper<object>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckGenericCustomWithSubClassRestrictionCoalesceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckGenericCustomWithSubClassRestrictionCoalesceTest(bool useInterpreter)
         {
-            CheckGenericWithSubClassRestrictionCoalesceHelper<C>();
+            CheckGenericWithSubClassRestrictionCoalesceHelper<C>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckGenericCustomWithClassAndNewRestrictionCoalesceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckGenericCustomWithClassAndNewRestrictionCoalesceTest(bool useInterpreter)
         {
-            CheckGenericWithClassAndNewRestrictionCoalesceHelper<C>();
+            CheckGenericWithClassAndNewRestrictionCoalesceHelper<C>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckGenericObjectWithClassAndNewRestrictionCoalesceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckGenericObjectWithClassAndNewRestrictionCoalesceTest(bool useInterpreter)
         {
-            CheckGenericWithClassAndNewRestrictionCoalesceHelper<object>();
+            CheckGenericWithClassAndNewRestrictionCoalesceHelper<object>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckGenericCustomWithSubClassAndNewRestrictionCoalesceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckGenericCustomWithSubClassAndNewRestrictionCoalesceTest(bool useInterpreter)
         {
-            CheckGenericWithSubClassAndNewRestrictionCoalesceHelper<C>();
+            CheckGenericWithSubClassAndNewRestrictionCoalesceHelper<C>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckGenericEnumWithStructRestrictionCoalesceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckGenericEnumWithStructRestrictionCoalesceTest(bool useInterpreter)
         {
-            CheckGenericWithStructRestrictionCoalesceHelper<E>();
+            CheckGenericWithStructRestrictionCoalesceHelper<E>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckGenericStructWithStructRestrictionCoalesceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckGenericStructWithStructRestrictionCoalesceTest(bool useInterpreter)
         {
-            CheckGenericWithStructRestrictionCoalesceHelper<S>();
+            CheckGenericWithStructRestrictionCoalesceHelper<S>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckGenericStructWithStringAndFieldWithStructRestrictionCoalesceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckGenericStructWithStringAndFieldWithStructRestrictionCoalesceTest(bool useInterpreter)
         {
-            CheckGenericWithStructRestrictionCoalesceHelper<Scs>();
+            CheckGenericWithStructRestrictionCoalesceHelper<Scs>(useInterpreter);
         }
 
         #endregion
 
         #region Generic helpers
 
-        private static void CheckGenericWithClassRestrictionCoalesceHelper<Tc>() where Tc : class
+        private static void CheckGenericWithClassRestrictionCoalesceHelper<Tc>(bool useInterpreter) where Tc : class
         {
             Tc[] array1 = new Tc[] { null, default(Tc) };
             Tc[] array2 = new Tc[] { null, default(Tc) };
@@ -483,12 +483,12 @@ namespace System.Linq.Expressions.Tests
             {
                 for (int j = 0; j < array2.Length; j++)
                 {
-                    VerifyGenericWithClassRestrictionCoalesce<Tc>(array1[i], array2[j]);
+                    VerifyGenericWithClassRestrictionCoalesce<Tc>(array1[i], array2[j], useInterpreter);
                 }
             }
         }
 
-        private static void CheckGenericWithSubClassRestrictionCoalesceHelper<TC>() where TC : C
+        private static void CheckGenericWithSubClassRestrictionCoalesceHelper<TC>(bool useInterpreter) where TC : C
         {
             TC[] array1 = new TC[] { null, default(TC), (TC)new C() };
             TC[] array2 = new TC[] { null, default(TC), (TC)new C() };
@@ -496,12 +496,12 @@ namespace System.Linq.Expressions.Tests
             {
                 for (int j = 0; j < array2.Length; j++)
                 {
-                    VerifyGenericWithSubClassRestrictionCoalesce<TC>(array1[i], array2[j]);
+                    VerifyGenericWithSubClassRestrictionCoalesce<TC>(array1[i], array2[j], useInterpreter);
                 }
             }
         }
 
-        private static void CheckGenericWithClassAndNewRestrictionCoalesceHelper<Tcn>() where Tcn : class, new()
+        private static void CheckGenericWithClassAndNewRestrictionCoalesceHelper<Tcn>(bool useInterpreter) where Tcn : class, new()
         {
             Tcn[] array1 = new Tcn[] { null, default(Tcn), new Tcn() };
             Tcn[] array2 = new Tcn[] { null, default(Tcn), new Tcn() };
@@ -509,12 +509,12 @@ namespace System.Linq.Expressions.Tests
             {
                 for (int j = 0; j < array2.Length; j++)
                 {
-                    VerifyGenericWithClassAndNewRestrictionCoalesce<Tcn>(array1[i], array2[j]);
+                    VerifyGenericWithClassAndNewRestrictionCoalesce<Tcn>(array1[i], array2[j], useInterpreter);
                 }
             }
         }
 
-        private static void CheckGenericWithSubClassAndNewRestrictionCoalesceHelper<TCn>() where TCn : C, new()
+        private static void CheckGenericWithSubClassAndNewRestrictionCoalesceHelper<TCn>(bool useInterpreter) where TCn : C, new()
         {
             TCn[] array1 = new TCn[] { null, default(TCn), new TCn(), (TCn)new C() };
             TCn[] array2 = new TCn[] { null, default(TCn), new TCn(), (TCn)new C() };
@@ -522,12 +522,12 @@ namespace System.Linq.Expressions.Tests
             {
                 for (int j = 0; j < array2.Length; j++)
                 {
-                    VerifyGenericWithSubClassAndNewRestrictionCoalesce<TCn>(array1[i], array2[j]);
+                    VerifyGenericWithSubClassAndNewRestrictionCoalesce<TCn>(array1[i], array2[j], useInterpreter);
                 }
             }
         }
 
-        private static void CheckGenericWithStructRestrictionCoalesceHelper<Ts>() where Ts : struct
+        private static void CheckGenericWithStructRestrictionCoalesceHelper<Ts>(bool useInterpreter) where Ts : struct
         {
             Ts?[] array1 = new Ts?[] { null, default(Ts), new Ts() };
             Ts[] array2 = new Ts[] { default(Ts), new Ts() };
@@ -535,7 +535,7 @@ namespace System.Linq.Expressions.Tests
             {
                 for (int j = 0; j < array2.Length; j++)
                 {
-                    VerifyGenericWithStructRestrictionCoalesce<Ts>(array1[i], array2[j]);
+                    VerifyGenericWithStructRestrictionCoalesce<Ts>(array1[i], array2[j], useInterpreter);
                 }
             }
         }
@@ -544,7 +544,7 @@ namespace System.Linq.Expressions.Tests
 
         #region Test verifiers
 
-        private static void VerifyBoolCoalesce(bool? a, bool b)
+        private static void VerifyBoolCoalesce(bool? a, bool b, bool useInterpreter)
         {
             Expression<Func<bool>> e =
                 Expression.Lambda<Func<bool>>(
@@ -552,46 +552,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(bool?)),
                         Expression.Constant(b, typeof(bool))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<bool> f = e.Compile();
+            Func<bool> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            bool etResult = default(bool);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            bool csResult = default(bool);
-            Exception csException = null;
-            try
-            {
-                csResult = a ?? b;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a ?? b, f());
         }
 
-        private static void VerifyByteCoalesce(byte? a, byte b)
+        private static void VerifyByteCoalesce(byte? a, byte b, bool useInterpreter)
         {
             Expression<Func<byte>> e =
                 Expression.Lambda<Func<byte>>(
@@ -599,46 +565,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(byte?)),
                         Expression.Constant(b, typeof(byte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<byte> f = e.Compile();
+            Func<byte> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            byte etResult = default(byte);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            byte csResult = default(byte);
-            Exception csException = null;
-            try
-            {
-                csResult = a ?? b;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a ?? b, f());
         }
 
-        private static void VerifyCustomCoalesce(C a, C b)
+        private static void VerifyCustomCoalesce(C a, C b, bool useInterpreter)
         {
             Expression<Func<C>> e =
                 Expression.Lambda<Func<C>>(
@@ -646,46 +578,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(C)),
                         Expression.Constant(b, typeof(C))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<C> f = e.Compile();
+            Func<C> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            C etResult = default(C);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            C csResult = default(C);
-            Exception csException = null;
-            try
-            {
-                csResult = a ?? b;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a ?? b, f());
         }
 
-        private static void VerifyCharCoalesce(char? a, char b)
+        private static void VerifyCharCoalesce(char? a, char b, bool useInterpreter)
         {
             Expression<Func<char>> e =
                 Expression.Lambda<Func<char>>(
@@ -693,46 +591,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(char?)),
                         Expression.Constant(b, typeof(char))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<char> f = e.Compile();
+            Func<char> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            char etResult = default(char);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            char csResult = default(char);
-            Exception csException = null;
-            try
-            {
-                csResult = a ?? b;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a ?? b, f());
         }
 
-        private static void VerifyCustom2Coalesce(D a, D b)
+        private static void VerifyCustom2Coalesce(D a, D b, bool useInterpreter)
         {
             Expression<Func<D>> e =
                 Expression.Lambda<Func<D>>(
@@ -740,46 +604,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(D)),
                         Expression.Constant(b, typeof(D))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<D> f = e.Compile();
+            Func<D> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            D etResult = default(D);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            D csResult = default(D);
-            Exception csException = null;
-            try
-            {
-                csResult = a ?? b;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a ?? b, f());
         }
 
-        private static void VerifyDecimalCoalesce(decimal? a, decimal b)
+        private static void VerifyDecimalCoalesce(decimal? a, decimal b, bool useInterpreter)
         {
             Expression<Func<decimal>> e =
                 Expression.Lambda<Func<decimal>>(
@@ -787,46 +617,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(decimal?)),
                         Expression.Constant(b, typeof(decimal))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<decimal> f = e.Compile();
+            Func<decimal> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            decimal etResult = default(decimal);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            decimal csResult = default(decimal);
-            Exception csException = null;
-            try
-            {
-                csResult = a ?? b;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a ?? b, f());
         }
 
-        private static void VerifyDelegateCoalesce(Delegate a, Delegate b)
+        private static void VerifyDelegateCoalesce(Delegate a, Delegate b, bool useInterpreter)
         {
             Expression<Func<Delegate>> e =
                 Expression.Lambda<Func<Delegate>>(
@@ -834,46 +630,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(Delegate)),
                         Expression.Constant(b, typeof(Delegate))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Delegate> f = e.Compile();
+            Func<Delegate> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            Delegate etResult = default(Delegate);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            Delegate csResult = default(Delegate);
-            Exception csException = null;
-            try
-            {
-                csResult = a ?? b;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a ?? b, f());
         }
 
-        private static void VerifyDoubleCoalesce(double? a, double b)
+        private static void VerifyDoubleCoalesce(double? a, double b, bool useInterpreter)
         {
             Expression<Func<double>> e =
                 Expression.Lambda<Func<double>>(
@@ -881,46 +643,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(double?)),
                         Expression.Constant(b, typeof(double))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<double> f = e.Compile();
+            Func<double> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            double etResult = default(double);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            double csResult = default(double);
-            Exception csException = null;
-            try
-            {
-                csResult = a ?? b;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a ?? b, f());
         }
 
-        private static void VerifyEnumCoalesce(E? a, E b)
+        private static void VerifyEnumCoalesce(E? a, E b, bool useInterpreter)
         {
             Expression<Func<E>> e =
                 Expression.Lambda<Func<E>>(
@@ -928,46 +656,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(E?)),
                         Expression.Constant(b, typeof(E))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<E> f = e.Compile();
+            Func<E> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            E etResult = default(E);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            E csResult = default(E);
-            Exception csException = null;
-            try
-            {
-                csResult = a ?? b;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a ?? b, f());
         }
 
-        private static void VerifyEnumLongCoalesce(El? a, El b)
+        private static void VerifyEnumLongCoalesce(El? a, El b, bool useInterpreter)
         {
             Expression<Func<El>> e =
                 Expression.Lambda<Func<El>>(
@@ -975,46 +669,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(El?)),
                         Expression.Constant(b, typeof(El))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<El> f = e.Compile();
+            Func<El> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            El etResult = default(El);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            El csResult = default(El);
-            Exception csException = null;
-            try
-            {
-                csResult = a ?? b;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a ?? b, f());
         }
 
-        private static void VerifyFloatCoalesce(float? a, float b)
+        private static void VerifyFloatCoalesce(float? a, float b, bool useInterpreter)
         {
             Expression<Func<float>> e =
                 Expression.Lambda<Func<float>>(
@@ -1022,46 +682,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(float?)),
                         Expression.Constant(b, typeof(float))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<float> f = e.Compile();
+            Func<float> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            float etResult = default(float);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            float csResult = default(float);
-            Exception csException = null;
-            try
-            {
-                csResult = a ?? b;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a ?? b, f());
         }
 
-        private static void VerifyFuncCoalesce(Func<object> a, Func<object> b)
+        private static void VerifyFuncCoalesce(Func<object> a, Func<object> b, bool useInterpreter)
         {
             Expression<Func<Func<object>>> e =
                 Expression.Lambda<Func<Func<object>>>(
@@ -1069,46 +695,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(Func<object>)),
                         Expression.Constant(b, typeof(Func<object>))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Func<object>> f = e.Compile();
+            Func<Func<object>> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            Func<object> etResult = default(Func<object>);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            Func<object> csResult = default(Func<object>);
-            Exception csException = null;
-            try
-            {
-                csResult = a ?? b;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a ?? b, f());
         }
 
-        private static void VerifyInterfaceCoalesce(I a, I b)
+        private static void VerifyInterfaceCoalesce(I a, I b, bool useInterpreter)
         {
             Expression<Func<I>> e =
                 Expression.Lambda<Func<I>>(
@@ -1116,46 +708,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(I)),
                         Expression.Constant(b, typeof(I))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<I> f = e.Compile();
+            Func<I> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            I etResult = default(I);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            I csResult = default(I);
-            Exception csException = null;
-            try
-            {
-                csResult = a ?? b;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a ?? b, f());
         }
 
-        private static void VerifyIEquatableCustomCoalesce(IEquatable<C> a, IEquatable<C> b)
+        private static void VerifyIEquatableCustomCoalesce(IEquatable<C> a, IEquatable<C> b, bool useInterpreter)
         {
             Expression<Func<IEquatable<C>>> e =
                 Expression.Lambda<Func<IEquatable<C>>>(
@@ -1163,46 +721,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(IEquatable<C>)),
                         Expression.Constant(b, typeof(IEquatable<C>))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<IEquatable<C>> f = e.Compile();
+            Func<IEquatable<C>> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            IEquatable<C> etResult = default(IEquatable<C>);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            IEquatable<C> csResult = default(IEquatable<C>);
-            Exception csException = null;
-            try
-            {
-                csResult = a ?? b;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a ?? b, f());
         }
 
-        private static void VerifyIEquatableCustom2Coalesce(IEquatable<D> a, IEquatable<D> b)
+        private static void VerifyIEquatableCustom2Coalesce(IEquatable<D> a, IEquatable<D> b, bool useInterpreter)
         {
             Expression<Func<IEquatable<D>>> e =
                 Expression.Lambda<Func<IEquatable<D>>>(
@@ -1210,46 +734,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(IEquatable<D>)),
                         Expression.Constant(b, typeof(IEquatable<D>))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<IEquatable<D>> f = e.Compile();
+            Func<IEquatable<D>> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            IEquatable<D> etResult = default(IEquatable<D>);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            IEquatable<D> csResult = default(IEquatable<D>);
-            Exception csException = null;
-            try
-            {
-                csResult = a ?? b;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a ?? b, f());
         }
 
-        private static void VerifyIntCoalesce(int? a, int b)
+        private static void VerifyIntCoalesce(int? a, int b, bool useInterpreter)
         {
             Expression<Func<int>> e =
                 Expression.Lambda<Func<int>>(
@@ -1257,46 +747,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(int?)),
                         Expression.Constant(b, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<int> f = e.Compile();
+            Func<int> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            int etResult = default(int);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            int csResult = default(int);
-            Exception csException = null;
-            try
-            {
-                csResult = a ?? b;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a ?? b, f());
         }
 
-        private static void VerifyLongCoalesce(long? a, long b)
+        private static void VerifyLongCoalesce(long? a, long b, bool useInterpreter)
         {
             Expression<Func<long>> e =
                 Expression.Lambda<Func<long>>(
@@ -1304,46 +760,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(long?)),
                         Expression.Constant(b, typeof(long))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<long> f = e.Compile();
+            Func<long> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            long etResult = default(long);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            long csResult = default(long);
-            Exception csException = null;
-            try
-            {
-                csResult = a ?? b;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a ?? b, f());
         }
 
-        private static void VerifyObjectCoalesce(object a, object b)
+        private static void VerifyObjectCoalesce(object a, object b, bool useInterpreter)
         {
             Expression<Func<object>> e =
                 Expression.Lambda<Func<object>>(
@@ -1351,46 +773,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(object)),
                         Expression.Constant(b, typeof(object))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<object> f = e.Compile();
+            Func<object> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            object etResult = default(object);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            object csResult = default(object);
-            Exception csException = null;
-            try
-            {
-                csResult = a ?? b;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a ?? b, f());
         }
 
-        private static void VerifyStructCoalesce(S? a, S b)
+        private static void VerifyStructCoalesce(S? a, S b, bool useInterpreter)
         {
             Expression<Func<S>> e =
                 Expression.Lambda<Func<S>>(
@@ -1398,46 +786,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(S?)),
                         Expression.Constant(b, typeof(S))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<S> f = e.Compile();
+            Func<S> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            S etResult = default(S);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            S csResult = default(S);
-            Exception csException = null;
-            try
-            {
-                csResult = a ?? b;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a ?? b, f());
         }
 
-        private static void VerifySByteCoalesce(sbyte? a, sbyte b)
+        private static void VerifySByteCoalesce(sbyte? a, sbyte b, bool useInterpreter)
         {
             Expression<Func<sbyte>> e =
                 Expression.Lambda<Func<sbyte>>(
@@ -1445,46 +799,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(sbyte?)),
                         Expression.Constant(b, typeof(sbyte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<sbyte> f = e.Compile();
+            Func<sbyte> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            sbyte etResult = default(sbyte);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            sbyte csResult = default(sbyte);
-            Exception csException = null;
-            try
-            {
-                csResult = a ?? b;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a ?? b, f());
         }
 
-        private static void VerifyStructWithStringCoalesce(Sc? a, Sc b)
+        private static void VerifyStructWithStringCoalesce(Sc? a, Sc b, bool useInterpreter)
         {
             Expression<Func<Sc>> e =
                 Expression.Lambda<Func<Sc>>(
@@ -1492,46 +812,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(Sc?)),
                         Expression.Constant(b, typeof(Sc))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Sc> f = e.Compile();
+            Func<Sc> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            Sc etResult = default(Sc);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            Sc csResult = default(Sc);
-            Exception csException = null;
-            try
-            {
-                csResult = a ?? b;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a ?? b, f());
         }
 
-        private static void VerifyStructWithStringAndFieldCoalesce(Scs? a, Scs b)
+        private static void VerifyStructWithStringAndFieldCoalesce(Scs? a, Scs b, bool useInterpreter)
         {
             Expression<Func<Scs>> e =
                 Expression.Lambda<Func<Scs>>(
@@ -1539,46 +825,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(Scs?)),
                         Expression.Constant(b, typeof(Scs))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Scs> f = e.Compile();
+            Func<Scs> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            Scs etResult = default(Scs);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            Scs csResult = default(Scs);
-            Exception csException = null;
-            try
-            {
-                csResult = a ?? b;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a ?? b, f());
         }
 
-        private static void VerifyShortCoalesce(short? a, short b)
+        private static void VerifyShortCoalesce(short? a, short b, bool useInterpreter)
         {
             Expression<Func<short>> e =
                 Expression.Lambda<Func<short>>(
@@ -1586,46 +838,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(short?)),
                         Expression.Constant(b, typeof(short))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<short> f = e.Compile();
+            Func<short> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            short etResult = default(short);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            short csResult = default(short);
-            Exception csException = null;
-            try
-            {
-                csResult = a ?? b;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a ?? b, f());
         }
 
-        private static void VerifyStructWithTwoValuesCoalesce(Sp? a, Sp b)
+        private static void VerifyStructWithTwoValuesCoalesce(Sp? a, Sp b, bool useInterpreter)
         {
             Expression<Func<Sp>> e =
                 Expression.Lambda<Func<Sp>>(
@@ -1633,46 +851,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(Sp?)),
                         Expression.Constant(b, typeof(Sp))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Sp> f = e.Compile();
+            Func<Sp> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            Sp etResult = default(Sp);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            Sp csResult = default(Sp);
-            Exception csException = null;
-            try
-            {
-                csResult = a ?? b;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a ?? b, f());
         }
 
-        private static void VerifyStructWithValueCoalesce(Ss? a, Ss b)
+        private static void VerifyStructWithValueCoalesce(Ss? a, Ss b, bool useInterpreter)
         {
             Expression<Func<Ss>> e =
                 Expression.Lambda<Func<Ss>>(
@@ -1680,46 +864,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(Ss?)),
                         Expression.Constant(b, typeof(Ss))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Ss> f = e.Compile();
+            Func<Ss> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            Ss etResult = default(Ss);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            Ss csResult = default(Ss);
-            Exception csException = null;
-            try
-            {
-                csResult = a ?? b;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a ?? b, f());
         }
 
-        private static void VerifyStringCoalesce(string a, string b)
+        private static void VerifyStringCoalesce(string a, string b, bool useInterpreter)
         {
             Expression<Func<string>> e =
                 Expression.Lambda<Func<string>>(
@@ -1727,46 +877,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(string)),
                         Expression.Constant(b, typeof(string))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<string> f = e.Compile();
+            Func<string> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            string etResult = default(string);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            string csResult = default(string);
-            Exception csException = null;
-            try
-            {
-                csResult = a ?? b;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a ?? b, f());
         }
 
-        private static void VerifyUIntCoalesce(uint? a, uint b)
+        private static void VerifyUIntCoalesce(uint? a, uint b, bool useInterpreter)
         {
             Expression<Func<uint>> e =
                 Expression.Lambda<Func<uint>>(
@@ -1774,46 +890,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(uint?)),
                         Expression.Constant(b, typeof(uint))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<uint> f = e.Compile();
+            Func<uint> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            uint etResult = default(uint);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            uint csResult = default(uint);
-            Exception csException = null;
-            try
-            {
-                csResult = a ?? b;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a ?? b, f());
         }
 
-        private static void VerifyULongCoalesce(ulong? a, ulong b)
+        private static void VerifyULongCoalesce(ulong? a, ulong b, bool useInterpreter)
         {
             Expression<Func<ulong>> e =
                 Expression.Lambda<Func<ulong>>(
@@ -1821,46 +903,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(ulong?)),
                         Expression.Constant(b, typeof(ulong))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<ulong> f = e.Compile();
+            Func<ulong> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            ulong etResult = default(ulong);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            ulong csResult = default(ulong);
-            Exception csException = null;
-            try
-            {
-                csResult = a ?? b;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a ?? b, f());
         }
 
-        private static void VerifyUShortCoalesce(ushort? a, ushort b)
+        private static void VerifyUShortCoalesce(ushort? a, ushort b, bool useInterpreter)
         {
             Expression<Func<ushort>> e =
                 Expression.Lambda<Func<ushort>>(
@@ -1868,46 +916,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(ushort?)),
                         Expression.Constant(b, typeof(ushort))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<ushort> f = e.Compile();
+            Func<ushort> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            ushort etResult = default(ushort);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            ushort csResult = default(ushort);
-            Exception csException = null;
-            try
-            {
-                csResult = a ?? b;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a ?? b, f());
         }
 
-        private static void VerifyGenericWithClassRestrictionCoalesce<Tc>(Tc a, Tc b) where Tc : class
+        private static void VerifyGenericWithClassRestrictionCoalesce<Tc>(Tc a, Tc b, bool useInterpreter) where Tc : class
         {
             Expression<Func<Tc>> e =
                 Expression.Lambda<Func<Tc>>(
@@ -1915,46 +929,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(Tc)),
                         Expression.Constant(b, typeof(Tc))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Tc> f = e.Compile();
+            Func<Tc> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            Tc etResult = default(Tc);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            Tc csResult = default(Tc);
-            Exception csException = null;
-            try
-            {
-                csResult = a ?? b;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a ?? b, f());
         }
 
-        private static void VerifyGenericWithSubClassRestrictionCoalesce<TC>(TC a, TC b) where TC : C
+        private static void VerifyGenericWithSubClassRestrictionCoalesce<TC>(TC a, TC b, bool useInterpreter) where TC : C
         {
             Expression<Func<TC>> e =
                 Expression.Lambda<Func<TC>>(
@@ -1962,46 +942,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(TC)),
                         Expression.Constant(b, typeof(TC))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<TC> f = e.Compile();
+            Func<TC> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            TC etResult = default(TC);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            TC csResult = default(TC);
-            Exception csException = null;
-            try
-            {
-                csResult = a ?? b;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a ?? b, f());
         }
 
-        private static void VerifyGenericWithClassAndNewRestrictionCoalesce<Tcn>(Tcn a, Tcn b) where Tcn : class, new()
+        private static void VerifyGenericWithClassAndNewRestrictionCoalesce<Tcn>(Tcn a, Tcn b, bool useInterpreter) where Tcn : class, new()
         {
             Expression<Func<Tcn>> e =
                 Expression.Lambda<Func<Tcn>>(
@@ -2009,46 +955,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(Tcn)),
                         Expression.Constant(b, typeof(Tcn))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Tcn> f = e.Compile();
+            Func<Tcn> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            Tcn etResult = default(Tcn);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            Tcn csResult = default(Tcn);
-            Exception csException = null;
-            try
-            {
-                csResult = a ?? b;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a ?? b, f());
         }
 
-        private static void VerifyGenericWithSubClassAndNewRestrictionCoalesce<TCn>(TCn a, TCn b) where TCn : C, new()
+        private static void VerifyGenericWithSubClassAndNewRestrictionCoalesce<TCn>(TCn a, TCn b, bool useInterpreter) where TCn : C, new()
         {
             Expression<Func<TCn>> e =
                 Expression.Lambda<Func<TCn>>(
@@ -2056,46 +968,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(TCn)),
                         Expression.Constant(b, typeof(TCn))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<TCn> f = e.Compile();
+            Func<TCn> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            TCn etResult = default(TCn);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            TCn csResult = default(TCn);
-            Exception csException = null;
-            try
-            {
-                csResult = a ?? b;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a ?? b, f());
         }
 
-        private static void VerifyGenericWithStructRestrictionCoalesce<Ts>(Ts? a, Ts b) where Ts : struct
+        private static void VerifyGenericWithStructRestrictionCoalesce<Ts>(Ts? a, Ts b, bool useInterpreter) where Ts : struct
         {
             Expression<Func<Ts>> e =
                 Expression.Lambda<Func<Ts>>(
@@ -2103,43 +981,9 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(Ts?)),
                         Expression.Constant(b, typeof(Ts))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Ts> f = e.Compile();
+            Func<Ts> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            Ts etResult = default(Ts);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            Ts csResult = default(Ts);
-            Exception csException = null;
-            try
-            {
-                csResult = a ?? b;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a ?? b, f());
         }
 
         #endregion

@@ -130,7 +130,7 @@ namespace System.Linq.Parallel
 
         //-----------------------------------------------------------------------------------
         // This internal helper method is used to generate a set of asynchronous channels.
-        // The algorithm used by each channel contains the necessary synchronizationis to
+        // The algorithm used by each channel contains the necessary synchronizations to
         // ensure it is suitable for pipelined consumption.
         //
         // Arguments:

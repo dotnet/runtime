@@ -169,7 +169,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     Tests whether the given value is valid against a specified list of <see cref="ValidationAttribute" />s.
         /// </summary>
         /// <remarks>
-        ///     This method will test each <see cref="ValidationAttribute" />s specified .  If
+        ///     This method will test each <see cref="ValidationAttribute" />s specified.  If
         ///     <paramref name="validationResults" /> is non-null, this method will add a <see cref="ValidationResult" />
         ///     to it for each validation failure.
         ///     <para>

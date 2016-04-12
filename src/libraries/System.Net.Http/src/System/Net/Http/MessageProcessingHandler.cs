@@ -74,7 +74,7 @@ namespace System.Net.Http
                     }
                     catch (OperationCanceledException e)
                     {
-                        // If ProcessResponse() throws an OperationCanceledException check wheter it is related to
+                        // If ProcessResponse() throws an OperationCanceledException check whether it is related to
                         // the cancellation token we received from the user. If so, cancel the Task.
                         HandleCanceledOperations(cancellationToken, tcs, e);
                     }

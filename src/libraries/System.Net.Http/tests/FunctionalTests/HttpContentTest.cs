@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.IO;
 using System.Net.Http.Headers;
 using System.Text;
@@ -39,8 +38,8 @@ namespace System.Net.Http.Functional.Tests
         {
             var content = new MockContent(new MockException(), MockOptions.ThrowInSerializeMethods);
 
-            var m = new MemoryStream();
-            await Assert.ThrowsAsync<MockException>(() => content.CopyToAsync(m));
+            Task t = content.CopyToAsync(new MemoryStream());
+            await Assert.ThrowsAsync<MockException>(() => t);
         }
 
         [Fact]
@@ -48,8 +47,8 @@ namespace System.Net.Http.Functional.Tests
         {
             var content = new MockContent(new ObjectDisposedException(""), MockOptions.ThrowInSerializeMethods);
 
-            var m = new MemoryStream();
-            HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => content.CopyToAsync(m));
+            Task t = content.CopyToAsync(new MemoryStream());
+            HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => t);
             Assert.IsType<ObjectDisposedException>(ex.InnerException);
         }
 
@@ -58,8 +57,8 @@ namespace System.Net.Http.Functional.Tests
         {
             var content = new MockContent(new IOException(), MockOptions.ThrowInSerializeMethods);
 
-            var m = new MemoryStream();
-            HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => content.CopyToAsync(m));
+            Task t = content.CopyToAsync(new MemoryStream());
+            HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => t);
             Assert.IsType<IOException>(ex.InnerException);
         }
 
@@ -69,7 +68,7 @@ namespace System.Net.Http.Functional.Tests
             var content = new MockContent(new MockException(), MockOptions.ThrowInAsyncSerializeMethods);
 
             var m = new MemoryStream();
-            Assert.Throws<MockException>(() => { Task t = content.CopyToAsync(m); });
+            Assert.Throws<MockException>(() => { content.CopyToAsync(m); });
         }
 
         [Fact]
@@ -77,8 +76,8 @@ namespace System.Net.Http.Functional.Tests
         {
             var content = new MockContent(new ObjectDisposedException(""), MockOptions.ThrowInAsyncSerializeMethods);
 
-            var m = new MemoryStream();
-            HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => content.CopyToAsync(m));
+            Task t = content.CopyToAsync(new MemoryStream());
+            HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => t);
             Assert.IsType<ObjectDisposedException>(ex.InnerException);
         }
 
@@ -87,8 +86,8 @@ namespace System.Net.Http.Functional.Tests
         {
             var content = new MockContent(new IOException(), MockOptions.ThrowInAsyncSerializeMethods);
 
-            var m = new MemoryStream();
-            HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => content.CopyToAsync(m));
+            Task t = content.CopyToAsync(new MemoryStream());
+            HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => t);
             Assert.IsType<IOException>(ex.InnerException);
         }
 
@@ -101,7 +100,7 @@ namespace System.Net.Http.Functional.Tests
             
             // The HttpContent derived class (MockContent in our case) must return a Task object when WriteToAsync()
             // is called. If not, HttpContent will throw.
-            Assert.Throws<InvalidOperationException>(() => { Task t = content.CopyToAsync(m); });
+            Assert.Throws<InvalidOperationException>(() => { content.CopyToAsync(m); });
         }
 
         [Fact]
@@ -221,14 +220,16 @@ namespace System.Net.Http.Functional.Tests
         public async Task LoadIntoBufferAsync_BufferSizeSmallerThanContentSizeWithCalculatedContentLength_ThrowsHttpRequestException()
         {
             var content = new MockContent(MockOptions.CanCalculateLength);
-            await Assert.ThrowsAsync<HttpRequestException>(() => content.LoadIntoBufferAsync(content.GetMockData().Length - 1));
+            Task t = content.LoadIntoBufferAsync(content.GetMockData().Length - 1);
+            await Assert.ThrowsAsync<HttpRequestException>(() => t);
         }
 
         [Fact]
         public async Task LoadIntoBufferAsync_BufferSizeSmallerThanContentSizeWithNullContentLength_ThrowsHttpRequestException()
         {
             var content = new MockContent();
-            await Assert.ThrowsAsync<HttpRequestException>(() => content.LoadIntoBufferAsync(content.GetMockData().Length - 1));
+            Task t = content.LoadIntoBufferAsync(content.GetMockData().Length - 1);
+            await Assert.ThrowsAsync<HttpRequestException>(() => t);
         }
 
         [Fact]
@@ -303,7 +304,8 @@ namespace System.Net.Http.Functional.Tests
         {
             var content = new MockContent(new MockException(), MockOptions.ThrowInSerializeMethods);
 
-            await Assert.ThrowsAsync<MockException>(() => content.LoadIntoBufferAsync());
+            Task t = content.LoadIntoBufferAsync();
+            await Assert.ThrowsAsync<MockException>(() => t);
         }
 
         [Fact]
@@ -311,7 +313,8 @@ namespace System.Net.Http.Functional.Tests
         {
             var content = new MockContent(new ObjectDisposedException(""), MockOptions.ThrowInSerializeMethods);
 
-            HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => content.LoadIntoBufferAsync());
+            Task t = content.LoadIntoBufferAsync();
+            HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => t);
             Assert.IsType<ObjectDisposedException>(ex.InnerException);
         }
 
@@ -320,16 +323,17 @@ namespace System.Net.Http.Functional.Tests
         {
             MockContent content = new MockContent(new IOException(), MockOptions.ThrowInSerializeMethods);
 
-            HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => content.LoadIntoBufferAsync());
+            Task t = content.LoadIntoBufferAsync();
+            HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => t);
             Assert.IsType<IOException>(ex.InnerException);
         }
 
         [Fact]
-        public async Task LoadIntoBufferAsync_ThrowCustomExceptionInOverriddenAsyncMethod_ExceptionBubblesUpToCaller()
+        public void LoadIntoBufferAsync_ThrowCustomExceptionInOverriddenAsyncMethod_ExceptionBubblesUpToCaller()
         {
             var content = new MockContent(new MockException(), MockOptions.ThrowInAsyncSerializeMethods);
 
-            await Assert.ThrowsAsync<MockException>(() => content.LoadIntoBufferAsync());
+            Assert.Throws<MockException>(() => { content.LoadIntoBufferAsync(); });
         }
 
         [Fact]
@@ -337,7 +341,8 @@ namespace System.Net.Http.Functional.Tests
         {
             var content = new MockContent(new ObjectDisposedException(""), MockOptions.ThrowInAsyncSerializeMethods);
 
-            HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => content.LoadIntoBufferAsync());
+            Task t = content.LoadIntoBufferAsync();
+            HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => t);
             Assert.IsType<ObjectDisposedException>(ex.InnerException);
         }
 
@@ -346,7 +351,8 @@ namespace System.Net.Http.Functional.Tests
         {
             var content = new MockContent(new IOException(), MockOptions.ThrowInAsyncSerializeMethods);
 
-            HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => content.LoadIntoBufferAsync());
+            Task t = content.LoadIntoBufferAsync();
+            HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => t);
             Assert.IsType<IOException>(ex.InnerException);
         }
 
@@ -381,7 +387,8 @@ namespace System.Net.Http.Functional.Tests
             // MockContent uses stream.WriteByte() rather than stream.Write(): Verify that the max. buffer size
             // is also checked when using WriteByte().
             var content = new MockContent(MockOptions.UseWriteByteInCopyTo);
-            await Assert.ThrowsAsync<HttpRequestException>(() => content.LoadIntoBufferAsync(content.GetMockData().Length - 1));
+            Task t = content.LoadIntoBufferAsync(content.GetMockData().Length - 1);
+            await Assert.ThrowsAsync<HttpRequestException>(() => t);
         }
         
         [Fact]
@@ -403,7 +410,8 @@ namespace System.Net.Http.Functional.Tests
             content.Headers.ContentType.CharSet = "invalid";
 
             // This will throw because we have an invalid charset.
-            await Assert.ThrowsAsync<InvalidOperationException>(() => content.ReadAsStringAsync());
+            Task t = content.ReadAsStringAsync();
+            await Assert.ThrowsAsync<InvalidOperationException>(() => t);
         }
 
         [Fact]
@@ -431,18 +439,18 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        public async Task Dispose_DisposedObjectThenAccessMembers_ThrowsObjectDisposedException()
+        public void Dispose_DisposedObjectThenAccessMembers_ThrowsObjectDisposedException()
         {
             var content = new MockContent();
             content.Dispose();
 
             var m = new MemoryStream();
 
-            await Assert.ThrowsAsync<ObjectDisposedException>(() => content.CopyToAsync(m));
-            await Assert.ThrowsAsync<ObjectDisposedException>(() => content.ReadAsByteArrayAsync());
-            await Assert.ThrowsAsync<ObjectDisposedException>(() => content.ReadAsStringAsync());
-            await Assert.ThrowsAsync<ObjectDisposedException>(() => content.ReadAsStreamAsync());
-            await Assert.ThrowsAsync<ObjectDisposedException>(() => content.LoadIntoBufferAsync());
+            Assert.Throws<ObjectDisposedException>(() => { content.CopyToAsync(m); });
+            Assert.Throws<ObjectDisposedException>(() => { content.ReadAsByteArrayAsync(); });
+            Assert.Throws<ObjectDisposedException>(() => { content.ReadAsStringAsync(); });
+            Assert.Throws<ObjectDisposedException>(() => { content.ReadAsStreamAsync(); });
+            Assert.Throws<ObjectDisposedException>(() => { content.LoadIntoBufferAsync(); });
 
             // Note that we don't throw when users access the Headers property. This is useful e.g. to be able to 
             // read the headers of a content, even though the content is already disposed. Note that the .NET guidelines
@@ -574,7 +582,7 @@ namespace System.Net.Http.Functional.Tests
                     throw _customException;
                 }
 
-                return Task.Factory.StartNew(() =>
+                return Task.Run(() =>
                 {
                     CheckThrow();
                     return stream.WriteAsync(_mockData, 0, _mockData.Length);

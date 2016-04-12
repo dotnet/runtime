@@ -261,6 +261,12 @@ namespace System.Linq.Expressions
                         }
                     }
                 }
+
+                // if we have a non-boolean user-defined equals, we don't want it.
+                if (comparison.ReturnType != typeof(bool))
+                {
+                    throw Error.EqualityMustReturnBoolean(comparison);
+                }
             }
             else if (caseList.Count != 0)
             {
@@ -297,12 +303,6 @@ namespace System.Linq.Expressions
             else
             {
                 ValidateSwitchCaseType(defaultBody, customType, resultType, nameof(defaultBody));
-            }
-
-            // if we have a non-boolean userdefined equals, we don't want it.
-            if (comparison != null && comparison.ReturnType != typeof(bool))
-            {
-                throw Error.EqualityMustReturnBoolean(comparison);
             }
 
             return new SwitchExpression(resultType, switchValue, defaultBody, comparison, caseList);

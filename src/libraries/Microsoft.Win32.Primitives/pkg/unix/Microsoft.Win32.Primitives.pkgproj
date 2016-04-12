@@ -8,9 +8,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Microsoft.Win32.Primitives.builds" >
+    <ProjectReference Include="..\..\src\Microsoft.Win32.Primitives.csproj" >
       <!-- the binary is not specific to Linux, but we only do a Linux & OSX pass, not Unix-specific pass -->
-      <AdditionalProperties>FilterToOSGroup=Linux</AdditionalProperties>
+      <OSGroup>Linux</OSGroup>
     </ProjectReference>
 
     <ProjectReference Include="$(NativePackagePath)\runtime.native.System\runtime.native.System.pkgproj" />

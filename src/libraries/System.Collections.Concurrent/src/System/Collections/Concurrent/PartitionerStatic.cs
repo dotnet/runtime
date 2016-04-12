@@ -982,7 +982,7 @@ namespace System.Collections.Concurrent
 
                 override public void Dispose()
                 {
-                    // If this is static partitioning, ie. _activePartitionCount != null, since the current partition 
+                    // If this is static partitioning, i.e. _activePartitionCount != null, since the current partition 
                     // is disposed, we decrement the number of active partitions for the shared reader. 
                     if (_activePartitionCount != null && Interlocked.Decrement(ref _activePartitionCount.Value) == 0)
                     {
@@ -990,7 +990,7 @@ namespace System.Collections.Concurrent
                         // reader we created in the _enumerable object.
                         _enumerable.Dispose();
                     }
-                    // If this is dynamic partitioning, ie. _activePartitionCount != null, then _enumerable needs to
+                    // If this is dynamic partitioning, i.e. _activePartitionCount != null, then _enumerable needs to
                     // be disposed explicitly by the user, and we do not need to anything here
                 }
             }

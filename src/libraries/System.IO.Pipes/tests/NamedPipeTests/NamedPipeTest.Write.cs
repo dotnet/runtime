@@ -66,11 +66,5 @@ namespace System.IO.Pipes.Tests
 
         // InOut pipes can be written/read from either direction
         public override void ReadOnWriteOnlyPipe_Throws_NotSupportedException() { }
-        public override void WriteToPipeWithClosedPartner_Throws_IOException()
-        {
-            // timeout on Unix: 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                base.WriteToPipeWithClosedPartner_Throws_IOException();
-        }
     }
 }

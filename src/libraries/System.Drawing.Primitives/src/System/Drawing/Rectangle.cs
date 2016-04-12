@@ -306,7 +306,7 @@ namespace System.Drawing
 
         /// <summary>
         ///    <para>
-        ///       Determines if the specfied point is contained within the
+        ///       Determines if the specified point is contained within the
         ///       rectangular region defined by this <see cref='System.Drawing.Rectangle'/> .
         ///    </para>
         /// </summary>
@@ -318,7 +318,7 @@ namespace System.Drawing
 
         /// <summary>
         ///    <para>
-        ///       Determines if the specfied point is contained within the
+        ///       Determines if the specified point is contained within the
         ///       rectangular region defined by this <see cref='System.Drawing.Rectangle'/> .
         ///    </para>
         /// </summary>
@@ -396,7 +396,7 @@ namespace System.Drawing
         }
 
         /// <summary>
-        ///    Creates a rectangle that represents the intersetion between a and
+        ///    Creates a rectangle that represents the intersection between a and
         ///    b. If there is no intersection, null is returned.
         /// </summary>
         public static Rectangle Intersect(Rectangle a, Rectangle b)
@@ -415,7 +415,7 @@ namespace System.Drawing
         }
 
         /// <summary>
-        ///     Determines if this rectangle intersets with rect.
+        ///     Determines if this rectangle intersects with rect.
         /// </summary>
         [Pure]
         public bool IntersectsWith(Rectangle rect)

@@ -115,7 +115,7 @@ namespace System.Collections.Tests
         [InlineData(1, null, 1)]
         [InlineData(null, 1, -1)]
         [InlineData(null, null, 0)]
-        [MemberData("CompareTestData")]
+        [MemberData(nameof(CompareTestData))]
         public static void TestDefault_Compare(object a, object b, int expected)
         {
             Assert.Equal(expected, Helpers.NormalizeCompare(Comparer.Default.Compare(a, b)));

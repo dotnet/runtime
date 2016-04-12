@@ -50,7 +50,7 @@ namespace System
 
         //
         // Is called whenever a parser gets registered with some scheme
-        // The base implementaion is a nop.
+        // The base implementation is a nop.
         //
         protected virtual void OnRegister(string schemeName, int defaultPort)
         {
@@ -103,8 +103,8 @@ namespace System
         }
 
         //
-        // This method is invoked to allow a cutsom parser to override the
-        // internal parser when serving application with Uri componenet strings.
+        // This method is invoked to allow a custom parser to override the
+        // internal parser when serving application with Uri component strings.
         // The output format depends on the "format" parameter
         //
         // Parameters:
@@ -112,7 +112,7 @@ namespace System
         //  uriFormat       - The requested output format.
         //
         // This method returns:
-        // The final result. The base impementaion could be invoked to get a suggested value
+        // The final result. The base implementation could be invoked to get a suggested value
         //
         protected virtual string GetComponents(Uri uri, UriComponents components, UriFormat format)
         {

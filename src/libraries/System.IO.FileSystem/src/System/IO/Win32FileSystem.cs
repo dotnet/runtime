@@ -53,7 +53,7 @@ namespace System.IO
 
             // We can save a bunch of work if the directory we want to create already exists.  This also
             // saves us in the case where sub paths are inaccessible (due to ERROR_ACCESS_DENIED) but the
-            // final path is accessable and the directory already exists.  For example, consider trying
+            // final path is accessible and the directory already exists.  For example, consider trying
             // to create c:\Foo\Bar\Baz, where everything already exists but ACLS prevent access to c:\Foo
             // and c:\Foo\Bar.  In that case, this code will think it needs to create c:\Foo, and c:\Foo\Bar
             // and fail to due so, causing an exception to be thrown.  This is not what we want.
@@ -215,7 +215,7 @@ namespace System.IO
                 Interop.mincore.WIN32_FIND_DATA findData;
                 findData = new Interop.mincore.WIN32_FIND_DATA();
 
-                // Remove trialing slash since this can cause grief to FindFirstFile. You will get an invalid argument error
+                // Remove trailing slash since this can cause grief to FindFirstFile. You will get an invalid argument error
                 String tempPath = path.TrimEnd(PathHelpers.DirectorySeparatorChars);
 
                 // For floppy drives, normally the OS will pop up a dialog saying
@@ -341,7 +341,7 @@ namespace System.IO
                 throw Win32Marshal.GetExceptionForLastWin32Error();
             String currentDirectory = sb.ToString();
             // Note that if we have somehow put our command prompt into short
-            // file name mode (ie, by running edlin or a DOS grep, etc), then
+            // file name mode (i.e. by running edlin or a DOS grep, etc), then
             // this will return a short file name.
             if (currentDirectory.IndexOf('~') >= 0)
             {

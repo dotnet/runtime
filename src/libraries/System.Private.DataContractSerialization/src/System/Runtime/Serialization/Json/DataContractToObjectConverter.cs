@@ -160,7 +160,7 @@ namespace System.Runtime.Serialization.Json
 
                 if (!member.EmitDefaultValue)
                 {
-                    //Dont emit value if its null or default(valuetype)
+                    // Don't emit value if its null or default(valuetype)
                     if (memberValue == null || (member.MemberTypeContract.IsValueType && object.Equals(memberValue, Activator.CreateInstance(member.MemberType))))
                     {
                         continue;

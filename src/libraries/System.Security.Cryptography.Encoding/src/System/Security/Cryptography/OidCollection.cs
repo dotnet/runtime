@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
 using Internal.Cryptography;
@@ -14,7 +12,7 @@ namespace System.Security.Cryptography
     {
         public OidCollection()
         {
-            _list = new LowLevelListWithIList<Oid>();
+            _list = new List<Oid>();
         }
 
         public int Add(Oid oid)
@@ -24,21 +22,15 @@ namespace System.Security.Cryptography
             return count;
         }
 
-        public Oid this[int index]
-        {
-            get
-            {
-                return _list[index];
-            }
-        }
+        public Oid this[int index] => _list[index];
 
         // Indexer using an OID friendly name or value.
-        public Oid this[String oid]
+        public Oid this[string oid]
         {
             get
             {
                 // If we were passed the friendly name, retrieve the value String.
-                String oidValue = OidLookup.ToOid(oid, OidGroup.All, fallBackToAllGroups: false);
+                string oidValue = OidLookup.ToOid(oid, OidGroup.All, fallBackToAllGroups: false);
                 if (oidValue == null)
                 {
                     oidValue = oid;
@@ -52,23 +44,11 @@ namespace System.Security.Cryptography
             }
         }
 
-        public int Count
-        {
-            get
-            {
-                return _list.Count;
-            }
-        }
+        public int Count => _list.Count;
 
-        public OidEnumerator GetEnumerator()
-        {
-            return new OidEnumerator(this);
-        }
+        public OidEnumerator GetEnumerator() => new OidEnumerator(this);
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return new OidEnumerator(this);
-        }
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         void ICollection.CopyTo(Array array, int index)
         {
@@ -78,10 +58,10 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
             if (index < 0 || index >= array.Length)
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
-            if (index + this.Count > array.Length)
+            if (index + Count > array.Length)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
-            for (int i = 0; i < this.Count; i++)
+            for (int i = 0; i < Count; i++)
             {
                 array.SetValue(this[i], index);
                 index++;
@@ -90,25 +70,21 @@ namespace System.Security.Cryptography
 
         public void CopyTo(Oid[] array, int index)
         {
-            ((ICollection)this).CopyTo(array, index);
+            // Need to do part of the argument validation ourselves as OidCollection throws
+            // ArgumentOutOfRangeException where List<>.CopyTo() throws ArgumentException.
+
+            if (array == null)
+                throw new ArgumentNullException(nameof(array));
+            if (index < 0 || index >= array.Length)
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+
+            _list.CopyTo(array, index);
         }
 
-        bool ICollection.IsSynchronized
-        {
-            get
-            {
-                return false;
-            }
-        }
+        bool ICollection.IsSynchronized => false;
 
-        Object ICollection.SyncRoot
-        {
-            get
-            {
-                return this;
-            }
-        }
+        object ICollection.SyncRoot => this;
 
-        private LowLevelListWithIList<Oid> _list;
+        private readonly List<Oid> _list;
     }
 }

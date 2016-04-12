@@ -38,7 +38,7 @@ namespace System.Linq.Expressions.Interpreter
         internal int _stackDepth = UnknownDepth;
         internal int _continuationStackDepth = UnknownDepth;
 
-        // Offsets of forward branching instructions targetting this label 
+        // Offsets of forward branching instructions targeting this label 
         // that need to be updated after we emit the label.
         private List<int> _forwardBranchFixups;
 

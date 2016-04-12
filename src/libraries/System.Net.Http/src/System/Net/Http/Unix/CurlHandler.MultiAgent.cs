@@ -11,28 +11,33 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 
-// TODO: Once we upgrade to C# 6, remove all of these and simply import the Http class.
-using CURLAUTH = Interop.Http.CURLAUTH;
 using CURLcode = Interop.Http.CURLcode;
-using CURLINFO = Interop.Http.CURLINFO;
 using CURLMcode = Interop.Http.CURLMcode;
-using CURLMSG = Interop.Http.CURLMSG;
-using CURLoption = Interop.Http.CURLoption;
-using SafeCurlMultiHandle = Interop.Http.SafeCurlMultiHandle;
-using CurlSeekResult = Interop.Http.CurlSeekResult;
+using CURLINFO = Interop.Http.CURLINFO;
 
 namespace System.Net.Http
 {
     internal partial class CurlHandler : HttpMessageHandler
     {
         /// <summary>Provides a multi handle and the associated processing for all requests on the handle.</summary>
-        private sealed class MultiAgent
+        private sealed class MultiAgent : IDisposable
         {
+            /// <summary>
+            /// Amount of time in milliseconds to keep a multiagent worker alive when there's no work to be done.
+            /// Increasing this value makes it more likely that a worker will end up getting reused for subsequent
+            /// requests, saving on the costs associated with spinning up a new worker, but at the same time it
+            /// burns a thread for that period of time.
+            /// </summary>
+            private const int KeepAliveMilliseconds = 50;
+
             private static readonly Interop.Http.ReadWriteCallback s_receiveHeadersCallback = CurlReceiveHeadersCallback;
             private static readonly Interop.Http.ReadWriteCallback s_sendCallback = CurlSendCallback;
             private static readonly Interop.Http.SeekCallback s_seekCallback = CurlSeekCallback;
             private static readonly Interop.Http.ReadWriteCallback s_receiveBodyCallback = CurlReceiveBodyCallback;
             private static readonly Interop.Http.DebugCallback s_debugCallback = CurlDebugFunction;
+
+            /// <summary>CurlHandler that owns this MultiAgent.</summary>
+            private readonly CurlHandler _associatedHandler;
 
             /// <summary>
             /// A collection of not-yet-processed incoming requests for work to be done
@@ -64,6 +69,29 @@ namespace System.Net.Http
             /// </summary>
             private Task _runningWorker;
 
+            /// <summary>
+            /// Multi handle used to service all requests on this agent.  It's lazily
+            /// created when it's first needed, so that it can utilize all of the settings
+            /// from the associated handler, and it's kept open for the duration of this
+            /// agent so that all of the resources it pools (connection pool, DNS cache, etc.)
+            /// can be used for all requests on this agent.
+            /// </summary>
+            private Interop.Http.SafeCurlMultiHandle _multiHandle;
+
+            /// <summary>Initializes the MultiAgent.</summary>
+            /// <param name="handler">The handler that owns this agent.</param>
+            public MultiAgent(CurlHandler handler)
+            {
+                Debug.Assert(handler != null, "Expected non-null handler");
+                _associatedHandler = handler;
+            }
+
+            /// <summary>Disposes of the agent.</summary>
+            public void Dispose()
+            {
+                _multiHandle?.Dispose();
+            }
+
             /// <summary>Queues a request for the multi handle to process.</summary>
             public void Queue(IncomingRequest request)
             {
@@ -76,7 +104,7 @@ namespace System.Net.Http
             }
 
             /// <summary>Gets the ID of the currently running worker, or null if there isn't one.</summary>
-            internal int? RunningWorkerId { get { return _runningWorker != null ? (int?)_runningWorker.Id : null; } }
+            internal int? RunningWorkerId => _runningWorker?.Id;
 
             /// <summary>Schedules the processing worker if one hasn't already been scheduled.</summary>
             private void EnsureWorkerIsRunning()
@@ -87,9 +115,14 @@ namespace System.Net.Http
                 {
                     EventSourceTrace("MultiAgent worker queueing");
 
+                    // Ensure we've created the multi handle for this agent.
+                    if (_multiHandle == null)
+                    {
+                        _multiHandle = CreateAndConfigureMultiHandle();
+                    }
+
                     // Create pipe used to forcefully wake up curl_multi_wait calls when something important changes.
-                    // This is created here rather than in Process so that the pipe is available immediately
-                    // for subsequent queue calls to use.
+                    // This is created here so that the pipe is available immediately for subsequent queue calls to use.
                     Debug.Assert(_wakeupRequestedPipeFd == null, "Read pipe should have been cleared");
                     Debug.Assert(_requestWakeupPipeFd == null, "Write pipe should have been cleared");
                     unsafe
@@ -100,53 +133,27 @@ namespace System.Net.Http
                         _requestWakeupPipeFd = new SafeFileHandle((IntPtr)fds[Interop.Sys.WriteEndOfPipe], true);
                     }
 
-                    // Kick off the processing task.  It's "DenyChildAttach" to avoid any surprises if
+                    // Create the processing task.  It's "DenyChildAttach" to avoid any surprises if
                     // code happens to create attached tasks, and it's LongRunning because this thread
                     // is likely going to sit around for a while in a wait loop (and the more requests
                     // are concurrently issued to the same agent, the longer the thread will be around).
-                    const TaskCreationOptions Options = TaskCreationOptions.DenyChildAttach | TaskCreationOptions.LongRunning;
-                    _runningWorker = new Task(s =>
-                    {
-                        var thisRef = (MultiAgent)s;
-                        try
-                        {
-                            // Do the actual processing
-                            thisRef.EventSourceTrace("MultiAgent worker running");
-                            thisRef.WorkerLoop();
-                        }
-                        catch (Exception exc)
-                        {
-                            thisRef.EventSourceTrace("Unexpected worker failure: {0}", exc);
-                            Debug.Fail("Unexpected exception from processing loop: " + exc.ToString());
-                        }
-                        finally
-                        {
-                            thisRef.EventSourceTrace("MultiAgent worker shutting down");
-                            lock (thisRef._incomingRequests)
-                            {
-                                // Close our wakeup pipe (ignore close errors).
-                                // This is done while holding the lock to prevent
-                                // subsequent Queue calls to see an improperly configured
-                                // set of descriptors.
-                                thisRef._wakeupRequestedPipeFd.Dispose();
-                                thisRef._wakeupRequestedPipeFd = null;
-                                thisRef._requestWakeupPipeFd.Dispose();
-                                thisRef._requestWakeupPipeFd = null;
+                    _runningWorker = new Task(s => ((MultiAgent)s).WorkerBody(), this, 
+                        CancellationToken.None, TaskCreationOptions.DenyChildAttach | TaskCreationOptions.LongRunning);
 
-                                // In the time between we stopped processing and now,
-                                // more requests could have been added.  If they were
-                                // kick off another processing loop.
-                                thisRef._runningWorker = null;
-                                if (thisRef._incomingRequests.Count > 0)
-                                {
-                                    thisRef.EnsureWorkerIsRunning();
-                                }
-                            }
-                        }
-                    }, this, CancellationToken.None, Options);
-                    _runningWorker.Start(TaskScheduler.Default); // started after _runningWorker field set to avoid race conditions
+                    // We want to avoid situations where a Dispose occurs while we're in the middle
+                    // of processing requests and causes us to tear out the multi handle while it's
+                    // in active use.  To avoid that, we add-ref it here, and release it at the end
+                    // of the worker loop.
+                    bool ignored = false;
+                    _multiHandle.DangerousAddRef(ref ignored);
+
+                    // Kick off the processing task.  This is done after both setting _runningWorker
+                    // to non-null and add-refing the handle, both to avoid race conditions.  The worker
+                    // body needs to see _runningWorker as non-null and assumes that it's free to use
+                    // the multi handle, without fear of it having been disposed.
+                    _runningWorker.Start(TaskScheduler.Default);
                 }
-                else // _workerRunning == true
+                else // _runningWorker != null
                 {
                     // The worker is already running.  If there are already queued requests, we're done.
                     // However, if there aren't any queued requests, Process could be blocked inside of
@@ -161,14 +168,11 @@ namespace System.Net.Http
             }
 
             /// <summary>Write a byte to the wakeup pipe.</summary>
-            private void RequestWakeup()
+            private unsafe void RequestWakeup()
             {
-                unsafe
-                {
-                    EventSourceTrace(null);
-                    byte b = 1;
-                    Interop.CheckIo(Interop.Sys.Write(_requestWakeupPipeFd, &b, 1));
-                }
+                EventSourceTrace(null);
+                byte b = 1;
+                Interop.CheckIo(Interop.Sys.Write(_requestWakeupPipeFd, &b, 1));
             }
 
             /// <summary>Clears data from the wakeup pipe.</summary>
@@ -196,10 +200,10 @@ namespace System.Net.Http
             }
 
             /// <summary>Creates and configures a new multi handle.</summary>
-            private SafeCurlMultiHandle CreateAndConfigureMultiHandle()
+            private Interop.Http.SafeCurlMultiHandle CreateAndConfigureMultiHandle()
             {
                 // Create the new handle
-                SafeCurlMultiHandle multiHandle = Interop.Http.MultiCreate();
+                Interop.Http.SafeCurlMultiHandle multiHandle = Interop.Http.MultiCreate();
                 if (multiHandle.IsInvalid)
                 {
                     throw CreateHttpRequestException(new CurlException((int)CURLcode.CURLE_FAILED_INIT, isMulti: false));
@@ -214,23 +218,101 @@ namespace System.Net.Http
                     ThrowIfCURLMError(Interop.Http.MultiSetOptionLong(multiHandle,
                         Interop.Http.CURLMoption.CURLMOPT_PIPELINING,
                         (long)Interop.Http.CurlPipe.CURLPIPE_MULTIPLEX));
+                    EventSourceTrace("Set multiplexing on multi handle");
                 }
-                
+
+                // Configure max connections per host if it was changed from the default
+                int maxConnections = _associatedHandler.MaxConnectionsPerServer;
+                if (maxConnections < int.MaxValue) // int.MaxValue considered infinite, mapping to libcurl default of 0
+                {
+                    // This should always succeed, as we already verified we can set this option with this value.  Treat 
+                    // any failure then as non-fatal in release; worst case is we employ more connections than desired.
+                    CURLMcode code = Interop.Http.MultiSetOptionLong(multiHandle, Interop.Http.CURLMoption.CURLMOPT_MAX_HOST_CONNECTIONS, maxConnections);
+                    Debug.Assert(code == CURLMcode.CURLM_OK, $"Expected OK, got {code}");
+                    EventSourceTrace("Set max connections per server to {0}", maxConnections);
+                }
+
                 return multiHandle;
             }
 
-            private void WorkerLoop()
+            private void WorkerBody()
             {
-                Debug.Assert(!Monitor.IsEntered(_incomingRequests), "No locks should be held while invoking Process");
+                Debug.Assert(!Monitor.IsEntered(_incomingRequests), $"No locks should be held while invoking {nameof(WorkerBody)}");
                 Debug.Assert(_runningWorker != null && _runningWorker.Id == Task.CurrentId, "This is the worker, so it must be running");
-                Debug.Assert(_wakeupRequestedPipeFd != null && !_wakeupRequestedPipeFd.IsInvalid, "Should have a valid pipe for wake ups");
 
-                // Create the multi handle to use for this round of processing.  This one handle will be used
-                // to service all easy requests currently available and all those that come in while
-                // we're processing other requests.  Once the work quiesces and there are no more requests
-                // to process, this multi handle will be released as the worker goes away.  The next
-                // time a request arrives and a new worker is spun up, a new multi handle will be created.
-                SafeCurlMultiHandle multiHandle = CreateAndConfigureMultiHandle();
+                EventSourceTrace("MultiAgent worker running");
+                try
+                {
+                    try
+                    {
+                        // Do the actual processing
+                        WorkerBodyLoop();
+                    }
+                    finally
+                    {
+                        EventSourceTrace("MultiAgent worker shutting down");
+
+                        // The multi handle's reference count was increased prior to launching
+                        // this processing task.  Release that reference; any Dispose operations
+                        // that occurred during the worker's processing will now be allowed to
+                        // proceed to clean up the multi handle.
+                        _multiHandle.DangerousRelease();
+
+                        lock (_incomingRequests)
+                        {
+                            // Close our wakeup pipe (ignore close errors).
+                            // This is done while holding the lock to prevent
+                            // subsequent Queue calls to see an improperly configured
+                            // set of descriptors.
+                            _wakeupRequestedPipeFd.Dispose();
+                            _wakeupRequestedPipeFd = null;
+                            _requestWakeupPipeFd.Dispose();
+                            _requestWakeupPipeFd = null;
+
+                            // In the time between we stopped processing and taking the lock,
+                            // more requests could have been added.  If they were,
+                            // kick off another processing loop.
+                            _runningWorker = null;
+                            if (_incomingRequests.Count > 0)
+                            {
+                                EnsureWorkerIsRunning();
+                            }
+                        }
+                    }
+                }
+                catch (Exception exc)
+                {
+                    // Something went very wrong.  This should not happen.
+                    EventSourceTrace("Unexpected worker failure: {0}", exc);
+                    Debug.Fail($"Unexpected exception from processing loop: {exc}");
+
+                    // At this point if there any queued requests but there's no worker,
+                    // those queued requests are potentially going to sit there waiting forever,
+                    // resulting in a hang. Instead, fail those requests.
+                    lock (_incomingRequests)
+                    {
+                        if (_runningWorker == null)
+                        {
+                            while (_incomingRequests.Count > 0)
+                            {
+                                IncomingRequest request = _incomingRequests.Dequeue();
+                                request.Easy.FailRequest(exc);
+                                request.Easy.Cleanup();
+                            }
+                        }
+                    }
+                }
+            }
+
+            private void WorkerBodyLoop()
+            {
+                Debug.Assert(_wakeupRequestedPipeFd != null, "Should have a non-null pipe for wake ups");
+                Debug.Assert(!_wakeupRequestedPipeFd.IsInvalid, "Should have a valid pipe for wake ups");
+                Debug.Assert(!_wakeupRequestedPipeFd.IsClosed, "Should have an open pipe for wake ups");
+
+                Debug.Assert(_multiHandle != null, "Should have a non-null multi handle");
+                Debug.Assert(!_multiHandle.IsInvalid, "Should have a valid multi handle");
+                Debug.Assert(!_multiHandle.IsClosed, "Should have an open multi handle");
 
                 // Clear our active operations table.  This should already be clear, either because
                 // all previous operations completed without unexpected exception, or in the case of an
@@ -253,33 +335,49 @@ namespace System.Net.Http
                                 if (_incomingRequests.Count == 0) break;
                                 request = _incomingRequests.Dequeue();
                             }
-                            HandleIncomingRequest(multiHandle, request);
+                            HandleIncomingRequest(request);
                         }
 
-                        // If we have no active operations, we're done.
+                        // If we have no active operations, there's no work to do right now.
                         if (_activeOperations.Count == 0)
                         {
+                            // Setting up a mutiagent processing loop involves creating a new MultiAgent, creating a task
+                            // and a thread to process it, creating a new pipe, etc., which has non-trivial cost associated 
+                            // with it.  Thus, to avoid repeatedly spinning up and down these workers, we can keep this worker 
+                            // alive for a little while longer in case another request comes in within some reasonably small 
+                            // amount of time.  This helps with the case where a sequence of requests is made serially rather 
+                            // than in parallel, avoiding the likely case of spinning up a new multiagent for each.
+                            Interop.Sys.PollEvents triggered;
+                            Interop.Error pollRv = Interop.Sys.Poll(_wakeupRequestedPipeFd, Interop.Sys.PollEvents.POLLIN, KeepAliveMilliseconds, out triggered);
+                            if (pollRv == Interop.Error.SUCCESS && (triggered & Interop.Sys.PollEvents.POLLIN) != 0)
+                            {
+                                // Another request came in while we were waiting. Clear the pipe and loop around to continue processing.
+                                ReadFromWakeupPipeWhenKnownToContainData();
+                                continue;
+                            }
+
+                            // We're done.  Exit the multiagent.
                             return;
                         }
 
                         // We have one or more active operations. Run any work that needs to be run.
                         CURLMcode performResult;
-                        while ((performResult = Interop.Http.MultiPerform(multiHandle)) == CURLMcode.CURLM_CALL_MULTI_PERFORM);
+                        while ((performResult = Interop.Http.MultiPerform(_multiHandle)) == CURLMcode.CURLM_CALL_MULTI_PERFORM);
                         ThrowIfCURLMError(performResult);
 
                         // Complete and remove any requests that have finished being processed.
-                        CURLMSG message;
+                        Interop.Http.CURLMSG message;
                         IntPtr easyHandle;
                         CURLcode result;
-                        while (Interop.Http.MultiInfoRead(multiHandle, out message, out easyHandle, out result))
+                        while (Interop.Http.MultiInfoRead(_multiHandle, out message, out easyHandle, out result))
                         {
-                            Debug.Assert(message == CURLMSG.CURLMSG_DONE, "CURLMSG_DONE is supposed to be the only message type");
+                            Debug.Assert(message == Interop.Http.CURLMSG.CURLMSG_DONE, $"CURLMSG_DONE is supposed to be the only message type, but got {message}");
 
-                            if (message == CURLMSG.CURLMSG_DONE)
+                            if (message == Interop.Http.CURLMSG.CURLMSG_DONE)
                             {
                                 IntPtr gcHandlePtr;
                                 CURLcode getInfoResult = Interop.Http.EasyGetInfoPointer(easyHandle, CURLINFO.CURLINFO_PRIVATE, out gcHandlePtr);
-                                Debug.Assert(getInfoResult == CURLcode.CURLE_OK, "Failed to get info on a completing easy handle");
+                                Debug.Assert(getInfoResult == CURLcode.CURLE_OK, $"Failed to get info on a completing easy handle: {getInfoResult}");
                                 if (getInfoResult == CURLcode.CURLE_OK)
                                 {
                                     ActiveRequest completedOperation;
@@ -287,28 +385,31 @@ namespace System.Net.Http
                                     Debug.Assert(gotActiveOp, "Expected to find GCHandle ptr in active operations table");
                                     if (gotActiveOp)
                                     {
-                                        DeactivateActiveRequest(multiHandle, completedOperation.Easy, gcHandlePtr, completedOperation.CancellationRegistration);
+                                        DeactivateActiveRequest(completedOperation.Easy, gcHandlePtr, completedOperation.CancellationRegistration);
                                         FinishRequest(completedOperation.Easy, result);
                                     }
                                 }
                             }
                         }
 
-                        // Wait for more things to do.
-                        bool isWakeupRequestedPipeActive;
-                        bool isTimeout;
-                        ThrowIfCURLMError(Interop.Http.MultiWait(multiHandle, _wakeupRequestedPipeFd, out isWakeupRequestedPipeActive, out isTimeout));
-                        if (isWakeupRequestedPipeActive)
+                        // If there are any active operations, wait for more things to do.
+                        if (_activeOperations.Count > 0)
                         {
-                            // We woke up (at least in part) because a wake-up was requested.  
-                            // Read the data out of the pipe to clear it.
-                            Debug.Assert(!isTimeout, "should not have timed out if isExtraFileDescriptorActive");
-                            EventSourceTrace("Wait wake-up");
-                            ReadFromWakeupPipeWhenKnownToContainData();
-                        }
-                        if (isTimeout)
-                        {
-                            EventSourceTrace("Wait timeout");
+                            bool isWakeupRequestedPipeActive;
+                            bool isTimeout;
+                            ThrowIfCURLMError(Interop.Http.MultiWait(_multiHandle, _wakeupRequestedPipeFd, out isWakeupRequestedPipeActive, out isTimeout));
+                            if (isWakeupRequestedPipeActive)
+                            {
+                                // We woke up (at least in part) because a wake-up was requested.  
+                                // Read the data out of the pipe to clear it.
+                                Debug.Assert(!isTimeout, $"Should not have timed out when {nameof(isWakeupRequestedPipeActive)} is true");
+                                EventSourceTrace("Wait wake-up");
+                                ReadFromWakeupPipeWhenKnownToContainData();
+                            }
+                            if (isTimeout)
+                            {
+                                EventSourceTrace("Wait timeout");
+                            }
                         }
 
                         // PERF NOTE: curl_multi_wait uses poll (assuming it's available), which is O(N) in terms of the number of fds 
@@ -339,7 +440,7 @@ namespace System.Net.Http
                             ActiveRequest failingOperation = pair.Value;
                             IntPtr failingOperationGcHandle = pair.Key;
 
-                            DeactivateActiveRequest(multiHandle, failingOperation.Easy, failingOperationGcHandle, failingOperation.CancellationRegistration);
+                            DeactivateActiveRequest(failingOperation.Easy, failingOperationGcHandle, failingOperation.CancellationRegistration);
 
                             // Complete the operation's task and clean up any of its resources
                             failingOperation.Easy.FailRequest(CreateHttpRequestException(eventLoopError));
@@ -349,13 +450,10 @@ namespace System.Net.Http
                         // Clear the table.
                         _activeOperations.Clear();
                     }
-
-                    // Finally, dispose of the multi handle.
-                    multiHandle.Dispose();
                 }
             }
 
-            private void HandleIncomingRequest(SafeCurlMultiHandle multiHandle, IncomingRequest request)
+            private void HandleIncomingRequest(IncomingRequest request)
             {
                 Debug.Assert(!Monitor.IsEntered(_incomingRequests), "Incoming requests lock should only be held while accessing the queue");
                 EventSourceTrace("Type: {0}", request.Type, easy: request.Easy);
@@ -364,13 +462,13 @@ namespace System.Net.Http
                 switch (request.Type)
                 {
                     case IncomingRequestType.New:
-                        ActivateNewRequest(multiHandle, easy);
+                        ActivateNewRequest(easy);
                         break;
 
                     case IncomingRequestType.Cancel:
                         Debug.Assert(easy._associatedMultiAgent == this, "Should only cancel associated easy requests");
                         Debug.Assert(easy._cancellationToken.IsCancellationRequested, "Cancellation should have been requested");
-                        FindAndFailActiveRequest(multiHandle, easy, new OperationCanceledException(easy._cancellationToken));
+                        FindAndFailActiveRequest(easy, new OperationCanceledException(easy._cancellationToken));
                         break;
 
                     case IncomingRequestType.Unpause:
@@ -388,7 +486,7 @@ namespace System.Net.Http
                             }
                             catch (Exception exc)
                             {
-                                FindAndFailActiveRequest(multiHandle, easy, exc);
+                                FindAndFailActiveRequest(easy, exc);
                             }
                         }
                         break;
@@ -399,7 +497,7 @@ namespace System.Net.Http
                 }
             }
 
-            private void ActivateNewRequest(SafeCurlMultiHandle multiHandle, EasyRequest easy)
+            private void ActivateNewRequest(EasyRequest easy)
             {
                 Debug.Assert(easy != null, "We should never get a null request");
                 Debug.Assert(easy._associatedMultiAgent == null, "New requests should not be associated with an agent yet");
@@ -421,9 +519,9 @@ namespace System.Net.Http
                 try
                 {
                     easy._associatedMultiAgent = this;
-                    easy.SetCurlOption(CURLoption.CURLOPT_PRIVATE, gcHandlePtr);
+                    easy.SetCurlOption(Interop.Http.CURLoption.CURLOPT_PRIVATE, gcHandlePtr);
                     easy.SetCurlCallbacks(gcHandlePtr, s_receiveHeadersCallback, s_sendCallback, s_seekCallback, s_receiveBodyCallback, s_debugCallback);
-                    ThrowIfCURLMError(Interop.Http.MultiAddHandle(multiHandle, easy._easyHandle));
+                    ThrowIfCURLMError(Interop.Http.MultiAddHandle(_multiHandle, easy._easyHandle));
                 }
                 catch (Exception exc)
                 {
@@ -444,9 +542,9 @@ namespace System.Net.Http
                 {
                     cancellationReg = easy._cancellationToken.Register(s =>
                     {
-                        var state = (Tuple<MultiAgent, EasyRequest>)s;
-                        state.Item1.Queue(new IncomingRequest { Easy = state.Item2, Type = IncomingRequestType.Cancel });
-                    }, Tuple.Create<MultiAgent, EasyRequest>(this, easy));
+                        EasyRequest e = (EasyRequest)s;
+                        e._associatedMultiAgent.Queue(new IncomingRequest { Easy = e, Type = IncomingRequestType.Cancel });
+                    }, easy);
                 }
 
                 // Finally, add it to our map.
@@ -456,11 +554,10 @@ namespace System.Net.Http
             }
 
             private void DeactivateActiveRequest(
-                SafeCurlMultiHandle multiHandle, EasyRequest easy, 
-                IntPtr gcHandlePtr, CancellationTokenRegistration cancellationRegistration)
+                EasyRequest easy, IntPtr gcHandlePtr, CancellationTokenRegistration cancellationRegistration)
             {
                 // Remove the operation from the multi handle so we can shut down the multi handle cleanly
-                CURLMcode removeResult = Interop.Http.MultiRemoveHandle(multiHandle, easy._easyHandle);
+                CURLMcode removeResult = Interop.Http.MultiRemoveHandle(_multiHandle, easy._easyHandle);
                 Debug.Assert(removeResult == CURLMcode.CURLM_OK, "Failed to remove easy handle"); // ignore cleanup errors in release
 
                 // Release the associated GCHandle so that it's not kept alive forever
@@ -500,7 +597,7 @@ namespace System.Net.Http
                 return false;
             }
 
-            private void FindAndFailActiveRequest(SafeCurlMultiHandle multiHandle, EasyRequest easy, Exception error)
+            private void FindAndFailActiveRequest(EasyRequest easy, Exception error)
             {
                 EventSourceTrace("Error: {0}", error, easy: easy);
 
@@ -508,7 +605,7 @@ namespace System.Net.Http
                 ActiveRequest activeRequest;
                 if (FindActiveRequest(easy, out gcHandlePtr, out activeRequest))
                 {
-                    DeactivateActiveRequest(multiHandle, easy, gcHandlePtr, activeRequest.CancellationRegistration);
+                    DeactivateActiveRequest(easy, gcHandlePtr, activeRequest.CancellationRegistration);
                     easy.FailRequest(error);
                     easy.Cleanup(); // no active processing remains, so we can cleanup
                 }
@@ -533,7 +630,7 @@ namespace System.Net.Http
                         if (Interop.Http.EasyGetInfoLong(completedOperation._easyHandle, CURLINFO.CURLINFO_HTTPAUTH_AVAIL, out authAvailable) == CURLcode.CURLE_OK)
                         {
                             completedOperation._handler.TransferCredentialsToCache(
-                                completedOperation._requestMessage.RequestUri, (CURLAUTH)authAvailable);
+                                completedOperation._requestMessage.RequestUri, (Interop.Http.CURLAUTH)authAvailable);
                         }
                         // Ignore errors: no need to fail for the sake of putting the credentials into the cache
                     }
@@ -594,12 +691,11 @@ namespace System.Net.Http
                 // The callback is invoked once per header; multi-line headers get merged into a single line.
 
                 size *= nitems;
+                Debug.Assert(size <= Interop.Http.CURL_MAX_HTTP_HEADER, $"Expected header size <= {Interop.Http.CURL_MAX_HTTP_HEADER}, got {size}");
                 if (size == 0)
                 {
                     return 0;
                 }
-
-                Debug.Assert(size <= Interop.Http.CURL_MAX_HTTP_HEADER);
 
                 EasyRequest easy;
                 if (TryGetEasyRequestFromContext(context, out easy))
@@ -607,20 +703,31 @@ namespace System.Net.Http
                     CurlHandler.EventSourceTrace("Size: {0}", size, easy: easy);
                     try
                     {
-                        HttpResponseMessage response = easy._responseMessage;
-
+                        CurlResponseMessage response = easy._responseMessage;
                         CurlResponseHeaderReader reader = new CurlResponseHeaderReader(buffer, size);
 
+                        // Validate that we haven't received too much header data.
+                        ulong headerBytesReceived = response._headerBytesReceived + size;
+                        if (headerBytesReceived > (ulong)easy._handler.MaxResponseHeadersLength)
+                        {
+                            throw new HttpRequestException(
+                                SR.Format(SR.net_http_response_headers_exceeded_length, easy._handler.MaxResponseHeadersLength));
+                        }
+                        response._headerBytesReceived = (uint)headerBytesReceived;
+
+                        // Parse the header
                         if (reader.ReadStatusLine(response))
                         {
-                            // Clear the header if status line is received again. This signifies that there are multiple response headers (like in redirection).
+                            // Clear the headers when the status line is received. This may happen multiple times if there are multiple response headers (like in redirection).
                             response.Headers.Clear();
                             response.Content.Headers.Clear();
+                            response._headerBytesReceived = (uint)size;
 
                             easy._isRedirect = easy._handler.AutomaticRedirection &&
-                                         (response.StatusCode == HttpStatusCode.Redirect ||
-                                         response.StatusCode == HttpStatusCode.RedirectKeepVerb ||
-                                         response.StatusCode == HttpStatusCode.RedirectMethod);
+                                (response.StatusCode == HttpStatusCode.Moved ||           // 301
+                                 response.StatusCode == HttpStatusCode.Redirect ||        // 302
+                                 response.StatusCode == HttpStatusCode.RedirectMethod ||  // 303
+                                 response.StatusCode == HttpStatusCode.RedirectKeepVerb); // 307
                         }
                         else
                         {
@@ -652,7 +759,7 @@ namespace System.Net.Http
                     }
                 }
 
-                // Returing a value other than size fails the callback and forces
+                // Returning a value other than size fails the callback and forces
                 // request completion with an error
                 CurlHandler.EventSourceTrace("Aborting request", easy: easy);
                 return size - 1;
@@ -688,7 +795,7 @@ namespace System.Net.Http
                     }
                 }
 
-                // Returing a value other than size fails the callback and forces
+                // Returning a value other than size fails the callback and forces
                 // request completion with an error.
                 CurlHandler.EventSourceTrace("Aborting request", easy: easy);
                 return (size > 0) ? size - 1 : 1;
@@ -697,7 +804,7 @@ namespace System.Net.Http
             private static ulong CurlSendCallback(IntPtr buffer, ulong size, ulong nitems, IntPtr context)
             {
                 int length = checked((int)(size * nitems));
-                Debug.Assert(length <= RequestBufferSize, "length " + length + " should not be larger than RequestBufferSize " + RequestBufferSize);
+                Debug.Assert(length <= RequestBufferSize, $"length {length} should not be larger than RequestBufferSize {RequestBufferSize}");
                 if (length == 0)
                 {
                     return 0;
@@ -767,7 +874,7 @@ namespace System.Net.Http
                         // If nothing was read, then we're done and can simply return 0 to indicate
                         // the end of the stream.
                         int bytesRead = sts._task.GetAwaiter().GetResult(); // will throw if read failed
-                        Debug.Assert(bytesRead >= 0 && bytesRead <= sts._buffer.Length, "ReadAsync returned an invalid result length: " + bytesRead);
+                        Debug.Assert(bytesRead >= 0 && bytesRead <= sts._buffer.Length, $"ReadAsync returned an invalid result length: {bytesRead}");
                         if (bytesRead == 0)
                         {
                             sts.SetTaskOffsetCount(null, 0, 0);
@@ -838,7 +945,7 @@ namespace System.Net.Http
 
                     // Copy as much as we can.
                     int bytesToCopy = Math.Min(bytesRead, length);
-                    Debug.Assert(bytesToCopy > 0 && bytesToCopy <= sts._buffer.Length, "ReadAsync quickly returned an invalid result length: " + bytesToCopy);
+                    Debug.Assert(bytesToCopy > 0 && bytesToCopy <= sts._buffer.Length, $"ReadAsync quickly returned an invalid result length: {bytesToCopy}");
                     Marshal.Copy(sts._buffer, 0, buffer, bytesToCopy);
 
                     // If we read more than we were able to copy, stash it away for the next read.
@@ -865,7 +972,7 @@ namespace System.Net.Http
                 return Interop.Http.CURL_READFUNC_PAUSE;
             }
 
-            private static CurlSeekResult CurlSeekCallback(IntPtr context, long offset, int origin)
+            private static Interop.Http.CurlSeekResult CurlSeekCallback(IntPtr context, long offset, int origin)
             {
                 CurlHandler.EventSourceTrace("Offset: {0}, Origin: {1}", offset, origin, 0);
                 EasyRequest easy;
@@ -880,19 +987,16 @@ namespace System.Net.Http
                             easy._requestContentStream != null && easy._requestContentStream.TryReset())
                         {
                             // Dump any state associated with the old stream's position
-                            if (easy._sendTransferState != null)
-                            {
-                                easy._sendTransferState.SetTaskOffsetCount(null, 0, 0);
-                            }
+                            easy._sendTransferState?.SetTaskOffsetCount(null, 0, 0);
 
                             // Restart the transfer
                             easy._requestContentStream.Run();
 
-                            return CurlSeekResult.CURL_SEEKFUNC_OK;
+                            return Interop.Http.CurlSeekResult.CURL_SEEKFUNC_OK;
                         }
                         else
                         {
-                            return CurlSeekResult.CURL_SEEKFUNC_CANTSEEK;
+                            return Interop.Http.CurlSeekResult.CURL_SEEKFUNC_CANTSEEK;
                         }
                     }
                     catch (Exception ex)
@@ -902,7 +1006,7 @@ namespace System.Net.Http
                 }
 
                 // Something went wrong
-                return CurlSeekResult.CURL_SEEKFUNC_FAIL;
+                return Interop.Http.CurlSeekResult.CURL_SEEKFUNC_FAIL;
             }
 
             private static bool TryGetEasyRequestFromContext(IntPtr context, out EasyRequest easy)
@@ -915,13 +1019,13 @@ namespace System.Net.Http
                     Debug.Assert(easy != null, "Expected non-null EasyRequest in GCHandle");
                     return easy != null;
                 }
-                catch (InvalidCastException)
+                catch (InvalidCastException e)
                 {
-                    Debug.Fail("EasyRequest wasn't the GCHandle's Target");
+                    Debug.Fail($"EasyRequest wasn't the GCHandle's Target: {e}");
                 }
-                catch (InvalidOperationException)
+                catch (InvalidOperationException e)
                 {
-                    Debug.Fail("Invalid GCHandle");
+                    Debug.Fail($"Invalid GCHandle: {e}");
                 }
 
                 easy = null;

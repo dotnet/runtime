@@ -747,7 +747,7 @@ namespace System
                             break;
 
                         // Some terminfo files appear to have a fairly liberal interpretation of %i. The spec states that %i increments the first two arguments, 
-                        // but some uses occur when there's only a single argument. To make sure we accomodate these files, we increment the values 
+                        // but some uses occur when there's only a single argument. To make sure we accommodate these files, we increment the values 
                         // of up to (but not requiring) two arguments.
                         case 'i':
                             if (args.Length > 0)

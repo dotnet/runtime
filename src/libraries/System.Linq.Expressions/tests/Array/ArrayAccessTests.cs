@@ -10,8 +10,9 @@ namespace System.Linq.Expressions.Tests
 {
     public static class ArrayAccessTests
     {
-        [Fact]
-        public static void ArrayAccess_MultiDimensionalOf1()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void ArrayAccess_MultiDimensionalOf1(bool useInterpreter)
         {
             var arrayType = typeof(int).MakeArrayType(1);
             var arrayCtor = arrayType.GetTypeInfo().DeclaredConstructors.Single(ctor => ctor.GetParameters().Length == 2);
@@ -19,16 +20,17 @@ namespace System.Linq.Expressions.Tests
             var c = Expression.Constant(arr);
             var e = Expression.ArrayAccess(c, Expression.Constant(1));
 
-            var set = Expression.Lambda<Action>(Expression.Assign(e, Expression.Constant(42))).Compile();
+            var set = Expression.Lambda<Action>(Expression.Assign(e, Expression.Constant(42))).Compile(useInterpreter);
             set();
             Assert.Equal(42, arr.GetValue(1));
 
-            var get = Expression.Lambda<Func<int>>(e).Compile();
+            var get = Expression.Lambda<Func<int>>(e).Compile(useInterpreter);
             Assert.Equal(42, get());
         }
 
-        [Fact]
-        public static void ArrayIndex_MultiDimensionalOf1()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void ArrayIndex_MultiDimensionalOf1(bool useInterpreter)
         {
             var arrayType = typeof(int).MakeArrayType(1);
             var arrayCtor = arrayType.GetTypeInfo().DeclaredConstructors.Single(ctor => ctor.GetParameters().Length == 2);
@@ -37,7 +39,7 @@ namespace System.Linq.Expressions.Tests
             var c = Expression.Constant(arr);
             var e = Expression.ArrayIndex(c, Expression.Constant(1));
 
-            var get = Expression.Lambda<Func<int>>(e).Compile();
+            var get = Expression.Lambda<Func<int>>(e).Compile(useInterpreter);
             Assert.Equal(42, get());
         }
     }

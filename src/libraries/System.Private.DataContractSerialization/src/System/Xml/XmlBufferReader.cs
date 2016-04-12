@@ -958,7 +958,7 @@ namespace System.Xml
             int byteLength = length1;
             int charLength = s2.Length;
 
-            // N unicode chars will be represented in at least N bytes, but
+            // N Unicode chars will be represented in at least N bytes, but
             // no more than N * 3 bytes.  If the byte count falls outside of this
             // range, then the strings cannot be equal.
             if (byteLength < charLength || byteLength > charLength * maxBytesPerChar)
@@ -989,7 +989,7 @@ namespace System.Xml
                     fixed (char* _pch = s2)
                     {
                         char* pch = _pch;
-                        // Try to do the fast comparison in ascii space
+                        // Try to do the fast comparison in ASCII space
                         int t = 0;
                         while (pb < pbMax && *pb < 0x80)
                         {

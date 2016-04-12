@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -166,7 +166,7 @@ namespace System.Collections.Concurrent.Tests
             });
 
             int ignored;
-            Assert.Equal(1, BlockingCollection<int>.TryTakeFromAny(producerArray, out ignored, 5000));
+            Assert.Equal(1, BlockingCollection<int>.TryTakeFromAny(producerArray, out ignored, -1));
         }
 
         [Fact]

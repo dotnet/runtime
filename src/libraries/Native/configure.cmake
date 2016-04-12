@@ -11,6 +11,10 @@ if (CMAKE_SYSTEM_NAME STREQUAL Linux)
     set(PAL_UNIX_NAME \"LINUX\")
 elseif (CMAKE_SYSTEM_NAME STREQUAL Darwin)
     set(PAL_UNIX_NAME \"OSX\")
+
+    # Xcode's clang does not include /usr/local/include by default, but brew's does.
+    # This ensures an even playing field.
+    include_directories(SYSTEM /usr/local/include)
 elseif (CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
     set(PAL_UNIX_NAME \"FREEBSD\")
     include_directories(SYSTEM /usr/local/include)
@@ -364,6 +368,10 @@ check_include_files(
     linux/rtnetlink.h
     HAVE_LINUX_RTNETLINK_H)
 
+check_function_exists(
+    getpeereid
+    HAVE_GETPEEREID)
+
 # getdomainname on OSX takes an 'int' instead of a 'size_t'
 # check if compiling with 'size_t' would cause a warning
 set (PREVIOUS_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
@@ -416,6 +424,34 @@ check_cxx_source_compiles(
     int main() { int i = CURLPIPE_MULTIPLEX; }
     "
     HAVE_CURLPIPE_MULTIPLEX)
+
+check_cxx_source_compiles(
+    "
+    #include <curl/curl.h>
+    int main() 
+    { 
+        int i = CURL_SSLVERSION_TLSv1_0;
+        i = CURL_SSLVERSION_TLSv1_1;
+        i = CURL_SSLVERSION_TLSv1_2;
+    }
+    "
+    HAVE_CURL_SSLVERSION_TLSv1_012)
+
+check_include_files(
+    GSS/GSS.h
+    HAVE_GSSFW_HEADERS)
+
+if (HAVE_GSSFW_HEADERS)
+    check_symbol_exists(
+        GSS_SPNEGO_MECHANISM
+        "GSS/GSS.h"
+        HAVE_GSS_SPNEGO_MECHANISM)
+else ()
+    check_symbol_exists(
+        GSS_SPNEGO_MECHANISM
+        "gssapi/gssapi.h"
+        HAVE_GSS_SPNEGO_MECHANISM)
+endif ()
 
 set (CMAKE_REQUIRED_LIBRARIES)
 

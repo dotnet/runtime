@@ -5,7 +5,7 @@ __init_tools_log=$__scriptpath/init-tools.log
 __PACKAGES_DIR=$__scriptpath/packages
 __TOOLRUNTIME_DIR=$__scriptpath/Tools
 __DOTNET_PATH=$__TOOLRUNTIME_DIR/dotnetcli
-__DOTNET_CMD=$__DOTNET_PATH/bin/dotnet
+__DOTNET_CMD=$__DOTNET_PATH/dotnet
 if [ -z "$__BUILDTOOLS_SOURCE" ]; then __BUILDTOOLS_SOURCE=https://dotnet.myget.org/F/dotnet-buildtools/api/v3/index.json; fi
 __BUILD_TOOLS_PACKAGE_VERSION=$(cat $__scriptpath/BuildToolsVersion.txt)
 __DOTNET_TOOLS_VERSION=$(cat $__scriptpath/DotnetCLIVersion.txt)
@@ -18,26 +18,27 @@ OSName=$(uname -s)
 case $OSName in
     Darwin)
         OS=OSX
-        __DOTNET_PKG=dotnet-osx-x64
+        __DOTNET_PKG=dotnet-dev-osx-x64
+        ulimit -n 2048
         ;;
 
     Linux)
         OS=Linux
         source /etc/os-release
         if [ "$ID" == "centos" -o "$ID" == "rhel" ]; then
-            __DOTNET_PKG=dotnet-centos-x64
+            __DOTNET_PKG=dotnet-dev-centos-x64
         elif [ "$ID" == "ubuntu" -o "$ID" == "debian" ]; then
-            __DOTNET_PKG=dotnet-ubuntu-x64
+            __DOTNET_PKG=dotnet-dev-ubuntu-x64
         else
             echo "Unsupported Linux distribution '$ID' detected. Downloading ubuntu-x64 tools."
-            __DOTNET_PKG=dotnet-ubuntu-x64
+            __DOTNET_PKG=dotnet-dev-ubuntu-x64
         fi
         ;;
 
     *)
         echo "Unsupported OS '$OSName' detected. Downloading ubuntu-x64 tools."
         OS=Linux
-        __DOTNET_PKG=dotnet-ubuntu-x64
+        __DOTNET_PKG=dotnet-dev-ubuntu-x64
         ;;
 esac
 

@@ -31,7 +31,7 @@ namespace XPathTests.FunctionalTests.MiscellaneousCases
         }
 
         /// <summary>
-        /// Match should throw an exception on expression that dont have a return type of nodeset
+        /// Match should throw an exception on expression that don't have a return type of nodeset
         /// true() and true()
         /// </summary>
         [Fact]
@@ -44,7 +44,7 @@ namespace XPathTests.FunctionalTests.MiscellaneousCases
         }
 
         /// <summary>
-        /// Match should throw an exception on expression that dont have a return type of nodeset
+        /// Match should throw an exception on expression that don't have a return type of nodeset
         /// false() or true()
         /// </summary>
         [Fact]

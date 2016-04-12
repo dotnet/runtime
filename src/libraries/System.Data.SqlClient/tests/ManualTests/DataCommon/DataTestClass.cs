@@ -75,8 +75,16 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         private static void PopulateConnectionStrings()
         {
             s_xmlConnectionStringMap = new Dictionary<string, string>();
-
-            TextReader connectionStringReader = File.OpenText(@"ConnectionString.xml");
+            TextReader connectionStringReader = null;
+            //This override connection string is used for security reason. so that you can add this your local binary folder. Modifying ConnectionString.xml will caused sync into source file.
+            if (File.Exists("ConnectionString.Override.xml"))
+            {
+                connectionStringReader = File.OpenText(@"ConnectionString.override.xml");
+            }
+            else
+            {
+                connectionStringReader = File.OpenText(@"ConnectionString.xml");
+            }
             XmlReaderSettings settings = new XmlReaderSettings();
             settings.IgnoreWhitespace = true;
             settings.DtdProcessing = DtdProcessing.Ignore;
@@ -94,7 +102,11 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     {
                         string connectionStringKey = node.Attributes["id"].Value;
                         XmlText connectionStringXml = node.FirstChild as XmlText;
-                        string connectionStringValue = connectionStringXml.Data;
+                        string connectionStringValue = string.Empty;
+                        if (connectionStringXml != null)
+                        {
+                            connectionStringValue = connectionStringXml.Data;
+                        }
                         s_xmlConnectionStringMap[connectionStringKey] = connectionStringValue;
                     }
                 }

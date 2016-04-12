@@ -195,7 +195,7 @@ namespace System.Data.SqlClient
 
         public SqlConnectionStringBuilder(string connectionString) : base()
         {
-            if (!ADP.IsEmpty(connectionString))
+            if (!string.IsNullOrEmpty(connectionString))
             {
                 ConnectionString = connectionString;
             }
@@ -613,7 +613,7 @@ namespace System.Data.SqlClient
 
         public override bool ContainsKey(string keyword)
         {
-            ADP.CheckArgumentNull(keyword, "keyword");
+            ADP.CheckArgumentNull(keyword, nameof(keyword));
             return s_keywords.ContainsKey(keyword);
         }
 
@@ -679,7 +679,7 @@ namespace System.Data.SqlClient
 
         private Keywords GetIndex(string keyword)
         {
-            ADP.CheckArgumentNull(keyword, "keyword");
+            ADP.CheckArgumentNull(keyword, nameof(keyword));
             Keywords index;
             if (s_keywords.TryGetValue(keyword, out index))
             {
@@ -691,7 +691,7 @@ namespace System.Data.SqlClient
 
         public override bool Remove(string keyword)
         {
-            ADP.CheckArgumentNull(keyword, "keyword");
+            ADP.CheckArgumentNull(keyword, nameof(keyword));
             Keywords index;
             if (s_keywords.TryGetValue(keyword, out index))
             {
@@ -819,7 +819,7 @@ namespace System.Data.SqlClient
 
         public override bool ShouldSerialize(string keyword)
         {
-            ADP.CheckArgumentNull(keyword, "keyword");
+            ADP.CheckArgumentNull(keyword, nameof(keyword));
             Keywords index;
             return s_keywords.TryGetValue(keyword, out index) && base.ShouldSerialize(s_validKeywords[(int)index]);
         }

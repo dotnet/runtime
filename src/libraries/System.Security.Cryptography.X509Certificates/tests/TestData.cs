@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Runtime.InteropServices;
 using Test.Cryptography;
-using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
@@ -1073,6 +1071,23 @@ WQndXd9du7pKZJi5yiJbbjaLlJE7/CTeayvZomsZK5VzBLiVMekC/8kbVLI3uyKL
             "E1F4116F10B595FCE7420532DBCE9D515E28B69E85D35BEFA57D4540728EB70E" +
             "6B0E06FB33354871B89D278BC4655F0D86769C447AF6955CF65D320833A454B6" +
             "183F685CF2424A853854835FD1E82CF2AC11D6A8ED636A").HexToByteArray();
+
+        internal static readonly byte[] Rsa384CertificatePemBytes = ByteUtils.AsciiBytes(
+            @"-----BEGIN CERTIFICATE-----
+MIICTzCCAgmgAwIBAgIJAMQtYhFJ0+5jMA0GCSqGSIb3DQEBBQUAMIGSMQswCQYD
+VQQGEwJVUzETMBEGA1UECAwKV2FzaGluZ3RvbjEQMA4GA1UEBwwHUmVkbW9uZDEY
+MBYGA1UECgwPTWljcm9zb2Z0IENvcnAuMSAwHgYDVQQLDBcuTkVUIEZyYW1ld29y
+ayAoQ29yZUZ4KTEgMB4GA1UEAwwXUlNBIDM4NC1iaXQgQ2VydGlmaWNhdGUwHhcN
+MTYwMzAyMTY1OTA0WhcNMTYwNDAxMTY1OTA0WjCBkjELMAkGA1UEBhMCVVMxEzAR
+BgNVBAgMCldhc2hpbmd0b24xEDAOBgNVBAcMB1JlZG1vbmQxGDAWBgNVBAoMD01p
+Y3Jvc29mdCBDb3JwLjEgMB4GA1UECwwXLk5FVCBGcmFtZXdvcmsgKENvcmVGeCkx
+IDAeBgNVBAMMF1JTQSAzODQtYml0IENlcnRpZmljYXRlMEwwDQYJKoZIhvcNAQEB
+BQADOwAwOAIxANrMIthuZxV1Ay4x8gbc/BksZeLVEInlES0JbyiCr9tbeM22Vy/S
+9h2zkEciMuPZ9QIDAQABo1AwTjAdBgNVHQ4EFgQU5FG2Fmi86hJOCf4KnjaxOGWV
+dRUwHwYDVR0jBBgwFoAU5FG2Fmi86hJOCf4KnjaxOGWVdRUwDAYDVR0TBAUwAwEB
+/zANBgkqhkiG9w0BAQUFAAMxAEzDg/u8TlApCnE8qxhcbTXk2MbX+2n5PCn+MVrW
+wggvPj3b2WMXsVWiPr4S1Y/nBA==
+-----END CERTIFICATE-----");
 
         internal static readonly ECDsaCngKeyValues ECDsaCng256PublicKey = 
             new ECDsaCngKeyValues()

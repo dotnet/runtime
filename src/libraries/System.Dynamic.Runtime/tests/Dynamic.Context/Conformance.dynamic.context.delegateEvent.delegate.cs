@@ -55,7 +55,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
     using ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgate001.dlgate001;
     // <Area> Dynamic type in delegates </Area>
     // <Title> Delegate instantiation</Title>
-    // <Description> interchangable dynamic and object parameters </Description>
+    // <Description> interchangeable dynamic and object parameters </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects status=success></Expects>
     using System;
@@ -1042,7 +1042,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
     using ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgate008bug.dlgate008bug;
     // <Area> Dynamic type in delegates </Area>
     // <Title> Delegate instantiation (Behavior is 'by design' as they are 2 different boxed instances)</Title>
-    // <Description> Delegate: compare same delegates return false if the method is struct's not staic method </Description>
+    // <Description> Delegate: compare same delegates return false if the method is struct's not static method </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects status=success></Expects>
     using System;

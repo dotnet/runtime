@@ -10,7 +10,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        internal static class Fcntl
+        internal static partial class Fcntl
         {
             internal static readonly bool CanGetSetPipeSz = (FcntlCanGetSetPipeSz() != 0);
 

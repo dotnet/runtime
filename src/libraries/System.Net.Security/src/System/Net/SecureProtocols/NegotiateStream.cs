@@ -649,7 +649,7 @@ namespace System.Net.Security
         //     buffer            - Buffer to read into.
         //     offset            - Offset into the buffer where we're to read.
         //     size              - Number of bytes to read.
-        //     cancellationtoken - Token used to request cancellation of the operation
+        //     cancellationToken - Token used to request cancellation of the operation
         // 
         // Returns:
         // 
@@ -680,7 +680,7 @@ namespace System.Net.Security
         //     buffer  - Buffer to write into.
         //     offset  - Offset into the buffer where we're to write.
         //     size    - Number of bytes to write.
-        //     cancellationtoken - Token used to request cancellation of the operation
+        //     cancellationToken - Token used to request cancellation of the operation
         // 
         // Returns:
         // 

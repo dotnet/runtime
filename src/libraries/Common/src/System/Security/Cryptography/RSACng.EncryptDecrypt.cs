@@ -42,7 +42,7 @@ namespace System.Security.Cryptography
 
         //
         // Conveniently, Encrypt() and Decrypt() are identical save for the actual P/Invoke call to CNG. Thus, both
-        // api's invoke this common helper with the "transform" parameter determining whether encryption or decryption is done.
+        // APIs invoke this common helper with the "transform" parameter determining whether encryption or decryption is done.
         //
         private byte[] EncryptOrDecrypt(byte[] data, RSAEncryptionPadding padding, EncryptOrDecryptAction encryptOrDecrypt)
         {

@@ -57,7 +57,7 @@ namespace System.IO
         }
 
         /// <devdoc>
-        ///    Gets the fully qualifed path of the affected file or directory.
+        ///    Gets the fully qualified path of the affected file or directory.
         /// </devdoc>
         public string FullPath
         {

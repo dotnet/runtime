@@ -307,7 +307,6 @@ namespace System.IO.Tests
             {
                 if (useAsync && !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
-                    // [ActiveIssue(812, PlatformID.AnyUnix)]
                     // We don't have a special async I/O implementation in FileStream on Unix.
                     continue;
                 }

@@ -24,6 +24,7 @@ enum PAL_CURLMcode : int32_t
 enum PAL_CURLMoption : int32_t
 {
     PAL_CURLMOPT_PIPELINING = 3,
+    PAL_CURLMOPT_MAX_HOST_CONNECTIONS = 7,
 };
 
 enum PAL_CurlPipe : int32_t

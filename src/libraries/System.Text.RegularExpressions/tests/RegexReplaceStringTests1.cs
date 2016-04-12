@@ -11,38 +11,13 @@ public partial class RegexReplaceStringTests
     [Fact]
     public static void RegexReplaceStringTestCase1()
     {
-        //////////// Global Variables used for all tests
-        String strLoc = "Loc_000oo";
-        String strValue = String.Empty;
-        int iCountErrors = 0;
-        int iCountTestcases = 0;
-        try
+        for (int i = 0; i < s_regexTests.Length; i++)
         {
-            /////////////////////////  START TESTS ////////////////////////////
-            ///////////////////////////////////////////////////////////////////
-            for (int i = 0; i < _regexTests.Length; i++)
-            {
-                iCountTestcases++;
-                if (!_regexTests[i].Run())
-                {
-                    Console.WriteLine("Err_79872asnko! Test {0} FAILED Pattern={1}, Input={2} ReplaceString={3}\n", i, _regexTests[i].Pattern, _regexTests[i].Input, _regexTests[i].ReplaceString);
-                    iCountErrors++;
-                }
-            }
-            ///////////////////////////////////////////////////////////////////
-            /////////////////////////// END TESTS /////////////////////////////
+            Assert.True(s_regexTests[i].Run());
         }
-        catch (Exception exc_general)
-        {
-            ++iCountErrors;
-            Console.WriteLine("Error Err_8888yyy!  strLoc==" + strLoc + ", exc_general==" + exc_general.ToString());
-        }
-
-        ////  Finish Diagnostics
-        Assert.Equal(0, iCountErrors);
     }
 
-    private static RegexReplaceStringTest[] _regexTests = new RegexReplaceStringTest[]
+    private static RegexReplaceStringTest[] s_regexTests = new RegexReplaceStringTest[]
     {
         /*********************************************************
         ValidCases
@@ -58,18 +33,18 @@ public partial class RegexReplaceStringTests
     ;
     public class RegexReplaceStringTest
     {
-        private String _pattern;
-        private String _input;
+        private string _pattern;
+        private string _input;
         private RegexOptions _options;
-        private String _replaceString;
-        private String _expectedResult;
+        private string _replaceString;
+        private string _expectedResult;
         private Type _expectedExceptionType;
-        public RegexReplaceStringTest(String pattern, String input, String replaceString, String expectedResult)
+        public RegexReplaceStringTest(string pattern, string input, string replaceString, string expectedResult)
             : this(pattern, RegexOptions.None, input, replaceString, expectedResult)
         {
         }
 
-        public RegexReplaceStringTest(String pattern, RegexOptions options, String input, String replaceString, String expectedResult)
+        public RegexReplaceStringTest(string pattern, RegexOptions options, string input, string replaceString, string expectedResult)
         {
             _pattern = pattern;
             _options = options;
@@ -78,12 +53,12 @@ public partial class RegexReplaceStringTests
             _expectedResult = expectedResult;
         }
 
-        public RegexReplaceStringTest(String pattern, String input, String replaceString, Type expectedExceptionType)
+        public RegexReplaceStringTest(string pattern, string input, string replaceString, Type expectedExceptionType)
             : this(pattern, RegexOptions.None, input, replaceString, expectedExceptionType)
         {
         }
 
-        public RegexReplaceStringTest(String pattern, RegexOptions options, String input, String replaceString, Type expectedExceptionType)
+        public RegexReplaceStringTest(string pattern, RegexOptions options, string input, string replaceString, Type expectedExceptionType)
         {
             _pattern = pattern;
             _options = options;
@@ -116,7 +91,7 @@ public partial class RegexReplaceStringTests
             }
         }
 
-        public String ReplaceString
+        public string ReplaceString
         {
             get
             {
@@ -124,7 +99,7 @@ public partial class RegexReplaceStringTests
             }
         }
 
-        public String ExpectedResult
+        public string ExpectedResult
         {
             get
             {
@@ -159,7 +134,7 @@ public partial class RegexReplaceStringTests
         public bool Run()
         {
             Regex r;
-            String result = null;
+            string result = null;
             r = new Regex(_pattern, _options);
             try
             {

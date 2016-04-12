@@ -50,7 +50,7 @@ namespace System.Data.Common
             + "(?<![\"']))"                                            // unquoted value must not stop with " or '
             + ")(\\s*)(;|[\u0000\\s]*$)"                                // whitespace after value up to semicolon or end-of-line
             + ")*"                                                      // repeat the key-value pair
-            + "[\\s;]*[\u0000\\s]*"                                     // traling whitespace/semicolons (DataSourceLocator), embedded nulls are allowed only in the end
+            + "[\\s;]*[\u0000\\s]*"                                     // trailing whitespace/semicolons (DataSourceLocator), embedded nulls are allowed only in the end
         ;
 
 
@@ -280,7 +280,7 @@ namespace System.Data.Common
             return buffer.ToString(index, count - index);
         }
 
-        // transistion states used for parsing
+        // transition states used for parsing
         private enum ParserState
         {
             NothingYet = 1,   //start point
@@ -344,7 +344,7 @@ namespace System.Data.Common
                     case ParserState.KeyEqual: // \\s*=(?!=)\\s*
                         if ('=' == currentChar) { parserState = ParserState.Key; break; }
                         keyname = GetKeyName(buffer);
-                        if (ADP.IsEmpty(keyname)) { throw ADP.ConnectionStringSyntax(startposition); }
+                        if (string.IsNullOrEmpty(keyname)) { throw ADP.ConnectionStringSyntax(startposition); }
                         buffer.Length = 0;
                         parserState = ParserState.KeyEnd;
                         goto case ParserState.KeyEnd;
@@ -428,7 +428,7 @@ namespace System.Data.Common
                 case ParserState.KeyEqual:
                     // equal sign at end of line
                     keyname = GetKeyName(buffer);
-                    if (ADP.IsEmpty(keyname)) { throw ADP.ConnectionStringSyntax(startposition); }
+                    if (string.IsNullOrEmpty(keyname)) { throw ADP.ConnectionStringSyntax(startposition); }
                     break;
 
                 case ParserState.UnquotedValue:
@@ -618,7 +618,7 @@ namespace System.Data.Common
 
                     string keyname, keyvalue;
                     nextStartPosition = GetKeyValuePair(connectionString, startPosition, buffer, out keyname, out keyvalue);
-                    if (ADP.IsEmpty(keyname))
+                    if (string.IsNullOrEmpty(keyname))
                     {
                         // if (nextStartPosition != endPosition) { throw; }
                         break;

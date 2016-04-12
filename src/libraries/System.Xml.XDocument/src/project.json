@@ -1,6 +1,6 @@
 {
   "frameworks": {
-    "dnxcore50": {
+    "netstandard1.3": {
       "dependencies": {
         "System.Runtime": "4.0.20",
         "System.Xml.ReaderWriter": "4.0.10",
@@ -14,7 +14,10 @@
         "System.Runtime.Extensions": "4.0.10",
         "System.Threading": "4.0.10",
         "System.Text.Encoding": "4.0.10"
-      }
+      },
+      "imports": [
+        "dotnet5.4"
+      ]
     },
     "net46": {
       "dependencies": {

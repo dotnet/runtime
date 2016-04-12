@@ -14,7 +14,7 @@ namespace System.Security.Cryptography.Csp.Tests
         private static readonly byte[] s_dataToSign = { 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0 };
 
         [Theory]
-        [MemberData("AlgorithmIdentifiers")]
+        [MemberData(nameof(AlgorithmIdentifiers))]
         public static void AlgorithmLookups(string primaryId, object halg)
         {
             using (var rsa = new RSACryptoServiceProvider())
@@ -114,6 +114,48 @@ namespace System.Security.Cryptography.Csp.Tests
 
                 Assert.Throws<CryptographicException>(() => rsa.SignHash(Array.Empty<byte>(), "SHA384"));
             }
+        }
+
+        [Theory]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        // (false, false) is not required, that would be equivalent to the RSA AlgorithmImplementation suite.
+        public static void VerifyLegacySignVerifyHash(bool useLegacySign, bool useLegacyVerify)
+        {
+            byte[] dataHash, signature;
+
+            using (HashAlgorithm hash = SHA256.Create())
+            {
+                dataHash = hash.ComputeHash(TestData.HelloBytes);
+            }
+
+            using (var rsa = new RSACryptoServiceProvider())
+            {
+                rsa.ImportParameters(TestData.RSA2048Params);
+
+                signature = useLegacySign ?
+                    rsa.SignHash(dataHash, "SHA256") :
+                    rsa.SignHash(dataHash, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+            }
+
+            bool verified;
+
+            using (var rsa = new RSACryptoServiceProvider())
+            {
+                rsa.ImportParameters(
+                    new RSAParameters
+                    {
+                        Modulus = TestData.RSA2048Params.Modulus,
+                        Exponent = TestData.RSA2048Params.Exponent,
+                    });
+
+                verified = useLegacyVerify ?
+                    rsa.VerifyHash(dataHash, "SHA256", signature) :
+                    rsa.VerifyHash(dataHash, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+            }
+
+            Assert.True(verified);
         }
 
         public static IEnumerable<object[]> AlgorithmIdentifiers()

@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <File Include="$(OSXNativePath)\System.IO.Compression.Native.dylib">
+    <File Include="$(OSXNativePath)System.IO.Compression.Native.dylib">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
     </File>
   </ItemGroup>

@@ -657,9 +657,9 @@ namespace System.Collections.Concurrent.Tests
             Assert.Equal(SIZE, dictionary.Count);
 
             //test contains
-            Assert.False(dictionary.Contains(1), "TestIDictionary:  FAILED.  Contain retuned true for incorrect key type");
-            Assert.False(dictionary.Contains("100"), "TestIDictionary:  FAILED.  Contain retuned true for incorrect key");
-            Assert.True(dictionary.Contains("1"), "TestIDictionary:  FAILED.  Contain retuned false for correct key");
+            Assert.False(dictionary.Contains(1), "TestIDictionary:  FAILED.  Contain returned true for incorrect key type");
+            Assert.False(dictionary.Contains("100"), "TestIDictionary:  FAILED.  Contain returned true for incorrect key");
+            Assert.True(dictionary.Contains("1"), "TestIDictionary:  FAILED.  Contain returned false for correct key");
 
             //test GetEnumerator
             int count = 0;
@@ -799,6 +799,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.True(dictionary.IsEmpty, "TestClear: FAILED.  IsEmpty returned false after Clear");
         }
 
+        [Fact]
         public static void TestTryUpdate()
         {
             var dictionary = new ConcurrentDictionary<string, int>();

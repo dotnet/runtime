@@ -57,7 +57,7 @@ namespace System.Net.Sockets
         //
         private static SocketAsyncEngine s_currentEngine;
 
-        private readonly int _port;
+        private readonly IntPtr _port;
         private readonly Interop.Sys.SocketEvent* _buffer;
 
         //
@@ -69,7 +69,7 @@ namespace System.Net.Sockets
 
         //
         // Each SocketAsyncContext is associated with a particular "handle" value, used to identify that 
-        // SocketAsyncContext when events are raised.  These handle values are never resused, because we do not have
+        // SocketAsyncContext when events are raised.  These handle values are never reused, because we do not have
         // a way to ensure that we will never see an event for a socket/handle that has been freed.  Instead, we
         // allocate monotonically increasing handle values up to some limit; when we would exceed that limit,
         // we allocate a new SocketAsyncEngine (and thus a new event port) and start the handle values over at zero.
@@ -205,7 +205,7 @@ namespace System.Net.Sockets
 
         private SocketAsyncEngine()
         {
-            _port = -1;
+            _port = (IntPtr)(-1);
             _shutdownReadPipe = -1;
             _shutdownWritePipe = -1;
             try
@@ -223,7 +223,7 @@ namespace System.Net.Sockets
                 }
 
                 //
-                // Create the pipe for signalling shutdown, and register for "read" events for the pipe.  Now writing
+                // Create the pipe for signaling shutdown, and register for "read" events for the pipe.  Now writing
                 // to the pipe will send an event to the event loop.
                 //
                 int* pipeFds = stackalloc int[2];
@@ -234,7 +234,7 @@ namespace System.Net.Sockets
                 _shutdownReadPipe = pipeFds[Interop.Sys.ReadEndOfPipe];
                 _shutdownWritePipe = pipeFds[Interop.Sys.WriteEndOfPipe];
 
-                if (Interop.Sys.DangerousTryChangeSocketEventRegistration(_port, _shutdownReadPipe, Interop.Sys.SocketEvents.None, Interop.Sys.SocketEvents.Read, ShutdownHandle) != Interop.Error.SUCCESS)
+                if (Interop.Sys.TryChangeSocketEventRegistration(_port, (IntPtr)_shutdownReadPipe, Interop.Sys.SocketEvents.None, Interop.Sys.SocketEvents.Read, ShutdownHandle) != Interop.Error.SUCCESS)
                 {
                     throw new InternalException();
                 }
@@ -325,7 +325,7 @@ namespace System.Net.Sockets
             {
                 Interop.Sys.FreeSocketEventBuffer(_buffer);
             }
-            if (_port != -1)
+            if (_port != (IntPtr)(-1))
             {
                 Interop.Sys.CloseSocketEventPort(_port);
             }

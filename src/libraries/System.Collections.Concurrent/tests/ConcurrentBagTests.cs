@@ -16,6 +16,7 @@ namespace System.Collections.Concurrent.Tests
         public static void TestBasicScenarios()
         {
             ConcurrentBag<int> cb = new ConcurrentBag<int>();
+            Assert.True(cb.IsEmpty);
             Task[] tks = new Task[2];
             tks[0] = Task.Run(() =>
                 {

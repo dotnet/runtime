@@ -42,7 +42,7 @@ namespace System.Collections.Tests
         #region IDictionary tests
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_ItemSet_NullValueWhenDefaultValueIsNonNull(int count)
         {
             IDictionary dictionary = new Dictionary<string, int>();
@@ -50,7 +50,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_ItemSet_KeyOfWrongType(int count)
         {
             if (!IsReadOnly)
@@ -62,7 +62,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_ItemSet_ValueOfWrongType(int count)
         {
             if (!IsReadOnly)
@@ -75,7 +75,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_Add_KeyOfWrongType(int count)
         {
             if (!IsReadOnly)
@@ -88,7 +88,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_Add_ValueOfWrongType(int count)
         {
             if (!IsReadOnly)
@@ -101,7 +101,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_Add_NullValueWhenDefaultTValueIsNonNull(int count)
         {
             if (!IsReadOnly)
@@ -114,7 +114,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_Contains_KeyOfWrongType(int count)
         {
             if (!IsReadOnly)
@@ -129,7 +129,7 @@ namespace System.Collections.Tests
         #region ICollection tests
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_NonGeneric_CopyTo_ArrayOfIncorrectKeyValuePairType(int count)
         {
             ICollection collection = NonGenericICollectionFactory(count);
@@ -138,7 +138,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_NonGeneric_CopyTo_ArrayOfCorrectKeyValuePairType(int count)
         {
             ICollection collection = NonGenericICollectionFactory(count);
@@ -167,7 +167,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("CopyConstructorInt32Data")]
+        [MemberData(nameof(CopyConstructorInt32Data))]
         public void CopyConstructorInt32(int size, Func<int, int> keyValueSelector, Func<IDictionary<int, int>, IDictionary<int, int>> dictionarySelector)
         {
             TestCopyConstructor(size, keyValueSelector, dictionarySelector);
@@ -179,7 +179,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("CopyConstructorStringData")]
+        [MemberData(nameof(CopyConstructorStringData))]
         public void CopyConstructorString(int size, Func<int, string> keyValueSelector, Func<IDictionary<string, string>, IDictionary<string, string>> dictionarySelector)
         {
             TestCopyConstructor(size, keyValueSelector, dictionarySelector);
@@ -199,7 +199,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("CopyConstructorInt32ComparerData")]
+        [MemberData(nameof(CopyConstructorInt32ComparerData))]
         public void CopyConstructorInt32Comparer(int size, Func<int, int> keyValueSelector, Func<IDictionary<int, int>, IDictionary<int, int>> dictionarySelector, IEqualityComparer<int> comparer)
         {
             TestCopyConstructor(size, keyValueSelector, dictionarySelector, comparer);
@@ -220,10 +220,17 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("CopyConstructorStringComparerData")]
+        [MemberData(nameof(CopyConstructorStringComparerData))]
         public void CopyConstructorStringComparer(int size, Func<int, string> keyValueSelector, Func<IDictionary<string, string>, IDictionary<string, string>> dictionarySelector, IEqualityComparer<string> comparer)
         {
             TestCopyConstructor(size, keyValueSelector, dictionarySelector, comparer);
+        }
+
+        [Fact]
+        public void CantAcceptDuplicateKeysFromSourceDictionary()
+        {
+            Dictionary<string, int> source = new Dictionary<string, int> { { "a", 1 }, { "A", 1 } };
+            Assert.Throws<ArgumentException>(null, () => new Dictionary<string, int>(source, StringComparer.OrdinalIgnoreCase));
         }
 
         public static IEnumerable<object[]> CopyConstructorStringComparerData

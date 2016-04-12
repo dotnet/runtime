@@ -11,106 +11,106 @@ namespace System.Linq.Expressions.Tests
     {
         #region Test methods
 
-        [Fact]
-        public static void CheckByteExclusiveOrTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckByteExclusiveOrTest(bool useInterpreter)
         {
             byte[] array = new byte[] { 0, 1, byte.MaxValue };
             for (int i = 0; i < array.Length; i++)
             {
                 for (int j = 0; j < array.Length; j++)
                 {
-                    VerifyByteExclusiveOr(array[i], array[j]);
+                    VerifyByteExclusiveOr(array[i], array[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckSByteExclusiveOrTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckSByteExclusiveOrTest(bool useInterpreter)
         {
             sbyte[] array = new sbyte[] { 0, 1, -1, sbyte.MinValue, sbyte.MaxValue };
             for (int i = 0; i < array.Length; i++)
             {
                 for (int j = 0; j < array.Length; j++)
                 {
-                    VerifySByteExclusiveOr(array[i], array[j]);
+                    VerifySByteExclusiveOr(array[i], array[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckUShortExclusiveOrTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckUShortExclusiveOrTest(bool useInterpreter)
         {
             ushort[] array = new ushort[] { 0, 1, ushort.MaxValue };
             for (int i = 0; i < array.Length; i++)
             {
                 for (int j = 0; j < array.Length; j++)
                 {
-                    VerifyUShortExclusiveOr(array[i], array[j]);
+                    VerifyUShortExclusiveOr(array[i], array[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckShortExclusiveOrTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckShortExclusiveOrTest(bool useInterpreter)
         {
             short[] array = new short[] { 0, 1, -1, short.MinValue, short.MaxValue };
             for (int i = 0; i < array.Length; i++)
             {
                 for (int j = 0; j < array.Length; j++)
                 {
-                    VerifyShortExclusiveOr(array[i], array[j]);
+                    VerifyShortExclusiveOr(array[i], array[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckUIntExclusiveOrTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckUIntExclusiveOrTest(bool useInterpreter)
         {
             uint[] array = new uint[] { 0, 1, uint.MaxValue };
             for (int i = 0; i < array.Length; i++)
             {
                 for (int j = 0; j < array.Length; j++)
                 {
-                    VerifyUIntExclusiveOr(array[i], array[j]);
+                    VerifyUIntExclusiveOr(array[i], array[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckIntExclusiveOrTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckIntExclusiveOrTest(bool useInterpreter)
         {
             int[] array = new int[] { 0, 1, -1, int.MinValue, int.MaxValue };
             for (int i = 0; i < array.Length; i++)
             {
                 for (int j = 0; j < array.Length; j++)
                 {
-                    VerifyIntExclusiveOr(array[i], array[j]);
+                    VerifyIntExclusiveOr(array[i], array[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckULongExclusiveOrTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckULongExclusiveOrTest(bool useInterpreter)
         {
             ulong[] array = new ulong[] { 0, 1, ulong.MaxValue };
             for (int i = 0; i < array.Length; i++)
             {
                 for (int j = 0; j < array.Length; j++)
                 {
-                    VerifyULongExclusiveOr(array[i], array[j]);
+                    VerifyULongExclusiveOr(array[i], array[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckLongExclusiveOrTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLongExclusiveOrTest(bool useInterpreter)
         {
             long[] array = new long[] { 0, 1, -1, long.MinValue, long.MaxValue };
             for (int i = 0; i < array.Length; i++)
             {
                 for (int j = 0; j < array.Length; j++)
                 {
-                    VerifyLongExclusiveOr(array[i], array[j]);
+                    VerifyLongExclusiveOr(array[i], array[j], useInterpreter);
                 }
             }
         }
@@ -119,7 +119,7 @@ namespace System.Linq.Expressions.Tests
 
         #region Test verifiers
 
-        private static void VerifyByteExclusiveOr(byte a, byte b)
+        private static void VerifyByteExclusiveOr(byte a, byte b, bool useInterpreter)
         {
             Expression<Func<byte>> e =
                 Expression.Lambda<Func<byte>>(
@@ -127,46 +127,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(byte)),
                         Expression.Constant(b, typeof(byte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<byte> f = e.Compile();
+            Func<byte> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            byte etResult = default(byte);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            byte csResult = default(byte);
-            Exception csException = null;
-            try
-            {
-                csResult = (byte)(a ^ b);
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal((byte)(a ^ b), f());
         }
 
-        private static void VerifySByteExclusiveOr(sbyte a, sbyte b)
+        private static void VerifySByteExclusiveOr(sbyte a, sbyte b, bool useInterpreter)
         {
             Expression<Func<sbyte>> e =
                 Expression.Lambda<Func<sbyte>>(
@@ -174,46 +140,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(sbyte)),
                         Expression.Constant(b, typeof(sbyte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<sbyte> f = e.Compile();
+            Func<sbyte> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            sbyte etResult = default(sbyte);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            sbyte csResult = default(sbyte);
-            Exception csException = null;
-            try
-            {
-                csResult = (sbyte)(a ^ b);
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal((sbyte)(a ^ b), f());
         }
 
-        private static void VerifyUShortExclusiveOr(ushort a, ushort b)
+        private static void VerifyUShortExclusiveOr(ushort a, ushort b, bool useInterpreter)
         {
             Expression<Func<ushort>> e =
                 Expression.Lambda<Func<ushort>>(
@@ -221,46 +153,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(ushort)),
                         Expression.Constant(b, typeof(ushort))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<ushort> f = e.Compile();
+            Func<ushort> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            ushort etResult = default(ushort);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            ushort csResult = default(ushort);
-            Exception csException = null;
-            try
-            {
-                csResult = (ushort)(a ^ b);
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal((ushort)(a ^ b), f());
         }
 
-        private static void VerifyShortExclusiveOr(short a, short b)
+        private static void VerifyShortExclusiveOr(short a, short b, bool useInterpreter)
         {
             Expression<Func<short>> e =
                 Expression.Lambda<Func<short>>(
@@ -268,46 +166,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(short)),
                         Expression.Constant(b, typeof(short))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<short> f = e.Compile();
+            Func<short> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            short etResult = default(short);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            short csResult = default(short);
-            Exception csException = null;
-            try
-            {
-                csResult = (short)(a ^ b);
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal((short)(a ^ b), f());
         }
 
-        private static void VerifyUIntExclusiveOr(uint a, uint b)
+        private static void VerifyUIntExclusiveOr(uint a, uint b, bool useInterpreter)
         {
             Expression<Func<uint>> e =
                 Expression.Lambda<Func<uint>>(
@@ -315,46 +179,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(uint)),
                         Expression.Constant(b, typeof(uint))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<uint> f = e.Compile();
+            Func<uint> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            uint etResult = default(uint);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            uint csResult = default(uint);
-            Exception csException = null;
-            try
-            {
-                csResult = (uint)(a ^ b);
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a ^ b, f());
         }
 
-        private static void VerifyIntExclusiveOr(int a, int b)
+        private static void VerifyIntExclusiveOr(int a, int b, bool useInterpreter)
         {
             Expression<Func<int>> e =
                 Expression.Lambda<Func<int>>(
@@ -362,46 +192,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(int)),
                         Expression.Constant(b, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<int> f = e.Compile();
+            Func<int> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            int etResult = default(int);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            int csResult = default(int);
-            Exception csException = null;
-            try
-            {
-                csResult = (int)(a ^ b);
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a ^ b, f());
         }
 
-        private static void VerifyULongExclusiveOr(ulong a, ulong b)
+        private static void VerifyULongExclusiveOr(ulong a, ulong b, bool useInterpreter)
         {
             Expression<Func<ulong>> e =
                 Expression.Lambda<Func<ulong>>(
@@ -409,46 +205,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(ulong)),
                         Expression.Constant(b, typeof(ulong))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<ulong> f = e.Compile();
+            Func<ulong> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            ulong etResult = default(ulong);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            ulong csResult = default(ulong);
-            Exception csException = null;
-            try
-            {
-                csResult = (ulong)(a ^ b);
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a ^ b, f());
         }
 
-        private static void VerifyLongExclusiveOr(long a, long b)
+        private static void VerifyLongExclusiveOr(long a, long b, bool useInterpreter)
         {
             Expression<Func<long>> e =
                 Expression.Lambda<Func<long>>(
@@ -456,43 +218,9 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(long)),
                         Expression.Constant(b, typeof(long))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<long> f = e.Compile();
+            Func<long> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            long etResult = default(long);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            long csResult = default(long);
-            Exception csException = null;
-            try
-            {
-                csResult = (long)(a ^ b);
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a ^ b, f());
         }
 
         #endregion

@@ -15,7 +15,7 @@ namespace System.Xml.Schema
         private String _text;                 // Text for internal entity
         private XmlQualifiedName _ndata = XmlQualifiedName.Empty; // NDATA identifier
         private int _lineNumber;           // line number
-        private int _linePosition;         // character postion
+        private int _linePosition;         // character position
         private bool _isParameter;          // parameter entity flag
         private bool _isExternal;           // external entity flag
         private bool _parsingInProgress;      // whether entity is being parsed (DtdParser infinite recursion check)

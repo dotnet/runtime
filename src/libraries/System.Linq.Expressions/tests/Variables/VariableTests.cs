@@ -33,8 +33,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void NameNeedNotBeCSharpValid()
         {
-            ParameterExpression variable = Expression.Variable(typeof(int), "a name with charcters not allowed in C# <, >, !, =, \0, \uFFFF, &c.");
-            Assert.Equal("a name with charcters not allowed in C# <, >, !, =, \0, \uFFFF, &c.", variable.Name);
+            ParameterExpression variable = Expression.Variable(typeof(int), "a name with characters not allowed in C# <, >, !, =, \0, \uFFFF, &c.");
+            Assert.Equal("a name with characters not allowed in C# <, >, !, =, \0, \uFFFF, &c.", variable.Name);
         }
 
         [Fact]
@@ -60,8 +60,8 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValueData))]
-        public void CanWriteAndReadBack(object value)
+        [PerCompilationType(nameof(ValueData))]
+        public void CanWriteAndReadBack(object value, bool useInterpreter)
         {
             Type type = value.GetType();
             ParameterExpression variable = Expression.Variable(type);
@@ -76,18 +76,19 @@ namespace System.Linq.Expressions.Tests
                             variable
                             )
                         )
-                    ).Compile()()
+                    ).Compile(useInterpreter)()
                 );
         }
 
-        [Fact]
-        public void CanUseAsLambdaParameter()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void CanUseAsLambdaParameter(bool useInterpreter)
         {
             ParameterExpression variable = Expression.Variable(typeof(int));
             Func<int, int> addOne = Expression.Lambda<Func<int, int>>(
                 Expression.Add(variable, Expression.Constant(1)),
                 variable
-                ).Compile();
+                ).Compile(useInterpreter);
             Assert.Equal(3, addOne(2));
         }
 

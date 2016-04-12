@@ -16,11 +16,15 @@ static_assert(PAL_CURLOPT_POST == CURLOPT_POST, "");
 static_assert(PAL_CURLOPT_FOLLOWLOCATION == CURLOPT_FOLLOWLOCATION, "");
 static_assert(PAL_CURLOPT_PROXYPORT == CURLOPT_PROXYPORT, "");
 static_assert(PAL_CURLOPT_POSTFIELDSIZE == CURLOPT_POSTFIELDSIZE, "");
+static_assert(PAL_CURLOPT_SSL_VERIFYPEER == CURLOPT_SSL_VERIFYPEER, "");
 static_assert(PAL_CURLOPT_MAXREDIRS == CURLOPT_MAXREDIRS, "");
+static_assert(PAL_CURLOPT_SSL_VERIFYHOST == CURLOPT_SSL_VERIFYHOST, "");
 static_assert(PAL_CURLOPT_HTTP_VERSION == CURLOPT_HTTP_VERSION, "");
+static_assert(PAL_CURLOPT_DNS_CACHE_TIMEOUT == CURLOPT_DNS_CACHE_TIMEOUT, "");
 static_assert(PAL_CURLOPT_NOSIGNAL == CURLOPT_NOSIGNAL, "");
 static_assert(PAL_CURLOPT_PROXYTYPE == CURLOPT_PROXYTYPE, "");
 static_assert(PAL_CURLOPT_HTTPAUTH == CURLOPT_HTTPAUTH, "");
+static_assert(PAL_CURLOPT_CONNECTTIMEOUT_MS == CURLOPT_CONNECTTIMEOUT_MS, "");
 static_assert(PAL_CURLOPT_PROTOCOLS == CURLOPT_PROTOCOLS, "");
 static_assert(PAL_CURLOPT_REDIR_PROTOCOLS == CURLOPT_REDIR_PROTOCOLS, "");
 
@@ -36,12 +40,16 @@ static_assert(PAL_CURLOPT_COPYPOSTFIELDS == CURLOPT_COPYPOSTFIELDS, "");
 static_assert(PAL_CURLOPT_USERNAME == CURLOPT_USERNAME, "");
 static_assert(PAL_CURLOPT_PASSWORD == CURLOPT_PASSWORD, "");
 
+static_assert(PAL_CURLOPT_INFILESIZE_LARGE == CURLOPT_INFILESIZE_LARGE, "");
+static_assert(PAL_CURLOPT_POSTFIELDSIZE_LARGE == CURLOPT_POSTFIELDSIZE_LARGE, "");
+
 static_assert(PAL_CURLE_OK == CURLE_OK, "");
 static_assert(PAL_CURLE_UNSUPPORTED_PROTOCOL == CURLE_UNSUPPORTED_PROTOCOL, "");
 static_assert(PAL_CURLE_FAILED_INIT == CURLE_FAILED_INIT, "");
 static_assert(PAL_CURLE_NOT_BUILT_IN == CURLE_NOT_BUILT_IN, "");
 static_assert(PAL_CURLE_COULDNT_RESOLVE_HOST == CURLE_COULDNT_RESOLVE_HOST, "");
 static_assert(PAL_CURLE_OUT_OF_MEMORY == CURLE_OUT_OF_MEMORY, "");
+static_assert(PAL_CURLE_OPERATION_TIMEDOUT == CURLE_OPERATION_TIMEDOUT, "");
 static_assert(PAL_CURLE_ABORTED_BY_CALLBACK == CURLE_ABORTED_BY_CALLBACK, "");
 static_assert(PAL_CURLE_UNKNOWN_OPTION == CURLE_UNKNOWN_OPTION, "");
 
@@ -53,6 +61,11 @@ static_assert(PAL_CURL_HTTP_VERSION_2_0 == CURL_HTTP_VERSION_2_0, "");
 #endif
 
 static_assert(PAL_CURL_SSLVERSION_TLSv1 == CURL_SSLVERSION_TLSv1, "");
+#if HAVE_CURL_SSLVERSION_TLSv1_012
+static_assert(PAL_CURL_SSLVERSION_TLSv1_0 == CURL_SSLVERSION_TLSv1_0, "");
+static_assert(PAL_CURL_SSLVERSION_TLSv1_1 == CURL_SSLVERSION_TLSv1_1, "");
+static_assert(PAL_CURL_SSLVERSION_TLSv1_2 == CURL_SSLVERSION_TLSv1_2, "");
+#endif
 
 static_assert(PAL_CURLINFO_PRIVATE == CURLINFO_PRIVATE, "");
 static_assert(PAL_CURLINFO_HTTPAUTH_AVAIL == CURLINFO_HTTPAUTH_AVAIL, "");
@@ -108,7 +121,19 @@ extern "C" int32_t HttpNative_EasySetOptionString(CURL* handle, PAL_CURLoption o
 
 extern "C" int32_t HttpNative_EasySetOptionLong(CURL* handle, PAL_CURLoption option, int64_t value)
 {
-    return curl_easy_setopt(handle, ConvertOption(option), value);
+    CURLoption curlOpt = ConvertOption(option);
+
+    // The HttpNative_EasySetOptionLong entrypoint is used for both curl_easy_setopt(..., long) and
+    // curl_easy_setopt(..., curl_off_t).  As they'll likely be different sizes on 32-bit platforms, 
+    // we map anything >= CurlOptionOffTBase to use curl_off_t.
+    if (option >= CurlOptionOffTBase)
+    {
+        return curl_easy_setopt(handle, curlOpt, static_cast<curl_off_t>(value));
+    }
+    else
+    {
+        return curl_easy_setopt(handle, curlOpt, static_cast<long>(value));
+    }
 }
 
 extern "C" int32_t HttpNative_EasySetOptionPointer(CURL* handle, PAL_CURLoption option, void* value)

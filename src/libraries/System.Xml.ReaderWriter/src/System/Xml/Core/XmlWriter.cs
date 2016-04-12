@@ -48,7 +48,7 @@ namespace System.Xml
         // Constants
         private const int WriteNodeBufferSize = 1024;
 
-        // Returns the settings describing the features of the the writer. Returns null for V1 XmlWriters (XmlTextWriter).
+        // Returns the settings describing the features of the writer. Returns null for V1 XmlWriters (XmlTextWriter).
         public virtual XmlWriterSettings Settings
         {
             get
@@ -62,7 +62,7 @@ namespace System.Xml
 
         public abstract void WriteStartDocument();
 
-        //Writes out the XML declaration with the version "1.0" and the speficied standalone attribute.
+        //Writes out the XML declaration with the version "1.0" and the specified standalone attribute.
 
         public abstract void WriteStartDocument(bool standalone);
 

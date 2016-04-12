@@ -1161,7 +1161,7 @@ namespace System.Diagnostics.Tracing
                 envelope.Format = ManifestEnvelope.ManifestFormats.SimpleXmlFormat;
                 envelope.MajorVersion = 1;
                 envelope.MinorVersion = 0;
-                envelope.Magic = 0x5B;              // An unusual number that can be checked for consistancy. 
+                envelope.Magic = 0x5B;              // An unusual number that can be checked for consistency. 
                 int dataLeft = rawManifest.Length;
                 envelope.TotalChunks = (ushort)((dataLeft + (ManifestEnvelope.MaxChunkSize - 1)) / ManifestEnvelope.MaxChunkSize);
                 envelope.ChunkNumber = 0;
@@ -1576,7 +1576,7 @@ namespace System.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// Checks internal consistancy of EventSources/Listeners. 
+        /// Checks internal consistency of EventSources/Listeners. 
         /// </summary>
         [Conditional("DEBUG")]
         internal static void Validate()
@@ -1877,7 +1877,7 @@ namespace System.Diagnostics.Tracing
         // Instance fields
         readonly internal EventListener m_Listener;   // The dispatcher this entry is for
         internal bool[] m_EventEnabled;               // For every event in a the eventSource, is it enabled?
-        // Only guarenteed to exist after a InsureInit()
+        // Only guaranteed to exist after a InsureInit()
         internal EventDispatcher m_Next;              // These form a linked list in code:EventSource.m_Dispatchers
         // Of all listeners for that eventSource.  
     }

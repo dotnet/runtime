@@ -68,7 +68,7 @@ namespace System.IO.Pipes
         /// Win32 note: this gets used for dwPipeMode. CreateNamedPipe allows you to specify PIPE_TYPE_BYTE/MESSAGE
         /// and PIPE_READMODE_BYTE/MESSAGE independently, but this sets type and readmode to match.
         /// </param>
-        /// <param name="options">PipeOption enum: None, Asynchronous, or Writethrough
+        /// <param name="options">PipeOption enum: None, Asynchronous, or Write-through
         /// Win32 note: this gets passed in with dwOpenMode to CreateNamedPipe. Asynchronous corresponds to 
         /// FILE_FLAG_OVERLAPPED option. PipeOptions enum doesn't expose FIRST_PIPE_INSTANCE option because
         /// this sets that automatically based on the number of instances specified.
@@ -103,10 +103,17 @@ namespace System.IO.Pipes
             {
                 throw new ArgumentOutOfRangeException(nameof(inBufferSize), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
-            ValidateMaxNumberOfServerInstances(maxNumberOfServerInstances);
+            if ((maxNumberOfServerInstances < 1 || maxNumberOfServerInstances > 254) && (maxNumberOfServerInstances != MaxAllowedServerInstances))
+            {
+                // win32 allows fixed values of 1-254 or 255 to mean max allowed by system. We expose 255 as -1 (unlimited)
+                // through the MaxAllowedServerInstances constant. This is consistent e.g. with -1 as infinite timeout, etc.
+                // We do this check for consistency on Unix, even though maxNumberOfServerInstances is otherwise ignored.
+                throw new ArgumentOutOfRangeException(nameof(maxNumberOfServerInstances), SR.ArgumentOutOfRange_MaxNumServerInstances);
+            }
+
             // inheritability will always be None since this private constructor is only called from other constructors from which
             // inheritability is always set to None. Desktop has a public constructor to allow setting it to something else, but Core
-            // doesnt.
+            // doesn't.
             if (inheritability < HandleInheritability.None || inheritability > HandleInheritability.Inheritable)
             {
                 throw new ArgumentOutOfRangeException(nameof(inheritability), SR.ArgumentOutOfRange_HandleInheritabilityNoneOrInheritable);

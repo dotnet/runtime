@@ -2,15 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//-----------------------------------------------------------------------------
-//
-// Description:
-//  The package properties are a subset of the standard OLE property sets
-//  SummaryInformation and DocumentSummaryInformation, and include such properties
-//  as Title and Subject.
-//
-//-----------------------------------------------------------------------------
-
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -18,7 +9,7 @@ using System.IO.Packaging;
 using System.Collections;
 using System.Collections.Generic;
 using System.Xml;
-using System.Globalization;             // For CultureInfo
+using System.Globalization;
 
 namespace System.IO.Packaging
 {
@@ -33,12 +24,6 @@ namespace System.IO.Packaging
     /// </remarks>
     internal class PartBasedPackageProperties : PackageProperties
     {
-        //------------------------------------------------------
-        //
-        //  Constructors
-        //
-        //------------------------------------------------------
-
         #region Constructors
 
         internal PartBasedPackageProperties(Package package)
@@ -55,18 +40,6 @@ namespace System.IO.Packaging
         }
 
         #endregion Constructors
-
-        //------------------------------------------------------
-        //
-        //  Public Methods
-        //
-        //------------------------------------------------------
-
-        //------------------------------------------------------
-        //
-        //  Public Properties
-        //
-        //------------------------------------------------------
 
         #region Public Properties
 
@@ -328,13 +301,7 @@ namespace System.IO.Packaging
         }
 
         #endregion Public Properties
-
-        //------------------------------------------------------
-        //
-        //  Internal Methods
-        //
-        //------------------------------------------------------
-
+        
         #region Internal Methods
 
         // Invoked from Package.Flush.
@@ -362,19 +329,7 @@ namespace System.IO.Packaging
         }
 
         #endregion Internal Methods
-
-        //------------------------------------------------------
-        //
-        //  Internal Properties
-        //
-        //------------------------------------------------------
-
-        //------------------------------------------------------
-        //
-        //  Private Methods
-        //
-        //------------------------------------------------------
-
+        
         #region Private Methods
 
         // The property store is implemented as a hash table of objects.
@@ -636,7 +591,7 @@ namespace System.IO.Packaging
         }
 
         // This method validates xsi:type="dcterms:W3CDTF"
-        // The valude of xsi:type is a qualified name. It should have a prefix that matches
+        // The value of xsi:type is a qualified name. It should have a prefix that matches
         //  the xml namespace (ns) within the scope and the name that matches name
         // The comparisons should be case-sensitive comparisons
         internal static void ValidateXsiType(XmlReader reader, Object ns, string name)
@@ -654,7 +609,7 @@ namespace System.IO.Packaging
 
             int index = typeValue.IndexOf(':');
 
-            // The valude of xsi:type is not a qualified name
+            // The value of xsi:type is not a qualified name
             if (index == -1)
             {
                 throw new XmlException(SR.Format(SR.UnknownDCDateTimeXsiType, reader.Name),
@@ -856,13 +811,7 @@ namespace System.IO.Packaging
         }
 
         #endregion Private Methods
-
-        //------------------------------------------------------
-        //
-        //   Private fields
-        //
-        //------------------------------------------------------
-
+        
         #region Private Fields
 
         private Package _package;

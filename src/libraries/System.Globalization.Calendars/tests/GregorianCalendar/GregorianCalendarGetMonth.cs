@@ -2,240 +2,50 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
+using System.Collections.Generic;
 using Xunit;
 
-namespace System.Globalization.CalendarTests
+using static System.Globalization.Tests.GregorianCalendarTestUtilities;
+
+namespace System.Globalization.Tests
 {
-    // GregorianCalendar.GetMonth(DateTime)
     public class GregorianCalendarGetMonth
     {
-        private const int c_DAYS_IN_LEAP_YEAR = 366;
-        private const int c_DAYS_IN_COMMON_YEAR = 365;
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
-
-        #region Positive tests
-        // PosTest1: the speicified time is in leap year, February
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> GetMonth_TestData()
         {
-            System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            DateTime time;
-            int year, month;
-            int expectedMonth, actualMonth;
-            year = GetALeapYear(myCalendar);
-            month = 2;
-            time = myCalendar.ToDateTime(year, month, 29, 10, 30, 12, 0);
-            expectedMonth = month;
-            actualMonth = myCalendar.GetMonth(time);
-            Assert.Equal(expectedMonth, actualMonth);
+            // February in a leap year
+            yield return new object[] { new DateTime(RandomLeapYear(), 2, 29, 10, 30, 12) };
+
+            // Month other than february in a leap year
+            yield return new object[] { new DateTime(RandomLeapYear(), RandomMonthNotFebruary(), 28, 10, 30, 12) };
+
+            // February in a common year
+            yield return new object[] { new DateTime(RandomCommonYear(), 2, 28, 10, 30, 12) };
+
+            // Month other than february in a common year
+            yield return new object[] { new DateTime(RandomCommonYear(), RandomMonthNotFebruary(), 28, 10, 30, 12) };
+
+            // Any month in the maximum supported year
+            yield return new object[] { new DateTime(9999, RandomMonth(), 20, 8, 20, 30) };
+
+            // Any month in the minimum supported year
+            yield return new object[] { new DateTime(1, RandomMonth(), 20, 8, 20, 30) };
+
+            // Minimum month in minimum year
+            yield return new object[] { new DateTime(1, 1, 20, 8, 20, 30) };
+
+            // Maximum month in maximum year
+            yield return new object[] { new DateTime(9999, 12, 20, 8, 20, 30) };
+
+            // Any month in any year
+            yield return new object[] { new DateTime(RandomYear(), RandomMonth(), 20, 8, 20, 30) };
         }
 
-        // PosTest2: the speicified time is in leap year, any month other than February
-        [Fact]
-        public void PosTest2()
+        [Theory]
+        [MemberData(nameof(GetMonth_TestData))]
+        public void GetMonth(DateTime time)
         {
-            System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            int year, month;
-            DateTime time;
-            int expectedMonth, actualMonth;
-            year = GetALeapYear(myCalendar);
-            //Get a random value beween 1 and 12 not including 2.
-            do
-            {
-                month = _generator.GetInt32(-55) % 12 + 1;
-            } while (2 == month);
-            time = myCalendar.ToDateTime(year, month, 28, 10, 30, 20, 0);
-            expectedMonth = month;
-            actualMonth = myCalendar.GetMonth(time);
-            Assert.Equal(expectedMonth, actualMonth);
+            Assert.Equal(time.Month, new GregorianCalendar().GetMonth(time));
         }
-
-        // PosTest3: the speicified time is in common year, February
-        [Fact]
-        public void PosTest3()
-        {
-            System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            int year, month;
-            DateTime time;
-            int expectedMonth, actualMonth;
-            year = GetACommonYear(myCalendar);
-            month = 2;
-            time = myCalendar.ToDateTime(year, month, 28, 10, 20, 30, 0);
-            expectedMonth = month;
-            actualMonth = myCalendar.GetMonth(time);
-            Assert.Equal(expectedMonth, actualMonth);
-        }
-
-        // PosTest4: the speicified time is in common year, any month other than February
-        [Fact]
-        public void PosTest4()
-        {
-            System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            int year, month;
-            DateTime time;
-            int expectedMonth, actualMonth;
-            year = GetACommonYear(myCalendar);
-            //Get a random value beween 1 and 12 not including 2.
-            do
-            {
-                month = _generator.GetInt32(-55) % 12 + 1;
-            } while (2 == month);
-            time = myCalendar.ToDateTime(year, month, 28, 10, 30, 20, 0);
-            expectedMonth = month;
-            actualMonth = myCalendar.GetMonth(time);
-            Assert.Equal(expectedMonth, actualMonth);
-        }
-
-        // PosTest5: the speicified time is in minimum supported year, any month
-        [Fact]
-        public void PosTest5()
-        {
-            System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            int year, month;
-            DateTime time;
-            int expectedMonth, actualMonth;
-            year = myCalendar.MinSupportedDateTime.Year;
-            month = _generator.GetInt32(-55) % 12 + 1;
-            time = myCalendar.ToDateTime(year, month, 20, 8, 20, 30, 0);
-            expectedMonth = month;
-            actualMonth = myCalendar.GetMonth(time);
-            Assert.Equal(expectedMonth, actualMonth);
-        }
-
-        // PosTest6: the speicified time is in maximum supported year, any month
-        [Fact]
-        public void PosTest6()
-        {
-            System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            int year, month;
-            DateTime time;
-            int expectedMonth, actualMonth;
-            year = myCalendar.MaxSupportedDateTime.Year;
-            month = _generator.GetInt32(-55) % 12 + 1;
-            time = myCalendar.ToDateTime(year, month, 20, 8, 20, 30, 0);
-            expectedMonth = month;
-            actualMonth = myCalendar.GetMonth(time);
-            Assert.Equal(expectedMonth, actualMonth);
-        }
-
-        // PosTest7: the speicified time is in any year, minimum month
-        [Fact]
-        public void PosTest7()
-        {
-            System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            int year, month;
-            DateTime time;
-            int expectedMonth, actualMonth;
-            year = myCalendar.MinSupportedDateTime.Year;
-            month = 1;
-            time = myCalendar.ToDateTime(year, month, 20, 8, 20, 30, 0);
-            expectedMonth = month;
-            actualMonth = myCalendar.GetMonth(time);
-            Assert.Equal(expectedMonth, actualMonth);
-        }
-
-        // PosTest8: the speicified time is in any year, maximum month
-        [Fact]
-        public void PosTest8()
-        {
-            System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            int year, month;
-            DateTime time;
-            int expectedMonth, actualMonth;
-            year = myCalendar.MaxSupportedDateTime.Year;
-            month = 12;
-            time = myCalendar.ToDateTime(year, month, 20, 8, 20, 30, 0);
-            expectedMonth = month;
-            actualMonth = myCalendar.GetMonth(time);
-            Assert.Equal(expectedMonth, actualMonth);
-        }
-
-        // PosTest9: the speicified time is in any year, any month
-        [Fact]
-        public void PosTest9()
-        {
-            System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            int year, month;
-            DateTime time;
-            int expectedMonth, actualMonth;
-            year = GetAYear(myCalendar);
-            month = _generator.GetInt32(-55) % 12 + 1;
-            time = myCalendar.ToDateTime(year, month, 20, 8, 20, 30, 0);
-            expectedMonth = month;
-            actualMonth = myCalendar.GetMonth(time);
-            Assert.Equal(expectedMonth, actualMonth);
-        }
-        #endregion
-
-        #region Helper methods for all the tests
-        //Indicate whether the specified year is leap year or not
-        private bool IsLeapYear(int year)
-        {
-            if (0 == year % 400 || (0 != year % 100 && 0 == (year & 0x3)))
-            {
-                return true;
-            }
-
-            return false;
-        }
-
-        //Get a random year beween minmum supported year and maximum supported year of the specified calendar
-        private int GetAYear(Calendar calendar)
-        {
-            int retVal;
-            int maxYear, minYear;
-            maxYear = calendar.MaxSupportedDateTime.Year;
-            minYear = calendar.MinSupportedDateTime.Year;
-            retVal = minYear + _generator.GetInt32(-55) % (maxYear + 1 - minYear);
-            return retVal;
-        }
-
-        //Get a leap year of the specified calendar
-        private int GetALeapYear(Calendar calendar)
-        {
-            int retVal;
-            // A leap year is any year divisible by 4 except for centennial years(those ending in 00)
-            // which are only leap years if they are divisible by 400.
-            retVal = ~(~GetAYear(calendar) | 0x3); // retVal will be divisible by 4 since the 2 least significant bits will be 0
-            retVal = (0 != retVal % 100) ? retVal : (retVal - retVal % 400); // if retVal is divisible by 100 subtract years from it to make it divisible by 400
-                                                                             // if retVal was 100, 200, or 300 the above logic will result in 0
-            if (0 == retVal)
-            {
-                retVal = 400;
-            }
-
-            return retVal;
-        }
-
-        //Get a common year of the specified calendar
-        private int GetACommonYear(Calendar calendar)
-        {
-            int retVal;
-            do
-            {
-                retVal = GetAYear(calendar);
-            }
-            while ((0 == (retVal & 0x3) && 0 != retVal % 100) || 0 == retVal % 400);
-            return retVal;
-        }
-
-        //Get text represntation of the input parmeters
-        private string GetParamsInfo(int year)
-        {
-            string str;
-            str = string.Format("\nThe specified year is {0:04}(yyyy).", year);
-            return str;
-        }
-
-        //Get text represntation of the input parmeters
-        private string GetParamsInfo(DateTime time)
-        {
-            string str;
-            str = string.Format("\nThe specified time is ({0}).", time);
-            return str;
-        }
-        #endregion
     }
 }

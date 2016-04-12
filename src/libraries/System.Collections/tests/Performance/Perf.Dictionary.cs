@@ -23,7 +23,7 @@ namespace System.Collections.Tests
                 if (!dict.ContainsKey(key))
                     dict.Add(key, 0);
             }
-           return dict;
+            return dict;
         }
 
         [Benchmark]
@@ -170,28 +170,305 @@ namespace System.Collections.Tests
         }
 
         [Benchmark]
+        [InlineData(1)]
+        [InlineData(10)]
+        [InlineData(1000)]
+        public static void Remove_ValueType(long size)
+        {
+            Dictionary<long?, long?> collection = new Dictionary<long?, long?>();
+            long?[] items;
+
+            items = new long?[size * 10];
+
+            for (long i = 0; i < size * 10; ++i)
+            {
+                items[i] = i;
+                collection.Add(items[i], items[i]);
+            }
+
+
+            foreach (var iteration in Benchmark.Iterations)
+                using (iteration.StartMeasurement())
+                    for (long i = 1; i < size; ++i)
+                        collection.Remove(items[i]);
+        }
+
+        [Benchmark]
+        public static void Indexer_get_ValueType()
+        {
+            int size = 1024;
+            int? item;
+            Dictionary<int?, int?> collection = new Dictionary<int?, int?>();
+            for (int i = 0; i < size; ++i)
+            {
+                collection.Add(i, i);
+            }
+
+            foreach (var iteration in Benchmark.Iterations)
+            {
+                using (iteration.StartMeasurement())
+                {
+                    for (int j = 0; j < size; ++j)
+                    {
+                        item = (int)collection[j];
+                        item = (int)collection[j];
+                        item = (int)collection[j];
+                        item = (int)collection[j];
+                        item = (int)collection[j];
+                        item = (int)collection[j];
+                        item = (int)collection[j];
+                        item = (int)collection[j];
+                        item = (int)collection[j];
+                        item = (int)collection[j];
+                    }
+                }
+            }
+        }
+
+        [Benchmark]
+        public static void Enumeration_ValueType()
+        {
+            int size = 1024;
+            int? key;
+            int? value;
+            Dictionary<int?, int?> collection = new Dictionary<int?, int?>();
+
+            for (int i = 0; i < size; ++i)
+            {
+                collection.Add(i, i);
+            }
+
+            foreach (var iteration in Benchmark.Iterations)
+            {
+                using (iteration.StartMeasurement())
+                {
+                    foreach (KeyValuePair<int?, int?> tempItem in collection)
+                    {
+                        key = tempItem.Key;
+                        value = tempItem.Value;
+                    }
+                }
+            }
+        }
+
+        [Benchmark]
         [InlineData(1000)]
         [InlineData(10000)]
         [InlineData(100000)]
-        public void ContainsKey(int size)
+        public static void Dictionary_ContainsValue_Int_True(int sampleLength)
         {
-            Dictionary<int, int> dict = CreateDictionary(size);
+            Dictionary<int, int> dictionary = new Dictionary<int, int>();
 
-            // Setup - utils needs a specific seed to prevent key collision with TestData
-            Random rand = new Random(837322);
-            int key = rand.Next(0, 400000);
-            dict.Add(key, 12);
+            for (int i = 0; i < sampleLength; i++)
+            {
+                dictionary.Add(i, i);
+            }
 
-            // Actual perf testing
+            bool result = false;
+
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                    for (int i = 0; i <= 10000; i++)
-                    {
-                        dict.ContainsKey(key); dict.ContainsKey(key); dict.ContainsKey(key);
-                        dict.ContainsKey(key); dict.ContainsKey(key); dict.ContainsKey(key);
-                        dict.ContainsKey(key); dict.ContainsKey(key); dict.ContainsKey(key);
-                        dict.ContainsKey(key); dict.ContainsKey(key); dict.ContainsKey(key);
-                    }
+                    for (int j = 0; j < sampleLength; j++)
+                        result = dictionary.ContainsValue(j);   //Every value searched for is present in the dictionary.
+        }
+
+        [Benchmark]
+        [InlineData(1000)]
+        [InlineData(10000)]
+        [InlineData(100000)]
+        public static void Dictionary_ContainsValue_Int_False(int sampleLength)
+        {
+            Dictionary<int, int> dictionary = new Dictionary<int, int>();
+
+            for (int i = 0; i < sampleLength; i++)
+            {
+                dictionary.Add(i, i);
+            }
+
+            bool result = false;
+
+            int missingValue = sampleLength;   //The value sampleLength is not present in the dictionary.
+
+            foreach (var iteration in Benchmark.Iterations)
+                using (iteration.StartMeasurement())
+                    for (int j = 0; j < sampleLength; j++)
+                        result = dictionary.ContainsValue(missingValue);
+        }
+
+        [Benchmark]
+        [InlineData(1000)]
+        [InlineData(10000)]
+        [InlineData(100000)]
+        public static void Dictionary_ContainsValue_String_True(int sampleLength)
+        {
+            string[] sampleValues = new string[sampleLength];
+
+            Dictionary<string, string> dictionary = new Dictionary<string, string>();
+
+            for (int i = 0; i < sampleLength; i++)
+            {
+                sampleValues[i] = i.ToString();
+
+                dictionary.Add(sampleValues[i], sampleValues[i]);
+            }
+
+            bool result = false;
+
+            foreach (var iteration in Benchmark.Iterations)
+                using (iteration.StartMeasurement())
+                    for (int j = 0; j < sampleLength; j++)
+                        result = dictionary.ContainsValue(sampleValues[j]);   //Every value searched for is present in the dictionary.
+        }
+
+        [Benchmark]
+        [InlineData(1000)]
+        [InlineData(10000)]
+        [InlineData(100000)]
+        public static void Dictionary_ContainsValue_String_False(int sampleLength)
+        {
+            string sampleValue;
+
+            Dictionary<string, string> dictionary = new Dictionary<string, string>();
+
+            for (int i = 0; i < sampleLength; i++)
+            {
+                sampleValue = i.ToString();
+
+                dictionary.Add(sampleValue, sampleValue);
+            }
+
+            bool result = false;
+
+            string missingValue = sampleLength.ToString();   //The string representation of sampleLength is not present in the dictionary.
+
+            foreach (var iteration in Benchmark.Iterations)
+                using (iteration.StartMeasurement())
+                    for (int j = 0; j < sampleLength; j++)
+                        result = dictionary.ContainsValue(missingValue);
+        }
+
+
+        [Benchmark]
+        [InlineData(1000)]
+        [InlineData(10000)]
+        [InlineData(100000)]
+        public static void Dictionary_ContainsKey_Int_True(int sampleLength)
+        {
+            Dictionary<int, int> dictionary = new Dictionary<int, int>();
+
+            for (int i = 0; i < sampleLength; i++)
+            {
+                dictionary.Add(i, i);
+            }
+
+            bool result = false;
+
+            foreach (var iteration in Benchmark.Iterations)
+                using (iteration.StartMeasurement())
+                    for (int j = 0; j < sampleLength; j++)
+                        result = dictionary.ContainsKey(j);
+        }
+
+        [Benchmark]
+        [InlineData(1000)]
+        [InlineData(10000)]
+        [InlineData(100000)]
+        public static void Dictionary_ContainsKey_Int_False(int sampleLength)
+        {
+            Dictionary<int, int> dictionary = new Dictionary<int, int>();
+
+            for (int i = 0; i < sampleLength; i++)
+            {
+                dictionary.Add(i, i);
+            }
+
+            bool result = false;
+
+            int missingKey = sampleLength;   //The key sampleLength is not present in the dictionary.
+
+            foreach (var iteration in Benchmark.Iterations)
+                using (iteration.StartMeasurement())
+                    for (int j = 0; j < sampleLength; j++)
+                        result = dictionary.ContainsKey(missingKey);
+        }
+
+        [Benchmark]
+        [InlineData(1000)]
+        [InlineData(10000)]
+        [InlineData(100000)]
+        public static void Dictionary_ContainsKey_String_True(int sampleLength)
+        {
+            string[] sampleKeys = new string[sampleLength];
+
+            Dictionary<string, string> dictionary = new Dictionary<string, string>();
+
+            for (int i = 0; i < sampleLength; i++)
+            {
+                sampleKeys[i] = i.ToString();
+
+                dictionary.Add(sampleKeys[i], sampleKeys[i]);
+            }
+
+            bool result = false;
+
+            foreach (var iteration in Benchmark.Iterations)
+                using (iteration.StartMeasurement())
+                    for (int j = 0; j < sampleLength; j++)
+                        result = dictionary.ContainsKey(sampleKeys[j]);  //Every key searched for is present in the dictionary.
+        }
+
+        [Benchmark]
+        [InlineData(1000)]
+        [InlineData(10000)]
+        [InlineData(100000)]
+        public static void Dictionary_ContainsKey_String_False(int sampleLength)
+        {
+            string sampleKey;
+
+            Dictionary<string, string> dictionary = new Dictionary<string, string>();
+
+            for (int i = 0; i < sampleLength; i++)
+            {
+                sampleKey = i.ToString();
+
+                dictionary.Add(sampleKey, sampleKey);
+            }
+
+            bool result = false;
+
+            string missingKey = sampleLength.ToString();  //The string representation of sampleLength is not present in the dictionary.
+
+            foreach (var iteration in Benchmark.Iterations)
+                using (iteration.StartMeasurement())
+                    for (int j = 0; j < sampleLength; j++)
+                        result = dictionary.ContainsKey(missingKey);
+        }
+
+        [Benchmark]
+        [InlineData(1000)]
+        [InlineData(10000)]
+        [InlineData(100000)]
+        public static void Dictionary_ContainsKey_String_False_IgnoreCase(int sampleLength)
+        {
+            string sampleKey;
+
+            Dictionary<string, string> dictionary = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            for (int i = 0; i < sampleLength; i++)
+            {
+                sampleKey = i.ToString();
+
+                dictionary.Add(sampleKey, sampleKey);
+            }
+
+            bool result = false;
+
+            string missingKey = sampleLength.ToString();  //The string representation of sampleLength is not present in the dictionary.
+
+            foreach (var iteration in Benchmark.Iterations)
+                using (iteration.StartMeasurement())
+                    for (int j = 0; j < sampleLength; j++)
+                        result = dictionary.ContainsKey(missingKey);
         }
     }
 }

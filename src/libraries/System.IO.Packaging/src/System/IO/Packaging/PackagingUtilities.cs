@@ -2,45 +2,22 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//---------------------------------------------------------------------------
-//
-// Description:
-//
-//---------------------------------------------------------------------------
-
 using System;
 using System.IO;
-using System.Xml;               // For XmlReader
-using System.Diagnostics;       // For Debug.Assert
-using System.Text;              // For Encoding
+using System.Xml;
+using System.Diagnostics;
+using System.Text;
 
 namespace System.IO.Packaging
 {
     internal static class PackagingUtilities
     {
-        //------------------------------------------------------
-        //
-        //  Internal Fields
-        //
-        //------------------------------------------------------
         internal static readonly string RelationshipNamespaceUri = "http://schemas.openxmlformats.org/package/2006/relationships";
         internal static readonly ContentType RelationshipPartContentType
             = new ContentType("application/vnd.openxmlformats-package.relationships+xml");
 
         internal const string ContainerFileExtension = "xps";
         internal const string XamlFileExtension = "xaml";
-
-        //------------------------------------------------------
-        //
-        //  Internal Properties
-        //
-        //------------------------------------------------------
-
-        //------------------------------------------------------
-        //
-        //  Internal Methods
-        //
-        //------------------------------------------------------
 
         #region Internal Methods
 
@@ -97,257 +74,6 @@ namespace System.IO.Packaging
         }
 
         /// <summary>
-        /// VerifyStreamReadArgs
-        /// </summary>
-        /// <param name="s">stream</param>
-        /// <param name="buffer">buffer</param>
-        /// <param name="offset">offset</param>
-        /// <param name="count">count</param>
-        /// <remarks>Common argument verification for Stream.Read()</remarks>
-        static internal void VerifyStreamReadArgs(Stream s, byte[] buffer, int offset, int count)
-        {
-            if (!s.CanRead)
-                throw new NotSupportedException(SR.ReadNotSupported);
-
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.OffsetNegative);
-            }
-
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ReadCountNegative);
-            }
-
-            checked     // catch any integer overflows
-            {
-                if (offset + count > buffer.Length)
-                {
-                    throw new ArgumentException(SR.ReadBufferTooSmall, nameof(buffer));
-                }
-            }
-        }
-
-        /// <summary>
-        /// VerifyStreamWriteArgs
-        /// </summary>
-        /// <param name="s"></param>
-        /// <param name="buffer"></param>
-        /// <param name="offset"></param>
-        /// <param name="count"></param>
-        /// <remarks>common argument verification for Stream.Write</remarks>
-        static internal void VerifyStreamWriteArgs(Stream s, byte[] buffer, int offset, int count)
-        {
-            if (!s.CanWrite)
-                throw new NotSupportedException(SR.WriteNotSupported);
-
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.OffsetNegative);
-            }
-
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.WriteCountNegative);
-            }
-
-            checked
-            {
-                if (offset + count > buffer.Length)
-                    throw new ArgumentException(SR.WriteBufferTooSmall, nameof(buffer));
-            }
-        }
-
-        /// <summary>
-        /// Read utility that is guaranteed to return the number of bytes requested
-        /// if they are available.
-        /// </summary>
-        /// <param name="stream">stream to read from</param>
-        /// <param name="buffer">buffer to read into</param>
-        /// <param name="offset">offset in buffer to write to</param>
-        /// <param name="count">bytes to read</param>
-        /// <returns>bytes read</returns>
-        /// <remarks>Normal Stream.Read does not guarantee how many bytes it will
-        /// return.  This one does.</remarks>
-        internal static int ReliableRead(Stream stream, byte[] buffer, int offset, int count)
-        {
-            return ReliableRead(stream, buffer, offset, count, count);
-        }
-
-        /// <summary>
-        /// Read utility that is guaranteed to return the number of bytes requested
-        /// if they are available.
-        /// </summary>
-        /// <param name="stream">stream to read from</param>
-        /// <param name="buffer">buffer to read into</param>
-        /// <param name="offset">offset in buffer to write to</param>
-        /// <param name="requestedCount">count of bytes that we would like to read (max read size to try)</param>
-        /// <param name="requiredCount">minimal count of bytes that we would like to read (min read size to achieve)</param>
-        /// <returns>bytes read</returns>
-        /// <remarks>Normal Stream.Read does not guarantee how many bytes it will
-        /// return.  This one does.</remarks>
-        internal static int ReliableRead(Stream stream, byte[] buffer, int offset, int requestedCount, int requiredCount)
-        {
-            Debug.Assert(stream != null);
-            Debug.Assert(buffer != null);
-            Debug.Assert(buffer.Length > 0);
-            Debug.Assert(offset >= 0);
-            Debug.Assert(requestedCount >= 0);
-            Debug.Assert(requiredCount >= 0);
-            Debug.Assert(checked(offset + requestedCount <= buffer.Length));
-            Debug.Assert(requiredCount <= requestedCount);
-
-            // let's read the whole block into our buffer 
-            int totalBytesRead = 0;
-            while (totalBytesRead < requiredCount)
-            {
-                int bytesRead = stream.Read(buffer,
-                                offset + totalBytesRead,
-                                requestedCount - totalBytesRead);
-                if (bytesRead == 0)
-                {
-                    break;
-                }
-                totalBytesRead += bytesRead;
-            }
-            return totalBytesRead;
-        }
-
-        /// <summary>
-        /// Read utility that is guaranteed to return the number of bytes requested
-        /// if they are available.
-        /// </summary>
-        /// <param name="reader">BinaryReader to read from</param>
-        /// <param name="buffer">buffer to read into</param>
-        /// <param name="offset">offset in buffer to write to</param>
-        /// <param name="count">bytes to read</param>
-        /// <returns>bytes read</returns>
-        /// <remarks>Normal Stream.Read does not guarantee how many bytes it will
-        /// return.  This one does.</remarks>
-        internal static int ReliableRead(BinaryReader reader, byte[] buffer, int offset, int count)
-        {
-            return ReliableRead(reader, buffer, offset, count, count);
-        }
-
-        /// <summary>
-        /// Read utility that is guaranteed to return the number of bytes requested
-        /// if they are available.
-        /// </summary>
-        /// <param name="reader">BinaryReader to read from</param>
-        /// <param name="buffer">buffer to read into</param>
-        /// <param name="offset">offset in buffer to write to</param>
-        /// <param name="requestedCount">count of bytes that we would like to read (max read size to try)</param>
-        /// <param name="requiredCount">minimal count of bytes that we would like to read (min read size to achieve)</param>
-        /// <returns>bytes read</returns>
-        /// <remarks>Normal Stream.Read does not guarantee how many bytes it will
-        /// return.  This one does.</remarks>
-        internal static int ReliableRead(BinaryReader reader, byte[] buffer, int offset, int requestedCount, int requiredCount)
-        {
-            Debug.Assert(reader != null);
-            Debug.Assert(buffer != null);
-            Debug.Assert(buffer.Length > 0);
-            Debug.Assert(offset >= 0);
-            Debug.Assert(requestedCount >= 0);
-            Debug.Assert(requiredCount >= 0);
-            Debug.Assert(checked(offset + requestedCount <= buffer.Length));
-            Debug.Assert(requiredCount <= requestedCount);
-
-            // let's read the whole block into our buffer 
-            int totalBytesRead = 0;
-            while (totalBytesRead < requiredCount)
-            {
-                int bytesRead = reader.Read(buffer,
-                                offset + totalBytesRead,
-                                requestedCount - totalBytesRead);
-                if (bytesRead == 0)
-                {
-                    break;
-                }
-                totalBytesRead += bytesRead;
-            }
-            return totalBytesRead;
-        }
-
-        /// <summary>
-        /// CopyStream utility that is guaranteed to return the number of bytes copied (may be less then requested,
-        /// if source stream doesn't have enough data)
-        /// </summary>
-        /// <param name="sourceStream">stream to read from</param>
-        /// <param name="targetStream">stream to write to </param>
-        /// <param name="bytesToCopy">number of bytes to be copied(use Int64.MaxValue if the whole stream needs to be copied)</param>
-        /// <param name="bufferSize">number of bytes to be copied (usually it is 4K for scenarios where we expect a lot of data 
-        ///  like in SparseMemoryStream case it could be larger </param>
-        /// <returns>bytes copied (might be less than requested if source stream is too short</returns>
-        /// <remarks>Neither source nor target stream are seeked; it is up to the caller to make sure that their positions are properly set.
-        ///  Target stream isn't truncated even if it has more data past the area that was copied.</remarks> 
-        internal static long CopyStream(Stream sourceStream, Stream targetStream, long bytesToCopy, int bufferSize)
-        {
-            Debug.Assert(sourceStream != null);
-            Debug.Assert(targetStream != null);
-            Debug.Assert(bytesToCopy >= 0);
-            Debug.Assert(bufferSize > 0);
-
-            byte[] buffer = new byte[bufferSize];
-
-            // let's read the whole block into our buffer 
-            long bytesLeftToCopy = bytesToCopy;
-            while (bytesLeftToCopy > 0)
-            {
-                int bytesRead = sourceStream.Read(buffer, 0, (int)Math.Min(bytesLeftToCopy, (long)bufferSize));
-                if (bytesRead == 0)
-                {
-                    targetStream.Flush();
-                    return bytesToCopy - bytesLeftToCopy;
-                }
-
-                targetStream.Write(buffer, 0, bytesRead);
-                bytesLeftToCopy -= bytesRead;
-            }
-
-            // It must not be negative
-            Debug.Assert(bytesLeftToCopy == 0);
-
-            targetStream.Flush();
-            return bytesToCopy;
-        }
-
-
-        /// <summary>
-        /// Calculate overlap between two blocks, returning the offset and length of the overlap
-        /// </summary>
-        /// <param name="block1Offset"></param>
-        /// <param name="block1Size"></param>
-        /// <param name="block2Offset"></param>
-        /// <param name="block2Size"></param>
-        /// <param name="overlapBlockOffset"></param>
-        /// <param name="overlapBlockSize"></param>
-        internal static void CalculateOverlap(long block1Offset, long block1Size,
-                                              long block2Offset, long block2Size,
-                                              out long overlapBlockOffset, out long overlapBlockSize)
-        {
-            checked
-            {
-                overlapBlockOffset = Math.Max(block1Offset, block2Offset);
-                overlapBlockSize = Math.Min(block1Offset + block1Size, block2Offset + block2Size) - overlapBlockOffset;
-
-                if (overlapBlockSize <= 0)
-                {
-                    overlapBlockSize = 0;
-                }
-            }
-        }
-
-        /// <summary>
         /// This method returns the count of xml attributes other than:
         /// 1. xmlns="namespace"
         /// 2. xmlns:someprefix="namespace"
@@ -384,13 +110,7 @@ namespace System.IO.Packaging
         }
 
         #endregion Internal Methods
-
-
-        //------------------------------------------------------
-        //
-        //  Private Fields
-        //
-        //------------------------------------------------------
+        
         /// <summary>
         /// Synchronize access to IsolatedStorage methods that can step on each-other
         /// </summary>
@@ -399,6 +119,5 @@ namespace System.IO.Packaging
         private const string EncodingAttribute = "encoding";
         private const string WebNameUTF8 = "utf-8";
         private const string WebNameUnicode = "utf-16";
-
     }
 }

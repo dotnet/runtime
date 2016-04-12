@@ -2,74 +2,28 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
+using System.Collections.Generic;
 using Xunit;
 
-namespace System.Globalization.CalendarsTests
+namespace System.Globalization.Tests
 {
-    //System.Globalization.KoreanCalendar.GetDayOfWeek(System.DateTime)
     public class KoreanCalendarGetDayOfWeek
     {
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
 
-        #region Test Logic
-        // PosTest1:Test is with min DateTime
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> GetDayOfWeek_TestData()
         {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            System.Globalization.Calendar gC = new GregorianCalendar();
-            DateTime dateTime = new GregorianCalendar().ToDateTime(1, 1, 1, 0, 0, 0, 0);
-            DayOfWeek expectedValue;
-            DayOfWeek actualValue;
-            expectedValue = gC.GetDayOfWeek(dateTime);
-            actualValue = kC.GetDayOfWeek(dateTime);
-            Assert.Equal(expectedValue, actualValue);
+            yield return new object[] { DateTime.MinValue };
+            yield return new object[] { DateTime.MaxValue };
+            yield return new object[] { new DateTime(2000, 2, 29) };
+            yield return new object[] { s_randomDataGenerator.GetDateTime(-55) };
         }
 
-        // PosTest2:Test it with max DateTime
-        [Fact]
-        public void PosTest2()
+        [Theory]
+        [MemberData(nameof(GetDayOfWeek_TestData))]
+        public void GetDayOfWeek(DateTime time)
         {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            System.Globalization.Calendar gC = new GregorianCalendar();
-            DateTime dateTime = new GregorianCalendar().ToDateTime(9999, 12, 31, 0, 0, 0, 0);
-            DayOfWeek expectedValue;
-            DayOfWeek actualValue;
-            expectedValue = gC.GetDayOfWeek(dateTime);
-            actualValue = kC.GetDayOfWeek(dateTime);
-            Assert.Equal(expectedValue, actualValue);
+            Assert.Equal(new GregorianCalendar().GetDayOfWeek(time), new KoreanCalendar().GetDayOfWeek(time));
         }
-
-        // PosTest3:Test it with leap year DateTime
-        [Fact]
-        public void PosTest3()
-        {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            System.Globalization.Calendar gC = new GregorianCalendar();
-            DateTime dateTime = new GregorianCalendar().ToDateTime(2000, 2, 29, 0, 0, 0, 0);
-            DayOfWeek expectedValue;
-            DayOfWeek actualValue;
-            expectedValue = gC.GetDayOfWeek(dateTime);
-            actualValue = kC.GetDayOfWeek(dateTime);
-            Assert.Equal(expectedValue, actualValue);
-        }
-
-        // PosTest4:Test it with random DateTime
-        [Fact]
-        public void PosTest4()
-        {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            System.Globalization.Calendar gC = new GregorianCalendar();
-            DateTime dateTime = new DateTime(_generator.GetInt64(-55) % (DateTime.MaxValue.Ticks + 1));
-            dateTime = new GregorianCalendar().ToDateTime(dateTime.Year, dateTime.Month, dateTime.Day, 0, 0, 0, 0);
-            DayOfWeek expectedValue;
-            DayOfWeek actualValue;
-            expectedValue = gC.GetDayOfWeek(dateTime);
-            actualValue = kC.GetDayOfWeek(dateTime);
-            Assert.Equal(expectedValue, actualValue);
-        }
-        #endregion
     }
 }

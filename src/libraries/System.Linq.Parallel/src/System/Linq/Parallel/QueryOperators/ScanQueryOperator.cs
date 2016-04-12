@@ -101,7 +101,7 @@ namespace System.Linq.Parallel
             get
             {
                 return _data is IList<TElement>
-                    ? OrdinalIndexState.Indexible
+                    ? OrdinalIndexState.Indexable
                     : OrdinalIndexState.Correct;
             }
         }

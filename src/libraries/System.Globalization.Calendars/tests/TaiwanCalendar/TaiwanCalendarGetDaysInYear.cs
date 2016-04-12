@@ -2,145 +2,36 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
+using System.Collections.Generic;
 using Xunit;
 
-namespace System.Globalization.CalendarsTests
+namespace System.Globalization.Tests
 {
-    // System.Globalization.TaiwanCalendar.GetDayOfYear(Int32,Int32)
     public class TaiwanCalendarGetDaysInYear
     {
-        #region Positive Tests
-        // PosTest1: Verify the day is a random year
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> GetDaysInYear_TestData()
         {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            Random rand = new Random(-55);
-            int year = rand.Next(tc.MinSupportedDateTime.Year, tc.MaxSupportedDateTime.Year - 1911);
-            int era;
-            int actualDays;
-            if (tc.IsLeapYear(year))
+            yield return new object[] { 1912, 1 };
+            yield return new object[] { 8088, 1 };
+            yield return new object[] { 2000, 1 };
+            yield return new object[] { TaiwanCalendarUtilities.RandomYear(), 1 };
+        }
+
+        [Theory]
+        [MemberData(nameof(GetDaysInYear_TestData))]
+        public void GetDaysInYear(int year, int era)
+        {
+            TaiwanCalendar calendar = new TaiwanCalendar();
+            int expected;
+            if (calendar.IsLeapYear(year, era))
             {
-                actualDays = 366;
+                expected = 366;
             }
             else
             {
-                actualDays = 365;
+                expected = 365;
             }
-
-            for (int i = 0; i < tc.Eras.Length; i++)
-            {
-                era = tc.Eras[i];
-                Assert.Equal(tc.GetDaysInYear(year, era), actualDays);
-            }
+            Assert.Equal(expected, new TaiwanCalendar().GetDaysInYear(year, era));
         }
-
-        // PosTest2: Verify year is TaiwanCalendar MinSupportedDateTime
-        [Fact]
-        public void PosTest2()
-        {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            DateTime dt = tc.MinSupportedDateTime;
-            int year = dt.Year;
-            int era;
-            int actualDays;
-            if (tc.IsLeapYear(year))
-            {
-                actualDays = 366;
-            }
-            else
-            {
-                actualDays = 365;
-            }
-
-            for (int i = 0; i < tc.Eras.Length; i++)
-            {
-                era = tc.Eras[i];
-                Assert.Equal(tc.GetDaysInYear(year, era), actualDays);
-            }
-        }
-
-        // PosTest3: Verify the DateTime is TaiwanCalendar MaxSupportDateTime
-        [Fact]
-        public void PosTest3()
-        {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            DateTime dt = tc.MaxSupportedDateTime;
-            int year = dt.Year - 1911;
-            int era;
-            int actualDays;
-            if (tc.IsLeapYear(year))
-            {
-                actualDays = 366;
-            }
-            else
-            {
-                actualDays = 365;
-            }
-
-            for (int i = 0; i < tc.Eras.Length; i++)
-            {
-                era = tc.Eras[i];
-                Assert.Equal(tc.GetDaysInYear(year, era), actualDays);
-            }
-        }
-
-        // PosTest4: Verify the DateTime is leap year
-        [Fact]
-        public void PosTest4()
-        {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            DateTime dt = new DateTime(2000, 12, 31);
-            int year = dt.Year;
-            int era;
-            int actualDays;
-            if (tc.IsLeapYear(year))
-            {
-                actualDays = 366;
-            }
-            else
-            {
-                actualDays = 365;
-            }
-
-            for (int i = 0; i < tc.Eras.Length; i++)
-            {
-                era = tc.Eras[i];
-                Assert.Equal(tc.GetDaysInYear(year, era), actualDays);
-            }
-        }
-        #endregion
-
-        #region Negative Tests
-        // NegTest1: The year greater than max year
-        [Fact]
-        public void NegTest1()
-        {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            Random rand = new Random(-55);
-            int year = tc.MaxSupportedDateTime.Year - 1911 + rand.Next(1, Int32.MaxValue);
-            int era = Calendar.CurrentEra;
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                tc.GetDaysInMonth(year, era);
-            });
-        }
-
-        // NegTest2: The year less than min year
-        [Fact]
-        public void NegTest2()
-        {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            Random rand = new Random(-55);
-            int year = tc.MinSupportedDateTime.Year - rand.Next(1, Int32.MaxValue);
-            int era = Calendar.CurrentEra;
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                tc.GetDaysInYear(year, era);
-            });
-        }
-        #endregion
     }
 }

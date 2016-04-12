@@ -2,63 +2,25 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
 using Xunit;
 
-namespace System.Globalization.CalendarsTests
+namespace System.Globalization.Tests
 {
-    // System.Globalization.TaiwanCalendar.TwoDigitYearMax
     public class TaiwanCalendarTwoDigitYearMax
     {
-        #region Positive Tests
-        // PosTest1: Verify the default TwoDigitYearMax is 99
         [Fact]
-        public void PosTest1()
+        public void TwoDigitYearMax_Get()
         {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            Assert.Equal(99, tc.TwoDigitYearMax);
+            Assert.Equal(99, new TaiwanCalendar().TwoDigitYearMax);
         }
-
-        // PosTest2: Verify the TwoDigitYearMax is set random value
+        
         [Fact]
-        public void PosTest2()
+        public void TwoDigitYearMax_Set()
         {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            Random rand = new Random(-55);
-            int twoYearMax = rand.Next(99, tc.MaxSupportedDateTime.Year);
-            tc.TwoDigitYearMax = twoYearMax;
-            Assert.Equal(twoYearMax, tc.TwoDigitYearMax);
+            TaiwanCalendar calendar = new TaiwanCalendar();
+            int newTwoDigitYearMax = new Random(-55).Next(99, calendar.MaxSupportedDateTime.Year);
+            calendar.TwoDigitYearMax = newTwoDigitYearMax;
+            Assert.Equal(newTwoDigitYearMax, calendar.TwoDigitYearMax);
         }
-        #endregion
-
-        #region Negative Tests
-        // NegTest1: Set the TwoDigitYear max as greater than the year of  MaxSuportedDateTime
-        [Fact]
-        public void NegTest1()
-        {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            int year = 8089;
-
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                tc.TwoDigitYearMax = year;
-            });
-        }
-
-        // NegTest2: The year less than 99
-        [Fact]
-        public void NegTest2()
-        {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            int year = 98;
-
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                tc.TwoDigitYearMax = year;
-            });
-        }
-        #endregion
     }
 }
-

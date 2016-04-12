@@ -25,10 +25,10 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/coreclr/issues/635", PlatformID.AnyUnix)]
+        [PlatformSpecific(PlatformID.Windows)] // GetEnvironmentVariable by design doesn't respect changes via setenv
         public void RandomLongVariableNameCanRoundTrip()
         {
-            // NOTE: The limit of 32766 characters enforced by dekstop
+            // NOTE: The limit of 32766 characters enforced by desktop
             // SetEnvironmentVariable is antiquated. I was
             // able to create ~1GB names and values on my Windows 8.1 box. On
             // desktop, GetEnvironmentVariable throws OOM during its attempt to

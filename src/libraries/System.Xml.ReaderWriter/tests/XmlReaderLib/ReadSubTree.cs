@@ -38,7 +38,7 @@ namespace System.Xml.Tests
 
                     if (flag)
                     {
-                        CError.WriteLine("ReadSubtree doesnt throw InvalidOp Exception on NodeType : " + nodeType);
+                        CError.WriteLine("ReadSubtree doesn't throw InvalidOp Exception on NodeType : " + nodeType);
                         return TEST_FAIL;
                     }
 
@@ -69,7 +69,7 @@ namespace System.Xml.Tests
                         }
                         if (flag)
                         {
-                            CError.WriteLine("ReadSubtree doesnt throw InvalidOp Exception on Attribute Node Type");
+                            CError.WriteLine("ReadSubtree doesn't throw InvalidOp Exception on Attribute Node Type");
                             return TEST_FAIL;
                         }
 
@@ -123,9 +123,9 @@ namespace System.Xml.Tests
             r.Read();
 
             CError.Compare(r.ReadState, ReadState.Interactive, "Reader state is not Interactive");
-            CError.Compare(r.Name, name, "Subreader name doesnt match");
-            CError.Compare(r.Value, value, "Subreader value doesnt match");
-            CError.Compare(r.NodeType.ToString().ToUpperInvariant(), type, "Subreader nodetype doesnt match");
+            CError.Compare(r.Name, name, "Subreader name doesn't match");
+            CError.Compare(r.Value, value, "Subreader value doesn't match");
+            CError.Compare(r.NodeType.ToString().ToUpperInvariant(), type, "Subreader nodetype doesn't match");
             CError.Compare(r.Depth, 0, "Subreader Depth is not zero");
 
             while (r.Read()) ;
@@ -137,9 +137,9 @@ namespace System.Xml.Tests
 
             DataReader.Read();
 
-            CError.Compare(DataReader.Name, oname, "Main name doesnt match");
-            CError.Compare(DataReader.Value, ovalue, "Main value doesnt match");
-            CError.Compare(DataReader.NodeType.ToString().ToUpperInvariant(), otype, "Main nodetype doesnt match");
+            CError.Compare(DataReader.Name, oname, "Main name doesn't match");
+            CError.Compare(DataReader.Value, ovalue, "Main value doesn't match");
+            CError.Compare(DataReader.NodeType.ToString().ToUpperInvariant(), otype, "Main nodetype doesn't match");
 
             DataReader.Close();
             return TEST_PASS;
@@ -277,9 +277,9 @@ namespace System.Xml.Tests
 
             DataReader.Read();
 
-            CError.Compare(DataReader.Name, "ELEMENT_1", "Main name doesnt match");
-            CError.Compare(DataReader.Value, "", "Main value doesnt match");
-            CError.Compare(DataReader.NodeType.ToString().ToUpperInvariant(), "ENDELEMENT", "Main nodetype doesnt match");
+            CError.Compare(DataReader.Name, "ELEMENT_1", "Main name doesn't match");
+            CError.Compare(DataReader.Value, "", "Main value doesn't match");
+            CError.Compare(DataReader.NodeType.ToString().ToUpperInvariant(), "ENDELEMENT", "Main nodetype doesn't match");
 
             DataReader.Close();
             return TEST_PASS;

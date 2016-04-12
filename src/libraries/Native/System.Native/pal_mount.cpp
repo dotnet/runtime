@@ -81,7 +81,7 @@ extern "C" int32_t SystemNative_GetSpaceInfoForMountPoint(const char* name, Moun
 #endif
     if (result == 0)
     {
-        // Note that these have signed integer types on some platforms but musn't be negative.
+        // Note that these have signed integer types on some platforms but mustn't be negative.
         // Also, upcast here (some platforms have smaller types) to 64-bit before multiplying to
         // avoid overflow.
         uint64_t bsize = UnsignedCast(stats.f_bsize);

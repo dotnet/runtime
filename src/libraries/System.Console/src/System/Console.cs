@@ -189,6 +189,10 @@ namespace System
             set { ConsolePal.CursorSize = value; }
         }
 
+        public static bool NumberLock { get { return ConsolePal.NumberLock; } }
+
+        public static bool CapsLock { get { return ConsolePal.CapsLock; } }
+
         public static ConsoleColor BackgroundColor
         {
             get { return ConsolePal.BackgroundColor; }
@@ -742,7 +746,7 @@ namespace System
             // Block until the delegate is done. We need to be robust in the face of the task not executing
             // but we also want to get control back immediately after it is done and we don't want to give the
             // handler a fixed time limit in case it needs to display UI. Wait on the task twice, once with a
-            // timout and a second time without if we are sure that the handler actually started.
+            // timeout and a second time without if we are sure that the handler actually started.
             TimeSpan controlCWaitTime = new TimeSpan(0, 0, 30); // 30 seconds
             callBackTask.Wait(controlCWaitTime);
             

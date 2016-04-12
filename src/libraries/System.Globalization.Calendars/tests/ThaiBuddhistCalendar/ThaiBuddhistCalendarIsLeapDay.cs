@@ -2,83 +2,29 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
+using System.Collections.Generic;
 using Xunit;
 
-namespace System.Globalization.CalendarsTests
+namespace System.Globalization.Tests
 {
-    // System.Globalization.ThaiBuddhistCalendar.IsLeapDay(Int32,Int32,Int32,Int32)
     public class ThaiBuddhistCalendarIsLeapDay
     {
-        #region Positive Tests
-        // PosTest1: Verify the day  is not leap day
-        [Fact]
-        public void PosTest1()
+        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
+
+        public static IEnumerable<object[]> IsLeapDay_TestData()
         {
-            System.Globalization.Calendar tbc = new ThaiBuddhistCalendar();
-            Random rand = new Random(-55);
-            int year = rand.Next(tbc.MinSupportedDateTime.Year + 543, tbc.MaxSupportedDateTime.Year + 544);
-            int month = rand.Next(1, 12);
-            int day = rand.Next(1, 29);
-            int era;
-            for (int i = 0; i < tbc.Eras.Length; i++)
-            {
-                era = tbc.Eras[i];
-                Assert.False(tbc.IsLeapDay(year, month, day, era));
-            }
+            yield return new object[] { 1, 1, 1, 1 };
+            yield return new object[] { 9999, 12, 31, 1 };
+            yield return new object[] { 2000, 2, 29, 1 };
+            yield return new object[] { s_randomDataGenerator.GetInt16(-55) % 9999, s_randomDataGenerator.GetInt16(-55) % 12 + 1, s_randomDataGenerator.GetInt16(-55) % 29 + 1, 1 };
         }
 
-        // PosTest2: Verify the Date is leap day
-        [Fact]
-        public void PosTest2()
+        [Theory]
+        [MemberData(nameof(IsLeapDay_TestData))]
+        public void IsLeapDay(int year, int month, int day, int era)
         {
-            System.Globalization.Calendar tbc = new ThaiBuddhistCalendar();
-            Random rand = new Random(-55);
-            int year = 2000 + 543;
-            int month = 2;
-            int day = 29;
-            int era;
-            for (int i = 0; i < tbc.Eras.Length; i++)
-            {
-                era = tbc.Eras[i];
-                Assert.True(tbc.IsLeapDay(year, month, day, era));
-            }
+            bool expected = new GregorianCalendar().IsLeapDay(year, month, day, era);
+            Assert.Equal(expected, new ThaiBuddhistCalendar().IsLeapDay(year + 543, month, day, era));
         }
-
-        // PosTest3: Verify the DateTime is ThaiBuddhistCalendar MinSupportedDateTime
-        [Fact]
-        public void PosTest3()
-        {
-            System.Globalization.Calendar tbc = new ThaiBuddhistCalendar();
-            Random rand = new Random(-55);
-            int year = tbc.MinSupportedDateTime.Year + 543;
-            int month = tbc.MinSupportedDateTime.Month;
-            int day = tbc.MinSupportedDateTime.Day;
-            int era;
-            for (int i = 0; i < tbc.Eras.Length; i++)
-            {
-                era = tbc.Eras[i];
-                Assert.False(tbc.IsLeapDay(year, month, day, era));
-            }
-        }
-
-        // PosTest4: Verify the DateTime is ThaiBuddhistCalendar MaxSupportedDateTime
-        [Fact]
-        public void PosTest4()
-        {
-            System.Globalization.Calendar tbc = new ThaiBuddhistCalendar();
-            Random rand = new Random(-55);
-            int year = tbc.MaxSupportedDateTime.Year + 543;
-            int month = tbc.MaxSupportedDateTime.Month;
-            int day = tbc.MaxSupportedDateTime.Day;
-            int era;
-            for (int i = 0; i < tbc.Eras.Length; i++)
-            {
-                era = tbc.Eras[i];
-                Assert.False(tbc.IsLeapDay(year, month, day, era));
-            }
-        }
-        #endregion
     }
 }

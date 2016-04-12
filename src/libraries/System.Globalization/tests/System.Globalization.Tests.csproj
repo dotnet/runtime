@@ -11,50 +11,62 @@
     <IncludePerformanceTests>true</IncludePerformanceTests>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+
   <ItemGroup>
-    <Compile Include="CompareInfo.cs" />
-    <Compile Include="CompareInfo.TestData.cs" />
+    <Compile Include="CharUnicodeInfo\CharUnicodeInfoTestData.cs" />
+    <Compile Include="CharUnicodeInfo\CharUnicodeInfoTests.cs" />
+    <Compile Include="CompareInfo\CompareInfoTests.cs" />
     <Compile Include="CompareInfo\CompareInfoTests.IndexOf.cs" />
     <Compile Include="CompareInfo\CompareInfoTests.IsPrefix.cs" />
     <Compile Include="CompareInfo\CompareInfoTests.Compare.cs" />
     <Compile Include="CompareInfo\CompareInfoTests.IsSuffix.cs" />
     <Compile Include="CompareInfo\CompareInfoTests.LastIndexOf.cs" />
+    <Compile Include="NumberFormatInfo\NumberFormatInfoCurrentInfo.cs" />
+    <Compile Include="NumberFormatInfo\NumberFormatInfoValidateParseStyle.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoData.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoCurrencySymbol.cs" />
+    <Compile Include="NumberFormatInfo\NumberFormatInfoNaNSymbol.cs" />
+    <Compile Include="NumberFormatInfo\NumberFormatInfoPercentGroupSeparator.cs" />
+    <Compile Include="NumberFormatInfo\NumberFormatInfoPercentDecimalSeparator.cs" />
+    <Compile Include="NumberFormatInfo\NumberFormatInfoPercentDecimalDigits.cs" />
+    <Compile Include="NumberFormatInfo\NumberFormatInfoPerMilleSymbol.cs" />
+    <Compile Include="NumberFormatInfo\NumberFormatInfoPercentSymbol.cs" />
+    <Compile Include="NumberFormatInfo\NumberFormatInfoPositiveSign.cs" />
+    <Compile Include="NumberFormatInfo\NumberFormatInfoPositiveInfinitySymbol.cs" />
+    <Compile Include="NumberFormatInfo\NumberFormatInfoNegativeSign.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoNegativeInfinitySymbol.cs" />
+    <Compile Include="NumberFormatInfo\NumberFormatInfoNumberGroupSeparator.cs" />
+    <Compile Include="NumberFormatInfo\NumberFormatInfoNumberDecimalSeparator.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoNumberDecimalDigits.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoNumberGroupSizes.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoNumberNegativePattern.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoPercentNegativePattern.cs" />
+    <Compile Include="NumberFormatInfo\NumberFormatInfoPercentGroupSizes.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoPercentPositivePattern.cs" />
     <Compile Include="RegionInfo\RegionInfoTests.Methods.cs" />
     <Compile Include="RegionInfo\RegionInfoTests.Properties.cs" />
-    <Compile Include="TextInfo.cs" />
-    <Compile Include="CompareInfo\CompareInfoTests.cs" />
     <Compile Include="CultureInfo\CultureInfoAll.cs" />
+    <!-- async current cultures feature is supported on 4.6.1 and up on Windows desktop framework -->
+    <Compile Include="CultureInfo\CultureInfoAsync.cs" Condition="'$(TargetGroup)' != 'net46'" />
     <Compile Include="CultureInfo\CultureInfoCalendar.cs" />
     <Compile Include="CultureInfo\CultureInfoClone.cs" />
     <Compile Include="CultureInfo\CultureInfoCompareInfo.cs" />
-    <Compile Include="CultureInfo\CultureInfoConstructor2.cs" />
+    <Compile Include="CultureInfo\CultureInfoCtor.cs" />
     <Compile Include="CultureInfo\CultureInfoDateTimeFormat.cs" />
     <Compile Include="CultureInfo\CultureInfoEnglishName.cs" />
     <Compile Include="CultureInfo\CultureInfoEquals.cs" />
     <Compile Include="CultureInfo\CultureInfoGetFormat.cs" />
     <Compile Include="CultureInfo\CultureInfoGetHashCode.cs" />
-    <Compile Include="CultureInfo\CultureInfoInvariantCulture.cs" />
     <Compile Include="CultureInfo\CultureInfoIsNeutralCulture.cs" />
-    <Compile Include="CultureInfo\CultureInfoIsReadOnly.cs" />
-    <Compile Include="CultureInfo\CultureInfoName.cs" />
     <Compile Include="CultureInfo\CultureInfoNativeName.cs" />
     <Compile Include="CultureInfo\CultureInfoParent.cs" />
     <Compile Include="CultureInfo\CultureInfoReadOnly.cs" />
-    <Compile Include="CultureInfo\CultureInfoToString.cs" />
     <Compile Include="CultureInfo\CultureInfoTwoLetterISOLanguageName.cs" />
-    <Compile Include="CultureInfo\CurrentCulture.cs" />
+    <Compile Include="CultureInfo\CultureInfoCurrentCulture.cs" />
     <Compile Include="CultureNotFoundException\CultureNotFoundExceptionTests.cs" />
     <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoAbbreviatedDayNames.cs" />
     <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoAbbreviatedMonthGenitiveNames.cs" />
@@ -92,7 +104,6 @@
     <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoYearMonthPattern.cs" />
     <Compile Include="DateTimeStyles\DateTimeStylesTests.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoClone.cs" />
-    <Compile Include="NumberFormatInfo\NumberFormatInfoCtor.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoCurrencyDecimalDigits.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoCurrencyDecimalSeparator.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoCurrencyGroupSeparator.cs" />
@@ -103,7 +114,6 @@
     <Compile Include="NumberFormatInfo\NumberFormatInfoGetInstance.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoReadOnly.cs" />
     <Compile Include="NumberStyles\NumberStylesTests.cs" />
-    <Compile Include="PlatformDetection.cs" />
     <Compile Include="StringInfo\StringInfoCtor.cs" />
     <Compile Include="StringInfo\StringInfoEquals.cs" />
     <Compile Include="StringInfo\StringInfoGetNextTextElement.cs" />
@@ -121,7 +131,6 @@
     <Compile Include="TextInfo\TextInfoToString.cs" />
     <Compile Include="TextInfo\TextInfoToUpper.cs" />
     <Compile Include="UnicodeCategory\UnicodeCategoryTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\RandomDataGenerator.cs" />
     <!-- Performance Tests -->
     <Compile Include="Performance\Perf.CultureInfo.cs" />
     <Compile Include="Performance\Perf.DateTimeCultureInfo.cs" />
@@ -129,9 +138,43 @@
     <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
       <Link>Common\System\PerfUtils.cs</Link>
     </Compile>
+    <!-- Helpers -->
+    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
+      <Link>Common\System\PlatformDetection.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\RandomDataGenerator.cs">
+      <Link>Common\System\RandomDataGenerator.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorTestBase.cs">
+      <Link>Common\System\Diagnostics\RemoteExecutorTestBase.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\FileCleanupTestBase.cs">
+      <Link>Common\System\IO\FileCleanupTestBase.cs</Link>
+    </Compile>
+    <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>RemoteExecutorConsoleApp</Name>
+    </ProjectReference>
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
+    <TargetingPackReference Include="System" />
+    <TargetingPackReference Include="System.Threading.Tasks" /> 
+    <TargetingPackReference Include="System.Core" /> 
+    <TargetingPackReference Include="System.Runtime" />
+  </ItemGroup>  
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="$(CommonTestPath)\Data\UnicodeData.8.0.txt">
+        <Link>CharUnicodeInfo\UnicodeData8.0.txt</Link>
+        <LogicalName>UnicodeData.8.0.txt</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+
+  <PropertyGroup Condition="'$(OSEnvironment)' == 'Windows_NT'">
+    <DelaySign>false</DelaySign>
+  </PropertyGroup>
+
 </Project>

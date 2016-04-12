@@ -18,7 +18,7 @@ namespace System.Runtime.Serialization
         private DateTimeStyles _dateTimeStyles;
 
         /// <summary>
-        /// Initailizes a new <see cref="DateTimeFormat"/> with the specified
+        /// Initializes a new <see cref="DateTimeFormat"/> with the specified
         /// formatString and DateTimeFormatInfo.CurrentInfo as the
         /// formatProvider.
         /// </summary>
@@ -28,7 +28,7 @@ namespace System.Runtime.Serialization
         }
 
         /// <summary>
-        /// Initailizes a new <see cref="DateTimeFormat"/> with the specified
+        /// Initializes a new <see cref="DateTimeFormat"/> with the specified
         /// formatString and formatProvider.
         /// </summary>
         /// <param name="formatString">Specifies the formatString to be used.</param>

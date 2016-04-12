@@ -4,9 +4,16 @@
   <ItemGroup>
     <Project Include="System.Runtime.csproj" />
     <Project Include="System.Runtime.csproj">
-      <TargetGroup>net46</TargetGroup>
+      <TargetGroup>net462</TargetGroup>
     </Project>
+    <!-- NETCore50 must redistribute binaries due to shared library
     <Project Include="System.Runtime.csproj">
+      <TargetGroup>netcore50aot</TargetGroup>
+    </Project> -->
+    <Project Include="redist\System.Runtime.depproj">
+      <TargetGroup>netcore50</TargetGroup>
+    </Project>
+    <Project Include="redist\System.Runtime.depproj">
       <TargetGroup>netcore50aot</TargetGroup>
     </Project>
   </ItemGroup>

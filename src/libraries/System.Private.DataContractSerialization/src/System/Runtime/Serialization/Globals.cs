@@ -344,7 +344,7 @@ namespace System.Runtime.Serialization
         }
 
         /// <SecurityNote>
-        /// Critical - attrbute type used in security decision
+        /// Critical - attribute type used in security decision
         /// </SecurityNote>
         [SecurityCritical]
         private static Type s_typeOfDataContractAttribute;

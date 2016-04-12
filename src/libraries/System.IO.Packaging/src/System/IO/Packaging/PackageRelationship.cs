@@ -2,19 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//-----------------------------------------------------------------------------
-//
-// Description:
-//  This is a class for representing a PackageRelationship. This is a part of the 
-//  MMCF Packaging Layer. 
-//
-//-----------------------------------------------------------------------------
-
 using System;
 using System.Collections;
 using System.Xml;
-using System.Text;              // for StringBuilder
-using System.Diagnostics;       // for Debug.Assert
+using System.Text;
+using System.Diagnostics;
 
 namespace System.IO.Packaging
 {
@@ -23,21 +15,11 @@ namespace System.IO.Packaging
     /// The only way to create a PackageRelationship, is to call the PackagePart.CreateRelationship()
     /// or Package.CreateRelationship(). A relationship is owned by a part or by the package itself. 
     /// If the source part is deleted all the relationships it owns are also deleted. 
-    /// A target of the relationship need not be present. </summary>
+    /// A target of the relationship need not be present.
+    /// This class is part of the MMCF Packaging layer.
+    /// </summary>
     public class PackageRelationship
     {
-        //------------------------------------------------------
-        //
-        //  Public Constructors
-        //
-        //------------------------------------------------------
-        // None
-        //------------------------------------------------------
-        //
-        //  Public Properties
-        //
-        //------------------------------------------------------
-
         #region Public Properties
 
         /// <summary>
@@ -118,24 +100,6 @@ namespace System.IO.Packaging
 
         #endregion Public Properties
 
-        //------------------------------------------------------
-        //
-        //  Public Methods
-        //
-        //------------------------------------------------------
-        // None
-        //------------------------------------------------------
-        //
-        //  Public Events
-        //
-        //------------------------------------------------------
-        // None
-        //------------------------------------------------------
-        //
-        //  Internal Constructors
-        //
-        //------------------------------------------------------
-
         #region Internal Constructor
 
         /// <summary>
@@ -197,13 +161,7 @@ namespace System.IO.Packaging
         }
 
         #endregion Internal Constructor
-
-        //------------------------------------------------------
-        //
-        //  Internal Properties
-        //
-        //------------------------------------------------------
-
+        
         #region Internal Properties
 
         internal static Uri ContainerRelationshipPartName
@@ -215,31 +173,7 @@ namespace System.IO.Packaging
         }
 
         #endregion Internal Properties
-
-        //------------------------------------------------------
-        //
-        //  Internal Methods
-        //
-        //------------------------------------------------------
-        // None
-        //------------------------------------------------------
-        //
-        //  Internal Events
-        //
-        //------------------------------------------------------
-        // None
-        //------------------------------------------------------
-        //
-        //  Private Methods
-        //
-        //------------------------------------------------------
-        // None
-        //------------------------------------------------------
-        //
-        //  Private Fields
-        //
-        //------------------------------------------------------
-
+        
         #region Private Members
 
         private Package _package;

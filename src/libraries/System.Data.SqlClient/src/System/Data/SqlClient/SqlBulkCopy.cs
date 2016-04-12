@@ -258,7 +258,7 @@ namespace System.Data.SqlClient
         {
             if (connection == null)
             {
-                throw ADP.ArgumentNull("connection");
+                throw ADP.ArgumentNull(nameof(connection));
             }
             _connection = connection;
             _columnMappings = new SqlBulkCopyColumnMappingCollection();
@@ -283,7 +283,7 @@ namespace System.Data.SqlClient
         {
             if (connectionString == null)
             {
-                throw ADP.ArgumentNull("connectionString");
+                throw ADP.ArgumentNull(nameof(connectionString));
             }
             _connection = new SqlConnection(connectionString);
             _columnMappings = new SqlBulkCopyColumnMappingCollection();
@@ -310,7 +310,7 @@ namespace System.Data.SqlClient
                 }
                 else
                 {
-                    throw ADP.ArgumentOutOfRange("BatchSize");
+                    throw ADP.ArgumentOutOfRange(nameof(BatchSize));
                 }
             }
         }
@@ -361,11 +361,11 @@ namespace System.Data.SqlClient
             {
                 if (value == null)
                 {
-                    throw ADP.ArgumentNull("DestinationTableName");
+                    throw ADP.ArgumentNull(nameof(DestinationTableName));
                 }
                 else if (value.Length == 0)
                 {
-                    throw ADP.ArgumentOutOfRange("DestinationTableName");
+                    throw ADP.ArgumentOutOfRange(nameof(DestinationTableName));
                 }
                 _destinationTableName = value;
             }
@@ -385,7 +385,7 @@ namespace System.Data.SqlClient
                 }
                 else
                 {
-                    throw ADP.ArgumentOutOfRange("NotifyAfter");
+                    throw ADP.ArgumentOutOfRange(nameof(NotifyAfter));
                 }
             }
         }
@@ -444,7 +444,7 @@ namespace System.Data.SqlClient
             {
                 throw SQL.BulkLoadInvalidDestinationTable(this.DestinationTableName, e);
             }
-            if (ADP.IsEmpty(parts[MultipartIdentifier.TableIndex]))
+            if (string.IsNullOrEmpty(parts[MultipartIdentifier.TableIndex]))
             {
                 throw SQL.BulkLoadInvalidDestinationTable(this.DestinationTableName, null);
             }
@@ -466,7 +466,7 @@ namespace System.Data.SqlClient
 
             string TableName = parts[MultipartIdentifier.TableIndex];
             bool isTempTable = TableName.Length > 0 && '#' == TableName[0];
-            if (!ADP.IsEmpty(TableName))
+            if (!string.IsNullOrEmpty(TableName))
             {
                 // Escape table name to be put inside TSQL literal block (within N'').
                 TableName = SqlServerEscapeHelper.EscapeStringAsLiteral(TableName);
@@ -475,7 +475,7 @@ namespace System.Data.SqlClient
             }
 
             string SchemaName = parts[MultipartIdentifier.SchemaIndex];
-            if (!ADP.IsEmpty(SchemaName))
+            if (!string.IsNullOrEmpty(SchemaName))
             {
                 // Escape schema name to be put inside TSQL literal block (within N'').
                 SchemaName = SqlServerEscapeHelper.EscapeStringAsLiteral(SchemaName);
@@ -484,7 +484,7 @@ namespace System.Data.SqlClient
             }
 
             string CatalogName = parts[MultipartIdentifier.CatalogIndex];
-            if (isTempTable && ADP.IsEmpty(CatalogName))
+            if (isTempTable && string.IsNullOrEmpty(CatalogName))
             {
                 TDSCommand += String.Format((IFormatProvider)null, "exec tempdb..{0} N'{1}.{2}'",
                     TableCollationsStoredProc,
@@ -495,7 +495,7 @@ namespace System.Data.SqlClient
             else
             {
                 // Escape the catalog name
-                if (!ADP.IsEmpty(CatalogName))
+                if (!string.IsNullOrEmpty(CatalogName))
                 {
                     CatalogName = SqlServerEscapeHelper.EscapeIdentifier(CatalogName);
                 }
@@ -756,7 +756,7 @@ namespace System.Data.SqlClient
             return (updateBulkCommandText.ToString());
         }
 
-        // submitts the updatebulk command
+        // submits the updatebulk command
         //
         private Task SubmitUpdateBulkCommand(string TDSCommand)
         {
@@ -815,7 +815,7 @@ namespace System.Data.SqlClient
         {
             if (disposing)
             {
-                // dispose dependend objects
+                // dispose dependent objects
                 _columnMappings = null;
                 _parser = null;
                 try
@@ -974,7 +974,7 @@ namespace System.Data.SqlClient
         {
             if (_isAsyncBulkCopy)
             {
-                //This will call ReadAsync for DbDataReader (for SqlDataReader it will be truely async read; for non-SqlDataReader it may block.) 
+                //This will call ReadAsync for DbDataReader (for SqlDataReader it will be truly async read; for non-SqlDataReader it may block.) 
                 return _DbDataReaderRowSource.ReadAsync(cts).ContinueWith((t) =>
                 {
                     if (t.Status == TaskStatus.RanToCompletion)
@@ -995,9 +995,7 @@ namespace System.Data.SqlClient
                 {
                     if (_isAsyncBulkCopy)
                     {
-                        TaskCompletionSource<bool> tcs = new TaskCompletionSource<bool>();
-                        tcs.SetException(ex);
-                        return tcs.Task;
+                        return Task.FromException<bool>(ex);
                     }
                     else
                     {
@@ -1133,7 +1131,7 @@ namespace System.Data.SqlClient
         }
 
         // Runs the _parser until it is done and ensures that ThreadHasParserLockForClose is correctly set and unset
-        // Ensure that you only call this inside of a Reliabilty Section
+        // Ensure that you only call this inside of a Reliability Section
         private void RunParser(BulkCopySimpleResultSet bulkCopyHandler = null)
         {
             // In case of error while reading, we should let the connection know that we already own the _parserLock
@@ -1211,7 +1209,7 @@ namespace System.Data.SqlClient
         // Appends columnname in square brackets, a space and the typename to the query
         // putting the name in quotes also requires doubling existing ']' so that they are not mistaken for
         // the closing quote
-        // example: abc will become [abc] but abc[] will becom [abc[]]]
+        // example: abc will become [abc] but abc[] will become [abc[]]]
         //
         private void AppendColumnNameAndTypeName(StringBuilder query, string columnName, string typeName)
         {
@@ -1222,11 +1220,11 @@ namespace System.Data.SqlClient
 
         private string UnquotedName(string name)
         {
-            if (ADP.IsEmpty(name)) return null;
+            if (string.IsNullOrEmpty(name)) return null;
             if (name[0] == '[')
             {
                 int l = name.Length;
-                Debug.Assert(name[l - 1] == ']', "Name starts with [ but doesn not end with ]");
+                Debug.Assert(name[l - 1] == ']', "Name starts with [ but doesn't not end with ]");
                 name = name.Substring(1, l - 2);
             }
             return name;
@@ -1298,7 +1296,7 @@ namespace System.Data.SqlClient
                         mt = MetaType.GetMetaTypeFromSqlDbType(type.SqlDbType, false);
                         value = SqlParameter.CoerceValue(value, mt, out coercedToDataFeed, out typeChanged, false);
 
-                        // Convert Source Decimal Percision and Scale to Destination Percision and Scale
+                        // Convert Source Decimal Precision and Scale to Destination Precision and Scale
                         // Sql decimal data could get corrupted on insert if the scale of
                         // the source and destination weren't the same.  The BCP protocol, specifies the
                         // scale of the incoming data in the insert statement, we just tell the server we
@@ -1321,7 +1319,7 @@ namespace System.Data.SqlClient
                         // Perf: It is more efficient to write a SqlDecimal than a decimal since we need to break it into its 'bits' when writing
                         value = sqlValue;
                         isSqlType = true;
-                        typeChanged = false;    // Setting this to false as SqlParameter.CoerceValue will only set it to true when coverting to a CLR type
+                        typeChanged = false;    // Setting this to false as SqlParameter.CoerceValue will only set it to true when converting to a CLR type
 
                         if (sqlValue.Precision > metadata.precision)
                         {
@@ -1503,7 +1501,7 @@ namespace System.Data.SqlClient
             bool finishedSynchronously = true;
             _isBulkCopyingInProgress = true;
 
-            CreateOrValidateConnection(SQL.WriteToServer);
+            CreateOrValidateConnection(nameof(WriteToServer));
             SqlInternalConnectionTds internalConnection = _connection.GetOpenTdsConnection();
 
             Debug.Assert(_parserLock == null, "Previous parser lock not cleaned");
@@ -1519,7 +1517,7 @@ namespace System.Data.SqlClient
                     finishedSynchronously = false;
                     return resultTask.ContinueWith((t) =>
                     {
-                        AbortTransaction(); // if there is one, on success transactions will be commited
+                        AbortTransaction(); // if there is one, on success transactions will be committed
                         _isBulkCopyingInProgress = false;
                         if (_parser != null)
                         {
@@ -1541,7 +1539,7 @@ namespace System.Data.SqlClient
                 _columnMappings.ReadOnly = false;
                 if (finishedSynchronously)
                 {
-                    AbortTransaction(); // if there is one, on success transactions will be commited
+                    AbortTransaction(); // if there is one, on success transactions will be committed
                     _isBulkCopyingInProgress = false;
                     if (_parser != null)
                     {
@@ -1658,7 +1656,7 @@ namespace System.Data.SqlClient
         // Reads a cell and then writes it. 
         // Read may block at this moment since there is no getValueAsync or DownStream async at this moment.
         // When _isAsyncBulkCopy == true: Write will return Task (when async method runs asynchronously) or Null (when async call actually ran synchronously) for performance. 
-        // When _isAsyncBulkCopy == false: Writes are purely sync. This method reutrn null at the end.
+        // When _isAsyncBulkCopy == false: Writes are purely sync. This method return null at the end.
         //
         private Task ReadWriteColumnValueAsync(int col)
         {
@@ -1739,7 +1737,7 @@ namespace System.Data.SqlClient
                         resultTask = source.Task;
                     }
                     CopyColumnsAsyncSetupContinuation(source, task, i);
-                    return resultTask; //associated task will be completed when all colums (i.e. the entire row) is written
+                    return resultTask; //associated task will be completed when all columns (i.e. the entire row) is written
                 }
                 if (source != null)
                 {
@@ -1803,7 +1801,7 @@ namespace System.Data.SqlClient
                             // In case the target connection is closed accidentally.
                             if (ConnectionState.Open != _connection.State)
                             {
-                                exception = ADP.OpenConnectionRequired("CheckAndRaiseNotification", _connection.State);
+                                exception = ADP.OpenConnectionRequired(nameof(CheckAndRaiseNotification), _connection.State);
                             }
                         }
                         catch (Exception e)
@@ -1838,12 +1836,12 @@ namespace System.Data.SqlClient
             }
             if (_connection.State != ConnectionState.Open)
             {
-                throw ADP.OpenConnectionRequired(SQL.WriteToServer, _connection.State);
+                throw ADP.OpenConnectionRequired(nameof(WriteToServer), _connection.State);
             }
             if (exception != null)
             {
                 _parser._asyncWrite = false;
-                Task writeTask = _parser.WriteBulkCopyDone(_stateObj); //We should complete the current batch upto this row.
+                Task writeTask = _parser.WriteBulkCopyDone(_stateObj); //We should complete the current batch up to this row.
                 Debug.Assert(writeTask == null, "Task should not pend while doing sync bulk copy");
                 RunParser();
                 AbortTransaction();
@@ -1896,7 +1894,7 @@ namespace System.Data.SqlClient
                     task = CopyColumnsAsync(0); //copy 1 row
 
                     if (task == null)
-                    { //tsk is done. 
+                    { //task is done. 
                         CheckAndRaiseNotification(); //check notification logic after copying the row
 
                         //now we will read the next row.    
@@ -1914,7 +1912,7 @@ namespace System.Data.SqlClient
                         }
                     }
                     else
-                    { //tsk != null, we add continuation for it.
+                    { //task != null, we add continuation for it.
                         source = source ?? new TaskCompletionSource<object>();
                         resultTask = source.Task;
 
@@ -1969,7 +1967,7 @@ namespace System.Data.SqlClient
                     SqlInternalConnectionTds internalConnection = _connection.GetOpenTdsConnection();
 
                     if (IsCopyOption(SqlBulkCopyOptions.UseInternalTransaction))
-                    { //internal trasaction is started prior to each batch if the Option is set.
+                    { //internal transaction is started prior to each batch if the Option is set.
                         internalConnection.ThreadHasParserLockForClose = true;     // In case of error, tell the connection we already have the parser lock
                         try
                         {

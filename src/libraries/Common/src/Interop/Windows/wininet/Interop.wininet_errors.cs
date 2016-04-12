@@ -155,7 +155,7 @@ namespace System.Net
         // An error has occurred in a Wininet asynchronous thread. You may need to restart
         public const int WININET_E_ASYNC_THREAD_FAILED = unchecked((int)0x80072F0F);
 
-        // The protocol scheme has changed during a redirect operaiton
+        // The protocol scheme has changed during a redirect operation
         public const int WININET_E_REDIRECT_SCHEME_CHANGE = unchecked((int)0x80072F10);
 
         // There are operations awaiting retry

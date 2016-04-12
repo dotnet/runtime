@@ -83,6 +83,7 @@ namespace System.Net.Http
                 // Configure the handle
                 SetUrl();
                 SetMultithreading();
+                SetTimeouts();
                 SetRedirection();
                 SetVerb();
                 SetVersion();
@@ -96,9 +97,36 @@ namespace System.Net.Http
 
             public void EnsureResponseMessagePublished()
             {
+                // If the response message hasn't been published yet, do any final processing of it before it is.
+                if (!Task.IsCompleted)
+                {
+                    // On Windows, if the response was automatically decompressed, Content-Encoding and Content-Length
+                    // headers are removed from the response. Do the same thing here.
+                    DecompressionMethods dm = _handler.AutomaticDecompression;
+                    if (dm != DecompressionMethods.None)
+                    {
+                        HttpContentHeaders contentHeaders = _responseMessage.Content.Headers;
+                        IEnumerable<string> encodings;
+                        if (contentHeaders.TryGetValues(HttpKnownHeaderNames.ContentEncoding, out encodings))
+                        {
+                            foreach (string encoding in encodings)
+                            {
+                                if (((dm & DecompressionMethods.GZip) != 0 && string.Equals(encoding, EncodingNameGzip, StringComparison.OrdinalIgnoreCase)) ||
+                                    ((dm & DecompressionMethods.Deflate) != 0 && string.Equals(encoding, EncodingNameDeflate, StringComparison.OrdinalIgnoreCase)))
+                                {
+                                    contentHeaders.Remove(HttpKnownHeaderNames.ContentEncoding);
+                                    contentHeaders.Remove(HttpKnownHeaderNames.ContentLength);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Now ensure it's published.
                 bool result = TrySetResult(_responseMessage);
                 Debug.Assert(result || Task.Status == TaskStatus.RanToCompletion,
-                    "If the task was already completed, it should have been completed succesfully; " +
+                    "If the task was already completed, it should have been completed successfully; " +
                     "we shouldn't be completing as successful after already completing as failed.");
             }
 
@@ -137,23 +165,19 @@ namespace System.Net.Http
                 // by code reading data stored in the stream.
 
                 // Dispose of the input content stream if there was one.  Nothing should be using it any more.
-                if (_requestContentStream != null)
-                    _requestContentStream.Dispose();
+                _requestContentStream?.Dispose();
 
                 // Dispose of the underlying easy handle.  We're no longer processing it.
-                if (_easyHandle != null)
-                    _easyHandle.Dispose();
+                _easyHandle?.Dispose();
 
                 // Dispose of the request headers if we had any.  We had to keep this handle
                 // alive as long as the easy handle was using it.  We didn't need to do any
                 // ref counting on the safe handle, though, as the only processing happens
                 // in Process, which ensures the handle will be rooted while libcurl is
                 // doing any processing that assumes it's valid.
-                if (_requestHeaders != null)
-                    _requestHeaders.Dispose();
+                _requestHeaders?.Dispose();
 
-                if (_callbackHandle != null)
-                    _callbackHandle.Dispose();
+                _callbackHandle?.Dispose();
             }
 
             private void SetUrl()
@@ -166,6 +190,19 @@ namespace System.Net.Http
             private void SetMultithreading()
             {
                 SetCurlOption(CURLoption.CURLOPT_NOSIGNAL, 1L);
+            }
+
+            private void SetTimeouts()
+            {
+                // Set timeout limit on the connect phase.
+                SetCurlOption(CURLoption.CURLOPT_CONNECTTIMEOUT_MS, _handler.ConnectTimeout == Timeout.InfiniteTimeSpan ? 
+                    int.MaxValue : 
+                    Math.Max(1, (long)_handler.ConnectTimeout.TotalMilliseconds));
+
+                // Override the default DNS cache timeout.  libcurl defaults to a 1 minute
+                // timeout, but we extend that to match the Windows timeout of 10 minutes.
+                const int DnsCacheTimeoutSeconds = 10 * 60;
+                SetCurlOption(CURLoption.CURLOPT_DNS_CACHE_TIMEOUT, DnsCacheTimeoutSeconds);
             }
 
             private void SetRedirection()
@@ -186,6 +223,41 @@ namespace System.Net.Http
                 EventSourceTrace("Max automatic redirections: {0}", _handler._maxAutomaticRedirections);
             }
 
+            private void SetContentLength(CURLoption lengthOption)
+            {
+                Debug.Assert(lengthOption == CURLoption.CURLOPT_POSTFIELDSIZE || lengthOption == CURLoption.CURLOPT_INFILESIZE);
+
+                if (_requestMessage.Content == null)
+                {
+                    // Tell libcurl there's no data to be sent.
+                    SetCurlOption(lengthOption, 0L);
+                    return;
+                }
+
+                long? contentLengthOpt = _requestMessage.Content.Headers.ContentLength;
+                if (contentLengthOpt != null)
+                {
+                    long contentLength = contentLengthOpt.GetValueOrDefault();
+                    if (contentLength <= int.MaxValue)
+                    {
+                        // Tell libcurl how much data we expect to send.
+                        SetCurlOption(lengthOption, contentLength);
+                    }
+                    else
+                    {
+                        // Similarly, tell libcurl how much data we expect to send.  However,
+                        // as the amount is larger than a 32-bit value, switch to the "_LARGE"
+                        // equivalent libcurl options.
+                        SetCurlOption(
+                            lengthOption == CURLoption.CURLOPT_INFILESIZE ? CURLoption.CURLOPT_INFILESIZE_LARGE : CURLoption.CURLOPT_POSTFIELDSIZE_LARGE,
+                            contentLength);
+                    }
+                    return;
+                }
+
+                // There is content but we couldn't determine its size.  Don't set anything.
+            }
+
             private void SetVerb()
             {
                 EventSourceTrace<string>("Verb: {0}", _requestMessage.Method.Method);
@@ -193,10 +265,7 @@ namespace System.Net.Http
                 if (_requestMessage.Method == HttpMethod.Put)
                 {
                     SetCurlOption(CURLoption.CURLOPT_UPLOAD, 1L);
-                    if (_requestMessage.Content == null)
-                    {
-                        SetCurlOption(CURLoption.CURLOPT_INFILESIZE, 0L);
-                    }
+                    SetContentLength(CURLoption.CURLOPT_INFILESIZE);
                 }
                 else if (_requestMessage.Method == HttpMethod.Head)
                 {
@@ -205,11 +274,7 @@ namespace System.Net.Http
                 else if (_requestMessage.Method == HttpMethod.Post)
                 {
                     SetCurlOption(CURLoption.CURLOPT_POST, 1L);
-                    if (_requestMessage.Content == null)
-                    {
-                        SetCurlOption(CURLoption.CURLOPT_POSTFIELDSIZE, 0L);
-                        SetCurlOption(CURLoption.CURLOPT_COPYPOSTFIELDS, string.Empty);
-                    }
+                    SetContentLength(CURLoption.CURLOPT_POSTFIELDSIZE);
                 }
                 else if (_requestMessage.Method == HttpMethod.Trace)
                 {
@@ -222,6 +287,7 @@ namespace System.Net.Http
                     if (_requestMessage.Content != null)
                     {
                         SetCurlOption(CURLoption.CURLOPT_UPLOAD, 1L);
+                        SetContentLength(CURLoption.CURLOPT_INFILESIZE);
                     }
                 }
             }
@@ -296,8 +362,14 @@ namespace System.Net.Http
                 if (_handler.Proxy == null)
                 {
                     // UseProxy was true, but Proxy was null.  Let libcurl do its default handling, 
-                    // which includes checking the http_proxy environment variable.
+                    // which includes checking the http_proxy environment variable.  
                     EventSourceTrace("UseProxy true, Proxy null, using default proxy");
+
+                    // Since that proxy set in an environment variable might require a username and password,
+                    // use the default proxy credentials if there are any.  Currently only NetworkCredentials 
+                    // are used, as we can't query by the proxy Uri, since we don't know it.
+                    SetProxyCredentials(_handler.DefaultProxyCredentials as NetworkCredential);
+
                     return;
                 }
 
@@ -336,12 +408,17 @@ namespace System.Net.Http
                 SetCurlOption(CURLoption.CURLOPT_PROXYPORT, proxyUri.Port);
                 EventSourceTrace("Proxy: {0}", proxyUri);
 
-                KeyValuePair<NetworkCredential, CURLAUTH> credentialScheme = GetCredentials(_requestMessage.RequestUri, _handler.Proxy.Credentials, AuthTypesPermittedByCredentialKind(_handler.Proxy.Credentials));
-                NetworkCredential credentials = credentialScheme.Key;
+                KeyValuePair<NetworkCredential, CURLAUTH> credentialScheme = GetCredentials(
+                    proxyUri, _handler.Proxy.Credentials, AuthTypesPermittedByCredentialKind(_handler.Proxy.Credentials));
+                SetProxyCredentials(credentialScheme.Key);
+            }
+
+            private void SetProxyCredentials(NetworkCredential credentials)
+            {
                 if (credentials == CredentialCache.DefaultCredentials)
                 {
                     // No "default credentials" on Unix; nop just like UseDefaultCredentials.
-                    EventSourceTrace("Default proxy credentials. Skipping.");
+                    EventSourceTrace("DefaultCredentials set for proxy. Skipping.");
                 }
                 else if (credentials != null)
                 {
@@ -350,9 +427,11 @@ namespace System.Net.Http
                         throw new ArgumentException(SR.net_http_argument_empty_string, "UserName");
                     }
 
+                    // Unlike normal credentials, proxy credentials are URL decoded by libcurl, so we URL encode 
+                    // them in order to allow, for example, a colon in the username.
                     string credentialText = string.IsNullOrEmpty(credentials.Domain) ?
-                        string.Format("{0}:{1}", credentials.UserName, credentials.Password) :
-                        string.Format("{2}\\{0}:{1}", credentials.UserName, credentials.Password, credentials.Domain);
+                        string.Format("{0}:{1}", WebUtility.UrlEncode(credentials.UserName), WebUtility.UrlEncode(credentials.Password)) :
+                        string.Format("{2}\\{0}:{1}", WebUtility.UrlEncode(credentials.UserName), WebUtility.UrlEncode(credentials.Password), WebUtility.UrlEncode(credentials.Domain));
 
                     EventSourceTrace("Proxy credentials set.");
                     SetCurlOption(CURLoption.CURLOPT_PROXYUSERPWD, credentialText);
@@ -399,56 +478,40 @@ namespace System.Net.Http
 
             internal void SetRequestHeaders()
             {
-                HttpContentHeaders contentHeaders = null;
+                var slist = new SafeCurlSListHandle();
+
+                // Add content request headers
                 if (_requestMessage.Content != null)
                 {
                     SetChunkedModeForSend(_requestMessage);
 
-                    // TODO: Content-Length header isn't getting correctly placed using ToString()
-                    // This is a bug in HttpContentHeaders that needs to be fixed.
-                    if (_requestMessage.Content.Headers.ContentLength.HasValue)
-                    {
-                        long contentLength = _requestMessage.Content.Headers.ContentLength.Value;
-                        _requestMessage.Content.Headers.ContentLength = null;
-                        _requestMessage.Content.Headers.ContentLength = contentLength;
-                    }
-                    contentHeaders = _requestMessage.Content.Headers;
-                }
+                    _requestMessage.Content.Headers.Remove(HttpKnownHeaderNames.ContentLength); // avoid overriding libcurl's handling via INFILESIZE/POSTFIELDSIZE
+                    AddRequestHeaders(_requestMessage.Content.Headers, slist);
 
-                var slist = new SafeCurlSListHandle();
-
-                // Add request and content request headers
-                if (_requestMessage.Headers != null)
-                {
-                    AddRequestHeaders(_requestMessage.Headers, slist);
-                }
-                if (contentHeaders != null)
-                {
-                    AddRequestHeaders(contentHeaders, slist);
-                    if (contentHeaders.ContentType == null)
+                    if (_requestMessage.Content.Headers.ContentType == null)
                     {
-                        if (!Interop.Http.SListAppend(slist, NoContentType))
-                        {
-                            throw CreateHttpRequestException(new CurlException((int)CURLcode.CURLE_OUT_OF_MEMORY, isMulti: false));
-                        }
+                        // Remove the Content-Type header libcurl adds by default.
+                        ThrowOOMIfFalse(Interop.Http.SListAppend(slist, NoContentType));
                     }
                 }
+
+                // Add request headers
+                AddRequestHeaders(_requestMessage.Headers, slist);
 
                 // Since libcurl always adds a Transfer-Encoding header, we need to explicitly block
                 // it if caller specifically does not want to set the header
                 if (_requestMessage.Headers.TransferEncodingChunked.HasValue &&
                     !_requestMessage.Headers.TransferEncodingChunked.Value)
                 {
-                    if (!Interop.Http.SListAppend(slist, NoTransferEncoding))
-                    {
-                        throw CreateHttpRequestException(new CurlException((int)CURLcode.CURLE_OUT_OF_MEMORY, isMulti: false));
-                    }
+                    ThrowOOMIfFalse(Interop.Http.SListAppend(slist, NoTransferEncoding));
                 }
 
                 if (!slist.IsInvalid)
                 {
+                    SafeCurlSListHandle prevList = _requestHeaders;
                     _requestHeaders = slist;
                     SetCurlOption(CURLoption.CURLOPT_HTTPHEADER, slist);
+                    prevList?.Dispose();
                 }
                 else
                 {
@@ -550,10 +613,7 @@ namespace System.Net.Http
                     string headerKeyAndValue = string.IsNullOrEmpty(headerValue) ?
                         header.Key + ";" : // semicolon used by libcurl to denote empty value that should be sent
                         header.Key + ": " + headerValue;
-                    if (!Interop.Http.SListAppend(handle, headerKeyAndValue))
-                    {
-                        throw CreateHttpRequestException(new CurlException((int)CURLcode.CURLE_OUT_OF_MEMORY, isMulti: false));
-                    }
+                    ThrowOOMIfFalse(Interop.Http.SListAppend(handle, headerKeyAndValue));
                 }
             }
 
@@ -575,6 +635,12 @@ namespace System.Net.Http
             internal void SetCurlOption(CURLoption option, SafeHandle value)
             {
                 ThrowIfCURLEError(Interop.Http.EasySetOptionPointer(_easyHandle, option, value));
+            }
+
+            private static void ThrowOOMIfFalse(bool appendResult)
+            {
+                if (!appendResult)
+                    throw CreateHttpRequestException(new CurlException((int)CURLcode.CURLE_OUT_OF_MEMORY, isMulti: false));
             }
 
             internal sealed class SendTransferState

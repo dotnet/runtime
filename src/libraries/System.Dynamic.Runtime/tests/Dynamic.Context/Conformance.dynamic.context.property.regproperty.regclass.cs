@@ -627,7 +627,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regpro
 {
     using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regproperty.regclass.regclassregprop.regclassregprop;
     using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regproperty.regclass.regclass002.regclass002;
-    // <Title> Tests regular class regular property used in argements of method invocation.</Title>
+    // <Title> Tests regular class regular property used in arguments of method invocation.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>

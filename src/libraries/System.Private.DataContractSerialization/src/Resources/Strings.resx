@@ -427,7 +427,7 @@
     <value>One of the known types provided to the serializer via '{0}' argument was invalid because it was null. All known types specified must be non-null values.</value>
   </data>
   <data name="NullValueReturnedForGetOnlyCollection" xml:space="preserve">
-    <value>The get-only collection of type '{0}' returned a null value.  The input stream contains collection items which cannot be added if the instance is null.  Consider initializing the collection either in the constructor of the the object or in the getter.</value>
+    <value>The get-only collection of type '{0}' returned a null value.  The input stream contains collection items which cannot be added if the instance is null.  Consider initializing the collection either in the constructor of the object or in the getter.</value>
   </data>
   <data name="ObjectTableOverflow" xml:space="preserve">
     <value>An internal error has occurred. Object table overflow. This could be caused by serializing or deserializing extremely large object graphs.</value>

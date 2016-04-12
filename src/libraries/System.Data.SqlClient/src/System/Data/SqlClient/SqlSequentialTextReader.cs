@@ -121,7 +121,7 @@ namespace System.Data.SqlClient
                 _peekedChar = -1;
             }
 
-            // If we need more data and there is data avaiable, read
+            // If we need more data and there is data available, read
             charsRead += InternalRead(buffer, index + charsRead, charsNeeded);
 
             return charsRead;
@@ -442,7 +442,7 @@ namespace System.Data.SqlClient
         }
 
         /// <summary>
-        /// Checks the the parameters passed into a Read() method are valid
+        /// Checks the parameters passed into a Read() method are valid
         /// </summary>
         /// <param name="buffer"></param>
         /// <param name="index"></param>
@@ -451,15 +451,15 @@ namespace System.Data.SqlClient
         {
             if (buffer == null)
             {
-                throw ADP.ArgumentNull(ADP.ParameterBuffer);
+                throw ADP.ArgumentNull(nameof(buffer));
             }
             if (index < 0)
             {
-                throw ADP.ArgumentOutOfRange(ADP.ParameterIndex);
+                throw ADP.ArgumentOutOfRange(nameof(index));
             }
             if (count < 0)
             {
-                throw ADP.ArgumentOutOfRange(ADP.ParameterCount);
+                throw ADP.ArgumentOutOfRange(nameof(count));
             }
             try
             {

@@ -103,6 +103,47 @@ namespace System.Threading.Tests
             }
         }
 
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        [Fact]
+        public void OpenExisting_NotSupported_Unix()
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => Mutex.OpenExisting("anything"));
+            Mutex ewh;
+            Assert.Throws<PlatformNotSupportedException>(() => Mutex.TryOpenExisting("anything", out ewh));
+        }
+
+        [PlatformSpecific(PlatformID.Windows)]
+        [Fact]
+        public void OpenExisting_InvalidNames_Windows()
+        {
+            Assert.Throws<ArgumentNullException>("name", () => Mutex.OpenExisting(null));
+            Assert.Throws<ArgumentException>(() => Mutex.OpenExisting(string.Empty));
+            Assert.Throws<ArgumentException>(() => Mutex.OpenExisting(new string('a', 10000)));
+        }
+
+        [PlatformSpecific(PlatformID.Windows)]
+        [Fact]
+        public void OpenExisting_UnavailableName_Windows()
+        {
+            string name = Guid.NewGuid().ToString("N");
+            Assert.Throws<WaitHandleCannotBeOpenedException>(() => Mutex.OpenExisting(name));
+            Mutex ignored;
+            Assert.False(Mutex.TryOpenExisting(name, out ignored));
+        }
+
+        [PlatformSpecific(PlatformID.Windows)]
+        [Fact]
+        public void OpenExisting_NameUsedByOtherSynchronizationPrimitive_Windows()
+        {
+            string name = Guid.NewGuid().ToString("N");
+            using (Semaphore sema = new Semaphore(1, 1, name))
+            {
+                Assert.Throws<WaitHandleCannotBeOpenedException>(() => Mutex.OpenExisting(name));
+                Mutex ignored;
+                Assert.False(Mutex.TryOpenExisting(name, out ignored));
+            }
+        }
+
         [Fact]
         public void AbandonExisting()
         {
@@ -126,6 +167,7 @@ namespace System.Threading.Tests
                 t.Wait();
                 AbandonedMutexException ame = Assert.Throws<AbandonedMutexException>(() => WaitHandle.WaitAny(new[] { m }, FailedWaitTimeout));
                 Assert.Equal(0, ame.MutexIndex);
+                Assert.Equal(m, ame.Mutex);
             }
         }
     }

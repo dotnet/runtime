@@ -639,7 +639,7 @@ namespace System.Xml
                 value = value * 10 + ch;
                 offset++;
             }
-            // Ten digits w/out a decimal point might've overflowed the int
+            // Ten digits w/out a decimal point might have overflowed the int
             if (count == 10)
                 return false;
             if (negative)
@@ -691,7 +691,7 @@ namespace System.Xml
                 value = value * 10 + ch;
                 offset++;
             }
-            // Ten digits w/out a decimal point might've overflowed the int
+            // Ten digits w/out a decimal point might have overflowed the int
             if (count == 10)
                 return false;
             if (negative)

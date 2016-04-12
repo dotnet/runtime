@@ -213,7 +213,7 @@ namespace System.Net.Sockets
         }
 
         // Utility cleanup routine. Frees the overlapped structure.
-        // This should be overriden to free pinned and unmanaged memory in the subclass.
+        // This should be overridden to free pinned and unmanaged memory in the subclass.
         // It needs to also be invoked from the subclass.
         protected virtual void ForceReleaseUnmanagedStructures()
         {

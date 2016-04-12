@@ -1004,7 +1004,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
                 //System.Console.WriteLine(mc);
             }
 
-            // op == is overrided
+            // op == is overridden
             if (msa.Length == 2 && (!msa[0].HasValue) && (msa[1].HasValue && (msa[1].Value == null) == decimal.MaxValue))
                 return 0;
             return 1;
@@ -1053,7 +1053,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
                 //System.Console.WriteLine(mc);
             }
 
-            // op == is overrided
+            // op == is overridden
             if (msa.Length == 2 && (!msa[0].HasValue) && (msa[1].HasValue && (msa[1].Value == null) == decimal.MaxValue))
                 return 0;
             return 1;

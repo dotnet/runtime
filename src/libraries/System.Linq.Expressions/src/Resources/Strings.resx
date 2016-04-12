@@ -372,9 +372,6 @@
   <data name="UnsupportedExpressionType" xml:space="preserve">
     <value>The expression type '{0}' is not supported</value>
   </data>
-  <data name="FilterBlockNotSupported" xml:space="preserve">
-    <value>Filter blocks are not supported</value>
-  </data>
   <data name="FaultBlockNotSupported" xml:space="preserve">
     <value>Fault blocks are not supported</value>
   </data>
@@ -565,7 +562,7 @@
     <value>Rewriting child expression from type '{0}' to type '{1}' is not allowed, because it would change the meaning of the operation. If this is intentional, override '{2}' and change it to allow this rewrite.</value>
   </data>
   <data name="MustRewriteWithoutMethod" xml:space="preserve">
-    <value>Rewritten expression calls operator method '{0}', but the original node had no operator method. If this is is intentional, override '{1}' and change it to allow this rewrite.</value>
+    <value>Rewritten expression calls operator method '{0}', but the original node had no operator method. If this is intentional, override '{1}' and change it to allow this rewrite.</value>
   </data>
   <data name="InvalidNullValue" xml:space="preserve">
     <value>The value null is not of type '{0}' and cannot be used in this collection.</value>
@@ -582,8 +579,8 @@
   <data name="EnumerationIsDone" xml:space="preserve">
     <value>Enumeration has either not started or has already finished.</value>
   </data>
-  <data name="HomogenousAppDomainRequired" xml:space="preserve">
-    <value>Dynamic operations can only be performed in homogenous AppDomain.</value>
+  <data name="HomogeneousAppDomainRequired" xml:space="preserve">
+    <value>Dynamic operations can only be performed in homogeneous AppDomain.</value>
   </data>
   <data name="TestValueTypeDoesNotMatchComparisonMethodParameter" xml:space="preserve">
     <value>Test value of type '{0}' cannot be used for the comparison method parameter of type '{1}'</value>

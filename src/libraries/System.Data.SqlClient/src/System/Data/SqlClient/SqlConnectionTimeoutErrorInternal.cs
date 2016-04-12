@@ -21,7 +21,7 @@ namespace System.Data.SqlClient
         LoginBegin,                 // [LOGIN PHASE]            End of the pre-login phase; Start of the login phase; 
         ProcessConnectionAuth,      // [LOGIN PHASE]            Process SSPI or SQL Authenticate.
         PostLogin,                  // [POST-LOGIN PHASE]       End of the login phase; And post-login phase;
-        Complete,                   // Marker for the succesful completion of the connection
+        Complete,                   // Marker for the successful completion of the connection
         Count                       // ** This is to track the length of the enum. ** Do not add any phase after this. **
     }
 
@@ -45,7 +45,7 @@ namespace System.Data.SqlClient
 
         internal void StopCapture()
         {
-            //Debug.Assert(swDuration.IsRunning == true, "The stop opertaion of the stopwatch cannot be called when it is not running.");
+            //Debug.Assert(swDuration.IsRunning == true, "The stop operation of the stopwatch cannot be called when it is not running.");
             if (_swDuration.IsRunning == true)
                 _swDuration.Stop();
         }

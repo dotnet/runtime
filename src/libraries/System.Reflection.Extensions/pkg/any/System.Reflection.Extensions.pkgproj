@@ -8,6 +8,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.Reflection.Extensions.csproj" />
+    <ProjectReference Include="..\..\src\redist\System.Reflection.Extensions.depproj">
+      <TargetGroup>netcore50</TargetGroup>
+    </ProjectReference>
 
     <!-- AOT implementation comes from AOT package -->
     <File Include="$(PlaceholderFile)">

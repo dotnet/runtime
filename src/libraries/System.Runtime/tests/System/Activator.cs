@@ -12,7 +12,7 @@ public static class ActivatorTests
     [Fact]
     public static void TestCreateInstance()
     {
-        // Passing null args is equivilent to an empty array of args.
+        // Passing null args is equivalent to an empty array of args.
         Choice1 c = (Choice1)(Activator.CreateInstance(typeof(Choice1), null));
         Assert.Equal(1, c.I);
 
@@ -106,6 +106,43 @@ public static class ActivatorTests
 
         Assert.ThrowsAny<MissingMemberException>(() => Activator.CreateInstance<TypeWithoutDefaultCtor>()); // Type has no default constructor
         Assert.Throws<TargetInvocationException>(() => Activator.CreateInstance<TypeWithDefaultCtorThatThrows>()); // Type has a default constructor that throws
+    }
+
+
+    class PrivateType
+    {
+        public PrivateType() { }
+    }
+
+    class PrivateTypeWithDefaultCtor
+    {
+        private PrivateTypeWithDefaultCtor() { }
+    }
+
+    class PrivateTypeWithoutDefaultCtor
+    {
+        private PrivateTypeWithoutDefaultCtor(int x) { }
+    }
+
+    class PrivateTypeWithDefaultCtorThatThrows
+    {
+        public PrivateTypeWithDefaultCtorThatThrows() { throw new Exception(); }
+    }
+
+    [Fact]
+    public static void TestCreateInstance_Type_Bool()
+    {
+        Assert.Equal(typeof(PrivateType), Activator.CreateInstance(typeof(PrivateType), true).GetType());
+        Assert.Equal(typeof(PrivateType), Activator.CreateInstance(typeof(PrivateType), false).GetType());
+
+        Assert.Equal(typeof(PrivateTypeWithDefaultCtor), Activator.CreateInstance(typeof(PrivateTypeWithDefaultCtor), true).GetType());
+        Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(typeof(PrivateTypeWithDefaultCtor), false).GetType());
+
+        Assert.Throws<TargetInvocationException>(() => Activator.CreateInstance(typeof(PrivateTypeWithDefaultCtorThatThrows), true).GetType());
+        Assert.Throws<TargetInvocationException>(() => Activator.CreateInstance(typeof(PrivateTypeWithDefaultCtorThatThrows), false).GetType());
+
+        Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(typeof(PrivateTypeWithoutDefaultCtor), true).GetType());
+        Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(typeof(PrivateTypeWithoutDefaultCtor), false).GetType());
     }
 
     public class Choice1 : Attribute

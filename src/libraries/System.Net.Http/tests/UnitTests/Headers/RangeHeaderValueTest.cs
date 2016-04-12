@@ -137,7 +137,7 @@ namespace System.Net.Http.Tests
         [Fact]
         public void GetRangeLength_DifferentInvalidScenarios_AllReturnZero()
         {
-            CheckInvalidGetRangeLength(" bytes=1-2", 0); // no leading whitespaces allowed
+            CheckInvalidGetRangeLength(" bytes=1-2", 0); // no leading whitespace allowed
             CheckInvalidGetRangeLength("bytes=1", 0);
             CheckInvalidGetRangeLength("bytes=", 0);
             CheckInvalidGetRangeLength("bytes", 0);

@@ -244,7 +244,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
 {
     using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclassregmeth.genclassregmeth;
     using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclass002.genclass002;
-    // <Title> Tests generic class regular method used in argements of method invocation.</Title>
+    // <Title> Tests generic class regular method used in arguments of method invocation.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>

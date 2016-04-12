@@ -9,8 +9,22 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\System.Runtime.InteropServices.RuntimeInformation.builds">
-      <AdditionalProperties>FilterToOSGroup=Windows_NT</AdditionalProperties>
+    <ProjectReference Include="..\..\src\System.Runtime.InteropServices.RuntimeInformation.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+    </ProjectReference>
+    <ProjectReference Include="..\..\src\System.Runtime.InteropServices.RuntimeInformation.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>net45</TargetGroup>
+    </ProjectReference>
+    <ProjectReference Include="..\..\src\System.Runtime.InteropServices.RuntimeInformation.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>netcore50</TargetGroup>
+      <AdditionalProperties>PackageTargetPath=runtimes/win7/lib/netcore50</AdditionalProperties>
+    </ProjectReference>
+    <ProjectReference Include="..\..\src\System.Runtime.InteropServices.RuntimeInformation.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>netcore50aot</TargetGroup>
+      <AdditionalProperties>PackageTargetPath=runtimes/win8-aot/lib/netcore50</AdditionalProperties>
     </ProjectReference>
   </ItemGroup>
 

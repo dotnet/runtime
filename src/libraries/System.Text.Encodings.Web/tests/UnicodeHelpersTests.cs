@@ -161,7 +161,7 @@ namespace Microsoft.Framework.WebEncoders
             HashSet<string> seenCategories = new HashSet<string>();
 
             bool[] retVal = new bool[0x10000];
-            string[] allLines = new StreamReader(typeof(UnicodeHelpersTests).GetTypeInfo().Assembly.GetManifestResourceStream("System.Text.Encodings.Web.Tests.UnicodeData.txt")).ReadAllLines();
+            string[] allLines = new StreamReader(typeof(UnicodeHelpersTests).GetTypeInfo().Assembly.GetManifestResourceStream("UnicodeData.8.0.txt")).ReadAllLines();
 
             uint startSpanCodepoint = 0;
             foreach (string line in allLines)

@@ -2,51 +2,25 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
+using System.Collections.Generic;
 using Xunit;
 
-namespace System.Globalization.CalendarsTests
+namespace System.Globalization.Tests
 {
-    //System.Globalization.KoreanCalendar.GetEra(System.DateTime)
     public class KoreanCalendarGetEra
     {
-        #region Test Logic
-        // PosTest1:Invoke the method with min datetime
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> GetEra_TestData()
         {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            DateTime dateTime = new GregorianCalendar().ToDateTime(1, 1, 1, 0, 0, 0, 0);
-            int expectedValue = 1;
-            int actualValue;
-            actualValue = kC.GetEra(dateTime);
-            Assert.Equal(expectedValue, actualValue);
+            yield return new object[] { DateTime.MinValue };
+            yield return new object[] { DateTime.MaxValue };
+            yield return new object[] { new DateTime(2004, 2, 29) };
         }
 
-        // PosTest2:Invoke the method with max datetime
-        [Fact]
-        public void PosTest2()
+        [Theory]
+        [MemberData(nameof(GetEra_TestData))]
+        public void GetEra(DateTime time)
         {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            DateTime dateTime = new GregorianCalendar().ToDateTime(9999, 12, 31, 0, 0, 0, 0);
-            int expectedValue = 1;
-            int actualValue;
-            actualValue = kC.GetEra(dateTime);
-            Assert.Equal(expectedValue, actualValue);
+            Assert.Equal(1, new KoreanCalendar().GetEra(time));
         }
-
-        // PosTest3:Invoke the method with leap year datetime
-        [Fact]
-        public void PosTest3()
-        {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            DateTime dateTime = new GregorianCalendar().ToDateTime(2004, 2, 29, 0, 0, 0, 0);
-            int expectedValue = 1;
-            int actualValue;
-            actualValue = kC.GetEra(dateTime);
-            Assert.Equal(expectedValue, actualValue);
-        }
-        #endregion
     }
 }

@@ -8,45 +8,18 @@ using Xunit;
 
 public class CharacterClassSubtraction
 {
-    // This tests CharacterClassSubtraction by specifying pattern, input and expected groups
     [Fact]
     public static void CharacterClassSubtractionTestCase()
     {
-        //////////// Global Variables used for all tests
-        String strLoc = "Loc_000oo";
-        String strValue = String.Empty;
-        int iCountErrors = 0;
-        int iCountTestcases = 0;
-
-        try
+        for (int i = 0; i < s_regexTests.Length; i++)
         {
-            /////////////////////////  START TESTS ////////////////////////////
-            ///////////////////////////////////////////////////////////////////
-
-            for (int i = 0; i < s_regexTests.Length; i++)
-            {
-                iCountTestcases++;
-                if (!s_regexTests[i].Run())
-                {
-                    Console.WriteLine("Err_79872asnko! Test {0} FAILED Pattern={1}, Input={2}\n", i, s_regexTests[i].Pattern, s_regexTests[i].Input);
-                    iCountErrors++;
-                }
-            }
-            ///////////////////////////////////////////////////////////////////
-            /////////////////////////// END TESTS /////////////////////////////
+            Assert.True(s_regexTests[i].Run());
         }
-        catch (Exception exc_general)
-        {
-            ++iCountErrors;
-            Console.WriteLine("Error Err_8888yyy!  strLoc==" + strLoc + ", exc_general==" + exc_general.ToString());
-        }
-        ////  Finish Diagnostics
-        Assert.Equal(0, iCountErrors);
     }
 
     private static RegexTestCase[] s_regexTests = new RegexTestCase[] {
         /****************************************************************************
-        (A - B) B is a subset of A (ie B only contains chars that are in A)
+        (A - B) B is a subset of A (i.e. B only contains chars that are in A)
         *****************************************************************************/
         new RegexTestCase(@"[abcd-[d]]+", "dddaabbccddd", "aabbcc"),
 
@@ -75,7 +48,7 @@ public class CharacterClassSubtraction
         new RegexTestCase(@"[\P{Nd}-[\p{Ll}]]+", "az09AZ'[]","AZ'[]"),
 
         /****************************************************************************
-        (A - B) B is a superset of A (ie B contains chars that are in A plus other chars that are not in A)
+        (A - B) B is a superset of A (i.e. B contains chars that are in A plus other chars that are not in A)
         *****************************************************************************/
         new RegexTestCase(@"[abcd-[def]]+", "fedddaabbccddd", "aabbcc"),
 
@@ -239,7 +212,7 @@ public class CharacterClassSubtraction
 
         new RegexTestCase(@"[a-zA-Z-[aeiouAEIOU]]+", "aeiouAEIOUbcdfghjklmnpqrstvwxyz", "bcdfghjklmnpqrstvwxyz"),
 
-        //The following is an overly complex way of matching an ip address using char class subtraction
+        //The following is an overly complex way of matching an IP address using char class subtraction
         new RegexTestCase(@"^
         (?<octet>^
             (

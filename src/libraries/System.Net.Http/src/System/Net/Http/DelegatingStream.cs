@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    // Forwards all calls to an inner stream except where overriden in a derived class.
+    // Forwards all calls to an inner stream except where overridden in a derived class.
     internal abstract class DelegatingStream : Stream
     {
         private Stream _innerStream;
@@ -131,6 +131,11 @@ namespace System.Net.Http
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             return _innerStream.WriteAsync(buffer, offset, count, cancellationToken);
+        }
+
+        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+        {
+            return _innerStream.CopyToAsync(destination, bufferSize, cancellationToken);
         }
         #endregion Write
     }

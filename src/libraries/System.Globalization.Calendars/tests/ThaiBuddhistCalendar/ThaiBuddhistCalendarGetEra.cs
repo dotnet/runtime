@@ -2,59 +2,28 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
+using System.Collections.Generic;
 using Xunit;
 
-namespace System.Globalization.CalendarsTests
+namespace System.Globalization.Tests
 {
-    // System.Globalization.ThaiBuddhistCalendar.GetEra(DateTime)
-    public class ThaiBuddhistCalendarGetEar
+    public class ThaiBuddhistCalendarGetEra
     {
-        #region Positive Tests
-        // PosTest1: Verify the return is current Era when DateTime random time
-        [Fact]
-        public void PosTest1()
+        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
+
+        public static IEnumerable<object[]> GetEra_TestData()
         {
-            System.Globalization.Calendar tbc = new ThaiBuddhistCalendar();
-            Random rand = new Random(-55);
-            int year = rand.Next(tbc.MinSupportedDateTime.Year + 543, tbc.MaxSupportedDateTime.Year + 544);
-            int month = rand.Next(1, 13);
-            int day = rand.Next(1, tbc.GetDaysInMonth(year, month) + 1);
-            DateTime dt = tbc.ToDateTime(year, month, day, 0, 0, 0, 0);
-            int era = tbc.GetEra(dt);
-            Assert.Equal(1, era);
+            yield return new object[] { DateTime.MinValue };
+            yield return new object[] { DateTime.MaxValue };
+            yield return new object[] { new DateTime(2000, 2, 29) };
+            yield return new object[] { s_randomDataGenerator.GetDateTime(-55) };
         }
 
-        // PosTest2: Verify DateTime is MaxSuppeortedDateTime of ThaiBuddhistCalendar
-        [Fact]
-        public void PosTest2()
+        [Theory]
+        [MemberData(nameof(GetEra_TestData))]
+        public void GetEra(DateTime time)
         {
-            System.Globalization.Calendar tbc = new ThaiBuddhistCalendar();
-            DateTime dt = tbc.MaxSupportedDateTime;
-            int era = tbc.GetEra(dt);
-            Assert.Equal(1, era);
+            Assert.Equal(1, new ThaiBuddhistCalendar().GetEra(time));
         }
-
-        // PosTest3: Verify DateTime is MinSupportedDateTime of ThaiBuddhistCalendar
-        [Fact]
-        public void PosTest3()
-        {
-            System.Globalization.Calendar tbc = new ThaiBuddhistCalendar();
-            DateTime dt = tbc.MinSupportedDateTime;
-            int era = tbc.GetEra(dt);
-            Assert.Equal(1, era);
-        }
-
-        // PosTest4: Verify DateTime is leap day
-        [Fact]
-        public void PosTest4()
-        {
-            System.Globalization.Calendar tbc = new ThaiBuddhistCalendar();
-            DateTime dt = new DateTime(2000, 2, 29);
-            int era = tbc.GetEra(dt);
-            Assert.Equal(1, era);
-        }
-        #endregion
     }
 }

@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  
+  <PropertyGroup>
+    <Version>1.0.1</Version>
+    <IsLineupPackage>true</IsLineupPackage>
+    <RuntimeFileSource>runtime.json</RuntimeFileSource>
+  </PropertyGroup>
+  
+  <Import Project="..\NETStandard.Library\NETStandard.Library.packages.targets" />
+  
+  <ItemGroup>
+    <Package Include="System.Private.Uri" />
+    <NativePackage Include="runtime.native.System.IO.Compression" />
+    <NativePackage Include="runtime.native.System" />
+    <NativePackage Include="runtime.native.System.Net.Http" />
+    <NativePackage Include="runtime.native.System.Security.Cryptography" />
+    <NativePackage Include="runtime.native.System.Net.Security" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <LineupProjectReference Include="@(Package->'$(SourceDir)%(Identity)/pkg/%(Identity).pkgproj')" />
+    <LineupProjectReference Include="@(NativePackage->'$(SourceDir)Native/pkg/%(Identity)/%(Identity).pkgproj')" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

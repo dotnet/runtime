@@ -16,7 +16,7 @@ namespace System.Net
         {
             if (GlobalLog.IsEnabled)
             {
-                GlobalLog.Enter("EnumerateSecurityPackages");
+                GlobalLog.Enter(nameof(EnumerateSecurityPackages));
             }
 
             if (secModule.SecurityPackages == null)
@@ -66,7 +66,7 @@ namespace System.Net
 
             if (GlobalLog.IsEnabled)
             {
-                GlobalLog.Leave("EnumerateSecurityPackages");
+                GlobalLog.Leave(nameof(EnumerateSecurityPackages));
             }
             return secModule.SecurityPackages;
         }
@@ -255,7 +255,7 @@ namespace System.Net
 
             if (SecurityEventSource.Log.IsEnabled())
             {
-                SecurityEventSource.Log.SecurityContextInputBuffer("InitializeSecurityContext", (inputBuffer == null ? 0 : inputBuffer.size), outputBuffer.size, (Interop.SecurityStatus)errorCode);
+                SecurityEventSource.Log.SecurityContextInputBuffer(nameof(InitializeSecurityContext), (inputBuffer == null ? 0 : inputBuffer.size), outputBuffer.size, (Interop.SecurityStatus)errorCode);
             }
 
             return errorCode;
@@ -275,7 +275,7 @@ namespace System.Net
 
             if (SecurityEventSource.Log.IsEnabled())
             {
-                SecurityEventSource.Log.SecurityContextInputBuffers("InitializeSecurityContext", (inputBuffers == null ? 0 : inputBuffers.Length), outputBuffer.size, (Interop.SecurityStatus)errorCode);
+                SecurityEventSource.Log.SecurityContextInputBuffers(nameof(InitializeSecurityContext), (inputBuffers == null ? 0 : inputBuffers.Length), outputBuffer.size, (Interop.SecurityStatus)errorCode);
             }
 
             return errorCode;
@@ -292,7 +292,7 @@ namespace System.Net
 
             if (SecurityEventSource.Log.IsEnabled())
             {
-                SecurityEventSource.Log.SecurityContextInputBuffer("AcceptSecurityContext", (inputBuffer == null ? 0 : inputBuffer.size), outputBuffer.size, (Interop.SecurityStatus)errorCode);
+                SecurityEventSource.Log.SecurityContextInputBuffer(nameof(AcceptSecurityContext), (inputBuffer == null ? 0 : inputBuffer.size), outputBuffer.size, (Interop.SecurityStatus)errorCode);
             }
 
             return errorCode;
@@ -309,7 +309,7 @@ namespace System.Net
 
             if (SecurityEventSource.Log.IsEnabled())
             {
-                SecurityEventSource.Log.SecurityContextInputBuffers("AcceptSecurityContext", (inputBuffers == null ? 0 : inputBuffers.Length), outputBuffer.size, (Interop.SecurityStatus)errorCode);
+                SecurityEventSource.Log.SecurityContextInputBuffers(nameof(AcceptSecurityContext), (inputBuffers == null ? 0 : inputBuffers.Length), outputBuffer.size, (Interop.SecurityStatus)errorCode);
             }
 
             return errorCode;
@@ -522,7 +522,7 @@ namespace System.Net
         {
             if (GlobalLog.IsEnabled)
             {
-                GlobalLog.Enter("QueryContextChannelBinding", contextAttribute.ToString());
+                GlobalLog.Enter(nameof(QueryContextChannelBinding), contextAttribute.ToString());
             }
 
             SafeFreeContextBufferChannelBinding result;
@@ -531,14 +531,14 @@ namespace System.Net
             {
                 if (GlobalLog.IsEnabled)
                 {
-                    GlobalLog.Leave("QueryContextChannelBinding", "ERROR = " + ErrorDescription(errorCode));
+                    GlobalLog.Leave(nameof(QueryContextChannelBinding), "ERROR = " + ErrorDescription(errorCode));
                 }
                 return null;
             }
 
             if (GlobalLog.IsEnabled)
             {
-                GlobalLog.Leave("QueryContextChannelBinding", LoggingHash.HashString(result));
+                GlobalLog.Leave(nameof(QueryContextChannelBinding), LoggingHash.HashString(result));
             }
             return result;
         }
@@ -553,7 +553,7 @@ namespace System.Net
         {
             if (GlobalLog.IsEnabled)
             {
-                GlobalLog.Enter("QueryContextAttributes", contextAttribute.ToString());
+                GlobalLog.Enter(nameof(QueryContextAttributes), contextAttribute.ToString());
             }
 
             int nativeBlockSize = IntPtr.Size;
@@ -603,7 +603,7 @@ namespace System.Net
                     break;
 
                 default:
-                    throw new ArgumentException(SR.Format(SR.net_invalid_enum, "ContextAttribute"), nameof(contextAttribute));
+                    throw new ArgumentException(SR.Format(SR.net_invalid_enum, nameof(contextAttribute)), nameof(contextAttribute));
             }
 
             SafeHandle sspiHandle = null;
@@ -684,7 +684,7 @@ namespace System.Net
 
             if (GlobalLog.IsEnabled)
             {
-                GlobalLog.Leave("QueryContextAttributes", LoggingHash.ObjectToString(attribute));
+                GlobalLog.Leave(nameof(QueryContextAttributes), LoggingHash.ObjectToString(attribute));
             }
 
             return attribute;

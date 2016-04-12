@@ -3,10 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="System.Net.WebSockets.Client.csproj">
-      <OSGroup>Linux</OSGroup>
-    </Project>
-    <Project Include="System.Net.WebSockets.Client.csproj">
-      <OSGroup>OSX</OSGroup>
+      <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="System.Net.WebSockets.Client.csproj">
       <OSGroup>Windows_NT</OSGroup>

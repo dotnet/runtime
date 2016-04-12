@@ -16,7 +16,7 @@ internal static partial class Interop
             O_WRONLY = 0x0001,
             O_RDWR   = 0x0002,
 
-            // Flags (combineable)
+            // Flags (combinable)
             O_CLOEXEC = 0x0010,
             O_CREAT   = 0x0020,
             O_EXCL    = 0x0040,

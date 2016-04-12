@@ -6,18 +6,18 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    public class Directory_GetFileSystemEntries_str_str_so : Directory_GetFileSystemEntries_str_str
+    public class Directory_GetFileSystemEntries_str_str_so_alldirs : Directory_GetFileSystemEntries_str_str
     {
         #region Utilities
 
         public override string[] GetEntries(string dirName)
         {
-            return Directory.GetFileSystemEntries(dirName, "*", SearchOption.TopDirectoryOnly);
+            return Directory.GetFileSystemEntries(dirName, "*", SearchOption.AllDirectories);
         }
 
         public override string[] GetEntries(string dirName, string searchPattern)
         {
-            return Directory.GetFileSystemEntries(dirName, searchPattern, SearchOption.TopDirectoryOnly);
+            return Directory.GetFileSystemEntries(dirName, searchPattern, SearchOption.AllDirectories);
         }
 
         public virtual string[] GetEntries(string dirName, string searchPattern, SearchOption option)
@@ -27,10 +27,27 @@ namespace System.IO.Tests
 
         #endregion
 
-        #region UniversalTests
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public override void WindowsSearchPatternQuestionMarks()
+        {
+            string testDir1Str = GetTestFileName();
+            DirectoryInfo testDir = new DirectoryInfo(TestDirectory);
+            DirectoryInfo testDir1 = testDir.CreateSubdirectory(testDir1Str);
+
+            using (File.Create(Path.Combine(TestDirectory, testDir1Str, GetTestFileName())))
+            using (File.Create(Path.Combine(TestDirectory, GetTestFileName())))
+            {
+                string[] results = GetEntries(TestDirectory, string.Format("{0}.???", new string('?', GetTestFileName().Length)));
+                if (TestFiles && TestDirectories)
+                    Assert.Equal(3, results.Length);
+                else
+                    Assert.Equal(1, results.Length);
+            }
+        }
 
         [Fact]
-        public void IncludeSubDirectoryFiles()
+        public override void IgnoreSubDirectoryFiles()
         {
             string testDir = GetTestFileName();
             string testFile1 = Path.Combine(TestDirectory, GetTestFileName());
@@ -80,6 +97,28 @@ namespace System.IO.Tests
                 }
             }
         }
+    }
+
+    public class Directory_GetFileSystemEntries_str_str_so : Directory_GetFileSystemEntries_str_str
+    {
+        #region Utilities
+
+        public override string[] GetEntries(string dirName)
+        {
+            return Directory.GetFileSystemEntries(dirName, "*", SearchOption.TopDirectoryOnly);
+        }
+
+        public override string[] GetEntries(string dirName, string searchPattern)
+        {
+            return Directory.GetFileSystemEntries(dirName, searchPattern, SearchOption.TopDirectoryOnly);
+        }
+
+        public virtual string[] GetEntries(string dirName, string searchPattern, SearchOption option)
+        {
+            return Directory.GetFileSystemEntries(dirName, searchPattern, option);
+        }
+
+        #endregion
 
         [Fact]
         public void InvalidSearchOption()
@@ -87,7 +126,5 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => GetEntries(".", "*", (SearchOption)100));
             Assert.Throws<ArgumentOutOfRangeException>(() => GetEntries(".", "*", (SearchOption)(-1)));
         }
-
-        #endregion
     }
 }

@@ -65,6 +65,7 @@ enum
     PAL_S_IFDIR = 0x4000, // Directory
     PAL_S_IFREG = 0x8000, // Regular file
     PAL_S_IFLNK = 0xA000, // Symbolic link
+    PAL_S_IFSOCK = 0xC000, // Socket
 };
 
 /**
@@ -86,7 +87,7 @@ enum
     // everywhere.
     PAL_O_ACCESS_MODE_MASK = 0x000F,
 
-    // Flags (combineable)
+    // Flags (combinable)
     // These numeric values are not defined by POSIX and vary across targets.
     PAL_O_CLOEXEC = 0x0010, // Close-on-exec
     PAL_O_CREAT = 0x0020,   // Create file if it doesn't already exist
@@ -218,7 +219,8 @@ enum SysConfName : int32_t
  */
 enum PollEvents : int16_t
 {
-    PAL_POLLIN = 0x0001,   /* any readable data available */
+    PAL_POLLIN = 0x0001,   /* non-urgent readable data available */
+    PAL_POLLPRI = 0x0002,  /* urgent readable data available */
     PAL_POLLOUT = 0x0004,  /* data can be written without blocked */
     PAL_POLLERR = 0x0008,  /* an error occurred */
     PAL_POLLHUP = 0x0010,  /* the file descriptor hung up */
@@ -235,7 +237,7 @@ enum FileAdvice : int32_t
     PAL_POSIX_FADV_RANDOM = 1,     /* random I/O access */
     PAL_POSIX_FADV_SEQUENTIAL = 2, /* sequential I/O access */
     PAL_POSIX_FADV_WILLNEED = 3,   /* will need specified pages */
-    PAL_POSIX_FADV_DONTNEED = 4,   /* dont need the specified pages */
+    PAL_POSIX_FADV_DONTNEED = 4,   /* don't need the specified pages */
     PAL_POSIX_FADV_NOREUSE = 5,    /* data will only be acessed once */
 };
 
@@ -438,13 +440,6 @@ extern "C" int32_t SystemNative_ChMod(const char* path, int32_t mode);
 extern "C" int32_t SystemNative_FChMod(intptr_t fd, int32_t mode);
 
 /**
- * Create a FIFO (named pipe). Implemented as a shim to mkfifo(3).
- *
- * Returns 0 for success, -1 for failure. Sets errno for failure.
- */
-extern "C" int32_t SystemNative_MkFifo(const char* path, int32_t mode);
-
-/**
  * Flushes all modified data and attribtues of the specified File Descriptor to the storage medium.
  *
  * Returns 0 for success; on fail, -1 is returned and errno is set.
@@ -484,7 +479,7 @@ extern "C" int32_t SystemNative_FnMatch(const char* pattern, const char* path, F
 /**
  * Seek to a specified location within a seekable stream
  *
- * On success, the resulting offet, in bytes, from the begining of the stream; otherwise,
+ * On success, the resulting offet, in bytes, from the beginning of the stream; otherwise,
  * returns -1 and errno is set.
  */
 extern "C" int64_t SystemNative_LSeek(intptr_t fd, int64_t offset, SeekWhence whence);
@@ -679,3 +674,10 @@ extern "C" int32_t SystemNative_INotifyAddWatch(intptr_t fd, const char* pathNam
 * Returns 0 on success, or -1 if an error occurred (in which case, errno is set appropriately).
 */
 extern "C" int32_t SystemNative_INotifyRemoveWatch(intptr_t fd, int32_t wd);
+
+/**
+* Expands all symbolic links and expands all paths to return an absolute path
+*
+* Returns the result absolute path on success or null on error with errno set appropriately.
+*/
+extern "C" char* SystemNative_RealPath(const char* path);

@@ -27,7 +27,7 @@ namespace System.Collections.Generic
                 {
                     object comparer;
 
-                    // NUTC compiler is able to static evalulate the conditions and only put the necessary branches in finally binary code, 
+                    // NUTC compiler is able to static evaluate the conditions and only put the necessary branches in finally binary code, 
                     // even casting to EqualityComparer<T> can be removed.
 
                     // For example: for Byte, the code generated is
@@ -102,7 +102,7 @@ namespace System.Collections.Generic
     }
 
     //
-    // ProjectN compatiblity notes:
+    // ProjectN compatibility notes:
     //
     //    Unlike the full desktop, we make no attempt to use the IEquatable<T> interface on T. Because we can't generate
     //    code at runtime, we derive no performance benefit from using the type-specific Equals(). We can't even

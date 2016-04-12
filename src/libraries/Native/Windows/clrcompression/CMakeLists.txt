@@ -56,9 +56,14 @@ if ($ENV{__VSVersion} STREQUAL vs2015)
     add_definitions(-DHAVE_VSNPRINTF)
 endif ()
 
+# Include 'bin/obj' dir since it contains _version.h
+include_directories("${CMAKE_BINARY_DIR}/../../")
+
 add_library(clrcompression
     SHARED
     ${NATIVECOMPRESSION_SOURCES}
+    # This will add versioning to the library
+    ${CMAKE_SOURCE_DIR}/../../../Tools/NativeVersion.rc
 )
 
 GENERATE_EXPORT_HEADER( clrcompression

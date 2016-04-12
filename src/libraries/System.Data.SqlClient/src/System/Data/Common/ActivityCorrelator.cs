@@ -10,7 +10,7 @@ using System.Globalization;
 namespace System.Data.Common
 {
     /// <summary>
-    /// This class defines the data strucutre for ActvitiyId used for correlated tracing between client (bid trace event) and server (XEvent).
+    /// This class defines the data structure for ActvitiyId used for correlated tracing between client (bid trace event) and server (XEvent).
     /// It also includes all the APIs used to access the ActivityId. Note: ActivityId is thread based which is stored in TLS.
     /// </summary>
 
@@ -50,7 +50,7 @@ namespace System.Data.Common
 
         // Declare the ActivityId which will be stored in TLS. The Id is unique for each thread.
         // The Sequence number will be incremented when each event happens.
-        // Correlation along threads is consistent with the current XEvent mechanisam at server.
+        // Correlation along threads is consistent with the current XEvent mechanism at server.
         [ThreadStaticAttribute]
         private static ActivityId t_tlsActivity;
 

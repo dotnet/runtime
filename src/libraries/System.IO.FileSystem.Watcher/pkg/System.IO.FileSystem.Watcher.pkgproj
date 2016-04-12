@@ -5,12 +5,9 @@
     <ProjectReference Include="..\ref\System.IO.FileSystem.Watcher.csproj">
       <SupportedFramework>net46;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.IO.FileSystem.Watcher.csproj">
-      <TargetGroup>net46</TargetGroup>
-    </ProjectReference>
-    <ProjectReference Include="win\System.IO.FileSystem.Watcher.pkgproj" />
-    <ProjectReference Include="linux\System.IO.FileSystem.Watcher.pkgproj" />
-    <ProjectReference Include="osx\System.IO.FileSystem.Watcher.pkgproj" />
+    <ProjectReference Include="..\src\System.IO.FileSystem.Watcher.builds" />
+
+    <ProjectReference Include="$(NativePackagePath)\runtime.native.System\runtime.native.System.pkgproj" />
   </ItemGroup>
   <ItemGroup>
     <InboxOnTargetFramework Include="MonoAndroid10" />
@@ -19,6 +16,9 @@
     <InboxOnTargetFramework Include="xamarinmac20" />
     <InboxOnTargetFramework Include="xamarintvos10" />
     <InboxOnTargetFramework Include="xamarinwatchos10" />
-  </ItemGroup>
+
+    <NotSupportedOnTargetFramework Include="netcore50">
+      <PackageTargetRuntime>win7</PackageTargetRuntime>
+    </NotSupportedOnTargetFramework>  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

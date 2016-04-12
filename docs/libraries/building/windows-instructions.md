@@ -14,6 +14,8 @@ The following free downloads are compatible:
 
 Note: In order to build our C++ projects be sure to select "Programming Languages | Visual C++ | Common Tools for Visual C++ 2015" while installing VS 2015 (or modify your install to include it).
 
+We also require that [Visual Studio 2015 Update 1](https://www.visualstudio.com/en-us/news/vs2015-update1-vs.aspx) be installed.
+
 [CMake](https://cmake.org/) is required to build the native libraries for Windows. To build these libraries cmake must be installed from [the CMake download page](https://cmake.org/download/) and added to your path.
 
 ## Building From the Command Line
@@ -37,11 +39,16 @@ and then also build the Nuget package for it.   The Nuget package ends up in the
 
 ### Building other OSes
 
-By default building from the root will only build the libraries for the OS you are running on. One can
+By default, building from the root will only build the libraries for the OS you are running on. One can
 build for another OS by specifying `/p:FilterToOSGroup=[Windows_NT|Linux|OSX|FreeBSD]` or build for all by specifying
 `/p:BuildAllOSGroups=true`.
 
 [Building CoreFX on FreeBSD, Linux and OS X](unix-instructions.md)
+
+### Building in Release or Debug
+
+By default, building from the root or within a project will build the libraries in Debug mode. One can build in Debug or Release mode by specifying `/p:ConfigurationGroup=[Debug|Release]` after the `msbuild` command.
+
 ## Tests
 
 We use the OSS testing framework [xunit](http://xunit.github.io/).
@@ -70,7 +77,13 @@ Tests participate in the incremental build.  This means that if tests have alrea
 The tests can also be filtered based on xunit trait attributes defined in [`xunit.netcore.extensions`](https://github.com/dotnet/buildtools/tree/master/src/xunit.netcore.extensions). These attributes are to be specified over the test method. The available attributes are:
 
 _**`OuterLoop`:**_
-This attribute applies the 'outerloop' category; to run outerloop tests, use the following commandline
+Tests marked as ```Outerloop``` are for scenarios that don't need to run every build. They may take longer than normal tests, cover seldom hit code paths, or require special setup or resources to execute. These tests are excluded by default when testing through msbuild but can be enabled manually by adding the  ```/p:Outerloop=true``` property e.g. 
+
+```cmd
+build.cmd *.csproj /p:Outerloop=true
+```
+
+To run <b>only</b> the Outerloop tests, use the following command:
 ```cmd
 xunit.console.netcore.exe *.dll -trait category=outerloop
 build.cmd *.csproj /p:WithCategories=OuterLoop
@@ -118,12 +131,7 @@ xunit.console.netcore.exe *.dll -notrait category=nonosxtests -trait category=Ou
 xunit.console.netcore.exe *.dll -notrait category=nonlinuxtests -trait category=failing
 ```
 
-All the required dlls to run a test project can be found in `bin\tests\{Flavor}\{Project}.Tests\aspnetcore50\` which should be created when the test project is built.
-
-To skip an entire test project on a specific platform, for example, to skip running registry tests on Linux and Mac OS X, use the `<UnsupportedPlatforms>` MSBuild property in the csproj. Valid platform values are
-```xml
-<UnsupportedPlatforms>Windows_NT;Linux;OSX</UnsupportedPlatforms>
-```
+All the required dlls to run a test project can be found in `bin\tests\{Configration}\{Project}.Tests\dnxcore50\` which should be created when the test project is built.
 
 ### Running tests from Visual Studio
 

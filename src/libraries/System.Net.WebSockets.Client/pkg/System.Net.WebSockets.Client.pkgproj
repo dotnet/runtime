@@ -5,11 +5,7 @@
     <ProjectReference Include="..\ref\System.Net.WebSockets.Client.csproj">
       <SupportedFramework>net46;netcore50;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.Net.WebSockets.Client.csproj">
-      <TargetGroup>net46</TargetGroup>
-    </ProjectReference>
-    <ProjectReference Include="win\System.Net.WebSockets.Client.pkgproj" />
-    <ProjectReference Include="unix\System.Net.WebSockets.Client.pkgproj" />
+    <ProjectReference Include="..\src\System.Net.WebSockets.Client.builds" />
   </ItemGroup>
   <ItemGroup>
     <InboxOnTargetFramework Include="MonoAndroid10" />

@@ -297,20 +297,14 @@
   <data name="net_http_invalid_cookiecontainer_unix" xml:space="preserve">
     <value>CookieContainer property must not be null.</value>
   </data>
-  <data name="net_http_unix_invalid_client_cert_option" xml:space="preserve">
-    <value>ClientCertificateOption.Automatic is supported only with libcurl with libssl compatible backend.</value>
+  <data name="net_http_unix_invalid_certcallback_option" xml:space="preserve">
+    <value>The libcurl library in use ({0}) and its SSL backend ("{1}") do not support custom handling of certificates. A libcurl built with OpenSSL is required.</value>
   </data>
   <data name="net_http_unix_invalid_credential" xml:space="preserve">
-    <value>The libcurl library in use does not support different credentials for different authentication schemes.</value>
-  </data>
-  <data name="net_http_unix_https_libcurl_no_versioninfo" xml:space="preserve">
-    <value>The attempt to access libcurl version information failed unexpectedly.</value>
-  </data>
-  <data name="net_http_unix_https_libcurl_too_old" xml:space="preserve">
-    <value>The libcurl library in use is too old.</value>
+    <value>The libcurl library in use ({0}) does not support different credentials for different authentication schemes.</value>
   </data>
   <data name="net_http_unix_https_support_unavailable_libcurl" xml:space="preserve">
-    <value>The libcurl library in use does not support https.</value>
+    <value>The libcurl library in use ({0}) does not support HTTPS.</value>
   </data>
   <data name="ArgumentOutOfRange_FileLengthTooBig" xml:space="preserve">
     <value>Specified file length was too large for the file system.</value>
@@ -359,5 +353,8 @@
   </data>
   <data name="net_http_buffer_insufficient_length" xml:space="preserve">
     <value>The buffer was not long enough.</value>
+  </data>
+  <data name="net_http_response_headers_exceeded_length" xml:space="preserve">
+    <value>The HTTP response headers length exceeded the set limit of {0} bytes.</value>
   </data>
 </root>

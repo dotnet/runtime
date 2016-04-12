@@ -30,9 +30,9 @@ namespace System.Data
         {
             if (lcid < 0)
             {
-                throw ADP.ArgumentOutOfRange("lcid");
+                throw ADP.ArgumentOutOfRange(nameof(lcid));
             }
-            return s_cachedEncodings.GetOrAdd(lcid, GetDetailsInternal);
+            return s_cachedEncodings.GetOrAdd(lcid, id => GetDetailsInternal(id));
         }
 
         internal static Encoding GetEncodingForLcid(int lcid)

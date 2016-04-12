@@ -2,32 +2,42 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Globalization.Tests
 {
     public class NumberFormatInfoReadOnly
     {
-        // PosTest1: Verify method ReadOnly
-        [Fact]
-        public void TestReadOnly()
+        public static IEnumerable<object[]> ReadOnly_TestData()
         {
-            NumberFormatInfo nfi = new NumberFormatInfo();
-            NumberFormatInfo nfiReadOnly = NumberFormatInfo.ReadOnly(nfi);
-            Assert.True(nfiReadOnly.IsReadOnly);
+            yield return new object[] { new NumberFormatInfo(), false };
+            yield return new object[] { new CultureInfo("en-US").NumberFormat, false };
+            yield return new object[] { NumberFormatInfo.InvariantInfo, true };
+            yield return new object[] { NumberFormatInfo.ReadOnly(new CultureInfo("en-US").NumberFormat), true };
         }
 
-        // NegTest1: ArgumentNullException is not thrown
-        [Fact]
-        public void TestNullArgument()
+        [Theory]
+        [MemberData(nameof(ReadOnly_TestData))]
+        public void ReadOnly(NumberFormatInfo format, bool expected)
         {
-            NumberFormatInfo nfi = null;
-            Assert.Throws<ArgumentNullException>(() =>
-            {
-                NumberFormatInfo nfiReadOnly = NumberFormatInfo.ReadOnly(nfi);
-            });
+            Assert.Equal(expected, format.IsReadOnly);
+
+            NumberFormatInfo readOnlyFormat = NumberFormatInfo.ReadOnly(format);
+            Assert.True(readOnlyFormat.IsReadOnly);
+        }
+
+        [Fact]
+        public void ReadOnly_ReadOnlyFormat()
+        {
+            NumberFormatInfo readOnlyFormat = NumberFormatInfo.ReadOnly(new NumberFormatInfo());
+            Assert.Same(readOnlyFormat, NumberFormatInfo.ReadOnly(readOnlyFormat));
+        }
+
+        [Fact]
+        public void ReadOnly_Null_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>("nfi", () => NumberFormatInfo.ReadOnly(null));
         }
     }
 }

@@ -51,7 +51,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("EnumerableTestData")]
+        [MemberData(nameof(EnumerableTestData))]
         public void SortedSet_Generic_Constructor_IEnumerable(EnumerableType enumerableType, int setLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
         {
             IEnumerable<T> enumerable = CreateEnumerable(enumerableType, null, enumerableLength, 0, numberOfDuplicateElements);
@@ -67,7 +67,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("EnumerableTestData")]
+        [MemberData(nameof(EnumerableTestData))]
         public void SortedSet_Generic_Constructor_IEnumerable_IComparer(EnumerableType enumerableType, int setLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
         {
             IEnumerable<T> enumerable = CreateEnumerable(enumerableType, null, enumerableLength, 0, 0);
@@ -80,7 +80,7 @@ namespace System.Collections.Tests
         #region Max and Min
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedSet_Generic_MaxAndMin(int setLength)
         {
             if (setLength > 0)
@@ -98,7 +98,7 @@ namespace System.Collections.Tests
         #region GetViewBetween
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedSet_Generic_GetViewBetween_EntireSet(int setLength)
         {
             if (setLength > 0)
@@ -113,7 +113,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedSet_Generic_GetViewBetween_MiddleOfSet(int setLength)
         {
             if (setLength >= 3)
@@ -137,7 +137,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedSet_Generic_GetViewBetween_LowerValueGreaterThanUpperValue_ThrowsArgumentException(int setLength)
         {
             if (setLength >= 2)
@@ -154,7 +154,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedSet_Generic_GetViewBetween_SubsequentOutOfRangeCall_ThrowsArgumentOutOfRangeException(int setLength)
         {
             if (setLength >= 3)
@@ -179,7 +179,7 @@ namespace System.Collections.Tests
         #region RemoveWhere
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedSet_Generic_RemoveWhere_AllElements(int setLength)
         {
             SortedSet<T> set = (SortedSet<T>)GenericISetFactory(setLength);
@@ -188,7 +188,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedSet_Generic_RemoveWhere_NoElements(int setLength)
         {
             SortedSet<T> set = (SortedSet<T>)GenericISetFactory(setLength);
@@ -202,7 +202,7 @@ namespace System.Collections.Tests
         #region Enumeration and Ordering
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedSet_Generic_SetIsProperlySortedAccordingToComparer(int setLength)
         {
             SortedSet<T> set = (SortedSet<T>)GenericISetFactory(setLength);
@@ -214,7 +214,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedSet_Generic_ReverseSetIsProperlySortedAccordingToComparer(int setLength)
         {
             SortedSet<T> set = (SortedSet<T>)GenericISetFactory(setLength);
@@ -248,7 +248,7 @@ namespace System.Collections.Tests
         #region CopyTo
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedSet_Generic_CopyTo_WithoutIndex(int setLength)
         {
             SortedSet<T> set = (SortedSet<T>)GenericISetFactory(setLength);
@@ -260,7 +260,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedSet_Generic_CopyTo_WithValidFullCount(int setLength)
         {
             SortedSet<T> set = (SortedSet<T>)GenericISetFactory(setLength);
@@ -272,7 +272,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedSet_Generic_CopyTo_NegativeCount_ThrowsArgumentOutOfRangeException(int setLength)
         {
             SortedSet<T> set = (SortedSet<T>)GenericISetFactory(setLength);

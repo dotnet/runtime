@@ -200,7 +200,7 @@ namespace System.Collections.Specialized.Tests
 
 
             //
-            //  [] Create from filled collection - greater capacity capacity
+            //  [] Create from filled collection - greater capacity
             //
             len = values.Length;
 

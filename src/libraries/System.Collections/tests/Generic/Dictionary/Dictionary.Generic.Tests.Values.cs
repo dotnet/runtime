@@ -39,14 +39,14 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void Dictionary_Generic_ValueCollection_Constructor_NullDictionary(int count)
         {
             Assert.Throws<ArgumentNullException>(() => new Dictionary<string, string>.ValueCollection(null));
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void Dictionary_Generic_ValueCollection_GetEnumerator(int count)
         {
             Dictionary<string, string> dictionary = new Dictionary<string, string>();
@@ -94,7 +94,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void Dictionary_Generic_ValueCollection_CopyTo_ExactlyEnoughSpaceInTypeCorrectArray(int count)
         {
             ICollection collection = NonGenericICollectionFactory(count);

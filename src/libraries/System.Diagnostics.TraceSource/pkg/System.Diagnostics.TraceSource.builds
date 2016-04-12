@@ -2,12 +2,6 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <Project Include="unix\System.Diagnostics.TraceSource.pkgproj">
-      <OSGroup>Linux</OSGroup>
-    </Project>
-    <Project Include="win\System.Diagnostics.TraceSource.pkgproj">
-      <OSGroup>Windows_NT</OSGroup>
-    </Project>
     <Project Include="System.Diagnostics.TraceSource.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

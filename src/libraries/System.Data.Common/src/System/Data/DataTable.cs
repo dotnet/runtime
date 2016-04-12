@@ -6,7 +6,7 @@
 namespace System.Data
 {
 
-    // An empty Datatable class to allow complete interfaces
+    // An empty DataTable class to allow complete interfaces
     public class DataTable
     {
         internal DataTable()

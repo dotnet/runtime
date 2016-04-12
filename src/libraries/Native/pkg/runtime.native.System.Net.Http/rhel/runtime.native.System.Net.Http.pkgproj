@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <File Include="$(RHELNativePath)\System.Net.Http.Native.so">
+    <File Include="$(RHELNativePath)System.Net.Http.Native.so">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
     </File>
   </ItemGroup>

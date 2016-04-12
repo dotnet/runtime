@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -11,43 +9,60 @@ namespace System.Globalization.Tests
     public class CultureNotFoundExceptionTests
     {
         [Fact]
-        public void TestMessage()
+        public void Ctor_String()
         {
-            CultureNotFoundException cnf = new CultureNotFoundException("this is a test string");
-            Assert.Equal("this is a test string", cnf.Message);
+            string message = "this is a test string";
+            CultureNotFoundException cultureNotFoundException = new CultureNotFoundException(message);
+
+            Assert.Equal(message, cultureNotFoundException.Message);
         }
 
         [Fact]
-        public void TestInnerExceptionMessage()
+        public void Ctor_String_Exception()
         {
-            CultureNotFoundException cnf = new CultureNotFoundException("this is a test string", new Exception("inner exception string"));
+            string message = "this is a test string";
+            Exception innerException = new Exception("inner exception string");
+            CultureNotFoundException cultureNotFoundException = new CultureNotFoundException(message, innerException);
 
-            Assert.Equal("this is a test string", cnf.Message);
-            Assert.Equal("inner exception string", cnf.InnerException.Message);
+            Assert.Equal(message, cultureNotFoundException.Message);
+            Assert.Same(innerException, cultureNotFoundException.InnerException);
         }
 
         [Fact]
-        public void TestParamName()
+        public void Ctor_String_String()
         {
-            CultureNotFoundException cnf = new CultureNotFoundException("aNameOfAParam", "this is a test string");
-            Assert.Equal("this is a test string" + System.Environment.NewLine +"Parameter name: aNameOfAParam", cnf.Message);
+            string paramName = "nameOfParam";
+            string message = "this is a test string";
+            CultureNotFoundException cultureNotFoundException = new CultureNotFoundException(paramName, message);
+
+            Assert.Equal(paramName, cultureNotFoundException.ParamName);
+            Assert.NotEmpty(cultureNotFoundException.Message);
         }
 
         [Fact]
-        public void TestInvalidCultureName1()
+        public void Ctor_String_String_Exception()
         {
-            CultureNotFoundException cnf = new CultureNotFoundException("this is a test string", "abcd", new Exception("inner exception string"));
-            Assert.Equal("this is a test string" + System.Environment.NewLine + "abcd is an invalid culture identifier.", cnf.Message);
-            Assert.Equal("inner exception string", cnf.InnerException.Message);
-            Assert.Equal("abcd", cnf.InvalidCultureName);
+            string message = "this is a test string";
+            string invalidCultureName = "abcd";
+            Exception innerException = new Exception("inner exception string");
+            CultureNotFoundException cultureNotFoundException = new CultureNotFoundException(message, invalidCultureName, innerException);
+
+            Assert.NotEmpty(cultureNotFoundException.Message);
+            Assert.Equal(invalidCultureName, cultureNotFoundException.InvalidCultureName);
+            Assert.Same(innerException, cultureNotFoundException.InnerException);
         }
 
         [Fact]
-        public void TestInvalidCultureName2()
+        public void Ctor_String_String_String()
         {
-            CultureNotFoundException cnf = new CultureNotFoundException("aNameOfAParam", "abcd", "this is a test string");
-            Assert.Equal("this is a test string" + System.Environment.NewLine + "Parameter name: aNameOfAParam" + System.Environment.NewLine + "abcd is an invalid culture identifier.", cnf.Message);
-            Assert.Equal("abcd", cnf.InvalidCultureName);
+            string paramName = "nameOfParam";
+            string invalidCultureName = "abcd";
+            string message = "this is a test string";
+            CultureNotFoundException cultureNotFoundException = new CultureNotFoundException(paramName, invalidCultureName, message);
+
+            Assert.Equal(paramName, cultureNotFoundException.ParamName);
+            Assert.Equal(invalidCultureName, cultureNotFoundException.InvalidCultureName);
+            Assert.NotEmpty(cultureNotFoundException.Message);
         }
     }
 }

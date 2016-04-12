@@ -1350,6 +1350,14 @@
         ]
     },
     {
+        "Name": "System.Security.Cryptography.ProtectedData",
+        "Description": "Provides access to Windows Data Protection Api.",
+        "CommonTypes": [
+            "System.Security.Cryptography.DataProtectionScope",
+            "System.Security.Cryptography.ProtectedData",
+        ]
+    },
+    {
         "Name": "System.Security.Cryptography.X509Certificates",
         "Description": "Provides types for reading, exporting and verifying Authenticode X.509 v3 certificates. These certificates are signed with a private key that uniquely and positively identifies the holder of the certificate.",
         "CommonTypes": [

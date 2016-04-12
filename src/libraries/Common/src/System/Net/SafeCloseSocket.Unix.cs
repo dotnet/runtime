@@ -85,7 +85,7 @@ namespace System.Net.Sockets
             }
         }
 
-        public unsafe static SafeCloseSocket CreateSocket(int fileDescriptor)
+        public unsafe static SafeCloseSocket CreateSocket(IntPtr fileDescriptor)
         {
             return CreateSocket(InnerSafeCloseSocket.CreateSocket(fileDescriptor));
         }
@@ -177,7 +177,7 @@ namespace System.Net.Sockets
                     Seconds = 0
                 };
 
-                errorCode = (int)Interop.Sys.DangerousSetLingerOption((int)handle, &linger);
+                errorCode = (int)Interop.Sys.SetLingerOption(handle, &linger);
 #if DEBUG
                 _closeSocketLinger = SocketPal.GetSocketErrorForErrorCode((Interop.Error)errorCode);
 #endif
@@ -205,20 +205,20 @@ namespace System.Net.Sockets
                 return SocketPal.GetSocketErrorForErrorCode((Interop.Error)errorCode);
             }
 
-            public static InnerSafeCloseSocket CreateSocket(int fileDescriptor)
+            public static InnerSafeCloseSocket CreateSocket(IntPtr fileDescriptor)
             {
                 var res = new InnerSafeCloseSocket();
-                res.SetHandle((IntPtr)fileDescriptor);
+                res.SetHandle(fileDescriptor);
                 return res;
             }
 
             public static unsafe InnerSafeCloseSocket CreateSocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType, out SocketError errorCode)
             {
-                int fd;
+                IntPtr fd;
                 Interop.Error error = Interop.Sys.Socket(addressFamily, socketType, protocolType, &fd);
                 if (error == Interop.Error.SUCCESS)
                 {
-                    Debug.Assert(fd != -1, "fd should not be -1");
+                    Debug.Assert(fd != (IntPtr)(-1), "fd should not be -1");
 
                     errorCode = SocketError.Success;
 
@@ -226,30 +226,30 @@ namespace System.Net.Sockets
                     if (addressFamily == AddressFamily.InterNetworkV6)
                     {
                         int on = 1;
-                        error = Interop.Sys.DangerousSetSockOpt(fd, SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, (byte*)&on, sizeof(int));
+                        error = Interop.Sys.SetSockOpt(fd, SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, (byte*)&on, sizeof(int));
                         if (error != Interop.Error.SUCCESS)
                         {
-                            Interop.Sys.Close((IntPtr)fd);
-                            fd = -1;
+                            Interop.Sys.Close(fd);
+                            fd = (IntPtr)(-1);
                             errorCode = SocketPal.GetSocketErrorForErrorCode(error);
                         }
                     }
                 }
                 else
                 {
-                    Debug.Assert(fd == -1, $"Unexpected fd: {fd}");
+                    Debug.Assert(fd == (IntPtr)(-1), $"Unexpected fd: {fd}");
 
                     errorCode = SocketPal.GetSocketErrorForErrorCode(error);
                 }
 
                 var res = new InnerSafeCloseSocket();
-                res.SetHandle((IntPtr)fd);
+                res.SetHandle(fd);
                 return res;
             }
 
             public static unsafe InnerSafeCloseSocket Accept(SafeCloseSocket socketHandle, byte[] socketAddress, ref int socketAddressLen, out SocketError errorCode)
             {
-                int acceptedFd;
+                IntPtr acceptedFd;
                 if (!socketHandle.IsNonBlocking)
                 {
                     errorCode = socketHandle.AsyncContext.Accept(socketAddress, ref socketAddressLen, -1, out acceptedFd);
@@ -260,7 +260,7 @@ namespace System.Net.Sockets
                 }
 
                 var res = new InnerSafeCloseSocket();
-                res.SetHandle((IntPtr)acceptedFd);
+                res.SetHandle(acceptedFd);
                 return res;
             }
         }

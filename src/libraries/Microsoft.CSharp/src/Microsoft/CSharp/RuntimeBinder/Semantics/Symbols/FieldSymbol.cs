@@ -19,7 +19,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal class FieldSymbol : VariableSymbol
     {
         public new bool isStatic;               // Static member?
-        public bool isReadOnly;            // Can only be changed from within ructor.
+        public bool isReadOnly;            // Can only be changed from within constructor.
         public bool isEvent;               // This field is the implementation for an event.
 
         public bool isAssigned;              // Has this ever been assigned by the user?

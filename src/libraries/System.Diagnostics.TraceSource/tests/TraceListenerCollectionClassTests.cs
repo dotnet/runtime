@@ -14,7 +14,7 @@ namespace System.Diagnostics.TraceSourceTests
 
         public override TraceListenerCollection Create(int count = 0)
         {
-            // TraceListenerCollection has an internal consructor
+            // TraceListenerCollection has an internal constructor
             // so we use a TraceSource to create one for us.
             var list = new TraceSource("Test").Listeners;
             list.Clear();

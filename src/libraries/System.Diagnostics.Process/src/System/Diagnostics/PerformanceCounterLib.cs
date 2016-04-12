@@ -245,7 +245,7 @@ namespace System.Diagnostics
             // scenarios before they detect it and exit gracefully. In the mean time, ERROR_BUSY, 
             // ERROR_NOT_READY etc can be seen by other concurrent calls (which is the reason for the 
             // wait loop and switch case below). We want to wait most certainly more than a 2min window. 
-            // The curent wait time of up to 10mins takes care of the known stress deadlock issues. In most 
+            // The current wait time of up to 10mins takes care of the known stress deadlock issues. In most 
             // cases we wouldn't wait for more than 2mins anyways but in worst cases how much ever time 
             // we wait may not be sufficient if the Win32 code keeps running into this deadlock again 
             // and again. A condition very rare but possible in theory. We would get back to the user 

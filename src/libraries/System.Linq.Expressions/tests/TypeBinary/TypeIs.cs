@@ -76,30 +76,19 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ExpressionAndTypeCombinations))]
-        public void ExpressionEvaluationCompiled(Expression expression, Type type)
+        [PerCompilationType(nameof(ExpressionAndTypeCombinations))]
+        public void ExpressionEvaluationCompiled(Expression expression, Type type, bool useInterpreter)
         {
             bool expected = expression.Type == typeof(void)
                 ? type == typeof(void)
                 : type.IsInstanceOfType(Expression.Lambda<Func<object>>(Expression.Convert(expression, typeof(object))).Compile()());
 
-            Assert.Equal(expected, Expression.Lambda<Func<bool>>(Expression.TypeIs(expression, type)).Compile(false)());
+            Assert.Equal(expected, Expression.Lambda<Func<bool>>(Expression.TypeIs(expression, type)).Compile(useInterpreter)());
         }
 
         [Theory]
-        [MemberData(nameof(ExpressionAndTypeCombinations))]
-        public void ExpressionEvaluationInterpretted(Expression expression, Type type)
-        {
-            bool expected = expression.Type == typeof(void)
-                ? type == typeof(void)
-                : type.IsInstanceOfType(Expression.Lambda<Func<object>>(Expression.Convert(expression, typeof(object))).Compile()());
-
-            Assert.Equal(expected, Expression.Lambda<Func<bool>>(Expression.TypeIs(expression, type)).Compile(true)());
-        }
-
-        [Theory]
-        [MemberData(nameof(ExpressionAndTypeCombinations))]
-        public void ExpressionEvaluationWithParameterCompiled(Expression expression, Type type)
+        [PerCompilationType(nameof(ExpressionAndTypeCombinations))]
+        public void ExpressionEvaluationWithParameter(Expression expression, Type type, bool useInterpreter)
         {
             if (expression.Type == typeof(void))
                 return; // Can't have void parameter.
@@ -116,31 +105,7 @@ namespace System.Linq.Expressions.Tests
                     Expression.Assign(param, expression),
                     Expression.TypeIs(param, type)
                     )
-                ).Compile(false);
-
-            Assert.Equal(expected, func());
-        }
-
-        [Theory]
-        [MemberData(nameof(ExpressionAndTypeCombinations))]
-        public void ExpressionEvaluationWithParameterInterpretted(Expression expression, Type type)
-        {
-            if (expression.Type == typeof(void))
-                return; // Can't have void parameter.
-
-            bool expected = expression.Type == typeof(void)
-                ? type == typeof(void)
-                : type.IsInstanceOfType(Expression.Lambda<Func<object>>(Expression.Convert(expression, typeof(object))).Compile()());
-
-            var param = Expression.Parameter(expression.Type);
-
-            Func<bool> func = Expression.Lambda<Func<bool>>(
-                Expression.Block(
-                    new[] { param },
-                    Expression.Assign(param, expression),
-                    Expression.TypeIs(param, type)
-                    )
-                ).Compile(true);
+                ).Compile(useInterpreter);
 
             Assert.Equal(expected, func());
         }

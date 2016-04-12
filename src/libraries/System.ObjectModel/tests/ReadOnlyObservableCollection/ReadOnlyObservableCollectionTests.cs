@@ -161,7 +161,7 @@ namespace System.Collections.ObjectModel.Tests
             Assert.Equal(-1, readOnlyCollection.IndexOf("seven"));
             Assert.Equal(-1, readOnlyCollection.IndexOf(null));
 
-            // testing that the first occurance is the index returned.
+            // testing that the first occurrence is the index returned.
             ObservableCollection<int> intCol = new ObservableCollection<int>();
             for (int i = 0; i < 4; ++i)
                 intCol.Add(i % 2);
@@ -323,7 +323,7 @@ namespace System.Collections.ObjectModel.Tests
 
                 // Verify we have not gotten more items then we expected
                 Assert.True(iterations < expectedCount,
-                    "Err_9844awpa More items have been returned fromt the enumerator(" + iterations + " items) than are in the expectedElements(" + expectedCount + " items)");
+                    "Err_9844awpa More items have been returned from the enumerator(" + iterations + " items) than are in the expectedElements(" + expectedCount + " items)");
 
                 // Verify Current returned the correct value
                 Assert.Equal(currentItem, expectedItems[iterations]);
@@ -368,7 +368,7 @@ namespace System.Collections.ObjectModel.Tests
 
                 // Verify we have not gotten more items then we expected                
                 Assert.True(iterations < expectedCount,
-                    "Err_9844awpa More items have been returned fromt the enumerator(" + iterations + " items) then are in the expectedElements(" + expectedCount + " items)");
+                    "Err_9844awpa More items have been returned from the enumerator(" + iterations + " items) then are in the expectedElements(" + expectedCount + " items)");
 
                 // Verify Current returned the correct value
                 itemFound = false;

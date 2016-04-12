@@ -2,14 +2,43 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
 using System.Collections.Generic;
-using System.Threading;
 using Xunit;
 
 namespace System.Linq.Parallel.Tests
 {
     public class ToLookupTests
     {
+        [Theory]
+        [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(UnorderedSources))]
+        public static void ILookup_MembersBehaveCorrectly(Labeled<ParallelQuery<int>> labeled, int count)
+        {
+            int NonExistentKey = count * 2;
+            ILookup<int, int> lookup = labeled.Item.ToLookup(x => x);
+
+            // Count
+            Assert.Equal(count, lookup.Count);
+
+            // Contains
+            Assert.All(lookup, group => lookup.Contains(group.Key));
+            Assert.False(lookup.Contains(NonExistentKey));
+
+            // Indexer
+            Assert.All(lookup, group => Assert.Equal(group, lookup[group.Key]));
+            Assert.Equal(Enumerable.Empty<int>(), lookup[NonExistentKey]);
+
+            // GetEnumerator
+            IEnumerator e1 = ((IEnumerable)lookup).GetEnumerator();
+            IEnumerator<IGrouping<int, int>> e2 = lookup.GetEnumerator();
+            while (e1.MoveNext())
+            {
+                e2.MoveNext();
+                Assert.Equal(((IGrouping<int,int>)e1.Current).Key, e2.Current.Key);
+            }
+            Assert.False(e2.MoveNext());
+        }
+
         [Theory]
         [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(UnorderedSources))]
         public static void ToLookup(Labeled<ParallelQuery<int>> labeled, int count)
@@ -211,18 +240,30 @@ namespace System.Linq.Parallel.Tests
             ToLookup_DuplicateKeys_ElementSelector_CustomComparator(labeled, count);
         }
 
-        [Theory]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 1 }, MemberType = typeof(UnorderedSources))]
-        public static void ToLookup_OperationCanceledException_PreCanceled(Labeled<ParallelQuery<int>> labeled, int count)
+        [Fact]
+        public static void ToDictionary_OperationCanceledException()
         {
-            CancellationTokenSource cs = new CancellationTokenSource();
-            cs.Cancel();
+            AssertThrows.EventuallyCanceled((source, canceler) => source.ToLookup(x => x, new CancelingEqualityComparer<int>(canceler)));
+            AssertThrows.EventuallyCanceled((source, canceler) => source.ToLookup(x => x, y => y, new CancelingEqualityComparer<int>(canceler)));
+        }
 
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).ToLookup(x => x));
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).ToLookup(x => x, EqualityComparer<int>.Default));
+        [Fact]
+        public static void ToLookup_AggregateException_Wraps_OperationCanceledException()
+        {
+            AssertThrows.OtherTokenCanceled((source, canceler) => source.ToLookup(x => x, new CancelingEqualityComparer<int>(canceler)));
+            AssertThrows.OtherTokenCanceled((source, canceler) => source.ToLookup(x => x, y => y, new CancelingEqualityComparer<int>(canceler)));
+            AssertThrows.SameTokenNotCanceled((source, canceler) => source.ToLookup(x => x, new CancelingEqualityComparer<int>(canceler)));
+            AssertThrows.SameTokenNotCanceled((source, canceler) => source.ToLookup(x => x, y => y, new CancelingEqualityComparer<int>(canceler)));
+        }
 
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).ToLookup(x => x, y => y));
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).ToLookup(x => x, y => y, EqualityComparer<int>.Default));
+        [Fact]
+        public static void ToLookup_OperationCanceledException_PreCanceled()
+        {
+            AssertThrows.AlreadyCanceled(source => source.ToLookup(x => x));
+            AssertThrows.AlreadyCanceled(source => source.ToLookup(x => x, EqualityComparer<int>.Default));
+
+            AssertThrows.AlreadyCanceled(source => source.ToLookup(x => x, y => y));
+            AssertThrows.AlreadyCanceled(source => source.ToLookup(x => x, y => y, EqualityComparer<int>.Default));
         }
 
         [Theory]

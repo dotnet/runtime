@@ -693,7 +693,7 @@ namespace System.Xml
         {
             CheckAsync();
             //since it is protected method, we can't call coreReader.Dispose(disposing). 
-            //Internal, it is always called to Dipose(true). So call coreReader.Dispose() is OK.
+            //Internal, it is always called to Dispose(true). So call coreReader.Dispose() is OK.
             _coreReader.Dispose();
         }
 

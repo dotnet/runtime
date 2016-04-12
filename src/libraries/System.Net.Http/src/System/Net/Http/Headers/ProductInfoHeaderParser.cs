@@ -10,7 +10,7 @@ namespace System.Net.Http.Headers
     // must follow. Also leading separators are not allowed.
     internal class ProductInfoHeaderParser : HttpHeaderParser
     {
-        // Unlike most other headers, User-Agent and Server use whitespaces as separators
+        // Unlike most other headers, User-Agent and Server use whitespace as separators
         private const string separator = " ";
 
         internal static readonly ProductInfoHeaderParser SingleValueParser = new ProductInfoHeaderParser(false);
@@ -30,7 +30,7 @@ namespace System.Net.Http.Headers
                 return false;
             }
 
-            // Skip leading whitespaces
+            // Skip leading whitespace
             int current = index + HttpRuleParser.GetWhitespaceLength(value, index);
 
             if (current == value.Length)
@@ -46,7 +46,7 @@ namespace System.Net.Http.Headers
                 return false;
             }
 
-            // GetProductInfoLength() already skipped trailing whitespaces. No need to do it here again.
+            // GetProductInfoLength() already skipped trailing whitespace. No need to do it here again.
             current = current + length;
 
             // If we have more values, make sure we saw a whitespace before. Values like "product/1.0(comment)" are
@@ -62,7 +62,7 @@ namespace System.Net.Http.Headers
                 }
             }
 
-            // Separators for "User-Agent" and "Server" headers are whitespaces. This is different from most other headers
+            // Separators for "User-Agent" and "Server" headers are whitespace. This is different from most other headers
             // where comma/semicolon is used as separator.
             index = current;
             parsedValue = result;

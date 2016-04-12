@@ -64,7 +64,7 @@ namespace System.Collections.Tests
             Assert.Null(linkedList.FindLast(default(T))); //"Err_3969887wiqpi Expected FindLast to return false with an null item not in the collection size=3"
             VerifyFindLast(linkedList, new T[] { headItems[0], headItems[1], headItems[2] });
 
-            //[] Call FindLast on a collection with mulitple items in it
+            //[] Call FindLast on a collection with multiple items in it
             linkedList = new LinkedList<T>();
             for (int i = 0; i < headItems.Length; ++i)
             {

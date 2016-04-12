@@ -8,8 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\System.Runtime.Extensions.builds">
-      <AdditionalProperties>FilterToOSGroup=Linux</AdditionalProperties>
+    <ProjectReference Include="..\..\src\System.Runtime.Extensions.csproj">
+      <OSGroup>Linux</OSGroup>
     </ProjectReference>
     <ProjectReference Include="$(NativePackagePath)\runtime.native.System\runtime.native.System.pkgproj" />
     <ProjectReference Include="$(NativePackagePath)\runtime.native.System.Security.Cryptography\runtime.native.System.Security.Cryptography.pkgproj" />

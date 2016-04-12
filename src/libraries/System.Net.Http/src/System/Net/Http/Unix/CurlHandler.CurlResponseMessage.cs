@@ -15,8 +15,9 @@ namespace System.Net.Http
     {
         private sealed class CurlResponseMessage : HttpResponseMessage
         {
-            internal readonly EasyRequest _easy;
             private readonly CurlResponseStream _responseStream;
+            internal readonly EasyRequest _easy;
+            internal uint _headerBytesReceived;
 
             internal CurlResponseMessage(EasyRequest easy)
             {
@@ -303,7 +304,7 @@ namespace System.Net.Http
                     if (cancellationToken.CanBeCanceled)
                     {
                         // If the cancellation token is cancelable, then we need to register for cancellation.
-                        // We creat a special CancelableReadState that carries with it additional info:
+                        // We create a special CancelableReadState that carries with it additional info:
                         // the cancellation token and the registration with that token.  When cancellation
                         // is requested, we schedule a work item that tries to remove the read state
                         // from being pending, canceling it in the process.  This needs to happen under the
@@ -395,12 +396,7 @@ namespace System.Net.Http
                 Debug.Assert(Monitor.IsEntered(_lockObject), "Lock object must be held to manipulate _pendingReadRequest");
                 Debug.Assert(_pendingReadRequest != null, "Should only be clearing the pending read request if there is one");
 
-                var crs = _pendingReadRequest as CancelableReadState;
-                if (crs != null)
-                {
-                    crs._registration.Dispose();
-                }
-
+                (_pendingReadRequest as CancelableReadState)?._registration.Dispose();
                 _pendingReadRequest = null;
             }
 

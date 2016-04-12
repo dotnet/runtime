@@ -19,6 +19,19 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         private const string warningInfoMessage = "Test of info messages";
         private const string orderIdQuery = "select orderid from orders where orderid < 10250";
 
+#if MANAGED_SNI
+        [Fact]
+        public static void NonWindowsIntAuthFailureTest()
+        {
+            string connectionString = DataTestClass.SQL2008_Northwind + ";Integrated Security = true";
+            Assert.Throws<NotSupportedException>(() => new SqlConnection(connectionString).Open());
+
+            // Should not receive any exception when using IntAuth=false
+            connectionString = DataTestClass.SQL2008_Northwind + ";Integrated Security = false";
+            new SqlConnection(connectionString).Open();
+        }
+#endif
+
         [Fact]
         public static void WarningTest()
         {

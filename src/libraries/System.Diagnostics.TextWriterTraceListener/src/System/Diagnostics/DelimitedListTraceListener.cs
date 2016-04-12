@@ -40,10 +40,10 @@ namespace System.Diagnostics
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException("Delimiter");
+                    throw new ArgumentNullException(nameof(Delimiter));
 
                 if (value.Length == 0)
-                    throw new ArgumentException(SR.Format(SR.Generic_ArgCantBeEmptyString, "Delimiter"));
+                    throw new ArgumentException(SR.Format(SR.Generic_ArgCantBeEmptyString, nameof(Delimiter)));
 
                 lock (this)
                 {

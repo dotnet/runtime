@@ -142,10 +142,13 @@ namespace System.Reflection.Internal
             return true;
         }
 
+
+// The library guards against unavailable entrypoints by using EntryPointNotFoundException.
+#pragma warning disable BCL0015 // Diasable Pinvoke analyzer errors.
         private static unsafe class NativeMethods
         {
             // API sets available on modern platforms:
-            [DllImport(@"api-ms-win-core-file-l1-2-0.dll", EntryPoint = "ReadFile", ExactSpelling = true, SetLastError = true)]
+            [DllImport(@"api-ms-win-core-file-l1-1-0.dll", EntryPoint = "ReadFile", ExactSpelling = true, SetLastError = true)]
             [return: MarshalAs(UnmanagedType.Bool)]
             internal static extern bool ReadFileModern(
                  SafeHandle fileHandle,
@@ -166,5 +169,6 @@ namespace System.Reflection.Internal
                  IntPtr overlapped
             );
         }
+#pragma warning restore BCL0015
     }
 }

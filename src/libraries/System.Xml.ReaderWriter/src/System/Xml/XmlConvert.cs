@@ -152,7 +152,7 @@ namespace System.Xml
                                 bufBld.Append(highChar);
                                 bufBld.Append(lowChar);
                             }
-                            //else bad ucs-4 char dont convert
+                            //else bad ucs-4 char don't convert
                         }
                         else
                         { //convert to single char
@@ -520,12 +520,12 @@ namespace System.Xml
 #endif
 
 
-        // Value convertors:
+        // Value converters:
         //
         // String representation of Base types in XML (xsd) sometimes differ from
         // one common language runtime offer and for all types it has to be locale independent.
         // o -- means that XmlConvert pass through to common language runtime converter with InvariantInfo FormatInfo
-        // x -- means we doing something special to make a convertion.
+        // x -- means we doing something special to make a conversion.
         //
         // From:  To: Bol Chr SBy Byt I16 U16 I32 U32 I64 U64 Sgl Dbl Dec Dat Tim Str uid
         // ------------------------------------------------------------------------------

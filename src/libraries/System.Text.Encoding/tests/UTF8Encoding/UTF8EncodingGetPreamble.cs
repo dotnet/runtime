@@ -8,16 +8,12 @@ namespace System.Text.Tests
 {
     public class UTF8EncodingGetPreamble
     {
-        #region Positive Test Cases
-        // PosTest1: Verify method GetPreamble
-        [Fact]
-        public void PosTest1()
+        [Theory]
+        [InlineData(true, new byte[] { 0xEF, 0xBB, 0xBF })]
+        [InlineData(false, new byte[0])]
+        public void GetPreamble(bool emitUTF8Identifier, byte[] expected)
         {
-            UTF8Encoding UTF8NoPreamble = new UTF8Encoding();
-            Byte[] preamble;
-
-            preamble = UTF8NoPreamble.GetPreamble();
+            Assert.Equal(expected, new UTF8Encoding(emitUTF8Identifier).GetPreamble());
         }
-        #endregion
     }
 }

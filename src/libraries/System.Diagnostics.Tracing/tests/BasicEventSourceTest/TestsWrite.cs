@@ -38,7 +38,6 @@ namespace BasicEventSourceTests
         /// Tests the EventSource.Write[T] method (can only use the self-describing mechanism).  
         /// Tests the EventListener code path
         /// </summary>
-        [ActiveIssue(4871, PlatformID.AnyUnix)]
         [Fact]
         public void Test_Write_T_EventListener()
         {
@@ -49,7 +48,6 @@ namespace BasicEventSourceTests
         /// Tests the EventSource.Write[T] method (can only use the self-describing mechanism).  
         /// Tests the EventListener code path using events instead of virtual callbacks.
         /// </summary>
-        [ActiveIssue(4871, PlatformID.AnyUnix)]
         [Fact]
         public void Test_Write_T_EventListener_UseEvents()
         {
@@ -404,7 +402,6 @@ namespace BasicEventSourceTests
         /// Declare SelfDescribingSerialization.  In that case THOSE
         /// events MUST use SelfDescribing serialization.  
         /// </summary>
-        [ActiveIssue(4871, PlatformID.AnyUnix)]
         [Fact]
         public void Test_Write_T_In_Manifest_Serialization()
         {

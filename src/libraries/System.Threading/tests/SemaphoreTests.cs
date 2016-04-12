@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Threading.Tests
 {
-    public class SemaphoreTests
+    public class SemaphoreTests : RemoteExecutorTestBase
     {
         private const int FailedWaitTimeout = 30000;
 
@@ -274,6 +275,45 @@ namespace System.Threading.Tests
                     Assert.False(s1.WaitOne(0));
                 }
             }
+        }
+
+        [PlatformSpecific(PlatformID.Windows)] // names aren't supported on Unix
+        [Fact]
+        public void PingPong()
+        {
+            // Create names for the two semaphores
+            string outboundName = Guid.NewGuid().ToString("N");
+            string inboundName = Guid.NewGuid().ToString("N");
+
+            // Create the two semaphores and the other process with which to synchronize
+            using (var inbound = new Semaphore(1, 1, inboundName))
+            using (var outbound = new Semaphore(0, 1, outboundName))
+            using (var remote = RemoteInvoke(PingPong_OtherProcess, outboundName, inboundName))
+            {
+                // Repeatedly wait for count in one semaphore and then release count into the other
+                for (int i = 0; i < 10; i++)
+                {
+                    Assert.True(inbound.WaitOne(FailWaitTimeoutMilliseconds));
+                    outbound.Release();
+                }
+            }
+        }
+
+        private static int PingPong_OtherProcess(string inboundName, string outboundName)
+        {
+            // Open the two semaphores
+            using (var inbound = Semaphore.OpenExisting(inboundName))
+            using (var outbound = Semaphore.OpenExisting(outboundName))
+            {
+                // Repeatedly wait for count in one sempahore and then release count into the other
+                for (int i = 0; i < 10; i++)
+                {
+                    Assert.True(inbound.WaitOne(FailWaitTimeoutMilliseconds));
+                    outbound.Release();
+                }
+            }
+
+            return SuccessExitCode;
         }
     }
 }

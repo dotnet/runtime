@@ -28,7 +28,9 @@ endif ()
 
 string(TOUPPER ${CMAKE_BUILD_TYPE} UPPERCASE_CMAKE_BUILD_TYPE)
 if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
-    add_definitions(-DDEBUG)
+    # Do not define DEBUG. zlib has asserts under DEBUG for non-catastrophic cases,
+    # such as on bad user-provided inputs.  We leave NDEBUG defined, however,
+    # as other asserts should still be included.
 elseif (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE)
     add_definitions(-DNDEBUG)
 else ()

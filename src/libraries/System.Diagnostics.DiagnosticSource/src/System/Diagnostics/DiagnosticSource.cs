@@ -9,18 +9,13 @@ namespace System.Diagnostics
     /// <summary>
     /// This is the basic API to 'hook' parts of the framework.   It is like an EventSource
     /// (which can also write object), but is intended to log complex objects that can't be serialized.
+    /// 
+    /// Please See the DiagnosticSource Users Guide 
+    /// https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/DiagnosticSourceUsersGuide.md
+    /// for instructions on its use.  
     /// </summary>
     public abstract class DiagnosticSource
-    {
-#if false
-        /// <summary>
-        /// The NotificationSource that you should be writing to by default.  This is what
-        /// most of the class library does.   Data written here goes to DefaultListener
-        /// which dispatches to all its subscribers.  
-        /// </summary>
-        // public static DiagnosticSource DefaultSource { get { return DiagnosticListener.DefaultListener; } }
-#endif 
-
+    { 
         /// <summary>
         /// Write is a generic way of logging complex payloads.  Each notification
         /// is given a name, which identifies it as well as a object (typically an anonymous type)

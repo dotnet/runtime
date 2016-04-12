@@ -183,7 +183,7 @@ namespace System.Text
                     continue;
                 }
 
-                // See if its outside of the Indic script Range range
+                // See if its outside of the Indic script range
                 if ((ch < IndicBegin) || (ch > IndicEnd))
                 {
                     // See if its a ZWJ or ZWNJ and if we has bLastVirama;

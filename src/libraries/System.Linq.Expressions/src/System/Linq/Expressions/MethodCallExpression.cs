@@ -59,7 +59,7 @@ namespace System.Linq.Expressions
 
         /// <summary>
         /// Gets the <see cref="Expression" /> that represents the instance 
-        /// for instance method calls or null for static method cals.
+        /// for instance method calls or null for static method calls.
         /// </summary>
         public Expression Object
         {

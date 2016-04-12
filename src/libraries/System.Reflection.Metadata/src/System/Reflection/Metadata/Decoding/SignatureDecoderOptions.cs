@@ -11,7 +11,7 @@ namespace Roslyn.Reflection.Metadata.Decoding
 #endif
 {
     [Flags]
-#if SRM && FUTURE
+#if SRM
     public
 #endif
     enum SignatureDecoderOptions

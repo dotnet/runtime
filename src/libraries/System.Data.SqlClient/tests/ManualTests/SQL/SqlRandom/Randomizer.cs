@@ -15,8 +15,8 @@ namespace System.Data.SqlClient.ManualTesting.Tests
     /// This class also provides more helper methods, like create numbers with high probability for low numbers.
     /// 
     /// Use the CurrentState property to save repro information, and, when crash is detected, dump the state to file or log 
-    /// with its ToString method. The performance of CurrentState has been optimized to ensure it does not affect the overall performace
-    /// of the test app. But, the CurrentState.ToString is not optimim, so use it only when crash is detected.
+    /// with its ToString method. The performance of CurrentState has been optimized to ensure it does not affect the overall performance
+    /// of the test app. But, the CurrentState.ToString is not optimum, so use it only when crash is detected.
     /// 
     /// For easy Random scope and repro management, see also RandomizerScope class.
     /// 
@@ -87,7 +87,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
 
             /// <summary>
-            /// represents an empty randomzer state, it cannot be used to create a randomizer!
+            /// represents an empty randomizer state, it cannot be used to create a randomizer!
             /// </summary>
             public static readonly State Empty = new State(null, null);
         }
@@ -131,7 +131,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         /// <summary>
         /// Used to create an instance of randomizer from its state. Use Create static method to create the instance.
         /// </summary>
-        /// <remarks>when overriding Randomizer, explicitly define a new protected contructor that accepts state only</remarks>
+        /// <remarks>when overriding Randomizer, explicitly define a new protected constructor that accepts state only</remarks>
         protected Randomizer(State state)
         {
             Deserialize(state);
@@ -167,7 +167,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         /// call base.Serialize first when overriding this method and use the nextOffset to write custom data
         /// </remarks>
         /// <remarks>
-        /// For fast performace, avoid using MemoryStream/BinaryReader or reflection/serialization. I measured the difference between several implementations and found that:
+        /// For fast performance, avoid using MemoryStream/BinaryReader or reflection/serialization. I measured the difference between several implementations and found that:
         /// * Difference in time performance between using plain byte array versus MemoryStream with BinaryReader is ~ 1/10!
         /// * Difference between this implementation and serialization via .Net Serialization is ~1/100!
         /// </remarks>
@@ -258,7 +258,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
         #region Random core implementation taken from .Net 4.0 source code- DO NOT CHANGE BEYOND THIS POINT
         // The code below was copied from .Net 4.0 sources of Random class
-        // I copy-pasted the source instead of inheritence to get super-fast performace on state management (see State Management section above)
+        // I copy-pasted the source instead of inheritance to get super-fast performance on state management (see State Management section above)
         // which is 100 times faster than using Reflection. See remarks on Serialize method for more details.
 
         //
@@ -270,7 +270,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
 
         //
-        // Member Variables - make sure to update state size and update serialiation code when adding more members
+        // Member Variables - make sure to update state size and update serialization code when adding more members
         //
         private const int BinaryStateSizeRandom = 4 + 4 + 56 * 4;
         private int _inext;
@@ -455,7 +455,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         /*==================================NextBytes===================================
         **Action:  Fills the byte array with random bytes [0..0x7f].  The entire array is filled.
         **Returns:Void
-        **Arugments:  buffer -- the array to be filled.
+        **Arguments:  buffer -- the array to be filled.
         **Exceptions: None
         ==============================================================================*/
         public virtual void NextBytes(byte[] buffer)

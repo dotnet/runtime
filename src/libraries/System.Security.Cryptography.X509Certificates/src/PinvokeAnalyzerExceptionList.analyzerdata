@@ -1,0 +1,5 @@
+<!-- This is a bug. This DLL supports .NET Standard 1.5 and so should be using APiSet dependencies. -->
+advapi32.dll!CryptAcquireContextW
+
+<!--Devdiv:1201818 BCrypt* and friends are exposed via different DLLs in store vs OneCore profiles. -->
+bcrypt.dll!BCryptDestroyKey

@@ -90,9 +90,9 @@ static void IncorporateBreak(struct termios *termios, int32_t signalForBreak)
     assert(signalForBreak == 0 || signalForBreak == 1);
 
     if (signalForBreak)
-        termios->c_lflag &= static_cast<uint32_t>(~ISIG);
-    else
         termios->c_lflag |= static_cast<uint32_t>(ISIG);
+    else
+        termios->c_lflag &= static_cast<uint32_t>(~ISIG);
 }
 
 // In order to support Console.ReadKey(intecept: true), we need to disable echo and canonical mode.
@@ -140,7 +140,7 @@ extern "C" void SystemNative_UninitializeConsoleAfterRead()
 
         int tmpErrno = errno; // preserve any errors from before uninitializing
         IncorporateBreak(&g_preReadTermios, g_signalForBreak);
-        int ret = tcsetattr(STDIN_FILENO, TCSAFLUSH, &g_preReadTermios);
+        int ret = tcsetattr(STDIN_FILENO, TCSANOW, &g_preReadTermios);
         assert(ret >= 0); // shouldn't fail, but if it does we don't want to fail in release
         (void)ret;
         errno = tmpErrno;
@@ -278,7 +278,7 @@ extern "C" int32_t SystemNative_SetSignalForBreak(int32_t signalForBreak)
     if (tcgetattr(STDIN_FILENO, &current) >= 0)
     {
         IncorporateBreak(&current, signalForBreak);
-        if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &current) >= 0)
+        if (tcsetattr(STDIN_FILENO, TCSANOW, &current) >= 0)
         {
             g_signalForBreak = signalForBreak;
             return 1;
@@ -497,7 +497,7 @@ extern "C" int32_t SystemNative_InitializeConsole()
     if (tcgetattr(STDIN_FILENO, &g_initTermios) >= 0)
     {
         g_haveInitTermios = true;
-        g_signalForBreak = (g_initTermios.c_lflag & ISIG) == 0;
+        g_signalForBreak = (g_initTermios.c_lflag & ISIG) != 0;
     }
     else
     {

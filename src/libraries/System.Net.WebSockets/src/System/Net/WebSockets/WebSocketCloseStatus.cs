@@ -31,7 +31,7 @@ namespace System.Net.WebSockets
         // 3000 - 3999 Status codes in the range 3000-3999 MAY be used by libraries and frameworks. The 
         //             interpretation of these codes is undefined by this protocol. End applications MUST 
         //             NOT use status codes in this range.       
-        // 4000 - 4999 Status codes in the range 4000-4999 MAY be used by application code. The interpretaion
+        // 4000 - 4999 Status codes in the range 4000-4999 MAY be used by application code. The interpretation
         //             of these codes is undefined by this protocol.
     }
 }

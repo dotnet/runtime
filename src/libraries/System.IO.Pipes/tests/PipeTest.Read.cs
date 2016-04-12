@@ -258,7 +258,7 @@ namespace System.IO.Pipes.Tests
                 Task.Run(() => { pair.writeablePipe.Write(sent, 0, sent.Length); });
                 Assert.Equal(sent.Length, pair.readablePipe.Read(received, 0, sent.Length));
                 Assert.Equal(sent, received);
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // WaitForPipeDrain isn't supported on Unix
                     pair.writeablePipe.WaitForPipeDrain();
             }
         }
@@ -287,7 +287,7 @@ namespace System.IO.Pipes.Tests
 
             using (ServerClientPair pair = CreateServerClientPair())
             {
-                // Repeatedly and asynchronously write to the writeable pipe and read from the readable pipe,
+                // Repeatedly and asynchronously write to the writable pipe and read from the readable pipe,
                 // verifying that the correct data made it through.
                 for (int iter = 0; iter < iterations; iter++)
                 {

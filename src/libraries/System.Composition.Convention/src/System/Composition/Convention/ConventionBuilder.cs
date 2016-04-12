@@ -211,7 +211,7 @@ namespace System.Composition.Convention
                             }
                         }
 
-                        // We will have updated all of the MemberInfos by now so lets reload cachedAttributes wiuth the current store
+                        // We will have updated all of the MemberInfos by now so lets reload cachedAttributes with the current store
                         _memberInfos.TryGetValue(memberInfo, out cachedAttributes);
                     }
                     finally

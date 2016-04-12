@@ -58,13 +58,13 @@ namespace System
                 {
                     if (chOther != '/')
                     {
-                        // comparison has falied
+                        // comparison has failed
                         return false;
                     }
                     // plus the segments must be the same
                     if (!AllSameBeforeSlash)
                     {
-                        // comparison has falied
+                        // comparison has failed
                         return false;
                     }
                     //so far so good
@@ -251,12 +251,12 @@ namespace System
         //
         // This method will assume that any good Escaped Sequence will be unescaped in the output
         // - Assumes Dest.Length - detPosition >= end-start
-        // - UnescapeLevel controls various modes of opearion
+        // - UnescapeLevel controls various modes of operation
         // - Any "bad" escape sequence will remain as is or '%' will be escaped.
         // - destPosition tells the starting index in dest for placing the result.
-        //   On return destPosition tells the last character + 1 postion in the "dest" array.
+        //   On return destPosition tells the last character + 1 position in the "dest" array.
         // - The control chars and chars passed in rsdvX parameters may be re-escaped depending on UnescapeLevel
-        // - It is a RARE case when Unescape actually needs escaping some characteres mentioned above.
+        // - It is a RARE case when Unescape actually needs escaping some characters mentioned above.
         //   For this reason it returns a char[] that is usually the same ref as the input "dest" value.
         //
         internal unsafe static char[] UnescapeString(string input, int start, int end, char[] dest,
@@ -326,7 +326,7 @@ namespace System
                                         if ((unescapeMode & UnescapeMode.Escape) != 0)
                                             escapeReserved = true;
                                         else
-                                            continue;   // we should throw instead but since v1.0 woudl just print '%'
+                                            continue;   // we should throw instead but since v1.0 would just print '%'
                                     }
                                     // Do not unescape '%' itself unless full unescape is requested
                                     else if (ch == '%')
@@ -349,7 +349,7 @@ namespace System
                                     else if (iriParsing && ((ch <= '\x9F' && IsNotSafeForUnescape(ch)) ||
                                                             (ch > '\x9F' && !IriHelper.CheckIriUnicodeRange(ch, isQuery))))
                                     {
-                                        // check if unenscaping gives a char ouside iri range 
+                                        // check if unenscaping gives a char outside iri range 
                                         // if it does then keep it escaped
                                         next += 2;
                                         continue;
@@ -371,7 +371,7 @@ namespace System
                                 {
                                     escapeReserved = true;
                                 }
-                                // escape (escapeReserved==ture) or otheriwse unescape the sequence
+                                // escape (escapeReserved==true) or otherwise unescape the sequence
                                 break;
                             }
                             else if ((unescapeMode & (UnescapeMode.Unescape | UnescapeMode.UnescapeAll))
@@ -504,7 +504,7 @@ namespace System
 
         //
         // Need to check for invalid utf sequences that may not have given any chars.
-        // We got the unescaped chars, we then reencode them and match off the bytes
+        // We got the unescaped chars, we then re-encode them and match off the bytes
         // to get the invalid sequence bytes that we just copy off
         //
         internal static unsafe void MatchUTF8Sequence(char* pDest, char[] dest, ref int destOffset, char[] unescapedChars,
@@ -598,7 +598,7 @@ namespace System
                         }
                         else
                         {
-                            // copy bytes till place where bytes dont match
+                            // copy bytes till place where bytes don't match
                             for (int l = 0; l < k; ++l)
                             {
                                 Debug.Assert(dest.Length > destOffset, "Destination length exceeded destination offset.");

@@ -20,10 +20,10 @@ internal static partial class Interop
         internal static extern void SslCtxDestroy(IntPtr ctx);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetCertVerifyCallback")]
-        internal static extern void SslCtxSetCertVerifyCallback(SafeSslContextHandle ctx, AppVerifyCallback cb, IntPtr arg);
+        internal static extern void SslCtxSetCertVerifyCallback(IntPtr ctx, AppVerifyCallback cb, IntPtr arg);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetClientCertCallback")]
-        internal static extern void SslCtxSetClientCertCallback(SafeSslContextHandle ctx, ClientCertCallback callback);
+        internal static extern void SslCtxSetClientCertCallback(IntPtr ctx, ClientCertCallback callback);
     }
 }
 

@@ -382,7 +382,7 @@ namespace CoreXml.Test.XLinq
                     {
                         strName = strAttr + i;
                         DataReader.MoveToAttribute(strName, strNamespace);
-                        TestLog.Compare(DataReader[strName, null], null, "Ordinal (" + i + "): Should have retuned null");
+                        TestLog.Compare(DataReader[strName, null], null, "Ordinal (" + i + "): Should have returned null");
                     }
                 }
 

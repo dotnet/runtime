@@ -9,7 +9,7 @@ namespace System.Net
         CacheControl = 0,    // general-header [section 4.5]
         Connection = 1,    // general-header [section 4.5]
         Date = 2,    // general-header [section 4.5]
-        KeepAlive = 3,    // general-header [not in rfc]
+        KeepAlive = 3,    // general-header [not in RFC]
         Pragma = 4,    // general-header [section 4.5]
         Trailer = 5,    // general-header [section 4.5]
         TransferEncoding = 6,    // general-header [section 4.5]
@@ -34,7 +34,7 @@ namespace System.Net
         ProxyAuthenticate = 24,   // response-header [section 6.2]
         RetryAfter = 25,   // response-header [section 6.2]
         Server = 26,   // response-header [section 6.2]
-        SetCookie = 27,   // response-header [not in rfc]
+        SetCookie = 27,   // response-header [not in RFC]
         Vary = 28,   // response-header [section 6.2]
         WwwAuthenticate = 29,   // response-header [section 6.2]
     }

@@ -94,7 +94,7 @@ namespace System.Collections.Tests
         #region Count
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IGenericSharedAPI_Count_Validity(int count)
         {
             IEnumerable<T> collection = GenericIEnumerableFactory(count);
@@ -106,7 +106,7 @@ namespace System.Collections.Tests
         #region Add
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IGenericSharedAPI_Add_DefaultValue(int count)
         {
             if (DefaultValueAllowed && !IsReadOnly)
@@ -118,7 +118,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IGenericSharedAPI_Add_InvalidValueToMiddleOfCollection(int count)
         {
             if (!IsReadOnly)
@@ -135,7 +135,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IGenericSharedAPI_Add_InvalidValueToBeginningOfCollection(int count)
         {
             if (!IsReadOnly)
@@ -152,7 +152,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IGenericSharedAPI_Add_InvalidValueToEndOfCollection(int count)
         {
             if (!IsReadOnly)
@@ -167,7 +167,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IGenericSharedAPI_Add_DuplicateValue(int count)
         {
             if (!IsReadOnly)
@@ -184,7 +184,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IGenericSharedAPI_Add_AfterCallingClear(int count)
         {
             if (!IsReadOnly)
@@ -197,7 +197,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IGenericSharedAPI_Add_AfterRemovingAnyValue(int count)
         {
             if (!IsReadOnly)
@@ -220,7 +220,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IGenericSharedAPI_Add_AfterRemovingAllItems(int count)
         {
             if (!IsReadOnly)
@@ -239,7 +239,7 @@ namespace System.Collections.Tests
         #region Clear
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IGenericSharedAPI_Clear(int count)
         {
             IEnumerable<T> collection = GenericIEnumerableFactory(count);
@@ -260,7 +260,7 @@ namespace System.Collections.Tests
         #region Contains
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IGenericSharedAPI_Contains_ValidValueOnCollectionNotContainingThatValue(int count)
         {
             IEnumerable<T> collection = GenericIEnumerableFactory(count);
@@ -272,7 +272,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IGenericSharedAPI_IGenericSharedAPI_Contains_ValidValueOnCollectionContainingThatValue(int count)
         {
             IEnumerable<T> collection = GenericIEnumerableFactory(count);
@@ -281,7 +281,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IGenericSharedAPI_Contains_DefaultValueOnCollectionNotContainingDefaultValue(int count)
         {
             IEnumerable<T> collection = GenericIEnumerableFactory(count);
@@ -290,7 +290,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IGenericSharedAPI_Contains_DefaultValueOnCollectionContainingDefaultValue(int count)
         {
             IEnumerable<T> collection = GenericIEnumerableFactory(count);
@@ -302,7 +302,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IGenericSharedAPI_Contains_ValidValueThatExistsTwiceInTheCollection(int count)
         {
             if (DuplicateValuesAllowed && !IsReadOnly)
@@ -316,7 +316,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IGenericSharedAPI_Contains_InvalidValue_ThrowsArgumentException(int count)
         {
             IEnumerable<T> collection = GenericIEnumerableFactory(count);
@@ -326,7 +326,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public virtual void IGenericSharedAPI_Contains_DefaultValueWhenNotAllowed(int count)
         {
             IEnumerable<T> collection = GenericIEnumerableFactory(count);
@@ -344,7 +344,7 @@ namespace System.Collections.Tests
         #region CopyTo
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IGenericSharedAPI_CopyTo_NullArray_ThrowsArgumentNullException(int count)
         {
             IEnumerable<T> collection = GenericIEnumerableFactory(count);
@@ -352,7 +352,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IGenericSharedAPI_CopyTo_NegativeIndex_ThrowsArgumentOutOfRangeException(int count)
         {
             IEnumerable<T> collection = GenericIEnumerableFactory(count);
@@ -362,7 +362,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IGenericSharedAPI_CopyTo_IndexEqualToArrayCount_ThrowsArgumentException(int count)
         {
             IEnumerable<T> collection = GenericIEnumerableFactory(count);
@@ -374,7 +374,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IGenericSharedAPI_CopyTo_IndexLargerThanArrayCount_ThrowsAnyArgumentException(int count)
         {
             IEnumerable<T> collection = GenericIEnumerableFactory(count);
@@ -383,7 +383,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IGenericSharedAPI_CopyTo_NotEnoughSpaceInOffsettedArray_ThrowsArgumentException(int count)
         {
             if (count > 0) // Want the T array to have at least 1 element
@@ -395,7 +395,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IGenericSharedAPI_CopyTo_ExactlyEnoughSpaceInArray(int count)
         {
             IEnumerable<T> collection = GenericIEnumerableFactory(count);
@@ -405,7 +405,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IGenericSharedAPI_CopyTo_ArrayIsLargerThanCollection(int count)
         {
             IEnumerable<T> collection = GenericIEnumerableFactory(count);

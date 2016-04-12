@@ -121,7 +121,7 @@ namespace System.Reflection.Tests
             Assert.True(ti.IsAnsiClass, "Failed!! .IsAnsiClass returned false.");
         }
 
-        //Verify IsAray
+        //Verify IsArray
         [Fact]
         public static void TestIsArray()
         {

@@ -10458,7 +10458,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.basic.opera
     using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.basic.common.common;
     using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.basic.operate013a.operate013a;
     // <Title>Arithmetic operator, Compound assignment</Title>
-    // <Description>dynamic does NOT keep nullabel info either non-nullable Type or null object
+    // <Description>dynamic does NOT keep nullable info either non-nullable Type or null object
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>

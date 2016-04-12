@@ -27,7 +27,7 @@ namespace System.Xml
             throw NotImplemented.ByDesign;
         }
 
-        //Writes out the XML declaration with the version "1.0" and the speficied standalone attribute.
+        //Writes out the XML declaration with the version "1.0" and the specified standalone attribute.
 
         public virtual Task WriteStartDocumentAsync(bool standalone)
         {

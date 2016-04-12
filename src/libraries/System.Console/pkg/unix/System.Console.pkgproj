@@ -7,9 +7,9 @@
     <PreventImplementationReference>true</PreventImplementationReference>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\System.Console.builds" >
+    <ProjectReference Include="..\..\src\System.Console.csproj" >
       <!-- the binary is not specific to Linux, but we only do a Linux & OSX pass, not Unix-specific pass -->
-      <AdditionalProperties>FilterToOSGroup=Linux</AdditionalProperties>
+      <OSGroup>Linux</OSGroup>
     </ProjectReference>
   </ItemGroup>
 

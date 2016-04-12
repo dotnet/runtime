@@ -148,7 +148,7 @@
     <value>Corrupt .resources file.  The specified type doesn't match the available data in the stream.</value>
   </data>
   <data name="BadImageFormat_ResourceNameCorrupted_NameIndex" xml:space="preserve">
-    <value>Corrupt .resources file. The resource name for name index that extends past the end of the strea is </value>
+    <value>Corrupt .resources file. The resource name for name index that extends past the end of the stream is </value>
   </data>
   <data name="BadImageFormat_ResourcesDataInvalidOffset" xml:space="preserve">
     <value>Corrupt .resources file. Invalid offset  into data section is </value>

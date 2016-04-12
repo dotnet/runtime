@@ -1,18 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
-  <PropertyGroup>
-    <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
-  </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{BB5C85AD-C51A-4903-80E9-6F6E1AC1AD34}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <UnsupportedPlatforms>FreeBSD</UnsupportedPlatforms>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
   <ItemGroup>
+    <Compile Include="SocketPerformanceAPMTests.cs" />
     <Compile Include="SocketPerformanceAsyncTests.cs" />
     <Compile Include="SocketTestClientAPMMock.cs" />    
     <Compile Include="SocketTestServerAPMMock.cs" />
@@ -23,9 +20,6 @@
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\Sockets\SocketTestServer.cs">
       <Link>SocketCommon\SocketTestServer.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)\System\Net\Sockets\SocketTestServer.DefaultAsyncFactoryConfiguration.cs">
-      <Link>SocketCommon\SocketTestServer.DefaultAsyncFactoryConfiguration.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\Sockets\SocketTestServerAsync.cs">
       <Link>SocketCommon\SocketTestServerAsync.cs</Link>

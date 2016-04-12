@@ -16,7 +16,6 @@ namespace System.Runtime.Loader.Tests
     {
         private const string TestAssembly = "System.Runtime.Loader.Test.Assembly";
 
-        [ActiveIssue(/* dotnet/coreclr */ 1187, PlatformID.Windows)] // dependency on coreclr behavior, waiting for new coreclr
         [Fact]
         public static void GetAssemblyNameTest_ValidAssembly()
         {

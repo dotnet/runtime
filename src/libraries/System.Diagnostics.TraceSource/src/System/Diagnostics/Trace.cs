@@ -13,7 +13,7 @@ namespace System.Diagnostics
     /// </devdoc>
     public sealed class Trace
     {
-        // not creatble...
+        // not creatable...
         //
         private Trace()
         {

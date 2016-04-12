@@ -57,24 +57,29 @@ namespace System.Dynamic.Utils
         }
 
         [Pure]
-        public static bool ListEquals<T>(this ICollection<T> first, ICollection<T> second)
+        public static bool ListEquals<T>(this ReadOnlyCollection<T> first, ReadOnlyCollection<T> second)
         {
-            if (first.Count != second.Count)
+            if (first == second)
+            {
+                return true;
+            }
+
+            int count = first.Count;
+
+            if (count != second.Count)
             {
                 return false;
             }
-            var cmp = EqualityComparer<T>.Default;
-            var f = first.GetEnumerator();
-            var s = second.GetEnumerator();
-            while (f.MoveNext())
-            {
-                s.MoveNext();
 
-                if (!cmp.Equals(f.Current, s.Current))
+            var cmp = EqualityComparer<T>.Default;
+            for(int i = 0; i != count; ++i)
+            {
+                if (!cmp.Equals(first[i], second[i]))
                 {
                     return false;
                 }
             }
+
             return true;
         }
 

@@ -28,13 +28,15 @@ check_exit_status()
 
 WorkingTreeRoot="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 CleanLog=$WorkingTreeRoot/clean.log
+
+options="/nologo /v:minimal /clp:Summary /flp:v=detailed;Append;LogFile=$CleanLog"
+unprocessedBuildArgs=
 CleanSuccessful=true
 CleanTargets=
 
-# Parse arguments
-
 echo "Running clean.sh $*" > $CleanLog
 
+# Parse arguments
 if [ $# == 0 ]
 then
     CleanTargets="Clean;"
@@ -67,22 +69,23 @@ do
         CleanTargets="Clean;CleanPackages;CleanPackagesCache;"
         ;;
         *)
-        echo "Unrecognized argument '$opt'"
-        echo "Use 'clean -h' for help."
-        exit 1
-        ;;
+        unprocessedBuildArgs="$unprocessedBuildArgs $1"
     esac
     shift
 done
 
-echo "Running init-tools.sh"
-$WorkingTreeRoot/init-tools.sh
-
 if [ -n "$CleanTargets" ]
 then
-    echo "Running MSBuild target(s): ${CleanTargets:0:-1}"
-    echo -e "\n$WorkingTreeRoot/Tools/corerun $WorkingTreeRoot/Tools/MSBuild.exe $WorkingTreeRoot/build.proj /t:${CleanTargets:0:-1} /nologo /verbosity:minimal /flp:v=detailed;Append;LogFile=$CleanLog" >> $CleanLog
-    $WorkingTreeRoot/Tools/corerun $WorkingTreeRoot/Tools/MSBuild.exe $WorkingTreeRoot/build.proj /t:${CleanTargets:0:-1} /nologo /verbosity:minimal "/flp:v=detailed;Append;LogFile=$CleanLog"
+    # Ensure that MSBuild is available
+    echo "Running init-tools.sh"
+    $WorkingTreeRoot/init-tools.sh
+
+    # Trim the trailing semicolon from the targets string
+    CleanTargetsTrimmed=${CleanTargets:0:${#CleanTargets}-1}
+
+    echo "Running MSBuild target(s): $CleanTargetsTrimmed"
+    echo -e "\n$WorkingTreeRoot/Tools/corerun $WorkingTreeRoot/Tools/MSBuild.exe $WorkingTreeRoot/build.proj /t:$CleanTargetsTrimmed $options $unprocessedBuildArgs" >> $CleanLog
+    $WorkingTreeRoot/Tools/corerun $WorkingTreeRoot/Tools/MSBuild.exe $WorkingTreeRoot/build.proj /t:$CleanTargetsTrimmed $options $unprocessedBuildArgs
     check_exit_status
 fi
 
