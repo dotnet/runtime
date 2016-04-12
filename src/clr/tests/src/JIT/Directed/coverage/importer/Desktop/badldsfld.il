@@ -17,7 +17,7 @@ ret
 call int32 Test::f()
 leave.s FAIL
 }
-catch [mscorlib]System.Security.VerificationException
+catch [mscorlib]System.InvalidProgramException
 {
 leave.s PASS
 }
