@@ -165,6 +165,7 @@ typedef struct {
 	gboolean need_stack_frame_inited;
 	gboolean need_stack_frame;
 	int sp_fp_offset, param_area_size;
+	gpointer cinfo;
 	gpointer ss_tramp_var;
 	gpointer bp_tramp_var;
 } MonoCompileArch;

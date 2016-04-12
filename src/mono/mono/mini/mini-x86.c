@@ -1010,7 +1010,9 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	header = cfg->header;
 	sig = mono_method_signature (cfg->method);
 
-	cinfo = get_call_info (cfg->mempool, sig);
+	if (!cfg->arch.cinfo)
+		cfg->arch.cinfo = get_call_info (cfg->mempool, sig);
+	cinfo = (CallInfo *)cfg->arch.cinfo;
 
 	cfg->frame_reg = X86_EBP;
 	offset = 0;
@@ -1140,8 +1142,8 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		if (inst->opcode != OP_REGVAR) {
 			inst->opcode = OP_REGOFFSET;
 			inst->inst_basereg = X86_EBP;
+			inst->inst_offset = ainfo->offset + ARGS_OFFSET;
 		}
-		inst->inst_offset = ainfo->offset + ARGS_OFFSET;
 	}
 
 	cfg->stack_offset = offset;
@@ -1156,7 +1158,10 @@ mono_arch_create_vars (MonoCompile *cfg)
 
 	sig = mono_method_signature (cfg->method);
 
-	cinfo = get_call_info (cfg->mempool, sig);
+	if (!cfg->arch.cinfo)
+		cfg->arch.cinfo = get_call_info (cfg->mempool, sig);
+	cinfo = (CallInfo *)cfg->arch.cinfo;
+
 	sig_ret = mini_get_underlying_type (sig->ret);
 
 	if (cinfo->ret.storage == ArgValuetypeInReg)
@@ -5128,6 +5133,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	MonoBasicBlock *bb;
 	MonoMethodSignature *sig;
 	MonoInst *inst;
+	CallInfo *cinfo;
+	ArgInfo *ainfo;
 	int alloc_size, pos, max_offset, i, cfa_offset;
 	guint8 *code;
 	gboolean need_stack_frame;
@@ -5387,11 +5394,14 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	sig = mono_method_signature (method);
 	pos = 0;
 
+	cinfo = (CallInfo *)cfg->arch.cinfo;
+
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		inst = cfg->args [pos];
+		ainfo = &cinfo->args [pos];
 		if (inst->opcode == OP_REGVAR) {
 			g_assert (need_stack_frame);
-			x86_mov_reg_membase (code, inst->dreg, X86_EBP, inst->inst_offset, 4);
+			x86_mov_reg_membase (code, inst->dreg, X86_EBP, ainfo->offset + ARGS_OFFSET, 4);
 			if (cfg->verbose_level > 2)
 				g_print ("Argument %d assigned to register %s\n", pos, mono_arch_regname (inst->dreg));
 		}
@@ -5513,7 +5523,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	}
 
 	/* Load returned vtypes into registers if needed */
-	cinfo = get_call_info (cfg->mempool, sig);
+	cinfo = (CallInfo *)cfg->arch.cinfo;
 	if (cinfo->ret.storage == ArgValuetypeInReg) {
 		for (quad = 0; quad < 2; quad ++) {
 			switch (cinfo->ret.pair_storage [quad]) {
