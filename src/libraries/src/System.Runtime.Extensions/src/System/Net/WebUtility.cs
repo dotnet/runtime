@@ -401,10 +401,12 @@ namespace System.Net
 
                 if (ch == '+')
                 {
+                    helper._containsSpaces = true;
                     ch = ' ';
                 }
                 else if (ch == '%' && pos < count - 2)
                 {
+                    helper._containsUnsafe = true;
                     int h1 = HexToInt(value[pos + 1]);
                     int h2 = HexToInt(value[pos + 2]);
 
@@ -425,7 +427,7 @@ namespace System.Net
                     helper.AddChar(ch);
             }
 
-            return helper.GetString();
+            return helper.GetString(value);
         }
 
         private static byte[] UrlDecodeInternal(byte[] bytes, int offset, int count)
@@ -610,6 +612,9 @@ namespace System.Net
         // Internal struct to facilitate URL decoding -- keeps char buffer and byte buffer, allows appending of either chars or bytes
         private struct UrlDecoder
         {
+            public bool _containsUnsafe;
+            public bool _containsSpaces;
+
             private int _bufferSize;
 
             // Accumulate characters in a special array
@@ -626,17 +631,23 @@ namespace System.Net
             private void FlushBytes()
             {
                 Debug.Assert(_numBytes > 0);
+                if (_charBuffer == null)
+                    _charBuffer = new char[_bufferSize];
+
                 _numChars += _encoding.GetChars(_byteBuffer, 0, _numBytes, _charBuffer, _numChars);
                 _numBytes = 0;
             }
 
             internal UrlDecoder(int bufferSize, Encoding encoding)
             {
+                _containsUnsafe = false;
+                _containsSpaces = false;
+
                 _bufferSize = bufferSize;
                 _encoding = encoding;
 
-                _charBuffer = new char[bufferSize];
-                
+                _charBuffer = null; // char buffer created on demand
+
                 _numChars = 0;
                 _numBytes = 0;
                 _byteBuffer = null; // byte buffer created on demand
@@ -646,6 +657,9 @@ namespace System.Net
             {
                 if (_numBytes > 0)
                     FlushBytes();
+
+                if (_charBuffer == null)
+                    _charBuffer = new char[_bufferSize];
 
                 _charBuffer[_numChars++] = ch;
             }
@@ -658,8 +672,11 @@ namespace System.Net
                 _byteBuffer[_numBytes++] = b;
             }
 
-            internal String GetString()
+            internal String GetString(string originalString)
             {
+                if (!_containsUnsafe && !_containsSpaces)
+                    return originalString;
+
                 if (_numBytes > 0)
                     FlushBytes();
 
