@@ -530,7 +530,10 @@ namespace System.Data.Common
                     DebugTraceKeyValuePair(keyname, keyvalue, synonyms);
 
                     string synonym;
-                    string realkeyname = null != synonyms && synonyms.TryGetValue(keyname, out synonym) ? synonym : keyname;
+                    string realkeyname = null != synonyms ?
+                        (synonyms.TryGetValue(keyname, out synonym) ? synonym : null) :
+                        keyname;
+
                     if (!IsKeyNameValid(realkeyname))
                     {
                         throw ADP.KeywordNotSupported(keyname);
@@ -625,7 +628,10 @@ namespace System.Data.Common
                     Debug.Assert(IsValueValidInternal(keyvalue), "parse failure, invalid keyvalue");
 #endif
                     string synonym;
-                    string realkeyname = null != synonyms && synonyms.TryGetValue(keyname, out synonym) ? synonym : keyname;
+                    string realkeyname = null != synonyms ?
+                        (synonyms.TryGetValue(keyname, out synonym) ? synonym : null) :
+                        keyname;
+
                     if (!IsKeyNameValid(realkeyname))
                     {
                         throw ADP.KeywordNotSupported(keyname);
