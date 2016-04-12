@@ -6,10 +6,10 @@
 
 namespace System.Text.RegularExpressions
 {
-    abstract public class RegexRunnerFactory
+    public abstract class RegexRunnerFactory
     {
         protected RegexRunnerFactory() { }
-        abstract protected internal RegexRunner CreateInstance();
+        protected internal abstract RegexRunner CreateInstance();
     }
 
 }

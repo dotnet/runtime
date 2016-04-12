@@ -62,10 +62,10 @@ namespace System.Text.RegularExpressions
         void System.Collections.ICollection.CopyTo(System.Array array, int arrayIndex) { }
     }
     public delegate string MatchEvaluator(System.Text.RegularExpressions.Match match);
-    abstract public partial class RegexRunnerFactory
+    public abstract partial class RegexRunnerFactory
     {
         protected RegexRunnerFactory() { }
-        abstract protected internal RegexRunner CreateInstance();
+        protected internal abstract RegexRunner CreateInstance();
     }
     public partial class Regex
     {
