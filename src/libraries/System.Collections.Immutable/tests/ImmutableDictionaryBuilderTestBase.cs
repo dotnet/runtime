@@ -43,7 +43,7 @@ namespace System.Collections.Immutable.Tests
         {
             var builder = this.GetBuilder<string, int>();
             builder.Add("five", 5);
-            Assert.Throws<ArgumentException>(() => builder.Add("five", 6));
+            Assert.Throws<ArgumentException>(null, () => builder.Add("five", 6));
         }
 
         [Fact]
@@ -104,7 +104,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(new KeyValuePair<string, int>(), array[0]);
             Assert.Equal(new KeyValuePair<string, int>("five", 5), array[1]);
 
-            Assert.Throws<ArgumentNullException>(() => builder.CopyTo(null, 0));
+            Assert.Throws<ArgumentNullException>("array", () => builder.CopyTo(null, 0));
         }
 
         [Fact]
