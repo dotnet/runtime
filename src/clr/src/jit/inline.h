@@ -24,13 +24,14 @@
 // InlineInfo          - detailed information needed for inlining
 // InlineContext       - class, remembers what inlines happened
 // InlinePolicy        - class, determines policy for inlining
+// InlineStrategy      - class, determines overall inline strategy
 //
 // Enums are used throughout to provide various descriptions.
 //
-// Classes are used as follows. There are 5 sitations where inline
-// candidacy is evaluated.  In each case an InlineResult is allocated
-// on the stack to collect information about the inline candidate.
-// Each InlineResult refers to an InlinePolicy.
+// There are 4 sitations where inline candidacy is evaluated.  In each
+// case an InlineResult is allocated on the stack to collect
+// information about the inline candidate.  Each InlineResult refers
+// to an InlinePolicy.
 //
 // 1. Importer Candidate Screen (impMarkInlineCandidate)
 //
@@ -67,15 +68,6 @@
 //
 // When prejitting, each method is scanned to see if it is a viable
 // inline candidate.
-//
-// A note on InlinePolicy
-//
-// In the current code base, the inlining policy is distributed across
-// the various parts of the code that drive the inlining process
-// forward. Subsequent refactoring will extract some or all of this
-// policy into the LegacyPolicy object, to make it feasible to create
-// and experiment with alternative policies, while preserving the
-// LegacyPolicy as a baseline and fallback.
 
 #ifndef _INLINE_H_
 #define _INLINE_H_
@@ -101,6 +93,10 @@ const unsigned int   MAX_INL_LCLS =      8;
                                          CORJIT_FLG_DEBUG_EnC |                     \
                                          CORJIT_FLG_DEBUG_INFO                      \
                                         )
+
+// Forward declarations
+
+class InlineStrategy;
 
 // InlineCallsiteFrequency gives a rough classification of how
 // often a call site will be excuted at runtime.
@@ -555,27 +551,18 @@ struct InlineInfo
 
 class InlineContext
 {
+    // InlineContexts are created by InlineStrategies
+    friend class InlineStrategy;
+
 public:
-
-    // New context for the root instance
-    static InlineContext* NewRoot(Compiler* compiler);
-
-    // New context for a successful inline
-    static InlineContext* NewSuccess(Compiler*   compiler,
-                                     InlineInfo* inlineInfo);
 
 #if defined(DEBUG) || defined(INLINE_DATA)
 
-    // New context for a failing inline
-    static InlineContext* NewFailure(Compiler *    compiler,
-                                     GenTree*      stmt,
-                                     InlineResult* inlineResult);
-
     // Dump the full subtree, including failures
-    void Dump(Compiler* compiler, int indent = 0);
+    void Dump(int indent = 0);
 
     // Dump only the success subtree, with rich data
-    void DumpData(Compiler* compiler, int indent = 0);
+    void DumpData(int indent = 0);
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
@@ -591,18 +578,39 @@ public:
         return m_Code;
     }
 
+    // True if this context describes a successful inline.
+    bool IsSuccess() const
+    {
+        return m_Success;
+    }
+
+    // Get the observation that supported or disqualified this inline.
+    InlineObservation GetObservation()
+    {
+        return m_Observation;
+    }
+
+    // Get the IL code size for this inline.
+    unsigned GetCodeSize() const
+    {
+        return m_CodeSize;
+    }
+
 private:
 
-    InlineContext();
+    InlineContext(InlineStrategy* strategy);
 
 private:
 
+    InlineStrategy*       m_InlineStrategy; // overall strategy
     InlineContext*        m_Parent;      // logical caller (parent)
     InlineContext*        m_Child;       // first child
     InlineContext*        m_Sibling;     // next child of the parent
     IL_OFFSETX            m_Offset;      // call site location within parent
     BYTE*                 m_Code;        // address of IL buffer for the method
+    unsigned              m_CodeSize;    // size of IL buffer for the method
     InlineObservation     m_Observation; // what lead to this inline
+    bool                  m_Success;     // true if this was a successful inline
 
 #if defined(DEBUG) || defined(INLINE_DATA)
 
@@ -610,10 +618,90 @@ private:
     CORINFO_METHOD_HANDLE m_Callee;      // handle to the method
     unsigned              m_TreeID;      // ID of the GenTreeCall
     unsigned              m_Ordinal;     // Ordinal number of this inline
-    bool                  m_Success;     // true if this was a successful inline
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
+};
+
+// The InlineStrategy holds the per-method persistent inline state.
+// It is responsible for providing information that applies to
+// multiple inlining decisions.
+
+class InlineStrategy
+{
+
+public:
+
+    // Construct a new inline strategy.
+    InlineStrategy(Compiler* compiler);
+
+    // Create context for a successful inline.
+    InlineContext* NewSuccess(InlineInfo*     inlineInfo);
+
+    // Create context for a failing inline.
+    InlineContext* NewFailure(GenTree*        stmt,
+                              InlineResult*   inlineResult);
+
+    // Compiler associated with this strategy
+    Compiler* GetCompiler()
+    {
+        return m_Compiler;
+    }
+
+    // Root context
+    InlineContext* GetRootContext();
+
+    // Number of successful inlines into the root.
+    unsigned GetInlineCount()
+    {
+        return m_InlineCount;
+    }
+
+    // Inform strategy that there's a new inline candidate.
+    void NoteCandidate();
+
+#if defined(DEBUG) || defined(INLINE_DATA)
+
+    // Dump textual description of inlines done so far.
+    void Dump();
+
+
+    // Dump data-format description of inlines done so far.
+    void DumpData();
+
+#endif // defined(DEBUG) || defined(INLINE_DATA)
+
+private:
+
+    // Create a context for the root method.
+    InlineContext* NewRoot();
+
+    // Accounting updates for a successful or failed inline.
+    void NoteOutcome(InlineContext* context);
+
+    // Cap on allowable increase in jit time due to inlining.
+    // Multiplicative, so BUDGET = 10 means up to 10x increase
+    // in jit time.
+    enum { BUDGET = 10 };
+
+    // Estimate the jit time change because of this inline.
+    int EstimateTime(InlineContext* context);
+
+#if defined(DEBUG) || defined(INLINE_DATA)
+    static bool    s_DumpDataHeader;
+#endif // defined(DEBUG) || defined(INLINE_DATA)
+
+    Compiler*      m_Compiler;
+    InlineContext* m_RootContext;
+    InlinePolicy*  m_LastSuccessfulPolicy;
+    unsigned       m_CandidateCount;
+    unsigned       m_InlineAttemptCount;
+    unsigned       m_InlineCount;
+    int            m_InitialTimeBudget;
+    int            m_InitialTimeEstimate;
+    int            m_CurrentTimeBudget;
+    int            m_CurrentTimeEstimate;
+    bool           m_HasForceViaDiscretionary;
 };
 
 #endif // _INLINE_H_
