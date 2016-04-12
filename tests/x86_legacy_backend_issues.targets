@@ -31,9 +31,6 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\varargs\seh\filter_il_r\filter_il_r.cmd">
       <Issue>needs triage</Issue>
     </ExcludeList>
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\prefix\unaligned\2\arglist\arglist.cmd">
-      <Issue>needs triage</Issue>
-    </ExcludeList>
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\rvastatics\rvastatic1\rvastatic1.cmd">
       <Issue>needs triage</Issue>
     </ExcludeList>
@@ -73,9 +70,6 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Boxing\xlang\_dbgsin_il_il\_dbgsin_il_il.cmd">
       <Issue>needs triage</Issue>
     </ExcludeList>
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\prefix\unaligned\1\arglist\arglist.cmd">
-      <Issue>needs triage</Issue>
-    </ExcludeList>
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\divrem\div\u8div_cs_ro\u8div_cs_ro.cmd">
       <Issue>needs triage</Issue>
     </ExcludeList>
@@ -113,9 +107,6 @@
       <Issue>needs triage</Issue>
     </ExcludeList>
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\RVAInit\overlap\overlap.cmd">
-      <Issue>needs triage</Issue>
-    </ExcludeList>
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\prefix\unaligned\4\arglist\arglist.cmd">
       <Issue>needs triage</Issue>
     </ExcludeList>
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\importer\Desktop\badldsfld_il_r\badldsfld_il_r.cmd">
@@ -320,9 +311,6 @@
       <Issue>needs triage</Issue>
     </ExcludeList>
     <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\regress\vsw\102754\test1\test1.cmd">
-      <Issue>needs triage</Issue>
-    </ExcludeList>
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\prefix\volatile\1\arglist\arglist.cmd">
       <Issue>needs triage</Issue>
     </ExcludeList>
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Boxing\xlang\_orelsin_il_il\_orelsin_il_il.cmd">
