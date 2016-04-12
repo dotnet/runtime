@@ -62,9 +62,22 @@ namespace System.Text.RegularExpressions
         void System.Collections.ICollection.CopyTo(System.Array array, int arrayIndex) { }
     }
     public delegate string MatchEvaluator(System.Text.RegularExpressions.Match match);
+    public abstract partial class RegexRunnerFactory
+    {
+        protected RegexRunnerFactory() { }
+        protected internal abstract RegexRunner CreateInstance();
+    }
     public partial class Regex
     {
         public static readonly System.TimeSpan InfiniteMatchTimeout;
+        protected internal string pattern;
+        protected internal RegexRunnerFactory factory;
+        protected internal RegexOptions roptions;
+        protected internal TimeSpan internalMatchTimeout;
+        protected internal int capsize;
+        protected internal string[] capslist;
+        protected System.Collections.IDictionary Caps { get; set; }
+        protected System.Collections.IDictionary CapNames { get; set; }
         protected Regex() { }
         public Regex(string pattern) { }
         public Regex(string pattern, System.Text.RegularExpressions.RegexOptions options) { }
@@ -73,6 +86,8 @@ namespace System.Text.RegularExpressions
         public System.TimeSpan MatchTimeout { get { return default(System.TimeSpan); } }
         public System.Text.RegularExpressions.RegexOptions Options { get { return default(System.Text.RegularExpressions.RegexOptions); } }
         public bool RightToLeft { get { return default(bool); } }
+        protected void InitializeReferences() { }
+        protected internal static void ValidateMatchTimeout(TimeSpan matchTimeout) { }
         public static string Escape(string str) { return default(string); }
         public string[] GetGroupNames() { return default(string[]); }
         public int[] GetGroupNumbers() { return default(int[]); }
@@ -138,5 +153,47 @@ namespace System.Text.RegularExpressions
         None = 0,
         RightToLeft = 64,
         Singleline = 16,
+    }
+    [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+    public abstract partial class RegexRunner
+    {
+        protected internal int[] runcrawl;
+        protected internal int runcrawlpos;
+        protected internal System.Text.RegularExpressions.Match runmatch;
+        protected internal System.Text.RegularExpressions.Regex runregex;
+        protected internal int[] runstack;
+        protected internal int runstackpos;
+        protected internal string runtext;
+        protected internal int runtextbeg;
+        protected internal int runtextend;
+        protected internal int runtextpos;
+        protected internal int runtextstart;
+        protected internal int[] runtrack;
+        protected internal int runtrackcount;
+        protected internal int runtrackpos;
+        protected internal RegexRunner() { }
+        protected void Capture(int capnum, int start, int end) { }
+        protected static bool CharInClass(char ch, string charClass) { return default(bool); }
+        protected static bool CharInSet(char ch, string @set, string category) { return default(bool); }
+        protected void CheckTimeout() { }
+        protected void Crawl(int i) { }
+        protected int Crawlpos() { return default(int); }
+        protected void DoubleCrawl() { }
+        protected void DoubleStack() { }
+        protected void DoubleTrack() { }
+        protected void EnsureStorage() { }
+        protected abstract bool FindFirstChar();
+        protected abstract void Go();
+        protected abstract void InitTrackCount();
+        protected bool IsBoundary(int index, int startpos, int endpos) { return default(bool); }
+        protected bool IsECMABoundary(int index, int startpos, int endpos) { return default(bool); }
+        protected bool IsMatched(int cap) { return default(bool); }
+        protected int MatchIndex(int cap) { return default(int); }
+        protected int MatchLength(int cap) { return default(int); }
+        protected int Popcrawl() { return default(int); }
+        protected internal System.Text.RegularExpressions.Match Scan(System.Text.RegularExpressions.Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick) { return default(System.Text.RegularExpressions.Match); }
+        protected internal System.Text.RegularExpressions.Match Scan(System.Text.RegularExpressions.Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick, System.TimeSpan timeout) { return default(System.Text.RegularExpressions.Match); }
+        protected void TransferCapture(int capnum, int uncapnum, int start, int end) { }
+        protected void Uncapture() { }
     }
 }

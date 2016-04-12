@@ -37,6 +37,7 @@
     <Compile Include="System\Text\RegularExpressions\RegexRunner.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexTree.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexWriter.cs" />
+    <Compile Include="System\Text\RegularExpressions\RegexRunnerFactory.cs" />
     <!-- Common or Common-branched source files -->
     <Compile Include="$(CommonPath)\System\NotImplemented.cs">
       <Link>Common\System\NotImplemented.cs</Link>
