@@ -185,33 +185,5 @@ namespace System.Linq.Parallel.Tests
             Assert.Throws<ObjectDisposedException>(() => e.MoveNext());
         }
 
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public static void GetEnumerator_DisposeAsynchronously(bool synchronousMerge)
-        {
-            IEnumerable<int> effectivelyInfiniteSource = Enumerable.Range(0, int.MaxValue);
-
-            var query = effectivelyInfiniteSource.AsParallel().Select(i => i);
-            if (synchronousMerge)
-            {
-                query = query.WithMergeOptions(ParallelMergeOptions.FullyBuffered);
-            }
-
-            IEnumerator<int> enumerator = query.GetEnumerator();
-
-            Task.Delay(10).ContinueWith(_ => enumerator.Dispose(),
-                CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
-
-            Exception e = Assert.ThrowsAny<Exception>(() =>
-            {
-                for (int i = 0; i < int.MaxValue; i++)
-                    enumerator.MoveNext();
-            });
-            Assert.True(
-                e is OperationCanceledException || // if the dispose happens to occur during the opening of the query, after the sync dispose check
-                e is ObjectDisposedException, // all other cases
-                $"Expected an OCE or ODE, got {e.GetType()}");
-        }
     }
 }
