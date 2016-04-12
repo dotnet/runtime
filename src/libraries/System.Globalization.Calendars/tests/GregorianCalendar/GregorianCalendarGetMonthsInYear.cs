@@ -27,8 +27,11 @@ namespace System.Globalization.Tests
         [MemberData(nameof(GetMonthsInYear_TestData))]
         public void GetMonthsInYear(int year)
         {
-            Assert.Equal(12, new GregorianCalendar().GetMonthsInYear(year, 1));
-            Assert.Equal(12, new GregorianCalendar().GetMonthsInYear(year, 0));
+            GregorianCalendar calendar = new GregorianCalendar();
+            int expected = 12;
+            Assert.Equal(expected, calendar.GetMonthsInYear(year));
+            Assert.Equal(expected, calendar.GetMonthsInYear(year, 0));
+            Assert.Equal(expected, calendar.GetMonthsInYear(year, 1));
         }
     }
 }

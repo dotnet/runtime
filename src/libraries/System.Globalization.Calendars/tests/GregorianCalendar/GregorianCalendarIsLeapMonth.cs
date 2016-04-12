@@ -33,7 +33,10 @@ namespace System.Globalization.Tests
         [MemberData(nameof(IsLeapMonth_TestData))]
         public void IsLeapMonth(int year, int month)
         {
-            Assert.False(new GregorianCalendar().IsLeapMonth(year, month, 1));
+            GregorianCalendar calendar = new GregorianCalendar();
+            Assert.False(calendar.IsLeapMonth(year, month));
+            Assert.False(calendar.IsLeapMonth(year, month, 0));
+            Assert.False(calendar.IsLeapMonth(year, month, 1));
         }
     }
 }

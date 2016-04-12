@@ -20,6 +20,8 @@ namespace System.Globalization.Tests
 
             // 29th February on a leap year
             yield return new object[] { RandomLeapYear(), 2, 29 };
+            yield return new object[] { RandomLeapYear(), 2, 28 };
+            yield return new object[] { RandomLeapYear(), 3, 29 };
 
             // 28th February on a common year
             yield return new object[] { RandomCommonYear(), 2, 28 };
@@ -38,8 +40,11 @@ namespace System.Globalization.Tests
         [MemberData(nameof(IsLeapDay_TestData))]
         public void IsLeapDay(int year, int month, int day)
         {
+            GregorianCalendar calendar = new GregorianCalendar();
             bool expected = IsLeapYear(year) && month == 2 && day == 29;
-            Assert.Equal(expected, new GregorianCalendar().IsLeapDay(year, month, day, 1));
+            Assert.Equal(expected, calendar.IsLeapDay(year, month, day));
+            Assert.Equal(expected, calendar.IsLeapDay(year, month, day, 0));
+            Assert.Equal(expected, calendar.IsLeapDay(year, month, day, 1));
         }
     }
 }
