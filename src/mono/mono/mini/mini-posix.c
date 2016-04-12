@@ -816,12 +816,16 @@ mono_runtime_setup_stat_profiler (void)
 	 * tends to result in awful delivery rates when the application is heavily
 	 * loaded.
 	 *
+	 * We avoid real-time signals on Android as they're super broken in certain
+	 * API levels (too small sigset_t, nonsensical SIGRTMIN/SIGRTMAX values,
+	 * etc).
+	 *
 	 * TODO: On Mac, we should explore using the Mach thread suspend/resume
 	 * functions and doing the stack walk from the sampling thread. This would
 	 * get us a 100% sampling rate. However, this may interfere with the GC's
 	 * STW logic. Could perhaps be solved by taking the suspend lock.
 	 */
-#if defined (USE_POSIX_BACKEND) && defined (SIGRTMIN)
+#if defined (USE_POSIX_BACKEND) && defined (SIGRTMIN) && !defined (PLATFORM_ANDROID)
 	/* Just take the first real-time signal we can get. */
 	profiler_signal = mono_threads_posix_signal_search_alternative (-1);
 #else
