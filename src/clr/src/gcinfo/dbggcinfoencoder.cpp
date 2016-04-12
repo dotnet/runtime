@@ -74,7 +74,7 @@ GcInfoEncoder::GcInfoEncoder(
 #endif
 #endif
         m_FullyInterruptibleInfoWriter( pJitAllocator ),
-        m_LifetimeTransitions()
+        m_LifetimeTransitions( pJitAllocator )
 {
     _ASSERTE( pCorJitInfo != NULL );
     _ASSERTE( pMethodInfo != NULL );
@@ -354,7 +354,7 @@ void GcInfoEncoder::SetSlotState(
     transition.CodeOffset = instructionOffset;
     transition.BecomesLive = ( slotState == GC_SLOT_LIVE );
 
-    *( m_LifetimeTransitions.AppendThrowing() ) = transition;
+    *( m_LifetimeTransitions.Append() ) = transition;
 }
 
 
