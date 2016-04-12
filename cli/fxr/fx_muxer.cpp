@@ -381,9 +381,18 @@ int fx_muxer_t::read_config_and_execute(
     }
     else
     {
-        trace::verbose(_X("Executing as a standalone app as per config file [%s]"), config_file.c_str());
         pal::string_t impl_dir;
-        if (!hostpolicy_exists_in_svc(&impl_dir))
+        trace::verbose(_X("Executing as a standalone app as per config file [%s]"), config_file.c_str());
+        if (mode == host_mode_t::standalone)
+        {
+            pal::string_t svc_dir;
+            impl_dir = hostpolicy_exists_in_svc(&svc_dir) ? svc_dir : own_dir;
+        }
+        else if (mode == host_mode_t::split_fx)
+        {
+            impl_dir = own_dir;
+        }
+        else if (mode == host_mode_t::muxer)
         {
             impl_dir = get_directory(app_or_deps);
         }
