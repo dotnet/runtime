@@ -835,8 +835,3 @@ DynamicHelper DynamicHelperFrameFlags_ObjectArg, _Obj
 DynamicHelper DynamicHelperFrameFlags_ObjectArg | DynamicHelperFrameFlags_ObjectArg2, _ObjObj
 
 #endif
-
-LEAF_ENTRY StartUnwindingNativeFrames, _TEXT
-    EMIT_BREAKPOINT
-LEAF_END StartUnwindingNativeFrames, _TEXT
-

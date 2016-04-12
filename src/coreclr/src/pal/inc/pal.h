@@ -6501,6 +6501,13 @@ PALAPI
 PAL_SetGetGcMarkerExceptionCode(
     IN PGET_GCMARKER_EXCEPTION_CODE getGcMarkerExceptionCode);
 
+PALIMPORT
+VOID
+PALAPI
+PAL_ThrowExceptionFromContext(
+    IN CONTEXT* context,
+    IN PAL_SEHException* ex);
+
 //
 // This holder is used to indicate that a hardware
 // exception should be raised as a C++ exception
