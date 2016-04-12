@@ -1,6 +1,7 @@
 # Set the RPATH of sos so that it can find dependencies without needing to set LD_LIBRARY_PATH
 # For more information: http://www.cmake.org/Wiki/CMake_RPATH_handling.
 if (CORECLR_SET_RPATH)
+  set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
   if(CLR_CMAKE_PLATFORM_DARWIN)
     set(CMAKE_INSTALL_RPATH "@loader_path")
   else()
