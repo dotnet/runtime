@@ -283,7 +283,7 @@ namespace System.Net.Http
             }
             catch (Exception e) when (StreamCopyExceptionNeedsWrapping(e))
             {
-                throw GetStreamCopyException(e);
+                return Task.FromException(GetStreamCopyException(e));
             }
         }
 
