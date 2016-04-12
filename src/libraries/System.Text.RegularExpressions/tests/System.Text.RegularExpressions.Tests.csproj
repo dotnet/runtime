@@ -24,6 +24,7 @@
     <Compile Include="GroupCollectionTests.cs" />
     <Compile Include="IsMatchMatchSplitTests.cs" />
     <Compile Include="MatchCollectionTests.cs" />
+    <Compile Include="PrecompiledRegexScenarioTest.cs" />
     <Compile Include="R2LGetGroupNamesMatchTests.cs" />
     <Compile Include="RegexComponentsSplitTests.cs" />
     <Compile Include="RegexConstructorTests.cs" />
