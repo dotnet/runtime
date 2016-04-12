@@ -17,6 +17,8 @@ namespace System.Globalization.Tests
             yield return new object[] { RandomLeapYear() };
             yield return new object[] { RandomCommonYear() };
             yield return new object[] { RandomYear() };
+            yield return new object[] { 100 };
+            yield return new object[] { 400 };
 
             // Boundary years
             yield return new object[] { 9999  };
@@ -27,8 +29,11 @@ namespace System.Globalization.Tests
         [MemberData(nameof(GetDaysInYear_TestData))]
         public void GetDaysInYear(int year)
         {
+            GregorianCalendar calendar = new GregorianCalendar();
             int expected = IsLeapYear(year) ? 366 : 365;
-            Assert.Equal(expected, new GregorianCalendar().GetDaysInYear(year));
+            Assert.Equal(expected, calendar.GetDaysInYear(year));
+            Assert.Equal(expected, calendar.GetDaysInYear(year, 0));
+            Assert.Equal(expected, calendar.GetDaysInYear(year, 1));
         }
     }
 }
