@@ -6,7 +6,7 @@
     "System.Runtime.WindowsRuntime": "4.0.10"
   },
   "frameworks": {
-    "netcore50": {}
+    "netcore50": {},
   },
   "runtimes": {
     "win8-x86": {},

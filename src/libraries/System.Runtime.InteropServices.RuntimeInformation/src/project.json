@@ -10,6 +10,8 @@
   },
   "frameworks": {
     "netstandard1.1": {
+      "dependencies": {
+      },
       "imports": [
         "dotnet5.2"
       ]
