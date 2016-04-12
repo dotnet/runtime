@@ -201,8 +201,8 @@ namespace System.Collections.Immutable.Tests
                 AssertAreSame(item, set[i++]);
             }
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => set[-1]);
-            Assert.Throws<ArgumentOutOfRangeException>(() => set[set.Count]);
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => set[-1]);
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => set[set.Count]);
         }
 
         [Fact]
