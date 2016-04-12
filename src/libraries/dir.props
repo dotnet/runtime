@@ -82,14 +82,6 @@
     <EnableDotnetAnalyzers Condition="'$(EnableDotnetAnalyzers)'==''">true</EnableDotnetAnalyzers>
   </PropertyGroup>
 
-  <!-- Test runtime -->
-  <PropertyGroup>
-    <TestRuntimeProjectJson Condition="'$(TestRuntimeProjectJson)' == '' And '$(TargetGroup)' == 'net46'">$(SourceDir)Common/test-runtime/net46/project.json</TestRuntimeProjectJson>
-    <TestRuntimeProjectLockJson Condition="'$(TestRuntimeProjectLockJson)' == '' And '$(TargetGroup)' == 'net46'">$(SourceDir)Common/test-runtime/net46/project.lock.json</TestRuntimeProjectLockJson>
-    <TestRuntimeProjectJson Condition="'$(TestRuntimeProjectJson)' == ''">$(SourceDir)Common/test-runtime/project.json</TestRuntimeProjectJson>
-    <TestRuntimeProjectLockJson Condition="'$(TestRuntimeProjectLockJson)' == ''">$(SourceDir)Common/test-runtime/project.lock.json</TestRuntimeProjectLockJson>
-  </PropertyGroup>
-
   <!-- Package dependency validation -->
   <PropertyGroup>
     <ValidatePackageVersions>true</ValidatePackageVersions>
@@ -348,6 +340,42 @@
         <PackageTargetRuntime>aot</PackageTargetRuntime>
         <TargetingPackNugetPackageId>Microsoft.TargetingPack.Private.NetNative</TargetingPackNugetPackageId>
         <NuGetTargetMoniker>.NETCore,Version=v5.0</NuGetTargetMoniker>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetGroup)'=='netstandard1.0'">
+      <PropertyGroup>
+        <PackageTargetFramework>netstandard1.0</PackageTargetFramework>
+        <NuGetTargetMoniker>.NETStandard,Version=v1.0</NuGetTargetMoniker>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetGroup)'=='netstandard1.1'">
+      <PropertyGroup>
+        <PackageTargetFramework>netstandard1.1</PackageTargetFramework>
+        <NuGetTargetMoniker>.NETStandard,Version=v1.1</NuGetTargetMoniker>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetGroup)'=='netstandard1.2'">
+      <PropertyGroup>
+        <PackageTargetFramework>netstandard1.2</PackageTargetFramework>
+        <NuGetTargetMoniker>.NETStandard,Version=v1.2</NuGetTargetMoniker>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetGroup)'=='netstandard1.3'">
+      <PropertyGroup>
+        <PackageTargetFramework>netstandard1.3</PackageTargetFramework>
+        <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetGroup)'=='netstandard1.4'">
+      <PropertyGroup>
+        <PackageTargetFramework>netstandard1.4</PackageTargetFramework>
+        <NuGetTargetMoniker>.NETStandard,Version=v1.4</NuGetTargetMoniker>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetGroup)'=='netstandard1.5'">
+      <PropertyGroup>
+        <PackageTargetFramework>netstandard1.5</PackageTargetFramework>
+        <NuGetTargetMoniker>.NETStandard,Version=v1.5</NuGetTargetMoniker>
       </PropertyGroup>
     </When>
     <When Condition="'$(TargetGroup)'=='netstandard13aot'">
