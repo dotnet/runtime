@@ -395,18 +395,19 @@ namespace System.Net
             // appending each char as char, with exception of %XX constructs
             // that are appended as bytes
 
+            bool needsDecoding = false;
             for (int pos = 0; pos < count; pos++)
             {
                 char ch = value[pos];
 
                 if (ch == '+')
                 {
-                    helper._containsSpaces = true;
+                    needsDecoding = true;
                     ch = ' ';
                 }
                 else if (ch == '%' && pos < count - 2)
                 {
-                    helper._containsUnsafe = true;
+                    needsDecoding = true;
                     int h1 = HexToInt(value[pos + 1]);
                     int h2 = HexToInt(value[pos + 2]);
 
@@ -427,7 +428,12 @@ namespace System.Net
                     helper.AddChar(ch);
             }
 
-            return helper.GetString(value);
+            if (!needsDecoding)
+            {
+                // No decoding needed
+                return value;
+            }
+            return helper.GetString();
         }
 
         private static byte[] UrlDecodeInternal(byte[] bytes, int offset, int count)
@@ -612,9 +618,6 @@ namespace System.Net
         // Internal struct to facilitate URL decoding -- keeps char buffer and byte buffer, allows appending of either chars or bytes
         private struct UrlDecoder
         {
-            public bool _containsUnsafe;
-            public bool _containsSpaces;
-
             private int _bufferSize;
 
             // Accumulate characters in a special array
@@ -640,9 +643,6 @@ namespace System.Net
 
             internal UrlDecoder(int bufferSize, Encoding encoding)
             {
-                _containsUnsafe = false;
-                _containsSpaces = false;
-
                 _bufferSize = bufferSize;
                 _encoding = encoding;
 
@@ -672,11 +672,8 @@ namespace System.Net
                 _byteBuffer[_numBytes++] = b;
             }
 
-            internal String GetString(string originalString)
+            internal String GetString()
             {
-                if (!_containsUnsafe && !_containsSpaces)
-                    return originalString;
-
                 if (_numBytes > 0)
                     FlushBytes();
 
