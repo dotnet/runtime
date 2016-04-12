@@ -9,9 +9,19 @@ namespace System.Globalization.Tests
     public class KoreanCalendarTwoDigitYearMax
     {
         [Fact]
-        public void TwoDigitYearMax()
+        public void TwoDigitYearMax_Get()
         {
             Assert.Equal(4362, new KoreanCalendar().TwoDigitYearMax);
+        }
+
+        [Theory]
+        [InlineData(99)]
+        [InlineData(2016)]
+        public void TwoDigitYearMax_Set(int newTwoDigitYearMax)
+        {
+            Calendar calendar = new KoreanCalendar();
+            calendar.TwoDigitYearMax = newTwoDigitYearMax;
+            Assert.Equal(newTwoDigitYearMax, calendar.TwoDigitYearMax);
         }
     }
 }
