@@ -30,6 +30,9 @@
     <ProjectReference Include="ubuntu\Microsoft.NETCore.DotNetHostPolicy.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
+    <ProjectReference Include="debian\Microsoft.NETCore.DotNetHostPolicy.pkgproj">
+      <Platform>amd64</Platform>
+    </ProjectReference>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
