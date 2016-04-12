@@ -1,16 +1,10 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="..\mono\metadata\appdomain.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\mono\metadata\assembly.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\mono\metadata\attach.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\metadata\boehm-gc.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\mono\metadata\class.c">
@@ -37,9 +31,6 @@
     <ClCompile Include="..\mono\metadata\decimal-ms.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\mono\metadata\domain.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\mono\metadata\environment.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -53,12 +44,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\mono\metadata\filewatcher.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\metadata\gc.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\metadata\gc-stats.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\mono\metadata\handle.c">
@@ -100,9 +85,6 @@
     <ClCompile Include="..\mono\mini\mini-cross-helpers.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\mono\metadata\monitor.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\mono\metadata\mono-basic-block.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -116,9 +98,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\mono\metadata\mono-endian.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\metadata\mono-hash.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\mono\metadata\mono-mlist.c">
@@ -139,9 +118,6 @@
     <ClCompile Include="..\mono\metadata\number-ms.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\mono\metadata\object.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\mono\metadata\opcodes.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -152,9 +128,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\mono\metadata\rand.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\metadata\reflection.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\mono\metadata\remoting.c">
@@ -170,105 +143,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\mono\metadata\seq-points-data.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\sgen\sgen-alloc.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\metadata\sgen-bridge.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\sgen\sgen-cardtable.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\sgen\sgen-debug.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\sgen\sgen-descriptor.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\sgen\sgen-fin-weak-hash.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\sgen\sgen-gc.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\sgen\sgen-gchandles.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\sgen\sgen-gray.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\sgen\sgen-hash-table.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\sgen\sgen-internal.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\sgen\sgen-los.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\sgen\sgen-marksweep.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\sgen\sgen-memory-governor.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\metadata\sgen-mono.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\metadata\sgen-new-bridge.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\sgen\sgen-nursery-allocator.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\metadata\sgen-old-bridge.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\metadata\sgen-os-mach.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\metadata\sgen-os-posix.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\metadata\sgen-os-win32.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\sgen\sgen-pinning.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\sgen\sgen-pinning-stats.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\sgen\sgen-pointer-queue.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\sgen\sgen-protocol.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\sgen\sgen-qsort.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\sgen\sgen-simple-nursery.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\sgen\sgen-split-nursery.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\metadata\sgen-stw.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\metadata\sgen-tarjan-bridge.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\sgen\sgen-thread-pool.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\metadata\sgen-toggleref.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\sgen\sgen-workers.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\mono\metadata\socket-io.c">
@@ -291,6 +165,63 @@
     </ClCompile>
     <ClCompile Include="..\mono\metadata\verify.c">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\mono\metadata\boehm-gc.c">
+      <Filter>Source Files\boehm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\mono\metadata\sgen-os-mach.c">
+      <Filter>Source Files\sgen</Filter>
+    </ClCompile>
+    <ClCompile Include="..\mono\metadata\sgen-os-posix.c">
+      <Filter>Source Files\sgen</Filter>
+    </ClCompile>
+    <ClCompile Include="..\mono\metadata\sgen-os-win32.c">
+      <Filter>Source Files\sgen</Filter>
+    </ClCompile>
+    <ClCompile Include="..\mono\metadata\appdomain.c">
+      <Filter>Source Files\gc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\mono\metadata\domain.c">
+      <Filter>Source Files\gc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\mono\metadata\gc-stats.c">
+      <Filter>Source Files\gc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\mono\metadata\gc.c">
+      <Filter>Source Files\gc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\mono\metadata\monitor.c">
+      <Filter>Source Files\gc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\mono\metadata\mono-hash.c">
+      <Filter>Source Files\gc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\mono\metadata\object.c">
+      <Filter>Source Files\gc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\mono\metadata\reflection.c">
+      <Filter>Source Files\gc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\mono\metadata\sgen-bridge.c">
+      <Filter>Source Files\sgen</Filter>
+    </ClCompile>
+    <ClCompile Include="..\mono\metadata\sgen-old-bridge.c">
+      <Filter>Source Files\sgen</Filter>
+    </ClCompile>
+    <ClCompile Include="..\mono\metadata\sgen-new-bridge.c">
+      <Filter>Source Files\sgen</Filter>
+    </ClCompile>
+    <ClCompile Include="..\mono\metadata\sgen-tarjan-bridge.c">
+      <Filter>Source Files\sgen</Filter>
+    </ClCompile>
+    <ClCompile Include="..\mono\metadata\sgen-toggleref.c">
+      <Filter>Source Files\sgen</Filter>
+    </ClCompile>
+    <ClCompile Include="..\mono\metadata\sgen-stw.c">
+      <Filter>Source Files\sgen</Filter>
+    </ClCompile>
+    <ClCompile Include="..\mono\metadata\sgen-mono.c">
+      <Filter>Source Files\sgen</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -349,12 +280,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\mono\metadata\filewatcher.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\mono\sgen\gc-internal-agnostic.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\mono\metadata\gc-internals.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\mono\metadata\handle.h">
@@ -447,9 +372,6 @@
     <ClInclude Include="..\mono\metadata\opcodes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\mono\sgen\sgen-descriptor.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\mono\metadata\process.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -483,60 +405,6 @@
     <ClInclude Include="..\mono\metadata\seq-points-data.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\mono\sgen\sgen-archdep.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\mono\metadata\sgen-bridge.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\mono\sgen\sgen-cardtable.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\mono\sgen\sgen-conf.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\mono\sgen\sgen-copy-object.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\mono\sgen\sgen-gc.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\mono\sgen\sgen-gray.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\mono\sgen\sgen-major-copy-object.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\mono\sgen\sgen-memory-governor.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\mono\sgen\sgen-minor-copy-object.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\mono\sgen\sgen-minor-scan-object.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\mono\sgen\sgen-pinning.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\mono\sgen\sgen-protocol.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\mono\sgen\sgen-qsort.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\mono\sgen\sgen-scan-object.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\mono\sgen\sgen-thread-pool.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\mono\metadata\sgen-toggleref.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\mono\sgen\sgen-workers.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\mono\metadata\socket-io.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -567,6 +435,24 @@
     <ClInclude Include="..\mono\metadata\verify-internals.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\mono\metadata\sgen-bridge.h">
+      <Filter>Header Files\sgen</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mono\metadata\sgen-bridge-internals.h">
+      <Filter>Header Files\sgen</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mono\metadata\sgen-toggleref.h">
+      <Filter>Header Files\sgen</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mono\metadata\sgen-client-mono.h">
+      <Filter>Header Files\sgen</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mono\sgen\gc-internal-agnostic.h">
+      <Filter>Header Files\gc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mono\metadata\gc-internals.h">
+      <Filter>Header Files\gc</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header Files">
@@ -577,6 +463,24 @@
     </Filter>
     <Filter Include="Source Files">
       <UniqueIdentifier>{3f4ff222-41cc-4bbc-b36b-cac0c21266ad}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\boehm">
+      <UniqueIdentifier>{728e57f8-14d3-42f4-b92a-be03cd2acdfa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\sgen">
+      <UniqueIdentifier>{d5996ea0-8b43-4267-a46c-715270aaee2b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\boehm">
+      <UniqueIdentifier>{2446a0bf-5f8b-4789-91ab-6107f72b8539}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\sgen">
+      <UniqueIdentifier>{5fede250-d478-466b-aa2a-36d2222de065}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\gc">
+      <UniqueIdentifier>{410dd556-6715-4c4e-beff-c5dd7a6b78a1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\gc">
+      <UniqueIdentifier>{e37c9a88-bfb3-47dd-948c-a74dea25b3ad}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>
