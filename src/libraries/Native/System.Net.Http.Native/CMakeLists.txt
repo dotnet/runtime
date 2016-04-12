@@ -25,4 +25,4 @@ target_link_libraries(System.Net.Http.Native
   ${CURL_LIBRARIES}
 )
 
-install (TARGETS System.Net.Http.Native DESTINATION .)
+install_library_and_symbols (System.Net.Http.Native)

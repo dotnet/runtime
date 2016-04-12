@@ -71,4 +71,4 @@ endif()
 
 include(configure.cmake)
 
-install (TARGETS System.Security.Cryptography.Native DESTINATION .)
+install_library_and_symbols (System.Security.Cryptography.Native)

@@ -13,9 +13,9 @@
     <NativeFile Include="$(DebianNativePath)System.Native.so">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
     </NativeFile>
-    <NativeFile Include="$(DebianNativePath)System.Native.a">
+    <File Include="$(DebianNativePath)System.Native.a">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
-    </NativeFile>
+    </File>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
