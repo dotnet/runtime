@@ -42,6 +42,7 @@
     <Compile Include="JapaneseCalendar\JapaneseCalendarEras.cs" />
     <Compile Include="JapaneseCalendar\JapaneseCalendarMaxSupportedDateTime.cs" />
     <Compile Include="JapaneseCalendar\JapaneseCalendarMinSupportedDateTime.cs" />
+    <Compile Include="JapaneseCalendar\JapaneseCalendarToFourDigitYear.cs" />
     <Compile Include="JapaneseCalendar\JapaneseCalendarTwoDigitYearMax.cs" />
     <Compile Include="KoreanCalendar\KoreanCalendarToDateTime.cs" />
     <Compile Include="KoreanCalendar\KoreanCalendarAddMonths.cs" />
