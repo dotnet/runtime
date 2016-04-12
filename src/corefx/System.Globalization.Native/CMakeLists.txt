@@ -52,7 +52,7 @@ set(NATIVEGLOBALIZATION_SOURCES
 
 include_directories(${UTYPES_H})
 
-add_library(System.Globalization.Native
+_add_library(System.Globalization.Native
     SHARED
     ${NATIVEGLOBALIZATION_SOURCES}
 )
