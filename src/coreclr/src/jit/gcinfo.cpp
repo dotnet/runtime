@@ -704,7 +704,7 @@ GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTreePtr 
             }
         }
     }
-    if (tgtAddr->OperGet() == GT_ADDR && tgtAddr->gtOp.gtOp1->OperGet() == GT_LCL_VAR)
+    if (tgtAddr->IsLocalAddrExpr() != nullptr)
     {
         // No need for a GC barrier when writing to a local variable.
         return GCInfo::WBF_NoBarrier;
