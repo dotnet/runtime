@@ -468,8 +468,8 @@ namespace System.Collections.Immutable.Tests
 
             var map1 = map.Add(key, value1);
             var map2 = map.Add(key, value2);
-            Assert.Throws<ArgumentException>(() => map1.Add(key, value2));
-            Assert.Throws<ArgumentException>(() => map2.Add(key, value1));
+            Assert.Throws<ArgumentException>(null, () => map1.Add(key, value2));
+            Assert.Throws<ArgumentException>(null, () => map2.Add(key, value1));
         }
 
         protected void ContainsKeyTestHelper<TKey, TValue>(IImmutableDictionary<TKey, TValue> map, TKey key, TValue value)
@@ -583,7 +583,7 @@ namespace System.Collections.Immutable.Tests
             Assert.True(nonGeneric.IsSynchronized);
             Assert.True(collection.IsReadOnly);
 
-            Assert.Throws<ArgumentNullException>(() => nonGeneric.CopyTo(null, 0));
+            Assert.Throws<ArgumentNullException>("array", () => nonGeneric.CopyTo(null, 0));
             var array = new T[collection.Count + 1];
             nonGeneric.CopyTo(array, 1);
             Assert.Equal(default(T), array[0]);
