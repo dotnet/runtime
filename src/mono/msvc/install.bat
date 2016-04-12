@@ -4,6 +4,10 @@ SET PLATFORM=%1
 SET CONFIG=%2
 SET BUILD_DIR=%3
 SET INSTALL_DIR=%4
+SET ARGUMENTS=%5
+
+SET BUILD_DIR=%BUILD_DIR:"=%
+SET INSTALL_DIR=%INSTALL_DIR:"=%
 
 IF "" == "%PLATFORM%" (
 	ECHO Error: No platform parameter set.
@@ -50,16 +54,27 @@ IF NOT EXIST %PACKAGE_DIR% (
 	GOTO ON_ERROR
 )
 
+SET OPTIONS=/s /e /y
+
+IF "-v" == "%ARGUMENTS%" (
+	SET OPTIONS=/f /s /e /y
+)
+
+IF "-q" == "%ARGUMENTS%" (
+	SET "OPTIONS=/s /e /q /y ^>nul"
+)
+
 ECHO Installing mono build %PLATFORM% %CONFIG% from %BUILD_DIR% into %INSTALL_DIR% ...
 
-xcopy %PACKAGE_DIR%\*.* %INSTALL_DIR% /s /e /q /y > nul
+SET RUN=xcopy "%PACKAGE_DIR%\*.*" "%INSTALL_DIR%" %OPTIONS%
+%RUN%
 
 ECHO Installing of mono build %PLATFORM% %CONFIG% from %BUILD_DIR% into %INSTALL_DIR% DONE. 
 
 EXIT /b 0
 
 :ON_ERROR
-	ECHO "install.bat [win32|x64] [Debug|Release] [MONO_BUILD_DIR_PREFIX] [MONO_INSTALLATION_DIR_PREFIX]"
+	ECHO "install.bat [win32|x64] [Debug|Release] [MONO_BUILD_DIR_PREFIX] [MONO_INSTALLATION_DIR_PREFIX] [ARGUMENTS]"
 	EXIT /b 1
 
 @ECHO on

@@ -95,7 +95,7 @@
       <SDLCheck>true</SDLCheck>
     </ClCompile>
     <PostBuildEvent>
-      <Command>.\package.bat  $(Platform) $(Configuration) $(MONO_BUILD_DIR_PREFIX)</Command>
+      <Command>.\package.bat  $(Platform) $(Configuration) "$(MONO_BUILD_DIR_PREFIX)" -q</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -105,7 +105,7 @@
       <SDLCheck>true</SDLCheck>
     </ClCompile>
     <PostBuildEvent>
-      <Command>.\package.bat  $(Platform) $(Configuration) $(MONO_BUILD_DIR_PREFIX)</Command>
+      <Command>.\package.bat  $(Platform) $(Configuration) "$(MONO_BUILD_DIR_PREFIX)" -q</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -121,7 +121,7 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PostBuildEvent>
-      <Command>.\package.bat  $(Platform) $(Configuration) $(MONO_BUILD_DIR_PREFIX)</Command>
+      <Command>.\package.bat  $(Platform) $(Configuration) "$(MONO_BUILD_DIR_PREFIX)" -q</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -137,7 +137,7 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PostBuildEvent>
-      <Command>.\package.bat  $(Platform) $(Configuration) $(MONO_BUILD_DIR_PREFIX)</Command>
+      <Command>.\package.bat  $(Platform) $(Configuration) "$(MONO_BUILD_DIR_PREFIX)" -q</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

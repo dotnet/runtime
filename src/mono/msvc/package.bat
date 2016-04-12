@@ -3,6 +3,9 @@
 SET PLATFORM=%1
 SET CONFIG=%2
 SET BUILD_DIR=%3
+SET ARGUMENTS=%4
+
+SET BUILD_DIR=%BUILD_DIR:"=%
 
 IF "" == "%PLATFORM%" (
 	ECHO Error: No platform parameter set.
@@ -40,27 +43,49 @@ IF NOT EXIST %BUILD_DIR%\%PLATFORM%\bin\%CONFIG% (
 
 SET PACKAGE_DIR=%BUILD_DIR%\package\%PLATFORM%\%CONFIG%
 
+SET OPTIONS=/s /e /y
+
+IF "-v" == "%ARGUMENTS%" (
+	SET OPTIONS=/f /s /e /y
+)
+
+IF "-q" == "%ARGUMENTS%" (
+	SET "OPTIONS=/s /e /q /y ^>nul"
+)
+
 ECHO Packaging mono build %PLATFORM% %CONFIG% into '%PACKAGE_DIR%' ...
 
 IF EXIST %PACKAGE_DIR% rmdir %PACKAGE_DIR% /s /q
-mkdir %PACKAGE_DIR%
-mkdir %PACKAGE_DIR%\include\mono-2.0
-xcopy .\include\*.* %PACKAGE_DIR%\include\mono-2.0\ /s /e /q /y > nul
+mkdir "%PACKAGE_DIR%"
+mkdir "%PACKAGE_DIR%\include\mono-2.0"
 
-xcopy %BUILD_DIR%\%PLATFORM%\lib\%CONFIG%\*.lib %PACKAGE_DIR%\lib\ /s /e /q /y > nul
-xcopy %BUILD_DIR%\%PLATFORM%\lib\%CONFIG%\*.pdb %PACKAGE_DIR%\lib\ /s /e /q /y > nul
+SET RUN=xcopy ".\include\*.*" "%PACKAGE_DIR%\include\mono-2.0\" %OPTIONS%
+%RUN%
 
-xcopy %BUILD_DIR%\%PLATFORM%\bin\%CONFIG%\*.exe %PACKAGE_DIR%\bin\ /s /e /q /y > nul
-xcopy %BUILD_DIR%\%PLATFORM%\bin\%CONFIG%\*.dll %PACKAGE_DIR%\bin\ /s /e /q /y > nul
-xcopy %BUILD_DIR%\%PLATFORM%\bin\%CONFIG%\*.pdb %PACKAGE_DIR%\bin\ /s /e /q /y > nul
-xcopy %BUILD_DIR%\%PLATFORM%\bin\%CONFIG%\*.lib %PACKAGE_DIR%\bin\ /s /e /q /y > nul
+SET RUN=xcopy "%BUILD_DIR%\%PLATFORM%\lib\%CONFIG%\*.lib" "%PACKAGE_DIR%\lib\" %OPTIONS%
+%RUN%
+
+SET RUN=xcopy "%BUILD_DIR%\%PLATFORM%\lib\%CONFIG%\*.pdb" "%PACKAGE_DIR%\lib\" %OPTIONS%
+%RUN%
+
+SET RUN=xcopy "%BUILD_DIR%\%PLATFORM%\bin\%CONFIG%\*.exe" "%PACKAGE_DIR%\bin\" %OPTIONS%
+%RUN%
+
+SET RUN=xcopy "%BUILD_DIR%\%PLATFORM%\bin\%CONFIG%\*.dll" "%PACKAGE_DIR%\bin\" %OPTIONS%
+%RUN%
+
+SET RUN=xcopy "%BUILD_DIR%\%PLATFORM%\bin\%CONFIG%\*.pdb" "%PACKAGE_DIR%\bin\" %OPTIONS%
+%RUN%
+
+SET RUN=xcopy "%BUILD_DIR%\%PLATFORM%\bin\%CONFIG%\*.lib" "%PACKAGE_DIR%\bin\" %OPTIONS%
+%RUN%
 
 ECHO Packaging of mono build %PLATFORM% %CONFIG% into '%PACKAGE_DIR%' DONE. 
 
 EXIT /b 0
 
 :ON_ERROR
-	ECHO "package.bat [win32|x64] [Debug|Release] [MONO_BUILD_DIR_PREFIX]"
+	ECHO "package.bat [win32|x64] [Debug|Release] [MONO_BUILD_DIR_PREFIX] [ARGUMENTS]"
 	EXIT /b 1
 
 @ECHO on
