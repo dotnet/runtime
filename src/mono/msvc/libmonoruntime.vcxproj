@@ -138,7 +138,6 @@
     <ClInclude Include="..\mono\metadata\appdomain.h" />
     <ClInclude Include="..\mono\metadata\assembly.h" />
     <ClInclude Include="..\mono\metadata\attach.h" />
-    <ClInclude Include="..\mono\metadata\char-conversions.h" />
     <ClInclude Include="..\mono\metadata\cil-coff.h" />
     <ClInclude Include="..\mono\metadata\class-internals.h" />
     <ClInclude Include="..\mono\metadata\class.h" />
@@ -150,7 +149,6 @@
     <ClInclude Include="..\mono\metadata\debug-helpers.h" />
     <ClInclude Include="..\mono\metadata\debug-mono-ppdb.h" />
     <ClInclude Include="..\mono\metadata\debug-mono-symfile.h" />
-    <ClInclude Include="..\mono\metadata\decimal.h" />
     <ClInclude Include="..\mono\metadata\domain-internals.h" />
     <ClInclude Include="..\mono\metadata\environment.h" />
     <ClInclude Include="..\mono\metadata\exception.h" />
@@ -210,7 +208,6 @@
     <ClInclude Include="..\mono\sgen\sgen-gc.h" />
     <ClInclude Include="..\mono\sgen\sgen-gray.h" />
     <ClInclude Include="..\mono\sgen\sgen-major-copy-object.h" />
-    <ClInclude Include="..\mono\sgen\sgen-major-scan-object.h" />
     <ClInclude Include="..\mono\sgen\sgen-memory-governor.h" />
     <ClInclude Include="..\mono\sgen\sgen-minor-copy-object.h" />
     <ClInclude Include="..\mono\sgen\sgen-minor-scan-object.h" />
@@ -229,6 +226,11 @@
     <ClInclude Include="..\mono\metadata\verify-internals.h" />
     <ClInclude Include="..\mono\metadata\verify.h" />
     <ClInclude Include="..\mono\metadata\wrapper-types.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="eglib.vcxproj">
+      <Project>{158073ed-99ae-4196-9edc-ddb2344f8466}</Project>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C36612BD-22D3-4B95-85E2-7FDC4FC5D739}</ProjectGuid>

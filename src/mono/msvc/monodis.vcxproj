@@ -214,6 +214,14 @@
     <ClInclude Include="..\mono\dis\push-pop.h" />
     <ClInclude Include="..\mono\dis\util.h" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="eglib.vcxproj">
+      <Project>{158073ed-99ae-4196-9edc-ddb2344f8466}</Project>
+    </ProjectReference>
+    <ProjectReference Include="libmono.vcxproj">
+      <Project>{cb0d9e92-293c-439c-9ac7-c5f59b6e0771}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
