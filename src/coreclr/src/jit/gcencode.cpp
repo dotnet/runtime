@@ -4184,7 +4184,7 @@ void                GCInfo::gcInfoRecordGCRegStateChange(GcInfoEncoder* gcInfoEn
     while (regMask)
     {
         // Get hold of the next register bit.
-        unsigned tmpMask = genFindLowestReg(regMask); assert(tmpMask);
+        regMaskTP tmpMask = genFindLowestReg(regMask); assert(tmpMask);
 
         // Remember the new state of this register.
         if (pPtrRegs != NULL)

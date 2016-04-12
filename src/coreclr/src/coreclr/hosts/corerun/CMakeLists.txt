@@ -10,14 +10,14 @@ add_definitions(-DFX_VER_INTERNALNAME_STR=CoreRun.exe)
 if(CLR_CMAKE_PLATFORM_UNIX)
     # This does not compile on Linux yet
     if(CAN_BE_COMPILED_ON_LINUX)
-        add_executable(CoreRun
+        _add_executable(CoreRun
           ${CoreRun_SOURCES}
           ${CoreRun_RESOURCES}
         )
     endif(CAN_BE_COMPILED_ON_LINUX)
 
 else()
-    add_executable(CoreRun
+    _add_executable(CoreRun
       ${CoreRun_SOURCES}
       ${CoreRun_RESOURCES}
     )
