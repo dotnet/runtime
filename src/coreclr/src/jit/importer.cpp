@@ -11635,6 +11635,7 @@ DO_LDFTN:
         case CEE_LDSFLDA: {
 
             BOOL isLoadAddress  = (opcode == CEE_LDFLDA || opcode == CEE_LDSFLDA);
+            BOOL isLoadStatic = (opcode == CEE_LDSFLD || opcode == CEE_LDSFLDA);
 
             /* Get the CP_Fieldref index */
             assertImp(sz == sizeof(unsigned));
@@ -11667,6 +11668,7 @@ DO_LDFTN:
             }
 
             eeGetFieldInfo(&resolvedToken, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo);
+
             // Figure out the type of the member.  We always call canAccessField, so you always need this
             // handle
             CorInfoType ciType = fieldInfo.fieldType;
@@ -11758,6 +11760,15 @@ DO_LDFTN:
                         // safe byref
                         tiRetVal.SetIsPermanentHomeByRef();
                     }
+                }
+            }
+            else 
+            {
+                // tiVerificationNeeded is false.
+                // Raise InvalidProgramException if static load accesses non-static field
+                if (isLoadStatic && ((fieldInfo.fieldFlags & CORINFO_FLG_FIELD_STATIC) == 0))
+                {
+                    BADCODE("static access on an instance field");
                 }
             }
 
@@ -11977,6 +11988,8 @@ FIELD_DONE:
         case CEE_STFLD:
         case CEE_STSFLD: {
 
+            BOOL isStoreStatic = (opcode == CEE_STSFLD);
+
             CORINFO_CLASS_HANDLE fieldClsHnd; // class of the field (if it's a ref type)
 
             /* Get the CP_Fieldref index */
@@ -12054,6 +12067,15 @@ FIELD_DONE:
                 verVerifyField(&resolvedToken, fieldInfo, tiObj, TRUE);
                 typeInfo fieldType = verMakeTypeInfo(ciType, fieldClsHnd);
                 Verify(tiCompatibleWith(tiVal, fieldType.NormaliseForStack(), true), "type mismatch");
+            }
+            else 
+            {
+                // tiVerificationNeed is false.
+                // Raise InvalidProgramException if static store accesses non-static field
+                if (isStoreStatic && ((fieldInfo.fieldFlags & CORINFO_FLG_FIELD_STATIC) == 0)) 
+                {
+                    BADCODE("static access on an instance field");
+                }
             }
 
             // We are using stfld on a static field.
