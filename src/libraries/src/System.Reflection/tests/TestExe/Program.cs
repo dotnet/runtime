@@ -4,13 +4,12 @@
 
 using System;
 
+[assembly: System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+
 namespace System.Reflection.Tests
 {
     public static class TestExe
     {
-        private static int Main()
-        {
-            return 42;
-        }
+        private static int Main() => 42;
     }
 }
