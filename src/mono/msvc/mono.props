@@ -13,11 +13,16 @@
       <Value>$(MONO_USE_SGEN)</Value>
       <EnvironmentVariable>true</EnvironmentVariable>
     </BuildMacro>
+	<BuildMacro Include="MONO_USE_TARGET_SUFFIX">
+      <Value>$(MONO_USE_TARGET_SUFFIX)</Value>
+      <EnvironmentVariable>true</EnvironmentVariable>
+    </BuildMacro>
   </ItemGroup>
   <PropertyGroup Label="UserMacros">
     <MONO_BUILD_DIR_PREFIX>c:\mono-build\</MONO_BUILD_DIR_PREFIX>
     <MONO_INSTALL_DIR_PREFIX>c:\mono-dist\</MONO_INSTALL_DIR_PREFIX>
     <MONO_USE_SGEN>true</MONO_USE_SGEN>
+	<MONO_USE_TARGET_SUFFIX>true</MONO_USE_TARGET_SUFFIX>
   </PropertyGroup>
   <PropertyGroup Label="MonoDirectories">
     <top_srcdir>$(MSBuildProjectDirectory)\..</top_srcdir>
@@ -37,14 +42,14 @@
     <GC_DEFINES>$(SGEN_DEFINES)</GC_DEFINES>
     <GC_LIB>libgcmonosgen.lib</GC_LIB>
     <MONO_DEF>monosgen.def</MONO_DEF>
-    <MONO_TARGET_SUFFIX>-sgen</MONO_TARGET_SUFFIX>
+    <MONO_TARGET_SUFFIX Condition="'$(MONO_USE_TARGET_SUFFIX)'=='true'">-sgen</MONO_TARGET_SUFFIX>
   </PropertyGroup>
   <PropertyGroup Label="MonoBOEHM" Condition="$(MONO_USE_SGEN)==false">
     <BOEHM_DEFINES>HAVE_BOEHM_GC</BOEHM_DEFINES>
     <GC_DEFINES>$(HAVE_BOEHM_GC)</GC_DEFINES>
     <GC_LIB>libgc.lib</GC_LIB>
     <MONO_DEF>mono.def</MONO_DEF>
-    <MONO_TARGET_SUFFIX>-boehm</MONO_TARGET_SUFFIX>
+    <MONO_TARGET_SUFFIX Condition="'$(MONO_USE_TARGET_SUFFIX)'=='true'">-boehm</MONO_TARGET_SUFFIX>
   </PropertyGroup>
   <PropertyGroup Label="MonoProfiler">
     <VTUNE_INCLUDE_DIR>$(ProgramFiles)\Intel\VTune Amplifier XE 2013\include</VTUNE_INCLUDE_DIR>
