@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Globalization.Tests
 {
-    public class DateTimeFormatInfoCurrentCultureTests : RemoteExecutorTestBase
+    public class CurrentCultureTests : RemoteExecutorTestBase
     {
         [Fact]
         public void CurrentCulture()
@@ -97,6 +97,32 @@ namespace System.Globalization.Tests
         public void CurrentUICulture_Set_Null_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("value", () => CultureInfo.CurrentUICulture = null);
+        }
+
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        [Theory]
+        [InlineData("en-US.UTF-8", "en-US")]
+        [InlineData("en-US", "en-US")]
+        [InlineData("en_GB", "en-GB")]
+        [InlineData("fr-FR", "fr-FR")]
+        [InlineData("ru", "ru")]
+        [InlineData("", "en-US-POSIX")]
+        public void CurrentCulture_BasedOnLangEnvVar(string langEnvVar, string expectedCultureName)
+        {
+            var psi = new ProcessStartInfo();
+            psi.Environment.Clear();
+            psi.Environment["LANG"] = langEnvVar;
+
+            RemoteInvoke(expected =>
+            {
+                Assert.NotNull(CultureInfo.CurrentCulture);
+                Assert.NotNull(CultureInfo.CurrentUICulture);
+
+                Assert.Equal(expected, CultureInfo.CurrentCulture.Name);
+                Assert.Equal(expected, CultureInfo.CurrentUICulture.Name);
+
+                return SuccessExitCode;
+            }, expectedCultureName, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
     }
 }
