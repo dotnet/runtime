@@ -13,9 +13,9 @@
     <NativeFile Include="$(OSXNativePath)System.Native.dylib">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
     </NativeFile>
-    <NativeFile Include="$(OSXNativePath)System.Native.a">
+    <File Include="$(OSXNativePath)System.Native.a">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
-    </NativeFile>
+    </File>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
