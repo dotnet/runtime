@@ -21,6 +21,7 @@
     <Compile Include="CaptureTests.cs" />
     <Compile Include="EscapeUnescapeTests.cs" />
     <Compile Include="GroupNamesAndNumbers.cs" />
+    <Compile Include="GroupCollectionTests.cs" />
     <Compile Include="IsMatchMatchSplitTests.cs" />
     <Compile Include="MatchCollectionTests.cs" />
     <Compile Include="R2LGetGroupNamesMatchTests.cs" />
