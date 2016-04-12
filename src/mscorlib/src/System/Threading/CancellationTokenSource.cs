@@ -556,18 +556,33 @@ namespace System.Threading
                 //      instance may unnecessarily hold onto a registered callback.  But that's no worse
                 //      than if Dispose wasn't safe to use concurrently, as Dispose would never be called,
                 //      and thus no handlers would be dropped.
+                //
+                //      And, we tolerate Dispose being used concurrently with Cancel.  This is necessary
+                //      to properly support LinkedCancellationTokenSource, where, due to common usage patterns,
+                //      it's possible for this pairing to occur with valid usage (e.g. a component accepts
+                //      an external CancellationToken and uses CreateLinkedTokenSource to combine it with an
+                //      internal source of cancellation, then Disposes of that linked source, which could
+                //      happen at the same time the external entity is requesting cancellation).
 
-                if (m_timer != null) m_timer.Dispose();
+                m_timer?.Dispose(); // Timer.Dispose is thread-safe
 
                 // registered callbacks are now either complete or will never run, due to guarantees made by ctr.Dispose()
                 // so we can now perform main disposal work without risk of linking callbacks trying to use this CTS.
 
-                m_registeredCallbacksLists = null; // free for GC.
+                m_registeredCallbacksLists = null; // free for GC; Cancel correctly handles a null field
 
+                // If a kernel event was created via WaitHandle, we'd like to Dispose of it.  However,
+                // we only want to do so if it's not being used by Cancel concurrently.  First, we
+                // interlocked exchange it to be null, and then we check whether cancellation is currently
+                // in progress.  NotifyCancellation will only try to set the event if it exists after it's
+                // transitioned to and while it's in the NOTIFYING state.
                 if (m_kernelEvent != null)
                 {
-                    m_kernelEvent.Close(); // the critical cleanup to release an OS handle
-                    m_kernelEvent = null; // free for GC.
+                    ManualResetEvent mre = Interlocked.Exchange(ref m_kernelEvent, null);
+                    if (mre != null && m_state != NOTIFYING)
+                    {
+                        mre.Dispose();
+                    }
                 }
 
                 m_disposed = true;
@@ -698,16 +713,17 @@ namespace System.Threading
             // If we're the first to signal cancellation, do the main extra work.
             if (Interlocked.CompareExchange(ref m_state, NOTIFYING, NOT_CANCELED) == NOT_CANCELED)
             {
-                // Dispose of the timer, if any
-                Timer timer = m_timer;
-                if(timer != null) timer.Dispose();
+                // Dispose of the timer, if any.  Dispose may be running concurrently here, but Timer.Dispose is thread-safe.
+                m_timer?.Dispose();
 
-                //record the threadID being used for running the callbacks.
+                // Record the threadID being used for running the callbacks.
                 ThreadIDExecutingCallbacks = Thread.CurrentThread.ManagedThreadId;
                 
-                //If the kernel event is null at this point, it will be set during lazy construction.
-                if (m_kernelEvent != null)
-                    m_kernelEvent.Set(); // update the MRE value.
+                // Set the event if it's been lazily initialized and hasn't yet been disposed of.  Dispose may
+                // be running concurrently, in which case either it'll have set m_kernelEvent back to null and
+                // we won't see it here, or it'll see that we've transitioned to NOTIFYING and will skip disposing it,
+                // leaving cleanup to finalization.
+                m_kernelEvent?.Set(); // update the MRE value.
 
                 // - late enlisters to the Canceled event will have their callbacks called immediately in the Register() methods.
                 // - Callbacks are not called inside a lock.
@@ -893,7 +909,8 @@ namespace System.Threading
 
         private sealed class LinkedCancellationTokenSource : CancellationTokenSource
         {
-            private static readonly Action<object> s_linkedTokenCancelDelegate = s => ((CancellationTokenSource)s).Cancel();
+            private static readonly Action<object> s_linkedTokenCancelDelegate = 
+                s => ((CancellationTokenSource)s).NotifyCancellation(throwOnFirstException: false); // skip ThrowIfDisposed() check in Cancel()
             private CancellationTokenRegistration[] m_linkingRegistrations;
 
             internal LinkedCancellationTokenSource(CancellationToken token1, CancellationToken token2)
