@@ -438,8 +438,8 @@ GcInfoEncoder::GcInfoEncoder(
             )
     :   m_Info1( pJitAllocator ),
         m_Info2( pJitAllocator ),
-        m_InterruptibleRanges(),
-        m_LifetimeTransitions()
+        m_InterruptibleRanges( pJitAllocator ),
+        m_LifetimeTransitions( pJitAllocator )
 #ifdef VERIFY_GCINFO
         , m_DbgEncoder(pCorJitInfo, pMethodInfo, pJitAllocator)
 #endif    
@@ -647,7 +647,7 @@ void GcInfoEncoder::DefineInterruptibleRange( UINT32 startInstructionOffset, UIN
             InterruptibleRange range;
             range.NormStartOffset = normStartOffset;
             range.NormStopOffset = normStopOffset;
-            m_pLastInterruptibleRange = m_InterruptibleRanges.AppendThrowing();
+            m_pLastInterruptibleRange = m_InterruptibleRanges.Append();
             *m_pLastInterruptibleRange = range;
         }
     }
@@ -679,7 +679,7 @@ void GcInfoEncoder::SetSlotState(
     transition.BecomesLive = ( slotState == GC_SLOT_LIVE );
     transition.IsDeleted = FALSE;
 
-    *( m_LifetimeTransitions.AppendThrowing() ) = transition;
+    *( m_LifetimeTransitions.Append() ) = transition;
 
     LOG((LF_GCINFO, LL_INFO1000000, LOG_GCSLOTDESC_FMT " %s at %x\n", LOG_GCSLOTDESC_ARGS(&m_SlotTable[slotId]), slotState == GC_SLOT_LIVE ? "live" : "dead", instructionOffset));
 }
