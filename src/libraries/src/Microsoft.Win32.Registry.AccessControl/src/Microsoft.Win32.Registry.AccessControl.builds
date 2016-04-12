@@ -6,9 +6,11 @@
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="Microsoft.Win32.Registry.AccessControl.csproj">
+      <OSGroup>Unix</OSGroup>
+    </Project>
+    <Project Include="Microsoft.Win32.Registry.AccessControl.csproj">
       <TargetGroup>net46</TargetGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
-

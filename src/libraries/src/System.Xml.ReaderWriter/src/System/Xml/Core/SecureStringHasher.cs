@@ -26,7 +26,7 @@ namespace System.Xml
         public int GetHashCode(String key)
         {
             int hashCode = _hashCodeRandomizer;
-            // use key.Length to eliminate the rangecheck
+            // use key.Length to eliminate the range check
             for (int i = 0; i < key.Length; i++)
             {
                 hashCode += (hashCode << 7) ^ key[i];

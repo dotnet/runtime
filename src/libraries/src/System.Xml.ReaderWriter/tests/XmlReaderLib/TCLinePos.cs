@@ -110,7 +110,7 @@ namespace System.Xml.Tests
 
             // for function TestLinePos21
             {
-                this.AddChild(new CVariation(TestLinePos21) { Attribute = new Variation("LineNumber/LinePos after ReadBase64 succesive calls") });
+                this.AddChild(new CVariation(TestLinePos21) { Attribute = new Variation("LineNumber/LinePos after ReadBase64 successive calls") });
             }
 
 

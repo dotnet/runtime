@@ -11,93 +11,93 @@ namespace System.Linq.Expressions.Tests
     {
         #region Test methods
 
-        [Fact]
-        public static void CheckUnaryArithmeticNegateCheckedByteTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckUnaryArithmeticNegateCheckedByteTest(bool useInterpreter)
         {
             byte[] values = new byte[] { 0, 1, byte.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
-                VerifyArithmeticNegateCheckedByte(values[i]);
+                VerifyArithmeticNegateCheckedByte(values[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckUnaryArithmeticNegateCheckedCharTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckUnaryArithmeticNegateCheckedCharTest(bool useInterpreter)
         {
             char[] values = new char[] { '\0', '\b', 'A', '\uffff' };
             for (int i = 0; i < values.Length; i++)
             {
-                VerifyArithmeticNegateCheckedChar(values[i]);
+                VerifyArithmeticNegateCheckedChar(values[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckUnaryArithmeticNegateCheckedDecimalTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckUnaryArithmeticNegateCheckedDecimalTest(bool useInterpreter)
         {
             decimal[] values = new decimal[] { decimal.Zero, decimal.One, decimal.MinusOne, decimal.MinValue, decimal.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
-                VerifyArithmeticNegateCheckedDecimal(values[i]);
+                VerifyArithmeticNegateCheckedDecimal(values[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckUnaryArithmeticNegateCheckedDoubleTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckUnaryArithmeticNegateCheckedDoubleTest(bool useInterpreter)
         {
             double[] values = new double[] { 0, 1, -1, double.MinValue, double.MaxValue, double.Epsilon, double.NegativeInfinity, double.PositiveInfinity, double.NaN };
             for (int i = 0; i < values.Length; i++)
             {
-                VerifyArithmeticNegateCheckedDouble(values[i]);
+                VerifyArithmeticNegateCheckedDouble(values[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckUnaryArithmeticNegateCheckedFloatTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckUnaryArithmeticNegateCheckedFloatTest(bool useInterpreter)
         {
             float[] values = new float[] { 0, 1, -1, float.MinValue, float.MaxValue, float.Epsilon, float.NegativeInfinity, float.PositiveInfinity, float.NaN };
             for (int i = 0; i < values.Length; i++)
             {
-                VerifyArithmeticNegateCheckedFloat(values[i]);
+                VerifyArithmeticNegateCheckedFloat(values[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckUnaryArithmeticNegateCheckedIntTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckUnaryArithmeticNegateCheckedIntTest(bool useInterpreter)
         {
             int[] values = new int[] { 0, 1, -1, int.MinValue, int.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
-                VerifyArithmeticNegateCheckedInt(values[i]);
+                VerifyArithmeticNegateCheckedInt(values[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckUnaryArithmeticNegateCheckedLongTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckUnaryArithmeticNegateCheckedLongTest(bool useInterpreter)
         {
             long[] values = new long[] { 0, 1, -1, long.MinValue, long.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
-                VerifyArithmeticNegateCheckedLong(values[i]);
+                VerifyArithmeticNegateCheckedLong(values[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckUnaryArithmeticNegateCheckedSByteTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckUnaryArithmeticNegateCheckedSByteTest(bool useInterpreter)
         {
             sbyte[] values = new sbyte[] { 0, 1, -1, sbyte.MinValue, sbyte.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
-                VerifyArithmeticNegateCheckedSByte(values[i]);
+                VerifyArithmeticNegateCheckedSByte(values[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckUnaryArithmeticNegateCheckedShortTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckUnaryArithmeticNegateCheckedShortTest(bool useInterpreter)
         {
             short[] values = new short[] { 0, 1, -1, short.MinValue, short.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
-                VerifyArithmeticNegateCheckedShort(values[i]);
+                VerifyArithmeticNegateCheckedShort(values[i], useInterpreter);
             }
         }
 
@@ -105,295 +105,100 @@ namespace System.Linq.Expressions.Tests
 
         #region Test verifiers
 
-        private static void VerifyArithmeticNegateCheckedByte(byte value)
+        private static void VerifyArithmeticNegateCheckedByte(byte value, bool useInterpreter)
         {
             Assert.Throws<InvalidOperationException>(() => Expression.NegateChecked(Expression.Constant(value, typeof(byte))));
         }
 
-        private static void VerifyArithmeticNegateCheckedChar(char value)
+        private static void VerifyArithmeticNegateCheckedChar(char value, bool useInterpreter)
         {
             Assert.Throws<InvalidOperationException>(() => Expression.NegateChecked(Expression.Constant(value, typeof(char))));
         }
 
-        private static void VerifyArithmeticNegateCheckedDecimal(decimal value)
+        private static void VerifyArithmeticNegateCheckedDecimal(decimal value, bool useInterpreter)
         {
             Expression<Func<decimal>> e =
                 Expression.Lambda<Func<decimal>>(
                     Expression.NegateChecked(Expression.Constant(value, typeof(decimal))),
                     Enumerable.Empty<ParameterExpression>());
 
-            Func<decimal> f = e.Compile();
+            Func<decimal> f = e.Compile(useInterpreter);
 
-            // add with expression tree
-            decimal etResult = default(decimal);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // add with real IL
-            decimal csResult = default(decimal);
-            Exception csException = null;
-            try
-            {
-                csResult = checked((decimal)(-value));
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(-value, f());
         }
 
-        private static void VerifyArithmeticNegateCheckedDouble(double value)
+        private static void VerifyArithmeticNegateCheckedDouble(double value, bool useInterpreter)
         {
             Expression<Func<double>> e =
                 Expression.Lambda<Func<double>>(
                     Expression.NegateChecked(Expression.Constant(value, typeof(double))),
                     Enumerable.Empty<ParameterExpression>());
 
-            Func<double> f = e.Compile();
+            Func<double> f = e.Compile(useInterpreter);
 
-            // add with expression tree
-            double etResult = default(double);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // add with real IL
-            double csResult = default(double);
-            Exception csException = null;
-            try
-            {
-                csResult = checked((double)(-value));
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(-value, f());
         }
 
-        private static void VerifyArithmeticNegateCheckedFloat(float value)
+        private static void VerifyArithmeticNegateCheckedFloat(float value, bool useInterpreter)
         {
             Expression<Func<float>> e =
                 Expression.Lambda<Func<float>>(
                     Expression.NegateChecked(Expression.Constant(value, typeof(float))),
                     Enumerable.Empty<ParameterExpression>());
 
-            Func<float> f = e.Compile();
+            Func<float> f = e.Compile(useInterpreter);
 
-            // add with expression tree
-            float etResult = default(float);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // add with real IL
-            float csResult = default(float);
-            Exception csException = null;
-            try
-            {
-                csResult = checked((float)(-value));
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(-value, f());
         }
 
-        private static void VerifyArithmeticNegateCheckedInt(int value)
+        private static void VerifyArithmeticNegateCheckedInt(int value, bool useInterpreter)
         {
             Expression<Func<int>> e =
                 Expression.Lambda<Func<int>>(
                     Expression.NegateChecked(Expression.Constant(value, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
 
-            Func<int> f = e.Compile();
+            Func<int> f = e.Compile(useInterpreter);
 
-            // add with expression tree
-            int etResult = default(int);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // add with real IL
-            int csResult = default(int);
-            Exception csException = null;
-            try
-            {
-                csResult = checked((int)(-value));
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
+            if (value == int.MinValue)
+                Assert.Throws<OverflowException>(() => f());
             else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+                Assert.Equal(-value, f());
         }
 
-        private static void VerifyArithmeticNegateCheckedLong(long value)
+        private static void VerifyArithmeticNegateCheckedLong(long value, bool useInterpreter)
         {
             Expression<Func<long>> e =
                 Expression.Lambda<Func<long>>(
                     Expression.NegateChecked(Expression.Constant(value, typeof(long))),
                     Enumerable.Empty<ParameterExpression>());
 
-            Func<long> f = e.Compile();
+            Func<long> f = e.Compile(useInterpreter);
 
-            // add with expression tree
-            long etResult = default(long);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // add with real IL
-            long csResult = default(long);
-            Exception csException = null;
-            try
-            {
-                csResult = checked((long)(-value));
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
+            if (value == long.MinValue)
+                Assert.Throws<OverflowException>(() => f());
             else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+                Assert.Equal(-value, f());
         }
 
-        private static void VerifyArithmeticNegateCheckedSByte(sbyte value)
+        private static void VerifyArithmeticNegateCheckedSByte(sbyte value, bool useInterpreter)
         {
             Assert.Throws<InvalidOperationException>(() => Expression.NegateChecked(Expression.Constant(value, typeof(sbyte))));
         }
 
-        private static void VerifyArithmeticNegateCheckedShort(short value)
+        private static void VerifyArithmeticNegateCheckedShort(short value, bool useInterpreter)
         {
             Expression<Func<short>> e =
                 Expression.Lambda<Func<short>>(
                     Expression.NegateChecked(Expression.Constant(value, typeof(short))),
                     Enumerable.Empty<ParameterExpression>());
 
-            Func<short> f = e.Compile();
+            Func<short> f = e.Compile(useInterpreter);
 
-            // add with expression tree
-            short etResult = default(short);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // add with real IL
-            short csResult = default(short);
-            Exception csException = null;
-            try
-            {
-                csResult = checked((short)(-value));
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
+            if (value == short.MinValue)
+                Assert.Throws<OverflowException>(() => f());
             else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+                Assert.Equal(-value, f());
         }
 
         #endregion

@@ -2,15 +2,6 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <Project Include="linux\System.Net.NetworkInformation.pkgproj">
-      <OSGroup>Linux</OSGroup>
-    </Project>
-    <Project Include="osx\System.Net.NetworkInformation.pkgproj">
-      <OSGroup>OSX</OSGroup>
-    </Project>
-    <Project Include="win\System.Net.NetworkInformation.pkgproj">
-      <OSGroup>Windows_NT</OSGroup>
-    </Project>
     <Project Include="System.Net.NetworkInformation.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

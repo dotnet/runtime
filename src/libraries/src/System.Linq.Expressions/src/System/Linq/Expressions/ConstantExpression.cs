@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Reflection;
@@ -12,11 +11,9 @@ namespace System.Linq.Expressions
     /// <summary>
     /// Represents an expression that has a constant value.
     /// </summary>
-    [DebuggerTypeProxy(typeof(Expression.ConstantExpressionProxy))]
+    [DebuggerTypeProxy(typeof(ConstantExpressionProxy))]
     public class ConstantExpression : Expression
     {
-        // Possible optimization: we could have a Constant<T> subclass that
-        // stores the unboxed value.
         private readonly object _value;
 
         internal ConstantExpression(object value)
@@ -26,7 +23,7 @@ namespace System.Linq.Expressions
 
         internal static ConstantExpression Make(object value, Type type)
         {
-            if ((value == null && type == typeof(object)) || (value != null && value.GetType() == type))
+            if (value == null ? type == typeof(object) : value.GetType() == type)
             {
                 return new ConstantExpression(value);
             }
@@ -48,6 +45,7 @@ namespace System.Linq.Expressions
                 {
                     return typeof(object);
                 }
+
                 return _value.GetType();
             }
         }
@@ -61,6 +59,7 @@ namespace System.Linq.Expressions
         {
             get { return ExpressionType.Constant; }
         }
+
         /// <summary>
         /// Gets the value of the constant expression.
         /// </summary>
@@ -109,7 +108,6 @@ namespace System.Linq.Expressions
             return ConstantExpression.Make(value, value == null ? typeof(object) : value.GetType());
         }
 
-
         /// <summary>
         /// Creates a <see cref="ConstantExpression"/> that has the <see cref="P:ConstantExpression.Value"/> 
         /// and <see cref="P:ConstantExpression.Type"/> properties set to the specified values. .
@@ -124,14 +122,11 @@ namespace System.Linq.Expressions
         public static ConstantExpression Constant(object value, Type type)
         {
             ContractUtils.RequiresNotNull(type, nameof(type));
-            if (value == null && type.GetTypeInfo().IsValueType && !TypeUtils.IsNullableType(type))
+            if (value == null ? type.GetTypeInfo().IsValueType && !TypeUtils.IsNullableType(type) : !type.IsAssignableFrom(value.GetType()))
             {
                 throw Error.ArgumentTypesMustMatch();
             }
-            if (value != null && !type.IsAssignableFrom(value.GetType()))
-            {
-                throw Error.ArgumentTypesMustMatch();
-            }
+
             return ConstantExpression.Make(value, type);
         }
     }

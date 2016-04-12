@@ -2,41 +2,25 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
+using System.Collections.Generic;
 using Xunit;
 
-namespace System.Globalization.CalendarsTests
+namespace System.Globalization.Tests
 {
     public class GregorianCalendarGetDayOfMonth
     {
-        #region Positive Test Cases
-        // PosTest1:Verify method GetDayOfMonth with args 2006-1-1
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> GetDayOfMonth_TestData()
         {
-            DateTime myDT = new GregorianCalendar().ToDateTime(2006, 1, 1, 0, 0, 0, 0);
-            System.Globalization.Calendar myCal = new GregorianCalendar();
-            Assert.Equal(1, myCal.GetDayOfMonth(myDT));
+            yield return new object[] { new DateTime(2006, 1, 1) };
+            yield return new object[] { new DateTime(2006, 1, 17) };
+            yield return new object[] { new DateTime(2006, 1, 31) };
         }
 
-        // PosTest2:Verify method GetDayOfMonth with args 2006-1-17
-        [Fact]
-        public void PosTest2()
+        [Theory]
+        [MemberData(nameof(GetDayOfMonth_TestData))]
+        public void GetDayOfMonth(DateTime time)
         {
-            DateTime myDT = new GregorianCalendar().ToDateTime(2006, 1, 17, 0, 0, 0, 0);
-            System.Globalization.Calendar myCal = new GregorianCalendar();
-            Assert.Equal(17, myCal.GetDayOfMonth(myDT));
+            Assert.Equal(time.Day, new GregorianCalendar().GetDayOfMonth(time));
         }
-
-        // PosTest3:Verify method GetDayOfMonth with args 2006-1-31
-        [Fact]
-        public void PosTest3()
-        {
-            DateTime myDT = new GregorianCalendar().ToDateTime(2006, 1, 31, 0, 0, 0, 0);
-            System.Globalization.Calendar myCal = new GregorianCalendar();
-            Assert.Equal(31, myCal.GetDayOfMonth(myDT));
-        }
-        #endregion
     }
 }

@@ -46,7 +46,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
             string host = GetHostFromDataSource(builder.DataSource);
 
-            // Using forwad slashes
+            // Using forward slashes
             builder.DataSource = "np://" + host + "/pipe/sql/query";
             OpenBadConnection<SqlException>(builder.ConnectionString, invalidConnStringError);
 

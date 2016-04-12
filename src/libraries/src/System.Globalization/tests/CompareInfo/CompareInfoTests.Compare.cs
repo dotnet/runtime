@@ -1,10 +1,8 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
-
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -15,18 +13,15 @@ namespace System.Globalization.Tests
         private static CompareInfo s_currentCompare = CultureInfo.CurrentCulture.CompareInfo;
         private static CompareInfo s_hungarianCompare = new CultureInfo("hu-HU").CompareInfo;
         private static CompareInfo s_turkishCompare = new CultureInfo("tr-TR").CompareInfo;
-
-        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
-
-        private static bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        
         // On Windows, hiragana characters sort after katakana.
         // On ICU, it is the opposite
-        private static int s_expectedHiraganaToKatakanaCompare = s_isWindows ? 1 : -1;
+        private static int s_expectedHiraganaToKatakanaCompare = PlatformDetection.IsWindows ? 1 : -1;
 
         // On Windows, all halfwidth characters sort before fullwidth characters.
         // On ICU, half and fullwidth characters that aren't in the "Halfwidth and fullwidth forms" block U+FF00-U+FFEF
         // sort before the corresponding characters that are in the block U+FF00-U+FFEF
-        private static int s_expectedHalfToFullFormsComparison = s_isWindows ? -1 : 1;
+        private static int s_expectedHalfToFullFormsComparison = PlatformDetection.IsWindows ? -1 : 1;
 
         private const string SoftHyphen = "\u00AD";
         
@@ -226,54 +221,101 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "c", "C", CompareOptions.IgnoreKanaType, -1 };
         }
 
-        public static IEnumerable<object[]> Compare_Random_TestData()
+        [Theory]
+        [MemberData(nameof(Compare_TestData))]
+        public void Compare(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expected)
         {
-            string[] interestingStrings = new string[] { null, "", "a", "1", "-", "A", "!", "abc", "aBc", "a\u0400Bc", "I", "i", "\u0130", "\u0131", "A", "\uFF21", "\uFE57" };
-            foreach (string string1 in interestingStrings)
-            {
-                foreach (string string2 in interestingStrings)
-                {
-                    yield return new object[] { s_currentCompare, string1, string2, CompareOptions.Ordinal, PredictCompareOrdinalResult(string1, string2) };
-                }
-            }
+            Compare(compareInfo, string1, 0, string1?.Length ?? 0, string2, 0, string2?.Length ?? 0, options, expected);
+        }
 
-            for (int i = 0; i < 40; i++)
-            {
-                char c = s_randomDataGenerator.GetChar(-55);
-                yield return new object[] { s_currentCompare, new string(c, 1), new string(c, 1), CompareOptions.Ordinal, 0 };
-                for (int j = 0; j < c; j++)
-                {
-                    yield return new object[] { s_currentCompare, new string(c, 1), new string((char)j, 1), CompareOptions.Ordinal, 1 };
-                }
-            }
+        public static IEnumerable<object[]> Compare_Advanced_TestData()
+        {
+            yield return new object[] { s_invariantCompare, "Hello", 2, 3, "Hello", 2, 3, CompareOptions.None, 0 };
+            yield return new object[] { s_invariantCompare, "Hello", 2, 2, "ello", 1, 2, CompareOptions.None, 0 };
+            yield return new object[] { s_invariantCompare, "Hello", 1, 0, "Hello", 1, 0, CompareOptions.None, 0 };
+            yield return new object[] { s_invariantCompare, "Hello", 5, 0, "Hello", 0, 0, CompareOptions.None, 0 };
 
-            for (int i = 0; i < 1000; i++)
-            {
-                string string1 = s_randomDataGenerator.GetString(-55, false, 5, 20);
-                string string2 = s_randomDataGenerator.GetString(-55, false, 5, 20);
-                yield return new object[] { s_currentCompare, string1, string1, CompareOptions.Ordinal, 0 };
-                yield return new object[] { s_currentCompare, string2, string2, CompareOptions.Ordinal, 0 };
-                yield return new object[] { s_currentCompare, string1, string2, CompareOptions.Ordinal, PredictCompareOrdinalResult(string1, string2) };
-            }
+            yield return new object[] { s_invariantCompare, "Hello", 2, 3, "Hemlo", 2, 3, CompareOptions.None, -1 };
+            yield return new object[] { s_invariantCompare, "Hello", 2, 2, "elmo", 1, 2, CompareOptions.None, -1 };
+            yield return new object[] { s_invariantCompare, "Hello", 1, 0, "Goodbye", 1, 0, CompareOptions.None, 0 };
+            yield return new object[] { s_invariantCompare, "Hello", 5, 0, "Goodbye", 0, 0, CompareOptions.None, 0 };
+
+            yield return new object[] { s_invariantCompare, "Hello", 1, 2, "hElLo", 1, 2, CompareOptions.OrdinalIgnoreCase, 0 };
+            yield return new object[] { s_invariantCompare, "Hello", 1, 2, "heLLo", 1, 3, CompareOptions.OrdinalIgnoreCase, -1 };
+
+            yield return new object[] { s_invariantCompare, null, 0, 0, null, 0, 0, CompareOptions.Ordinal, 0 };
+            yield return new object[] { s_invariantCompare, "Hello", 0, 5, null, 0, 0, CompareOptions.Ordinal, 1 };
+            yield return new object[] { s_invariantCompare, null, 0, 0, "Hello", 0, 5, CompareOptions.Ordinal, -1 };
+            yield return new object[] { s_invariantCompare, "Hello", 0, 0, "Hello", 0, 0, CompareOptions.Ordinal, 0 };
+            yield return new object[] { s_invariantCompare, "Hello", 0, 5, "Hello", 0, 5, CompareOptions.Ordinal, 0 };
+            yield return new object[] { s_invariantCompare, "Hello", 0, 3, "Hello", 0, 3, CompareOptions.Ordinal, 0 };
+            yield return new object[] { s_invariantCompare, "Hello", 2, 3, "Hello", 2, 3, CompareOptions.Ordinal, 0 };
+            yield return new object[] { s_invariantCompare, "Hello", 0, 5, "He" + SoftHyphen + "llo", 0, 5, CompareOptions.Ordinal, -1 };
+            yield return new object[] { s_invariantCompare, "Hello", 0, 5, "-=<Hello>=-", 3, 5, CompareOptions.Ordinal, 0 };
+            yield return new object[] { s_invariantCompare, "\uD83D\uDD53Hello\uD83D\uDD50", 1, 7, "\uD83D\uDD53Hello\uD83D\uDD54", 1, 7, CompareOptions.Ordinal, 0 }; // Surrogate split
+            yield return new object[] { s_invariantCompare, "Hello", 0, 5, "Hello123", 0, 8, CompareOptions.Ordinal, -1 };
+            yield return new object[] { s_invariantCompare, "Hello123", 0, 8, "Hello", 0, 5, CompareOptions.Ordinal, 1 };
+            yield return new object[] { s_invariantCompare, "---aaaaaaaaaaa", 3, 11, "+++aaaaaaaaaaa", 3, 11, CompareOptions.Ordinal, 0 }; // Equal long alignment 2, equal compare
+            yield return new object[] { s_invariantCompare, "aaaaaaaaaaaaaa", 3, 11, "aaaxaaaaaaaaaa", 3, 11, CompareOptions.Ordinal, -1 }; // Equal long alignment 2, different compare at n=1
+            yield return new object[] { s_invariantCompare, "-aaaaaaaaaaaaa", 1, 13, "+aaaaaaaaaaaaa", 1, 13, CompareOptions.Ordinal, 0 }; // Equal long alignment 6, equal compare
+            yield return new object[] { s_invariantCompare, "aaaaaaaaaaaaaa", 1, 13, "axaaaaaaaaaaaa", 1, 13, CompareOptions.Ordinal, -1 }; // Equal long alignment 6, different compare at n=1
+            yield return new object[] { s_invariantCompare, "aaaaaaaaaaaaaa", 0, 14, "aaaaaaaaaaaaaa", 0, 14, CompareOptions.Ordinal, 0 }; // Equal long alignment 4, equal compare
+            yield return new object[] { s_invariantCompare, "aaaaaaaaaaaaaa", 0, 14, "xaaaaaaaaaaaaa", 0, 14, CompareOptions.Ordinal, -1 }; // Equal long alignment 4, different compare at n=1
+            yield return new object[] { s_invariantCompare, "aaaaaaaaaaaaaa", 0, 14, "axaaaaaaaaaaaa", 0, 14, CompareOptions.Ordinal, -1 }; // Equal long alignment 4, different compare at n=2
+            yield return new object[] { s_invariantCompare, "--aaaaaaaaaaaa", 2, 12, "++aaaaaaaaaaaa", 2, 12, CompareOptions.Ordinal, 0 }; // Equal long alignment 0, equal compare
+            yield return new object[] { s_invariantCompare, "aaaaaaaaaaaaaa", 2, 12, "aaxaaaaaaaaaaa", 2, 12, CompareOptions.Ordinal, -1 }; // Equal long alignment 0, different compare at n=1
+            yield return new object[] { s_invariantCompare, "aaaaaaaaaaaaaa", 2, 12, "aaaxaaaaaaaaaa", 2, 12, CompareOptions.Ordinal, -1 }; // Equal long alignment 0, different compare at n=2
+            yield return new object[] { s_invariantCompare, "aaaaaaaaaaaaaa", 2, 12, "aaaaxaaaaaaaaa", 2, 12, CompareOptions.Ordinal, -1 }; // Equal long alignment 0, different compare at n=3
+            yield return new object[] { s_invariantCompare, "aaaaaaaaaaaaaa", 2, 12, "aaaaaxaaaaaaaa", 2, 12, CompareOptions.Ordinal, -1 }; // Equal long alignment 0, different compare at n=4
+            yield return new object[] { s_invariantCompare, "aaaaaaaaaaaaaa", 2, 12, "aaaaaaxaaaaaaa", 2, 12, CompareOptions.Ordinal, -1 }; // Equal long alignment 0, different compare at n=5
+            yield return new object[] { s_invariantCompare, "aaaaaaaaaaaaaa", 0, 13, "+aaaaaaaaaaaaa", 1, 13, CompareOptions.Ordinal, 0 }; // Different int alignment, equal compare
+            yield return new object[] { s_invariantCompare, "aaaaaaaaaaaaaa", 0, 13, "aaaaaaaaaaaaax", 1, 13, CompareOptions.Ordinal, -1 }; // Different int alignment
+            yield return new object[] { s_invariantCompare, "aaaaaaaaaaaaaa", 1, 13, "aaaxaaaaaaaaaa", 3, 11, CompareOptions.Ordinal, -1 }; // Different long alignment, abs of 4, one of them is 2, different at n=1
+            yield return new object[] { s_invariantCompare, "-aaaaaaaaaaaaa", 1, 10, "++++aaaaaaaaaa", 4, 10, CompareOptions.Ordinal, 0 }; // Different long alignment, equal compare
+            yield return new object[] { s_invariantCompare, "aaaaaaaaaaaaaa", 1, 10, "aaaaaaaaaaaaax", 4, 10, CompareOptions.Ordinal, -1 }; // Different long alignment
         }
         
         [Theory]
-        [MemberData("Compare_TestData")]
-        public void Compare(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expected)
+        [MemberData(nameof(Compare_Advanced_TestData))]
+        public void Compare(CompareInfo compareInfo, string string1, int offset1, int length1, string string2, int offset2, int length2, CompareOptions options, int expected)
         {
+            if (offset1 + length1 == (string1?.Length ?? 0) && offset2 + length2 == (string2?.Length ?? 0))
+            {
+                if (offset1 == 0 && offset2 == 0)
+                {
+                    if (options == CompareOptions.None)
+                    {
+                        // Use Compare(string, string)
+                        Assert.Equal(expected, Math.Sign(compareInfo.Compare(string1, string2)));
+                        Assert.Equal(-expected, Math.Sign(compareInfo.Compare(string2, string1)));
+                    }
+                    // Use Compare(string, string, CompareOptions)
+                    Assert.Equal(expected, Math.Sign(compareInfo.Compare(string1, string2, options)));
+                    Assert.Equal(-expected, Math.Sign(compareInfo.Compare(string2, string1, options)));
+                }
+                if (options == CompareOptions.None)
+                {
+                    // Use Compare(string, int, string, int)
+                    Assert.Equal(expected, Math.Sign(compareInfo.Compare(string1, offset1, string2, offset2)));
+                    Assert.Equal(-expected, Math.Sign(compareInfo.Compare(string2, offset2, string1, offset1)));
+                }
+                // Use Compare(string, int, string, int, CompareOptions)
+                Assert.Equal(expected, Math.Sign(compareInfo.Compare(string1, offset1, string2, offset2, options)));
+                Assert.Equal(-expected, Math.Sign(compareInfo.Compare(string2, offset2, string1, offset1, options)));
+            }
             if (options == CompareOptions.None)
             {
-                // Use Compare(string, string)
-                Assert.Equal(expected, NormalizeCompare(compareInfo.Compare(string1, string2)));
-                Assert.Equal(-expected, NormalizeCompare(compareInfo.Compare(string2, string1)));
+                // Use Compare(string, int, int, string, int, int)
+                Assert.Equal(expected, Math.Sign(compareInfo.Compare(string1, offset1, length1, string2, offset2, length2)));
+                Assert.Equal(-expected, Math.Sign(compareInfo.Compare(string2, offset2, length2, string1, offset1, length1)));
             }
-            // Use Compare(string, string, CompareOptions)
-            Assert.Equal(expected, NormalizeCompare(compareInfo.Compare(string1, string2, options)));
-            Assert.Equal(-expected, NormalizeCompare(compareInfo.Compare(string2, string1, options)));
+            // Use Compare(string, int, int, string, int, int, CompareOptions)
+            Assert.Equal(expected, Math.Sign(compareInfo.Compare(string1, offset1, length1, string2, offset2, length2, options)));
+            Assert.Equal(-expected, Math.Sign(compareInfo.Compare(string2, offset2, length2, string1, offset1, length1, options)));
         }
 
         [Fact]
-        [ActiveIssue(5436, PlatformID.AnyUnix)]
+        [ActiveIssue(5436, Xunit.PlatformID.AnyUnix)]
         public void Compare_Issue5463()
         {
             // TODO: Remove this function, and combine into Compare_TestData once 5463 is fixed
@@ -291,56 +333,74 @@ namespace System.Globalization.Tests
             Compare(s_invariantCompare, "FooBar", "Foo" + UnassignedUnicodeCharacter() + "Bar", CompareOptions.None, 0);
             Compare(s_invariantCompare, "FooBar", "Foo" + UnassignedUnicodeCharacter() + "Bar", CompareOptions.IgnoreNonSpace, 0);
             Compare(s_invariantCompare, "Test's", "Tests", CompareOptions.None, 1);
-        }
 
-        [Theory]
-        [InlineData(null, 0, 0, null, 0, 0, 0)]
-        [InlineData("Hello", 0, 5, null, 0, 0, 1)]
-        [InlineData(null, 0, 0, "Hello", 0, 5, -1)]
-        [InlineData("Hello", 0, 0, "Hello", 0, 0, 0)]
-        [InlineData("Hello", 0, 5, "Hello", 0, 5, 0)]
-        [InlineData("Hello", 0, 3, "Hello", 0, 3, 0)]
-        [InlineData("Hello", 2, 3, "Hello", 2, 3, 0)]
-        [InlineData("Hello", 0, 5, "He" + SoftHyphen + "llo", 0, 5, -1)]
-        [InlineData("Hello", 0, 5, "-=<Hello>=-", 3, 5, 0)]
-        [InlineData("\uD83D\uDD53Hello\uD83D\uDD50", 1, 7, "\uD83D\uDD53Hello\uD83D\uDD54", 1, 7, 0)] // Surrogate split
-        [InlineData("Hello", 0, 5, "Hello123", 0, 8, -1)]
-        [InlineData("Hello123", 0, 8, "Hello", 0, 5, 1)]
-        [InlineData("---aaaaaaaaaaa", 3, 11, "+++aaaaaaaaaaa", 3, 11, 0)]      // Equal long alignment 2, equal compare
-        [InlineData("aaaaaaaaaaaaaa", 3, 11, "aaaxaaaaaaaaaa", 3, 11, -1)]     // Equal long alignment 2, different compare at n=1
-        [InlineData("-aaaaaaaaaaaaa", 1, 13, "+aaaaaaaaaaaaa", 1, 13, 0)]      // Equal long alignment 6, equal compare
-        [InlineData("aaaaaaaaaaaaaa", 1, 13, "axaaaaaaaaaaaa", 1, 13, -1)]     // Equal long alignment 6, different compare at n=1
-        [InlineData("aaaaaaaaaaaaaa", 0, 14, "aaaaaaaaaaaaaa", 0, 14, 0)]      // Equal long alignment 4, equal compare
-        [InlineData("aaaaaaaaaaaaaa", 0, 14, "xaaaaaaaaaaaaa", 0, 14, -1)]     // Equal long alignment 4, different compare at n=1
-        [InlineData("aaaaaaaaaaaaaa", 0, 14, "axaaaaaaaaaaaa", 0, 14, -1)]     // Equal long alignment 4, different compare at n=2
-        [InlineData("--aaaaaaaaaaaa", 2, 12, "++aaaaaaaaaaaa", 2, 12, 0)]      // Equal long alignment 0, equal compare
-        [InlineData("aaaaaaaaaaaaaa", 2, 12, "aaxaaaaaaaaaaa", 2, 12, -1)]     // Equal long alignment 0, different compare at n=1
-        [InlineData("aaaaaaaaaaaaaa", 2, 12, "aaaxaaaaaaaaaa", 2, 12, -1)]     // Equal long alignment 0, different compare at n=2
-        [InlineData("aaaaaaaaaaaaaa", 2, 12, "aaaaxaaaaaaaaa", 2, 12, -1)]     // Equal long alignment 0, different compare at n=3
-        [InlineData("aaaaaaaaaaaaaa", 2, 12, "aaaaaxaaaaaaaa", 2, 12, -1)]     // Equal long alignment 0, different compare at n=4
-        [InlineData("aaaaaaaaaaaaaa", 2, 12, "aaaaaaxaaaaaaa", 2, 12, -1)]     // Equal long alignment 0, different compare at n=5
-        [InlineData("aaaaaaaaaaaaaa", 0, 13, "+aaaaaaaaaaaaa", 1, 13, 0)]      // Different int alignment, equal compare
-        [InlineData("aaaaaaaaaaaaaa", 0, 13, "aaaaaaaaaaaaax", 1, 13, -1)]     // Different int alignment
-        [InlineData("aaaaaaaaaaaaaa", 1, 13, "aaaxaaaaaaaaaa", 3, 11, -1)]     // Different long alignment, abs of 4, one of them is 2, different at n=1
-        [InlineData("-aaaaaaaaaaaaa", 1, 10, "++++aaaaaaaaaa", 4, 10, 0)]      // Different long alignment, equal compare
-        [InlineData("aaaaaaaaaaaaaa", 1, 10, "aaaaaaaaaaaaax", 4, 10, -1)]     // Different long alignment
-        public static void TestCompare_Ordinal_Indexed(string str1, int offset1, int length1, string str2, int offset2, int length2, int expectedResult)
-        {
-            CompareInfo ci = CultureInfo.InvariantCulture.CompareInfo;
-            Assert.Equal(expectedResult, NormalizeCompare(ci.Compare(str1, offset1, length1, str2, offset2, length2, CompareOptions.Ordinal)));
-
-            if ((str1 == null || offset1 + length1 == str1.Length) &&
-                (str2 == null || offset2 + length2 == str2.Length))
-            {
-                Assert.Equal(expectedResult, NormalizeCompare(ci.Compare(str1, offset1, str2, offset2, CompareOptions.Ordinal)));
-            }
+            Compare(new CultureInfo("de-DE").CompareInfo, "Ü", "UE", CompareOptions.None, -1);
+            Compare(new CultureInfo("de-DE_phoneb").CompareInfo, "Ü", "UE", CompareOptions.None, 0);
         }
 
         [Fact]
         public void Compare_Invalid()
         {
             // Compare options are invalid
-            Assert.Throws<ArgumentException>(() => CultureInfo.InvariantCulture.CompareInfo.Compare("Test's", "Tests", (CompareOptions)(-1)));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.Compare("Tests", "Tests", (CompareOptions)(-1)));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.Compare("Tests", 0, "Tests", 0, (CompareOptions)(-1)));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.Compare("Tests", 0, 2, "Tests", 0, 2, (CompareOptions)(-1)));
+
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.Compare("Tests", "Tests", CompareOptions.Ordinal | CompareOptions.IgnoreWidth));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.Compare("Tests", 0, "Tests", 0, CompareOptions.Ordinal | CompareOptions.IgnoreWidth));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.Compare("Tests", 0, 2, "Tests", 0, 2, CompareOptions.Ordinal | CompareOptions.IgnoreWidth));
+
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.Compare("Tests", "Tests", CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.Compare("Tests", 0, "Tests", 0, CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.Compare("Tests", 0, 2, "Tests", 0, 2, CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth));
+
+            // Offset1 < 0
+            Assert.Throws<ArgumentOutOfRangeException>("offset1", () => s_invariantCompare.Compare("Test", -1, "Test", 0));
+            Assert.Throws<ArgumentOutOfRangeException>("offset1", () => s_invariantCompare.Compare("Test", -1, "Test", 0, CompareOptions.None));
+            Assert.Throws<ArgumentOutOfRangeException>("offset1", () => s_invariantCompare.Compare("Test", -1, 2, "Test", 0, 2));
+            Assert.Throws<ArgumentOutOfRangeException>("offset1", () => s_invariantCompare.Compare("Test", -1, 2, "Test", 0, 2, CompareOptions.None));
+
+            // Offset1 > string1.Length
+            Assert.Throws<ArgumentOutOfRangeException>("length1", () => s_invariantCompare.Compare("Test", 5, "Test", 0));
+            Assert.Throws<ArgumentOutOfRangeException>("length1", () => s_invariantCompare.Compare("Test", 5, "Test", 0, CompareOptions.None));
+            Assert.Throws<ArgumentOutOfRangeException>("string1", () => s_invariantCompare.Compare("Test", 5, 0, "Test", 0, 2));
+            Assert.Throws<ArgumentOutOfRangeException>("string1", () => s_invariantCompare.Compare("Test", 5, 0, "Test", 0, 2, CompareOptions.None));
+
+            // Offset2 < 0
+            Assert.Throws<ArgumentOutOfRangeException>("offset2", () => s_invariantCompare.Compare("Test", 0, "Test", -1));
+            Assert.Throws<ArgumentOutOfRangeException>("offset2", () => s_invariantCompare.Compare("Test", 0, "Test", -1, CompareOptions.None));
+            Assert.Throws<ArgumentOutOfRangeException>("offset2", () => s_invariantCompare.Compare("Test", 0, 2, "Test", -1, 2));
+            Assert.Throws<ArgumentOutOfRangeException>("offset2", () => s_invariantCompare.Compare("Test", 0, 2, "Test", -1, 2, CompareOptions.None));
+
+            // Offset2 > string2.Length
+            Assert.Throws<ArgumentOutOfRangeException>("length2", () => s_invariantCompare.Compare("Test", 0, "Test", 5));
+            Assert.Throws<ArgumentOutOfRangeException>("length2", () => s_invariantCompare.Compare("Test", 0, "Test", 5, CompareOptions.None));
+            Assert.Throws<ArgumentOutOfRangeException>("string2", () => s_invariantCompare.Compare("Test", 0, 2, "Test", 5, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("string2", () => s_invariantCompare.Compare("Test", 0, 2, "Test", 5, 0, CompareOptions.None));
+
+            // Length1 < 0
+            Assert.Throws<ArgumentOutOfRangeException>("length1", () => s_invariantCompare.Compare("Test", 0, -1, "Test", 0, 2));
+            Assert.Throws<ArgumentOutOfRangeException>("length1", () => s_invariantCompare.Compare("Test", 0, -1, "Test", 0, 2, CompareOptions.None));
+
+            // Length1 > string1.Length
+            Assert.Throws<ArgumentOutOfRangeException>("string1", () => s_invariantCompare.Compare("Test", 0, 5, "Test", 0, 2));
+            Assert.Throws<ArgumentOutOfRangeException>("string1", () => s_invariantCompare.Compare("Test", 0, 5, "Test", 0, 2, CompareOptions.None));
+
+            // Length2 < 0
+            Assert.Throws<ArgumentOutOfRangeException>("length2", () => s_invariantCompare.Compare("Test", 0, 2, "Test", 0, -1));
+            Assert.Throws<ArgumentOutOfRangeException>("length2", () => s_invariantCompare.Compare("Test", 0, 2, "Test", 0, -1, CompareOptions.None));
+
+            // Length2 > string2.Length
+            Assert.Throws<ArgumentOutOfRangeException>("string2", () => s_invariantCompare.Compare("Test", 0, 2, "Test", 0, 5));
+            Assert.Throws<ArgumentOutOfRangeException>("string2", () => s_invariantCompare.Compare("Test", 0, 2, "Test", 0, 5, CompareOptions.None));
+
+            // Offset1 + length1 > string1.Length
+            Assert.Throws<ArgumentOutOfRangeException>("string1", () => s_invariantCompare.Compare("Test", 2, 3, "Test", 0, 2));
+            Assert.Throws<ArgumentOutOfRangeException>("string1", () => s_invariantCompare.Compare("Test", 2, 3, "Test", 0, 2, CompareOptions.None));
+
+            // Offset2 + length2 > string2.Length
+            Assert.Throws<ArgumentOutOfRangeException>("string2", () => s_invariantCompare.Compare("Test", 0, 2, "Test", 2, 3));
+            Assert.Throws<ArgumentOutOfRangeException>("string2", () => s_invariantCompare.Compare("Test", 0, 2, "Test", 2, 3, CompareOptions.None));
         }
 
         private static char UnassignedUnicodeCharacter()
@@ -352,33 +412,7 @@ namespace System.Globalization.Tests
                     return ch;
                 }
             }
-            return char.MinValue; // There are no unassigned unicode characters from \u0000 - \uFFFF
-        }
-
-        private static int PredictCompareOrdinalResult(string string1, string string2)
-        {
-            if (string1 == null)
-            {
-                if (string2 == null) return 0;
-                else return -1;
-            }
-            if (string2 == null) return 1;
-
-            for (int i = 0; i < string1.Length; i++)
-            {
-                if (i >= string2.Length) return 1;
-                if (string1[i] > string2[i]) return 1;
-                if (string1[i] < string2[i]) return -1;
-            }
-
-            if (string2.Length > string1.Length) return -1;
-
-            return 0;
-        }
-
-        private static int NormalizeCompare(int result)
-        {
-            return Math.Sign(result);
+            return char.MinValue; // There are no unassigned Unicode characters from \u0000 - \uFFFF
         }
     }
 }

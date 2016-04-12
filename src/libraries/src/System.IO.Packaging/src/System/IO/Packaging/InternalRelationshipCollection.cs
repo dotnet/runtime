@@ -27,11 +27,6 @@ namespace System.IO.Packaging
     /// </summary>
     internal class InternalRelationshipCollection : IEnumerable<PackageRelationship>
     {
-        //------------------------------------------------------
-        //
-        //  Public Methods
-        //
-        //------------------------------------------------------
         #region IEnumerable
         /// <summary>
         /// Returns an enumerator over all the relationships for a Package or a PackagePart
@@ -43,7 +38,7 @@ namespace System.IO.Packaging
         }
 
         /// <summary>
-        /// Returns an enumertor over all the relationships for a Package or a PackagePart
+        /// Returns an enumerator over all the relationships for a Package or a PackagePart
         /// </summary>
         /// <returns></returns>
         IEnumerator<PackageRelationship> IEnumerable<PackageRelationship>.GetEnumerator()
@@ -52,7 +47,7 @@ namespace System.IO.Packaging
         }
 
         /// <summary>
-        /// Returns an enumertor over all the relationships for a Package or a PackagePart
+        /// Returns an enumerator over all the relationships for a Package or a PackagePart
         /// </summary>
         /// <returns></returns>
         public List<PackageRelationship>.Enumerator GetEnumerator()
@@ -61,12 +56,7 @@ namespace System.IO.Packaging
         }
 
         #endregion
-
-        //------------------------------------------------------
-        //
-        //  Internal Methods
-        //
-        //------------------------------------------------------
+        
         #region Internal Methods
         /// <summary>
         /// Constructor
@@ -189,11 +179,6 @@ namespace System.IO.Packaging
 
         #endregion Internal Methods
 
-        //------------------------------------------------------
-        //
-        //  Private Methods
-        //
-        //------------------------------------------------------
         #region Private Methods
         /// <summary>
         /// Constructor
@@ -522,7 +507,7 @@ namespace System.IO.Packaging
                 // We would like to persist the uri as passed in by the user and so we use the
                 // OriginalString property. This makes the persisting behavior consistent
                 // for relative and absolute Uris. 
-                // Since we accpeted the Uri as a string, we are at the minimum guaranteed that
+                // Since we accepted the Uri as a string, we are at the minimum guaranteed that
                 // the string can be converted to a valid Uri. 
                 // Also, we are just using it here to persist the information and we are not
                 // resolving or fetching a resource based on this Uri.
@@ -572,27 +557,13 @@ namespace System.IO.Packaging
         /// <returns>Resolved Uri</returns>
         private Uri GetResolvedTargetUri(Uri target, TargetMode targetMode)
         {
-            if (targetMode == TargetMode.Internal)
-            {
-                Debug.Assert(!target.IsAbsoluteUri, "Uri should be relative at this stage");
+            Debug.Assert(targetMode == TargetMode.Internal);
+            Debug.Assert(!target.IsAbsoluteUri, "Uri should be relative at this stage");
 
-                if (_sourcePart == null) //indicates that the source is the package root
-                    return PackUriHelper.ResolvePartUri(PackUriHelper.PackageRootUri, target);
-                else
-                    return PackUriHelper.ResolvePartUri(_sourcePart.Uri, target);
-            }
+            if (_sourcePart == null) //indicates that the source is the package root
+                return PackUriHelper.ResolvePartUri(PackUriHelper.PackageRootUri, target);
             else
-            {
-                if (target.IsAbsoluteUri)
-                {
-                    if (string.Equals(target.Scheme, PackUriHelper.UriSchemePack))
-                        return PackUriHelper.GetPartUri(target);
-                }
-                else
-                    Debug.Fail("Uri should not be relative at this stage");
-            }
-            // relative to the location of the package.
-            return target;
+                return PackUriHelper.ResolvePartUri(_sourcePart.Uri, target);
         }
 
         //Throws an exception if the relationship part does not have the correct content type
@@ -665,11 +636,6 @@ namespace System.IO.Packaging
 
         #endregion Private Properties
 
-        //------------------------------------------------------
-        //
-        //  Private Members
-        //
-        //------------------------------------------------------
         #region Private Members
         private List<PackageRelationship> _relationships;
         private bool _dirty;    // true if we have uncommitted changes to _relationships

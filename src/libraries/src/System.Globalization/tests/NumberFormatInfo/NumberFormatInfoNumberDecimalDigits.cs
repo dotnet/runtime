@@ -2,8 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -11,69 +10,37 @@ namespace System.Globalization.Tests
 {
     public class NumberFormatInfoNumberDecimalDigits
     {
-        // PosTest1: Verify property NumberDecimalDigits default value
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> NumberDecimalDigits_TestData()
         {
-            NumberFormatInfo nfi = new NumberFormatInfo();
-            Assert.Equal(2, nfi.NumberDecimalDigits);
+            yield return new object[] { NumberFormatInfo.InvariantInfo, 2, 2 };
+            yield return new object[] { new CultureInfo("en-US").NumberFormat, 2, 3 };
         }
 
-        // PosTest2: Verify set value of property NumberDecimalDigits
-        [Fact]
-        public void PosTest2()
-        {
-            NumberFormatInfo nfi = new NumberFormatInfo();
-
-            for (int i = 0; i < 100; i++)
-            {
-                nfi.NumberDecimalDigits = i;
-                Assert.Equal(i, nfi.NumberDecimalDigits);
-            }
-        }
-
-        // TestArgumentOutOfRange: ArgumentOutOfRangeException is thrown
-        [Fact]
-        public void TestArgumentOutOfRange()
-        {
-            VerificationHelper<ArgumentOutOfRangeException>(-1);
-            VerificationHelper<ArgumentOutOfRangeException>(100);
-        }
-
-        // TestInvalidOperation: InvalidOperationException is thrown
-        [Fact]
-        public void TestInvalidOperation()
-        {
-            NumberFormatInfo nfi = new NumberFormatInfo();
-            NumberFormatInfo nfiReadOnly = NumberFormatInfo.ReadOnly(nfi);
-            Assert.Throws<InvalidOperationException>(() =>
-            {
-                nfiReadOnly.NumberDecimalDigits = 1;
-            });
-        }
-
-        // TestCurrencyNumberDecimalDigitsLocale: Verify value of property NumberDecimalDigits for specific locales
         [Theory]
-        [InlineData("en-US", 2, 3)]
-        public void TestCurrencyNumberDecimalDigitsLocale(string locale, int expectedWindows, int expectedIcu)
+        [MemberData(nameof(NumberDecimalDigits_TestData))]
+        public void NumberDecimalDigits_Get(NumberFormatInfo format, int expectedWindows, int expectedIcu)
         {
-            CultureInfo myTestCulture = new CultureInfo(locale);
-            NumberFormatInfo nfi = myTestCulture.NumberFormat;
-            int actual = nfi.NumberDecimalDigits;
             int expected = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? expectedWindows : expectedIcu;
-
-            // todo: determine if Windows version needs to support "accounting" currency explictly which contains parenthesis
-            Assert.Equal(expected, actual);
+            Assert.Equal(expected, format.NumberDecimalDigits);
         }
 
-        private void VerificationHelper<T>(int i) where T : Exception
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(99)]
+        public void NumberDecimalDigits_Set(int newNumberDecimalDigits)
         {
-            NumberFormatInfo nfi = new NumberFormatInfo();
-            Assert.Throws<T>(() =>
-            {
-                nfi.NumberDecimalDigits = i;
-                int actual = nfi.NumberDecimalDigits;
-            });
+            NumberFormatInfo format = new NumberFormatInfo();
+            format.NumberDecimalDigits = newNumberDecimalDigits;
+            Assert.Equal(newNumberDecimalDigits, format.NumberDecimalDigits);
+        }
+
+        [Fact]
+        public void NumberDecimalDigits_Set_Invalid()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("NumberDecimalDigits", () => new NumberFormatInfo().NumberDecimalDigits = -1);
+            Assert.Throws<ArgumentOutOfRangeException>("NumberDecimalDigits", () => new NumberFormatInfo().NumberDecimalDigits = 100);
+            Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.NumberDecimalDigits = 1);
         }
     }
 }

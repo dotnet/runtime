@@ -2,18 +2,19 @@
 
 usage()
 {
-    echo "Usage: $0 [managed] [native] [BuildArch] [BuildType] [clean] [verbose] [clangx.y] [platform] [cross] [cmakeargs]"
+    echo "Usage: $0 [managed] [native] [BuildArch] [BuildType] [clean] [verbose] [clangx.y] [platform] [cross] [skiptests] [cmakeargs]"
     echo "managed - optional argument to build the managed code"
     echo "native - optional argument to build the native code"
     echo "The following arguments affect native builds only:"
     echo "BuildArch can be: x64, x86, arm, arm64"
-    echo "BuildType can be: Debug, Release"
+    echo "BuildType can be: debug, release"
     echo "clean - optional argument to force a clean build."
     echo "verbose - optional argument to enable verbose build output."
     echo "clangx.y - optional argument to build using clang version x.y."
     echo "platform can be: FreeBSD, Linux, NetBSD, OSX, Windows"
     echo "cross - optional argument to signify cross compilation,"
     echo "      - will use ROOTFS_DIR environment variable if set."
+    echo "skiptests - skip the tests in the './bin/*/*Tests/' subdirectory."
     echo "cmakeargs - user-settable additional arguments passed to CMake."
     exit 1
 }
@@ -98,14 +99,14 @@ prepare_native_build()
     fi
 }
 
-build_managed_corefx()
+build_managed()
 {
     __buildproj=$__scriptpath/build.proj
     __buildlog=$__scriptpath/msbuild.log
     __binclashlog=$__scriptpath/binclash.log
     __binclashloggerdll=$__scriptpath/Tools/Microsoft.DotNet.Build.Tasks.dll
 
-    $__scriptpath/Tools/corerun $__scriptpath/Tools/MSBuild.exe "$__buildproj" /nologo /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__buildlog" "/l:BinClashLogger,$__binclashloggerdll;LogFile=$__binclashlog" /t:Build /p:ConfigurationGroup=$__BuildType /p:OSGroup=$__BuildOS /p:COMPUTERNAME=$(hostname) /p:USERNAME=$(id -un) /p:TestNugetRuntimeId=$__TestNugetRuntimeId $__UnprocessedBuildArgs
+    $__scriptpath/Tools/corerun $__scriptpath/Tools/MSBuild.exe "$__buildproj" /m /nologo /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__buildlog" "/l:BinClashLogger,$__binclashloggerdll;LogFile=$__binclashlog" /t:Build /p:ConfigurationGroup=$__BuildType /p:OSGroup=$__BuildOS /p:SkipTests=$__SkipTests /p:COMPUTERNAME=$(hostname) /p:USERNAME=$(id -un) /p:TestNugetRuntimeId=$__TestNugetRuntimeId $__UnprocessedBuildArgs
     BUILDERRORLEVEL=$?
 
     echo
@@ -115,7 +116,7 @@ build_managed_corefx()
     echo Build Exit Code = $BUILDERRORLEVEL
 }
 
-build_native_corefx()
+build_native()
 {
     # All set to commence the build
 
@@ -256,6 +257,7 @@ BUILDERRORLEVEL=0
 __UnprocessedBuildArgs=
 __CleanBuild=false
 __CrossBuild=0
+__SkipTests=false
 __VerboseBuild=false
 __ClangMajorVersion=3
 __ClangMinorVersion=5
@@ -341,6 +343,9 @@ while :; do
         cross)
             __CrossBuild=1
             ;;
+        skiptests)
+            __SkipTests=true
+            ;;
         cmakeargs)
             if [ -n "$2" ]; then
                 __CMakeExtraArgs="$2"
@@ -371,6 +376,10 @@ if [ "$__BuildOS" != "$__HostOS" ]; then
     __buildnative=false
 fi
 
+if [ ! -e "$__nativeroot" ]; then
+   __buildnative=false
+fi
+
 # Set the remaining variables based upon the determined build configuration
 __IntermediatesDir="$__rootbinpath/obj/$__BuildOS.$__BuildArch.$__BuildType/Native"
 __BinDir="$__rootbinpath/$__BuildOS.$__BuildArch.$__BuildType/Native"
@@ -378,24 +387,6 @@ __BinDir="$__rootbinpath/$__BuildOS.$__BuildArch.$__BuildType/Native"
 # Make the directories necessary for build if they don't exist
 
 setup_dirs
-
-if $__buildmanaged; then
-
-    # Prepare the system
-
-    prepare_managed_build
-
-    # Build the corefx native components.
-
-    build_managed_corefx
-
-    # Build complete
-fi
-
-# If managed build failed, exit with the status code of the managed build
-if [ $BUILDERRORLEVEL != 0 ]; then
-    exit $BUILDERRORLEVEL
-fi
 
 # Configure environment if we are doing a cross compile.
 if [ "$__CrossBuild" == 1 ]; then
@@ -417,9 +408,27 @@ if $__buildnative; then
 
     # Build the corefx native components.
 
-    build_native_corefx
+    build_native
 
     # Build complete
+fi
+
+if $__buildmanaged; then
+
+    # Prepare the system
+
+    prepare_managed_build
+
+    # Build the corefx native components.
+
+    build_managed
+
+    # Build complete
+fi
+
+# If managed build failed, exit with the status code of the managed build
+if [ $BUILDERRORLEVEL != 0 ]; then
+    exit $BUILDERRORLEVEL
 fi
 
 exit $BUILDERRORLEVEL

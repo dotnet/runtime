@@ -177,7 +177,7 @@ namespace System.Linq.Tests
         public void ForcedToEnumeratorDoesntEnumerate()
         {
             var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).Take(2);
-            // Don't insist on this behaviour, but check its correct if it happens
+            // Don't insist on this behaviour, but check it's correct if it happens
             var en = iterator as IEnumerator<int>;
             Assert.False(en != null && en.MoveNext());
         }
@@ -194,7 +194,7 @@ namespace System.Linq.Tests
         public void ForcedToEnumeratorDoesntEnumerateIList()
         {
             var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).ToList().Take(2);
-            // Don't insist on this behaviour, but check its correct if it happens
+            // Don't insist on this behaviour, but check it's correct if it happens
             var en = iterator as IEnumerator<int>;
             Assert.False(en != null && en.MoveNext());
         }
@@ -413,6 +413,26 @@ namespace System.Linq.Tests
             Assert.Equal(1, source.Take(1).ToList().Single());
             Assert.Empty(source.Take(0).ToList());
             Assert.Empty(source.Take(-10).ToList());
+        }
+
+        [Fact]
+        public void TakeCanOnlyBeOneList()
+        {
+            var source = new[] { 2, 4, 6, 8, 10 };
+            Assert.Equal(new[] { 2 }, source.Take(1));
+            Assert.Equal(new[] { 4 }, source.Skip(1).Take(1));
+            Assert.Equal(new[] { 6 }, source.Take(3).Skip(2));
+            Assert.Equal(new[] { 2 }, source.Take(3).Take(1));
+        }
+
+        [Fact]
+        public void TakeCanOnlyBeOneNotList()
+        {
+            var source = GuaranteeNotIList(new[] { 2, 4, 6, 8, 10 });
+            Assert.Equal(new[] { 2 }, source.Take(1));
+            Assert.Equal(new[] { 4 }, source.Skip(1).Take(1));
+            Assert.Equal(new[] { 6 }, source.Take(3).Skip(2));
+            Assert.Equal(new[] { 2 }, source.Take(3).Take(1));
         }
 
         [Fact]

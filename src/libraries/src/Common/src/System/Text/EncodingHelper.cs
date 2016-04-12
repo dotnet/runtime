@@ -7,7 +7,7 @@ using System.Text;
 
 namespace System.Text
 {
-    // If we find issues with this or if more libraries need this behavior we will revist the solution.
+    // If we find issues with this or if more libraries need this behavior we will revisit the solution.
     internal static partial class EncodingHelper
     {
         // Since only a minimum set of encodings are available by default,
@@ -15,7 +15,7 @@ namespace System.Text
         // To avoid encoding exception in Console APIs we default to UTF8 in such scenarios.
         //
         //
-        // The guranteed way to identify the above is to use a try/catch pattern, however to avoid 1st chance exceptions 
+        // The guaranteed way to identify the above is to use a try/catch pattern, however to avoid 1st chance exceptions 
         // we do a best-effort heuristic instead. By default CodePage 0 is CP_ACP(Windows ANSI encoding)
         // and Encoding.GetEncoding(0) returns the ANSI codepage if its encoding data is available else it returns UTF8. We leverage 
         // this behavior to identify whether a potential provider is registered or not.

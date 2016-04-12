@@ -53,8 +53,6 @@ namespace System.Xml.Tests
 
         [Fact]
         [OuterLoop]
-        [ActiveIssue(5462, PlatformID.AnyUnix)]
-        [ActiveIssue(1303, PlatformID.Windows)]
         public static void ToTypeTests()
         {
             RunTestCase(new ToTypeTests { Attribute = new TestCase { Name = "XmlConvert type conversion functions", Desc = "XmlConvert" } });

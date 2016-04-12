@@ -12,7 +12,7 @@ namespace System.IO.Compression
     /// or Unix (3) will be treated as equal to the current OS.
     /// </summary>
     /// <remarks>
-    /// The value of 0 more specificaly corresponds to the FAT file system while NTFS is assigned a higher value. However
+    /// The value of 0 more specifically corresponds to the FAT file system while NTFS is assigned a higher value. However
     /// for historical and compatibility reasons, Windows is always assigned a 0 value regardless of file system.
     /// </remarks>
     internal enum ZipVersionMadeByPlatform : byte

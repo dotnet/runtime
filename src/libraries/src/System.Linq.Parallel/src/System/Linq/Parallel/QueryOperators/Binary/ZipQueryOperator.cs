@@ -68,8 +68,8 @@ namespace System.Linq.Parallel
             OrdinalIndexState leftIndexState = _leftChild.OrdinalIndexState;
             OrdinalIndexState rightIndexState = _rightChild.OrdinalIndexState;
 
-            _prematureMergeLeft = leftIndexState != OrdinalIndexState.Indexible;
-            _prematureMergeRight = rightIndexState != OrdinalIndexState.Indexible;
+            _prematureMergeLeft = leftIndexState != OrdinalIndexState.Indexable;
+            _prematureMergeRight = rightIndexState != OrdinalIndexState.Indexable;
             _limitsParallelism =
                 (_prematureMergeLeft && leftIndexState != OrdinalIndexState.Shuffled)
                 || (_prematureMergeRight && rightIndexState != OrdinalIndexState.Shuffled);
@@ -134,7 +134,7 @@ namespace System.Linq.Parallel
         {
             get
             {
-                return OrdinalIndexState.Indexible;
+                return OrdinalIndexState.Indexable;
             }
         }
 
@@ -153,7 +153,7 @@ namespace System.Linq.Parallel
 
         //---------------------------------------------------------------------------------------
         // A special QueryResults class for the Zip operator. It requires that both of the child
-        // QueryResults are indexible.
+        // QueryResults are indexable.
         //
 
         internal class ZipQueryOperatorResults : QueryResults<TOutput>

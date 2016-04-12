@@ -2,13 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Globalization;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -17,7 +12,7 @@ namespace System.Globalization.Tests
     public class CultureInfoAll
     {
         [Fact]
-        [ActiveIssue(5463, PlatformID.AnyUnix)]
+        [PlatformSpecific(Xunit.PlatformID.Windows)] // P/Invoke to Win32 function
         public void TestAllCultures()
         {
             Assert.True(EnumSystemLocalesEx(EnumLocales, LOCALE_WINDOWS, IntPtr.Zero, IntPtr.Zero), "EnumSystemLocalesEx has failed");
@@ -141,7 +136,8 @@ namespace System.Globalization.Tests
             Assert.Equal(GetLocaleInfo(ci, LOCALE_SENGLISHCOUNTRYNAME), ri.EnglishName);
             Assert.Equal(GetLocaleInfoAsInt(ci, LOCALE_IMEASURE) == 0, ri.IsMetric);
             Assert.Equal(GetLocaleInfo(ci, LOCALE_SINTLSYMBOL), ri.ISOCurrencySymbol);
-            Assert.Equal(GetLocaleInfo(ci, LOCALE_SISO3166CTRYNAME), ri.Name, StringComparer.OrdinalIgnoreCase);
+            Assert.True(ci.Name.Equals(ri.Name, StringComparison.OrdinalIgnoreCase) || // Desktop usese culture name as region name
+                        ri.Name.Equals(GetLocaleInfo(ci, LOCALE_SISO3166CTRYNAME), StringComparison.OrdinalIgnoreCase)); // netcore uses 2 letter ISO for region name
             Assert.Equal(GetLocaleInfo(ci, LOCALE_SISO3166CTRYNAME), ri.TwoLetterISORegionName, StringComparer.OrdinalIgnoreCase);
             Assert.Equal(GetLocaleInfo(ci, LOCALE_SNATIVECOUNTRYNAME), ri.NativeName, StringComparer.OrdinalIgnoreCase);
         }

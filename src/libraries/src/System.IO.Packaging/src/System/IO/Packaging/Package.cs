@@ -2,20 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//-----------------------------------------------------------------------------
-//
-// Description:
-//  This is a base abstract class for Package. This is a part of the
-//  Packaging Layer.
-//
-//-----------------------------------------------------------------------------
-
 using System;
 using System.IO;
 using System.Collections;
-using System.Collections.Generic;   // For SortedList<>
+using System.Collections.Generic;
 using System.Diagnostics;
-using System.Security;           // For Debug.Assert
+using System.Security;
 
 namespace System.IO.Packaging
 {
@@ -25,12 +17,6 @@ namespace System.IO.Packaging
     /// </summary>
     public abstract class Package : IDisposable
     {
-        //------------------------------------------------------
-        //
-        //  Public Constructors
-        //
-        //------------------------------------------------------
-
         #region Protected Constructor
 
         /// <summary>
@@ -53,13 +39,7 @@ namespace System.IO.Packaging
         }
 
         #endregion Protected Constructor
-
-        //------------------------------------------------------
-        //
-        //  Public Properties
-        //
-        //------------------------------------------------------
-
+        
         #region Public Properties
 
         /// <summary>
@@ -96,13 +76,7 @@ namespace System.IO.Packaging
         }
 
         #endregion Public Properties
-
-        //------------------------------------------------------
-        //
-        //  Public Methods
-        //
-        //------------------------------------------------------
-
+        
         #region Public Methods
 
         #region OpenOnFileMethods
@@ -785,31 +759,11 @@ namespace System.IO.Packaging
         protected abstract void FlushCore();
 
         #endregion Protected Abstract Methods
-
-        //------------------------------------------------------
-        //
-        //  Internal Constructors
-        //
-        //------------------------------------------------------
-        // None
-        //------------------------------------------------------
-
-        //------------------------------------------------------
-        //
-        //   Internal Properties
-        //
-        //------------------------------------------------------
-
+        
         #region Internal Properties
 
 
         #endregion Internal Properties
-
-        //------------------------------------------------------
-        //
-        //  Internal Methods
-        //
-        //------------------------------------------------------
 
         #region Internal Methods
 
@@ -868,63 +822,57 @@ namespace System.IO.Packaging
             FileShare packageShare)
         {
             Package package = null;
+            if (path == null)
+                throw new ArgumentNullException(nameof(path));
+
+            ThrowIfFileModeInvalid(packageMode);
+            ThrowIfFileAccessInvalid(packageAccess);
+
+            if (packageMode == FileMode.OpenOrCreate && packageAccess != FileAccess.ReadWrite)
+                throw new ArgumentException(SR.UnsupportedCombinationOfModeAccess);
+            if (packageMode == FileMode.Create && packageAccess != FileAccess.ReadWrite)
+                throw new ArgumentException(SR.UnsupportedCombinationOfModeAccess);
+            if (packageMode == FileMode.CreateNew && packageAccess != FileAccess.ReadWrite)
+                throw new ArgumentException(SR.UnsupportedCombinationOfModeAccess);
+            if (packageMode == FileMode.Open && packageAccess == FileAccess.Write)
+                throw new ArgumentException(SR.UnsupportedCombinationOfModeAccess);
+            if (packageMode == FileMode.Truncate && packageAccess == FileAccess.Read)
+                throw new ArgumentException(SR.UnsupportedCombinationOfModeAccess);
+            if (packageMode == FileMode.Truncate)
+                throw new NotSupportedException(SR.UnsupportedCombinationOfModeAccess);
+
+            //Note: FileShare enum is not being verified at this stage, as we do not interpret the flag in this
+            //code at all and just pass it on to the next layer, where the necessary validation can be
+            //performed. Also, there is no meaningful way to check this parameter at this layer, as the
+            //FileShare enumeration is a set of flags and flags/Bit-fields can be combined using a
+            //bitwise OR operation to create different values, and validity of these values is specific to
+            //the actual physical implementation.
+
+            //Verify if this is valid for filenames
+            FileInfo packageFileInfo = new FileInfo(path);
+
             try
             {
-                if (path == null)
-                    throw new ArgumentNullException(nameof(path));
+                package = new ZipPackage(packageFileInfo.FullName, packageMode, packageAccess, packageShare);
+                package._openFileMode = packageMode;
 
-                ThrowIfFileModeInvalid(packageMode);
-                ThrowIfFileAccessInvalid(packageAccess);
-
-                if (packageMode == FileMode.OpenOrCreate && packageAccess != FileAccess.ReadWrite)
-                    throw new ArgumentException(SR.UnsupportedCombinationOfModeAccess);
-                if (packageMode == FileMode.Create && packageAccess != FileAccess.ReadWrite)
-                    throw new ArgumentException(SR.UnsupportedCombinationOfModeAccess);
-                if (packageMode == FileMode.CreateNew && packageAccess != FileAccess.ReadWrite)
-                    throw new ArgumentException(SR.UnsupportedCombinationOfModeAccess);
-                if (packageMode == FileMode.Open && packageAccess == FileAccess.Write)
-                    throw new ArgumentException(SR.UnsupportedCombinationOfModeAccess);
-                if (packageMode == FileMode.Truncate && packageAccess == FileAccess.Read)
-                    throw new ArgumentException(SR.UnsupportedCombinationOfModeAccess);
-                if (packageMode == FileMode.Truncate)
-                    throw new NotSupportedException(SR.UnsupportedCombinationOfModeAccess);
-
-                //Note: FileShare enum is not being verfied at this stage, as we do not interpret the flag in this
-                //code at all and just pass it on to the next layer, where the necessary validation can be
-                //performed. Also, there is no meaningful way to check this parameter at this layer, as the
-                //FileShare enumeration is a set of flags and flags/Bit-fields can be combined using a
-                //bitwise OR operation to create different values, and validity of these values is specific to
-                //the actual physical implementation.
-
-                //Verify if this is valid for filenames
-                FileInfo packageFileInfo = new FileInfo(path);
-
-                try
-                {
-                    package = new ZipPackage(packageFileInfo.FullName, packageMode, packageAccess, packageShare);
-                    package._openFileMode = packageMode;
-
-                    //We need to get all the parts if any exists from the underlying file
-                    //so that we have the names in the Normalized form in our in-memory
-                    //data structures.
-                    //Note: If ever this call is removed, each individual call to GetPartCore,
-                    //may result in undefined behavior as the underlying ZipArchive, maintains the
-                    //files list as being case-sensitive.
-                    if (package.FileOpenAccess == FileAccess.ReadWrite || package.FileOpenAccess == FileAccess.Read)
-                        package.GetParts();
-                }
-                catch
-                {
-                    if (package != null)
-                    {
-                        package.Close();
-                    }
-
-                    throw;
-                }
+                //We need to get all the parts if any exists from the underlying file
+                //so that we have the names in the Normalized form in our in-memory
+                //data structures.
+                //Note: If ever this call is removed, each individual call to GetPartCore,
+                //may result in undefined behavior as the underlying ZipArchive, maintains the
+                //files list as being case-sensitive.
+                if (package.FileOpenAccess == FileAccess.ReadWrite || package.FileOpenAccess == FileAccess.Read)
+                    package.GetParts();
             }
-            finally
+            catch
             {
+                if (package != null)
+                {
+                    package.Close();
+                }
+
+                throw;
             }
             return package;
         }
@@ -943,39 +891,33 @@ namespace System.IO.Packaging
         public static Package Open(Stream stream, FileMode packageMode, FileAccess packageAccess)
         {
             Package package = null;
+            if (stream == null)
+                throw new ArgumentNullException(nameof(stream));
+
             try
             {
-                if (stream == null)
-                    throw new ArgumentNullException(nameof(stream));
+                // Today the Open(Stream) method is purely used for streams of Zip file format as
+                // that is the default underlying file format mapper implemented.
 
-                try
-                {
-                    // Today the Open(Stream) method is purely used for streams of Zip file format as
-                    // that is the default underlying file format mapper implemented.
+                package = new ZipPackage(stream, packageMode, packageAccess);
 
-                    package = new ZipPackage(stream, packageMode, packageAccess);
-
-                    //We need to get all the parts if any exists from the underlying file
-                    //so that we have the names in the Normalized form in our in-memory
-                    //data structures.
-                    //Note: If ever this call is removed, each individual call to GetPartCore,
-                    //may result in undefined behavior as the underlying ZipArchive, maintains the
-                    //files list as being case-sensitive.
-                    if (package.FileOpenAccess == FileAccess.ReadWrite || package.FileOpenAccess == FileAccess.Read)
-                        package.GetParts();
-                }
-                catch
-                {
-                    if (package != null)
-                    {
-                        package.Close();
-                    }
-
-                    throw;
-                }
+                //We need to get all the parts if any exists from the underlying file
+                //so that we have the names in the Normalized form in our in-memory
+                //data structures.
+                //Note: If ever this call is removed, each individual call to GetPartCore,
+                //may result in undefined behavior as the underlying ZipArchive, maintains the
+                //files list as being case-sensitive.
+                if (package.FileOpenAccess == FileAccess.ReadWrite || package.FileOpenAccess == FileAccess.Read)
+                    package.GetParts();
             }
-            finally
+            catch
             {
+                if (package != null)
+                {
+                    package.Close();
+                }
+
+                throw;
             }
 
             return package;
@@ -1225,13 +1167,7 @@ namespace System.IO.Packaging
         }
 
         #endregion Private Methods
-
-        //------------------------------------------------------
-        //
-        //  Private Fields
-        //
-        //------------------------------------------------------
-
+        
         #region Private Members
 
         // Default values for the Package.Open method overloads
@@ -1251,6 +1187,5 @@ namespace System.IO.Packaging
 
 
         #endregion Private Members
-
     }
 }

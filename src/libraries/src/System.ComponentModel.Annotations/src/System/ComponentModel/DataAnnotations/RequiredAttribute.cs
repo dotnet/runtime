@@ -35,7 +35,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <returns>
         ///     <c>false</c> if the <paramref name="value" /> is null or an empty string. If
         ///     <see cref="RequiredAttribute.AllowEmptyStrings" />
-        ///     then <c>false</c> is returned only if <paramref name="vale" /> is null.
+        ///     then <c>false</c> is returned only if <paramref name="value" /> is null.
         /// </returns>
         public override bool IsValid(object value)
         {

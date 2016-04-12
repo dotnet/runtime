@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Net.Sockets.Tests
 {
-    internal static class SocketAsyncExtensions
+    internal static partial class SocketAsyncExtensions
     {
         public static void AcceptAsync(this Socket socket, SocketAsyncEventArgs eventArgs, Action<Socket> handler)
         {

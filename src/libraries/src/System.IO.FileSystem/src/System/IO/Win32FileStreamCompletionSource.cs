@@ -123,7 +123,7 @@ namespace System.IO
                 Interlocked.CompareExchange(ref _stream._currentOverlappedOwner, null, this);
             }
 
-            // When doing IO asynchronously (ie, _isAsync==true), this callback is 
+            // When doing IO asynchronously (i.e. _isAsync==true), this callback is 
             // called by a free thread in the threadpool when the IO operation 
             // completes.  
             internal static unsafe void IOCallback(uint errorCode, uint numBytes, NativeOverlapped* pOverlapped)

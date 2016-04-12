@@ -57,7 +57,7 @@ namespace System.Collections.Tests
             Assert.Null(linkedList.Find(default(T))); //"Err_3969887wiqpi Expected Find to return false with an null item not in the collection size=3"
             VerifyFind(linkedList, new T[] { headItems[0], headItems[1], headItems[2] });
 
-            //[] Call Find on a collection with mulitple items in it
+            //[] Call Find on a collection with multiple items in it
             linkedList = new LinkedList<T>();
             for (int i = 0; i < headItems.Length; ++i)
                 linkedList.AddLast(headItems[i]);

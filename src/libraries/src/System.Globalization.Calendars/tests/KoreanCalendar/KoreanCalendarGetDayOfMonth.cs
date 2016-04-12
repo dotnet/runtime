@@ -2,67 +2,28 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
+using System.Collections.Generic;
 using Xunit;
 
-namespace System.Globalization.CalendarsTests
+namespace System.Globalization.Tests
 {
-    //System.Globalization.KoreanCalendar.GetDayOfMonth(System.DateTime)
     public class KoreanCalendarGetDayOfMonth
     {
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
 
-        #region Test Logic
-        // PosTest1:Test the method with min time
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> GetDayOfMonth_TestData()
         {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            DateTime dateTime = new GregorianCalendar().ToDateTime(1, 1, 1, 0, 0, 0, 0);
-            int expectedValue = 1;
-            int actualValue;
-            actualValue = kC.GetDayOfMonth(dateTime);
-            Assert.Equal(expectedValue, actualValue);
+            yield return new object[] { DateTime.MinValue };
+            yield return new object[] { DateTime.MaxValue };
+            yield return new object[] { new DateTime(2008, 2, 29) };
+            yield return new object[] { s_randomDataGenerator.GetDateTime(-55) };
         }
 
-        // PosTest2:Test the method with max time
-        [Fact]
-        public void PosTest2()
+        [Theory]
+        [MemberData(nameof(GetDayOfMonth_TestData))]
+        public void GetDayOfMonth(DateTime time)
         {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            DateTime dateTime = new GregorianCalendar().ToDateTime(9999, 12, 31, 0, 0, 0, 0);
-            int expectedValue = 31;
-            int actualValue;
-            actualValue = kC.GetDayOfMonth(dateTime);
-            Assert.Equal(expectedValue, actualValue);
+            Assert.Equal(time.Day, new KoreanCalendar().GetDayOfMonth(time));
         }
-
-        // PosTest3:Test the method with leap year time
-        [Fact]
-        public void PosTest3()
-        {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            DateTime dateTime = new GregorianCalendar().ToDateTime(2008, 2, 29, 0, 0, 0, 0);
-            int expectedValue = 29;
-            int actualValue;
-            actualValue = kC.GetDayOfMonth(dateTime);
-            Assert.Equal(expectedValue, actualValue);
-        }
-
-        // PosTest4:Test the method with random time
-        [Fact]
-        public void PosTest4()
-        {
-            Int64 ticks = _generator.GetInt64(-55) % (DateTime.MaxValue.Ticks + 1);
-            DateTime dateTime = new DateTime(ticks);
-            dateTime = new GregorianCalendar().ToDateTime(dateTime.Year, dateTime.Month, dateTime.Day, 0, 0, 0, 0);
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            int expectedValue = dateTime.Day;
-            int actualValue;
-            actualValue = kC.GetDayOfMonth(dateTime);
-            Assert.Equal(expectedValue, actualValue);
-        }
-        #endregion
     }
 }

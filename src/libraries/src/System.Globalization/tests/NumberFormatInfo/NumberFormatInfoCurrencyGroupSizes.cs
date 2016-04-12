@@ -2,95 +2,50 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Globalization.Tests
 {
     public class NumberFormatInfoCurrencyGroupSizes
     {
-        // PosTest1: Verify default value of property CurrencyGroupSizes
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> CurrencyGroupSizes_TestData()
         {
-            NumberFormatInfo nfi = new NumberFormatInfo();
-            int[] expected = nfi.CurrencyGroupSizes;
-            Assert.Equal(1, expected.Length);
-            Assert.Equal(3, expected[0]);
+            yield return new object[] { NumberFormatInfo.InvariantInfo, new int[] { 3 } };
+            yield return new object[] { new CultureInfo("en-US").NumberFormat, new int[] { 3 } };
+            
+            if (!PlatformDetection.IsWindows7)
+                yield return new object[] { new CultureInfo("ur-IN").NumberFormat, new int[] { 3, 2 } };
         }
 
-        // PosTest2: Verify set value of property CurrencyGroupSizes
-        [Fact]
-        public void PosTest2()
-        {
-            NumberFormatInfo nfi = new NumberFormatInfo();
-            nfi.CurrencyGroupSizes = new int[] { 2, 3, 4 };
-            int[] expected = nfi.CurrencyGroupSizes;
-            Assert.Equal(3, expected.Length);
-            Assert.Equal(2, expected[0]);
-            Assert.Equal(3, expected[1]);
-            Assert.Equal(4, expected[2]);
-        }
-
-        // NegTest1: ArgumentNullException is not thrown
-        [Fact]
-        public void NegTest1()
-        {
-            int[] expected = null;
-            NumberFormatInfo nfi = new NumberFormatInfo();
-            Assert.Throws<ArgumentNullException>(() =>
-            {
-                nfi.CurrencyGroupSizes = expected;
-            });
-        }
-
-        // NegTest2: ArgumentOutOfRangeException is not thrown
-        [Fact]
-        public void NegTest2()
-        {
-            VerificationHelper<ArgumentException>(new int[] { -1, 1, 2 });
-            VerificationHelper<ArgumentException>(new int[] { 98, 99, 100 });
-            VerificationHelper<ArgumentException>(new int[] { 0, 1, 2 });
-        }
-
-        // NegTest3: InvalidOperationException is not thrown
-        [Fact]
-        public void NegTest3()
-        {
-            NumberFormatInfo nfi = new NumberFormatInfo();
-            NumberFormatInfo nfiReadOnly = NumberFormatInfo.ReadOnly(nfi);
-            Assert.Throws<InvalidOperationException>(() =>
-            {
-                nfiReadOnly.CurrencyGroupSizes = new int[] { 2, 3, 4 };
-            });
-        }
-
-        // TestCurrencyGroupSizesLocale: Verify value of property CurrencyGroupSizes for specific locales
         [Theory]
-        [InlineData("en-US", 3, 0)]
-        [InlineData("ur-IN", 3, 2)]
-        public void TestCurrencyGroupSizesLocale(string locale, int primaryGroupSize, int secondaryGroupSize)
+        [MemberData(nameof(CurrencyGroupSizes_TestData))]
+        public void CurrencyGroupSizes_Get(NumberFormatInfo format, int[] expected)
         {
-            CultureInfo myTestCulture = new CultureInfo(locale);
-            NumberFormatInfo nfi = myTestCulture.NumberFormat;
-            int count = (secondaryGroupSize == 0) ? 1 : 2;
-
-            Assert.Equal(primaryGroupSize, nfi.CurrencyGroupSizes[0]);
-            Assert.Equal(count, nfi.CurrencyGroupSizes.Length);
-            if (count == 2)
-            {
-                Assert.Equal(secondaryGroupSize, nfi.CurrencyGroupSizes[1]);
-            }
+            Assert.Equal(expected, format.CurrencyGroupSizes);
         }
 
-        private void VerificationHelper<T>(int[] intArray) where T : Exception
+        [Theory]
+        [InlineData(new int[0])]
+        [InlineData(new int[] { 2, 3, 4 })]
+        [InlineData(new int[] { 2, 3, 4, 0 })]
+        [InlineData(new int[] { 0 })]
+        public void CurrencyGroupSizes_Set(int[] newCurrencyGroupSizes)
         {
-            NumberFormatInfo nfi = new NumberFormatInfo();
-            Assert.Throws<T>(() =>
-            {
-                nfi.CurrencyGroupSizes = intArray;
-            });
+            NumberFormatInfo format = new NumberFormatInfo();
+            format.CurrencyGroupSizes = newCurrencyGroupSizes;
+            Assert.Equal(newCurrencyGroupSizes, format.CurrencyGroupSizes);
+        }
+
+        [Fact]
+        public void CurrencyGroupSizes_Set_Invalid()
+        {
+            Assert.Throws<ArgumentNullException>("CurrencyGroupSizes", () => new NumberFormatInfo().CurrencyGroupSizes = null);
+            Assert.Throws<ArgumentException>("CurrencyGroupSizes", () => new NumberFormatInfo().CurrencyGroupSizes = new int[] { -1, 1, 2 });
+            Assert.Throws<ArgumentException>("CurrencyGroupSizes", () => new NumberFormatInfo().CurrencyGroupSizes = new int[] { 98, 99, 100 });
+            Assert.Throws<ArgumentException>("CurrencyGroupSizes", () => new NumberFormatInfo().CurrencyGroupSizes = new int[] { 0, 1, 2 });
+
+            Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.CurrencyGroupSizes = new int[] { 1, 2, 3 });
         }
     }
 }

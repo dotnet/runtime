@@ -56,7 +56,7 @@ namespace System.Xml.Tests
 
             // for function InvalidCommentCharacters
             {
-                this.AddChild(new CVariation(InvalidCommentCharacters) { Attribute = new Variation("For non-wellformed XMLs, check for the line info in the error message") });
+                this.AddChild(new CVariation(InvalidCommentCharacters) { Attribute = new Variation("For non-well-formed XMLs, check for the line info in the error message") });
             }
 
 

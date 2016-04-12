@@ -6,3 +6,6 @@ Note: These tests are disabled by default so that they aren't run automatically.
 
 Instructions for running tests: [Unix](https://github.com/dotnet/corefx/blob/master/Documentation/building/cross-platform-testing.md) and [Windows](https://github.com/dotnet/corefx/blob/master/Documentation/building/windows-instructions.md).
 Documentation for connection string parameters: [SqlConnection.ConnectionString](https://msdn.microsoft.com/en-us/library/system.data.sqlclient.sqlconnection.connectionstring.aspx).
+
+Tips: Modifying ConnectionString.xml inside bin/test/... will sync into the source as well 
+To avoid accidently pushing  ConnectionString.xml to github. You can put ConnectionString.Override.xml in your bin/test/.. folder.

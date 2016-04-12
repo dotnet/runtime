@@ -5,11 +5,9 @@
     <ProjectReference Include="..\ref\System.Security.Cryptography.Encoding.csproj">
       <SupportedFramework>net46;netcore50;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.Security.Cryptography.Encoding.csproj">
-      <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
-    </ProjectReference>
-    <ProjectReference Include="win\System.Security.Cryptography.Encoding.pkgproj" />
-    <ProjectReference Include="unix\System.Security.Cryptography.Encoding.pkgproj" />
+    <ProjectReference Include="..\src\System.Security.Cryptography.Encoding.builds" />
+
+    <ProjectReference Include="$(NativePackagePath)\runtime.native.System.Security.Cryptography\runtime.native.System.Security.Cryptography.pkgproj" />
   </ItemGroup>
   <ItemGroup>
     <InboxOnTargetFramework Include="MonoAndroid10" />

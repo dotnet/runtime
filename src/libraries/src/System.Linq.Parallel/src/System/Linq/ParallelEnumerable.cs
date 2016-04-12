@@ -543,7 +543,7 @@ namespace System.Linq
 
         //-----------------------------------------------------------------------------------
         // Where is an operator that filters any elements from the data source for which the
-        // user-supplied predictate returns false.
+        // user-supplied predicate returns false.
         //
 
         /// <summary>
@@ -592,7 +592,7 @@ namespace System.Linq
         /// Projects in parallel each element of a sequence into a new form.
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
-        /// <typeparam name="TResult">The type of elements resturned by <b>selector</b>.</typeparam>
+        /// <typeparam name="TResult">The type of elements returned by <b>selector</b>.</typeparam>
         /// <param name="source">A sequence of values to invoke a transform function on.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>A sequence whose elements are the result of invoking the transform function on each 
@@ -613,7 +613,7 @@ namespace System.Linq
         /// Projects in parallel each element of a sequence into a new form by incorporating the element's index.
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
-        /// <typeparam name="TResult">The type of elements resturned by <b>selector</b>.</typeparam>
+        /// <typeparam name="TResult">The type of elements returned by <b>selector</b>.</typeparam>
         /// <param name="source">A sequence of values to invoke a transform function on.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>A sequence whose elements are the result of invoking the transform function on each 
@@ -1940,7 +1940,7 @@ namespace System.Linq
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (predicate == null) throw new ArgumentNullException(nameof(predicate));
 
-            // Construct a where operator to filter out unmatching elements, and then aggregate.
+            // Construct a where operator to filter out non-matching elements, and then aggregate.
             checked
             {
                 return new CountAggregationOperator<TSource>(Where<TSource>(source, predicate)).Aggregate();
@@ -2009,7 +2009,7 @@ namespace System.Linq
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (predicate == null) throw new ArgumentNullException(nameof(predicate));
 
-            // Construct a where operator to filter out unmatching elements, and then aggregate.
+            // Construct a where operator to filter out non-matching elements, and then aggregate.
             return new LongCountAggregationOperator<TSource>(Where<TSource>(source, predicate)).Aggregate();
         }
 
@@ -4878,9 +4878,9 @@ namespace System.Linq
 
             if (asOperator != null)
             {
-                if (asOperator.OrdinalIndexState == OrdinalIndexState.Indexible && asOperator.OutputOrdered)
+                if (asOperator.OrdinalIndexState == OrdinalIndexState.Indexable && asOperator.OutputOrdered)
                 {
-                    // If the query is indexible and the output is ordered, we will use the array-based merge.
+                    // If the query is indexable and the output is ordered, we will use the array-based merge.
                     // That way, we avoid the ordering overhead. Due to limitations of the List<> class, the
                     // most efficient solution seems to be to first dump all results into the array, and then
                     // copy them over into a List<>.
@@ -5944,7 +5944,7 @@ namespace System.Linq
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (index < 0) throw new ArgumentOutOfRangeException(nameof(index));
 
-            // @PERF: there are obvious optimization opportunities for indexible data sources,
+            // @PERF: there are obvious optimization opportunities for indexable data sources,
             //          since we can just seek to the element requested.
 
             ElementAtQueryOperator<TSource> op = new ElementAtQueryOperator<TSource>(source, index);
@@ -5982,7 +5982,7 @@ namespace System.Linq
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
 
-            // @PERF: there are obvious optimization opportunities for indexible data sources,
+            // @PERF: there are obvious optimization opportunities for indexable data sources,
             //          since we can just seek to the element requested.
 
             if (index >= 0)

@@ -34,7 +34,17 @@ namespace System.Globalization.Tests
             new TaiwanLunisolarCalendar(),
             new ChineseLunisolarCalendar(),
             new KoreanLunisolarCalendar(),
-            new PersianCalendar()
+            new PersianCalendar(),
+#if !net46
+            // desktop has a bug in JapaneseLunisolarCalendar which is fixed in .Net Core.
+            // in case of a new era starts in the middle of a month which means part of the month will belong to one
+            // era and the rest will belong to the new era. When calculating the calendar year number for dates which 
+            // in the rest of the month and exist in the new started era, we should still use the old era info instead 
+            // of the new era info because the rest of the month still belong to the year of last era.
+            // https://github.com/dotnet/coreclr/pull/3662
+            new JapaneseLunisolarCalendar(),
+#endif // net46             
+            new UmAlQuraCalendar()
         };
 
         private static int MinEra(Calendar calendar) => calendar.GetEra(calendar.MinSupportedDateTime);
@@ -139,12 +149,12 @@ namespace System.Globalization.Tests
                 DateTime minDate = calendar.MinSupportedDateTime;
                 if (minDate != DateTime.MinValue)
                 {
-                    yield return new object[] { calendar, minDate.AddYears(-1) };
+                    yield return new object[] { calendar, minDate.AddDays(-1) };
                 }
                 DateTime maxDate = calendar.MaxSupportedDateTime;
                 if (maxDate != DateTime.MaxValue)
                 {
-                    yield return new object[] { calendar, maxDate.AddYears(1) }; 
+                    yield return new object[] { calendar, maxDate.AddDays(1) }; 
                 }
             }
         }

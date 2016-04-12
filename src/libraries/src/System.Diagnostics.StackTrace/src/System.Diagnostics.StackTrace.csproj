@@ -6,7 +6,8 @@
     <ProjectGuid>{02304469-722E-4723-92A1-820B9A37D275}</ProjectGuid>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)'!='netcore50aot'">true</IsPartialFacadeAssembly>
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework> 
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -19,12 +20,12 @@
     <TargetingPackReference Include="mscorlib" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netcore50aot'">
-    <TargetingPackReference Include="System.Private.CoreLib"/>
+    <TargetingPackReference Include="System.Private.CoreLib" />
     <TargetingPackReference Include="System.Private.Reflection" />
-    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="..\..\System.Runtime\src\redist\System.Runtime.depproj" />
   </ItemGroup>
   <ItemGroup>
-     <Compile Include="System\Diagnostics\StackFrameExtensions.cs" />
+    <Compile Include="System\Diagnostics\StackFrameExtensions.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'!='netcore50aot'">
     <Compile Include="System\Diagnostics\StackFrameExtensions.dnxcore50.cs" />

@@ -216,6 +216,18 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void TakeAndSkip()
+        {
+            var source = Enumerable.Range(0, 100).Shuffle().ToArray();
+            var ordered = source.OrderBy(i => i);
+            Assert.Empty(ordered.Skip(100).Take(20));
+            Assert.Equal(Enumerable.Range(10, 20), ordered.Take(30).Skip(10));
+            Assert.Equal(Enumerable.Range(10, 1), ordered.Take(11).Skip(10));
+
+            Assert.Empty(Enumerable.Range(0, int.MaxValue).Take(int.MaxValue).OrderBy(i => i).Skip(int.MaxValue - 4).Skip(15));
+        }
+
+        [Fact]
         public void TakeThenTakeExcessive()
         {
             var source = Enumerable.Range(0, 100).Shuffle().ToArray();
@@ -314,6 +326,16 @@ namespace System.Linq.Tests
         public void Count()
         {
             Assert.Equal(20, Enumerable.Range(0, 100).Shuffle().OrderBy(i => i).Skip(10).Take(20).Count());
+            Assert.Equal(1, Enumerable.Range(0, 100).Shuffle().OrderBy(i => i).Take(2).Skip(1).Count());
+        }
+
+        [Fact]
+        public void SkipTakesOnlyOne()
+        {
+            Assert.Equal(new[] { 1 }, Enumerable.Range(1, 10).Shuffle().OrderBy(i => i).Take(1));
+            Assert.Equal(new[] { 2 }, Enumerable.Range(1, 10).Shuffle().OrderBy(i => i).Skip(1).Take(1));
+            Assert.Equal(new[] { 3 }, Enumerable.Range(1, 10).Shuffle().OrderBy(i => i).Take(3).Skip(2));
+            Assert.Equal(new[] { 1 }, Enumerable.Range(1, 10).Shuffle().OrderBy(i => i).Take(3).Take(1));
         }
 
         [Fact]
@@ -389,7 +411,7 @@ namespace System.Linq.Tests
         public void SelectForcedToEnumeratorDoesntEnumerate()
         {
             var iterator = Enumerable.Range(-1, 8).Shuffle().OrderBy(i => i).Skip(1).Take(5).Select(i => i * 2);
-            // Don't insist on this behaviour, but check its correct if it happens
+            // Don't insist on this behaviour, but check it's correct if it happens
             var en = iterator as IEnumerator<int>;
             Assert.False(en != null && en.MoveNext());
         }

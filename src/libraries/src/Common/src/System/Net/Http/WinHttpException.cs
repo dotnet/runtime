@@ -53,7 +53,7 @@ namespace System.Net.Http
 
         public static string GetErrorMessage(int error)
         {
-            // Look up specifc error message in WINHTTP.DLL since it is not listed in default system resources
+            // Look up specific error message in WINHTTP.DLL since it is not listed in default system resources
             // and thus can't be found by default .Net interop.
             IntPtr moduleHandle = Interop.mincore.GetModuleHandle(Interop.Libraries.WinHttp);
             return Interop.mincore.GetMessage(moduleHandle, error);

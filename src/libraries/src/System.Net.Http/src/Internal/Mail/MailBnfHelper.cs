@@ -16,7 +16,7 @@ namespace System.Net.Mime
         // characters allowed in atoms
         internal static readonly bool[] Atext = CreateCharactersAllowedInAtoms();
 
-        // characters allowed in quoted strings (not including unicode)
+        // characters allowed in quoted strings (not including Unicode)
         internal static readonly bool[] Qtext = CreateCharactersAllowedInQuotedStrings();
 
         // characters allowed in domain literals
@@ -241,12 +241,12 @@ namespace System.Net.Mime
                 }
                 else if (permitUnicodeInDisplayName)
                 {
-                    //if data contains unicode and unicode is permitted, then 
+                    //if data contains Unicode and Unicode is permitted, then 
                     //it is valid in a quoted string in a header.
                     if (data[offset] <= Ascii7bitMaxValue && !Qtext[data[offset]])
                         throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, data[offset]));
                 }
-                //not permitting unicode, in which case unicode is a formatting error
+                //not permitting Unicode, in which case Unicode is a formatting error
                 else if (data[offset] > Ascii7bitMaxValue || !Qtext[data[offset]])
                 {
                     throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, data[offset]));

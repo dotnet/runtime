@@ -14,7 +14,7 @@ namespace System.Dynamic
         private readonly CallInfo _callInfo;
 
         /// <summary>
-        /// Initializes a new intsance of the <see cref="CreateInstanceBinder" />.
+        /// Initializes a new instance of the <see cref="CreateInstanceBinder" />.
         /// </summary>
         /// <param name="callInfo">The signature of the arguments at the call site.</param>
         protected CreateInstanceBinder(CallInfo callInfo)

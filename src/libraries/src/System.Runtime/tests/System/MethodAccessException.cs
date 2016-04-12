@@ -3,40 +3,38 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-
 using Xunit;
 
 public static class MethodAccessExceptionTests
 {
-    internal const int COR_E_METHODACCESS = unchecked((int)0x80131510);
-    internal const int COR_E_FIELDACCESS = unchecked((int)0x80131507);
+    private const int COR_E_METHODACCESS = unchecked((int)0x80131510);
 
     [Fact]
-    public static void MethodAccessException_Ctor1()
+    public static void TestCtor_Empty()
     {
-        MethodAccessException i = new MethodAccessException();
-        //Assert.Equal("Attempted to access a missing method.", i.Message, "TestCtor1_001 failed");
-        Assert.Equal(COR_E_METHODACCESS, i.HResult);
+        var exception = new MethodAccessException();
+        Assert.NotEmpty(exception.Message);
+        Assert.Equal(COR_E_METHODACCESS, exception.HResult);
     }
 
     [Fact]
-    public static void MethodAccessException_Ctor2()
+    public static void TestCtor_String()
     {
-        MethodAccessException i = new MethodAccessException("Created MethodAccessException");
-
-        Assert.Equal("Created MethodAccessException", i.Message);
-        Assert.Equal(COR_E_METHODACCESS, i.HResult);
+        string message = "Created MethodAccessException";
+        var exception = new MethodAccessException(message);
+        Assert.Equal(message, exception.Message);
+        Assert.Equal(COR_E_METHODACCESS, exception.HResult);
     }
 
     [Fact]
-    public static void MethodAccessException_Ctor3()
+    public static void TestCtor_Exception()
     {
-        Exception ex = new Exception("Created inner exception");
-        MethodAccessException i = new MethodAccessException("Created MethodAccessException", ex);
-
-        Assert.Equal("Created MethodAccessException", i.Message);
-        Assert.Equal(COR_E_METHODACCESS, i.HResult);
-        Assert.Equal(i.InnerException.Message, "Created inner exception");
-        Assert.Equal(i.InnerException.HResult, ex.HResult);
+        string message = "Created MethodAccessException";
+        var innerException = new Exception("Created inner exception");
+        var exception = new MethodAccessException(message, innerException);
+        Assert.Equal(message, exception.Message);
+        Assert.Equal(COR_E_METHODACCESS, exception.HResult);
+        Assert.Same(innerException, exception.InnerException);
+        Assert.Equal(innerException.HResult, exception.InnerException.HResult);
     }
 }

@@ -49,7 +49,7 @@ namespace System.Text.Tests
             Assert.Equal(0, ret1);
         }
 
-        // PosTest2: Call GetBytes to convert an arbitrary character array by using unicode encoder
+        // PosTest2: Call GetBytes to convert an arbitrary character array by using Unicode encoder
         [Fact]
         public void PosTest2()
         {
@@ -92,7 +92,7 @@ namespace System.Text.Tests
             VerificationHelper(encoder, chars, 0, chars.Length, bytes, 0, true, chars.Length, "003.1");
             VerificationHelper(encoder, chars, 0, chars.Length, bytes, 0, false, chars.Length, "003.2");
 
-            // partial convertion
+            // partial conversion
             VerificationHelper(encoder, chars, 1, chars.Length - 1, bytes, 0, true, chars.Length - 1, "003.3");
             VerificationHelper(encoder, chars, 0, 1, bytes, 1, false, 1, "003.4");
         }
@@ -107,12 +107,12 @@ namespace System.Text.Tests
             VerificationHelper(encoder, chars, 0, chars.Length, bytes, 0, true, chars.Length * 2, "004.1");
             VerificationHelper(encoder, chars, 0, chars.Length, bytes, 0, false, chars.Length * 2, "004.2");
 
-            // partial convertion
+            // partial conversion
             VerificationHelper(encoder, chars, 0, chars.Length - 1, bytes, 0, true, (chars.Length - 1) * 2, "004.3");
             VerificationHelper(encoder, chars, 1, 1, bytes, 1, false, 2, "004.4");
         }
 
-        // PosTest6: Call GetBytes to convert an unicode character array by using unicode encoder
+        // PosTest6: Call GetBytes to convert an Unicode character array by using Unicode encoder
         [Fact]
         public void PosTest5()
         {
@@ -122,13 +122,13 @@ namespace System.Text.Tests
             VerificationHelper(encoder, chars, 0, chars.Length, bytes, 0, true, chars.Length * 2, "006.1");
             VerificationHelper(encoder, chars, 0, chars.Length, bytes, 0, false, chars.Length * 2, "006.2");
 
-            // partial convertion
+            // partial conversion
             VerificationHelper(encoder, chars, 1, chars.Length - 1, bytes, 1, true, (chars.Length - 1) * 2, "006.3");
             VerificationHelper(encoder, chars, 1, 1, bytes, 1, false, 2, "006.4");
         }
         #endregion
 
-        #region Nagetive Test Cases
+        #region Negative Test Cases
         // NegTest1: ArgumentNullException should be thrown when chars is a null reference or bytes is a null reference
         [Fact]
         public void NegTest1()

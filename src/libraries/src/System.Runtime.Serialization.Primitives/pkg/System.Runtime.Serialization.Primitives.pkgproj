@@ -8,13 +8,7 @@
     <ProjectReference Include="..\ref\System.Runtime.Serialization.Primitives.csproj">
       <SupportedFramework>net46;netcore50;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.Runtime.Serialization.Primitives.csproj">
-      <TargetGroup>net46</TargetGroup>
-    </ProjectReference>
-    <ProjectReference Include="any\System.Runtime.Serialization.Primitives.pkgproj" />
-    <ProjectReference Include="aot\System.Runtime.Serialization.Primitives.pkgproj">
-      <OSGroup>Windows_NT</OSGroup>
-    </ProjectReference>
+    <ProjectReference Include="..\src\System.Runtime.Serialization.Primitives.builds" />
     <InboxOnTargetFramework Include="MonoAndroid10" />
     <InboxOnTargetFramework Include="MonoTouch10" />
     <InboxOnTargetFramework Include="net45" />

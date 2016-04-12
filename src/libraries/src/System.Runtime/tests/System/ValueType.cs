@@ -4,17 +4,14 @@
 
 using Xunit;
 
-public static unsafe class ValueTypeTests
+public static class ValueTypeTests
 {
     [Fact]
     public static void TestToString()
     {
-        object o = new S();
-        string s = o.ToString();
-        Assert.NotNull(s);
-        string s1 = o.GetType().ToString();
-        Assert.Equal(s, s1);
-        Assert.Equal("ValueTypeTests+S", s);
+        object obj = new S();
+        Assert.Equal(obj.ToString(), obj.GetType().ToString());
+        Assert.Equal("ValueTypeTests+S", obj.ToString());
     }
 
     public struct S

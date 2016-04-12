@@ -152,7 +152,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autopr
 {
     using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autoproperty.genclass.genclassautoprop.genclassautoprop;
     using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autoproperty.genclass.genclass003.genclass003;
-    // <Title> Tests generic class auto property used in collection initializier.</Title>
+    // <Title> Tests generic class auto property used in collection initializer.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>

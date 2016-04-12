@@ -124,7 +124,7 @@ namespace System.IO
         }
 
         // Returns an array of Files in the current DirectoryInfo matching the 
-        // given search criteria (ie, "*.txt").
+        // given search criteria (i.e. "*.txt").
         [SecurityCritical]
         public FileInfo[] GetFiles(String searchPattern)
         {
@@ -136,7 +136,7 @@ namespace System.IO
         }
 
         // Returns an array of Files in the current DirectoryInfo matching the 
-        // given search criteria (ie, "*.txt").
+        // given search criteria (i.e. "*.txt").
         public FileInfo[] GetFiles(String searchPattern, SearchOption searchOption)
         {
             if (searchPattern == null)
@@ -149,7 +149,7 @@ namespace System.IO
         }
 
         // Returns an array of Files in the current DirectoryInfo matching the 
-        // given search criteria (ie, "*.txt").
+        // given search criteria (i.e. "*.txt").
         private FileInfo[] InternalGetFiles(String searchPattern, SearchOption searchOption)
         {
             Contract.Requires(searchPattern != null);
@@ -172,7 +172,7 @@ namespace System.IO
         }
 
         // Returns an array of strongly typed FileSystemInfo entries in the path with the
-        // given search criteria (ie, "*.txt").
+        // given search criteria (i.e. "*.txt").
         public FileSystemInfo[] GetFileSystemInfos(String searchPattern)
         {
             if (searchPattern == null)
@@ -183,7 +183,7 @@ namespace System.IO
         }
 
         // Returns an array of strongly typed FileSystemInfo entries in the path with the
-        // given search criteria (ie, "*.txt").
+        // given search criteria (i.e. "*.txt").
         public FileSystemInfo[] GetFileSystemInfos(String searchPattern, SearchOption searchOption)
         {
             if (searchPattern == null)
@@ -196,7 +196,7 @@ namespace System.IO
         }
 
         // Returns an array of strongly typed FileSystemInfo entries in the path with the
-        // given search criteria (ie, "*.txt").
+        // given search criteria (i.e. "*.txt").
         private FileSystemInfo[] InternalGetFileSystemInfos(String searchPattern, SearchOption searchOption)
         {
             Contract.Requires(searchPattern != null);
@@ -214,7 +214,7 @@ namespace System.IO
         }
 
         // Returns an array of Directories in the current DirectoryInfo matching the 
-        // given search criteria (ie, "System*" could match the System & System32
+        // given search criteria (i.e. "System*" could match the System & System32
         // directories).
         public DirectoryInfo[] GetDirectories(String searchPattern)
         {
@@ -226,7 +226,7 @@ namespace System.IO
         }
 
         // Returns an array of Directories in the current DirectoryInfo matching the 
-        // given search criteria (ie, "System*" could match the System & System32
+        // given search criteria (i.e. "System*" could match the System & System32
         // directories).
         public DirectoryInfo[] GetDirectories(String searchPattern, SearchOption searchOption)
         {
@@ -240,7 +240,7 @@ namespace System.IO
         }
 
         // Returns an array of Directories in the current DirectoryInfo matching the 
-        // given search criteria (ie, "System*" could match the System & System32
+        // given search criteria (i.e. "System*" could match the System & System32
         // directories).
         private DirectoryInfo[] InternalGetDirectories(String searchPattern, SearchOption searchOption)
         {

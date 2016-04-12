@@ -180,7 +180,7 @@ namespace System.Security.AccessControl
         internal static int AccessMaskFromRights(FileSystemRights fileSystemRights, AccessControlType controlType)
         {
             if (fileSystemRights < (FileSystemRights)0 || fileSystemRights > FileSystemRights.FullControl)
-                throw new ArgumentOutOfRangeException(nameof(fileSystemRights), SR.Format(SR.Argument_InvalidEnumValue, fileSystemRights, "FileSystemRights"));
+                throw new ArgumentOutOfRangeException(nameof(fileSystemRights), SR.Format(SR.Argument_InvalidEnumValue, fileSystemRights, nameof(AccessControl.FileSystemRights)));
             Contract.EndContractBlock();
 
             if (controlType == AccessControlType.Allow)
@@ -291,7 +291,7 @@ namespace System.Security.AccessControl
         private static int AccessMaskFromRights(FileSystemRights fileSystemRights)
         {
             if (fileSystemRights < (FileSystemRights)0 || fileSystemRights > FileSystemRights.FullControl)
-                throw new ArgumentOutOfRangeException(nameof(fileSystemRights), SR.Format(SR.Argument_InvalidEnumValue, fileSystemRights, "FileSystemRights"));
+                throw new ArgumentOutOfRangeException(nameof(fileSystemRights), SR.Format(SR.Argument_InvalidEnumValue, fileSystemRights, nameof(AccessControl.FileSystemRights)));
             Contract.EndContractBlock();
 
             return (int)fileSystemRights;

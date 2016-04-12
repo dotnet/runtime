@@ -226,7 +226,7 @@ namespace System.IO
             // Use lstat to get the details on the object, without following symlinks.
             // If it is a symlink, then subsequently get details on the target of the symlink,
             // storing those results separately.  We only report failure if the initial
-            // lstat fails, as a broken symlink should still report info on exists, attributs, etc.
+            // lstat fails, as a broken symlink should still report info on exists, attributes, etc.
             _targetOfSymlinkIsDirectory = false;
             int result = Interop.Sys.LStat(FullPath, out _fileStatus);
             if (result < 0)

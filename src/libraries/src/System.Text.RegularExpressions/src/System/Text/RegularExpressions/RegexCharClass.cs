@@ -11,8 +11,8 @@
 //
 // Char index   Use
 //      0       Flags - currently this only holds the "negate" flag
-//      1       length of the string representing the "set" portion, eg [a-z0-9] only has a "set"
-//      2       length of the string representing the "category" portion, eg [\p{Lu}] only has a "category"
+//      1       length of the string representing the "set" portion, e.g. [a-z0-9] only has a "set"
+//      2       length of the string representing the "category" portion, e.g. [\p{Lu}] only has a "category"
 //      3...m   The set.  These are a series of ranges which define the characters included in the set.
 //              To determine if a given character is in the set, we binary search over this set of ranges
 //              and see where the character should go.  Based on whether the ending index is odd or even,

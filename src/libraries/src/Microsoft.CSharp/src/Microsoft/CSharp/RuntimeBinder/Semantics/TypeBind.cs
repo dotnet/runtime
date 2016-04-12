@@ -248,11 +248,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 {
                     if (fReportErrors)
                     {
-                        // The bound isn't satisfied because of a constaint type. Explain to the user why not.
+                        // The bound isn't satisfied because of a constraint type. Explain to the user why not.
                         // There are 4 main cases, based on the type of the supplied type argument:
                         //  - reference type, or type parameter known to be a reference type
                         //  - nullable type, from which there is a boxing conversion to the constraint type(see below for details)
-                        //  - type varaiable
+                        //  - type variable
                         //  - value type
                         // These cases are broken out because: a) The sets of conversions which can be used 
                         // for constraint satisfaction is different based on the type argument supplied, 

@@ -46,9 +46,9 @@ namespace OLEDB.Test.ModuleCore
         static internal void Dispose()
         {
             //Reset the info.  
-            //Since this is a static class, (to make it simplier to access from anywhere in your code)
+            //Since this is a static class, (to make it simpler to access from anywhere in your code)
             //we need to reset this info everytime a test is run - so if you don't select an alias
-            //the next time it doesn't use the previous alias setting - ie: ProviderInfo doesn't 
+            //the next time it doesn't use the previous alias setting - i.e.: ProviderInfo doesn't 
             //get called when no alias is selected...
             s_strCommandLine = null;
             s_hashOptions = null;

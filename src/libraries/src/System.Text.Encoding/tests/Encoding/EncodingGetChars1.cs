@@ -8,7 +8,7 @@ namespace System.Text.Tests
 {
     public class EncodingGetChars1
     {
-        #region Positive Testcases
+        #region Positive Test Cases
         [Fact]
         public void PosTest1()
         {
@@ -244,7 +244,7 @@ namespace System.Text.Tests
         }
         #endregion
 
-        #region Negative Testcases
+        #region Negative Test Cases
         [Fact]
         public void NegTest1()
         {

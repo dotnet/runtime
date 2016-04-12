@@ -126,7 +126,7 @@ namespace System.IO.Tests
         {
             string fileName = GetTestFilePath();
 
-            // use a seperate method to be sure that fs isn't rooted at time of GC.
+            // use a separate method to be sure that fs isn't rooted at time of GC.
             Action leakFs = () =>
             {
                 // we must specify useAsync:false, otherwise the finalizer just kicks off an async write.

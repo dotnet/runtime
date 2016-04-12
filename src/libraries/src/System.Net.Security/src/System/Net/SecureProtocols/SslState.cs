@@ -534,7 +534,7 @@ namespace System.Net.Security
         // When re-handshaking the "old" key decrypted data are queued until the handshake is done.
         // When stream calls for decryption we will feed it queued data left from "old" encryption key.
         //
-        // Must be called under the lock in case concurent handshake is going.
+        // Must be called under the lock in case concurrent handshake is going.
         //
         internal int CheckOldKeyDecryptedData(byte[] buffer, int offset, int count)
         {
@@ -624,12 +624,12 @@ namespace System.Net.Security
         {
             lock (this)
             {
-                // Note we are already inside the read, so checking for already going concurent handshake.
+                // Note we are already inside the read, so checking for already going concurrent handshake.
                 _lockReadState = LockHandshake;
 
                 if (_pendingReHandshake)
                 {
-                    // A concurent handshake is pending, resume.
+                    // A concurrent handshake is pending, resume.
                     FinishRead(buffer);
                     return;
                 }
@@ -819,7 +819,7 @@ namespace System.Net.Security
                 }
 
                 // Release waiting IO if any. Presumably it should not throw.
-                // Otheriwse application may get not expected type of the exception.
+                // Otherwise application may get not expected type of the exception.
                 FinishHandshake(null, asyncRequest);
                 return;
             }
@@ -1228,7 +1228,7 @@ namespace System.Net.Security
 
             if (lockState != LockHandshake)
             {
-                // Proceed, no concurent handshake is ongoing so no need for a lock.
+                // Proceed, no concurrent handshake is ongoing so no need for a lock.
                 return CheckOldKeyDecryptedData(buffer, offset, count);
             }
 
@@ -1513,7 +1513,7 @@ namespace System.Net.Security
              * ... PCT hello ...
              */
 
-            /* Microsft Unihello starts with
+            /* Microsoft Unihello starts with
              * RECORD_LENGTH_MSB  (ignore)
              * RECORD_LENGTH_LSB  (ignore)
              * SSL2_CLIENT_HELLO  (must be equal)
@@ -1845,7 +1845,7 @@ namespace System.Net.Security
                 //
                 // 3. SetException won't overwrite an already-set _Exception.
                 //
-                // 4. There are three possibilites for _LockReadState and _LockWriteState:
+                // 4. There are three possibilities for _LockReadState and _LockWriteState:
                 //
                 //    a. They were set back to None by the first call to FinishHandshake, and this will set them to
                 //       None again: a no-op.

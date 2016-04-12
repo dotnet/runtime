@@ -33,7 +33,8 @@ namespace System.Collections.Generic
 
         // Constructs a List. The list is initially empty and has a capacity
         // of zero. Upon adding the first element to the list the capacity is
-        // increased to 16, and then increased in multiples of two as required.
+        // increased to _defaultCapacity, and then increased in multiples of two
+        // as required.
         public List()
         {
             _items = _emptyArray;
@@ -421,7 +422,7 @@ namespace System.Collections.Generic
         }
 
         // Ensures that the capacity of this list is at least the given minimum
-        // value. If the currect capacity of the list is less than min, the
+        // value. If the current capacity of the list is less than min, the
         // capacity is increased to twice the current capacity or to min,
         // whichever is larger.
         private void EnsureCapacity(int min)

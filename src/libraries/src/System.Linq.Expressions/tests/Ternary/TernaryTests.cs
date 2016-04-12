@@ -11,8 +11,8 @@ namespace System.Linq.Expressions.Tests
     {
         #region Test methods
 
-        [Fact]
-        public static void CheckTernaryBoolTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryBoolTest(bool useInterpreter)
         {
             bool[] array1 = new bool[] { false, true };
             bool[] array2 = new bool[] { true, false };
@@ -22,14 +22,14 @@ namespace System.Linq.Expressions.Tests
                 {
                     for (int k = 0; k < array2.Length; k++)
                     {
-                        VerifyBool(array1[i], array2[j], array2[k]);
+                        VerifyBool(array1[i], array2[j], array2[k], useInterpreter);
                     }
                 }
             }
         }
 
-        [Fact]
-        public static void CheckTernaryByteTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryByteTest(bool useInterpreter)
         {
             bool[] array1 = new bool[] { false, true };
             byte[] array2 = new byte[] { 0, 1, byte.MaxValue };
@@ -39,14 +39,14 @@ namespace System.Linq.Expressions.Tests
                 {
                     for (int k = 0; k < array2.Length; k++)
                     {
-                        VerifyByte(array1[i], array2[j], array2[k]);
+                        VerifyByte(array1[i], array2[j], array2[k], useInterpreter);
                     }
                 }
             }
         }
 
-        [Fact]
-        public static void CheckTernaryCustomTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryCustomTest(bool useInterpreter)
         {
             bool[] array1 = new bool[] { false, true };
             C[] array2 = new C[] { null, new C(), new D(), new D(0), new D(5) };
@@ -56,14 +56,14 @@ namespace System.Linq.Expressions.Tests
                 {
                     for (int k = 0; k < array2.Length; k++)
                     {
-                        VerifyCustom(array1[i], array2[j], array2[k]);
+                        VerifyCustom(array1[i], array2[j], array2[k], useInterpreter);
                     }
                 }
             }
         }
 
-        [Fact]
-        public static void CheckTernaryCharTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryCharTest(bool useInterpreter)
         {
             bool[] array1 = new bool[] { false, true };
             char[] array2 = new char[] { '\0', '\b', 'A', '\uffff' };
@@ -73,14 +73,14 @@ namespace System.Linq.Expressions.Tests
                 {
                     for (int k = 0; k < array2.Length; k++)
                     {
-                        VerifyChar(array1[i], array2[j], array2[k]);
+                        VerifyChar(array1[i], array2[j], array2[k], useInterpreter);
                     }
                 }
             }
         }
 
-        [Fact]
-        public static void CheckTernaryCustom2Test()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryCustom2Test(bool useInterpreter)
         {
             bool[] array1 = new bool[] { false, true };
             D[] array2 = new D[] { null, new D(), new D(0), new D(5) };
@@ -90,14 +90,14 @@ namespace System.Linq.Expressions.Tests
                 {
                     for (int k = 0; k < array2.Length; k++)
                     {
-                        VerifyCustom2(array1[i], array2[j], array2[k]);
+                        VerifyCustom2(array1[i], array2[j], array2[k], useInterpreter);
                     }
                 }
             }
         }
 
-        [Fact]
-        public static void CheckTernaryDecimalTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryDecimalTest(bool useInterpreter)
         {
             bool[] array1 = new bool[] { false, true };
             decimal[] array2 = new decimal[] { decimal.Zero, decimal.One, decimal.MinusOne, decimal.MinValue, decimal.MaxValue };
@@ -107,14 +107,14 @@ namespace System.Linq.Expressions.Tests
                 {
                     for (int k = 0; k < array2.Length; k++)
                     {
-                        VerifyDecimal(array1[i], array2[j], array2[k]);
+                        VerifyDecimal(array1[i], array2[j], array2[k], useInterpreter);
                     }
                 }
             }
         }
 
-        [Fact]
-        public static void CheckTernaryDelegateTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryDelegateTest(bool useInterpreter)
         {
             bool[] array1 = new bool[] { false, true };
             Delegate[] array2 = new Delegate[] { null, (Func<object>)delegate () { return null; }, (Func<int, int>)delegate (int i) { return i + 1; }, (Action<object>)delegate { } };
@@ -124,14 +124,14 @@ namespace System.Linq.Expressions.Tests
                 {
                     for (int k = 0; k < array2.Length; k++)
                     {
-                        VerifyDelegate(array1[i], array2[j], array2[k]);
+                        VerifyDelegate(array1[i], array2[j], array2[k], useInterpreter);
                     }
                 }
             }
         }
 
-        [Fact]
-        public static void CheckTernaryDoubleTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryDoubleTest(bool useInterpreter)
         {
             bool[] array1 = new bool[] { false, true };
             double[] array2 = new double[] { 0, 1, -1, double.MinValue, double.MaxValue, double.Epsilon, double.NegativeInfinity, double.PositiveInfinity, double.NaN };
@@ -141,14 +141,14 @@ namespace System.Linq.Expressions.Tests
                 {
                     for (int k = 0; k < array2.Length; k++)
                     {
-                        VerifyDouble(array1[i], array2[j], array2[k]);
+                        VerifyDouble(array1[i], array2[j], array2[k], useInterpreter);
                     }
                 }
             }
         }
 
-        [Fact]
-        public static void CheckTernaryEnumTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryEnumTest(bool useInterpreter)
         {
             bool[] array1 = new bool[] { false, true };
             E[] array2 = new E[] { (E)0, E.A, E.B, (E)int.MaxValue, (E)int.MinValue };
@@ -158,14 +158,14 @@ namespace System.Linq.Expressions.Tests
                 {
                     for (int k = 0; k < array2.Length; k++)
                     {
-                        VerifyEnum(array1[i], array2[j], array2[k]);
+                        VerifyEnum(array1[i], array2[j], array2[k], useInterpreter);
                     }
                 }
             }
         }
 
-        [Fact]
-        public static void CheckTernaryEnumLongTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryEnumLongTest(bool useInterpreter)
         {
             bool[] array1 = new bool[] { false, true };
             El[] array2 = new El[] { (El)0, El.A, El.B, (El)long.MaxValue, (El)long.MinValue };
@@ -175,14 +175,14 @@ namespace System.Linq.Expressions.Tests
                 {
                     for (int k = 0; k < array2.Length; k++)
                     {
-                        VerifyEnumLong(array1[i], array2[j], array2[k]);
+                        VerifyEnumLong(array1[i], array2[j], array2[k], useInterpreter);
                     }
                 }
             }
         }
 
-        [Fact]
-        public static void CheckTernaryFloatTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryFloatTest(bool useInterpreter)
         {
             bool[] array1 = new bool[] { false, true };
             float[] array2 = new float[] { 0, 1, -1, float.MinValue, float.MaxValue, float.Epsilon, float.NegativeInfinity, float.PositiveInfinity, float.NaN };
@@ -192,14 +192,14 @@ namespace System.Linq.Expressions.Tests
                 {
                     for (int k = 0; k < array2.Length; k++)
                     {
-                        VerifyFloat(array1[i], array2[j], array2[k]);
+                        VerifyFloat(array1[i], array2[j], array2[k], useInterpreter);
                     }
                 }
             }
         }
 
-        [Fact]
-        public static void CheckTernaryFuncOfObjectTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryFuncOfObjectTest(bool useInterpreter)
         {
             bool[] array1 = new bool[] { false, true };
             Func<object>[] array2 = new Func<object>[] { null, (Func<object>)delegate () { return null; } };
@@ -209,14 +209,14 @@ namespace System.Linq.Expressions.Tests
                 {
                     for (int k = 0; k < array2.Length; k++)
                     {
-                        VerifyFuncOfObject(array1[i], array2[j], array2[k]);
+                        VerifyFuncOfObject(array1[i], array2[j], array2[k], useInterpreter);
                     }
                 }
             }
         }
 
-        [Fact]
-        public static void CheckTernaryInterfaceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryInterfaceTest(bool useInterpreter)
         {
             bool[] array1 = new bool[] { false, true };
             I[] array2 = new I[] { null, new C(), new D(), new D(0), new D(5) };
@@ -226,14 +226,14 @@ namespace System.Linq.Expressions.Tests
                 {
                     for (int k = 0; k < array2.Length; k++)
                     {
-                        VerifyInterface(array1[i], array2[j], array2[k]);
+                        VerifyInterface(array1[i], array2[j], array2[k], useInterpreter);
                     }
                 }
             }
         }
 
-        [Fact]
-        public static void CheckTernaryIEquatableOfCustomTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryIEquatableOfCustomTest(bool useInterpreter)
         {
             bool[] array1 = new bool[] { false, true };
             IEquatable<C>[] array2 = new IEquatable<C>[] { null, new C(), new D(), new D(0), new D(5) };
@@ -243,14 +243,14 @@ namespace System.Linq.Expressions.Tests
                 {
                     for (int k = 0; k < array2.Length; k++)
                     {
-                        VerifyIEquatableOfCustom(array1[i], array2[j], array2[k]);
+                        VerifyIEquatableOfCustom(array1[i], array2[j], array2[k], useInterpreter);
                     }
                 }
             }
         }
 
-        [Fact]
-        public static void CheckTernaryIEquatableOfCustom2Test()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryIEquatableOfCustom2Test(bool useInterpreter)
         {
             bool[] array1 = new bool[] { false, true };
             IEquatable<D>[] array2 = new IEquatable<D>[] { null, new D(), new D(0), new D(5) };
@@ -260,14 +260,14 @@ namespace System.Linq.Expressions.Tests
                 {
                     for (int k = 0; k < array2.Length; k++)
                     {
-                        VerifyIEquatableOfCustom2(array1[i], array2[j], array2[k]);
+                        VerifyIEquatableOfCustom2(array1[i], array2[j], array2[k], useInterpreter);
                     }
                 }
             }
         }
 
-        [Fact]
-        public static void CheckTernaryIntTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryIntTest(bool useInterpreter)
         {
             bool[] array1 = new bool[] { false, true };
             int[] array2 = new int[] { 0, 1, -1, int.MinValue, int.MaxValue };
@@ -277,14 +277,14 @@ namespace System.Linq.Expressions.Tests
                 {
                     for (int k = 0; k < array2.Length; k++)
                     {
-                        VerifyInt(array1[i], array2[j], array2[k]);
+                        VerifyInt(array1[i], array2[j], array2[k], useInterpreter);
                     }
                 }
             }
         }
 
-        [Fact]
-        public static void CheckTernaryLongTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryLongTest(bool useInterpreter)
         {
             bool[] array1 = new bool[] { false, true };
             long[] array2 = new long[] { 0, 1, -1, long.MinValue, long.MaxValue };
@@ -294,14 +294,14 @@ namespace System.Linq.Expressions.Tests
                 {
                     for (int k = 0; k < array2.Length; k++)
                     {
-                        VerifyLong(array1[i], array2[j], array2[k]);
+                        VerifyLong(array1[i], array2[j], array2[k], useInterpreter);
                     }
                 }
             }
         }
 
-        [Fact]
-        public static void CheckTernaryObjectTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryObjectTest(bool useInterpreter)
         {
             bool[] array1 = new bool[] { false, true };
             object[] array2 = new object[] { null, new object(), new C(), new D(3) };
@@ -311,14 +311,14 @@ namespace System.Linq.Expressions.Tests
                 {
                     for (int k = 0; k < array2.Length; k++)
                     {
-                        VerifyObject(array1[i], array2[j], array2[k]);
+                        VerifyObject(array1[i], array2[j], array2[k], useInterpreter);
                     }
                 }
             }
         }
 
-        [Fact]
-        public static void CheckTernaryStructTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryStructTest(bool useInterpreter)
         {
             bool[] array1 = new bool[] { false, true };
             S[] array2 = new S[] { default(S), new S() };
@@ -328,14 +328,14 @@ namespace System.Linq.Expressions.Tests
                 {
                     for (int k = 0; k < array2.Length; k++)
                     {
-                        VerifyStruct(array1[i], array2[j], array2[k]);
+                        VerifyStruct(array1[i], array2[j], array2[k], useInterpreter);
                     }
                 }
             }
         }
 
-        [Fact]
-        public static void CheckTernarySByteTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernarySByteTest(bool useInterpreter)
         {
             bool[] array1 = new bool[] { false, true };
             sbyte[] array2 = new sbyte[] { 0, 1, -1, sbyte.MinValue, sbyte.MaxValue };
@@ -345,14 +345,14 @@ namespace System.Linq.Expressions.Tests
                 {
                     for (int k = 0; k < array2.Length; k++)
                     {
-                        VerifySByte(array1[i], array2[j], array2[k]);
+                        VerifySByte(array1[i], array2[j], array2[k], useInterpreter);
                     }
                 }
             }
         }
 
-        [Fact]
-        public static void CheckTernaryStructWithStringTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryStructWithStringTest(bool useInterpreter)
         {
             bool[] array1 = new bool[] { false, true };
             Sc[] array2 = new Sc[] { default(Sc), new Sc(), new Sc(null) };
@@ -362,14 +362,14 @@ namespace System.Linq.Expressions.Tests
                 {
                     for (int k = 0; k < array2.Length; k++)
                     {
-                        VerifyStructWithString(array1[i], array2[j], array2[k]);
+                        VerifyStructWithString(array1[i], array2[j], array2[k], useInterpreter);
                     }
                 }
             }
         }
 
-        [Fact]
-        public static void CheckTernaryStructWithStringAndFieldTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryStructWithStringAndFieldTest(bool useInterpreter)
         {
             bool[] array1 = new bool[] { false, true };
             Scs[] array2 = new Scs[] { default(Scs), new Scs(), new Scs(null, new S()) };
@@ -379,14 +379,14 @@ namespace System.Linq.Expressions.Tests
                 {
                     for (int k = 0; k < array2.Length; k++)
                     {
-                        VerifyStructWithStringAndField(array1[i], array2[j], array2[k]);
+                        VerifyStructWithStringAndField(array1[i], array2[j], array2[k], useInterpreter);
                     }
                 }
             }
         }
 
-        [Fact]
-        public static void CheckTernaryShortTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryShortTest(bool useInterpreter)
         {
             bool[] array1 = new bool[] { false, true };
             short[] array2 = new short[] { 0, 1, -1, short.MinValue, short.MaxValue };
@@ -396,14 +396,14 @@ namespace System.Linq.Expressions.Tests
                 {
                     for (int k = 0; k < array2.Length; k++)
                     {
-                        VerifyShort(array1[i], array2[j], array2[k]);
+                        VerifyShort(array1[i], array2[j], array2[k], useInterpreter);
                     }
                 }
             }
         }
 
-        [Fact]
-        public static void CheckTernaryStructWithTwoValuesTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryStructWithTwoValuesTest(bool useInterpreter)
         {
             bool[] array1 = new bool[] { false, true };
             Sp[] array2 = new Sp[] { default(Sp), new Sp(), new Sp(5, 5.0) };
@@ -413,14 +413,14 @@ namespace System.Linq.Expressions.Tests
                 {
                     for (int k = 0; k < array2.Length; k++)
                     {
-                        VerifyStructWithTwoValues(array1[i], array2[j], array2[k]);
+                        VerifyStructWithTwoValues(array1[i], array2[j], array2[k], useInterpreter);
                     }
                 }
             }
         }
 
-        [Fact]
-        public static void CheckTernaryStructWithValueTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryStructWithValueTest(bool useInterpreter)
         {
             bool[] array1 = new bool[] { false, true };
             Ss[] array2 = new Ss[] { default(Ss), new Ss(), new Ss(new S()) };
@@ -430,14 +430,14 @@ namespace System.Linq.Expressions.Tests
                 {
                     for (int k = 0; k < array2.Length; k++)
                     {
-                        VerifyStructWithValue(array1[i], array2[j], array2[k]);
+                        VerifyStructWithValue(array1[i], array2[j], array2[k], useInterpreter);
                     }
                 }
             }
         }
 
-        [Fact]
-        public static void CheckTernaryStringTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryStringTest(bool useInterpreter)
         {
             bool[] array1 = new bool[] { false, true };
             string[] array2 = new string[] { null, "", "a", "foo" };
@@ -447,14 +447,14 @@ namespace System.Linq.Expressions.Tests
                 {
                     for (int k = 0; k < array2.Length; k++)
                     {
-                        VerifyString(array1[i], array2[j], array2[k]);
+                        VerifyString(array1[i], array2[j], array2[k], useInterpreter);
                     }
                 }
             }
         }
 
-        [Fact]
-        public static void CheckTernaryUIntTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryUIntTest(bool useInterpreter)
         {
             bool[] array1 = new bool[] { false, true };
             uint[] array2 = new uint[] { 0, 1, uint.MaxValue };
@@ -464,14 +464,14 @@ namespace System.Linq.Expressions.Tests
                 {
                     for (int k = 0; k < array2.Length; k++)
                     {
-                        VerifyUInt(array1[i], array2[j], array2[k]);
+                        VerifyUInt(array1[i], array2[j], array2[k], useInterpreter);
                     }
                 }
             }
         }
 
-        [Fact]
-        public static void CheckTernaryULongTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryULongTest(bool useInterpreter)
         {
             bool[] array1 = new bool[] { false, true };
             ulong[] array2 = new ulong[] { 0, 1, ulong.MaxValue };
@@ -481,14 +481,14 @@ namespace System.Linq.Expressions.Tests
                 {
                     for (int k = 0; k < array2.Length; k++)
                     {
-                        VerifyULong(array1[i], array2[j], array2[k]);
+                        VerifyULong(array1[i], array2[j], array2[k], useInterpreter);
                     }
                 }
             }
         }
 
-        [Fact]
-        public static void CheckTernaryUShortTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryUShortTest(bool useInterpreter)
         {
             bool[] array1 = new bool[] { false, true };
             ushort[] array2 = new ushort[] { 0, 1, ushort.MaxValue };
@@ -498,101 +498,101 @@ namespace System.Linq.Expressions.Tests
                 {
                     for (int k = 0; k < array2.Length; k++)
                     {
-                        VerifyUShort(array1[i], array2[j], array2[k]);
+                        VerifyUShort(array1[i], array2[j], array2[k], useInterpreter);
                     }
                 }
             }
         }
 
-        [Fact]
-        public static void CheckTernaryGenericWithCustomTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryGenericWithCustomTest(bool useInterpreter)
         {
-            CheckTernaryGenericHelper<C>();
+            CheckTernaryGenericHelper<C>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckTernaryGenericWithEnumTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryGenericWithEnumTest(bool useInterpreter)
         {
-            CheckTernaryGenericHelper<E>();
+            CheckTernaryGenericHelper<E>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckTernaryGenericWithObjectTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryGenericWithObjectTest(bool useInterpreter)
         {
-            CheckTernaryGenericHelper<object>();
+            CheckTernaryGenericHelper<object>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckTernaryGenericWithStructTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryGenericWithStructTest(bool useInterpreter)
         {
-            CheckTernaryGenericHelper<S>();
+            CheckTernaryGenericHelper<S>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckTernaryGenericWithStructWithStringAndFieldTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryGenericWithStructWithStringAndFieldTest(bool useInterpreter)
         {
-            CheckTernaryGenericHelper<Scs>();
+            CheckTernaryGenericHelper<Scs>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckTernaryGenericWithClassRestrictionWithCustomTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryGenericWithClassRestrictionWithCustomTest(bool useInterpreter)
         {
-            CheckTernaryGenericWithClassRestrictionHelper<C>();
+            CheckTernaryGenericWithClassRestrictionHelper<C>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckTernaryGenericWithClassRestrictionWithObjectTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryGenericWithClassRestrictionWithObjectTest(bool useInterpreter)
         {
-            CheckTernaryGenericWithClassRestrictionHelper<object>();
+            CheckTernaryGenericWithClassRestrictionHelper<object>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckTernaryGenericWithSubClassRestrictionWithCustomTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryGenericWithSubClassRestrictionWithCustomTest(bool useInterpreter)
         {
-            CheckTernaryGenericWithSubClassRestrictionHelper<C>();
+            CheckTernaryGenericWithSubClassRestrictionHelper<C>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckTernaryGenericWithClassAndNewRestrictionWithCustomTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryGenericWithClassAndNewRestrictionWithCustomTest(bool useInterpreter)
         {
-            CheckTernaryGenericWithClassAndNewRestrictionHelper<C>();
+            CheckTernaryGenericWithClassAndNewRestrictionHelper<C>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckTernaryGenericWithClassAndNewRestrictionWithObjectTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryGenericWithClassAndNewRestrictionWithObjectTest(bool useInterpreter)
         {
-            CheckTernaryGenericWithClassAndNewRestrictionHelper<object>();
+            CheckTernaryGenericWithClassAndNewRestrictionHelper<object>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckTernaryGenericWithSubClassAndNewRestrictionWithCustomTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryGenericWithSubClassAndNewRestrictionWithCustomTest(bool useInterpreter)
         {
-            CheckTernaryGenericWithSubClassAndNewRestrictionHelper<C>();
+            CheckTernaryGenericWithSubClassAndNewRestrictionHelper<C>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckTernaryGenericWithStructRestrictionWithEnumTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryGenericWithStructRestrictionWithEnumTest(bool useInterpreter)
         {
-            CheckTernaryGenericWithStructRestrictionHelper<E>();
+            CheckTernaryGenericWithStructRestrictionHelper<E>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckTernaryGenericWithStructRestrictionWithStructTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryGenericWithStructRestrictionWithStructTest(bool useInterpreter)
         {
-            CheckTernaryGenericWithStructRestrictionHelper<S>();
+            CheckTernaryGenericWithStructRestrictionHelper<S>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckTernaryGenericWithStructRestrictionWithStructWithStringAndFieldTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTernaryGenericWithStructRestrictionWithStructWithStringAndFieldTest(bool useInterpreter)
         {
-            CheckTernaryGenericWithStructRestrictionHelper<Scs>();
+            CheckTernaryGenericWithStructRestrictionHelper<Scs>(useInterpreter);
         }
 
         #endregion
 
         #region Generic helpers
 
-        private static void CheckTernaryGenericHelper<T>()
+        private static void CheckTernaryGenericHelper<T>(bool useInterpreter)
         {
             bool[] array1 = new bool[] { false, true };
             T[] array2 = new T[] { default(T) };
@@ -602,13 +602,13 @@ namespace System.Linq.Expressions.Tests
                 {
                     for (int k = 0; k < array2.Length; k++)
                     {
-                        VerifyGeneric<T>(array1[i], array2[j], array2[k]);
+                        VerifyGeneric<T>(array1[i], array2[j], array2[k], useInterpreter);
                     }
                 }
             }
         }
 
-        private static void CheckTernaryGenericWithClassRestrictionHelper<Tc>() where Tc : class
+        private static void CheckTernaryGenericWithClassRestrictionHelper<Tc>(bool useInterpreter) where Tc : class
         {
             bool[] array1 = new bool[] { false, true };
             Tc[] array2 = new Tc[] { null, default(Tc) };
@@ -618,13 +618,13 @@ namespace System.Linq.Expressions.Tests
                 {
                     for (int k = 0; k < array2.Length; k++)
                     {
-                        VerifyGenericWithClassRestriction<Tc>(array1[i], array2[j], array2[k]);
+                        VerifyGenericWithClassRestriction<Tc>(array1[i], array2[j], array2[k], useInterpreter);
                     }
                 }
             }
         }
 
-        private static void CheckTernaryGenericWithSubClassRestrictionHelper<TC>() where TC : C
+        private static void CheckTernaryGenericWithSubClassRestrictionHelper<TC>(bool useInterpreter) where TC : C
         {
             bool[] array1 = new bool[] { false, true };
             TC[] array2 = new TC[] { null, default(TC), (TC)new C() };
@@ -634,13 +634,13 @@ namespace System.Linq.Expressions.Tests
                 {
                     for (int k = 0; k < array2.Length; k++)
                     {
-                        VerifyGenericWithSubClassRestriction<TC>(array1[i], array2[j], array2[k]);
+                        VerifyGenericWithSubClassRestriction<TC>(array1[i], array2[j], array2[k], useInterpreter);
                     }
                 }
             }
         }
 
-        private static void CheckTernaryGenericWithClassAndNewRestrictionHelper<Tcn>() where Tcn : class, new()
+        private static void CheckTernaryGenericWithClassAndNewRestrictionHelper<Tcn>(bool useInterpreter) where Tcn : class, new()
         {
             bool[] array1 = new bool[] { false, true };
             Tcn[] array2 = new Tcn[] { null, default(Tcn), new Tcn() };
@@ -650,13 +650,13 @@ namespace System.Linq.Expressions.Tests
                 {
                     for (int k = 0; k < array2.Length; k++)
                     {
-                        VerifyGenericWithClassAndNewRestriction<Tcn>(array1[i], array2[j], array2[k]);
+                        VerifyGenericWithClassAndNewRestriction<Tcn>(array1[i], array2[j], array2[k], useInterpreter);
                     }
                 }
             }
         }
 
-        private static void CheckTernaryGenericWithSubClassAndNewRestrictionHelper<TCn>() where TCn : C, new()
+        private static void CheckTernaryGenericWithSubClassAndNewRestrictionHelper<TCn>(bool useInterpreter) where TCn : C, new()
         {
             bool[] array1 = new bool[] { false, true };
             TCn[] array2 = new TCn[] { null, default(TCn), new TCn(), (TCn)new C() };
@@ -666,13 +666,13 @@ namespace System.Linq.Expressions.Tests
                 {
                     for (int k = 0; k < array2.Length; k++)
                     {
-                        VerifyGenericWithSubClassAndNewRestriction<TCn>(array1[i], array2[j], array2[k]);
+                        VerifyGenericWithSubClassAndNewRestriction<TCn>(array1[i], array2[j], array2[k], useInterpreter);
                     }
                 }
             }
         }
 
-        private static void CheckTernaryGenericWithStructRestrictionHelper<Ts>() where Ts : struct
+        private static void CheckTernaryGenericWithStructRestrictionHelper<Ts>(bool useInterpreter) where Ts : struct
         {
             bool[] array1 = new bool[] { false, true };
             Ts[] array2 = new Ts[] { default(Ts), new Ts() };
@@ -682,7 +682,7 @@ namespace System.Linq.Expressions.Tests
                 {
                     for (int k = 0; k < array2.Length; k++)
                     {
-                        VerifyGenericWithStructRestriction<Ts>(array1[i], array2[j], array2[k]);
+                        VerifyGenericWithStructRestriction<Ts>(array1[i], array2[j], array2[k], useInterpreter);
                     }
                 }
             }
@@ -692,7 +692,7 @@ namespace System.Linq.Expressions.Tests
 
         #region Test verifiers
 
-        private static void VerifyBool(bool condition, bool a, bool b)
+        private static void VerifyBool(bool condition, bool a, bool b, bool useInterpreter)
         {
             Expression<Func<bool>> e =
                 Expression.Lambda<Func<bool>>(
@@ -701,43 +701,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(bool)),
                         Expression.Constant(b, typeof(bool))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<bool> f = e.Compile();
+            Func<bool> f = e.Compile(useInterpreter);
 
-            bool result = default(bool);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            bool expected = default(bool);
-            Exception csEx = null;
-            try
-            {
-                expected = condition ? a : b;
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Equal(condition ? a : b, f());
         }
 
-        private static void VerifyByte(bool condition, byte a, byte b)
+        private static void VerifyByte(bool condition, byte a, byte b, bool useInterpreter)
         {
             Expression<Func<byte>> e =
                 Expression.Lambda<Func<byte>>(
@@ -746,43 +715,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(byte)),
                         Expression.Constant(b, typeof(byte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<byte> f = e.Compile();
+            Func<byte> f = e.Compile(useInterpreter);
 
-            byte result = default(byte);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            byte expected = default(byte);
-            Exception csEx = null;
-            try
-            {
-                expected = condition ? a : b;
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Equal(condition ? a : b, f());
         }
 
-        private static void VerifyCustom(bool condition, C a, C b)
+        private static void VerifyCustom(bool condition, C a, C b, bool useInterpreter)
         {
             Expression<Func<C>> e =
                 Expression.Lambda<Func<C>>(
@@ -791,43 +729,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(C)),
                         Expression.Constant(b, typeof(C))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<C> f = e.Compile();
+            Func<C> f = e.Compile(useInterpreter);
 
-            C result = default(C);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            C expected = default(C);
-            Exception csEx = null;
-            try
-            {
-                expected = condition ? a : b;
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Same(condition ? a : b, f());
         }
 
-        private static void VerifyChar(bool condition, char a, char b)
+        private static void VerifyChar(bool condition, char a, char b, bool useInterpreter)
         {
             Expression<Func<char>> e =
                 Expression.Lambda<Func<char>>(
@@ -836,43 +743,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(char)),
                         Expression.Constant(b, typeof(char))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<char> f = e.Compile();
+            Func<char> f = e.Compile(useInterpreter);
 
-            char result = default(char);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            char expected = default(char);
-            Exception csEx = null;
-            try
-            {
-                expected = condition ? a : b;
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Equal(condition ? a : b, f());
         }
 
-        private static void VerifyCustom2(bool condition, D a, D b)
+        private static void VerifyCustom2(bool condition, D a, D b, bool useInterpreter)
         {
             Expression<Func<D>> e =
                 Expression.Lambda<Func<D>>(
@@ -881,43 +757,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(D)),
                         Expression.Constant(b, typeof(D))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<D> f = e.Compile();
+            Func<D> f = e.Compile(useInterpreter);
 
-            D result = default(D);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            D expected = default(D);
-            Exception csEx = null;
-            try
-            {
-                expected = condition ? a : b;
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Same(condition ? a : b, f());
         }
 
-        private static void VerifyDecimal(bool condition, decimal a, decimal b)
+        private static void VerifyDecimal(bool condition, decimal a, decimal b, bool useInterpreter)
         {
             Expression<Func<decimal>> e =
                 Expression.Lambda<Func<decimal>>(
@@ -926,43 +771,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(decimal)),
                         Expression.Constant(b, typeof(decimal))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<decimal> f = e.Compile();
+            Func<decimal> f = e.Compile(useInterpreter);
 
-            decimal result = default(decimal);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            decimal expected = default(decimal);
-            Exception csEx = null;
-            try
-            {
-                expected = condition ? a : b;
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Equal(condition ? a : b, f());
         }
 
-        private static void VerifyDelegate(bool condition, Delegate a, Delegate b)
+        private static void VerifyDelegate(bool condition, Delegate a, Delegate b, bool useInterpreter)
         {
             Expression<Func<Delegate>> e =
                 Expression.Lambda<Func<Delegate>>(
@@ -971,43 +785,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(Delegate)),
                         Expression.Constant(b, typeof(Delegate))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Delegate> f = e.Compile();
+            Func<Delegate> f = e.Compile(useInterpreter);
 
-            Delegate result = default(Delegate);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            Delegate expected = default(Delegate);
-            Exception csEx = null;
-            try
-            {
-                expected = condition ? a : b;
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Same(condition ? a : b, f());
         }
 
-        private static void VerifyDouble(bool condition, double a, double b)
+        private static void VerifyDouble(bool condition, double a, double b, bool useInterpreter)
         {
             Expression<Func<double>> e =
                 Expression.Lambda<Func<double>>(
@@ -1016,43 +799,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(double)),
                         Expression.Constant(b, typeof(double))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<double> f = e.Compile();
+            Func<double> f = e.Compile(useInterpreter);
 
-            double result = default(double);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            double expected = default(double);
-            Exception csEx = null;
-            try
-            {
-                expected = condition ? a : b;
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Equal(condition ? a : b, f());
         }
 
-        private static void VerifyEnum(bool condition, E a, E b)
+        private static void VerifyEnum(bool condition, E a, E b, bool useInterpreter)
         {
             Expression<Func<E>> e =
                 Expression.Lambda<Func<E>>(
@@ -1061,43 +813,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(E)),
                         Expression.Constant(b, typeof(E))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<E> f = e.Compile();
+            Func<E> f = e.Compile(useInterpreter);
 
-            E result = default(E);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            E expected = default(E);
-            Exception csEx = null;
-            try
-            {
-                expected = condition ? a : b;
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Equal(condition ? a : b, f());
         }
 
-        private static void VerifyEnumLong(bool condition, El a, El b)
+        private static void VerifyEnumLong(bool condition, El a, El b, bool useInterpreter)
         {
             Expression<Func<El>> e =
                 Expression.Lambda<Func<El>>(
@@ -1106,43 +827,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(El)),
                         Expression.Constant(b, typeof(El))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<El> f = e.Compile();
+            Func<El> f = e.Compile(useInterpreter);
 
-            El result = default(El);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            El expected = default(El);
-            Exception csEx = null;
-            try
-            {
-                expected = condition ? a : b;
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Equal(condition ? a : b, f());
         }
 
-        private static void VerifyFloat(bool condition, float a, float b)
+        private static void VerifyFloat(bool condition, float a, float b, bool useInterpreter)
         {
             Expression<Func<float>> e =
                 Expression.Lambda<Func<float>>(
@@ -1151,43 +841,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(float)),
                         Expression.Constant(b, typeof(float))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<float> f = e.Compile();
+            Func<float> f = e.Compile(useInterpreter);
 
-            float result = default(float);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            float expected = default(float);
-            Exception csEx = null;
-            try
-            {
-                expected = condition ? a : b;
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Equal(condition ? a : b, f());
         }
 
-        private static void VerifyFuncOfObject(bool condition, Func<object> a, Func<object> b)
+        private static void VerifyFuncOfObject(bool condition, Func<object> a, Func<object> b, bool useInterpreter)
         {
             Expression<Func<Func<object>>> e =
                 Expression.Lambda<Func<Func<object>>>(
@@ -1196,43 +855,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(Func<object>)),
                         Expression.Constant(b, typeof(Func<object>))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Func<object>> f = e.Compile();
+            Func<Func<object>> f = e.Compile(useInterpreter);
 
-            Func<object> result = default(Func<object>);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            Func<object> expected = default(Func<object>);
-            Exception csEx = null;
-            try
-            {
-                expected = condition ? a : b;
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Same(condition ? a : b, f());
         }
 
-        private static void VerifyInterface(bool condition, I a, I b)
+        private static void VerifyInterface(bool condition, I a, I b, bool useInterpreter)
         {
             Expression<Func<I>> e =
                 Expression.Lambda<Func<I>>(
@@ -1241,43 +869,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(I)),
                         Expression.Constant(b, typeof(I))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<I> f = e.Compile();
+            Func<I> f = e.Compile(useInterpreter);
 
-            I result = default(I);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            I expected = default(I);
-            Exception csEx = null;
-            try
-            {
-                expected = condition ? a : b;
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Same(condition ? a : b, f());
         }
 
-        private static void VerifyIEquatableOfCustom(bool condition, IEquatable<C> a, IEquatable<C> b)
+        private static void VerifyIEquatableOfCustom(bool condition, IEquatable<C> a, IEquatable<C> b, bool useInterpreter)
         {
             Expression<Func<IEquatable<C>>> e =
                 Expression.Lambda<Func<IEquatable<C>>>(
@@ -1286,43 +883,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(IEquatable<C>)),
                         Expression.Constant(b, typeof(IEquatable<C>))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<IEquatable<C>> f = e.Compile();
+            Func<IEquatable<C>> f = e.Compile(useInterpreter);
 
-            IEquatable<C> result = default(IEquatable<C>);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            IEquatable<C> expected = default(IEquatable<C>);
-            Exception csEx = null;
-            try
-            {
-                expected = condition ? a : b;
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Same(condition ? a : b, f());
         }
 
-        private static void VerifyIEquatableOfCustom2(bool condition, IEquatable<D> a, IEquatable<D> b)
+        private static void VerifyIEquatableOfCustom2(bool condition, IEquatable<D> a, IEquatable<D> b, bool useInterpreter)
         {
             Expression<Func<IEquatable<D>>> e =
                 Expression.Lambda<Func<IEquatable<D>>>(
@@ -1331,43 +897,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(IEquatable<D>)),
                         Expression.Constant(b, typeof(IEquatable<D>))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<IEquatable<D>> f = e.Compile();
+            Func<IEquatable<D>> f = e.Compile(useInterpreter);
 
-            IEquatable<D> result = default(IEquatable<D>);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            IEquatable<D> expected = default(IEquatable<D>);
-            Exception csEx = null;
-            try
-            {
-                expected = condition ? a : b;
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Same(condition ? a : b, f());
         }
 
-        private static void VerifyInt(bool condition, int a, int b)
+        private static void VerifyInt(bool condition, int a, int b, bool useInterpreter)
         {
             Expression<Func<int>> e =
                 Expression.Lambda<Func<int>>(
@@ -1376,43 +911,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(int)),
                         Expression.Constant(b, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<int> f = e.Compile();
+            Func<int> f = e.Compile(useInterpreter);
 
-            int result = default(int);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            int expected = default(int);
-            Exception csEx = null;
-            try
-            {
-                expected = condition ? a : b;
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Equal(condition ? a : b, f());
         }
 
-        private static void VerifyLong(bool condition, long a, long b)
+        private static void VerifyLong(bool condition, long a, long b, bool useInterpreter)
         {
             Expression<Func<long>> e =
                 Expression.Lambda<Func<long>>(
@@ -1421,43 +925,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(long)),
                         Expression.Constant(b, typeof(long))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<long> f = e.Compile();
+            Func<long> f = e.Compile(useInterpreter);
 
-            long result = default(long);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            long expected = default(long);
-            Exception csEx = null;
-            try
-            {
-                expected = condition ? a : b;
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Equal(condition ? a : b, f());
         }
 
-        private static void VerifyObject(bool condition, object a, object b)
+        private static void VerifyObject(bool condition, object a, object b, bool useInterpreter)
         {
             Expression<Func<object>> e =
                 Expression.Lambda<Func<object>>(
@@ -1466,43 +939,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(object)),
                         Expression.Constant(b, typeof(object))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<object> f = e.Compile();
+            Func<object> f = e.Compile(useInterpreter);
 
-            object result = default(object);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            object expected = default(object);
-            Exception csEx = null;
-            try
-            {
-                expected = condition ? a : b;
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Same(condition ? a : b, f());
         }
 
-        private static void VerifyStruct(bool condition, S a, S b)
+        private static void VerifyStruct(bool condition, S a, S b, bool useInterpreter)
         {
             Expression<Func<S>> e =
                 Expression.Lambda<Func<S>>(
@@ -1511,43 +953,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(S)),
                         Expression.Constant(b, typeof(S))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<S> f = e.Compile();
+            Func<S> f = e.Compile(useInterpreter);
 
-            S result = default(S);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            S expected = default(S);
-            Exception csEx = null;
-            try
-            {
-                expected = condition ? a : b;
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Equal(condition ? a : b, f());
         }
 
-        private static void VerifySByte(bool condition, sbyte a, sbyte b)
+        private static void VerifySByte(bool condition, sbyte a, sbyte b, bool useInterpreter)
         {
             Expression<Func<sbyte>> e =
                 Expression.Lambda<Func<sbyte>>(
@@ -1556,43 +967,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(sbyte)),
                         Expression.Constant(b, typeof(sbyte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<sbyte> f = e.Compile();
+            Func<sbyte> f = e.Compile(useInterpreter);
 
-            sbyte result = default(sbyte);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            sbyte expected = default(sbyte);
-            Exception csEx = null;
-            try
-            {
-                expected = condition ? a : b;
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Equal(condition ? a : b, f());
         }
 
-        private static void VerifyStructWithString(bool condition, Sc a, Sc b)
+        private static void VerifyStructWithString(bool condition, Sc a, Sc b, bool useInterpreter)
         {
             Expression<Func<Sc>> e =
                 Expression.Lambda<Func<Sc>>(
@@ -1601,43 +981,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(Sc)),
                         Expression.Constant(b, typeof(Sc))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Sc> f = e.Compile();
+            Func<Sc> f = e.Compile(useInterpreter);
 
-            Sc result = default(Sc);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            Sc expected = default(Sc);
-            Exception csEx = null;
-            try
-            {
-                expected = condition ? a : b;
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Equal(condition ? a : b, f());
         }
 
-        private static void VerifyStructWithStringAndField(bool condition, Scs a, Scs b)
+        private static void VerifyStructWithStringAndField(bool condition, Scs a, Scs b, bool useInterpreter)
         {
             Expression<Func<Scs>> e =
                 Expression.Lambda<Func<Scs>>(
@@ -1646,43 +995,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(Scs)),
                         Expression.Constant(b, typeof(Scs))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Scs> f = e.Compile();
+            Func<Scs> f = e.Compile(useInterpreter);
 
-            Scs result = default(Scs);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            Scs expected = default(Scs);
-            Exception csEx = null;
-            try
-            {
-                expected = condition ? a : b;
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Equal(condition ? a : b, f());
         }
 
-        private static void VerifyShort(bool condition, short a, short b)
+        private static void VerifyShort(bool condition, short a, short b, bool useInterpreter)
         {
             Expression<Func<short>> e =
                 Expression.Lambda<Func<short>>(
@@ -1691,43 +1009,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(short)),
                         Expression.Constant(b, typeof(short))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<short> f = e.Compile();
+            Func<short> f = e.Compile(useInterpreter);
 
-            short result = default(short);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            short expected = default(short);
-            Exception csEx = null;
-            try
-            {
-                expected = condition ? a : b;
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Equal(condition ? a : b, f());
         }
 
-        private static void VerifyStructWithTwoValues(bool condition, Sp a, Sp b)
+        private static void VerifyStructWithTwoValues(bool condition, Sp a, Sp b, bool useInterpreter)
         {
             Expression<Func<Sp>> e =
                 Expression.Lambda<Func<Sp>>(
@@ -1736,43 +1023,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(Sp)),
                         Expression.Constant(b, typeof(Sp))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Sp> f = e.Compile();
+            Func<Sp> f = e.Compile(useInterpreter);
 
-            Sp result = default(Sp);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            Sp expected = default(Sp);
-            Exception csEx = null;
-            try
-            {
-                expected = condition ? a : b;
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Equal(condition ? a : b, f());
         }
 
-        private static void VerifyStructWithValue(bool condition, Ss a, Ss b)
+        private static void VerifyStructWithValue(bool condition, Ss a, Ss b, bool useInterpreter)
         {
             Expression<Func<Ss>> e =
                 Expression.Lambda<Func<Ss>>(
@@ -1781,43 +1037,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(Ss)),
                         Expression.Constant(b, typeof(Ss))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Ss> f = e.Compile();
+            Func<Ss> f = e.Compile(useInterpreter);
 
-            Ss result = default(Ss);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            Ss expected = default(Ss);
-            Exception csEx = null;
-            try
-            {
-                expected = condition ? a : b;
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Equal(condition ? a : b, f());
         }
 
-        private static void VerifyString(bool condition, string a, string b)
+        private static void VerifyString(bool condition, string a, string b, bool useInterpreter)
         {
             Expression<Func<string>> e =
                 Expression.Lambda<Func<string>>(
@@ -1826,43 +1051,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(string)),
                         Expression.Constant(b, typeof(string))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<string> f = e.Compile();
+            Func<string> f = e.Compile(useInterpreter);
 
-            string result = default(string);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            string expected = default(string);
-            Exception csEx = null;
-            try
-            {
-                expected = condition ? a : b;
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Same(condition ? a : b, f());
         }
 
-        private static void VerifyUInt(bool condition, uint a, uint b)
+        private static void VerifyUInt(bool condition, uint a, uint b, bool useInterpreter)
         {
             Expression<Func<uint>> e =
                 Expression.Lambda<Func<uint>>(
@@ -1871,43 +1065,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(uint)),
                         Expression.Constant(b, typeof(uint))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<uint> f = e.Compile();
+            Func<uint> f = e.Compile(useInterpreter);
 
-            uint result = default(uint);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            uint expected = default(uint);
-            Exception csEx = null;
-            try
-            {
-                expected = condition ? a : b;
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Equal(condition ? a : b, f());
         }
 
-        private static void VerifyULong(bool condition, ulong a, ulong b)
+        private static void VerifyULong(bool condition, ulong a, ulong b, bool useInterpreter)
         {
             Expression<Func<ulong>> e =
                 Expression.Lambda<Func<ulong>>(
@@ -1916,43 +1079,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(ulong)),
                         Expression.Constant(b, typeof(ulong))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<ulong> f = e.Compile();
+            Func<ulong> f = e.Compile(useInterpreter);
 
-            ulong result = default(ulong);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            ulong expected = default(ulong);
-            Exception csEx = null;
-            try
-            {
-                expected = condition ? a : b;
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Equal(condition ? a : b, f());
         }
 
-        private static void VerifyUShort(bool condition, ushort a, ushort b)
+        private static void VerifyUShort(bool condition, ushort a, ushort b, bool useInterpreter)
         {
             Expression<Func<ushort>> e =
                 Expression.Lambda<Func<ushort>>(
@@ -1961,43 +1093,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(ushort)),
                         Expression.Constant(b, typeof(ushort))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<ushort> f = e.Compile();
+            Func<ushort> f = e.Compile(useInterpreter);
 
-            ushort result = default(ushort);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            ushort expected = default(ushort);
-            Exception csEx = null;
-            try
-            {
-                expected = condition ? a : b;
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Equal(condition ? a : b, f());
         }
 
-        private static void VerifyGeneric<T>(bool condition, T a, T b)
+        private static void VerifyGeneric<T>(bool condition, T a, T b, bool useInterpreter)
         {
             Expression<Func<T>> e =
                 Expression.Lambda<Func<T>>(
@@ -2006,43 +1107,15 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(T)),
                         Expression.Constant(b, typeof(T))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<T> f = e.Compile();
+            Func<T> f = e.Compile(useInterpreter);
 
-            T result = default(T);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            T expected = default(T);
-            Exception csEx = null;
-            try
-            {
-                expected = condition ? a : b;
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
+            if (default(T) == null)
+                Assert.Same(condition ? a : b, f());
             else
-            {
-                Assert.Equal(expected, result);
-            }
+                Assert.Equal(condition ? a : b, f());
         }
 
-        private static void VerifyGenericWithClassRestriction<Tc>(bool condition, Tc a, Tc b)
+        private static void VerifyGenericWithClassRestriction<Tc>(bool condition, Tc a, Tc b, bool useInterpreter)
         {
             Expression<Func<Tc>> e =
                 Expression.Lambda<Func<Tc>>(
@@ -2051,43 +1124,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(Tc)),
                         Expression.Constant(b, typeof(Tc))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Tc> f = e.Compile();
+            Func<Tc> f = e.Compile(useInterpreter);
 
-            Tc result = default(Tc);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            Tc expected = default(Tc);
-            Exception csEx = null;
-            try
-            {
-                expected = condition ? a : b;
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Same(condition ? a : b, f());
         }
 
-        private static void VerifyGenericWithSubClassRestriction<TC>(bool condition, TC a, TC b)
+        private static void VerifyGenericWithSubClassRestriction<TC>(bool condition, TC a, TC b, bool useInterpreter)
         {
             Expression<Func<TC>> e =
                 Expression.Lambda<Func<TC>>(
@@ -2096,43 +1138,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(TC)),
                         Expression.Constant(b, typeof(TC))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<TC> f = e.Compile();
+            Func<TC> f = e.Compile(useInterpreter);
 
-            TC result = default(TC);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            TC expected = default(TC);
-            Exception csEx = null;
-            try
-            {
-                expected = condition ? a : b;
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Same(condition ? a : b, f());
         }
 
-        private static void VerifyGenericWithClassAndNewRestriction<Tcn>(bool condition, Tcn a, Tcn b)
+        private static void VerifyGenericWithClassAndNewRestriction<Tcn>(bool condition, Tcn a, Tcn b, bool useInterpreter)
         {
             Expression<Func<Tcn>> e =
                 Expression.Lambda<Func<Tcn>>(
@@ -2141,43 +1152,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(Tcn)),
                         Expression.Constant(b, typeof(Tcn))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Tcn> f = e.Compile();
+            Func<Tcn> f = e.Compile(useInterpreter);
 
-            Tcn result = default(Tcn);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            Tcn expected = default(Tcn);
-            Exception csEx = null;
-            try
-            {
-                expected = condition ? a : b;
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Same(condition ? a : b, f());
         }
 
-        private static void VerifyGenericWithSubClassAndNewRestriction<TCn>(bool condition, TCn a, TCn b)
+        private static void VerifyGenericWithSubClassAndNewRestriction<TCn>(bool condition, TCn a, TCn b, bool useInterpreter)
         {
             Expression<Func<TCn>> e =
                 Expression.Lambda<Func<TCn>>(
@@ -2186,43 +1166,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(TCn)),
                         Expression.Constant(b, typeof(TCn))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<TCn> f = e.Compile();
+            Func<TCn> f = e.Compile(useInterpreter);
 
-            TCn result = default(TCn);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            TCn expected = default(TCn);
-            Exception csEx = null;
-            try
-            {
-                expected = condition ? a : b;
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Same(condition ? a : b, f());
         }
 
-        private static void VerifyGenericWithStructRestriction<Ts>(bool condition, Ts a, Ts b)
+        private static void VerifyGenericWithStructRestriction<Ts>(bool condition, Ts a, Ts b, bool useInterpreter)
         {
             Expression<Func<Ts>> e =
                 Expression.Lambda<Func<Ts>>(
@@ -2231,40 +1180,9 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(Ts)),
                         Expression.Constant(b, typeof(Ts))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Ts> f = e.Compile();
+            Func<Ts> f = e.Compile(useInterpreter);
 
-            Ts result = default(Ts);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            Ts expected = default(Ts);
-            Exception csEx = null;
-            try
-            {
-                expected = condition ? a : b;
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Equal(condition ? a : b, f());
         }
 
         #endregion

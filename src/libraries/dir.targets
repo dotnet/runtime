@@ -29,5 +29,4 @@
     <!-- We set this property to avoid MSBuild errors regarding not setting TargetFrameworkProfile (see above line) -->
     <PortableNuGetMode>true</PortableNuGetMode>
   </PropertyGroup>
-
 </Project>

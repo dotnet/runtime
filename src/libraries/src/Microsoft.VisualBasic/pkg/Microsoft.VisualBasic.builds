@@ -3,7 +3,9 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <!-- Temporary workaround, VisualBasic projects cannot be built on non-Windows platforms. See issue #5230. -->
-    <Project Include="Microsoft.VisualBasic.pkgproj" Condition="'$(OSEnvironment)' == 'Windows_NT'" />
+    <Project Include="Microsoft.VisualBasic.pkgproj" Condition="'$(OS)'=='Windows_NT'">
+      <OSGroup>Windows_NT</OSGroup>
+    </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>

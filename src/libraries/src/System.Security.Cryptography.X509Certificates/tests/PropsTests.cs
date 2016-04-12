@@ -88,7 +88,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (var c = new X509Certificate2(TestData.MsCertificate))
             {
                 string format = c.GetFormat();
-                Assert.Equal("X509", format);  // Only one format is supported so this is very predicatable api...
+                Assert.Equal("X509", format);  // Only one format is supported so this is very predictable api...
             }
         }
 

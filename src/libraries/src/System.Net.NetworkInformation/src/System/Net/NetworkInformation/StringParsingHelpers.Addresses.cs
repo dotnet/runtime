@@ -10,7 +10,7 @@ namespace System.Net.NetworkInformation
     internal static partial class StringParsingHelpers
     {
         // /proc/net/route contains some information about gateway addresses,
-        // and seperates the information about by each interface.
+        // and separates the information about by each interface.
         internal static List<GatewayIPAddressInformation> ParseGatewayAddressesFromRouteFile(string filePath, string interfaceName)
         {
             if (!File.Exists(filePath))

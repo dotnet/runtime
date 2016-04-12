@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -13,7 +12,7 @@ namespace System.Globalization.Tests
         private static CompareInfo s_invariantCompare = CultureInfo.InvariantCulture.CompareInfo;
         private static CompareInfo s_hungarianCompare = new CultureInfo("hu-HU").CompareInfo;
         private static CompareInfo s_turkishCompare = new CultureInfo("tr-TR").CompareInfo;
-        
+
         public static IEnumerable<object[]> IsSuffix_TestData()
         {
             // Empty strings
@@ -25,7 +24,7 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, new string('a', 5555), new string('a', 5000), CompareOptions.None, true };
             yield return new object[] { s_invariantCompare, new string('a', 5555), new string('a', 5000) + "b", CompareOptions.None, false };
 
-            // Hugarian
+            // Hungarian
             yield return new object[] { s_hungarianCompare, "foobardzsdzs", "rddzs", CompareOptions.Ordinal, false };
             yield return new object[] { s_invariantCompare, "foobardzsdzs", "rddzs", CompareOptions.None, false };
             yield return new object[] { s_invariantCompare, "foobardzsdzs", "rddzs", CompareOptions.Ordinal, false };
@@ -56,7 +55,7 @@ namespace System.Globalization.Tests
         }
 
         [Theory]
-        [MemberData("IsSuffix_TestData")]
+        [MemberData(nameof(IsSuffix_TestData))]
         public void IsSuffix(CompareInfo compareInfo, string source, string value, CompareOptions options, bool expected)
         {
             if (options == CompareOptions.None)
@@ -67,7 +66,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(5463, PlatformID.AnyUnix)]
+        [ActiveIssue(5463, Xunit.PlatformID.AnyUnix)]
         public void IsSuffix_Hungarian()
         {
             // TODO: Remove this function, and combine into IsSuffix_TestData once 5463 is fixed
@@ -75,7 +74,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(5463, PlatformID.AnyUnix)]
+        [ActiveIssue(5463, Xunit.PlatformID.AnyUnix)]
         public void IsSuffix_UnassignedUnicode()
         {
             IsSuffix(s_invariantCompare, "FooBar", "Foo" + UnassignedUnicodeCharacter() + "Bar", CompareOptions.None, true);
@@ -86,21 +85,23 @@ namespace System.Globalization.Tests
         public void IsSuffix_Invalid()
         {
             // Source is null
-            Assert.Throws<ArgumentNullException>(() => s_invariantCompare.IsSuffix(null, ""));
-            Assert.Throws<ArgumentNullException>(() => s_invariantCompare.IsSuffix(null, "", CompareOptions.None));
+            Assert.Throws<ArgumentNullException>("source", () => s_invariantCompare.IsSuffix(null, ""));
+            Assert.Throws<ArgumentNullException>("source", () => s_invariantCompare.IsSuffix(null, "", CompareOptions.None));
 
             // Prefix is null
-            Assert.Throws<ArgumentNullException>(() => s_invariantCompare.IsSuffix("", null));
-            Assert.Throws<ArgumentNullException>(() => s_invariantCompare.IsSuffix("", null, CompareOptions.None));
+            Assert.Throws<ArgumentNullException>("suffix", () => s_invariantCompare.IsSuffix("", null));
+            Assert.Throws<ArgumentNullException>("suffix", () => s_invariantCompare.IsSuffix("", null, CompareOptions.None));
 
             // Source and prefix are null
-            Assert.Throws<ArgumentNullException>(() => s_invariantCompare.IsSuffix(null, null));
-            Assert.Throws<ArgumentNullException>(() => s_invariantCompare.IsSuffix(null, null, CompareOptions.None));
+            Assert.Throws<ArgumentNullException>("source", () => s_invariantCompare.IsSuffix(null, null));
+            Assert.Throws<ArgumentNullException>("source", () => s_invariantCompare.IsSuffix(null, null, CompareOptions.None));
 
             // Options are invalid
-            Assert.Throws<ArgumentException>(() => s_invariantCompare.IsSuffix("Test's", "Tests", CompareOptions.StringSort));
-            Assert.Throws<ArgumentException>(() => s_invariantCompare.IsSuffix("Test's", "Tests", (CompareOptions)(-1)));
-            Assert.Throws<ArgumentException>(() => s_invariantCompare.IsSuffix("Test's", "Tests", (CompareOptions)0x11111111));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IsSuffix("Test's", "Tests", CompareOptions.StringSort));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IsSuffix("Test's", "Tests", CompareOptions.Ordinal | CompareOptions.IgnoreWidth));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IsSuffix("Test's", "Tests", CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IsSuffix("Test's", "Tests", (CompareOptions)(-1)));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IsSuffix("Test's", "Tests", (CompareOptions)0x11111111));
         }
 
         private static char UnassignedUnicodeCharacter()

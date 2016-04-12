@@ -44,7 +44,7 @@ namespace System.Reflection.Tests
             Assert.Null(methodinfo);
         }
 
-        // Positive Test 4:The Event is private and the param Nonpublic is falses
+        // Positive Test 4:The Event is private and the param Nonpublic is false
         [Fact]
         public void PosTest4()
         {

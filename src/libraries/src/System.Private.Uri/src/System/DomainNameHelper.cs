@@ -63,8 +63,8 @@ namespace System
         // Returns:
         //  bool
         //
-        //  Remarks: Optimized for speed as a most comon case,
-        //           MUST NOT be used unless all input indexes are are verified and trusted.
+        //  Remarks: Optimized for speed as a most common case,
+        //           MUST NOT be used unless all input indexes are verified and trusted.
         //
 
         internal unsafe static bool IsValid(char* name, ushort pos, ref int returnedEnd, ref bool notCanonical, bool notImplicitFile)
@@ -372,7 +372,7 @@ namespace System
         {
             IdnMapping map = new IdnMapping();
 
-            // Test comon scenario first for perf
+            // Test common scenario first for perf
             // try to get unicode equivalent 
             try
             {

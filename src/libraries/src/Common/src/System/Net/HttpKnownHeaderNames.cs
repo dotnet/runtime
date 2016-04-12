@@ -50,7 +50,7 @@ namespace System.Net
         public const string ProxyAuthorization = "Proxy-Authorization";
         public const string ProxyConnection = "Proxy-Connection";
         public const string Range = "Range";
-        public const string Referer = "Referer";
+        public const string Referer = "Referer"; // NB: The spelling-mistake "Referer" for "Referrer" must be matched.
         public const string RetryAfter = "Retry-After";
         public const string SecWebSocketAccept = "Sec-WebSocket-Accept";
         public const string SecWebSocketExtensions = "Sec-WebSocket-Extensions";

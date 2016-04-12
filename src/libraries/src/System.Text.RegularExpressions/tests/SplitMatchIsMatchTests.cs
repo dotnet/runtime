@@ -9,284 +9,91 @@ using Xunit;
 public class SplitMatchIsMatchTests
 {
     /*
-        Class: Regex
-        Tested Methods:
-
-            public static string[] Split(string input, string pattern);
-                very simple
-
-            public static bool IsMatch(string input, string pattern, string options);
-                "m" option with 5 patterns
-
-            public static bool IsMatch(string input, string pattern);
-                "abc", "^b"
-
-            public static Match Match(string input, string pattern);     ???
-                "XSP_TEST_FAILURE SUCCESS", ".*\\b(\\w+)\\b"
+        public static string[] Split(string input, string pattern); very simple
+        public static bool IsMatch(string input, string pattern, string options); "m" option with 5 patterns
+        public static bool IsMatch(string input, string pattern); "abc", "^b"
+        public static Match Match(string input, string pattern); ???, "XSP_TEST_FAILURE SUCCESS", ".*\\b(\\w+)\\b"
     */
-
     [Fact]
     public static void SplitMatchIsMatch()
     {
-        //////////// Global Variables used for all tests
-        String strLoc = "Loc_000oo";
-        String strValue = String.Empty;
-        int iCountErrors = 0;
-        int iCountTestcases = 0;
+        string[] strMatch1 = { "line2\nline3", "line2\nline3", "line3\n\nline4", "line3\n\nline4", "line2\nline3" };
+        int[,] iMatch1 = { { 6, 11 }, { 6, 11 }, { 12, 12 }, { 12, 12 }, { 6, 11 } };
+        string[] strGroup1 = { };
+        string[] strGrpCap1 = { };
+
+        string strMatch2 = "XSP_TEST_FAILURE SUCCESS";
+        int[] iMatch2 = { 0, 24 };
+        string[] strGroup2 = { "XSP_TEST_FAILURE SUCCESS", "SUCCESS" };
+        int[] iGroup2 = { 17, 7 };
+        string[] strGrpCap2 = { "SUCCESS" };
+        int[] iGrpCap2 = { 17, 7 };
+        
+        // public static string[] Split(string input, string pattern); very simple
+        string[] sa = Regex.Split("word0    word1    word2    word3", "    ");
+        Assert.Equal(new string[] { "word0", "word1", "word2", "word3" }, sa);
+
+        // public static bool IsMatch(string input, string pattern, string options); "m" option with 5 patterns
         Match match;
-        String[] sa;
-        String[] strMatch1 =
+        sa = new string[] { "(line2$\n)line3", "(line2\n^)line3", "(line3\n$\n)line4", "(line3\n^\n)line4", "(line2$\n^)line3" };
+        for (int i = 0; i < sa.Length; i++)
         {
-        "line2\nline3", "line2\nline3", "line3\n\nline4", "line3\n\nline4", "line2\nline3"
-        }
+            Assert.True(Regex.IsMatch("line1\nline2\nline3\n\nline4", sa[i], RegexOptions.Multiline));
+            match = Regex.Match("line1\nline2\nline3\n\nline4", sa[i], RegexOptions.Multiline);
 
-        ;
-        Int32[,] iMatch1 =
-        {
-        {
-        6, 11
-        }
+            Assert.Equal(strMatch1[i], match.Value);
+            Assert.Equal(iMatch1[i, 0], match.Index);
+            Assert.Equal(iMatch1[i, 1], match.Length);
 
-        , {
-        6, 11
-        }
-
-        , {
-        12, 12
-        }
-
-        , {
-        12, 12
-        }
-
-        , {
-        6, 11
-        }
-        }
-
-        ;
-        String[] strGroup1 =
-        {
-        }
-
-        ;
-        String[] strGrpCap1 =
-        {
-        }
-
-        ;
-        String strMatch2 = "XSP_TEST_FAILURE SUCCESS";
-        Int32[] iMatch2 =
-        {
-        0, 24
-        }
-
-        ;
-        String[] strGroup2 =
-        {
-        "XSP_TEST_FAILURE SUCCESS", "SUCCESS"
-        }
-
-        ;
-        Int32[] iGroup2 =
-        {
-        17, 7
-        }
-
-        ;
-        String[] strGrpCap2 =
-        {
-        "SUCCESS"
-        }
-
-        ;
-        Int32[] iGrpCap2 =
-        {
-        17, 7
-        }
-
-        ;
-        try
-        {
-            /////////////////////////  START TESTS ////////////////////////////
-            ///////////////////////////////////////////////////////////////////
-            try
+            Assert.Equal(1, match.Captures.Count);
+            for (int j = 0; j < match.Captures.Count; j++)
             {
-                // []     public static string[] Split(string input, string pattern);
-                //    very simple
-                //-----------------------------------------------------------------
-                strLoc = "Loc_498yg";
-                iCountTestcases++;
-                sa = Regex.Split("word0    word1    word2    word3", "    ");
-                for (int i = 0; i < sa.Length; i++)
-                {
-                    String s = "word" + i;
-                    if (String.Compare(sa[i], s) != 0)
-                    {
-                        iCountErrors++;
-                        Console.WriteLine("Err_7654fdgd! Fail : [" + s + "] not equal [" + sa[i] + "]");
-                    }
-                }
-                //-----------------------------------------------------------------
+                Assert.Equal(strMatch1[i], match.Captures[j].Value);
+                Assert.Equal(iMatch1[i, 0], match.Captures[j].Index);
+                Assert.Equal(iMatch1[i, 1], match.Captures[j].Length);
             }
-            catch
-            {
-            }
-
-            try
-            {
-                // [] public static bool IsMatch(string input, string pattern, string options);
-                //"m" option with 5 patterns
-                //-----------------------------------------------------------------
-                strLoc = "Loc_298vy";
-                iCountTestcases++;
-                sa = new String[5];
-                sa[0] = "(line2$\n)line3";
-                sa[1] = "(line2\n^)line3";
-                sa[2] = "(line3\n$\n)line4";
-                sa[3] = "(line3\n^\n)line4";
-                sa[4] = "(line2$\n^)line3";
-                for (int ii = 0; ii < sa.Length; ii++)
-                {
-                    strLoc = "Loc_0002." + ii.ToString();
-                    if (!Regex.IsMatch("line1\nline2\nline3\n\nline4", sa[ii], RegexOptions.Multiline))
-                    {
-                        iCountErrors++;
-                        Console.WriteLine("Fail : " + strLoc + " : Pattern not match");
-                    }
-                    else
-                    {
-                        match = Regex.Match("line1\nline2\nline3\n\nline4", sa[ii], RegexOptions.Multiline);
-                        if (!match.Value.Equals(strMatch1[ii]) || (match.Index != iMatch1[ii, 0]) || (match.Length != iMatch1[ii, 1]) || (match.Captures.Count != 1))
-                        {
-                            iCountErrors++;
-                            Console.WriteLine("Err_75234_" + ii + " : unexpected return result");
-                        }
-
-                        for (int i = 0; i < match.Captures.Count; i++)
-                        {
-                            if (!match.Captures[i].Value.Equals(strMatch1[ii]) || (match.Captures[i].Index != iMatch1[ii, 0]) || (match.Captures[i].Length != iMatch1[ii, 1]))
-                            {
-                                iCountErrors++;
-                                Console.WriteLine("Err_8743fsgd_" + ii + "_" + i + " : unexpected return result");
-                            }
-                        }
-
-                        if (match.Groups.Count != 2)
-                        {
-                            iCountErrors++;
-                            Console.WriteLine("Err_3976dffd! unexpected return result");
-                        }
-                    }
-                }
-                //-----------------------------------------------------------------
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex);
-            }
-
-            try
-            {
-                // [] public static bool IsMatch(string input, string pattern);
-                //"abc", "^b"
-                //-----------------------------------------------------------------
-                strLoc = "Loc_75rfds";
-                iCountTestcases++;
-                if (Regex.IsMatch("abc", "^b"))
-                {
-                    iCountErrors++;
-                    Console.WriteLine("Err_7356wgd! Fail : " + strLoc + " : unexpected match");
-                }
-                //-----------------------------------------------------------------
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex);
-            }
-
-            try
-            {
-                // [] public static Match Match(string input, string pattern);     ???
-                //"XSP_TEST_FAILURE SUCCESS", ".*\\b(\\w+)\\b"
-                //-----------------------------------------------------------------
-                strLoc = "Loc_87423fs";
-                iCountTestcases++;
-                match = Regex.Match("XSP_TEST_FAILURE SUCCESS", @".*\b(\w+)\b");
-                if (!match.Success)
-                {
-                    iCountErrors++;
-                    Console.WriteLine("Err_753rwef! Unexpected results returned");
-                }
-                else
-                {
-                    if (!match.Value.Equals(strMatch2) || (match.Index != iMatch2[0]) || (match.Length != iMatch2[1]) || (match.Captures.Count != 1))
-                    {
-                        iCountErrors++;
-                        Console.WriteLine("Err_98275dsg: unexpected return result");
-                    }
-
-                    //Match.Captures always is Match
-                    if (!match.Captures[0].Value.Equals(strMatch2) || (match.Captures[0].Index != iMatch2[0]) || (match.Captures[0].Length != iMatch2[1]))
-                    {
-                        iCountErrors++;
-                        Console.WriteLine("Err_2046gsg! unexpected return result");
-                    }
-
-                    if (match.Groups.Count != 2)
-                    {
-                        iCountErrors++;
-                        Console.WriteLine("Err_75324sg! unexpected return result");
-                    }
-
-                    //Group 0 always is the Match
-                    if (!match.Groups[0].Value.Equals(strMatch2) || (match.Groups[0].Index != iMatch2[0]) || (match.Groups[0].Length != iMatch2[1]) || (match.Groups[0].Captures.Count != 1))
-                    {
-                        iCountErrors++;
-                        Console.WriteLine("Err_2046gsg! unexpected return result");
-                    }
-
-                    //Group 0's Capture is always the Match
-                    if (!match.Groups[0].Captures[0].Value.Equals(strMatch2) || (match.Groups[0].Captures[0].Index != iMatch2[0]) || (match.Groups[0].Captures[0].Length != iMatch2[1]))
-                    {
-                        iCountErrors++;
-                        Console.WriteLine("Err_2975edg!! unexpected return result");
-                    }
-
-                    for (int i = 1; i < match.Groups.Count; i++)
-                    {
-                        if (!match.Groups[i].Value.Equals(strGroup2[i]) || (match.Groups[i].Index != iGroup2[0]) || (match.Groups[i].Length != iGroup2[1]) || (match.Groups[i].Captures.Count != 1))
-                        {
-                            iCountErrors++;
-                            Console.WriteLine("Err_1954eg_" + i + "! unexpected return result");
-                        }
-
-                        for (int j = 0; j < match.Groups[i].Captures.Count; j++)
-                        {
-                            if (!match.Groups[i].Captures[j].Value.Equals(strGrpCap2[j]) || (match.Groups[i].Captures[j].Index != iGrpCap2[0]) || (match.Groups[i].Captures[j].Length != iGrpCap2[1]))
-                            {
-                                iCountErrors++;
-                                Console.WriteLine("Err_5072dn_" + i + "_" + j + "!! unexpected return result");
-                            }
-                        }
-                    }
-                }
-                //-----------------------------------------------------------------
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex);
-            }
-            ///////////////////////////////////////////////////////////////////
-            /////////////////////////// END TESTS /////////////////////////////
+            Assert.Equal(2, match.Groups.Count);
         }
-        catch (Exception exc_general)
+
+        // public static bool IsMatch(string input, string pattern); "abc", "^b"
+        Assert.False(Regex.IsMatch("abc", "^b"));
+        
+        // public static Match Match(string input, string pattern); ???, "XSP_TEST_FAILURE SUCCESS", ".*\\b(\\w+)\\b"
+        match = Regex.Match("XSP_TEST_FAILURE SUCCESS", @".*\b(\w+)\b");
+        Assert.True(match.Success);
+
+        Assert.Equal(strMatch2, match.Value);
+        Assert.Equal(iMatch2[0], match.Index);
+        Assert.Equal(iMatch2[1], match.Length);
+
+        Assert.Equal(1, match.Captures.Count);
+        Assert.Equal(strMatch2, match.Captures[0].Value);
+        Assert.Equal(iMatch2[0], match.Captures[0].Index);
+        Assert.Equal(iMatch2[1], match.Captures[0].Length);
+
+        Assert.Equal(2, match.Groups.Count);
+        Assert.Equal(strMatch2, match.Groups[0].Value);
+        Assert.Equal(iMatch2[0], match.Groups[0].Index);
+        Assert.Equal(iMatch2[1], match.Groups[0].Length);
+
+        Assert.Equal(1, match.Groups[0].Captures.Count);
+        Assert.Equal(strMatch2, match.Groups[0].Captures[0].Value);
+        Assert.Equal(iMatch2[0], match.Groups[0].Captures[0].Index);
+        Assert.Equal(iMatch2[1], match.Groups[0].Captures[0].Length);
+
+        for (int i = 1; i < match.Groups.Count; i++)
         {
-            ++iCountErrors;
-            Console.WriteLine("Error Err_8888yyy!  strLoc==" + strLoc + ", exc_general==" + exc_general.ToString());
-        }
+            Assert.Equal(strGroup2[i], match.Groups[i].Value);
+            Assert.Equal(iGroup2[0], match.Groups[i].Index);
+            Assert.Equal(iGroup2[1], match.Groups[i].Length);
 
-        ////  Finish Diagnostics
-        Assert.Equal(0, iCountErrors);
+            Assert.Equal(1, match.Groups[i].Captures.Count);
+            for (int j = 0; j < match.Groups[i].Captures.Count; j++)
+            {
+                Assert.Equal(strGroup2[i], match.Groups[i].Captures[j].Value);
+                Assert.Equal(iGroup2[0], match.Groups[i].Captures[j].Index);
+                Assert.Equal(iGroup2[1], match.Groups[i].Captures[j].Length);
+            }
+        }
     }
 }

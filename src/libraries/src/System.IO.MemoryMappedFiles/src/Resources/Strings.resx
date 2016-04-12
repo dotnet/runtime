@@ -184,7 +184,7 @@
     <value>A positive number is required.</value>
   </data>
   <data name="ArgumentOutOfRange_PositiveOrDefaultCapacityRequired" xml:space="preserve">
-    <value>The capacity must be greater than or equal to 0. 0 represents the the size of the file being mapped.</value>
+    <value>The capacity must be greater than or equal to 0. 0 represents the size of the file being mapped.</value>
   </data>
   <data name="ArgumentOutOfRange_PositiveOrDefaultSizeRequired" xml:space="preserve">
     <value>The size must be greater than or equal to 0. If 0 is specified, the view extends from the specified offset to the end of the file mapping.</value>

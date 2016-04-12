@@ -228,7 +228,7 @@ namespace System.Reflection.Tests
     }
 
 
-    // Fields for Refletion
+    // Fields for Reflection
     public class FieldInfoGeneric<T> { public FieldInfoGeneric() { } }
 
     public class PublicFieldGeneric<T>

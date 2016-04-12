@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Threading;
 using Xunit;
 
 namespace System.Linq.Parallel.Tests
@@ -85,14 +84,23 @@ namespace System.Linq.Parallel.Tests
             All_OneTrue(labeled, count, position);
         }
 
-        [Theory]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 1 }, MemberType = typeof(UnorderedSources))]
-        public static void All_OperationCanceledException_PreCanceled(Labeled<ParallelQuery<int>> labeled, int count)
+        [Fact]
+        public static void All_OperationCanceledException()
         {
-            CancellationTokenSource cs = new CancellationTokenSource();
-            cs.Cancel();
+            AssertThrows.EventuallyCanceled((source, canceler) => source.All(x => { canceler(); return true; }));
+        }
 
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).All(x => true));
+        [Fact]
+        public static void All_AggregateException_Wraps_OperationCanceledException()
+        {
+            AssertThrows.OtherTokenCanceled((source, canceler) => source.All(x => { canceler(); return true; }));
+            AssertThrows.SameTokenNotCanceled((source, canceler) => source.All(x => { canceler(); return true; }));
+        }
+
+        [Fact]
+        public static void All_OperationCanceledException_PreCanceled()
+        {
+            AssertThrows.AlreadyCanceled(source => source.All(x => true));
         }
 
         [Theory]

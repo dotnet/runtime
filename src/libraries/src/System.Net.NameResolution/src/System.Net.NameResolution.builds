@@ -6,7 +6,7 @@
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="System.Net.NameResolution.csproj" >
-      <OSGroup>Linux</OSGroup>
+      <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="System.Net.NameResolution.csproj">
       <TargetGroup>net46</TargetGroup>

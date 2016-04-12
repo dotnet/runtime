@@ -90,7 +90,7 @@ namespace Internal.NativeCrypto
         /// <summary>
         /// Find the default provider name to be used in the case that we
         /// were not actually passed in a provider name. The main purpose
-        /// of this code is really to deal with the enhanched/default provider
+        /// of this code is really to deal with the enhanced/default provider
         /// problems given to us by CAPI.
         /// </summary>
         /// <param name="dwType">Type of the provider</param>
@@ -291,8 +291,8 @@ namespace Internal.NativeCrypto
         /// <summary>
         /// This method acquires CSP and returns the handle of CSP 
         /// </summary>
-        /// <param name="parameters">Accepts the CSP Paramters</param>
-        /// <param name="randomKeyContainer">Bool to indicate if keey needs to be persisted</param>
+        /// <param name="parameters">Accepts the CSP Parameters</param>
+        /// <param name="randomKeyContainer">Bool to indicate if key needs to be persisted</param>
         /// <returns>Returns the safehandle of CSP </returns>
         internal static SafeProvHandle CreateProvHandle(CspParameters parameters, bool randomKeyContainer)
         {
@@ -802,7 +802,7 @@ namespace Internal.NativeCrypto
             if (!Interop.CryptDecrypt(safeKeyHandle, SafeHashHandle.InvalidHandle, true, dwFlags, dataTobeDecrypted, ref decryptedDataLength))
             {
                 int ErrCode = GetErrorCode();
-                // If we're using OAEP mode and we recieved an NTE_BAD_FLAGS error, then OAEP is not supported on
+                // If we're using OAEP mode and we received an NTE_BAD_FLAGS error, then OAEP is not supported on
                 // this platform (XP+ only).  Throw a generic cryptographic exception if we failed to decrypt OAEP
                 // padded data in order to prevent a chosen ciphertext attack.  We will allow NTE_BAD_KEY out, since
                 // that error does not relate to the padding.  Otherwise just throw a cryptographic exception based on

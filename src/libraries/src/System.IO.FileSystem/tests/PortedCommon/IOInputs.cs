@@ -180,9 +180,11 @@ internal static class IOInputs
             yield return "\0";
             yield return "middle\0path";
             yield return "trailing\0";
-            yield return @"\\?\";
-            yield return @"\\?\UNC\";
-            yield return @"\\?\UNC\LOCALHOST";
+
+            // TODO: #6931 Add these back in some fashion
+            //yield return @"\\?\";
+            //yield return @"\\?\UNC\";
+            //yield return @"\\?\UNC\LOCALHOST";
         }
         else
         {

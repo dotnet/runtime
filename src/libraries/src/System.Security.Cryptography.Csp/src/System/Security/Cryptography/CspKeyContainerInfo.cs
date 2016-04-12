@@ -21,7 +21,7 @@ namespace System.Security.Cryptography
         ///Internal constructor for creating the CspKeyContainerInfo object
         /// </summary>
         /// <param name="parameters">CSP parameters</param>
-        /// <param name="randomKeyContainer">Is it ranndom container</param>
+        /// <param name="randomKeyContainer">Is it random container</param>
         internal CspKeyContainerInfo(CspParameters parameters, bool randomKeyContainer)
         {
             _parameters = new CspParameters(parameters);

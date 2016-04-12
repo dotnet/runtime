@@ -24,6 +24,9 @@ namespace System.Runtime.Serialization.Json
         private const char WHITESPACE = ' ';
         private const char CARRIAGE_RETURN = '\r';
         private const char NEWLINE = '\n';
+        private const char BACKSPACE = '\b';
+        private const char FORM_FEED = '\f';
+        private const char HORIZONTAL_TABULATION = '\t';
         private const string xmlNamespace = "http://www.w3.org/XML/1998/namespace";
         private const string xmlnsNamespace = "http://www.w3.org/2000/xmlns/";
 
@@ -1013,7 +1016,7 @@ namespace System.Runtime.Serialization.Json
                     text = string.Empty;
                 }
 
-                // do work only when not indenting whitespaces
+                // do work only when not indenting whitespace
                 if (!((_dataType == JsonDataType.Array || _dataType == JsonDataType.Object || _nodeType == JsonNodeType.EndElement) && XmlConverter.IsWhitespace(text)))
                 {
                     StartText();
@@ -1384,29 +1387,27 @@ namespace System.Runtime.Serialization.Json
                 for (j = 0; j < str.Length; j++)
                 {
                     char ch = chars[j];
-                    if (ch <= FORWARD_SLASH)
-                    {
-                        if (ch == FORWARD_SLASH || ch == JsonGlobals.QuoteChar)
-                        {
-                            _nodeWriter.WriteChars(chars + i, j - i);
-                            _nodeWriter.WriteText(BACK_SLASH);
-                            _nodeWriter.WriteText(ch);
-                            i = j + 1;
-                        }
-                        else if (ch < WHITESPACE)
-                        {
-                            _nodeWriter.WriteChars(chars + i, j - i);
-                            _nodeWriter.WriteText(BACK_SLASH);
-                            _nodeWriter.WriteText('u');
-                            _nodeWriter.WriteText(string.Format(CultureInfo.InvariantCulture, "{0:x4}", (int)ch));
-                            i = j + 1;
-                        }
-                    }
-                    else if (ch == BACK_SLASH)
+                    char abbrev;
+                    if (ch == BACK_SLASH || ch == JsonGlobals.QuoteChar || ch == FORWARD_SLASH)
                     {
                         _nodeWriter.WriteChars(chars + i, j - i);
                         _nodeWriter.WriteText(BACK_SLASH);
                         _nodeWriter.WriteText(ch);
+                        i = j + 1;
+                    }
+                    else if (TryEscapeControlCharacter(ch, out abbrev))
+                    {
+                        _nodeWriter.WriteChars(chars + i, j - i);
+                        _nodeWriter.WriteText(BACK_SLASH);
+                        _nodeWriter.WriteText(abbrev);
+                        i = j + 1;
+                    }
+                    else if (ch < WHITESPACE)
+                    {
+                        _nodeWriter.WriteChars(chars + i, j - i);
+                        _nodeWriter.WriteText(BACK_SLASH);
+                        _nodeWriter.WriteText('u');
+                        _nodeWriter.WriteText(string.Format(CultureInfo.InvariantCulture, "{0:x4}", (int)ch));
                         i = j + 1;
                     }
                     else if ((ch >= HIGH_SURROGATE_START && (ch <= LOW_SURROGATE_END || ch >= MAX_CHAR)) || IsUnicodeNewlineCharacter(ch))
@@ -1423,6 +1424,33 @@ namespace System.Runtime.Serialization.Json
                     _nodeWriter.WriteChars(chars + i, j - i);
                 }
             }
+        }
+
+        private bool TryEscapeControlCharacter(char ch, out char abbrev)
+        {
+            switch (ch)
+            {
+                case BACKSPACE:
+                    abbrev = 'b';
+                    break;
+                case FORM_FEED:
+                    abbrev = 'f';
+                    break;
+                case NEWLINE:
+                    abbrev = 'n';
+                    break;
+                case CARRIAGE_RETURN:
+                    abbrev = 'r';
+                    break;
+                case HORIZONTAL_TABULATION:
+                    abbrev = 't';
+                    break;
+                default:
+                    abbrev = ' ';
+                    return false;
+            }
+
+            return true;
         }
 
         private void WriteIndent()
@@ -1556,7 +1584,7 @@ namespace System.Runtime.Serialization.Json
             // E.g. WriteValue(new int[] { 1, 2, 3}) should be equivalent to WriteString("1 2 3").             
             JsonDataType oldDataType = _dataType;
             // Set attribute mode to String because WritePrimitiveValue might write numerical text.
-            //  Calls to methods that write numbers can't be mixed with calls that write quoted text unless the attribute mode is explictly string.            
+            //  Calls to methods that write numbers can't be mixed with calls that write quoted text unless the attribute mode is explicitly string.            
             _dataType = JsonDataType.String;
             StartText();
             for (int i = 0; i < array.Length; i++)

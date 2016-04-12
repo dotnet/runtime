@@ -86,7 +86,7 @@ namespace System.Dynamic
 
         /// <summary>
         /// Gets the lists of transitions that are valid from this ExpandoClass
-        /// to an ExpandoClass whos keys hash to the apporopriate hash code.
+        /// to an ExpandoClass whose keys hash to the appropriate hash code.
         /// </summary>
         private List<WeakReference> GetTransitionList(int hashCode)
         {
@@ -171,7 +171,7 @@ namespace System.Dynamic
                             }
                             else
                             {
-                                //Ambigous match, stop searching
+                                //Ambiguous match, stop searching
                                 return ExpandoObject.AmbiguousMatchFound;
                             }
                         }

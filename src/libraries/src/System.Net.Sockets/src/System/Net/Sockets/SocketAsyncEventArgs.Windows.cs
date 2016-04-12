@@ -932,7 +932,7 @@ namespace System.Net.Sockets
             }
         }
 
-        // Sets up an Overlapped object with with multiple buffers pinned.
+        // Sets up an Overlapped object with multiple buffers pinned.
         unsafe private void SetupOverlappedMultiple()
         {
             ArraySegment<byte>[] tempList = new ArraySegment<byte>[_bufferList.Count];

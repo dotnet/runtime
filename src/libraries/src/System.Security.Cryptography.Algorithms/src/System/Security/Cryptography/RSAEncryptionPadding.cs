@@ -50,7 +50,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        /// Creates a new instance instance representing <see cref="RSAEncryptionPaddingMode.Oaep"/> 
+        /// Creates a new instance representing <see cref="RSAEncryptionPaddingMode.Oaep"/> 
         /// with the given hash algorithm.
         /// </summary>
         public static RSAEncryptionPadding CreateOaep(HashAlgorithmName hashAlgorithm)

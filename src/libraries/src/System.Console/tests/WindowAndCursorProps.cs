@@ -100,16 +100,9 @@ public class WindowAndCursorProps
         Assert.Throws<PlatformNotSupportedException>(() => Console.Title);
     }
 
-    [ActiveIssue(6223, PlatformID.Windows)]
-    [Fact]
-    [OuterLoop] // changes the title and we can't change it back automatically in the test
-    public static void Title_Set()
-    {
-        Console.Title = "Title set by unit test";
-    }
-
     [Fact]
     [PlatformSpecific(PlatformID.Windows)]
+    [ActiveIssue(6223)]
     public static void Title()
     {
         Assert.NotNull(Console.Title);
@@ -123,12 +116,17 @@ public class WindowAndCursorProps
 
             Assert.Equal(newTitle, Console.Title);
 
-            //// Try setting a Title greater than 256 chars.
+            // Try setting a Title equal to 256 chars.
+            newTitle = new string('a', 256);
+            Console.Title = newTitle;
+            Assert.Equal(newTitle, Console.Title);
+
+            // Try setting a Title greater than 256 chars.
             newTitle = new string('a', 1024);
             Console.Title = newTitle;
             Assert.Equal(newTitle, Console.Title);
 
-            //// Try setting a title greater than 24500 chars and check that it fails.
+            // Try setting a title greater than 24500 chars and check that it fails.
             newTitle = new string('a', 24501);
             Assert.Throws<ArgumentOutOfRangeException>(() => { Console.Title = newTitle; });
         }

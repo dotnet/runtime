@@ -2,14 +2,14 @@
   "dependencies": {
     "System.Reflection": "4.0.0",
     "System.Reflection.Primitives": "4.0.0",
-    "System.Runtime": "4.1.0-rc3-23910",
+    "System.Runtime": "4.1.0-rc3-24012-00",
     "System.Runtime.Handles": "4.0.0",
-    "System.Runtime.InteropServices.PInvoke": "4.0.0-rc3-23910"
+    "System.Runtime.InteropServices.PInvoke": "4.0.0-rc3-24012-00"
   },
   "frameworks": {
-    "netstandard1.3": {
+    "netstandard1.5": {
       "imports": [
-        "dotnet5.4"
+        "dotnet5.6"
       ]
     }
   }

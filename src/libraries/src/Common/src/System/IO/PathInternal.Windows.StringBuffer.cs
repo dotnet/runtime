@@ -15,17 +15,13 @@ namespace System.IO
         /// </summary>
         internal static bool IsExtended(StringBuffer path)
         {
-            Debug.Assert(path != null);
-            return path.StartsWith(ExtendedPathPrefix);
-        }
-
-        /// <summary>
-        /// Returns true if the path uses the extended UNC syntax (\\?\UNC\)
-        /// </summary>
-        internal static bool IsExtendedUnc(StringBuffer path)
-        {
-            Debug.Assert(path != null);
-            return path.StartsWith(UncExtendedPathPrefix);
+            // While paths like "//?/C:/" will work, they're treated the same as "\\.\" paths.
+            // Skipping of normalization will *only* occur if back slashes ('\') are used.
+            return path.Length >= DevicePrefixLength
+                && path[0] == '\\'
+                && (path[1] == '\\' || path[1] == '?')
+                && path[2] == '?'
+                && path[3] == '\\';
         }
 
         /// <summary>
@@ -33,9 +29,26 @@ namespace System.IO
         /// </summary>
         internal unsafe static uint GetRootLength(StringBuffer path)
         {
-            Debug.Assert(path != null);
             if (path.Length == 0) return 0;
             return GetRootLength(path.CharPointer, path.Length);
+        }
+
+        /// <summary>
+        /// Returns true if the path uses any of the DOS device path syntaxes. ("\\.\", "\\?\", or "\??\")
+        /// </summary>
+        internal static bool IsDevice(StringBuffer path)
+        {
+            // If the path begins with any two separators is will be recognized and normalized and prepped with
+            // "\??\" for internal usage correctly. "\??\" is recognized and handled, "/??/" is not.
+            return IsExtended(path)
+                ||
+                (
+                    path.Length >= DevicePrefixLength
+                    && IsDirectorySeparator(path[0])
+                    && IsDirectorySeparator(path[1])
+                    && (path[2] == '.' || path[2] == '?')
+                    && IsDirectorySeparator(path[3])
+                );
         }
 
         /// <summary>
@@ -50,7 +63,7 @@ namespace System.IO
         /// for C: (rooted, but relative). "C:\a" is rooted and not relative (the current directory
         /// will not be used to modify the path).
         /// </remarks>
-        internal static bool IsRelative(StringBuffer path)
+        internal static bool IsPartiallyQualified(StringBuffer path)
         {
             if (path.Length < 2)
             {
@@ -61,8 +74,9 @@ namespace System.IO
 
             if (IsDirectorySeparator(path[0]))
             {
-                // There is no valid way to specify a relative path with two initial slashes
-                return !IsDirectorySeparator(path[1]);
+                // There is no valid way to specify a relative path with two initial slashes or
+                // \? as ? isn't valid for drive relative paths and \??\ is equivalent to \\?\
+                return !(path[1] == '?' || IsDirectorySeparator(path[1]));
             }
 
             // The only way to specify a fixed path that doesn't begin with two slashes

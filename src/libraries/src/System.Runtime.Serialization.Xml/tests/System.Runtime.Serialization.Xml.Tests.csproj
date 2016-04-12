@@ -12,10 +12,14 @@
     <ProjectGuid>{30CAB353-089E-4294-B23B-F2DD1D945654}</ProjectGuid>
     <IncludePerformanceTests>true</IncludePerformanceTests>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(UseContractReferences)' == 'true'" >
+    <ProjectJson>Performance/project.json</ProjectJson>
+    <ProjectLockJson>Performance/project.lock.json</ProjectLockJson>
+  </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Performance\DcsDeserializationTests.cs" />
-    <Compile Include="Performance\DcsSerializationTests.cs" />
     <Compile Include="Performance\XmlUTF8TextReaderTests.cs" />
+    <Compile Include="Performance\PerformanceTestsCommon.cs" />
+    <Compile Include="Performance\DcsPerformanceTest.cs" />
     <Compile Include="Utils.cs" />
     <Compile Include="SerializationTypes.cs" />
     <Compile Include="SerializationTypes.CoreCLR.cs" />
@@ -27,12 +31,11 @@
     <Compile Include="XmlDictionaryReaderTests.cs" />
     <Compile Include="XmlDictionaryWriterTest.cs" />
     <!-- Performance Tests -->
-    <Compile Include="Performance\Perf.Deserialization.cs" />
     <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
       <Link>Common\System\PerfUtils.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(UseContractReferences)' == ''">
     <ProjectReference Include="..\..\System.Private.DataContractSerialization\src\System.Private.DataContractSerialization.csproj">
       <Project>{6B4C1660-D158-4820-BE1C-D7A29CEBEC9B}</Project>
       <Name>System.Private.DataContractSerialization</Name>

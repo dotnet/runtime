@@ -174,7 +174,7 @@ namespace System.Text.Tests
         }
         #endregion
 
-        #region Nagetive Test Cases
+        #region Negative Test Cases
         // NegTest1: ArgumentNullException should be throw when bytes is a null reference or chars is a null reference
         [Fact]
         public void NegTest1()

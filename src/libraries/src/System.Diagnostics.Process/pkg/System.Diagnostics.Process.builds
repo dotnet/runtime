@@ -3,15 +3,6 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="System.Diagnostics.Process.pkgproj" />
-    <Project Include="win\System.Diagnostics.Process.pkgproj">
-      <OSGroup>Windows_NT</OSGroup>
-    </Project>
-    <Project Include="linux\System.Diagnostics.Process.pkgproj">
-      <OSGroup>Linux</OSGroup>
-    </Project>
-    <Project Include="osx\System.Diagnostics.Process.pkgproj">
-      <OSGroup>OSX</OSGroup>
-    </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>

@@ -16,10 +16,10 @@ namespace Internal.Reflection.Core.Execution.Binder
         // fit.  The methods all have the same number of arguments and the object
         // array args.  On exit, this method will choice the best fit method
         // and coerce the args to match that method.  By match, we mean all primitive
-        // arguments are exact matchs and all object arguments are exact or subclasses
+        // arguments are exact matches and all object arguments are exact or subclasses
         // of the target.  If the target OR is an interface, the object must implement
         // that interface.  There are a couple of exceptions
-        // thrown when a method cannot be returned.  If no method matchs the args and
+        // thrown when a method cannot be returned.  If no method matches the args and
         // ArgumentException is thrown.  If multiple methods match the args then 
         // an AmbiguousMatchException is thrown.
         // 
@@ -37,7 +37,7 @@ namespace Internal.Reflection.Core.Execution.Binder
             int i;
             int j;
 
-            #region Map named parameters to candidate parameter postions
+            #region Map named parameters to candidate parameter positions
             // We are creating an paramOrder array to act as a mapping
             //  between the order of the args and the actual order of the
             //  parameters in the method.  This order may differ because
@@ -197,7 +197,7 @@ namespace Internal.Reflection.Core.Execution.Binder
                 #region Match method by parameter type
                 for (j = 0; j < argsToCheck; j++)
                 {
-                    #region Classic argument coersion checks
+                    #region Classic argument coercion checks
                     // get the formal type
                     pCls = par[j].ParameterType;
 
@@ -442,7 +442,7 @@ namespace Internal.Reflection.Core.Execution.Binder
 
 
         // Given a set of methods that match the base criteria, select a method based
-        // upon an array of types.  This method should return null if no method matchs
+        // upon an array of types.  This method should return null if no method matches
         // the criteria.
         public static MethodBase SelectMethod(MethodBase[] match, Type[] types)
         {
@@ -858,7 +858,7 @@ namespace Internal.Reflection.Core.Execution.Binder
             int res = FindMostSpecific(m1.GetParameters(), paramOrder1, paramArrayType1,
                                        m2.GetParameters(), paramOrder2, paramArrayType2, types, args);
 
-            // If the match was not ambigous then return the result.
+            // If the match was not ambiguous then return the result.
             if (res != 0)
             {
                 return res;
@@ -886,7 +886,7 @@ namespace Internal.Reflection.Core.Execution.Binder
                 }
             }
 
-            // The match is ambigous.
+            // The match is ambiguous.
             return 0;
         }
 
@@ -912,7 +912,7 @@ namespace Internal.Reflection.Core.Execution.Binder
                 }
             }
 
-            // The match is ambigous.
+            // The match is ambiguous.
             return 0;
         }
 

@@ -289,6 +289,8 @@ namespace System.Net.Http
                     {
                         chain.Dispose();
                     }
+
+                    serverCertificate.Dispose();
                 }
             }
         }

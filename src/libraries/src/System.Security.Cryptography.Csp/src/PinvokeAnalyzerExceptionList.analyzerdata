@@ -1,0 +1,19 @@
+<!-- This is a bug. This DLL supports .NET Standard 1.5 and so should be using APISet dependencies. -->
+Advapi32.dll!CryptGetDefaultProviderW
+Advapi32.dll!CryptAcquireContextW
+Advapi32.dll!CryptGetProvParam
+Advapi32.dll!CryptGetUserKey
+Advapi32.dll!CryptGetKeyParam
+Advapi32.dll!CryptGenKey
+Advapi32.dll!CryptReleaseContext
+Advapi32.dll!CryptDecrypt
+Advapi32.dll!CryptEncrypt
+Advapi32.dll!CryptExportKey
+Advapi32.dll!CryptImportKey
+Advapi32.dll!CryptCreateHash
+Advapi32.dll!CryptGetHashParam
+Advapi32.dll!CryptSetHashParam
+Advapi32.dll!CryptSignHashW
+Advapi32.dll!CryptVerifySignatureW
+Advapi32.dll!CryptDestroyKey
+Advapi32.dll!CryptDestroyHash

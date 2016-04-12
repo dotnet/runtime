@@ -959,29 +959,26 @@ namespace System.Linq.Expressions
         // Checks that all variables are non-null, not byref, and unique.
         internal static void ValidateVariables(ReadOnlyCollection<ParameterExpression> varList, string collectionName)
         {
-            if (varList.Count == 0)
-            {
-                return;
-            }
-
             int count = varList.Count;
-            var set = new Set<ParameterExpression>(count);
-            for (int i = 0; i < count; i++)
+            if (count != 0)
             {
-                ParameterExpression v = varList[i];
-                if (v == null)
+                var set = new HashSet<ParameterExpression>();
+                for (int i = 0; i < count; i++)
                 {
-                    throw new ArgumentNullException(string.Format(System.Globalization.CultureInfo.CurrentCulture, "{0}[{1}]", collectionName, set.Count));
+                    ParameterExpression v = varList[i];
+                    if (v == null)
+                    {
+                        throw new ArgumentNullException(string.Format(System.Globalization.CultureInfo.CurrentCulture, "{0}[{1}]", collectionName, set.Count));
+                    }
+                    if (v.IsByRef)
+                    {
+                        throw Error.VariableMustNotBeByRef(v, v.Type);
+                    }
+                    if (!set.Add(v))
+                    {
+                        throw Error.DuplicateVariable(v);
+                    }
                 }
-                if (v.IsByRef)
-                {
-                    throw Error.VariableMustNotBeByRef(v, v.Type);
-                }
-                if (set.Contains(v))
-                {
-                    throw Error.DuplicateVariable(v);
-                }
-                set.Add(v);
             }
         }
 

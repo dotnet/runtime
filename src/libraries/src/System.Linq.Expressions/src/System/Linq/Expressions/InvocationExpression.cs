@@ -509,7 +509,7 @@ namespace System.Linq.Expressions
         ///<exception cref="T:System.ArgumentNullException">
         ///<paramref name="expression" /> is null.</exception>
         ///<exception cref="T:System.ArgumentException">
-        ///<paramref name="expression" />.Type does not represent a delegate type or an <see cref="T:System.Linq.Expressions.Expression`1" />.-or-The <see cref="P:System.Linq.Expressions.Expression.Type" /> property of an arugment expression is not assignable to the type of the corresponding parameter of the delegate represented by <paramref name="expression" />.</exception>
+        ///<paramref name="expression" />.Type does not represent a delegate type or an <see cref="T:System.Linq.Expressions.Expression`1" />.-or-The <see cref="P:System.Linq.Expressions.Expression.Type" /> property of an argument expression is not assignable to the type of the corresponding parameter of the delegate represented by <paramref name="expression" />.</exception>
         ///<exception cref="T:System.InvalidOperationException">
         ///The number of arguments does not contain match the number of parameters for the delegate represented by <paramref name="expression" />.</exception>
         internal static InvocationExpression Invoke(Expression expression, Expression arg0)
@@ -550,7 +550,7 @@ namespace System.Linq.Expressions
         ///<exception cref="T:System.ArgumentNullException">
         ///<paramref name="expression" /> is null.</exception>
         ///<exception cref="T:System.ArgumentException">
-        ///<paramref name="expression" />.Type does not represent a delegate type or an <see cref="T:System.Linq.Expressions.Expression`1" />.-or-The <see cref="P:System.Linq.Expressions.Expression.Type" /> property of an arugment expression is not assignable to the type of the corresponding parameter of the delegate represented by <paramref name="expression" />.</exception>
+        ///<paramref name="expression" />.Type does not represent a delegate type or an <see cref="T:System.Linq.Expressions.Expression`1" />.-or-The <see cref="P:System.Linq.Expressions.Expression.Type" /> property of an argument expression is not assignable to the type of the corresponding parameter of the delegate represented by <paramref name="expression" />.</exception>
         ///<exception cref="T:System.InvalidOperationException">
         ///The number of arguments does not contain match the number of parameters for the delegate represented by <paramref name="expression" />.</exception>
         internal static InvocationExpression Invoke(Expression expression, Expression arg0, Expression arg1)
@@ -594,7 +594,7 @@ namespace System.Linq.Expressions
         ///<exception cref="T:System.ArgumentNullException">
         ///<paramref name="expression" /> is null.</exception>
         ///<exception cref="T:System.ArgumentException">
-        ///<paramref name="expression" />.Type does not represent a delegate type or an <see cref="T:System.Linq.Expressions.Expression`1" />.-or-The <see cref="P:System.Linq.Expressions.Expression.Type" /> property of an arugment expression is not assignable to the type of the corresponding parameter of the delegate represented by <paramref name="expression" />.</exception>
+        ///<paramref name="expression" />.Type does not represent a delegate type or an <see cref="T:System.Linq.Expressions.Expression`1" />.-or-The <see cref="P:System.Linq.Expressions.Expression.Type" /> property of an argument expression is not assignable to the type of the corresponding parameter of the delegate represented by <paramref name="expression" />.</exception>
         ///<exception cref="T:System.InvalidOperationException">
         ///The number of arguments does not contain match the number of parameters for the delegate represented by <paramref name="expression" />.</exception>
         internal static InvocationExpression Invoke(Expression expression, Expression arg0, Expression arg1, Expression arg2)
@@ -643,7 +643,7 @@ namespace System.Linq.Expressions
         ///<exception cref="T:System.ArgumentNullException">
         ///<paramref name="expression" /> is null.</exception>
         ///<exception cref="T:System.ArgumentException">
-        ///<paramref name="expression" />.Type does not represent a delegate type or an <see cref="T:System.Linq.Expressions.Expression`1" />.-or-The <see cref="P:System.Linq.Expressions.Expression.Type" /> property of an arugment expression is not assignable to the type of the corresponding parameter of the delegate represented by <paramref name="expression" />.</exception>
+        ///<paramref name="expression" />.Type does not represent a delegate type or an <see cref="T:System.Linq.Expressions.Expression`1" />.-or-The <see cref="P:System.Linq.Expressions.Expression.Type" /> property of an argument expression is not assignable to the type of the corresponding parameter of the delegate represented by <paramref name="expression" />.</exception>
         ///<exception cref="T:System.InvalidOperationException">
         ///The number of arguments does not contain match the number of parameters for the delegate represented by <paramref name="expression" />.</exception>
         internal static InvocationExpression Invoke(Expression expression, Expression arg0, Expression arg1, Expression arg2, Expression arg3)
@@ -696,7 +696,7 @@ namespace System.Linq.Expressions
         ///<exception cref="T:System.ArgumentNullException">
         ///<paramref name="expression" /> is null.</exception>
         ///<exception cref="T:System.ArgumentException">
-        ///<paramref name="expression" />.Type does not represent a delegate type or an <see cref="T:System.Linq.Expressions.Expression`1" />.-or-The <see cref="P:System.Linq.Expressions.Expression.Type" /> property of an arugment expression is not assignable to the type of the corresponding parameter of the delegate represented by <paramref name="expression" />.</exception>
+        ///<paramref name="expression" />.Type does not represent a delegate type or an <see cref="T:System.Linq.Expressions.Expression`1" />.-or-The <see cref="P:System.Linq.Expressions.Expression.Type" /> property of an argument expression is not assignable to the type of the corresponding parameter of the delegate represented by <paramref name="expression" />.</exception>
         ///<exception cref="T:System.InvalidOperationException">
         ///The number of arguments does not contain match the number of parameters for the delegate represented by <paramref name="expression" />.</exception>
         internal static InvocationExpression Invoke(Expression expression, Expression arg0, Expression arg1, Expression arg2, Expression arg3, Expression arg4)

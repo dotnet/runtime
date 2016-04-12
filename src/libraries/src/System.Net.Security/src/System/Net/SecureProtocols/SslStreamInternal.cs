@@ -294,7 +294,7 @@ namespace System.Net.Security
         }
 
         //
-        // Validates user parameteres for all Read/Write methods.
+        // Validates user parameters for all Read/Write methods.
         //
         private void ValidateParameters(byte[] buffer, int offset, int count)
         {
@@ -460,7 +460,7 @@ namespace System.Net.Security
         }
 
         //
-        // Combined sync/async read method. For sync requet asyncRequest==null.
+        // Combined sync/async read method. For sync request asyncRequest==null.
         //
         private int ProcessRead(byte[] buffer, int offset, int count, AsyncProtocolRequest asyncRequest)
         {

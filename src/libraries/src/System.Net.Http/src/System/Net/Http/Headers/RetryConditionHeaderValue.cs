@@ -120,7 +120,7 @@ namespace System.Net.Http.Headers
 
             int current = startIndex;
 
-            // Caller must remove leading whitespaces.
+            // Caller must remove leading whitespace.
             DateTimeOffset date = DateTimeOffset.MinValue;
             int deltaSeconds = -1; // use -1 to indicate that the value was not set. 'delta' values are always >=0
 
@@ -160,7 +160,7 @@ namespace System.Net.Http.Headers
                     return 0;
                 }
 
-                // If we got a valid date, then the parser consumed the whole string (incl. trailing whitespaces).
+                // If we got a valid date, then the parser consumed the whole string (incl. trailing whitespace).
                 current = input.Length;
             }
 

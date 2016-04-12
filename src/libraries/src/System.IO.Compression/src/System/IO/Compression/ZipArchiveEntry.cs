@@ -185,7 +185,7 @@ namespace System.IO.Compression
             private set
             {
                 if (value == null)
-                    throw new ArgumentNullException("FullName");
+                    throw new ArgumentNullException(nameof(FullName));
 
                 bool isUTF8;
                 _storedEntryNameBytes = EncodeEntryName(value, out isUTF8);
@@ -283,7 +283,7 @@ namespace System.IO.Compression
         }
 
         /// <summary>
-        /// Opens the entry. If the archive that the entry belongs to was opened in Read mode, the returned stream will be readable, and it may or may not be seekable. If Create mode, the returned stream will be writeable and not seekable. If Update mode, the returned stream will be readable, writeable, seekable, and support SetLength.
+        /// Opens the entry. If the archive that the entry belongs to was opened in Read mode, the returned stream will be readable, and it may or may not be seekable. If Create mode, the returned stream will be writable and not seekable. If Update mode, the returned stream will be readable, writable, seekable, and support SetLength.
         /// </summary>
         /// <returns>A Stream that represents the contents of the entry.</returns>
         /// <exception cref="IOException">The entry is already currently open for writing. -or- The entry has been deleted from the archive. -or- The archive that this entry belongs to was opened in ZipArchiveMode.Create, and this entry has already been written to once.</exception>
@@ -323,10 +323,10 @@ namespace System.IO.Compression
         public void MoveTo(String destinationEntryName)
         {
             if (destinationEntryName == null)
-                throw new ArgumentNullException("destinationEntryName");
+                throw new ArgumentNullException(nameof(destinationEntryName));
 
             if (String.IsNullOrEmpty(destinationEntryName))
-                throw new ArgumentException("destinationEntryName cannot be empty", "destinationEntryName");
+                throw new ArgumentException("destinationEntryName cannot be empty", nameof(destinationEntryName));
 
             if (_archive == null)
                 throw new InvalidOperationException("Attempt to move a deleted entry");
@@ -1014,7 +1014,7 @@ namespace System.IO.Compression
              * correct size information in there. note that order of uncomp/comp is switched, and these are
              * 64-bit values
              * also, note that in order for this to be correct, we have to insure that the zip64 extra field
-             * is alwasy the first extra field that is written */
+             * is always the first extra field that is written */
             if (zip64HeaderUsed)
             {
                 _archive.ArchiveStream.Seek(_offsetOfLocalHeader + ZipLocalFileHeader.SizeOfLocalHeader

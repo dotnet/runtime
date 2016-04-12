@@ -52,7 +52,7 @@ namespace System.Net.Http
             /// <summary>Cancellation registration associated with the currently pending async operation.</summary>
             private CancellationTokenRegistration _cancellationRegistration;
 
-            /// <summary>Whether the currently oustanding async operation is a reader.</summary>
+            /// <summary>Whether the currently outstanding async operation is a reader.</summary>
             private bool _waiterIsReader;
             /// <summary>The current outstanding async operation's buffer.</summary>
             private byte[] _buffer;

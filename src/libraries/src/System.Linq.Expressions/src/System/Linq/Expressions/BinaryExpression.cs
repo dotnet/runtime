@@ -409,7 +409,7 @@ namespace System.Linq.Expressions
         }
 
         //
-        // For a userdefined type T which has op_False defined and L, R are
+        // For a user-defined type T which has op_False defined and L, R are
         // nullable, (L AndAlso R) is computed as:
         //
         // L.HasValue
@@ -420,7 +420,7 @@ namespace System.Linq.Expressions
         //             : null
         //     : null
         //
-        // For a userdefined type T which has op_True defined and L, R are
+        // For a user-defined type T which has op_True defined and L, R are
         // nullable, (L OrElse R)  is computed as:
         //
         // L.HasValue

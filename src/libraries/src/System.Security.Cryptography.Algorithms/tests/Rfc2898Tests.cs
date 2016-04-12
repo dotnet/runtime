@@ -96,7 +96,7 @@ namespace System.Security.Cryptography.DeriveBytesTests
 
                 saltIn[0] = (byte)~saltIn[0];
 
-                // Have to read the property again to prove it's detatched.
+                // Have to read the property again to prove it's detached.
                 Assert.NotEqual(saltIn, deriveBytes.Salt);
             }
         }

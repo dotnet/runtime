@@ -36,6 +36,11 @@ namespace System.IO.MemoryMappedFiles.Tests
                         Assert.Throws<ArgumentOutOfRangeException>("size", () => mmf.CreateViewAccessor(0, 1 + (long)uint.MaxValue));
                         Assert.Throws<ArgumentOutOfRangeException>("size", () => mmf.CreateViewAccessor(0, 1 + (long)uint.MaxValue, MemoryMappedFileAccess.ReadWrite));
                     }
+                    else
+                    {
+                        Assert.Throws<IOException>(() => mmf.CreateViewAccessor(0, long.MaxValue));
+                        Assert.Throws<IOException>(() => mmf.CreateViewAccessor(0, long.MaxValue, MemoryMappedFileAccess.ReadWrite));
+                    }
 
                     // Offset + Size
                     Assert.Throws<UnauthorizedAccessException>(() => mmf.CreateViewAccessor(0, mapLength + 1));
@@ -445,7 +450,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// Test to allow a map and view to be finalized, just to ensure we don't crash.
         /// </summary>
         [Fact]
-        public void AllowFinaliation()
+        public void AllowFinalization()
         {
             // Explicitly do not dispose, to allow finalization to happen, just to try to verify
             // that nothing fails when it does.

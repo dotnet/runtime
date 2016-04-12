@@ -103,7 +103,7 @@ namespace System.IO.MemoryMappedFiles.Tests
 
         /// <summary>
         /// Test various combinations of arguments to CreateOrOpen, validating the created maps each time they're created,
-        /// focusing on on accesses that don't involve execute permissions.
+        /// focusing on accesses that don't involve execute permissions.
         /// </summary>
         [PlatformSpecific(PlatformID.Windows)]
         [Theory]
@@ -164,7 +164,7 @@ namespace System.IO.MemoryMappedFiles.Tests
 
         /// <summary>
         /// Test various combinations of arguments to CreateOrOpen, validating the created maps each time they're created,
-        /// focusing on on accesses that involve execute permissions.
+        /// focusing on accesses that involve execute permissions.
         /// </summary>
         [PlatformSpecific(PlatformID.Windows)]
         [Theory]
@@ -226,7 +226,6 @@ namespace System.IO.MemoryMappedFiles.Tests
                 {
                     continue;
                 }
-                string mapName = tmpMapName == "CreateUniqueMapName()" ? CreateUniqueMapName() : tmpMapName;
 
                 foreach (long tmpCapacity in capacities)
                 {
@@ -240,6 +239,7 @@ namespace System.IO.MemoryMappedFiles.Tests
                         {
                             foreach (HandleInheritability inheritability in inheritabilities)
                             {
+                                string mapName = tmpMapName == "CreateUniqueMapName()" ? CreateUniqueMapName() : tmpMapName;
                                 yield return new object[] { mapName, capacity, access, option, inheritability };
                             }
                         }
@@ -282,7 +282,7 @@ namespace System.IO.MemoryMappedFiles.Tests
             }
             else
             {
-                Assert.Throws<IOException>(() => MemoryMappedFile.CreateNew(CreateUniqueMapName(), long.MaxValue));
+                Assert.Throws<IOException>(() => MemoryMappedFile.CreateOrOpen(CreateUniqueMapName(), long.MaxValue));
             }
         }
 

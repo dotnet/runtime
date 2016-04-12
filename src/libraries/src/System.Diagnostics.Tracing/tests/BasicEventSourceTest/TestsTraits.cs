@@ -25,7 +25,6 @@ namespace BasicEventSourceTests
         /// <summary>
         /// Tests EventSource Traits.
         /// </summary>
-        [ActiveIssue(4871, PlatformID.AnyUnix)]
         [Fact]
         public void Test_EventSource_Traits_Contract()
         {
@@ -42,7 +41,6 @@ namespace BasicEventSourceTests
             TestUtilities.CheckNoEventSourcesRunning("Stop");
         }
 
-        [ActiveIssue(4871, PlatformID.AnyUnix)]
         [Fact]
         public void Test_EventSource_Traits_Dynamic()
         {

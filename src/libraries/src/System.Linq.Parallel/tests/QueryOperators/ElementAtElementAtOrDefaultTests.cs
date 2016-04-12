@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Threading;
 using Xunit;
 
 namespace System.Linq.Parallel.Tests
@@ -103,15 +102,11 @@ namespace System.Linq.Parallel.Tests
             ElementAtOrDefault_OutOfRange(labeled, count, position);
         }
 
-        [Theory]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 1 }, MemberType = typeof(UnorderedSources))]
-        public static void ElementAt_OperationCanceledException_PreCanceled(Labeled<ParallelQuery<int>> labeled, int count)
+        [Fact]
+        public static void ElementAt_OperationCanceledException_PreCanceled()
         {
-            CancellationTokenSource cs = new CancellationTokenSource();
-            cs.Cancel();
-
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).ElementAt(0));
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).ElementAtOrDefault(0));
+            AssertThrows.AlreadyCanceled(source => source.ElementAt(0));
+            AssertThrows.AlreadyCanceled(source => source.ElementAtOrDefault(0));
         }
 
         [Fact]

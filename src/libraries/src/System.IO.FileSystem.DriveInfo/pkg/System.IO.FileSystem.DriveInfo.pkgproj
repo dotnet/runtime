@@ -5,12 +5,7 @@
     <ProjectReference Include="..\ref\System.IO.FileSystem.DriveInfo.csproj">
       <SupportedFramework>net46;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.IO.FileSystem.DriveInfo.csproj">
-      <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
-    </ProjectReference>
-    <ProjectReference Include="win\System.IO.FileSystem.DriveInfo.pkgproj" />
-    <ProjectReference Include="linux\System.IO.FileSystem.DriveInfo.pkgproj" />
-    <ProjectReference Include="osx\System.IO.FileSystem.DriveInfo.pkgproj" />
+    <ProjectReference Include="..\src\System.IO.FileSystem.DriveInfo.builds" />
   </ItemGroup>
   <ItemGroup>
     <InboxOnTargetFramework Include="MonoAndroid10" />
@@ -19,6 +14,9 @@
     <InboxOnTargetFramework Include="xamarinmac20" />
     <InboxOnTargetFramework Include="xamarintvos10" />
     <InboxOnTargetFramework Include="xamarinwatchos10" />
-  </ItemGroup>
+
+    <NotSupportedOnTargetFramework Include="netcore50">
+      <PackageTargetRuntime>win7</PackageTargetRuntime>
+    </NotSupportedOnTargetFramework>  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

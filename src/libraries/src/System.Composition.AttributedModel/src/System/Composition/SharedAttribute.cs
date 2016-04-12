@@ -5,7 +5,7 @@
 namespace System.Composition
 {
     /// <summary>
-    /// Marks a part as being constrainted to sharing within the named boundary.
+    /// Marks a part as being constrained to sharing within the named boundary.
     /// </summary>
     /// <example>
     /// [Export,

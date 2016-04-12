@@ -462,7 +462,7 @@ namespace System.Numerics
 
             if (!isNegative)
             {
-                // Handle the simple postive value cases where the input is already in sign magnitude
+                // Handle the simple positive value cases where the input is already in sign magnitude
                 if (dwordCount != value.Length)
                 {
                     _sign = +1;

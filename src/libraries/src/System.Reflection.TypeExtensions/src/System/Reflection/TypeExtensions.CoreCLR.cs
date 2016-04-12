@@ -9,7 +9,7 @@
 // source compatibility with classic reflection code.
 //
 // However, this does not apply if there is no 1:1 correspondence with an instance
-// in mscorlib. New extension methods should be merked with 'this'.
+// in mscorlib. New extension methods should be marked with 'this'.
 
 namespace System.Reflection
 {

@@ -2,83 +2,27 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
+using System.Collections.Generic;
 using Xunit;
 
-namespace System.Globalization.CalendarsTests
+namespace System.Globalization.Tests
 {
-    // System.Globalization.ThaiBuddhistCalendar.GetDayOfWeek(DateTime)
     public class ThaiBuddhistCalendarGetDayOfWeek
     {
-        private readonly int[] _DAYS_PER_MONTHS_IN_LEAP_YEAR = new int[13]
-        {
-            0, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
-        };
-        private readonly int[] _DAYS_PER_MONTHS_IN_NO_LEAP_YEAR = new int[13]
-        {
-            0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
-        };
+        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
 
-        #region Positive Tests
-        // PosTest1: Verify the day is a random Date
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> GetDayOfWeek_TestData()
         {
-            System.Globalization.Calendar tbc = new ThaiBuddhistCalendar();
-            Random rand = new Random(-55);
-            int year = rand.Next(tbc.MinSupportedDateTime.Year + 543, tbc.MaxSupportedDateTime.Year + 544);
-            int month = rand.Next(1, 12);
-            int day;
-            if (IsLeapYear(year))
-            {
-                day = rand.Next(1, _DAYS_PER_MONTHS_IN_LEAP_YEAR[month] + 1);
-            }
-            else
-            {
-                day = rand.Next(1, _DAYS_PER_MONTHS_IN_NO_LEAP_YEAR[month] + 1);
-            }
-
-            DateTime dt = tbc.ToDateTime(year, month, day, 0, 0, 0, 0);
-            DayOfWeek actualDay = getDayOfWeek(dt);
-            Assert.Equal(actualDay, tbc.GetDayOfWeek(dt));
+            yield return new object[] { DateTime.MinValue };
+            yield return new object[] { DateTime.MaxValue };
+            yield return new object[] { s_randomDataGenerator.GetDateTime(-55) };
         }
 
-        // PosTest2: Verify the DateTime is ThaiBuddhistCalendar MinSupportedDateTime
-        [Fact]
-        public void PosTest2()
+        [Theory]
+        [MemberData(nameof(GetDayOfWeek_TestData))]
+        public void GetDayOfWeek(DateTime time)
         {
-            System.Globalization.Calendar tbc = new ThaiBuddhistCalendar();
-            DateTime dt = tbc.MinSupportedDateTime;
-            Assert.Equal(DayOfWeek.Monday, tbc.GetDayOfWeek(dt));
+            Assert.Equal(new GregorianCalendar().GetDayOfWeek(time), new ThaiBuddhistCalendar().GetDayOfWeek(time));
         }
-
-        // PosTest3: Verify the DateTime is ThaiBuddhistCalendar MaxSupportDateTime
-        [Fact]
-        public void PosTest3()
-        {
-            System.Globalization.Calendar tbc = new ThaiBuddhistCalendar();
-            DateTime dt = tbc.MaxSupportedDateTime;
-            Assert.Equal(DayOfWeek.Friday, tbc.GetDayOfWeek(dt));
-        }
-        #endregion
-
-        #region Helper Methods
-        private bool IsLeapYear(int year)
-        {
-            return ((year % 4) == 0) && !(((year % 100) == 0) || ((year % 400) == 0));
-        }
-
-        private DayOfWeek getDayOfWeek(DateTime time)
-        {
-            long TicksPerMillisecond = 10000;
-            long TicksPerSecond = TicksPerMillisecond * 1000;
-            long TicksPerMinute = TicksPerSecond * 60;
-            long TicksPerHour = TicksPerMinute * 60;
-            long TicksPerDay = TicksPerHour * 24;
-            ;
-            return ((DayOfWeek)((time.Ticks / TicksPerDay + 1) % 7));
-        }
-        #endregion
     }
 }

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -10,55 +9,37 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Net.Http
 {
-    internal class CurlChannelBinding : ChannelBinding
+    internal sealed class CurlChannelBinding : ChannelBinding
     {
         private SafeChannelBindingHandle _bindingHandle;
-        private string _description = string.Empty;
+        private byte[] _bindingHash;
 
-        internal CurlChannelBinding()
-        {
-        }
+        public override bool IsInvalid => _bindingHandle == null ? true : _bindingHandle.IsInvalid;
 
-        public override bool IsInvalid
-        {
-            get
-            {
-                return _bindingHandle == null ? true : _bindingHandle.IsInvalid;
-            }
-        }
+        public override int Size => _bindingHandle == null ? 0 : _bindingHandle.Length;
 
-        public override int Size
-        {
-            get
-            {
-                return _bindingHandle == null ? 0 : _bindingHandle.Length;
-            }
-        }
-
-        public override string ToString()
-        {
-            return _description;
-        }
+        public override string ToString() => 
+            _bindingHash != null && !IsInvalid ? BitConverter.ToString(_bindingHash).Replace('-', ' ') : null;
 
         protected override bool ReleaseHandle()
         {
             if (_bindingHandle != null)
             {
-                _bindingHandle.Dispose();
                 SetHandle(IntPtr.Zero);
+                _bindingHandle.Dispose();
+                _bindingHandle = null;
             }
             return true;
         }
 
         internal void SetToken(X509Certificate2 cert)
         {
-            // Parity with WinHTTP : CurHandler only supports retrieval of ChannelBindingKind.Endpoint for CBT.
+            // Parity with WinHTTP: only support retrieval of CBT for ChannelBindingKind.Endpoint.
             _bindingHandle = new SafeChannelBindingHandle(ChannelBindingKind.Endpoint);
             using (HashAlgorithm hashAlgo = Interop.OpenSsl.GetHashForChannelBinding(cert))
             {
-                byte[] bindingHash = hashAlgo.ComputeHash(cert.RawData);
-                _bindingHandle.SetCertHash(bindingHash);
-                _description = BitConverter.ToString(bindingHash).Replace('-', ' ');
+                _bindingHash = hashAlgo.ComputeHash(cert.RawData);
+                _bindingHandle.SetCertHash(_bindingHash);
                 SetHandle(_bindingHandle.DangerousGetHandle());
             }
         }

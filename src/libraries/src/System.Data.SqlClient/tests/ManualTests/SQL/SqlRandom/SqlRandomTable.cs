@@ -266,7 +266,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         public void DumpRow(TextWriter output, object[] row)
         {
             if (row == null || row.Length != _columns.Length)
-                throw new ArgumentException("Row lentgh does not match the columns");
+                throw new ArgumentException("Row length does not match the columns");
 
             for (int i = 0; i < _columnNames.Length - 1; i++)
             {
@@ -286,7 +286,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     }
                     else if (val is string)
                     {
-                        val = string.Format("[Lenthg={0}]", ((string)val).Length);
+                        val = string.Format("[Length={0}]", ((string)val).Length);
                     }
                     else
                     {
@@ -499,47 +499,47 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         }
 
         /// <summary>
-        /// generates SELECT statement; if columnIndicies is null the statement will include all the columns
+        /// generates SELECT statement; if columnIndices is null the statement will include all the columns
         /// </summary>
-        public int GenerateSelectFromTableTSql(string tableName, StringBuilder selectBuilder, int[] columnIndicies = null, int indiciesOffset = -1, int indiciesCount = -1)
+        public int GenerateSelectFromTableTSql(string tableName, StringBuilder selectBuilder, int[] columnIndices = null, int indicesOffset = -1, int indicesCount = -1)
         {
             if (tableName == null || selectBuilder == null)
                 throw new ArgumentNullException("tableName == null || selectBuilder == null");
 
-            int maxIndiciesLength = (columnIndicies == null) ? _columns.Length : columnIndicies.Length;
-            if (indiciesOffset == -1)
+            int maxIndicesLength = (columnIndices == null) ? _columns.Length : columnIndices.Length;
+            if (indicesOffset == -1)
             {
-                indiciesOffset = 0;
+                indicesOffset = 0;
             }
-            else if (indiciesOffset < 0 || indiciesOffset >= maxIndiciesLength)
+            else if (indicesOffset < 0 || indicesOffset >= maxIndicesLength)
             {
-                throw new ArgumentOutOfRangeException("indiciesOffset");
+                throw new ArgumentOutOfRangeException("indicesOffset");
             }
 
-            if (indiciesCount == -1)
+            if (indicesCount == -1)
             {
-                indiciesCount = maxIndiciesLength;
+                indicesCount = maxIndicesLength;
             }
-            else if (indiciesCount < 1 || (indiciesCount + indiciesOffset) > maxIndiciesLength)
+            else if (indicesCount < 1 || (indicesCount + indicesOffset) > maxIndicesLength)
             {
                 // at least one index required
-                throw new ArgumentOutOfRangeException("indiciesCount");
+                throw new ArgumentOutOfRangeException("indicesCount");
             }
 
             double totalRowSize = 0;
             int countAdded = 0;
 
             // append the first
-            int columnIndex = (columnIndicies == null) ? indiciesOffset : columnIndicies[indiciesOffset];
+            int columnIndex = (columnIndices == null) ? indicesOffset : columnIndices[indicesOffset];
             selectBuilder.AppendFormat("SELECT [{0}]", _columnNames[columnIndex]);
             totalRowSize += _columns[columnIndex].GetInRowSize(null);
             countAdded++;
 
             // append the rest, if any
-            int end = indiciesOffset + indiciesCount;
-            for (int c = indiciesOffset + 1; c < end; c++)
+            int end = indicesOffset + indicesCount;
+            for (int c = indicesOffset + 1; c < end; c++)
             {
-                columnIndex = (columnIndicies == null) ? c : columnIndicies[c];
+                columnIndex = (columnIndices == null) ? c : columnIndices[c];
                 totalRowSize += _columns[columnIndex].GetInRowSize(null);
                 if (totalRowSize > MaxRowSize)
                 {

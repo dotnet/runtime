@@ -61,7 +61,7 @@ namespace System.Data.ProviderBase
 
         public void ClearPool(DbConnection connection)
         {
-            ADP.CheckArgumentNull(connection, "connection");
+            ADP.CheckArgumentNull(connection, nameof(connection));
 
             DbConnectionPoolGroup poolGroup = GetConnectionPoolGroup(connection);
             if (null != poolGroup)
@@ -73,7 +73,7 @@ namespace System.Data.ProviderBase
         public void ClearPool(DbConnectionPoolKey key)
         {
             Debug.Assert(key != null, "key cannot be null");
-            ADP.CheckArgumentNull(key.ConnectionString, "key.ConnectionString");
+            ADP.CheckArgumentNull(key.ConnectionString, nameof(key) + "." + nameof(key.ConnectionString));
 
             DbConnectionPoolGroup poolGroup;
             Dictionary<DbConnectionPoolKey, DbConnectionPoolGroup> connectionPoolGroups = _connectionPoolGroups;
@@ -133,7 +133,7 @@ namespace System.Data.ProviderBase
         protected DbConnectionOptions FindConnectionOptions(DbConnectionPoolKey key)
         {
             Debug.Assert(key != null, "key cannot be null");
-            if (!ADP.IsEmpty(key.ConnectionString))
+            if (!string.IsNullOrEmpty(key.ConnectionString))
             {
                 DbConnectionPoolGroup connectionPoolGroup;
                 Dictionary<DbConnectionPoolKey, DbConnectionPoolGroup> connectionPoolGroups = _connectionPoolGroups;
@@ -145,16 +145,10 @@ namespace System.Data.ProviderBase
             return null;
         }
 
-        // GetCompletedTask must be called from within s_pendingOpenPooled lock
         private static Task<DbConnectionInternal> GetCompletedTask()
         {
-            if (s_completedTask == null)
-            {
-                TaskCompletionSource<DbConnectionInternal> source = new TaskCompletionSource<DbConnectionInternal>();
-                source.SetResult(null);
-                s_completedTask = source.Task;
-            }
-            return s_completedTask;
+            Debug.Assert(Monitor.IsEntered(s_pendingOpenNonPooled), $"Expected {nameof(s_pendingOpenNonPooled)} lock to be held.");
+            return s_completedTask ?? (s_completedTask = Task.FromResult<DbConnectionInternal>(null));
         }
 
         internal bool TryGetConnection(DbConnection owningConnection, TaskCompletionSource<DbConnectionInternal> retry, DbConnectionOptions userOptions, DbConnectionInternal oldConnection, out DbConnectionInternal connection)
@@ -169,7 +163,7 @@ namespace System.Data.ProviderBase
             //  and GetConnection on the pool checking the pool state.  Clearing the pool in this window
             //  will switch the pool into the ShuttingDown state, and GetConnection will return null.
             //  There is probably a better solution involving locking the pool/group, but that entails a major
-            //  re-design of the connection pooling synchronization, so is post-poned for now.
+            //  re-design of the connection pooling synchronization, so is postponed for now.
 
             // Use retriesLeft to prevent CPU spikes with incremental sleep
             // start with one msec, double the time every retry
@@ -354,7 +348,7 @@ namespace System.Data.ProviderBase
 
         internal DbConnectionPoolGroup GetConnectionPoolGroup(DbConnectionPoolKey key, DbConnectionPoolGroupOptions poolOptions, ref DbConnectionOptions userConnectionOptions)
         {
-            if (ADP.IsEmpty(key.ConnectionString))
+            if (string.IsNullOrEmpty(key.ConnectionString))
             {
                 return (DbConnectionPoolGroup)null;
             }

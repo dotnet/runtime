@@ -8,8 +8,8 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Microsoft.Win32.Primitives.builds" >
-      <AdditionalProperties>FilterToOSGroup=Windows_NT</AdditionalProperties>
+    <ProjectReference Include="..\..\src\Microsoft.Win32.Primitives.csproj" >
+      <OSGroup>Windows_NT</OSGroup>
     </ProjectReference>
  
     <!-- don't use the dotnet implementation for any version of desktop, it's implementation comes from the reference package -->

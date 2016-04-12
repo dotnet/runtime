@@ -12,8 +12,9 @@
     <!-- CS1698 - Disable warning about reference to 4.0.0.0 System.Runtime.WindowsRuntime having same simple name as target assembly -->
     <NoWarn>$(NoWarn)1698</NoWarn>
     <ProjectGuid>{844A2A0B-4169-49C3-B367-AFDC4894E487}</ProjectGuid>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework> 
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework>
     <PackageTargetRuntime>win8</PackageTargetRuntime>
+    <PackageTargetRuntime Condition="'$(TargetGroup)' == 'netcore50aot'">win8-aot</PackageTargetRuntime>
     <AssemblyVersion>4.0.11.0</AssemblyVersion>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
@@ -35,10 +36,17 @@
     <!-- Needed for the compiler to resolve IObservableMap.MapChanged. -->
     <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj"/>
     <ProjectReference Include="..\..\System.Diagnostics.Tools\src\System.Diagnostics.Tools.csproj" />
-    <ProjectReference Include="..\..\System.ObjectModel\src\System.ObjectModel.csproj"/>
     <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj" />
-    <ProjectReference Include="..\..\System.Runtime.InteropServices.WindowsRuntime\src\System.Runtime.InteropServices.WindowsRuntime.csproj" />
-    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="..\..\System.Runtime.InteropServices.WindowsRuntime\src\System.Runtime.InteropServices.WindowsRuntime.csproj">
+      <UndefineProperties>OSGroup</UndefineProperties>
+    </ProjectReference>
+    <!-- ensure we use the lower-versioned UWP compatible facades so that this facade is compatible with UWP -->
+    <ProjectReference Include="..\..\System.ObjectModel\src\redist\System.ObjectModel.depproj">
+      <TargetGroup>netcore50</TargetGroup>
+    </ProjectReference>
+    <ProjectReference Include="..\..\System.Runtime\src\redist\System.Runtime.depproj">
+      <TargetGroup>netcore50</TargetGroup>
+    </ProjectReference>
     <Compile Include="System\IO\StreamOperationAsyncResult.netstandard.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\MarshalingHelpers.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\RestrictedErrorInfoHelper.cs" />

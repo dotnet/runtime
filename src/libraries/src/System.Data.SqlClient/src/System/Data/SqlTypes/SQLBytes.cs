@@ -9,8 +9,8 @@
 using System.Diagnostics;
 using System.Data.Common;
 using System.IO;
+using System.Runtime.CompilerServices;
 using Res = System.SR;
-
 
 namespace System.Data.SqlTypes
 {
@@ -41,7 +41,7 @@ namespace System.Data.SqlTypes
         //      - m_stream must not be null
         //      - m_rgbBuf could be null or not. if not null, content is garbage, should never look into it.
         //		- m_lCurLen must be x_lNull.
-        // 5) SqlBytes contains a Lazy Materialized Blob (ie, StorageState.Delayed)
+        // 5) SqlBytes contains a Lazy Materialized Blob (i.e, StorageState.Delayed)
         //
         internal byte[] m_rgbBuf;   // Data buffer
         private long _lCurLen; // Current data length
@@ -597,7 +597,7 @@ namespace System.Data.SqlTypes
 
         public override long Seek(long offset, SeekOrigin origin)
         {
-            CheckIfStreamClosed("Seek");
+            CheckIfStreamClosed();
 
             long lPosition = 0;
 
@@ -624,7 +624,7 @@ namespace System.Data.SqlTypes
                     break;
 
                 default:
-                    throw ADP.InvalidSeekOrigin("offset");
+                    throw ADP.InvalidSeekOrigin(nameof(offset));
             }
 
             return _lPosition;
@@ -633,7 +633,7 @@ namespace System.Data.SqlTypes
         // The Read/Write/ReadByte/WriteByte simply delegates to SqlBytes
         public override int Read(byte[] buffer, int offset, int count)
         {
-            CheckIfStreamClosed("Read");
+            CheckIfStreamClosed();
 
             if (buffer == null)
                 throw new ArgumentNullException(nameof(buffer));
@@ -650,7 +650,7 @@ namespace System.Data.SqlTypes
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            CheckIfStreamClosed("Write");
+            CheckIfStreamClosed();
 
             if (buffer == null)
                 throw new ArgumentNullException(nameof(buffer));
@@ -665,7 +665,7 @@ namespace System.Data.SqlTypes
 
         public override int ReadByte()
         {
-            CheckIfStreamClosed("ReadByte");
+            CheckIfStreamClosed();
 
             // If at the end of stream, return -1, rather than call SqlBytes.ReadByte,
             // which will throw exception. This is the behavior for Stream.
@@ -680,7 +680,7 @@ namespace System.Data.SqlTypes
 
         public override void WriteByte(byte value)
         {
-            CheckIfStreamClosed("WriteByte");
+            CheckIfStreamClosed();
 
             _sb[_lPosition] = value;
             _lPosition++;
@@ -688,7 +688,7 @@ namespace System.Data.SqlTypes
 
         public override void SetLength(long value)
         {
-            CheckIfStreamClosed("SetLength");
+            CheckIfStreamClosed();
 
             _sb.SetLength(value);
             if (_lPosition > value)
@@ -705,7 +705,7 @@ namespace System.Data.SqlTypes
         protected override void Dispose(bool disposing)
         {
             // When m_sb is null, it means the stream has been closed, and
-            // any opearation in the future should fail.
+            // any operation in the future should fail.
             // This is the only case that m_sb is null.
             try
             {
@@ -726,7 +726,7 @@ namespace System.Data.SqlTypes
             return _sb == null;
         }
 
-        private void CheckIfStreamClosed(string methodname)
+        private void CheckIfStreamClosed([CallerMemberName] string methodname = "")
         {
             if (FClosed())
                 throw ADP.StreamClosed(methodname);

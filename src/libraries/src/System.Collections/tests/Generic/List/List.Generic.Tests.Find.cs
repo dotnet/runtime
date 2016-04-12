@@ -18,7 +18,7 @@ namespace System.Collections.Tests
         private readonly Predicate<T> AlwaysFalseDelegate = (T item) => { return false; };
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void FindVerifyExceptions(int count)
         {
             List<T> list = GenericListFactory(count);
@@ -38,7 +38,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void FindLastIndexInt_VerifyExceptions(int count)
         {
             List<T> list = GenericListFactory(count);
@@ -72,7 +72,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void FindIndexIntInt_VerifyExceptions(int count)
         {
             List<T> list = GenericListFactory(count);
@@ -130,7 +130,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void FindLastIndexIntInt_VerifyExceptions(int count)
         {
             List<T> list = GenericListFactory(count);
@@ -190,7 +190,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void FindIndexInt_VerifyExceptions(int count)
         {
             List<T> list = GenericListFactory(count);
@@ -219,7 +219,7 @@ namespace System.Collections.Tests
         #region Find
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void Find_VerifyVanilla(int count)
         {
             List<T> list = GenericListFactory(count);
@@ -234,7 +234,7 @@ namespace System.Collections.Tests
                 expectedItem = beforeList[i];
                 foundItem = list.Find(EqualsDelegate);
 
-                Assert.Equal(expectedItem, foundItem); //"Err_282308ahid Verifying value retunred from Find FAILED\n"
+                Assert.Equal(expectedItem, foundItem); //"Err_282308ahid Verifying value returned from Find FAILED\n"
             }
 
             //[] Verify Find returns the first item if the match returns true on every item
@@ -253,7 +253,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void Find_VerifyDuplicates(int count)
         {
             T expectedItem = default(T);
@@ -293,7 +293,7 @@ namespace System.Collections.Tests
         #region FindLast
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void FindLast_VerifyVanilla(int count)
         {
             List<T> list = GenericListFactory(count);
@@ -331,7 +331,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void FindLast_VerifyDuplicates(int count)
         {
             T expectedItem = default(T);
@@ -370,7 +370,7 @@ namespace System.Collections.Tests
         #region FindIndex
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void FindIndex_VerifyVanilla(int count)
         {
             T expectedItem = default(T);
@@ -401,7 +401,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void FindIndex_VerifyDuplicates(int count)
         {
             List<T> list = GenericListFactory(count);
@@ -436,7 +436,7 @@ namespace System.Collections.Tests
         #region FindIndex(int, pred<T>)
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void FindIndexInt_VerifyVanilla(int count)
         {
             T expectedItem = default(T);
@@ -489,7 +489,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void FindIndexInt_VerifyDuplicates(int count)
         {
             T expectedItem = default(T);
@@ -534,7 +534,7 @@ namespace System.Collections.Tests
         #region FindIndex(int, int, pred<T>)
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void FindIndexIntInt_VerifyVanilla(int count)
         {
             T expectedItem = default(T);
@@ -612,7 +612,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void FindIndexIntInt_VerifyDuplicates(int count)
         {
             T expectedItem = default(T);
@@ -657,7 +657,7 @@ namespace System.Collections.Tests
         #region FindLastIndex
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void FindLastIndex_VerifyVanilla(int count)
         {
             T expectedItem = default(T);
@@ -686,7 +686,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void FindLastIndex_VerifyDuplicates(int count)
         {
             T expectedItem = default(T);
@@ -721,7 +721,7 @@ namespace System.Collections.Tests
         #region FindLastIndex(int, pred<T>)
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void FindLastIndexInt_VerifyVanilla(int count)
         {
             T expectedItem = default(T);
@@ -773,7 +773,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void FindLastIndexInt_VerifyDuplicates(int count)
         {
             T expectedItem = default(T);
@@ -818,7 +818,7 @@ namespace System.Collections.Tests
         #region FindLastIndex(int, int, pred<T>)
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void FindLastIndexIntInt_VerifyVanilla(int count)
         {
             T expectedItem = default(T);
@@ -899,7 +899,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void FindLastIndexIntInt_VerifyDuplicates(int count)
         {
             T expectedItem = default(T);
@@ -934,7 +934,7 @@ namespace System.Collections.Tests
         #region FindAll
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void FindAll_VerifyVanilla(int count)
         {
             List<T> list = GenericListFactory(count);
@@ -958,7 +958,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void FindAll_VerifyDuplicates(int count)
         {
             List<T> list = GenericListFactory(count);

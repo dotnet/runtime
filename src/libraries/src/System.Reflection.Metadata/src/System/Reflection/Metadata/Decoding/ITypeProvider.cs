@@ -11,7 +11,7 @@ namespace System.Reflection.Metadata.Decoding
 namespace Roslyn.Reflection.Metadata.Decoding
 #endif
 {
-#if SRM && FUTURE
+#if SRM
     public
 #endif
     interface ITypeProvider<TType>

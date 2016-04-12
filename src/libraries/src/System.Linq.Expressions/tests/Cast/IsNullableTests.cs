@@ -12,131 +12,131 @@ namespace System.Linq.Expressions.Tests
     {
         #region Test methods
 
-        [Fact]
-        public static void CheckNullableEnumIsEnumTypeTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableEnumIsEnumTypeTest(bool useInterpreter)
         {
             E?[] array = new E?[] { null, (E)0, E.A, E.B, (E)int.MaxValue, (E)int.MinValue };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyNullableEnumIsEnumType(array[i]);
+                VerifyNullableEnumIsEnumType(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckNullableEnumIsObjectTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableEnumIsObjectTest(bool useInterpreter)
         {
             E?[] array = new E?[] { null, (E)0, E.A, E.B, (E)int.MaxValue, (E)int.MinValue };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyNullableEnumIsObject(array[i]);
+                VerifyNullableEnumIsObject(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckNullableIntIsObjectTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableIntIsObjectTest(bool useInterpreter)
         {
             int?[] array = new int?[] { null, 0, 1, -1, int.MinValue, int.MaxValue };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyNullableIntIsObject(array[i]);
+                VerifyNullableIntIsObject(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckNullableIntIsValueTypeTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableIntIsValueTypeTest(bool useInterpreter)
         {
             int?[] array = new int?[] { null, 0, 1, -1, int.MinValue, int.MaxValue };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyNullableIntIsValueType(array[i]);
+                VerifyNullableIntIsValueType(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckNullableStructIsIEquatableOfStructTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableStructIsIEquatableOfStructTest(bool useInterpreter)
         {
             S?[] array = new S?[] { null, default(S), new S() };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyNullableStructIsIEquatableOfStruct(array[i]);
+                VerifyNullableStructIsIEquatableOfStruct(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckNullableStructIsObjectTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableStructIsObjectTest(bool useInterpreter)
         {
             S?[] array = new S?[] { null, default(S), new S() };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyNullableStructIsObject(array[i]);
+                VerifyNullableStructIsObject(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckNullableStructIsValueTypeTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableStructIsValueTypeTest(bool useInterpreter)
         {
             S?[] array = new S?[] { null, default(S), new S() };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyNullableStructIsValueType(array[i]);
+                VerifyNullableStructIsValueType(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void ConvertGenericWithStructRestrictionCastObjectAsEnum()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void ConvertGenericWithStructRestrictionCastObjectAsEnum(bool useInterpreter)
         {
-            CheckGenericWithStructRestrictionIsObjectHelper<E>();
+            CheckGenericWithStructRestrictionIsObjectHelper<E>(useInterpreter);
         }
 
-        [Fact]
-        public static void ConvertGenericWithStructRestrictionCastObjectAsStruct()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void ConvertGenericWithStructRestrictionCastObjectAsStruct(bool useInterpreter)
         {
-            CheckGenericWithStructRestrictionIsObjectHelper<S>();
+            CheckGenericWithStructRestrictionIsObjectHelper<S>(useInterpreter);
         }
 
-        [Fact]
-        public static void ConvertGenericWithStructRestrictionCastObjectAsStructWithStringAndField()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void ConvertGenericWithStructRestrictionCastObjectAsStructWithStringAndField(bool useInterpreter)
         {
-            CheckGenericWithStructRestrictionIsObjectHelper<Scs>();
+            CheckGenericWithStructRestrictionIsObjectHelper<Scs>(useInterpreter);
         }
 
-        [Fact]
-        public static void ConvertGenericWithStructRestrictionCastValueTypeAsEnum()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void ConvertGenericWithStructRestrictionCastValueTypeAsEnum(bool useInterpreter)
         {
-            CheckGenericWithStructRestrictionIsValueTypeHelper<E>();
+            CheckGenericWithStructRestrictionIsValueTypeHelper<E>(useInterpreter);
         }
 
-        [Fact]
-        public static void ConvertGenericWithStructRestrictionCastValueTypeAsStruct()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void ConvertGenericWithStructRestrictionCastValueTypeAsStruct(bool useInterpreter)
         {
-            CheckGenericWithStructRestrictionIsValueTypeHelper<S>();
+            CheckGenericWithStructRestrictionIsValueTypeHelper<S>(useInterpreter);
         }
 
-        [Fact]
-        public static void ConvertGenericWithStructRestrictionCastValueTypeAsStructWithStringAndField()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void ConvertGenericWithStructRestrictionCastValueTypeAsStructWithStringAndField(bool useInterpreter)
         {
-            CheckGenericWithStructRestrictionIsValueTypeHelper<Scs>();
+            CheckGenericWithStructRestrictionIsValueTypeHelper<Scs>(useInterpreter);
         }
 
         #endregion
 
         #region Generic helpers
 
-        private static void CheckGenericWithStructRestrictionIsObjectHelper<Ts>() where Ts : struct
+        private static void CheckGenericWithStructRestrictionIsObjectHelper<Ts>(bool useInterpreter) where Ts : struct
         {
             Ts[] array = new Ts[] { default(Ts), new Ts() };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyGenericWithStructRestrictionIsObject<Ts>(array[i]);
+                VerifyGenericWithStructRestrictionIsObject<Ts>(array[i], useInterpreter);
             }
         }
 
-        private static void CheckGenericWithStructRestrictionIsValueTypeHelper<Ts>() where Ts : struct
+        private static void CheckGenericWithStructRestrictionIsValueTypeHelper<Ts>(bool useInterpreter) where Ts : struct
         {
             Ts[] array = new Ts[] { default(Ts), new Ts() };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyGenericWithStructRestrictionIsValueType<Ts>(array[i]);
+                VerifyGenericWithStructRestrictionIsValueType<Ts>(array[i], useInterpreter);
             }
         }
 
@@ -144,338 +144,100 @@ namespace System.Linq.Expressions.Tests
 
         #region Test verifiers
 
-        private static void VerifyNullableEnumIsEnumType(E? value)
+        private static void VerifyNullableEnumIsEnumType(E? value, bool useInterpreter)
         {
             Expression<Func<bool>> e =
                 Expression.Lambda<Func<bool>>(
                     Expression.TypeIs(Expression.Constant(value, typeof(E?)), typeof(Enum)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<bool> f = e.Compile();
+            Func<bool> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            bool etResult = default(bool);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            bool csResult = default(bool);
-            Exception csException = null;
-            try
-            {
-                csResult = value is Enum;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value.HasValue, f());
         }
 
-        private static void VerifyNullableEnumIsObject(E? value)
+        private static void VerifyNullableEnumIsObject(E? value, bool useInterpreter)
         {
             Expression<Func<bool>> e =
                 Expression.Lambda<Func<bool>>(
                     Expression.TypeIs(Expression.Constant(value, typeof(E?)), typeof(object)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<bool> f = e.Compile();
+            Func<bool> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            bool etResult = default(bool);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            bool csResult = default(bool);
-            Exception csException = null;
-            try
-            {
-                csResult = value is object;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value.HasValue, f());
         }
 
-        private static void VerifyNullableIntIsObject(int? value)
+        private static void VerifyNullableIntIsObject(int? value, bool useInterpreter)
         {
             Expression<Func<bool>> e =
                 Expression.Lambda<Func<bool>>(
                     Expression.TypeIs(Expression.Constant(value, typeof(int?)), typeof(object)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<bool> f = e.Compile();
+            Func<bool> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            bool etResult = default(bool);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            bool csResult = default(bool);
-            Exception csException = null;
-            try
-            {
-                csResult = value is object;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value.HasValue, f());
         }
 
-        private static void VerifyNullableIntIsValueType(int? value)
+        private static void VerifyNullableIntIsValueType(int? value, bool useInterpreter)
         {
             Expression<Func<bool>> e =
                 Expression.Lambda<Func<bool>>(
                     Expression.TypeIs(Expression.Constant(value, typeof(int?)), typeof(ValueType)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<bool> f = e.Compile();
+            Func<bool> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            bool etResult = default(bool);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            bool csResult = default(bool);
-            Exception csException = null;
-            try
-            {
-                csResult = value is ValueType;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value.HasValue, f());
         }
 
-        private static void VerifyNullableStructIsIEquatableOfStruct(S? value)
+        private static void VerifyNullableStructIsIEquatableOfStruct(S? value, bool useInterpreter)
         {
             Expression<Func<bool>> e =
                 Expression.Lambda<Func<bool>>(
                     Expression.TypeIs(Expression.Constant(value, typeof(S?)), typeof(IEquatable<S>)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<bool> f = e.Compile();
+            Func<bool> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            bool etResult = default(bool);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            bool csResult = default(bool);
-            Exception csException = null;
-            try
-            {
-                csResult = value is IEquatable<S>;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value.HasValue, f());
         }
 
-        private static void VerifyNullableStructIsObject(S? value)
+        private static void VerifyNullableStructIsObject(S? value, bool useInterpreter)
         {
             Expression<Func<bool>> e =
                 Expression.Lambda<Func<bool>>(
                     Expression.TypeIs(Expression.Constant(value, typeof(S?)), typeof(object)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<bool> f = e.Compile();
+            Func<bool> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            bool etResult = default(bool);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            bool csResult = default(bool);
-            Exception csException = null;
-            try
-            {
-                csResult = value is object;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value.HasValue, f());
         }
 
-        private static void VerifyNullableStructIsValueType(S? value)
+        private static void VerifyNullableStructIsValueType(S? value, bool useInterpreter)
         {
             Expression<Func<bool>> e =
                 Expression.Lambda<Func<bool>>(
                     Expression.TypeIs(Expression.Constant(value, typeof(S?)), typeof(ValueType)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<bool> f = e.Compile();
+            Func<bool> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            bool etResult = default(bool);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            bool csResult = default(bool);
-            Exception csException = null;
-            try
-            {
-                csResult = value is ValueType;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value.HasValue, f());
         }
 
-        private static void VerifyGenericWithStructRestrictionIsObject<Ts>(Ts value) where Ts : struct
+        private static void VerifyGenericWithStructRestrictionIsObject<Ts>(Ts value, bool useInterpreter) where Ts : struct
         {
             Expression<Func<bool>> e =
                 Expression.Lambda<Func<bool>>(
                     Expression.TypeIs(Expression.Constant(value, typeof(Ts)), typeof(object)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<bool> f = e.Compile();
+            Func<bool> f = e.Compile(useInterpreter);
             Assert.True(f());
         }
 
-        private static void VerifyGenericWithStructRestrictionIsValueType<Ts>(Ts value) where Ts : struct
+        private static void VerifyGenericWithStructRestrictionIsValueType<Ts>(Ts value, bool useInterpreter) where Ts : struct
         {
             Expression<Func<bool>> e =
                 Expression.Lambda<Func<bool>>(
                     Expression.TypeIs(Expression.Constant(value, typeof(Ts)), typeof(ValueType)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<bool> f = e.Compile();
+            Func<bool> f = e.Compile(useInterpreter);
             Assert.True(f());
         }
 

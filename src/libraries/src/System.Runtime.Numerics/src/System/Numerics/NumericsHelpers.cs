@@ -41,7 +41,7 @@ namespace System.Numerics
             }
             else if (exp == 0x7FF)
             {
-                // NaN or Inifite.
+                // NaN or Infinite.
                 fFinite = false;
                 exp = int.MaxValue;
             }

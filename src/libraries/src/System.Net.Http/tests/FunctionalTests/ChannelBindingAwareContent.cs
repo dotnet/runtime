@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.IO;
 using System.Security.Authentication.ExtendedProtection;
 using System.Text;
@@ -10,10 +9,13 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public sealed class ChannelBindingAwareContent : StringContent
+    internal sealed class ChannelBindingAwareContent : HttpContent
     {
-        public ChannelBindingAwareContent(string content) : base(content)
+        private readonly byte[] _content;
+
+        public ChannelBindingAwareContent(string content)
         {
+            _content = Encoding.UTF8.GetBytes(content);
         }
         
         public ChannelBinding ChannelBinding { get ; private set; }
@@ -21,8 +23,18 @@ namespace System.Net.Http.Functional.Tests
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
         {
             ChannelBinding = context.GetChannelBinding(ChannelBindingKind.Endpoint);
-            
-            return base.SerializeToStreamAsync(stream, context);
+            return stream.WriteAsync(_content, 0, _content.Length);
+        }
+
+        protected override bool TryComputeLength(out long length)
+        {
+            length = _content.Length;
+            return true;
+        }
+
+        protected override Task<Stream> CreateContentReadStreamAsync()
+        {
+            return Task.FromResult<Stream>(new MemoryStream(_content, 0, _content.Length, writable: false));
         }
     }
 }

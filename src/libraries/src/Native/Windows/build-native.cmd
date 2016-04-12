@@ -1,4 +1,4 @@
-@echo off
+@if "%_echo%" neq "on" echo off
 setlocal
 
 :SetupArgs
@@ -7,9 +7,9 @@ set __sourceDir=%~dp0
 set __binDir=%~dp0..\..\..\bin
 set __CMakeBinDir=""
 set __IntermediatesDir=""
-set __BuildArch=AnyCPU
+set __BuildArch=x64
 set __VCBuildArch=x86_amd64
-set CMAKE_BUILD_TYPE=Release
+set CMAKE_BUILD_TYPE=Debug
 
 :Arg_Loop
 :: Since the native build requires some configuration information before msbuild is called, we have to do some manual args parsing
@@ -22,7 +22,7 @@ if /i [%1] == [/p:ConfigurationGroup]    (
     exit /b 1
 )
 if /i [%1] == [/p:Platform]    (
-    if /i [%2] == [AnyCPU]  (set __BuildArch=AnyCPU&&set __VCBuildArch=x86_amd64&&shift&&shift&goto Arg_Loop)
+    if /i [%2] == [AnyCPU]  (set __BuildArch=x64&&set __VCBuildArch=x86_amd64&&shift&&shift&goto Arg_Loop)
     if /i [%2] == [x86]     (set __BuildArch=x86&&set __VCBuildArch=x86&&shift&&shift&goto Arg_Loop)
     if /i [%2] == [arm]     (set __BuildArch=arm&&set __VCBuildArch=x86_arm&&shift&&shift&goto Arg_Loop)
     if /i [%2] == [x64]     (set __BuildArch=x64&&set __VCBuildArch=x86_amd64&&shift&&shift&goto Arg_Loop)
@@ -93,10 +93,6 @@ if %__IntermediatesDir% == "" (
     set "__CMakeBinDir=%__CMakeBinDir:\=/%"
     set "__IntermediatesDir=%__IntermediatesDir:\=/%"
 
-:: We wanted to allow AnyCPU for folder creation purposes, but it doesn't make sense for a native build. Default to something else for the actual building.
-if "%__BuildArch%" == "AnyCPU" (
-    set __BuildArch=x64
-)
 echo %__CMakeBinDir%
 
 :: Check that the intermediate directory exists so we can place our cmake build tree there
@@ -115,6 +111,9 @@ echo See: https://github.com/dotnet/coreclr/blob/master/Documentation/project-do
 exit /b 1
 
 :GenVSSolution
+:: Generate Version file
+msbuild /t:GenerateVersionHeader build.proj /p:NativeVersionHeaderFile="%__binDir%\obj\_version.h" /p:GenerateVersionHeader=true
+
 :: Regenerate the VS solution
 pushd "%__IntermediatesDir%"
 call "%__sourceDir%\gen-buildsys-win.bat" %__sourceDir% %__VSVersion% %__BuildArch%

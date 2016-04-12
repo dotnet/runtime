@@ -174,7 +174,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        // TODO: more writebacks and by-ref tests
+        // TODO: more write-backs and by-ref tests
         // TODO: tests for special methods that can't just be call'd or callvirt'd
 
         class C

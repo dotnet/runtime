@@ -15,7 +15,7 @@ namespace System.Dynamic
         private readonly bool _explicit;
 
         /// <summary>
-        /// Initializes a new intsance of the <see cref="ConvertBinder" />.
+        /// Initializes a new instance of the <see cref="ConvertBinder" />.
         /// </summary>
         /// <param name="type">The type to convert to.</param>
         /// <param name="explicit">true if the conversion should consider explicit conversions; otherwise, false.</param>

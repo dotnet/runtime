@@ -31,19 +31,13 @@ namespace System.Diagnostics
     /// 
     /// If you need to see 'everything' you can subscribe to the 'AllListeners' event that
     /// will fire for every live DiagnosticListener in the appdomain (past or present). 
+    /// 
+    /// Please See the DiagnosticSource Users Guide 
+    /// https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/DiagnosticSourceUsersGuide.md
+    /// for instructions on its use.  
     /// </summary>
     public class DiagnosticListener : DiagnosticSource, IObservable<KeyValuePair<string, object>>, IDisposable
     {
-#if false
-        /// <summary>
-        /// This is the DiagnosticListener that is used by default by the class library.   
-        /// Generally you don't want to make your own but rather have everyone use this one, which
-        /// ensures that everyone who wished to subscribe gets the callbacks.  
-        /// The main reason not to us this one is that you WANT isolation from other 
-        /// events in the system (e.g. multi-tenancy).  
-        /// </summary>
-        public static DiagnosticListener DefaultListener { get { return s_default; } }
-#endif 
         /// <summary>
         /// When you subscribe to this you get callbacks for all NotificationListeners in the appdomain
         /// as well as those that occurred in the past, and all future Listeners created in the future. 

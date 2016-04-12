@@ -12,30 +12,28 @@
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
     <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net46'">None</ResourcesSourceOutputDirectory>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework>
-    <!-- Temporarily remove the RID from this package until nuget has a way for folks
-         to consume platform-specific packages https://github.com/dotnet/corefx/issues/4925 -->
-    <!-- PackageTargetRuntime>win7</PackageTargetRuntime -->
+    <PackageTargetRuntime Condition="'$(TargetGroup)' != 'net46' AND '$(TargetsWindows)' == 'true'">win</PackageTargetRuntime>
+    <PackageTargetRuntime Condition="'$(TargetsUnix)' == 'true'">unix</PackageTargetRuntime>
+    <GeneratePlatformNotSupportedAssembly Condition="'$(TargetsUnix)' == 'true'">true</GeneratePlatformNotSupportedAssembly>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
-
   <!-- Default configurations to help VS understand the options -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'"/>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'"/>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
-
-  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
-    <Compile Include="Microsoft\Win32\SafeHandles\SafeAccessTokenHandle.cs"/>
-    <Compile Include="Microsoft\Win32\SafeHandles\SafeSecurityHandles.cs"/>
-    <Compile Include="System\Security\Principal\IdentityNotMappedException.cs"/>
-    <Compile Include="System\Security\Principal\IdentityReference.cs"/>
-    <Compile Include="System\Security\Principal\IRCollection.cs"/>
-    <Compile Include="System\Security\Principal\NTAccount.cs"/>
-    <Compile Include="System\Security\Principal\SID.cs"/>
-    <Compile Include="System\Security\Principal\TokenAccessLevels.cs"/>
-    <Compile Include="System\Security\Principal\Win32.cs"/>
-    <Compile Include="System\Security\Principal\WindowsIdentity.cs"/>
-    <Compile Include="System\Security\Principal\WindowsPrincipal.cs"/>
-
+  <ItemGroup Condition="'$(TargetGroup)' != 'net46' AND '$(TargetsWindows)' == 'true'">
+    <Compile Include="Microsoft\Win32\SafeHandles\SafeAccessTokenHandle.cs" />
+    <Compile Include="Microsoft\Win32\SafeHandles\SafeSecurityHandles.cs" />
+    <Compile Include="System\Security\Principal\IdentityNotMappedException.cs" />
+    <Compile Include="System\Security\Principal\IdentityReference.cs" />
+    <Compile Include="System\Security\Principal\IRCollection.cs" />
+    <Compile Include="System\Security\Principal\NTAccount.cs" />
+    <Compile Include="System\Security\Principal\SID.cs" />
+    <Compile Include="System\Security\Principal\TokenAccessLevels.cs" />
+    <Compile Include="System\Security\Principal\Win32.cs" />
+    <Compile Include="System\Security\Principal\WindowsIdentity.cs" />
+    <Compile Include="System\Security\Principal\WindowsPrincipal.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Interop.Libraries.cs</Link>
     </Compile>
@@ -193,7 +191,6 @@
   <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
     <TargetingPackReference Include="mscorlib" />
   </ItemGroup>
-
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>

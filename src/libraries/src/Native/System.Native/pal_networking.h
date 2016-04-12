@@ -353,68 +353,96 @@ extern "C" int32_t SystemNative_GetControlMessageBufferSize(int32_t isIPv4, int3
 extern "C" int32_t
 SystemNative_TryGetIPPacketInformation(MessageHeader* messageHeader, int32_t isIPv4, IPPacketInformation* packetInfo);
 
-extern "C" Error SystemNative_GetIPv4MulticastOption(int32_t socket, int32_t multicastOption, IPv4MulticastOption* option);
+extern "C" Error SystemNative_GetIPv4MulticastOption(intptr_t socket, int32_t multicastOption, IPv4MulticastOption* option);
+extern "C" Error SystemNative_GetIPv4MulticastOption_IntPtr(intptr_t socket, int32_t multicastOption, IPv4MulticastOption* option);
 
-extern "C" Error SystemNative_SetIPv4MulticastOption(int32_t socket, int32_t multicastOption, IPv4MulticastOption* option);
+extern "C" Error SystemNative_SetIPv4MulticastOption(intptr_t socket, int32_t multicastOption, IPv4MulticastOption* option);
+extern "C" Error SystemNative_SetIPv4MulticastOption_IntPtr(intptr_t socket, int32_t multicastOption, IPv4MulticastOption* option);
 
-extern "C" Error SystemNative_GetIPv6MulticastOption(int32_t socket, int32_t multicastOption, IPv6MulticastOption* option);
+extern "C" Error SystemNative_GetIPv6MulticastOption(intptr_t socket, int32_t multicastOption, IPv6MulticastOption* option);
+extern "C" Error SystemNative_GetIPv6MulticastOption_IntPtr(intptr_t socket, int32_t multicastOption, IPv6MulticastOption* option);
 
-extern "C" Error SystemNative_SetIPv6MulticastOption(int32_t socket, int32_t multicastOption, IPv6MulticastOption* option);
+extern "C" Error SystemNative_SetIPv6MulticastOption(intptr_t socket, int32_t multicastOption, IPv6MulticastOption* option);
+extern "C" Error SystemNative_SetIPv6MulticastOption_IntPtr(intptr_t socket, int32_t multicastOption, IPv6MulticastOption* option);
 
-extern "C" Error SystemNative_GetLingerOption(int32_t socket, LingerOption* option);
+extern "C" Error SystemNative_GetLingerOption(intptr_t socket, LingerOption* option);
+extern "C" Error SystemNative_GetLingerOption_IntPtr(intptr_t socket, LingerOption* option);
 
-extern "C" Error SystemNative_SetLingerOption(int32_t socket, LingerOption* option);
+extern "C" Error SystemNative_SetLingerOption(intptr_t socket, LingerOption* option);
+extern "C" Error SystemNative_SetLingerOption_IntPtr(intptr_t socket, LingerOption* option);
 
-extern "C" Error SystemNative_SetReceiveTimeout(int32_t socket, int32_t millisecondsTimeout);
+extern "C" Error SystemNative_SetReceiveTimeout(intptr_t socket, int32_t millisecondsTimeout);
+extern "C" Error SystemNative_SetReceiveTimeout_IntPtr(intptr_t socket, int32_t millisecondsTimeout);
 
-extern "C" Error SystemNative_SetSendTimeout(int32_t socket, int32_t millisecondsTimeout);
+extern "C" Error SystemNative_SetSendTimeout(intptr_t socket, int32_t millisecondsTimeout);
+extern "C" Error SystemNative_SetSendTimeout_IntPtr(intptr_t socket, int32_t millisecondsTimeout);
 
-extern "C" Error SystemNative_ReceiveMessage(int32_t socket, MessageHeader* messageHeader, int32_t flags, int64_t* received);
+extern "C" Error SystemNative_ReceiveMessage(intptr_t socket, MessageHeader* messageHeader, int32_t flags, int64_t* received);
+extern "C" Error SystemNative_ReceiveMessage_IntPtr(intptr_t socket, MessageHeader* messageHeader, int32_t flags, int64_t* received);
 
-extern "C" Error SystemNative_SendMessage(int32_t socket, MessageHeader* messageHeader, int32_t flags, int64_t* sent);
+extern "C" Error SystemNative_SendMessage(intptr_t socket, MessageHeader* messageHeader, int32_t flags, int64_t* sent);
+extern "C" Error SystemNative_SendMessage_IntPtr(intptr_t socket, MessageHeader* messageHeader, int32_t flags, int64_t* sent);
 
-extern "C" Error SystemNative_Accept(int32_t socket, uint8_t* socketAddress, int32_t* socketAddressLen, int32_t* acceptedSocket);
+extern "C" Error SystemNative_Accept(intptr_t socket, uint8_t* socketAddress, int32_t* socketAddressLen, intptr_t* acceptedSocket);
+extern "C" Error SystemNative_Accept_IntPtr(intptr_t socket, uint8_t* socketAddress, int32_t* socketAddressLen, intptr_t* acceptedSocket);
 
-extern "C" Error SystemNative_Bind(int32_t socket, uint8_t* socketAddress, int32_t socketAddressLen);
+extern "C" Error SystemNative_Bind(intptr_t socket, uint8_t* socketAddress, int32_t socketAddressLen);
+extern "C" Error SystemNative_Bind_IntPtr(intptr_t socket, uint8_t* socketAddress, int32_t socketAddressLen);
 
-extern "C" Error SystemNative_Connect(int32_t socket, uint8_t* socketAddress, int32_t socketAddressLen);
+extern "C" Error SystemNative_Connect(intptr_t socket, uint8_t* socketAddress, int32_t socketAddressLen);
+extern "C" Error SystemNative_Connect_IntPtr(intptr_t socket, uint8_t* socketAddress, int32_t socketAddressLen);
 
-extern "C" Error SystemNative_GetPeerName(int32_t socket, uint8_t* socketAddress, int32_t* socketAddressLen);
+extern "C" Error SystemNative_GetPeerName(intptr_t socket, uint8_t* socketAddress, int32_t* socketAddressLen);
+extern "C" Error SystemNative_GetPeerName_IntPtr(intptr_t socket, uint8_t* socketAddress, int32_t* socketAddressLen);
 
-extern "C" Error SystemNative_GetSockName(int32_t socket, uint8_t* socketAddress, int32_t* socketAddressLen);
+extern "C" Error SystemNative_GetSockName(intptr_t socket, uint8_t* socketAddress, int32_t* socketAddressLen);
+extern "C" Error SystemNative_GetSockName_IntPtr(intptr_t socket, uint8_t* socketAddress, int32_t* socketAddressLen);
 
-extern "C" Error SystemNative_Listen(int32_t socket, int32_t backlog);
+extern "C" Error SystemNative_Listen(intptr_t socket, int32_t backlog);
+extern "C" Error SystemNative_Listen_IntPtr(intptr_t socket, int32_t backlog);
 
-extern "C" Error SystemNative_Shutdown(int32_t socket, int32_t socketShutdown);
+extern "C" Error SystemNative_Shutdown(intptr_t socket, int32_t socketShutdown);
+extern "C" Error SystemNative_Shutdown_IntPtr(intptr_t socket, int32_t socketShutdown);
 
-extern "C" Error SystemNative_GetSocketErrorOption(int32_t socket, Error* error);
+extern "C" Error SystemNative_GetSocketErrorOption(intptr_t socket, Error* error);
+extern "C" Error SystemNative_GetSocketErrorOption_IntPtr(intptr_t socket, Error* error);
 
 extern "C" Error SystemNative_GetSockOpt(
-    int32_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t* optionLen);
+    intptr_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t* optionLen);
+extern "C" Error SystemNative_GetSockOpt_IntPtr(
+    intptr_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t* optionLen);
 
 extern "C" Error SystemNative_SetSockOpt(
-    int32_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t optionLen);
+    intptr_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t optionLen);
+extern "C" Error SystemNative_SetSockOpt_IntPtr(
+    intptr_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t optionLen);
 
-extern "C" Error SystemNative_Socket(int32_t addressFamily, int32_t socketType, int32_t protocolType, int32_t* createdSocket);
+extern "C" Error SystemNative_Socket(int32_t addressFamily, int32_t socketType, int32_t protocolType, intptr_t* createdSocket);
+extern "C" Error SystemNative_Socket_IntPtr(int32_t addressFamily, int32_t socketType, int32_t protocolType, intptr_t* createdSocket);
 
-extern "C" int32_t SystemNative_FdSetSize();
+extern "C" Error SystemNative_GetBytesAvailable(intptr_t socket, int32_t* available);
+extern "C" Error SystemNative_GetBytesAvailable_IntPtr(intptr_t socket, int32_t* available);
 
-extern "C" Error SystemNative_Select(
-    int32_t fdCount, uint32_t* readFdSet, uint32_t* writeFdSet, uint32_t* errorFdSet, int32_t microseconds, int32_t* selected);
+extern "C" Error SystemNative_CreateSocketEventPort(intptr_t* port);
+extern "C" Error SystemNative_CreateSocketEventPort_IntPtr(intptr_t* port);
 
-extern "C" Error SystemNative_GetBytesAvailable(int32_t socket, int32_t* available);
-
-extern "C" Error SystemNative_CreateSocketEventPort(int32_t* port);
-
-extern "C" Error SystemNative_CloseSocketEventPort(int32_t port);
+extern "C" Error SystemNative_CloseSocketEventPort(intptr_t port);
+extern "C" Error SystemNative_CloseSocketEventPort_IntPtr(intptr_t port);
 
 extern "C" Error SystemNative_CreateSocketEventBuffer(int32_t count, SocketEvent** buffer);
 
 extern "C" Error SystemNative_FreeSocketEventBuffer(SocketEvent* buffer);
 
 extern "C" Error SystemNative_TryChangeSocketEventRegistration(
-    int32_t port, int32_t socket, int32_t currentEvents, int32_t newEvents, uintptr_t data);
+    intptr_t port, intptr_t socket, int32_t currentEvents, int32_t newEvents, uintptr_t data);
+extern "C" Error SystemNative_TryChangeSocketEventRegistration_IntPtr(
+    intptr_t port, intptr_t socket, int32_t currentEvents, int32_t newEvents, uintptr_t data);
 
-extern "C" Error SystemNative_WaitForSocketEvents(int32_t port, SocketEvent* buffer, int32_t* count);
+extern "C" Error SystemNative_WaitForSocketEvents(intptr_t port, SocketEvent* buffer, int32_t* count);
+extern "C" Error SystemNative_WaitForSocketEvents_IntPtr(intptr_t port, SocketEvent* buffer, int32_t* count);
 
 extern "C" int32_t SystemNative_PlatformSupportsDualModeIPv4PacketInfo();
+
+extern "C" char* SystemNative_GetPeerUserName(intptr_t socket);
+
+extern "C" void SystemNative_GetDomainSocketSizes(int32_t* pathOffset, int32_t* pathSize, int32_t* addressSize);

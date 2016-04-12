@@ -2,104 +2,25 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
+using System.Collections.Generic;
 using Xunit;
 
-namespace System.Globalization.CalendarsTests
+namespace System.Globalization.Tests
 {
-    // System.Globalization.TaiwanCalendar.IsLeapYear(Int32,Int32)
     public class TaiwanCalendarIsLeapYear
     {
-        #region Positive Tests
-        // PosTest1: Verify the year  is a random year
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> IsLeapYear_TestData()
         {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            Random rand = new Random(-55);
-            int year = rand.Next(tc.MinSupportedDateTime.Year, tc.MaxSupportedDateTime.Year - 1911);
-            int era;
-
-            bool isLeap = isLeapYear(year);
-            for (int i = 0; i < tc.Eras.Length; i++)
-            {
-                era = tc.Eras[i];
-                Assert.False(tc.IsLeapYear(year, era) ^ isLeap);
-            }
+            yield return new object[] { TaiwanCalendarUtilities.RandomYear(), 1 };
+            yield return new object[] { 2000 - 1911, 1 };
         }
 
-        // PosTest2: Verify the Date is leap day
-        [Fact]
-        public void PosTest2()
+        [Theory]
+        [MemberData(nameof(IsLeapYear_TestData))]
+        public void IsLeapYear(int year, int era)
         {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            Random rand = new Random(-55);
-            int year = 2000 - 1911;
-            int era;
-
-            for (int i = 0; i < tc.Eras.Length; i++)
-            {
-                era = tc.Eras[i];
-                Assert.True(tc.IsLeapYear(year, era));
-            }
+            bool expected = new GregorianCalendar().IsLeapYear(year + 1911, era);
+            Assert.Equal(expected, new TaiwanCalendar().IsLeapYear(year, era));
         }
-        #endregion
-
-        #region Negative Tests
-        // NegTest1: The year greater than max year
-        [Fact]
-        public void NegTest1()
-        {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            Random rand = new Random(-55);
-            int year = tc.MaxSupportedDateTime.Year - 1911 + rand.Next(1, Int32.MaxValue);
-            int era = Calendar.CurrentEra;
-
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                tc.IsLeapYear(year, era);
-            });
-        }
-
-        // NegTest2: The year less than min year
-        [Fact]
-        public void NegTest2()
-        {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            Random rand = new Random(-55);
-            int year = tc.MinSupportedDateTime.Year - rand.Next(1, Int32.MaxValue);
-            int era = Calendar.CurrentEra;
-
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                tc.IsLeapYear(year, era);
-            });
-        }
-
-        // NegTest3: The era greater than 1
-        [Fact]
-        public void NegTest3()
-        {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            Random rand = new Random(-55);
-            int year = rand.Next(tc.MinSupportedDateTime.Year, tc.MaxSupportedDateTime.Year + 1);
-            int era = 2;
-
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                tc.IsLeapYear(year, era);
-            });
-        }
-        #endregion
-
-        #region Helper Methods
-        private bool isLeapYear(int year)
-        {
-            year += 1911;
-            return (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0));
-        }
-        #endregion
     }
 }
-

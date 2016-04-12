@@ -8,14 +8,7 @@
     <ProjectReference Include="..\ref\System.Security.Cryptography.Algorithms.csproj">
       <SupportedFramework>net461;netcore50;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.Security.Cryptography.Algorithms.csproj">
-      <TargetGroup>net46</TargetGroup>
-    </ProjectReference>
-    <ProjectReference Include="..\src\System.Security.Cryptography.Algorithms.csproj">
-      <TargetGroup>net461</TargetGroup>
-    </ProjectReference>
-    <ProjectReference Include="win\System.Security.Cryptography.Algorithms.pkgproj" />
-    <ProjectReference Include="unix\System.Security.Cryptography.Algorithms.pkgproj" />
+    <ProjectReference Include="..\src\System.Security.Cryptography.Algorithms.builds" />
     <InboxOnTargetFramework Include="MonoAndroid10" />
     <InboxOnTargetFramework Include="MonoTouch10" />
     <InboxOnTargetFramework Include="xamarinios10" />

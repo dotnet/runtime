@@ -40,9 +40,9 @@ namespace System.Linq.Parallel
         {
             Debug.Assert(child != null, "child data source cannot be null");
 
-            if (Child.OrdinalIndexState == OrdinalIndexState.Indexible)
+            if (Child.OrdinalIndexState == OrdinalIndexState.Indexable)
             {
-                SetOrdinalIndexState(OrdinalIndexState.Indexible);
+                SetOrdinalIndexState(OrdinalIndexState.Indexable);
             }
             else
             {
@@ -53,7 +53,7 @@ namespace System.Linq.Parallel
         internal override void WrapPartitionedStream<TKey>(
             PartitionedStream<TSource, TKey> inputStream, IPartitionedStreamRecipient<TSource> recipient, bool preferStriping, QuerySettings settings)
         {
-            Debug.Assert(Child.OrdinalIndexState != OrdinalIndexState.Indexible, "Don't take this code path if the child is indexible.");
+            Debug.Assert(Child.OrdinalIndexState != OrdinalIndexState.Indexable, "Don't take this code path if the child is indexable.");
 
             int partitionCount = inputStream.PartitionCount;
             PartitionedStream<TSource, TKey> outputStream = new PartitionedStream<TSource, TKey>(
@@ -163,8 +163,8 @@ namespace System.Linq.Parallel
         }
 
         //-----------------------------------------------------------------------------------
-        // Query results for a Reverse operator. The results are indexible if the child
-        // results were indexible.
+        // Query results for a Reverse operator. The results are indexable if the child
+        // results were indexable.
         //
 
         class ReverseQueryOperatorResults : UnaryQueryOperatorResults

@@ -220,6 +220,19 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [Theory, MemberData(nameof(CompressedServers))]
+        public async Task GetAsync_DefaultAutomaticDecompression_HeadersRemoved(Uri server)
+        {
+            using (var client = new HttpClient())
+            using (HttpResponseMessage response = await client.GetAsync(server, HttpCompletionOption.ResponseHeadersRead))
+            {
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                Assert.False(response.Content.Headers.Contains("Content-Encoding"), "Content-Encoding unexpectedly found");
+                Assert.False(response.Content.Headers.Contains("Content-Length"), "Content-Length unexpectedly found");
+            }
+        }
+
         [Fact]
         public async Task GetAsync_ServerNeedsAuthAndSetCredential_StatusCodeOK()
         {
@@ -478,6 +491,20 @@ namespace System.Net.Http.Functional.Tests
 
         public static object[][] CookieNameValues =
         {
+            // WinHttpHandler calls WinHttpQueryHeaders to iterate through multiple Set-Cookie header values,
+            // using an initial buffer size of 128 chars. If the buffer is not large enough, WinHttpQueryHeaders
+            // returns an insufficient buffer error, allowing WinHttpHandler to try again with a larger buffer.
+            // Sometimes when WinHttpQueryHeaders fails due to insufficient buffer, it still advances the
+            // iteration index, which would cause header values to be missed if not handled correctly.
+            //
+            // In particular, WinHttpQueryHeader behaves as follows for the following header value lengths:
+            //  * 0-127 chars: succeeds, index advances from 0 to 1.
+            //  * 128-255 chars: fails due to insufficient buffer, index advances from 0 to 1.
+            //  * 256+ chars: fails due to insufficient buffer, index stays at 0.
+            //
+            // The below overall header value lengths were chosen to exercise reading header values at these
+            // edges, to ensure WinHttpHandler does not miss multiple Set-Cookie headers.
+
             new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 126) },
             new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 127) },
             new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 128) },
@@ -520,6 +547,7 @@ namespace System.Net.Http.Functional.Tests
             using (var client = new HttpClient(handler))
             using (HttpResponseMessage response = await client.GetAsync(url))
             {
+                Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
                 CookieCollection cookies = handler.CookieContainer.GetCookies(new Uri(url));
 
                 Assert.Equal(3, handler.CookieContainer.Count);
@@ -537,7 +565,7 @@ namespace System.Net.Http.Functional.Tests
                 const int NumGets = 5;
                 Task<HttpResponseMessage>[] responseTasks = (from _ in Enumerable.Range(0, NumGets)
                                                              select client.GetAsync(HttpTestServers.RemoteEchoServer, HttpCompletionOption.ResponseHeadersRead)).ToArray();
-                for (int i = responseTasks.Length - 1; i >= 0; i--) // read backwards to increase liklihood that we wait on a different task than has data available
+                for (int i = responseTasks.Length - 1; i >= 0; i--) // read backwards to increase likelihood that we wait on a different task than has data available
                 {
                     using (HttpResponseMessage response = await responseTasks[i])
                     {
@@ -761,6 +789,28 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task PostAsync_Redirect_ResultingGetFormattedCorrectly(bool secure)
+        {
+            const string ContentString = "This is the content string.";
+            var content = new StringContent(ContentString);
+            Uri redirectUri = HttpTestServers.RedirectUriForDestinationUri(
+                secure, 
+                secure ? HttpTestServers.SecureRemoteEchoServer : HttpTestServers.RemoteEchoServer, 
+                1);
+
+            using (var client = new HttpClient())
+            using (HttpResponseMessage response = await client.PostAsync(redirectUri, content))
+            {
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                string responseContent = await response.Content.ReadAsStringAsync();
+                Assert.DoesNotContain(ContentString, responseContent);
+                Assert.DoesNotContain("Content-Length", responseContent);
+            }
+        }
+
+        [Theory]
         [InlineData(HttpStatusCode.MethodNotAllowed, "Custom description")]
         [InlineData(HttpStatusCode.MethodNotAllowed, "")]
         public async Task GetAsync_CallMethod_ExpectedStatusLine(HttpStatusCode statusCode, string reasonPhrase)
@@ -779,7 +829,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue(3565, PlatformID.OSX)]
         public async Task PostAsync_Post_ChannelBindingHasExpectedValue()
         {
             using (var client = new HttpClient())
@@ -937,11 +986,23 @@ namespace System.Net.Http.Functional.Tests
         #region Proxy tests
         [Theory]
         [MemberData(nameof(CredentialsForProxy))]
-        public void Proxy_BypassFalse_GetRequestGoesThroughCustomProxy(ICredentials creds)
+        public void Proxy_BypassFalse_GetRequestGoesThroughCustomProxy(ICredentials creds, bool wrapCredsInCache)
         {
             int port;
-            Task<LoopbackGetRequestHttpProxy.ProxyResult> proxyTask = LoopbackGetRequestHttpProxy.StartAsync(out port, requireAuth: creds != null && creds != CredentialCache.DefaultCredentials);
+            Task<LoopbackGetRequestHttpProxy.ProxyResult> proxyTask = LoopbackGetRequestHttpProxy.StartAsync(
+                out port,
+                requireAuth: creds != null && creds != CredentialCache.DefaultCredentials,
+                expectCreds: true);
             Uri proxyUrl = new Uri($"http://localhost:{port}");
+
+            const string BasicAuth = "Basic";
+            if (wrapCredsInCache)
+            {
+                Assert.IsAssignableFrom<NetworkCredential>(creds);
+                var cache = new CredentialCache();
+                cache.Add(proxyUrl, BasicAuth, (NetworkCredential)creds);
+                creds = cache;
+            }
 
             using (var handler = new HttpClientHandler() { Proxy = new UseSpecifiedUriWebProxy(proxyUrl, creds) })
             using (var client = new HttpClient(handler))
@@ -953,7 +1014,7 @@ namespace System.Net.Http.Functional.Tests
                 TestHelper.VerifyResponseBody(responseStringTask.Result, responseTask.Result.Content.Headers.ContentMD5, false, null);
                 Assert.Equal(Encoding.ASCII.GetString(proxyTask.Result.ResponseContent), responseStringTask.Result);
 
-                NetworkCredential nc = creds != null ? creds.GetCredential(proxyUrl, "Basic") : null;
+                NetworkCredential nc = creds?.GetCredential(proxyUrl, BasicAuth);
                 string expectedAuth =
                     nc == null || nc == CredentialCache.DefaultCredentials ? null :
                     string.IsNullOrEmpty(nc.Domain) ? $"{nc.UserName}:{nc.Password}" :
@@ -977,29 +1038,25 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        private sealed class UseSpecifiedUriWebProxy : IWebProxy
+        [Fact]
+        public void Proxy_HaveNoCredsAndUseAuthenticatedCustomProxy_ProxyAuthenticationRequiredStatusCode()
         {
-            private readonly Uri _uri;
-            private readonly bool _bypass;
+            int port;
+            Task<LoopbackGetRequestHttpProxy.ProxyResult> proxyTask = LoopbackGetRequestHttpProxy.StartAsync(
+                out port,
+                requireAuth: true,
+                expectCreds: false);
+            Uri proxyUrl = new Uri($"http://localhost:{port}");
 
-            public UseSpecifiedUriWebProxy(Uri uri, ICredentials credentials = null, bool bypass = false)
+            using (var handler = new HttpClientHandler() { Proxy = new UseSpecifiedUriWebProxy(proxyUrl, null) })
+            using (var client = new HttpClient(handler))
             {
-                _uri = uri;
-                _bypass = bypass;
-                Credentials = credentials;
+                Task<HttpResponseMessage> responseTask = client.GetAsync(HttpTestServers.RemoteEchoServer);
+                Task.WaitAll(proxyTask, responseTask);
+
+                Assert.Equal(HttpStatusCode.ProxyAuthenticationRequired, responseTask.Result.StatusCode);
             }
-
-            public ICredentials Credentials { get; set; }
-            public Uri GetProxy(Uri destination) => _uri;
-            public bool IsBypassed(Uri host) => _bypass;
-        }
-
-        private sealed class PlatformNotSupportedWebProxy : IWebProxy
-        {
-            public ICredentials Credentials { get; set; }
-            public Uri GetProxy(Uri destination) { throw new PlatformNotSupportedException(); }
-            public bool IsBypassed(Uri host) { throw new PlatformNotSupportedException(); }
-        }
+        }        
 
         private static IEnumerable<object[]> BypassedProxies()
         {
@@ -1010,10 +1067,13 @@ namespace System.Net.Http.Functional.Tests
 
         private static IEnumerable<object[]> CredentialsForProxy()
         {
-            yield return new object[] { null };
-            yield return new object[] { new NetworkCredential("username", "password") };
-            yield return new object[] { new NetworkCredential("username", "password", "domain") };
-            yield return new object[] { CredentialCache.DefaultCredentials };
+            yield return new object[] { null, false };
+            foreach (bool wrapCredsInCache in new[] { true, false })
+            {
+                yield return new object[] { CredentialCache.DefaultCredentials, wrapCredsInCache };
+                yield return new object[] { new NetworkCredential("user:name", "password"), wrapCredsInCache };
+                yield return new object[] { new NetworkCredential("username", "password", "dom:\\ain"), wrapCredsInCache };
+            }
         }
         #endregion
     }

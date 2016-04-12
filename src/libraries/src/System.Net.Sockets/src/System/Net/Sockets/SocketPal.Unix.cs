@@ -57,7 +57,7 @@ namespace System.Net.Sockets
             return SafeCloseSocket.CreateSocket(addressFamily, socketType, protocolType, out socket);
         }
 
-        private static unsafe int Receive(SafeCloseSocket socket, SocketFlags flags, int available, byte[] buffer, int offset, int count, byte[] socketAddress, ref int socketAddressLen, out SocketFlags receivedFlags, out Interop.Error errno)
+        private static unsafe int Receive(SafeCloseSocket socket, SocketFlags flags, byte[] buffer, int offset, int count, byte[] socketAddress, ref int socketAddressLen, out SocketFlags receivedFlags, out Interop.Error errno)
         {
             Debug.Assert(socketAddress != null || socketAddressLen == 0, $"Unexpected values: socketAddress={socketAddress}, socketAddressLen={socketAddressLen}");
 
@@ -224,8 +224,21 @@ namespace System.Net.Sockets
             return sent;
         }
 
-        private static unsafe int Receive(SafeCloseSocket socket, SocketFlags flags, int available, IList<ArraySegment<byte>> buffers, byte[] socketAddress, ref int socketAddressLen, out SocketFlags receivedFlags, out Interop.Error errno)
+        private static unsafe int Receive(SafeCloseSocket socket, SocketFlags flags, IList<ArraySegment<byte>> buffers, byte[] socketAddress, ref int socketAddressLen, out SocketFlags receivedFlags, out Interop.Error errno)
         {
+            int available;
+            errno = Interop.Sys.GetBytesAvailable(socket, &available);
+            if (errno != Interop.Error.SUCCESS)
+            {
+                receivedFlags = 0;
+                return -1;
+            }
+            if (available == 0)
+            {
+                // Always request at least one byte.
+                available = 1;
+            }
+
             // Pin buffers and set up iovecs.
             int maxBuffers = buffers.Count;
             var handles = new GCHandle[maxBuffers];
@@ -297,7 +310,7 @@ namespace System.Net.Sockets
             return checked((int)received);
         }
 
-        private static unsafe int ReceiveMessageFrom(SafeCloseSocket socket, SocketFlags flags, int available, byte[] buffer, int offset, int count, byte[] socketAddress, ref int socketAddressLen, bool isIPv4, bool isIPv6, out SocketFlags receivedFlags, out IPPacketInformation ipPacketInformation, out Interop.Error errno)
+        private static unsafe int ReceiveMessageFrom(SafeCloseSocket socket, SocketFlags flags, byte[] buffer, int offset, int count, byte[] socketAddress, ref int socketAddressLen, bool isIPv4, bool isIPv6, out SocketFlags receivedFlags, out IPPacketInformation ipPacketInformation, out Interop.Error errno)
         {
             Debug.Assert(socketAddress != null, "Expected non-null socketAddress");
 
@@ -344,9 +357,9 @@ namespace System.Net.Sockets
             return checked((int)received);
         }
 
-        public static unsafe bool TryCompleteAccept(SafeCloseSocket socket, byte[] socketAddress, ref int socketAddressLen, out int acceptedFd, out SocketError errorCode)
+        public static unsafe bool TryCompleteAccept(SafeCloseSocket socket, byte[] socketAddress, ref int socketAddressLen, out IntPtr acceptedFd, out SocketError errorCode)
         {
-            int fd;
+            IntPtr fd;
             Interop.Error errno;
             int sockAddrLen = socketAddressLen;
             fixed (byte* rawSocketAddress = socketAddress)
@@ -359,14 +372,14 @@ namespace System.Net.Sockets
                 {
                     // The socket was closed, or is closing.
                     errorCode = SocketError.OperationAborted;
-                    acceptedFd = -1;
+                    acceptedFd = (IntPtr)(-1);
                     return true;
                 }
             }
 
             if (errno == Interop.Error.SUCCESS)
             {
-                Debug.Assert(fd != -1, "Expected fd != -1");
+                Debug.Assert(fd != (IntPtr)(-1), "Expected fd != -1");
 
                 socketAddressLen = sockAddrLen;
                 errorCode = SocketError.Success;
@@ -375,7 +388,7 @@ namespace System.Net.Sockets
                 return true;
             }
 
-            acceptedFd = -1;
+            acceptedFd = (IntPtr)(-1);
             if (errno != Interop.Error.EAGAIN && errno != Interop.Error.EWOULDBLOCK)
             {
                 errorCode = GetSocketErrorForErrorCode(errno);
@@ -464,29 +477,15 @@ namespace System.Net.Sockets
         {
             try
             {
-                int available;
-                Interop.Error errno = Interop.Sys.GetBytesAvailable(socket, &available);
-                if (errno != Interop.Error.SUCCESS)
-                {
-                    bytesReceived = 0;
-                    receivedFlags = 0;
-                    errorCode = GetSocketErrorForErrorCode(errno);
-                    return true;
-                }
-                if (available == 0)
-                {
-                    // Always request at least one byte.
-                    available = 1;
-                }
-
+                Interop.Error errno;
                 int received;
                 if (buffer != null)
                 {
-                    received = Receive(socket, flags, available, buffer, offset, count, socketAddress, ref socketAddressLen, out receivedFlags, out errno);
+                    received = Receive(socket, flags, buffer, offset, count, socketAddress, ref socketAddressLen, out receivedFlags, out errno);
                 }
                 else
                 {
-                    received = Receive(socket, flags, available, buffers, socketAddress, ref socketAddressLen, out receivedFlags, out errno);
+                    received = Receive(socket, flags, buffers, socketAddress, ref socketAddressLen, out receivedFlags, out errno);
                 }
 
                 if (received != -1)
@@ -521,23 +520,9 @@ namespace System.Net.Sockets
         {
             try
             {
-                int available;
-                Interop.Error errno = Interop.Sys.GetBytesAvailable(socket, &available);
-                if (errno != Interop.Error.SUCCESS)
-                {
-                    bytesReceived = 0;
-                    receivedFlags = 0;
-                    ipPacketInformation = default(IPPacketInformation);
-                    errorCode = GetSocketErrorForErrorCode(errno);
-                    return true;
-                }
-                if (available == 0)
-                {
-                    // Always request at least one byte.
-                    available = 1;
-                }
+                Interop.Error errno;
 
-                int received = ReceiveMessageFrom(socket, flags, available, buffer, offset, count, socketAddress, ref socketAddressLen, isIPv4, isIPv6, out receivedFlags, out ipPacketInformation, out errno);
+                int received = ReceiveMessageFrom(socket, flags, buffer, offset, count, socketAddress, ref socketAddressLen, isIPv4, isIPv6, out receivedFlags, out ipPacketInformation, out errno);
 
                 if (received != -1)
                 {
@@ -832,15 +817,8 @@ namespace System.Net.Sockets
             return completed ? errorCode : SocketError.WouldBlock;
         }
 
-        public static SocketError Ioctl(SafeCloseSocket handle, int ioControlCode, byte[] optionInValue, byte[] optionOutValue, out int optionLength)
-        {
-            // TODO: can this be supported in some reasonable fashion?
-            throw new PlatformNotSupportedException();
-        }
-
-        public static SocketError IoctlInternal(SafeCloseSocket handle, IOControlCode ioControlCode, IntPtr optionInValue, int inValueLength, IntPtr optionOutValue, int outValueLength, out int optionLength)
-        {
-            // TODO: can this be supported in some reasonable fashion?
+        public static SocketError WindowsIoctl(SafeCloseSocket handle, int ioControlCode, byte[] optionInValue, byte[] optionOutValue, out int optionLength)
+        {            
             throw new PlatformNotSupportedException();
         }
 
@@ -1076,116 +1054,166 @@ namespace System.Net.Sockets
 
         public static unsafe SocketError Poll(SafeCloseSocket handle, int microseconds, SelectMode mode, out bool status)
         {
-            uint* fdSet = stackalloc uint[Interop.Sys.FD_SETSIZE_UINTS];
-            Interop.Sys.FD_ZERO(fdSet);
-
-            bool releaseHandle = false;
-            try
+            Interop.Sys.PollEvents inEvent = Interop.Sys.PollEvents.POLLNONE;
+            switch (mode)
             {
-                handle.DangerousAddRef(ref releaseHandle);
-                int fd = (int)handle.DangerousGetHandle();
-                Interop.Sys.FD_SET(fd, fdSet);
-
-                int fdCount = 0;
-                uint* readFds = null;
-                uint* writeFds = null;
-                uint* errorFds = null;
-                switch (mode)
-                {
-                    case SelectMode.SelectRead:
-                        readFds = fdSet;
-                        fdCount = fd + 1;
-                        break;
-
-                    case SelectMode.SelectWrite:
-                        writeFds = fdSet;
-                        fdCount = fd + 1;
-                        break;
-
-                    case SelectMode.SelectError:
-                        errorFds = fdSet;
-                        fdCount = fd + 1;
-                        break;
-                }
-
-                int socketCount = 0;
-                Interop.Error err = Interop.Sys.Select(fdCount, readFds, writeFds, errorFds, microseconds, &socketCount);
-                if (err != Interop.Error.SUCCESS)
-                {
-                    status = false;
-                    return GetSocketErrorForErrorCode(err);
-                }
-
-                status = Interop.Sys.FD_ISSET(fd, fdSet);
+                case SelectMode.SelectRead: inEvent = Interop.Sys.PollEvents.POLLIN; break;
+                case SelectMode.SelectWrite: inEvent = Interop.Sys.PollEvents.POLLOUT; break;
+                case SelectMode.SelectError: inEvent = Interop.Sys.PollEvents.POLLPRI; break;
             }
-            finally
+
+            int milliseconds = microseconds == -1 ? -1 : microseconds / 1000;
+
+            Interop.Sys.PollEvents outEvents;
+            Interop.Error err = Interop.Sys.Poll(handle, inEvent, milliseconds, out outEvents);
+            if (err != Interop.Error.SUCCESS)
             {
-                if (releaseHandle)
-                {
-                    handle.DangerousRelease();
-                }
+                status = false;
+                return GetSocketErrorForErrorCode(err);
+            }
+
+            switch (mode)
+            {
+                case SelectMode.SelectRead: status = (outEvents & (Interop.Sys.PollEvents.POLLIN | Interop.Sys.PollEvents.POLLHUP)) != 0; break;
+                case SelectMode.SelectWrite: status = (outEvents & Interop.Sys.PollEvents.POLLOUT) != 0; break;
+                case SelectMode.SelectError: status = (outEvents & (Interop.Sys.PollEvents.POLLERR | Interop.Sys.PollEvents.POLLPRI)) != 0; break;
+                default: status = false; break;
             }
             return SocketError.Success;
         }
 
         public static unsafe SocketError Select(IList checkRead, IList checkWrite, IList checkError, int microseconds)
         {
-            uint* readSet = stackalloc uint[Interop.Sys.FD_SETSIZE_UINTS];
-            int maxReadFd = Socket.FillFdSetFromSocketList(readSet, checkRead);
+            int checkReadInitialCount = checkRead != null ? checkRead.Count : 0;
+            int checkWriteInitialCount = checkWrite != null ? checkWrite.Count : 0;
+            int checkErrorInitialCount = checkError != null ? checkError.Count : 0;
+            int count = checked(checkReadInitialCount + checkWriteInitialCount + checkErrorInitialCount);
+            Debug.Assert(count > 0, $"Expected at least one entry.");
 
-            uint* writeSet = stackalloc uint[Interop.Sys.FD_SETSIZE_UINTS];
-            int maxWriteFd = Socket.FillFdSetFromSocketList(writeSet, checkWrite);
+            // Rather than using the select syscall, we use poll.  While this has a mismatch in API from Select and
+            // requires some translation, it avoids the significant limitation of select only working with file descriptors
+            // less than FD_SETSIZE, and thus failing arbitrarily depending on the file descriptor value assigned
+            // by the system.  Since poll then expects an array of entries, we try to allocate the array on the stack,
+            // only falling back to allocating it on the heap if it's deemed too big.
 
-            uint* errorSet = stackalloc uint[Interop.Sys.FD_SETSIZE_UINTS];
-            int maxErrorFd = Socket.FillFdSetFromSocketList(errorSet, checkError);
-
-            int fdCount = 0;
-            uint* readFds = null;
-            uint* writeFds = null;
-            uint* errorFds = null;
-
-            if (maxReadFd != 0)
+            const int StackThreshold = 80; // arbitrary limit to avoid too much space on stack
+            if (count < StackThreshold)
             {
-                readFds = readSet;
-                fdCount = maxReadFd;
+                Interop.Sys.PollEvent* eventsOnStack = stackalloc Interop.Sys.PollEvent[count];
+                return SelectViaPoll(
+                    checkRead, checkReadInitialCount,
+                    checkWrite, checkWriteInitialCount,
+                    checkError, checkErrorInitialCount,
+                    eventsOnStack, count, microseconds);
             }
-
-            if (maxWriteFd != 0)
+            else
             {
-                writeFds = writeSet;
-                if (maxWriteFd > fdCount)
+                var eventsOnHeap = new Interop.Sys.PollEvent[count];
+                fixed (Interop.Sys.PollEvent* eventsOnHeapPtr = eventsOnHeap)
                 {
-                    fdCount = maxWriteFd;
+                    return SelectViaPoll(
+                        checkRead, checkReadInitialCount,
+                        checkWrite, checkWriteInitialCount,
+                        checkError, checkErrorInitialCount,
+                        eventsOnHeapPtr, count, microseconds);
                 }
             }
+        }
 
-            if (maxErrorFd != 0)
-            {
-                errorFds = errorSet;
-                if (maxErrorFd > fdCount)
-                {
-                    fdCount = maxErrorFd;
-                }
-            }
+        private static unsafe SocketError SelectViaPoll(
+            IList checkRead, int checkReadInitialCount,
+            IList checkWrite, int checkWriteInitialCount,
+            IList checkError, int checkErrorInitialCount,
+            Interop.Sys.PollEvent* events, int eventsLength,
+            int microseconds)
+        {
+            // Add each of the list's contents to the events array 
+            Debug.Assert(eventsLength == checkReadInitialCount + checkWriteInitialCount + checkErrorInitialCount, "Invalid eventsLength");
+            int offset = 0;
+            AddToPollArray(events, eventsLength, checkRead, ref offset, Interop.Sys.PollEvents.POLLIN | Interop.Sys.PollEvents.POLLHUP);
+            AddToPollArray(events, eventsLength, checkWrite, ref offset, Interop.Sys.PollEvents.POLLOUT);
+            AddToPollArray(events, eventsLength, checkError, ref offset, Interop.Sys.PollEvents.POLLPRI);
+            Debug.Assert(offset == eventsLength, $"Invalid adds. offset={offset}, eventsLength={eventsLength}.");
 
-            int socketCount;
-            Interop.Error err = Interop.Sys.Select(fdCount, readFds, writeFds, errorFds, microseconds, &socketCount);
-
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print("Socket::Select() Interop.Sys.Select returns socketCount:" + socketCount);
-            }
-
+            // Do the poll
+            uint triggered = 0;
+            int milliseconds = microseconds == -1 ? -1 : microseconds / 1000;
+            Interop.Error err = Interop.Sys.Poll(events, (uint)eventsLength, milliseconds, &triggered);
             if (err != Interop.Error.SUCCESS)
             {
                 return GetSocketErrorForErrorCode(err);
             }
 
-            Socket.FilterSocketListUsingFdSet(readSet, checkRead);
-            Socket.FilterSocketListUsingFdSet(writeSet, checkWrite);
-            Socket.FilterSocketListUsingFdSet(errorSet, checkError);
-
+            // Remove from the lists any entries which weren't set
+            if (triggered == 0)
+            {
+                checkRead?.Clear();
+                checkWrite?.Clear();
+                checkError?.Clear();
+            }
+            else
+            {
+                FilterPollList(checkRead, events, checkReadInitialCount - 1, Interop.Sys.PollEvents.POLLIN | Interop.Sys.PollEvents.POLLHUP);
+                FilterPollList(checkWrite, events, checkWriteInitialCount + checkReadInitialCount - 1, Interop.Sys.PollEvents.POLLOUT);
+                FilterPollList(checkError, events, checkErrorInitialCount + checkWriteInitialCount + checkReadInitialCount - 1, Interop.Sys.PollEvents.POLLERR | Interop.Sys.PollEvents.POLLPRI);
+            }
             return SocketError.Success;
+        }
+
+        private static unsafe void AddToPollArray(Interop.Sys.PollEvent* arr, int arrLength, IList socketList, ref int arrOffset, Interop.Sys.PollEvents events)
+        {
+            if (socketList == null)
+                return;
+
+            int listCount = socketList.Count;
+            for (int i = 0; i < listCount; i++)
+            {
+                if (arrOffset >= arrLength)
+                {
+                    Debug.Fail("IList.Count must have been faulty, returning a negative value and/or returning a different value across calls.");
+                    throw new ArgumentOutOfRangeException(nameof(socketList));
+                }
+
+                Socket socket = socketList[i] as Socket;
+                if (socket == null)
+                {
+                    throw new ArgumentException(SR.Format(SR.net_sockets_select, socket?.GetType().FullName ?? "null", typeof(Socket).FullName));
+                }
+
+                int fd = (int)socket.SafeHandle.DangerousGetHandle();
+                arr[arrOffset++] = new Interop.Sys.PollEvent { Events = events, FileDescriptor = fd };
+            }
+        }
+
+        private static unsafe void FilterPollList(IList socketList, Interop.Sys.PollEvent* arr, int arrEndOffset, Interop.Sys.PollEvents desiredEvents)
+        {
+            if (socketList == null)
+                return;
+
+            // The Select API requires leaving in the input lists only those sockets that were ready.  As such, we need to loop
+            // through each poll event, and for each that wasn't ready, remove the corresponding Socket from its list.  Technically
+            // this is O(n^2), due to removing from the list requiring shifting down all elements after it.  However, this doesn't
+            // happen with the most common cases.  If very few sockets were ready, then as we iterate from the end of the list, each
+            // removal will typically be O(1) rather than O(n).  If most sockets were ready, then we only need to remove a few, in
+            // which case we're only doing a small number of O(n) shifts.  It's only for the intermediate case, where a non-trivial
+            // number of sockets are ready and a non-trivial number of sockets are not ready that we end up paying the most.  We could
+            // avoid these costs by, for example, allocating a side list that we fill with the sockets that should remain, clearing
+            // the original list, and then populating the original list with the contents of the side list.  That of course has its
+            // own costs, and so for now we do the "simple" thing.  This can be changed in the future as needed.
+
+            for (int i = socketList.Count - 1; i >= 0; --i, --arrEndOffset)
+            {
+                if (arrEndOffset < 0)
+                {
+                    Debug.Fail("IList.Count must have been faulty, returning a negative value and/or returning a different value across calls.");
+                    throw new ArgumentOutOfRangeException(nameof(arrEndOffset));
+                }
+
+                if ((arr[arrEndOffset].TriggeredEvents & desiredEvents) == 0)
+                {
+                    socketList.RemoveAt(i);
+                }
+            }
         }
 
         public static SocketError Shutdown(SafeCloseSocket handle, bool isConnected, bool isDisconnected, SocketShutdown how)

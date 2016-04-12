@@ -29,7 +29,7 @@ namespace System.Text.Tests
         }
         #endregion
 
-        #region Nagetive Test Cases
+        #region Negative Test Cases
         [Fact]
         public void NegTest1()
         {

@@ -54,7 +54,7 @@ namespace OLEDB.Test.ModuleCore
                 foreach (object child in children)
                 {
                     CTestCase childTc = child as CTestCase;
-                    if (childTc != null)    //nested test test case class will be child of a test case
+                    if (childTc != null)    //nested test case class will be child of a test case
                     {
                         childTc.Init();
                         childTc.Execute();
@@ -90,7 +90,7 @@ namespace OLEDB.Test.ModuleCore
                         catch (Exception e)
                         {
                             System.Console.WriteLine(indent + var.Desc);
-                            System.Console.WriteLine("unexpected exception happend:{0}", e.Message);
+                            System.Console.WriteLine("unexpected exception happened:{0}", e.Message);
                             System.Console.WriteLine(e.StackTrace);
                             System.Console.WriteLine(indent + " FAILED");
                             TestModule.FailCount++;
@@ -137,7 +137,7 @@ namespace OLEDB.Test.ModuleCore
             catch (Exception e)
             {
                 System.Console.WriteLine(indent + curVar.Desc);
-                System.Console.WriteLine("unexpected exception happend:{0}", e.Message);
+                System.Console.WriteLine("unexpected exception happened:{0}", e.Message);
                 System.Console.WriteLine(e.StackTrace);
                 System.Console.WriteLine(indent + " FAILED");
                 TestModule.FailCount++;
@@ -178,9 +178,9 @@ namespace OLEDB.Test.ModuleCore
         {
             //Return the current variation:
             //Note: We do this so that within the variation the user can have access to all the 
-            //atrributes of that particular method.  Unlike the TestModule/TestCase which are objects 
+            //attributes of that particular method.  Unlike the TestModule/TestCase which are objects 
             //and have properties to reference, the variations are function and don't.  Each variation
-            //could also have multiple atrributes (repeats), so we can't simply use the StackFrame
+            //could also have multiple attributes (repeats), so we can't simply use the StackFrame
             //to determine this info...
             get { return _curvariation; }
             set { _curvariation = value; }
@@ -219,8 +219,8 @@ namespace OLEDB.Test.ModuleCore
             }
 
             //Before exiting make sure we reset our CurVariation to null, to prevent 
-            //incorrect uses of CurVariation wihtin the TestCase, but not actually a running
-            //variation.  This will only be valid within a fucntion with a //[Variation] attribute...
+            //incorrect uses of CurVariation within the TestCase, but not actually a running
+            //variation.  This will only be valid within a function with a //[Variation] attribute...
             _curvariation = null;
             return (tagVARIATION_STATUS)result;
         }
@@ -248,11 +248,11 @@ namespace OLEDB.Test.ModuleCore
             //Default - no sort
             bool bSort = false;
             //Normally the reflection Type.GetMethods() api returns the methods in order 
-            //of how thery appear in the code.  But it will change that order depending 
+            //of how they appear in the code.  But it will change that order depending 
             //upon if there are virtual functions, which are returned first before other
             //non-virtual functions.  Then there are also inherited classes where the 
-            //derived classes methods are returned before the inherted class.  So we have
-            //added the support of specifing an id=x, as an attribute so you can have
+            //derived classes methods are returned before the inherited class.  So we have
+            //added the support of specifying an id=x, as an attribute so you can have
             //then sorted and displayed however your see fit.
             if (bSort)
                 Children.Sort(/*Default sort is based upon IComparable of each item*/);

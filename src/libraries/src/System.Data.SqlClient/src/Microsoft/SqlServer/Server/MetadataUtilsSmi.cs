@@ -176,8 +176,8 @@ namespace Microsoft.SqlServer.Server
         //  series of if statements, or using a hash table. 
         // NOTE: the form of these checks is taking advantage of a feature of the JIT compiler that is supposed to
         //      optimize checks of the form '(xxx.GetType() == typeof( YYY ))'.  The JIT team claimed at one point that
-        //      this doesn't even instantiate a Type instance, thus was the fastest method for individual comparisions.
-        //      Given that there's a known SqlDbType, thus a minimal number of comparisions, it's likely this is faster
+        //      this doesn't even instantiate a Type instance, thus was the fastest method for individual comparisons.
+        //      Given that there's a known SqlDbType, thus a minimal number of comparisons, it's likely this is faster
         //      than the other approaches considered (both GetType().GetTypeCode() switch and hash table using Type keys
         //      must instantiate a Type object.  The typecode switch also degenerates into a large if-then-else for
         //      all but the primitive clr types.
@@ -308,7 +308,7 @@ namespace Microsoft.SqlServer.Server
                         // SqlDbType doesn't help us here, call general-purpose function
                         extendedCode = DetermineExtendedTypeCode(value);
 
-                        // Some types aren't allowed for Variants but are for the general-purpos function.  
+                        // Some types aren't allowed for Variants but are for the general-purpose function.  
                         //  Match behavior of other types and return invalid in these cases.
                         if (ExtendedClrTypeCode.SqlXml == extendedCode)
                         {

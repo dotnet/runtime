@@ -39,7 +39,7 @@ namespace System.Data.SqlClient
             SqlInternalConnection result = null;
             SessionData recoverySessionData = null;
 
-            SqlConnection sqlOwningConnection = owningConnection as SqlConnection;
+            SqlConnection sqlOwningConnection = (SqlConnection)owningConnection;
             bool applyTransientFaultHandling = sqlOwningConnection != null ? sqlOwningConnection._applyTransientFaultHandling : false;
 
             SqlConnectionString userOpt = null;
@@ -47,14 +47,14 @@ namespace System.Data.SqlClient
             {
                 userOpt = (SqlConnectionString)userOptions;
             }
-            else if (owningConnection != null)
+            else if (sqlOwningConnection != null)
             {
-                userOpt = (SqlConnectionString)(((SqlConnection)owningConnection).UserConnectionOptions);
+                userOpt = (SqlConnectionString)(sqlOwningConnection.UserConnectionOptions);
             }
 
-            if (owningConnection != null)
+            if (sqlOwningConnection != null)
             {
-                recoverySessionData = ((SqlConnection)owningConnection)._recoverySessionData;
+                recoverySessionData = sqlOwningConnection._recoverySessionData;
             }
 
             bool redirectedUserInstance = false;
@@ -136,7 +136,7 @@ namespace System.Data.SqlClient
 
         protected override DbConnectionOptions CreateConnectionOptions(string connectionString, DbConnectionOptions previous)
         {
-            Debug.Assert(!ADP.IsEmpty(connectionString), "empty connectionString");
+            Debug.Assert(!string.IsNullOrEmpty(connectionString), "empty connectionString");
             SqlConnectionString result = new SqlConnectionString(connectionString);
             return result;
         }

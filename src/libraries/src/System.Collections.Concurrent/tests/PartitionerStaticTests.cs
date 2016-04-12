@@ -217,7 +217,7 @@ namespace System.Collections.Concurrent.Tests
                 case (2):
                     return Partitioner.Create((IList<T>)data, true);
 
-                //dynamic partitioning through Arrray
+                //dynamic partitioning through Array
                 case (3):
                     return Partitioner.Create(data, true);
 

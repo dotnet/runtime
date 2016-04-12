@@ -8,13 +8,11 @@ namespace System.Text.Tests
 {
     public class UTF8EncodingGetEncoder
     {
-        #region Positive Test Cases
         [Fact]
-        public void PosTest1()
+        public void GetEncoder()
         {
-            UTF8Encoding utf8 = new UTF8Encoding();
-            Encoder encoder = utf8.GetEncoder();
+            Encoder encoder = new UTF8Encoding().GetEncoder();
+            Assert.NotNull(encoder);
         }
-        #endregion
     }
 }

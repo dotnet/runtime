@@ -12,7 +12,7 @@ namespace System.Threading.Tasks
         /// Returns an awaitable/awaiter that will ensure the continuation is executed
         /// asynchronously on the thread pool, even if the task is already completed
         /// by the time the await occurs.  Effectively, it is equivalent to awaiting
-        /// with ConfigureAwait(false) and then queueing the continuation with Task.Run,
+        /// with ConfigureAwait(false) and then queuing the continuation with Task.Run,
         /// but it avoids the extra hop if the continuation already executed asynchronously.
         /// </summary>
         public static ForceAsyncAwaiter ForceAsync(this Task task)

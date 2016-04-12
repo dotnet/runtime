@@ -132,7 +132,7 @@ namespace System.Reflection.Tests
             Assert.Throws<ArgumentException>(() => { obj = (ConstructorInfoInvokeSample)cis[1].Invoke(new object[] { "hello" }); });
         }
 
-        // calling a contstructor on an existing instance.  Note this should not produce
+        // calling a constructor on an existing instance.  Note this should not produce
         // a second object.  I suppose you would use this in a situation where you wanted to reset
         // the state of an object.
         //

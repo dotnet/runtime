@@ -36,7 +36,7 @@ namespace System.Security.Cryptography
         }
 
         public Rfc2898DeriveBytes(string password, byte[] salt, int iterations)
-            : this(new UTF8Encoding(false).GetBytes(password), salt, iterations)
+            : this(Encoding.UTF8.GetBytes(password), salt, iterations)
         {
         }
 
@@ -56,7 +56,7 @@ namespace System.Security.Cryptography
 
             _salt = Helpers.GenerateRandom(saltSize);
             _iterations = (uint)iterations;
-            _password = new UTF8Encoding(false).GetBytes(password);
+            _password = Encoding.UTF8.GetBytes(password);
             _hmacSha1 = new HMACSHA1(_password);
 
             Initialize();

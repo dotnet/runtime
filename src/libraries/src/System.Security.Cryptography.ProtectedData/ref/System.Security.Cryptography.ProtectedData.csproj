@@ -4,6 +4,8 @@
   <PropertyGroup>
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <OutputType>Library</OutputType>
+    <PackageTargetFramework>netstandard1.3</PackageTargetFramework>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Security.Cryptography.ProtectedData.cs" />

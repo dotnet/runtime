@@ -13,42 +13,14 @@ namespace System.Net.Sockets.Tests
 
         protected abstract int Port { get; }
 
-        public static SocketTestServer SocketTestServerFactory(EndPoint endpoint, ProtocolType protocolType = ProtocolType.Tcp)
+        public static SocketTestServer SocketTestServerFactory(SocketImplementationType type, EndPoint endpoint, ProtocolType protocolType = ProtocolType.Tcp)
         {
-            return SocketTestServerFactory(DefaultNumConnections, DefaultReceiveBufferSize, endpoint, protocolType);
+            return SocketTestServerFactory(type, DefaultNumConnections, DefaultReceiveBufferSize, endpoint, protocolType);
         }
 
-        public static SocketTestServer SocketTestServerFactory(IPAddress address, out int port)
+        public static SocketTestServer SocketTestServerFactory(SocketImplementationType type, IPAddress address, out int port)
         {
-            return SocketTestServerFactory(DefaultNumConnections, DefaultReceiveBufferSize, address, out port);
-        }
-
-        public static SocketTestServer SocketTestServerFactory(
-            int numConnections,
-            int receiveBufferSize,
-            EndPoint localEndPoint,
-            ProtocolType protocolType = ProtocolType.Tcp)
-        {
-            return SocketTestServerFactory(
-                s_implementationType,
-                numConnections,
-                receiveBufferSize,
-                localEndPoint,
-                protocolType);
-        }
-
-        public static SocketTestServer SocketTestServerFactory(
-            int numConnections,
-            int receiveBufferSize,
-            IPAddress address,
-            out int port)
-        {
-            return SocketTestServerFactory(
-                s_implementationType,
-                numConnections,
-                receiveBufferSize,
-                address,
-                out port);
+            return SocketTestServerFactory(type, DefaultNumConnections, DefaultReceiveBufferSize, address, out port);
         }
 
         public static SocketTestServer SocketTestServerFactory(

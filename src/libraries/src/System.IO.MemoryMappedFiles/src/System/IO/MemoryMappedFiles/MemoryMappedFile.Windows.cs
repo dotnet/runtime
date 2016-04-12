@@ -14,7 +14,7 @@ namespace System.IO.MemoryMappedFiles
     {
         /// <summary>
         /// Used by the 2 Create factory method groups.  A null fileHandle specifies that the 
-        /// memory mapped file should not be associated with an exsiting file on disk (ie start
+        /// memory mapped file should not be associated with an exsiting file on disk (i.e. start
         /// out empty).
         /// </summary>
 
@@ -46,6 +46,7 @@ namespace System.IO.MemoryMappedFiles
             }
             else // handle.IsInvalid
             {
+                handle.Dispose();
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode);
             }
 
@@ -86,7 +87,7 @@ namespace System.IO.MemoryMappedFiles
             /// either create or open a memory mapped file up to a timeout. CreateFileMapping may fail
             /// if the file exists and we have non-null security attributes, in which case we need to
             /// use OpenFileMapping.  But, there exists a race condition because the memory mapped file
-            /// may have closed inbetween the two calls -- hence the loop. 
+            /// may have closed between the two calls -- hence the loop. 
             /// 
             /// The retry/timeout logic increases the wait time each pass through the loop and times 
             /// out in approximately 1.4 minutes. If after retrying, a MMF handle still hasn't been opened, 
@@ -104,7 +105,7 @@ namespace System.IO.MemoryMappedFiles
             int waitRetries = 14;   //((2^13)-1)*10ms == approximately 1.4mins
             int waitSleep = 0;
 
-            // keep looping until we've exhausted retries or break as soon we we get valid handle
+            // keep looping until we've exhausted retries or break as soon we get valid handle
             while (waitRetries > 0)
             {
                 // try to create
@@ -117,6 +118,7 @@ namespace System.IO.MemoryMappedFiles
                 }
                 else
                 {
+                    handle.Dispose();
                     int createErrorCode = Marshal.GetLastWin32Error();
                     if (createErrorCode != Interop.mincore.Errors.ERROR_ACCESS_DENIED)
                     {
@@ -136,6 +138,7 @@ namespace System.IO.MemoryMappedFiles
                 // didn't get valid handle; have to retry
                 else
                 {
+                    handle.Dispose();
                     int openErrorCode = Marshal.GetLastWin32Error();
                     if (openErrorCode != Interop.mincore.Errors.ERROR_FILE_NOT_FOUND)
                     {
@@ -231,6 +234,7 @@ namespace System.IO.MemoryMappedFiles
 
             if (handle.IsInvalid)
             {
+                handle.Dispose();
                 if (createOrOpen && (lastError == Interop.mincore.Errors.ERROR_FILE_NOT_FOUND))
                 {
                     throw new ArgumentException(SR.Argument_NewMMFWriteAccessNotAllowed, "access");

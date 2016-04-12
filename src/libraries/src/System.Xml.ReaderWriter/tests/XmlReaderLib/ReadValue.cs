@@ -74,8 +74,8 @@ namespace System.Xml.Tests
                 }
             }
 
-            CError.Compare(DataReader.ReadValueChunk(buffer, 0, 5), 5, "Didnt read 5 chars");
-            CError.Compare("value", new string(buffer), "Strings dont match");
+            CError.Compare(DataReader.ReadValueChunk(buffer, 0, 5), 5, "Didn't read 5 chars");
+            CError.Compare("value", new string(buffer), "Strings don't match");
 
             return TEST_PASS;
         }
@@ -133,7 +133,7 @@ namespace System.Xml.Tests
                 }
             }
             CError.Compare(DataReader.ReadValueChunk(buffer, 0, 5), 5, "Didnt read 5 chars");
-            CError.Compare("value", new string(buffer), "Strings dont match");
+            CError.Compare("value", new string(buffer), "Strings don't match");
             CError.Compare(DataReader.ReadValueChunk(buffer, 0, 5), 0, "Did read 5 chars");
 
             return TEST_PASS;
@@ -162,12 +162,12 @@ namespace System.Xml.Tests
             CError.Compare(DataReader.ReadAttributeValue(), true, "Didnt read attribute value");
             CError.Compare(DataReader.Value, "value", "Didnt read correct attribute value");
             CError.Compare(DataReader.ReadValueChunk(buffer, 0, 5), 5, "Didnt read 5 chars");
-            CError.Compare("value", new string(buffer), "Strings dont match");
+            CError.Compare("value", new string(buffer), "Strings don't match");
             CError.Compare(DataReader.ReadValueChunk(buffer, 0, 5), 0, "Did read 5 chars");
             CError.WriteLineIgnore(DataReader.MoveToElement() + "");
             DataReader.Read();
             CError.Compare(DataReader.ReadValueChunk(buffer, 0, 5), 5, "Didnt read 5 chars on text node");
-            CError.Compare("value", new string(buffer), "Strings dont match");
+            CError.Compare("value", new string(buffer), "Strings don't match");
             CError.Compare(DataReader.ReadValueChunk(buffer, 0, 5), 0, "Did read 5 chars on text node");
 
             return TEST_PASS;
@@ -292,10 +292,10 @@ namespace System.Xml.Tests
             }
 
             CError.Compare(DataReader.ReadValueChunk(buffer, 0, 5), 5, "Didnt read first 5");
-            CError.Compare("01234", new string(buffer), "First strings dont match");
+            CError.Compare("01234", new string(buffer), "First strings don't match");
 
             CError.Compare(DataReader.ReadValueChunk(buffer, 0, 5), 5, "Didnt read second 5 chars");
-            CError.Compare("56789", new string(buffer), "Second strings dont match");
+            CError.Compare("56789", new string(buffer), "Second strings don't match");
 
             return TEST_PASS;
         }
@@ -322,7 +322,7 @@ namespace System.Xml.Tests
             }
 
             CError.Compare(DataReader.ReadValueChunk(buffer, 0, 10), 10, "Didnt read 10");
-            CError.Compare("0123456789", new string(buffer), "Strings dont match");
+            CError.Compare("0123456789", new string(buffer), "Strings don't match");
 
             return TEST_PASS;
         }
@@ -355,7 +355,7 @@ namespace System.Xml.Tests
                 CError.Compare(DataReader.ReadValueChunk(buffer, index, 1), 1, "Read " + index);
             }
 
-            CError.Compare("0123456789", new string(buffer), "Strings dont match");
+            CError.Compare("0123456789", new string(buffer), "Strings don't match");
             return TEST_PASS;
         }
 
@@ -389,7 +389,7 @@ namespace System.Xml.Tests
                 CError.Compare(DataReader.ReadValueChunk(buffer, index, 1), 1, "Read " + index);
             }
 
-            CError.Compare(val, new string(buffer), "Strings dont match");
+            CError.Compare(val, new string(buffer), "Strings don't match");
             return TEST_PASS;
         }
 
@@ -425,7 +425,7 @@ namespace System.Xml.Tests
                 CError.Compare(DataReader.ReadValueChunk(buffer, index, 1), 1, "Read " + index);
             }
 
-            CError.Compare(val, new string(buffer), "Strings dont match");
+            CError.Compare(val, new string(buffer), "Strings don't match");
             try
             {
                 DataReader.Read();
@@ -680,7 +680,7 @@ namespace System.Xml.Tests
                 CError.Compare(DataReader.ReadValueChunk(buffer, index, 1), 1, "Read " + index);
             }
 
-            CError.Compare("somevalue", new string(buffer), "Strings dont match");
+            CError.Compare("somevalue", new string(buffer), "Strings don't match");
 
             try
             {
@@ -797,7 +797,7 @@ namespace System.Xml.Tests
             }
 
             CError.Compare(DataReader.ReadValueChunk(buffer, 0, 5), 5, "Didnt read 5 chars");
-            CError.Compare("value", new string(buffer), "Strings dont match");
+            CError.Compare("value", new string(buffer), "Strings don't match");
 
             try
             {
@@ -985,12 +985,12 @@ namespace System.Xml.Tests
             DataReader.Read(); //This takes to text node.
 
             CError.Compare(DataReader.ReadValueChunk(buffer, 0, 3), 3, "Didnt read 3 chars");
-            CError.Compare("val", new string(buffer), "Strings dont match");
+            CError.Compare("val", new string(buffer), "Strings don't match");
 
             buffer = new char[2];
             DataReader.Read(); //This takes to text node.
             CError.Compare(DataReader.ReadValueChunk(buffer, 0, 2), 2, "Didnt read 2 chars");
-            CError.Compare("ue", new string(buffer), "Strings dont match");
+            CError.Compare("ue", new string(buffer), "Strings don't match");
 
             while (DataReader.Read()) ;
             DataReader.Close();
@@ -1022,12 +1022,12 @@ namespace System.Xml.Tests
             DataReader.Read(); //This takes to text node.
 
             CError.Compare(DataReader.ReadValueChunk(buffer, 0, 3), 3, "Didnt read 3 chars");
-            CError.Compare("val", new string(buffer), "Strings dont match");
+            CError.Compare("val", new string(buffer), "Strings don't match");
 
             buffer = new char[2];
             DataReader.Read(); //This takes to text node.
             CError.Compare(DataReader.ReadValueChunk(buffer, 0, 2), 2, "Didnt read 2 chars");
-            CError.Compare("ue", new string(buffer), "Strings dont match");
+            CError.Compare("ue", new string(buffer), "Strings don't match");
 
             while (DataReader.Read()) ;
             DataReader.Close();

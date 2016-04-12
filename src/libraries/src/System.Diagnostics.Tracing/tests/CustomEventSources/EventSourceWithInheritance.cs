@@ -11,7 +11,7 @@ using System.Diagnostics.Tracing;
 #endif // USE_MDT_EVENTSOURCE
 
 // We wish to test both Microsoft.Diagnostics.Tracing (Nuget)
-// and System.Diagnostics.Tracing (Framewwork), we use this Ifdef make each kind 
+// and System.Diagnostics.Tracing (Framework), we use this Ifdef make each kind 
 #if USE_MDT_EVENTSOURCE
 namespace MdtEventSources
 #else

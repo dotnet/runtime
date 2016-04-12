@@ -2,65 +2,25 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
+using System.Collections.Generic;
 using Xunit;
 
-namespace System.Globalization.CalendarsTests
+namespace System.Globalization.Tests
 {
-    // System.Globalization.TaiwanCalendar.GetMonth(DateTime)
     public class TaiwanCalendarGetMonth
     {
-        private readonly int[] _DAYS_PER_MONTHS_IN_LEAP_YEAR = new int[13]
+        public static IEnumerable<object[]> GetMonth_TestData()
         {
-            0, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
-        };
-        private readonly int[] _DAYS_PER_MONTHS_IN_NO_LEAP_YEAR = new int[13]
-        {
-            0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
-        };
-
-        #region Positive Tests
-        // PosTest1: Verify the DateTime is a random Date
-        [Fact]
-        public void PosTest1()
-        {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            Random rand = new Random(-55);
-            int year = rand.Next(tc.MinSupportedDateTime.Year, tc.MaxSupportedDateTime.Year - 1911);
-            int month = rand.Next(1, 12);
-            int day;
-            if (tc.IsLeapYear(year))
-            {
-                day = rand.Next(1, _DAYS_PER_MONTHS_IN_LEAP_YEAR[month] + 1);
-            }
-            else
-            {
-                day = rand.Next(1, _DAYS_PER_MONTHS_IN_NO_LEAP_YEAR[month] + 1);
-            }
-
-            DateTime dt = tc.ToDateTime(year, month, day, 0, 0, 0, 0);
-            int actualMonth = dt.Month;
-            Assert.Equal(tc.GetMonth(dt), actualMonth);
+            yield return new object[] { new TaiwanCalendar().MinSupportedDateTime };
+            yield return new object[] { new TaiwanCalendar().MaxSupportedDateTime };
+            yield return new object[] { TaiwanCalendarUtilities.RandomDateTime() };
         }
 
-        // PosTest2: Verify the DateTime is TaiwanCalendar MaxSupportDateTime
-        [Fact]
-        public void PosTest2()
+        [Theory]
+        [MemberData(nameof(GetMonth_TestData))]
+        public void GetMonth(DateTime time)
         {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            DateTime dt = tc.MaxSupportedDateTime;
-            Assert.Equal(12, tc.GetMonth(dt));
+            Assert.Equal(time.Month, new TaiwanCalendar().GetMonth(time));
         }
-
-        // PosTest3: Verify the DateTime is TaiwanCalendar MinSupportedDateTime
-        [Fact]
-        public void PosTest3()
-        {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            DateTime dt = tc.MinSupportedDateTime;
-            Assert.Equal(1, tc.GetDayOfMonth(dt));
-        }
-        #endregion
     }
 }

@@ -24,13 +24,5 @@ namespace System.Text.Tests
         {
             Assert.Equal(expected, new ASCIIEncoding().GetMaxByteCount(charCount));
         }
-
-        [Theory]
-        [InlineData(-1)]
-        [InlineData(int.MaxValue)]
-        public void GetMaxByteCount_Invalid(int charCount)
-        {
-            Assert.Throws<ArgumentOutOfRangeException>("charCount", () => new ASCIIEncoding().GetMaxByteCount(charCount));
-        }
     }
 }

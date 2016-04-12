@@ -1913,7 +1913,7 @@ public static class TimeZoneInfoTests
     private static void VerifyOffsets(TimeZoneInfo tz, DateTime dt, TimeSpan[] expectedOffsets)
     {
         TimeSpan[] ret = tz.GetAmbiguousTimeOffsets(dt);
-        VerifyTimeSpanArray(ret, expectedOffsets, string.Format("Wrong offsets when used {0} with teh zone {1}", dt, tz.Id));
+        VerifyTimeSpanArray(ret, expectedOffsets, string.Format("Wrong offsets when used {0} with the zone {1}", dt, tz.Id));
     }
 
     static public void VerifyTimeSpanArray(TimeSpan[] actual, TimeSpan[] expected, string errorMsg)

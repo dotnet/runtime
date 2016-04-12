@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <Import Project="dir.props" />
+  <Import Project="..\dir.targets" />
+
+  <PropertyGroup>
+    <OutDir>$(BinDir)</OutDir>
+  </PropertyGroup>
+
+  <UsingTask AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" TaskName="ReadSigningRequired" />
+
+  <!-- populates item group FilesToSign with the list of files to sign -->
+  <Target Name="GetFilesToSignItems">
+    <!-- read all of the marker files and populate the FilesToSign item group -->
+    <ItemGroup>
+      <SignMarkerFile Include="$(OutDir)**\*.requires_signing" />
+    </ItemGroup>
+    <ReadSigningRequired MarkerFiles="@(SignMarkerFile)">
+      <Output TaskParameter="SigningMetadata" ItemName="FilesToSign" />
+    </ReadSigningRequired>
+  </Target>
+
+  <Target Name="Build"
+          Condition="'$(SkipSigning)' != 'true' and '$(SignType)' != 'oss'"
+          DependsOnTargets="GetFilesToSignItems">
+    <CallTarget Targets="SignFiles" />
+    <!-- now that the files have been signed delete the marker files -->
+    <Delete Files="@(SignMarkerFile)" />
+  </Target>
+
+</Project>

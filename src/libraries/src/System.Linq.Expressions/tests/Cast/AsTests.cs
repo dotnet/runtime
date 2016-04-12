@@ -12,871 +12,871 @@ namespace System.Linq.Expressions.Tests
     {
         #region Test methods
 
-        [Fact]
-        public static void CheckCustomAsCustom2Test()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckCustomAsCustom2Test(bool useInterpreter)
         {
             C[] array = new C[] { null, new C(), new D(), new D(0), new D(5) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyCustomAsCustom2(array[i]);
+                VerifyCustomAsCustom2(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckCustomAsInterfaceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckCustomAsInterfaceTest(bool useInterpreter)
         {
             C[] array = new C[] { null, new C(), new D(), new D(0), new D(5) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyCustomAsInterface(array[i]);
+                VerifyCustomAsInterface(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckCustomAsIEquatableOfCustomTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckCustomAsIEquatableOfCustomTest(bool useInterpreter)
         {
             C[] array = new C[] { null, new C(), new D(), new D(0), new D(5) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyCustomAsIEquatableOfCustom(array[i]);
+                VerifyCustomAsIEquatableOfCustom(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckCustomAsIEquatableOfCustom2Test()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckCustomAsIEquatableOfCustom2Test(bool useInterpreter)
         {
             C[] array = new C[] { null, new C(), new D(), new D(0), new D(5) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyCustomAsIEquatableOfCustom2(array[i]);
+                VerifyCustomAsIEquatableOfCustom2(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckCustomAsObjectTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckCustomAsObjectTest(bool useInterpreter)
         {
             C[] array = new C[] { null, new C(), new D(), new D(0), new D(5) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyCustomAsObject(array[i]);
+                VerifyCustomAsObject(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckCustomArrayAsCustom2ArrayTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckCustomArrayAsCustom2ArrayTest(bool useInterpreter)
         {
             C[][] array = new C[][] { null, new C[] { null, new C(), new D(), new D(0), new D(5) }, new C[10] };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyCustomArrayAsCustom2Array(array[i]);
+                VerifyCustomArrayAsCustom2Array(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckCustomArrayAsIEnumerableOfCustomTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckCustomArrayAsIEnumerableOfCustomTest(bool useInterpreter)
         {
             C[][] array = new C[][] { null, new C[] { null, new C(), new D(), new D(0), new D(5) }, new C[10] };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyCustomArrayAsIEnumerableOfCustom(array[i]);
+                VerifyCustomArrayAsIEnumerableOfCustom(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckCustomArrayAsIEnumerableOfCustom2Test()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckCustomArrayAsIEnumerableOfCustom2Test(bool useInterpreter)
         {
             C[][] array = new C[][] { null, new C[] { null, new C(), new D(), new D(0), new D(5) }, new C[10] };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyCustomArrayAsIEnumerableOfCustom2(array[i]);
+                VerifyCustomArrayAsIEnumerableOfCustom2(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckCustomArrayAsIEnumerableOfInterfaceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckCustomArrayAsIEnumerableOfInterfaceTest(bool useInterpreter)
         {
             C[][] array = new C[][] { null, new C[] { null, new C(), new D(), new D(0), new D(5) }, new C[10] };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyCustomArrayAsIEnumerableOfInterface(array[i]);
+                VerifyCustomArrayAsIEnumerableOfInterface(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckCustomArrayAsIEnumerableOfObjectTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckCustomArrayAsIEnumerableOfObjectTest(bool useInterpreter)
         {
             C[][] array = new C[][] { null, new C[] { null, new C(), new D(), new D(0), new D(5) }, new C[10] };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyCustomArrayAsIEnumerableOfObject(array[i]);
+                VerifyCustomArrayAsIEnumerableOfObject(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckCustomArrayAsIListOfCustomTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckCustomArrayAsIListOfCustomTest(bool useInterpreter)
         {
             C[][] array = new C[][] { null, new C[] { null, new C(), new D(), new D(0), new D(5) }, new C[10] };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyCustomArrayAsIListOfCustom(array[i]);
+                VerifyCustomArrayAsIListOfCustom(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckCustomArrayAsIListOfCustom2Test()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckCustomArrayAsIListOfCustom2Test(bool useInterpreter)
         {
             C[][] array = new C[][] { null, new C[] { null, new C(), new D(), new D(0), new D(5) }, new C[10] };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyCustomArrayAsIListOfCustom2(array[i]);
+                VerifyCustomArrayAsIListOfCustom2(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckCustomArrayAsIListOfInterfaceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckCustomArrayAsIListOfInterfaceTest(bool useInterpreter)
         {
             C[][] array = new C[][] { null, new C[] { null, new C(), new D(), new D(0), new D(5) }, new C[10] };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyCustomArrayAsIListOfInterface(array[i]);
+                VerifyCustomArrayAsIListOfInterface(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckCustomArrayAsIListOfObjectTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckCustomArrayAsIListOfObjectTest(bool useInterpreter)
         {
             C[][] array = new C[][] { null, new C[] { null, new C(), new D(), new D(0), new D(5) }, new C[10] };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyCustomArrayAsIListOfObject(array[i]);
+                VerifyCustomArrayAsIListOfObject(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckCustomArrayAsObjectArrayTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckCustomArrayAsObjectArrayTest(bool useInterpreter)
         {
             C[][] array = new C[][] { null, new C[] { null, new C(), new D(), new D(0), new D(5) }, new C[10] };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyCustomArrayAsObjectArray(array[i]);
+                VerifyCustomArrayAsObjectArray(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckCustom2AsCustomTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckCustom2AsCustomTest(bool useInterpreter)
         {
             D[] array = new D[] { null, new D(), new D(0), new D(5) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyCustom2AsCustom(array[i]);
+                VerifyCustom2AsCustom(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckCustom2AsInterfaceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckCustom2AsInterfaceTest(bool useInterpreter)
         {
             D[] array = new D[] { null, new D(), new D(0), new D(5) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyCustom2AsInterface(array[i]);
+                VerifyCustom2AsInterface(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckCustom2AsIEquatableOfCustomTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckCustom2AsIEquatableOfCustomTest(bool useInterpreter)
         {
             D[] array = new D[] { null, new D(), new D(0), new D(5) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyCustom2AsIEquatableOfCustom(array[i]);
+                VerifyCustom2AsIEquatableOfCustom(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckCustom2AsIEquatableOfCustom2Test()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckCustom2AsIEquatableOfCustom2Test(bool useInterpreter)
         {
             D[] array = new D[] { null, new D(), new D(0), new D(5) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyCustom2AsIEquatableOfCustom2(array[i]);
+                VerifyCustom2AsIEquatableOfCustom2(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckCustom2AsObjectTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckCustom2AsObjectTest(bool useInterpreter)
         {
             D[] array = new D[] { null, new D(), new D(0), new D(5) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyCustom2AsObject(array[i]);
+                VerifyCustom2AsObject(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckCustom2ArrayAsCustomArrayTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckCustom2ArrayAsCustomArrayTest(bool useInterpreter)
         {
             D[][] array = new D[][] { null, new D[] { null, new D(), new D(0), new D(5) }, new D[10] };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyCustom2ArrayAsCustomArray(array[i]);
+                VerifyCustom2ArrayAsCustomArray(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckDelegateAsFuncOfObjectTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckDelegateAsFuncOfObjectTest(bool useInterpreter)
         {
             Delegate[] array = new Delegate[] { null, (Func<object>)delegate () { return null; }, (Func<int, int>)delegate (int i) { return i + 1; }, (Action<object>)delegate { } };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyDelegateAsFuncOfObject(array[i]);
+                VerifyDelegateAsFuncOfObject(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckDelegateAsObjectTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckDelegateAsObjectTest(bool useInterpreter)
         {
             Delegate[] array = new Delegate[] { null, (Func<object>)delegate () { return null; }, (Func<int, int>)delegate (int i) { return i + 1; }, (Action<object>)delegate { } };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyDelegateAsObject(array[i]);
+                VerifyDelegateAsObject(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckEnumAsEnumTypeTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckEnumAsEnumTypeTest(bool useInterpreter)
         {
             E[] array = new E[] { (E)0, E.A, E.B, (E)int.MaxValue, (E)int.MinValue };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyEnumAsEnumType(array[i]);
+                VerifyEnumAsEnumType(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckEnumAsObjectTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckEnumAsObjectTest(bool useInterpreter)
         {
             E[] array = new E[] { (E)0, E.A, E.B, (E)int.MaxValue, (E)int.MinValue };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyEnumAsObject(array[i]);
+                VerifyEnumAsObject(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckEnumTypeAsObjectTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckEnumTypeAsObjectTest(bool useInterpreter)
         {
             Enum[] array = new Enum[] { null, (E)0, E.A, E.B, (E)int.MaxValue, (E)int.MinValue, (El)0, El.A, El.B, (El)long.MaxValue, (El)long.MinValue };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyEnumTypeAsObject(array[i]);
+                VerifyEnumTypeAsObject(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckFuncOfObjectAsDelegateTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckFuncOfObjectAsDelegateTest(bool useInterpreter)
         {
             Func<object>[] array = new Func<object>[] { null, (Func<object>)delegate () { return null; } };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyFuncOfObjectAsDelegate(array[i]);
+                VerifyFuncOfObjectAsDelegate(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckInterfaceAsCustomTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckInterfaceAsCustomTest(bool useInterpreter)
         {
             I[] array = new I[] { null, new C(), new D(), new D(0), new D(5) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyInterfaceAsCustom(array[i]);
+                VerifyInterfaceAsCustom(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckInterfaceAsCustom2Test()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckInterfaceAsCustom2Test(bool useInterpreter)
         {
             I[] array = new I[] { null, new C(), new D(), new D(0), new D(5) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyInterfaceAsCustom2(array[i]);
+                VerifyInterfaceAsCustom2(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckInterfaceAsObjectTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckInterfaceAsObjectTest(bool useInterpreter)
         {
             I[] array = new I[] { null, new C(), new D(), new D(0), new D(5) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyInterfaceAsObject(array[i]);
+                VerifyInterfaceAsObject(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckIEnumerableOfCustomAsCustomArrayTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckIEnumerableOfCustomAsCustomArrayTest(bool useInterpreter)
         {
             IEnumerable<C>[] array = new IEnumerable<C>[] { null, new C[] { null, new C(), new D(), new D(0), new D(5) }, new C[10], new List<C>(), new List<C>(new C[] { null, new C(), new D(), new D(0), new D(5) }) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyIEnumerableOfCustomAsCustomArray(array[i]);
+                VerifyIEnumerableOfCustomAsCustomArray(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckIEnumerableOfCustomAsObjectArrayTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckIEnumerableOfCustomAsObjectArrayTest(bool useInterpreter)
         {
             IEnumerable<C>[] array = new IEnumerable<C>[] { null, new C[] { null, new C(), new D(), new D(0), new D(5) }, new C[10], new List<C>(), new List<C>(new C[] { null, new C(), new D(), new D(0), new D(5) }) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyIEnumerableOfCustomAsObjectArray(array[i]);
+                VerifyIEnumerableOfCustomAsObjectArray(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckIEnumerableOfCustomAsCustomTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckIEnumerableOfCustomAsCustomTest(bool useInterpreter)
         {
             IEnumerable<C>[] array = new IEnumerable<C>[] { null, new C[] { null, new C(), new D(), new D(0), new D(5) }, new C[10], new List<C>(), new List<C>(new C[] { null, new C(), new D(), new D(0), new D(5) }) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyIEnumerableOfCustomAsCustom(array[i]);
+                VerifyIEnumerableOfCustomAsCustom(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckIEnumerableOfCustomAsCustom2Test()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckIEnumerableOfCustomAsCustom2Test(bool useInterpreter)
         {
             IEnumerable<C>[] array = new IEnumerable<C>[] { null, new C[] { null, new C(), new D(), new D(0), new D(5) }, new C[10], new List<C>(), new List<C>(new C[] { null, new C(), new D(), new D(0), new D(5) }) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyIEnumerableOfCustomAsCustom2(array[i]);
+                VerifyIEnumerableOfCustomAsCustom2(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckIEnumerableOfCustomAsObjectTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckIEnumerableOfCustomAsObjectTest(bool useInterpreter)
         {
             IEnumerable<C>[] array = new IEnumerable<C>[] { null, new C[] { null, new C(), new D(), new D(0), new D(5) }, new C[10], new List<C>(), new List<C>(new C[] { null, new C(), new D(), new D(0), new D(5) }) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyIEnumerableOfCustomAsObject(array[i]);
+                VerifyIEnumerableOfCustomAsObject(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckIEnumerableOfCustom2AsCustomArrayTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckIEnumerableOfCustom2AsCustomArrayTest(bool useInterpreter)
         {
             IEnumerable<D>[] array = new IEnumerable<D>[] { null, new D[] { null, new D(), new D(0), new D(5) }, new D[10], new List<D>(), new List<D>(new D[] { null, new D(), new D(0), new D(5) }) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyIEnumerableOfCustom2AsCustomArray(array[i]);
+                VerifyIEnumerableOfCustom2AsCustomArray(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckIEnumerableOfCustom2AsCustomTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckIEnumerableOfCustom2AsCustomTest(bool useInterpreter)
         {
             IEnumerable<D>[] array = new IEnumerable<D>[] { null, new D[] { null, new D(), new D(0), new D(5) }, new D[10], new List<D>(), new List<D>(new D[] { null, new D(), new D(0), new D(5) }) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyIEnumerableOfCustom2AsCustom(array[i]);
+                VerifyIEnumerableOfCustom2AsCustom(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckIEnumerableOfCustom2AsCustom2Test()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckIEnumerableOfCustom2AsCustom2Test(bool useInterpreter)
         {
             IEnumerable<D>[] array = new IEnumerable<D>[] { null, new D[] { null, new D(), new D(0), new D(5) }, new D[10], new List<D>(), new List<D>(new D[] { null, new D(), new D(0), new D(5) }) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyIEnumerableOfCustom2AsCustom2(array[i]);
+                VerifyIEnumerableOfCustom2AsCustom2(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckIEnumerableOfCustom2AsObjectTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckIEnumerableOfCustom2AsObjectTest(bool useInterpreter)
         {
             IEnumerable<D>[] array = new IEnumerable<D>[] { null, new D[] { null, new D(), new D(0), new D(5) }, new D[10], new List<D>(), new List<D>(new D[] { null, new D(), new D(0), new D(5) }) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyIEnumerableOfCustom2AsObject(array[i]);
+                VerifyIEnumerableOfCustom2AsObject(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckIEnumerableOfInterfaceAsCustomArrayTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckIEnumerableOfInterfaceAsCustomArrayTest(bool useInterpreter)
         {
             IEnumerable<I>[] array = new IEnumerable<I>[] { null, new I[] { null, new C(), new D(), new D(0), new D(5) }, new I[10], new List<I>(), new List<I>(new I[] { null, new C(), new D(), new D(0), new D(5) }) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyIEnumerableOfInterfaceAsCustomArray(array[i]);
+                VerifyIEnumerableOfInterfaceAsCustomArray(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckIEnumerableOfInterfaceAsObjectArrayTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckIEnumerableOfInterfaceAsObjectArrayTest(bool useInterpreter)
         {
             IEnumerable<I>[] array = new IEnumerable<I>[] { null, new I[] { null, new C(), new D(), new D(0), new D(5) }, new I[10], new List<I>(), new List<I>(new I[] { null, new C(), new D(), new D(0), new D(5) }) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyIEnumerableOfInterfaceAsObjectArray(array[i]);
+                VerifyIEnumerableOfInterfaceAsObjectArray(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckIEnumerableOfObjectAsCustomArrayTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckIEnumerableOfObjectAsCustomArrayTest(bool useInterpreter)
         {
             IEnumerable<object>[] array = new IEnumerable<object>[] { null, new object[] { null, new object(), new C(), new D(3) }, new object[10], new List<object>(), new List<object>(new object[] { null, new object(), new C(), new D(3) }) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyIEnumerableOfObjectAsCustomArray(array[i]);
+                VerifyIEnumerableOfObjectAsCustomArray(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckIEnumerableOfObjectAsObjectArrayTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckIEnumerableOfObjectAsObjectArrayTest(bool useInterpreter)
         {
             IEnumerable<object>[] array = new IEnumerable<object>[] { null, new object[] { null, new object(), new C(), new D(3) }, new object[10], new List<object>(), new List<object>(new object[] { null, new object(), new C(), new D(3) }) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyIEnumerableOfObjectAsObjectArray(array[i]);
+                VerifyIEnumerableOfObjectAsObjectArray(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckIEnumerableOfStructAsStructArrayTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckIEnumerableOfStructAsStructArrayTest(bool useInterpreter)
         {
             IEnumerable<S>[] array = new IEnumerable<S>[] { null, new S[] { default(S), new S() }, new S[10], new List<S>(), new List<S>(new S[] { default(S), new S() }) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyIEnumerableOfStructAsStructArray(array[i]);
+                VerifyIEnumerableOfStructAsStructArray(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckIListOfCustomAsCustomArrayTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckIListOfCustomAsCustomArrayTest(bool useInterpreter)
         {
             IList<C>[] array = new IList<C>[] { null, new C[] { null, new C(), new D(), new D(0), new D(5) }, new C[10], new List<C>(), new List<C>(new C[] { null, new C(), new D(), new D(0), new D(5) }) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyIListOfCustomAsCustomArray(array[i]);
+                VerifyIListOfCustomAsCustomArray(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckIListOfCustomAsObjectArrayTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckIListOfCustomAsObjectArrayTest(bool useInterpreter)
         {
             IList<C>[] array = new IList<C>[] { null, new C[] { null, new C(), new D(), new D(0), new D(5) }, new C[10], new List<C>(), new List<C>(new C[] { null, new C(), new D(), new D(0), new D(5) }) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyIListOfCustomAsObjectArray(array[i]);
+                VerifyIListOfCustomAsObjectArray(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckIListOfCustom2AsCustomArrayTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckIListOfCustom2AsCustomArrayTest(bool useInterpreter)
         {
             IList<D>[] array = new IList<D>[] { null, new D[] { null, new D(), new D(0), new D(5) }, new D[10], new List<D>(), new List<D>(new D[] { null, new D(), new D(0), new D(5) }) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyIListOfCustom2AsCustomArray(array[i]);
+                VerifyIListOfCustom2AsCustomArray(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckIListOfInterfaceAsCustomArrayTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckIListOfInterfaceAsCustomArrayTest(bool useInterpreter)
         {
             IList<I>[] array = new IList<I>[] { null, new I[] { null, new C(), new D(), new D(0), new D(5) }, new I[10], new List<I>(), new List<I>(new I[] { null, new C(), new D(), new D(0), new D(5) }) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyIListOfInterfaceAsCustomArray(array[i]);
+                VerifyIListOfInterfaceAsCustomArray(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckIListOfInterfaceAsObjectArrayTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckIListOfInterfaceAsObjectArrayTest(bool useInterpreter)
         {
             IList<I>[] array = new IList<I>[] { null, new I[] { null, new C(), new D(), new D(0), new D(5) }, new I[10], new List<I>(), new List<I>(new I[] { null, new C(), new D(), new D(0), new D(5) }) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyIListOfInterfaceAsObjectArray(array[i]);
+                VerifyIListOfInterfaceAsObjectArray(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckIListOfObjectAsCustomArrayTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckIListOfObjectAsCustomArrayTest(bool useInterpreter)
         {
             IList<object>[] array = new IList<object>[] { null, new object[] { null, new object(), new C(), new D(3) }, new object[10], new List<object>(), new List<object>(new object[] { null, new object(), new C(), new D(3) }) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyIListOfObjectAsCustomArray(array[i]);
+                VerifyIListOfObjectAsCustomArray(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckIListOfObjectAsObjectArrayTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckIListOfObjectAsObjectArrayTest(bool useInterpreter)
         {
             IList<object>[] array = new IList<object>[] { null, new object[] { null, new object(), new C(), new D(3) }, new object[10], new List<object>(), new List<object>(new object[] { null, new object(), new C(), new D(3) }) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyIListOfObjectAsObjectArray(array[i]);
+                VerifyIListOfObjectAsObjectArray(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckIListOfStructAsStructArrayTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckIListOfStructAsStructArrayTest(bool useInterpreter)
         {
             IList<S>[] array = new IList<S>[] { null, new S[] { default(S), new S() }, new S[10], new List<S>(), new List<S>(new S[] { default(S), new S() }) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyIListOfStructAsStructArray(array[i]);
+                VerifyIListOfStructAsStructArray(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckIntAsObjectTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckIntAsObjectTest(bool useInterpreter)
         {
             int[] array = new int[] { 0, 1, -1, int.MinValue, int.MaxValue };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyIntAsObject(array[i]);
+                VerifyIntAsObject(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckIntAsValueTypeTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckIntAsValueTypeTest(bool useInterpreter)
         {
             int[] array = new int[] { 0, 1, -1, int.MinValue, int.MaxValue };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyIntAsValueType(array[i]);
+                VerifyIntAsValueType(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckObjectAsCustomTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckObjectAsCustomTest(bool useInterpreter)
         {
             object[] array = new object[] { null, new object(), new C(), new D(3) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyObjectAsCustom(array[i]);
+                VerifyObjectAsCustom(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckObjectAsCustom2Test()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckObjectAsCustom2Test(bool useInterpreter)
         {
             object[] array = new object[] { null, new object(), new C(), new D(3) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyObjectAsCustom2(array[i]);
+                VerifyObjectAsCustom2(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckObjectAsDelegateTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckObjectAsDelegateTest(bool useInterpreter)
         {
             object[] array = new object[] { null, new object(), new C(), new D(3) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyObjectAsDelegate(array[i]);
+                VerifyObjectAsDelegate(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckObjectAsEnumTypeTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckObjectAsEnumTypeTest(bool useInterpreter)
         {
             object[] array = new object[] { null, new object(), new C(), new D(3) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyObjectAsEnumType(array[i]);
+                VerifyObjectAsEnumType(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckObjectAsInterfaceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckObjectAsInterfaceTest(bool useInterpreter)
         {
             object[] array = new object[] { null, new object(), new C(), new D(3) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyObjectAsInterface(array[i]);
+                VerifyObjectAsInterface(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckObjectAsIEquatableOfCustomTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckObjectAsIEquatableOfCustomTest(bool useInterpreter)
         {
             object[] array = new object[] { null, new object(), new C(), new D(3) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyObjectAsIEquatableOfCustom(array[i]);
+                VerifyObjectAsIEquatableOfCustom(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckObjectAsIEquatableOfCustom2Test()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckObjectAsIEquatableOfCustom2Test(bool useInterpreter)
         {
             object[] array = new object[] { null, new object(), new C(), new D(3) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyObjectAsIEquatableOfCustom2(array[i]);
+                VerifyObjectAsIEquatableOfCustom2(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckObjectAsValueTypeTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckObjectAsValueTypeTest(bool useInterpreter)
         {
             object[] array = new object[] { null, new object(), new C(), new D(3) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyObjectAsValueType(array[i]);
+                VerifyObjectAsValueType(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckObjectArrayAsCustomArrayTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckObjectArrayAsCustomArrayTest(bool useInterpreter)
         {
             object[][] array = new object[][] { null, new object[] { null, new object(), new C(), new D(3) }, new object[10] };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyObjectArrayAsCustomArray(array[i]);
+                VerifyObjectArrayAsCustomArray(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckObjectArrayAsIEnumerableOfCustomTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckObjectArrayAsIEnumerableOfCustomTest(bool useInterpreter)
         {
             object[][] array = new object[][] { null, new object[] { null, new object(), new C(), new D(3) }, new object[10] };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyObjectArrayAsIEnumerableOfCustom(array[i]);
+                VerifyObjectArrayAsIEnumerableOfCustom(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckObjectArrayAsIEnumerableOfInterfaceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckObjectArrayAsIEnumerableOfInterfaceTest(bool useInterpreter)
         {
             object[][] array = new object[][] { null, new object[] { null, new object(), new C(), new D(3) }, new object[10] };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyObjectArrayAsIEnumerableOfInterface(array[i]);
+                VerifyObjectArrayAsIEnumerableOfInterface(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckObjectArrayAsIEnumerableOfObjectTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckObjectArrayAsIEnumerableOfObjectTest(bool useInterpreter)
         {
             object[][] array = new object[][] { null, new object[] { null, new object(), new C(), new D(3) }, new object[10] };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyObjectArrayAsIEnumerableOfObject(array[i]);
+                VerifyObjectArrayAsIEnumerableOfObject(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckObjectArrayAsIListOfCustomTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckObjectArrayAsIListOfCustomTest(bool useInterpreter)
         {
             object[][] array = new object[][] { null, new object[] { null, new object(), new C(), new D(3) }, new object[10] };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyObjectArrayAsIListOfCustom(array[i]);
+                VerifyObjectArrayAsIListOfCustom(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckObjectArrayAsIListOfInterfaceTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckObjectArrayAsIListOfInterfaceTest(bool useInterpreter)
         {
             object[][] array = new object[][] { null, new object[] { null, new object(), new C(), new D(3) }, new object[10] };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyObjectArrayAsIListOfInterface(array[i]);
+                VerifyObjectArrayAsIListOfInterface(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckObjectArrayAsIListOfObjectTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckObjectArrayAsIListOfObjectTest(bool useInterpreter)
         {
             object[][] array = new object[][] { null, new object[] { null, new object(), new C(), new D(3) }, new object[10] };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyObjectArrayAsIListOfObject(array[i]);
+                VerifyObjectArrayAsIListOfObject(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructAsIEquatableOfStructTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructAsIEquatableOfStructTest(bool useInterpreter)
         {
             S[] array = new S[] { default(S), new S() };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyStructAsIEquatableOfStruct(array[i]);
+                VerifyStructAsIEquatableOfStruct(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructAsObjectTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructAsObjectTest(bool useInterpreter)
         {
             S[] array = new S[] { default(S), new S() };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyStructAsObject(array[i]);
+                VerifyStructAsObject(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructAsValueTypeTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructAsValueTypeTest(bool useInterpreter)
         {
             S[] array = new S[] { default(S), new S() };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyStructAsValueType(array[i]);
+                VerifyStructAsValueType(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructArrayAsIEnumerableOfStructTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructArrayAsIEnumerableOfStructTest(bool useInterpreter)
         {
             S[][] array = new S[][] { null, new S[] { default(S), new S() }, new S[10] };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyStructArrayAsIEnumerableOfStruct(array[i]);
+                VerifyStructArrayAsIEnumerableOfStruct(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructArrayAsIListOfStructTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructArrayAsIListOfStructTest(bool useInterpreter)
         {
             S[][] array = new S[][] { null, new S[] { default(S), new S() }, new S[10] };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyStructArrayAsIListOfStruct(array[i]);
+                VerifyStructArrayAsIListOfStruct(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckValueTypeAsObjectTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckValueTypeAsObjectTest(bool useInterpreter)
         {
             ValueType[] array = new ValueType[] { null, default(S), new Scs(null, new S()), E.A, El.B };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyValueTypeAsObject(array[i]);
+                VerifyValueTypeAsObject(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckGenericAsObjectCustomTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckGenericAsObjectCustomTest(bool useInterpreter)
         {
-            CheckGenericAsObjectHelper<C>();
+            CheckGenericAsObjectHelper<C>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckGenericAsObjectEnumTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckGenericAsObjectEnumTest(bool useInterpreter)
         {
-            CheckGenericAsObjectHelper<E>();
+            CheckGenericAsObjectHelper<E>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckGenericAsObjectObjectTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckGenericAsObjectObjectTest(bool useInterpreter)
         {
-            CheckGenericAsObjectHelper<object>();
+            CheckGenericAsObjectHelper<object>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckGenericAsObjectStructTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckGenericAsObjectStructTest(bool useInterpreter)
         {
-            CheckGenericAsObjectHelper<S>();
+            CheckGenericAsObjectHelper<S>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckGenericAsObjectStructWithStringAndValueTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckGenericAsObjectStructWithStringAndValueTest(bool useInterpreter)
         {
-            CheckGenericAsObjectHelper<Scs>();
+            CheckGenericAsObjectHelper<Scs>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckGenericWithClassRestrictionAsCustomTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckGenericWithClassRestrictionAsCustomTest(bool useInterpreter)
         {
-            CheckGenericWithClassRestrictionAsObjectHelper<C>();
+            CheckGenericWithClassRestrictionAsObjectHelper<C>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckGenericWithClassRestrictionAsObjectTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckGenericWithClassRestrictionAsObjectTest(bool useInterpreter)
         {
-            CheckGenericWithClassRestrictionAsObjectHelper<object>();
+            CheckGenericWithClassRestrictionAsObjectHelper<object>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckGenericWithStructRestrictionAsEnumTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckGenericWithStructRestrictionAsEnumTest(bool useInterpreter)
         {
-            CheckGenericWithStructRestrictionAsObjectHelper<E>();
+            CheckGenericWithStructRestrictionAsObjectHelper<E>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckGenericWithStructRestrictionAsStructTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckGenericWithStructRestrictionAsStructTest(bool useInterpreter)
         {
-            CheckGenericWithStructRestrictionAsObjectHelper<S>();
+            CheckGenericWithStructRestrictionAsObjectHelper<S>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckGenericWithStructRestrictionAsStructWithStringAndValueTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckGenericWithStructRestrictionAsStructWithStringAndValueTest(bool useInterpreter)
         {
-            CheckGenericWithStructRestrictionAsObjectHelper<Scs>();
+            CheckGenericWithStructRestrictionAsObjectHelper<Scs>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckGenericWithStructRestrictionAsValueTypeAsEnumTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckGenericWithStructRestrictionAsValueTypeAsEnumTest(bool useInterpreter)
         {
-            CheckGenericWithStructRestrictionAsValueTypeHelper<E>();
+            CheckGenericWithStructRestrictionAsValueTypeHelper<E>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckGenericWithStructRestrictionAsValueTypeAsStructTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckGenericWithStructRestrictionAsValueTypeAsStructTest(bool useInterpreter)
         {
-            CheckGenericWithStructRestrictionAsValueTypeHelper<S>();
+            CheckGenericWithStructRestrictionAsValueTypeHelper<S>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckGenericWithStructRestrictionAsValueTypeAsStructWithStringAndValueTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckGenericWithStructRestrictionAsValueTypeAsStructWithStringAndValueTest(bool useInterpreter)
         {
-            CheckGenericWithStructRestrictionAsValueTypeHelper<Scs>();
+            CheckGenericWithStructRestrictionAsValueTypeHelper<Scs>(useInterpreter);
         }
 
         #endregion
 
         #region Generic helpers
 
-        private static void CheckGenericAsObjectHelper<T>()
+        private static void CheckGenericAsObjectHelper<T>(bool useInterpreter)
         {
             T[] array = new T[] { default(T) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyGenericAsObject<T>(array[i]);
+                VerifyGenericAsObject<T>(array[i], useInterpreter);
             }
         }
 
-        private static void CheckGenericWithClassRestrictionAsObjectHelper<Tc>() where Tc : class
+        private static void CheckGenericWithClassRestrictionAsObjectHelper<Tc>(bool useInterpreter) where Tc : class
         {
             Tc[] array = new Tc[] { null, default(Tc) };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyGenericWithClassRestrictionAsObject<Tc>(array[i]);
+                VerifyGenericWithClassRestrictionAsObject<Tc>(array[i], useInterpreter);
             }
         }
 
-        private static void CheckGenericWithStructRestrictionAsObjectHelper<Ts>() where Ts : struct
+        private static void CheckGenericWithStructRestrictionAsObjectHelper<Ts>(bool useInterpreter) where Ts : struct
         {
             Ts[] array = new Ts[] { default(Ts), new Ts() };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyGenericWithStructRestrictionAsObject<Ts>(array[i]);
+                VerifyGenericWithStructRestrictionAsObject<Ts>(array[i], useInterpreter);
             }
         }
 
-        private static void CheckGenericWithStructRestrictionAsValueTypeHelper<Ts>() where Ts : struct
+        private static void CheckGenericWithStructRestrictionAsValueTypeHelper<Ts>(bool useInterpreter) where Ts : struct
         {
             Ts[] array = new Ts[] { default(Ts), new Ts() };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyGenericWithStructRestrictionAsValueType<Ts>(array[i]);
+                VerifyGenericWithStructRestrictionAsValueType<Ts>(array[i], useInterpreter);
             }
         }
 
@@ -884,3559 +884,875 @@ namespace System.Linq.Expressions.Tests
 
         #region Test verifiers
 
-        private static void VerifyCustomAsCustom2(C value)
+        private static void VerifyCustomAsCustom2(C value, bool useInterpreter)
         {
             Expression<Func<D>> e =
                 Expression.Lambda<Func<D>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(C)), typeof(D)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<D> f = e.Compile();
+            Func<D> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            D etResult = default(D);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            D csResult = default(D);
-            Exception csException = null;
-            try
-            {
-                csResult = value as D;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as D, f());
         }
 
-        private static void VerifyCustomAsInterface(C value)
+        private static void VerifyCustomAsInterface(C value, bool useInterpreter)
         {
             Expression<Func<I>> e =
                 Expression.Lambda<Func<I>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(C)), typeof(I)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<I> f = e.Compile();
+            Func<I> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            I etResult = default(I);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            I csResult = default(I);
-            Exception csException = null;
-            try
-            {
-                csResult = value as I;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as I, f());
         }
 
-        private static void VerifyCustomAsIEquatableOfCustom(C value)
+        private static void VerifyCustomAsIEquatableOfCustom(C value, bool useInterpreter)
         {
             Expression<Func<IEquatable<C>>> e =
                 Expression.Lambda<Func<IEquatable<C>>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(C)), typeof(IEquatable<C>)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<IEquatable<C>> f = e.Compile();
+            Func<IEquatable<C>> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            IEquatable<C> etResult = default(IEquatable<C>);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            IEquatable<C> csResult = default(IEquatable<C>);
-            Exception csException = null;
-            try
-            {
-                csResult = value as IEquatable<C>;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as IEquatable<C>, f());
         }
 
-        private static void VerifyCustomAsIEquatableOfCustom2(C value)
+        private static void VerifyCustomAsIEquatableOfCustom2(C value, bool useInterpreter)
         {
             Expression<Func<IEquatable<D>>> e =
                 Expression.Lambda<Func<IEquatable<D>>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(C)), typeof(IEquatable<D>)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<IEquatable<D>> f = e.Compile();
+            Func<IEquatable<D>> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            IEquatable<D> etResult = default(IEquatable<D>);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            IEquatable<D> csResult = default(IEquatable<D>);
-            Exception csException = null;
-            try
-            {
-                csResult = value as IEquatable<D>;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as IEquatable<D>, f());
         }
 
-        private static void VerifyCustomAsObject(C value)
+        private static void VerifyCustomAsObject(C value, bool useInterpreter)
         {
             Expression<Func<object>> e =
                 Expression.Lambda<Func<object>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(C)), typeof(object)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<object> f = e.Compile();
+            Func<object> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            object etResult = default(object);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            object csResult = default(object);
-            Exception csException = null;
-            try
-            {
-                csResult = value as object;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as object, f());
         }
 
-        private static void VerifyCustomArrayAsCustom2Array(C[] value)
+        private static void VerifyCustomArrayAsCustom2Array(C[] value, bool useInterpreter)
         {
             Expression<Func<D[]>> e =
                 Expression.Lambda<Func<D[]>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(C[])), typeof(D[])),
                     Enumerable.Empty<ParameterExpression>());
-            Func<D[]> f = e.Compile();
+            Func<D[]> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            D[] etResult = default(D[]);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            D[] csResult = default(D[]);
-            Exception csException = null;
-            try
-            {
-                csResult = value as D[];
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as D[], f());
         }
 
-        private static void VerifyCustomArrayAsIEnumerableOfCustom(C[] value)
+        private static void VerifyCustomArrayAsIEnumerableOfCustom(C[] value, bool useInterpreter)
         {
             Expression<Func<IEnumerable<C>>> e =
                 Expression.Lambda<Func<IEnumerable<C>>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(C[])), typeof(IEnumerable<C>)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<IEnumerable<C>> f = e.Compile();
+            Func<IEnumerable<C>> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            IEnumerable<C> etResult = default(IEnumerable<C>);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            IEnumerable<C> csResult = default(IEnumerable<C>);
-            Exception csException = null;
-            try
-            {
-                csResult = value as IEnumerable<C>;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as IEnumerable<C>, f());
         }
 
-        private static void VerifyCustomArrayAsIEnumerableOfCustom2(C[] value)
+        private static void VerifyCustomArrayAsIEnumerableOfCustom2(C[] value, bool useInterpreter)
         {
             Expression<Func<IEnumerable<D>>> e =
                 Expression.Lambda<Func<IEnumerable<D>>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(C[])), typeof(IEnumerable<D>)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<IEnumerable<D>> f = e.Compile();
+            Func<IEnumerable<D>> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            IEnumerable<D> etResult = default(IEnumerable<D>);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            IEnumerable<D> csResult = default(IEnumerable<D>);
-            Exception csException = null;
-            try
-            {
-                csResult = value as IEnumerable<D>;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as IEnumerable<D>, f());
         }
 
-        private static void VerifyCustomArrayAsIEnumerableOfInterface(C[] value)
+        private static void VerifyCustomArrayAsIEnumerableOfInterface(C[] value, bool useInterpreter)
         {
             Expression<Func<IEnumerable<I>>> e =
                 Expression.Lambda<Func<IEnumerable<I>>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(C[])), typeof(IEnumerable<I>)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<IEnumerable<I>> f = e.Compile();
+            Func<IEnumerable<I>> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            IEnumerable<I> etResult = default(IEnumerable<I>);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            IEnumerable<I> csResult = default(IEnumerable<I>);
-            Exception csException = null;
-            try
-            {
-                csResult = value as IEnumerable<I>;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as IEnumerable<I>, f());
         }
 
-        private static void VerifyCustomArrayAsIEnumerableOfObject(C[] value)
+        private static void VerifyCustomArrayAsIEnumerableOfObject(C[] value, bool useInterpreter)
         {
             Expression<Func<IEnumerable<object>>> e =
                 Expression.Lambda<Func<IEnumerable<object>>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(C[])), typeof(IEnumerable<object>)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<IEnumerable<object>> f = e.Compile();
+            Func<IEnumerable<object>> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            IEnumerable<object> etResult = default(IEnumerable<object>);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            IEnumerable<object> csResult = default(IEnumerable<object>);
-            Exception csException = null;
-            try
-            {
-                csResult = value as IEnumerable<object>;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as IEnumerable<object>, f());
         }
 
-        private static void VerifyCustomArrayAsIListOfCustom(C[] value)
+        private static void VerifyCustomArrayAsIListOfCustom(C[] value, bool useInterpreter)
         {
             Expression<Func<IList<C>>> e =
                 Expression.Lambda<Func<IList<C>>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(C[])), typeof(IList<C>)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<IList<C>> f = e.Compile();
+            Func<IList<C>> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            IList<C> etResult = default(IList<C>);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            IList<C> csResult = default(IList<C>);
-            Exception csException = null;
-            try
-            {
-                csResult = value as IList<C>;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as IList<C>, f());
         }
 
-        private static void VerifyCustomArrayAsIListOfCustom2(C[] value)
+        private static void VerifyCustomArrayAsIListOfCustom2(C[] value, bool useInterpreter)
         {
             Expression<Func<IList<D>>> e =
                 Expression.Lambda<Func<IList<D>>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(C[])), typeof(IList<D>)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<IList<D>> f = e.Compile();
+            Func<IList<D>> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            IList<D> etResult = default(IList<D>);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
+            Assert.Equal(value as IList<D>, f());
 
-            // compute the value with regular IL
-            IList<D> csResult = default(IList<D>);
-            Exception csException = null;
-            try
-            {
-                csResult = value as IList<D>;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
         }
 
-        private static void VerifyCustomArrayAsIListOfInterface(C[] value)
+        private static void VerifyCustomArrayAsIListOfInterface(C[] value, bool useInterpreter)
         {
             Expression<Func<IList<I>>> e =
                 Expression.Lambda<Func<IList<I>>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(C[])), typeof(IList<I>)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<IList<I>> f = e.Compile();
+            Func<IList<I>> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            IList<I> etResult = default(IList<I>);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            IList<I> csResult = default(IList<I>);
-            Exception csException = null;
-            try
-            {
-                csResult = value as IList<I>;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as IList<I>, f());
         }
 
-        private static void VerifyCustomArrayAsIListOfObject(C[] value)
+        private static void VerifyCustomArrayAsIListOfObject(C[] value, bool useInterpreter)
         {
             Expression<Func<IList<object>>> e =
                 Expression.Lambda<Func<IList<object>>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(C[])), typeof(IList<object>)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<IList<object>> f = e.Compile();
+            Func<IList<object>> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            IList<object> etResult = default(IList<object>);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            IList<object> csResult = default(IList<object>);
-            Exception csException = null;
-            try
-            {
-                csResult = value as IList<object>;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as IList<object>, f());
         }
 
-        private static void VerifyCustomArrayAsObjectArray(C[] value)
+        private static void VerifyCustomArrayAsObjectArray(C[] value, bool useInterpreter)
         {
             Expression<Func<object[]>> e =
                 Expression.Lambda<Func<object[]>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(C[])), typeof(object[])),
                     Enumerable.Empty<ParameterExpression>());
-            Func<object[]> f = e.Compile();
+            Func<object[]> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            object[] etResult = default(object[]);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            object[] csResult = default(object[]);
-            Exception csException = null;
-            try
-            {
-                csResult = value as object[];
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as object[], f());
         }
 
-        private static void VerifyCustom2AsCustom(D value)
+        private static void VerifyCustom2AsCustom(D value, bool useInterpreter)
         {
             Expression<Func<C>> e =
                 Expression.Lambda<Func<C>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(D)), typeof(C)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<C> f = e.Compile();
+            Func<C> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            C etResult = default(C);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
+            Assert.Equal(value as C, f());
 
-            // compute the value with regular IL
-            C csResult = default(C);
-            Exception csException = null;
-            try
-            {
-                csResult = value as C;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
         }
 
-        private static void VerifyCustom2AsInterface(D value)
+        private static void VerifyCustom2AsInterface(D value, bool useInterpreter)
         {
             Expression<Func<I>> e =
                 Expression.Lambda<Func<I>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(D)), typeof(I)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<I> f = e.Compile();
+            Func<I> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            I etResult = default(I);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            I csResult = default(I);
-            Exception csException = null;
-            try
-            {
-                csResult = value as I;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as I, f());
         }
 
-        private static void VerifyCustom2AsIEquatableOfCustom(D value)
+        private static void VerifyCustom2AsIEquatableOfCustom(D value, bool useInterpreter)
         {
             Expression<Func<IEquatable<C>>> e =
                 Expression.Lambda<Func<IEquatable<C>>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(D)), typeof(IEquatable<C>)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<IEquatable<C>> f = e.Compile();
+            Func<IEquatable<C>> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            IEquatable<C> etResult = default(IEquatable<C>);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            IEquatable<C> csResult = default(IEquatable<C>);
-            Exception csException = null;
-            try
-            {
-                csResult = value as IEquatable<C>;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as IEquatable<C>, f());
         }
 
-        private static void VerifyCustom2AsIEquatableOfCustom2(D value)
+        private static void VerifyCustom2AsIEquatableOfCustom2(D value, bool useInterpreter)
         {
             Expression<Func<IEquatable<D>>> e =
                 Expression.Lambda<Func<IEquatable<D>>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(D)), typeof(IEquatable<D>)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<IEquatable<D>> f = e.Compile();
+            Func<IEquatable<D>> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            IEquatable<D> etResult = default(IEquatable<D>);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            IEquatable<D> csResult = default(IEquatable<D>);
-            Exception csException = null;
-            try
-            {
-                csResult = value as IEquatable<D>;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as IEquatable<D>, f());
         }
 
-        private static void VerifyCustom2AsObject(D value)
+        private static void VerifyCustom2AsObject(D value, bool useInterpreter)
         {
             Expression<Func<object>> e =
                 Expression.Lambda<Func<object>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(D)), typeof(object)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<object> f = e.Compile();
+            Func<object> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            object etResult = default(object);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            object csResult = default(object);
-            Exception csException = null;
-            try
-            {
-                csResult = value as object;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as object, f());
         }
 
-        private static void VerifyCustom2ArrayAsCustomArray(D[] value)
+        private static void VerifyCustom2ArrayAsCustomArray(D[] value, bool useInterpreter)
         {
             Expression<Func<C[]>> e =
                 Expression.Lambda<Func<C[]>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(D[])), typeof(C[])),
                     Enumerable.Empty<ParameterExpression>());
-            Func<C[]> f = e.Compile();
+            Func<C[]> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            C[] etResult = default(C[]);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            C[] csResult = default(C[]);
-            Exception csException = null;
-            try
-            {
-                csResult = value as C[];
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as C[], f());
         }
 
-        private static void VerifyDelegateAsFuncOfObject(Delegate value)
+        private static void VerifyDelegateAsFuncOfObject(Delegate value, bool useInterpreter)
         {
             Expression<Func<Func<object>>> e =
                 Expression.Lambda<Func<Func<object>>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(Delegate)), typeof(Func<object>)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Func<object>> f = e.Compile();
+            Func<Func<object>> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            Func<object> etResult = default(Func<object>);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            Func<object> csResult = default(Func<object>);
-            Exception csException = null;
-            try
-            {
-                csResult = value as Func<object>;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as Func<object>, f());
         }
 
-        private static void VerifyDelegateAsObject(Delegate value)
+        private static void VerifyDelegateAsObject(Delegate value, bool useInterpreter)
         {
             Expression<Func<object>> e =
                 Expression.Lambda<Func<object>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(Delegate)), typeof(object)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<object> f = e.Compile();
+            Func<object> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            object etResult = default(object);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            object csResult = default(object);
-            Exception csException = null;
-            try
-            {
-                csResult = value as object;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as object, f());
         }
 
-        private static void VerifyEnumAsEnumType(E value)
+        private static void VerifyEnumAsEnumType(E value, bool useInterpreter)
         {
             Expression<Func<Enum>> e =
                 Expression.Lambda<Func<Enum>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(E)), typeof(Enum)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Enum> f = e.Compile();
+            Func<Enum> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            Enum etResult = default(Enum);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            Enum csResult = default(Enum);
-            Exception csException = null;
-            try
-            {
-                csResult = value as Enum;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as Enum, f());
         }
 
-        private static void VerifyEnumAsObject(E value)
+        private static void VerifyEnumAsObject(E value, bool useInterpreter)
         {
             Expression<Func<object>> e =
                 Expression.Lambda<Func<object>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(E)), typeof(object)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<object> f = e.Compile();
+            Func<object> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            object etResult = default(object);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            object csResult = default(object);
-            Exception csException = null;
-            try
-            {
-                csResult = value as object;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as object, f());
         }
 
-        private static void VerifyEnumTypeAsObject(Enum value)
+        private static void VerifyEnumTypeAsObject(Enum value, bool useInterpreter)
         {
             Expression<Func<object>> e =
                 Expression.Lambda<Func<object>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(Enum)), typeof(object)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<object> f = e.Compile();
+            Func<object> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            object etResult = default(object);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            object csResult = default(object);
-            Exception csException = null;
-            try
-            {
-                csResult = value as object;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as object, f());
         }
 
-        private static void VerifyFuncOfObjectAsDelegate(Func<object> value)
+        private static void VerifyFuncOfObjectAsDelegate(Func<object> value, bool useInterpreter)
         {
             Expression<Func<Delegate>> e =
                 Expression.Lambda<Func<Delegate>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(Func<object>)), typeof(Delegate)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Delegate> f = e.Compile();
+            Func<Delegate> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            Delegate etResult = default(Delegate);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            Delegate csResult = default(Delegate);
-            Exception csException = null;
-            try
-            {
-                csResult = value as Delegate;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as Delegate, f());
         }
 
-        private static void VerifyInterfaceAsCustom(I value)
+        private static void VerifyInterfaceAsCustom(I value, bool useInterpreter)
         {
             Expression<Func<C>> e =
                 Expression.Lambda<Func<C>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(I)), typeof(C)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<C> f = e.Compile();
+            Func<C> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            C etResult = default(C);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            C csResult = default(C);
-            Exception csException = null;
-            try
-            {
-                csResult = value as C;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as C, f());
         }
 
-        private static void VerifyInterfaceAsCustom2(I value)
+        private static void VerifyInterfaceAsCustom2(I value, bool useInterpreter)
         {
             Expression<Func<D>> e =
                 Expression.Lambda<Func<D>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(I)), typeof(D)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<D> f = e.Compile();
+            Func<D> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            D etResult = default(D);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            D csResult = default(D);
-            Exception csException = null;
-            try
-            {
-                csResult = value as D;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as D, f());
         }
 
-        private static void VerifyInterfaceAsObject(I value)
+        private static void VerifyInterfaceAsObject(I value, bool useInterpreter)
         {
             Expression<Func<object>> e =
                 Expression.Lambda<Func<object>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(I)), typeof(object)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<object> f = e.Compile();
+            Func<object> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            object etResult = default(object);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            object csResult = default(object);
-            Exception csException = null;
-            try
-            {
-                csResult = value as object;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as object, f());
         }
 
-        private static void VerifyIEnumerableOfCustomAsCustomArray(IEnumerable<C> value)
+        private static void VerifyIEnumerableOfCustomAsCustomArray(IEnumerable<C> value, bool useInterpreter)
         {
             Expression<Func<C[]>> e =
                 Expression.Lambda<Func<C[]>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(IEnumerable<C>)), typeof(C[])),
                     Enumerable.Empty<ParameterExpression>());
-            Func<C[]> f = e.Compile();
+            Func<C[]> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            C[] etResult = default(C[]);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            C[] csResult = default(C[]);
-            Exception csException = null;
-            try
-            {
-                csResult = value as C[];
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as C[], f());
         }
 
-        private static void VerifyIEnumerableOfCustomAsObjectArray(IEnumerable<C> value)
+        private static void VerifyIEnumerableOfCustomAsObjectArray(IEnumerable<C> value, bool useInterpreter)
         {
             Expression<Func<object[]>> e =
                 Expression.Lambda<Func<object[]>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(IEnumerable<C>)), typeof(object[])),
                     Enumerable.Empty<ParameterExpression>());
-            Func<object[]> f = e.Compile();
+            Func<object[]> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            object[] etResult = default(object[]);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            object[] csResult = default(object[]);
-            Exception csException = null;
-            try
-            {
-                csResult = value as object[];
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as object[], f());
         }
 
-        private static void VerifyIEnumerableOfCustomAsCustom(IEnumerable<C> value)
+        private static void VerifyIEnumerableOfCustomAsCustom(IEnumerable<C> value, bool useInterpreter)
         {
             Expression<Func<C>> e =
                 Expression.Lambda<Func<C>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(IEnumerable<C>)), typeof(C)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<C> f = e.Compile();
+            Func<C> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            C etResult = default(C);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            C csResult = default(C);
-            Exception csException = null;
-            try
-            {
-                csResult = value as C;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as C, f());
         }
 
-        private static void VerifyIEnumerableOfCustomAsCustom2(IEnumerable<C> value)
+        private static void VerifyIEnumerableOfCustomAsCustom2(IEnumerable<C> value, bool useInterpreter)
         {
             Expression<Func<D>> e =
                 Expression.Lambda<Func<D>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(IEnumerable<C>)), typeof(D)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<D> f = e.Compile();
+            Func<D> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            D etResult = default(D);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            D csResult = default(D);
-            Exception csException = null;
-            try
-            {
-                csResult = value as D;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as D, f());
         }
 
-        private static void VerifyIEnumerableOfCustomAsObject(IEnumerable<C> value)
+        private static void VerifyIEnumerableOfCustomAsObject(IEnumerable<C> value, bool useInterpreter)
         {
             Expression<Func<object>> e =
                 Expression.Lambda<Func<object>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(IEnumerable<C>)), typeof(object)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<object> f = e.Compile();
+            Func<object> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            object etResult = default(object);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            object csResult = default(object);
-            Exception csException = null;
-            try
-            {
-                csResult = value as object;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as object, f());
         }
 
-        private static void VerifyIEnumerableOfCustom2AsCustomArray(IEnumerable<D> value)
+        private static void VerifyIEnumerableOfCustom2AsCustomArray(IEnumerable<D> value, bool useInterpreter)
         {
             Expression<Func<C[]>> e =
                 Expression.Lambda<Func<C[]>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(IEnumerable<D>)), typeof(C[])),
                     Enumerable.Empty<ParameterExpression>());
-            Func<C[]> f = e.Compile();
+            Func<C[]> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            C[] etResult = default(C[]);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            C[] csResult = default(C[]);
-            Exception csException = null;
-            try
-            {
-                csResult = value as C[];
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as C[], f());
         }
 
-        private static void VerifyIEnumerableOfCustom2AsCustom(IEnumerable<D> value)
+        private static void VerifyIEnumerableOfCustom2AsCustom(IEnumerable<D> value, bool useInterpreter)
         {
             Expression<Func<C>> e =
                 Expression.Lambda<Func<C>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(IEnumerable<D>)), typeof(C)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<C> f = e.Compile();
+            Func<C> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            C etResult = default(C);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            C csResult = default(C);
-            Exception csException = null;
-            try
-            {
-                csResult = value as C;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as C, f());
         }
 
-        private static void VerifyIEnumerableOfCustom2AsCustom2(IEnumerable<D> value)
+        private static void VerifyIEnumerableOfCustom2AsCustom2(IEnumerable<D> value, bool useInterpreter)
         {
             Expression<Func<D>> e =
                 Expression.Lambda<Func<D>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(IEnumerable<D>)), typeof(D)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<D> f = e.Compile();
+            Func<D> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            D etResult = default(D);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            D csResult = default(D);
-            Exception csException = null;
-            try
-            {
-                csResult = value as D;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as D, f());
         }
 
-        private static void VerifyIEnumerableOfCustom2AsObject(IEnumerable<D> value)
+        private static void VerifyIEnumerableOfCustom2AsObject(IEnumerable<D> value, bool useInterpreter)
         {
             Expression<Func<object>> e =
                 Expression.Lambda<Func<object>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(IEnumerable<D>)), typeof(object)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<object> f = e.Compile();
+            Func<object> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            object etResult = default(object);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            object csResult = default(object);
-            Exception csException = null;
-            try
-            {
-                csResult = value as object;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as object, f());
         }
 
-        private static void VerifyIEnumerableOfInterfaceAsCustomArray(IEnumerable<I> value)
+        private static void VerifyIEnumerableOfInterfaceAsCustomArray(IEnumerable<I> value, bool useInterpreter)
         {
             Expression<Func<C[]>> e =
                 Expression.Lambda<Func<C[]>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(IEnumerable<I>)), typeof(C[])),
                     Enumerable.Empty<ParameterExpression>());
-            Func<C[]> f = e.Compile();
+            Func<C[]> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            C[] etResult = default(C[]);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            C[] csResult = default(C[]);
-            Exception csException = null;
-            try
-            {
-                csResult = value as C[];
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as C[], f());
         }
 
-        private static void VerifyIEnumerableOfInterfaceAsObjectArray(IEnumerable<I> value)
+        private static void VerifyIEnumerableOfInterfaceAsObjectArray(IEnumerable<I> value, bool useInterpreter)
         {
             Expression<Func<object[]>> e =
                 Expression.Lambda<Func<object[]>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(IEnumerable<I>)), typeof(object[])),
                     Enumerable.Empty<ParameterExpression>());
-            Func<object[]> f = e.Compile();
+            Func<object[]> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            object[] etResult = default(object[]);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            object[] csResult = default(object[]);
-            Exception csException = null;
-            try
-            {
-                csResult = value as object[];
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as object[], f());
         }
 
-        private static void VerifyIEnumerableOfObjectAsCustomArray(IEnumerable<object> value)
+        private static void VerifyIEnumerableOfObjectAsCustomArray(IEnumerable<object> value, bool useInterpreter)
         {
             Expression<Func<C[]>> e =
                 Expression.Lambda<Func<C[]>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(IEnumerable<object>)), typeof(C[])),
                     Enumerable.Empty<ParameterExpression>());
-            Func<C[]> f = e.Compile();
+            Func<C[]> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            C[] etResult = default(C[]);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            C[] csResult = default(C[]);
-            Exception csException = null;
-            try
-            {
-                csResult = value as C[];
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as C[], f());
         }
 
-        private static void VerifyIEnumerableOfObjectAsObjectArray(IEnumerable<object> value)
+        private static void VerifyIEnumerableOfObjectAsObjectArray(IEnumerable<object> value, bool useInterpreter)
         {
             Expression<Func<object[]>> e =
                 Expression.Lambda<Func<object[]>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(IEnumerable<object>)), typeof(object[])),
                     Enumerable.Empty<ParameterExpression>());
-            Func<object[]> f = e.Compile();
+            Func<object[]> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            object[] etResult = default(object[]);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            object[] csResult = default(object[]);
-            Exception csException = null;
-            try
-            {
-                csResult = value as object[];
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as object[], f());
         }
 
-        private static void VerifyIEnumerableOfStructAsStructArray(IEnumerable<S> value)
+        private static void VerifyIEnumerableOfStructAsStructArray(IEnumerable<S> value, bool useInterpreter)
         {
             Expression<Func<S[]>> e =
                 Expression.Lambda<Func<S[]>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(IEnumerable<S>)), typeof(S[])),
                     Enumerable.Empty<ParameterExpression>());
-            Func<S[]> f = e.Compile();
+            Func<S[]> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            S[] etResult = default(S[]);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            S[] csResult = default(S[]);
-            Exception csException = null;
-            try
-            {
-                csResult = value as S[];
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as S[], f());
         }
 
-        private static void VerifyIListOfCustomAsCustomArray(IList<C> value)
+        private static void VerifyIListOfCustomAsCustomArray(IList<C> value, bool useInterpreter)
         {
             Expression<Func<C[]>> e =
                 Expression.Lambda<Func<C[]>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(IList<C>)), typeof(C[])),
                     Enumerable.Empty<ParameterExpression>());
-            Func<C[]> f = e.Compile();
+            Func<C[]> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            C[] etResult = default(C[]);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            C[] csResult = default(C[]);
-            Exception csException = null;
-            try
-            {
-                csResult = value as C[];
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as C[], f());
         }
 
-        private static void VerifyIListOfCustomAsObjectArray(IList<C> value)
+        private static void VerifyIListOfCustomAsObjectArray(IList<C> value, bool useInterpreter)
         {
             Expression<Func<object[]>> e =
                 Expression.Lambda<Func<object[]>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(IList<C>)), typeof(object[])),
                     Enumerable.Empty<ParameterExpression>());
-            Func<object[]> f = e.Compile();
+            Func<object[]> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            object[] etResult = default(object[]);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            object[] csResult = default(object[]);
-            Exception csException = null;
-            try
-            {
-                csResult = value as object[];
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as object[], f());
         }
 
-        private static void VerifyIListOfCustom2AsCustomArray(IList<D> value)
+        private static void VerifyIListOfCustom2AsCustomArray(IList<D> value, bool useInterpreter)
         {
             Expression<Func<C[]>> e =
                 Expression.Lambda<Func<C[]>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(IList<D>)), typeof(C[])),
                     Enumerable.Empty<ParameterExpression>());
-            Func<C[]> f = e.Compile();
+            Func<C[]> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            C[] etResult = default(C[]);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            C[] csResult = default(C[]);
-            Exception csException = null;
-            try
-            {
-                csResult = value as C[];
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as C[], f());
         }
 
-        private static void VerifyIListOfInterfaceAsCustomArray(IList<I> value)
+        private static void VerifyIListOfInterfaceAsCustomArray(IList<I> value, bool useInterpreter)
         {
             Expression<Func<C[]>> e =
                 Expression.Lambda<Func<C[]>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(IList<I>)), typeof(C[])),
                     Enumerable.Empty<ParameterExpression>());
-            Func<C[]> f = e.Compile();
+            Func<C[]> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            C[] etResult = default(C[]);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            C[] csResult = default(C[]);
-            Exception csException = null;
-            try
-            {
-                csResult = value as C[];
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as C[], f());
         }
 
-        private static void VerifyIListOfInterfaceAsObjectArray(IList<I> value)
+        private static void VerifyIListOfInterfaceAsObjectArray(IList<I> value, bool useInterpreter)
         {
             Expression<Func<object[]>> e =
                 Expression.Lambda<Func<object[]>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(IList<I>)), typeof(object[])),
                     Enumerable.Empty<ParameterExpression>());
-            Func<object[]> f = e.Compile();
+            Func<object[]> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            object[] etResult = default(object[]);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            object[] csResult = default(object[]);
-            Exception csException = null;
-            try
-            {
-                csResult = value as object[];
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as object[], f());
         }
 
-        private static void VerifyIListOfObjectAsCustomArray(IList<object> value)
+        private static void VerifyIListOfObjectAsCustomArray(IList<object> value, bool useInterpreter)
         {
             Expression<Func<C[]>> e =
                 Expression.Lambda<Func<C[]>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(IList<object>)), typeof(C[])),
                     Enumerable.Empty<ParameterExpression>());
-            Func<C[]> f = e.Compile();
+            Func<C[]> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            C[] etResult = default(C[]);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            C[] csResult = default(C[]);
-            Exception csException = null;
-            try
-            {
-                csResult = value as C[];
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as C[], f());
         }
 
-        private static void VerifyIListOfObjectAsObjectArray(IList<object> value)
+        private static void VerifyIListOfObjectAsObjectArray(IList<object> value, bool useInterpreter)
         {
             Expression<Func<object[]>> e =
                 Expression.Lambda<Func<object[]>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(IList<object>)), typeof(object[])),
                     Enumerable.Empty<ParameterExpression>());
-            Func<object[]> f = e.Compile();
+            Func<object[]> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            object[] etResult = default(object[]);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            object[] csResult = default(object[]);
-            Exception csException = null;
-            try
-            {
-                csResult = value as object[];
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as object[], f());
         }
 
-        private static void VerifyIListOfStructAsStructArray(IList<S> value)
+        private static void VerifyIListOfStructAsStructArray(IList<S> value, bool useInterpreter)
         {
             Expression<Func<S[]>> e =
                 Expression.Lambda<Func<S[]>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(IList<S>)), typeof(S[])),
                     Enumerable.Empty<ParameterExpression>());
-            Func<S[]> f = e.Compile();
+            Func<S[]> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            S[] etResult = default(S[]);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            S[] csResult = default(S[]);
-            Exception csException = null;
-            try
-            {
-                csResult = value as S[];
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as S[], f());
         }
 
-        private static void VerifyIntAsObject(int value)
+        private static void VerifyIntAsObject(int value, bool useInterpreter)
         {
             Expression<Func<object>> e =
                 Expression.Lambda<Func<object>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(int)), typeof(object)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<object> f = e.Compile();
+            Func<object> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            object etResult = default(object);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            object csResult = default(object);
-            Exception csException = null;
-            try
-            {
-                csResult = value as object;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as object, f());
         }
 
-        private static void VerifyIntAsValueType(int value)
+        private static void VerifyIntAsValueType(int value, bool useInterpreter)
         {
             Expression<Func<ValueType>> e =
                 Expression.Lambda<Func<ValueType>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(int)), typeof(ValueType)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<ValueType> f = e.Compile();
+            Func<ValueType> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            ValueType etResult = default(ValueType);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            ValueType csResult = default(ValueType);
-            Exception csException = null;
-            try
-            {
-                csResult = value as ValueType;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as ValueType, f());
         }
 
-        private static void VerifyObjectAsCustom(object value)
+        private static void VerifyObjectAsCustom(object value, bool useInterpreter)
         {
             Expression<Func<C>> e =
                 Expression.Lambda<Func<C>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(object)), typeof(C)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<C> f = e.Compile();
+            Func<C> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            C etResult = default(C);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            C csResult = default(C);
-            Exception csException = null;
-            try
-            {
-                csResult = value as C;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as C, f());
         }
 
-        private static void VerifyObjectAsCustom2(object value)
+        private static void VerifyObjectAsCustom2(object value, bool useInterpreter)
         {
             Expression<Func<D>> e =
                 Expression.Lambda<Func<D>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(object)), typeof(D)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<D> f = e.Compile();
+            Func<D> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            D etResult = default(D);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            D csResult = default(D);
-            Exception csException = null;
-            try
-            {
-                csResult = value as D;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as D, f());
         }
 
-        private static void VerifyObjectAsDelegate(object value)
+        private static void VerifyObjectAsDelegate(object value, bool useInterpreter)
         {
             Expression<Func<Delegate>> e =
                 Expression.Lambda<Func<Delegate>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(object)), typeof(Delegate)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Delegate> f = e.Compile();
+            Func<Delegate> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            Delegate etResult = default(Delegate);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            Delegate csResult = default(Delegate);
-            Exception csException = null;
-            try
-            {
-                csResult = value as Delegate;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as Delegate, f());
         }
 
-        private static void VerifyObjectAsEnumType(object value)
+        private static void VerifyObjectAsEnumType(object value, bool useInterpreter)
         {
             Expression<Func<Enum>> e =
                 Expression.Lambda<Func<Enum>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(object)), typeof(Enum)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Enum> f = e.Compile();
+            Func<Enum> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            Enum etResult = default(Enum);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            Enum csResult = default(Enum);
-            Exception csException = null;
-            try
-            {
-                csResult = value as Enum;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as Enum, f());
         }
 
-        private static void VerifyObjectAsInterface(object value)
+        private static void VerifyObjectAsInterface(object value, bool useInterpreter)
         {
             Expression<Func<I>> e =
                 Expression.Lambda<Func<I>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(object)), typeof(I)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<I> f = e.Compile();
+            Func<I> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            I etResult = default(I);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            I csResult = default(I);
-            Exception csException = null;
-            try
-            {
-                csResult = value as I;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as I, f());
         }
 
-        private static void VerifyObjectAsIEquatableOfCustom(object value)
+        private static void VerifyObjectAsIEquatableOfCustom(object value, bool useInterpreter)
         {
             Expression<Func<IEquatable<C>>> e =
                 Expression.Lambda<Func<IEquatable<C>>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(object)), typeof(IEquatable<C>)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<IEquatable<C>> f = e.Compile();
+            Func<IEquatable<C>> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            IEquatable<C> etResult = default(IEquatable<C>);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            IEquatable<C> csResult = default(IEquatable<C>);
-            Exception csException = null;
-            try
-            {
-                csResult = value as IEquatable<C>;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as IEquatable<C>, f());
         }
 
-        private static void VerifyObjectAsIEquatableOfCustom2(object value)
+        private static void VerifyObjectAsIEquatableOfCustom2(object value, bool useInterpreter)
         {
             Expression<Func<IEquatable<D>>> e =
                 Expression.Lambda<Func<IEquatable<D>>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(object)), typeof(IEquatable<D>)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<IEquatable<D>> f = e.Compile();
+            Func<IEquatable<D>> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            IEquatable<D> etResult = default(IEquatable<D>);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            IEquatable<D> csResult = default(IEquatable<D>);
-            Exception csException = null;
-            try
-            {
-                csResult = value as IEquatable<D>;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as IEquatable<D>, f());
         }
 
-        private static void VerifyObjectAsValueType(object value)
+        private static void VerifyObjectAsValueType(object value, bool useInterpreter)
         {
             Expression<Func<ValueType>> e =
                 Expression.Lambda<Func<ValueType>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(object)), typeof(ValueType)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<ValueType> f = e.Compile();
+            Func<ValueType> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            ValueType etResult = default(ValueType);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            ValueType csResult = default(ValueType);
-            Exception csException = null;
-            try
-            {
-                csResult = value as ValueType;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as ValueType, f());
         }
 
-        private static void VerifyObjectArrayAsCustomArray(object[] value)
+        private static void VerifyObjectArrayAsCustomArray(object[] value, bool useInterpreter)
         {
             Expression<Func<C[]>> e =
                 Expression.Lambda<Func<C[]>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(object[])), typeof(C[])),
                     Enumerable.Empty<ParameterExpression>());
-            Func<C[]> f = e.Compile();
+            Func<C[]> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            C[] etResult = default(C[]);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            C[] csResult = default(C[]);
-            Exception csException = null;
-            try
-            {
-                csResult = value as C[];
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as C[], f());
         }
 
-        private static void VerifyObjectArrayAsIEnumerableOfCustom(object[] value)
+        private static void VerifyObjectArrayAsIEnumerableOfCustom(object[] value, bool useInterpreter)
         {
             Expression<Func<IEnumerable<C>>> e =
                 Expression.Lambda<Func<IEnumerable<C>>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(object[])), typeof(IEnumerable<C>)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<IEnumerable<C>> f = e.Compile();
+            Func<IEnumerable<C>> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            IEnumerable<C> etResult = default(IEnumerable<C>);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            IEnumerable<C> csResult = default(IEnumerable<C>);
-            Exception csException = null;
-            try
-            {
-                csResult = value as IEnumerable<C>;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as IEnumerable<C>, f());
         }
 
-        private static void VerifyObjectArrayAsIEnumerableOfInterface(object[] value)
+        private static void VerifyObjectArrayAsIEnumerableOfInterface(object[] value, bool useInterpreter)
         {
             Expression<Func<IEnumerable<I>>> e =
                 Expression.Lambda<Func<IEnumerable<I>>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(object[])), typeof(IEnumerable<I>)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<IEnumerable<I>> f = e.Compile();
+            Func<IEnumerable<I>> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            IEnumerable<I> etResult = default(IEnumerable<I>);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            IEnumerable<I> csResult = default(IEnumerable<I>);
-            Exception csException = null;
-            try
-            {
-                csResult = value as IEnumerable<I>;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as IEnumerable<I>, f());
         }
 
-        private static void VerifyObjectArrayAsIEnumerableOfObject(object[] value)
+        private static void VerifyObjectArrayAsIEnumerableOfObject(object[] value, bool useInterpreter)
         {
             Expression<Func<IEnumerable<object>>> e =
                 Expression.Lambda<Func<IEnumerable<object>>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(object[])), typeof(IEnumerable<object>)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<IEnumerable<object>> f = e.Compile();
+            Func<IEnumerable<object>> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            IEnumerable<object> etResult = default(IEnumerable<object>);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            IEnumerable<object> csResult = default(IEnumerable<object>);
-            Exception csException = null;
-            try
-            {
-                csResult = value as IEnumerable<object>;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as IEnumerable<object>, f());
         }
 
-        private static void VerifyObjectArrayAsIListOfCustom(object[] value)
+        private static void VerifyObjectArrayAsIListOfCustom(object[] value, bool useInterpreter)
         {
             Expression<Func<IList<C>>> e =
                 Expression.Lambda<Func<IList<C>>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(object[])), typeof(IList<C>)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<IList<C>> f = e.Compile();
+            Func<IList<C>> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            IList<C> etResult = default(IList<C>);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            IList<C> csResult = default(IList<C>);
-            Exception csException = null;
-            try
-            {
-                csResult = value as IList<C>;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as IList<C>, f());
         }
 
-        private static void VerifyObjectArrayAsIListOfInterface(object[] value)
+        private static void VerifyObjectArrayAsIListOfInterface(object[] value, bool useInterpreter)
         {
             Expression<Func<IList<I>>> e =
                 Expression.Lambda<Func<IList<I>>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(object[])), typeof(IList<I>)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<IList<I>> f = e.Compile();
+            Func<IList<I>> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            IList<I> etResult = default(IList<I>);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            IList<I> csResult = default(IList<I>);
-            Exception csException = null;
-            try
-            {
-                csResult = value as IList<I>;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as IList<I>, f());
         }
 
-        private static void VerifyObjectArrayAsIListOfObject(object[] value)
+        private static void VerifyObjectArrayAsIListOfObject(object[] value, bool useInterpreter)
         {
             Expression<Func<IList<object>>> e =
                 Expression.Lambda<Func<IList<object>>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(object[])), typeof(IList<object>)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<IList<object>> f = e.Compile();
+            Func<IList<object>> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            IList<object> etResult = default(IList<object>);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            IList<object> csResult = default(IList<object>);
-            Exception csException = null;
-            try
-            {
-                csResult = value as IList<object>;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as IList<object>, f());
         }
 
-        private static void VerifyStructAsIEquatableOfStruct(S value)
+        private static void VerifyStructAsIEquatableOfStruct(S value, bool useInterpreter)
         {
             Expression<Func<IEquatable<S>>> e =
                 Expression.Lambda<Func<IEquatable<S>>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(S)), typeof(IEquatable<S>)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<IEquatable<S>> f = e.Compile();
+            Func<IEquatable<S>> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            IEquatable<S> etResult = default(IEquatable<S>);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            IEquatable<S> csResult = default(IEquatable<S>);
-            Exception csException = null;
-            try
-            {
-                csResult = value as IEquatable<S>;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as IEquatable<S>, f());
         }
 
-        private static void VerifyStructAsObject(S value)
+        private static void VerifyStructAsObject(S value, bool useInterpreter)
         {
             Expression<Func<object>> e =
                 Expression.Lambda<Func<object>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(S)), typeof(object)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<object> f = e.Compile();
+            Func<object> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            object etResult = default(object);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            object csResult = default(object);
-            Exception csException = null;
-            try
-            {
-                csResult = value as object;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as object, f());
         }
 
-        private static void VerifyStructAsValueType(S value)
+        private static void VerifyStructAsValueType(S value, bool useInterpreter)
         {
             Expression<Func<ValueType>> e =
                 Expression.Lambda<Func<ValueType>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(S)), typeof(ValueType)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<ValueType> f = e.Compile();
+            Func<ValueType> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            ValueType etResult = default(ValueType);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            ValueType csResult = default(ValueType);
-            Exception csException = null;
-            try
-            {
-                csResult = value as ValueType;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as ValueType, f());
         }
 
-        private static void VerifyStructArrayAsIEnumerableOfStruct(S[] value)
+        private static void VerifyStructArrayAsIEnumerableOfStruct(S[] value, bool useInterpreter)
         {
             Expression<Func<IEnumerable<S>>> e =
                 Expression.Lambda<Func<IEnumerable<S>>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(S[])), typeof(IEnumerable<S>)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<IEnumerable<S>> f = e.Compile();
+            Func<IEnumerable<S>> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            IEnumerable<S> etResult = default(IEnumerable<S>);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            IEnumerable<S> csResult = default(IEnumerable<S>);
-            Exception csException = null;
-            try
-            {
-                csResult = value as IEnumerable<S>;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as IEnumerable<S>, f());
         }
 
-        private static void VerifyStructArrayAsIListOfStruct(S[] value)
+        private static void VerifyStructArrayAsIListOfStruct(S[] value, bool useInterpreter)
         {
             Expression<Func<IList<S>>> e =
                 Expression.Lambda<Func<IList<S>>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(S[])), typeof(IList<S>)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<IList<S>> f = e.Compile();
+            Func<IList<S>> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            IList<S> etResult = default(IList<S>);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            IList<S> csResult = default(IList<S>);
-            Exception csException = null;
-            try
-            {
-                csResult = value as IList<S>;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as IList<S>, f());
         }
 
-        private static void VerifyValueTypeAsObject(ValueType value)
+        private static void VerifyValueTypeAsObject(ValueType value, bool useInterpreter)
         {
             Expression<Func<object>> e =
                 Expression.Lambda<Func<object>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(ValueType)), typeof(object)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<object> f = e.Compile();
+            Func<object> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            object etResult = default(object);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            object csResult = default(object);
-            Exception csException = null;
-            try
-            {
-                csResult = value as object;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as object, f());
         }
 
-        private static void VerifyGenericAsObject<T>(T value)
+        private static void VerifyGenericAsObject<T>(T value, bool useInterpreter)
         {
             Expression<Func<object>> e =
                 Expression.Lambda<Func<object>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(T)), typeof(object)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<object> f = e.Compile();
+            Func<object> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            object etResult = default(object);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            object csResult = default(object);
-            Exception csException = null;
-            try
-            {
-                csResult = value as object;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as object, f());
         }
 
-        private static void VerifyGenericWithClassRestrictionAsObject<Tc>(Tc value) where Tc : class
+        private static void VerifyGenericWithClassRestrictionAsObject<Tc>(Tc value, bool useInterpreter) where Tc : class
         {
             Expression<Func<object>> e =
                 Expression.Lambda<Func<object>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(Tc)), typeof(object)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<object> f = e.Compile();
+            Func<object> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            object etResult = default(object);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            object csResult = default(object);
-            Exception csException = null;
-            try
-            {
-                csResult = value as object;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as object, f());
         }
 
-        private static void VerifyGenericWithStructRestrictionAsObject<Ts>(Ts value) where Ts : struct
+        private static void VerifyGenericWithStructRestrictionAsObject<Ts>(Ts value, bool useInterpreter) where Ts : struct
         {
             Expression<Func<object>> e =
                 Expression.Lambda<Func<object>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(Ts)), typeof(object)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<object> f = e.Compile();
+            Func<object> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            object etResult = default(object);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            object csResult = default(object);
-            Exception csException = null;
-            try
-            {
-                csResult = value as object;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as object, f());
         }
 
-        private static void VerifyGenericWithStructRestrictionAsValueType<Ts>(Ts value) where Ts : struct
+        private static void VerifyGenericWithStructRestrictionAsValueType<Ts>(Ts value, bool useInterpreter) where Ts : struct
         {
             Expression<Func<ValueType>> e =
                 Expression.Lambda<Func<ValueType>>(
                     Expression.TypeAs(Expression.Constant(value, typeof(Ts)), typeof(ValueType)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<ValueType> f = e.Compile();
+            Func<ValueType> f = e.Compile(useInterpreter);
 
-            // compute the value with the expression tree
-            ValueType etResult = default(ValueType);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute the value with regular IL
-            ValueType csResult = default(ValueType);
-            Exception csException = null;
-            try
-            {
-                csResult = value as ValueType;
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(value as ValueType, f());
         }
 
         #endregion

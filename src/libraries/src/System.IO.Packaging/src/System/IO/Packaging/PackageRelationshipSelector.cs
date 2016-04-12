@@ -2,13 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//-----------------------------------------------------------------------------
-//
-// Description:
-//  This class represents a PackageRelationshipSelector. 
-//
-//-----------------------------------------------------------------------------
-
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;                  // for Debug.Assert
@@ -21,12 +14,6 @@ namespace System.IO.Packaging
     /// what the actual criteria is. </summary>
     public sealed class PackageRelationshipSelector
     {
-        //------------------------------------------------------
-        //
-        //  Public Constructors
-        //
-        //------------------------------------------------------
-
         #region Public Constructor
 
         /// <summary>
@@ -70,11 +57,6 @@ namespace System.IO.Packaging
         }
 
         #endregion Public Constructor
-        //------------------------------------------------------
-        //
-        //  Public Properties
-        //
-        //------------------------------------------------------
 
         #region Public Properties
 
@@ -118,20 +100,14 @@ namespace System.IO.Packaging
 
 
         #endregion Public Properties
-
-        //------------------------------------------------------
-        //
-        //  Public Methods
-        //
-        //------------------------------------------------------
-
+        
         #region Public Methods
 
         /// <summary>
         /// This method returns the list of selected PackageRelationships as per the
         /// given criteria, from a part in the Package provided
         /// </summary>
-        /// <param name="package">Package object from which we get the relationsips</param>
+        /// <param name="package">Package object from which we get the relationships</param>
         /// <returns></returns>
         /// <exception cref="ArgumentNullException">If package parameter is null</exception>
         public List<PackageRelationship> Select(Package package)
@@ -189,49 +165,7 @@ namespace System.IO.Packaging
         }
 
         #endregion Public Methods
-
-        //------------------------------------------------------
-        //
-        //  Public Events
-        //
-        //------------------------------------------------------
-        // None
-        //------------------------------------------------------
-        //
-        //  Internal Constructors
-        //
-        //------------------------------------------------------
-        // None
-        //------------------------------------------------------
-        //
-        //  Internal Properties
-        //
-        //------------------------------------------------------
-        // None
-        //------------------------------------------------------
-        //
-        //  Internal Methods
-        //
-        //------------------------------------------------------
-        // None
-        //------------------------------------------------------
-        //
-        //  Internal Events
-        //
-        //------------------------------------------------------
-        // None
-        //------------------------------------------------------
-        //
-        //  Private Methods
-        //
-        //------------------------------------------------------
-        // None
-        //------------------------------------------------------
-        //
-        //  Private Fields
-        //
-        //------------------------------------------------------
-
+        
         #region Private Members
 
         private Uri _sourceUri;

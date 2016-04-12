@@ -2,33 +2,26 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Globalization.Tests
 {
     public class CultureInfoIsNeutralCulture
     {
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> IsNeutralCulture_TestData()
         {
-            CultureInfo myCultureInfo = CultureInfo.InvariantCulture;
-            Assert.False(myCultureInfo.IsNeutralCulture);
+            yield return new object[] { new CultureInfo(CultureInfo.InvariantCulture.Name), false };
+            yield return new object[] { CultureInfo.InvariantCulture, false };
+            yield return new object[] { new CultureInfo("fr-FR"), false };
+            yield return new object[] { new CultureInfo("fr"), true };
         }
 
-        [Fact]
-        public void PosTest2()
+        [Theory]
+        [MemberData(nameof(IsNeutralCulture_TestData))]
+        public void IsNeutralCulture(CultureInfo culture, bool expected)
         {
-            CultureInfo myCultureInfo = new CultureInfo("fr");
-            Assert.True(myCultureInfo.IsNeutralCulture);
-        }
-
-        [Fact]
-        public void PosTest3()
-        {
-            CultureInfo myCultureInfo = new CultureInfo("fr-FR");
-            Assert.False(myCultureInfo.IsNeutralCulture);
+            Assert.Equal(expected, culture.IsNeutralCulture);
         }
     }
 }

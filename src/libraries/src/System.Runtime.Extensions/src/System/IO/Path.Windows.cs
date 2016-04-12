@@ -41,145 +41,58 @@ namespace System.IO
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
-            string fullPath = NormalizeAndValidatePath(path);
-
-            // Emulate FileIOPermissions checks, retained for compatibility (normal invalid characters have already been checked)
-            if (PathInternal.HasWildCardCharacters(fullPath))
-                throw new ArgumentException(SR.Argument_InvalidPathChars, nameof(path));
-
-            return fullPath;
-        }
-
-        /// <summary>
-        /// Checks for known bad extended paths (paths that start with \\?\)
-        /// </summary>
-        /// <returns>'true' if the path passes validity checks.</returns>
-        private static bool ValidateExtendedPath(string path)
-        {
-            if (path.Length == PathInternal.ExtendedPathPrefix.Length)
-            {
-                // Effectively empty and therefore invalid
-                return false;
-            }
-
-            if (path.StartsWith(PathInternal.UncExtendedPathPrefix, StringComparison.Ordinal))
-            {
-                // UNC specific checks
-                if (path.Length == PathInternal.UncExtendedPathPrefix.Length || path[PathInternal.UncExtendedPathPrefix.Length] == DirectorySeparatorChar)
-                {
-                    // Effectively empty and therefore invalid (\\?\UNC\ or \\?\UNC\\)
-                    return false;
-                }
-
-                int serverShareSeparator = path.IndexOf(DirectorySeparatorChar, PathInternal.UncExtendedPathPrefix.Length);
-                if (serverShareSeparator == -1 || serverShareSeparator == path.Length - 1)
-                {
-                    // Need at least a Server\Share
-                    return false;
-                }
-            }
-
-            // Segments can't be empty "\\" or contain *just* "." or ".."
-            char twoBack = '?';
-            char oneBack = DirectorySeparatorChar;
-            char currentCharacter;
-            bool periodSegment = false;
-            for (int i = PathInternal.ExtendedPathPrefix.Length; i < path.Length; i++)
-            {
-                currentCharacter = path[i];
-                switch (currentCharacter)
-                {
-                    case '\\':
-                        if (oneBack == DirectorySeparatorChar || periodSegment)
-                            throw new ArgumentException(SR.Arg_PathIllegal);
-                        periodSegment = false;
-                        break;
-                    case '.':
-                        periodSegment = (oneBack == DirectorySeparatorChar || (twoBack == DirectorySeparatorChar && oneBack == '.'));
-                        break;
-                    default:
-                        periodSegment = false;
-                        break;
-                }
-
-                twoBack = oneBack;
-                oneBack = currentCharacter;
-            }
-
-            if (periodSegment)
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-        /// <summary>
-        /// Normalize the path and check for bad characters or other invalid syntax.
-        /// </summary>
-        /// <remarks>
-        /// The legacy NormalizePath
-        /// </remarks>
-        private static string NormalizeAndValidatePath(string path)
-        {
-            Debug.Assert(path != null, "path can't be null");
-
             // Embedded null characters are the only invalid character case we want to check up front.
             // This is because the nulls will signal the end of the string to Win32 and therefore have
             // unpredictable results. Other invalid characters we give a chance to be normalized out.
             if (path.IndexOf('\0') != -1)
                 throw new ArgumentException(SR.Argument_InvalidPathChars, nameof(path));
 
-            // Toss out paths with colons that aren't a valid drive specifier.
-            // Cannot start with a colon and can only be of the form "C:" or "\\?\C:".
-            // (Note that we used to explicitly check "http:" and "file:"- these are caught by this check now.)
-            int startIndex = PathInternal.PathStartSkip(path);
-            bool isExtended = path.Length >= PathInternal.ExtendedPathPrefix.Length + startIndex
-                && path.IndexOf(PathInternal.ExtendedPathPrefix, startIndex, PathInternal.ExtendedPathPrefix.Length, StringComparison.Ordinal) >= 0;
-
-            if (isExtended)
+            if (PathInternal.IsExtended(path))
             {
-                startIndex += PathInternal.ExtendedPathPrefix.Length;
-            }
-
-            // Move past the colon
-            startIndex += 2;
-
-            if ((path.Length > 0 && path[0] == VolumeSeparatorChar)
-                || (path.Length >= startIndex && path[startIndex - 1] == VolumeSeparatorChar && !PathInternal.IsValidDriveChar(path[startIndex - 2]))
-                || (path.Length > startIndex && path.IndexOf(VolumeSeparatorChar, startIndex) != -1))
-            {
-                throw new NotSupportedException(SR.Argument_PathFormatNotSupported);
-            }
-
-            if (isExtended)
-            {
-                // If the path is in extended syntax, we don't need to normalize, but we still do some basic validity checks
-                if (!ValidateExtendedPath(path))
-                {
-                    throw new ArgumentException(SR.Arg_PathIllegal);
-                }
-
-                // \\?\GLOBALROOT gives access to devices out of the scope of the current user, we
-                // don't want to allow this for security reasons.
-                // https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247.aspx#nt_namespaces
-                if (path.StartsWith(@"\\?\globalroot", StringComparison.OrdinalIgnoreCase))
-                    throw new ArgumentException(SR.Arg_PathGlobalRoot);
-
-
-                // Look for illegal path characters.
-                PathInternal.CheckInvalidPathChars(path);
-
+                // We can't really know what is valid for all cases of extended paths.
+                //
+                //  - object names can include other characters as well (':', '/', etc.)
+                //  - even file objects have different rules (pipe names can contain most characters)
+                //
+                // As such we will do no further analysis of extended paths to avoid blocking known and unknown
+                // scenarios as well as minimizing compat breaks should we block now and need to unblock later.
                 return path;
             }
-            else
-            {
-                // Technically this doesn't matter but we used to throw for this case
-                if (String.IsNullOrWhiteSpace(path))
-                    throw new ArgumentException(SR.Arg_PathIllegal);
 
-                return PathHelper.Normalize(path, checkInvalidCharacters: true, expandShortPaths: true);
+            bool isDevice = PathInternal.IsDevice(path);
+            if (!isDevice)
+            {
+                // Toss out paths with colons that aren't a valid drive specifier.
+                // Cannot start with a colon and can only be of the form "C:".
+                // (Note that we used to explicitly check "http:" and "file:"- these are caught by this check now.)
+                int startIndex = PathInternal.PathStartSkip(path);
+
+                // Move past the colon
+                startIndex += 2;
+
+                if ((path.Length > 0 && path[0] == VolumeSeparatorChar)
+                    || (path.Length >= startIndex && path[startIndex - 1] == VolumeSeparatorChar && !PathInternal.IsValidDriveChar(path[startIndex - 2]))
+                    || (path.Length > startIndex && path.IndexOf(VolumeSeparatorChar, startIndex) != -1))
+                {
+                    throw new NotSupportedException(SR.Argument_PathFormatNotSupported);
+                }
             }
+
+            // Technically this doesn't matter but we used to throw for this case
+            if (string.IsNullOrWhiteSpace(path))
+                throw new ArgumentException(SR.Arg_PathIllegal);
+
+            // We don't want to check invalid characters for device format- see comments for extended above
+            string fullPath = PathHelper.Normalize(path, checkInvalidCharacters: !isDevice, expandShortPaths: true);
+
+            if (!isDevice)
+            {
+                // Emulate FileIOPermissions checks, retained for compatibility (normal invalid characters have already been checked)
+                if (PathInternal.HasWildCardCharacters(fullPath))
+                    throw new ArgumentException(SR.Argument_InvalidPathChars, nameof(path));
+            }
+
+            return fullPath;
         }
 
         [System.Security.SecuritySafeCritical]

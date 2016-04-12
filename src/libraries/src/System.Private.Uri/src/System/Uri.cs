@@ -88,7 +88,7 @@ namespace System
 
             UserDrivenParsing   = 0x01000000,
             CanonicalDnsHost    = 0x02000000,
-            ErrorOrParsingRecursion = 0x04000000,   // Used to signal a default parser error and alsoe to confirm Port 
+            ErrorOrParsingRecursion = 0x04000000,   // Used to signal a default parser error and also to confirm Port 
                                                     // and Host values in case of a custom user Parser
             DosPath             = 0x08000000,
             UncPath             = 0x10000000,
@@ -696,7 +696,7 @@ namespace System
                     EnsureUriInfo();
                 else
                 {
-                    // For a custom parser we request HostString creation that will aso set the port
+                    // For a custom parser we request HostString creation that will also set the port
                     EnsureHostString(false);
                 }
 
@@ -942,7 +942,7 @@ namespace System
             else
             {
                 // Return unescaped canonical path
-                // Note we cannot call GetParts here because it has circular dependancy on GelLocalPath method
+                // Note we cannot call GetParts here because it has circular dependency on GelLocalPath method
                 return GetUnescapedParts(UriComponents.Path | UriComponents.KeepDelimiter, UriFormat.Unescaped);
             }
         }
@@ -960,7 +960,7 @@ namespace System
                     EnsureUriInfo();
                 else
                 {
-                    // For a custom parser we request HostString creation that will aso set the port
+                    // For a custom parser we request HostString creation that will also set the port
                     EnsureHostString(false);
                 }
 
@@ -1419,7 +1419,7 @@ namespace System
                 tempHash = CalculateCaseInsensitiveHashCode(chkString);
                 if (tempHash == 0)
                 {
-                    tempHash = 0x1000000;   //making it not zero still large enough to be maped to zero by a hashtable
+                    tempHash = 0x1000000;   //making it not zero still large enough to be mapped to zero by a hashtable
                 }
                 info.MoreInfo.Hash = tempHash;
             }
@@ -1819,7 +1819,7 @@ namespace System
             if (result == ParsingError.None)
                 return null;
 
-            // Means the we think the Uri is invalid, bu that can be later overriden by a user parser
+            // Means the we think the Uri is invalid, bu that can be later overridden by a user parser
             _flags |= Flags.ErrorOrParsingRecursion;
 
             return GetException(result);
@@ -1827,14 +1827,14 @@ namespace System
 
         //
         //
-        //  This method tries to parse the minimal information needed to certify the valifity
+        //  This method tries to parse the minimal information needed to certify the validity
         //  of a uri string
         //
         //      scheme://userinfo@host:Port/Path?Query#Fragment
         //
         //  The method must be called only at the .ctor time
         //
-        //  Returns ParsingError.None if the Uri syntax is valid, an error otheriwse
+        //  Returns ParsingError.None if the Uri syntax is valid, an error otherwise
         //
         private unsafe ParsingError PrivateParseMinimal()
         {
@@ -1861,7 +1861,7 @@ namespace System
                 }
 
                 // Old Uri parser tries to figure out on a DosPath in all cases.
-                // Hence http://c:/ is treated as as DosPath without the host while it should be a host "c", port 80
+                // Hence http://c:/ is treated as DosPath without the host while it should be a host "c", port 80
                 //
                 // This block is compatible with Old Uri parser in terms it will look for the DosPath if the scheme
                 // syntax allows both empty hostnames and DosPath
@@ -1941,7 +1941,7 @@ namespace System
 
                     if (_syntax.InFact(UriSyntaxFlags.MustHaveAuthority))
                     {
-                        // (V1.0 compatiblity) This will allow http:\\ http:\/ http:/\
+                        // (V1.0 compatibility) This will allow http:\\ http:\/ http:/\
                         if ((first == '/' || first == '\\') && (second == '/' || second == '\\'))
                         {
                             _flags |= Flags.AuthorityFound;
@@ -2013,7 +2013,7 @@ namespace System
                 _flags |= (Flags)idx;
 
                 // The rest of the string will be parsed on demand
-                // The Host/Authorty is all checked, the type is known but the host value string
+                // The Host/Authority is all checked, the type is known but the host value string
                 // is not created/canonicalized at this point.
             }
 
@@ -2029,7 +2029,7 @@ namespace System
             if (newHost != null)
                 _string = newHost;
 
-            // conditions where we dont need to go to parseremaining, so we copy the rest of the
+            // conditions where we don't need to go to parseremaining, so we copy the rest of the
             // original string.. and switch offsets
             if ((!_iriParsing && AllowIdn && (((_flags & Flags.IdnHost) != 0) || ((_flags & Flags.UnicodeHost) != 0))) ||
                 (_iriParsing && ((_flags & Flags.HasUnicode) == 0) && AllowIdn && ((_flags & Flags.IdnHost) != 0)))
@@ -2053,7 +2053,7 @@ namespace System
         //
         // The method is called when we have to access m_Info members
         // This will create the m_Info based on the copied parser context
-        // Under milti-threading race this method may do duplicated yet harmless work
+        // Under multi-threading race this method may do duplicated yet harmless work
         //
         private unsafe void CreateUriInfo(Flags cF)
         {
@@ -2128,7 +2128,7 @@ namespace System
                 || StaticInFact(cF, Flags.DosPath)
                 )
             {
-                //there is no Authotity component defined
+                //there is no Authority component defined
                 info.Offset.User = (ushort)(cF & Flags.IndexMask);
                 info.Offset.Host = info.Offset.User;
                 info.Offset.Path = info.Offset.User;
@@ -2205,7 +2205,7 @@ namespace System
                     {
                         int port = 0;
 
-                        //Check on some noncanonical cases http://host:0324/, http://host:03, http://host:0, etc
+                        //Check on some non-canonical cases http://host:0324/, http://host:03, http://host:0, etc
                         if (++idx < info.Offset.End)
                         {
                             port = (ushort)(userString[idx] - '0');
@@ -2261,7 +2261,7 @@ namespace System
         //
         // This will create a Host string. The validity has been already checked
         //
-        // Assuming: UriInfo memeber is already set at this point
+        // Assuming: UriInfo member is already set at this point
         private unsafe void CreateHostString()
         {
             if (!_syntax.IsSimple)
@@ -2326,7 +2326,7 @@ namespace System
                         }
                         else
                         {
-                            // We should throw here but currenty just accept user input known as invalid
+                            // We should throw here but currently just accept user input known as invalid
                         }
                     }
                 }
@@ -2504,7 +2504,7 @@ namespace System
         }
 
         //
-        // An internal shortcut into Uri extenisiblity API
+        // An internal shortcut into Uri extensibility API
         //
         internal string GetParts(UriComponents uriParts, UriFormat formatAs)
         {
@@ -2586,7 +2586,7 @@ namespace System
             EnsureHostString(false);
             string stemp = (parts & UriComponents.Host) == 0 ? string.Empty : _info.Host;
             // we reserve more space than required because a canonical Ipv6 Host
-            // may take more characteres than in original m_String
+            // may take more characters than in original m_String
             // Also +3 is for :// and +1 is for absent first slash
             // Also we may escape every character, hence multiplying by 12
             // UTF-8 can use up to 4 bytes per char * 3 chars per byte (%A4) = 12 encoded chars
@@ -2627,7 +2627,7 @@ namespace System
                             {
                                 if (InFact(Flags.E_UserNotCanonical))
                                 {
-                                    // We should throw here but currenty just accept user input known as invalid
+                                    // We should throw here but currently just accept user input known as invalid
                                 }
                                 _string.CopyTo(_info.Offset.User, chars, count, _info.Offset.Host - _info.Offset.User);
                                 count += (_info.Offset.Host - _info.Offset.User);
@@ -3053,7 +3053,7 @@ namespace System
         //
         //This method does:
         //  - Creates m_Info member
-        //  - checks all componenets up to path on their canonical representation
+        //  - checks all components up to path on their canonical representation
         //  - continues parsing starting the path position
         //  - Sets the offsets of remaining components
         //  - Sets the Canonicalization flags if applied
@@ -3219,7 +3219,7 @@ namespace System
                 // ATTN:
                 // This may render problems for unknown schemes, but in general for an authority based Uri
                 // (that has slashes) a path should start with "/"
-                // This becomes more interesting knowning how a file uri is used in "file://c:/path"
+                // This becomes more interesting knowing how a file uri is used in "file://c:/path"
                 // It will be converted to file:///c:/path
                 //
                 // However, even more interesting is that vsmacros://c:\path will not add the third slash in the _canoical_ case
@@ -3360,7 +3360,7 @@ namespace System
                 }
             }
             //
-            //Now we've got to parse the Fragment if any. Note that Fragment requires the presense of '#'
+            //Now we've got to parse the Fragment if any. Note that Fragment requires the presence of '#'
             //
             if (buildIriStringFromPath)
             {
@@ -3438,7 +3438,7 @@ namespace System
         {
             ushort idx = 0;
 
-            //skip whitespaces
+            //skip whitespace
             while (idx < length && IsLWS(uriString[idx]))
             {
                 ++idx;
@@ -3842,7 +3842,7 @@ namespace System
             }
 
             // DNS name only optimization
-            // Fo an overriden parsing the optimization is suppressed since hostname can be changed to anything
+            // Fo an overridden parsing the optimization is suppressed since hostname can be changed to anything
             bool dnsNotCanonical = ((syntaxFlags & UriSyntaxFlags.SimpleUserSyntax) == 0);
 
             if (ch == '[' && syntax.InFact(UriSyntaxFlags.AllowIPv6Host)
@@ -3900,7 +3900,7 @@ namespace System
                         // did we find at least one valid idn
                         if (atLeastOneIdn)
                         {
-                            // need to switch string here since we didnt know before hand there there was an idn host
+                            // need to switch string here since we didn't know beforehand there was an idn host
                             if (StaticNotAny(flags, Flags.HasUnicode))
                                 _originalUnicodeString = _string; // lazily switching strings
                             flags |= Flags.IdnHost;
@@ -3927,7 +3927,7 @@ namespace System
             else if ((syntaxFlags & UriSyntaxFlags.AllowUncHost) != 0)
             {
                 //
-                // This must remain as the last check befor BasicHost type
+                // This must remain as the last check before BasicHost type
                 //
                 if (UncNameHelper.IsValid(pString, start, ref end, StaticNotAny(flags, Flags.ImplicitFile)))
                 {
@@ -3937,7 +3937,7 @@ namespace System
             }
 
             // The deal here is that we won't allow '\' host terminator except for the File scheme
-            // If we see '\' we try to make it a part of of a Basic host
+            // If we see '\' we try to make it a part of a Basic host
             if (end < length && pString[end] == '\\' && (flags & Flags.HostTypeMask) != Flags.HostNotParsed
                 && !StaticIsFile(syntax))
             {
@@ -4232,7 +4232,7 @@ namespace System
         //
         // Parameters:
         // - escaped   true = treat all valid escape sequences as escaped sequences, false = escape all %
-        // - delim     a character signalling the termination of the component being checked
+        // - delim     a character signaling the termination of the component being checked
         //
         // When delim=='?', then '#' character is also considered as delimiter additionally to passed '?'.
         //
@@ -4445,7 +4445,7 @@ namespace System
 
             int dosPathIdx = SecuredPathIndex;
 
-            // Note that unescaping and then escapig back is not transitive hence not safe.
+            // Note that unescaping and then escaping back is not transitive hence not safe.
             // We are vulnerable due to the way the UserEscaped flag is processed.
             // Try to unescape only needed chars.
             if (formatAs == UriFormat.UriEscaped)
@@ -4667,7 +4667,7 @@ namespace System
         //
         // This will compress any "\" "/../" "/./" "///" "/..../" /XXX.../, etc found in the input
         //
-        // The passed syntax controls whether to use agressive compression or the one specified in RFC 2396
+        // The passed syntax controls whether to use aggressive compression or the one specified in RFC 2396
         //
         private static char[] Compress(char[] dest, ushort start, ref int destLength, UriParser syntax)
         {
@@ -4794,7 +4794,7 @@ namespace System
                     else if (dotCount != 0)
                     {
                         // If final string starts with a segment looking like .[...]/ or .[...]<eos>
-                        // then we remove this fisrt segment
+                        // then we remove this first segment
                         if (lastSlash == dotCount + 1 || (lastSlash == 0 && dotCount + 1 == destLength))
                         {
                             dotCount = (ushort)(dotCount + (lastSlash == 0 ? 0 : 1));
@@ -4968,7 +4968,7 @@ namespace System
             // Split relative on path and extra (for compression)
             c1 = basePart.Syntax.InFact(UriSyntaxFlags.MayHaveQuery) ? '?' : c_DummyChar;
 
-            // The  implcit file check is to avoid a fragment in the implicit file combined uri.
+            // The  implicit file check is to avoid a fragment in the implicit file combined uri.
             char c2 = (!basePart.IsImplicitFile && basePart.Syntax.InFact(UriSyntaxFlags.MayHaveFragment)) ? '#' :
                 c_DummyChar;
             string extra = string.Empty;
@@ -5104,7 +5104,7 @@ namespace System
             return relPath.ToString() + path2.Substring(si + 1);
         }
 
-        //Used by Uribuilder
+        //Used by UriBuilder
         internal bool HasAuthority
         {
             get
@@ -5142,7 +5142,7 @@ namespace System
         }
 
         //
-        // Strip Bidirectional control charcters from this string
+        // Strip Bidirectional control characters from this string
         //
         internal static unsafe string StripBidiControlCharacter(char* strToClean, int start, int length)
         {

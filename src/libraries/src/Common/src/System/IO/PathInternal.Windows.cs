@@ -11,6 +11,35 @@ namespace System.IO
     /// <summary>Contains internal path helpers that are shared between many projects.</summary>
     internal static partial class PathInternal
     {
+        // All paths in Win32 ultimately end up becoming a path to a File object in the Windows object manager. Passed in paths get mapped through
+        // DosDevice symbolic links in the object tree to actual File objects under \Devices. To illustrate, this is what happens with a typical
+        // path "Foo" passed as a filename to any Win32 API:
+        //
+        //  1. "Foo" is recognized as a relative path and is appended to the current directory (say, "C:\" in our example)
+        //  2. "C:\Foo" is prepended with the DosDevice namespace "\??\"
+        //  3. CreateFile tries to create an object handle to the requested file "\??\C:\Foo"
+        //  4. The Object Manager recognizes the DosDevices prefix and looks
+        //      a. First in the current session DosDevices ("\Sessions\1\DosDevices\" for example, mapped network drives go here)
+        //      b. If not found in the session, it looks in the Global DosDevices ("\GLOBAL??\")
+        //  5. "C:" is found in DosDevices (in our case "\GLOBAL??\C:", which is a symbolic link to "\Device\HarddiskVolume6")
+        //  6. The full path is now "\Device\HarddiskVolume6\Foo", "\Device\HarddiskVolume6" is a File object and parsing is handed off
+        //      to the registered parsing method for Files
+        //  7. The registered open method for File objects is invoked to create the file handle which is then returned
+        //
+        // There are multiple ways to directly specify a DosDevices path. The final format of "\??\" is one way. It can also be specified
+        // as "\\.\" (the most commonly documented way) and "\\?\". If the question mark syntax is used the path will skip normalization
+        // (essentially GetFullPathName()) and path length checks.
+
+        // Windows Kernel-Mode Object Manager
+        // https://msdn.microsoft.com/en-us/library/windows/hardware/ff565763.aspx
+        // https://channel9.msdn.com/Shows/Going+Deep/Windows-NT-Object-Manager
+        //
+        // Introduction to MS-DOS Device Names
+        // https://msdn.microsoft.com/en-us/library/windows/hardware/ff548088.aspx
+        //
+        // Local and Global MS-DOS Device Names
+        // https://msdn.microsoft.com/en-us/library/windows/hardware/ff554302.aspx
+
         internal const string ExtendedPathPrefix = @"\\?\";
         internal const string UncPathPrefix = @"\\";
         internal const string UncExtendedPrefixToInsert = @"?\UNC\";
@@ -19,6 +48,7 @@ namespace System.IO
         internal const int MaxShortPath = 260;
         internal const int MaxShortDirectoryPath = 248;
         internal const int MaxLongPath = short.MaxValue;
+        internal const int DevicePrefixLength = 4;
         internal static readonly int MaxComponentLength = 255;
 
         internal static readonly char[] InvalidPathChars =
@@ -54,17 +84,19 @@ namespace System.IO
             }
 
             // We need to check if we have a prefix to account for one being implicitly added.
-            if (IsExtended(fullPath))
+            if (IsDevice(fullPath))
             {
-                // We won't prepend, just check
+                // We won't add any length to make the path extended
                 return fullPath.Length >= MaxLongPath;
             }
 
             if (fullPath.StartsWith(UncPathPrefix, StringComparison.Ordinal))
             {
+                // If we have a UNC we'll need to stick \\?\UNC in front
                 return fullPath.Length + UncExtendedPrefixToInsert.Length >= MaxLongPath;
             }
 
+            // Otherwise we need to insert \\?\
             return fullPath.Length + ExtendedPathPrefix.Length >= MaxLongPath;
         }
 
@@ -77,7 +109,7 @@ namespace System.IO
         }
 
         /// <summary>
-        /// Adds the extended path prefix (\\?\) if not already present, IF the path is not relative,
+        /// Adds the extended path prefix (\\?\) if not already a device path, IF the path is not relative,
         /// AND the path is more than 259 characters. (> MAX_PATH + null)
         /// </summary>
         internal static string EnsureExtendedPrefixOverMaxPath(string path)
@@ -93,11 +125,21 @@ namespace System.IO
         }
 
         /// <summary>
-        /// Adds the extended path prefix (\\?\) if not already present and if the path is not relative or a device (\\.\).
+        /// Adds the extended path prefix (\\?\) if not relative or already a device path.
         /// </summary>
         internal static string EnsureExtendedPrefix(string path)
         {
-            if (IsExtended(path) || IsRelative(path) || IsDevice(path))
+            // Putting the extended prefix on the path changes the processing of the path. It won't get normalized, which
+            // means adding to relative paths will prevent them from getting the appropriate current directory inserted.
+
+            // If it already has some variant of a device path (\??\, \\?\, \\.\, //./, etc.) we don't need to change it
+            // as it is either correct or we will be changing the behavior. When/if Windows supports long paths implicitly
+            // in the future we wouldn't want normalization to come back and break existing code.
+
+            // In any case, all internal usages should be hitting normalize path (Path.GetFullPath) before they hit this
+            // shimming method. (Or making a change that doesn't impact normalization, such as adding a filename to a
+            // normalized base path.)
+            if (IsPartiallyQualified(path) || IsDevice(path))
                 return path;
 
             // Given \\server\share in longpath becomes \\?\UNC\server\share
@@ -108,99 +150,37 @@ namespace System.IO
         }
 
         /// <summary>
-        /// Adds the extended path prefix (\\?\) if not already present and if the path is not relative or a device (\\.\).
-        /// </summary>
-        internal static void EnsureExtendedPrefix(StringBuilder path)
-        {
-            if (IsExtended(path) || IsRelative(path) || IsDevice(path))
-                return;
-
-            // Given \\server\share in longpath becomes \\?\UNC\server\share
-            if (path.StartsWithOrdinal(UncPathPrefix))
-            {
-                path.Insert(2, PathInternal.UncExtendedPrefixToInsert);
-                return;
-            }
-
-            path.Insert(0, PathInternal.ExtendedPathPrefix);
-        }
-
-        /// <summary>
-        /// Removes the extended path prefix (\\?\) if present.
-        /// </summary>
-        internal static string RemoveExtendedPrefix(string path)
-        {
-            if (!IsExtended(path))
-                return path;
-
-            // Given \\?\UNC\server\share we return \\server\share
-            if (IsExtendedUnc(path))
-                return path.Remove(2, 6);
-
-            return path.Substring(4);
-        }
-
-        /// <summary>
-        /// Removes the extended path prefix (\\?\) if present.
-        /// </summary>
-        internal static StringBuilder RemoveExtendedPrefix(StringBuilder path)
-        {
-            if (!IsExtended(path))
-                return path;
-
-            // Given \\?\UNC\server\share we return \\server\share
-            if (IsExtendedUnc(path))
-                return path.Remove(2, 6);
-
-            return path.Remove(0, 4);
-        }
-
-        /// <summary>
-        /// Returns true if the path uses the device syntax (\\.\)
+        /// Returns true if the path uses any of the DOS device path syntaxes. ("\\.\", "\\?\", or "\??\")
         /// </summary>
         internal static bool IsDevice(string path)
         {
-            return path != null && path.StartsWith(DevicePathPrefix, StringComparison.Ordinal);
+            // If the path begins with any two separators is will be recognized and normalized and prepped with
+            // "\??\" for internal usage correctly. "\??\" is recognized and handled, "/??/" is not.
+            return IsExtended(path)
+                ||
+                (
+                    path.Length >= DevicePrefixLength
+                    && IsDirectorySeparator(path[0])
+                    && IsDirectorySeparator(path[1])
+                    && (path[2] == '.' || path[2] == '?')
+                    && IsDirectorySeparator(path[3])
+                );
         }
 
         /// <summary>
-        /// Returns true if the path uses the device syntax (\\.\)
-        /// </summary>
-        internal static bool IsDevice(StringBuilder path)
-        {
-            return path != null && path.StartsWithOrdinal(DevicePathPrefix);
-        }
-
-        /// <summary>
-        /// Returns true if the path uses the extended syntax (\\?\)
+        /// Returns true if the path uses the canonical form of extended syntax ("\\?\" or "\??\"). If the
+        /// path matches exactly (cannot use alternate directory separators) Windows will skip normalization
+        /// and path length checks.
         /// </summary>
         internal static bool IsExtended(string path)
         {
-            return path != null && path.StartsWith(ExtendedPathPrefix, StringComparison.Ordinal);
-        }
-
-        /// <summary>
-        /// Returns true if the path uses the extended syntax (\\?\)
-        /// </summary>
-        internal static bool IsExtended(StringBuilder path)
-        {
-            return path != null && path.StartsWithOrdinal(ExtendedPathPrefix);
-        }
-
-        /// <summary>
-        /// Returns true if the path uses the extended UNC syntax (\\?\UNC\)
-        /// </summary>
-        internal static bool IsExtendedUnc(string path)
-        {
-            return path != null && path.StartsWith(UncExtendedPathPrefix, StringComparison.Ordinal);
-        }
-
-        /// <summary>
-        /// Returns true if the path uses the extended UNC syntax (\\?\UNC\)
-        /// </summary>
-        internal static bool IsExtendedUnc(StringBuilder path)
-        {
-            return path != null && path.StartsWithOrdinal(UncExtendedPathPrefix);
+            // While paths like "//?/C:/" will work, they're treated the same as "\\.\" paths.
+            // Skipping of normalization will *only* occur if back slashes ('\') are used.
+            return path.Length >= DevicePrefixLength
+                && path[0] == '\\'
+                && (path[1] == '\\' || path[1] == '?')
+                && path[2] == '?'
+                && path[3] == '\\';
         }
 
         /// <summary>
@@ -210,7 +190,6 @@ namespace System.IO
         /// </summary>
         internal static bool HasIllegalCharacters(string path, bool checkAdditional = false)
         {
-            Debug.Assert(path != null);
             return path.IndexOfAny(InvalidPathChars) >= 0;
         }
 
@@ -312,7 +291,7 @@ namespace System.IO
         /// for C: (rooted, but relative). "C:\a" is rooted and not relative (the current directory
         /// will not be used to modify the path).
         /// </remarks>
-        internal static bool IsRelative(string path)
+        internal static bool IsPartiallyQualified(string path)
         {
             if (path.Length < 2)
             {
@@ -323,42 +302,9 @@ namespace System.IO
 
             if (IsDirectorySeparator(path[0]))
             {
-                // There is no valid way to specify a relative path with two initial slashes
-                return !IsDirectorySeparator(path[1]);
-            }
-
-            // The only way to specify a fixed path that doesn't begin with two slashes
-            // is the drive, colon, slash format- i.e. C:\
-            return !((path.Length >= 3)
-                && (path[1] == Path.VolumeSeparatorChar)
-                && IsDirectorySeparator(path[2]));
-        }
-
-        /// <summary>
-        /// Returns true if the path specified is relative to the current drive or working directory.
-        /// Returns false if the path is fixed to a specific drive or UNC path.  This method does no
-        /// validation of the path (URIs will be returned as relative as a result).
-        /// </summary>
-        /// <remarks>
-        /// Handles paths that use the alternate directory separator.  It is a frequent mistake to
-        /// assume that rooted paths (Path.IsPathRooted) are not relative.  This isn't the case.
-        /// "C:a" is drive relative- meaning that it will be resolved against the current directory
-        /// for C: (rooted, but relative). "C:\a" is rooted and not relative (the current directory
-        /// will not be used to modify the path).
-        /// </remarks>
-        internal static bool IsRelative(StringBuilder path)
-        {
-            if (path.Length < 2)
-            {
-                // It isn't fixed, it must be relative.  There is no way to specify a fixed
-                // path with one character (or less).
-                return true;
-            }
-
-            if (IsDirectorySeparator(path[0]))
-            {
-                // There is no valid way to specify a relative path with two initial slashes
-                return !IsDirectorySeparator(path[1]);
+                // There is no valid way to specify a relative path with two initial slashes or
+                // \? as ? isn't valid for drive relative paths and \??\ is equivalent to \\?\
+                return !(path[1] == '?' || IsDirectorySeparator(path[1]));
             }
 
             // The only way to specify a fixed path that doesn't begin with two slashes

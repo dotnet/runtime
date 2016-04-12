@@ -22,13 +22,13 @@ namespace System.Xml.Tests
 
             // for function v2
             {
-                this.AddChild(new CVariation(v2) { Attribute = new Variation("Read on a deep tree atleast more than 4K boundary") { Pri = 2 } });
+                this.AddChild(new CVariation(v2) { Attribute = new Variation("Read on a deep tree at least more than 4K boundary") { Pri = 2 } });
             }
 
 
             // for function v2_1
             {
-                this.AddChild(new CVariation(v2_1) { Attribute = new Variation("Read on a deep tree atleast more than 65535 boundary") { Pri = 2 } });
+                this.AddChild(new CVariation(v2_1) { Attribute = new Variation("Read on a deep tree at least more than 65535 boundary") { Pri = 2 } });
             }
 
 

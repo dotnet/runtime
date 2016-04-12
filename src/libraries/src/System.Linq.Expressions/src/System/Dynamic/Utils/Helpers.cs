@@ -17,7 +17,7 @@ namespace System.Dynamic.Utils
             {
                 return first;
             }
-            var set = new Set<T>(cmp);
+            var set = new HashSet<T>(cmp);
             for (T t = first; t != null; t = parent(t))
             {
                 set.Add(t);

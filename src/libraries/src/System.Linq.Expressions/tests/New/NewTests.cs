@@ -12,218 +12,237 @@ namespace System.Linq.Expressions.Tests
     {
         #region Test methods
 
-        [Fact]
-        public static void CheckNewCustomTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckNewCustomTest(bool useInterpreter)
         {
             Expression<Func<C>> e =
                 Expression.Lambda<Func<C>>(
                     Expression.New(typeof(C)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<C> f = e.Compile();
+            Func<C> f = e.Compile(useInterpreter);
 
             Assert.Equal(new C(), f());
         }
 
-        [Fact]
-        public static void CheckNewEnumTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckNewEnumTest(bool useInterpreter)
         {
             Expression<Func<E>> e =
                 Expression.Lambda<Func<E>>(
                     Expression.New(typeof(E)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<E> f = e.Compile();
+            Func<E> f = e.Compile(useInterpreter);
 
             Assert.Equal(new E(), f());
         }
 
-        [Fact]
-        public static void CheckNewNullableEnumTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckNewNullableEnumTest(bool useInterpreter)
         {
             Expression<Func<E?>> e =
                 Expression.Lambda<Func<E?>>(
                     Expression.New(typeof(E?)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<E?> f = e.Compile();
+            Func<E?> f = e.Compile(useInterpreter);
 
             Assert.Equal(new E?(), f());
         }
 
-        [Fact]
-        public static void CheckNewNullableIntTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckNewNullableIntTest(bool useInterpreter)
         {
             Expression<Func<int?>> e =
                 Expression.Lambda<Func<int?>>(
                     Expression.New(typeof(int?)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<int?> f = e.Compile();
+            Func<int?> f = e.Compile(useInterpreter);
 
             Assert.Equal(new int?(), f());
         }
 
-        [Fact]
-        public static void CheckNewStructTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckNewStructTest(bool useInterpreter)
         {
             Expression<Func<S>> e =
                 Expression.Lambda<Func<S>>(
                     Expression.New(typeof(S)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<S> f = e.Compile();
+            Func<S> f = e.Compile(useInterpreter);
 
             Assert.Equal(new S(), f());
         }
 
-        [Fact]
-        public static void CheckNewNullableStructTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckNewNullableStructTest(bool useInterpreter)
         {
             Expression<Func<S?>> e =
                 Expression.Lambda<Func<S?>>(
                     Expression.New(typeof(S?)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<S?> f = e.Compile();
+            Func<S?> f = e.Compile(useInterpreter);
 
             Assert.Equal(new S?(), f());
         }
 
-        [Fact]
-        public static void CheckNewStructWithStringTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckNewStructWithStringTest(bool useInterpreter)
         {
             Expression<Func<Sc>> e =
                 Expression.Lambda<Func<Sc>>(
                     Expression.New(typeof(Sc)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Sc> f = e.Compile();
+            Func<Sc> f = e.Compile(useInterpreter);
 
             Assert.Equal(new Sc(), f());
         }
 
-        [Fact]
-        public static void CheckNewNullableStructWithStringTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckNewNullableStructWithStringTest(bool useInterpreter)
         {
             Expression<Func<Sc?>> e =
                 Expression.Lambda<Func<Sc?>>(
                     Expression.New(typeof(Sc?)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Sc?> f = e.Compile();
+            Func<Sc?> f = e.Compile(useInterpreter);
 
             Assert.Equal(new Sc?(), f());
         }
 
-        [Fact]
-        public static void CheckNewStructWithStringAndFieldTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckNewStructWithStringAndFieldTest(bool useInterpreter)
         {
             Expression<Func<Scs>> e =
                 Expression.Lambda<Func<Scs>>(
                     Expression.New(typeof(Scs)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Scs> f = e.Compile();
+            Func<Scs> f = e.Compile(useInterpreter);
 
             Assert.Equal(new Scs(), f());
         }
 
-        [Fact]
-        public static void CheckNewNullableStructWithStringAndFieldTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckNewNullableStructWithStringAndFieldTest(bool useInterpreter)
         {
             Expression<Func<Scs?>> e =
                 Expression.Lambda<Func<Scs?>>(
                     Expression.New(typeof(Scs?)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Scs?> f = e.Compile();
+            Func<Scs?> f = e.Compile(useInterpreter);
 
             Assert.Equal(new Scs?(), f());
         }
 
-        [Fact]
-        public static void CheckNewStructWithTwoValuesTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckNewStructWithTwoValuesTest(bool useInterpreter)
         {
             Expression<Func<Sp>> e =
                 Expression.Lambda<Func<Sp>>(
                     Expression.New(typeof(Sp)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Sp> f = e.Compile();
+            Func<Sp> f = e.Compile(useInterpreter);
 
             Assert.Equal(new Sp(), f());
         }
 
-        [Fact]
-        public static void CheckNewNullableStructWithTwoValuesTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckNewNullableStructWithTwoValuesTest(bool useInterpreter)
         {
             Expression<Func<Sp?>> e =
                 Expression.Lambda<Func<Sp?>>(
                     Expression.New(typeof(Sp?)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Sp?> f = e.Compile();
+            Func<Sp?> f = e.Compile(useInterpreter);
 
             Assert.Equal(new Sp?(), f());
         }
 
-        [Fact]
-        public static void CheckNewGenericWithStructRestrictionWithEnumTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckNewGenericWithStructRestrictionWithEnumTest(bool useInterpreter)
         {
-            CheckNewGenericWithStructRestrictionHelper<E>();
+            CheckNewGenericWithStructRestrictionHelper<E>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckNewGenericWithStructRestrictionWithStructTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckNewGenericWithStructRestrictionWithStructTest(bool useInterpreter)
         {
-            CheckNewGenericWithStructRestrictionHelper<S>();
+            CheckNewGenericWithStructRestrictionHelper<S>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckNewGenericWithStructRestrictionWithStructWithStringAndFieldTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckNewGenericWithStructRestrictionWithStructWithStringAndFieldTest(bool useInterpreter)
         {
-            CheckNewGenericWithStructRestrictionHelper<Scs>();
+            CheckNewGenericWithStructRestrictionHelper<Scs>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckNewNullableGenericWithStructRestrictionWithEnumTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckNewNullableGenericWithStructRestrictionWithEnumTest(bool useInterpreter)
         {
-            CheckNewNullableGenericWithStructRestrictionHelper<E>();
+            CheckNewNullableGenericWithStructRestrictionHelper<E>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckNewNullableGenericWithStructRestrictionWithStructTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckNewNullableGenericWithStructRestrictionWithStructTest(bool useInterpreter)
         {
-            CheckNewNullableGenericWithStructRestrictionHelper<S>();
+            CheckNewNullableGenericWithStructRestrictionHelper<S>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckNewNullableGenericWithStructRestrictionWithStructWithStringAndFieldTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckNewNullableGenericWithStructRestrictionWithStructWithStringAndFieldTest(bool useInterpreter)
         {
-            CheckNewNullableGenericWithStructRestrictionHelper<Scs>();
+            CheckNewNullableGenericWithStructRestrictionHelper<Scs>(useInterpreter);
         }
 
         #endregion
 
         #region Generic helpers
 
-        private static void CheckNewGenericWithStructRestrictionHelper<Ts>() where Ts : struct
+        private static void CheckNewGenericWithStructRestrictionHelper<Ts>(bool useInterpreter) where Ts : struct
         {
             Expression<Func<Ts>> e =
                 Expression.Lambda<Func<Ts>>(
                     Expression.New(typeof(Ts)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Ts> f = e.Compile();
+            Func<Ts> f = e.Compile(useInterpreter);
 
             Assert.Equal(new Ts(), f());
         }
 
-        private static void CheckNewNullableGenericWithStructRestrictionHelper<Ts>() where Ts : struct
+        private static void CheckNewNullableGenericWithStructRestrictionHelper<Ts>(bool useInterpreter) where Ts : struct
         {
             Expression<Func<Ts?>> e =
                 Expression.Lambda<Func<Ts?>>(
                     Expression.New(typeof(Ts?)),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Ts?> f = e.Compile();
+            Func<Ts?> f = e.Compile(useInterpreter);
 
             Assert.Equal(new Ts?(), f());
         }
 
         #endregion
 
-        [Fact]
-        public static void PrivateDefaultConstructor()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void PrivateDefaultConstructor(bool useInterpreter)
         {
-            Assert.Equal("Test instance", TestPrivateDefaultConstructor.GetInstanceFunc()().ToString());
+            Assert.Equal("Test instance", TestPrivateDefaultConstructor.GetInstanceFunc(useInterpreter)().ToString());
         }
 
         class TestPrivateDefaultConstructor
@@ -232,10 +251,10 @@ namespace System.Linq.Expressions.Tests
             {
             }
 
-            public static Func<TestPrivateDefaultConstructor> GetInstanceFunc()
+            public static Func<TestPrivateDefaultConstructor> GetInstanceFunc(bool useInterpreter)
             {
                 var lambda = Expression.Lambda<Func<TestPrivateDefaultConstructor>>(Expression.New(typeof(TestPrivateDefaultConstructor)), new ParameterExpression[] { });
-                return lambda.Compile();
+                return lambda.Compile(useInterpreter);
             }
 
             public override string ToString()
@@ -251,16 +270,14 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<ArgumentException>(() => Expression.New(cctor));
         }
 
-        [Fact]
-        public static void CheckNewWithAbstractCtor()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckNewWithAbstractCtor(bool useInterpretation)
         {
             var ctor = typeof(AbstractCtor).GetTypeInfo().DeclaredConstructors.Single();
             var f = Expression.Lambda<Func<AbstractCtor>>(Expression.New(ctor));
 
-            foreach (var preferInterpretation in new[] { false, true })
-            {
-                Assert.Throws<InvalidOperationException>(() => f.Compile(preferInterpretation));
-            }
+            Assert.Throws<InvalidOperationException>(() => f.Compile(useInterpretation));
         }
 
         static class StaticCtor

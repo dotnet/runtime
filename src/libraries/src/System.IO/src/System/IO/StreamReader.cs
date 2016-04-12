@@ -141,7 +141,7 @@ namespace System.IO
         {
             if (stream == null || encoding == null)
             {
-                throw new ArgumentNullException((stream == null ? "stream" : "encoding"));
+                throw new ArgumentNullException(stream == null ? nameof(stream) : nameof(encoding));
             }
             if (!stream.CanRead)
             {
@@ -335,7 +335,7 @@ namespace System.IO
             }
             if (index < 0 || count < 0)
             {
-                throw new ArgumentOutOfRangeException((index < 0 ? "index" : "count"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             if (buffer.Length - index < count)
             {
@@ -416,7 +416,7 @@ namespace System.IO
             }
             if (index < 0 || count < 0)
             {
-                throw new ArgumentOutOfRangeException((index < 0 ? "index" : "count"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             if (buffer.Length - index < count)
             {
@@ -584,7 +584,7 @@ namespace System.IO
                 _isBlocked = (_byteLen < _byteBuffer.Length);
 
                 // Check for preamble before detect encoding. This is not to override the
-                // user suppplied Encoding for the one we implicitly detect. The user could
+                // user supplied Encoding for the one we implicitly detect. The user could
                 // customize the encoding which we will loose, such as ThrowOnError on UTF8
                 if (IsPreamble())
                 {
@@ -690,7 +690,7 @@ namespace System.IO
                 _isBlocked = (_byteLen < _byteBuffer.Length);
 
                 // Check for preamble before detect encoding. This is not to override the
-                // user suppplied Encoding for the one we implicitly detect. The user could
+                // user supplied Encoding for the one we implicitly detect. The user could
                 // customize the encoding which we will loose, such as ThrowOnError on UTF8
                 // Note: we don't need to recompute readToUserBuffer optimization as IsPreamble
                 // doesn't change the encoding or affect _maxCharsPerBuffer
@@ -797,7 +797,7 @@ namespace System.IO
         public override Task<string> ReadLineAsync()
         {
             // If we have been inherited into a subclass, the following implementation could be incorrect
-            // since it does not call through to Read() which a subclass might have overriden.  
+            // since it does not call through to Read() which a subclass might have overridden.  
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Read) when we are not sure.
             if (GetType() != typeof(StreamReader))
@@ -885,7 +885,7 @@ namespace System.IO
         public override Task<string> ReadToEndAsync()
         {
             // If we have been inherited into a subclass, the following implementation could be incorrect
-            // since it does not call through to Read() which a subclass might have overriden.  
+            // since it does not call through to Read() which a subclass might have overridden.  
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Read) when we are not sure.
             if (GetType() != typeof(StreamReader))
@@ -929,7 +929,7 @@ namespace System.IO
             }
             if (index < 0 || count < 0)
             {
-                throw new ArgumentOutOfRangeException((index < 0 ? "index" : "count"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             if (buffer.Length - index < count)
             {
@@ -937,7 +937,7 @@ namespace System.IO
             }
 
             // If we have been inherited into a subclass, the following implementation could be incorrect
-            // since it does not call through to Read() which a subclass might have overriden.  
+            // since it does not call through to Read() which a subclass might have overridden.  
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Read) when we are not sure.
             if (GetType() != typeof(StreamReader))
@@ -976,7 +976,7 @@ namespace System.IO
 
             while (count > 0)
             {
-                // n is the characeters avaialbe in _charBuffer
+                // n is the characters available in _charBuffer
                 int n = CharLen_Prop - CharPos_Prop;
 
                 // charBuffer is empty, let's read from the stream
@@ -1055,7 +1055,7 @@ namespace System.IO
                         IsBlocked_Prop = (ByteLen_Prop < tmpByteBuffer.Length);
 
                         // Check for preamble before detect encoding. This is not to override the
-                        // user suppplied Encoding for the one we implicitly detect. The user could
+                        // user supplied Encoding for the one we implicitly detect. The user could
                         // customize the encoding which we will loose, such as ThrowOnError on UTF8
                         // Note: we don't need to recompute readToUserBuffer optimization as IsPreamble
                         // doesn't change the encoding or affect _maxCharsPerBuffer
@@ -1136,7 +1136,7 @@ namespace System.IO
             }
             if (index < 0 || count < 0)
             {
-                throw new ArgumentOutOfRangeException((index < 0 ? "index" : "count"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             if (buffer.Length - index < count)
             {
@@ -1144,7 +1144,7 @@ namespace System.IO
             }
 
             // If we have been inherited into a subclass, the following implementation could be incorrect
-            // since it does not call through to Read() which a subclass might have overriden.  
+            // since it does not call through to Read() which a subclass might have overridden.  
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Read) when we are not sure.
             if (GetType() != typeof(StreamReader))
@@ -1297,7 +1297,7 @@ namespace System.IO
                 IsBlocked_Prop = (ByteLen_Prop < tmpByteBuffer.Length);
 
                 // Check for preamble before detect encoding. This is not to override the
-                // user suppplied Encoding for the one we implicitly detect. The user could
+                // user supplied Encoding for the one we implicitly detect. The user could
                 // customize the encoding which we will loose, such as ThrowOnError on UTF8
                 if (IsPreamble())
                 {

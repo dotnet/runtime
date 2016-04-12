@@ -25,7 +25,7 @@ namespace Roslyn.Reflection
 #endif
 {
     [DebuggerDisplay("{GetDebuggerDisplay(),nq}")]
-#if SRM && FUTURE
+#if SRM
     public
 #endif
     unsafe partial class BlobBuilder

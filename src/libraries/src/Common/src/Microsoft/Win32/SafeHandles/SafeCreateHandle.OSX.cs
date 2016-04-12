@@ -10,7 +10,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     /// <summary>
     /// This class is a wrapper around the Create pattern in OS X where
-    /// if a Create* function is called, the caler must also CFRelease 
+    /// if a Create* function is called, the caller must also CFRelease 
     /// on the same pointer in order to correctly free the memory.
     /// </summary>
     [System.Security.SecurityCritical]

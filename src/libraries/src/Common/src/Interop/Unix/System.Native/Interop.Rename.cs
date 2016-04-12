@@ -15,7 +15,7 @@ internal static partial class Interop
         /// <param name="oldPath">Path to the source item</param>
         /// <param name="newPath">Path to the desired new item</param>
         /// <returns>
-        /// Returns 0 on succes; otherwise, returns -1
+        /// Returns 0 on success; otherwise, returns -1
         /// </returns>
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_Rename", SetLastError = true)]
         internal static extern int Rename(string oldPath, string newPath);

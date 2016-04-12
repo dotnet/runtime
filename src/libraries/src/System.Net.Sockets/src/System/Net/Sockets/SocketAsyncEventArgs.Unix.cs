@@ -9,7 +9,7 @@ namespace System.Net.Sockets
 {
     public partial class SocketAsyncEventArgs : EventArgs, IDisposable
     {
-        private int _acceptedFileDescriptor;
+        private IntPtr _acceptedFileDescriptor;
         private int _socketAddressSize;
         private SocketFlags _receivedFlags;
 
@@ -47,10 +47,10 @@ namespace System.Net.Sockets
 
         private void InnerStartOperationAccept(bool userSuppliedBuffer)
         {
-            _acceptedFileDescriptor = -1;
+            _acceptedFileDescriptor = (IntPtr)(-1);
         }
 
-        private void AcceptCompletionCallback(int acceptedFileDescriptor, byte[] socketAddress, int socketAddressSize, SocketError socketError)
+        private void AcceptCompletionCallback(IntPtr acceptedFileDescriptor, byte[] socketAddress, int socketAddressSize, SocketError socketError)
         {
             // TODO: receive bytes on socket if requested
 

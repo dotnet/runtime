@@ -3,10 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-
 using Xunit;
 
-public class Utility
+public static class ExceptionUtility
 {
     public static void ValidateExceptionProperties(Exception e,
         int dataCount = 0,

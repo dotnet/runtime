@@ -153,7 +153,7 @@ namespace Internal.Reflection.Extensions.NonPortable
 
                             if (!isImplicitlyOverridden)
                             {
-                                // This member overrides another and is the most derived instance of it we've fonud.
+                                // This member overrides another and is the most derived instance of it we've found.
                                 overridingMembers.Add(member);
                             }
                         }

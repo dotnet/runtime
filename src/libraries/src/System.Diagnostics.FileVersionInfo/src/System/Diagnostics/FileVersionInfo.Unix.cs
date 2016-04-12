@@ -229,7 +229,7 @@ namespace System.Diagnostics
             BlobReader signatureReader = reader.GetBlobReader(signature);
             BlobReader valueReader = reader.GetBlobReader(attr.Value);
 
-            const ushort Prolog = 1; // two-byte "prolog" defined by Ecma 335 (II.23.3) to be at the beginning of attribute value blobs
+            const ushort Prolog = 1; // two-byte "prolog" defined by ECMA-335 (II.23.3) to be at the beginning of attribute value blobs
             if (valueReader.ReadUInt16() == Prolog)
             {
                 SignatureHeader header = signatureReader.ReadSignatureHeader();

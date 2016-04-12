@@ -2,68 +2,25 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
+using System.Collections.Generic;
 using Xunit;
 
-namespace System.Globalization.CalendarsTests
+namespace System.Globalization.Tests
 {
-    // System.Globalization.TaiwanCalendar.GetYear(DateTime)
     public class TaiwanCalendarGetYear
     {
-        private readonly int[] _DAYS_PER_MONTHS_IN_LEAP_YEAR = new int[13] { 0, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
-        private readonly int[] _DAYS_PER_MONTHS_IN_NO_LEAP_YEAR = new int[13] { 0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
-
-        #region Positive Tests
-        // PosTest1: Verify the DateTime is a random Date
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> GetYear_TestData()
         {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            Random rand = new Random(-55);
-            int year = rand.Next(tc.MinSupportedDateTime.Year, tc.MaxSupportedDateTime.Year + 1);
-            int month = rand.Next(1, 12);
-            int day;
-            if (IsLeapYear(year))
-            {
-                day = rand.Next(1, _DAYS_PER_MONTHS_IN_LEAP_YEAR[month] + 1);
-            }
-            else
-            {
-                day = rand.Next(1, _DAYS_PER_MONTHS_IN_NO_LEAP_YEAR[month] + 1);
-            }
-
-            DateTime dt = new DateTime(year, month, day);
-
-            int actualYear = dt.Year - 1911;
-            Assert.Equal(tc.GetYear(dt), actualYear);
+            yield return new object[] { new TaiwanCalendar().MinSupportedDateTime };
+            yield return new object[] { new TaiwanCalendar().MaxSupportedDateTime };
+            yield return new object[] { TaiwanCalendarUtilities.RandomDateTime() };
         }
 
-        // PosTest2: Verify the DateTime is TaiwanCalendar MaxSupportDateTime
-        [Fact]
-        public void PosTest2()
+        [Theory]
+        [MemberData(nameof(GetYear_TestData))]
+        public void GetYear(DateTime time)
         {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            DateTime dt = tc.MaxSupportedDateTime;
-            Assert.Equal(tc.GetYear(dt), 8088);
+            Assert.Equal(time.Year - 1911, new TaiwanCalendar().GetYear(time));
         }
-
-        // PosTest3: Verify the DateTime is TaiwanCalendar MinSupportedDateTime
-        [Fact]
-        public void PosTest3()
-        {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            DateTime dt = tc.MinSupportedDateTime;
-            Assert.Equal(tc.GetYear(dt), 1);
-        }
-        #endregion
-
-        #region Helper Methods
-        private bool IsLeapYear(int year)
-        {
-            return ((year % 4) == 0) && !(((year % 100) == 0) || ((year % 400) == 0));
-        }
-        #endregion
     }
 }
-

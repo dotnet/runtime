@@ -297,7 +297,7 @@ namespace System.Net
 
             // Match Desktop behavior: prevent someone from getting a request stream
             // if the protocol verb/method doesn't support it. Note that this is not
-            // entirely compliant RFC2616 for the aforementioned compatbility reasons.
+            // entirely compliant RFC2616 for the aforementioned compatibility reasons.
             if (string.Equals(HttpMethod.Get.Method, _originVerb, StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(HttpMethod.Head.Method, _originVerb, StringComparison.OrdinalIgnoreCase) ||
                 string.Equals("CONNECT", _originVerb, StringComparison.OrdinalIgnoreCase))
@@ -400,7 +400,7 @@ namespace System.Net
             foreach (string headerName in _webHeaderCollection)
             {
                 // The System.Net.Http APIs require HttpRequestMessage headers to be properly divided between the request headers
-                // collection and the request content headers colllection for all well-known header names.  And custom headers
+                // collection and the request content headers collection for all well-known header names.  And custom headers
                 // are only allowed in the request headers collection and not in the request content headers collection.
                 if (IsWellKnownContentHeader(headerName))
                 {

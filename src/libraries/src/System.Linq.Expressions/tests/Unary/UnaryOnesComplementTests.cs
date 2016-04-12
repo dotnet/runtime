@@ -12,83 +12,83 @@ namespace System.Linq.Expressions.Tests
     {
         #region Test methods
 
-        [Fact] //[WorkItem(3737, "https://github.com/dotnet/corefx/issues/3737")]
-        public static void CheckUnaryArithmeticOnesComplementShortTest()
+        [Theory, ClassData(typeof(CompilationTypes))] //[WorkItem(3737, "https://github.com/dotnet/corefx/issues/3737")]
+        public static void CheckUnaryArithmeticOnesComplementShortTest(bool useInterpreter)
         {
             short[] values = new short[] { 0, 1, -1, short.MinValue, short.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
-                VerifyArithmeticOnesComplementShort(values[i]);
+                VerifyArithmeticOnesComplementShort(values[i], useInterpreter);
             }
         }
 
-        [Fact] //[WorkItem(3737, "https://github.com/dotnet/corefx/issues/3737")]
-        public static void CheckUnaryArithmeticOnesComplementUShortTest()
+        [Theory, ClassData(typeof(CompilationTypes))] //[WorkItem(3737, "https://github.com/dotnet/corefx/issues/3737")]
+        public static void CheckUnaryArithmeticOnesComplementUShortTest(bool useInterpreter)
         {
             ushort[] values = new ushort[] { 0, 1, ushort.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
-                VerifyArithmeticOnesComplementUShort(values[i]);
+                VerifyArithmeticOnesComplementUShort(values[i], useInterpreter);
             }
         }
 
-        [Fact] //[WorkItem(3737, "https://github.com/dotnet/corefx/issues/3737")]
-        public static void CheckUnaryArithmeticOnesComplementIntTest()
+        [Theory, ClassData(typeof(CompilationTypes))] //[WorkItem(3737, "https://github.com/dotnet/corefx/issues/3737")]
+        public static void CheckUnaryArithmeticOnesComplementIntTest(bool useInterpreter)
         {
             int[] values = new int[] { 0, 1, -1, int.MinValue, int.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
-                VerifyArithmeticOnesComplementInt(values[i]);
+                VerifyArithmeticOnesComplementInt(values[i], useInterpreter);
             }
         }
 
-        [Fact] //[WorkItem(3737, "https://github.com/dotnet/corefx/issues/3737")]
-        public static void CheckUnaryArithmeticOnesComplementUIntTest()
+        [Theory, ClassData(typeof(CompilationTypes))] //[WorkItem(3737, "https://github.com/dotnet/corefx/issues/3737")]
+        public static void CheckUnaryArithmeticOnesComplementUIntTest(bool useInterpreter)
         {
             uint[] values = new uint[] { 0, 1, uint.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
-                VerifyArithmeticOnesComplementUInt(values[i]);
+                VerifyArithmeticOnesComplementUInt(values[i], useInterpreter);
             }
         }
 
-        [Fact] //[WorkItem(3737, "https://github.com/dotnet/corefx/issues/3737")]
-        public static void CheckUnaryArithmeticOnesComplementLongTest()
+        [Theory, ClassData(typeof(CompilationTypes))] //[WorkItem(3737, "https://github.com/dotnet/corefx/issues/3737")]
+        public static void CheckUnaryArithmeticOnesComplementLongTest(bool useInterpreter)
         {
             long[] values = new long[] { 0, 1, -1, long.MinValue, long.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
-                VerifyArithmeticOnesComplementLong(values[i]);
+                VerifyArithmeticOnesComplementLong(values[i], useInterpreter);
             }
         }
 
-        [Fact] //[WorkItem(3737, "https://github.com/dotnet/corefx/issues/3737")]
-        public static void CheckUnaryArithmeticOnesComplementULongTest()
+        [Theory, ClassData(typeof(CompilationTypes))] //[WorkItem(3737, "https://github.com/dotnet/corefx/issues/3737")]
+        public static void CheckUnaryArithmeticOnesComplementULongTest(bool useInterpreter)
         {
             ulong[] values = new ulong[] { 0, 1, ulong.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
-                VerifyArithmeticOnesComplementULong(values[i]);
+                VerifyArithmeticOnesComplementULong(values[i], useInterpreter);
             }
         }
 
-        [Fact] //[WorkItem(3737, "https://github.com/dotnet/corefx/issues/3737")]
-        public static void CheckUnaryArithmeticOnesComplementByteTest()
+        [Theory, ClassData(typeof(CompilationTypes))] //[WorkItem(3737, "https://github.com/dotnet/corefx/issues/3737")]
+        public static void CheckUnaryArithmeticOnesComplementByteTest(bool useInterpreter)
         {
             byte[] values = new byte[] { 0, 1, byte.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
-                VerifyArithmeticOnesComplementByte(values[i]);
+                VerifyArithmeticOnesComplementByte(values[i], useInterpreter);
             }
         }
 
-        [Fact] //[WorkItem(3737, "https://github.com/dotnet/corefx/issues/3737")]
-        public static void CheckUnaryArithmeticOnesComplementSByteTest()
+        [Theory, ClassData(typeof(CompilationTypes))] //[WorkItem(3737, "https://github.com/dotnet/corefx/issues/3737")]
+        public static void CheckUnaryArithmeticOnesComplementSByteTest(bool useInterpreter)
         {
             sbyte[] values = new sbyte[] { 0, 1, -1, sbyte.MinValue, sbyte.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
-                VerifyArithmeticOnesComplementSByte(values[i]);
+                VerifyArithmeticOnesComplementSByte(values[i], useInterpreter);
             }
         }
 
@@ -96,83 +96,83 @@ namespace System.Linq.Expressions.Tests
 
         #region Test verifiers
 
-        private static void VerifyArithmeticOnesComplementShort(short value)
+        private static void VerifyArithmeticOnesComplementShort(short value, bool useInterpreter)
         {
             Expression<Func<short>> e =
                 Expression.Lambda<Func<short>>(
                     Expression.OnesComplement(Expression.Constant(value, typeof(short))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<short> f = e.Compile();
+            Func<short> f = e.Compile(useInterpreter);
             Assert.Equal((short)(~value), f());
         }
 
-        private static void VerifyArithmeticOnesComplementUShort(ushort value)
+        private static void VerifyArithmeticOnesComplementUShort(ushort value, bool useInterpreter)
         {
             Expression<Func<ushort>> e =
                 Expression.Lambda<Func<ushort>>(
                     Expression.OnesComplement(Expression.Constant(value, typeof(ushort))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<ushort> f = e.Compile();
+            Func<ushort> f = e.Compile(useInterpreter);
             Assert.Equal((ushort)(~value), f());
         }
 
-        private static void VerifyArithmeticOnesComplementInt(int value)
+        private static void VerifyArithmeticOnesComplementInt(int value, bool useInterpreter)
         {
             Expression<Func<int>> e =
                 Expression.Lambda<Func<int>>(
                     Expression.OnesComplement(Expression.Constant(value, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<int> f = e.Compile();
+            Func<int> f = e.Compile(useInterpreter);
             Assert.Equal((int)(~value), f());
         }
 
-        private static void VerifyArithmeticOnesComplementUInt(uint value)
+        private static void VerifyArithmeticOnesComplementUInt(uint value, bool useInterpreter)
         {
             Expression<Func<uint>> e =
                 Expression.Lambda<Func<uint>>(
                     Expression.OnesComplement(Expression.Constant(value, typeof(uint))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<uint> f = e.Compile();
+            Func<uint> f = e.Compile(useInterpreter);
             Assert.Equal((uint)(~value), f());
         }
 
-        private static void VerifyArithmeticOnesComplementLong(long value)
+        private static void VerifyArithmeticOnesComplementLong(long value, bool useInterpreter)
         {
             Expression<Func<long>> e =
                 Expression.Lambda<Func<long>>(
                     Expression.OnesComplement(Expression.Constant(value, typeof(long))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<long> f = e.Compile();
+            Func<long> f = e.Compile(useInterpreter);
             Assert.Equal((long)(~value), f());
         }
 
-        private static void VerifyArithmeticOnesComplementULong(ulong value)
+        private static void VerifyArithmeticOnesComplementULong(ulong value, bool useInterpreter)
         {
             Expression<Func<ulong>> e =
                 Expression.Lambda<Func<ulong>>(
                     Expression.OnesComplement(Expression.Constant(value, typeof(ulong))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<ulong> f = e.Compile();
+            Func<ulong> f = e.Compile(useInterpreter);
             Assert.Equal((ulong)(~value), f());
         }
 
-        private static void VerifyArithmeticOnesComplementByte(byte value)
+        private static void VerifyArithmeticOnesComplementByte(byte value, bool useInterpreter)
         {
             Expression<Func<byte>> e =
                 Expression.Lambda<Func<byte>>(
                     Expression.OnesComplement(Expression.Constant(value, typeof(byte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<byte> f = e.Compile();
+            Func<byte> f = e.Compile(useInterpreter);
             Assert.Equal((byte)(~value), f());
         }
 
-        private static void VerifyArithmeticOnesComplementSByte(sbyte value)
+        private static void VerifyArithmeticOnesComplementSByte(sbyte value, bool useInterpreter)
         {
             Expression<Func<sbyte>> e =
                 Expression.Lambda<Func<sbyte>>(
                     Expression.OnesComplement(Expression.Constant(value, typeof(sbyte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<sbyte> f = e.Compile();
+            Func<sbyte> f = e.Compile(useInterpreter);
             Assert.Equal((sbyte)(~value), f());
         }
 

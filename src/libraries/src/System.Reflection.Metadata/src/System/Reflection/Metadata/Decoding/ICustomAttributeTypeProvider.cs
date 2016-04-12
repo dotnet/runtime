@@ -8,7 +8,7 @@ namespace System.Reflection.Metadata.Decoding
 namespace Roslyn.Reflection.Metadata.Decoding
 #endif
 {
-#if SRM && FUTURE
+#if SRM
     public
 #endif
     interface ICustomAttributeTypeProvider<TType> : IPrimitiveTypeProvider<TType>, ISZArrayTypeProvider<TType>, ITypeProvider<TType>

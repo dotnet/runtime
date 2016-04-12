@@ -35,7 +35,6 @@ namespace BasicEventSourceTests
         /// Tests WriteEvent using the manifest based mechanism.   
         /// Tests bTraceListener path. 
         /// </summary>
-        [ActiveIssue(4871, PlatformID.AnyUnix)]
         [Fact]
         public void Test_WriteEvent_Manifest_EventListener()
         {
@@ -46,7 +45,6 @@ namespace BasicEventSourceTests
         /// Tests WriteEvent using the manifest based mechanism.   
         /// Tests bTraceListener path using events instead of virtual callbacks. 
         /// </summary>
-        [ActiveIssue(4871, PlatformID.AnyUnix)]
         [Fact]
         public void Test_WriteEvent_Manifest_EventListener_UseEvents()
         {
@@ -67,7 +65,6 @@ namespace BasicEventSourceTests
         /// Tests WriteEvent using the self-describing mechanism.   
         /// Tests both the ETW and TraceListener paths. 
         /// </summary>
-        [ActiveIssue(4871, PlatformID.AnyUnix)]
         [Fact]
         public void Test_WriteEvent_SelfDescribing_EventListener()
         {
@@ -79,7 +76,6 @@ namespace BasicEventSourceTests
         /// Tests both the ETW and TraceListener paths using events 
         /// instead of virtual callbacks. 
         /// </summary>
-        [ActiveIssue(4871, PlatformID.AnyUnix)]
         [Fact]
         public void Test_WriteEvent_SelfDescribing_EventListener_UseEvents()
         {
@@ -405,7 +401,6 @@ namespace BasicEventSourceTests
         /// Tests sending complex data (class, arrays etc) from WriteEvent 
         /// Tests the EventListener case
         /// </summary>
-        [ActiveIssue(4871, PlatformID.AnyUnix)]
         [Fact]
         public void Test_WriteEvent_ComplexData_SelfDescribing_EventListener()
         {
@@ -477,7 +472,6 @@ namespace BasicEventSourceTests
         /// Uses Manifest format      
         /// Tests the EventListener case
         /// </summary>
-        [ActiveIssue(4871, PlatformID.AnyUnix)]
         [Fact]
         public void Test_WriteEvent_ByteArray_Manifest_EventListener()
         {
@@ -490,7 +484,6 @@ namespace BasicEventSourceTests
         /// Tests the EventListener case using events instead of virtual
         /// callbacks.
         /// </summary>
-        [ActiveIssue(4871, PlatformID.AnyUnix)]
         [Fact]
         public void Test_WriteEvent_ByteArray_Manifest_EventListener_UseEvents()
         {
@@ -515,7 +508,6 @@ namespace BasicEventSourceTests
         /// Uses Self-Describing format
         /// Tests the EventListener case
         /// </summary>
-        [ActiveIssue(4871, PlatformID.AnyUnix)]
         [Fact]
         public void Test_WriteEvent_ByteArray_SelfDescribing_EventListener()
         {

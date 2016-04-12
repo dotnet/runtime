@@ -58,7 +58,7 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
-        /// Provides a list of variables, supporing read/write of the values
+        /// Provides a list of variables, supporting read/write of the values
         /// Exposed via RuntimeVariablesExpression
         /// </summary>
         private sealed class RuntimeVariableList : IRuntimeVariables
@@ -68,7 +68,7 @@ namespace System.Runtime.CompilerServices
             private readonly object[] _data;
 
             // An array of (int, int) pairs, each representing how to find a
-            // variable in the environment data struction.
+            // variable in the environment data structure.
             //
             // The first integer indicates the number of times to go up in the
             // closure chain, the second integer indicates the index into that

@@ -2,51 +2,28 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Text.Tests
 {
     public class UTF7EncodingGetMaxCharCount
     {
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
 
-        // PosTest1: Verify method GetMaxCharCount using random integer
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> GetMaxCharCount_TestData()
         {
-            int byteCount = _generator.GetInt32(-55);
-            UTF7Encoding utf7 = new UTF7Encoding();
-            int maxCharCount = utf7.GetMaxCharCount(byteCount);
+            int randomByteCount = s_randomDataGenerator.GetInt32(-55);
+            yield return new object[] { randomByteCount, randomByteCount };
+            yield return new object[] { 0, 1 };
+            yield return new object[] { int.MaxValue, int.MaxValue };
         }
 
-        // PosTest2: Verify method GetMaxCharCount using 0
-        [Fact]
-        public void PosTest2()
+        [Theory]
+        [MemberData(nameof(GetMaxCharCount_TestData))]
+        public void GetMaxCharCount(int byteCount, int expected)
         {
-            int byteCount = 0;
-            UTF7Encoding utf7 = new UTF7Encoding();
-            int maxCharCount = utf7.GetMaxCharCount(byteCount);
-        }
-
-        // PosTest2: Verify method GetMaxCharCount using Int32.MaxValue
-        [Fact]
-        public void PosTest3()
-        {
-            int byteCount = Int32.MaxValue;
-            UTF7Encoding utf7 = new UTF7Encoding();
-            int maxCharCount = utf7.GetMaxCharCount(byteCount);
-        }
-
-        // NegTest1: ArgumentOutOfRangeException is not thrown when byteCount is less than zero.
-        [Fact]
-        public void NegTest1()
-        {
-            UTF7Encoding utf7 = new UTF7Encoding();
-            int byteCount = -1;
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                int maxCharCount = utf7.GetMaxCharCount(byteCount);
-            });
+            Assert.Equal(expected, new UTF7Encoding().GetMaxCharCount(byteCount));
         }
     }
 }

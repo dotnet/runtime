@@ -90,7 +90,7 @@ namespace System.Runtime.Serialization
                     i = -1;
                 }
             }
-            // m_obj must ALWAYS have atleast one slot empty (null).
+            // m_obj must ALWAYS have at least one slot empty (null).
             DiagnosticUtility.DebugAssert("Object table overflow");
             throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ObjectTableOverflow)));
         }
@@ -129,7 +129,7 @@ namespace System.Runtime.Serialization
                     next = -1;
                 }
             }
-            // m_obj must ALWAYS have atleast one slot empty (null).
+            // m_obj must ALWAYS have at least one slot empty (null).
             DiagnosticUtility.DebugAssert("Object table overflow");
             throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ObjectTableOverflow)));
         }

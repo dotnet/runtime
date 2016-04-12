@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 
 namespace System.Data
@@ -450,7 +451,13 @@ namespace System.Data
 
         public static string LcidToLocaleNameInternal(int lcid)
         {
-            return s_mapper[lcid].LocaleName;
+            LocaleCodePage value;
+            if (s_mapper.TryGetValue(lcid, out value))
+            {
+                return value.LocaleName;
+            }
+
+            throw new CultureNotFoundException(nameof(lcid), lcid.ToString(), message: null);
         }
 
         public static int LocaleNameToAnsiCodePage(string localeName)

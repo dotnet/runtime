@@ -2,31 +2,25 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Globalization.Tests
 {
     public class CultureInfoNativeName
     {
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> NativeName_TestData()
         {
-            CultureInfo ci = CultureInfo.CurrentCulture;
-            {
-                string inFactName = ci.NativeName;
-                string excepectedName = new CultureInfo(ci.Name).NativeName;
-                Assert.Equal(excepectedName, inFactName);
-            }
+            yield return new object[] { CultureInfo.CurrentCulture.Name, CultureInfo.CurrentCulture.NativeName };
+            yield return new object[] { "en-US", "English (United States)" };
+            yield return new object[] { "en-CA", "English (Canada)" };
         }
 
         [Theory]
-        [InlineData("en-US", "English (United States)")]
-        [InlineData("en-CA", "English (Canada)")]
-        public void TestNativeNameLocale(string locale, string expected)
+        [MemberData(nameof(NativeName_TestData))]
+        public void NativeName(string name, string expected)
         {
-            CultureInfo myTestCulture = new CultureInfo(locale);
+            CultureInfo myTestCulture = new CultureInfo(name);
             Assert.Equal(expected, myTestCulture.NativeName);
         }
     }

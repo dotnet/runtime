@@ -10,10 +10,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <File Include="$(RHELNativePath)\System.Native.so">
+    <File Include="$(RHELNativePath)System.Native.so">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
     </File>
-    <File Include="$(RHELNativePath)\System.Native.a">
+    <File Include="$(RHELNativePath)System.Native.a">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
     </File>
   </ItemGroup>

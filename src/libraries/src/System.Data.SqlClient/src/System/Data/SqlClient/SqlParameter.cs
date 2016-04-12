@@ -115,7 +115,7 @@ namespace System.Data.SqlClient
         }
 
         //
-        // currently the user can't set this value.  it gets set by the returnvalue from tds
+        // currently the user can't set this value.  it gets set by the return value from tds
         //
         internal SqlCollation Collation
         {
@@ -150,7 +150,7 @@ namespace System.Data.SqlClient
                 }
                 if ((value & SqlString.x_iValidSqlCompareOptionMask) != value)
                 {
-                    throw ADP.ArgumentOutOfRange("CompareInfo");
+                    throw ADP.ArgumentOutOfRange(nameof(CompareInfo));
                 }
                 collation.SqlCompareOptions = value;
             }
@@ -252,7 +252,7 @@ namespace System.Data.SqlClient
                 }
                 if (value != (SqlCollation.MaskLcid & value))
                 {
-                    throw ADP.ArgumentOutOfRange("LocaleId");
+                    throw ADP.ArgumentOutOfRange(nameof(LocaleId));
                 }
                 collation.LCID = value;
             }
@@ -351,7 +351,7 @@ namespace System.Data.SqlClient
                 typeSpecificNamePart2 = this.XmlSchemaCollectionOwningSchema;
                 typeSpecificNamePart3 = this.XmlSchemaCollectionName;
             }
-            else if (SqlDbType.Udt == mt.SqlDbType || (SqlDbType.Structured == mt.SqlDbType && !ADP.IsEmpty(this.TypeName)))
+            else if (SqlDbType.Udt == mt.SqlDbType || (SqlDbType.Structured == mt.SqlDbType && !string.IsNullOrEmpty(this.TypeName)))
             {
                 // Split the input name. The type name is specified as single 3 part name.
                 // NOTE: ParseTypeName throws if format is incorrect
@@ -382,14 +382,14 @@ namespace System.Data.SqlClient
                 }
                 else
                 {
-                    throw ADP.ArgumentOutOfRange("names");
+                    throw ADP.ArgumentOutOfRange(nameof(names));
                 }
 
-                if ((!ADP.IsEmpty(typeSpecificNamePart1) && TdsEnums.MAX_SERVERNAME < typeSpecificNamePart1.Length)
-                    || (!ADP.IsEmpty(typeSpecificNamePart2) && TdsEnums.MAX_SERVERNAME < typeSpecificNamePart2.Length)
-                    || (!ADP.IsEmpty(typeSpecificNamePart3) && TdsEnums.MAX_SERVERNAME < typeSpecificNamePart3.Length))
+                if ((!string.IsNullOrEmpty(typeSpecificNamePart1) && TdsEnums.MAX_SERVERNAME < typeSpecificNamePart1.Length)
+                    || (!string.IsNullOrEmpty(typeSpecificNamePart2) && TdsEnums.MAX_SERVERNAME < typeSpecificNamePart2.Length)
+                    || (!string.IsNullOrEmpty(typeSpecificNamePart3) && TdsEnums.MAX_SERVERNAME < typeSpecificNamePart3.Length))
                 {
-                    throw ADP.ArgumentOutOfRange("names");
+                    throw ADP.ArgumentOutOfRange(nameof(names));
                 }
             }
 
@@ -429,7 +429,7 @@ namespace System.Data.SqlClient
                                             this.Direction);
         }
 
-        internal bool ParamaterIsSqlType
+        internal bool ParameterIsSqlType
         {
             get
             {
@@ -450,7 +450,7 @@ namespace System.Data.SqlClient
             }
             set
             {
-                if (ADP.IsEmpty(value) || (value.Length < TdsEnums.MAX_PARAMETER_NAME_LENGTH)
+                if (string.IsNullOrEmpty(value) || (value.Length < TdsEnums.MAX_PARAMETER_NAME_LENGTH)
                     || (('@' == value[0]) && (value.Length <= TdsEnums.MAX_PARAMETER_NAME_LENGTH)))
                 {
                     if (_parameterName != value)
@@ -671,7 +671,7 @@ namespace System.Data.SqlClient
                 }
                 else if (_sqlBufferReturnValue != null)
                 {
-                    if (ParamaterIsSqlType)
+                    if (ParameterIsSqlType)
                     {
                         return _sqlBufferReturnValue.SqlValue;
                     }
@@ -746,7 +746,7 @@ namespace System.Data.SqlClient
                 else
                 {
                     // @hack: until we have ForceOffset behavior we have the following semantics:
-                    // @hack: if the user supplies a Size through the Size propeprty or constructor,
+                    // @hack: if the user supplies a Size through the Size property or constructor,
                     // @hack: we only send a MAX of Size bytes over.  If the actualSize is < Size, then
                     // @hack: we send over actualSize
                     int coercedSize = 0;
@@ -1396,7 +1396,7 @@ namespace System.Data.SqlClient
             // Validate structured-type-specific details.
             if (metaType.SqlDbType == SqlDbType.Structured)
             {
-                if (!isCommandProc && ADP.IsEmpty(TypeName))
+                if (!isCommandProc && string.IsNullOrEmpty(TypeName))
                     throw SQL.MustSetTypeNameForParam(metaType.TypeName, this.ParameterName);
 
                 if (ParameterDirection.Input != this.Direction)
@@ -1409,14 +1409,14 @@ namespace System.Data.SqlClient
                     throw SQL.DBNullNotSupportedForTVPValues(this.ParameterName);
                 }
             }
-            else if (!ADP.IsEmpty(TypeName))
+            else if (!string.IsNullOrEmpty(TypeName))
             {
                 throw SQL.UnexpectedTypeNameForNonStructParams(this.ParameterName);
             }
         }
 
         // func will change type to that with a 4 byte length if the type has a two
-        // byte length and a parameter length > than that expressable in 2 bytes
+        // byte length and a parameter length > than that expressible in 2 bytes
         internal MetaType ValidateTypeLengths()
         {
             MetaType mt = InternalMetaType;
@@ -1433,11 +1433,11 @@ namespace System.Data.SqlClient
                 // 'actualSizeInBytes' is the size of value passed; 
                 // 'sizeInCharacters' is the parameter size;
                 // 'actualSizeInBytes' is in bytes; 
-                // 'this.Size' is in charaters; 
+                // 'this.Size' is in characters; 
                 // 'sizeInCharacters' is in characters; 
                 // 'TdsEnums.TYPE_SIZE_LIMIT' is in bytes;
                 // For Non-NCharType and for non-Yukon or greater variables, size should be maintained;
-                // Modifed variable names from 'size' to 'sizeInCharacters', 'actualSize' to 'actualSizeInBytes', and 
+                // Modified variable names from 'size' to 'sizeInCharacters', 'actualSize' to 'actualSizeInBytes', and 
                 // 'maxSize' to 'maxSizeInBytes'
                 // The idea is to
                 // Keeping these goals in mind - the following are the changes we are making

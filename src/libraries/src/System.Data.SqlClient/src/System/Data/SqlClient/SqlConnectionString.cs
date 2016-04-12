@@ -88,7 +88,7 @@ namespace System.Data.SqlClient
             internal const string Connect_Retry_Interval = "connectretryinterval";
         }
 
-        // Constant for the number of duplicate options in the connnection string
+        // Constant for the number of duplicate options in the connection string
 
         private static class SYNONYM
         {
@@ -202,7 +202,12 @@ namespace System.Data.SqlClient
             }
 
             _integratedSecurity = ConvertValueToIntegratedSecurity();
-
+#if MANAGED_SNI
+            if(_integratedSecurity)
+            {
+                throw SQL.UnsupportedKeyword(KEY.Integrated_Security);
+            }
+#endif
             _encrypt = ConvertValueToBoolean(KEY.Encrypt, DEFAULT.Encrypt);
             _mars = ConvertValueToBoolean(KEY.MARS, DEFAULT.MARS);
             _persistSecurityInfo = ConvertValueToBoolean(KEY.Persist_Security_Info, DEFAULT.Persist_Security_Info);
@@ -305,12 +310,12 @@ namespace System.Data.SqlClient
             }
 
 
-            if (true == _userInstance && !ADP.IsEmpty(_failoverPartner))
+            if (true == _userInstance && !string.IsNullOrEmpty(_failoverPartner))
             {
                 throw SQL.UserInstanceFailoverNotCompatible();
             }
 
-            if (ADP.IsEmpty(typeSystemVersionString))
+            if (string.IsNullOrEmpty(typeSystemVersionString))
             {
                 typeSystemVersionString = DbConnectionStringDefaults.TypeSystemVersion;
             }

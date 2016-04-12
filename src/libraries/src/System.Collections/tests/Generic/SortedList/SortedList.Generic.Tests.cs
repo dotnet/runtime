@@ -22,7 +22,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public override void Enumerator_MoveNext_AfterDisposal(int count)
         {
             // Disposal of the enumerator is treated the same as a Reset call
@@ -39,7 +39,7 @@ namespace System.Collections.Tests
         #region Constructor_IComparer
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedList_Generic_Constructor_IComparer(int count)
         {
             IComparer<TKey> comparer = GetKeyIComparer();
@@ -54,7 +54,7 @@ namespace System.Collections.Tests
         #region Constructor_IDictionary
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedList_Generic_Constructor_IDictionary(int count)
         {
             IDictionary<TKey, TValue> source = GenericIDictionaryFactory(count);
@@ -63,7 +63,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedList_Generic_Constructor_NullIDictionary_ThrowsArgumentNullException(int count)
         {
             Assert.Throws<ArgumentNullException>(() => new SortedList<TKey, TValue>((IDictionary<TKey, TValue>)null));
@@ -74,7 +74,7 @@ namespace System.Collections.Tests
         #region Constructor_IDictionary_IComparer
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedList_Generic_Constructor_IDictionary_IComparer(int count)
         {
             IComparer<TKey> comparer = GetKeyIComparer();
@@ -89,7 +89,7 @@ namespace System.Collections.Tests
         #region Constructor_int
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedList_Generic_Constructor_int(int count)
         {
             SortedList<TKey, TValue> dictionary = new SortedList<TKey, TValue>(count);
@@ -98,7 +98,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedList_Generic_Constructor_NegativeCapacity_ThrowsArgumentOutOfRangeException(int count)
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => new SortedList<TKey, TValue>(-1));
@@ -110,7 +110,7 @@ namespace System.Collections.Tests
         #region Constructor_int_IComparer
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedList_Generic_Constructor_int_IComparer(int count)
         {
             IComparer<TKey> comparer = GetKeyIComparer();
@@ -125,7 +125,7 @@ namespace System.Collections.Tests
         #region Capacity
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedList_Generic_Capacity_setRoundTrips(int count)
         {
             SortedList<TKey, TValue> dictionary = (SortedList<TKey, TValue>)GenericIDictionaryFactory(count);
@@ -137,7 +137,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedList_Generic_Capacity_NegativeValue_ThrowsArgumentOutOfRangeException(int count)
         {
             SortedList<TKey, TValue> dictionary = (SortedList<TKey, TValue>)GenericIDictionaryFactory(count);
@@ -147,7 +147,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedList_Generic_Capacity_LessThanCount_ThrowsArgumentOutOfRangeException(int count)
         {
             SortedList<TKey, TValue> dictionary = (SortedList<TKey, TValue>)GenericIDictionaryFactory();
@@ -159,7 +159,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedList_Generic_Capacity_GrowsDuringAdds(int count)
         {
             SortedList<TKey, TValue> dictionary = (SortedList<TKey, TValue>)GenericIDictionaryFactory();
@@ -179,7 +179,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedList_Generic_Capacity_ClearDoesntTrim(int count)
         {
             SortedList<TKey, TValue> dictionary = (SortedList<TKey, TValue>)GenericIDictionaryFactory();
@@ -200,7 +200,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedList_Generic_Capacity_ClearTrimsToInitialCapacity(int count)
         {
             SortedList<TKey, TValue> dictionary = new SortedList<TKey, TValue>(count);
@@ -214,7 +214,7 @@ namespace System.Collections.Tests
         #region ContainsValue
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedList_Generic_ContainsValue_NotPresent(int count)
         {
             SortedList<TKey, TValue> dictionary = (SortedList<TKey, TValue>)GenericIDictionaryFactory(count);
@@ -226,7 +226,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedList_Generic_ContainsValue_Present(int count)
         {
             SortedList<TKey, TValue> dictionary = (SortedList<TKey, TValue>)GenericIDictionaryFactory(count);
@@ -239,7 +239,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedList_Generic_ContainsValue_DefaultValueNotPresent(int count)
         {
             SortedList<TKey, TValue> dictionary = (SortedList<TKey, TValue>)GenericIDictionaryFactory(count);
@@ -247,7 +247,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedList_Generic_ContainsValue_DefaultValuePresent(int count)
         {
             SortedList<TKey, TValue> dictionary = (SortedList<TKey, TValue>)GenericIDictionaryFactory(count);
@@ -264,7 +264,7 @@ namespace System.Collections.Tests
         #region IndexOfKey
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedList_Generic_IndexOf_DefaultKeyNotContainedInSortedList(int count)
         {
             if (DefaultValueAllowed)
@@ -282,7 +282,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedList_Generic_IndexOfKey_EachKey(int count)
         {
             // Assumes no duplicate elements contained in the dictionary returned by GenericIListFactory
@@ -299,7 +299,7 @@ namespace System.Collections.Tests
         #region IndexOfValue
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedList_Generic_IndexOfValue_DefaultValueNotContainedInList(int count)
         {
             SortedList<TKey, TValue> dictionary = (SortedList<TKey, TValue>)GenericIDictionaryFactory(count);
@@ -314,7 +314,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedList_Generic_IndexOfValue_DefaultValueContainedInList(int count)
         {
             if (!IsReadOnly)
@@ -335,7 +335,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedList_Generic_IndexOfValue_ValueInCollectionMultipleTimes(int count)
         {
             if (!IsReadOnly)
@@ -365,7 +365,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedList_Generic_IndexOfValue_EachValue(int count)
         {
             // Assumes no duplicate elements contained in the dictionary returned by GenericIListFactory
@@ -387,7 +387,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedList_Generic_RemoveAt_OnReadOnlySortedList_ThrowsNotSupportedException(int count)
         {
             if (IsReadOnly)
@@ -398,7 +398,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedList_Generic_RemoveAt_NonDefaultValueContainedInCollection(int count)
         {
             if (!IsReadOnly)
@@ -417,7 +417,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedList_Generic_RemoveAt_EveryValue(int count)
         {
             if (!IsReadOnly)
@@ -431,12 +431,26 @@ namespace System.Collections.Tests
             }
         }
 
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void SortedList_Generic_RemoveAt_OutOfRangeValues(int count)
+        {
+            if (!IsReadOnly)
+            {
+                SortedList<TKey, TValue> dictionary = (SortedList<TKey, TValue>)GenericIDictionaryFactory(count);
+                Assert.Throws<ArgumentOutOfRangeException>(() => dictionary.RemoveAt(-1));
+                Assert.Throws<ArgumentOutOfRangeException>(() => dictionary.RemoveAt(int.MinValue));
+                Assert.Throws<ArgumentOutOfRangeException>(() => dictionary.RemoveAt(count));
+                Assert.Throws<ArgumentOutOfRangeException>(() => dictionary.RemoveAt(count + 1));
+            }
+        }
+
         #endregion
 
         #region TrimExcess
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedList_Generic_TrimExcess_OnValidSortedListThatHasntBeenRemovedFrom(int dictionaryLength)
         {
             SortedList<TKey, TValue> dictionary = (SortedList<TKey, TValue>)GenericIDictionaryFactory(dictionaryLength);
@@ -444,7 +458,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedList_Generic_TrimExcess_Repeatedly(int dictionaryLength)
         {
             SortedList<TKey, TValue> dictionary = (SortedList<TKey, TValue>)GenericIDictionaryFactory(dictionaryLength);
@@ -456,7 +470,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedList_Generic_TrimExcess_AfterRemovingOneElement(int dictionaryLength)
         {
             if (dictionaryLength > 0)
@@ -475,7 +489,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedList_Generic_TrimExcess_AfterClearingAndAddingSomeElementsBack(int dictionaryLength)
         {
             if (dictionaryLength > 0)
@@ -493,7 +507,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedList_Generic_TrimExcess_AfterClearingAndAddingAllElementsBack(int dictionaryLength)
         {
             if (dictionaryLength > 0)
@@ -515,7 +529,7 @@ namespace System.Collections.Tests
         #region Ordering
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedList_Generic_DictionaryIsProperlySortedAccordingToComparer(int setLength)
         {
             SortedList<TKey, TValue> set = (SortedList<TKey, TValue>)GenericIDictionaryFactory(setLength);
@@ -531,7 +545,7 @@ namespace System.Collections.Tests
         #region IReadOnlyDictionary<TKey, TValue>.Keys
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IReadOnlyDictionary_Generic_Keys_ContainsAllCorrectKeys(int count)
         {
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
@@ -541,7 +555,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IReadOnlyDictionary_Generic_Values_ContainsAllCorrectValues(int count)
         {
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);

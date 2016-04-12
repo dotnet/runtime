@@ -3,14 +3,22 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Net;
 
 namespace System.Security.Authentication.ExtendedProtection
 {
-    public class ServiceNameCollection : ReadOnlyCollectionBase
+    public class ServiceNameCollection : ICollection
     {
+        // Ideally this would be List<string>, but we want the behavior of members like
+        // CopyTo(Array, int) to behave the same as ArrayList to match the behavior of
+        // the full framework (e.g. throw InvalidCastException for mismatched array types
+        // instead of ArgumentException). Thus, List<object> is used so that the backing
+        // array is typed as object[] like ArrayList.
+        private readonly List<object> _list;
+
         public ServiceNameCollection(ICollection items)
         {
             if (items == null)
@@ -18,65 +26,54 @@ namespace System.Security.Authentication.ExtendedProtection
                 throw new ArgumentNullException(nameof(items));
             }
 
+            _list = new List<object>(items.Count);
+
             // Normalize and filter for duplicates.
-            foreach (string serviceName in items)
-            {
-                AddIfNew(InnerList, serviceName);
-            }
+            AddIfNew(items, expectStrings: true);
         }
 
-        public ServiceNameCollection Merge(string serviceName)
+        /// <summary>
+        /// Merges <paramref name="list"/> and <paramref name="serviceName"/> into a new collection.
+        /// </summary>
+        private ServiceNameCollection(List<object> list, string serviceName)
+            : this(list, additionalCapacity: 1)
         {
-            ArrayList newServiceNames = new ArrayList();
-            newServiceNames.AddRange(this.InnerList);
-
-            AddIfNew(newServiceNames, serviceName);
-
-            ServiceNameCollection newCollection = new ServiceNameCollection(newServiceNames);
-            return newCollection;
+            AddIfNew(serviceName);
         }
 
-        public ServiceNameCollection Merge(IEnumerable serviceNames)
+        /// <summary>
+        /// Merges <paramref name="list"/> and <paramref name="serviceNames"/> into a new collection.
+        /// </summary>
+        private ServiceNameCollection(List<object> list, IEnumerable serviceNames)
+            : this(list, additionalCapacity: GetCountOrOne(serviceNames))
         {
-            ArrayList newServiceNames = new ArrayList();
-            newServiceNames.AddRange(this.InnerList);
-
-            // We have a pretty bad performance here: O(n^2), but since service name lists should 
+            // We have a pretty bad performance here: O(n^2), but since service name lists should
             // be small (<<50) and Merge() should not be called frequently, this shouldn't be an issue.
-            foreach (object item in serviceNames)
-            {
-                AddIfNew(newServiceNames, item as string);
-            }
-
-            ServiceNameCollection newCollection = new ServiceNameCollection(newServiceNames);
-            return newCollection;
+            AddIfNew(serviceNames, expectStrings: false);
         }
 
-        // Normalize, check for duplicates, and add if the value is unique.
-        private static void AddIfNew(ArrayList newServiceNames, string serviceName)
+        private ServiceNameCollection(List<object> list, int additionalCapacity)
         {
-            if (String.IsNullOrEmpty(serviceName))
-            {
-                throw new ArgumentException(SR.security_ServiceNameCollection_EmptyServiceName);
-            }
+            Debug.Assert(list != null);
+            Debug.Assert(additionalCapacity >= 0);
 
-            serviceName = NormalizeServiceName(serviceName);
+            _list = new List<object>(list.Count + additionalCapacity);
 
-            if (!Contains(serviceName, newServiceNames))
+            foreach (string item in list)
             {
-                newServiceNames.Add(serviceName);
+                _list.Add(item);
             }
         }
 
-        // Assumes searchServiceName and serviceNames have already been normalized.
-        internal static bool Contains(string searchServiceName, ICollection serviceNames)
-        {
-            Debug.Assert(serviceNames != null);
-            Debug.Assert(!String.IsNullOrEmpty(searchServiceName));
+        public int Count => _list.Count;
 
-            foreach (string serviceName in serviceNames)
+        public bool Contains(string searchServiceName)
+        {
+            string searchName = NormalizeServiceName(searchServiceName);
+
+            foreach (string serviceName in _list)
             {
-                if (Match(serviceName, searchServiceName))
+                if (string.Equals(serviceName, searchName, StringComparison.OrdinalIgnoreCase))
                 {
                     return true;
                 }
@@ -85,21 +82,104 @@ namespace System.Security.Authentication.ExtendedProtection
             return false;
         }
 
-        public bool Contains(string searchServiceName)
-        {
-            string searchName = NormalizeServiceName(searchServiceName);
+        public IEnumerator GetEnumerator() => _list.GetEnumerator();
 
-            return Contains(searchName, InnerList);
+        public ServiceNameCollection Merge(string serviceName) => new ServiceNameCollection(_list, serviceName);
+
+        public ServiceNameCollection Merge(IEnumerable serviceNames) => new ServiceNameCollection(_list, serviceNames);
+
+        /// <summary>
+        /// Normalize, check for duplicates, and add each unique value.
+        /// </summary>
+        private void AddIfNew(IEnumerable serviceNames, bool expectStrings)
+        {
+            List<string> list = serviceNames as List<string>;
+            if (list != null)
+            {
+                AddIfNew(list);
+                return;
+            }
+
+            ServiceNameCollection snc = serviceNames as ServiceNameCollection;
+            if (snc != null)
+            {
+                AddIfNew(snc._list);
+                return;
+            }
+
+            // NullReferenceException is thrown when serviceNames is null,
+            // which is consistent with the behavior of the full framework.
+            foreach (object item in serviceNames)
+            {
+                // To match the behavior of the full framework, when an item
+                // in the collection is not a string:
+                //  - Throw InvalidCastException when expectStrings is true.
+                //  - Throw ArgumentException when expectStrings is false.
+                AddIfNew(expectStrings ? (string)item : item as string);
+            }
         }
 
-        // Normalizes any punycode to unicode in an Service Name (SPN) host.
+        /// <summary>
+        /// Normalize, check for duplicates, and add each unique value.
+        /// </summary>
+        private void AddIfNew(List<string> serviceNames)
+        {
+            Debug.Assert(serviceNames != null);
+
+            foreach (string serviceName in serviceNames)
+            {
+                AddIfNew(serviceName);
+            }
+        }
+
+        /// <summary>
+        /// Normalize, check for duplicates, and add each unique value.
+        /// </summary>
+        private void AddIfNew(List<object> serviceNames)
+        {
+            Debug.Assert(serviceNames != null);
+
+            foreach (string serviceName in serviceNames)
+            {
+                AddIfNew(serviceName);
+            }
+        }
+
+        /// <summary>
+        /// Normalize, check for duplicates, and add if the value is unique.
+        /// </summary>
+        private void AddIfNew(string serviceName)
+        {
+            if (string.IsNullOrEmpty(serviceName))
+            {
+                throw new ArgumentException(SR.security_ServiceNameCollection_EmptyServiceName);
+            }
+
+            serviceName = NormalizeServiceName(serviceName);
+
+            if (!Contains(serviceName))
+            {
+                _list.Add(serviceName);
+            }
+        }
+
+        /// <summary>
+        /// Gets the collection Count, if available, otherwise 1.
+        /// </summary>
+        private static int GetCountOrOne(IEnumerable collection)
+        {
+            ICollection<string> c = collection as ICollection<string>;
+            return c != null ? c.Count : 1;
+        }
+
+        // Normalizes any punycode to Unicode in an Service Name (SPN) host.
         // If the algorithm fails at any point then the original input is returned.
         // ServiceName is in one of the following forms:
         // prefix/host
         // prefix/host:port
         // prefix/host/DistinguishedName
         // prefix/host:port/DistinguishedName
-        internal static string NormalizeServiceName(string inputServiceName)
+        private static string NormalizeServiceName(string inputServiceName)
         {
             if (string.IsNullOrWhiteSpace(inputServiceName))
             {
@@ -147,12 +227,12 @@ namespace System.Security.Authentication.ExtendedProtection
                 if (colonIndex >= 0)
                 {
                     // host:port
-                    host = hostAndPort.Substring(0, colonIndex); // Excludes colon 
-                    port = hostAndPort.Substring(colonIndex + 1); // Excludes colon 
+                    host = hostAndPort.Substring(0, colonIndex); // Excludes colon
+                    port = hostAndPort.Substring(colonIndex + 1); // Excludes colon
 
                     // Loosely validate the port just to make sure it was a port and not something else.
-                    UInt16 portValue;
-                    if (!UInt16.TryParse(port, NumberStyles.Integer, CultureInfo.InvariantCulture, out portValue))
+                    ushort portValue;
+                    if (!ushort.TryParse(port, NumberStyles.Integer, CultureInfo.InvariantCulture, out portValue))
                     {
                         return inputServiceName;
                     }
@@ -169,7 +249,7 @@ namespace System.Security.Authentication.ExtendedProtection
                 // UriHostNameType.IPv4, UriHostNameType.IPv6: Do not normalize IPv4/6 hosts.
                 // UriHostNameType.Basic: This is never returned by CheckHostName today
                 // UriHostNameType.Unknown: Nothing recognizable to normalize
-                // default Some new UriHostNameType?                       
+                // default Some new UriHostNameType?
                 return inputServiceName;
             }
 
@@ -186,11 +266,10 @@ namespace System.Security.Authentication.ExtendedProtection
             string normalizedHost = constructedUri.GetComponents(
                 UriComponents.NormalizedHost, UriFormat.SafeUnescaped);
 
-            string normalizedServiceName = string.Format(CultureInfo.InvariantCulture,
-                "{0}{1}{2}{3}", prefix, normalizedHost, port, distinguisher);
+            string normalizedServiceName = prefix + normalizedHost + port + distinguisher;
 
             // Don't return the new one unless we absolutely have to.  It may have only changed casing.
-            if (Match(inputServiceName, normalizedServiceName))
+            if (string.Equals(inputServiceName, normalizedServiceName, StringComparison.OrdinalIgnoreCase))
             {
                 return inputServiceName;
             }
@@ -198,10 +277,12 @@ namespace System.Security.Authentication.ExtendedProtection
             return normalizedServiceName;
         }
 
-        // Assumes already normalized.
-        internal static bool Match(string serviceName1, string serviceName2)
-        {
-            return (String.Compare(serviceName1, serviceName2, StringComparison.OrdinalIgnoreCase) == 0);
-        }
+        bool ICollection.IsSynchronized => false;
+
+        object ICollection.SyncRoot => NonGenericList.SyncRoot;
+
+        void ICollection.CopyTo(Array array, int index) => NonGenericList.CopyTo(array, index);
+
+        private IList NonGenericList => _list;
     }
 }

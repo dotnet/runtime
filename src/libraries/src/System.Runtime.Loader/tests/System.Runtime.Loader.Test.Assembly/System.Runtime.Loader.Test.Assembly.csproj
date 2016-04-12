@@ -9,6 +9,7 @@
     <RootNamespace>System.Runtime.Loader.Test.Assembly</RootNamespace>
     <AssemblyName>System.Runtime.Loader.Test.Assembly</AssemblyName>
     <ProjectGuid>{396D6EBF-60BD-4DAF-8783-FB403E070A56}</ProjectGuid>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.0</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="TestClass.cs" />

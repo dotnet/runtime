@@ -55,7 +55,7 @@ namespace System.Net.NetworkInformation
         public abstract long MinimumTransmissionTimeout { get; }
 
         /// <summary>
-        /// Gets the number of RST packets recived by Transmission Control Protocol (TCP) connections.
+        /// Gets the number of RST packets received by Transmission Control Protocol (TCP) connections.
         /// </summary>
         public abstract long ResetConnections { get; }
 

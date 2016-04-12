@@ -2,133 +2,32 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
+using System.Collections.Generic;
 using Xunit;
 
-namespace System.Globalization.CalendarsTests
+namespace System.Globalization.Tests
 {
-    //System.Globalization.KoreanCalendar.GetWeekOfYear(System.DateTime,System.Globalization.CalendarWeekRule,System.DayOfWeek)
     public class KoreanCalendarGetWeekOfYear
     {
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
 
-        #region Positive Test Logic
-        // PosTest1:invoke the method with min dateTime
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> GetWeekOfYear_TestData()
         {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            System.Globalization.Calendar gC = new GregorianCalendar();
-            DateTime dateTime = gC.ToDateTime(1, 1, 1, 0, 0, 0, 0);
-            int expectedValue = gC.GetWeekOfYear(dateTime, new CultureInfo("en-US").DateTimeFormat.CalendarWeekRule, new CultureInfo("en-US").DateTimeFormat.FirstDayOfWeek);
-            int actualValue;
-            actualValue = kC.GetWeekOfYear(kC.ToDateTime(dateTime.Year + 2333, dateTime.Month, dateTime.Day, 0, 0, 0, 0), new CultureInfo("ko-KR").DateTimeFormat.CalendarWeekRule, new CultureInfo("ko-KR").DateTimeFormat.FirstDayOfWeek);
-            Assert.Equal(expectedValue, actualValue);
+            CalendarWeekRule rule = new CultureInfo("ko-KR").DateTimeFormat.CalendarWeekRule;
+            DayOfWeek firstDayOfWeek = new CultureInfo("ko-KR").DateTimeFormat.FirstDayOfWeek;
+
+            yield return new object[] { DateTime.MinValue, rule, firstDayOfWeek };
+            yield return new object[] { DateTime.MaxValue, rule, firstDayOfWeek };
+            yield return new object[] { new DateTime(2008, 2, 29), rule, firstDayOfWeek };
+            yield return new object[] { s_randomDataGenerator.GetDateTime(-55), rule, firstDayOfWeek };
         }
 
-        // PosTest2:invoke the method with max dateTime
-        [Fact]
-        public void PosTest2()
+        [Theory]
+        [MemberData(nameof(GetWeekOfYear_TestData))]
+        public void GetWeekOfYear(DateTime time, CalendarWeekRule rule, DayOfWeek firstDayOfWeek)
         {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            System.Globalization.Calendar gC = new GregorianCalendar();
-            DateTime dateTime = gC.ToDateTime(9999, 12, 31, 0, 0, 0, 0);
-            int expectedValue = gC.GetWeekOfYear(dateTime, new CultureInfo("en-US").DateTimeFormat.CalendarWeekRule, new CultureInfo("en-US").DateTimeFormat.FirstDayOfWeek);
-            int actualValue;
-            actualValue = kC.GetWeekOfYear(kC.ToDateTime(dateTime.Year + 2333, dateTime.Month, dateTime.Day, 0, 0, 0, 0), new CultureInfo("ko-KR").DateTimeFormat.CalendarWeekRule, new CultureInfo("ko-KR").DateTimeFormat.FirstDayOfWeek);
-            Assert.Equal(expectedValue, actualValue);
+            int expected = new GregorianCalendar().GetWeekOfYear(time, rule, firstDayOfWeek);
+            Assert.Equal(expected, new KoreanCalendar().GetWeekOfYear(time, rule, firstDayOfWeek));
         }
-
-        // PosTest3:invoke the method with leap year dateTime
-        [Fact]
-        public void PosTest3()
-        {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            System.Globalization.Calendar gC = new GregorianCalendar();
-            DateTime dateTime = gC.ToDateTime(2008, 2, 29, 0, 0, 0, 0);
-            int expectedValue = gC.GetWeekOfYear(dateTime, new CultureInfo("en-US").DateTimeFormat.CalendarWeekRule, new CultureInfo("en-US").DateTimeFormat.FirstDayOfWeek);
-            int actualValue;
-            actualValue = kC.GetWeekOfYear(kC.ToDateTime(dateTime.Year + 2333, dateTime.Month, dateTime.Day, 0, 0, 0, 0), new CultureInfo("ko-KR").DateTimeFormat.CalendarWeekRule, new CultureInfo("ko-KR").DateTimeFormat.FirstDayOfWeek);
-            Assert.Equal(expectedValue, actualValue);
-        }
-
-        // PosTest4:invoke the method with random dateTime
-        [Fact]
-        public void PosTest4()
-        {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            System.Globalization.Calendar gC = new GregorianCalendar();
-            Int64 ticks = _generator.GetInt64(-55) % DateTime.MaxValue.Ticks + 1;
-            DateTime dateTime = new DateTime(ticks);
-            dateTime = gC.ToDateTime(dateTime.Year, dateTime.Month, dateTime.Day, 0, 0, 0, 0);
-            int expectedValue = gC.GetWeekOfYear(dateTime, new CultureInfo("en-US").DateTimeFormat.CalendarWeekRule, new CultureInfo("en-US").DateTimeFormat.FirstDayOfWeek);
-            int actualValue;
-            actualValue = kC.GetWeekOfYear(kC.ToDateTime(dateTime.Year + 2333, dateTime.Month, dateTime.Day, 0, 0, 0, 0), new CultureInfo("ko-KR").DateTimeFormat.CalendarWeekRule, new CultureInfo("ko-KR").DateTimeFormat.FirstDayOfWeek);
-            Assert.Equal(expectedValue, actualValue);
-        }
-        #endregion
-
-        #region Negative Test Logic
-        // NegTest1:Invoke the method with CalendarWeekRule outside the lower supported range
-        [Fact]
-        public void NegTest1()
-        {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            Int64 ticks = _generator.GetInt64(-55) % DateTime.MaxValue.Ticks + 1;
-            DateTime dateTime = new DateTime(ticks);
-            dateTime = kC.ToDateTime(dateTime.Year + 2333, dateTime.Month, dateTime.Day, 0, 0, 0, 0);
-            int actualValue;
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                actualValue = kC.GetWeekOfYear(dateTime, (CalendarWeekRule)(-1), new CultureInfo("ko-KR").DateTimeFormat.FirstDayOfWeek);
-            });
-        }
-
-        // NegTest2:Invoke the method with CalendarWeekRule outside the upper supported range
-        [Fact]
-        public void NegTest2()
-        {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            Int64 ticks = _generator.GetInt64(-55) % DateTime.MaxValue.Ticks + 1;
-            DateTime dateTime = new DateTime(ticks);
-            dateTime = kC.ToDateTime(dateTime.Year + 2333, dateTime.Month, dateTime.Day, 0, 0, 0, 0);
-            int actualValue;
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                actualValue = kC.GetWeekOfYear(dateTime, (CalendarWeekRule)(3), new CultureInfo("ko-KR").DateTimeFormat.FirstDayOfWeek);
-            });
-        }
-
-        // NegTest3:Invoke the method with CalendarWeekRule outside the upper supported range
-        [Fact]
-        public void NegTest3()
-        {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            Int64 ticks = _generator.GetInt64(-55) % DateTime.MaxValue.Ticks + 1;
-            DateTime dateTime = new DateTime(ticks);
-            dateTime = kC.ToDateTime(dateTime.Year + 2333, dateTime.Month, dateTime.Day, 0, 0, 0, 0);
-            int actualValue;
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                actualValue = kC.GetWeekOfYear(dateTime, new CultureInfo("ko-KR").DateTimeFormat.CalendarWeekRule, (DayOfWeek)(-1));
-            });
-        }
-
-        // NegTest4:Invoke the method with CalendarWeekRule outside the upper supported range
-        [Fact]
-        public void NegTest4()
-        {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            Int64 ticks = _generator.GetInt64(-55) % DateTime.MaxValue.Ticks + 1;
-            DateTime dateTime = new DateTime(ticks);
-            dateTime = kC.ToDateTime(dateTime.Year + 2333, dateTime.Month, dateTime.Day, 0, 0, 0, 0);
-            int actualValue;
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                actualValue = kC.GetWeekOfYear(dateTime, new CultureInfo("ko-KR").DateTimeFormat.CalendarWeekRule, (DayOfWeek)7);
-            });
-        }
-        #endregion
     }
 }

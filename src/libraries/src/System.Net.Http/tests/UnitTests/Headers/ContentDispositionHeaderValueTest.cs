@@ -30,7 +30,7 @@ namespace System.Net.Http.Tests
         [Fact]
         public void Ctor_ContentDispositionInvalidFormat_ThrowFormatException()
         {
-            // When adding values using strongly typed objects, no leading/trailing LWS (whitespaces) are allowed.
+            // When adding values using strongly typed objects, no leading/trailing LWS (whitespace) are allowed.
             AssertFormatException(" inline ");
             AssertFormatException(" inline");
             AssertFormatException("inline ");
@@ -646,7 +646,7 @@ namespace System.Net.Http.Tests
             { "invalid17", new ContentDispositionValue(@"attachment; filename=""bar", @"'attachment', specifying a filename parameter that is broken (missing ending double quote). This is invalid syntax.", false) },
             { "invalid18", new ContentDispositionValue(@"attachment; filename=foo""bar;baz""qux", @"'attachment', specifying a filename parameter that is broken (disallowed characters in token syntax). This is invalid syntax.", false) },
             { "invalid19", new ContentDispositionValue(@"attachment; filename=foo.html, attachment; filename=bar.html", @"'attachment', two comma-separated instances of the header field. As Content-Disposition doesn't use a list-style syntax, this is invalid syntax and, according to <a href=""http://greenbytes.de/tech/webdav/rfc2616.html#rfc.section.4.2.p.5"">RFC 2616, Section 4.2</a>, roughly equivalent to having two separate header field instances.", false) },
-            { "invalid20", new ContentDispositionValue(@"filename=foo.html; attachment", @"filename parameter and disposion type reversed.", false) },
+            { "invalid20", new ContentDispositionValue(@"filename=foo.html; attachment", @"filename parameter and disposition type reversed.", false) },
             { "invalid24", new ContentDispositionValue(@"attachment; filename==?ISO-8859-1?Q?foo-=E4.html?=", @"Uses RFC 2047 style encoded word. ""="" is invalid inside the token production, so this is invalid.", false) },
             { "invalid25", new ContentDispositionValue(@"attachment; filename==?utf-8?B?Zm9vLeQuaHRtbA==?=", @"Uses RFC 2047 style encoded word. ""="" is invalid inside the token production, so this is invalid.", false) },
         };

@@ -440,7 +440,7 @@ namespace System.Collections.Generic
             }
             Contract.EndContractBlock();
 
-            // this is already the enpty set; return
+            // this is already the empty set; return
             if (_count == 0)
             {
                 return;

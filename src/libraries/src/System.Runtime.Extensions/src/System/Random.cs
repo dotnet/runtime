@@ -216,7 +216,7 @@ namespace System
         /*==================================NextBytes===================================
         **Action:  Fills the byte array with random bytes [0..0x7f].  The entire array is filled.
         **Returns:Void
-        **Arugments:  buffer -- the array to be filled.
+        **Arguments:  buffer -- the array to be filled.
         **Exceptions: None
         ==============================================================================*/
         public virtual void NextBytes(byte[] buffer)

@@ -21,7 +21,6 @@ namespace BasicEventSourceTests
         /// Tests the EventSource.Write[T] method (can only use the self-describing mechanism).  
         /// 
         /// </summary>
-        [ActiveIssue(4871, PlatformID.AnyUnix)]
         [Fact]
         public void Test_Write_Fuzzy()
         {

@@ -9,82 +9,30 @@ using Xunit;
 public partial class RegexMatchTests
 {
     /*
-    Tested Methods:
-
-        public static Match Match(string input);     Using [a-z], \s, \w : Actual - "([a-zA-Z]+)\\s(\\w+)"
-            "David Bau"
-
-        public static Match Match(string input);     \\S, \\d, \\D, \\W: Actual - "(\\S+):\\W(\\d+)\\s(\\D+)"
-            "Price: 5 dollars"
-
-        public static Match Match(string input);     \\S, \\d, \\D, \\W: Actual - "[^0-9]+(\\d+)"
-            "Price: 30 dollars"
-
+    public Match Match(string input);
+        - Using [a-z], \s, \w : Actual - "([a-zA-Z]+)\\s(\\w+)", "David Bau"
+        - \\S, \\d, \\D, \\W: Actual - "(\\S+):\\W(\\d+)\\s(\\D+)", "Price: 5 dollars"
+        - \\S, \\d, \\D, \\W: Actual - "[^0-9]+(\\d+)", "Price: 30 dollars"
     */
-
     [Fact]
     public static void RegexMatchTestCase2()
     {
-        //////////// Global Variables used for all tests
-        String strLoc = "Loc_000oo";
-        String strValue = String.Empty;
-        int iCountErrors = 0;
-        int iCountTestcases = 0;
-        Regex r;
-        Match m;
-        Match match;
-        try
-        {
-            /////////////////////////  START TESTS ////////////////////////////
-            ///////////////////////////////////////////////////////////////////
-            // [] public static Match Match(string input);     Using [a-z], \s, \w : Actual - "([a-zA-Z]+)\\s(\\w+)"
-            //"David Bau"
-            //-----------------------------------------------------------------
-            strLoc = "Loc_498yg";
-            iCountTestcases++;
-            r = new Regex(@"([a-zA-Z]+)\s(\w+)");
-            match = r.Match("David Bau");
-            if (!match.Success)
-            {
-                iCountErrors++;
-                Console.WriteLine("Err_7563rfsgf! doesnot match");
-            }
+        // Using [a-z], \s, \w : Actual - "([a-zA-Z]+)\\s(\\w+)"
+        // "David Bau"
+        Regex regex = new Regex(@"([a-zA-Z]+)\s(\w+)");
+        Match match = regex.Match("David Bau");
+        Assert.True(match.Success);
 
-            // [] public static Match Match(string input);     \\S, \\d, \\D, \\W: Actual - "(\\S+):\\W(\\d+)\\s(\\D+)"
-            //"Price: 5 dollars"
-            //-----------------------------------------------------------------
-            strLoc = "Loc_298vy";
-            iCountTestcases++;
-            r = new Regex(@"(\S+):\W(\d+)\s(\D+)");
-            m = r.Match("Price: 5 dollars");
-            if (!m.Success)
-            {
-                iCountErrors++;
-                Console.WriteLine("Err_75erfdg! doesnot match");
-            }
+        // \\S, \\d, \\D, \\W: Actual - "(\\S+):\\W(\\d+)\\s(\\D+)"
+        // "Price: 5 dollars"
+        regex = new Regex(@"(\S+):\W(\d+)\s(\D+)");
+        match = regex.Match("Price: 5 dollars");
+        Assert.True(match.Success);
 
-            // [] public static Match Match(string input);     \\S, \\d, \\D, \\W: Actual - "[^0-9]+(\\d+)"
-            //"Price: 30 dollars"
-            //-----------------------------------------------------------------
-            strLoc = "Loc_746tegd";
-            iCountTestcases++;
-            r = new Regex(@"[^0-9]+(\d+)");
-            m = r.Match("Price: 30 dollars");
-            if (!m.Success)
-            {
-                iCountErrors++;
-                Console.WriteLine("Err_5743rfsfg! doesnot match");
-            }
-            ///////////////////////////////////////////////////////////////////
-            /////////////////////////// END TESTS /////////////////////////////
-        }
-        catch (Exception exc_general)
-        {
-            ++iCountErrors;
-            Console.WriteLine("Error Err_8888yyy!  strLoc==" + strLoc + ", exc_general==" + exc_general.ToString());
-        }
-
-        ////  Finish Diagnostics
-        Assert.Equal(0, iCountErrors);
+        // \\S, \\d, \\D, \\W: Actual - "[^0-9]+(\\d+)"
+        // "Price: 30 dollars"
+        regex = new Regex(@"[^0-9]+(\d+)");
+        match = regex.Match("Price: 30 dollars");
+        Assert.True(match.Success);
     }
 }

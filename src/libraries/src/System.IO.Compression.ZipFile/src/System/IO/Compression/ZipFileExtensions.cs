@@ -85,7 +85,7 @@ namespace System.IO.Compression
                                                           String sourceFileName, String entryName, CompressionLevel compressionLevel)
         {
             // Checking of compressionLevel is passed down to DeflateStream and the IDeflater implementation
-            // as it is a pugable component that completely encapsulates the meaning of compressionLevel.
+            // as it is a pluggable component that completely encapsulates the meaning of compressionLevel.
 
             Contract.Ensures(Contract.Result<ZipArchiveEntry>() != null);
             Contract.EndContractBlock();
@@ -177,7 +177,7 @@ namespace System.IO.Compression
                 throw new ArgumentNullException(nameof(entryName));
 
             // Checking of compressionLevel is passed down to DeflateStream and the IDeflater implementation
-            // as it is a pugable component that completely encapsulates the meaning of compressionLevel.
+            // as it is a pluggable component that completely encapsulates the meaning of compressionLevel.
 
             // Argument checking gets passed down to FileStream's ctor and CreateEntry
             Contract.Ensures(Contract.Result<ZipArchiveEntry>() != null);

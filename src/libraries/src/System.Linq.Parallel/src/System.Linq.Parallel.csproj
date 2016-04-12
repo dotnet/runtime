@@ -4,11 +4,13 @@
   <PropertyGroup>
     <ProjectGuid>{BE28323E-327A-4E0F-B7F9-16AB7EAB59DD}</ProjectGuid>
     <AssemblyName>System.Linq.Parallel</AssemblyName>
-    <AssemblyVersion>4.0.1.0</AssemblyVersion>
+    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <AssemblyVersion Condition="'$(AssemblyVersionTransition)' == 'true'">4.0.1.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
     <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net46'">None</ResourcesSourceOutputDirectory>
     <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.3</PackageTargetFramework>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -29,7 +31,6 @@
     <Compile Include="System\Linq\Parallel\Enumerables\QueryAggregationOptions.cs" />
     <Compile Include="System\Linq\Parallel\Enumerables\RangeEnumerable.cs" />
     <Compile Include="System\Linq\Parallel\Enumerables\RepeatEnumerable.cs" />
-    <Compile Include="System\Linq\Errors.cs" />
     <Compile Include="System\Linq\Parallel\Merging\ArrayMergeHelper.cs" />
     <Compile Include="System\Linq\Parallel\Merging\AsynchronousChannelMergeEnumerator.cs" />
     <Compile Include="System\Linq\Parallel\Merging\DefaultMergeHelper.cs" />

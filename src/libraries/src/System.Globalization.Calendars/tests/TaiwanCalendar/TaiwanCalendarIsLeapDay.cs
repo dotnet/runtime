@@ -2,173 +2,28 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
+using System.Collections.Generic;
 using Xunit;
 
-namespace System.Globalization.CalendarsTests
+namespace System.Globalization.Tests
 {
-    // System.Globalization.TaiwanCalendar.IsLeapDay(Int32,Int32,Int32,Int32)
     public class TaiwanCalendarIsLeapDay
     {
-        #region Positive Tests
-        // PosTest1: Verify the day  is not leap day
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> IsLeapDay_TestData()
         {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            Random rand = new Random(-55);
-            int year = rand.Next(tc.MinSupportedDateTime.Year, tc.MaxSupportedDateTime.Year - 1911);
-            int month = rand.Next(1, 12);
-            int day = rand.Next(1, 29);
-            int era;
+            int randomYear = TaiwanCalendarUtilities.RandomYear();
+            int radomMonth = TaiwanCalendarUtilities.RandomMonth();
+            int randomDay = TaiwanCalendarUtilities.RandomDay(randomYear, radomMonth);
+            yield return new object[] { randomYear, radomMonth, randomDay, 1, false };
 
-            for (int i = 0; i < tc.Eras.Length; i++)
-            {
-                era = tc.Eras[i];
-                Assert.False(tc.IsLeapDay(year, month, era));
-            }
+            yield return new object[] { 2000 - 1911, 2, 29, 1, true };
         }
 
-        // PosTest2: Verify the Date is leap day
-        [Fact]
-        public void PosTest2()
+        [Theory]
+        [MemberData(nameof(IsLeapDay_TestData))]
+        public void IsLeapDay(int year, int month, int day, int era, bool expected)
         {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            Random rand = new Random(-55);
-            int year = 2000 - 1911;
-            int month = 2;
-            int day = 29;
-            int era;
-
-            for (int i = 0; i < tc.Eras.Length; i++)
-            {
-                era = tc.Eras[i];
-                Assert.True(tc.IsLeapDay(year, month, day, era));
-            }
+            Assert.Equal(expected, new TaiwanCalendar().IsLeapDay(year, month, day, era));
         }
-        #endregion
-
-        #region Negative Tests
-        // NegTest1: The year greater than max year
-        [Fact]
-        public void NegTest1()
-        {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            Random rand = new Random(-55);
-            int year = tc.MaxSupportedDateTime.Year - 1911 + rand.Next(1, Int32.MaxValue);
-            int month = rand.Next(1, 13);
-            int day = rand.Next(1, 28);
-            int era = Calendar.CurrentEra;
-
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                tc.IsLeapDay(year, month, day, era);
-            });
-        }
-
-        // NegTest2: The year less than min year
-        [Fact]
-        public void NegTest2()
-        {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            Random rand = new Random(-55);
-            int year = tc.MinSupportedDateTime.Year - rand.Next(1, Int32.MaxValue);
-            int month = rand.Next(1, 13);
-            int day = rand.Next(1, 28);
-            int era = Calendar.CurrentEra;
-
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                tc.IsLeapDay(year, month, day, era);
-            });
-        }
-
-        // NegTest3: The month greater than 12
-        [Fact]
-        public void NegTest3()
-        {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            Random rand = new Random(-55);
-            int year = rand.Next(tc.MinSupportedDateTime.Year, tc.MaxSupportedDateTime.Year + 1);
-            int month = rand.Next(12, Int32.MaxValue);
-            int day = rand.Next(1, 28);
-            int era = Calendar.CurrentEra;
-
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                tc.IsLeapDay(year, month, day, era);
-            });
-        }
-
-        // NegTest4: The month less than 1
-        [Fact]
-        public void NegTest4()
-        {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            Random rand = new Random(-55);
-            int year = rand.Next(tc.MinSupportedDateTime.Year, tc.MaxSupportedDateTime.Year + 1);
-            int month = rand.Next(Int32.MinValue, 1);
-            int day = rand.Next(1, 28);
-            int era = Calendar.CurrentEra;
-
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                tc.IsLeapDay(year, month, day, era);
-            });
-        }
-
-        // NegTest5: The day greater than 31
-        [Fact]
-        public void NegTest5()
-        {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            Random rand = new Random(-55);
-            int year = rand.Next(tc.MinSupportedDateTime.Year, tc.MaxSupportedDateTime.Year + 1);
-            int month = rand.Next(1, 13);
-            int day = rand.Next(31, Int32.MaxValue);
-            int era = Calendar.CurrentEra;
-
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                tc.IsLeapDay(year, month, day, era);
-            });
-        }
-
-        // NegTest6: The day less than 1
-        [Fact]
-        public void NegTest6()
-        {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            Random rand = new Random(-55);
-            int year = rand.Next(tc.MinSupportedDateTime.Year, tc.MaxSupportedDateTime.Year + 1);
-            int month = rand.Next(1, 13);
-            int day = rand.Next(Int32.MinValue, 1);
-            int era = Calendar.CurrentEra;
-
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                tc.IsLeapDay(year, month, day, era);
-            });
-        }
-
-        // NegTest7: The era greater than 1
-        [Fact]
-        public void NegTest7()
-        {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            Random rand = new Random(-55);
-            int year = rand.Next(tc.MinSupportedDateTime.Year, tc.MaxSupportedDateTime.Year + 1);
-            int month = rand.Next(1, 13);
-            int day = rand.Next(1, 28);
-            int era = 2;
-
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                tc.IsLeapDay(year, month, day, era);
-            });
-        }
-        #endregion
     }
 }
-

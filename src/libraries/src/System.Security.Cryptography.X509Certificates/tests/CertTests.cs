@@ -141,14 +141,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(2635)]
         public static void X509Certificate2FromPkcs7DerFile()
         {
             Assert.ThrowsAny<CryptographicException>(() => new X509Certificate2(Path.Combine("TestData", "singlecert.p7b")));
         }
 
         [Fact]
-        [ActiveIssue(2635)]
         public static void X509Certificate2FromPkcs7PemFile()
         {
             Assert.ThrowsAny<CryptographicException>(() => new X509Certificate2(Path.Combine("TestData", "singlecert.p7c")));

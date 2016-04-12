@@ -2,14 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//-----------------------------------------------------------------------------
-//
-// Description:
-//  CompressionOption enumeration is used as an aggregate mechanism to give users controls 
-//  over Compression features. 
-//
-//-----------------------------------------------------------------------------
-
 namespace System.IO.Packaging
 {
     /// <summary>
@@ -23,7 +15,7 @@ namespace System.IO.Packaging
         NotCompressed = -1,
 
         /// <summary>
-        /// Compression is optimized for a resonable compromise between size and performance. 
+        /// Compression is optimized for a reasonable compromise between size and performance. 
         /// </summary>
         Normal = 0,
 

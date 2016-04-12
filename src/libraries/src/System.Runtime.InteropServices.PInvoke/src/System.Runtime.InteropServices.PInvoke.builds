@@ -4,11 +4,12 @@
   <ItemGroup>
     <Project Include="System.Runtime.InteropServices.PInvoke.csproj"/>
     <Project Include="System.Runtime.InteropServices.PInvoke.csproj">
-      <TargetGroup>net46</TargetGroup>
+      <TargetGroup>net462</TargetGroup>
     </Project>
+    <!-- Due to shared library we cannot currently support PINvoke on NETCore50
     <Project Include="System.Runtime.InteropServices.PInvoke.csproj">
       <TargetGroup>netcore50aot</TargetGroup>
-    </Project>
+    </Project> -->
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>

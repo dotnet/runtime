@@ -5,8 +5,7 @@
     <ProjectReference Include="..\ref\System.Reflection.DispatchProxy.csproj">
       <SupportedFramework>net46;netcore50;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="any\System.Reflection.DispatchProxy.pkgproj" />
-    <ProjectReference Include="aot\System.Reflection.DispatchProxy.pkgproj" />
+    <ProjectReference Include="..\src\System.Reflection.DispatchProxy.builds" />
   </ItemGroup>
   <ItemGroup>
     <InboxOnTargetFramework Include="MonoAndroid10" />

@@ -66,18 +66,6 @@ namespace System.Reflection.Tests
             Assert.Equal(2, methodinfo.Length);
         }
 
-        // Negative Test 1
-        [Fact]
-        public void NegTest1()
-        {
-            Type type = typeof(baseclass);
-            PropertyInfo properinfo = type.GetProperty("prop10");
-            Assert.Throws<ArgumentNullException>(() =>
-           {
-               MethodInfo[] methodinfo = properinfo.GetAccessors();
-           });
-        }
-
         public int pro1
         {
             set

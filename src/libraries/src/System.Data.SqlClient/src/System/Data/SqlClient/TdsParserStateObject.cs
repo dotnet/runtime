@@ -576,7 +576,7 @@ namespace System.Data.SqlClient
 
             /// <summary>
             /// If this method returns true, the value is guaranteed to be null. This is not true vice versa: 
-            /// if the bitmat value is false (if this method returns false), the value can be either null or non-null - no guarantee in this case.
+            /// if the bitmap value is false (if this method returns false), the value can be either null or non-null - no guarantee in this case.
             /// To determine whether it is null or not, read it from the TDS (per NBCROW design spec, for IMAGE/TEXT/NTEXT columns server might send
             /// bitmap = 0, when the actual value is null).
             /// </summary>
@@ -604,8 +604,8 @@ namespace System.Data.SqlClient
         internal void Activate(object owner)
         {
             Debug.Assert(_parser.MARSOn, "Can not activate a non-MARS connection");
-            Owner = owner; // must assign an owner for reclaimation to work
-            int result = Interlocked.Increment(ref _activateCount);   // must have non-zero activation count for reclaimation to work too.
+            Owner = owner; // must assign an owner for reclamation to work
+            int result = Interlocked.Increment(ref _activateCount);   // must have non-zero activation count for reclamation to work too.
             Debug.Assert(result == 1, "invalid deactivate count");
         }
 
@@ -614,7 +614,6 @@ namespace System.Data.SqlClient
         internal void Cancel(object caller)
         {
             Debug.Assert(!(caller is int), "Incorrectly calling this API using the caller's objectID");
-            Debug.Assert(_owner.Target == caller, "Someone other than the stateObj's owner is attempting to cancel");
             bool hasLock = false;
             try
             {
@@ -634,7 +633,7 @@ namespace System.Data.SqlClient
                             if (_pendingData && !_attentionSent)
                             {
                                 bool hasParserLock = false;
-                                // Keep looping until we have the parser lock (and so are allowed to write), or the conneciton closes\breaks
+                                // Keep looping until we have the parser lock (and so are allowed to write), or the connection closes\breaks
                                 while ((!hasParserLock) && (_parser.State != TdsParserState.Closed) && (_parser.State != TdsParserState.Broken))
                                 {
                                     try
@@ -751,7 +750,7 @@ namespace System.Data.SqlClient
         private void ResetCancelAndProcessAttention()
         {
             // This method is shared by CloseSession initiated by DataReader.Close or completed
-            // command execution, as well as the session reclaimation code for cases where the
+            // command execution, as well as the session reclamation code for cases where the
             // DataReader is opened and then GC'ed.
             lock (this)
             {
@@ -872,7 +871,7 @@ namespace System.Data.SqlClient
             if (_parser.MARSOn)
             {
                 // We only care about the activation count for MARS connections
-                int result = Interlocked.Decrement(ref _activateCount);   // must have non-zero activation count for reclaimation to work too.
+                int result = Interlocked.Decrement(ref _activateCount);   // must have non-zero activation count for reclamation to work too.
                 Debug.Assert(result == 0, "invalid deactivate count");
             }
             Owner = null;
@@ -1292,7 +1291,7 @@ namespace System.Data.SqlClient
         // Buffer read methods - data values //
         ///////////////////////////////////////
 
-        // look at the next byte without pulling it off the wire, don't just returun _inBytesUsed since we may
+        // look at the next byte without pulling it off the wire, don't just return _inBytesUsed since we may
         // have to go to the network to get the next byte.
         internal bool TryPeekByte(out byte value)
         {
@@ -1865,7 +1864,7 @@ namespace System.Data.SqlClient
 
         // Reads the length of either the entire data or the length of the next chunk in a
         //   partially length prefixed data
-        // After this call, call  ReadPlpBytes/ReadPlpUnicodeChars untill the specified length of data
+        // After this call, call  ReadPlpBytes/ReadPlpUnicodeChars until the specified length of data
         // is consumed. Repeat this until ReadPlpLength returns 0 in order to read the
         // entire stream.
         // When this function returns 0, it means the data stream is read completely and the
@@ -1942,11 +1941,11 @@ namespace System.Data.SqlClient
 
         // Reads the requested number of bytes from a plp data stream, or the entire data if
         // requested length is -1 or larger than the actual length of data. First call to this method
-        //  should be preceeded by a call to ReadPlpLength or ReadDataLength.
+        //  should be preceded by a call to ReadPlpLength or ReadDataLength.
         // Returns the actual bytes read.
         // NOTE: This method must be retriable WITHOUT replaying a snapshot
-        // Every time you call this method increment the offst and decrease len by the value of totalBytesRead
-        internal bool TryReadPlpBytes(ref byte[] buff, int offst, int len, out int totalBytesRead)
+        // Every time you call this method increment the offset and decrease len by the value of totalBytesRead
+        internal bool TryReadPlpBytes(ref byte[] buff, int offset, int len, out int totalBytesRead)
         {
             int bytesRead = 0;
             int bytesLeft;
@@ -1969,7 +1968,7 @@ namespace System.Data.SqlClient
             Debug.Assert((_longlen != TdsEnums.SQL_PLP_NULL),
                     "Out of sync plp read request");
 
-            Debug.Assert((buff == null && offst == 0) || (buff.Length >= offst + len), "Invalid length sent to ReadPlpBytes()!");
+            Debug.Assert((buff == null && offset == 0) || (buff.Length >= offset + len), "Invalid length sent to ReadPlpBytes()!");
             bytesLeft = len;
 
             // If total length is known up front, allocate the whole buffer in one shot instead of realloc'ing and copying over each time
@@ -2002,20 +2001,20 @@ namespace System.Data.SqlClient
             while (bytesLeft > 0)
             {
                 int bytesToRead = (int)Math.Min(_longlenleft, (ulong)bytesLeft);
-                if (buff.Length < (offst + bytesToRead))
+                if (buff.Length < (offset + bytesToRead))
                 {
                     // Grow the array
-                    newbuf = new byte[offst + bytesToRead];
-                    Buffer.BlockCopy(buff, 0, newbuf, 0, offst);
+                    newbuf = new byte[offset + bytesToRead];
+                    Buffer.BlockCopy(buff, 0, newbuf, 0, offset);
                     buff = newbuf;
                 }
 
-                bool result = TryReadByteArray(buff, offst, bytesToRead, out bytesRead);
+                bool result = TryReadByteArray(buff, offset, bytesToRead, out bytesRead);
                 Debug.Assert(bytesRead <= bytesLeft, "Read more bytes than we needed");
                 Debug.Assert((ulong)bytesRead <= _longlenleft, "Read more bytes than is available");
 
                 bytesLeft -= bytesRead;
-                offst += bytesRead;
+                offset += bytesRead;
                 totalBytesRead += bytesRead;
                 _longlenleft -= (ulong)bytesRead;
                 if (!result)
@@ -2203,9 +2202,9 @@ namespace System.Data.SqlClient
                 if (TdsEnums.SNI_SUCCESS == error)
                 { // Success - process results!
 #if MANAGED_SNI				
-                    Debug.Assert(readPacket != null, "ReadNetworkPacket cannot be null in syncronous operation!");
+                    Debug.Assert(readPacket != null, "ReadNetworkPacket cannot be null in synchronous operation!");
 #else					
-                    Debug.Assert(IntPtr.Zero != readPacket, "ReadNetworkPacket cannot be null in syncronous operation!");
+                    Debug.Assert(IntPtr.Zero != readPacket, "ReadNetworkPacket cannot be null in synchronous operation!");
 #endif // MANAGED_SNI
 
                     ProcessSniPacket(readPacket, 0);
@@ -2527,7 +2526,7 @@ namespace System.Data.SqlClient
         }
 
         /// <summary>
-        /// Checks to see if the underlying connection is still alive (used by connection pool resilency)
+        /// Checks to see if the underlying connection is still alive (used by connection pool resiliency)
         /// NOTE: This is not safe to do on a connection that is currently in use
         /// NOTE: This will mark the connection as broken if it is found to be dead
         /// </summary>
@@ -2785,7 +2784,7 @@ namespace System.Data.SqlClient
             {
                 if ((_parser.State == TdsParserState.Closed) || (_parser.State == TdsParserState.Broken))
                 {
-                    // Do nothing with with callback if closed or broken and error not 0 - callback can occur
+                    // Do nothing with callback if closed or broken and error not 0 - callback can occur
                     // after connection has been closed.  PROBLEM IN NETLIB - DESIGN FLAW.
                     return;
                 }
@@ -2911,7 +2910,7 @@ namespace System.Data.SqlClient
             }
             finally
             {
-                // pendingCallbacks may be 2 after decrementing, this indicates that a fatal timeout is occuring, and therefore we shouldn't complete the task
+                // pendingCallbacks may be 2 after decrementing, this indicates that a fatal timeout is occurring, and therefore we shouldn't complete the task
                 int pendingCallbacks = DecrementPendingCallbacks(false); // may dispose of GC handle.
                 if ((processFinallyBlock) && (source != null) && (pendingCallbacks < 2))
                 {
@@ -3152,7 +3151,7 @@ namespace System.Data.SqlClient
                 bool async = _parser._asyncWrite;  // NOTE: We are capturing this now for the assert after the Task is returned, since WritePacket will turn off async if there is an exception
                 Debug.Assert(async || _asyncWriteCount == 0);
                 // Do we have to send out in packet size chunks, or can we rely on netlib layer to break it up?
-                // would prefer to to do something like:
+                // would prefer to do something like:
                 //
                 // if (len > what we have room for || len > out buf)
                 //   flush buffer
@@ -3249,7 +3248,7 @@ namespace System.Data.SqlClient
             if (
                 // This appears to be an optimization to avoid writing empty packets in Yukon
                 // However, since we don't know the version prior to login IsYukonOrNewer was always false prior to login
-                // So removing the IsYukonOrNewer check causes issues since the login packet happens to to meet the rest of the conditions below
+                // So removing the IsYukonOrNewer check causes issues since the login packet happens to meet the rest of the conditions below
                 // So we need to avoid this check prior to login completing
                 _parser.State == TdsParserState.OpenLoggedIn &&
                 !_bulkCopyOpperationInProgress && // ignore the condition checking for bulk copy
@@ -3601,7 +3600,7 @@ namespace System.Data.SqlClient
                 // We wanted to encrypt entire login channel, but there is
                 // currently no mechanism to communicate this.  Removing encryption post 1st packet
                 // is a hard-coded agreement between client and server.  We need some mechanism or
-                // common change to be able to make this change in a non-breaking fasion.
+                // common change to be able to make this change in a non-breaking fashion.
                 _parser.RemoveEncryption();                        // Remove the SSL Provider.
                 _parser.EncryptionOptions = EncryptionOptions.OFF; // Turn encryption off.
 
@@ -4255,7 +4254,7 @@ namespace System.Data.SqlClient
                 _snapshotLongLen = _stateObj._longlen;
                 _snapshotLongLenLeft = _stateObj._longlenleft;
                 _snapshotCleanupMetaData = _stateObj._cleanupMetaData;
-                // _cleanupAltMetaDataSetArray must be cloned bofore it is updated
+                // _cleanupAltMetaDataSetArray must be cloned before it is updated
                 _snapshotCleanupAltMetaDataSetArray = _stateObj._cleanupAltMetaDataSetArray;
                 _snapshotHasOpenResult = _stateObj._hasOpenResult;
                 _snapshotReceivedColumnMetadata = _stateObj._receivedColMetaData;
@@ -4265,7 +4264,7 @@ namespace System.Data.SqlClient
                 _rollingPendCount = 0;
                 _stateObj._lastStack = null;
                 Debug.Assert(_stateObj._bTmpRead == 0, "Has partially read data when snapshot taken");
-                Debug.Assert(_stateObj._partialHeaderBytesRead == 0, "Has partially read header when shapshot taken");
+                Debug.Assert(_stateObj._partialHeaderBytesRead == 0, "Has partially read header when snapshot taken");
 #endif
 
                 PushBuffer(_stateObj._inBuff, _stateObj._inBytesRead);

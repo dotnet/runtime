@@ -64,7 +64,7 @@ class StripHeaderAndFooter
         }
 
         //body
-        //We will now write the body to the outpupt file
+        //We will now write the body to the output file
 
         List<Byte> bitlist = new List<Byte>();
 
@@ -78,7 +78,7 @@ class StripHeaderAndFooter
         inputStream.Dispose();
 
         //Footer
-        //The correct way to find a footer would be to read the compressed blocks but we try a different appraoch
+        //The correct way to find a footer would be to read the compressed blocks but we try a different approach
         //All we know about it is that it is the last 8 bytes and we will read the last 8 bytes as the footer
         //We can confirm this by comparing the size of the decompressed file with the size specified in the footer
         //To do this, we need to decompress the file

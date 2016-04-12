@@ -1,0 +1,27 @@
+<!-- Not a bug. sni.dll is a native component that ships as part of the package. -->
+sni.dll!SNIAddProviderWrapper
+sni.dll!SNICheckConnectionWrapper
+sni.dll!SNICloseWrapper
+sni.dll!SNIGetLastError
+sni.dll!SNIPacketRelease
+sni.dll!SNIPacketResetWrapper
+sni.dll!SNIQueryInfo
+sni.dll!SNIReadAsyncWrapper
+sni.dll!SNIReadSyncOverAsync
+sni.dll!SNIRemoveProviderWrapper
+sni.dll!SNISecInitPackage
+sni.dll!SNISetInfoWrapper
+sni.dll!SNITerminate
+sni.dll!SNIWaitForSSLHandshakeToCompleteWrapper
+sni.dll!UnmanagedIsTokenRestricted
+sni.dll!GetSniMaxComposedSpnLength
+sni.dll!SNIGetInfoWrapper
+sni.dll!SNIInitialize
+sni.dll!SNIOpenSyncExWrapper
+sni.dll!SNIOpenWrapper
+sni.dll!SNIPacketAllocateWrapper
+sni.dll!SNIPacketGetDataWrapper
+sni.dll!SNIPacketSetData
+sni.dll!SNISecGenClientContextWrapper
+sni.dll!SNIWriteAsyncWrapper
+sni.dll!SNIWriteSyncOverAsync

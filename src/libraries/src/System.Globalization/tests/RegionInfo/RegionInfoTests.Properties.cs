@@ -12,7 +12,8 @@ namespace System.Globalization.Tests
         [Fact]
         public void CurrentRegion()
         {
-            Assert.Equal(RegionInfo.CurrentRegion, new RegionInfo(CultureInfo.CurrentCulture.Name));
+            RegionInfo ri = new RegionInfo(new RegionInfo(CultureInfo.CurrentCulture.Name).TwoLetterISORegionName);
+            Assert.True(RegionInfo.CurrentRegion.Equals(ri) || RegionInfo.CurrentRegion.Equals(new RegionInfo(CultureInfo.CurrentCulture.Name)));
             Assert.Same(RegionInfo.CurrentRegion, RegionInfo.CurrentRegion);
         }
 

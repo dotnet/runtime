@@ -433,7 +433,7 @@ namespace System.Linq.Parallel
                         // Give an empty buffer to the producer
                         _mergeHelper._buffers[producer] = new Queue<Pair<TKey, TOutput>>(INITIAL_BUFFER_SIZE);
                         // No return statement.
-                        // This is the only branch that contines below of the lock region.
+                        // This is the only branch that continues below of the lock region.
                     }
                 }
 

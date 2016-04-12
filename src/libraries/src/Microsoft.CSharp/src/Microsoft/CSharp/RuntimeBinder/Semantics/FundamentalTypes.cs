@@ -6,7 +6,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal enum FUNDTYPE
     {
-        FT_NONE,         // No fundemental type
+        FT_NONE,         // No fundamental type
         FT_I1,
         FT_I2,
         FT_I4,

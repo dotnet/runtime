@@ -30,7 +30,7 @@ namespace System.Net.Http.Tests
         [Fact]
         public void Ctor_NameInvalidFormat_ThrowFormatException()
         {
-            // When adding values using strongly typed objects, no leading/trailing LWS (whitespaces) are allowed.
+            // When adding values using strongly typed objects, no leading/trailing LWS (whitespace) are allowed.
             AssertFormatException(" text ", null);
             AssertFormatException("text ", null);
             AssertFormatException(" text", null);
@@ -49,7 +49,7 @@ namespace System.Net.Http.Tests
         [Fact]
         public void Ctor_ValueInvalidFormat_ThrowFormatException()
         {
-            // When adding values using strongly typed objects, no leading/trailing LWS (whitespaces) are allowed.
+            // When adding values using strongly typed objects, no leading/trailing LWS (whitespace) are allowed.
             AssertFormatException("text", " token ");
             AssertFormatException("text", "token ");
             AssertFormatException("text", " token");

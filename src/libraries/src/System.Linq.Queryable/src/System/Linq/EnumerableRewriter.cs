@@ -147,7 +147,7 @@ namespace System.Linq
             if (_equivalentTypeCache == null)
             {
                 // Pre-loading with the non-generic IQueryable and IEnumerable not only covers this case
-                // without any reflection-based interspection, but also means the slightly different
+                // without any reflection-based introspection, but also means the slightly different
                 // code needed to catch this case can be omitted safely.
                 _equivalentTypeCache = new Dictionary<Type, Type>
                     {

@@ -134,7 +134,7 @@ namespace System.Net.NetworkInformation.Tests
                     Assert.True(pingReply.Address.Equals(localIpAddress));
 
                     // Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-                    if (Capability.CanUseRawSockets())
+                    if (Capability.CanUseRawSockets(localIpAddress.AddressFamily))
                     {
                         Assert.Equal(buffer, pingReply.Buffer);
                     }
@@ -179,7 +179,7 @@ namespace System.Net.NetworkInformation.Tests
                     Assert.True(pingReply.Address.Equals(localIpAddress));
 
                     // Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-                    if (Capability.CanUseRawSockets())
+                    if (Capability.CanUseRawSockets(localIpAddress.AddressFamily))
                     {
                         Assert.Equal(buffer, pingReply.Buffer);
                     }
@@ -251,7 +251,7 @@ namespace System.Net.NetworkInformation.Tests
                     Assert.True(pingReply.Address.Equals(localIpAddress));
 
                     // Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-                    if (Capability.CanUseRawSockets())
+                    if (Capability.CanUseRawSockets(localIpAddress.AddressFamily))
                     {
                         Assert.Equal(buffer, pingReply.Buffer);
                     }
@@ -295,7 +295,7 @@ namespace System.Net.NetworkInformation.Tests
                     Assert.True(pingReply.Address.Equals(localIpAddress));
 
                     // Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-                    if (Capability.CanUseRawSockets())
+                    if (Capability.CanUseRawSockets(localIpAddress.AddressFamily))
                     {
                         Assert.Equal(buffer, pingReply.Buffer);
                     }

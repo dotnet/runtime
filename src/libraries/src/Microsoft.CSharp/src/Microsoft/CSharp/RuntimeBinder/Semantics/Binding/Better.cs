@@ -121,9 +121,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         //    Foo(string y = "", string x="", long l = 5)
         // and the call site:
         //    Foo(y:"a")
-        // After rearanging the parameter types we will have:
+        // After rearranging the parameter types we will have:
         //   (string, int, long) and (string, string, long)
-        // By rearanging the arguments as such we make sure that any specified named arguments appear in the same position for both
+        // By rearranging the arguments as such we make sure that any specified named arguments appear in the same position for both
         // methods and we also maintain the relative order of the other parameters (the type long appears after int in the above example)
 
         private TypeArray RearrangeNamedArguments(TypeArray pta, MethPropWithInst mpwi,
@@ -440,7 +440,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             If second is better, make the contender the candidate and make the item following
                 contender into the new contender, if there is none, goto phase 2
             If neither, make contender+1 into candidate and contender+2 into contender, if possible,
-                otherwise, if contender was last, return null, otherwise if new condidate is last,
+                otherwise, if contender was last, return null, otherwise if new candidate is last,
                 goto phase 2
             Phase 2: compare all items before candidate to candidate
                 If candidate always better, return it, otherwise return null

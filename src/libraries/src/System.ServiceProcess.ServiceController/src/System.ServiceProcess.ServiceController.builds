@@ -6,7 +6,10 @@
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="System.ServiceProcess.ServiceController.csproj">
-      <TargetGroup>net46</TargetGroup>
+      <OSGroup>Unix</OSGroup>
+    </Project>
+    <Project Include="System.ServiceProcess.ServiceController.csproj">
+      <TargetGroup>net461</TargetGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

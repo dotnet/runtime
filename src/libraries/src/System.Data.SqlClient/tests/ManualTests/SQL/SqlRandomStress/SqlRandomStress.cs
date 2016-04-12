@@ -144,7 +144,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
                 if (!_randPool.ReproMode)
                 {
-                    // add .repro extention to enable easy delete on repro files
+                    // add .repro extension to enable easy delete on repro files
                     string reproFile = Path.GetRandomFileName() + ".repro";
                     _randPool.SaveLastThreadScopeRepro(reproFile);
                     output.AppendFormat("ReproFile (use with /repro:reproFilePath):{0}{1}{0}",
@@ -238,11 +238,11 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         {
             // random list of columns
             int columnCount = table.Columns.Count;
-            int[] columnIndicies = rand.NextIndicies(columnCount);
+            int[] columnIndices = rand.NextIndices(columnCount);
             int selectedCount = rand.NextIntInclusive(1, maxValueInclusive: columnCount);
 
             StringBuilder selectBuilder = new StringBuilder();
-            table.GenerateSelectFromTableTSql(tableName, selectBuilder, columnIndicies, 0, selectedCount);
+            table.GenerateSelectFromTableTSql(tableName, selectBuilder, columnIndices, 0, selectedCount);
             SqlCommand cmd = con.CreateCommand();
             cmd.CommandType = CommandType.Text;
             cmd.CommandText = selectBuilder.ToString();
@@ -304,7 +304,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                                 continue;
                             }
 
-                            int expectedTableColumn = columnIndicies[c];
+                            int expectedTableColumn = columnIndices[c];
                             object expectedValue = expectedRow[expectedTableColumn];
                             if (table.Columns[expectedTableColumn].CanCompareValues)
                             {

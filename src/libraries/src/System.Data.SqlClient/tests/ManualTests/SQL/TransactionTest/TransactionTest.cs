@@ -319,7 +319,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     {
                         int count = 0;
                         while (reader.Read()) count++;
-                        Assert.True(count == 1, "Should Expected 1 row because Isolation Level is read uncommited which should return uncommited data.");
+                        Assert.True(count == 1, "Should Expected 1 row because Isolation Level is read uncommitted which should return uncommitted data.");
                     }
 
                     tx2.Rollback();

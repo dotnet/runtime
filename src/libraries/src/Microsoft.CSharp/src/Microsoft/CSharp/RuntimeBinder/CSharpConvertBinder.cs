@@ -26,7 +26,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         private RuntimeBinder _binder;
 
         /// <summary>
-        /// Initializes a new intsance of the <see cref="CSharpConvertBinder" />.
+        /// Initializes a new instance of the <see cref="CSharpConvertBinder" />.
         /// </summary>
         /// <param name="type">The type to convert to.</param>
         /// <param name="conversionKind">The kind of conversion for this operation.</param>

@@ -566,7 +566,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             new FlagVariantEncoderTestCases("CN=a\nO=b\rOU=c\r\nL=d\n\n \n")
             {
-                // One very-whitespaced value.  Note that the whatespace at the end
+                // One whitespace-heavy value.  Note that the whitespace at the end
                 // was removed, even though the default-printed form has quotes.
                 {
                     X500DistinguishedNameFlags.None,

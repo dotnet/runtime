@@ -1727,7 +1727,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.readonl
 {
     using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.readonly10.readonly10;
     // <Title>Dynamic & readonly</Title>
-    // <Description>The field of readonly struct can be evaluted in member initializer.</Description>
+    // <Description>The field of readonly struct can be evaluated in member initializer.</Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>

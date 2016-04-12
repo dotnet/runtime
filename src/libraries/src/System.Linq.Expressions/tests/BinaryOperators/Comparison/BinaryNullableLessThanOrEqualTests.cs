@@ -11,158 +11,158 @@ namespace System.Linq.Expressions.Tests
     {
         #region Test methods
 
-        [Fact]
-        public static void CheckNullableByteLessThanOrEqualTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableByteLessThanOrEqualTest(bool useInterpreter)
         {
             byte?[] array = new byte?[] { null, 0, 1, byte.MaxValue };
             for (int i = 0; i < array.Length; i++)
             {
                 for (int j = 0; j < array.Length; j++)
                 {
-                    VerifyNullableByteLessThanOrEqual(array[i], array[j]);
+                    VerifyNullableByteLessThanOrEqual(array[i], array[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckNullableCharLessThanOrEqualTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableCharLessThanOrEqualTest(bool useInterpreter)
         {
             char?[] array = new char?[] { null, '\0', '\b', 'A', '\uffff' };
             for (int i = 0; i < array.Length; i++)
             {
                 for (int j = 0; j < array.Length; j++)
                 {
-                    VerifyNullableCharLessThanOrEqual(array[i], array[j]);
+                    VerifyNullableCharLessThanOrEqual(array[i], array[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckNullableDecimalLessThanOrEqualTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableDecimalLessThanOrEqualTest(bool useInterpreter)
         {
             decimal?[] array = new decimal?[] { null, decimal.Zero, decimal.One, decimal.MinusOne, decimal.MinValue, decimal.MaxValue };
             for (int i = 0; i < array.Length; i++)
             {
                 for (int j = 0; j < array.Length; j++)
                 {
-                    VerifyNullableDecimalLessThanOrEqual(array[i], array[j]);
+                    VerifyNullableDecimalLessThanOrEqual(array[i], array[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckNullableDoubleLessThanOrEqualTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableDoubleLessThanOrEqualTest(bool useInterpreter)
         {
             double?[] array = new double?[] { null, 0, 1, -1, double.MinValue, double.MaxValue, double.Epsilon, double.NegativeInfinity, double.PositiveInfinity, double.NaN };
             for (int i = 0; i < array.Length; i++)
             {
                 for (int j = 0; j < array.Length; j++)
                 {
-                    VerifyNullableDoubleLessThanOrEqual(array[i], array[j]);
+                    VerifyNullableDoubleLessThanOrEqual(array[i], array[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckNullableFloatLessThanOrEqualTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableFloatLessThanOrEqualTest(bool useInterpreter)
         {
             float?[] array = new float?[] { null, 0, 1, -1, float.MinValue, float.MaxValue, float.Epsilon, float.NegativeInfinity, float.PositiveInfinity, float.NaN };
             for (int i = 0; i < array.Length; i++)
             {
                 for (int j = 0; j < array.Length; j++)
                 {
-                    VerifyNullableFloatLessThanOrEqual(array[i], array[j]);
+                    VerifyNullableFloatLessThanOrEqual(array[i], array[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckNullableIntLessThanOrEqualTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableIntLessThanOrEqualTest(bool useInterpreter)
         {
             int?[] array = new int?[] { null, 0, 1, -1, int.MinValue, int.MaxValue };
             for (int i = 0; i < array.Length; i++)
             {
                 for (int j = 0; j < array.Length; j++)
                 {
-                    VerifyNullableIntLessThanOrEqual(array[i], array[j]);
+                    VerifyNullableIntLessThanOrEqual(array[i], array[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckNullableLongLessThanOrEqualTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableLongLessThanOrEqualTest(bool useInterpreter)
         {
             long?[] array = new long?[] { null, 0, 1, -1, long.MinValue, long.MaxValue };
             for (int i = 0; i < array.Length; i++)
             {
                 for (int j = 0; j < array.Length; j++)
                 {
-                    VerifyNullableLongLessThanOrEqual(array[i], array[j]);
+                    VerifyNullableLongLessThanOrEqual(array[i], array[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckNullableSByteLessThanOrEqualTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableSByteLessThanOrEqualTest(bool useInterpreter)
         {
             sbyte?[] array = new sbyte?[] { null, 0, 1, -1, sbyte.MinValue, sbyte.MaxValue };
             for (int i = 0; i < array.Length; i++)
             {
                 for (int j = 0; j < array.Length; j++)
                 {
-                    VerifyNullableSByteLessThanOrEqual(array[i], array[j]);
+                    VerifyNullableSByteLessThanOrEqual(array[i], array[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckNullableShortLessThanOrEqualTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableShortLessThanOrEqualTest(bool useInterpreter)
         {
             short?[] array = new short?[] { null, 0, 1, -1, short.MinValue, short.MaxValue };
             for (int i = 0; i < array.Length; i++)
             {
                 for (int j = 0; j < array.Length; j++)
                 {
-                    VerifyNullableShortLessThanOrEqual(array[i], array[j]);
+                    VerifyNullableShortLessThanOrEqual(array[i], array[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckNullableUIntLessThanOrEqualTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableUIntLessThanOrEqualTest(bool useInterpreter)
         {
             uint?[] array = new uint?[] { null, 0, 1, uint.MaxValue };
             for (int i = 0; i < array.Length; i++)
             {
                 for (int j = 0; j < array.Length; j++)
                 {
-                    VerifyNullableUIntLessThanOrEqual(array[i], array[j]);
+                    VerifyNullableUIntLessThanOrEqual(array[i], array[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckNullableULongLessThanOrEqualTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableULongLessThanOrEqualTest(bool useInterpreter)
         {
             ulong?[] array = new ulong?[] { null, 0, 1, ulong.MaxValue };
             for (int i = 0; i < array.Length; i++)
             {
                 for (int j = 0; j < array.Length; j++)
                 {
-                    VerifyNullableULongLessThanOrEqual(array[i], array[j]);
+                    VerifyNullableULongLessThanOrEqual(array[i], array[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckNullableUShortLessThanOrEqualTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableUShortLessThanOrEqualTest(bool useInterpreter)
         {
             ushort?[] array = new ushort?[] { null, 0, 1, ushort.MaxValue };
             for (int i = 0; i < array.Length; i++)
             {
                 for (int j = 0; j < array.Length; j++)
                 {
-                    VerifyNullableUShortLessThanOrEqual(array[i], array[j]);
+                    VerifyNullableUShortLessThanOrEqual(array[i], array[j], useInterpreter);
                 }
             }
         }
@@ -171,7 +171,7 @@ namespace System.Linq.Expressions.Tests
 
         #region Test verifiers
 
-        private static void VerifyNullableByteLessThanOrEqual(byte? a, byte? b)
+        private static void VerifyNullableByteLessThanOrEqual(byte? a, byte? b, bool useInterpreter)
         {
             Expression<Func<bool>> e =
                 Expression.Lambda<Func<bool>>(
@@ -179,46 +179,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(byte?)),
                         Expression.Constant(b, typeof(byte?))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<bool> f = e.Compile();
+            Func<bool> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            bool etResult = default(bool);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            bool csResult = default(bool);
-            Exception csException = null;
-            try
-            {
-                csResult = (bool)(a <= b);
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a <= b, f());
         }
 
-        private static void VerifyNullableCharLessThanOrEqual(char? a, char? b)
+        private static void VerifyNullableCharLessThanOrEqual(char? a, char? b, bool useInterpreter)
         {
             Expression<Func<bool>> e =
                 Expression.Lambda<Func<bool>>(
@@ -226,46 +192,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(char?)),
                         Expression.Constant(b, typeof(char?))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<bool> f = e.Compile();
+            Func<bool> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            bool etResult = default(bool);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            bool csResult = default(bool);
-            Exception csException = null;
-            try
-            {
-                csResult = (bool)(a <= b);
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a <= b, f());
         }
 
-        private static void VerifyNullableDecimalLessThanOrEqual(decimal? a, decimal? b)
+        private static void VerifyNullableDecimalLessThanOrEqual(decimal? a, decimal? b, bool useInterpreter)
         {
             Expression<Func<bool>> e =
                 Expression.Lambda<Func<bool>>(
@@ -273,46 +205,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(decimal?)),
                         Expression.Constant(b, typeof(decimal?))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<bool> f = e.Compile();
+            Func<bool> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            bool etResult = default(bool);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            bool csResult = default(bool);
-            Exception csException = null;
-            try
-            {
-                csResult = (bool)(a <= b);
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a <= b, f());
         }
 
-        private static void VerifyNullableDoubleLessThanOrEqual(double? a, double? b)
+        private static void VerifyNullableDoubleLessThanOrEqual(double? a, double? b, bool useInterpreter)
         {
             Expression<Func<bool>> e =
                 Expression.Lambda<Func<bool>>(
@@ -320,46 +218,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(double?)),
                         Expression.Constant(b, typeof(double?))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<bool> f = e.Compile();
+            Func<bool> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            bool etResult = default(bool);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            bool csResult = default(bool);
-            Exception csException = null;
-            try
-            {
-                csResult = (bool)(a <= b);
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a <= b, f());
         }
 
-        private static void VerifyNullableFloatLessThanOrEqual(float? a, float? b)
+        private static void VerifyNullableFloatLessThanOrEqual(float? a, float? b, bool useInterpreter)
         {
             Expression<Func<bool>> e =
                 Expression.Lambda<Func<bool>>(
@@ -367,46 +231,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(float?)),
                         Expression.Constant(b, typeof(float?))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<bool> f = e.Compile();
+            Func<bool> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            bool etResult = default(bool);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            bool csResult = default(bool);
-            Exception csException = null;
-            try
-            {
-                csResult = (bool)(a <= b);
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a <= b, f());
         }
 
-        private static void VerifyNullableIntLessThanOrEqual(int? a, int? b)
+        private static void VerifyNullableIntLessThanOrEqual(int? a, int? b, bool useInterpreter)
         {
             Expression<Func<bool>> e =
                 Expression.Lambda<Func<bool>>(
@@ -414,46 +244,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(int?)),
                         Expression.Constant(b, typeof(int?))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<bool> f = e.Compile();
+            Func<bool> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            bool etResult = default(bool);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            bool csResult = default(bool);
-            Exception csException = null;
-            try
-            {
-                csResult = (bool)(a <= b);
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a <= b, f());
         }
 
-        private static void VerifyNullableLongLessThanOrEqual(long? a, long? b)
+        private static void VerifyNullableLongLessThanOrEqual(long? a, long? b, bool useInterpreter)
         {
             Expression<Func<bool>> e =
                 Expression.Lambda<Func<bool>>(
@@ -461,46 +257,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(long?)),
                         Expression.Constant(b, typeof(long?))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<bool> f = e.Compile();
+            Func<bool> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            bool etResult = default(bool);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            bool csResult = default(bool);
-            Exception csException = null;
-            try
-            {
-                csResult = (bool)(a <= b);
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a <= b, f());
         }
 
-        private static void VerifyNullableSByteLessThanOrEqual(sbyte? a, sbyte? b)
+        private static void VerifyNullableSByteLessThanOrEqual(sbyte? a, sbyte? b, bool useInterpreter)
         {
             Expression<Func<bool>> e =
                 Expression.Lambda<Func<bool>>(
@@ -508,46 +270,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(sbyte?)),
                         Expression.Constant(b, typeof(sbyte?))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<bool> f = e.Compile();
+            Func<bool> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            bool etResult = default(bool);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            bool csResult = default(bool);
-            Exception csException = null;
-            try
-            {
-                csResult = (bool)(a <= b);
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a <= b, f());
         }
 
-        private static void VerifyNullableShortLessThanOrEqual(short? a, short? b)
+        private static void VerifyNullableShortLessThanOrEqual(short? a, short? b, bool useInterpreter)
         {
             Expression<Func<bool>> e =
                 Expression.Lambda<Func<bool>>(
@@ -555,46 +283,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(short?)),
                         Expression.Constant(b, typeof(short?))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<bool> f = e.Compile();
+            Func<bool> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            bool etResult = default(bool);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            bool csResult = default(bool);
-            Exception csException = null;
-            try
-            {
-                csResult = (bool)(a <= b);
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a <= b, f());
         }
 
-        private static void VerifyNullableUIntLessThanOrEqual(uint? a, uint? b)
+        private static void VerifyNullableUIntLessThanOrEqual(uint? a, uint? b, bool useInterpreter)
         {
             Expression<Func<bool>> e =
                 Expression.Lambda<Func<bool>>(
@@ -602,46 +296,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(uint?)),
                         Expression.Constant(b, typeof(uint?))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<bool> f = e.Compile();
+            Func<bool> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            bool etResult = default(bool);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            bool csResult = default(bool);
-            Exception csException = null;
-            try
-            {
-                csResult = (bool)(a <= b);
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a <= b, f());
         }
 
-        private static void VerifyNullableULongLessThanOrEqual(ulong? a, ulong? b)
+        private static void VerifyNullableULongLessThanOrEqual(ulong? a, ulong? b, bool useInterpreter)
         {
             Expression<Func<bool>> e =
                 Expression.Lambda<Func<bool>>(
@@ -649,46 +309,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(ulong?)),
                         Expression.Constant(b, typeof(ulong?))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<bool> f = e.Compile();
+            Func<bool> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            bool etResult = default(bool);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            bool csResult = default(bool);
-            Exception csException = null;
-            try
-            {
-                csResult = (bool)(a <= b);
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a <= b, f());
         }
 
-        private static void VerifyNullableUShortLessThanOrEqual(ushort? a, ushort? b)
+        private static void VerifyNullableUShortLessThanOrEqual(ushort? a, ushort? b, bool useInterpreter)
         {
             Expression<Func<bool>> e =
                 Expression.Lambda<Func<bool>>(
@@ -696,43 +322,9 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(ushort?)),
                         Expression.Constant(b, typeof(ushort?))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<bool> f = e.Compile();
+            Func<bool> f = e.Compile(useInterpreter);
 
-            // compute with expression tree
-            bool etResult = default(bool);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // compute with real IL
-            bool csResult = default(bool);
-            Exception csException = null;
-            try
-            {
-                csResult = (bool)(a <= b);
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(a <= b, f());
         }
 
         #endregion

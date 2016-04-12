@@ -73,7 +73,7 @@ namespace System.Data.SqlClient
             return s_nicAddress;
         }
 
-        // translates remaining time in stateObj (from user specified timeout) to timout value for SNI
+        // translates remaining time in stateObj (from user specified timeout) to timeout value for SNI
         static internal Int32 GetTimeoutMilliseconds(long timeoutTime)
         {
             // User provided timeout t | timeout value for SNI | meaning

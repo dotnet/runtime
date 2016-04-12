@@ -10,7 +10,7 @@ namespace System.Linq.Expressions.Tests
 {
     public class LabelTests
     {
-        // The actual use of label when compiling, interpretting or otherwise acting upon an expression
+        // The actual use of label when compiling, interpreting or otherwise acting upon an expression
         // that makes use of them is by necessity covered by testing those GotoExpressions that make use of them.
         // These tests focus on the LabelTarget class and the factory methods producing them.
 

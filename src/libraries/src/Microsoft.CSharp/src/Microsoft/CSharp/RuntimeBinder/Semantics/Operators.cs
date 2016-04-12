@@ -76,7 +76,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         */
 
         // BinOpBindMethod and UnaOpBindMethod are method pointer arrays to dispatch the appropriate operator binder.
-        // Method pointers must be in the order of the corresponding enums. We check check this when the full signature is set. 
+        // Method pointers must be in the order of the corresponding enums. We check this when the full signature is set. 
         // When the binding method is looked up in these arrays we ASSERT
         // if the array is out of bounds of the corresponding array.
 
@@ -449,7 +449,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             BinOpArgInfo info = new BinOpArgInfo(arg1, arg2);
             if (!GetBinopKindAndFlags(ek, out info.binopKind, out flags))
             {
-                // If we dont get the BinopKind and the flags, then we must have had some bad operator types.
+                // If we don't get the BinopKind and the flags, then we must have had some bad operator types.
 
                 return BadOperatorTypesError(ek, arg1, arg2);
             }
@@ -496,7 +496,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             else
             {
                 // We had some matches, try to find the best one. FindBestSignatureInList returns < 0 if
-                // we dont have a best one, otherwise it returns the index of the best one in our list that 
+                // we don't have a best one, otherwise it returns the index of the best one in our list that 
                 // we give it.
 
                 bestBinopSignature = FindBestSignatureInList(binopSignatures, info);
@@ -1292,7 +1292,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         }
                         if (nBestSignature < 0)
                         {
-                            // Ambigous.
+                            // Ambiguous.
                             return ambiguousOperatorError(ek, pArgument, null);
                         }
 
@@ -1873,7 +1873,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         the EE then uses the runtimesystem to find if any of the arguments of the expr can be evaluated to constants.
         3.  If so it creates new arguments and expr, aliases the original expr to the new one and passes
         it new expr to Expressionbinder to be bound. 
-        4.  This time the expresson binder realizes that the 2 arguments are constants and tries to fold them.
+        4.  This time the expression binder realizes that the 2 arguments are constants and tries to fold them.
         If the folding is successful the value is used by the EE (and we have avoided a funceval)
         5.  if the constant binding fails, then the Expression binders returns the same exp as it would have 
         created for the compile case ( we func eval the same function as what would be executed at runtime).
@@ -1938,7 +1938,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 #endif
 
-            // At this point, for the compiler we dont want to optimize the binop just yet. Maintain the correct tree until
+            // At this point, for the compiler we don't want to optimize the binop just yet. Maintain the correct tree until
             // the arithmetic optimizer pass.
             return GetExprFactory().CreateBinop(ek, typeRet, arg1, arg2);
 
@@ -2113,7 +2113,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             EXPR argConst1 = arg1.GetConst();
             EXPR argConst2 = arg2.GetConst();
 
-            if (argConst1 == null || argConst2 == null) // One or more aren't constants, so dont fold anything.
+            if (argConst1 == null || argConst2 == null) // One or more aren't constants, so don't fold anything.
             {
                 return GetExprFactory().CreateBinop(ek, arg1.type, arg1, arg2);
             }
@@ -2229,7 +2229,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
 
         /*
-            Handles boolean unary operater (!).
+            Handles boolean unary operator (!).
         */
         private EXPR BindBoolUnaOp(ExpressionKind ek, EXPRFLAG flags, EXPR arg)
         {
@@ -3102,7 +3102,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 else
                 {
                     // NaN has some implementation defined bits that differ between platforms.
-                    // Normalize it to produce identical images accross all platforms
+                    // Normalize it to produce identical images across all platforms
                     /*
                      * How do we get here?
                     if (_isnan(result))
@@ -3437,7 +3437,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             if (pmethBest == null)
             {
-                // No winner, so its an ambigous call...
+                // No winner, so its an ambiguous call...
                 GetErrorContext().Error(ErrorCode.ERR_AmbigCall, pmethAmbig1.mpwi, pmethAmbig2.mpwi);
 
                 EXPRMEMGRP pMemGroup = GetExprFactory().CreateMemGroup(null, pmethAmbig1.mpwi);

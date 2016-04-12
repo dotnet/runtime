@@ -48,7 +48,7 @@ namespace System.IO.Compression
         #region Private Constructors and Initializers
 
         /// <summary>
-        /// Internal constructor to check stream validity and call the correct initalization function depending on
+        /// Internal constructor to check stream validity and call the correct initialization function depending on
         /// the value of the CompressionMode given.
         /// </summary>
         internal DeflateStream(Stream stream, CompressionMode mode, bool leaveOpen, int windowBits)

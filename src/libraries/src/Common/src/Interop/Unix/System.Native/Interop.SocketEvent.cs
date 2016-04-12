@@ -29,10 +29,10 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_CreateSocketEventPort")]
-        internal static extern unsafe Error CreateSocketEventPort(out int port);
+        internal static extern unsafe Error CreateSocketEventPort(out IntPtr port);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_CloseSocketEventPort")]
-        internal static extern Error CloseSocketEventPort(int port);
+        internal static extern Error CloseSocketEventPort(IntPtr port);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_CreateSocketEventBuffer")]
         internal static extern unsafe Error CreateSocketEventBuffer(int count, out SocketEvent* buffer);
@@ -41,26 +41,12 @@ internal static partial class Interop
         internal static extern unsafe Error FreeSocketEventBuffer(SocketEvent* buffer);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_TryChangeSocketEventRegistration")]
-        internal static extern Error DangerousTryChangeSocketEventRegistration(int port, int socket, SocketEvents currentEvents, SocketEvents newEvents, IntPtr data);
+        internal static extern Error TryChangeSocketEventRegistration(IntPtr port, SafeHandle socket, SocketEvents currentEvents, SocketEvents newEvents, IntPtr data);
 
-        internal static Error TryChangeSocketEventRegistration(int port, SafeHandle socket, SocketEvents currentEvents, SocketEvents newEvents, IntPtr data)
-        {
-            bool release = false;
-            try
-            {
-                socket.DangerousAddRef(ref release);
-                return DangerousTryChangeSocketEventRegistration(port, (int)socket.DangerousGetHandle(), currentEvents, newEvents, data);
-            }
-            finally
-            {
-                if (release)
-                {
-                    socket.DangerousRelease();
-                }
-            }
-        }
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_TryChangeSocketEventRegistration")]
+        internal static extern Error TryChangeSocketEventRegistration(IntPtr port, IntPtr socket, SocketEvents currentEvents, SocketEvents newEvents, IntPtr data);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_WaitForSocketEvents")]
-        internal static extern unsafe Error WaitForSocketEvents(int port, SocketEvent* buffer, int* count);
+        internal static extern unsafe Error WaitForSocketEvents(IntPtr port, SocketEvent* buffer, int* count);
     }
 }

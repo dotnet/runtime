@@ -12,8 +12,8 @@ namespace System.Linq.Expressions.Tests
     public class NoParameterBlockTests : SharedBlockTests
     {
         [Theory]
-        [MemberData(nameof(ConstantValueData))]
-        public void SingleElementBlock(object value)
+        [PerCompilationType(nameof(ConstantValueData))]
+        public void SingleElementBlock(object value, bool useInterpreter)
         {
             Type type = value.GetType();
             ConstantExpression constant = Expression.Constant(value, type);
@@ -24,12 +24,12 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(type, block.Type);
 
             Expression equal = Expression.Equal(constant, block);
-            Assert.True(Expression.Lambda<Func<bool>>(equal).Compile()());
+            Assert.True(Expression.Lambda<Func<bool>>(equal).Compile(useInterpreter)());
         }
 
         [Theory]
-        [MemberData(nameof(ConstantValueData))]
-        public void DoubleElementBlock(object value)
+        [PerCompilationType(nameof(ConstantValueData))]
+        public void DoubleElementBlock(object value, bool useInterpreter)
         {
             Type type = value.GetType();
             ConstantExpression constant = Expression.Constant(value, type);
@@ -41,7 +41,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(type, block.Type);
 
             Expression equal = Expression.Equal(constant, block);
-            Assert.True(Expression.Lambda<Func<bool>>(equal).Compile()());
+            Assert.True(Expression.Lambda<Func<bool>>(equal).Compile(useInterpreter)());
         }
 
         [Fact]
@@ -59,8 +59,8 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ConstantValueData))]
-        public void TripleElementBlock(object value)
+        [PerCompilationType(nameof(ConstantValueData))]
+        public void TripleElementBlock(object value, bool useInterpreter)
         {
             Type type = value.GetType();
             ConstantExpression constant = Expression.Constant(value, type);
@@ -73,7 +73,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(type, block.Type);
 
             Expression equal = Expression.Equal(constant, block);
-            Assert.True(Expression.Lambda<Func<bool>>(equal).Compile()());
+            Assert.True(Expression.Lambda<Func<bool>>(equal).Compile(useInterpreter)());
         }
 
         [Fact]
@@ -93,8 +93,8 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ConstantValueData))]
-        public void QuadrupleElementBlock(object value)
+        [PerCompilationType(nameof(ConstantValueData))]
+        public void QuadrupleElementBlock(object value, bool useInterpreter)
         {
             Type type = value.GetType();
             ConstantExpression constant = Expression.Constant(value, type);
@@ -108,7 +108,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(type, block.Type);
 
             Expression equal = Expression.Equal(constant, block);
-            Assert.True(Expression.Lambda<Func<bool>>(equal).Compile()());
+            Assert.True(Expression.Lambda<Func<bool>>(equal).Compile(useInterpreter)());
         }
 
         [Fact]
@@ -130,8 +130,8 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ConstantValueData))]
-        public void QuintupleElementBlock(object value)
+        [PerCompilationType(nameof(ConstantValueData))]
+        public void QuintupleElementBlock(object value, bool useInterpreter)
         {
             Type type = value.GetType();
             ConstantExpression constant = Expression.Constant(value, type);
@@ -146,7 +146,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(type, block.Type);
 
             Expression equal = Expression.Equal(constant, block);
-            Assert.True(Expression.Lambda<Func<bool>>(equal).Compile()());
+            Assert.True(Expression.Lambda<Func<bool>>(equal).Compile(useInterpreter)());
         }
 
         [Fact]
@@ -170,8 +170,8 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ConstantValueData))]
-        public void SextupleElementBlock(object value)
+        [PerCompilationType(nameof(ConstantValueData))]
+        public void SextupleElementBlock(object value, bool useInterpreter)
         {
             Type type = value.GetType();
             ConstantExpression constant = Expression.Constant(value, type);
@@ -187,7 +187,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(type, block.Type);
 
             Expression equal = Expression.Equal(constant, block);
-            Assert.True(Expression.Lambda<Func<bool>>(equal).Compile()());
+            Assert.True(Expression.Lambda<Func<bool>>(equal).Compile(useInterpreter)());
         }
 
         [Fact]
@@ -241,8 +241,8 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ObjectAssignableConstantValuesAndSizes))]
-        public void BlockExplicitType(object value, int blockSize)
+        [PerCompilationType(nameof(ObjectAssignableConstantValuesAndSizes))]
+        public void BlockExplicitType(object value, int blockSize, bool useInterpreter)
         {
             ConstantExpression constant = Expression.Constant(value, value.GetType());
             BlockExpression block = Expression.Block(typeof(object), PadBlock(blockSize - 1, constant));
@@ -250,7 +250,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(typeof(object), block.Type);
 
             Expression equal = Expression.Equal(constant, block);
-            Assert.True(Expression.Lambda<Func<bool>>(equal).Compile()());
+            Assert.True(Expression.Lambda<Func<bool>>(equal).Compile(useInterpreter)());
         }
 
         [Theory]
@@ -317,7 +317,7 @@ namespace System.Linq.Expressions.Tests
 
         [Theory]
         [MemberData(nameof(ConstantValuesAndSizes))]
-        [ActiveIssue(3883)]
+        [ActiveIssue(3958)]
         public void RewriteToSameWithSameValues(object value, int blockSize)
         {
             ConstantExpression constant = Expression.Constant(value, value.GetType());

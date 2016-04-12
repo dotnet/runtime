@@ -28,7 +28,7 @@ namespace System.Threading
     }
 
     /// <summary>
-    /// Manages the lifetime of an object which implements IDiposable, but which must defer the actual
+    /// Manages the lifetime of an object which implements IDisposable, but which must defer the actual
     /// cleanup of state until all existing uses of the object are complete.
     /// </summary>
     /// <typeparam name="T">The type of object whose lifetime will be managed.</typeparam>

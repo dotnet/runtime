@@ -29,7 +29,7 @@ namespace System.Composition.TypedParts.Discovery
         // but in reality unlikely to be a problem.
         private readonly IList<Type[]> _appliedArguments = new List<Type[]>();
 
-        // Lazyily initialised among potentially many exports
+        // Lazily initialised among potentially many exports
         private ConstructorInfo _constructor;
         private CompositeActivator _partActivator;
 

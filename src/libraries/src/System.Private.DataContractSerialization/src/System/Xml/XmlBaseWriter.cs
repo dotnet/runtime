@@ -1809,7 +1809,7 @@ namespace System.Xml
 
         private enum DocumentState : byte
         {
-            None,       // Not inside StartDocument/EndDocument - Allows multiple root elemnts
+            None,       // Not inside StartDocument/EndDocument - Allows multiple root elements
             Document,   // Inside StartDocument/EndDocument
             Epilog,     // EndDocument must be called
             End         // Nothing further to write

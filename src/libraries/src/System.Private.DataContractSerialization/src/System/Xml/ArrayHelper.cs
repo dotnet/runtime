@@ -92,7 +92,7 @@ namespace System.Xml
     // Guid
     // TimeSpan
 
-    // Int8 is not supported since sbyte[] is non-cls compliant, and uncommon
+    // Int8 is not supported since sbyte[] is non-CLS compliant, and uncommon
     // UniqueId is not supported since elements may be variable size strings
 
     internal class BooleanArrayHelperWithString : ArrayHelper<string, bool>

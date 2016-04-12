@@ -102,7 +102,7 @@ namespace System.Reflection.Tests
             });
         }
 
-        //create closed static method with inccorect argument
+        //create closed static method with incorrect argument
         [Fact]
         public void TestCreateDelegate9()
         {

@@ -11,7 +11,7 @@ namespace System.IO.MemoryMappedFiles
     {
         /// <summary>
         /// Used by the 2 Create factory method groups.  A null fileHandle specifies that the 
-        /// memory mapped file should not be associated with an existing file on disk (ie start
+        /// memory mapped file should not be associated with an existing file on disk (i.e. start
         /// out empty).
         /// </summary>
         [SecurityCritical]
@@ -188,7 +188,7 @@ namespace System.IO.MemoryMappedFiles
 
             try
             {
-                // Unlink the shared memory object immediatley so that it'll go away once all handles 
+                // Unlink the shared memory object immediately so that it'll go away once all handles 
                 // to it are closed (as with opened then unlinked files, it'll remain usable via
                 // the open handles even though it's unlinked and can't be opened anew via its name).
                 Interop.CheckIo(Interop.Sys.ShmUnlink(mapName));

@@ -4,13 +4,12 @@
 
   <PropertyGroup>
     <!-- Ideally we'd harvest this from the runtime dependencies -->
-    <Version>4.1.0</Version>
+    <Version>4.1.1</Version>
     <PreventImplementationReference>true</PreventImplementationReference>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="any\System.Private.DataContractSerialization.pkgproj" />
-    <ProjectReference Include="aot\System.Private.DataContractSerialization.pkgproj" />
+    <ProjectReference Include="..\src\System.Private.DataContractSerialization.builds" />
   </ItemGroup>
   
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

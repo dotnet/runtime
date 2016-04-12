@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Xunit;
 
@@ -202,9 +203,32 @@ namespace System.Linq.Parallel.Tests
             Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Empty<bool>().Select((Func<bool, int, bool>)null));
         }
 
+        [Theory]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        public static void Select_OrderablePartitionerWithOutOfOrderInputs_AsOrdered_CorrectOrder(bool keysOrderedInEachPartition, bool keysNormalized)
+        {
+            var range = new RangeOrderablePartitioner(0, 1024, keysOrderedInEachPartition, keysNormalized);
+            int next = 0;
+            foreach (int i in range.AsParallel().AsOrdered().Select(i => i))
+            {
+                Assert.Equal(next++, i);
+            }
+        }
+
         //
         // SelectMany
         //
+        // [Regression Test]
+        //   An issue occurred because the QuerySettings structure was not being deep-cloned during
+        //   query-opening.  As a result, the concurrent inner-enumerators (for the RHS operators)
+        //   that occur in SelectMany were sharing CancellationState that they should not have.
+        //   The result was that enumerators could falsely believe they had been canceled when
+        //   another inner-enumerator was disposed.
+        //
+        //   Note: the failure was intermittent.  this test would fail about 1 in 2 times on mikelid1 (4-core).
 
         public static IEnumerable<object[]> SelectManyUnorderedData(int[] counts)
         {
@@ -238,7 +262,7 @@ namespace System.Linq.Parallel.Tests
         {
             yield return Labeled.Label("Array", (Func<int, int, IEnumerable<int>>)((start, count) => Enumerable.Range(start * count, count).ToArray()));
             yield return Labeled.Label("Enumerable.Range", (Func<int, int, IEnumerable<int>>)((start, count) => Enumerable.Range(start * count, count)));
-            yield return Labeled.Label("ParallelEnumerable.Range", (Func<int, int, IEnumerable<int>>)((start, count) => ParallelEnumerable.Range(start * count, count)));
+            yield return Labeled.Label("ParallelEnumerable.Range", (Func<int, int, IEnumerable<int>>)((start, count) => ParallelEnumerable.Range(start * count, count).AsOrdered().Select(x => x)));
         }
 
         [Theory]

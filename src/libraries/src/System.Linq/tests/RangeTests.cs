@@ -168,6 +168,15 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void SkipTakeCanOnlyBeOne()
+        {
+            Assert.Equal(new[] { 1 }, Enumerable.Range(1, 10).Take(1));
+            Assert.Equal(new[] { 2 }, Enumerable.Range(1, 10).Skip(1).Take(1));
+            Assert.Equal(new[] { 3 }, Enumerable.Range(1, 10).Take(3).Skip(2));
+            Assert.Equal(new[] { 1 }, Enumerable.Range(1, 10).Take(3).Take(1));
+        }
+
+        [Fact]
         public void ElementAt()
         {
             Assert.Equal(4, Enumerable.Range(0, 10).ElementAt(4));

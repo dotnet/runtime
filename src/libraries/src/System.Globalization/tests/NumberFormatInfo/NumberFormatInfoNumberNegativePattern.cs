@@ -2,74 +2,44 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Globalization.Tests
 {
     public class NumberFormatInfoNumberNegativePattern
     {
-        // TestDefault: Verify default value of property NumberNegativePattern
-        [Fact]
-        public void TestDefault()
+        public static IEnumerable<object[]> NumberNegativePattern_TestData()
         {
-            NumberFormatInfo nfi = new NumberFormatInfo();
-            int expected = nfi.NumberNegativePattern;
-            Assert.Equal(1, expected);
+            yield return new object[] { NumberFormatInfo.InvariantInfo, 1 };
+            yield return new object[] { new CultureInfo("en-US").NumberFormat, 1 };
         }
 
-        // TestSetValue: Verify set value of property NumberNegativePattern
-        [Fact]
-        public void TestSetValue()
-        {
-            NumberFormatInfo nfi = new NumberFormatInfo();
-            for (int i = 0; i <= 4; i++)
-            {
-                nfi.NumberNegativePattern = i;
-                Assert.Equal(i, nfi.NumberNegativePattern);
-            }
-        }
-
-        // TestArgumentOutOfRangeException: ArgumentOutOfRangeException is thrown
-        [Fact]
-        public void TestArgumentOutOfRangeException()
-        {
-            VerificationHelper<ArgumentOutOfRangeException>(-1);
-            VerificationHelper<ArgumentOutOfRangeException>(5);
-        }
-
-        // TestInvalidOperationException: InvalidOperationException is thrown
-        [Fact]
-        public void TestInvalidOperationException()
-        {
-            NumberFormatInfo nfi = new NumberFormatInfo();
-            NumberFormatInfo nfiReadOnly = NumberFormatInfo.ReadOnly(nfi);
-            Assert.Throws<InvalidOperationException>(() =>
-            {
-                nfiReadOnly.NumberNegativePattern = 1;
-            });
-        }
-
-        // TestNumberNegativePatternLocale: Verify value of property NumberNegativePattern for specific locales
         [Theory]
-        [InlineData("en-US", 1)]
-        public void TestNumberNegativePatternLocale(string locale, int expected)
+        [MemberData(nameof(NumberNegativePattern_TestData))]
+        public void NumberNegativePattern_Get(NumberFormatInfo format, int expected)
         {
-            CultureInfo myTestCulture = new CultureInfo(locale);
-            NumberFormatInfo nfi = myTestCulture.NumberFormat;
-            int actual = nfi.NumberNegativePattern;
-            Assert.Equal(expected, actual);
+            Assert.Equal(expected, format.NumberNegativePattern);
         }
 
-        private void VerificationHelper<T>(int i) where T : Exception
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(4)]
+        public void NumberNegativePattern_Set(int newNumberNegativePattern)
         {
-            NumberFormatInfo nfi = new NumberFormatInfo();
-            Assert.Throws<T>(() =>
-            {
-                nfi.NumberNegativePattern = i;
-                int actual = nfi.NumberNegativePattern;
-            });
+            NumberFormatInfo format = new NumberFormatInfo();
+            format.NumberNegativePattern = newNumberNegativePattern;
+            Assert.Equal(newNumberNegativePattern, format.NumberNegativePattern);
+        }
+
+        [Fact]
+        public void NumberNegativePattern_Set_Invalid()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("NumberNegativePattern", () => new NumberFormatInfo().NumberNegativePattern = -1);
+            Assert.Throws<ArgumentOutOfRangeException>("NumberNegativePattern", () => new NumberFormatInfo().NumberNegativePattern = 5);
+
+            Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.NumberNegativePattern = 1);
         }
     }
 }

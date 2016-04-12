@@ -12,8 +12,8 @@ namespace System.Runtime.Versioning.Tests
         private const string TestProfile = "TestProfile";
 
         private static readonly Version s_testVersion = new Version(1, 2, 3, 4);
-        private static readonly string s_testNameString = string.Format("{0},Version=v{1},Profile={2}", TestIdentifier, s_testVersion, TestProfile);
-        private static readonly string s_testNameNoProfileString = string.Format("{0},Version=v{1}", TestIdentifier, s_testVersion);
+        private static readonly string s_testNameString = $"{TestIdentifier},Version=v{s_testVersion},Profile={TestProfile}";
+        private static readonly string s_testNameNoProfileString = $"{TestIdentifier},Version=v{s_testVersion}";
         private static readonly FrameworkName s_testName = new FrameworkName(s_testNameString);
         private static readonly FrameworkName s_testNameNoProfile = new FrameworkName(s_testNameNoProfileString);
 
@@ -50,6 +50,9 @@ namespace System.Runtime.Versioning.Tests
             Assert.Throws<ArgumentException>(() => new FrameworkName("A,Version=1.z.0.0,Profile=C"));
             Assert.Throws<ArgumentException>(() => new FrameworkName("A,Something=1.z.0.0,Profile=C"));
             Assert.Throws<ArgumentException>(() => new FrameworkName("A,Profile=C"));
+            Assert.Throws<ArgumentException>(() => new FrameworkName("A,======"));
+            Assert.Throws<ArgumentException>(() => new FrameworkName("A,    =B="));
+            Assert.Throws<ArgumentException>(() => new FrameworkName("A,1  =2=3"));
         }
 
         [Fact]

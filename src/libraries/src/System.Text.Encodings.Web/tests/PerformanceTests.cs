@@ -38,7 +38,7 @@ namespace Microsoft.Framework.WebEncoders
             IJavaScriptStringEncoder newEncoder = JavaScriptStringEncoder.Default;
             Stopwatch timer = new Stopwatch();
 
-            // warmup
+            // warm up
             EncodeJavaScript(oldEncoder, SmallString, timer, SmallIterations);
             EncodeJavaScript(newEncoder, SmallString, timer, SmallIterations);
 
@@ -80,7 +80,7 @@ namespace Microsoft.Framework.WebEncoders
             IHtmlEncoder newEncoder = HtmlEncoder.Default;
             Stopwatch timer = new Stopwatch();
 
-            // warmup
+            // warm up
             EncodeHtml(oldEncoder, SmallString, timer, SmallIterations);
             EncodeHtml(newEncoder, SmallString, timer, SmallIterations);
 
@@ -122,7 +122,7 @@ namespace Microsoft.Framework.WebEncoders
             IHtmlEncoder newEncoder = HtmlEncoder.Default;
             Stopwatch timer = new Stopwatch();
 
-            // warmup
+            // warm up
             EncodeHtmlToTextWriter(oldEncoder, SmallString, timer, SmallIterations);
             EncodeHtmlToTextWriter(newEncoder, SmallString, timer, SmallIterations);
 

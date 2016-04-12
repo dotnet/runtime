@@ -12,158 +12,158 @@ namespace System.Linq.Expressions.Tests
     {
         #region Test methods
 
-        [Fact]
-        public static void CheckLiftedModuloNullableByteTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLiftedModuloNullableByteTest(bool useInterpreter)
         {
             byte?[] values = new byte?[] { null, 0, 1, byte.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
                 for (int j = 0; j < values.Length; j++)
                 {
-                    VerifyModuloNullableByte(values[i], values[j]);
+                    VerifyModuloNullableByte(values[i], values[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckLiftedModuloNullableCharTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLiftedModuloNullableCharTest(bool useInterpreter)
         {
             char?[] values = new char?[] { null, '\0', '\b', 'A', '\uffff' };
             for (int i = 0; i < values.Length; i++)
             {
                 for (int j = 0; j < values.Length; j++)
                 {
-                    VerifyModuloNullableChar(values[i], values[j]);
+                    VerifyModuloNullableChar(values[i], values[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckLiftedModuloNullableDecimalTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLiftedModuloNullableDecimalTest(bool useInterpreter)
         {
             decimal?[] values = new decimal?[] { null, decimal.Zero, decimal.One, decimal.MinusOne, decimal.MinValue, decimal.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
                 for (int j = 0; j < values.Length; j++)
                 {
-                    VerifyModuloNullableDecimal(values[i], values[j]);
+                    VerifyModuloNullableDecimal(values[i], values[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckLiftedModuloNullableDoubleTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLiftedModuloNullableDoubleTest(bool useInterpreter)
         {
             double?[] values = new double?[] { null, 0, 1, -1, double.MinValue, double.MaxValue, double.Epsilon, double.NegativeInfinity, double.PositiveInfinity, double.NaN };
             for (int i = 0; i < values.Length; i++)
             {
                 for (int j = 0; j < values.Length; j++)
                 {
-                    VerifyModuloNullableDouble(values[i], values[j]);
+                    VerifyModuloNullableDouble(values[i], values[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckLiftedModuloNullableFloatTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLiftedModuloNullableFloatTest(bool useInterpreter)
         {
             float?[] values = new float?[] { null, 0, 1, -1, float.MinValue, float.MaxValue, float.Epsilon, float.NegativeInfinity, float.PositiveInfinity, float.NaN };
             for (int i = 0; i < values.Length; i++)
             {
                 for (int j = 0; j < values.Length; j++)
                 {
-                    VerifyModuloNullableFloat(values[i], values[j]);
+                    VerifyModuloNullableFloat(values[i], values[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckLiftedModuloNullableIntTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLiftedModuloNullableIntTest(bool useInterpreter)
         {
             int?[] values = new int?[] { null, 0, 1, -1, int.MinValue, int.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
                 for (int j = 0; j < values.Length; j++)
                 {
-                    VerifyModuloNullableInt(values[i], values[j]);
+                    VerifyModuloNullableInt(values[i], values[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckLiftedModuloNullableLongTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLiftedModuloNullableLongTest(bool useInterpreter)
         {
             long?[] values = new long?[] { null, 0, 1, -1, long.MinValue, long.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
                 for (int j = 0; j < values.Length; j++)
                 {
-                    VerifyModuloNullableLong(values[i], values[j]);
+                    VerifyModuloNullableLong(values[i], values[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckLiftedModuloNullableSByteTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLiftedModuloNullableSByteTest(bool useInterpreter)
         {
             sbyte?[] values = new sbyte?[] { null, 0, 1, -1, sbyte.MinValue, sbyte.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
                 for (int j = 0; j < values.Length; j++)
                 {
-                    VerifyModuloNullableSByte(values[i], values[j]);
+                    VerifyModuloNullableSByte(values[i], values[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckLiftedModuloNullableShortTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLiftedModuloNullableShortTest(bool useInterpreter)
         {
             short?[] values = new short?[] { null, 0, 1, -1, short.MinValue, short.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
                 for (int j = 0; j < values.Length; j++)
                 {
-                    VerifyModuloNullableShort(values[i], values[j]);
+                    VerifyModuloNullableShort(values[i], values[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckLiftedModuloNullableUIntTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLiftedModuloNullableUIntTest(bool useInterpreter)
         {
             uint?[] values = new uint?[] { null, 0, 1, uint.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
                 for (int j = 0; j < values.Length; j++)
                 {
-                    VerifyModuloNullableUInt(values[i], values[j]);
+                    VerifyModuloNullableUInt(values[i], values[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckLiftedModuloNullableULongTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLiftedModuloNullableULongTest(bool useInterpreter)
         {
             ulong?[] values = new ulong?[] { null, 0, 1, ulong.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
                 for (int j = 0; j < values.Length; j++)
                 {
-                    VerifyModuloNullableULong(values[i], values[j]);
+                    VerifyModuloNullableULong(values[i], values[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckLiftedModuloNullableUShortTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLiftedModuloNullableUShortTest(bool useInterpreter)
         {
             ushort?[] values = new ushort?[] { null, 0, 1, ushort.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
                 for (int j = 0; j < values.Length; j++)
                 {
-                    VerifyModuloNullableUShort(values[i], values[j]);
+                    VerifyModuloNullableUShort(values[i], values[j], useInterpreter);
                 }
             }
         }
@@ -236,7 +236,7 @@ namespace System.Linq.Expressions.Tests
 
         #region Test verifiers
 
-        private static void VerifyModuloNullableByte(byte? a, byte? b)
+        private static void VerifyModuloNullableByte(byte? a, byte? b, bool useInterpreter)
         {
             Expression<Func<byte?>> e =
                 Expression.Lambda<Func<byte?>>(
@@ -244,43 +244,15 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(byte?)),
                         Expression.Constant(b, typeof(byte?)),
                         typeof(LiftedModuloNullableTests).GetTypeInfo().GetDeclaredMethod("ModuloNullableByte")));
-            Func<byte?> f = e.Compile();
+            Func<byte?> f = e.Compile(useInterpreter);
 
-            byte? result = default(byte);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            byte? expected = default(byte);
-            Exception csEx = null;
-            try
-            {
-                expected = (byte?)(a % b);
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
+            if (a.HasValue && b == 0)
+                Assert.Throws<DivideByZeroException>(() => f());
             else
-            {
-                Assert.Equal(expected, result);
-            }
+                Assert.Equal((byte?)(a % b), f());
         }
 
-        private static void VerifyModuloNullableChar(char? a, char? b)
+        private static void VerifyModuloNullableChar(char? a, char? b, bool useInterpreter)
         {
             Expression<Func<char?>> e =
                 Expression.Lambda<Func<char?>>(
@@ -288,43 +260,15 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(char?)),
                         Expression.Constant(b, typeof(char?)),
                         typeof(LiftedModuloNullableTests).GetTypeInfo().GetDeclaredMethod("ModuloNullableChar")));
-            Func<char?> f = e.Compile();
+            Func<char?> f = e.Compile(useInterpreter);
 
-            char? result = default(char);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            char? expected = default(char);
-            Exception csEx = null;
-            try
-            {
-                expected = (char?)(a % b);
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
+            if (a.HasValue && b == '\0')
+                Assert.Throws<DivideByZeroException>(() => f());
             else
-            {
-                Assert.Equal(expected, result);
-            }
+                Assert.Equal((char?)(a % b), f());
         }
 
-        private static void VerifyModuloNullableDecimal(decimal? a, decimal? b)
+        private static void VerifyModuloNullableDecimal(decimal? a, decimal? b, bool useInterpreter)
         {
             Expression<Func<decimal?>> e =
                 Expression.Lambda<Func<decimal?>>(
@@ -332,43 +276,15 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(decimal?)),
                         Expression.Constant(b, typeof(decimal?)),
                         typeof(LiftedModuloNullableTests).GetTypeInfo().GetDeclaredMethod("ModuloNullableDecimal")));
-            Func<decimal?> f = e.Compile();
+            Func<decimal?> f = e.Compile(useInterpreter);
 
-            decimal? result = default(decimal);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            decimal? expected = default(decimal);
-            Exception csEx = null;
-            try
-            {
-                expected = (decimal?)(a % b);
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
+            if (a.HasValue && b == 0)
+                Assert.Throws<DivideByZeroException>(() => f());
             else
-            {
-                Assert.Equal(expected, result);
-            }
+                Assert.Equal(a % b, f());
         }
 
-        private static void VerifyModuloNullableDouble(double? a, double? b)
+        private static void VerifyModuloNullableDouble(double? a, double? b, bool useInterpreter)
         {
             Expression<Func<double?>> e =
                 Expression.Lambda<Func<double?>>(
@@ -376,43 +292,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(double?)),
                         Expression.Constant(b, typeof(double?)),
                         typeof(LiftedModuloNullableTests).GetTypeInfo().GetDeclaredMethod("ModuloNullableDouble")));
-            Func<double?> f = e.Compile();
+            Func<double?> f = e.Compile(useInterpreter);
 
-            double? result = default(double);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            double? expected = default(double);
-            Exception csEx = null;
-            try
-            {
-                expected = (double?)(a % b);
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Equal(a % b, f());
         }
 
-        private static void VerifyModuloNullableFloat(float? a, float? b)
+        private static void VerifyModuloNullableFloat(float? a, float? b, bool useInterpreter)
         {
             Expression<Func<float?>> e =
                 Expression.Lambda<Func<float?>>(
@@ -420,43 +305,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(float?)),
                         Expression.Constant(b, typeof(float?)),
                         typeof(LiftedModuloNullableTests).GetTypeInfo().GetDeclaredMethod("ModuloNullableFloat")));
-            Func<float?> f = e.Compile();
+            Func<float?> f = e.Compile(useInterpreter);
 
-            float? result = default(float);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            float? expected = default(float);
-            Exception csEx = null;
-            try
-            {
-                expected = (float?)(a % b);
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Equal(a % b, f());
         }
 
-        private static void VerifyModuloNullableInt(int? a, int? b)
+        private static void VerifyModuloNullableInt(int? a, int? b, bool useInterpreter)
         {
             Expression<Func<int?>> e =
                 Expression.Lambda<Func<int?>>(
@@ -464,43 +318,17 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(int?)),
                         Expression.Constant(b, typeof(int?)),
                         typeof(LiftedModuloNullableTests).GetTypeInfo().GetDeclaredMethod("ModuloNullableInt")));
-            Func<int?> f = e.Compile();
+            Func<int?> f = e.Compile(useInterpreter);
 
-            int? result = default(int);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            int? expected = default(int);
-            Exception csEx = null;
-            try
-            {
-                expected = (int?)(a % b);
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
+            if (a.HasValue && b == 0)
+                Assert.Throws<DivideByZeroException>(() => f());
+            else if (a == int.MinValue && b == -1)
+                Assert.Throws<OverflowException>(() => f());
             else
-            {
-                Assert.Equal(expected, result);
-            }
+                Assert.Equal(a % b, f());
         }
 
-        private static void VerifyModuloNullableLong(long? a, long? b)
+        private static void VerifyModuloNullableLong(long? a, long? b, bool useInterpreter)
         {
             Expression<Func<long?>> e =
                 Expression.Lambda<Func<long?>>(
@@ -508,43 +336,17 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(long?)),
                         Expression.Constant(b, typeof(long?)),
                         typeof(LiftedModuloNullableTests).GetTypeInfo().GetDeclaredMethod("ModuloNullableLong")));
-            Func<long?> f = e.Compile();
+            Func<long?> f = e.Compile(useInterpreter);
 
-            long? result = default(long);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            long? expected = default(long);
-            Exception csEx = null;
-            try
-            {
-                expected = (long?)(a % b);
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
+            if (a.HasValue && b == 0)
+                Assert.Throws<DivideByZeroException>(() => f());
+            else if (a == long.MinValue && b == -1)
+                Assert.Throws<OverflowException>(() => f());
             else
-            {
-                Assert.Equal(expected, result);
-            }
+                Assert.Equal(a % b, f());
         }
 
-        private static void VerifyModuloNullableSByte(sbyte? a, sbyte? b)
+        private static void VerifyModuloNullableSByte(sbyte? a, sbyte? b, bool useInterpreter)
         {
             Expression<Func<sbyte?>> e =
                 Expression.Lambda<Func<sbyte?>>(
@@ -552,43 +354,15 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(sbyte?)),
                         Expression.Constant(b, typeof(sbyte?)),
                         typeof(LiftedModuloNullableTests).GetTypeInfo().GetDeclaredMethod("ModuloNullableSByte")));
-            Func<sbyte?> f = e.Compile();
+            Func<sbyte?> f = e.Compile(useInterpreter);
 
-            sbyte? result = default(sbyte);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            sbyte? expected = default(sbyte);
-            Exception csEx = null;
-            try
-            {
-                expected = (sbyte?)(a % b);
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
+            if (a.HasValue && b == 0)
+                Assert.Throws<DivideByZeroException>(() => f());
             else
-            {
-                Assert.Equal(expected, result);
-            }
+                Assert.Equal((sbyte?)(a % b), f());
         }
 
-        private static void VerifyModuloNullableShort(short? a, short? b)
+        private static void VerifyModuloNullableShort(short? a, short? b, bool useInterpreter)
         {
             Expression<Func<short?>> e =
                 Expression.Lambda<Func<short?>>(
@@ -596,43 +370,15 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(short?)),
                         Expression.Constant(b, typeof(short?)),
                         typeof(LiftedModuloNullableTests).GetTypeInfo().GetDeclaredMethod("ModuloNullableShort")));
-            Func<short?> f = e.Compile();
+            Func<short?> f = e.Compile(useInterpreter);
 
-            short? result = default(short);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            short? expected = default(short);
-            Exception csEx = null;
-            try
-            {
-                expected = (short?)(a % b);
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
+            if (a.HasValue && b == 0)
+                Assert.Throws<DivideByZeroException>(() => f());
             else
-            {
-                Assert.Equal(expected, result);
-            }
+                Assert.Equal((short?)(a % b), f());
         }
 
-        private static void VerifyModuloNullableUInt(uint? a, uint? b)
+        private static void VerifyModuloNullableUInt(uint? a, uint? b, bool useInterpreter)
         {
             Expression<Func<uint?>> e =
                 Expression.Lambda<Func<uint?>>(
@@ -640,43 +386,15 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(uint?)),
                         Expression.Constant(b, typeof(uint?)),
                         typeof(LiftedModuloNullableTests).GetTypeInfo().GetDeclaredMethod("ModuloNullableUInt")));
-            Func<uint?> f = e.Compile();
+            Func<uint?> f = e.Compile(useInterpreter);
 
-            uint? result = default(uint);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            uint? expected = default(uint);
-            Exception csEx = null;
-            try
-            {
-                expected = (uint?)(a % b);
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
+            if (a.HasValue && b == 0)
+                Assert.Throws<DivideByZeroException>(() => f());
             else
-            {
-                Assert.Equal(expected, result);
-            }
+                Assert.Equal(a % b, f());
         }
 
-        private static void VerifyModuloNullableULong(ulong? a, ulong? b)
+        private static void VerifyModuloNullableULong(ulong? a, ulong? b, bool useInterpreter)
         {
             Expression<Func<ulong?>> e =
                 Expression.Lambda<Func<ulong?>>(
@@ -684,43 +402,15 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(ulong?)),
                         Expression.Constant(b, typeof(ulong?)),
                         typeof(LiftedModuloNullableTests).GetTypeInfo().GetDeclaredMethod("ModuloNullableULong")));
-            Func<ulong?> f = e.Compile();
+            Func<ulong?> f = e.Compile(useInterpreter);
 
-            ulong? result = default(ulong);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            ulong? expected = default(ulong);
-            Exception csEx = null;
-            try
-            {
-                expected = (ulong?)(a % b);
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
+            if (a.HasValue && b == 0)
+                Assert.Throws<DivideByZeroException>(() => f());
             else
-            {
-                Assert.Equal(expected, result);
-            }
+                Assert.Equal(a % b, f());
         }
 
-        private static void VerifyModuloNullableUShort(ushort? a, ushort? b)
+        private static void VerifyModuloNullableUShort(ushort? a, ushort? b, bool useInterpreter)
         {
             Expression<Func<ushort?>> e =
                 Expression.Lambda<Func<ushort?>>(
@@ -728,40 +418,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(ushort?)),
                         Expression.Constant(b, typeof(ushort?)),
                         typeof(LiftedModuloNullableTests).GetTypeInfo().GetDeclaredMethod("ModuloNullableUShort")));
-            Func<ushort?> f = e.Compile();
+            Func<ushort?> f = e.Compile(useInterpreter);
 
-            ushort? result = default(ushort);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            ushort? expected = default(ushort);
-            Exception csEx = null;
-            try
-            {
-                expected = (ushort?)(a % b);
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
+            if (a.HasValue && b == 0)
+                Assert.Throws<DivideByZeroException>(() => f());
             else
-            {
-                Assert.Equal(expected, result);
-            }
+                Assert.Equal((ushort?)(a % b), f());
         }
 
         #endregion

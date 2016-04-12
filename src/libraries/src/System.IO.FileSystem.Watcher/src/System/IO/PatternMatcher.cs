@@ -167,7 +167,7 @@ namespace System.IO
             //  This allows a simple conversion between state number and expression
             //  offset.  Each character in the expression can represent one or two
             //  states.  * and DOS_STAR generate two states: ExprOffset*2 and
-            //  ExprOffset*2 + 1.  All other expreesion characters can produce only
+            //  ExprOffset*2 + 1.  All other expression characters can produce only
             //  a single state.  Thus ExprOffset = State/2.
             //
             //
@@ -182,9 +182,9 @@ namespace System.IO
             //  DestCount   - Next location to put a matching assuming current name char
             //
             //  NameFinished - Allows one more iteration through the Matches array
-            //                 after the name is exhusted (to come *s for example)
+            //                 after the name is exhausted (to come *s for example)
             //
-            //  PreviousDestCount - This is used to prevent entry duplication, see coment
+            //  PreviousDestCount - This is used to prevent entry duplication, see comment
             //
             //  PreviousMatches   - Holds the previous set of matches (the Src array)
             //
@@ -235,7 +235,7 @@ namespace System.IO
                     nameFinished = true;
 
                     //
-                    //  if we have already exhasted the expression, C#.  Don't
+                    //  if we have already exhausted the expression, C#.  Don't
                     //  continue.
                     //
                     if (previousMatches[matchesCount - 1] == maxState)
@@ -329,7 +329,7 @@ namespace System.IO
 
                             //
                             //  If we are at a period, determine if we are allowed to
-                            //  consume it, ie. make sure it is not the last one.
+                            //  consume it, i.e. make sure it is not the last one.
                             //
                             if (!nameFinished && (nameChar == '.'))
                             {
@@ -360,7 +360,7 @@ namespace System.IO
                             {
                                 //
                                 //  We are at a period.  We can only match zero
-                                //  characters (ie. the epsilon transition).
+                                //  characters (i.e. the epsilon transition).
                                 //
                                 currentMatches[destCount++] = (currentState + 1);
                                 continue;
@@ -451,10 +451,10 @@ namespace System.IO
                     //
                     //  Prevent duplication in the destination array.
                     //
-                    //  Each of the arrays is montonically increasing and non-
+                    //  Each of the arrays is monotonically increasing and non-
                     //  duplicating, thus we skip over any source element in the src
                     //  array if we just added the same element to the destination
-                    //  array.  This guarentees non-duplication in the dest. array.
+                    //  array.  This guarantees non-duplication in the dest. array.
                     //
 
                     if ((srcCount < matchesCount) && (previousDestCount < destCount))

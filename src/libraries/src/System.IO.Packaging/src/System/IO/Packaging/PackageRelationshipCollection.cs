@@ -2,35 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//-----------------------------------------------------------------------------
-//
-// Description:
-//  This is a class for representing a PackageRelationshipCollection. This is a part of the 
-//  MMCF Packaging Layer. 
-//
-// Details:
-//   This class handles serialization to/from relationship parts, creation of those parts
-//   and offers methods to create, delete and enumerate relationships.
-//
-//-----------------------------------------------------------------------------
-
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;               // For Debug.Assert
+using System.Diagnostics;
 
 namespace System.IO.Packaging
 {
     /// <summary>
-    /// Collection of all the relationships corresponding to a given source PackagePart
+    /// Collection of all the relationships corresponding to a given source PackagePart.
+    /// This class is part of the MMCF Packaging Layer. It handles serialization to/from
+    /// relationship parts, creation of those parts and offers methods to create, delete 
+    /// and enumerate relationships.
     /// </summary>
     public class PackageRelationshipCollection : IEnumerable<PackageRelationship>
     {
-        //------------------------------------------------------
-        //
-        //  Public Methods
-        //
-        //------------------------------------------------------
         #region IEnumerable
 
         /// <summary>
@@ -57,12 +43,7 @@ namespace System.IO.Packaging
                 return new FilteredEnumerator(relationshipsEnumerator, _filter);
         }
         #endregion
-
-        //------------------------------------------------------
-        //
-        //  Internal Members
-        //
-        //------------------------------------------------------
+        
         #region Internal Members
         /// <summary>
         /// Constructor
@@ -77,18 +58,7 @@ namespace System.IO.Packaging
         }
 
         #endregion
-
-        //------------------------------------------------------
-        //
-        //  Private Methods
-        //
-        //------------------------------------------------------
-        //  None
-        //------------------------------------------------------
-        //
-        //  Private Members
-        //
-        //------------------------------------------------------
+        
         #region Private Members
 
         private InternalRelationshipCollection _relationships;
@@ -130,7 +100,7 @@ namespace System.IO.Packaging
             #region IEnumerator Methods
 
             /// <summary>
-            /// This method keeps moving the enumerator the the next position till
+            /// This method keeps moving the enumerator the next position till
             /// a relationship is found with the matching Name
             /// </summary>
             /// <returns>Bool indicating if the enumerator successfully moved to the next position</returns>
@@ -158,7 +128,7 @@ namespace System.IO.Packaging
             }
 
             /// <summary>
-            /// Resets the enumerator to the begining
+            /// Resets the enumerator to the beginning
             /// </summary>
             void IEnumerator.Reset()
             {

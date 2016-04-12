@@ -45,7 +45,7 @@ namespace MethodInfoTests
 
 
 
-        // Invoke a method that requires Reflection to box a primitive integer for the invoked method's parm. // Bug 10829 
+        // Invoke a method that requires Reflection to box a primitive integer for the invoked method's param. // Bug 10829 
         [Fact]
         public static void TestInvokeMethod3()
         {
@@ -65,7 +65,7 @@ namespace MethodInfoTests
         }
 
 
-        //Invoke a vanilla method that takes no parms but returns an integer 
+        //Invoke a vanilla method that takes no params but returns an integer 
         [Fact]
         public static void TestInvokeMethod4()
         {
@@ -82,7 +82,7 @@ namespace MethodInfoTests
 
 
 
-        //Invoke a vanilla method that takes no parms but returns an integer 
+        //Invoke a vanilla method that takes no params but returns an integer 
         [Fact]
         public static void TestInvokeMethod5()
         {
@@ -98,7 +98,7 @@ namespace MethodInfoTests
         }
 
 
-        //Invoke a method that has parameters of primative types
+        //Invoke a method that has parameters of primitive types
         [Fact]
         public static void TestInvokeMethod6()
         {
@@ -120,7 +120,7 @@ namespace MethodInfoTests
         }
 
 
-        //Invoke a static method using null , that has parameters of primative types
+        //Invoke a static method using null , that has parameters of primitive types
         [Fact]
         public static void TestInvokeMethod7()
         {
@@ -141,7 +141,7 @@ namespace MethodInfoTests
 
 
 
-        //Invoke a static method using class object , that has parameters of primative types
+        //Invoke a static method using class object , that has parameters of primitive types
         [Fact]
         public static void TestInvokeMethod8()
         {

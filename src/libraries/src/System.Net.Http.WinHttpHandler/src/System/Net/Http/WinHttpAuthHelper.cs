@@ -122,6 +122,15 @@ namespace System.Net.Http
                     
                     state.LastStatusCode = statusCode;
 
+                    // If we don't have any proxy credentials to try, then we end up with 407.
+                    ICredentials proxyCreds = state.Proxy == null ?
+                        state.DefaultProxyCredentials :
+                        state.Proxy.Credentials;
+                     if (proxyCreds == null)
+                     {
+                         break;
+                     }
+
                     // Determine authorization scheme to use. We ignore the firstScheme
                     // parameter which is included in the supportedSchemes flags already.
                     // We pass the schemes to ChooseAuthScheme which will pick the scheme
@@ -162,10 +171,23 @@ namespace System.Net.Http
             // 407-401-407-401- loop.
             if (proxyAuthScheme != 0)
             {
+                ICredentials proxyCredentials;
+                Uri proxyUri;
+                if (state.Proxy != null)
+                {
+                    proxyCredentials = state.Proxy.Credentials;
+                    proxyUri = state.Proxy.GetProxy(state.RequestMessage.RequestUri);
+                }
+                else
+                {
+                    proxyCredentials = state.DefaultProxyCredentials;
+                    proxyUri = state.RequestMessage.RequestUri;
+                }
+
                 SetWinHttpCredential(
                     state.RequestHandle,
-                    state.Proxy == null ? state.DefaultProxyCredentials : state.Proxy.Credentials,
-                    state.RequestMessage.RequestUri,
+                    proxyCredentials,
+                    proxyUri,
                     proxyAuthScheme,
                     Interop.WinHttp.WINHTTP_AUTH_TARGET_PROXY);
             }

@@ -9,6 +9,10 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.Diagnostics.Tracing.csproj" />
 
+    <ProjectReference Include="..\..\src\redist\System.Diagnostics.Tracing.depproj">
+      <TargetGroup>netcore50</TargetGroup>
+    </ProjectReference>
+    
     <!-- AOT implementation comes from AOT package -->
     <File Include="$(PlaceholderFile)">
       <TargetPath>runtimes/aot/lib/netcore50</TargetPath>

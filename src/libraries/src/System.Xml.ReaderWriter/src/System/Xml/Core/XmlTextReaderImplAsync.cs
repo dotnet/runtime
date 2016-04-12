@@ -972,7 +972,7 @@ namespace System.Xml
 
         private Task SwitchEncodingToUTF8Async()
         {
-            return SwitchEncodingAsync(new UTF8Encoding(true, true));
+            return SwitchEncodingAsync(UTF8BomThrowing);
         }
 
         // Reads more data to the character buffer, discarding already parsed chars / decoded bytes.
@@ -1136,7 +1136,7 @@ namespace System.Xml
                 }
             }
 
-            if (!XmlConvert.StrEqual(_ps.chars, _ps.charPos, 5, XmlDeclarationBegining) ||
+            if (!XmlConvert.StrEqual(_ps.chars, _ps.charPos, 5, XmlDeclarationBeginning) ||
                  _xmlCharType.IsNameSingleChar(_ps.chars[_ps.charPos + 5])
 #if XML10_FIFTH_EDITION
                  || xmlCharType.IsNCNameHighSurrogateChar(ps.chars[ps.charPos + 5])
@@ -2658,7 +2658,7 @@ namespace System.Xml
                         case '<':
                             Throw(pos, SR.Xml_BadAttributeChar, XmlException.BuildCharExceptionArgs('<', '\0'));
                             break;
-                        // entity referece
+                        // entity reference
                         case '&':
                             if (pos - _ps.charPos > 0)
                             {
@@ -4009,7 +4009,7 @@ namespace System.Xml
                     pos++;
                 }
 
-                // posibbly end of comment or cdata section
+                // possibly end of comment or cdata section
                 if (chars[pos] == stopChar)
                 {
                     if (chars[pos + 1] == stopChar)

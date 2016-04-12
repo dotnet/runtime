@@ -9,37 +9,41 @@ namespace System.Linq.Expressions.Tests
 {
     public static class ArrayBoundsOneOffTests
     {
-        [Fact]
-        public static void CompileWithCastTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CompileWithCastTest(bool useInterpreter)
         {
             Expression<Func<object[]>> expr = () => (object[])new BaseClass[1];
-            expr.Compile();
+            expr.Compile(useInterpreter);
         }
 
-        [Fact]
-        public static void ToStringTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void ToStringTest(bool useInterpreter)
         {
             Expression<Func<int, object>> x = c => new double[c, c];
             Assert.Equal("c => new System.Double[,](c, c)", x.ToString());
 
-            object y = x.Compile()(2);
+            object y = x.Compile(useInterpreter)(2);
             Assert.Equal("System.Double[,]", y.ToString());
         }
 
-        [Fact]
-        public static void ArrayBoundsVectorNegativeThrowsOverflowException()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void ArrayBoundsVectorNegativeThrowsOverflowException(bool useInterpreter)
         {
             Expression<Func<int, int[]>> e = a => new int[a];
-            Func<int, int[]> f = e.Compile();
+            Func<int, int[]> f = e.Compile(useInterpreter);
 
             Assert.Throws<OverflowException>(() => f(-1));
         }
 
-        [Fact]
-        public static void ArrayBoundsMultiDimensionalNegativeThrowsOverflowException()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void ArrayBoundsMultiDimensionalNegativeThrowsOverflowException(bool useInterpreter)
         {
             Expression<Func<int, int, int[,]>> e = (a, b) => new int[a, b];
-            Func<int, int, int[,]> f = e.Compile();
+            Func<int, int, int[,]> f = e.Compile(useInterpreter);
 
             Assert.Throws<OverflowException>(() => f(-1, 1));
             Assert.Throws<OverflowException>(() => f(1, -1));

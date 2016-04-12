@@ -2323,6 +2323,7 @@ namespace System.Linq.Expressions.Interpreter
     internal class CastToEnumInstruction : CastInstruction
     {
         private readonly Type _t;
+
         public CastToEnumInstruction(Type t)
         {
             Debug.Assert(t.GetTypeInfo().IsEnum);
@@ -2332,10 +2333,106 @@ namespace System.Linq.Expressions.Interpreter
         public override int Run(InterpretedFrame frame)
         {
             var from = frame.Pop();
-            var to = from != null ? Enum.ToObject(_t, from) : from;
-            frame.Push(to);
+            switch (Convert.GetTypeCode(from))
+            {
+                case TypeCode.Empty:
+                    frame.Push(null);
+                    break;
+                case TypeCode.Int32:
+                case TypeCode.SByte:
+                case TypeCode.Int16:
+                case TypeCode.Int64:
+                case TypeCode.UInt32:
+                case TypeCode.Byte:
+                case TypeCode.UInt16:
+                case TypeCode.UInt64:
+                case TypeCode.Char:
+                case TypeCode.Boolean:
+                    frame.Push(Enum.ToObject(_t, from));
+                    break;
+                default:
+                    throw new InvalidCastException();
+            }
 
             return +1;
+        }
+    }
+
+    internal sealed class CastReferenceToEnumInstruction : CastInstruction
+    {
+        private readonly Type _t;
+
+        public CastReferenceToEnumInstruction(Type t)
+        {
+            Debug.Assert(t.GetTypeInfo().IsEnum);
+            _t = t;
+        }
+
+        public override int Run(InterpretedFrame frame)
+        {
+            var from = frame.Pop();
+            if (from == null)
+            {
+                frame.Push(null);
+            }
+            else
+            {
+                Type underlying = _t.GetTypeInfo().IsEnum ? Enum.GetUnderlyingType(_t) : _t;
+                // Order checks in order of likelihood. int first as the vast majority of enums
+                // are int-based, then long as that is sometimes used when required for a large set of flags
+                // and so-on.
+                if (underlying == typeof(int))
+                {
+                    // If from is neither an int nor a type assignable to int (viz. an int-backed enum)
+                    // this will cause an InvalidCastException, which is what this operation should
+                    // throw in this case.
+                    frame.Push(Enum.ToObject(_t, (int)from));
+                }
+                else if (underlying == typeof(long))
+                {
+                    frame.Push(Enum.ToObject(_t, (long)from));
+                }
+                else if (underlying == typeof(uint))
+                {
+                    frame.Push(Enum.ToObject(_t, (uint)from));
+                }
+                else if (underlying == typeof(ulong))
+                {
+                    frame.Push(Enum.ToObject(_t, (ulong)from));
+                }
+                else if (underlying == typeof(byte))
+                {
+                    frame.Push(Enum.ToObject(_t, (byte)from));
+                }
+                else if (underlying == typeof(sbyte))
+                {
+                    frame.Push(Enum.ToObject(_t, (sbyte)from));
+                }
+                else if (underlying == typeof(short))
+                {
+                    frame.Push(Enum.ToObject(_t, (short)from));
+                }
+                else if (underlying == typeof(ushort))
+                {
+                    frame.Push(Enum.ToObject(_t, (ushort)from));
+                }
+                else if (underlying == typeof(char))
+                {
+                    // Disallowed in C#, but allowed in CIL
+                    frame.Push(Enum.ToObject(_t, (char)from));
+                }
+                else if (underlying == typeof(bool))
+                {
+                    // Disallowed in C#, but allowed in CIL
+                    frame.Push(Enum.ToObject(_t, (bool)from));
+                }
+                else
+                {
+                    throw new InvalidCastException();
+                }
+            }
+
+            return 1;
         }
     }
 
@@ -2373,7 +2470,7 @@ namespace System.Linq.Expressions.Interpreter
         // burned as a constant, and all hoisted variables/parameters are rewritten
         // as indexing expressions.
         //
-        // The behavior of Quote is indended to be like C# and VB expression quoting
+        // The behavior of Quote is intended to be like C# and VB expression quoting
         private sealed class ExpressionQuoter : ExpressionVisitor
         {
             private readonly Dictionary<ParameterExpression, LocalVariable> _variables;
@@ -2382,7 +2479,7 @@ namespace System.Linq.Expressions.Interpreter
             // A stack of variables that are defined in nested scopes. We search
             // this first when resolving a variable in case a nested scope shadows
             // one of our variable instances.
-            private readonly Stack<Set<ParameterExpression>> _shadowedVars = new Stack<Set<ParameterExpression>>();
+            private readonly Stack<HashSet<ParameterExpression>> _shadowedVars = new Stack<HashSet<ParameterExpression>>();
 
             internal ExpressionQuoter(Dictionary<ParameterExpression, LocalVariable> hoistedVariables, InterpretedFrame frame)
             {
@@ -2392,7 +2489,7 @@ namespace System.Linq.Expressions.Interpreter
 
             protected internal override Expression VisitLambda<T>(Expression<T> node)
             {
-                _shadowedVars.Push(new Set<ParameterExpression>(node.Parameters));
+                _shadowedVars.Push(new HashSet<ParameterExpression>(node.Parameters));
                 Expression b = Visit(node.Body);
                 _shadowedVars.Pop();
                 if (b == node.Body)
@@ -2406,7 +2503,7 @@ namespace System.Linq.Expressions.Interpreter
             {
                 if (node.Variables.Count > 0)
                 {
-                    _shadowedVars.Push(new Set<ParameterExpression>(node.Variables));
+                    _shadowedVars.Push(new HashSet<ParameterExpression>(node.Variables));
                 }
                 var b = Visit(node.Expressions);
                 if (node.Variables.Count > 0)
@@ -2424,7 +2521,7 @@ namespace System.Linq.Expressions.Interpreter
             {
                 if (node.Variable != null)
                 {
-                    _shadowedVars.Push(new Set<ParameterExpression>(new[] { node.Variable }));
+                    _shadowedVars.Push(new HashSet<ParameterExpression>{ node.Variable });
                 }
                 Expression b = Visit(node.Body);
                 Expression f = Visit(node.Filter);
@@ -2542,7 +2639,7 @@ namespace System.Linq.Expressions.Interpreter
             }
 
             /// <summary>
-            /// Provides a list of variables, supporing read/write of the values
+            /// Provides a list of variables, supporting read/write of the values
             /// Exposed via RuntimeVariablesExpression
             /// </summary>
             private sealed class MergedRuntimeVariables : IRuntimeVariables

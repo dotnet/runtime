@@ -75,17 +75,5 @@ namespace System.Text.Tests
             UTF7Encoding utf7 = new UTF7Encoding();
             Assert.Equal(c_INT_STRINGEMPTYlENGTH, utf7.GetByteCount(String.Empty));
         }
-
-        //NegTest1: The argument is null reference
-        [Fact]
-        public void NegTest1()
-        {
-            string source = null;
-            Assert.Throws<ArgumentNullException>(() =>
-            {
-                UTF7Encoding UTF7 = new UTF7Encoding();
-                UTF7.GetByteCount(source);
-            });
-        }
     }
 }

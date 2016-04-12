@@ -81,7 +81,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void LinkedList_ICollection_NonGeneric_CopyTo_ExactlyEnoughSpaceInTypeCorrectArray(int count)
         {
             ICollection collection = NonGenericICollectionFactory(count);

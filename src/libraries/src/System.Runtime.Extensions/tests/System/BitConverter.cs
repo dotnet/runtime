@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Linq;
+using System.Text;
 using Xunit;
 
 namespace System.Tests
@@ -207,7 +209,20 @@ namespace System.Tests
             Assert.Equal("12-34-56-78-9A", BitConverter.ToString(bytes));
             Assert.Equal("56-78-9A", BitConverter.ToString(bytes, 2));
             Assert.Equal("56", BitConverter.ToString(bytes, 2, 1));
-            Assert.Equal(String.Empty, BitConverter.ToString(new byte[0]));
+
+            Assert.Same(string.Empty, BitConverter.ToString(new byte[0]));
+            Assert.Same(string.Empty, BitConverter.ToString(new byte[3], 1, 0));
+        }
+
+        [Fact]
+        public static void ToString_ByteArray_Long()
+        {
+            byte[] bytes = Enumerable.Range(0, 256 * 4).Select(i => (byte)i).ToArray();
+
+            string expected = string.Join("-", bytes.Select(b => b.ToString("X2")));
+
+            Assert.Equal(expected, BitConverter.ToString(bytes));
+            Assert.Equal(expected.Substring(3, expected.Length - 6), BitConverter.ToString(bytes, 1, bytes.Length - 2));
         }
 
         [Fact]

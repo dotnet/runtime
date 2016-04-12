@@ -316,7 +316,18 @@ namespace System.Net
 
             // nothing to expand?
             if (cSpaces == 0 && cUnsafe == 0)
-                return bytes;
+            {
+                if (0 == offset && bytes.Length == count)
+                {
+                    return bytes;
+                }
+                else
+                {
+                    var subarray = new byte[count];
+                    Buffer.BlockCopy(bytes, offset, subarray, 0, count);
+                    return subarray;
+                }
+            }
 
             // expand not 'safe' characters into %XX, spaces to +s
             byte[] expandedBytes = new byte[count + cUnsafe * 2];
@@ -614,11 +625,9 @@ namespace System.Net
 
             private void FlushBytes()
             {
-                if (_numBytes > 0)
-                {
-                    _numChars += _encoding.GetChars(_byteBuffer, 0, _numBytes, _charBuffer, _numChars);
-                    _numBytes = 0;
-                }
+                Debug.Assert(_numBytes > 0);
+                _numChars += _encoding.GetChars(_byteBuffer, 0, _numBytes, _charBuffer, _numChars);
+                _numBytes = 0;
             }
 
             internal UrlDecoder(int bufferSize, Encoding encoding)
@@ -667,7 +676,7 @@ namespace System.Net
 #if DEBUG
             static HtmlEntities()
             {
-                // Make sure the inital capacity for s_lookupTable is correct
+                // Make sure the initial capacity for s_lookupTable is correct
                 Debug.Assert(s_lookupTable.Count == Count, $"There should be {Count} HTML entities, but {nameof(s_lookupTable)} has {s_lookupTable.Count} of them.");
             }
 #endif

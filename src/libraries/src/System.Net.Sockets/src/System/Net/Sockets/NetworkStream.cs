@@ -23,7 +23,7 @@ namespace System.Net.Sockets
 
         private bool _ownsSocket;
 
-        // Creates a new instance of the System.Net.Sockets.NetworkStream without initalization.
+        // Creates a new instance of the System.Net.Sockets.NetworkStream without initialization.
         internal NetworkStream()
         {
             _ownsSocket = true;
@@ -947,7 +947,7 @@ namespace System.Net.Sockets
         //     buffer            - Buffer to read into.
         //     offset            - Offset into the buffer where we're to read.
         //     size              - Number of bytes to read.
-        //     cancellationtoken - Token used to request cancellation of the operation
+        //     cancellationToken - Token used to request cancellation of the operation
         // 
         // Returns:
         // 
@@ -978,7 +978,7 @@ namespace System.Net.Sockets
         //     buffer  - Buffer to write into.
         //     offset  - Offset into the buffer where we're to write.
         //     size    - Number of bytes to write.
-        //     cancellationtoken - Token used to request cancellation of the operation
+        //     cancellationToken - Token used to request cancellation of the operation
         // 
         // Returns:
         // 

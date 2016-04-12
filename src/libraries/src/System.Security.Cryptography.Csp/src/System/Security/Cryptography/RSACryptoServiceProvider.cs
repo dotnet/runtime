@@ -301,7 +301,7 @@ namespace System.Security.Cryptography
         ///     arbitrary byte arrays. Instead, encrypt a symmetric key with this method, and use the symmetric
         ///     key to encrypt the sensitive data.
         /// </remarks>
-        /// <param name="rgb">raw data to encryt</param>
+        /// <param name="rgb">raw data to encrypt</param>
         /// <param name="fOAEP">true to use OAEP padding (PKCS #1 v2), false to use PKCS #1 type 2 padding</param>
         /// <returns>Encrypted key</returns>
         public byte[] Encrypt(byte[] rgb, bool fOAEP)

@@ -12,7 +12,7 @@ using Microsoft.Win32.SafeHandles;
 /*
  * Win32FileStream supports different modes of accessing the disk - async mode
  * and sync mode.  They are two completely different codepaths in the
- * sync & async methods (ie, Read/Write vs. ReadAsync/WriteAsync).  File
+ * sync & async methods (i.e. Read/Write vs. ReadAsync/WriteAsync).  File
  * handles in NT can be opened in only sync or overlapped (async) mode,
  * and we have to deal with this pain.  Stream has implementations of
  * the sync methods in terms of the async ones, so we'll
@@ -464,7 +464,7 @@ namespace System.IO
                 _canWrite = false;
                 _canSeek = false;
                 // Don't set the buffer to null, to avoid a NullReferenceException
-                // when users have a race condition in their code (ie, they call
+                // when users have a race condition in their code (i.e. they call
                 // Close when calling another method on Stream like Read).
                 //_buffer = null;
                 base.Dispose(disposing);
@@ -698,7 +698,7 @@ namespace System.IO
                 _readPos = 0;
                 _readLen = n;
             }
-            // Now copy min of count or numBytesAvailable (ie, near EOF) to array.
+            // Now copy min of count or numBytesAvailable (i.e. near EOF) to array.
             if (n > count) n = count;
             Buffer.BlockCopy(_buffer, _readPos, array, offset, n);
             _readPos += n;
@@ -718,7 +718,7 @@ namespace System.IO
             {
                 // If we hit the end of the buffer and didn't have enough bytes, we must
                 // read some more from the underlying stream.  However, if we got
-                // fewer bytes from the underlying stream than we asked for (ie, we're 
+                // fewer bytes from the underlying stream than we asked for (i.e. we're 
                 // probably blocked), don't ask for more bytes.
                 if (n < count && !isBlocked)
                 {
@@ -964,7 +964,7 @@ namespace System.IO
             // The assumption here is memcpy is cheaper than disk (or net) IO.
             // (10 milliseconds to disk vs. ~20-30 microseconds for a 4K memcpy)
             // So the extra copying will reduce the total number of writes, in 
-            // non-pathological cases (ie, write 1 byte, then write for the buffer 
+            // non-pathological cases (i.e. write 1 byte, then write for the buffer 
             // size repeatedly)
             if (_writePos > 0)
             {
@@ -1041,7 +1041,7 @@ namespace System.IO
                 else
                 {
                     // ERROR_INVALID_PARAMETER may be returned for writes
-                    // where the position is too large (ie, writing at Int64.MaxValue 
+                    // where the position is too large (i.e. writing at Int64.MaxValue 
                     // on Win9x) OR for synchronous writes to a handle opened 
                     // asynchronously.
                     if (errorCode == ERROR_INVALID_PARAMETER)

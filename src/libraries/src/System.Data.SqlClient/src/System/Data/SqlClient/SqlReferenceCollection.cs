@@ -41,7 +41,7 @@ namespace System.Data.SqlClient
             }
             else
             {
-                // else will find live datareader assocated with the command
+                // else will find live datareader associated with the command
                 return FindItem<SqlDataReader>(DataReaderTag, (dataReader) => ((!dataReader.IsClosed) && (command == dataReader.Command)));
             }
         }

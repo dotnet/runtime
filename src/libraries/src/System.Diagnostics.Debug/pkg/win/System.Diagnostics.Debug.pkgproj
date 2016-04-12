@@ -8,8 +8,12 @@
   </PropertyGroup>
  
   <ItemGroup>
-    <ProjectReference Include="..\..\src\System.Diagnostics.Debug.builds">
-      <AdditionalProperties>FilterToOSGroup=Windows_NT</AdditionalProperties>
+    <ProjectReference Include="..\..\src\System.Diagnostics.Debug.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+    </ProjectReference>
+    <ProjectReference Include="..\..\src\System.Diagnostics.Debug.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>netcore50aot</TargetGroup>
     </ProjectReference>
     
     <InboxOnTargetFramework Include="net45" />

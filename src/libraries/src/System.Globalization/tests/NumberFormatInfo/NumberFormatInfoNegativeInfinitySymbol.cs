@@ -2,24 +2,43 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Globalization.Tests
 {
     public class NumberFormatInfoNegativeInfinitySymbol
     {
-        // PosTest1: Verify value of property NegativeInfinitySymbol for specific locales
-        [Theory]
-        [InlineData("en-US")]
-        [InlineData("fr-FR")]
-        public void PosTest1(string locale)
+        public static IEnumerable<object[]> NegativeInfinitySymbol_TestData()
         {
-            CultureInfo myTestCulture = new CultureInfo(locale);
-            NumberFormatInfo nfi = myTestCulture.NumberFormat;
-            string actual = nfi.NegativeInfinitySymbol;
-            string expected = NumberFormatInfoData.GetNegativeInfinitySymbol(myTestCulture);
+            yield return new object[] { NumberFormatInfo.InvariantInfo };
+            yield return new object[] { new CultureInfo("en-US").NumberFormat };
+            yield return new object[] { new CultureInfo("fr-FR").NumberFormat };
+        }
 
-            Assert.Equal(expected, actual);
+        [Theory]
+        [MemberData(nameof(NegativeInfinitySymbol_TestData))]
+        public void NegativeInfinitySymbol_Get(NumberFormatInfo format)
+        {
+            Assert.Equal(float.NegativeInfinity.ToString(format), format.NegativeInfinitySymbol);
+        }
+
+        [Theory]
+        [InlineData("string")]
+        [InlineData("   ")]
+        [InlineData("")]
+        public void NegativeInfinitySymbol_Set(string newNegativeInfinitySymbol)
+        {
+            NumberFormatInfo format = new NumberFormatInfo();
+            format.NegativeInfinitySymbol = newNegativeInfinitySymbol;
+            Assert.Equal(newNegativeInfinitySymbol, format.NegativeInfinitySymbol);
+        }
+
+        [Fact]
+        public void NegativeInfinitySymbol_Set_Invalid()
+        {
+            Assert.Throws<ArgumentNullException>("NegativeInfinitySymbol", () => new NumberFormatInfo().NegativeInfinitySymbol = null);
+            Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.NegativeInfinitySymbol = "");
         }
     }
 }

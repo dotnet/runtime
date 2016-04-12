@@ -95,17 +95,15 @@ namespace System.Dynamic.Utils
                 return TypeCode.Object;
         }
 
-        public static MethodInfo[] GetStaticMethods(this Type type)
+        public static IEnumerable<MethodInfo> GetStaticMethods(this Type type)
         {
-            var list = new List<MethodInfo>();
             foreach (var method in type.GetRuntimeMethods())
             {
                 if (method.IsStatic)
                 {
-                    list.Add(method);
+                    yield return method;
                 }
             }
-            return list.ToArray();
         }
 
         public static MethodInfo GetAnyStaticMethod(this Type type, string name)

@@ -4,32 +4,31 @@
 
 using System;
 using System.IO;
-
 using Xunit;
 
-public partial class DirectoryNotFoundException_40100_Tests
+public static class DirectoryNotFoundExceptionTests
 {
     [Fact]
-    public static void DirectoryNotFoundException_ctor()
+    public static void TestCtor_Empty()
     {
-        DirectoryNotFoundException dnfe = new DirectoryNotFoundException();
-        Utility.ValidateExceptionProperties(dnfe, hResult: HResults.COR_E_DIRECTORYNOTFOUND, validateMessage: false);
+        var exception = new DirectoryNotFoundException();
+        ExceptionUtility.ValidateExceptionProperties(exception, hResult: HResults.COR_E_DIRECTORYNOTFOUND, validateMessage: false);
     }
 
     [Fact]
-    public static void DirectoryNotFoundException_ctor_string()
+    public static void TestCtor_String()
     {
         string message = "That page was missing from the directory.";
-        DirectoryNotFoundException dnfe = new DirectoryNotFoundException(message);
-        Utility.ValidateExceptionProperties(dnfe, hResult: HResults.COR_E_DIRECTORYNOTFOUND, message: message);
+        var exception = new DirectoryNotFoundException(message);
+        ExceptionUtility.ValidateExceptionProperties(exception, hResult: HResults.COR_E_DIRECTORYNOTFOUND, message: message);
     }
 
     [Fact]
-    public static void DirectoryNotFoundException_ctor_string_exception()
+    public static void TestCtor_String_Exception()
     {
         string message = "That page was missing from the directory.";
-        Exception innerException = new Exception("Inner exception");
-        DirectoryNotFoundException dnfe = new DirectoryNotFoundException(message, innerException);
-        Utility.ValidateExceptionProperties(dnfe, hResult: HResults.COR_E_DIRECTORYNOTFOUND, innerException: innerException, message: message);
+        var innerException = new Exception("Inner exception");
+        var exception = new DirectoryNotFoundException(message, innerException);
+        ExceptionUtility.ValidateExceptionProperties(exception, hResult: HResults.COR_E_DIRECTORYNOTFOUND, innerException: innerException, message: message);
     }
 }

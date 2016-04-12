@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  
+  <PropertyGroup>
+    <Version>4.0.1</Version>
+    <PackageTargetRuntime>win10-$(PackagePlatform)</PackageTargetRuntime>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- use Win10 temporarily as the distinguishing factor, in reality the distinction is app-container vs not. -->
+    <File Include="$(WinNativePath)..\..\NetCoreForCoreCLR\native\clrcompression.dll">
+      <TargetPath>runtimes/win10-$(PackagePlatform)/native</TargetPath>
+    </File>
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

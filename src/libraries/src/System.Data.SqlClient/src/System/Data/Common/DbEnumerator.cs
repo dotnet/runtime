@@ -26,7 +26,7 @@ namespace System.Data.Common
         {
             if (null == reader)
             {
-                throw ADP.ArgumentNull("reader");
+                throw ADP.ArgumentNull(nameof(reader));
             }
             _reader = reader;
             _closeReader = closeReader;

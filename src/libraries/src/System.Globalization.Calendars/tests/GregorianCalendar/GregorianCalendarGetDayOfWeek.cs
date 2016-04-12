@@ -2,82 +2,32 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
+using System.Collections.Generic;
 using Xunit;
 
-namespace System.Globalization.CalendarsTests
+namespace System.Globalization.Tests
 {
     public class GregorianCalendarGetDayOfWeek
     {
-        private System.Globalization.Calendar _calendar = new GregorianCalendar();
-
-        #region Positive Test Cases
-        // PosTest: Get day of week
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> GetDayOfWeek_TestData()
         {
-            Verification(_calendar, new DateTime(2007, 1, 1), DayOfWeek.Monday, "001.1");
+            yield return new object[] { new DateTime(2007, 1, 1) };
+            yield return new object[] { new DateTime(2006, 2, 28) };
+            yield return new object[] { new DateTime(2006, 3, 1) };
+            yield return new object[] { new DateTime(2006, 8, 31) };
+            yield return new object[] { new DateTime(2008, 2, 29) };
+            yield return new object[] { new DateTime(2006, 12, 30) };
+            yield return new object[] { new DateTime(2006, 12, 31) };
+            yield return new object[] { DateTime.MaxValue };
+            yield return new object[] { DateTime.MinValue };
+            yield return new object[] { new DateTime(2000, 2, 29) };
         }
 
-        [Fact]
-        public void PosTest2()
+        [Theory]
+        [MemberData(nameof(GetDayOfWeek_TestData))]
+        public void GetDayOfWeek(DateTime time)
         {
-            Verification(_calendar, new DateTime(2006, 2, 28), DayOfWeek.Tuesday, "001.2");
+            Assert.Equal(time.DayOfWeek, new GregorianCalendar().GetDayOfWeek(time));
         }
-        [Fact]
-        public void PosTest3()
-        {
-            Verification(_calendar, new DateTime(2006, 3, 1), DayOfWeek.Wednesday, "001.3");
-        }
-        [Fact]
-        public void PosTest4()
-        {
-            Verification(_calendar, new DateTime(2006, 8, 31), DayOfWeek.Thursday, "001.4");
-        }
-        [Fact]
-        public void PosTest5()
-        {
-            Verification(_calendar, new DateTime(2008, 2, 29), DayOfWeek.Friday, "001.5");
-        }
-
-        [Fact]
-        public void PosTest6()
-        {
-            Verification(_calendar, new DateTime(2006, 12, 30), DayOfWeek.Saturday, "001.6");
-        }
-
-        [Fact]
-        public void PosTest7()
-        {
-            Verification(_calendar, new DateTime(2006, 12, 31), DayOfWeek.Sunday, "001.7");
-        }
-
-        [Fact]
-        public void PosTest8()
-        {
-            Verification(_calendar, DateTime.MaxValue, DayOfWeek.Friday, "001.8");
-        }
-
-        [Fact]
-        public void PosTest9()
-        {
-            Verification(_calendar, DateTime.MinValue, DayOfWeek.Monday, "001.9");
-        }
-
-        [Fact]
-        public void PosTest10()
-        {
-            Verification(_calendar, new DateTime(2000, 2, 29), DayOfWeek.Tuesday, "001.10");
-        }
-
-        #endregion
-        #region Private Methods
-        private void Verification(Calendar calendar, DateTime time, DayOfWeek expected, string errorno)
-        {
-            DayOfWeek RealVal = calendar.GetDayOfWeek(time);
-            Assert.Equal(expected, RealVal);
-        }
-        #endregion
     }
 }

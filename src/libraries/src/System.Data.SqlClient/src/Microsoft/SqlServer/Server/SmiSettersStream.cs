@@ -95,7 +95,7 @@ namespace Microsoft.SqlServer.Server
         {
             if (value < 0)
             {
-                throw ADP.ArgumentOutOfRange("value");
+                throw ADP.ArgumentOutOfRange(nameof(value));
             }
             ValueUtilsSmi.SetBytesLength(_sink, _setters, _ordinal, _metaData, value);
         }

@@ -79,7 +79,7 @@ namespace System.IO
             if (buffer == null)
                 throw new ArgumentNullException(nameof(buffer));
             if (offset < 0 || count < 0)
-                throw new ArgumentOutOfRangeException((offset < 0 ? "offset" : "count"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(offset < 0 ? nameof(offset) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             Contract.EndContractBlock();
@@ -91,7 +91,7 @@ namespace System.IO
             if (buffer == null)
                 throw new ArgumentNullException(nameof(buffer));
             if (offset < 0 || count < 0)
-                throw new ArgumentOutOfRangeException((offset < 0 ? "offset" : "count"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(offset < 0 ? nameof(offset) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             Contract.EndContractBlock();

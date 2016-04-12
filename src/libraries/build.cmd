@@ -1,4 +1,4 @@
-@echo off
+@if "%_echo%" neq "on" echo off
 setlocal
 
 :: Note: We've disabled node reuse because it causes file locking issues.
@@ -35,11 +35,13 @@ if "%__buildSpec%"=="managed"  goto :BuildManaged
 :BuildNative
 :: Run the Native Windows build
 echo [%time%] Building Native Libraries...
-call %~dp0src\native\Windows\build-native.cmd %__args% >nativebuild.log
-IF ERRORLEVEL 1 (
-    echo Native component build failed see nativebuild.log for more details.
-) else (
-    echo [%time%] Successfully built Native Libraries.
+IF EXIST "%~dp0src\native\Windows\build-native.cmd" (
+    call %~dp0src\native\Windows\build-native.cmd %__args% >nativebuild.log
+    IF ERRORLEVEL 1 (
+        echo Native component build failed see nativebuild.log for more details.
+    ) else (
+        echo [%time%] Successfully built Native Libraries.
+    )
 )
 
 :: If we only wanted to build the native components, exit

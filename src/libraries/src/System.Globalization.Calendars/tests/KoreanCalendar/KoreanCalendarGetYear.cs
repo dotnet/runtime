@@ -2,71 +2,28 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
+using System.Collections.Generic;
 using Xunit;
 
-namespace System.Globalization.CalendarsTests
+namespace System.Globalization.Tests
 {
-    //System.Globalization.KoreanCalendar.GetYear(System.DateTime)
     public class KoreanCalendarGetYear
     {
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
 
-        #region Test Logic
-        // PosTest1:Invoke the method with min datetime
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> GetYear_TestData()
         {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            System.Globalization.Calendar gC = new GregorianCalendar();
-            DateTime dateTime = gC.ToDateTime(1, 1, 1, 0, 0, 0, 0);
-            int expectedValue = gC.GetYear(dateTime) + 2333;
-            int actualValue;
-            actualValue = kC.GetYear(dateTime);
-            Assert.Equal(expectedValue, actualValue);
+            yield return new object[] { DateTime.MinValue };
+            yield return new object[] { DateTime.MaxValue };
+            yield return new object[] { new DateTime(2008, 2, 29) };
+            yield return new object[] { s_randomDataGenerator.GetDateTime(-55) };
         }
 
-        // PosTest2:Invoke the method with max datetime
-        [Fact]
-        public void PosTest2()
+        [Theory]
+        [MemberData(nameof(GetYear_TestData))]
+        public void GetYear(DateTime time)
         {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            System.Globalization.Calendar gC = new GregorianCalendar();
-            DateTime dateTime = gC.ToDateTime(9999, 12, 31, 0, 0, 0, 0);
-            int expectedValue = gC.GetYear(dateTime) + 2333;
-            int actualValue;
-            actualValue = kC.GetYear(dateTime);
-            Assert.Equal(expectedValue, actualValue);
+            Assert.Equal(time.Year + 2333, new KoreanCalendar().GetYear(time));
         }
-
-        // PosTest3:Invoke the method with leap year datetime
-        [Fact]
-        public void PosTest3()
-        {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            System.Globalization.Calendar gC = new GregorianCalendar();
-            DateTime dateTime = gC.ToDateTime(2008, 2, 29, 0, 0, 0, 0);
-            int expectedValue = gC.GetYear(dateTime) + 2333;
-            int actualValue;
-            actualValue = kC.GetYear(dateTime);
-            Assert.Equal(expectedValue, actualValue);
-        }
-
-        // PosTest4:Invoke the method with random datetime
-        [Fact]
-        public void PosTest4()
-        {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            System.Globalization.Calendar gC = new GregorianCalendar();
-            Int64 ticks = _generator.GetInt64(-55) % (DateTime.MaxValue.Ticks + 1);
-            DateTime dateTime = new DateTime(ticks);
-            dateTime = gC.ToDateTime(dateTime.Year, dateTime.Month, dateTime.Day, 0, 0, 0, 0);
-            int expectedValue = gC.GetYear(dateTime) + 2333;
-            int actualValue;
-            actualValue = kC.GetYear(dateTime);
-            Assert.Equal(expectedValue, actualValue);
-        }
-        #endregion
     }
 }

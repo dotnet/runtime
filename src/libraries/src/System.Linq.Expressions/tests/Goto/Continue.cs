@@ -26,8 +26,9 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<ArgumentException>(() => Expression.Continue(target, type));
         }
 
-        [Fact]
-        public void ContinueVoidNoValue()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void ContinueVoidNoValue(bool useInterpreter)
         {
             LabelTarget target = Expression.Label();
             Expression block = Expression.Block(
@@ -35,11 +36,12 @@ namespace System.Linq.Expressions.Tests
                 Expression.Throw(Expression.Constant(new InvalidOperationException())),
                 Expression.Label(target)
                 );
-            Expression.Lambda<Action>(block).Compile()();
+            Expression.Lambda<Action>(block).Compile(useInterpreter)();
         }
 
-        [Fact]
-        public void ContinueExplicitVoidNoValue()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void ContinueExplicitVoidNoValue(bool useInterpreter)
         {
             LabelTarget target = Expression.Label();
             Expression block = Expression.Block(
@@ -47,7 +49,7 @@ namespace System.Linq.Expressions.Tests
                 Expression.Throw(Expression.Constant(new InvalidOperationException())),
                 Expression.Label(target)
                 );
-            Expression.Lambda<Action>(block).Compile()();
+            Expression.Lambda<Action>(block).Compile(useInterpreter)();
         }
 
         [Theory]

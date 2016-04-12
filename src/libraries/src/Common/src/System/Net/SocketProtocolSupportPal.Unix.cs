@@ -55,7 +55,7 @@ namespace System.Net
 
         private static unsafe bool IsProtocolSupported(AddressFamily af)
         {
-            int socket = -1;
+            IntPtr socket = (IntPtr)(-1);
             try
             {
                 Interop.Error err = Interop.Sys.Socket(af, SocketType.Dgram, (ProtocolType)0, &socket);
@@ -63,9 +63,9 @@ namespace System.Net
             }
             finally
             {
-                if (socket != -1)
+                if (socket != (IntPtr)(-1))
                 {
-                    Interop.Sys.Close((IntPtr)socket);
+                    Interop.Sys.Close(socket);
                 }
             }
         }

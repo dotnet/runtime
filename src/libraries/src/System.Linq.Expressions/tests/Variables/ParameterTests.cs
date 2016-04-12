@@ -33,8 +33,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void NameNeedNotBeCSharpValid()
         {
-            ParameterExpression param = Expression.Parameter(typeof(int), "a name with charcters not allowed in C# <, >, !, =, \0, \uFFFF, &c.");
-            Assert.Equal("a name with charcters not allowed in C# <, >, !, =, \0, \uFFFF, &c.", param.Name);
+            ParameterExpression param = Expression.Parameter(typeof(int), "a name with characters not allowed in C# <, >, !, =, \0, \uFFFF, &c.");
+            Assert.Equal("a name with characters not allowed in C# <, >, !, =, \0, \uFFFF, &c.", param.Name);
         }
 
         [Fact]
@@ -72,8 +72,8 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValueData))]
-        public void CanWriteAndReadBack(object value)
+        [PerCompilationType(nameof(ValueData))]
+        public void CanWriteAndReadBack(object value, bool useInterpreter)
         {
             Type type = value.GetType();
             ParameterExpression param = Expression.Parameter(type);
@@ -88,31 +88,33 @@ namespace System.Linq.Expressions.Tests
                             param
                             )
                         )
-                    ).Compile()()
+                    ).Compile(useInterpreter)()
                 );
         }
 
-        [Fact]
-        public void CanUseAsLambdaParameter()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void CanUseAsLambdaParameter(bool useInterpreter)
         {
             ParameterExpression param = Expression.Parameter(typeof(int));
             Func<int, int> addOne = Expression.Lambda<Func<int, int>>(
                 Expression.Add(param, Expression.Constant(1)),
                 param
-                ).Compile();
+                ).Compile(useInterpreter);
             Assert.Equal(3, addOne(2));
         }
 
         public delegate void ByRefFunc<T>(ref T arg);
 
-        [Fact]
-        public void CanUseAsLambdaByRefParameter()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void CanUseAsLambdaByRefParameter(bool useInterpreter)
         {
             ParameterExpression param = Expression.Parameter(typeof(int).MakeByRefType());
             ByRefFunc<int> addOneInPlace = Expression.Lambda<ByRefFunc<int>>(
                 Expression.PreIncrementAssign(param),
                 param
-                ).Compile();
+                ).Compile(useInterpreter);
             int argument = 5;
             addOneInPlace(ref argument);
             Assert.Equal(6, argument);

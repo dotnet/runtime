@@ -5,11 +5,7 @@
     <ProjectReference Include="..\ref\System.Net.NameResolution.csproj">
       <SupportedFramework>net46;netcore50;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.Net.NameResolution.csproj">
-      <TargetGroup>net46</TargetGroup>
-    </ProjectReference>
-    <ProjectReference Include="win\System.Net.NameResolution.pkgproj" />
-    <ProjectReference Include="unix\System.Net.NameResolution.pkgproj" />
+    <ProjectReference Include="..\src\System.Net.NameResolution.builds" />
   </ItemGroup>
   <ItemGroup>
     <InboxOnTargetFramework Include="MonoAndroid10" />

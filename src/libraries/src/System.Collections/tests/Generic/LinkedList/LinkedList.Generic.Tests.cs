@@ -69,7 +69,7 @@ namespace System.Collections.Tests
                 VerifyLinkedListNode(linkedList.Last, expectedItems[expectedItems.Length - 1], linkedList, false, true);
             }
 
-            //[] Moving forward throught he collection starting at head
+            //[] Moving forward through he collection starting at head
             currentNode = linkedList.First;
             previousNode = null;
             index = 0;
@@ -86,7 +86,7 @@ namespace System.Collections.Tests
                 ++index;
             }
 
-            //[] Moving backword throught he collection starting at Tail
+            //[] Moving backward through he collection starting at Tail
             currentNode = linkedList.Last;
             nextNode = null;
             index = 0;
@@ -186,7 +186,7 @@ namespace System.Collections.Tests
 
                 //[] Verify we have not gotten more items then we expected
                 Assert.True(iterations < expectedCount,
-                    "Err_9844awpa More items have been returned fromt the enumerator(" + iterations + " items) than are in the expectedElements(" + expectedCount + " items)");
+                    "Err_9844awpa More items have been returned from the enumerator(" + iterations + " items) than are in the expectedElements(" + expectedCount + " items)");
 
                 //[] Verify Current returned the correct value
                 Assert.Equal(currentItem, expectedItems[iterations]); //"Err_1432pauy Current returned unexpected value at index: " + iterations
@@ -195,7 +195,7 @@ namespace System.Collections.Tests
                 for (int i = 0; i < 3; i++)
                 {
                     tempItem = enumerator.Current;
-                    Assert.Equal(currentItem, tempItem); //"Err_8776phaw Current is returning inconsistant results"
+                    Assert.Equal(currentItem, tempItem); //"Err_8776phaw Current is returning inconsistent results"
                 }
 
                 iterations++;
@@ -251,7 +251,7 @@ namespace System.Collections.Tests
 
                 //[] Verify we have not gotten more items then we expected                
                 Assert.True(iterations < expectedCount,
-                    "Err_9844awpa More items have been returned fromt the enumerator(" + iterations + " items) then are in the expectedElements(" + expectedCount + " items)");
+                    "Err_9844awpa More items have been returned from the enumerator(" + iterations + " items) then are in the expectedElements(" + expectedCount + " items)");
 
                 //[] Verify Current returned the correct value
                 itemFound = false;
@@ -274,7 +274,7 @@ namespace System.Collections.Tests
                 for (int i = 0; i < 3; i++)
                 {
                     tempItem = enumerator.Current;
-                    Assert.Equal(currentItem, tempItem); //"Err_8776phaw Current is returning inconsistant results Current."
+                    Assert.Equal(currentItem, tempItem); //"Err_8776phaw Current is returning inconsistent results Current."
                 }
 
                 iterations++;
@@ -336,7 +336,7 @@ namespace System.Collections.Tests
                 previousNode = 0 < index ? nodes[index - 1] : null;
                 nextNode = nodes.Length - 1 > index ? nodes[index + 1] : null;
 
-                Assert.Equal(nodes[index], currentNode); //"Node returned from FindLast idnex=" + i.ToString()
+                Assert.Equal(nodes[index], currentNode); //"Node returned from FindLast index=" + i.ToString()
 
                 VerifyLinkedListNode(currentNode, expectedItems[i], linkedList, previousNode, nextNode);
             }
@@ -365,7 +365,7 @@ namespace System.Collections.Tests
                 previousNode = 0 < index ? nodes[index - 1] : null;
                 nextNode = nodes.Length - 1 > index ? nodes[index + 1] : null;
 
-                Assert.Equal(nodes[index], currentNode); //"Node returned from Find idnex=" + i.ToString()
+                Assert.Equal(nodes[index], currentNode); //"Node returned from Find index=" + i.ToString()
 
                 VerifyLinkedListNode(currentNode, expectedItems[i], linkedList, previousNode, nextNode);
             }
@@ -487,7 +487,7 @@ namespace System.Collections.Tests
         #region Constructor_IEnumerable
 
         [Theory]
-        [MemberData("EnumerableTestData")]
+        [MemberData(nameof(EnumerableTestData))]
         public void LinkedList_Generic_Constructor_IEnumerable(EnumerableType enumerableType, int setLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
         {
             IEnumerable<T> enumerable = CreateEnumerable(enumerableType, null, enumerableLength, 0, numberOfDuplicateElements);
