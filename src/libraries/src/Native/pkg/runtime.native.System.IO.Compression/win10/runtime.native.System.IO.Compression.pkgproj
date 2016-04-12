@@ -8,9 +8,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <File Include="$(WinNativePath)..\..\NetCoreForCoreCLR\native\clrcompression.dll">
+    <NativeFile Include="$(WinNativePath)..\..\NetCoreForCoreCLR\native\clrcompression.dll">
       <TargetPath>runtimes/win10-$(PackagePlatform)/lib/netcore50</TargetPath>
-    </File>
+    </NativeFile>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
