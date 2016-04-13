@@ -6,7 +6,7 @@ using System.Security;
 using System.Threading;
 using System.Globalization;
 using System.Runtime.InteropServices;
-
+#pragma warning disable 618
 public partial class FunctionPtr
 {
     delegate void VoidDelegate();
@@ -40,3 +40,4 @@ public partial class FunctionPtr
     }
   
 }
+#pragma warning restore 618

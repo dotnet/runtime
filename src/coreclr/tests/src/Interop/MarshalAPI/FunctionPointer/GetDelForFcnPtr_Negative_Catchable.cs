@@ -6,6 +6,7 @@ using System.Security;
 using System.Threading;
 using System.Globalization;
 using System.Runtime.InteropServices;
+#pragma warning disable 618
 
 public partial class FunctionPtr
 {  
@@ -88,3 +89,4 @@ public partial class FunctionPtr
         Console.WriteLine("Simple method to get a delegate for");
     }
 }
+#pragma warning restore 618

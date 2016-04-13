@@ -80,10 +80,10 @@ extern "C" DLL_EXPORT LPSTR MarshalPointer_InOut(/*[in,out]*/LPSTR *s)
     {
         printf("Error in Function MarshalPointer_InOut\n");
         
-        for(int i = 0; i< lenstrManaged;++i)
+        for(size_t i = 0; i< lenstrManaged;++i)
             putchar(*(((char *)strManaged)+i));
                 
-        for( int j = 0; j < len; ++j)
+        for( size_t j = 0; j < len; ++j)
             putchar(*(((char *)*s) + j));
         
         return ReturnErrorString();
@@ -111,7 +111,7 @@ extern "C" DLL_EXPORT LPSTR MarshalPointer_Out(/*[out]*/ LPSTR *s)
 extern "C" DLL_EXPORT int __cdecl Writeline(char * pFormat, int i, char c, double d, short s, unsigned u)
 {
 	int sum = i;
-	for (size_t i = 0; i < strlen(pFormat); i++)
+	for (size_t it = 0; it < strlen(pFormat); it++)
 	{
 		sum += (int)(*pFormat);
 	}	
@@ -127,7 +127,7 @@ typedef LPCTSTR (__stdcall * Test_DelMarshal_InOut)(/*[in]*/ LPCSTR s);
 extern "C" DLL_EXPORT BOOL __cdecl RPinvoke_DelMarshal_InOut(Test_DelMarshal_InOut d, /*[in]*/ LPCSTR s)
 {
     LPCTSTR str = d(s);
-    LPTSTR ret = (LPTSTR)W("Return");    
+    const char *ret = "Return";    
 
     size_t lenstr = _tcslen(str);
     size_t lenret = _tcslen(ret);
