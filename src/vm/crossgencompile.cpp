@@ -78,18 +78,23 @@ BOOL Debug_IsLockedViaThreadSuspension()
 #endif // _DEBUG
 
 #if defined(FEATURE_MERGE_JIT_AND_ENGINE) && defined(FEATURE_IMPLICIT_TLS)
-Compiler* theTlsCompiler;
+void* theJitTls;
 
-Compiler* GetTlsCompiler()
+extern "C"
+{
+
+void* GetJitTls()
 {
     LIMITED_METHOD_CONTRACT
 
-    return theTlsCompiler;
+    return theJitTls;
 }
-void SetTlsCompiler(Compiler* c)
+void SetJitTls(void* v)
 {
     LIMITED_METHOD_CONTRACT
-    theTlsCompiler = c;
+    theJitTls = v;
+}
+
 }
 #endif
 

@@ -105,8 +105,8 @@ inline static bool ShouldThrowOnNoway(
 #endif
 )
 {
-    return GetTlsCompiler() == NULL ||
-        GetTlsCompiler()->compShouldThrowOnNoway(
+    return JitTls::GetCompiler() == NULL ||
+        JitTls::GetCompiler()->compShouldThrowOnNoway(
 #ifdef FEATURE_TRACELOGGING
             filename, line
 #endif
@@ -137,7 +137,7 @@ void notYetImplemented(const char * msg, const char * filename, unsigned line)
 {
 #if FUNC_INFO_LOGGING
 #ifdef DEBUG
-    LogEnv* env = LogEnv::cur();
+    LogEnv* env = JitTls::GetLogEnv();
     if (env != NULL)
     {
         const Compiler* const pCompiler = env->compiler;
@@ -242,7 +242,7 @@ void debugError(const char* msg, const char* file, unsigned line)
     const char* tail = strrchr(file, '\\');
     if (tail) file = tail+1;
 
-    LogEnv* env = LogEnv::cur();
+    LogEnv* env = JitTls::GetLogEnv();
 
     logf(LL_ERROR, "COMPILATION FAILED: file: %s:%d compiling method %s reason %s\n", file, line, env->compiler->info.compFullName, msg);
 
@@ -260,23 +260,9 @@ void debugError(const char* msg, const char* file, unsigned line)
 
 
 /*****************************************************************************/
-LogEnv* LogEnv::cur()
-{
-    return (LogEnv*) ClrFlsGetValue(TlsIdx_JitLogEnv);
-}
-
-LogEnv::LogEnv(ICorJitInfo* aCompHnd) : compHnd(aCompHnd), compiler(0) 
-{
-    next = (LogEnv*) ClrFlsGetValue(TlsIdx_JitLogEnv);
-    ClrFlsSetValue(TlsIdx_JitLogEnv, this);
-}
-
-LogEnv::~LogEnv()
-{
-    ClrFlsSetValue(TlsIdx_JitLogEnv, next);   // pop me off the environment stack
-}
-
-void LogEnv::cleanup()
+LogEnv::LogEnv(ICorJitInfo* aCompHnd)
+    : compHnd(aCompHnd)
+    , compiler(nullptr)
 {
 }
 
@@ -285,7 +271,7 @@ extern  "C"
 void  __cdecl   assertAbort(const char *why, const char *file, unsigned line)
 {
     const char* msg = why;
-    LogEnv* env = LogEnv::cur();
+    LogEnv* env = JitTls::GetLogEnv();
     const int BUFF_SIZE = 8192;
     char *buff = (char*)alloca(BUFF_SIZE);
     if (env->compiler) {
@@ -339,7 +325,7 @@ void  __cdecl   assertAbort(const char *why, const char *file, unsigned line)
 /*********************************************************************/
 BOOL vlogf(unsigned level, const char* fmt, va_list args) 
 {
-    return(LogEnv::cur()->compHnd->logMsg(level, fmt, args));
+    return JitTls::GetLogEnv()->compHnd->logMsg(level, fmt, args);
 } 
 
 int logf_stdout(const char* fmt, va_list args)
