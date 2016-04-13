@@ -178,7 +178,7 @@ CrstStatic ReJitManager::s_csGlobalRequest;
 //---------------------------------------------------------------------------------------
 // Helpers
 
-static DWORD JitFlagsFromProfCodegenFlags(DWORD dwCodegenFlags)
+inline DWORD JitFlagsFromProfCodegenFlags(DWORD dwCodegenFlags)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
@@ -3111,8 +3111,8 @@ void ReJitManager::Dump(LPCSTR szIntroText)
             "\tInfo 0x%p: State=0x%x, Next=0x%p, Shared=%p, SharedState=0x%x\n",
             pInfo,
             pInfo->GetState(),
-            pInfo->m_pNext,
-            pInfo->m_pShared,
+            (void*)pInfo->m_pNext,
+            (void*)pInfo->m_pShared,
             pInfo->m_pShared->GetState());
 
         switch(pInfo->m_key.m_keyType)
@@ -3120,7 +3120,7 @@ void ReJitManager::Dump(LPCSTR szIntroText)
         case ReJitInfo::Key::kMethodDesc:
             printf(
                 "\t\tMD=0x%p, %s.%s (%s)\n",
-                pInfo->GetMethodDesc(),
+                (void*)pInfo->GetMethodDesc(),
                 pInfo->GetMethodDesc()->m_pszDebugClassName,
                 pInfo->GetMethodDesc()->m_pszDebugMethodName,
                 pInfo->GetMethodDesc()->m_pszDebugMethodSignature);
@@ -3718,10 +3718,10 @@ COR_ILMETHOD * ReJitInfo::GetIL()
 
 
 SharedReJitInfo::SharedReJitInfo()
-    : m_reJitId(InterlockedIncrement(reinterpret_cast<LONG*>(&s_GlobalReJitId))),
-    m_dwInternalFlags(kStateRequested),
+    : m_dwInternalFlags(kStateRequested),
     m_pbIL(NULL),
     m_dwCodegenFlags(0),
+    m_reJitId(InterlockedIncrement(reinterpret_cast<LONG*>(&s_GlobalReJitId))),
     m_pInfoList(NULL)
 {
     LIMITED_METHOD_CONTRACT;

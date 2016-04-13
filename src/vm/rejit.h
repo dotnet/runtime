@@ -37,7 +37,7 @@ class ProfilerFunctionControl : public ICorProfilerFunctionControl
 {
 public:
     ProfilerFunctionControl(LoaderHeap * pHeap);
-    ~ProfilerFunctionControl();
+    virtual ~ProfilerFunctionControl();
 
     // IUnknown functions
     virtual HRESULT __stdcall QueryInterface(REFIID id, void** pInterface);
