@@ -2596,7 +2596,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
     unsigned        argSlots          = 0;
     unsigned        nonRegPassedStructSlots = 0;
     bool            lateArgsComputed  = (call->gtCallLateArgs != nullptr);
-    bool            callHasRetBuffArg = ((call->gtCallMoreFlags & GTF_CALL_M_RETBUFFARG) != 0);
+    bool            callHasRetBuffArg = call->HasRetBufArg();
 
 #ifndef _TARGET_X86_    // i.e. _TARGET_AMD64_ or _TARGET_ARM_
     bool            callIsVararg      = call->IsVarargs();
@@ -5788,7 +5788,7 @@ bool                Compiler::fgCanFastTailCall(GenTreeCall* callee)
         nCalleeArgs++;
     }
 
-    if (callee->gtCallMoreFlags & GTF_CALL_M_RETBUFFARG)  // RetBuf
+    if (callee->HasRetBufArg())  // RetBuf
     {
         nCalleeArgs++;
 
@@ -5939,7 +5939,7 @@ void                Compiler::fgMorphTailCall(GenTreeCall* call)
 
         GenTreeArgList** pList = &call->gtCallArgs;
 #if RETBUFARG_PRECEDES_THIS
-        if (call->gtCallMoreFlags & GTF_CALL_M_RETBUFFARG) {
+        if (call->HasRetBufArg()) {
            pList = &(*pList)->Rest();
         }
 #endif // RETBUFARG_PRECEDES_THIS
@@ -6095,7 +6095,7 @@ void                Compiler::fgMorphTailCall(GenTreeCall* call)
 
         GenTreeArgList** pList = &call->gtCallArgs;
 #if RETBUFARG_PRECEDES_THIS
-        if (call->gtCallMoreFlags & GTF_CALL_M_RETBUFFARG) {
+        if (call->HasRetBufArg()) {
            pList = &(*pList)->Rest();
         }
 #endif // RETBUFARG_PRECEDES_THIS
@@ -6972,11 +6972,11 @@ NO_TAIL_CALL:
     }
 
     // Make sure that return buffers containing GC pointers that aren't too large are pointers into the stack.
-    GenTreePtr origDest = NULL; // Will only become non-null if we do the transformation (and thus require copy-back).
+    GenTreePtr origDest = nullptr; // Will only become non-null if we do the transformation (and thus require copy-back).
     unsigned retValTmpNum = BAD_VAR_NUM;
-    CORINFO_CLASS_HANDLE structHnd = NULL;
-    if (call->gtCallMoreFlags & GTF_CALL_M_RETBUFFARG
-        && call->gtCallLateArgs == NULL)  // Don't do this if we're re-morphing (which will make late args non-null).
+    CORINFO_CLASS_HANDLE structHnd = nullptr;
+    if (call->HasRetBufArg() &&
+        call->gtCallLateArgs == nullptr)  // Don't do this if we're re-morphing (which will make late args non-null).
     {
         // We're enforcing the invariant that return buffers pointers (at least for
         // struct return types containing GC pointers) are never pointers into the heap.
