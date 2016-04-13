@@ -27,11 +27,6 @@
         "System.Threading": "4.0.0",
         "System.Threading.Tasks": "4.0.10"
       }
-    },
-    "net46": {
-      "dependencies": {
-        "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
-      }
     }
   }
 }
