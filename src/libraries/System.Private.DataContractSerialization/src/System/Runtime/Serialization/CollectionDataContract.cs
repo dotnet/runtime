@@ -68,15 +68,13 @@ namespace System.Runtime.Serialization
 
     [DataContract(Namespace = "http://schemas.microsoft.com/2003/10/Serialization/Arrays")]
 #if USE_REFEMIT
-    public class KeyValue<K, V>
+    public struct KeyValue<K, V>
 #else
-    internal class KeyValue<K, V>
+    internal struct KeyValue<K, V>
 #endif
     {
         private K _key;
         private V _value;
-
-        public KeyValue() { }
 
         internal KeyValue(K key, V value)
         {
