@@ -18,7 +18,7 @@ OSName=$(uname -s)
 case $OSName in
     Darwin)
         # Darwin version can be three sets of digits (e.g. 10.10.3), we want just the first two
-        DarwinVersion=$(sw_vers -productVersion | awk 'match($0, /[0-9]{2}\.[0-9]{2}/) { print substr($0, RSTART, RLENGTH) }')
+        DarwinVersion=$(sw_vers -productVersion | awk 'match($0, /[0-9]+\.[0-9]+/) { print substr($0, RSTART, RLENGTH) }')
         RuntimeOS=osx.$DarwinVersion
         ;;
 
@@ -29,10 +29,11 @@ case $OSName in
 
     Linux)
         source /etc/os-release
+        VersionMajor=$(echo $VERSION_ID | awk 'match($0, /[0-9]+/) { print substr($0, RSTART, RLENGTH) }')
         if [ "$ID" == "rhel" ]; then
-            RuntimeOS=rhel.$VERSION_ID
+            RuntimeOS=rhel.$VersionMajor
         elif [ "$ID" == "debian" ]; then
-            RuntimeOS=debian.$VERSION_ID
+            RuntimeOS=debian.$VersionMajor
         elif [ "$ID" == "ubuntu" ]; then
             RuntimeOS=ubuntu.$VERSION_ID
         else
