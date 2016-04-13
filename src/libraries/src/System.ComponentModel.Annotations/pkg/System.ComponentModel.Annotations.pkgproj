@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\4.0.0\System.ComponentModel.Annotations.depproj">
-      <SupportedFramework>net45</SupportedFramework>
+      <SupportedFramework>net45;netcore45</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\ref\4.0.10\System.ComponentModel.Annotations.depproj">
       <SupportedFramework>net46</SupportedFramework>
@@ -15,6 +15,8 @@
     <InboxOnTargetFramework Include="MonoAndroid10" />
     <InboxOnTargetFramework Include="MonoTouch10" />
     <InboxOnTargetFramework Include="net45" />
+    <InboxOnTargetFramework Include="win8" />
+    <InboxOnTargetFramework Include="portable-net45+win8" />
     <InboxOnTargetFramework Include="xamarinios10" />
     <InboxOnTargetFramework Include="xamarinmac20" />
     <InboxOnTargetFramework Include="xamarintvos10" />
