@@ -427,13 +427,8 @@ namespace System.Net
                 else
                     helper.AddChar(ch);
             }
-
-            if (!needsDecoding)
-            {
-                // No decoding needed
-                return value;
-            }
-            return helper.GetString();
+            
+            return needsDecoding ? helper.GetString() : value;
         }
 
         private static byte[] UrlDecodeInternal(byte[] bytes, int offset, int count)
