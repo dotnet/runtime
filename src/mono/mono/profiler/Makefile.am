@@ -61,21 +61,21 @@ LIBMONO=$(top_builddir)/mono/mini/libmonosgen-$(API_VER).la
 endif
 
 libmono_profiler_aot_la_SOURCES = mono-profiler-aot.c
-libmono_profiler_aot_la_LIBADD = $(LIBMONO) $(GLIB_LIBS) $(LIBICONV)
+libmono_profiler_aot_la_LIBADD = $(GLIB_LIBS) $(LIBICONV)
 if BITCODE
 libmono_profiler_aot_la_LDFLAGS = -no-undefined
 endif
 libmono_profiler_iomap_la_SOURCES = mono-profiler-iomap.c
-libmono_profiler_iomap_la_LIBADD = $(LIBMONO) $(GLIB_LIBS) $(LIBICONV)
+libmono_profiler_iomap_la_LIBADD = $(GLIB_LIBS) $(LIBICONV)
 if BITCODE
 libmono_profiler_iomap_la_LDFLAGS = -no-undefined
 endif
 libmono_profiler_log_la_SOURCES = proflog.c
-libmono_profiler_log_la_LIBADD = $(LIBMONO) $(GLIB_LIBS) $(Z_LIBS)
+libmono_profiler_log_la_LIBADD = $(GLIB_LIBS) $(Z_LIBS)
 if HAVE_VTUNE
 libmono_profiler_vtune_la_SOURCES = mono-profiler-vtune.c
 libmono_profiler_vtune_la_CFLAGS = $(VTUNE_CFLAGS)
-libmono_profiler_vtune_la_LIBADD = $(VTUNE_LIBS) $(LIBMONO) $(GLIB_LIBS) $(LIBICONV)
+libmono_profiler_vtune_la_LIBADD = $(VTUNE_LIBS) $(GLIB_LIBS) $(LIBICONV)
 endif
 
 # The log profile uses eglib functions, so it needs to be linked against
