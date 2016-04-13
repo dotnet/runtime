@@ -1488,7 +1488,7 @@ regNumber           CodeGenInterface::genGetThisArgReg(GenTreePtr  call)
 {
     noway_assert(call->IsCall());
 #if RETBUFARG_PRECEDES_THIS
-    if (call->gtCall.gtCallMoreFlags & GTF_CALL_M_RETBUFFARG)
+    if (call->AsCall()->HasRetBufArg())
         return REG_ARG_1;
 #endif // RETBUFARG_PRECEEDS_THIS
     return REG_ARG_0;
@@ -4030,7 +4030,7 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
                 else
 #endif
                 {
-                    regType = compiler->getEightByteType(structDesc, slotCounter);
+                    regType = compiler->GetEightByteType(structDesc, slotCounter);
                 }
                 
                 regArgNum = genMapRegNumToRegArgNum(regNum, regType);
