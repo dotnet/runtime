@@ -1310,11 +1310,6 @@ void DomainFile::FinishLoad()
         // Inform metadata that it has been loaded from a native image
         // (and so there was an opportunity to check for or fix inconsistencies in the original IL metadata)
         m_pFile->GetMDImport()->SetVerifiedByTrustedSource(TRUE);
-
-#ifdef FEATURE_PERFMAP
-        // Notify the perfmap of the native image load.
-        PerfMap::LogNativeImageLoad(m_pFile);
-#endif
     }
 
     // Are we absolutely required to use a native image?
@@ -1382,6 +1377,11 @@ void DomainFile::FinishLoad()
     // Set a bit to indicate that the module has been loaded in some domain, and therefore
     // typeloads can involve types from this module. (Used for candidate instantiations.)
     GetModule()->SetIsReadyForTypeLoad();
+
+#ifdef FEATURE_PERFMAP
+    // Notify the perfmap of the IL image load.
+    PerfMap::LogImageLoad(m_pFile);
+#endif
 }
 
 void DomainFile::VerifyExecution()
