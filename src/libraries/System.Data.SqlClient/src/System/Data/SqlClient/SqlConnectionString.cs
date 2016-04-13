@@ -7,6 +7,7 @@
 //------------------------------------------------------------------------------
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Data.Common;
 using System.Diagnostics;
 
@@ -152,7 +153,7 @@ namespace System.Data.SqlClient
         }
 
 
-        static private Hashtable s_sqlClientSynonyms;
+        static private Dictionary<string, string> s_sqlClientSynonyms;
 
         private readonly bool _integratedSecurity;
 
@@ -437,73 +438,76 @@ namespace System.Data.SqlClient
 
         internal TypeSystem TypeSystemVersion { get { return _typeSystemVersion; } }
 
-        // this hashtable is meant to be read-only translation of parsed string
-        // keywords/synonyms to a known keyword string
-        internal static Hashtable GetParseSynonyms()
+        // This dictionary is meant to be read-only translation of parsed string
+        // keywords/synonyms to a known keyword string.
+        internal static Dictionary<string, string> GetParseSynonyms()
         {
-            Hashtable hash = s_sqlClientSynonyms;
-            if (null == hash)
+            Dictionary<string, string> synonyms = s_sqlClientSynonyms;
+            if (null == synonyms)
             {
-                hash = new Hashtable(SqlConnectionStringBuilder.KeywordsCount + SqlConnectionStringBuilder.DeprecatedKeywordsCount + SynonymCount + DeprecatedSynonymCount);
-                hash.Add(KEY.ApplicationIntent, KEY.ApplicationIntent);
-                hash.Add(KEY.Application_Name, KEY.Application_Name);
-                hash.Add(KEY.AsynchronousProcessing, KEY.AsynchronousProcessing);
-                hash.Add(KEY.AttachDBFilename, KEY.AttachDBFilename);
-                hash.Add(KEY.Connect_Timeout, KEY.Connect_Timeout);
-                hash.Add(KEY.Connection_Reset, KEY.Connection_Reset);
-                hash.Add(KEY.Context_Connection, KEY.Context_Connection);
-                hash.Add(KEY.Current_Language, KEY.Current_Language);
-                hash.Add(KEY.Data_Source, KEY.Data_Source);
-                hash.Add(KEY.Encrypt, KEY.Encrypt);
-                hash.Add(KEY.Enlist, KEY.Enlist);
-                hash.Add(KEY.FailoverPartner, KEY.FailoverPartner);
-                hash.Add(KEY.Initial_Catalog, KEY.Initial_Catalog);
-                hash.Add(KEY.Integrated_Security, KEY.Integrated_Security);
-                hash.Add(KEY.Load_Balance_Timeout, KEY.Load_Balance_Timeout);
-                hash.Add(KEY.MARS, KEY.MARS);
-                hash.Add(KEY.Max_Pool_Size, KEY.Max_Pool_Size);
-                hash.Add(KEY.Min_Pool_Size, KEY.Min_Pool_Size);
-                hash.Add(KEY.MultiSubnetFailover, KEY.MultiSubnetFailover);
-                hash.Add(KEY.Network_Library, KEY.Network_Library);
-                hash.Add(KEY.Packet_Size, KEY.Packet_Size);
-                hash.Add(KEY.Password, KEY.Password);
-                hash.Add(KEY.Persist_Security_Info, KEY.Persist_Security_Info);
-                hash.Add(KEY.Pooling, KEY.Pooling);
-                hash.Add(KEY.Replication, KEY.Replication);
-                hash.Add(KEY.TrustServerCertificate, KEY.TrustServerCertificate);
-                hash.Add(KEY.TransactionBinding, KEY.TransactionBinding);
-                hash.Add(KEY.Type_System_Version, KEY.Type_System_Version);
-                hash.Add(KEY.User_ID, KEY.User_ID);
-                hash.Add(KEY.User_Instance, KEY.User_Instance);
-                hash.Add(KEY.Workstation_Id, KEY.Workstation_Id);
-                hash.Add(KEY.Connect_Retry_Count, KEY.Connect_Retry_Count);
-                hash.Add(KEY.Connect_Retry_Interval, KEY.Connect_Retry_Interval);
+                int count = SqlConnectionStringBuilder.KeywordsCount + SqlConnectionStringBuilder.DeprecatedKeywordsCount + SynonymCount + DeprecatedSynonymCount;
+                synonyms = new Dictionary<string, string>(count)
+                {
+                    { KEY.ApplicationIntent, KEY.ApplicationIntent },
+                    { KEY.Application_Name, KEY.Application_Name },
+                    { KEY.AsynchronousProcessing, KEY.AsynchronousProcessing },
+                    { KEY.AttachDBFilename, KEY.AttachDBFilename },
+                    { KEY.Connect_Timeout, KEY.Connect_Timeout },
+                    { KEY.Connection_Reset, KEY.Connection_Reset },
+                    { KEY.Context_Connection, KEY.Context_Connection },
+                    { KEY.Current_Language, KEY.Current_Language },
+                    { KEY.Data_Source, KEY.Data_Source },
+                    { KEY.Encrypt, KEY.Encrypt },
+                    { KEY.Enlist, KEY.Enlist },
+                    { KEY.FailoverPartner, KEY.FailoverPartner },
+                    { KEY.Initial_Catalog, KEY.Initial_Catalog },
+                    { KEY.Integrated_Security, KEY.Integrated_Security },
+                    { KEY.Load_Balance_Timeout, KEY.Load_Balance_Timeout },
+                    { KEY.MARS, KEY.MARS },
+                    { KEY.Max_Pool_Size, KEY.Max_Pool_Size },
+                    { KEY.Min_Pool_Size, KEY.Min_Pool_Size },
+                    { KEY.MultiSubnetFailover, KEY.MultiSubnetFailover },
+                    { KEY.Network_Library, KEY.Network_Library },
+                    { KEY.Packet_Size, KEY.Packet_Size },
+                    { KEY.Password, KEY.Password },
+                    { KEY.Persist_Security_Info, KEY.Persist_Security_Info },
+                    { KEY.Pooling, KEY.Pooling },
+                    { KEY.Replication, KEY.Replication },
+                    { KEY.TrustServerCertificate, KEY.TrustServerCertificate },
+                    { KEY.TransactionBinding, KEY.TransactionBinding },
+                    { KEY.Type_System_Version, KEY.Type_System_Version },
+                    { KEY.User_ID, KEY.User_ID },
+                    { KEY.User_Instance, KEY.User_Instance },
+                    { KEY.Workstation_Id, KEY.Workstation_Id },
+                    { KEY.Connect_Retry_Count, KEY.Connect_Retry_Count },
+                    { KEY.Connect_Retry_Interval, KEY.Connect_Retry_Interval },
 
-                hash.Add(SYNONYM.APP, KEY.Application_Name);
-                hash.Add(SYNONYM.Async, KEY.AsynchronousProcessing);
-                hash.Add(SYNONYM.EXTENDED_PROPERTIES, KEY.AttachDBFilename);
-                hash.Add(SYNONYM.INITIAL_FILE_NAME, KEY.AttachDBFilename);
-                hash.Add(SYNONYM.CONNECTION_TIMEOUT, KEY.Connect_Timeout);
-                hash.Add(SYNONYM.TIMEOUT, KEY.Connect_Timeout);
-                hash.Add(SYNONYM.LANGUAGE, KEY.Current_Language);
-                hash.Add(SYNONYM.ADDR, KEY.Data_Source);
-                hash.Add(SYNONYM.ADDRESS, KEY.Data_Source);
-                hash.Add(SYNONYM.NETWORK_ADDRESS, KEY.Data_Source);
-                hash.Add(SYNONYM.SERVER, KEY.Data_Source);
-                hash.Add(SYNONYM.DATABASE, KEY.Initial_Catalog);
-                hash.Add(SYNONYM.TRUSTED_CONNECTION, KEY.Integrated_Security);
-                hash.Add(SYNONYM.Connection_Lifetime, KEY.Load_Balance_Timeout);
-                hash.Add(SYNONYM.NET, KEY.Network_Library);
-                hash.Add(SYNONYM.NETWORK, KEY.Network_Library);
-                hash.Add(SYNONYM.Pwd, KEY.Password);
-                hash.Add(SYNONYM.PERSISTSECURITYINFO, KEY.Persist_Security_Info);
-                hash.Add(SYNONYM.UID, KEY.User_ID);
-                hash.Add(SYNONYM.User, KEY.User_ID);
-                hash.Add(SYNONYM.WSID, KEY.Workstation_Id);
-                Debug.Assert(SqlConnectionStringBuilder.KeywordsCount + SqlConnectionStringBuilder.DeprecatedKeywordsCount + SynonymCount + DeprecatedSynonymCount == hash.Count, "incorrect initial ParseSynonyms size");
-                s_sqlClientSynonyms = hash;
+                    { SYNONYM.APP, KEY.Application_Name },
+                    { SYNONYM.Async, KEY.AsynchronousProcessing },
+                    { SYNONYM.EXTENDED_PROPERTIES, KEY.AttachDBFilename },
+                    { SYNONYM.INITIAL_FILE_NAME, KEY.AttachDBFilename },
+                    { SYNONYM.CONNECTION_TIMEOUT, KEY.Connect_Timeout },
+                    { SYNONYM.TIMEOUT, KEY.Connect_Timeout },
+                    { SYNONYM.LANGUAGE, KEY.Current_Language },
+                    { SYNONYM.ADDR, KEY.Data_Source },
+                    { SYNONYM.ADDRESS, KEY.Data_Source },
+                    { SYNONYM.NETWORK_ADDRESS, KEY.Data_Source },
+                    { SYNONYM.SERVER, KEY.Data_Source },
+                    { SYNONYM.DATABASE, KEY.Initial_Catalog },
+                    { SYNONYM.TRUSTED_CONNECTION, KEY.Integrated_Security },
+                    { SYNONYM.Connection_Lifetime, KEY.Load_Balance_Timeout },
+                    { SYNONYM.NET, KEY.Network_Library },
+                    { SYNONYM.NETWORK, KEY.Network_Library },
+                    { SYNONYM.Pwd, KEY.Password },
+                    { SYNONYM.PERSISTSECURITYINFO, KEY.Persist_Security_Info },
+                    { SYNONYM.UID, KEY.User_ID },
+                    { SYNONYM.User, KEY.User_ID },
+                    { SYNONYM.WSID, KEY.Workstation_Id }
+                };
+                Debug.Assert(synonyms.Count == count, "incorrect initial ParseSynonyms size");
+                s_sqlClientSynonyms = synonyms;
             }
-            return hash;
+            return synonyms;
         }
 
         internal string ObtainWorkstationId()
@@ -534,8 +538,8 @@ namespace System.Data.SqlClient
 
         internal System.Data.SqlClient.ApplicationIntent ConvertValueToApplicationIntent()
         {
-            object value = base.Parsetable[KEY.ApplicationIntent];
-            if (value == null)
+            string value;
+            if (!TryGetParsetableValue(KEY.ApplicationIntent, out value))
             {
                 return DEFAULT.ApplicationIntent;
             }
