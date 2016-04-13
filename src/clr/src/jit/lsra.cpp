@@ -9044,7 +9044,7 @@ LinearScan::lsraGetOperandString(GenTreePtr tree, LsraTupleDumpMode mode, char *
         break;
     case LinearScan::LSRA_DUMP_POST:
         {
-            Compiler *compiler = GetTlsCompiler();
+            Compiler *compiler = JitTls::GetCompiler();
 
             if (!tree->gtHasReg())
             {
@@ -9064,7 +9064,7 @@ LinearScan::lsraGetOperandString(GenTreePtr tree, LsraTupleDumpMode mode, char *
 void
 LinearScan::lsraDispNode(GenTreePtr tree, LsraTupleDumpMode mode, bool hasDest)
 {
-    Compiler*         compiler = GetTlsCompiler();
+    Compiler*         compiler = JitTls::GetCompiler();
     const unsigned    operandStringLength = 16;
     char              operandString[operandStringLength];
     const char*       emptyDestOperand = "               ";
