@@ -170,14 +170,6 @@ namespace System.IO
             return new string(rndCharArray, 0, 12);
         }
 
-        // Returns a unique temporary file name, and creates a 0-byte file by that
-        // name on disk.
-        [System.Security.SecuritySafeCritical]
-        public static string GetTempFileName()
-        {
-            return InternalGetTempFileName(checkHost: true);
-        }
-
         // Tests if a path includes a file extension. The result is
         // true if the characters that follow the last directory
         // separator ('\\' or '/') or volume separator (':') in the path include 

@@ -35,7 +35,6 @@ namespace System.IO
         }
 
         // Expands the given path to a fully qualified path. 
-        [System.Security.SecuritySafeCritical]
         public static string GetFullPath(string path)
         {
             if (path == null)
@@ -95,7 +94,6 @@ namespace System.IO
             return fullPath;
         }
 
-        [System.Security.SecuritySafeCritical]
         public static string GetTempPath()
         {
             StringBuilder sb = StringBuilderCache.Acquire(MaxPath);
@@ -105,11 +103,10 @@ namespace System.IO
             return GetFullPath(StringBuilderCache.GetStringAndRelease(sb));
         }
 
-        [System.Security.SecurityCritical]
-        private static string InternalGetTempFileName(bool checkHost)
+        // Returns a unique temporary file name, and creates a 0-byte file by that
+        // name on disk.
+        public static string GetTempFileName()
         {
-            // checkHost was originally intended for file security checks, but is ignored.
-
             string path = GetTempPath();
 
             StringBuilder sb = StringBuilderCache.Acquire(MaxPath);
