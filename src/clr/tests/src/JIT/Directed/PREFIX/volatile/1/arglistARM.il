@@ -16,20 +16,20 @@ another.
 
 ie. in this case CompareArgs checks that
 arg1==arg4, arg2==arg5, arg3==arg6.
+
+The vararg cookie in the case of x86 and ARM 
+is after/before the declared arguments respectively:
+(from Compiler::lvaInitTypeRef() in lclvars.cpp)
+x86 args look something like this:
+[this ptr] [hidden return buffer] [declared arguments]* [generic context] [var arg cookie]
+ARM is closer to the native ABI:
+[hidden return buffer] [this ptr] [generic context] [var arg cookie] [declared arguments]*
 */
 
 .assembly extern legacy library mscorlib {}
 .assembly arglist.exe{ //This byte field requests that this assembly not be verified at run time and corresponds to this C# declaration:
   //[assembly:System.Security.Permissions.SecurityPermissionAttribute( [mscorlib]System.Security.Permissions.SecurityAction.RequestMinimum, Flags=System.Security.Permissions.SecurityPermissionFlag.SkipVerification )]
                         }
-
-/*
-CompareArgs(5,1,2,3,4,5,1,2,3,4,5)
-arglist on x86: 5,4,3,2,1,5,4,3,2,1,5
-                ^ index 1
-arglist on ia64: 5,1,2,3,4,5,1,2,3,4,5
-                 ^ index 1
-*/
 
 .method static vararg int32 CompareArgs(int32){
 .locals(int32 currentindex, int32 loopconstant)
@@ -40,26 +40,28 @@ arglist on ia64: 5,1,2,3,4,5,1,2,3,4,5
 	ldarg		0
 	stloc		loopconstant
 LOOP:	ldloc		currentindex
-	ldc.i4		8
+	ldc.i4		4
 	mul
 	arglist
 	add
-	unaligned. 0x4
+	volatile.
+	unaligned. 0x1
 	ldind.i4
 	ldloc		currentindex
 	ldloc		loopconstant
 	add
-	ldc.i4		8
+	ldc.i4		4
 	mul
 	arglist
 	add
-	unaligned. 0x4
+	volatile.
+	unaligned. 0x1
 	ldind.i4
 	ceq
 	brfalse		EXITWITHFAIL
 	ldloc		currentindex
 	ldloc		loopconstant
-	ldc.i4		1
+	ldc.i4 1
 	add
 	beq		EXITWITHPASS
 	ldc.i4		1
