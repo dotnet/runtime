@@ -407,7 +407,6 @@ namespace System.Net
                 }
                 else if (ch == '%' && pos < count - 2)
                 {
-                    needsDecoding = true;
                     int h1 = HexToInt(value[pos + 1]);
                     int h2 = HexToInt(value[pos + 2]);
 
@@ -418,6 +417,7 @@ namespace System.Net
 
                         // don't add as char
                         helper.AddByte(b);
+                        needsDecoding = true;
                         continue;
                     }
                 }
