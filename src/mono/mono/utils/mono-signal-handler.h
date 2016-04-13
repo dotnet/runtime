@@ -48,14 +48,12 @@
 			      "mov r0, r0\n\t"				\
 			      "mov r0, r0\n\t"				\
 			      "mov r0, r0\n\t"				\
-			      "mov r0, r0\n\t");			\
-		asm volatile (						\
-			      "bx %0"					\
-			      : : "r" (__krait_ ## name));		\
+			      "mov r0, r0\n\t"				\
+				  "b __krait_" # name			\
+				  "\n\t");						\
 	}	\
-	static void __krait_ ## name arglist
+	static __attribute__((used)) void __krait_ ## name arglist
 #endif
-
 
 /* Don't use this */
 #ifndef MONO_SIGNAL_HANDLER_FUNC
