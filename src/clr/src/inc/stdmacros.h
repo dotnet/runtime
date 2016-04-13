@@ -188,6 +188,12 @@ inline void* ALIGN_UP( void* val, size_t alignment )
     
     return (void*) ALIGN_UP( (size_t)val, alignment );
 }
+inline uint8_t* ALIGN_UP( uint8_t* val, size_t alignment )
+{
+    WRAPPER_NO_CONTRACT;
+    
+    return (uint8_t*) ALIGN_UP( (size_t)val, alignment );
+}
 
 inline size_t ALIGN_DOWN( size_t val, size_t alignment )
 {
@@ -202,6 +208,11 @@ inline void* ALIGN_DOWN( void* val, size_t alignment )
 {
     WRAPPER_NO_CONTRACT;
     return (void*) ALIGN_DOWN( (size_t)val, alignment );
+}
+inline uint8_t* ALIGN_DOWN( uint8_t* val, size_t alignment )
+{
+    WRAPPER_NO_CONTRACT;
+    return (uint8_t*) ALIGN_DOWN( (size_t)val, alignment );
 }
 
 inline BOOL IS_ALIGNED( size_t val, size_t alignment )
