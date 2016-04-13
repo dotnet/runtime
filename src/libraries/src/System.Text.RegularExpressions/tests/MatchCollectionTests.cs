@@ -2,67 +2,47 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections;
-using System.Text.RegularExpressions;
 using Xunit;
 
-namespace Test
+namespace System.Text.RegularExpressions.Tests
 {
     public class MatchCollectionTests
     {
         [Fact]
-        public static void EnumeratorTest1()
+        public void GetEnumerator()
+        {
+            Regex regex = new Regex("e");
+            MatchCollection collection = regex.Matches("dotnet");
+            IEnumerator enumerator = collection.GetEnumerator();
+            for (int i = 0; i < 2; i++)
+            {
+                int counter = 0;
+                while (enumerator.MoveNext())
+                {
+                    Assert.Same(collection[counter], enumerator.Current);
+                    counter++;
+                }
+                Assert.Equal(collection.Count, counter);
+                enumerator.Reset();
+            }
+        }
+
+        [Fact]
+        public void GetEnumerator_Invalid()
         {
             Regex regex = new Regex("e");
             MatchCollection collection = regex.Matches("dotnet");
             IEnumerator enumerator = collection.GetEnumerator();
 
             Assert.Throws<InvalidOperationException>(() => enumerator.Current);
-            Assert.True(enumerator.MoveNext());
-            Assert.IsAssignableFrom<Match>(enumerator.Current);
-            Assert.Equal(4, ((Match)enumerator.Current).Index);
-            Assert.Equal("e", ((Match)enumerator.Current).Value);
-            Assert.False(enumerator.MoveNext());
+
+            while (enumerator.MoveNext()) ;
             Assert.Throws<InvalidOperationException>(() => enumerator.Current);
 
             enumerator.Reset();
-            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
             Assert.True(enumerator.MoveNext());
-            Assert.IsAssignableFrom<Match>(enumerator.Current);
-            Assert.Equal(4, ((Match)enumerator.Current).Index);
-            Assert.Equal("e", ((Match)enumerator.Current).Value);
-            Assert.False(enumerator.MoveNext());
-            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
-        }
-
-        [Fact]
-        public static void EnumeratorTest2()
-        {
-            Regex regex = new Regex("t");
-            MatchCollection collection = regex.Matches("dotnet");
-            IEnumerator enumerator = collection.GetEnumerator();
-
-            for (int i = 0; i < collection.Count; i++)
-            {
-                enumerator.MoveNext();
-
-                Assert.Equal(enumerator.Current, collection[i]);
-            }
-
-            Assert.False(enumerator.MoveNext());
-            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
-
             enumerator.Reset();
-
-            for (int i = 0; i < collection.Count; i++)
-            {
-                enumerator.MoveNext();
-
-                Assert.Equal(enumerator.Current, collection[i]);
-            }
-
-            Assert.False(enumerator.MoveNext());
             Assert.Throws<InvalidOperationException>(() => enumerator.Current);
         }
     }
