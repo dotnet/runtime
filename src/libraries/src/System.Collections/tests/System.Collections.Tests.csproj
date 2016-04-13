@@ -86,6 +86,7 @@
       <Link>Common\System\Collections\TestingTypes.cs</Link>
     </Compile>
     <!-- Generic tests -->
+    <Compile Include="StructuralComparisonsTests.cs" />
     <Compile Include="BitArray\BitArray_CtorTests.cs" />
     <Compile Include="BitArray\BitArray_GetSetTests.cs" />
     <Compile Include="BitArray\BitArray_OperatorsTests.cs" />
