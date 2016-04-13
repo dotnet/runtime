@@ -3,6 +3,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using CoreFXTestLibrary;
+#pragma warning disable 618
 
 public class GetObjectForNativeVariantTest 
 {  
@@ -140,3 +141,4 @@ public class GetObjectForNativeVariantTest
         return 100;
     }
 }
+#pragma warning restore 618

@@ -9,6 +9,8 @@ using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using CoreFXTestLibrary;
 
+#pragma warning disable 618
+
 public class TestClass
 {
     public int value;
@@ -67,8 +69,9 @@ public class IUnknownMarshalingTest
 
     public void GetComInterfaceForObjectTest()
     {
-            //test null
-            IntPtr nullPtr = Marshal.GetComInterfaceForObject(null, typeof(object));
+
+        //test null
+        IntPtr nullPtr = Marshal.GetComInterfaceForObject(null, typeof(object));
             if (nullPtr != IntPtr.Zero)
                 throw new Exception("A valid ptr was returned for null object.");
        
@@ -220,3 +223,4 @@ public class IUnknownMarshalingTest
     }
 
 }
+#pragma warning restore 618
