@@ -411,7 +411,7 @@ namespace System.Linq.Expressions
                 Type valueType = setParameters[setParameters.Length - 1].ParameterType;
                 if (valueType.IsByRef) throw Error.PropertyCannotHaveRefType();
                 if (setter.ReturnType != typeof(void)) throw Error.SetterMustBeVoid();
-                if (property.PropertyType != valueType) throw Error.PropertyTyepMustMatchSetter();
+                if (property.PropertyType != valueType) throw Error.PropertyTypeMustMatchSetter();
 
                 if (getter != null)
                 {
