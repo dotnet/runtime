@@ -33,7 +33,7 @@ namespace Microsoft.Extensions.DependencyModel
             var runCommand = new RunCommand(testProject);
             var result = runCommand.ExecuteWithCapturedOutput();
             result.Should().Pass();
-            ValidateRuntimeLibrarites(result, appname);
+            ValidateRuntimeLibraries(result, appname);
             if (checkCompilation)
             {
                 ValidateCompilationLibraries(result, appname);
@@ -56,7 +56,7 @@ namespace Microsoft.Extensions.DependencyModel
             var exeName = portable ? publishCommand.GetPortableOutputName() : publishCommand.GetOutputExecutable();
 
             var result = TestExecutable(publishCommand.GetOutputDirectory(portable).FullName, exeName, string.Empty);
-            ValidateRuntimeLibrarites(result, appname);
+            ValidateRuntimeLibraries(result, appname);
             if (checkCompilation)
             {
                 ValidateCompilationLibraries(result, appname);
@@ -72,7 +72,7 @@ namespace Microsoft.Extensions.DependencyModel
             var runCommand = new RunCommand(testProject);
             var result = runCommand.ExecuteWithCapturedOutput();
             result.Should().Pass();
-            ValidateRuntimeLibraritesFullClr(result, "TestAppFullClr");
+            ValidateRuntimeLibrariesFullClr(result, "TestAppFullClr");
             ValidateCompilationLibrariesFullClr(result, "TestAppFullClr");
         }
 
@@ -86,11 +86,11 @@ namespace Microsoft.Extensions.DependencyModel
             publishCommand.Execute().Should().Pass();
 
             var result = TestExecutable(publishCommand.GetOutputDirectory().FullName, publishCommand.GetOutputExecutable(), string.Empty);
-            ValidateRuntimeLibraritesFullClr(result, "TestAppFullClr");
+            ValidateRuntimeLibrariesFullClr(result, "TestAppFullClr");
             ValidateCompilationLibrariesFullClr(result, "TestAppFullClr");
         }
 
-        private void ValidateRuntimeLibraritesFullClr(CommandResult result, string appname)
+        private void ValidateRuntimeLibrariesFullClr(CommandResult result, string appname)
         {
             // entry assembly
             result.Should().HaveStdOutContaining($"Runtime {appname}:{appname}");
@@ -109,7 +109,7 @@ namespace Microsoft.Extensions.DependencyModel
         }
 
 
-        private void ValidateRuntimeLibrarites(CommandResult result, string appname)
+        private void ValidateRuntimeLibraries(CommandResult result, string appname)
         {
             // entry assembly
             result.Should().HaveStdOutContaining($"Runtime {appname}:{appname}");
