@@ -15,6 +15,7 @@ usage()
     echo "cross - optional argument to signify cross compilation,"
     echo "      - will use ROOTFS_DIR environment variable if set."
     echo "skiptests - skip the tests in the './bin/*/*Tests/' subdirectory."
+    echo "generateversion - if building native only, pass this in to get a version on the build output."
     echo "cmakeargs - user-settable additional arguments passed to CMake."
     exit 1
 }
@@ -97,6 +98,25 @@ prepare_native_build()
     if [ $__VerboseBuild == 1 ]; then
         export VERBOSE=1
     fi
+
+    # If managed build is supported, then generate version
+    if [ $__buildmanaged == true ]; then
+        __generateversionsource=true
+    fi
+
+    # Ensure tools are present if we will generate version.c
+    if [ $__generateversionsource == true ]; then
+        $__scriptpath/init-tools.sh
+    fi
+
+    # Generate version.c if specified, else have an empty one.
+    __versionSourceFile=$__scriptpath/bin/obj/version.c
+    if [ $__generateversionsource == true ]; then
+        $__scriptpath/Tools/corerun $__scriptpath/Tools/MSBuild.exe "$__scriptpath/build.proj" /t:GenerateVersionSourceFile /p:NativeVersionSourceFile=$__scriptpath/bin/obj/version.c /p:GenerateVersionSourceFile=true /v:minimal
+    else
+        __versionSourceLine="static char sccsid[] __attribute__((used)) = \"@(#)No version information produced\";"
+        echo $__versionSourceLine > $__versionSourceFile
+    fi
 }
 
 build_managed()
@@ -167,6 +187,7 @@ __nugetpath=$__packageroot/NuGet.exe
 __nugetconfig=$__sourceroot/NuGet.Config
 __rootbinpath="$__scriptpath/bin"
 __msbuildpackageid="Microsoft.Build.Mono.Debug"
+__generateversionsource=false
 __msbuildpackageversion="14.1.0.0-prerelease"
 __msbuildpath=$__packageroot/$__msbuildpackageid.$__msbuildpackageversion/lib/MSBuild.exe
 __buildmanaged=false
@@ -303,6 +324,9 @@ while :; do
             ;;
         verbose)
             __VerboseBuild=1
+            ;;
+        generateversion)
+            __generateversionsource=true
             ;;
         clang3.5)
             __ClangMajorVersion=3
