@@ -220,6 +220,7 @@ nameof(value),
 
             set
             {
+                CheckDisposedOrStarted();
                 _checkCertificateRevocationList = value;
             }
         }
