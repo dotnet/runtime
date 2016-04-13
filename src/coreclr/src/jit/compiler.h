@@ -7783,8 +7783,8 @@ public :
         bool            compPublishStubParam: 1;   // EAX captured in prolog will be available through an instrinsic
         bool            compRetBuffDefStack:  1;   // The ret buff argument definitely points into the stack.
 
-        var_types       compRetType;
-        var_types       compRetNativeType;
+        var_types       compRetType;                // Return type of the method as declared in IL
+        var_types       compRetNativeType;          // Normalized return type as per target arch ABI
         unsigned        compILargsCount;            // Number of arguments (incl. implicit but not hidden)
         unsigned        compArgsCount;              // Number of arguments (incl. implicit and     hidden)
         unsigned        compRetBuffArg;             // position of hidden return param var (0, 1) (BAD_VAR_NUM means not present);
@@ -8817,12 +8817,16 @@ public:
 
     static HelperCallProperties s_helperCallProperties;
 
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
     static var_types GetTypeFromClassificationAndSizes(SystemVClassificationType classType, int size);
-    static var_types getEightByteType(const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR& structDesc, unsigned slotNum);
+    static var_types GetEightByteType(const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR& structDesc, unsigned slotNum);
+    static void      GetStructTypeOffset(const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR& structDesc,
+                                         var_types* type0,
+                                         var_types* type1,
+                                         unsigned __int8* offset0,
+                                         unsigned __int8* offset1);
     void fgMorphSystemVStructArgs(GenTreeCall* call, bool hasStructArgument);
-#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-
+#endif 
 }; // end of class Compiler
 
 // Inline methods of CompAllocator.
