@@ -178,7 +178,7 @@ namespace System.IO
                 path + DirectorySeparatorChar;
         }
 
-        private static string InternalGetTempFileName(bool checkHost)
+        public static string GetTempFileName()
         {
             const string Suffix = ".tmp";
             const int SuffixByteLength = 4;
