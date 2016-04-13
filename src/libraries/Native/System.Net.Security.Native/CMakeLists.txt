@@ -23,6 +23,7 @@ set(NATIVEGSS_SOURCES
 add_library(System.Net.Security.Native
     SHARED
     ${NATIVEGSS_SOURCES}
+    ${VERSION_FILE_PATH}
 )
 
 target_link_libraries(System.Net.Security.Native
