@@ -73,7 +73,7 @@ namespace System.Collections.Tests
 
             Assert.Throws<ArgumentNullException>("dest", () => collection.CopyTo(null, 0)); // Array is null
 
-            Assert.Throws<ArgumentException>("", () => collection.CopyTo(new Foo[100], 50)); // Index + collection.Count > array.Length
+            Assert.Throws<ArgumentException>(string.Empty, () => collection.CopyTo(new Foo[100], 50)); // Index + collection.Count > array.Length
             Assert.Throws<ArgumentOutOfRangeException>("dstIndex", () => collection.CopyTo(new Foo[100], -1)); // Index < 0
         }
 
