@@ -20,7 +20,11 @@
 #include "gcinfo.h"     // For InfoHdr
 
 #ifndef FASTCALL
+#ifndef FEATURE_PAL
 #define FASTCALL __fastcall
+#else
+#define FASTCALL
+#endif
 #endif
 
 
