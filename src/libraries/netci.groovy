@@ -13,7 +13,7 @@ def projectFolder = Utilities.getFolderName(project) + '/' + Utilities.getFolder
 // Globals
 
 // Map of os -> osGroup.
-def osGroupMap = ['Ubuntu':'Linux',
+def osGroupMap = ['Ubuntu14.04':'Linux',
                   'Ubuntu15.10':'Linux',
                   'Debian8.2':'Linux',
                   'OSX':'OSX',
@@ -23,7 +23,7 @@ def osGroupMap = ['Ubuntu':'Linux',
                   'RHEL7.2': 'Linux']
 // Map of os -> nuget runtime
 def targetNugetRuntimeMap = ['OSX' : 'osx.10.10-x64',
-                             'Ubuntu' : 'ubuntu.14.04-x64',
+                             'Ubuntu14.04' : 'ubuntu.14.04-x64',
                              'Ubuntu15.10' : 'ubuntu.14.04-x64',
                              'Debian8.2' : 'ubuntu.14.04-x64',
                              'CentOS7.1' : 'centos.7-x64',
@@ -100,8 +100,8 @@ def osShortName = ['Windows 10': 'win10',
     
     // Set up standard options.
     Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
-    // Set the machine affinity to Ubuntu machines
-    Utilities.setMachineAffinity(newJob, 'Ubuntu', 'latest-or-auto')
+    // Set the machine affinity to Ubuntu14.04 machines
+    Utilities.setMachineAffinity(newJob, 'Ubuntu14.04', 'latest-or-auto')
     if (isPR) {
         // Set PR trigger.  Only trigger when the phrase is said.
         Utilities.addGithubPRTriggerForBranch(newJob, branch, 'Code Formatter Check', '(?i).*test\\W+code\\W+formatter\\W+check.*', true)
@@ -462,7 +462,7 @@ def static addCopyCoreClrAndRunTestSteps(def job, def coreclrBranch, String os, 
 // and then a build for the test of corefx on the target platform.  Then we link them with a build
 // flow job.
 
-def innerLoopNonWindowsOSs = ['Ubuntu', 'Ubuntu15.10', 'Debian8.2', 'OSX', 'CentOS7.1', 'OpenSUSE13.2', 'RHEL7.2']
+def innerLoopNonWindowsOSs = ['Ubuntu15.10', 'Debian8.2', 'OSX', 'CentOS7.1', 'OpenSUSE13.2', 'RHEL7.2']
 [true, false].each { isPR ->
     ['Debug', 'Release'].each { configurationGroup ->
         innerLoopNonWindowsOSs.each { os ->
@@ -510,7 +510,7 @@ def innerLoopNonWindowsOSs = ['Ubuntu', 'Ubuntu15.10', 'Debian8.2', 'OSX', 'Cent
             Utilities.addArchival(newBuildJob, "bin/build.pack,bin/osGroup.AnyCPU.${configurationGroup}/**,bin/ref/**,bin/packages/**,msbuild.log")
 
             // Use Server GC for Ubuntu/OSX Debug PR build & test
-            def useServerGC = ((os == 'Ubuntu' || os == 'OSX') && configurationGroup == 'Release' && isPR)
+            def useServerGC = ((os == 'Ubuntu15.10' || os == 'OSX') && configurationGroup == 'Release' && isPR)
 
             //
             // Then we set up a job that runs the test on the target OS
@@ -567,7 +567,7 @@ def innerLoopNonWindowsOSs = ['Ubuntu', 'Ubuntu15.10', 'Debian8.2', 'OSX', 'Cent
             if (isPR) {
                 // Set PR trigger.
                 // Set of OS's that work currently. 
-                if (os in ['OSX', 'Ubuntu', 'OpenSUSE13.2', 'CentOS7.1']) {
+                if (os in ['OSX', 'OpenSUSE13.2', 'CentOS7.1']) {
                     // TODO #6070: Temporarily disabled due to failing globalization tests on OpenSUSE.
                     if (os != 'OpenSUSE13.2') {
                         Utilities.addGithubPRTriggerForBranch(newFlowJob, branch, "Innerloop ${os} ${configurationGroup} Build and Test")
@@ -585,34 +585,45 @@ def innerLoopNonWindowsOSs = ['Ubuntu', 'Ubuntu15.10', 'Debian8.2', 'OSX', 'Cent
     }
 }
 
-// Generate the build and test versions for Windows_NT.  When full build/run is supported on a platform, those platforms
+// Generate the build and test versions for Windows_NT and Ubuntu14.04.  When full build/run is supported on a platform, those platforms
 // could be removed from above and then added in below.
-def supportedFullCyclePlatforms = ['Windows_NT']
+def supportedFullCyclePlatforms = ['Windows_NT', 'Ubuntu14.04']
 
 [true, false].each { isPR ->
     ['Debug', 'Release'].each { configurationGroup ->
-        supportedFullCyclePlatforms.each { osGroup ->
-            def newJobName = "${osGroup.toLowerCase()}_${configurationGroup.toLowerCase()}"
+        supportedFullCyclePlatforms.each { os ->
+            def osGroup = osGroupMap[os]
+            def newJobName = "${os.toLowerCase()}_${configurationGroup.toLowerCase()}"
 
             def newJob = job(Utilities.getFullJobName(project, newJobName, isPR)) {
                 steps {
-                    batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd /p:ConfigurationGroup=${configurationGroup} /p:OSGroup=${osGroup}")
-                    batchFile("C:\\Packer\\Packer.exe .\\bin\\build.pack .\\bin")
+                    if (os == 'Windows 10' || os == 'Windows 7' || os == 'Windows_NT') {
+                        batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd /p:ConfigurationGroup=${configurationGroup} /p:OSGroup=${osGroup}")
+                        batchFile("C:\\Packer\\Packer.exe .\\bin\\build.pack .\\bin")
+                    }
+                    else {
+                        shell("HOME=\$WORKSPACE/tempHome ./build.sh /p:ConfigurationGroup=${configurationGroup} /p:TestWithLocalLibraries=true")
+                    }
                 }
             }
 
-            // Set the affinity.  All of these run on Windows currently.
-            Utilities.setMachineAffinity(newJob, osGroup, 'latest-or-auto')
+            // Set the affinity.
+            Utilities.setMachineAffinity(newJob, os, 'latest-or-auto')
             // Set up standard options.
             Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
             // Add the unit test results
             Utilities.addXUnitDotNETResults(newJob, 'bin/tests/**/testResults.xml')
+            def archiveContents = "bin/${osGroup}.AnyCPU.Debug/**,bin/ref/**,bin/packages/**,msbuild.log"
+            if (os.contains('Windows')) {
+                // Packer.exe is a .NET Framework application. When we can use it from the tool-runtime, we can archive the ".pack" file here.
+                archiveContents += ",bin/build.pack"
+            }
             // Add archival for the built data.
-            Utilities.addArchival(newJob, "bin/build.pack,bin/${osGroup}.AnyCPU.Debug/**,bin/ref/**,bin/packages/**,msbuild.log")
+            Utilities.addArchival(newJob, archiveContents)
             // Set up triggers
             if (isPR) {
                 // Set PR trigger.
-                Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop ${osGroup} ${configurationGroup} Build and Test")
+                Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop ${os} ${configurationGroup} Build and Test")
             }
             else {
                 // Set a push trigger
