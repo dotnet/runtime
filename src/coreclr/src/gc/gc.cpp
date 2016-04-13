@@ -78,6 +78,10 @@ BOOL bgc_heap_walk_for_etw_p = FALSE;
 int compact_ratio = 0;
 #endif //GC_CONFIG_DRIVEN
 
+#if defined(FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP) && defined(NO_WRITE_BARRIER)
+#error Software write watch requires write barriers.
+#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP && NO_WRITE_BARRIER
+
 // See comments in reset_memory.
 BOOL reset_mm_p = TRUE;
 
@@ -597,7 +601,8 @@ enum gc_join_stage
     gc_join_after_commit_soh_no_gc = 35,
     gc_join_expand_loh_no_gc = 36,
     gc_join_final_no_gc = 37,
-    gc_join_max = 38
+    gc_join_disable_software_write_watch = 38,
+    gc_join_max = 39
 };
 
 enum gc_join_flavor
@@ -1435,19 +1440,21 @@ void reset_memory (uint8_t* o, size_t sizeo);
 
 #ifdef WRITE_WATCH
 
-static bool virtual_alloc_write_watch = false;
+#ifndef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+static bool virtual_alloc_hardware_write_watch = false;
+#endif // !FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
-static bool write_watch_capability = false;
+static bool hardware_write_watch_capability = false;
 
 #ifndef DACCESS_COMPILE
 
 //check if the write watch APIs are supported.
 
-void write_watch_api_supported()
+void hardware_write_watch_api_supported()
 {
     if (GCToOSInterface::SupportsWriteWatch())
     {
-        write_watch_capability = true;
+        hardware_write_watch_capability = true;
         dprintf (2, ("WriteWatch supported"));
     }
     else
@@ -1458,9 +1465,23 @@ void write_watch_api_supported()
 
 #endif //!DACCESS_COMPILE
 
-inline bool can_use_write_watch()
+inline bool can_use_hardware_write_watch()
 {
-    return write_watch_capability;
+    return hardware_write_watch_capability;
+}
+
+inline bool can_use_write_watch_for_gc_heap()
+{
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    return true;
+#else // !FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    return can_use_hardware_write_watch();
+#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+}
+
+inline bool can_use_write_watch_for_card_table()
+{
+    return can_use_hardware_write_watch();
 }
 
 #else
@@ -4255,7 +4276,13 @@ void* virtual_alloc (size_t size)
         }
     }
 
-    uint32_t flags = virtual_alloc_write_watch ? VirtualReserveFlags::WriteWatch : VirtualReserveFlags::None;
+    uint32_t flags = VirtualReserveFlags::None;
+#ifndef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    if (virtual_alloc_hardware_write_watch)
+    {
+        flags = VirtualReserveFlags::WriteWatch;
+    }
+#endif // !FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
     void* prgmem = GCToOSInterface::VirtualReserve (0, requested_size, card_size * card_word_width, flags);
     void *aligned_mem = prgmem;
 
@@ -6490,7 +6517,7 @@ uint32_t* translate_card_bundle_table (uint32_t* cb)
 
 void gc_heap::enable_card_bundles ()
 {
-    if (can_use_write_watch() && (!card_bundles_enabled()))
+    if (can_use_write_watch_for_card_table() && (!card_bundles_enabled()))
     {
         dprintf (3, ("Enabling card bundles"));
         //set all of the card bundles
@@ -6826,13 +6853,21 @@ void release_card_table (uint32_t* c_table)
             destroy_card_table (c_table);
             // sever the link from the parent
             if (&g_card_table[card_word (gcard_of(g_lowest_address))] == c_table)
-                g_card_table = 0;
-            uint32_t* p_table = &g_card_table[card_word (gcard_of(g_lowest_address))];
-            if (p_table)
             {
-                while (p_table && (card_table_next (p_table) != c_table))
-                    p_table = card_table_next (p_table);
-                card_table_next (p_table) = 0;
+                g_card_table = 0;
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+                SoftwareWriteWatch::StaticClose();
+#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+            }
+            else
+            {
+                uint32_t* p_table = &g_card_table[card_word (gcard_of(g_lowest_address))];
+                if (p_table)
+                {
+                    while (p_table && (card_table_next (p_table) != c_table))
+                        p_table = card_table_next (p_table);
+                    card_table_next (p_table) = 0;
+                }
             }
         }
     }
@@ -6866,12 +6901,23 @@ uint32_t* gc_heap::make_card_table (uint8_t* start, uint8_t* end)
     size_t cb = 0;
 
 #ifdef CARD_BUNDLE
-    if (can_use_write_watch())
+    if (can_use_write_watch_for_card_table())
     {
         virtual_reserve_flags |= VirtualReserveFlags::WriteWatch;
         cb = size_card_bundle_of (g_lowest_address, g_highest_address);
     }
 #endif //CARD_BUNDLE
+
+    size_t wws = 0;
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    size_t sw_ww_table_offset = 0;
+    if (gc_can_use_concurrent)
+    {
+        size_t sw_ww_size_before_table = sizeof(card_table_info) + cs + bs + cb;
+        sw_ww_table_offset = SoftwareWriteWatch::GetTableStartByteOffset(sw_ww_size_before_table);
+        wws = sw_ww_table_offset - sw_ww_size_before_table + SoftwareWriteWatch::GetTableByteSize(start, end);
+    }
+#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
 #ifdef GROWABLE_SEG_MAPPING_TABLE
     size_t st = size_seg_mapping_table_of (g_lowest_address, g_highest_address);
@@ -6881,29 +6927,29 @@ uint32_t* gc_heap::make_card_table (uint8_t* start, uint8_t* end)
 
     // it is impossible for alloc_size to overflow due bounds on each of 
     // its components.
-    size_t alloc_size = sizeof (uint8_t)*(bs + cs + cb + ms + st + sizeof (card_table_info));
+    size_t alloc_size = sizeof (uint8_t)*(sizeof(card_table_info) + cs + bs + cb + wws + st + ms);
     size_t alloc_size_aligned = Align (alloc_size, g_SystemInfo.dwAllocationGranularity-1);
 
-    uint32_t* ct = (uint32_t*)GCToOSInterface::VirtualReserve (0, alloc_size_aligned, 0, virtual_reserve_flags);
+    uint8_t* mem = (uint8_t*)GCToOSInterface::VirtualReserve (0, alloc_size_aligned, 0, virtual_reserve_flags);
 
-    if (!ct)
+    if (!mem)
         return 0;
 
-    dprintf (2, ("init - table alloc for %Id bytes: [%Ix, %Ix[",
-                 alloc_size, (size_t)ct, (size_t)((uint8_t*)ct+alloc_size)));
+    dprintf (2, ("Init - Card table alloc for %Id bytes: [%Ix, %Ix[",
+                 alloc_size, (size_t)mem, (size_t)(mem+alloc_size)));
 
     // mark array will be committed separately (per segment).
     size_t commit_size = alloc_size - ms;
 
-    if (!GCToOSInterface::VirtualCommit ((uint8_t*)ct, commit_size))
+    if (!GCToOSInterface::VirtualCommit (mem, commit_size))
     {
-        dprintf (2, ("Table commit failed"));
-        GCToOSInterface::VirtualRelease ((uint8_t*)ct, alloc_size_aligned);
+        dprintf (2, ("Card table commit failed"));
+        GCToOSInterface::VirtualRelease (mem, alloc_size_aligned);
         return 0;
     }
 
     // initialize the ref count
-    ct = (uint32_t*)((uint8_t*)ct+sizeof (card_table_info));
+    uint32_t* ct = (uint32_t*)(mem+sizeof (card_table_info));
     card_table_refcount (ct) = 0;
     card_table_lowest_address (ct) = start;
     card_table_highest_address (ct) = end;
@@ -6915,15 +6961,22 @@ uint32_t* gc_heap::make_card_table (uint8_t* start, uint8_t* end)
     card_table_card_bundle_table (ct) = (uint32_t*)((uint8_t*)card_table_brick_table (ct) + bs);
 #endif //CARD_BUNDLE
 
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    if (gc_can_use_concurrent)
+    {
+        SoftwareWriteWatch::InitializeUntranslatedTable(mem + sw_ww_table_offset, start);
+    }
+#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+
 #ifdef GROWABLE_SEG_MAPPING_TABLE
-    seg_mapping_table = (seg_mapping*)((uint8_t*)card_table_brick_table (ct) + bs + cb);
+    seg_mapping_table = (seg_mapping*)((uint8_t*)card_table_brick_table (ct) + bs + cb + wws);
     seg_mapping_table = (seg_mapping*)((uint8_t*)seg_mapping_table - 
                                         size_seg_mapping_table_of (0, (align_lower_segment (g_lowest_address))));
 #endif //GROWABLE_SEG_MAPPING_TABLE
 
 #ifdef MARK_ARRAY
     if (gc_can_use_concurrent)
-        card_table_mark_array (ct) = (uint32_t*)((uint8_t*)card_table_brick_table (ct) + bs + cb + st);
+        card_table_mark_array (ct) = (uint32_t*)((uint8_t*)card_table_brick_table (ct) + bs + cb + wws + st);
     else
         card_table_mark_array (ct) = NULL;
 #endif //MARK_ARRAY
@@ -7033,12 +7086,26 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
         size_t cb = 0;
 
 #ifdef CARD_BUNDLE
-        if (can_use_write_watch())
+        if (can_use_write_watch_for_card_table())
         {
             virtual_reserve_flags = VirtualReserveFlags::WriteWatch;
             cb = size_card_bundle_of (saved_g_lowest_address, saved_g_highest_address);
         }
 #endif //CARD_BUNDLE
+
+        size_t wws = 0;
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        size_t sw_ww_table_offset = 0;
+        if (gc_can_use_concurrent)
+        {
+            size_t sw_ww_size_before_table = sizeof(card_table_info) + cs + bs + cb;
+            sw_ww_table_offset = SoftwareWriteWatch::GetTableStartByteOffset(sw_ww_size_before_table);
+            wws =
+                sw_ww_table_offset -
+                sw_ww_size_before_table +
+                SoftwareWriteWatch::GetTableByteSize(saved_g_lowest_address, saved_g_highest_address);
+        }
+#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
 #ifdef GROWABLE_SEG_MAPPING_TABLE
         size_t st = size_seg_mapping_table_of (saved_g_lowest_address, saved_g_highest_address);
@@ -7048,10 +7115,10 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
 
         // it is impossible for alloc_size to overflow due bounds on each of 
         // its components.
-        size_t alloc_size = sizeof (uint8_t)*(bs + cs + cb + ms +st + sizeof (card_table_info));
+        size_t alloc_size = sizeof (uint8_t)*(sizeof(card_table_info) + cs + bs + cb + wws + st + ms);
         size_t alloc_size_aligned = Align (alloc_size, g_SystemInfo.dwAllocationGranularity-1);
-        dprintf (GC_TABLE_LOG, ("brick table: %Id; card table: %Id; mark array: %Id, card bundle: %Id, seg table: %Id",
-                                  bs, cs, ms, cb, st));
+        dprintf (GC_TABLE_LOG, ("card table: %Id; brick table: %Id; card bundle: %Id; sw ww table: %Id; seg table: %Id; mark array: %Id",
+                                  cs, bs, cb, wws, st, ms));
 
         uint8_t* mem = (uint8_t*)GCToOSInterface::VirtualReserve (0, alloc_size_aligned, 0, virtual_reserve_flags);
 
@@ -7104,7 +7171,7 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
 
 #ifdef GROWABLE_SEG_MAPPING_TABLE
         {
-            seg_mapping* new_seg_mapping_table = (seg_mapping*)((uint8_t*)card_table_brick_table (ct) + bs + cb);
+            seg_mapping* new_seg_mapping_table = (seg_mapping*)((uint8_t*)card_table_brick_table (ct) + bs + cb + wws);
             new_seg_mapping_table = (seg_mapping*)((uint8_t*)new_seg_mapping_table -
                                               size_seg_mapping_table_of (0, (align_lower_segment (saved_g_lowest_address))));
             memcpy(&new_seg_mapping_table[seg_mapping_word_of(g_lowest_address)],
@@ -7117,7 +7184,7 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
 
 #ifdef MARK_ARRAY
         if(gc_can_use_concurrent)
-            card_table_mark_array (ct) = (uint32_t*)((uint8_t*)card_table_brick_table (ct) + bs + cb + st);
+            card_table_mark_array (ct) = (uint32_t*)((uint8_t*)card_table_brick_table (ct) + bs + cb + wws + st);
         else
             card_table_mark_array (ct) = NULL;
 #endif //MARK_ARRAY
@@ -7155,11 +7222,51 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
         }
 #endif //BACKGROUND_GC
 
-        // This passes a bool telling whether we need to switch to the post
-        // grow version of the write barrier.  This test tells us if the new
-        // segment was allocated at a lower address than the old, requiring
-        // that we start doing an upper bounds check in the write barrier.
-        StompWriteBarrierResize(la != saved_g_lowest_address);
+        {
+            bool write_barrier_updated = false;
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+            if (gc_can_use_concurrent)
+            {
+                // The current design of software write watch requires that the runtime is suspended during resize. Suspending
+                // on resize is preferred because it is a far less frequent operation than GetWriteWatch() / ResetWriteWatch().
+                // Suspending here allows copying dirty state from the old table into the new table, and not have to merge old
+                // table info lazily as done for card tables.
+
+                BOOL is_runtime_suspended = IsSuspendEEThread();
+                if (!is_runtime_suspended)
+                {
+                    suspend_EE();
+                }
+
+                SoftwareWriteWatch::SetResizedUntranslatedTable(
+                    mem + sw_ww_table_offset,
+                    saved_g_lowest_address,
+                    saved_g_highest_address);
+
+                // Since the runtime is already suspended, update the write barrier here as well.
+                // This passes a bool telling whether we need to switch to the post
+                // grow version of the write barrier.  This test tells us if the new
+                // segment was allocated at a lower address than the old, requiring
+                // that we start doing an upper bounds check in the write barrier.
+                StompWriteBarrierResize(true, la != saved_g_lowest_address);
+                write_barrier_updated = true;
+
+                if (!is_runtime_suspended)
+                {
+                    restart_EE();
+                }
+            }
+#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+
+            if (!write_barrier_updated)
+            {
+                // This passes a bool telling whether we need to switch to the post
+                // grow version of the write barrier.  This test tells us if the new
+                // segment was allocated at a lower address than the old, requiring
+                // that we start doing an upper bounds check in the write barrier.
+                StompWriteBarrierResize(!!IsSuspendEEThread(), la != saved_g_lowest_address);
+            }
+        }
 
         // We need to make sure that other threads executing checked write barriers
         // will see the g_card_table update before g_lowest/highest_address updates.
@@ -7367,8 +7474,6 @@ void gc_heap::copy_brick_card_table()
 #else  //GROWABLE_SEG_MAPPING_TABLE
     size_t st = 0;
 #endif //GROWABLE_SEG_MAPPING_TABLE
-    assert (!gc_can_use_concurrent || 
-            (((uint8_t*)card_table_card_bundle_table (ct) + size_card_bundle_of (g_lowest_address, g_highest_address) + st) == (uint8_t*)card_table_mark_array (ct)));
 #endif //MARK_ARRAY && _DEBUG
     card_bundle_table = translate_card_bundle_table (card_table_card_bundle_table (ct));
     assert (&card_bundle_table [card_bundle_word (cardw_card_bundle (card_word (card_of (g_lowest_address))))] ==
@@ -9279,6 +9384,27 @@ void gc_heap::update_card_table_bundle()
 }
 #endif //CARD_BUNDLE
 
+// static
+void gc_heap::reset_write_watch_for_gc_heap(void* base_address, size_t region_size)
+{
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    SoftwareWriteWatch::ClearDirty(base_address, region_size);
+#else // !FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    GCToOSInterface::ResetWriteWatch(base_address, region_size);
+#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+}
+
+// static
+void gc_heap::get_write_watch_for_gc_heap(bool reset, void *base_address, size_t region_size, void** dirty_pages, uintptr_t* dirty_page_count_ref, bool is_runtime_suspended)
+{
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    SoftwareWriteWatch::GetDirty(base_address, region_size, dirty_pages, dirty_page_count_ref, reset, is_runtime_suspended);
+#else // !FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    bool success = GCToOSInterface::GetWriteWatch(reset, base_address, region_size, dirty_pages, dirty_page_count_ref);
+    assert(success);
+#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+}
+
 const size_t ww_reset_quantum = 128*1024*1024;
 
 inline
@@ -9302,7 +9428,7 @@ void gc_heap::reset_ww_by_chunk (uint8_t* start_address, size_t total_reset_size
         next_reset_size = ((remaining_reset_size >= ww_reset_quantum) ? ww_reset_quantum : remaining_reset_size);
         if (next_reset_size)
         {
-            GCToOSInterface::ResetWriteWatch (start_address, next_reset_size);
+            reset_write_watch_for_gc_heap(start_address, next_reset_size);
             reset_size += next_reset_size;
 
             switch_one_quantum();
@@ -9333,6 +9459,11 @@ void gc_heap::switch_on_reset (BOOL concurrent_p, size_t* current_total_reset_si
 
 void gc_heap::reset_write_watch (BOOL concurrent_p)
 {
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    // Software write watch currently requires the runtime to be suspended during reset. See SoftwareWriteWatch::ClearDirty().
+    assert(!concurrent_p);
+#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+
     heap_segment* seg = heap_segment_rw (generation_start_segment (generation_of (max_generation)));
 
     PREFIX_ASSUME(seg != NULL);
@@ -9371,7 +9502,7 @@ void gc_heap::reset_write_watch (BOOL concurrent_p)
 #endif //TIME_WRITE_WATCH
             dprintf (3, ("h%d: soh ww: [%Ix(%Id)", heap_number, (size_t)base_address, region_size));
             //reset_ww_by_chunk (base_address, region_size);
-            GCToOSInterface::ResetWriteWatch (base_address, region_size);
+            reset_write_watch_for_gc_heap(base_address, region_size);
 
 #ifdef TIME_WRITE_WATCH
             unsigned int time_stop = GetCycleCount32();
@@ -9414,7 +9545,7 @@ void gc_heap::reset_write_watch (BOOL concurrent_p)
 #endif //TIME_WRITE_WATCH
             dprintf (3, ("h%d: loh ww: [%Ix(%Id)", heap_number, (size_t)base_address, region_size));
             //reset_ww_by_chunk (base_address, region_size);
-            GCToOSInterface::ResetWriteWatch (base_address, region_size);
+            reset_write_watch_for_gc_heap(base_address, region_size);
 
 #ifdef TIME_WRITE_WATCH
             unsigned int time_stop = GetCycleCount32();
@@ -9514,7 +9645,7 @@ void gc_heap::adjust_ephemeral_limits ()
                  (size_t)ephemeral_low, (size_t)ephemeral_high))
 
     // This updates the write barrier helpers with the new info.
-    StompWriteBarrierEphemeral();
+    StompWriteBarrierEphemeral(!!IsSuspendEEThread());
 }
 
 #if defined(TRACE_GC) || defined(GC_CONFIG_DRIVEN)
@@ -9636,12 +9767,14 @@ HRESULT gc_heap::initialize_gc (size_t segment_size,
     HRESULT hres = S_OK;
 
 #ifdef WRITE_WATCH
-    write_watch_api_supported();
+    hardware_write_watch_api_supported();
 #ifdef BACKGROUND_GC
-    if (can_use_write_watch () && g_pConfig->GetGCconcurrent()!=0)
+    if (can_use_write_watch_for_gc_heap() && g_pConfig->GetGCconcurrent() != 0)
     {
         gc_can_use_concurrent = true;
-        virtual_alloc_write_watch = true;
+#ifndef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        virtual_alloc_hardware_write_watch = true;
+#endif // !FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
     }
     else
     {
@@ -9673,10 +9806,11 @@ HRESULT gc_heap::initialize_gc (size_t segment_size,
     uint64_t th = (uint64_t)SH_TH_CARD_BUNDLE;
 #endif //MULTIPLE_HEAPS
 
-    if ((can_use_write_watch() && reserved_memory >= th))
+    if (can_use_write_watch_for_card_table() && reserved_memory >= th)
     {
         settings.card_bundles = TRUE;
-    } else
+    }
+    else
     {
         settings.card_bundles = FALSE;
     }
@@ -18428,10 +18562,11 @@ void gc_heap::fix_card_table ()
                 continue;
             }
             else
-    {
+            {
                 break;
             }
         }
+
         uint8_t* base_address = align_lower_page (heap_segment_mem (seg));
         uint8_t* high_address =  align_on_page (
             (seg != ephemeral_heap_segment) ?
@@ -18451,15 +18586,14 @@ void gc_heap::fix_card_table ()
 #ifdef TIME_WRITE_WATCH
             unsigned int time_start = GetCycleCount32();
 #endif //TIME_WRITE_WATCH
-            bool success = GCToOSInterface::GetWriteWatch(reset_watch_state, base_address, region_size,
-                                                          (void**)g_addresses,
-                                                          &bcount);
-            assert (success);
+            get_write_watch_for_gc_heap(reset_watch_state, base_address, region_size,
+                                        (void**)g_addresses,
+                                        &bcount, true);
 
 #ifdef TIME_WRITE_WATCH
             unsigned int time_stop = GetCycleCount32();
             tot_cycles += time_stop - time_start;
-            printf ("GetWriteWatch Duration: %d, total: %d\n",
+            printf ("get_write_watch_for_gc_heap Duration: %d, total: %d\n",
                     time_stop - time_start, tot_cycles);
 #endif //TIME_WRITE_WATCH
 
@@ -18483,6 +18617,7 @@ void gc_heap::fix_card_table ()
         } while (bcount >= array_size);
         seg = heap_segment_next_rw (seg);
     }
+
 #ifdef BACKGROUND_GC
     if (settings.concurrent)
     {
@@ -18491,7 +18626,7 @@ void gc_heap::fix_card_table ()
             align_on_page (generation_allocation_start (generation_of (0)));
         size_t region_size =
             heap_segment_allocated (ephemeral_heap_segment) - base_address;
-        GCToOSInterface::ResetWriteWatch (base_address, region_size);
+        reset_write_watch_for_gc_heap(base_address, region_size);
     }
 #endif //BACKGROUND_GC
 #endif //WRITE_WATCH
@@ -24295,6 +24430,15 @@ void  gc_heap::gcmemcopy (uint8_t* dest, uint8_t* src, size_t len, BOOL copy_car
         //dprintf(3,(" Memcopy [%Ix->%Ix, %Ix->%Ix[", (size_t)src, (size_t)dest, (size_t)src+len, (size_t)dest+len));
         dprintf(3,(" mc: [%Ix->%Ix, %Ix->%Ix[", (size_t)src, (size_t)dest, (size_t)src+len, (size_t)dest+len));
         memcopy (dest - plug_skew, src - plug_skew, (int)len);
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        if (SoftwareWriteWatch::IsEnabledForGCHeap())
+        {
+            // The ranges [src - plug_kew .. src[ and [src + len - plug_skew .. src + len[ are ObjHeaders, which don't have GC
+            // references, and are not relevant for write watch. The latter range actually corresponds to the ObjHeader for the
+            // object at (src + len), so it can be ignored anyway.
+            SoftwareWriteWatch::SetDirtyRegion(dest, len - plug_skew);
+        }
+#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         copy_cards_range (dest, src, len, copy_cards_p);
     }
 }
@@ -25570,6 +25714,28 @@ void gc_heap::background_mark_phase ()
         if (bgc_t_join.joined())
 #endif //MULTIPLE_HEAPS
         {
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+            SoftwareWriteWatch::EnableForGCHeap();
+
+            // Resetting write watch for software write watch is pretty fast, much faster than for hardware write watch. Reset
+            // can be done while the runtime is suspended or after the runtime is restarted, the preference was to reset while
+            // the runtime is suspended. The reset for hardware write watch is done after the runtime is restarted below.
+#ifdef WRITE_WATCH
+            concurrent_print_time_delta ("CRWW begin");
+
+#ifdef MULTIPLE_HEAPS
+            for (int i = 0; i < n_heaps; i++)
+            {
+                g_heaps[i]->reset_write_watch (FALSE);
+            }
+#else
+            reset_write_watch (FALSE);
+#endif //MULTIPLE_HEAPS
+
+            concurrent_print_time_delta ("CRWW");
+#endif //WRITE_WATCH
+#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+
             num_sizedrefs = SystemDomain::System()->GetTotalNumSizedRefHandles();
 
             // this c_write is not really necessary because restart_vm
@@ -25597,12 +25763,16 @@ void gc_heap::background_mark_phase ()
         {
             disable_preemptive (current_thread, TRUE);
 
+#ifndef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+            // When software write watch is enabled, resetting write watch is done while the runtime is suspended above. The
+            // post-reset call to revisit_written_pages is only necessary for concurrent reset_write_watch, to discard dirtied
+            // pages during the concurrent reset.
+
 #ifdef WRITE_WATCH
             concurrent_print_time_delta ("CRWW begin");
 
 #ifdef MULTIPLE_HEAPS
-            int i;
-            for (i = 0; i < n_heaps; i++)
+            for (int i = 0; i < n_heaps; i++)
             {
                 g_heaps[i]->reset_write_watch (TRUE);
             }
@@ -25614,7 +25784,7 @@ void gc_heap::background_mark_phase ()
 #endif //WRITE_WATCH
 
 #ifdef MULTIPLE_HEAPS
-            for (i = 0; i < n_heaps; i++)
+            for (int i = 0; i < n_heaps; i++)
             {
                 g_heaps[i]->revisit_written_pages (TRUE, TRUE);
             }
@@ -25623,9 +25793,10 @@ void gc_heap::background_mark_phase ()
 #endif //MULTIPLE_HEAPS
 
             concurrent_print_time_delta ("CRW");
+#endif // !FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
 #ifdef MULTIPLE_HEAPS
-            for (i = 0; i < n_heaps; i++)
+            for (int i = 0; i < n_heaps; i++)
             {
                 g_heaps[i]->current_bgc_state = bgc_mark_handles;
             }
@@ -25817,6 +25988,23 @@ void gc_heap::background_mark_phase ()
         revisit_written_pages (FALSE);
         //concurrent_print_time_delta ("nonconcurrent revisit dirtied pages on LOH");
         concurrent_print_time_delta ("NRre LOH");
+
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+#ifdef MULTIPLE_HEAPS
+        bgc_t_join.join(this, gc_join_disable_software_write_watch);
+        if (bgc_t_join.joined())
+#endif // MULTIPLE_HEAPS
+        {
+            // The runtime is suspended, and we will be doing a final query of dirty pages, so pause tracking written pages to
+            // avoid further perf penalty after the runtime is restarted
+            SoftwareWriteWatch::DisableForGCHeap();
+
+#ifdef MULTIPLE_HEAPS
+            dprintf(3, ("Restarting BGC threads after disabling software write watch"));
+            bgc_t_join.restart();
+#endif // MULTIPLE_HEAPS
+        }
+#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
         dprintf (2, ("before NR 1st Hov count: %d", bgc_overflow_count));
         bgc_overflow_count = 0;
@@ -26223,6 +26411,7 @@ void gc_heap::revisit_written_pages (BOOL concurrent_p, BOOL reset_only_p)
     PREFIX_ASSUME(seg != NULL);
 
     bool reset_watch_state = !!concurrent_p;
+    bool is_runtime_suspended = !concurrent_p;
     BOOL small_object_segments = TRUE;
     int align_const = get_alignment_constant (small_object_segments);
 
@@ -26327,18 +26516,27 @@ void gc_heap::revisit_written_pages (BOOL concurrent_p, BOOL reset_only_p)
                     ptrdiff_t region_size = high_address - base_address;
                     dprintf (3, ("h%d: gw: [%Ix(%Id)", heap_number, (size_t)base_address, (size_t)region_size));
 
-                    bool success = GCToOSInterface::GetWriteWatch (reset_watch_state, base_address, region_size,
-                                                                   (void**)background_written_addresses,
-                                                                   &bcount);
-
-    //#ifdef _DEBUG
-                    if (!success)
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+                    // When the runtime is not suspended, it's possible for the table to be resized concurrently with the scan
+                    // for dirty pages below. Prevent that by synchronizing with grow_brick_card_tables(). When the runtime is
+                    // suspended, it's ok to scan for dirty pages concurrently from multiple background GC threads for disjoint
+                    // memory regions.
+                    if (!is_runtime_suspended)
                     {
-                        printf ("GetWriteWatch Error ");
-                        printf ("Probing pages [%Ix, %Ix[\n", (size_t)base_address, (size_t)high_address);
+                        enter_spin_lock(&gc_lock);
                     }
-    //#endif
-                    assert (success);
+#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+
+                    get_write_watch_for_gc_heap (reset_watch_state, base_address, region_size,
+                                                 (void**)background_written_addresses,
+                                                 &bcount, is_runtime_suspended);
+
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+                    if (!is_runtime_suspended)
+                    {
+                        leave_spin_lock(&gc_lock);
+                    }
+#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
                     if (bcount != 0)
                     {
@@ -33396,6 +33594,9 @@ HRESULT GCHeap::Shutdown ()
     {
         destroy_card_table (ct);
         g_card_table = 0;
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        SoftwareWriteWatch::StaticClose();
+#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
     }
 
     //destroy all segments on the standby list
@@ -33555,7 +33756,7 @@ HRESULT GCHeap::Initialize ()
 
     WaitForGCEvent->CreateManualEvent(TRUE);
 
-    StompWriteBarrierResize(FALSE);
+    StompWriteBarrierResize(true, false);
 
 #ifndef FEATURE_REDHAWK // Redhawk forces relocation a different way
 #if defined (STRESS_HEAP) && !defined (MULTIPLE_HEAPS)
@@ -35902,6 +36103,13 @@ GCHeap::SetCardsAfterBulkCopy( Object **StartPoint, size_t len )
         for(unsigned i=0; i < len / sizeof(Object*); i++)
             updateGCShadow(&StartPoint[i], StartPoint[i]);
 #endif //WRITE_BARRIER_CHECK && !SERVER_GC
+
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    if (SoftwareWriteWatch::IsEnabledForGCHeap())
+    {
+        SoftwareWriteWatch::SetDirtyRegion(StartPoint, len);
+    }
+#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
     // If destination is in Gen 0 don't bother
     if (

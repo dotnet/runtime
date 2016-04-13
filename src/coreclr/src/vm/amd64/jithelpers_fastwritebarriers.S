@@ -5,39 +5,6 @@
 .intel_syntax noprefix
 #include "unixasmmacros.inc"
 
-        .balign 4
-LEAF_ENTRY JIT_WriteBarrier_PreGrow32, _TEXT
-        // Do the move into the GC .  It is correct to take an AV here, the EH code
-        // figures out that this came from a WriteBarrier and correctly maps it back
-        // to the managed method which called the WriteBarrier (see setup in
-        // InitializeExceptionHandling, vm\exceptionhandling.cpp).
-        mov     [rdi], rsi
-
-        NOP_2_BYTE // padding for alignment of constant
-
-PATCH_LABEL JIT_WriteBarrier_PreGrow32_PatchLabel_Lower
-        cmp     rsi, -0F0F0F10h // 0F0F0F0F0h
-        .byte 0x72, 0x22
-        // jb      Exit_PreGrow32
-
-        shr     rdi, 0Bh
-PATCH_LABEL JIT_WriteBarrier_PreGrow32_PatchLabel_CardTable_Check
-        cmp     byte ptr [rdi + 0F0F0F0F0h], 0FFh
-        .byte 0x75, 0x03
-        // jne     UpdateCardTable_PreGrow32
-        REPRET
-
-        nop // padding for alignment of constant
-
-PATCH_LABEL JIT_WriteBarrier_PreGrow32_PatchLabel_CardTable_Update
-    UpdateCardTable_PreGrow32:
-        mov     byte ptr [rdi + 0F0F0F0F0h], 0FFh
-        ret
-
-    .balign 16
-    Exit_PreGrow32:
-        REPRET
-LEAF_END_MARKED JIT_WriteBarrier_PreGrow32, _TEXT
 
         .balign 8
 LEAF_ENTRY JIT_WriteBarrier_PreGrow64, _TEXT
@@ -79,6 +46,7 @@ PATCH_LABEL JIT_WriteBarrier_PreGrow64_Patch_Label_CardTable
     Exit_PreGrow64:
         REPRET
 LEAF_END_MARKED JIT_WriteBarrier_PreGrow64, _TEXT
+
 
         .balign 8
 // See comments for JIT_WriteBarrier_PreGrow (above).
@@ -134,84 +102,8 @@ PATCH_LABEL JIT_WriteBarrier_PostGrow64_Patch_Label_CardTable
         REPRET
 LEAF_END_MARKED JIT_WriteBarrier_PostGrow64, _TEXT
 
-        .balign 4
-LEAF_ENTRY JIT_WriteBarrier_PostGrow32, _TEXT
-        // Do the move into the GC .  It is correct to take an AV here, the EH code
-        // figures out that this came from a WriteBarrier and correctly maps it back
-        // to the managed method which called the WriteBarrier (see setup in
-        // InitializeExceptionHandling, vm\exceptionhandling.cpp).
-        mov     [rdi], rsi
 
-        NOP_2_BYTE // padding for alignment of constant
-
-        // Check the lower and upper ephemeral region bounds
-
-PATCH_LABEL JIT_WriteBarrier_PostGrow32_PatchLabel_Lower
-        cmp     rsi, -0F0F0F10h // 0F0F0F0F0h
-        .byte 0x72, 0x2e
-        // jb      Exit_PostGrow32
-
-        NOP_3_BYTE // padding for alignment of constant
-
-PATCH_LABEL JIT_WriteBarrier_PostGrow32_PatchLabel_Upper
-        cmp     rsi, -0F0F0F10h // 0F0F0F0F0h
-        .byte 0x73, 0x22
-        // jae     Exit_PostGrow32
-
-        // Touch the card table entry, if not already dirty.
-        shr     rdi, 0Bh
-
-PATCH_LABEL JIT_WriteBarrier_PostGrow32_PatchLabel_CheckCardTable
-        cmp     byte ptr [rdi + 0F0F0F0F0h], 0FFh
-        .byte 0x75, 0x03
-        // jne     UpdateCardTable_PostGrow32
-        REPRET
-
-        nop // padding for alignment of constant
-
-PATCH_LABEL JIT_WriteBarrier_PostGrow32_PatchLabel_UpdateCardTable
-    UpdateCardTable_PostGrow32:
-        mov     byte ptr [rdi + 0F0F0F0F0h], 0FFh
-        ret
-
-    .balign 16
-    Exit_PostGrow32:
-        REPRET
-LEAF_END_MARKED JIT_WriteBarrier_PostGrow32, _TEXT
-
-
-        .balign 4
-LEAF_ENTRY JIT_WriteBarrier_SVR32, _TEXT
-        //
-        // SVR GC has multiple heaps, so it cannot provide one single 
-        // ephemeral region to bounds check against, so we just skip the
-        // bounds checking all together and do our card table update 
-        // unconditionally.
-        //
-
-        // Do the move into the GC .  It is correct to take an AV here, the EH code
-        // figures out that this came from a WriteBarrier and correctly maps it back
-        // to the managed method which called the WriteBarrier (see setup in
-        // InitializeExceptionHandling, vm\exceptionhandling.cpp).
-        mov     [rdi], rsi
-
-        shr     rdi, 0Bh
-
-        NOP_3_BYTE // padding for alignment of constant
-
-PATCH_LABEL JIT_WriteBarrier_SVR32_PatchLabel_CheckCardTable
-        cmp     byte ptr [rdi + 0F0F0F0F0h], 0FFh
-        .byte 0x75, 0x03
-        // jne     UpdateCardTable_SVR32
-        REPRET
-
-        nop // padding for alignment of constant
-
-PATCH_LABEL JIT_WriteBarrier_SVR32_PatchLabel_UpdateCardTable
-    UpdateCardTable_SVR32:
-        mov     byte ptr [rdi + 0F0F0F0F0h], 0FFh
-        ret
-LEAF_END_MARKED JIT_WriteBarrier_SVR32, _TEXT
+#ifdef FEATURE_SVR_GC
 
         .balign 8
 LEAF_ENTRY JIT_WriteBarrier_SVR64, _TEXT
@@ -244,3 +136,184 @@ PATCH_LABEL JIT_WriteBarrier_SVR64_PatchLabel_CardTable
         mov     byte ptr [rdi + rax], 0FFh
         ret
 LEAF_END_MARKED JIT_WriteBarrier_SVR64, _TEXT
+
+#endif
+
+
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+
+        .balign 8
+LEAF_ENTRY JIT_WriteBarrier_WriteWatch_PreGrow64, _TEXT
+        // Regarding patchable constants:
+        // - 64-bit constants have to be loaded into a register
+        // - The constants have to be aligned to 8 bytes so that they can be patched easily
+        // - The constant loads have been located to minimize NOP padding required to align the constants
+        // - Using different registers for successive constant loads helps pipeline better. Should we decide to use a special
+        //   non-volatile calling convention, this should be changed to use just one register.
+
+        // Do the move into the GC .  It is correct to take an AV here, the EH code
+        // figures out that this came from a WriteBarrier and correctly maps it back
+        // to the managed method which called the WriteBarrier (see setup in
+        // InitializeExceptionHandling, vm\exceptionhandling.cpp).
+        mov     [rdi], rsi
+
+        // Update the write watch table if necessary
+        mov     rax, rdi
+PATCH_LABEL JIT_WriteBarrier_WriteWatch_PreGrow64_Patch_Label_WriteWatchTable
+        movabs  r10, 0xF0F0F0F0F0F0F0F0
+        shr     rax, 0Ch // SoftwareWriteWatch::AddressToTableByteIndexShift
+        NOP_2_BYTE // padding for alignment of constant
+PATCH_LABEL JIT_WriteBarrier_WriteWatch_PreGrow64_Patch_Label_Lower
+        movabs  r11, 0xF0F0F0F0F0F0F0F0
+        add     rax, r10
+        cmp     byte ptr [rax], 0h
+        .byte 0x75, 0x03
+        // jne     CheckCardTable_WriteWatch_PreGrow64
+        mov     byte ptr [rax], 0FFh
+
+    CheckCardTable_WriteWatch_PreGrow64:
+        // Check the lower ephemeral region bound.
+        cmp     rsi, r11
+        .byte 0x72, 0x20
+        // jb      Exit_WriteWatch_PreGrow64
+
+        // Touch the card table entry, if not already dirty.
+        shr     rdi, 0Bh
+        NOP_2_BYTE // padding for alignment of constant
+PATCH_LABEL JIT_WriteBarrier_WriteWatch_PreGrow64_Patch_Label_CardTable
+        movabs  rax, 0xF0F0F0F0F0F0F0F0
+        cmp     byte ptr [rdi + rax], 0FFh
+        .byte 0x75, 0x02
+        // jne     UpdateCardTable_WriteWatch_PreGrow64
+        REPRET
+
+    UpdateCardTable_WriteWatch_PreGrow64:
+        mov     byte ptr [rdi + rax], 0FFh
+        ret
+
+    .balign 16
+    Exit_WriteWatch_PreGrow64:
+        REPRET
+LEAF_END_MARKED JIT_WriteBarrier_WriteWatch_PreGrow64, _TEXT
+
+
+        .balign 8
+LEAF_ENTRY JIT_WriteBarrier_WriteWatch_PostGrow64, _TEXT
+        // Regarding patchable constants:
+        // - 64-bit constants have to be loaded into a register
+        // - The constants have to be aligned to 8 bytes so that they can be patched easily
+        // - The constant loads have been located to minimize NOP padding required to align the constants
+        // - Using different registers for successive constant loads helps pipeline better. Should we decide to use a special
+        //   non-volatile calling convention, this should be changed to use just one register.
+
+        // Do the move into the GC .  It is correct to take an AV here, the EH code
+        // figures out that this came from a WriteBarrier and correctly maps it back
+        // to the managed method which called the WriteBarrier (see setup in
+        // InitializeExceptionHandling, vm\exceptionhandling.cpp).
+        mov     [rdi], rsi
+
+        // Update the write watch table if necessary
+        mov     rax, rdi
+PATCH_LABEL JIT_WriteBarrier_WriteWatch_PostGrow64_Patch_Label_WriteWatchTable
+        movabs  r10, 0xF0F0F0F0F0F0F0F0
+        shr     rax, 0Ch // SoftwareWriteWatch::AddressToTableByteIndexShift
+        NOP_2_BYTE // padding for alignment of constant
+PATCH_LABEL JIT_WriteBarrier_WriteWatch_PostGrow64_Patch_Label_Lower
+        movabs  r11, 0xF0F0F0F0F0F0F0F0
+        add     rax, r10
+        cmp     byte ptr [rax], 0h
+        .byte 0x75, 0x06
+        // jne     CheckCardTable_WriteWatch_PostGrow64
+        mov     byte ptr [rax], 0FFh
+
+        NOP_3_BYTE // padding for alignment of constant
+
+        // Check the lower and upper ephemeral region bounds
+    CheckCardTable_WriteWatch_PostGrow64:
+        cmp     rsi, r11
+        .byte 0x72, 0x3d
+        // jb      Exit_WriteWatch_PostGrow64
+
+        NOP_3_BYTE // padding for alignment of constant
+
+PATCH_LABEL JIT_WriteBarrier_WriteWatch_PostGrow64_Patch_Label_Upper
+        movabs  r10, 0xF0F0F0F0F0F0F0F0
+
+        cmp     rsi, r10
+        .byte 0x73, 0x2b
+        // jae     Exit_WriteWatch_PostGrow64
+
+        nop // padding for alignment of constant
+
+PATCH_LABEL JIT_WriteBarrier_WriteWatch_PostGrow64_Patch_Label_CardTable
+        movabs  rax, 0xF0F0F0F0F0F0F0F0
+
+        // Touch the card table entry, if not already dirty.
+        shr     rdi, 0Bh
+        cmp     byte ptr [rdi + rax], 0FFh
+        .byte 0x75, 0x02
+        // jne     UpdateCardTable_WriteWatch_PostGrow64
+        REPRET
+
+    UpdateCardTable_WriteWatch_PostGrow64:
+        mov     byte ptr [rdi + rax], 0FFh
+        ret
+
+    .balign 16
+    Exit_WriteWatch_PostGrow64:
+        REPRET
+LEAF_END_MARKED JIT_WriteBarrier_WriteWatch_PostGrow64, _TEXT
+
+
+#ifdef FEATURE_SVR_GC
+
+        .balign 8
+LEAF_ENTRY JIT_WriteBarrier_WriteWatch_SVR64, _TEXT
+        // Regarding patchable constants:
+        // - 64-bit constants have to be loaded into a register
+        // - The constants have to be aligned to 8 bytes so that they can be patched easily
+        // - The constant loads have been located to minimize NOP padding required to align the constants
+        // - Using different registers for successive constant loads helps pipeline better. Should we decide to use a special
+        //   non-volatile calling convention, this should be changed to use just one register.
+
+        //
+        // SVR GC has multiple heaps, so it cannot provide one single 
+        // ephemeral region to bounds check against, so we just skip the
+        // bounds checking all together and do our card table update 
+        // unconditionally.
+        //
+
+        // Do the move into the GC .  It is correct to take an AV here, the EH code
+        // figures out that this came from a WriteBarrier and correctly maps it back
+        // to the managed method which called the WriteBarrier (see setup in
+        // InitializeExceptionHandling, vm\exceptionhandling.cpp).
+        mov     [rdi], rsi
+
+        // Update the write watch table if necessary
+        mov     rax, rdi
+PATCH_LABEL JIT_WriteBarrier_WriteWatch_SVR64_PatchLabel_WriteWatchTable
+        movabs  r10, 0xF0F0F0F0F0F0F0F0
+        shr     rax, 0Ch // SoftwareWriteWatch::AddressToTableByteIndexShift
+        NOP_2_BYTE // padding for alignment of constant
+PATCH_LABEL JIT_WriteBarrier_WriteWatch_SVR64_PatchLabel_CardTable
+        movabs  r11, 0xF0F0F0F0F0F0F0F0
+        add     rax, r10
+        cmp     byte ptr [rax], 0h
+        .byte 0x75, 0x03
+        // jne     CheckCardTable_WriteWatch_SVR64
+        mov     byte ptr [rax], 0FFh
+
+    CheckCardTable_WriteWatch_SVR64:
+        shr     rdi, 0Bh
+        cmp     byte ptr [rdi + r11], 0FFh
+        .byte 0x75, 0x02
+        // jne     UpdateCardTable_WriteWatch_SVR64
+        REPRET
+
+    UpdateCardTable_WriteWatch_SVR64:
+        mov     byte ptr [rdi + r11], 0FFh
+        ret
+LEAF_END_MARKED JIT_WriteBarrier_WriteWatch_SVR64, _TEXT
+
+#endif
+#endif
