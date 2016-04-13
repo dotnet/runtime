@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Specialized;
-
 using Xunit;
 
 namespace System.Collections.Tests
@@ -11,7 +10,7 @@ namespace System.Collections.Tests
     public static class CollectionsUtilTests
     {
         [Fact]
-        public static void TestCreateCaseInsensitiveHashtable()
+        public static void CreateCaseInsensitiveHashtable()
         {
             Hashtable hashtable = CollectionsUtil.CreateCaseInsensitiveHashtable();
             Assert.Equal(0, hashtable.Count);
@@ -19,11 +18,11 @@ namespace System.Collections.Tests
             hashtable.Add("key1", "value1");
             Assert.Equal("value1", hashtable["key1"]);
 
-            Assert.Throws<ArgumentException>(() => hashtable.Add("key1", "value1"));
+            Assert.Throws<ArgumentException>(null, () => hashtable.Add("key1", "value1"));
         }
 
         [Fact]
-        public static void TestCreateCaseInsensitiveHashtable_Capacity()
+        public static void CreateCaseInsensitiveHashtable_Capacity()
         {
             Hashtable hashtable = CollectionsUtil.CreateCaseInsensitiveHashtable(15);
             Assert.Equal(0, hashtable.Count);
@@ -32,11 +31,11 @@ namespace System.Collections.Tests
             Assert.Equal("value1", hashtable["key1"]);
             Assert.Equal(1, hashtable.Count);
 
-            Assert.Throws<ArgumentException>(() => hashtable.Add("key1", "value1"));
+            Assert.Throws<ArgumentException>(null, () => hashtable.Add("key1", "value1"));
         }
 
         [Fact]
-        public static void TestCreateCaseInsensitiveHashtable_IDictionary()
+        public static void CreateCaseInsensitiveHashtable_IDictionary()
         {
             Hashtable hashtable1 = CollectionsUtil.CreateCaseInsensitiveHashtable();
             hashtable1.Add("key1", "value1");
@@ -48,11 +47,11 @@ namespace System.Collections.Tests
             Assert.Equal("value1", hashtable2["key1"]);
             Assert.Equal(2, hashtable2.Count);
 
-            Assert.Throws<ArgumentException>(() => hashtable2.Add("key1", "value1"));
+            Assert.Throws<ArgumentException>(null, () => hashtable2.Add("key1", "value1"));
         }
 
         [Fact]
-        public static void TestCreateCaseInsensitiveSortedList()
+        public static void CreateCaseInsensitiveSortedList()
         {
             SortedList sortedList = CollectionsUtil.CreateCaseInsensitiveSortedList();
             Assert.Equal(0, sortedList.Count);
@@ -61,7 +60,7 @@ namespace System.Collections.Tests
             Assert.Equal("value1", sortedList["key1"]);
             Assert.Equal(1, sortedList.Count);
 
-            Assert.Throws<ArgumentException>(() => sortedList.Add("key1", "value1"));
+            Assert.Throws<ArgumentException>(null, () => sortedList.Add("key1", "value1"));
         }
     }
 }
