@@ -1638,7 +1638,7 @@ namespace System.Collections.Tests
             Assert.NotEqual(hash1.SyncRoot, hash3.SyncRoot);
 
             // Testing SyncRoot is not as simple as its implementation looks like. This is the working
-            // scenrio we have in mind.
+            // scenario we have in mind.
             // 1) Create your Down to earth mother Hashtable
             // 2) Get a synchronized wrapper from it
             // 3) Get a Synchronized wrapper from 2)

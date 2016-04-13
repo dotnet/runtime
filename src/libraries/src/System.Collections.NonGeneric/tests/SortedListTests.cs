@@ -759,7 +759,7 @@ namespace System.Collections.Tests
                 Assert.Throws<ArgumentException>("array", () => keys.CopyTo(new object[10, 10], 0)); // Array is multidimensional
 
                 Assert.Throws<ArgumentOutOfRangeException>("dstIndex", () => keys.CopyTo(new object[100], -1)); // Index < 0
-                Assert.Throws<ArgumentException>("", () => keys.CopyTo(new object[150], 51)); // Index + list.Count > array.Count
+                Assert.Throws<ArgumentException>(string.Empty, () => keys.CopyTo(new object[150], 51)); // Index + list.Count > array.Count
             });
         }
 
@@ -999,7 +999,7 @@ namespace System.Collections.Tests
                 Assert.Throws<ArgumentException>("array", () => values.CopyTo(new object[10, 10], 0)); // Array is multidimensional
 
                 Assert.Throws<ArgumentOutOfRangeException>("dstIndex", () => values.CopyTo(new object[100], -1)); // Index < 0
-                Assert.Throws<ArgumentException>("", () => values.CopyTo(new object[150], 51)); // Index + list.Count > array.Count
+                Assert.Throws<ArgumentException>(string.Empty, () => values.CopyTo(new object[150], 51)); // Index + list.Count > array.Count
             });
         }
 
@@ -1443,7 +1443,7 @@ namespace System.Collections.Tests
         public void GetSyncRootBasic()
         {
             // Testing SyncRoot is not as simple as its implementation looks like. This is the working
-            // scenrio we have in mind.
+            // scenario we have in mind.
             // 1) Create your Down to earth mother SortedList
             // 2) Get a synchronized wrapper from it
             // 3) Get a Synchronized wrapper from 2)

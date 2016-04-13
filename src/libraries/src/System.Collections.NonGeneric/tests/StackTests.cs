@@ -478,7 +478,7 @@ namespace System.Collections.Tests
         public void GetSyncRootBasic()
         {
             // Testing SyncRoot is not as simple as its implementation looks like. This is the working
-            // scenrio we have in mind.
+            // scenario we have in mind.
             // 1) Create your Down to earth mother Stack
             // 2) Get a Fixed wrapper from it
             // 3) Get a Synchronized wrapper from 2)

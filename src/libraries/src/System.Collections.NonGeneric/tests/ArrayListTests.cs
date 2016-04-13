@@ -3370,7 +3370,7 @@ namespace System.Collections.Tests
             const int NumberOfWorkers = 10;
 
             // Testing SyncRoot is not as simple as its implementation looks like. This is the working
-            // scenrio we have in mind.
+            // scenario we have in mind.
             // 1) Create your Down to earth mother ArrayList
             // 2) Get a Fixed wrapper from it
             // 3) Get a Synchronized wrapper from 2)
