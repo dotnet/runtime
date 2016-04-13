@@ -122,6 +122,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     securitydescriptorassembly.cpp
     sigformat.cpp
     siginfo.cpp
+    ../gc/softwarewritewatch.cpp
     stackwalk.cpp
     stublink.cpp
     stubmgr.cpp

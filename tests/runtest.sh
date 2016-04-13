@@ -340,11 +340,16 @@ function create_core_overlay {
     fi
     mkdir "$coreOverlayDir"
 
-    (cd $coreFxBinDir && find . -iname '*.dll' \! -iwholename '*netstandard13aot*' \! -iwholename '*netstandard15aot*' \! -iwholename '*netcore50aot*' \! -iwholename '*test*' \! -iwholename '*/ToolRuntime/*' \! -iwholename '*RemoteExecutorConsoleApp*' -exec cp -f '{}' "$coreOverlayDir/" \;)
+    (cd $coreFxBinDir && find . -iname '*.dll' \! -iwholename '*test*' \! -iwholename '*/ToolRuntime/*' \! -iwholename '*/RemoteExecutorConsoleApp/*' \! -iwholename '*/net*' \! -iwholename '*aot*' -exec cp -f '{}' "$coreOverlayDir/" \;)
     cp -f "$coreFxNativeBinDir/Native/"*."$libExtension" "$coreOverlayDir/" 2>/dev/null
 
     cp -f "$coreClrBinDir/"* "$coreOverlayDir/" 2>/dev/null
+    cp -f "$mscorlibDir/mscorlib.dll" "$coreOverlayDir/"
     cp -n "$testDependenciesDir"/* "$coreOverlayDir/" 2>/dev/null
+    if [ -f "$coreOverlayDir/mscorlib.ni.dll" ]; then
+        # Test dependencies come from a Windows build, and mscorlib.ni.dll would be the one from Windows
+        rm -f "$coreOverlayDir/mscorlib.ni.dll"
+    fi
 }
 
 function precompile_overlay_assemblies {
@@ -407,7 +412,7 @@ declare -a failingTests
 ((runFailingTestsOnly = 0))
 
 function load_unsupported_tests {
-    # Load the list of tests that fail and on this platform. These tests are disabled (skipped), pending investigation.
+    # Load the list of tests that are not supported on this platform. These tests are disabled (skipped) permanently.
     # 'readarray' is not used here, as it includes the trailing linefeed in lines placed in the array.
     while IFS='' read -r line || [ -n "$line" ]; do
         unsupportedTests[${#unsupportedTests[@]}]=$line
@@ -415,7 +420,7 @@ function load_unsupported_tests {
 }
 
 function load_failing_tests {
-    # Load the list of tests that fail and on this platform. These tests are disabled (skipped), pending investigation.
+    # Load the list of tests that fail on this platform. These tests are disabled (skipped) temporarily, pending investigation.
     # 'readarray' is not used here, as it includes the trailing linefeed in lines placed in the array.
     while IFS='' read -r line || [ -n "$line" ]; do
         failingTests[${#failingTests[@]}]=$line
@@ -733,8 +738,8 @@ do
     esac
 done
 
-if (( disableEventLogging == 0)); then
-        export COMPlus_EnableEventLog=1
+if ((disableEventLogging == 0)); then
+    export COMPlus_EnableEventLog=1
 fi
 
 export CORECLR_SERVER_GC="$serverGC"
@@ -749,10 +754,11 @@ if [ ! -d "$testRootDir" ]; then
     exit $EXIT_CODE_EXCEPTION
 fi
 
-    
 # Copy native interop test libraries over to the mscorlib path in
 # order for interop tests to run on linux.
-cp $mscorlibDir/bin/* $mscorlibDir   
+if [ -d $mscorlibDir/bin ]; then
+    cp $mscorlibDir/bin/* $mscorlibDir   
+fi
 
 # If this is a coverage run, make sure the appropriate args have been passed
 if [ "$CoreClrCoverage" == "ON" ]
