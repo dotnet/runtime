@@ -30,18 +30,14 @@ namespace System.Runtime.Serialization
     internal sealed class XmlFormatReaderGenerator
 #endif
     {
-        private static MethodInfo s_getUninitializedObjectMethodInfo;
-        private static Dictionary<Type, bool> s_typeHasDefaultConstructorMap;
+        private static readonly MethodInfo s_getUninitializedObjectMethodInfo =
+            typeof(string)
+            .GetTypeInfo()
+            .Assembly
+            .GetType("System.Runtime.Serialization.FormatterServices")
+            ?.GetMethod("GetUninitializedObject", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
 
-        static XmlFormatReaderGenerator()
-        {
-            var formatterServiceType = typeof(string).GetTypeInfo().Assembly.GetType("System.Runtime.Serialization.FormatterServices");
-            if (formatterServiceType != null)
-            {
-                s_getUninitializedObjectMethodInfo = formatterServiceType.GetMethod("GetUninitializedObject", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
-            }
-            s_typeHasDefaultConstructorMap = new Dictionary<Type, bool>();
-        }
+        private static readonly Dictionary<Type, bool> s_typeHasDefaultConstructorMap = new Dictionary<Type, bool>();
 
 #if !NET_NATIVE
         [SecurityCritical]
@@ -869,6 +865,11 @@ namespace System.Runtime.Serialization
         static internal object UnsafeGetUninitializedObject(Type type)
         {
 #if !NET_NATIVE
+            if (type.GetTypeInfo().IsValueType)
+            {
+                  return Activator.CreateInstance(type);
+            }
+
             bool hasDefaultConstructor;
             if (!s_typeHasDefaultConstructorMap.TryGetValue(type, out hasDefaultConstructor))
             {
