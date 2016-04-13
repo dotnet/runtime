@@ -43,46 +43,49 @@ void GcInfoEncoder::LifetimeTransitionAllocator::Free (void *context, void *pv)
 }
 
 
-void BitStreamWriter::AllocMemoryBlock()
+BitStreamWriter::MemoryBlockList::MemoryBlockList()
+    : m_head(nullptr),
+      m_tail(nullptr)
 {
-    _ASSERTE( IS_ALIGNED( m_MemoryBlockSize, sizeof( size_t ) ) );
-    m_pCurrentSlot = (size_t*) m_pAllocator->Alloc( m_MemoryBlockSize );
-    m_OutOfBlockSlot = m_pCurrentSlot + m_MemoryBlockSize / sizeof( size_t );
+}
 
-    MemoryBlockDesc* pMemBlockDesc = (MemoryBlockDesc*) m_pAllocator->Alloc( sizeof( MemoryBlockDesc ) );
-    _ASSERTE( IS_ALIGNED( pMemBlockDesc, sizeof( void* ) ) );
+BitStreamWriter::MemoryBlock* BitStreamWriter::MemoryBlockList::AppendNew(IJitAllocator* allocator, size_t bytes)
+{
+    auto* memBlock = reinterpret_cast<MemoryBlock*>(allocator->Alloc(sizeof(MemoryBlock) + bytes));
+    memBlock->m_next = nullptr;
 
-    pMemBlockDesc->Init();
-    pMemBlockDesc->StartAddress = m_pCurrentSlot;
-    if (m_MemoryBlocksTail != NULL)
+    if (m_tail != nullptr)
     {
-        _ASSERTE(m_MemoryBlocksHead != NULL);
-        m_MemoryBlocksTail->m_Next = pMemBlockDesc;
+        _ASSERTE(m_head != nullptr);
+        m_tail->m_next = memBlock;
     }
     else
     {
-        _ASSERTE(m_MemoryBlocksHead == NULL);
-        m_MemoryBlocksHead = pMemBlockDesc;
+        _ASSERTE(m_head == nullptr);
+        m_head = memBlock;
     }
-    m_MemoryBlocksTail = pMemBlockDesc;
 
-#ifdef _DEBUG
-       m_MemoryBlocksCount++;
-#endif
-
+    m_tail = memBlock;
+    return memBlock;
 }
 
-GcInfoEncoder::GcInfoEncoder(
-            ICorJitInfo*                pCorJitInfo,
-            CORINFO_METHOD_INFO*        pMethodInfo,
-            IJitAllocator*              pJitAllocator
-            )
-    :   m_HeaderInfoWriter( pJitAllocator ),
-#if 0
-#ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
-        m_PartiallyInterruptibleInfoWriter( pJitAllocator ),
+void BitStreamWriter::MemoryBlockList::Dispose(IJitAllocator* allocator)
+{
+#ifdef MUST_CALL_JITALLOCATOR_FREE
+    for (MemoryBlock* block = m_head, *next; block != nullptr; block = next)
+    {
+        next = block->m_next;
+        allocator->Free(block);
+    }
+    m_head = nullptr;
+    m_tail = nullptr;
 #endif
-#endif
+}
+
+
+void BitStreamWriter::AllocMemoryBlock()
+{
+    _ASSERTE( IS_ALIGNED( m_MemoryBlockSize, sizeof( size_t ) ) );
         m_FullyInterruptibleInfoWriter( pJitAllocator ),
         m_LifetimeTransitions( pJitAllocator )
 {
@@ -941,21 +944,21 @@ void BitStreamWriter::CopyTo( BYTE* buffer )
     int i,c;
     BYTE* source = NULL;
 
-    MemoryBlockDesc* pMemBlockDesc = m_MemoryBlocks.GetHead();
+    MemoryBlock* pMemBlock = m_MemoryBlocks.Head();
     _ASSERTE( pMemBlockDesc != NULL );
-    while (pMemBlockDesc->m_Next != NULL)
+    while (pMemBlock->Next() != NULL)
     {
-        source = (BYTE*) pMemBlockDesc->StartAddress;
+        source = (BYTE*) pMemBlock->Contents;
         // @TODO: use memcpy instead
         for( i = 0; i < m_MemoryBlockSize; i++ )
         {
             *( buffer++ ) = *( source++ );
         }
 
-        pMemBlockDesc = pMemBlockDesc->m_Next;
+        pMemBlock = pMemBlock->Next();
     }
 
-    source = (BYTE*) pMemBlockDesc->StartAddress;
+    source = (BYTE*) pMemBlock->Contents;
     // The number of bytes to copy in the last block
     c = (int) ((BYTE*) ( m_pCurrentSlot + 1 ) - source - m_FreeBitsInCurrentSlot/8);
     _ASSERTE( c >= 0 );
@@ -969,18 +972,7 @@ void BitStreamWriter::CopyTo( BYTE* buffer )
 
 void BitStreamWriter::Dispose()
 {
-#ifdef MUST_CALL_JITALLOCATOR_FREE
-    for (MemoryBlockDes* block = m_MemoryBlocksHead, *next; block != NULL; block = next)
-    {
-        next = block->m_Next;
-        m_pAllocator->Free(block->StartAddress);
-        m_pAllocator->Free(block);
-    }
-    m_MemoryBlocksHead = NULL;
-    m_MemoryBlocksTail = NULL;
-
-    m_pAllocator->Free( m_SlotMappings );
-#endif
+    m_MemoryBlocks.Dispose(m_pAllocator);
 }
 
 }
