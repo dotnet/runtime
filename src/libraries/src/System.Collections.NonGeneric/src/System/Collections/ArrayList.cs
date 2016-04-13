@@ -345,7 +345,7 @@ namespace System.Collections
         public virtual void CopyTo(Array array, int arrayIndex)
         {
             if ((array != null) && (array.Rank != 1))
-                throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
+                throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
             Contract.EndContractBlock();
             // Delegate rest of error checking to Array.Copy.
             Array.Copy(_items, 0, array, arrayIndex, _size);
@@ -360,7 +360,7 @@ namespace System.Collections
             if (_size - index < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             if ((array != null) && (array.Rank != 1))
-                throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
+                throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
             Contract.EndContractBlock();
             // Delegate rest of error checking to Array.Copy.
             Array.Copy(_items, index, array, arrayIndex, count);
@@ -999,7 +999,7 @@ namespace System.Collections
                 if (array.Length - arrayIndex < count)
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
                 if (array.Rank != 1)
-                    throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
+                    throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
                 Contract.EndContractBlock();
 
                 if (_list.Count - index < count)
@@ -2612,7 +2612,7 @@ namespace System.Collections
                 if (array == null)
                     throw new ArgumentNullException(nameof(array));
                 if (array.Rank != 1)
-                    throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
+                    throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
                 if (index < 0)
                     throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
                 if (array.Length - index < _baseSize)
@@ -2628,7 +2628,7 @@ namespace System.Collections
                 if (array == null)
                     throw new ArgumentNullException(nameof(array));
                 if (array.Rank != 1)
-                    throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
+                    throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
                 if (index < 0 || count < 0)
                     throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
                 if (array.Length - arrayIndex < count)
