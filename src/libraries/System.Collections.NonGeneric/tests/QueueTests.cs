@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-
 using Xunit;
 
 namespace System.Collections.Tests
@@ -14,7 +13,7 @@ namespace System.Collections.Tests
     public static class QueueTests
     {
         [Fact]
-        public static void TestCtor_Empty()
+        public static void Ctor_Empty()
         {
             const int DefaultCapactiy = 32;
             var queue = new Queue();
@@ -33,7 +32,7 @@ namespace System.Collections.Tests
         [InlineData(1)]
         [InlineData(32)]
         [InlineData(77)]
-        public static void TestCtor_Capacity(int capacity)
+        public static void Ctor_Int(int capacity)
         {
             var queue = new Queue(capacity);
 
@@ -45,16 +44,16 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestCtor_Capacity_Invalid()
+        public static void Ctor_Int_NegativeCapacity_ThrowsArgumentOutOfRangeException()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Queue(-1)); // Capacity < 0
+            Assert.Throws<ArgumentOutOfRangeException>("capacity", () => new Queue(-1)); // Capacity < 0
         }
 
         [Theory]
         [InlineData(1, 2.0)]
         [InlineData(32, 1.0)]
         [InlineData(77, 5.0)]
-        public static void TestCtor_Capacity_GrowFactor(int capacity, float growFactor)
+        public static void Ctor_Int_Int(int capacity, float growFactor)
         {
             var queue = new Queue(capacity, growFactor);
 
@@ -66,15 +65,15 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestCtor_Capactiy_GrowFactor_Invalid()
+        public static void Ctor_Int_Int_Invalid()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Queue(-1, 1)); // Capacity < 0
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Queue(1, (float)0.99)); // Grow factor < 1
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Queue(1, (float)10.01)); // Grow factor > 10
+            Assert.Throws<ArgumentOutOfRangeException>("capacity", () => new Queue(-1, 1)); // Capacity < 0
+            Assert.Throws<ArgumentOutOfRangeException>("growFactor", () => new Queue(1, (float)0.99)); // Grow factor < 1
+            Assert.Throws<ArgumentOutOfRangeException>("growFactor", () => new Queue(1, (float)10.01)); // Grow factor > 10
         }
 
         [Fact]
-        public static void TestCtor_ICollection()
+        public static void Ctor_ICollection()
         {
             ArrayList arrList = Helpers.CreateIntArrayList(100);
             var queue = new Queue(arrList);
@@ -87,13 +86,13 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestCtor_ICollection_Invalid()
+        public static void Ctor_ICollection_NullCollection_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => new Queue(null)); // Collection is null
+            Assert.Throws<ArgumentNullException>("col", () => new Queue(null)); // Collection is null
         }
 
         [Fact]
-        public static void TestDebuggerAttribute()
+        public static void DebuggerAttribute()
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(new Queue());
 
@@ -111,8 +110,7 @@ namespace System.Collections.Tests
             }
             catch (TargetInvocationException ex)
             {
-                ArgumentNullException nullException = ex.InnerException as ArgumentNullException;
-                threwNull = nullException != null;
+                threwNull = ex.InnerException is ArgumentNullException;
             }
 
             Assert.True(threwNull);
@@ -122,7 +120,7 @@ namespace System.Collections.Tests
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(32)]
-        public static void TestClear(int capacity)
+        public static void Clear(int capacity)
         {
             var queue1 = new Queue(capacity);
             Helpers.PerformActionOnAllQueueWrappers(queue1, queue2 =>
@@ -137,7 +135,7 @@ namespace System.Collections.Tests
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(32)]
-        public static void TestClearEmpty(int capacity)
+        public static void Clear_Empty(int capacity)
         {
             var queue1 = new Queue(capacity);
             Helpers.PerformActionOnAllQueueWrappers(queue1, queue2 =>
@@ -150,7 +148,7 @@ namespace System.Collections.Tests
             });
         }
         [Fact]
-        public static void TestClone()
+        public static void Clone()
         {
             Queue queue1 = Helpers.CreateIntQueue(100);
             Helpers.PerformActionOnAllQueueWrappers(queue1, queue2 =>
@@ -167,7 +165,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestClone_IsShallowCopy()
+        public static void Clone_IsShallowCopy()
         {
             var queue1 = new Queue();
             Helpers.PerformActionOnAllQueueWrappers(queue1, queue2 =>
@@ -184,7 +182,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestClone_Empty()
+        public static void Clone_Empty()
         {
             var queue1 = new Queue();
             Helpers.PerformActionOnAllQueueWrappers(queue1, queue2 =>
@@ -199,7 +197,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestClone_Clear()
+        public static void Clone_Clear()
         {
             Queue queue1 = Helpers.CreateIntQueue(100);
             Helpers.PerformActionOnAllQueueWrappers(queue1, queue2 =>
@@ -216,7 +214,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestClone_DequeueUntilEmpty()
+        public static void Clone_DequeueUntilEmpty()
         {
             Queue queue1 = Helpers.CreateIntQueue(100);
             Helpers.PerformActionOnAllQueueWrappers(queue1, queue2 =>
@@ -236,7 +234,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestClone_DequeueThenEnqueue()
+        public static void Clone_DequeueThenEnqueue()
         {
             var queue1 = new Queue(100);
             Helpers.PerformActionOnAllQueueWrappers(queue1, queue2 =>
@@ -268,7 +266,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestContains()
+        public static void Contains()
         {
             Queue queue1 = Helpers.CreateIntQueue(100);
             Helpers.PerformActionOnAllQueueWrappers(queue1, queue2 =>
@@ -284,7 +282,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestContains_NonExistentObject()
+        public static void Contains_NonExistentObject()
         {
             Queue queue1 = Helpers.CreateIntQueue(100);
             Helpers.PerformActionOnAllQueueWrappers(queue1, queue2 =>
@@ -299,7 +297,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestContains_EmptyQueue()
+        public static void Contains_EmptyQueue()
         {
             var queue1 = new Queue();
             Helpers.PerformActionOnAllQueueWrappers(queue1, queue2 =>
@@ -320,7 +318,7 @@ namespace System.Collections.Tests
         [InlineData(10, 50)]
         [InlineData(100, 50)]
         [InlineData(1000, 50)]
-        public static void TestCopyTo(int count, int index)
+        public static void CopyTo(int count, int index)
         {
             Queue queue1 = Helpers.CreateIntQueue(count);
             Helpers.PerformActionOnAllQueueWrappers(queue1, queue2 =>
@@ -336,7 +334,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestCopyTo_DequeueThenEnqueue()
+        public static void CopyTo_DequeueThenEnqueue()
         {
             var queue1 = new Queue(100);
             // Insert 50 items in the Queue
@@ -363,17 +361,17 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestCopyTo_Invalid()
+        public static void CopyTo_Invalid()
         {
             Queue queue1 = Helpers.CreateIntQueue(100);
             Helpers.PerformActionOnAllQueueWrappers(queue1, queue2 =>
             {
-                Assert.Throws<ArgumentNullException>(() => queue2.CopyTo(null, 0)); // Array is null
-                Assert.Throws<ArgumentException>(() => queue2.CopyTo(new object[150, 150], 0)); // Array is multidimensional
+                Assert.Throws<ArgumentNullException>("array", () => queue2.CopyTo(null, 0)); // Array is null
+                Assert.Throws<ArgumentException>("array", () => queue2.CopyTo(new object[150, 150], 0)); // Array is multidimensional
 
-                Assert.Throws<ArgumentOutOfRangeException>(() => queue2.CopyTo(new object[150], -1)); // Index < 0
+                Assert.Throws<ArgumentOutOfRangeException>("index", () => queue2.CopyTo(new object[150], -1)); // Index < 0
 
-                Assert.Throws<ArgumentException>(() => queue2.CopyTo(new object[150], 51)); // Index + queue.Count > array.Length
+                Assert.Throws<ArgumentException>(null, () => queue2.CopyTo(new object[150], 51)); // Index + queue.Count > array.Length
             });
         }
 
@@ -382,7 +380,7 @@ namespace System.Collections.Tests
         [InlineData(10)]
         [InlineData(100)]
         [InlineData(1000)]
-        public static void TestDequeue(int count)
+        public static void Dequeue(int count)
         {
             Queue queue1 = Helpers.CreateIntQueue(count);
             Helpers.PerformActionOnAllQueueWrappers(queue1, queue2 =>
@@ -397,7 +395,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestDequeue_EmptyQueue()
+        public static void Dequeue_EmptyQueue_ThrowsInvalidOperationException()
         {
             var queue1 = new Queue();
             Helpers.PerformActionOnAllQueueWrappers(queue1, queue2 =>
@@ -411,7 +409,7 @@ namespace System.Collections.Tests
         [InlineData(10)]
         [InlineData(100)]
         [InlineData(1000)]
-        public static void TestDequeue_UntilEmpty(int count)
+        public static void Dequeue_UntilEmpty(int count)
         {
             Queue queue1 = Helpers.CreateIntQueue(count);
             Helpers.PerformActionOnAllQueueWrappers(queue1, queue2 =>
@@ -429,7 +427,7 @@ namespace System.Collections.Tests
         [InlineData(10)]
         [InlineData(100)]
         [InlineData(10000)]
-        public static void TestEnqueue(int count)
+        public static void Enqueue(int count)
         {
             var queue1 = new Queue();
             Helpers.PerformActionOnAllQueueWrappers(queue1, queue2 =>
@@ -444,7 +442,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestEnqueue_Null()
+        public static void Enqueue_Null()
         {
             var queue1 = new Queue();
             Helpers.PerformActionOnAllQueueWrappers(queue1, queue2 =>
@@ -459,32 +457,29 @@ namespace System.Collections.Tests
         [InlineData(10)]
         [InlineData(100)]
         [InlineData(1000)]
-        public static void TestGetEnumerator(int count)
+        public static void GetEnumerator(int count)
         {
             var queue1 = Helpers.CreateIntQueue(count);
             Helpers.PerformActionOnAllQueueWrappers(queue1, queue2 =>
             {
-                IEnumerator enumerator1 = queue2.GetEnumerator();
-                IEnumerator enumerator2 = queue2.GetEnumerator();
-
-                IEnumerator[] enumerators = { enumerator1, enumerator2 };
-                foreach (IEnumerator enumerator in enumerators)
+                Assert.NotSame(queue2.GetEnumerator(), queue2.GetEnumerator());
+                IEnumerator enumerator = queue2.GetEnumerator();
+                for (int i = 0; i < 2; i++)
                 {
-                    Assert.NotNull(enumerator);
-                    int i = 0;
+                    int counter = 0;
                     while (enumerator.MoveNext())
                     {
-                        Assert.Equal(i, enumerator.Current);
-                        i++;
+                        Assert.Equal(counter, enumerator.Current);
+                        counter++;
                     }
-                    Assert.Equal(count, i);
+                    Assert.Equal(count, counter);
                     enumerator.Reset();
                 }
             });
         }
 
         [Fact]
-        public static void TestGetEnumerator_Invalid()
+        public static void GetEnumerator_Invalid()
         {
             var queue1 = Helpers.CreateIntQueue(100);
             Helpers.PerformActionOnAllQueueWrappers(queue1, queue2 =>
@@ -520,7 +515,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestPeek()
+        public static void Peek()
         {
             string s1 = "hello";
             string s2 = "world";
@@ -580,7 +575,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestPeek_Invalid()
+        public static void Peek_EmptyQueue_ThrowsInvalidOperationException()
         {
             var queue1 = new Queue();
             Helpers.PerformActionOnAllQueueWrappers(queue1, queue2 =>
@@ -594,7 +589,7 @@ namespace System.Collections.Tests
         [InlineData(10)]
         [InlineData(100)]
         [InlineData(1000)]
-        public static void TestToArray(int count)
+        public static void ToArray(int count)
         {
             Queue queue1 = Helpers.CreateIntQueue(count);
             Helpers.PerformActionOnAllQueueWrappers(queue1, queue2 =>
@@ -609,7 +604,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestToArray_Wrapped()
+        public static void ToArray_Wrapped()
         {
             var queue1 = new Queue(1);
             queue1.Enqueue(1);
@@ -623,7 +618,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestToArrayDiffentObjectTypes()
+        public static void ToArrayDiffentObjectTypes()
         {
             string s1 = "hello";
             string s2 = "world";
@@ -665,7 +660,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestToArray_EmptyQueue()
+        public static void ToArray_EmptyQueue()
         {
             var queue1 = new Queue();
             Helpers.PerformActionOnAllQueueWrappers(queue1, queue2 =>
@@ -681,7 +676,7 @@ namespace System.Collections.Tests
         [InlineData(10)]
         [InlineData(100)]
         [InlineData(1000)]
-        public static void TestTrimToSize(int count)
+        public static void TrimToSize(int count)
         {
             Queue queue1 = Helpers.CreateIntQueue(count);
             Helpers.PerformActionOnAllQueueWrappers(queue1, queue2 =>
@@ -708,7 +703,7 @@ namespace System.Collections.Tests
         [InlineData(10)]
         [InlineData(100)]
         [InlineData(1000)]
-        public static void TestTrimToSize_DequeueAll(int count)
+        public static void TrimToSize_DequeueAll(int count)
         {
             Queue queue1 = Helpers.CreateIntQueue(count);
             for (int i = 0; i < count; i++)
@@ -728,7 +723,7 @@ namespace System.Collections.Tests
         }
         
         [Fact]
-        public static void TestTrimToSize_Wrapped()
+        public static void TrimToSize_Wrapped()
         {
             var queue = new Queue(100);
 
@@ -761,33 +756,24 @@ namespace System.Collections.Tests
             {
                 IntValue = intValue;
             }
-
-            private int _intValue;
-            public int IntValue
-            {
-                set { _intValue = value; }
-                get { return _intValue; }
-            }
+            
+            public int IntValue { get; set; }
         }
     }
 
     public class Queue_SyncRootTests
     {
-        Task[] workers;
-        Action action1;
-        Action action2;
-
-        int iNumberOfElements = 1000;
-        int iNumberOfWorkers = 1000;
+        private const int NumberOfElements = 1000;
+        private const int NumberOfWorkers = 1000;
 
         private Queue _queueDaughter;
         private Queue _queueGrandDaughter;
 
         [Fact]
-        public void TestSyncRoot()
+        public void SyncRoot()
         {
             var queueMother = new Queue();
-            for (int i = 0; i < iNumberOfElements; i++)
+            for (int i = 0; i < NumberOfElements; i++)
             {
                 queueMother.Enqueue(i);
             }
@@ -803,14 +789,13 @@ namespace System.Collections.Tests
             Assert.Equal(queueMother.SyncRoot, _queueGrandDaughter.SyncRoot);
             Assert.Equal(queueMother.SyncRoot, _queueDaughter.SyncRoot);
 
-
-            workers = new Task[iNumberOfWorkers];
-            action1 = SortElements;
-            action2 = ReverseElements;
-            for (int iThreads = 0; iThreads < iNumberOfWorkers; iThreads += 2)
+            Task[] workers = new Task[NumberOfWorkers];
+            Action action1 = SortElements;
+            Action action2 = ReverseElements;
+            for (int i = 0; i < NumberOfWorkers; i += 2)
             {
-                workers[iThreads] = Task.Run(action1);
-                workers[iThreads + 1] = Task.Run(action2);
+                workers[i] = Task.Run(action1);
+                workers[i + 1] = Task.Run(action2);
             }
 
             Task.WaitAll(workers);
@@ -819,7 +804,7 @@ namespace System.Collections.Tests
         private void SortElements()
         {
             _queueGrandDaughter.Clear();
-            for (int i = 0; i < iNumberOfElements; i++)
+            for (int i = 0; i < NumberOfElements; i++)
             {
                 _queueGrandDaughter.Enqueue(i);
             }
@@ -828,7 +813,7 @@ namespace System.Collections.Tests
         private void ReverseElements()
         {
             _queueDaughter.Clear();
-            for (int i = 0; i < iNumberOfElements; i++)
+            for (int i = 0; i < NumberOfElements; i++)
             {
                 _queueDaughter.Enqueue(i);
             }
@@ -837,16 +822,14 @@ namespace System.Collections.Tests
 
     public class Queue_SynchronizedTests
     {
-        public Queue m_Queue;
-        public int iCountTestcases = 0;
-        public int iCountErrors = 0;
-        public int m_ThreadsToUse = 8;
-        public int m_ThreadAge = 5; // 5000;
+        public Queue _queue;
+        public int _threadsToUse = 8;
+        public int _threadAge = 5; // 5000;
 
-        public int m_ThreadCount;
+        public int _threadCount;
 
         [Fact]
-        public static void TestSynchronized()
+        public static void Synchronized()
         {
             Queue queue = Helpers.CreateIntQueue(100);
             Queue syncQueue = Queue.Synchronized(queue);
@@ -860,96 +843,96 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public void TestSynchronizedEnqueue()
+        public void SynchronizedEnqueue()
         {
             // Enqueue
-            m_Queue = Queue.Synchronized(new Queue());
+            _queue = Queue.Synchronized(new Queue());
             PerformTest(StartEnqueueThread, 40);
 
             // Dequeue
-            Queue queue = Helpers.CreateIntQueue(m_ThreadAge);
-            m_Queue = Queue.Synchronized(queue);
+            Queue queue = Helpers.CreateIntQueue(_threadAge);
+            _queue = Queue.Synchronized(queue);
             PerformTest(StartDequeueThread, 0);
 
             // Enqueue, dequeue
-            m_Queue = Queue.Synchronized(new Queue());
+            _queue = Queue.Synchronized(new Queue());
             PerformTest(StartEnqueueDequeueThread, 0);
 
             // Dequeue, enqueue
-            queue = Helpers.CreateIntQueue(m_ThreadAge);
-            m_Queue = Queue.Synchronized(queue);
-            PerformTest(StartDequeueEnqueueThread, m_ThreadAge);
+            queue = Helpers.CreateIntQueue(_threadAge);
+            _queue = Queue.Synchronized(queue);
+            PerformTest(StartDequeueEnqueueThread, _threadAge);
         }
 
         private void PerformTest(Action action, int expected)
         {
-            var tasks = new Task[m_ThreadsToUse];
+            var tasks = new Task[_threadsToUse];
 
-            for (int i = 0; i < m_ThreadsToUse; i++)
+            for (int i = 0; i < _threadsToUse; i++)
             {
                 tasks[i] = Task.Factory.StartNew(action, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
             }
 
-            m_ThreadCount = m_ThreadsToUse;
+            _threadCount = _threadsToUse;
             Task.WaitAll(tasks);
 
-            Assert.Equal(expected, m_Queue.Count);
+            Assert.Equal(expected, _queue.Count);
         }
 
         [Fact]
-        public static void TestSynchronizedInvalid()
+        public static void Synchronized_NullQueue_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => Queue.Synchronized(null)); // Queue is null
+            Assert.Throws<ArgumentNullException>("queue", () => Queue.Synchronized(null)); // Queue is null
         }
 
         public void StartEnqueueThread()
         {
-            int t_age = m_ThreadAge;
+            int t_age = _threadAge;
             while (t_age > 0)
             {
-                m_Queue.Enqueue(t_age);
+                _queue.Enqueue(t_age);
                 Interlocked.Decrement(ref t_age);
             }
-            Interlocked.Decrement(ref m_ThreadCount);
+            Interlocked.Decrement(ref _threadCount);
         }
 
         private void StartDequeueThread()
         {
-            int t_age = m_ThreadAge;
+            int t_age = _threadAge;
             while (t_age > 0)
             {
                 try
                 {
-                    m_Queue.Dequeue();
+                    _queue.Dequeue();
                 }
                 catch { }
                 Interlocked.Decrement(ref t_age);
             }
-            Interlocked.Decrement(ref m_ThreadCount);
+            Interlocked.Decrement(ref _threadCount);
         }
 
         private void StartEnqueueDequeueThread()
         {
-            int t_age = m_ThreadAge;
+            int t_age = _threadAge;
             while (t_age > 0)
             {
-                m_Queue.Enqueue(2);
-                m_Queue.Dequeue();
+                _queue.Enqueue(2);
+                _queue.Dequeue();
                 Interlocked.Decrement(ref t_age);
             }
-            Interlocked.Decrement(ref m_ThreadCount);
+            Interlocked.Decrement(ref _threadCount);
         }
 
         private void StartDequeueEnqueueThread()
         {
-            int t_age = m_ThreadAge;
+            int t_age = _threadAge;
             while (t_age > 0)
             {
-                m_Queue.Dequeue();
-                m_Queue.Enqueue(2);
+                _queue.Dequeue();
+                _queue.Enqueue(2);
                 Interlocked.Decrement(ref t_age);
             }
-            Interlocked.Decrement(ref m_ThreadCount);
+            Interlocked.Decrement(ref _threadCount);
         }
     }
 }
