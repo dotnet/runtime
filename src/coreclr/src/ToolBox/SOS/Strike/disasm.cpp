@@ -44,7 +44,6 @@ namespace X86GCDump
 #endif // SOS_TARGET_X86
 
 #ifdef SOS_TARGET_AMD64 
-#ifndef FEATURE_PAL
 #include "gcdump.h"
 #define DAC_ARG(x)
 #define SUPPORTS_DAC
@@ -60,7 +59,6 @@ namespace X86GCDump
     #endif
     #define LOG_PIPTR(pObjRef, gcFlags, hCallBack) ((void)0)
 #include "gcdumpnonx86.cpp"
-#endif // FEATURE_PAL
 #endif // SOS_TARGET_AMD64
 
 #include "disasm.h"
@@ -1111,9 +1109,6 @@ LPCSTR AMD64Machine::s_SPName           = "RSP";
 ///
 void AMD64Machine::DumpGCInfo(BYTE* pTable, unsigned methodSize, printfFtn gcPrintf, bool encBytes, bool bPrintHeader) const
 {
-#ifdef FEATURE_PAL
-    ExtErr("AMD64Machine::DumpGCInfo not implemented\n");
-#else
     if (bPrintHeader)
     {
         ExtOut("Pointer table:\n");
@@ -1123,7 +1118,6 @@ void AMD64Machine::DumpGCInfo(BYTE* pTable, unsigned methodSize, printfFtn gcPri
     gcDump.gcPrintf = gcPrintf;
 
     gcDump.DumpGCTable(pTable, methodSize, 0);
-#endif // FEATURE_PAL
 }
 
 #endif // SOS_TARGET_AMD64

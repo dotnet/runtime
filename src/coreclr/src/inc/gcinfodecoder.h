@@ -13,6 +13,9 @@
 
 #include "daccess.h"
 
+#define _max(a, b) (((a) > (b)) ? (a) : (b)) 
+#define _min(a, b) (((a) < (b)) ? (a) : (b))
+
 #ifndef GCINFODECODER_NO_EE
 
 #include "eetwain.h"
@@ -148,6 +151,10 @@ enum ICodeManagerFlags
     #define MAX_PREDECODED_SLOTS  4
 #else
     #define MAX_PREDECODED_SLOTS 64
+#endif
+
+#if defined(FEATURE_PAL) && !defined(STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY)
+#define STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY
 #endif
 
 
