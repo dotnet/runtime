@@ -743,7 +743,8 @@ namespace System.Reflection.Metadata
             // debug tables:
             // Type-system metadata tables may be stored in a separate (external) metadata file.
             // We need to use the row counts of the external tables when referencing them.
-            var combinedRowCounts = (externalRowCountsOpt != null) ? CombineRowCounts(rowCounts, externalRowCountsOpt, TableIndex.Document) : rowCounts;
+            // Debug tables are local to the current metadata image and type system metadata tables are external and precede all debug tables.
+            var combinedRowCounts = (externalRowCountsOpt != null) ? CombineRowCounts(rowCounts, externalRowCountsOpt, firstLocalTableIndex: TableIndex.Document) : rowCounts;
 
             int methodRefSizeCombined = GetReferenceSize(combinedRowCounts, TableIndex.MethodDef);
             int hasCustomDebugInformationRefSizeCombined = ComputeCodedTokenSize(HasCustomDebugInformationTag.LargeRowSize, combinedRowCounts, HasCustomDebugInformationTag.TablesReferenced);
@@ -778,19 +779,19 @@ namespace System.Reflection.Metadata
             }
         }
 
-        private static int[] CombineRowCounts(int[] local, int[] external, TableIndex firstExternalTableIndex)
+        private static int[] CombineRowCounts(int[] local, int[] external, TableIndex firstLocalTableIndex)
         {
             Debug.Assert(local.Length == external.Length);
 
             var rowCounts = new int[local.Length];
-            for (int i = 0; i < (int)firstExternalTableIndex; i++)
-            {
-                rowCounts[i] = local[i];
-            }
-
-            for (int i = (int)firstExternalTableIndex; i < rowCounts.Length; i++)
+            for (int i = 0; i < (int)firstLocalTableIndex; i++)
             {
                 rowCounts[i] = external[i];
+            }
+
+            for (int i = (int)firstLocalTableIndex; i < rowCounts.Length; i++)
+            {
+                rowCounts[i] = local[i];
             }
 
             return rowCounts;
