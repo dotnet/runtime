@@ -900,6 +900,45 @@ int __cdecl CompareLifetimeTransitionsBySlot(const void* p1, const void* p2)
     }
 }
 
+BitStreamWriter::MemoryBlockList::MemoryBlockList()
+    : m_head(nullptr),
+      m_tail(nullptr)
+{
+}
+
+BitStreamWriter::MemoryBlock* BitStreamWriter::MemoryBlockList::AppendNew(IAllocator* allocator, size_t bytes)
+{
+    auto* memBlock = reinterpret_cast<MemoryBlock*>(allocator->Alloc(sizeof(MemoryBlock) + bytes));
+    memBlock->m_next = nullptr;
+
+    if (m_tail != nullptr)
+    {
+        _ASSERTE(m_head != nullptr);
+        m_tail->m_next = memBlock;
+    }
+    else
+    {
+        _ASSERTE(m_head == nullptr);
+        m_head = memBlock;
+    }
+
+    m_tail = memBlock;
+    return memBlock;
+}
+
+void BitStreamWriter::MemoryBlockList::Dispose(IAllocator* allocator)
+{
+#ifdef MUST_CALL_JITALLOCATOR_FREE
+    for (MemoryBlock* block = m_head, *next; block != nullptr; block = next)
+    {
+        next = block->m_next;
+        allocator->Free(block);
+    }
+    m_head = nullptr;
+    m_tail = nullptr;
+#endif
+}
+
 void BitStreamWriter::Write(BitArray& a, UINT32 count)
 {
     size_t* dataPtr = a.DataPtr();
@@ -2647,8 +2686,6 @@ BitStreamWriter::BitStreamWriter( IAllocator* pAllocator )
 {
     m_pAllocator = pAllocator;
     m_BitCount = 0;
-    m_MemoryBlocksHead = NULL;
-    m_MemoryBlocksTail = NULL;
 #ifdef _DEBUG
     m_MemoryBlocksCount = 0;
 #endif
@@ -2711,23 +2748,23 @@ void BitStreamWriter::CopyTo( BYTE* buffer )
     int i,c;
     BYTE* source = NULL;
 
-    MemoryBlockDesc* pMemBlockDesc = m_MemoryBlocksHead;
-    if( pMemBlockDesc == NULL )
+    MemoryBlock* pMemBlock = m_MemoryBlocks.Head();
+    if( pMemBlock == NULL )
         return;
         
-    while (pMemBlockDesc->m_Next != NULL)
+    while (pMemBlock->Next() != NULL)
     {
-        source = (BYTE*) pMemBlockDesc->StartAddress;
+        source = (BYTE*) pMemBlock->Contents;
         // @TODO: use memcpy instead
         for( i = 0; i < m_MemoryBlockSize; i++ )
         {
             *( buffer++ ) = *( source++ );
         }
 
-        pMemBlockDesc = pMemBlockDesc->m_Next;
+        pMemBlock = pMemBlock->Next();
     }
 
-    source = (BYTE*) pMemBlockDesc->StartAddress;
+    source = (BYTE*) pMemBlock->Contents;
     // The number of bytes to copy in the last block
     c = (int) ((BYTE*) ( m_pCurrentSlot + 1 ) - source - m_FreeBitsInCurrentSlot/8);
     _ASSERTE( c >= 0 );
@@ -2741,16 +2778,7 @@ void BitStreamWriter::CopyTo( BYTE* buffer )
 
 void BitStreamWriter::Dispose()
 {
-#ifdef MUST_CALL_JITALLOCATOR_FREE
-    for (MemoryBlockDes* block = m_MemoryBlocksHead, *next; block != NULL; block = next)
-    {
-        next = block->m_Next;
-        m_pAllocator->Free(block->StartAddress);
-        m_pAllocator->Free(block);
-    }
-    m_MemoryBlocksHead = NULL;
-    m_MemoryBlocksTail = NULL;
-#endif
+    m_MemoryBlocks.Dispose(m_pAllocator);
 }
 
 int BitStreamWriter::SizeofVarLengthUnsigned( size_t n, UINT32 base)
