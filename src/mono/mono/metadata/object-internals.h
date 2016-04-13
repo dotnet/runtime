@@ -201,23 +201,24 @@ typedef struct {
 
 struct _MonoException {
 	MonoObject object;
+	MonoString *class_name;
+	MonoString *message;
+	MonoObject *_data;
+	MonoObject *inner_ex;
+	MonoString *help_link;
 	/* Stores the IPs and the generic sharing infos
 	   (vtable/MRGCTX) of the frames. */
 	MonoArray  *trace_ips;
-	MonoObject *inner_ex;
-	MonoString *message;
-	MonoString *help_link;
-	MonoString *class_name;
 	MonoString *stack_trace;
 	MonoString *remote_stack_trace;
 	gint32	    remote_stack_index;
-	gint32	    hresult;
-	MonoString *source;
-	MonoObject *_data;
-	MonoObject *captured_traces;
-	MonoArray  *native_trace_ips;
 	/* Dynamic methods referenced by the stack trace */
 	MonoObject *dynamic_methods;
+	gint32	    hresult;
+	MonoString *source;
+	MonoObject *serialization_manager;
+	MonoObject *captured_traces;
+	MonoArray  *native_trace_ips;
 };
 
 typedef struct {
