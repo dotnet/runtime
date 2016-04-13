@@ -1188,7 +1188,7 @@ combinedScenarios.each { scenario ->
                                         // Set time out
                                         setTestJobTimeOut(newJob, scenario)
                                         // Basic archiving of the build
-                                        Utilities.addArchival(newJob, "bin/Product/**,bin/obj/*/tests/**")
+                                        Utilities.addArchival(newJob, "bin/Product/**,bin/obj/*/tests/**/*.dylib,bin/obj/*/tests/**/*.so")
                                         // And pal tests
                                         Utilities.addXUnitDotNETResults(newJob, '**/pal_tests.xml')
                                     }
