@@ -33,6 +33,7 @@ namespace System.Net
         }
 
         internal const bool StartMutualAuthAsAnonymous = true;
+        internal const bool PresizeEncryptBuffer = true;
 
         public static void VerifyPackageInfo()
         {
@@ -126,8 +127,13 @@ namespace System.Net
             return AcquireCredentialsHandle(direction, secureCredential);
         }
 
-        public static SecurityStatusPal EncryptMessage(SafeDeleteContext securityContext, byte[] writeBuffer, int size, int headerSize, int trailerSize, out int resultSize)
+        public static SecurityStatusPal EncryptMessage(SafeDeleteContext securityContext, byte[] input, int offset, int size, int headerSize, int trailerSize, ref byte[] output, out int resultSize)
         {
+            byte[] writeBuffer = output;
+
+            // Copy the input into the output buffer to prepare for SCHANNEL's expectations
+            Buffer.BlockCopy(input, offset, writeBuffer, headerSize, size);
+
             // Encryption using SCHANNEL requires 4 buffers: header, payload, trailer, empty.
             SecurityBuffer[] securityBuffer = new SecurityBuffer[4];
 
