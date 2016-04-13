@@ -12,7 +12,7 @@ namespace System.Reflection.Internal
     {
         internal static Lazy<Type> FileStreamType = new Lazy<Type>(() =>
         {
-            const string systemIOFileSystem = "System.IO.FileSystem, Version=0.0.0.0, Culture=neutral, PublicKeyToken = b03f5f7f11d50a3a";
+            const string systemIOFileSystem = "System.IO.FileSystem, Version=4.0.0.0, Culture=neutral, PublicKeyToken = b03f5f7f11d50a3a";
             const string mscorlib = "mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
 
             return LightUpHelper.GetType("System.IO.FileStream", systemIOFileSystem, mscorlib);
