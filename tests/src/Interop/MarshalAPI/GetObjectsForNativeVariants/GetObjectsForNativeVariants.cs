@@ -3,7 +3,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using CoreFXTestLibrary;
-
+#pragma warning disable 618
 public class GetObjectsForNativeVariantsTest 
 {  
     [StructLayout(LayoutKind.Sequential)]
@@ -83,3 +83,4 @@ public class GetObjectsForNativeVariantsTest
         return 100;
     }
 }
+#pragma warning restore 618
