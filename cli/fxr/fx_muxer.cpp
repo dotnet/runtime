@@ -292,7 +292,7 @@ int fx_muxer_t::parse_args_and_execute(
         }
 
         app_candidate = argv[cur_i];
-        bool is_app_runnable = ends_with(app_candidate, _X(".dll"), false) || ends_with(app_candidate, _X(".exe"), false);
+        bool is_app_runnable = (ends_with(app_candidate, _X(".dll"), false) || ends_with(app_candidate, _X(".exe"), false)) && pal::realpath(&app_candidate);
         trace::verbose(_X("App %s runnable=[%d]"), app_candidate.c_str(), is_app_runnable);
         // If exec mode is on, then check we have a dll at this point
         if (exec_mode)
@@ -300,6 +300,7 @@ int fx_muxer_t::parse_args_and_execute(
             if (!is_app_runnable)
             {
                 trace::error(_X("dotnet exec needs a dll to execute. Try dotnet [--help]"));
+                *is_an_app = false;
                 return InvalidArgFailure;
             }
         }
