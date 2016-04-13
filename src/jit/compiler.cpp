@@ -5766,14 +5766,18 @@ var_types Compiler::GetTypeFromClassificationAndSizes(SystemVClassificationType 
     return type;
 }
 
-// getEightByteType:
-//   Returns the type of the struct description and slot number of the eightbyte.
+//-------------------------------------------------------------------
+// GetEightByteType: Returns the type of eightbyte slot of a struct
 //
-// args:
-//   structDesc: struct classification description.
-//   slotNum: eightbyte slot number for the struct.
-//   
-var_types Compiler::getEightByteType(const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR& structDesc, unsigned slotNum)
+// Arguments:
+//   structDesc  -  struct classification description.
+//   slotNum     -  eightbyte slot number for the struct.
+//
+// Return Value:
+//    type of the eightbyte slot of the struct
+// 
+//static
+var_types Compiler::GetEightByteType(const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR& structDesc, unsigned slotNum)
 {
     var_types eightByteType = TYP_UNDEF;
     unsigned len = structDesc.eightByteSizes[slotNum];
@@ -5793,7 +5797,7 @@ var_types Compiler::getEightByteType(const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASS
         }
         else
         {
-            assert(false && "getEightByteType Invalid Integer classification type.");
+            assert(false && "GetEightByteType Invalid Integer classification type.");
         }
         break;
     case SystemVClassificationTypeIntegerReference:
@@ -5815,15 +5819,51 @@ var_types Compiler::getEightByteType(const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASS
         }
         else
         {
-            assert(false && "getEightByteType Invalid SSE classification type.");
+            assert(false && "GetEightByteType Invalid SSE classification type.");
         }
         break;
     default:
-        assert(false && "getEightByteType Invalid classification type.");
+        assert(false && "GetEightByteType Invalid classification type.");
         break;
     }
 
     return eightByteType;
+}
+
+//------------------------------------------------------------------------------------------------------
+// GetStructTypeOffset: Gets the type, size and offset of the eightbytes of a struct for System V systems.
+//
+// Arguments:
+//    'structDesc' -  struct description
+//    'type0'      -  out param; returns the type of the first eightbyte.
+//    'type1'      -  out param; returns the type of the second eightbyte.
+//    'offset0'    -  out param; returns the offset of the first eightbyte.
+//    'offset1'    -  out param; returns the offset of the second eightbyte.
+//
+//static
+void Compiler::GetStructTypeOffset(const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR& structDesc,
+    var_types* type0,
+    var_types* type1,
+    unsigned __int8* offset0,
+    unsigned __int8* offset1)
+{
+    *offset0 = structDesc.eightByteOffsets[0];
+    *offset1 = structDesc.eightByteOffsets[1];
+
+    *type0 = TYP_UNKNOWN;
+    *type1 = TYP_UNKNOWN;
+
+    // Set the first eightbyte data
+    if (structDesc.eightByteCount >= 1)
+    {
+        *type0 = GetEightByteType(structDesc, 0);
+    }
+
+    // Set the second eight byte data
+    if (structDesc.eightByteCount == 2)
+    {
+        *type1 = GetEightByteType(structDesc, 1);
+    }
 }
 #endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
