@@ -1,6 +1,7 @@
 // Import the utility functionality.
 
 import jobs.generation.Utilities;
+import jobs.generation.JobReport;
 
 // The input project name (e.g. dotnet/coreclr)
 def project = GithubProject
@@ -943,7 +944,7 @@ combinedScenarios.each { scenario ->
                                     return
                                 }
                                 // only x64 or x86 for now
-                                if (architecture != 'x64' && architecture != 'x86') {
+                                if (architecture != 'x64') {
                                     return
                                 }
                                 break
@@ -954,7 +955,7 @@ combinedScenarios.each { scenario ->
                                     return
                                 }
                                 // only x64 or x86 for now
-                                if (architecture != 'x64' && architecture != 'x86') {
+                                if (architecture != 'x64') {
                                     return
                                 }
                                 break
@@ -965,17 +966,17 @@ combinedScenarios.each { scenario ->
                                     return
                                 }
                                 // only x64 or x86 for now
-                                if (architecture != 'x64' && architecture != 'x86') {
+                                if (architecture != 'x64') {
                                     return
                                 }
                                 break
                             case 'longgc':
-                                if (os != 'Windows_NT' && !(os in Constants.crossList)) {
+                                if (os != 'Windows_NT') {
                                     return
                                 }
                                 
                                 // only x64 or x86 for now
-                                if (architecture != 'x64' && architecture != 'x86') {
+                                if (architecture != 'x64') {
                                     return
                                 }
                                 break
@@ -1495,6 +1496,10 @@ combinedScenarios.each { scenario ->
                     // Linux CoreCLR test
                     def flowJobName = getJobName(configuration, architecture, os, scenario, false) + "_flow"
                     def fullTestJobName = projectFolder + '/' + newJob.name
+                    // Add a reference to the input jobs for report purposes
+                    JobReport.Report.addReference(inputCoreCLRBuildName)
+                    JobReport.Report.addReference(inputWindowTestsBuildName)
+                    JobReport.Report.addReference(fullTestJobName)
                     def newFlowJob = buildFlowJob(Utilities.getFullJobName(project, flowJobName, isPR)) {
                         buildFlow("""
 // Build the input jobs in parallel
@@ -1516,3 +1521,5 @@ build(params + [CORECLR_BUILD: coreclrBuildJob.build.number,
         } // architecture
     } // isPR
 } // scenario
+
+JobReport.Report.generateJobReport(out)
