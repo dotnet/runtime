@@ -162,7 +162,7 @@ static int fast_block_obj_size_indexes [MS_NUM_FAST_BLOCK_OBJ_SIZE_INDEXES];
 static gboolean *evacuate_block_obj_sizes;
 static float evacuation_threshold = 0.666f;
 
-static gboolean lazy_sweep = FALSE;
+static gboolean lazy_sweep = TRUE;
 
 enum {
 	SWEEP_STATE_SWEPT,
@@ -807,6 +807,7 @@ set_sweep_state (int new_, int expected)
 static gboolean ensure_block_is_checked_for_sweeping (guint32 block_index, gboolean wait, gboolean *have_checked);
 
 static SgenThreadPoolJob * volatile sweep_job;
+static SgenThreadPoolJob * volatile sweep_blocks_job;
 
 static void
 major_finish_sweep_checking (void)
@@ -1578,6 +1579,20 @@ ensure_block_is_checked_for_sweeping (guint32 block_index, gboolean wait, gboole
 }
 
 static void
+sweep_blocks_job_func (void *thread_data_untyped, SgenThreadPoolJob *job)
+{
+	volatile gpointer *slot;
+
+	SGEN_ARRAY_LIST_FOREACH_SLOT (&allocated_blocks, slot) {
+		sweep_block (BLOCK_UNTAG (*slot));
+	} SGEN_ARRAY_LIST_END_FOREACH_SLOT;
+
+	mono_memory_write_barrier ();
+
+	sweep_blocks_job = NULL;
+}
+
+static void
 sweep_job_func (void *thread_data_untyped, SgenThreadPoolJob *job)
 {
 	guint32 block_index;
@@ -1618,6 +1633,16 @@ sweep_job_func (void *thread_data_untyped, SgenThreadPoolJob *job)
 
 	sgen_array_list_remove_nulls (&allocated_blocks);
 
+	/*
+	 * Concurrently sweep all the blocks to reduce workload during minor
+	 * pauses where we need certain blocks to be swept. At the start of
+	 * the next major we need all blocks to be swept anyway.
+	 */
+	if (concurrent_sweep && lazy_sweep) {
+		sweep_blocks_job = sgen_thread_pool_job_alloc ("sweep_blocks", sweep_blocks_job_func, sizeof (SgenThreadPoolJob));
+		sgen_thread_pool_job_enqueue (sweep_blocks_job);
+	}
+
 	sweep_finish ();
 
 	sweep_job = NULL;
@@ -1644,6 +1669,8 @@ sweep_finish (void)
 	sgen_memgov_major_post_sweep ();
 
 	set_sweep_state (SWEEP_STATE_SWEPT, SWEEP_STATE_COMPACTING);
+	if (concurrent_sweep)
+		binary_protocol_concurrent_sweep_end (sgen_timestamp ());
 }
 
 static void
@@ -1863,12 +1890,22 @@ major_start_major_collection (void)
 		sgen_evacuation_freelist_blocks (&free_block_lists [MS_BLOCK_FLAG_REFS][i], i);
 	}
 
-	if (lazy_sweep)
-		binary_protocol_sweep_begin (GENERATION_OLD, TRUE);
+	if (lazy_sweep && concurrent_sweep) {
+		/*
+		 * sweep_blocks_job is created before sweep_finish, which we wait for above
+		 * (major_finish_sweep_checking). After the end of sweep, if we don't have
+		 * sweep_blocks_job set, it means that it has already been run.
+		 */
+		SgenThreadPoolJob *job = sweep_blocks_job;
+		if (job)
+			sgen_thread_pool_job_wait (job);
+	}
 
+	if (lazy_sweep && !concurrent_sweep)
+		binary_protocol_sweep_begin (GENERATION_OLD, TRUE);
 	/* Sweep all unswept blocks and set them to MARKING */
 	FOREACH_BLOCK_NO_LOCK (block) {
-		if (lazy_sweep)
+		if (lazy_sweep && !concurrent_sweep)
 			sweep_block (block);
 		SGEN_ASSERT (0, block->state == BLOCK_STATE_SWEPT, "All blocks must be swept when we're pinning.");
 		set_block_state (block, BLOCK_STATE_MARKING, BLOCK_STATE_SWEPT);
@@ -1880,8 +1917,7 @@ major_start_major_collection (void)
 		if (evacuate_block_obj_sizes [block->obj_size_index] && !block->free_list)
 			block->is_to_space = TRUE;
 	} END_FOREACH_BLOCK_NO_LOCK;
-
-	if (lazy_sweep)
+	if (lazy_sweep && !concurrent_sweep)
 		binary_protocol_sweep_end (GENERATION_OLD, TRUE);
 
 	set_sweep_state (SWEEP_STATE_NEED_SWEEPING, SWEEP_STATE_SWEPT);
