@@ -2063,6 +2063,14 @@ enqueue_sample_hit (gpointer p)
 static void
 mono_sample_hit (MonoProfiler *profiler, unsigned char *ip, void *context)
 {
+	/*
+	 * Please note: We rely on the runtime loading the profiler with
+	 * MONO_DL_EAGER (RTLD_NOW) so that references to runtime functions within
+	 * this function (and its siblings) are resolved when the profiler is
+	 * loaded. Otherwise, we would potentially invoke the dynamic linker when
+	 * invoking runtime functions, which is not async-signal-safe.
+	 */
+
 	if (in_shutdown)
 		return;
 
