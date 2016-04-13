@@ -7764,7 +7764,7 @@ struct ThreadLocalInfo
     AppDomain* m_pAppDomain;
     void** m_EETlsData; // ClrTlsInfo::data
 #ifdef FEATURE_MERGE_JIT_AND_ENGINE
-    Compiler* m_pCompiler;
+    void* m_pJitTls;
 #endif
 };
 #endif // FEATURE_IMPLICIT_TLS
