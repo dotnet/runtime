@@ -247,7 +247,7 @@ namespace System.IO
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return new Task(() => { }, cancellationToken);
+                return Task.FromCanceled(cancellationToken);
             }
 
             return Task.Factory.StartNew(state => ((Stream)state).Flush(), this,
@@ -268,7 +268,7 @@ namespace System.IO
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return new Task<int>(() => 0, cancellationToken);
+                return Task.FromCanceled<int>(cancellationToken);
             }
 
             // To avoid a race with a stream's position pointer & generating race 
@@ -304,7 +304,7 @@ namespace System.IO
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return new Task(() => { }, cancellationToken);
+                return Task.FromCanceled(cancellationToken);
             }
 
             // To avoid a race with a stream's position pointer & generating race 
