@@ -5616,7 +5616,7 @@ void        Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineR
 
         // Before we do any cleanup, create a failing InlineContext to
         // capture details of the inlining attempt.
-        InlineContext::NewFailure(this, fgMorphStmt, inlineResult);
+        m_inlineStrategy->NewFailure(fgMorphStmt, inlineResult);
 
 #endif
 
@@ -5737,11 +5737,6 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result)
     {
        // printf("After inlining lvaCount=%d.\n", lvaCount);
     }
-#endif
-
-
-#if defined(DEBUG) || MEASURE_INLINING
-    ++Compiler::jitTotalMethodInlined;
 #endif
 }
 

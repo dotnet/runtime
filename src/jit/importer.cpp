@@ -6836,14 +6836,8 @@ DONE_CALL:
         if ((call->gtOper == GT_CALL) && ((call->gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0))
         {
             assert(opts.OptEnabled(CLFLG_INLINING));
-            // Make the call node its own statement tree.
-
-#if defined(DEBUG) || MEASURE_INLINING
-            ++Compiler::jitTotalInlineCandidatesWithNonNullReturn;
-#endif 
 
             // Make the call its own tree (spill the stack if needed).            
-
             impAppendTree(call, (unsigned)CHECK_SPILL_ALL, impCurStmtOffs);
 
             // TODO: Still using the widened type.
@@ -13692,13 +13686,6 @@ bool Compiler::impReturnInstruction(BasicBlock *block, int prefixFlags, OPCODE &
                 return false;
             }
 
-#if defined(DEBUG) || MEASURE_INLINING
-            if (op2->gtOper == GT_LCL_VAR)
-            {
-                ++Compiler::jitTotalInlineReturnFromALocal;
-            }
-#endif
-
             // Below, we are going to set impInlineInfo->retExpr to the tree with the return
             // expression. At this point, retExpr could already be set if there are multiple
             // return blocks (meaning lvaInlineeReturnSpillTemp != BAD_VAR_NUM) and one of
@@ -15681,10 +15668,6 @@ void  Compiler::impCheckCanInline(GenTreePtr                call,
                                   InlineCandidateInfo**     ppInlineCandidateInfo,
                                   InlineResult*             inlineResult)
 {
-#if defined(DEBUG) || MEASURE_INLINING
-    ++Compiler::jitCheckCanInlineCallCount;    // This is actually the number of methods that starts the inline attempt.
-#endif 
-
     // Either EE or JIT might throw exceptions below.
     // If that happens, just don't inline the method.
     
@@ -15726,10 +15709,6 @@ void  Compiler::impCheckCanInline(GenTreePtr                call,
 
         /* Try to get the code address/size for the method */
 
-#if defined(DEBUG) || MEASURE_INLINING
-        ++Compiler::jitInlineGetMethodInfoCallCount; 
-#endif     
-
         CORINFO_METHOD_INFO methInfo;    
         if (!pParam->pThis->info.compCompHnd->getMethodInfo(pParam->fncHandle, &methInfo))
         {
@@ -15751,10 +15730,6 @@ void  Compiler::impCheckCanInline(GenTreePtr                call,
             goto _exit;            
         }
 
-#if defined(DEBUG) || MEASURE_INLINING
-        ++Compiler::jitInlineInitClassCallCount; 
-#endif 
-
         // Speculatively check if initClass() can be done.
         // If it can be done, we will try to inline the method. If inlining
         // succeeds, then we will do the non-speculative initClass() and commit it.
@@ -15772,10 +15747,6 @@ void  Compiler::impCheckCanInline(GenTreePtr                call,
         // Given the EE the final say in whether to inline or not.  
         // This should be last since for verifiable code, this can be expensive
 
-#if defined(DEBUG) || MEASURE_INLINING
-        ++Compiler::jitInlineCanInlineCallCount; 
-#endif 
-    
         /* VM Inline check also ensures that the method is verifiable if needed */
         CorInfoInline vmResult;
         vmResult = pParam->pThis->info.compCompHnd->canInline(pParam->pThis->info.compMethodHnd, pParam->fncHandle, &dwRestrictions);
@@ -16742,10 +16713,6 @@ void          Compiler::impMarkInlineCandidate(GenTreePtr callNode, CORINFO_CONT
 
     if (inlineResult.IsFailure())
     {
-#if defined(DEBUG) || MEASURE_INLINING
-        ++Compiler::jitCheckCanInlineFailureCount;    // This is actually the number of methods that starts the inline attempt.
-#endif         
-
         return;
     }
 
@@ -16757,9 +16724,8 @@ void          Compiler::impMarkInlineCandidate(GenTreePtr callNode, CORINFO_CONT
     // Mark the call node as inline candidate.
     call->gtFlags |= GTF_CALL_INLINE_CANDIDATE;
 
-#if defined(DEBUG) || MEASURE_INLINING
-    Compiler::jitTotalInlineCandidates++;
-#endif
+    // Let the strategy know there's another candidate.
+    impInlineRoot()->m_inlineStrategy->NoteCandidate();
 
     // Since we're not actually inlining yet, and this call site is
     // still just an inline candidate, there's nothing to report.

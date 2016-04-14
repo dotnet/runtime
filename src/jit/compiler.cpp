@@ -34,24 +34,9 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #define COLUMN_FLAGS    (COLUMN_KINDS + 32)
 #endif
 
-#if defined(DEBUG) || MEASURE_INLINING
+#if defined(DEBUG)
 unsigned Compiler::jitTotalMethodCompiled = 0;
-unsigned Compiler::jitTotalMethodInlined  = 0;
-unsigned Compiler::jitTotalInlineCandidates = 0;
-unsigned Compiler::jitTotalInlineCandidatesWithNonNullReturn = 0;
-unsigned Compiler::jitTotalNumLocals = 0;
-unsigned Compiler::jitTotalInlineReturnFromALocal = 0;
-unsigned Compiler::jitInlineInitVarsFailureCount = 0;
-unsigned Compiler::jitCheckCanInlineCallCount = 0;
-unsigned Compiler::jitCheckCanInlineFailureCount = 0;
-
-unsigned Compiler::jitInlineGetMethodInfoCallCount = 0;
-unsigned Compiler::jitInlineInitClassCallCount = 0;
-unsigned Compiler::jitInlineCanInlineCallCount = 0;
-
-unsigned Compiler::jitIciStmtIsTheLastInBB = 0;
-unsigned Compiler::jitInlineeContainsOnlyOneBB = 0;
-#endif  // defined(DEBUG) || MEASURE_INLINING
+#endif  // defined(DEBUG)
 
 #if defined(DEBUG)
 LONG     Compiler::jitNestingLevel = 0;
@@ -629,10 +614,6 @@ unsigned            Compiler::s_compMethodsCount = 0; // to produce unique label
 bool                Compiler::s_dspMemStats = false;
 #endif
 
-#if defined(DEBUG) || defined(INLINE_DATA)
-bool                Compiler::s_inlDumpDataHeader = false;
-#endif // if defined(DEBUG) || defined(INLINE_DATA)
-
 #ifndef DEBUGGING_SUPPORT
 /* static */
 const bool          Compiler::Options::compDbgCode = false;
@@ -730,54 +711,6 @@ void                Compiler::compShutdown()
         compJitFuncInfoFile = NULL;
     }
 #endif // FUNC_INFO_LOGGING
-    
-#if defined(DEBUG) || MEASURE_INLINING
-
-#ifdef DEBUG
-    if ((unsigned)JitConfig.JitInlinePrintStats() == 1)
-#endif // DEBUG
-    {
-        fprintf(fout, "\n");
-        fprintf(fout, "--------------------------------------\n");
-        fprintf(fout, "Inlining stats\n");
-        fprintf(fout, "--------------------------------------\n");
-
-        fprintf(fout,
-               "jitTotalMethodCompiled = %d\n"
-               "jitTotalMethodInlined = %d\n"
-               "jitTotalInlineCandidates = %d\n"
-               "jitTotalInlineCandidatesWithNonNullReturn = %d\n"
-               "jitTotalNumLocals = %d\n"
-               "jitTotalInlineReturnFromALocal = %d\n"
-               "jitInlineInitVarsFailureCount = %d\n"
-               "jitCheckCanInlineCallCount = %d\n"
-               "jitCheckCanInlineFailureCount = %d\n"
-               "jitInlineGetMethodInfoCallCount = %d\n"
-               "jitInlineInitClassCallCount = %d\n"
-               "jitInlineCanInlineCallCount = %d\n"
-               "jitIciStmtIsTheLastInBB = %d\n"
-               "jitInlineeContainsOnlyOneBB = %d\n",
-        
-               jitTotalMethodCompiled,
-               jitTotalMethodInlined,
-               jitTotalInlineCandidates,
-               jitTotalInlineCandidatesWithNonNullReturn,
-               jitTotalNumLocals,
-               jitTotalInlineReturnFromALocal,
-               jitInlineInitVarsFailureCount,
-               jitCheckCanInlineCallCount,
-               jitCheckCanInlineFailureCount,
-
-               jitInlineGetMethodInfoCallCount,
-               jitInlineInitClassCallCount,
-               jitInlineCanInlineCallCount,
-
-               jitIciStmtIsTheLastInBB,
-               jitInlineeContainsOnlyOneBB
-               );                         
-    }
-    
-#endif // defined(DEBUG) || MEASURE_INLINING
 
 #if COUNT_RANGECHECKS
     if  (optRangeChkAll > 0)
@@ -1249,16 +1182,13 @@ void                Compiler::compInit(ArenaAllocator * pAlloc, InlineInfo * inl
     // Set the inline info.
     impInlineInfo    = inlineInfo;
 
-#if defined(DEBUG) || defined(INLINE_DATA)
-    inlLastSuccessfulPolicy = nullptr;
-#endif // defined(DEBUG) || defined(INLINE_DATA)
-
     eeInfoInitialized = false;
 
     compDoAggressiveInlining = false;
 
     if (compIsForInlining())
     {
+        m_inlineStrategy            = nullptr;
         compInlineResult            = inlineInfo->inlineResult;
         compAsIAllocator            = nullptr;  // We shouldn't be using the compAsIAllocator for other than the root compiler.
 #if MEASURE_MEM_ALLOC
@@ -1274,6 +1204,7 @@ void                Compiler::compInit(ArenaAllocator * pAlloc, InlineInfo * inl
     }
     else
     {
+        m_inlineStrategy            = new (this, CMK_Inlining) InlineStrategy(this);
         compInlineResult            = nullptr;
         compAsIAllocator            = new (this, CMK_Unknown) CompAllocator(this, CMK_AsIAllocator);
 #if MEASURE_MEM_ALLOC
@@ -3949,10 +3880,9 @@ void                 Compiler::compCompile(void * * methodCodePtr,
     compJitTelemetry.NotifyEndOfCompilation();
 #endif
 
-#if defined(DEBUG) || MEASURE_INLINING
+#if defined(DEBUG)
     ++Compiler::jitTotalMethodCompiled;
-    Compiler::jitTotalNumLocals += lvaCount; 
-#endif // defined(DEBUG) || MEASURE_INLINING
+#endif // defined(DEBUG)
 
 #ifdef DEBUG
     LONG newJitNestingLevel = InterlockedDecrement(&Compiler::jitNestingLevel);
@@ -4442,76 +4372,9 @@ void Compiler::compCompileFinish()
 
 #if defined(DEBUG) || defined(INLINE_DATA)
 
-    // Inliner data display
-    if (JitConfig.JitInlineDumpData() != 0)
-    {
-        // Don't dump anything if limiting is on and we didn't reach
-        // the limit while inlining.
-        //
-        // This serves to filter out duplicate data.
-        const int limit = JitConfig.JitInlineLimit();
+    m_inlineStrategy->DumpData();
 
-        if ((limit < 0) || (fgInlinedCount == static_cast<unsigned>(limit)))
-        {
-            // If there weren't any successful inlines (no limit, or
-            // limit=0 case), we won't have a successful policy, so
-            // fake one up.
-            if (inlLastSuccessfulPolicy == nullptr)
-            {
-                assert(limit <= 0);
-                const bool isPrejitRoot = (opts.eeFlags & CORJIT_FLG_PREJIT) != 0;
-                inlLastSuccessfulPolicy = InlinePolicy::GetPolicy(this, isPrejitRoot);
-
-                // Add in a bit of data....
-                const bool isForceInline = (info.compFlags & CORINFO_FLG_FORCEINLINE) != 0;
-                inlLastSuccessfulPolicy->NoteBool(InlineObservation::CALLEE_IS_FORCE_INLINE, isForceInline);
-                inlLastSuccessfulPolicy->NoteInt(InlineObservation::CALLEE_IL_CODE_SIZE, info.compMethodInfo->ILCodeSize);
-            }
-
-            if (!s_inlDumpDataHeader)
-            {
-                if (limit == 0)
-                {
-                    fprintf(stderr, "*** Inline Data: Policy=%s JitInlineLimit=%d ***\n",
-                                inlLastSuccessfulPolicy->GetName(),
-                                limit);
-                    fprintf(stderr, "Method,Version,HotSize,ColdSize,JitTime");
-                    inlLastSuccessfulPolicy->DumpSchema(stderr);
-                    fprintf(stderr, "\n");
-                }
-
-                s_inlDumpDataHeader = true;
-            }
-
-            // We'd really like the method identifier to be unique and
-            // durable across crossgen invocations. Not clear how to
-            // accomplish this, so we'll use the token for now.
-            //
-            // Post processing will have to filter out all data from
-            // methods where the root entry appears multiple times.
-            mdMethodDef currentMethodToken = info.compCompHnd->getMethodDefFromMethod(info.compMethodHnd);
-
-            // Convert time spent jitting into milliseconds
-            unsigned microsecondsSpentJitting = 0;
-            if (m_compCycles > 0)
-            {
-                double countsPerSec = CycleTimer::CyclesPerSecond();
-                double counts = (double) m_compCycles;
-                microsecondsSpentJitting = (unsigned) ((counts / countsPerSec) * 1000 * 1000);
-            }
-
-            fprintf(stderr, "%08X,%u,%u,%u,%u",
-                        currentMethodToken,
-                        fgInlinedCount,
-                        info.compTotalHotCodeSize,
-                        info.compTotalColdCodeSize,
-                        microsecondsSpentJitting);
-            inlLastSuccessfulPolicy->DumpData(stderr);
-            fprintf(stderr, "\n");
-        }
-    }
-
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif
 
 #ifdef DEBUG
     if (opts.dspOrder)
