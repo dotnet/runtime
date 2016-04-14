@@ -18,10 +18,13 @@ enum {
 	PIN_TYPE_MAX
 };
 
+void sgen_pinning_init (void);
 void sgen_pin_stage_ptr (void *ptr);
 void sgen_optimize_pin_queue (void);
 void sgen_init_pinning (void);
 void sgen_finish_pinning (void);
+void sgen_pinning_register_pinned_in_nursery (GCObject *obj);
+void sgen_scan_pin_queue_objects (ScanCopyContext ctx);
 void sgen_pin_queue_clear_discarded_entries (GCMemSection *section, size_t max_pin_slot);
 size_t sgen_get_pinned_count (void);
 void sgen_pinning_setup_section (GCMemSection *section);

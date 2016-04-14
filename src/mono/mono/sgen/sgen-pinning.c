@@ -21,15 +21,29 @@
 
 static SgenPointerQueue pin_queue;
 static size_t last_num_pinned = 0;
+/*
+ * While we hold the pin_queue_mutex, all objects in pin_queue_objs will
+ * stay pinned, which means they can't move, therefore they can be scanned.
+ */
+static SgenPointerQueue pin_queue_objs;
+static MonoCoopMutex pin_queue_mutex;
 
 #define PIN_HASH_SIZE 1024
 static void *pin_hash_filter [PIN_HASH_SIZE];
 
 void
+sgen_pinning_init (void)
+{
+	mono_coop_mutex_init (&pin_queue_mutex);
+}
+
+void
 sgen_init_pinning (void)
 {
+	mono_coop_mutex_lock (&pin_queue_mutex);
 	memset (pin_hash_filter, 0, sizeof (pin_hash_filter));
 	pin_queue.mem_type = INTERNAL_MEM_PIN_QUEUE;
+	sgen_pointer_queue_clear (&pin_queue_objs);
 }
 
 void
@@ -37,6 +51,27 @@ sgen_finish_pinning (void)
 {
 	last_num_pinned = pin_queue.next_slot;
 	sgen_pointer_queue_clear (&pin_queue);
+	mono_coop_mutex_unlock (&pin_queue_mutex);
+}
+
+void
+sgen_pinning_register_pinned_in_nursery (GCObject *obj)
+{
+	sgen_pointer_queue_add (&pin_queue_objs, obj);
+}
+
+void
+sgen_scan_pin_queue_objects (ScanCopyContext ctx)
+{
+	int i;
+	ScanObjectFunc scan_func = ctx.ops->scan_object;
+
+	mono_coop_mutex_lock (&pin_queue_mutex);
+	for (i = 0; i < pin_queue_objs.next_slot; ++i) {
+		GCObject *obj = (GCObject *)pin_queue_objs.data [i];
+		scan_func (obj, sgen_obj_get_descriptor_safe (obj), ctx.queue);
+	}
+	mono_coop_mutex_unlock (&pin_queue_mutex);
 }
 
 void
