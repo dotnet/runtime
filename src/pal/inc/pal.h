@@ -5467,7 +5467,7 @@ PALAPI
 FlushProcessWriteBuffers();
 
 typedef void (*PAL_ActivationFunction)(CONTEXT *context);
-typedef BOOL (*PAL_SafeActivationCheckFunction)(SIZE_T ip);
+typedef BOOL (*PAL_SafeActivationCheckFunction)(SIZE_T ip, BOOL checkingCurrentThread);
 
 PALIMPORT
 VOID
@@ -6487,13 +6487,15 @@ public:
 };
 
 typedef VOID (PALAPI *PHARDWARE_EXCEPTION_HANDLER)(PAL_SEHException* ex);
+typedef BOOL (PALAPI *PHARDWARE_EXCEPTION_SAFETY_CHECK_FUNCTION)(PCONTEXT contextRecord, PEXCEPTION_RECORD exceptionRecord);
 typedef DWORD (PALAPI *PGET_GCMARKER_EXCEPTION_CODE)(LPVOID ip);
 
 PALIMPORT
 VOID
 PALAPI
 PAL_SetHardwareExceptionHandler(
-    IN PHARDWARE_EXCEPTION_HANDLER exceptionHandler);
+    IN PHARDWARE_EXCEPTION_HANDLER exceptionHandler,
+    IN PHARDWARE_EXCEPTION_SAFETY_CHECK_FUNCTION exceptionCheckFunction);
 
 PALIMPORT
 VOID
