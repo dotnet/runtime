@@ -87,15 +87,9 @@ bool hostpolicy_exists_in_svc(pal::string_t* resolved_dir)
 {
     pal::string_t svc_dir;
     pal::get_default_extensions_directory(&svc_dir);
+    append_path(&svc_dir, _X("pkgs"));
 
     pal::string_t version = _STRINGIFY(HOST_POLICY_PKG_VER);
-
-    fx_ver_t lib_ver(-1, -1, -1);
-    if (!fx_ver_t::parse(version, &lib_ver, false))
-    {
-        return false;
-    }
-
     pal::string_t rel_dir = _STRINGIFY(HOST_POLICY_PKG_REL_DIR);
     if (DIR_SEPARATOR != '/')
     {
@@ -104,19 +98,7 @@ bool hostpolicy_exists_in_svc(pal::string_t* resolved_dir)
 
     pal::string_t path = svc_dir;
     append_path(&path, _STRINGIFY(HOST_POLICY_PKG_NAME));
-
-    pal::string_t max_ver;
-    if (lib_ver.is_prerelease())
-    {
-        try_prerelease_roll_forward_in_dir(path, lib_ver, &max_ver);
-    }
-    else
-    {
-        try_patch_roll_forward_in_dir(path, lib_ver, &max_ver);
-    }
-
-
-    append_path(&path, max_ver.c_str());
+    append_path(&path, version.c_str());
     append_path(&path, rel_dir.c_str());
 
     if (library_exists_in_dir(path, LIBHOSTPOLICY_NAME, nullptr))
