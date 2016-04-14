@@ -993,20 +993,22 @@ static gboolean use_managed_allocator = TRUE;
 
 #ifdef HAVE_KW_THREAD
 
-#define EMIT_TLS_ACCESS_IN_CRITICAL_REGION_ADDR(mb) \
+#define EMIT_TLS_ACCESS_VAR(_mb, _var) /* nothing to do */
+
+#define EMIT_TLS_ACCESS_IN_CRITICAL_REGION_ADDR(mb, _var) \
 	do { \
 		mono_mb_emit_byte ((mb), MONO_CUSTOM_PREFIX); \
 		mono_mb_emit_byte ((mb), CEE_MONO_TLS); \
 		mono_mb_emit_i4 ((mb), TLS_KEY_SGEN_IN_CRITICAL_REGION_ADDR); \
 	} while (0)
 
-#define EMIT_TLS_ACCESS_NEXT_ADDR(mb)	do {	\
+#define EMIT_TLS_ACCESS_NEXT_ADDR(mb, _var)	do {	\
 	mono_mb_emit_byte ((mb), MONO_CUSTOM_PREFIX);	\
 	mono_mb_emit_byte ((mb), CEE_MONO_TLS);		\
 	mono_mb_emit_i4 ((mb), TLS_KEY_SGEN_TLAB_NEXT_ADDR);		\
 	} while (0)
 
-#define EMIT_TLS_ACCESS_TEMP_END(mb)	do {	\
+#define EMIT_TLS_ACCESS_TEMP_END(mb, _var)	do {	\
 	mono_mb_emit_byte ((mb), MONO_CUSTOM_PREFIX);	\
 	mono_mb_emit_byte ((mb), CEE_MONO_TLS);		\
 	mono_mb_emit_i4 ((mb), TLS_KEY_SGEN_TLAB_TEMP_END);		\
@@ -1015,37 +1017,43 @@ static gboolean use_managed_allocator = TRUE;
 #else
 
 #if defined(TARGET_OSX) || defined(TARGET_WIN32) || defined(TARGET_ANDROID) || defined(TARGET_IOS)
-#define EMIT_TLS_ACCESS_IN_CRITICAL_REGION_ADDR(mb) \
+
+// Cache the SgenThreadInfo pointer in a local 'var'.
+#define EMIT_TLS_ACCESS_VAR(mb, var) \
 	do { \
+		var = mono_mb_add_local ((mb), &mono_defaults.int_class->byval_arg); \
 		mono_mb_emit_byte ((mb), MONO_CUSTOM_PREFIX); \
 		mono_mb_emit_byte ((mb), CEE_MONO_TLS); \
 		mono_mb_emit_i4 ((mb), TLS_KEY_SGEN_THREAD_INFO); \
+		mono_mb_emit_stloc ((mb), (var)); \
+	} while (0)
+
+#define EMIT_TLS_ACCESS_IN_CRITICAL_REGION_ADDR(mb, var) \
+	do { \
+		mono_mb_emit_ldloc ((mb), (var)); \
 		mono_mb_emit_icon ((mb), MONO_STRUCT_OFFSET (SgenClientThreadInfo, in_critical_region)); \
 		mono_mb_emit_byte ((mb), CEE_ADD); \
 	} while (0)
 
-#define EMIT_TLS_ACCESS_NEXT_ADDR(mb)	do {	\
-	mono_mb_emit_byte ((mb), MONO_CUSTOM_PREFIX);	\
-	mono_mb_emit_byte ((mb), CEE_MONO_TLS);		\
-	mono_mb_emit_i4 ((mb), TLS_KEY_SGEN_THREAD_INFO);	\
+#define EMIT_TLS_ACCESS_NEXT_ADDR(mb, var)	do {	\
+	mono_mb_emit_ldloc ((mb), (var));		\
 	mono_mb_emit_icon ((mb), MONO_STRUCT_OFFSET (SgenThreadInfo, tlab_next_addr));	\
 	mono_mb_emit_byte ((mb), CEE_ADD);		\
 	mono_mb_emit_byte ((mb), CEE_LDIND_I);		\
 	} while (0)
 
-#define EMIT_TLS_ACCESS_TEMP_END(mb)	do {	\
-	mono_mb_emit_byte ((mb), MONO_CUSTOM_PREFIX);	\
-	mono_mb_emit_byte ((mb), CEE_MONO_TLS);		\
-	mono_mb_emit_i4 ((mb), TLS_KEY_SGEN_THREAD_INFO);	\
+#define EMIT_TLS_ACCESS_TEMP_END(mb, var)	do {	\
+	mono_mb_emit_ldloc ((mb), (var));		\
 	mono_mb_emit_icon ((mb), MONO_STRUCT_OFFSET (SgenThreadInfo, tlab_temp_end));	\
 	mono_mb_emit_byte ((mb), CEE_ADD);		\
 	mono_mb_emit_byte ((mb), CEE_LDIND_I);		\
 	} while (0)
 
 #else
-#define EMIT_TLS_ACCESS_NEXT_ADDR(mb)	do { g_error ("sgen is not supported when using --with-tls=pthread.\n"); } while (0)
-#define EMIT_TLS_ACCESS_TEMP_END(mb)	do { g_error ("sgen is not supported when using --with-tls=pthread.\n"); } while (0)
-#define EMIT_TLS_ACCESS_IN_CRITICAL_REGION_ADDR(mb)	do { g_error ("sgen is not supported when using --with-tls=pthread.\n"); } while (0)
+#define EMIT_TLS_ACCESS_VAR(mb, _var)	do { g_error ("sgen is not supported when using --with-tls=pthread.\n"); } while (0)
+#define EMIT_TLS_ACCESS_NEXT_ADDR(mb, _var)	do { g_error ("sgen is not supported when using --with-tls=pthread.\n"); } while (0)
+#define EMIT_TLS_ACCESS_TEMP_END(mb, _var)	do { g_error ("sgen is not supported when using --with-tls=pthread.\n"); } while (0)
+#define EMIT_TLS_ACCESS_IN_CRITICAL_REGION_ADDR(mb, _var)	do { g_error ("sgen is not supported when using --with-tls=pthread.\n"); } while (0)
 #endif
 
 #endif
@@ -1061,7 +1069,7 @@ static gboolean use_managed_allocator = TRUE;
 static MonoMethod*
 create_allocator (int atype, ManagedAllocatorVariant variant)
 {
-	int p_var, size_var;
+	int p_var, size_var, thread_var G_GNUC_UNUSED;
 	gboolean slowpath = variant == MANAGED_ALLOCATOR_SLOW_PATH;
 	guint32 slowpath_branch, max_size_branch;
 	MonoMethodBuilder *mb;
@@ -1134,8 +1142,10 @@ create_allocator (int atype, ManagedAllocatorVariant variant)
 		goto done;
 	}
 
+	EMIT_TLS_ACCESS_VAR (mb, thread_var);
+
 #ifdef MANAGED_ALLOCATOR_CAN_USE_CRITICAL_REGION
-	EMIT_TLS_ACCESS_IN_CRITICAL_REGION_ADDR (mb);
+	EMIT_TLS_ACCESS_IN_CRITICAL_REGION_ADDR (mb, thread_var);
 	mono_mb_emit_byte (mb, CEE_LDC_I4_1);
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_byte (mb, CEE_MONO_ATOMIC_STORE_I4);
@@ -1291,7 +1301,7 @@ create_allocator (int atype, ManagedAllocatorVariant variant)
 
 	/* tlab_next_addr (local) = tlab_next_addr (TLS var) */
 	tlab_next_addr_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-	EMIT_TLS_ACCESS_NEXT_ADDR (mb);
+	EMIT_TLS_ACCESS_NEXT_ADDR (mb, thread_var);
 	mono_mb_emit_stloc (mb, tlab_next_addr_var);
 
 	/* p = (void**)tlab_next; */
@@ -1310,7 +1320,7 @@ create_allocator (int atype, ManagedAllocatorVariant variant)
 
 	/* if (G_LIKELY (new_next < tlab_temp_end)) */
 	mono_mb_emit_ldloc (mb, new_next_var);
-	EMIT_TLS_ACCESS_TEMP_END (mb);
+	EMIT_TLS_ACCESS_TEMP_END (mb, thread_var);
 	slowpath_branch = mono_mb_emit_short_branch (mb, MONO_CEE_BLT_UN_S);
 
 	/* Slowpath */
@@ -1377,7 +1387,7 @@ create_allocator (int atype, ManagedAllocatorVariant variant)
 	}
 
 #ifdef MANAGED_ALLOCATOR_CAN_USE_CRITICAL_REGION
-	EMIT_TLS_ACCESS_IN_CRITICAL_REGION_ADDR (mb);
+	EMIT_TLS_ACCESS_IN_CRITICAL_REGION_ADDR (mb, thread_var);
 	mono_mb_emit_byte (mb, CEE_LDC_I4_0);
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_byte (mb, CEE_MONO_ATOMIC_STORE_I4);
