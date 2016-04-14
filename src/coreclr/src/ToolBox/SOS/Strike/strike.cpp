@@ -11987,7 +11987,7 @@ void PrintRef(const SOSStackRefData &ref, TableOutput &out)
 class ClrStackImpl
 {
 public:
-    static void PrintThread(ULONG osID, BOOL bParams, BOOL bLocals, BOOL bSuppressLines, BOOL bGC, BOOL bFull)
+    static void PrintThread(ULONG osID, BOOL bParams, BOOL bLocals, BOOL bSuppressLines, BOOL bGC, BOOL bFull, BOOL bDisplayRegVals)
     {
         // Symbols variables
         ULONG symlines = 0; // symlines will be non-zero only if SYMOPT_LOAD_LINES was set in the symbol options
@@ -12100,7 +12100,8 @@ public:
                 if (bParams || bLocals)
                     PrintArgsAndLocals(pStackWalk, bParams, bLocals);
             }
-
+            if(bDisplayRegVals)
+                PrintManagedFrameContext(pStackWalk);
         } while (pStackWalk->Next() == S_OK);
 
 #ifdef _TARGET_WIN64_
@@ -12111,6 +12112,63 @@ public:
             numNativeFrames--;
         }
 #endif // _TARGET_WIN64_
+    }
+    
+    static HRESULT PrintManagedFrameContext(IXCLRDataStackWalk *pStackWalk)
+    {
+        CROSS_PLATFORM_CONTEXT context;
+        HRESULT hr = pStackWalk->GetContext(DT_CONTEXT_FULL, g_targetMachine->GetContextSize(), NULL, (BYTE *)&context);
+        if (FAILED(hr) || hr == S_FALSE)
+        {
+            // GetFrameContext returns S_FALSE if the frame iterator is invalid.  That's basically an error for us.
+            ExtOut("GetFrameContext failed: %lx\n", hr);
+            return E_FAIL;
+        }
+                     
+#if defined(SOS_TARGET_AMD64)
+        String outputFormat3 = "    %3s=%016x %3s=%016x %3s=%016x\n";
+        String outputFormat2 = "    %3s=%016x %3s=%016x\n";
+        ExtOut(outputFormat3, "rsp", context.Amd64Context.Rsp, "rbp", context.Amd64Context.Rbp, "rip", context.Amd64Context.Rip);
+        ExtOut(outputFormat3, "rax", context.Amd64Context.Rax, "rbx", context.Amd64Context.Rbx, "rcx", context.Amd64Context.Rcx);
+        ExtOut(outputFormat3, "rdx", context.Amd64Context.Rdx, "rsi", context.Amd64Context.Rsi, "rdi", context.Amd64Context.Rdi);
+        ExtOut(outputFormat3, "r8", context.Amd64Context.R8, "r9", context.Amd64Context.R9, "r10", context.Amd64Context.R10);
+        ExtOut(outputFormat3, "r11", context.Amd64Context.R11, "r12", context.Amd64Context.R12, "r13", context.Amd64Context.R13);
+        ExtOut(outputFormat2, "r14", context.Amd64Context.R14, "r15", context.Amd64Context.R15);
+#elif defined(SOS_TARGET_X86)
+        String outputFormat3 = "    %3s=%08x %3s=%08x %3s=%08x\n";
+        String outputFormat2 = "    %3s=%08x %3s=%08x\n";
+        ExtOut(outputFormat3, "esp", context.X86Context.Esp, "ebp", context.X86Context.Ebp, "eip", context.X86Context.Eip);
+        ExtOut(outputFormat3, "eax", context.X86Context.Eax, "ebx", context.X86Context.Ebx, "ecx", context.X86Context.Ecx);      
+        ExtOut(outputFormat3, "edx", context.X86Context.Edx, "esi", context.X86Context.Esi, "edi", context.X86Context.Edi);
+#elif defined(SOS_TARGET_ARM)
+        String outputFormat3 = "    %3s=%08x %3s=%08x %3s=%08x\n";
+        String outputFormat2 = "    %s=%08x %s=%08x\n";
+        String outputFormat1 = "    %s=%08x\n";
+        ExtOut(outputFormat3, "r0", context.ArmContext.R0, "r1", context.ArmContext.R1, "r2", context.ArmContext.R2);
+        ExtOut(outputFormat3, "r3", context.ArmContext.R3, "r4", context.ArmContext.R4, "r5", context.ArmContext.R5);
+        ExtOut(outputFormat3, "r6", context.ArmContext.R6, "r7", context.ArmContext.R7, "r8", context.ArmContext.R8);
+        ExtOut(outputFormat3, "r9", context.ArmContext.R9, "r10", context.ArmContext.R10, "r11", context.ArmContext.R11);
+        ExtOut(outputFormat1, "r12", context.ArmContext.R12);
+        ExtOut(outputFormat3, "sp", context.ArmContext.Sp, "lr", context.ArmContext.Lr, "pc", context.ArmContext.Pc);
+        ExtOut(outputFormat2, "cpsr", context.ArmContext.Cpsr, "fpsr", context.ArmContext.Fpscr);
+#elif defined(SOS_TARGET_ARM64)
+        String outputXRegFormat3 = "    x%d=%016x x%d=%016x x%d=%016x\n";
+        String outputXRegFormat1 = "    x%d=%016x\n";
+        String outputFormat3     = "    %s=%016x %s=%016x %s=%016x\n";
+        String outputFormat2     = "    %s=%08x %s=%08x\n";
+        DWORD64 *X = context.Arm64Context.X;
+        for (int i = 0; i < 9; i++)
+        {
+            ExtOut(outputXRegFormat3, i + 0, X[i + 0], i + 1, X[i + 1], i + 2, X[i + 2]);
+        }
+        ExtOut(outputXRegFormat1, 28, X[28]);
+        ExtOut(outputFormat3, "sp", context.ArmContext.Sp, "lr", context.ArmContext.Lr, "pc", context.ArmContext.Pc);
+        ExtOut(outputFormat2, "cpsr", context.ArmContext.Cpsr, "fpsr", context.ArmContext.Fpscr);
+#else
+        ExtOut("Can't display register values for this platform\n");
+#endif
+        return S_OK;
+
     }
 
     static HRESULT GetFrameLocation(IXCLRDataStackWalk *pStackWalk, CLRDATA_ADDRESS *ip, CLRDATA_ADDRESS *sp)
@@ -12178,7 +12236,7 @@ public:
         }
     }
 
-    static void PrintCurrentThread(BOOL bParams, BOOL bLocals, BOOL bSuppressLines, BOOL bGC, BOOL bNative)
+    static void PrintCurrentThread(BOOL bParams, BOOL bLocals, BOOL bSuppressLines, BOOL bGC, BOOL bNative, BOOL bDisplayRegVals)
     {
         ULONG id = 0;
         ULONG osid = 0;
@@ -12188,7 +12246,7 @@ public:
         g_ExtSystem->GetCurrentThreadId(&id);
         ExtOut("(%d)\n", id);
         
-        PrintThread(osid, bParams, bLocals, bSuppressLines, bGC, bNative);
+        PrintThread(osid, bParams, bLocals, bSuppressLines, bGC, bNative, bDisplayRegVals);
     }
 private: 
 
@@ -12600,6 +12658,7 @@ DECLARE_API(ClrStack)
     BOOL bGC = FALSE;
     BOOL dml = FALSE;
     BOOL bFull = FALSE;
+    BOOL bDisplayRegVals = FALSE;
     DWORD frameToDumpVariablesFor = -1;
     StringHolder cvariableName;
     ArrayHolder<WCHAR> wvariableName = new NOTHROW WCHAR[mdNameLen];
@@ -12621,6 +12680,7 @@ DECLARE_API(ClrStack)
         {"-i", &bICorDebug, COBOOL, FALSE},
         {"-gc", &bGC, COBOOL, FALSE},
         {"-f", &bFull, COBOOL, FALSE},
+        {"-r", &bDisplayRegVals, COBOOL, FALSE },
 #ifndef FEATURE_PAL
         {"/d", &dml, COBOOL, FALSE},
 #endif
@@ -12671,7 +12731,7 @@ DECLARE_API(ClrStack)
         return ClrStackImplWithICorDebug::ClrStackFromPublicInterface(bParams, bLocals, FALSE, wvariableName, frameToDumpVariablesFor);
     }
     
-    ClrStackImpl::PrintCurrentThread(bParams, bLocals, bSuppressLines, bGC, bFull);
+    ClrStackImpl::PrintCurrentThread(bParams, bLocals, bSuppressLines, bGC, bFull, bDisplayRegVals);
     
     return S_OK;
 }
