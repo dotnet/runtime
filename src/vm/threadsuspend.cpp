@@ -8348,9 +8348,16 @@ retry_for_debugger:
 
 // This function is called by PAL to check if the specified instruction pointer
 // is in a function where we can safely inject activation. 
-BOOL PALAPI CheckActivationSafePoint(SIZE_T ip)
+BOOL PALAPI CheckActivationSafePoint(SIZE_T ip, BOOL checkingCurrentThread)
 {
-    return ExecutionManager::IsManagedCode(ip);
+    Thread *pThread = GetThread();
+    // It is safe to call the ExecutionManager::IsManagedCode only if we are making the check for
+    // a thread different from the current one or if the current thread is in the cooperative mode.
+    // Otherwise ExecutionManager::IsManagedCode could deadlock if the activation happened when the
+    // thread was holding the ExecutionManager's writer lock.
+    // When the thread is in preemptive mode, we know for sure that it is not executing managed code.
+    BOOL checkForManagedCode = !checkingCurrentThread || (pThread != NULL && pThread->PreemptiveGCDisabled());
+    return checkForManagedCode && ExecutionManager::IsManagedCode(ip);
 }
 
 // This function is called when a GC is pending. It tries to ensure that the current
@@ -8362,7 +8369,7 @@ BOOL PALAPI CheckActivationSafePoint(SIZE_T ip)
 //
 //     - If the thread is in interruptible managed code, we will push a frame that
 //       has information about the context that was interrupted and then switch to
-//       premptive GC mode so that the pending GC can proceed, and then switch back.
+//       preemptive GC mode so that the pending GC can proceed, and then switch back.
 //
 //     - If the thread is in uninterruptible managed code, we will patch the return
 //       address to take the thread to the appropriate stub (based on the return 
@@ -8379,7 +8386,7 @@ void PALAPI HandleGCSuspensionForInterruptedThread(CONTEXT *interruptedContext)
 
     // This function can only be called when the interrupted thread is in 
     // an activation safe point.
-    _ASSERTE(CheckActivationSafePoint(ip));
+    _ASSERTE(CheckActivationSafePoint(ip, /* checkingCurrentThread */ TRUE));
 
     Thread::WorkingOnThreadContextHolder workingOnThreadContext(pThread);
     if (!workingOnThreadContext.Acquired())
