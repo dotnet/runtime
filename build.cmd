@@ -68,6 +68,7 @@ set __BuildTypeDebug=0
 set __BuildTypeChecked=0
 set __BuildTypeRelease=0
 set __GCStressLevel=0
+set __BuildJit32="-DBUILD_JIT32=0"
 
 REM __PassThroughArgs is a set of things that will be passed through to nested calls to build.cmd
 REM when using "all".
@@ -117,6 +118,7 @@ if /i "%1" == "sequential"          (set __BuildSequential=1&shift&goto Arg_Loop
 if /i "%1" == "disableoss"          (set __SignTypeReal="/p:SignType=real"&shift&goto Arg_Loop)
 if /i "%1" == "priority"            (set __TestPriority=%2&set __PassThroughArgs=%__PassThroughArgs% %2&shift&shift&goto Arg_Loop)
 if /i "%1" == "gcstresslevel"       (set __GCStressLevel=%2&set __PassThroughArgs=%__PassThroughArgs% %2&shift&shift&goto Arg_Loop)
+if /i "%1" == "buildjit32"          (set __BuildJit32="-DBUILD_JIT32=1"&shift&goto Arg_Loop)
 
 @REM For backwards compatibility, continue accepting "skiptestbuild", which was the original name of the option.
 if /i "%1" == "skiptestbuild"       (set __SkipTestBuild=1&shift&goto Arg_Loop)
@@ -308,7 +310,7 @@ if defined __SkipConfigure goto SkipConfigure
 echo %__MsgPrefix%Regenerating the Visual Studio solution
 
 pushd "%__IntermediatesDir%"
-call "%__SourceDir%\pal\tools\gen-buildsys-win.bat" "%__ProjectDir%" %__VSVersion% %__BuildArch%
+call "%__SourceDir%\pal\tools\gen-buildsys-win.bat" "%__ProjectDir%" %__VSVersion% %__BuildArch% %__BuildJit32%
 @if defined __echo @echo on
 popd
 
