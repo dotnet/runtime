@@ -906,7 +906,6 @@ namespace System.IO {
         
         }
 
-#if !FEATURE_CORECLR
         // Returns a cryptographically strong random 8.3 string that can be 
         // used as either a folder name or a file name.
 #if FEATURE_PAL
@@ -918,7 +917,7 @@ namespace System.IO {
             // This gives us exactly 8 chars. We want to avoid the 8.3 short name issue
             byte[] key = new byte[10];
 
-#if FEATURE_PAL
+#if FEATURE_CORECLR
             Win32Native.Random(true, key, key.Length);
 #else
             // RNGCryptoServiceProvider is disposable in post-Orcas desktop mscorlibs, but not in CoreCLR's
@@ -982,7 +981,6 @@ namespace System.IO {
             if (r==0) __Error.WinIOError();
             return sb.ToString();
         }
-#endif // FEATURE_CORECLR
 
         // Tests if a path includes a file extension. The result is
         // true if the characters that follow the last directory

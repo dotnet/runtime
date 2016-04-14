@@ -2413,26 +2413,29 @@ namespace Microsoft.Win32 {
 #if FEATURE_CORECLR
 #if FEATURE_PAL
         [DllImport(KERNEL32, EntryPoint = "PAL_Random")]
-        [ResourceExposure(ResourceScope.None)]
         internal extern static bool Random(bool bStrong,
                            [Out, MarshalAs(UnmanagedType.LPArray)] byte[] buffer, int length);
 #else
-        internal const int PROV_RSA_FULL = 1;
-        internal const int CRYPT_VERIFYCONTEXT = unchecked((int)0xF0000000);
+        private const int BCRYPT_USE_SYSTEM_PREFERRED_RNG = 0x00000002;
 
-        [DllImport("advapi32", SetLastError = true, CharSet = CharSet.Unicode)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool CryptAcquireContext([Out] out IntPtr phProv,
-                                                        string pszContainer,
-                                                        string pszProvider,
-                                                        int dwProvType,
-                                                        int dwFlags);
+        [DllImport("BCrypt.dll", CharSet = CharSet.Unicode)]
+        private static extern uint BCryptGenRandom(IntPtr hAlgorithm, [In, Out] byte[] pbBuffer, int cbBuffer, int dwFlags);
 
-        [DllImport("advapi32", SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool CryptGenRandom(IntPtr hProv,
-                                                   int dwLen,
-                                                   [In, Out, MarshalAs(UnmanagedType.LPArray)] byte[] pbBuffer);
+        internal static void Random(bool bStrong, byte[] buffer, int length)
+        {
+            uint status = BCryptGenRandom(IntPtr.Zero, buffer, length, BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+            if (status != STATUS_SUCCESS)
+            {
+                if (status == STATUS_NO_MEMORY)
+                {
+                    throw new OutOfMemoryException();
+                }
+                else
+                {
+                    throw new InvalidOperationException();
+                }
+            }
+        }
 #endif
 #endif
     }
