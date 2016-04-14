@@ -127,6 +127,11 @@ add_subdirectory(utilcode)
 add_subdirectory(gcinfo)
 add_subdirectory(coreclr)
 add_subdirectory(jit)
+
+if(IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/jit32")
+  add_subdirectory(jit32)
+endif()
+
 add_subdirectory(vm)
 add_subdirectory(md)
 add_subdirectory(debug)
