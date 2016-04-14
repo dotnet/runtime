@@ -185,7 +185,9 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo 
 	state = (thread_state_t) alloca (mono_mach_arch_get_thread_state_size ());
 	mctx = (mcontext_t) alloca (mono_mach_arch_get_mcontext_size ());
 
-	ret = mono_mach_arch_get_thread_state (info->native_handle, state, &num_state);
+	do {
+		ret = mono_mach_arch_get_thread_state (info->native_handle, state, &num_state);
+	} while (ret == KERN_ABORTED);
 	if (ret != KERN_SUCCESS)
 		return FALSE;
 
