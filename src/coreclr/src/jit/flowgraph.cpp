@@ -21674,6 +21674,13 @@ GenTreePtr Compiler::fgAssignStructInlineeToVar(GenTreePtr child, CORINFO_CLASS_
         // If inlinee was just a call, new inlinee is v05 = call()
         newInlinee = gtNewAssignNode(dst, src);
 
+        // When returning a multi-register value in a local var, make sure the variable is
+        // marked as lvIsMultiRegArgOrRet, so it does not get promoted.
+        if (src->AsCall()->HasMultiRegRetVal())
+        {
+            lvaTable[tmpNum].lvIsMultiRegArgOrRet = true;
+        }
+
         // If inlinee was comma, but a deeper call, new inlinee is (, , , v05 = call())
         if (child->gtOper == GT_COMMA)
         {
