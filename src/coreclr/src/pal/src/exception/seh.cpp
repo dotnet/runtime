@@ -52,6 +52,9 @@ const UINT RESERVED_SEH_BIT = 0x800000;
 /* Internal variables definitions **********************************************/
 
 PHARDWARE_EXCEPTION_HANDLER g_hardwareExceptionHandler = NULL;
+// Function to check if an activation can be safely injected at a specified context
+PHARDWARE_EXCEPTION_SAFETY_CHECK_FUNCTION g_safeExceptionCheckFunction = NULL;
+
 PGET_GCMARKER_EXCEPTION_CODE g_getGcMarkerExceptionCode = NULL;
 
 /* Internal function definitions **********************************************/
@@ -124,9 +127,11 @@ Return value:
 VOID
 PALAPI 
 PAL_SetHardwareExceptionHandler(
-    IN PHARDWARE_EXCEPTION_HANDLER exceptionHandler)
+    IN PHARDWARE_EXCEPTION_HANDLER exceptionHandler,
+    IN PHARDWARE_EXCEPTION_SAFETY_CHECK_FUNCTION exceptionCheckFunction)
 {
     g_hardwareExceptionHandler = exceptionHandler;
+    g_safeExceptionCheckFunction = exceptionCheckFunction;
 }
 
 /*++
@@ -212,7 +217,31 @@ SEHProcessException(PEXCEPTION_POINTERS pointers)
 
         if (g_hardwareExceptionHandler != NULL)
         {
-            g_hardwareExceptionHandler(&exception);
+            _ASSERTE(g_safeExceptionCheckFunction != NULL);
+            // Check if it is safe to handle the hardware exception (the exception happened in managed code
+            // or in a jitter helper or it is a debugger breakpoint)
+            if (g_safeExceptionCheckFunction(pointers->ContextRecord, pointers->ExceptionRecord))
+            {
+                if (pointers->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION)
+                {
+                    // Check if the failed access has hit a stack guard page. In such case, it
+                    // was a stack probe that detected that there is not enough stack left.
+                    void* stackLimit = CPalThread::GetStackLimit();
+                    void* stackGuard = (void*)((size_t)stackLimit - getpagesize());
+                    void* violationAddr = (void*)pointers->ExceptionRecord->ExceptionInformation[1];
+                    if ((violationAddr >= stackGuard) && (violationAddr < stackLimit))
+                    {
+                        // The exception happened in the page right below the stack limit,
+                        // so it is a stack overflow
+                        write(STDERR_FILENO, StackOverflowMessage, sizeof(StackOverflowMessage) - 1);
+                        PROCAbort();
+                    }
+                }
+
+                // The following callback returns only in case the exception was a single step or 
+                // a breakpoint and it was not handled by the debugger.
+                g_hardwareExceptionHandler(&exception);
+            }
         }
 
         if (CatchHardwareExceptionHolder::IsEnabled())
@@ -221,8 +250,7 @@ SEHProcessException(PEXCEPTION_POINTERS pointers)
         }
     }
 
-    TRACE("Unhandled hardware exception %08x at %p\n", 
-        pointers->ExceptionRecord->ExceptionCode, pointers->ExceptionRecord->ExceptionAddress);
+    // Unhandled hardware exception pointers->ExceptionRecord->ExceptionCode at pointers->ExceptionRecord->ExceptionAddress 
 }
 
 /*++
