@@ -1804,12 +1804,7 @@ namespace System.Collections {
         }
 
         private const int bufferSize = 1024;
-#if !FEATURE_PAL
-#if FEATURE_CORECLR
-        private static IntPtr hCryptProv;
-#else
-        private static RandomNumberGenerator rng;
-#endif
+#if !FEATURE_CORECLR
 #endif
         private static byte[] data;
         private static int currentIndex = bufferSize;
@@ -1826,25 +1821,17 @@ namespace System.Collections {
                     {
                         data = new byte[bufferSize];
                         Contract.Assert(bufferSize % 8 == 0, "We increment our current index by 8, so our buffer size must be a multiple of 8");
-#if !FEATURE_PAL
-#if FEATURE_CORECLR
+#if !FEATURE_CORECLR
                         Microsoft.Win32.Win32Native.CryptAcquireContext(out hCryptProv, null, null, 
                             Microsoft.Win32.Win32Native.PROV_RSA_FULL, Microsoft.Win32.Win32Native.CRYPT_VERIFYCONTEXT);
-#else
-                        rng = RandomNumberGenerator.Create();
-#endif
 #endif
 
                     }
 
-#if FEATURE_PAL
+#if FEATURE_CORECLR
                     Microsoft.Win32.Win32Native.Random(true, data, data.Length);
 #else
-#if FEATURE_CORECLR
-                    Microsoft.Win32.Win32Native.CryptGenRandom(hCryptProv, data.Length, data);
-#else
                     rng.GetBytes(data);
-#endif
 #endif
                     currentIndex = 0;
                 }
