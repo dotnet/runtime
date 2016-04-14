@@ -361,7 +361,7 @@ namespace System.Collections
             if (array == null)
                 throw new ArgumentNullException(nameof(array), SR.ArgumentNull_Array);
             if (array.Rank != 1)
-                throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
+                throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
             if (arrayIndex < 0)
                 throw new ArgumentOutOfRangeException(nameof(arrayIndex), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (array.Length - arrayIndex < Count)
@@ -982,7 +982,7 @@ namespace System.Collections
             public virtual void CopyTo(Array array, int arrayIndex)
             {
                 if (array != null && array.Rank != 1)
-                    throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
+                    throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
                 Contract.EndContractBlock();
 
                 // defer error checking to Array.Copy
@@ -1086,7 +1086,7 @@ namespace System.Collections
             public virtual void CopyTo(Array array, int arrayIndex)
             {
                 if (array != null && array.Rank != 1)
-                    throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
+                    throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
                 Contract.EndContractBlock();
 
                 // defer error checking to Array.Copy
