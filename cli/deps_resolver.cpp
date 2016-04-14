@@ -198,9 +198,9 @@ void deps_resolver_t::setup_probe_config(
         }
 
         // Servicing normal probe.
-        pal::string_t msil = args.dotnet_extensions;
-        append_path(&msil, _X("msil"));
-        m_probes.push_back(probe_config_t::svc(msil, false, false));
+        pal::string_t ext_pkgs = args.dotnet_extensions;
+        append_path(&ext_pkgs, _X("pkgs"));
+        m_probes.push_back(probe_config_t::svc(ext_pkgs, false, false));
     }
 
     if (pal::directory_exists(args.dotnet_packages_cache))
