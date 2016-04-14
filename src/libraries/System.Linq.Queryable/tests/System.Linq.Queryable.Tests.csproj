@@ -8,6 +8,8 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Linq.Queryable.Tests</AssemblyName>
     <RootNamespace>System.Linq.Queryable.Tests</RootNamespace>
+    <!-- Don't allow project reference to package dependency conversion -->
+    <KeepAllProjectReferences>true</KeepAllProjectReferences>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
