@@ -650,8 +650,8 @@ branchList.each { branchName ->
         def osGroup = osGroupMap[os]
         def configurationGroup = 'Debug'
 
-        def fullNativeCompBuildJobName = Utilities.getFolderName(project) + '/' + getJobName(Utilities.getFullJobName("nativecomp_${os.toLowerCase()}_${configurationGroup.toLowerCase()}", isPR), branchName)
-        def fullCoreFXBuildJobName = Utilities.getFolderName(project) + '/' + getJobName(Utilities.getFullJobName("${os.toLowerCase()}_${configurationGroup.toLowerCase()}_bld", isPR), branchName)
+        def fullNativeCompBuildJobName = Utilities.getFolderName(project) + '/' + getJobName(Utilities.getFullJobName(project, "nativecomp_${os.toLowerCase()}_${configurationGroup.toLowerCase()}", isPR), branchName)
+        def fullCoreFXBuildJobName = Utilities.getFolderName(project) + '/' + getJobName(Utilities.getFullJobName(project, "${os.toLowerCase()}_${configurationGroup.toLowerCase()}_bld", isPR), branchName)
 
         def newTestJobName = "outerloop_${os.toLowerCase()}_${configurationGroup.toLowerCase()}_checked_coreclr_tst"
 
