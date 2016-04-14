@@ -8,15 +8,9 @@ namespace System.Collections.Tests
 {
     public static class DictionaryBaseTests
     {
-        private static FooKey CreateKey(int i)
-        {
-            return new FooKey(i, i.ToString());
-        }
+        private static FooKey CreateKey(int i) => new FooKey(i, i.ToString());
 
-        private static FooValue CreateValue(int i)
-        {
-            return new FooValue(i, i.ToString());
-        }
+        private static FooValue CreateValue(int i) => new FooValue(i, i.ToString());
 
         private static MyDictionary CreateDictionary(int count)
         {
@@ -29,7 +23,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestAdd()
+        public static void Add()
         {
             var dictBase = new MyDictionary();
             for (int i = 0; i < 100; i++)
@@ -51,7 +45,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestRemove()
+        public static void Remove()
         {
             MyDictionary dictBase = CreateDictionary(100);
             for (int i = 0; i < 100; i++)
@@ -65,7 +59,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestContains()
+        public static void Contains()
         {
             MyDictionary dictBase = CreateDictionary(100);
             for (int i = 0; i < dictBase.Count; i++)
@@ -76,7 +70,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestKeys()
+        public static void Keys()
         {
             MyDictionary dictBase = CreateDictionary(100);
             ICollection keys = dictBase.Keys;
@@ -89,7 +83,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestValues()
+        public static void Values()
         {
             MyDictionary dictBase = CreateDictionary(100);
             ICollection values = dictBase.Values;
@@ -103,7 +97,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestIndexer_Get()
+        public static void Item_Get()
         {
             MyDictionary dictBase = CreateDictionary(100);
             for (int i = 0; i < dictBase.Count; i++)
@@ -114,14 +108,14 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestIndexer_Get_Invalid()
+        public static void Item_Get_NullKey_ThrowsArgumentNullException()
         {
             var dictBase = new MyDictionary();
-            Assert.Throws<ArgumentNullException>(() => dictBase[null]);
+            Assert.Throws<ArgumentNullException>("key", () => dictBase[null]);
         }
 
         [Fact]
-        public static void TestIndexer_Set()
+        public static void Item_Set()
         {
             MyDictionary dictBase = CreateDictionary(100);
 
@@ -141,14 +135,14 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestIndexer_Set_Invalid()
+        public static void Indexer_Set_NullKey_ThrowsArgumentNullException()
         {
             var dictBase = new MyDictionary();
-            Assert.Throws<ArgumentNullException>(() => dictBase[null] = new FooValue());
+            Assert.Throws<ArgumentNullException>("key", () => dictBase[null] = new FooValue());
         }
 
         [Fact]
-        public static void TestClear()
+        public static void Clear()
         {
             MyDictionary dictBase = CreateDictionary(100);
             dictBase.Clear();
@@ -156,7 +150,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestCopyTo()
+        public static void CopyTo()
         {
             MyDictionary dictBase = CreateDictionary(100);
             // Basic
@@ -185,19 +179,20 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestCopyTo_Invalid()
+        public static void CopyTo_Invalid()
         {
             MyDictionary dictBase = CreateDictionary(100);
-            Assert.Throws<ArgumentNullException>(() => dictBase.CopyTo(null, 0)); // Array is null
+            Assert.Throws<ArgumentNullException>("array", () => dictBase.CopyTo(null, 0)); // Array is null
+            Assert.Throws<ArgumentException>("array", () => dictBase.CopyTo(new object[100, 100], 0)); // Array is multidimensional
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => dictBase.CopyTo(new DictionaryEntry[100], -1)); // Index < 0
+            Assert.Throws<ArgumentOutOfRangeException>("arrayIndex", () => dictBase.CopyTo(new DictionaryEntry[100], -1)); // Index < 0
 
-            Assert.Throws<ArgumentException>(() => dictBase.CopyTo(new DictionaryEntry[100], 100)); // Index >= count
-            Assert.Throws<ArgumentException>(() => dictBase.CopyTo(new DictionaryEntry[100], 50)); // Index + array.Count >= count
+            Assert.Throws<ArgumentException>(null, () => dictBase.CopyTo(new DictionaryEntry[100], 100)); // Index >= count
+            Assert.Throws<ArgumentException>(null, () => dictBase.CopyTo(new DictionaryEntry[100], 50)); // Index + array.Count >= count
         }
 
         [Fact]
-        public static void TestGetEnumerator_IDictionaryEnumerator()
+        public static void GetEnumerator_IDictionaryEnumerator()
         {
             MyDictionary dictBase = CreateDictionary(100);
             IDictionaryEnumerator enumerator = dictBase.GetEnumerator();
@@ -223,7 +218,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestGetEnumerator_IDictionaryEnumerator_Invalid()
+        public static void GetEnumerator_IDictionaryEnumerator_Invalid()
         {
             MyDictionary dictBase = CreateDictionary(100);
             IDictionaryEnumerator enumerator = dictBase.GetEnumerator();
@@ -254,7 +249,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestGetEnumerator_IEnumerator()
+        public static void GetEnumerator_IEnumerator()
         {
             MyDictionary dictBase = CreateDictionary(100);
             IEnumerator enumerator = ((IEnumerable)dictBase).GetEnumerator();
@@ -272,7 +267,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestGetEnumerator_IEnumerator_Invalid()
+        public static void GetEnumerator_IEnumerator_Invalid()
         {
             MyDictionary dictBase = CreateDictionary(100);
             IEnumerator enumerator = ((IEnumerable)dictBase).GetEnumerator();
@@ -294,7 +289,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestSyncRoot()
+        public static void SyncRoot()
         {
             // SyncRoot should be the reference to the underlying dictionary, not to MyDictionary
             var dictBase = new MyDictionary();
@@ -304,7 +299,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestIDictionaryProperties()
+        public static void IDictionaryProperties()
         {
             var dictBase = new MyDictionary();
             Assert.False(dictBase.IsFixedSize);
@@ -313,7 +308,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestAdd_Called()
+        public static void Add_Called()
         {
             var f = new FooKey(0, "0");
             var dictBase = new OnMethodCalledDictionary();
@@ -326,7 +321,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestAdd_Throws_Called()
+        public static void Add_Throws_Called()
         {
             var f = new FooKey(0, "0");
 
@@ -353,7 +348,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestRemove_Called()
+        public static void Remove_Called()
         {
             var f = new FooKey(0, "0");
             var dictBase = new OnMethodCalledDictionary();
@@ -370,7 +365,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestRemove_Throws_Called()
+        public static void Remove_Throws_Called()
         {
             var f = new FooKey(0, "0");
 
@@ -400,7 +395,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestClear_Called()
+        public static void Clear_Called()
         {
             var f = new FooKey(0, "0");
             var dictBase = new OnMethodCalledDictionary();
@@ -414,7 +409,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestClear_Throws_Called()
+        public static void Clear_Throws_Called()
         {
             var f = new FooKey(0, "0");
 
@@ -444,7 +439,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestSet_New_Called()
+        public static void Set_New_Called()
         {
             var f = new FooKey(1, "1");
 
@@ -462,7 +457,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestSet_New_Throws_Called()
+        public static void Set_New_Throws_Called()
         {
             var f = new FooKey(0, "0");
 
@@ -489,7 +484,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestSet_Existing_Called()
+        public static void Set_Existing_Called()
         {
             var f = new FooKey(1, "1");
 
@@ -507,7 +502,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestSet_Existing_Throws_Called()
+        public static void Set_Existing_Throws_Called()
         {
             var f = new FooKey(0, "0");
 
@@ -539,10 +534,7 @@ namespace System.Collections.Tests
         // DictionaryBase is provided to be used as the base class for strongly typed collections. Lets use one of our own here
         private class MyDictionary : DictionaryBase
         {
-            public void Add(FooKey key, FooValue value)
-            {
-                Dictionary.Add(key, value);
-            }
+            public void Add(FooKey key, FooValue value) => Dictionary.Add(key, value);
 
             public FooValue this[FooKey key]
             {
@@ -560,15 +552,9 @@ namespace System.Collections.Tests
                 get { return Dictionary.SyncRoot; }
             }
 
-            public bool Contains(FooKey key)
-            {
-                return Dictionary.Contains(key);
-            }
+            public bool Contains(FooKey key) => Dictionary.Contains(key);
 
-            public void Remove(FooKey key)
-            {
-                Dictionary.Remove(key);
-            }
+            public void Remove(FooKey key) => Dictionary.Remove(key);
 
             public bool IsFixedSize
             {
@@ -599,51 +585,27 @@ namespace System.Collections.Tests
 
             public FooKey(int i, string str)
             {
-                _intValue = i;
-                _stringValue = str;
+                IntValue = i;
+                StringValue = str;
             }
 
-            private int _intValue;
-            public int IntValue
-            {
-                get { return _intValue; }
-                set { _intValue = value; }
-            }
-
-            private string _stringValue;
-            public string StringValue
-            {
-                get { return _stringValue; }
-                set { _stringValue = value; }
-            }
+            public int IntValue { get; set; }            
+            public string StringValue { get; set; }
 
             public override bool Equals(object obj)
             {
-                if (obj == null)
+                FooKey foo = obj as FooKey;
+                if (foo == null)
                     return false;
-                if (!(obj is FooKey))
-                    return false;
-                if ((((FooKey)obj).IntValue == _intValue) && (((FooKey)obj).StringValue == _stringValue))
-                    return true;
-                return false;
+                return foo.IntValue == IntValue && foo.StringValue == StringValue;
             }
 
-            public override int GetHashCode()
-            {
-                return _intValue;
-            }
+            public override int GetHashCode() =>IntValue;
 
             public int CompareTo(object obj)
             {
-                if (!(obj is FooKey))
-                    throw new ArgumentException("obj must be type FooKey");
                 FooKey temp = (FooKey)obj;
-                if (temp.IntValue > _intValue)
-                    return -1;
-                else if (temp.IntValue < _intValue)
-                    return 1;
-                else
-                    return 0;
+                return IntValue.CompareTo(temp.IntValue);
             }
         }
 
@@ -655,51 +617,27 @@ namespace System.Collections.Tests
 
             public FooValue(int intValue, string stringValue)
             {
-                _intValue = intValue;
-                _stringValue = stringValue;
+                IntValue = intValue;
+                StringValue = stringValue;
             }
-
-            private int _intValue;
-            public int IntValue
-            {
-                get { return _intValue; }
-                set { _intValue = value; }
-            }
-
-            private string _stringValue;
-            public string StringValue
-            {
-                get { return _stringValue; }
-                set { _stringValue = value; }
-            }
+            
+            public int IntValue { get; set; }
+            public string StringValue { get; set; }
 
             public override bool Equals(object obj)
             {
-                if (obj == null)
+                FooValue foo = obj as FooValue;
+                if (foo == null)
                     return false;
-                if (!(obj is FooValue))
-                    return false;
-                if ((((FooValue)obj).IntValue == _intValue) && (((FooValue)obj).StringValue == _stringValue))
-                    return true;
-                return false;
+                return foo.IntValue == IntValue && foo.StringValue == StringValue;
             }
 
-            public override int GetHashCode()
-            {
-                return _intValue;
-            }
+            public override int GetHashCode() => IntValue;
 
             public int CompareTo(object obj)
             {
-                if (!(obj is FooValue))
-                    throw new ArgumentException("obj must be type FooValue");
                 FooValue temp = (FooValue)obj;
-                if (temp.IntValue > _intValue)
-                    return -1;
-                else if (temp.IntValue < _intValue)
-                    return 1;
-                else
-                    return 0;
+                return IntValue.CompareTo(temp.IntValue);
             }
         }
 
@@ -726,32 +664,17 @@ namespace System.Collections.Tests
             public bool OnRemoveThrow;
             public bool OnRemoveCompleteThrow;
 
-            public void Add(FooKey key, string value)
-            {
-                Dictionary.Add(key, value);
-            }
+            public void Add(FooKey key, string value) => Dictionary.Add(key, value);
 
             public string this[FooKey key]
             {
-                get
-                {
-                    return (string)Dictionary[key];
-                }
-                set
-                {
-                    Dictionary[key] = value;
-                }
+                get { return (string)Dictionary[key]; }
+                set { Dictionary[key] = value; }
             }
 
-            public bool Contains(FooKey key)
-            {
-                return Dictionary.Contains(key);
-            }
+            public bool Contains(FooKey key) => Dictionary.Contains(key);
 
-            public void Remove(FooKey key)
-            {
-                Dictionary.Remove(key);
-            }
+            public void Remove(FooKey key) => Dictionary.Remove(key);
 
             protected override void OnSet(object key, object oldValue, object newValue)
             {

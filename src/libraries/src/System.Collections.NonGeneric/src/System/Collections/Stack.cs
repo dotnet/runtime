@@ -136,7 +136,7 @@ namespace System.Collections
             if (array == null)
                 throw new ArgumentNullException(nameof(array));
             if (array.Rank != 1)
-                throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
+                throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (array.Length - index < _size)

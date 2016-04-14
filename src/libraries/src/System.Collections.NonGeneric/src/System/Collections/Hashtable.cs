@@ -196,7 +196,7 @@ namespace System.Collections
 
             double rawsize = capacity / _loadFactor;
             if (rawsize > Int32.MaxValue)
-                throw new ArgumentException(SR.Arg_HTCapacityOverflow);
+                throw new ArgumentException(SR.Arg_HTCapacityOverflow, nameof(capacity));
 
             // Avoid awfully small sizes
             int hashsize = (rawsize > InitialSize) ? HashHelpers.GetPrime((int)rawsize) : InitialSize;
@@ -460,7 +460,7 @@ namespace System.Collections
             if (array == null)
                 throw new ArgumentNullException(nameof(array), SR.ArgumentNull_Array);
             if (array.Rank != 1)
-                throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
+                throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
             if (arrayIndex < 0)
                 throw new ArgumentOutOfRangeException(nameof(arrayIndex), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (array.Length - arrayIndex < Count)
@@ -1022,7 +1022,7 @@ namespace System.Collections
                 if (array == null)
                     throw new ArgumentNullException(nameof(array));
                 if (array.Rank != 1)
-                    throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
+                    throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
                 if (arrayIndex < 0)
                     throw new ArgumentOutOfRangeException(nameof(arrayIndex), SR.ArgumentOutOfRange_NeedNonNegNum);
                 Contract.EndContractBlock();
@@ -1068,7 +1068,7 @@ namespace System.Collections
                 if (array == null)
                     throw new ArgumentNullException(nameof(array));
                 if (array.Rank != 1)
-                    throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
+                    throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
                 if (arrayIndex < 0)
                     throw new ArgumentOutOfRangeException(nameof(arrayIndex), SR.ArgumentOutOfRange_NeedNonNegNum);
                 Contract.EndContractBlock();
