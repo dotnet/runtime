@@ -5034,11 +5034,17 @@ bool IsDivByZeroAnIntegerOverflow(PCONTEXT pContext)
 
 BOOL PALAPI IsSafeToHandleHardwareException(PCONTEXT contextRecord, PEXCEPTION_RECORD exceptionRecord)
 {
+    Thread *pThread = GetThread();
     PCODE controlPc = GetIP(contextRecord);
+    // It is safe to call the ExecutionManager::IsManagedCode only if the current thread is in
+    // the cooperative mode. Otherwise ExecutionManager::IsManagedCode could deadlock if 
+    // the exception happened when the thread was holding the ExecutionManager's writer lock.
+    // When the thread is in preemptive mode, we know for sure that it is not executing managed code.
+    BOOL isManagedCode = (pThread != NULL && pThread->PreemptiveGCDisabled() && ExecutionManager::IsManagedCode(controlPc));
     return g_fEEStarted && (
         exceptionRecord->ExceptionCode == STATUS_BREAKPOINT || 
         exceptionRecord->ExceptionCode == STATUS_SINGLE_STEP ||
-        ExecutionManager::IsManagedCode(controlPc) || 
+        isManagedCode ||
         IsIPInMarkedJitHelper(controlPc));
 }
 
@@ -5050,8 +5056,10 @@ VOID PALAPI HandleHardwareException(PAL_SEHException* ex)
     {
         // A hardware exception is handled only if it happened in a jitted code or 
         // in one of the JIT helper functions (JIT_MemSet, ...)
+        Thread *pThread = GetThread();
         PCODE controlPc = GetIP(&ex->ContextRecord);
-        if (ExecutionManager::IsManagedCode(controlPc) && IsGcMarker(ex->ExceptionRecord.ExceptionCode, &ex->ContextRecord))
+        BOOL isManagedCode = (pThread != NULL && pThread->PreemptiveGCDisabled() && ExecutionManager::IsManagedCode(controlPc));
+        if (isManagedCode && IsGcMarker(ex->ExceptionRecord.ExceptionCode, &ex->ContextRecord))
         {
             RtlRestoreContext(&ex->ContextRecord, &ex->ExceptionRecord);
             UNREACHABLE();
