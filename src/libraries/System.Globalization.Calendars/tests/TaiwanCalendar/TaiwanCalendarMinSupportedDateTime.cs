@@ -4,7 +4,7 @@
 
 using Xunit;
 
-namespace System.Globalization.CalendarsTests
+namespace System.Globalization.Tests
 {
     public class TaiwanCalendarMinSupportedDateTime
     {
