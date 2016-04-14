@@ -13,18 +13,21 @@ namespace System.Globalization.Tests
 
         public static IEnumerable<object[]> GetDaysInYear_TestData()
         {
-            yield return new object[] { 1, 1 };
-            yield return new object[] { 9999, 1 };
-            yield return new object[] { 2004, 1 };
-            yield return new object[] { s_randomDataGenerator.GetInt16(-55) % 9999, 1 };
+            yield return new object[] { 1 };
+            yield return new object[] { 9999 };
+            yield return new object[] { 2004 };
+            yield return new object[] { s_randomDataGenerator.GetInt16(-55) % 9999 };
         }
 
         [Theory]
         [MemberData(nameof(GetDaysInYear_TestData))]
-        public void GetDaysInYear(int year, int era)
+        public void GetDaysInYear(int year)
         {
-            int expected = new GregorianCalendar().GetDaysInYear(year, era);
-            Assert.Equal(expected, new KoreanCalendar().GetDaysInYear(year + 2333, era));
+            KoreanCalendar calendar = new KoreanCalendar();
+            int expected = new GregorianCalendar().GetDaysInYear(year);
+            Assert.Equal(expected, calendar.GetDaysInYear(year + 2333));
+            Assert.Equal(expected, calendar.GetDaysInYear(year + 2333, 0));
+            Assert.Equal(expected, calendar.GetDaysInYear(year + 2333, 1));
         }
     }
 }

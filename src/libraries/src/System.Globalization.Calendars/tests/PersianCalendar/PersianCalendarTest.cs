@@ -140,6 +140,12 @@ namespace System.Globalization.Tests
             Assert.Equal(expected, calendar.ToFourDigitYear(year));
         }
 
+        [Fact]
+        public void Eras()
+        {
+            Assert.Equal(new int[] { 1 }, new PersianCalendar().Eras);
+        }
+
         private static int[] s_dates = new int[]
         {
             // Persian year, Persian Month, Persian Day, Gregorian Year, Gregorian Month, Gregorian Day

@@ -14,16 +14,19 @@ namespace System.Globalization.Tests
             int randomYear = TaiwanCalendarUtilities.RandomYear();
             int radomMonth = TaiwanCalendarUtilities.RandomMonth();
             int randomDay = TaiwanCalendarUtilities.RandomDay(randomYear, radomMonth);
-            yield return new object[] { randomYear, radomMonth, randomDay, 1, false };
+            yield return new object[] { randomYear, radomMonth, randomDay, false };
 
-            yield return new object[] { 2000 - 1911, 2, 29, 1, true };
+            yield return new object[] { 2000 - 1911, 2, 29, true };
         }
 
         [Theory]
         [MemberData(nameof(IsLeapDay_TestData))]
-        public void IsLeapDay(int year, int month, int day, int era, bool expected)
+        public void IsLeapDay(int year, int month, int day, bool expected)
         {
-            Assert.Equal(expected, new TaiwanCalendar().IsLeapDay(year, month, day, era));
+            TaiwanCalendar calendar = new TaiwanCalendar();
+            Assert.Equal(expected, calendar.IsLeapDay(year, month, day));
+            Assert.Equal(expected, calendar.IsLeapDay(year, month, day, 0));
+            Assert.Equal(expected, calendar.IsLeapDay(year, month, day, 1));
         }
     }
 }

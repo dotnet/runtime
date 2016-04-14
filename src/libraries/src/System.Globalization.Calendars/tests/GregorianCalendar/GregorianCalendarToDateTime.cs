@@ -30,6 +30,8 @@ namespace System.Globalization.Tests
 
             // Maximum supported DateTime
             yield return new object[] { 9999, 12, 31, 23, 59, 59, 999 };
+
+            yield return new object[] { 1600, 1, 1, 0, 0, 0 , 0 };
         }
         
         [Theory]
