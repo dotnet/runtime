@@ -118,6 +118,10 @@ namespace System.Text.RegularExpressions.Tests
 
             // IgnoreCase
             yield return new object[] { "AAA", "aaabbb", RegexOptions.IgnoreCase, 0, 6, true, "aaa" };
+            yield return new object[] { @"\p{Lu}", "1bc", RegexOptions.IgnoreCase, 0, 3, true, "b" };
+            yield return new object[] { @"\p{Ll}", "1bc", RegexOptions.IgnoreCase, 0, 3, true, "b" };
+            yield return new object[] { @"\p{Lt}", "1bc", RegexOptions.IgnoreCase, 0, 3, true, "b" };
+            yield return new object[] { @"\p{Lo}", "1bc", RegexOptions.IgnoreCase, 0, 3, false, string.Empty };
 
             // "\D+"
             yield return new object[] { @"\D+", "12321", RegexOptions.None, 0, 5, false, string.Empty };
@@ -175,19 +179,19 @@ namespace System.Text.RegularExpressions.Tests
             // Alternation construct
             yield return new object[] { "(?(cat)|dog)", "oof", RegexOptions.None, 0, 3, false, string.Empty };
 
-            //No Negation
+            // No Negation
             yield return new object[] { "[abcd-[abcd]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
             yield return new object[] { "[1234-[1234]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
 
-            //All Negation
+            // All Negation
             yield return new object[] { "[^abcd-[^abcd]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
             yield return new object[] { "[^1234-[^1234]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
 
-            //No Negation        
+            // No Negation        
             yield return new object[] { "[a-z-[a-z]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
             yield return new object[] { "[0-9-[0-9]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
 
-            //All Negation
+            // All Negation
             yield return new object[] { "[^a-z-[^a-z]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
             yield return new object[] { "[^0-9-[^0-9]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
 
@@ -215,7 +219,7 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { @"[^\d-[\D]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
             yield return new object[] { @"[\d-[^\D]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
 
-            //No Negation
+            // No Negation
             yield return new object[] { @"[\p{Ll}-[\p{Ll}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
             yield return new object[] { @"[\P{Ll}-[\P{Ll}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
             yield return new object[] { @"[\p{Lu}-[\p{Lu}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
@@ -299,6 +303,15 @@ namespace System.Text.RegularExpressions.Tests
         {
             Assert.Equal(expectedSuccess, match.Success);
             Assert.Equal(expectedValue, match.Value);
+        }
+
+        [Fact]
+        public void Match_Timeout()
+        {
+            Regex regex = new Regex(@"\p{Lu}", RegexOptions.IgnoreCase, TimeSpan.FromHours(1));
+            Match match = regex.Match("abc");
+            Assert.True(match.Success);
+            Assert.Equal("a", match.Value);
         }
 
         public static IEnumerable<object[]> Match_Advanced_TestData()
@@ -460,6 +473,18 @@ namespace System.Text.RegularExpressions.Tests
                 }
             };
 
+            yield return new object[]
+            {
+                @"(?<A1>A*)(?<A2>B*)(?<A3>C*)", "aaabbccccccccccaaaabc", RegexOptions.IgnoreCase, 0, 21,
+                new Capture[]
+                {
+                    new Capture("aaabbcccccccccc", 0, 15),
+                    new Capture("aaa", 0, 3),
+                    new Capture("bb", 3, 2),
+                    new Capture("cccccccccc", 5, 10)
+                }
+            };
+
             // Using |, (), ^, $, .: Actual - "^aaa(bb.+)(d|c)$"
             yield return new object[]
             {
@@ -564,6 +589,7 @@ namespace System.Text.RegularExpressions.Tests
                     VerifyMatch(Regex.Match(input, pattern), true, expected);
 
                     Assert.True(new Regex(pattern).IsMatch(input));
+                    Assert.True(Regex.IsMatch(input, pattern));
                 }
                 if (beginning + length == input.Length)
                 {
@@ -633,9 +659,19 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"(?<1>\d{1,2})/(?<2>\d{1,2})/(?<3>\d{2,4})\s(?<time>\S+)", "08/10/99 16:00", "${1}", "08")]
         [InlineData(@"(?<1>\d{1,2})/(?<2>\d{1,2})/(?<3>\d{2,4})\s(?<time>\S+)", "08/10/99 16:00", "${2}", "10")]
         [InlineData(@"(?<1>\d{1,2})/(?<2>\d{1,2})/(?<3>\d{2,4})\s(?<time>\S+)", "08/10/99 16:00", "${3}", "99")]
+        [InlineData("abc", "abc", "abc", "abc")]
         public void Result(string pattern, string input, string replacement, string expected)
         {
             Assert.Equal(expected, new Regex(pattern).Match(input).Result(replacement));
+        }
+
+        [Fact]
+        public void Result_Invalid()
+        {
+            Match match = Regex.Match("foo", "foo");
+            Assert.Throws<ArgumentNullException>("replacement", () => match.Result(null));
+
+            Assert.Throws<NotSupportedException>(() => RegularExpressions.Match.Empty.Result("any"));
         }
 
         [Fact]
@@ -659,6 +695,73 @@ namespace System.Text.RegularExpressions.Tests
             {
                 CultureInfo.CurrentCulture = currentCulture;
             }
+        }
+
+        [Fact]
+        public void Match_Invalid()
+        {
+            // Input is null
+            Assert.Throws<ArgumentNullException>("input", () => Regex.Match(null, "pattern"));
+            Assert.Throws<ArgumentNullException>("input", () => Regex.Match(null, "pattern", RegexOptions.None));
+            Assert.Throws<ArgumentNullException>("input", () => Regex.Match(null, "pattern", RegexOptions.None, TimeSpan.FromSeconds(1)));
+
+            Assert.Throws<ArgumentNullException>("input", () => new Regex("pattern").Match(null));
+            Assert.Throws<ArgumentNullException>("input", () => new Regex("pattern").Match(null, 0));
+            Assert.Throws<ArgumentNullException>("input", () => new Regex("pattern").Match(null, 0, 0));
+
+            // Pattern is null
+            Assert.Throws<ArgumentNullException>("pattern", () => Regex.Match("input", null));
+            Assert.Throws<ArgumentNullException>("pattern", () => Regex.Match("input", null, RegexOptions.None));
+            Assert.Throws<ArgumentNullException>("pattern", () => Regex.Match("input", null, RegexOptions.None, TimeSpan.FromSeconds(1)));
+            
+            // Start is invalid
+            Assert.Throws<ArgumentOutOfRangeException>("start", () => new Regex("pattern").Match("input", -1));
+            Assert.Throws<ArgumentOutOfRangeException>("start", () => new Regex("pattern").Match("input", -1, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("start", () => new Regex("pattern").Match("input", 6));
+            Assert.Throws<ArgumentOutOfRangeException>("start", () => new Regex("pattern").Match("input", 6, 0));
+
+            // Length is invalid
+            Assert.Throws<ArgumentOutOfRangeException>("length", () => new Regex("pattern").Match("input", 0, -1));
+            Assert.Throws<ArgumentOutOfRangeException>("length", () => new Regex("pattern").Match("input", 0, 6));
+        }
+
+        [Theory]
+        [InlineData(")")]
+        [InlineData("())")]
+        [InlineData("[a-z-[aeiuo]")]
+        [InlineData("[a-z-[aeiuo")]
+        [InlineData("[a-z-[b]")]
+        [InlineData("[a-z-[b")]
+        [InlineData("[b-a]")]
+        [InlineData(@"[a-c]{2,1}")]
+        [InlineData(@"\d{2147483648}")]
+        [InlineData("[a-z-[b][")]
+        [InlineData(@"\")]
+        [InlineData("(?()|||||)")]
+        public void Match_InvalidPattern(string pattern)
+        {
+            Assert.Throws<ArgumentException>(() => Regex.Match("input", pattern));
+        }
+
+        [Fact]
+        public void IsMatch_Invalid()
+        {
+            // Input is null
+            Assert.Throws<ArgumentNullException>("input", () => Regex.IsMatch(null, "pattern"));
+            Assert.Throws<ArgumentNullException>("input", () => Regex.IsMatch(null, "pattern", RegexOptions.None));
+            Assert.Throws<ArgumentNullException>("input", () => Regex.IsMatch(null, "pattern", RegexOptions.None, TimeSpan.FromSeconds(1)));
+
+            Assert.Throws<ArgumentNullException>("input", () => new Regex("pattern").IsMatch(null));
+            Assert.Throws<ArgumentNullException>("input", () => new Regex("pattern").IsMatch(null, 0));
+
+            // Pattern is null
+            Assert.Throws<ArgumentNullException>("pattern", () => Regex.IsMatch("input", null));
+            Assert.Throws<ArgumentNullException>("pattern", () => Regex.IsMatch("input", null, RegexOptions.None));
+            Assert.Throws<ArgumentNullException>("pattern", () => Regex.IsMatch("input", null, RegexOptions.None, TimeSpan.FromSeconds(1)));
+
+            // Start is invalid
+            Assert.Throws<ArgumentOutOfRangeException>("start", () => new Regex("pattern").IsMatch("input", -1));
+            Assert.Throws<ArgumentOutOfRangeException>("start", () => new Regex("pattern").IsMatch("input", 6));
         }
     }
 }

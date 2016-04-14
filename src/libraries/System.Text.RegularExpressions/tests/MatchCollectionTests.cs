@@ -13,17 +13,18 @@ namespace System.Text.RegularExpressions.Tests
         public void GetEnumerator()
         {
             Regex regex = new Regex("e");
-            MatchCollection collection = regex.Matches("dotnet");
-            IEnumerator enumerator = collection.GetEnumerator();
+            MatchCollection matches = regex.Matches("dotnet");
+            IEnumerator enumerator = matches.GetEnumerator();
             for (int i = 0; i < 2; i++)
             {
                 int counter = 0;
                 while (enumerator.MoveNext())
                 {
-                    Assert.Same(collection[counter], enumerator.Current);
+                    Assert.Same(matches[counter], enumerator.Current);
                     counter++;
                 }
-                Assert.Equal(collection.Count, counter);
+                Assert.False(enumerator.MoveNext());
+                Assert.Equal(matches.Count, counter);
                 enumerator.Reset();
             }
         }
@@ -32,8 +33,8 @@ namespace System.Text.RegularExpressions.Tests
         public void GetEnumerator_Invalid()
         {
             Regex regex = new Regex("e");
-            MatchCollection collection = regex.Matches("dotnet");
-            IEnumerator enumerator = collection.GetEnumerator();
+            MatchCollection matches = regex.Matches("dotnet");
+            IEnumerator enumerator = matches.GetEnumerator();
 
             Assert.Throws<InvalidOperationException>(() => enumerator.Current);
 
@@ -44,6 +45,59 @@ namespace System.Text.RegularExpressions.Tests
             Assert.True(enumerator.MoveNext());
             enumerator.Reset();
             Assert.Throws<InvalidOperationException>(() => enumerator.Current);
+        }
+
+        [Fact]
+        public void Item_Get_InvalidIndex_ThrowsArgumentOutOfRangeException()
+        {
+            Regex regex = new Regex("e");
+            MatchCollection matches = regex.Matches("dotnet");
+            Assert.Throws<ArgumentOutOfRangeException>("i", () => matches[-1]);
+            Assert.Throws<ArgumentOutOfRangeException>("i", () => matches[matches.Count]);
+        }
+
+        [Fact]
+        public void ICollection_Properties()
+        {
+            Regex regex = new Regex("e");
+            MatchCollection matches = regex.Matches("dotnet");
+            ICollection collection = matches;
+
+            Assert.False(collection.IsSynchronized);
+            Assert.Same(matches, collection.SyncRoot);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(5)]
+        public void ICollection_CopyTo(int index)
+        {
+            Regex regex = new Regex("e");
+            MatchCollection matches = regex.Matches("dotnet");
+            ICollection collection = matches;
+
+            Match[] copy = new Match[collection.Count + index];
+            collection.CopyTo(copy, index);
+
+            for (int i = 0; i < index; i++)
+            {
+                Assert.Null(copy[i]);
+            }
+            for (int i = index; i < copy.Length; i++)
+            {
+                Assert.Same(matches[i - index], copy[i]);
+            }
+        }
+
+        [Fact]
+        public void ICollection_CopyTo_Invalid()
+        {
+            Regex regex = new Regex("e");
+            ICollection collection = regex.Matches("dotnet");
+
+            Assert.Throws<ArgumentNullException>("dest", () => collection.CopyTo(null, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("dstIndex", () => collection.CopyTo(new Match[collection.Count], -1));
+            Assert.Throws<ArgumentException>(string.Empty, () => collection.CopyTo(new Match[collection.Count], collection.Count));
         }
     }
 }

@@ -143,5 +143,32 @@ namespace System.Text.RegularExpressions.Tests
                 Assert.Equal(expectedNames[i], regex.GroupNameFromNumber(expectedNumbers[i]));
             }
         }
+
+        [Theory]
+        [InlineData("foo", 1)]
+        [InlineData("foo", -1)]
+        [InlineData("(?<first_name>\\S+)\\s(?<last_name>\\S+)", -1)]
+        [InlineData("(?<first_name>\\S+)\\s(?<last_name>\\S+)", 3)]
+        [InlineData(@"((?<256>abc)\d+)?(?<16>xyz)(.*)", -1)]
+        public void GroupNameFromNumber_InvalidIndex_ReturnsEmptyString(string pattern, int index)
+        {
+            Assert.Same(string.Empty, new Regex(pattern).GroupNameFromNumber(index));
+        }
+
+        [Theory]
+        [InlineData("foo", "no-such-name")]
+        [InlineData("foo", "1")]
+        [InlineData("(?<first_name>\\S+)\\s(?<last_name>\\S+)", "no-such-name")]
+        [InlineData("(?<first_name>\\S+)\\s(?<last_name>\\S+)", "FIRST_NAME")]
+        public void GroupNumberFromName_InvalidName_ReturnsMinusOne(string pattern, string name)
+        {
+            Assert.Equal(-1, new Regex(pattern).GroupNumberFromName(name));
+        }
+
+        [Fact]
+        public void GroupNumberFromName_NullName_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>("name", () => new Regex("foo").GroupNumberFromName(null));
+        }
     }
 }

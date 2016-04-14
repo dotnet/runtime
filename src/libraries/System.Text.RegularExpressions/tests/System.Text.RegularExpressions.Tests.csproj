@@ -25,7 +25,6 @@
     <Compile Include="Regex.GetGroupNames.Tests.cs" />
     <Compile Include="Regex.Ctor.Tests.cs" />
     <Compile Include="Regex.MultipleMatches.Tests.cs" />
-    <Compile Include="Regex.RightToLeft.Tests.cs" />
     <Compile Include="Regex.UnicodeChar.Tests.cs" />
     <Compile Include="Regex.Groups.Tests.cs" />
     <Compile Include="Regex.Replace.Tests.cs" />

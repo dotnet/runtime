@@ -2,14 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
 {
-    public partial class RegexMultipleMatchTests
+    public class RegexMultipleMatchTests
     {
+
         [Fact]
-        public static void MultipleMatches_MultipleCapturingGroups()
+        public void Matches_MultipleCapturingGroups()
         {
             string[] expectedGroupValues = { "abracadabra", "abra", "cad" };
             string[] expectedGroupCaptureValues = { "abracad", "abra" };
@@ -47,48 +49,169 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
-        [Fact]
-        public static void MultipleMatches_AlphabeticCharacters()
+        public static IEnumerable<object[]> Matches_TestData()
         {
-            // Actual "(abc){2}"
-            Regex regex = new Regex("(abc){2}");
-            string input = " !abcabcasl  dkfjasiduf 12343214-//asdfjzpiouxoifzuoxpicvql23r\\` #$3245,2345278 :asdfas & 100% @daeeffga (ryyy27343) poiweurwabcabcasdfalksdhfaiuyoiruqwer{234}/[(132387 + x)]'aaa''?";
-            for (Match match = regex.Match(input); match.Success; match = match.NextMatch())
+            yield return new object[]
             {
-                Assert.Equal("abcabc", match.Groups[0].Value);
-                Assert.True(match.Groups[0].Index == 2 || match.Groups[0].Index == 125);
+                "[0-9]", "12345asdfasdfasdfljkhsda67890", RegexOptions.None,
+                new Capture[]
+                {
+                    new Capture("1", 0, 1),
+                    new Capture("2", 1, 1),
+                    new Capture("3", 2, 1),
+                    new Capture("4", 3, 1),
+                    new Capture("5", 4, 1),
+                    new Capture("6", 24, 1),
+                    new Capture("7", 25, 1),
+                    new Capture("8", 26, 1),
+                    new Capture("9", 27, 1),
+                    new Capture("0", 28, 1),
+                }
+            };
+
+            yield return new object[]
+            {
+                "[a-z0-9]+", "[token1]? GARBAGEtoken2GARBAGE ;token3!", RegexOptions.None,
+                new Capture[]
+                {
+                    new Capture("token1", 1, 6),
+                    new Capture("token2", 17, 6),
+                    new Capture("token3", 32, 6)
+                }
+            };
+
+            yield return new object[]
+            {
+                "(abc){2}", " !abcabcasl  dkfjasiduf 12343214-//asdfjzpiouxoifzuoxpicvql23r\\` #$3245,2345278 :asdfas & 100% @daeeffga (ryyy27343) poiweurwabcabcasdfalksdhfaiuyoiruqwer{234}/[(132387 + x)]'aaa''?", RegexOptions.None,
+                new Capture[]
+                {
+                    new Capture("abcabc", 2, 6),
+                    new Capture("abcabc", 125, 6)
+                }
+            };
+
+            yield return new object[]
+            {
+                @"foo\d+", "0123456789foo4567890foo1foo  0987", RegexOptions.RightToLeft,
+                new Capture[]
+                {
+                    new Capture("foo1", 20, 4),
+                    new Capture("foo4567890", 10, 10),
+                }
+            };
+
+            yield return new object[]
+            {
+                "[a-z]", "a", RegexOptions.None,
+                new Capture[]
+                {
+                    new Capture("a", 0, 1)
+                }
+            };
+
+            yield return new object[]
+            {
+                "[a-z]", "a1bc", RegexOptions.None,
+                new Capture[]
+                {
+                    new Capture("a", 0, 1),
+                    new Capture("b", 2, 1),
+                    new Capture("c", 3, 1)
+                }
+            };
+        }
+
+        [Theory]
+        [MemberData(nameof(Matches_TestData))]
+        public void Matches(string pattern, string input, RegexOptions options, Capture[] expected)
+        {
+            if (options == RegexOptions.None)
+            {
+                Regex regexBasic = new Regex(pattern);
+                VerifyMatches(regexBasic.Matches(input), expected);
+                VerifyMatches(regexBasic.Match(input), expected);
+
+                VerifyMatches(Regex.Matches(input, pattern), expected);
+                VerifyMatches(Regex.Match(input, pattern), expected);
+            }
+
+            Regex regexAdvanced = new Regex(pattern, options);
+            VerifyMatches(regexAdvanced.Matches(input), expected);
+            VerifyMatches(regexAdvanced.Match(input), expected);
+
+            VerifyMatches(Regex.Matches(input, pattern, options), expected);
+            VerifyMatches(Regex.Match(input, pattern, options), expected);
+        }
+
+        public static void VerifyMatches(Match match, Capture[] expected)
+        {
+            for (int i = 0; match.Success; i++, match = match.NextMatch())
+            {
+                VerifyMatch(match, expected[i]);
             }
         }
 
-        [Fact]
-        public static void MultipleMatches_NumericalCharacters()
+        public static void VerifyMatches(MatchCollection matches, Capture[] expected)
         {
-            // Searching for numeric characters: Actual "[0-9]"
-            Regex regex = new Regex("[0-9]");
-            string input = "12345asdfasdfasdfljkhsda67890";
-            int i = 0;
-            int[] expectedIndices = new int[] { 0, 1, 2, 3, 4, 24, 25, 26, 27, 28 };
-            for (Match match = regex.Match(input); match.Success; match = match.NextMatch(), i++)
+            Assert.Equal(expected.Length, matches.Count);
+            for (int i = 0; i < matches.Count; i++)
             {
-                Assert.True(char.IsDigit(match.Groups[0].Value[0]));
-                Assert.Equal(expectedIndices[i], match.Groups[0].Index);
+                VerifyMatch(matches[i], expected[i]);
             }
         }
 
-        [Fact]
-        public static void MultipleMatches_NumericalCharacters_Symbols()
+        public static void VerifyMatch(Match match, Capture expected)
         {
-            // Actual "[a-z0-9]+"
-            Regex regex = new Regex("[a-z0-9]+");
-            string input = "[token1]? GARBAGEtoken2GARBAGE ;token3!";
-            int i = 0;
-            string[] expectedValues = new string[] { "token1", "token2", "token3" };
-            int[] expectedIndicies = new int[] { 1, 17, 32 };
-            for (Match match = regex.Match(input); match.Success; match = match.NextMatch(), i++)
-            {
-                Assert.Equal(expectedValues[i], match.Groups[0].Value);
-                Assert.Equal(expectedIndicies[i], match.Groups[0].Index);
-            }
+            Assert.True(match.Success);
+            Assert.Equal(expected.Value, match.Value);
+            Assert.Equal(expected.Index, match.Index);
+            Assert.Equal(expected.Length, match.Length);
+
+            Assert.Equal(expected.Value, match.Groups[0].Value);
+            Assert.Equal(expected.Index, match.Groups[0].Index);
+            Assert.Equal(expected.Length, match.Groups[0].Length);
+
+            Assert.Equal(1, match.Captures.Count);
+            Assert.Equal(expected.Value, match.Captures[0].Value);
+            Assert.Equal(expected.Index, match.Captures[0].Index);
+            Assert.Equal(expected.Length, match.Captures[0].Length);
+        }
+
+        [Fact]
+        public void Matches_Invalid()
+        {
+            // Input is null
+            Assert.Throws<ArgumentNullException>("input", () => Regex.Matches(null, "pattern"));
+            Assert.Throws<ArgumentNullException>("input", () => Regex.Matches(null, "pattern", RegexOptions.None));
+            Assert.Throws<ArgumentNullException>("input", () => Regex.Matches(null, "pattern", RegexOptions.None, TimeSpan.FromSeconds(1)));
+
+            Assert.Throws<ArgumentNullException>("input", () => new Regex("pattern").Matches(null));
+            Assert.Throws<ArgumentNullException>("input", () => new Regex("pattern").Matches(null, 0));
+
+            // Pattern is null
+            Assert.Throws<ArgumentNullException>("pattern", () => Regex.Matches("input", null));
+            Assert.Throws<ArgumentNullException>("pattern", () => Regex.Matches("input", null, RegexOptions.None));
+            Assert.Throws<ArgumentNullException>("pattern", () => Regex.Matches("input", null, RegexOptions.None, TimeSpan.FromSeconds(1)));
+
+            // Options are invalid
+            Assert.Throws<ArgumentOutOfRangeException>("options", () => Regex.Matches("input", "pattern", (RegexOptions)(-1)));
+            Assert.Throws<ArgumentOutOfRangeException>("options", () => Regex.Matches("input", "pattern", (RegexOptions)(-1), TimeSpan.FromSeconds(1)));
+            Assert.Throws<ArgumentOutOfRangeException>("options", () => Regex.Matches("input", "pattern", (RegexOptions)0x400));
+            Assert.Throws<ArgumentOutOfRangeException>("options", () => Regex.Matches("input", "pattern", (RegexOptions)0x400, TimeSpan.FromSeconds(1)));
+
+            // MatchTimeout is invalid
+            Assert.Throws<ArgumentOutOfRangeException>("matchTimeout", () => Regex.Matches("input", "pattern", RegexOptions.None, TimeSpan.Zero));
+            Assert.Throws<ArgumentOutOfRangeException>("matchTimeout", () => Regex.Matches("input", "pattern", RegexOptions.None, TimeSpan.Zero));
+
+            // Start is invalid
+            Assert.Throws<ArgumentOutOfRangeException>("startat", () => new Regex("pattern").Matches("input", -1));
+            Assert.Throws<ArgumentOutOfRangeException>("startat", () => new Regex("pattern").Matches("input", 6));
+        }
+
+        [Fact]
+        public void NextMatch_EmptyMatch_ReturnsEmptyMatch()
+        {
+            Assert.Same(Match.Empty, Match.Empty.NextMatch());
         }
     }
 }

@@ -9,12 +9,38 @@ namespace System.Text.RegularExpressions.Tests
     public class RegexEscapeUnescapeTests
     {
         [Theory]
-        [InlineData("#$^*+(){}<>\\|. ")]
-        public static void EscapeUnescape(string source)
+        [InlineData("Hello", "Hello")]
+        [InlineData("#$^*+(){}<>\\|. ", @"\#\$\^\*\+\(\)\{}<>\\\|\.\ ")]
+        [InlineData("\n\r\t\f", "\\n\\r\\t\\f")]
+        [InlineData(@"\", @"\\")]
+        [InlineData("", "")]
+        public static void Escape(string str, string expected)
         {
-            string escaped = Regex.Escape(source);
-            string unescaped = Regex.Unescape(escaped);
-            Assert.Equal(source, unescaped);
+            Assert.Equal(expected, Regex.Escape(str));
+        }
+
+        [Fact]
+        public void Escape_NullString_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>("str", () => Regex.Escape(null));
+        }
+
+        [Theory]
+        [InlineData("Hello", "Hello")]
+        [InlineData(@"\#\$\^\*\+\(\)\{}<>\\\|\.\ ", "#$^*+(){}<>\\|. ")]
+        [InlineData("\\n\\r\\t\\f", "\n\r\t\f")]
+        [InlineData(@"\\", @"\")]
+        [InlineData(@"\", "")]
+        [InlineData("", "")]
+        public void Unescape(string str, string expected)
+        {
+            Assert.Equal(expected, Regex.Unescape(str));
+        }
+
+        [Fact]
+        public void Unscape_NullString_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>("str", () => Regex.Unescape(null));
         }
     }
 }
