@@ -158,6 +158,89 @@ ICorJitCompiler* __stdcall getJit()
     return(ILJitter);
 }
 
+/*****************************************************************************/
+
+// Information kept in thread-local storage. This is used in the noway_assert exceptional path.
+// If you are using it more broadly in retail code, you would need to understand the
+// performance implications of accessing TLS.
+//
+// If the JIT is being statically linked, these methods must be implemented by the consumer.
+#if !defined(FEATURE_MERGE_JIT_AND_ENGINE) || !defined(FEATURE_IMPLICIT_TLS)
+
+__declspec(thread) void* gJitTls = nullptr;
+
+static void* GetJitTls()
+{
+    return gJitTls;
+}
+
+void SetJitTls(void* value)
+{
+    gJitTls = value;
+}
+
+#else // !defined(FEATURE_MERGE_JIT_AND_ENGINE) || !defined(FEATURE_IMPLICIT_TLS)
+
+extern "C"
+{
+void* GetJitTls();
+void SetJitTls(void* value);
+}
+
+#endif // // defined(FEATURE_MERGE_JIT_AND_ENGINE) && defined(FEATURE_IMPLICIT_TLS)
+
+#if defined(DEBUG)
+
+JitTls::JitTls(ICorJitInfo* jitInfo)
+    : m_compiler(nullptr)
+    , m_logEnv(jitInfo)
+{
+    m_next = reinterpret_cast<JitTls*>(GetJitTls());
+    SetJitTls(this);
+}
+
+JitTls::~JitTls()
+{
+    SetJitTls(m_next);
+}
+
+LogEnv* JitTls::GetLogEnv()
+{
+    return &reinterpret_cast<JitTls*>(GetJitTls())->m_logEnv;
+}
+
+Compiler* JitTls::GetCompiler()
+{
+    return reinterpret_cast<JitTls*>(GetJitTls())->m_compiler;
+}
+
+void JitTls::SetCompiler(Compiler* compiler)
+{
+    reinterpret_cast<JitTls*>(GetJitTls())->m_compiler = compiler;
+}
+
+#else // defined(DEBUG)
+
+JitTls::JitTls(ICorJitInfo* jitInfo)
+{
+}
+
+JitTls::~JitTls()
+{
+}
+
+Compiler* JitTls::GetCompiler()
+{
+    return reinterpret_cast<Compiler*>(GetJitTls());
+}
+
+void JitTls::SetCompiler(Compiler* compiler)
+{
+    SetJitTls(compiler);
+}
+
+#endif // !defined(DEBUG)
+
 //****************************************************************************
 // The main JIT function for the 32 bit JIT.  See code:ICorJitCompiler#EEToJitInterface for more on the EE-JIT
 // interface. Things really don't get going inside the JIT until the code:Compiler::compCompile#Phases
@@ -195,9 +278,7 @@ CorJitResult CILJit::compileMethod (
     void *                  methodCodePtr = NULL;
     CORINFO_METHOD_HANDLE   methodHandle  = methodInfo->ftn;
 
-#ifdef DEBUG
-    LogEnv curEnv(compHnd);      // capture state needed for error reporting
-#endif
+    JitTls jitTls(compHnd); // Initialize any necessary thread-local state
 
     assert(methodInfo->ILCode);
 

@@ -476,13 +476,13 @@ const   bool        dspGCtbls = true;
 
 #ifdef DEBUG
 void JitDump(const char* pcFormat, ...);
-#define JITDUMP(...) { if (GetTlsCompiler()->verbose) JitDump(__VA_ARGS__); }
+#define JITDUMP(...) { if (JitTls::GetCompiler()->verbose) JitDump(__VA_ARGS__); }
 #define JITLOG(x) { JitLogEE x; }
 #define JITLOG_THIS(t, x) { (t)->JitLogEE x; }
 #define DBEXEC(flg, expr) if (flg) {expr;}
-#define DISPNODE(t) if (GetTlsCompiler()->verbose) GetTlsCompiler()->gtDispTree(t, nullptr, nullptr, true);
-#define DISPTREE(x) if (GetTlsCompiler()->verbose) GetTlsCompiler()->gtDispTree(x)
-#define VERBOSE GetTlsCompiler()->verbose
+#define DISPNODE(t) if (JitTls::GetCompiler()->verbose) JitTls::GetCompiler()->gtDispTree(t, nullptr, nullptr, true);
+#define DISPTREE(x) if (JitTls::GetCompiler()->verbose) JitTls::GetCompiler()->gtDispTree(x)
+#define VERBOSE JitTls::GetCompiler()->verbose
 #else // !DEBUG
 #define JITDUMP(...)
 #define JITLOG(x)
@@ -813,9 +813,26 @@ enum CompMemKind
     CMK_Count
 };
 
-// These methods are implemented by VM when jit & VM are merged in one dll (eg. coreclr.dll)
-Compiler* GetTlsCompiler();
-void SetTlsCompiler(Compiler* c);
+class Compiler;
+class JitTls
+{
+#ifdef DEBUG
+    Compiler* m_compiler;
+    LogEnv m_logEnv;
+    JitTls* m_next;
+#endif
+
+public:
+    JitTls(ICorJitInfo* jitInfo);
+    ~JitTls();
+
+#ifdef DEBUG
+    static LogEnv* GetLogEnv();
+#endif
+
+    static Compiler* GetCompiler();
+    static void SetCompiler(Compiler* compiler);
+};
 
 #if defined(DEBUG)
 
@@ -824,13 +841,13 @@ void SetTlsCompiler(Compiler* c);
 template<typename T>
 T dspPtr(T p)
 {
-    return (p == 0) ? 0 : (GetTlsCompiler()->opts.dspDiffable ? T(0xD1FFAB1E) : p);
+    return (p == 0) ? 0 : (JitTls::GetCompiler()->opts.dspDiffable ? T(0xD1FFAB1E) : p);
 }
 
 template<typename T>
 T dspOffset(T o)
 {
-    return (o == 0) ? 0 : (GetTlsCompiler()->opts.dspDiffable ? T(0xD1FFAB1E) : o);
+    return (o == 0) ? 0 : (JitTls::GetCompiler()->opts.dspDiffable ? T(0xD1FFAB1E) : o);
 }
 
 #else // !defined(DEBUG)

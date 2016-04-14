@@ -45,7 +45,7 @@ unsigned SsaStressHashHelper()
     }
     if (hash == 1)
     {
-        return GetTlsCompiler()->info.compMethodHash();
+        return JitTls::GetCompiler()->info.compMethodHash();
     }
     return ((hash >> 16) == 0) ? ((hash << 16) | hash) : hash;
 }
