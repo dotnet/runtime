@@ -271,9 +271,6 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Performance\CodeQuality\V8\DeltaBlue\DeltaBlue\DeltaBlue.cmd">
       <Issue>needs triage</Issue>
     </ExcludeList>
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\structs\systemvbringup\structinregs\structinregs.cmd">
-      <Issue>needs triage</Issue>
-    </ExcludeList>
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Boxing\xlang\_relsin_il_il\_relsin_il_il.cmd">
       <Issue>needs triage</Issue>
     </ExcludeList>
