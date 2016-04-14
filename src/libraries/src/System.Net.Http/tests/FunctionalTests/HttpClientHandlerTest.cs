@@ -36,15 +36,24 @@ namespace System.Net.Http.Functional.Tests
             new object[] { "X-Cust-Header-NoValue", "" , HttpTestServers.RemoteEchoServer },
             new object[] { "X-CustomHeader", "x-value", HttpTestServers.RedirectUriForDestinationUri(
                 secure:false,
+                statusCode:302,
                 destinationUri:HttpTestServers.RemoteEchoServer,
                 hops:1) },
             new object[] { "X-Cust-Header-NoValue", "" , HttpTestServers.RedirectUriForDestinationUri(
                 secure:false,
+                statusCode:302,
                 destinationUri:HttpTestServers.RemoteEchoServer,
                 hops:1) },
         };
         public readonly static object[][] Http2Servers = HttpTestServers.Http2Servers;
 
+        public readonly static object[][] RedirectStatusCodes = {
+            new object[] { 300 },
+            new object[] { 301 },
+            new object[] { 302 },
+            new object[] { 303 },
+            new object[] { 307 }
+        };
 
         // Standard HTTP methods defined in RFC7231: http://tools.ietf.org/html/rfc7231#section-4.3
         //     "GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS", "TRACE"
@@ -261,8 +270,8 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Fact]
-        public async Task GetAsync_AllowAutoRedirectFalse_RedirectFromHttpToHttp_StatusCodeRedirect()
+        [Theory, MemberData(nameof(RedirectStatusCodes))]
+        public async Task GetAsync_AllowAutoRedirectFalse_RedirectFromHttpToHttp_StatusCodeRedirect(int statusCode)
         {
             var handler = new HttpClientHandler();
             handler.AllowAutoRedirect = false;
@@ -270,18 +279,19 @@ namespace System.Net.Http.Functional.Tests
             {
                 Uri uri = HttpTestServers.RedirectUriForDestinationUri(
                     secure:false,
+                    statusCode:statusCode,
                     destinationUri:HttpTestServers.RemoteEchoServer,
                     hops:1);
                 _output.WriteLine("Uri: {0}", uri);
                 using (HttpResponseMessage response = await client.GetAsync(uri))
                 {
-                    Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+                    Assert.Equal(statusCode, (int)response.StatusCode);
                 }
             }
         }
 
-        [Fact]
-        public async Task GetAsync_AllowAutoRedirectTrue_RedirectFromHttpToHttp_StatusCodeOK()
+        [Theory, MemberData(nameof(RedirectStatusCodes))]
+        public async Task GetAsync_AllowAutoRedirectTrue_RedirectFromHttpToHttp_StatusCodeOK(int statusCode)
         {
             var handler = new HttpClientHandler();
             handler.AllowAutoRedirect = true;
@@ -289,6 +299,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 Uri uri = HttpTestServers.RedirectUriForDestinationUri(
                     secure:false,
+                    statusCode:statusCode,
                     destinationUri:HttpTestServers.RemoteEchoServer,
                     hops:1);
                 _output.WriteLine("Uri: {0}", uri);
@@ -308,6 +319,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 Uri uri = HttpTestServers.RedirectUriForDestinationUri(
                     secure:false,
+                    statusCode:302,
                     destinationUri:HttpTestServers.SecureRemoteEchoServer,
                     hops:1);
                 _output.WriteLine("Uri: {0}", uri);
@@ -327,6 +339,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 Uri uri = HttpTestServers.RedirectUriForDestinationUri(
                     secure:true,
+                    statusCode:302,
                     destinationUri:HttpTestServers.RemoteEchoServer,
                     hops:1);
                 _output.WriteLine("Uri: {0}", uri);
@@ -345,7 +358,11 @@ namespace System.Net.Http.Functional.Tests
             Uri targetUri = HttpTestServers.BasicAuthUriForCreds(secure:false, userName:Username, password:Password);
             using (var client = new HttpClient(handler))
             {
-                Uri uri = HttpTestServers.RedirectUriForDestinationUri(secure:false, destinationUri:targetUri, hops:1);
+                Uri uri = HttpTestServers.RedirectUriForDestinationUri(
+                    secure:false,
+                    statusCode:302,
+                    destinationUri:targetUri,
+                    hops:1);
                 _output.WriteLine("Uri: {0}", uri);
                 using (HttpResponseMessage response = await client.GetAsync(uri))
                 {
@@ -365,6 +382,7 @@ namespace System.Net.Http.Functional.Tests
                 await Assert.ThrowsAsync<HttpRequestException>(() => 
                     client.GetAsync(HttpTestServers.RedirectUriForDestinationUri(
                         secure:false,
+                        statusCode:302,
                         destinationUri:HttpTestServers.RemoteEchoServer,
                         hops:(hops + 1))));
             }
@@ -377,7 +395,11 @@ namespace System.Net.Http.Functional.Tests
             handler.Credentials = _credential;
             using (var client = new HttpClient(handler))
             {
-                Uri redirectUri = HttpTestServers.RedirectUriForCreds(secure:false, userName:Username, password:Password);
+                Uri redirectUri = HttpTestServers.RedirectUriForCreds(
+                    secure:false,
+                    statusCode:302,
+                    userName:Username,
+                    password:Password);
                 using (HttpResponseMessage unAuthResponse = await client.GetAsync(redirectUri))
                 {
                     Assert.Equal(HttpStatusCode.Unauthorized, unAuthResponse.StatusCode);
@@ -385,11 +407,15 @@ namespace System.Net.Http.Functional.Tests
             }
        }
 
-        [Fact]
-        public async Task GetAsync_CredentialIsCredentialCacheUriRedirect_StatusCodeOK()
+        [Theory, MemberData(nameof(RedirectStatusCodes))]
+        public async Task GetAsync_CredentialIsCredentialCacheUriRedirect_StatusCodeOK(int statusCode)
         {
             Uri uri = HttpTestServers.BasicAuthUriForCreds(secure:false, userName:Username, password:Password);
-            Uri redirectUri = HttpTestServers.RedirectUriForCreds(secure:false, userName:Username, password:Password);
+            Uri redirectUri = HttpTestServers.RedirectUriForCreds(
+                secure:false,
+                statusCode:statusCode,
+                userName:Username,
+                password:Password);
             _output.WriteLine(uri.AbsoluteUri);
             _output.WriteLine(redirectUri.AbsoluteUri);
             var credentialCache = new CredentialCache();
@@ -446,6 +472,7 @@ namespace System.Net.Http.Functional.Tests
         {
             Uri uri = HttpTestServers.RedirectUriForDestinationUri(
                 secure:false,
+                statusCode:302,
                 destinationUri:HttpTestServers.RemoteEchoServer,
                 hops:1);
             using (HttpClient client = new HttpClient())
@@ -796,8 +823,9 @@ namespace System.Net.Http.Functional.Tests
             const string ContentString = "This is the content string.";
             var content = new StringContent(ContentString);
             Uri redirectUri = HttpTestServers.RedirectUriForDestinationUri(
-                secure, 
-                secure ? HttpTestServers.SecureRemoteEchoServer : HttpTestServers.RemoteEchoServer, 
+                secure,
+                302,
+                secure ? HttpTestServers.SecureRemoteEchoServer : HttpTestServers.RemoteEchoServer,
                 1);
 
             using (var client = new HttpClient())

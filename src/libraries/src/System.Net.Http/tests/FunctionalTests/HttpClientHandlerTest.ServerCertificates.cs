@@ -57,7 +57,13 @@ namespace System.Net.Http.Functional.Tests
             foreach (bool checkRevocation in new[] { true, false })
             {
                 yield return new object[] { HttpTestServers.SecureRemoteEchoServer, checkRevocation };
-                yield return new object[] { HttpTestServers.RedirectUriForDestinationUri(true, HttpTestServers.SecureRemoteEchoServer, 1), checkRevocation };
+                yield return new object[] {
+                    HttpTestServers.RedirectUriForDestinationUri(
+                        secure:true,
+                        statusCode:302,
+                        destinationUri:HttpTestServers.SecureRemoteEchoServer,
+                        hops:1),
+                    checkRevocation };
             }
         }
 
