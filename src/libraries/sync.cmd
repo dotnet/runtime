@@ -5,6 +5,7 @@ set synclog=sync.log
 echo Running Sync.cmd %* > %synclog%
 
 set options=/nologo /v:minimal /clp:Summary /flp:v=detailed;Append;LogFile=%synclog%
+set targets=BatchRestorePackages
 set unprocessedBuildArgs=
 set allargs=%*
 set thisArgs=
@@ -12,6 +13,7 @@ set thisArgs=
 if [%1]==[] (
   set src=true
   set packages=true
+  set tests=false
   goto Begin
 )
 
@@ -25,21 +27,25 @@ if /I [%1]==[/?] goto Usage
 
 if /I [%1] == [/p] (
     set packages=true
-    set thisArgs=!thisArgs!%1
+    set thisArgs=%thisArgs%%1
     goto Next
 )
 
 if /I [%1] == [/s] (
     set src=true
-    set thisArgs=!thisArgs!%1
+    set thisArgs=%thisArgs%%1
     goto Next
 )
 
-if [!thisArgs!]==[] (
-  set unprocessedBuildArgs=!allargs!
-) else (
-  call set unprocessedBuildArgs=%%allargs:*!thisArgs!=%%
+if /I [%1] == [/t] (
+    set tests=true
+    set options=%options% /p:BuildTestsAgainstPackages=true
+    set targets=BatchGenerateTestProjectJsons;%targets%
+    set thisArgs=%thisArgs%%1
+    goto Next
 )
+
+set unprocessedBuildArgs=%unprocessedBuildArgs% %1
 
 :Next
 shift /1
@@ -59,15 +65,19 @@ if [%src%] == [true] (
   )
 )
 
-if [%packages%] == [true] (
-  echo Restoring all packages ...
-  set options=!options! /t:BatchRestorePackages /p:RestoreDuringBuild=true
-  echo msbuild.exe %~dp0build.proj !options! !unprocessedBuildArgs! >> %synclog%
-  call msbuild.exe %~dp0build.proj !options! !unprocessedBuildArgs!
-  if NOT [%ERRORLEVEL%]==[0] (
-    echo ERROR: An error occurred while syncing packages, see %synclog% for more details. There may have been networking problems so please try again in a few minutes.
-    exit /b
+if [%tests%] == [true] (
+  echo Generating Test project.json's and Restoring all packages ... 
+) else (
+  if [%packages%] == [true] (
+    echo Restoring all packages ...
   )
+)
+set options=%options% /t:%targets% /p:RestoreDuringBuild=true
+echo msbuild.exe %~dp0build.proj %options% %unprocessedBuildArgs% >> %synclog%
+call msbuild.exe %~dp0build.proj %options% %unprocessedBuildArgs%
+if NOT [%ERRORLEVEL%]==[0] (
+  echo ERROR: An error occurred while syncing packages, see %synclog% for more details. There may have been networking problems so please try again in a few minutes.
+  exit /b
 )
 
 echo Done Syncing.

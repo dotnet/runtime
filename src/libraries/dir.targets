@@ -13,6 +13,10 @@
   <Target Name="RebuildAndTest" DependsOnTargets="Rebuild;Test" />
   <Target Name="Test" />
 
+  <!-- Targets will be overridden if buildagainstpackages.targets is imported. -->
+  <Target Name="GenerateTestProjectJson" />
+  <Target Name="GenerateAllTestProjectJsons" />
+
   <Import Project="$(ToolsDir)/Build.Common.targets" />
 
   <!-- permit a wrapping build system to contribute targets to this build -->
