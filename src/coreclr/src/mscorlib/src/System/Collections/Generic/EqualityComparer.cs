@@ -19,18 +19,12 @@ namespace System.Collections.Generic
     [TypeDependencyAttribute("System.Collections.Generic.ObjectEqualityComparer`1")]
     public abstract class EqualityComparer<T> : IEqualityComparer, IEqualityComparer<T>
     {
-        static volatile EqualityComparer<T> defaultComparer;
+        static readonly EqualityComparer<T> defaultComparer = CreateComparer();
 
         public static EqualityComparer<T> Default {
             get {
                 Contract.Ensures(Contract.Result<EqualityComparer<T>>() != null);
-
-                EqualityComparer<T> comparer = defaultComparer;
-                if (comparer == null) {
-                    comparer = CreateComparer();
-                    defaultComparer = comparer;
-                }
-                return comparer;
+                return defaultComparer;
             }
         }
 
