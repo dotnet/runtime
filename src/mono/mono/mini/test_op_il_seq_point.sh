@@ -7,11 +7,11 @@ TMP_FILE_PREFIX=$(basename $0).tmp
 BASEDIR=$(dirname $0)
 
 case "$(uname -s)" in
-	CYGWIN*) SEP=';';;
-	*) SEP=':';;
+	CYGWIN*) PLATFORM_PATH_SEPARATOR=';';;
+	*) PLATFORM_PATH_SEPARATOR=':';;
 esac
 
-MONO_PATH=$BASEDIR/../../mcs/class/lib/net_4_x$SEP$BASEDIR
+MONO_PATH=$BASEDIR/../../mcs/class/lib/net_4_x$PLATFORM_PATH_SEPARATOR$BASEDIR
 RUNTIME=$BASEDIR/../../runtime/mono-wrapper
 
 trap "rm -rf ${TMP_FILE_PREFIX}*" EXIT
