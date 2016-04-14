@@ -5,7 +5,7 @@ rem This file invokes cmake and generates the build system for windows.
 set argC=0
 for %%x in (%*) do Set /A argC+=1
 
-if NOT %argC%==3 GOTO :USAGE
+if NOT %argC%==3 if NOT %argC%==4 GOTO :USAGE
 if %1=="/?" GOTO :USAGE
 
 setlocal
@@ -16,11 +16,12 @@ set "basePath=%basePath:"=%"
 if %basePath:~-1%==\ set "basePath=%basePath:~0,-1%"
 
 set __VSString=12 2013
+set __UseVS=1
 if /i "%2" == "vs2015" (set __VSString=14 2015)
 if /i "%3" == "x64" (set __VSString=%__VSString% Win64)
-if /i "%3" == "arm64" (
-    set USE_VS=0
-)
+if /i "%3" == "arm64" (set UseVS=0)
+
+set __BuildJit32=%4
 
 if defined CMakePath goto DoGen
 
@@ -28,10 +29,10 @@ if defined CMakePath goto DoGen
 for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy RemoteSigned "& .\probe-win.ps1"') do %%a
 
 :DoGen
-if "%USE_VS%" == "0" (
+if "%UseVS%" == "0" (
     "%CMakePath%" "-DCMAKE_USER_MAKE_RULES_OVERRIDE=%basePath%\windows-compiler-override.txt" "-DCLR_CMAKE_TARGET_ARCH=%3" -G "Visual Studio %__VSString% Win64" %1
 ) else (
-    "%CMakePath%" "-DCMAKE_USER_MAKE_RULES_OVERRIDE=%basePath%\windows-compiler-override.txt" "-DCLR_CMAKE_TARGET_ARCH=%3" -G "Visual Studio %__VSString%" %1
+    "%CMakePath%" "-DCMAKE_USER_MAKE_RULES_OVERRIDE=%basePath%\windows-compiler-override.txt" "-DCLR_CMAKE_TARGET_ARCH=%3" %__BuildJit32% -G "Visual Studio %__VSString%" %1
 )
 endlocal
 GOTO :DONE
