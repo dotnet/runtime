@@ -10463,8 +10463,10 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	}
 
 #if defined(MONO_ARCH_GSHAREDVT_SUPPORTED)
-	acfg->opts |= MONO_OPT_GSHAREDVT;
-	opts |= MONO_OPT_GSHAREDVT;
+	if (acfg->aot_opts.llvm_only || mono_aot_mode_is_full (&acfg->aot_opts)) {
+		acfg->opts |= MONO_OPT_GSHAREDVT;
+		opts |= MONO_OPT_GSHAREDVT;
+	}
 #endif
 
 	if (opts & MONO_OPT_GSHAREDVT)
