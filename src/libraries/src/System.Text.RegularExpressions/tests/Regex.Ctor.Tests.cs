@@ -2,17 +2,48 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+using System.Threading;
 using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
 {
     public class RegexConstructorTests
     {
-        [Fact]
-        public static void Ctor()
+        public static IEnumerable<object[]> Ctor_TestData()
         {
-            // Should not throw
-            new Regex("foo", RegexOptions.ECMAScript | RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant);
+            yield return new object[] { "foo", RegexOptions.None, Timeout.InfiniteTimeSpan };
+            yield return new object[] { "foo", RegexOptions.RightToLeft, Timeout.InfiniteTimeSpan };
+            yield return new object[] { "foo", RegexOptions.ECMAScript | RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan };
+            yield return new object[] { "foo", RegexOptions.None, new TimeSpan(1) };
+            yield return new object[] { "foo", RegexOptions.None, TimeSpan.FromMilliseconds(int.MaxValue - 1) };
+        }
+
+        [Theory]
+        [MemberData(nameof(Ctor_TestData))]
+        public static void Ctor(string pattern, RegexOptions options, TimeSpan matchTimeout)
+        {
+            if (matchTimeout == Timeout.InfiniteTimeSpan)
+            {
+                if (options == RegexOptions.None)
+                {
+                    Regex regex1 = new Regex(pattern);
+                    Assert.Equal(pattern, regex1.ToString());
+                    Assert.Equal(options, regex1.Options);
+                    Assert.False(regex1.RightToLeft);
+                    Assert.Equal(matchTimeout, regex1.MatchTimeout);
+                }
+                Regex regex2 = new Regex(pattern, options);
+                Assert.Equal(pattern, regex2.ToString());
+                Assert.Equal(options, regex2.Options);
+                Assert.Equal((options & RegexOptions.RightToLeft) != 0, regex2.RightToLeft);
+                Assert.Equal(matchTimeout, regex2.MatchTimeout);
+            }
+            Regex regex3 = new Regex(pattern, options, matchTimeout);
+            Assert.Equal(pattern, regex3.ToString());
+            Assert.Equal(options, regex3.Options);
+            Assert.Equal((options & RegexOptions.RightToLeft) != 0, regex3.RightToLeft);
+            Assert.Equal(matchTimeout, regex3.MatchTimeout);
         }
 
         [Fact]
@@ -34,6 +65,36 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Throws<ArgumentOutOfRangeException>("options", () => new Regex("foo", RegexOptions.ECMAScript | RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture));
             Assert.Throws<ArgumentOutOfRangeException>("options", () => new Regex("foo", RegexOptions.ECMAScript | RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.Singleline));
             Assert.Throws<ArgumentOutOfRangeException>("options", () => new Regex("foo", RegexOptions.ECMAScript | RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.IgnorePatternWhitespace));
+
+            // MatchTimeout is invalid
+            Assert.Throws<ArgumentOutOfRangeException>("matchTimeout", () => new Regex("foo", RegexOptions.None, new TimeSpan(-1)));
+            Assert.Throws<ArgumentOutOfRangeException>("matchTimeout", () => new Regex("foo", RegexOptions.None, TimeSpan.Zero));
+            Assert.Throws<ArgumentOutOfRangeException>("matchTimeout", () => new Regex("foo", RegexOptions.None, TimeSpan.FromMilliseconds(int.MaxValue)));
+        }
+
+        [Fact]
+        public void CacheSize_Get()
+        {
+            Assert.Equal(15, Regex.CacheSize);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(12)]
+        public void CacheSize_Set(int newCacheSize)
+        {
+            int originalCacheSize = Regex.CacheSize;
+
+            Regex.CacheSize = newCacheSize;
+            Assert.Equal(newCacheSize, Regex.CacheSize);
+
+            Regex.CacheSize = originalCacheSize;
+        }
+
+        [Fact]
+        public void CacheSize_Set_NegativeValue_ThrowsArgumentOutOfRangeException()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => Regex.CacheSize = -1);
         }
 
         [Theory]

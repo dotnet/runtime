@@ -91,6 +91,20 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { @"\d", "0123456789foo4567890foo         ", "#", RegexOptions.RightToLeft, 7, 32, "0123456789foo#######foo         " };
             yield return new object[] { @"\d", "0123456789foo4567890foo         ", "#", RegexOptions.RightToLeft, 0, 32, "0123456789foo4567890foo         " };
             yield return new object[] { @"\d", "0123456789foo4567890foo         ", "#", RegexOptions.RightToLeft, -1, 32, "##########foo#######foo         " };
+
+            yield return new object[] { "([1-9])([1-9])([1-9])def", "abc123def!", "$0", RegexOptions.RightToLeft, -1, 10, "abc123def!" };
+            yield return new object[] { "([1-9])([1-9])([1-9])def", "abc123def!", "$1", RegexOptions.RightToLeft, -1, 10, "abc1!" };
+            yield return new object[] { "([1-9])([1-9])([1-9])def", "abc123def!", "$2", RegexOptions.RightToLeft, -1, 10, "abc2!" };
+            yield return new object[] { "([1-9])([1-9])([1-9])def", "abc123def!", "$3", RegexOptions.RightToLeft, -1, 10, "abc3!" };
+            yield return new object[] { "([1-9])([1-9])([1-9])def", "abc123def!", "$4", RegexOptions.RightToLeft, -1, 10, "abc$4!" };
+
+            yield return new object[] { "([1-9])([1-9])([1-9])def", "abc123def!", "$$", RegexOptions.RightToLeft, -1, 10, "abc$!" };
+            yield return new object[] { "([1-9])([1-9])([1-9])def", "abc123def!", "$&", RegexOptions.RightToLeft, -1, 10, "abc123def!" };
+            yield return new object[] { "([1-9])([1-9])([1-9])def", "abc123def!", "$`", RegexOptions.RightToLeft, -1, 10, "abcabc!" };
+            yield return new object[] { "([1-9])([1-9])([1-9])def", "abc123def!", "$'", RegexOptions.RightToLeft, -1, 10, "abc!!" };
+
+            yield return new object[] { "([1-9])([1-9])([1-9])def", "abc123def!", "$+", RegexOptions.RightToLeft, -1, 10, "abc3!" };
+            yield return new object[] { "([1-9])([1-9])([1-9])def", "abc123def!", "$_", RegexOptions.RightToLeft, -1, 10, "abcabc123def!!" };
         }
 
         [Theory]
@@ -199,12 +213,70 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Equal(expected, new Regex(pattern, options).Replace(input, evaluator, count, start));
         }
 
-        public static string MatchEvaluator1(Match match)
+        [Fact]
+        public void Replace_NoMatch()
         {
-            if (match.Value.ToLower() == "big")
-                return "Huge";
-            return "Tiny";
+            string input = "";
+            Assert.Same(input, Regex.Replace(input, "no-match", "replacement"));
+            Assert.Same(input, Regex.Replace(input, "no-match", new MatchEvaluator(MatchEvaluator1)));
         }
+
+        [Fact]
+        public void Replace_Invalid()
+        {
+            // Input is null
+            Assert.Throws<ArgumentNullException>("input", () => Regex.Replace(null, "pattern", "replacement"));
+            Assert.Throws<ArgumentNullException>("input", () => Regex.Replace(null, "pattern", "replacement", RegexOptions.None));
+            Assert.Throws<ArgumentNullException>("input", () => Regex.Replace(null, "pattern", "replacement", RegexOptions.None, TimeSpan.FromMilliseconds(1)));
+            Assert.Throws<ArgumentNullException>("input", () => new Regex("pattern").Replace(null, "replacement"));
+            Assert.Throws<ArgumentNullException>("input", () => new Regex("pattern").Replace(null, "replacement", 0));
+            Assert.Throws<ArgumentNullException>("input", () => new Regex("pattern").Replace(null, "replacement", 0, 0));
+
+            Assert.Throws<ArgumentNullException>("input", () => Regex.Replace(null, "pattern", new MatchEvaluator(MatchEvaluator1)));
+            Assert.Throws<ArgumentNullException>("input", () => Regex.Replace(null, "pattern", new MatchEvaluator(MatchEvaluator1), RegexOptions.None));
+            Assert.Throws<ArgumentNullException>("input", () => Regex.Replace(null, "pattern", new MatchEvaluator(MatchEvaluator1), RegexOptions.None, TimeSpan.FromMilliseconds(1)));
+            Assert.Throws<ArgumentNullException>("input", () => new Regex("pattern").Replace(null, new MatchEvaluator(MatchEvaluator1)));
+            Assert.Throws<ArgumentNullException>("input", () => new Regex("pattern").Replace(null, new MatchEvaluator(MatchEvaluator1), 0));
+            Assert.Throws<ArgumentNullException>("input", () => new Regex("pattern").Replace(null, new MatchEvaluator(MatchEvaluator1), 0, 0));
+
+            // Pattern is null
+            Assert.Throws<ArgumentNullException>("pattern", () => Regex.Replace("input", null, "replacement"));
+            Assert.Throws<ArgumentNullException>("pattern", () => Regex.Replace("input", null, "replacement", RegexOptions.None));
+            Assert.Throws<ArgumentNullException>("pattern", () => Regex.Replace("input", null, "replacement", RegexOptions.None, TimeSpan.FromMilliseconds(1)));
+            Assert.Throws<ArgumentNullException>("pattern", () => Regex.Replace("input", null, new MatchEvaluator(MatchEvaluator1)));
+            Assert.Throws<ArgumentNullException>("pattern", () => Regex.Replace("input", null, new MatchEvaluator(MatchEvaluator1), RegexOptions.None));
+            Assert.Throws<ArgumentNullException>("pattern", () => Regex.Replace("input", null, new MatchEvaluator(MatchEvaluator1), RegexOptions.None, TimeSpan.FromMilliseconds(1)));
+
+            // Replacement is null
+            Assert.Throws<ArgumentNullException>("replacement", () => Regex.Replace("input", "pattern", (string)null));
+            Assert.Throws<ArgumentNullException>("replacement", () => Regex.Replace("input", "pattern", (string)null, RegexOptions.None));
+            Assert.Throws<ArgumentNullException>("replacement", () => Regex.Replace("input", "pattern", (string)null, RegexOptions.None, TimeSpan.FromMilliseconds(1)));
+            Assert.Throws<ArgumentNullException>("replacement", () => new Regex("pattern").Replace("input", (string)null));
+            Assert.Throws<ArgumentNullException>("replacement", () => new Regex("pattern").Replace("input", (string)null, 0));
+            Assert.Throws<ArgumentNullException>("replacement", () => new Regex("pattern").Replace("input", (string)null, 0, 0));
+
+            Assert.Throws<ArgumentNullException>("evaluator", () => Regex.Replace("input", "pattern", (MatchEvaluator)null));
+            Assert.Throws<ArgumentNullException>("evaluator", () => Regex.Replace("input", "pattern", (MatchEvaluator)null, RegexOptions.None));
+            Assert.Throws<ArgumentNullException>("evaluator", () => Regex.Replace("input", "pattern", (MatchEvaluator)null, RegexOptions.None, TimeSpan.FromMilliseconds(1)));
+            Assert.Throws<ArgumentNullException>("evaluator", () => new Regex("pattern").Replace("input", (MatchEvaluator)null));
+            Assert.Throws<ArgumentNullException>("evaluator", () => new Regex("pattern").Replace("input", (MatchEvaluator)null, 0));
+            Assert.Throws<ArgumentNullException>("evaluator", () => new Regex("pattern").Replace("input", (MatchEvaluator)null, 0, 0));
+
+            // Count is invalid
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => new Regex("pattern").Replace("input", "replacement", -2));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => new Regex("pattern").Replace("input", "replacement", -2, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => new Regex("pattern").Replace("input", new MatchEvaluator(MatchEvaluator1), -2));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => new Regex("pattern").Replace("input", new MatchEvaluator(MatchEvaluator1), -2, 0));
+
+            // Start is invalid
+            Assert.Throws<ArgumentOutOfRangeException>("startat", () => new Regex("pattern").Replace("input", "replacement", 0, -1));
+            Assert.Throws<ArgumentOutOfRangeException>("startat", () => new Regex("pattern").Replace("input", new MatchEvaluator(MatchEvaluator1), 0, -1));
+            
+            Assert.Throws<ArgumentOutOfRangeException>("startat", () => new Regex("pattern").Replace("input", "replacement", 0, 6));
+            Assert.Throws<ArgumentOutOfRangeException>("startat", () => new Regex("pattern").Replace("input", new MatchEvaluator(MatchEvaluator1), 0, 6));
+        }
+
+        public static string MatchEvaluator1(Match match) => match.Value.ToLower() == "big" ? "Huge": "Tiny";
 
         public static string MatchEvaluator2(Match match) => "SUCCESS";
 

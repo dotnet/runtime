@@ -25,6 +25,7 @@ namespace System.Text.RegularExpressions.Tests
                     Assert.Equal(captures[counter], enumerator.Current);
                     counter++;
                 }
+                Assert.False(enumerator.MoveNext());
                 Assert.Equal(captures.Count, counter);
                 enumerator.Reset();
             }
@@ -44,6 +45,58 @@ namespace System.Text.RegularExpressions.Tests
 
             enumerator.Reset();
             Assert.Throws<InvalidOperationException>(() => enumerator.Current);
+        }
+
+        [Fact]
+        public static void Item_Get_InvalidIndex_ThrowsArgumentOutOfRangeException()
+        {
+            Regex regex = new Regex(@"(?<A1>a*)(?<A2>b*)(?<A3>c*)");
+            CaptureCollection captures = regex.Match("aaabbccccccccccaaaabc").Captures;
+
+            Assert.Throws<ArgumentOutOfRangeException>("i", () => captures[-1]);
+            Assert.Throws<ArgumentOutOfRangeException>("i", () => captures[captures.Count]);
+        }
+
+        [Fact]
+        public void ICollection_Properties()
+        {
+            Regex regex = new Regex(@"(?<A1>a*)(?<A2>b*)(?<A3>c*)");
+            CaptureCollection captures = regex.Match("aaabbccccccccccaaaabc").Captures;
+            ICollection collection = captures;
+
+            Assert.False(collection.IsSynchronized);
+            Assert.Same(collection.SyncRoot, collection.SyncRoot);
+        }
+        
+        [Theory]
+        [InlineData(0)]
+        [InlineData(5)]
+        public void ICollection_CopyTo(int index)
+        {
+            Regex regex = new Regex(@"(?<A1>a*)(?<A2>b*)(?<A3>c*)");
+            CaptureCollection captures = regex.Match("aaabbccccccccccaaaabc").Captures;
+            ICollection collection = captures;
+
+            RegularExpressions.Capture[] copy = new RegularExpressions.Capture[collection.Count + index];
+            collection.CopyTo(copy, index);
+
+            for (int i = 0; i < index; i++)
+            {
+                Assert.Null(copy[i]);
+            }
+            for (int i = index; i < copy.Length; i++)
+            {
+                Assert.Same(captures[i - index], copy[i]);
+            }
+        }
+
+        [Fact]
+        public void ICollection_CopyTo_NullArray_ThrowsArgumentNullException()
+        {
+            Regex regex = new Regex("e");
+            ICollection collection = regex.Match("aaabbccccccccccaaaabc").Captures;
+
+            Assert.Throws<ArgumentNullException>("array", () => collection.CopyTo(null, 0));
         }
     }
 }

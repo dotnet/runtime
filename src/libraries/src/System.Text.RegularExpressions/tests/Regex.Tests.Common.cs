@@ -8,6 +8,10 @@ namespace System.Text.RegularExpressions.Tests
     {
         public static bool IsDefaultCount(string input, RegexOptions options, int count)
         {
+            if ((options & RegexOptions.RightToLeft) != 0)
+            {
+                return count == input.Length || count == -1;
+            }
             return count == input.Length;
         }
 
@@ -28,7 +32,8 @@ namespace System.Text.RegularExpressions.Tests
             Value = value;
             Index = index;
             Length = length;
-
+            
+            // Prevent a StackOverflow recursion in the constructor
             if (createCaptures)
             {
                 Captures = new Capture[] { new Capture(value, index, length, false) };
