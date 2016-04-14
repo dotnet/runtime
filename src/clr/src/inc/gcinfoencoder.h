@@ -80,7 +80,6 @@
 #include <stdio.h>
 #include "utilcode.h"
 #include "corjit.h"
-#include "slist.h"     // for SList
 #include "iallocator.h"
 #include "gcinfoarraylist.h"
 #include "stdmacros.h"
@@ -224,23 +223,42 @@ public:
     int EncodeVarLengthSigned( SSIZE_T n, UINT32 base );
 
 private:
-
-    class MemoryBlockDesc
+    class MemoryBlockList;
+    class MemoryBlock
     {
-    public:
-        size_t* StartAddress;
-        SLink m_Link;
+        friend class MemoryBlockList;
+        MemoryBlock* m_next;
 
-        inline void Init()
+    public:
+        size_t Contents[];
+
+        inline MemoryBlock* Next()
         {
-            m_Link.m_pNext = NULL;
+            return m_next;
         }
+    };
+
+    class MemoryBlockList
+    {
+        MemoryBlock* m_head;
+        MemoryBlock* m_tail;
+
+    public:
+        MemoryBlockList();
+
+        inline MemoryBlock* Head()
+        {
+            return m_head;
+        }
+
+        MemoryBlock* AppendNew(IAllocator* allocator, size_t bytes);
+        void Dispose(IAllocator* allocator);
     };
 
     IAllocator* m_pAllocator;
     size_t m_BitCount;
     UINT32 m_FreeBitsInCurrentSlot;
-    SList<MemoryBlockDesc> m_MemoryBlocks;
+    MemoryBlockList m_MemoryBlocks;
     const static int m_MemoryBlockSize = 128;    // must be a multiple of the pointer size
     size_t* m_pCurrentSlot;            // bits are written through this pointer
     size_t* m_OutOfBlockSlot;        // sentinel value to determine when the block is full
@@ -260,15 +278,10 @@ private:
     inline void AllocMemoryBlock()
     {
         _ASSERTE( IS_ALIGNED( m_MemoryBlockSize, sizeof( size_t ) ) );
-        m_pCurrentSlot = (size_t*) m_pAllocator->Alloc( m_MemoryBlockSize );
+        MemoryBlock* pMemBlock = m_MemoryBlocks.AppendNew(m_pAllocator, m_MemoryBlockSize);
+
+        m_pCurrentSlot = pMemBlock->Contents;
         m_OutOfBlockSlot = m_pCurrentSlot + m_MemoryBlockSize / sizeof( size_t );
-
-        MemoryBlockDesc* pMemBlockDesc = (MemoryBlockDesc*) m_pAllocator->Alloc( sizeof( MemoryBlockDesc ) );
-        _ASSERTE( IS_ALIGNED( pMemBlockDesc, sizeof( void* ) ) );
-
-        pMemBlockDesc->Init();
-        pMemBlockDesc->StartAddress = m_pCurrentSlot;
-        m_MemoryBlocks.InsertTail( pMemBlockDesc );
 
 #ifdef _DEBUG
            m_MemoryBlocksCount++;

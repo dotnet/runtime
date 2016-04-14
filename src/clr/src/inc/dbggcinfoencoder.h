@@ -23,7 +23,6 @@
 
 #include "utilcode.h"
 #include "corjit.h"
-#include "list.h"     // for SList
 #include "iallocator.h"
 #include "gcinfoarraylist.h"
 
@@ -122,22 +121,42 @@ public:
 
 private:
 
-    class MemoryBlockDesc
+    class MemoryBlockList;
+    class MemoryBlock
     {
-    public:
-        size_t* StartAddress;
-        SLink m_Link;
+        friend class MemoryBlockList;
+        MemoryBlock* m_next;
 
-        inline void Init()
+    public:
+        size_t Contents[];
+
+        inline MemoryBlock* Next()
         {
-            m_Link.m_pNext = NULL;
+            return m_next;
         }
+    };
+
+    class MemoryBlockList
+    {
+        MemoryBlock* m_head;
+        MemoryBlock* m_tail;
+
+    public:
+        MemoryBlockList();
+
+        inline MemoryBlock* Head()
+        {
+            return m_head;
+        }
+
+        MemoryBlock* AppendNew(IAllocator* allocator, size_t bytes);
+        void Dispose(IAllocator* allocator);
     };
 
     IJitAllocator* m_pAllocator;
     size_t m_BitCount;
     int m_FreeBitsInCurrentSlot;
-    SList<MemoryBlockDesc> m_MemoryBlocks;
+    MemoryBlockList m_MemoryBlocks;
     const static int m_MemoryBlockSize = 512;    // must be a multiple of the pointer size
     size_t* m_pCurrentSlot;            // bits are written through this pointer
     size_t* m_OutOfBlockSlot;        // sentinel value to determine when the block is full
