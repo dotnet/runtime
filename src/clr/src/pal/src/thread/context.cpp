@@ -591,6 +591,10 @@ Return value :
 DWORD CONTEXTGetExceptionCodeForSignal(const siginfo_t *siginfo,
                                        const native_context_t *context)
 {
+    // IMPORTANT NOTE: This function must not call any signal unsafe functions
+    // since it is called from signal handlers.
+    // That includes ASSERT and TRACE macros.
+
     switch (siginfo->si_signo)
     {
         case SIGILL:
@@ -685,26 +689,24 @@ DWORD CONTEXTGetExceptionCodeForSignal(const siginfo_t *siginfo,
                 case TRAP_TRACE:    // Process trace trap
                     return EXCEPTION_SINGLE_STEP;
                 default:
-                    // We don't want to use ASSERT here since it raises SIGTRAP and we
-                    // might again end up here resulting in an infinite loop! 
-                    // so, we print out an error message and return 
-                    DBG_PRINTF(DLI_ASSERT, defdbgchan, TRUE) 
-                    ("Got unknown SIGTRAP signal (%d) with code %d\n", SIGTRAP, siginfo->si_code);
-
+                    // Got unknown SIGTRAP signal with code siginfo->si_code;
                     return EXCEPTION_ILLEGAL_INSTRUCTION;
             }
         default:
             break;
     }
 
-    ASSERT("Got unknown signal number %d with code %d\n",
-           siginfo->si_signo, siginfo->si_code);
+    // Got unknown signal number siginfo->si_signo with code siginfo->si_code;
     return EXCEPTION_ILLEGAL_INSTRUCTION;
 }
 #else   // ILL_ILLOPC
 DWORD CONTEXTGetExceptionCodeForSignal(const siginfo_t *siginfo,
                                        const native_context_t *context)
 {
+    // IMPORTANT NOTE: This function must not call any signal unsafe functions
+    // since it is called from signal handlers.
+    // That includes ASSERT and TRACE macros.
+
     int trap;
 
     if (siginfo->si_signo == SIGFPE)
@@ -713,48 +715,24 @@ DWORD CONTEXTGetExceptionCodeForSignal(const siginfo_t *siginfo,
         switch (siginfo->si_code)
         {
             case FPE_INTDIV :
-                TRACE("Got signal SIGFPE:FPE_INTDIV; raising "
-                      "EXCEPTION_INT_DIVIDE_BY_ZERO\n");
                 return EXCEPTION_INT_DIVIDE_BY_ZERO;
-                break;
             case FPE_INTOVF :
-                TRACE("Got signal SIGFPE:FPE_INTOVF; raising "
-                      "EXCEPTION_INT_OVERFLOW\n");
                 return EXCEPTION_INT_OVERFLOW;
-                break;
             case FPE_FLTDIV :
-                TRACE("Got signal SIGFPE:FPE_FLTDIV; raising "
-                      "EXCEPTION_FLT_DIVIDE_BY_ZERO\n");
                 return EXCEPTION_FLT_DIVIDE_BY_ZERO;
-                break;
             case FPE_FLTOVF :
-                TRACE("Got signal SIGFPE:FPE_FLTOVF; raising "
-                      "EXCEPTION_FLT_OVERFLOW\n");
                 return EXCEPTION_FLT_OVERFLOW;
-                break;
             case FPE_FLTUND :
-                TRACE("Got signal SIGFPE:FPE_FLTUND; raising "
-                      "EXCEPTION_FLT_UNDERFLOW\n");
                 return EXCEPTION_FLT_UNDERFLOW;
-                break;
             case FPE_FLTRES :
-                TRACE("Got signal SIGFPE:FPE_FLTRES; raising "
-                      "EXCEPTION_FLT_INEXACT_RESULT\n");
                 return EXCEPTION_FLT_INEXACT_RESULT;
-                break;
             case FPE_FLTINV :
-                TRACE("Got signal SIGFPE:FPE_FLTINV; raising "
-                      "EXCEPTION_FLT_INVALID_OPERATION\n");
                 return EXCEPTION_FLT_INVALID_OPERATION;
-                break;
             case FPE_FLTSUB :/* subscript out of range */
-                TRACE("Got signal SIGFPE:FPE_FLTSUB; raising "
-                      "EXCEPTION_FLT_INVALID_OPERATION\n");
                 return EXCEPTION_FLT_INVALID_OPERATION;
-                break;
             default:
-                ASSERT("Got unknown signal code %d\n", siginfo->si_code);
-                break;
+                // Got unknown signal code siginfo->si_code;
+                return 0;
         }
     }
 
@@ -762,71 +740,52 @@ DWORD CONTEXTGetExceptionCodeForSignal(const siginfo_t *siginfo,
     switch (trap)
     {
         case T_PRIVINFLT : /* privileged instruction */
-            TRACE("Trap code T_PRIVINFLT mapped to EXCEPTION_PRIV_INSTRUCTION\n");
             return EXCEPTION_PRIV_INSTRUCTION; 
         case T_BPTFLT :    /* breakpoint instruction */
-            TRACE("Trap code T_BPTFLT mapped to EXCEPTION_BREAKPOINT\n");
             return EXCEPTION_BREAKPOINT;
         case T_ARITHTRAP : /* arithmetic trap */
-            TRACE("Trap code T_ARITHTRAP maps to floating point exception...\n");
             return 0;      /* let the caller pick an exception code */
 #ifdef T_ASTFLT
         case T_ASTFLT :    /* system forced exception : ^C, ^\. SIGINT signal 
                               handler shouldn't be calling this function, since
                               it doesn't need an exception code */
-            ASSERT("Trap code T_ASTFLT received, shouldn't get here\n");
+            // Trap code T_ASTFLT received, shouldn't get here;
             return 0;
 #endif  // T_ASTFLT
         case T_PROTFLT :   /* protection fault */
-            TRACE("Trap code T_PROTFLT mapped to EXCEPTION_ACCESS_VIOLATION\n");
             return EXCEPTION_ACCESS_VIOLATION; 
         case T_TRCTRAP :   /* debug exception (sic) */
-            TRACE("Trap code T_TRCTRAP mapped to EXCEPTION_SINGLE_STEP\n");
             return EXCEPTION_SINGLE_STEP;
         case T_PAGEFLT :   /* page fault */
-            TRACE("Trap code T_PAGEFLT mapped to EXCEPTION_ACCESS_VIOLATION\n");
             return EXCEPTION_ACCESS_VIOLATION;
         case T_ALIGNFLT :  /* alignment fault */
-            TRACE("Trap code T_ALIGNFLT mapped to EXCEPTION_DATATYPE_MISALIGNMENT\n");
             return EXCEPTION_DATATYPE_MISALIGNMENT;
         case T_DIVIDE :
-            TRACE("Trap code T_DIVIDE mapped to EXCEPTION_INT_DIVIDE_BY_ZERO\n");
             return EXCEPTION_INT_DIVIDE_BY_ZERO;
         case T_NMI :       /* non-maskable trap */
-            TRACE("Trap code T_NMI mapped to EXCEPTION_ILLEGAL_INSTRUCTION\n");
             return EXCEPTION_ILLEGAL_INSTRUCTION;
         case T_OFLOW :
-            TRACE("Trap code T_OFLOW mapped to EXCEPTION_INT_OVERFLOW\n");
             return EXCEPTION_INT_OVERFLOW;
         case T_BOUND :     /* bound instruction fault */
-            TRACE("Trap code T_BOUND mapped to EXCEPTION_ARRAY_BOUNDS_EXCEEDED\n");
             return EXCEPTION_ARRAY_BOUNDS_EXCEEDED; 
         case T_DNA :       /* device not available fault */
-            TRACE("Trap code T_DNA mapped to EXCEPTION_ILLEGAL_INSTRUCTION\n");
             return EXCEPTION_ILLEGAL_INSTRUCTION; 
         case T_DOUBLEFLT : /* double fault */
-            TRACE("Trap code T_DOUBLEFLT mapped to EXCEPTION_ILLEGAL_INSTRUCTION\n");
             return EXCEPTION_ILLEGAL_INSTRUCTION; 
         case T_FPOPFLT :   /* fp coprocessor operand fetch fault */
-            TRACE("Trap code T_FPOPFLT mapped to EXCEPTION_FLT_INVALID_OPERATION\n");
             return EXCEPTION_FLT_INVALID_OPERATION; 
         case T_TSSFLT :    /* invalid tss fault */
-            TRACE("Trap code T_TSSFLT mapped to EXCEPTION_ILLEGAL_INSTRUCTION\n");
             return EXCEPTION_ILLEGAL_INSTRUCTION; 
         case T_SEGNPFLT :  /* segment not present fault */
-            TRACE("Trap code T_SEGNPFLT mapped to EXCEPTION_ACCESS_VIOLATION\n");
             return EXCEPTION_ACCESS_VIOLATION; 
         case T_STKFLT :    /* stack fault */
-            TRACE("Trap code T_STKFLT mapped to EXCEPTION_STACK_OVERFLOW\n");
             return EXCEPTION_STACK_OVERFLOW; 
         case T_MCHK :      /* machine check trap */
-            TRACE("Trap code T_MCHK mapped to EXCEPTION_ILLEGAL_INSTRUCTION\n");
             return EXCEPTION_ILLEGAL_INSTRUCTION; 
         case T_RESERVED :  /* reserved (unknown) */
-            TRACE("Trap code T_RESERVED mapped to EXCEPTION_ILLEGAL_INSTRUCTION\n");
             return EXCEPTION_ILLEGAL_INSTRUCTION; 
         default:
-            ASSERT("Got unknown trap code %d\n", trap);
+            // Got unknown trap code trap;
             break;
     }
     return EXCEPTION_ILLEGAL_INSTRUCTION;
