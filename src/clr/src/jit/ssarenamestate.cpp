@@ -155,7 +155,7 @@ void SsaRenameState::Push(BasicBlock* bb, unsigned lclNum, unsigned count)
     }
 
 #ifdef DEBUG
-    if (GetTlsCompiler()->verboseSsa)
+    if (JitTls::GetCompiler()->verboseSsa)
     {
         printf("\tContents of the stack: [");
         for (Stack::iterator iter2 = stack->begin(); iter2 != stack->end(); iter2++)
@@ -194,7 +194,7 @@ void SsaRenameState::PopBlockStacks(BasicBlock* block)
             assert(stacks[i]->back().m_bb != block);
         }
     }
-    if (GetTlsCompiler()->verboseSsa)
+    if (JitTls::GetCompiler()->verboseSsa)
     {
         DumpStacks();
     }
