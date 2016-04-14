@@ -1391,10 +1391,11 @@ void DiscretionaryPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo
 {
     // Punt if we're inlining and we've reached the acceptance limit.
     int limit = JitConfig.JitInlineLimit();
+    unsigned current = m_RootCompiler->m_inlineStrategy->GetInlineCount();
 
     if (!m_IsPrejitRoot &&
         (limit >= 0) &&
-        (m_RootCompiler->fgInlinedCount >= static_cast<unsigned>(limit)))
+        (current >= static_cast<unsigned>(limit)))
     {
         SetFailure(InlineObservation::CALLSITE_OVER_INLINE_LIMIT);
         return;
