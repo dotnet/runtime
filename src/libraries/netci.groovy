@@ -458,7 +458,7 @@ def static addCopyCoreClrAndRunTestSteps(def job, String os, String osGroup, Str
             ${isOuterLoop ? 'sudo' : '' } ./run-test.sh \\
                 --configurationGroup ${configurationGroup} \\
                 --os ${osGroup} \\
-                --corefx-tests \${WORKSPACE}/bin/tests/ \\
+                --corefx-tests \${WORKSPACE}/bin/tests/${osGroup}.AnyCPU.${configurationGroup}/ \\
                 --coreclr-bins \${WORKSPACE}/bin/Product/${osGroup}.x64.${coreClrConfigurationGroup}/ \\
                 --mscorlib-bins \${WORKSPACE}/bin/Product/${osGroup}.x64.${coreClrConfigurationGroup}/ \\
                 ${useServerGC ? '--serverGc' : ''} ${isOuterLoop ? '--outerloop' : ''}
