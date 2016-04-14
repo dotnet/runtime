@@ -1287,7 +1287,8 @@ GetExitCodeProcess (gpointer process, guint32 *code)
 			*code = STILL_ACTIVE;
 			return TRUE;
 		} else {
-			return FALSE;
+			*code = -1;
+			return TRUE;
 		}
 	}
 
