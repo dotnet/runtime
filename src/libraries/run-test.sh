@@ -345,8 +345,15 @@ then
     CoreClrObjs="$ProjectRoot/bin/obj/$OS.x64.$ConfigurationGroup"
 fi
 
-# Until netci.groovy is updated, if the CoreFxTests folder that was passed includes a specific
-# OS flavor, get the parent directory.
+# The CI system shares PR build job definitions between RC2 and master.  In RC2, we expected
+# that CoreFxTests was the path to the root folder containing the tests for a specific platform
+# (since all tests were rooted under a path like tests/Linux.AnyCPU.$ConfigurationGroup). In
+# master, we instead want CoreFxTests to point at the root of the tests folder, since tests
+# are now split across tests/AnyOS.AnyCPU.$ConfigruationGroup,
+# tests/Unix.AnyCPU.$ConfigruationGroup and tests/$OS.AnyCPU.$ConfigurationGroup.
+#
+# Until we can split the CI definitions up, we need them to pass a platform specific folder (so
+# the jobs work on RC2), so here we detect that case and use the parent folder instead.
 if [[ `basename $CoreFxTests` =~ ^(Linux|OSX|FreeBSD|NetBSD) ]]
 then
     CoreFxTests=`dirname $CoreFxTests`
