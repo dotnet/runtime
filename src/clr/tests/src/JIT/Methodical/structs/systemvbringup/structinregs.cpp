@@ -1,18 +1,18 @@
 #include <stdio.h>
 
-#ifdef __clang__
+#if defined(__clang__)
 #define EXPORT(type) __attribute__((visibility("default"))) extern "C" type
-#else
+#else // defined(__clang__)
 #define EXPORT(type) type
-#endif
+#endif // !defined(__clang__)
 
-#ifndef _MSCVER
+#if !defined(_MSC_VER)
 #if __i386__
 #define __stdcall __attribute__((stdcall))
-#else
+#else // __i386__
 #define __stdcall
-#endif
-#endif
+#endif  // !__i386__
+#endif // !defined(_MSC_VER)
 
 typedef unsigned char byte;
 
@@ -191,29 +191,29 @@ struct S30
     long long y;
 };
 
-typedef void* (__stdcall *PFNACTION1)(S1 s);
-typedef void* (__stdcall *PFNACTION2)(S2 s);
-typedef void* (__stdcall *PFNACTION3)(S3 s);
-typedef void* (__stdcall *PFNACTION4)(S4 s);
-typedef void* (__stdcall *PFNACTION5)(S5 s);
-typedef void* (__stdcall *PFNACTION6)(S6 s);
-typedef void* (__stdcall *PFNACTION7)(S7 s);
-typedef void* (__stdcall *PFNACTION8)(S8 s);
-typedef void* (__stdcall *PFNACTION9)(S9 s);
-typedef void* (__stdcall *PFNACTION10)(S10 s);
-typedef void* (__stdcall *PFNACTION11)(S11 s);
-typedef void* (__stdcall *PFNACTION12)(S12 s);
-typedef void* (__stdcall *PFNACTION13)(S13 s);
-typedef void* (__stdcall *PFNACTION14)(S14 s);
-typedef void* (__stdcall *PFNACTION15)(S15 s);
-typedef void* (__stdcall *PFNACTION16)(S16 s);
-typedef void* (__stdcall *PFNACTION17)(S17 s);
-typedef void* (__stdcall *PFNACTION18)(S18 s);
-typedef void* (__stdcall *PFNACTION19)(S19 s);
-typedef void* (__stdcall *PFNACTION20)(S20 s);
+typedef void (__stdcall *PFNACTION1)(S1 s);
+typedef void (__stdcall *PFNACTION2)(S2 s);
+typedef void (__stdcall *PFNACTION3)(S3 s);
+typedef void (__stdcall *PFNACTION4)(S4 s);
+typedef void (__stdcall *PFNACTION5)(S5 s);
+typedef void (__stdcall *PFNACTION6)(S6 s);
+typedef void (__stdcall *PFNACTION7)(S7 s);
+typedef void (__stdcall *PFNACTION8)(S8 s);
+typedef void (__stdcall *PFNACTION9)(S9 s);
+typedef void (__stdcall *PFNACTION10)(S10 s);
+typedef void (__stdcall *PFNACTION11)(S11 s);
+typedef void (__stdcall *PFNACTION12)(S12 s);
+typedef void (__stdcall *PFNACTION13)(S13 s);
+typedef void (__stdcall *PFNACTION14)(S14 s);
+typedef void (__stdcall *PFNACTION15)(S15 s);
+typedef void (__stdcall *PFNACTION16)(S16 s);
+typedef void (__stdcall *PFNACTION17)(S17 s);
+typedef void (__stdcall *PFNACTION18)(S18 s);
+typedef void (__stdcall *PFNACTION19)(S19 s);
+typedef void (__stdcall *PFNACTION20)(S20 s);
 
-typedef void* (__stdcall *PFNACTION28)(S28 s);
-typedef void* (__stdcall *PFNACTION29)(S29 s);
+typedef void (__stdcall *PFNACTION28)(S28 s);
+typedef void (__stdcall *PFNACTION29)(S29 s);
 typedef void (__stdcall *PFNACTION30)(S30 s1, S30 s2, S30 s3);
 
 EXPORT(void) __stdcall InvokeCallback1(PFNACTION1 callback, S1 s)
