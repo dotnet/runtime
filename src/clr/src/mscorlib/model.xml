@@ -8011,6 +8011,9 @@
       <Member Name="GetPathRoot(System.String)" />
       <Member Name="HasExtension(System.String)" />
       <Member Name="IsPathRooted(System.String)" />
+      <Member Name="GetRandomFileName" />
+      <Member Name="GetTempFileName" />
+      <Member Name="GetTempPath" />
     </Type>
     <Type Name="System.IO.PathTooLongException">
       <Member Name="#ctor" />
