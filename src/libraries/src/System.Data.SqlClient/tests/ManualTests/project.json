@@ -10,7 +10,6 @@
     "Microsoft.Win32.Primitives": "4.0.1-rc3-24013-00",
     "System.Collections": "4.0.11-rc3-24013-00",
     "System.Collections.Concurrent": "4.0.12-rc3-24013-00",
-    "System.Collections.NonGeneric": "4.0.1-rc3-24013-00",
     "System.ComponentModel": "4.0.1-rc3-24013-00",
     "System.ComponentModel.TypeConverter": "4.0.1-rc3-24013-00",
     "System.Console": "4.0.0-rc3-24013-00",
