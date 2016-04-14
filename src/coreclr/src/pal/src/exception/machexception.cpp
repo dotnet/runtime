@@ -1534,7 +1534,7 @@ InjectActivationInternal(CPalThread* pThread)
                                        &count);
             _ASSERT_MSG(MachRet == KERN_SUCCESS, "thread_get_state for x86_THREAD_STATE64\n");
 
-            if ((g_safeActivationCheckFunction != NULL) && g_safeActivationCheckFunction(ThreadState.__rip))
+            if ((g_safeActivationCheckFunction != NULL) && g_safeActivationCheckFunction(ThreadState.__rip, /* checkingCurrentThread */ FALSE))
             {
                 // TODO: it would be nice to preserve the red zone in case a jitter would want to use it
                 // Do we really care about unwinding through the wrapper?

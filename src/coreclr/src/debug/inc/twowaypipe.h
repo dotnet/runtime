@@ -79,8 +79,15 @@ private:
 
 
 #ifdef FEATURE_PAL
-    int m_id;                          //id that was passed to CreateServer() or Connect()
-    int m_inboundPipe, m_outboundPipe; //two one sided pipes used for communication
+
+    static const int MaxPipeNameLength = 64;
+
+    static void GetPipeName(char *name, DWORD id, const char *suffix);
+
+    int m_id;                              //id that was passed to CreateServer() or Connect()
+    int m_inboundPipe, m_outboundPipe;     //two one sided pipes used for communication
+    char m_inPipeName[MaxPipeNameLength];  //filename of the inbound pipe
+    char m_outPipeName[MaxPipeNameLength]; //filename of the outbound pipe
 
 #else
     // Connects to a one sided pipe previously created by CreateOneWayPipe.
