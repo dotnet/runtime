@@ -270,13 +270,42 @@ namespace System.Buffers.ArrayPool.Tests
         }
 
         [Fact]
-        public static void RentingAfterPoolExhaustionReturnsSizeForCorrespondingBucket()
+        public static void RentingAfterPoolExhaustionReturnsSizeForCorrespondingBucket_SmallerThanLimit()
         {
-            ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 64, maxArraysPerBucket: 1);
+            ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 64, maxArraysPerBucket: 2);
+
+            Assert.Equal(16, pool.Rent(15).Length); // try initial bucket
             Assert.Equal(16, pool.Rent(15).Length);
+
+            Assert.Equal(32, pool.Rent(15).Length); // try one more level
             Assert.Equal(32, pool.Rent(15).Length);
-            Assert.Equal(64, pool.Rent(15).Length);
-            Assert.Equal(16, pool.Rent(15).Length);
+
+            Assert.Equal(16, pool.Rent(15).Length); // fall back to original size
+        }
+
+        [Fact]
+        public static void RentingAfterPoolExhaustionReturnsSizeForCorrespondingBucket_JustBelowLimit()
+        {
+            ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 64, maxArraysPerBucket: 2);
+
+            Assert.Equal(32, pool.Rent(31).Length); // try initial bucket
+            Assert.Equal(32, pool.Rent(31).Length);
+
+            Assert.Equal(64, pool.Rent(31).Length); // try one more level
+            Assert.Equal(64, pool.Rent(31).Length);
+
+            Assert.Equal(32, pool.Rent(31).Length); // fall back to original size
+        }
+
+        [Fact]
+        public static void RentingAfterPoolExhaustionReturnsSizeForCorrespondingBucket_AtLimit()
+        {
+            ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 64, maxArraysPerBucket: 2);
+
+            Assert.Equal(64, pool.Rent(63).Length); // try initial bucket
+            Assert.Equal(64, pool.Rent(63).Length);
+
+            Assert.Equal(64, pool.Rent(63).Length); // still get original size
         }
 
         private static void ActionFiresSpecificEvent(Action body, int eventId, AutoResetEvent are)

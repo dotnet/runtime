@@ -47,9 +47,19 @@ namespace System.Buffers
             int index = Utilities.SelectBucketIndex(minimumLength);
             if (index < _buckets.Length)
             {
-                // Search for an array starting at the 'index' bucket. If the bucket
-                // is empty, bump up to the next higher bucket and try that one.
-                for (int i = index; i < _buckets.Length; i++)
+                // Search for an array starting at the 'index' bucket. If the bucket is empty, bump up to the
+                // next higher bucket and try that one. Only try a max number of buckets, e.g. a max of 2 will
+                // guarantee that for a request that maps to a bucket of size N, we'll not return a buffer larger
+                // than N*2, and for a max of 3, we'll not return a buffer larger than N*4, etc.
+
+                const int MaxBucketsToTry = 2;
+                int maxIndex = index + MaxBucketsToTry;
+                if (maxIndex >= _buckets.Length)
+                {
+                    maxIndex = _buckets.Length;
+                }
+
+                for (int i = index; i < maxIndex; i++)
                 {
                     buffer = _buckets[i].Rent();
 
