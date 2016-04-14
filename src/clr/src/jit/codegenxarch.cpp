@@ -2663,9 +2663,8 @@ CodeGen::genMultiRegCallStoreToLocal(GenTreePtr treeNode)
     // var in 'var = call' is flagged as lvIsMultiRegArgOrRet to prevent it from
     // being struct poromoted.  
     //
-    // TODO-BUG: Crossgen of mscorlib fires the below assert.
-    // A git issue is opened for investigating this.
-    // noway_assert(varDsc->lvIsMultiRegArgOrRet);
+
+    noway_assert(varDsc->lvIsMultiRegArgOrRet);
 
     getEmitter()->emitIns_S_R(ins_Store(type0), emitTypeSize(type0), reg0, lclNum, 0);
     getEmitter()->emitIns_S_R(ins_Store(type1), emitTypeSize(type1), reg1, lclNum, 8);
