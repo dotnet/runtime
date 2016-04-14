@@ -477,7 +477,7 @@ bool Compiler::fgBlockContainsStatementBounded(BasicBlock* block, GenTree* stmt,
 
     assert(stmt->gtOper == GT_STMT);
 
-    __int64 *numTraversed = &GetTlsCompiler()->compNumStatementLinksTraversed;
+    __int64 *numTraversed = &JitTls::GetCompiler()->compNumStatementLinksTraversed;
 
     if (*numTraversed > maxLinks)
         return answerOnBoundExceeded;

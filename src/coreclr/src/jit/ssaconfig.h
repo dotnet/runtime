@@ -23,7 +23,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 
 #ifdef DEBUG
-    #define DBG_SSA_JITDUMP(...) if (GetTlsCompiler()->verboseSsa) JitDump(__VA_ARGS__)
+    #define DBG_SSA_JITDUMP(...) if (JitTls::GetCompiler()->verboseSsa) JitDump(__VA_ARGS__)
 #else
     #define DBG_SSA_JITDUMP(...)
 #endif

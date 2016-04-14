@@ -63,22 +63,6 @@ bool Compiler::s_pAltJitExcludeAssembliesListInitialized = false;
 AssemblyNamesList2* Compiler::s_pAltJitExcludeAssembliesList = nullptr;
 #endif // ALT_JIT
 
-// Compiler stored in the tls slot. This is used in the noway_assert exceptional path.
-// If you are using it more broadly in retail code, you would need to understand the
-// performance implications of accessing TLS slots.
-#if !defined(FEATURE_MERGE_JIT_AND_ENGINE) || !defined(FEATURE_IMPLICIT_TLS)
-__declspec(thread) Compiler* gTlsCompiler = NULL;
-Compiler* GetTlsCompiler()
-{
-    return gTlsCompiler;
-}
-
-void SetTlsCompiler(Compiler* c)
-{
-    gTlsCompiler = c;
-}
-#endif // !defined(FEATURE_MERGE_JIT_AND_ENGINE) || !defined(FEATURE_IMPLICIT_TLS)
-
 /*****************************************************************************/
 inline
 unsigned            getCurTime()
@@ -1075,10 +1059,6 @@ void                Compiler::compShutdown()
 #endif // DEBUG
     fprintf(fout, "   NYI:                 %u\n", fatal_NYI);
 #endif // MEASURE_FATAL
-
-#ifdef DEBUG
-    LogEnv::cleanup();
-#endif
 }
 
 /*****************************************************************************
@@ -4237,7 +4217,7 @@ int           Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
 #ifdef  DEBUG
     if (!compIsForInlining())
     {
-        LogEnv::cur()->setCompiler(this);
+        JitTls::GetLogEnv()->setCompiler(this);
     }
 
     // Have we been told to be more selective in our Jitting?
@@ -5619,8 +5599,8 @@ START:
             }
 
             // push this compiler on the stack (TLS)
-            pParam->pComp->prevCompiler = GetTlsCompiler();
-            SetTlsCompiler(pParam->pComp);
+            pParam->pComp->prevCompiler = JitTls::GetCompiler();
+            JitTls::SetCompiler(pParam->pComp);
 
 ///PREFIX_ASSUME gets turned into ASSERT_CHECK and we cannot have it here
 #if defined(_PREFAST_) || defined(_PREFIX_)             
@@ -5655,8 +5635,8 @@ START:
                 pParamOuter->pComp->info.compCode = NULL;
 
                 // pop the compiler off the TLS stack only if it was linked above
-                assert(GetTlsCompiler() == pParamOuter->pComp);
-                SetTlsCompiler(GetTlsCompiler()->prevCompiler);
+                assert(JitTls::GetCompiler() == pParamOuter->pComp);
+                JitTls::SetCompiler(JitTls::GetCompiler()->prevCompiler);
             }
 
             if (pParamOuter->inlineInfo == NULL)
@@ -7168,87 +7148,87 @@ void        cCVarSet(Compiler* comp, VARSET_VALARG_TP vars)
 
 void        dBlock(BasicBlock* block)
 {
-    cBlock(GetTlsCompiler(), block);
+    cBlock(JitTls::GetCompiler(), block);
 }
 
 void        dBlocks()
 {
-    cBlocks(GetTlsCompiler());
+    cBlocks(JitTls::GetCompiler());
 }
 
 void        dBlocksV()
 {
-    cBlocksV(GetTlsCompiler());
+    cBlocksV(JitTls::GetCompiler());
 }
 
 void        dTree(GenTree* tree)
 {
-    cTree(GetTlsCompiler(), tree);
+    cTree(JitTls::GetCompiler(), tree);
 }
 
 void        dTrees()
 {
-    cTrees(GetTlsCompiler());
+    cTrees(JitTls::GetCompiler());
 }
 
 void        dEH()
 {
-    cEH(GetTlsCompiler());
+    cEH(JitTls::GetCompiler());
 }
 
 void        dVar(unsigned lclNum)
 {
-    cVar(GetTlsCompiler(), lclNum);
+    cVar(JitTls::GetCompiler(), lclNum);
 }
 
 void        dVarDsc(LclVarDsc* varDsc)
 {
-    cVarDsc(GetTlsCompiler(), varDsc);
+    cVarDsc(JitTls::GetCompiler(), varDsc);
 }
 
 void        dVars()
 {
-    cVars(GetTlsCompiler());
+    cVars(JitTls::GetCompiler());
 }
 
 void        dVarsFinal()
 {
-    cVarsFinal(GetTlsCompiler());
+    cVarsFinal(JitTls::GetCompiler());
 }
 
 void        dBlockPreds(BasicBlock* block)
 {
-    cBlockPreds(GetTlsCompiler(), block);
+    cBlockPreds(JitTls::GetCompiler(), block);
 }
 
 void        dBlockCheapPreds(BasicBlock* block)
 {
-    cBlockCheapPreds(GetTlsCompiler(), block);
+    cBlockCheapPreds(JitTls::GetCompiler(), block);
 }
 
 void        dBlockSuccs(BasicBlock* block)
 {
-    cBlockSuccs(GetTlsCompiler(), block);
+    cBlockSuccs(JitTls::GetCompiler(), block);
 }
 
 void        dReach()
 {
-    cReach(GetTlsCompiler());
+    cReach(JitTls::GetCompiler());
 }
 
 void        dDoms()
 {
-    cDoms(GetTlsCompiler());
+    cDoms(JitTls::GetCompiler());
 }
 
 void        dLiveness()
 {
-    cLiveness(GetTlsCompiler());
+    cLiveness(JitTls::GetCompiler());
 }
 
 void        dCVarSet(VARSET_VALARG_TP vars)
 {
-    cCVarSet(GetTlsCompiler(), vars);
+    cCVarSet(JitTls::GetCompiler(), vars);
 }
 
 
@@ -7315,7 +7295,7 @@ GenTree*    dFindTree(GenTree* tree, unsigned id)
 
 GenTree*    dFindTree(unsigned id)
 {
-    Compiler* comp = GetTlsCompiler();
+    Compiler* comp = JitTls::GetCompiler();
     BasicBlock* block;
     GenTree* tree;
 
@@ -7340,7 +7320,7 @@ GenTree*    dFindTree(unsigned id)
 
 GenTreeStmt*   dFindStmt(unsigned id)
 {
-    Compiler* comp = GetTlsCompiler();
+    Compiler* comp = JitTls::GetCompiler();
     BasicBlock* block;
 
     dbStmt = nullptr;
@@ -7364,7 +7344,7 @@ GenTreeStmt*   dFindStmt(unsigned id)
 
 BasicBlock*    dFindBlock(unsigned bbNum)
 {
-    Compiler* comp = GetTlsCompiler();
+    Compiler* comp = JitTls::GetCompiler();
     BasicBlock* block = nullptr;
 
     dbBlock = nullptr;
@@ -7407,7 +7387,7 @@ void        cFuncIR(Compiler* comp)
 
 void        dFormatIR()
 {
-    Compiler* comp = GetTlsCompiler();
+    Compiler* comp = JitTls::GetCompiler();
 
     if (comp->dumpIRFormat != NULL)
     {
@@ -7422,7 +7402,7 @@ void        dFormatIR()
 
 void        dFuncIR()
 {
-    cFuncIR(GetTlsCompiler());
+    cFuncIR(JitTls::GetCompiler());
 }
 
 /*****************************************************************************
@@ -7472,7 +7452,7 @@ void        cLoopIR(Compiler* comp, Compiler::LoopDsc* loop)
 
 void        dLoopIR(Compiler::LoopDsc* loop)
 {
-    cLoopIR(GetTlsCompiler(), loop);
+    cLoopIR(JitTls::GetCompiler(), loop);
 }
 
 /*****************************************************************************
@@ -7482,7 +7462,7 @@ void        dLoopIR(Compiler::LoopDsc* loop)
 
 void        dLoopNumIR(unsigned loopNum)
 {
-    Compiler* comp = GetTlsCompiler();
+    Compiler* comp = JitTls::GetCompiler();
 
     if (loopNum >= comp->optLoopCount)
     {
@@ -7491,7 +7471,7 @@ void        dLoopNumIR(unsigned loopNum)
     }
 
     Compiler::LoopDsc* loop = &comp->optLoopTable[loopNum];
-    cLoopIR(GetTlsCompiler(), loop);
+    cLoopIR(JitTls::GetCompiler(), loop);
 }
 
 /*****************************************************************************
@@ -7674,7 +7654,7 @@ void        cBlockIR(Compiler* comp, BasicBlock* block)
 
 void        dBlockIR(BasicBlock* block)
 {
-    cBlockIR(GetTlsCompiler(), block);
+    cBlockIR(JitTls::GetCompiler(), block);
 }
 
 /*****************************************************************************
@@ -7701,7 +7681,7 @@ int cTreeTypeIR(Compiler *comp, GenTree *tree)
 
 int dTreeTypeIR(GenTree *tree)
 {
-    int chars = cTreeTypeIR(GetTlsCompiler(), tree);
+    int chars = cTreeTypeIR(JitTls::GetCompiler(), tree);
 
     return chars;
 }
@@ -7751,7 +7731,7 @@ int cTreeKindsIR(Compiler *comp, GenTree *tree)
 
 int dTreeKindsIR(GenTree *tree)
 {
-    int chars = cTreeKindsIR(GetTlsCompiler(), tree);
+    int chars = cTreeKindsIR(JitTls::GetCompiler(), tree);
 
     return chars;
 }
@@ -8436,7 +8416,7 @@ int cTreeFlagsIR(Compiler *comp, GenTree *tree)
 
 int dTreeFlagsIR(GenTree *tree)
 {
-    int chars = cTreeFlagsIR(GetTlsCompiler(), tree);
+    int chars = cTreeFlagsIR(JitTls::GetCompiler(), tree);
 
     return chars;
 }
@@ -8475,7 +8455,7 @@ int         cSsaNumIR(Compiler *comp, GenTree *tree)
 
 int         dSsaNumIR(GenTree *tree)
 {
-    int chars = cSsaNumIR(GetTlsCompiler(), tree);
+    int chars = cSsaNumIR(JitTls::GetCompiler(), tree);
 
     return chars;
 }
@@ -8535,7 +8515,7 @@ int         cValNumIR(Compiler *comp, GenTree *tree)
 
 int         dValNumIR(GenTree *tree)
 {
-    int chars = cValNumIR(GetTlsCompiler(), tree);
+    int chars = cValNumIR(JitTls::GetCompiler(), tree);
 
     return chars;
 }
@@ -8995,7 +8975,7 @@ int         cLeafIR(Compiler *comp, GenTree* tree)
 
 int         dLeafIR(GenTree* tree)
 {
-    int chars = cLeafIR(GetTlsCompiler(), tree);
+    int chars = cLeafIR(JitTls::GetCompiler(), tree);
 
     return chars;
 }
@@ -9027,7 +9007,7 @@ int         cIndirIR(Compiler *comp, GenTree* tree)
 
 int         dIndirIR(GenTree* tree)
 {
-    int chars = cIndirIR(GetTlsCompiler(), tree);
+    int chars = cIndirIR(JitTls::GetCompiler(), tree);
 
     return chars;
 }
@@ -9155,7 +9135,7 @@ int         cOperandIR(Compiler* comp, GenTree* operand)
 
 int         dOperandIR(GenTree* operand)
 {
-    int chars = cOperandIR(GetTlsCompiler(), operand);
+    int chars = cOperandIR(JitTls::GetCompiler(), operand);
 
     return chars;
 }
@@ -9199,7 +9179,7 @@ int         cListIR(Compiler* comp, GenTree* list)
 
 int         dListIR(GenTree* list)
 {
-    int chars = cListIR(GetTlsCompiler(), list);
+    int chars = cListIR(JitTls::GetCompiler(), list);
 
     return chars;
 }
@@ -9249,7 +9229,7 @@ int         dDependsIR(GenTree* comma)
     int chars = 0;
     bool first = TRUE;
     
-    chars = cDependsIR(GetTlsCompiler(), comma, &first);
+    chars = cDependsIR(JitTls::GetCompiler(), comma, &first);
 
     return chars;
 }
@@ -9789,7 +9769,7 @@ void        cTreeIR(Compiler* comp, GenTree* tree)
 
 void        dTreeIR(GenTree* tree)
 {
-    cTreeIR(GetTlsCompiler(), tree);
+    cTreeIR(JitTls::GetCompiler(), tree);
 }
 
 #endif // DEBUG

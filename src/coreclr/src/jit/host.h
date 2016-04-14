@@ -10,19 +10,14 @@
 #endif
 
 class Compiler;
-class LogEnv {
+class LogEnv
+{
 public:
     LogEnv(ICorJitInfo* aCompHnd);
-    ~LogEnv();
-    static LogEnv* cur();           // get current logging environement
-    static void cleanup();          // clean up cached information (TLS ID)
     void setCompiler(Compiler* val) { const_cast<Compiler*&>(compiler) = val; }
 
     ICorJitInfo* const compHnd;
     Compiler* const compiler;
-private:
-    static int tlsID;
-    LogEnv* next;
 };
 
 BOOL vlogf(unsigned level, const char* fmt, va_list args);

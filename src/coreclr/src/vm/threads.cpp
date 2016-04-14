@@ -344,16 +344,22 @@ BOOL SetAppDomain(AppDomain* ad)
 }
 
 #if defined(FEATURE_MERGE_JIT_AND_ENGINE)
-Compiler* GetTlsCompiler()
+extern "C"
+{
+
+void* GetJitTls()
 {
     LIMITED_METHOD_CONTRACT
 
-    return gCurrentThreadInfo.m_pCompiler;
+    return gCurrentThreadInfo.m_pJitTls;
 }
-void SetTlsCompiler(Compiler* c)
+
+void SetJitTls(void* v)
 {
     LIMITED_METHOD_CONTRACT
-    gCurrentThreadInfo.m_pCompiler = c;
+    gCurrentThreadInfo.m_pJitTls = v;
+}
+
 }
 #endif // defined(FEATURE_MERGE_JIT_AND_ENGINE)
 
