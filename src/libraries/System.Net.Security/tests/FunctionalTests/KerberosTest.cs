@@ -159,6 +159,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact, OuterLoop]
+        [ActiveIssue(7707)]
         [PlatformSpecific(PlatformID.Linux)]
         public void NegotiateStream_StreamToStream_AuthToHttpTarget_Success()
         {
