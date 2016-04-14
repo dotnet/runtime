@@ -129,9 +129,12 @@ DECL_OFFSET(MonoTypedRef, value)
 DECL_OFFSET(MonoThreadsSync, status)
 DECL_OFFSET(MonoThreadsSync, nest)
 
-#if defined (HAVE_SGEN_GC) && !defined (HAVE_KW_THREAD)
+#ifdef HAVE_SGEN_GC
+DECL_OFFSET(SgenClientThreadInfo, in_critical_region)
+#ifndef HAVE_KW_THREAD
 DECL_OFFSET(SgenThreadInfo, tlab_next_addr)
 DECL_OFFSET(SgenThreadInfo, tlab_temp_end)
+#endif
 #endif
 
 #endif //DISABLE METADATA OFFSETS

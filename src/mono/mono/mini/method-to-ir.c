@@ -12768,6 +12768,22 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ip += 6;
 				break;
 			}
+			case CEE_MONO_ATOMIC_STORE_I4: {
+				g_assert (mono_arch_opcode_supported (OP_ATOMIC_STORE_I4));
+
+				CHECK_OPSIZE (6);
+				CHECK_STACK (2);
+				sp -= 2;
+
+				MONO_INST_NEW (cfg, ins, OP_ATOMIC_STORE_I4);
+				ins->dreg = sp [0]->dreg;
+				ins->sreg1 = sp [1]->dreg;
+				ins->backend.memory_barrier_kind = (int) read32 (ip + 2);
+				MONO_ADD_INS (cfg->cbb, ins);
+
+				ip += 6;
+				break;
+			}
 			case CEE_MONO_JIT_ATTACH: {
 				MonoInst *args [16], *domain_ins;
 				MonoInst *ad_ins, *jit_tls_ins;

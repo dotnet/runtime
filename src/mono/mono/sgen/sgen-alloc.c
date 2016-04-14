@@ -68,6 +68,9 @@ static __thread char *tlab_temp_end;
 static __thread char *tlab_real_end;
 /* Used by the managed allocator/wbarrier */
 static __thread char **tlab_next_addr MONO_ATTR_USED;
+#ifndef SGEN_WITHOUT_MONO
+static __thread volatile int *in_critical_region_addr MONO_ATTR_USED;
+#endif
 #endif
 
 #ifdef HAVE_KW_THREAD
@@ -506,6 +509,9 @@ sgen_init_tlab_info (SgenThreadInfo* info)
 
 #ifdef HAVE_KW_THREAD
 	tlab_next_addr = &tlab_next;
+#ifndef SGEN_WITHOUT_MONO
+	in_critical_region_addr = &info->client_info.in_critical_region;
+#endif
 #endif
 }
 
@@ -530,13 +536,15 @@ sgen_init_allocator (void)
 #if defined(HAVE_KW_THREAD) && !defined(SGEN_WITHOUT_MONO)
 	int tlab_next_addr_offset = -1;
 	int tlab_temp_end_offset = -1;
-
+	int in_critical_region_addr_offset = -1;
 
 	MONO_THREAD_VAR_OFFSET (tlab_next_addr, tlab_next_addr_offset);
 	MONO_THREAD_VAR_OFFSET (tlab_temp_end, tlab_temp_end_offset);
+	MONO_THREAD_VAR_OFFSET (in_critical_region_addr, in_critical_region_addr_offset);
 
 	mono_tls_key_set_offset (TLS_KEY_SGEN_TLAB_NEXT_ADDR, tlab_next_addr_offset);
 	mono_tls_key_set_offset (TLS_KEY_SGEN_TLAB_TEMP_END, tlab_temp_end_offset);
+	mono_tls_key_set_offset (TLS_KEY_SGEN_IN_CRITICAL_REGION_ADDR, in_critical_region_addr_offset);
 #endif
 
 #ifdef HEAVY_STATISTICS

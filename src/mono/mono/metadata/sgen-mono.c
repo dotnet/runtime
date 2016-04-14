@@ -993,6 +993,13 @@ static gboolean use_managed_allocator = TRUE;
 
 #ifdef HAVE_KW_THREAD
 
+#define EMIT_TLS_ACCESS_IN_CRITICAL_REGION_ADDR(mb) \
+	do { \
+		mono_mb_emit_byte ((mb), MONO_CUSTOM_PREFIX); \
+		mono_mb_emit_byte ((mb), CEE_MONO_TLS); \
+		mono_mb_emit_i4 ((mb), TLS_KEY_SGEN_IN_CRITICAL_REGION_ADDR); \
+	} while (0)
+
 #define EMIT_TLS_ACCESS_NEXT_ADDR(mb)	do {	\
 	mono_mb_emit_byte ((mb), MONO_CUSTOM_PREFIX);	\
 	mono_mb_emit_byte ((mb), CEE_MONO_TLS);		\
@@ -1008,6 +1015,15 @@ static gboolean use_managed_allocator = TRUE;
 #else
 
 #if defined(TARGET_OSX) || defined(TARGET_WIN32) || defined(TARGET_ANDROID) || defined(TARGET_IOS)
+#define EMIT_TLS_ACCESS_IN_CRITICAL_REGION_ADDR(mb) \
+	do { \
+		mono_mb_emit_byte ((mb), MONO_CUSTOM_PREFIX); \
+		mono_mb_emit_byte ((mb), CEE_MONO_TLS); \
+		mono_mb_emit_i4 ((mb), TLS_KEY_SGEN_THREAD_INFO); \
+		mono_mb_emit_icon ((mb), MONO_STRUCT_OFFSET (SgenClientThreadInfo, in_critical_region)); \
+		mono_mb_emit_byte ((mb), CEE_ADD); \
+	} while (0)
+
 #define EMIT_TLS_ACCESS_NEXT_ADDR(mb)	do {	\
 	mono_mb_emit_byte ((mb), MONO_CUSTOM_PREFIX);	\
 	mono_mb_emit_byte ((mb), CEE_MONO_TLS);		\
@@ -1029,6 +1045,7 @@ static gboolean use_managed_allocator = TRUE;
 #else
 #define EMIT_TLS_ACCESS_NEXT_ADDR(mb)	do { g_error ("sgen is not supported when using --with-tls=pthread.\n"); } while (0)
 #define EMIT_TLS_ACCESS_TEMP_END(mb)	do { g_error ("sgen is not supported when using --with-tls=pthread.\n"); } while (0)
+#define EMIT_TLS_ACCESS_IN_CRITICAL_REGION_ADDR(mb)	do { g_error ("sgen is not supported when using --with-tls=pthread.\n"); } while (0)
 #endif
 
 #endif
@@ -1042,9 +1059,10 @@ static gboolean use_managed_allocator = TRUE;
  * that they are executed atomically via the restart mechanism.
  */
 static MonoMethod*
-create_allocator (int atype, gboolean slowpath)
+create_allocator (int atype, ManagedAllocatorVariant variant)
 {
 	int p_var, size_var;
+	gboolean slowpath = variant == MANAGED_ALLOCATOR_SLOW_PATH;
 	guint32 slowpath_branch, max_size_branch;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
@@ -1115,6 +1133,14 @@ create_allocator (int atype, gboolean slowpath)
 
 		goto done;
 	}
+
+#ifdef MANAGED_ALLOCATOR_CAN_USE_CRITICAL_REGION
+	EMIT_TLS_ACCESS_IN_CRITICAL_REGION_ADDR (mb);
+	mono_mb_emit_byte (mb, CEE_LDC_I4_1);
+	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+	mono_mb_emit_byte (mb, CEE_MONO_ATOMIC_STORE_I4);
+	mono_mb_emit_i4 (mb, MONO_MEMORY_BARRIER_NONE);
+#endif
 
 	size_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 	if (atype == ATYPE_SMALL) {
@@ -1350,11 +1376,18 @@ create_allocator (int atype, gboolean slowpath)
 		mono_mb_emit_byte (mb, MONO_CEE_STIND_I4);
 	}
 
+#ifdef MANAGED_ALLOCATOR_CAN_USE_CRITICAL_REGION
+	EMIT_TLS_ACCESS_IN_CRITICAL_REGION_ADDR (mb);
+	mono_mb_emit_byte (mb, CEE_LDC_I4_0);
+	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+	mono_mb_emit_byte (mb, CEE_MONO_ATOMIC_STORE_I4);
+#else
+	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+	mono_mb_emit_byte (mb, CEE_MONO_MEMORY_BARRIER);
+#endif
 	/*
 	We must make sure both vtable and max_length are globaly visible before returning to managed land.
 	*/
-	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_byte (mb, CEE_MONO_MEMORY_BARRIER);
 	mono_mb_emit_i4 (mb, MONO_MEMORY_BARRIER_REL);
 
 	/* return p */
@@ -1403,17 +1436,19 @@ mono_gc_get_managed_allocator (MonoClass *klass, gboolean for_box, gboolean know
 		return NULL;
 	if (known_instance_size && ALIGN_TO (klass->instance_size, SGEN_ALLOC_ALIGN) >= SGEN_MAX_SMALL_OBJ_SIZE)
 		return NULL;
-	if (mono_class_has_finalizer (klass) || mono_class_is_marshalbyref (klass) || (mono_profiler_get_events () & MONO_PROFILE_ALLOCATIONS))
+	if (mono_class_has_finalizer (klass) || mono_class_is_marshalbyref (klass))
 		return NULL;
 	if (klass->rank)
 		return NULL;
+	if (mono_profiler_get_events () & MONO_PROFILE_ALLOCATIONS)
+		return NULL;
 	if (klass->byval_arg.type == MONO_TYPE_STRING)
-		return mono_gc_get_managed_allocator_by_type (ATYPE_STRING, FALSE);
+		return mono_gc_get_managed_allocator_by_type (ATYPE_STRING, MANAGED_ALLOCATOR_REGULAR);
 	/* Generic classes have dynamic field and can go above MAX_SMALL_OBJ_SIZE. */
 	if (known_instance_size)
-		return mono_gc_get_managed_allocator_by_type (ATYPE_SMALL, FALSE);
+		return mono_gc_get_managed_allocator_by_type (ATYPE_SMALL, MANAGED_ALLOCATOR_REGULAR);
 	else
-		return mono_gc_get_managed_allocator_by_type (ATYPE_NORMAL, FALSE);
+		return mono_gc_get_managed_allocator_by_type (ATYPE_NORMAL, MANAGED_ALLOCATOR_REGULAR);
 #else
 	return NULL;
 #endif
@@ -1433,7 +1468,7 @@ mono_gc_get_managed_array_allocator (MonoClass *klass)
 		return NULL;
 	g_assert (!mono_class_has_finalizer (klass) && !mono_class_is_marshalbyref (klass));
 
-	return mono_gc_get_managed_allocator_by_type (ATYPE_VECTOR, FALSE);
+	return mono_gc_get_managed_allocator_by_type (ATYPE_VECTOR, MANAGED_ALLOCATOR_REGULAR);
 #else
 	return NULL;
 #endif
@@ -1446,11 +1481,11 @@ sgen_set_use_managed_allocator (gboolean flag)
 }
 
 MonoMethod*
-mono_gc_get_managed_allocator_by_type (int atype, gboolean slowpath)
+mono_gc_get_managed_allocator_by_type (int atype, ManagedAllocatorVariant variant)
 {
 #ifdef MANAGED_ALLOCATION
 	MonoMethod *res;
-	MonoMethod **cache = slowpath ? slowpath_alloc_method_cache : alloc_method_cache;
+	MonoMethod **cache;
 
 	if (!use_managed_allocator)
 		return NULL;
@@ -1458,11 +1493,17 @@ mono_gc_get_managed_allocator_by_type (int atype, gboolean slowpath)
 	if (!mono_runtime_has_tls_get ())
 		return NULL;
 
+	switch (variant) {
+	case MANAGED_ALLOCATOR_REGULAR: cache = alloc_method_cache; break;
+	case MANAGED_ALLOCATOR_SLOW_PATH: cache = slowpath_alloc_method_cache; break;
+	default: g_assert_not_reached (); break;
+	}
+
 	res = cache [atype];
 	if (res)
 		return res;
 
-	res = create_allocator (atype, slowpath);
+	res = create_allocator (atype, variant);
 	LOCK_GC;
 	if (cache [atype]) {
 		mono_free_method (res);
