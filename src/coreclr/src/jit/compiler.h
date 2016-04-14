@@ -2521,15 +2521,10 @@ public :
 #endif
 
     InlineInfo*          impInlineInfo;
+    InlineStrategy*      m_inlineStrategy;
 
     // Get the maximum IL size allowed for an inline
     unsigned             getImpInlineSize() const { return impInlineSize; }
-
-#if defined(DEBUG) || defined(INLINE_DATA)
-    unsigned             fgInlinedCount; // Number of successful inline expansion of this method.
-    InlinePolicy*        inlLastSuccessfulPolicy; // Policy used in last successful inline.
-    static bool          s_inlDumpDataHeader;  // Print header schema for inline data
-#endif // defined(DEBUG) || defined(INLINE_DATA)
 
     // The Compiler* that is the root of the inlining tree of which "this" is a member.
     Compiler*            impInlineRoot();
@@ -3082,27 +3077,10 @@ private:
     regNumber           getCallArgIntRegister       (regNumber floatReg);
     regNumber           getCallArgFloatRegister     (regNumber intReg);
 #endif // FEATURE_VARARG
-    //--------------------------- Inlining-------------------------------------
 
-#if defined(DEBUG) || MEASURE_INLINING
+#if defined(DEBUG)
     static unsigned jitTotalMethodCompiled;
-    static unsigned jitTotalMethodInlined;
-    static unsigned jitTotalInlineCandidates;
-    static unsigned jitTotalInlineCandidatesWithNonNullReturn;
-    static unsigned jitTotalNumLocals;
-    static unsigned jitTotalInlineReturnFromALocal;
-    static unsigned jitInlineInitVarsFailureCount;
-    static unsigned jitCheckCanInlineCallCount;
-    static unsigned jitCheckCanInlineFailureCount;
-
-    static unsigned jitInlineGetMethodInfoCallCount;
-    static unsigned jitInlineInitClassCallCount;
-    static unsigned jitInlineCanInlineCallCount;
-
-    static unsigned jitIciStmtIsTheLastInBB;
-    static unsigned jitInlineeContainsOnlyOneBB;
-
-#endif // defined(DEBUG) || MEASURE_INLINING
+#endif
 
 #ifdef DEBUG
     static LONG     jitNestingLevel;
