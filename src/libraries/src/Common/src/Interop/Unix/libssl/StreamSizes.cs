@@ -12,9 +12,17 @@ namespace System.Net
 
         internal StreamSizes()
         {
+            // Since the header and trailer values aren't being calculated anyways just
+            // report them as 0.
+            int ignoredHeader;
+            int ignoredTrailer;
+
+            header = 0;
+            trailer = 0;
+
             Interop.Ssl.GetStreamSizes(
-                out header,
-                out trailer,
+                out ignoredHeader,
+                out ignoredTrailer,
                 out maximumMessage);
         }
     }
