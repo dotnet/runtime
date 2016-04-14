@@ -3,7 +3,6 @@
     "Microsoft.NETCore.Platforms": "1.0.1-rc3-24013-00",
     "Microsoft.Win32.Primitives": "4.0.1-rc3-24013-00",
     "System.Collections": "4.0.11-rc3-24013-00",
-    "System.Collections.NonGeneric": "4.0.1-rc3-24013-00",
     "System.ComponentModel.EventBasedAsync": "4.0.11-rc3-24013-00",
     "System.Console": "4.0.0-rc3-24013-00",
     "System.Diagnostics.Contracts": "4.0.1-rc3-24013-00",
