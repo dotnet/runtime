@@ -885,7 +885,7 @@ GenTree::GenTree(genTreeOps oper, var_types type DEBUG_ARG(bool largeNode))
 
 #ifdef DEBUG
     gtSeqNum   = 0;
-    gtTreeID   = GetTlsCompiler()->compGenTreeID++;
+    gtTreeID   = JitTls::GetCompiler()->compGenTreeID++;
     gtVNPair.SetBoth(ValueNumStore::NoVN);
     gtRegTag   = GT_REGTAG_NONE;
     gtOperSave = GT_NONE;

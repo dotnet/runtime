@@ -16,7 +16,7 @@
 void dumpMethod()
 {
     if (VERBOSE)
-        GetTlsCompiler()->fgDispBasicBlocks(true);
+        JitTls::GetCompiler()->fgDispBasicBlocks(true);
 }
 
 void dumpTreeStack(Compiler *comp, ArrayStack<GenTree *> *stack)
@@ -939,7 +939,7 @@ void Compiler::fgFixupIfCallArg(ArrayStack<GenTree *> *parentStack,
     GenTree *parentCall = isNodeCallArg(parentStack);
     if (!parentCall) 
     {
-        DBEXEC(VERBOSE, dumpTreeStack(GetTlsCompiler(), parentStack));
+        DBEXEC(VERBOSE, dumpTreeStack(JitTls::GetCompiler(), parentStack));
         return;
     }
      
@@ -2160,7 +2160,7 @@ void Rationalizer::ValidateStatement(Location loc)
 void Rationalizer::ValidateStatement(GenTree *tree, BasicBlock *block)
 {
     assert(tree->gtOper == GT_STMT);
-    DBEXEC(TRUE, GetTlsCompiler()->fgDebugCheckNodeLinks(block, tree));
+    DBEXEC(TRUE, JitTls::GetCompiler()->fgDebugCheckNodeLinks(block, tree));
 }
 
 // sanity checks that apply to all kinds of IR

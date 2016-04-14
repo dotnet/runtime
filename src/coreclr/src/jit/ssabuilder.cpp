@@ -922,7 +922,7 @@ void SsaBuilder::TreeRenameVariables(GenTree* tree, BasicBlock* block, SsaRename
                     pRenameState->PushHeap(block, count);
                     m_pCompiler->GetHeapSsaMap()->Set(tree, count);
 #ifdef DEBUG
-                    if (GetTlsCompiler()->verboseSsa) 
+                    if (JitTls::GetCompiler()->verboseSsa) 
                     {
                         printf("Node ");
                         Compiler::printTreeID(tree);
