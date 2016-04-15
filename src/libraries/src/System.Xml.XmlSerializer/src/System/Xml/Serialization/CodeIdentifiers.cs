@@ -9,8 +9,8 @@ namespace System.Xml.Serialization
     using System.IO;
     using System.Globalization;
     using System.Xml.Extensions;
-    // this[key] api throws KeyNotFoundException
-    using Hashtable = System.Collections.InternalHashtable;
+    using System.Collections.Generic;
+
 
 
     /// <include file='doc\CodeIdentifiers.uex' path='docs/doc[@for="CodeIdentifiers"]/*' />
@@ -20,17 +20,16 @@ namespace System.Xml.Serialization
     /// </devdoc>
     internal class CodeIdentifiers
     {
-        private Hashtable _identifiers;
-        private Hashtable _reservedIdentifiers;
+        private Dictionary<string, object> _identifiers;
+        private Dictionary<string, object> _reservedIdentifiers;
         private ArrayList _list;
 
         public CodeIdentifiers()
         {
-            _identifiers = new Hashtable();
-            _reservedIdentifiers = new Hashtable();
+            _identifiers = new Dictionary<string, object>();
+            _reservedIdentifiers = new Dictionary<string, object>();
             _list = new ArrayList();
         }
-
 
 
 
@@ -79,7 +78,7 @@ namespace System.Xml.Serialization
         /// </devdoc>
         public bool IsInUse(string identifier)
         {
-            return _identifiers.Contains(identifier) || _reservedIdentifiers.Contains(identifier);
+            return _identifiers.ContainsKey(identifier) || _reservedIdentifiers.ContainsKey(identifier);
         }
 
         /// <include file='doc\CodeIdentifiers.uex' path='docs/doc[@for="CodeIdentifiers.Add"]/*' />

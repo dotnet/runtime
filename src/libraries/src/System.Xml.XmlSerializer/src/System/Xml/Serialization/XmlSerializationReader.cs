@@ -21,8 +21,6 @@ namespace System.Xml.Serialization
     using System.Reflection.Emit;
     using System.Text.RegularExpressions;
     using System.Xml.Extensions;
-    using Hashtable = System.Collections.Generic.Dictionary<object, object>;
-    using DictionaryEntry = System.Collections.Generic.KeyValuePair<object, object>;
     using XmlSchema = System.ServiceModel.Dispatcher.XmlSchemaConstants;
     using XmlDeserializationEvents = System.Object;
 

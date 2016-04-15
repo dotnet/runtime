@@ -19,8 +19,6 @@ namespace System.Xml.Serialization
     using System.Collections.Generic;
     using System.Text.RegularExpressions;
     using System.Xml.Extensions;
-    using Hashtable = System.Collections.Generic.Dictionary<object, object>;
-    using DictionaryEntry = System.Collections.Generic.KeyValuePair<object, object>;
     using XmlSchema = System.ServiceModel.Dispatcher.XmlSchemaConstants;
 
     /// <include file='doc\XmlSerializationWriter.uex' path='docs/doc[@for="XmlSerializationWriter"]/*' />
@@ -30,8 +28,8 @@ namespace System.Xml.Serialization
         private XmlWriter _w;
         private XmlSerializerNamespaces _namespaces;
         private int _tempNamespacePrefix;
-        private InternalHashtable _usedPrefixes;
-        private InternalHashtable _objectsInUse;
+        private Dictionary<int, int> _usedPrefixes;
+        private Dictionary<object, object> _objectsInUse;
         private string _aliasBase = "q";
         private bool _escapeName = true;
 
@@ -93,7 +91,10 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    XmlQualifiedName[] qnames = (XmlQualifiedName[])ArrayList.ToArray(value, typeof(XmlQualifiedName));
+                    Array array = Array.CreateInstance(typeof(XmlQualifiedName), value.Count);
+                    value.CopyTo(array, 0);
+                    XmlQualifiedName[] qnames = (XmlQualifiedName[])array;
+
                     _namespaces = new XmlSerializerNamespaces(qnames);
                 }
             }
@@ -539,9 +540,9 @@ namespace System.Xml.Serialization
             WriteNamespaceDeclarations(xmlns);
         }
 
-        private InternalHashtable ListUsedPrefixes(InternalHashtable nsList, string prefix)
+        private Dictionary<int, int> ListUsedPrefixes(Dictionary<string, string> nsList, string prefix)
         {
-            InternalHashtable qnIndexes = new InternalHashtable();
+            var qnIndexes = new Dictionary<int, int>();
             int prefixLength = prefix.Length;
             const string MaxInt32 = "2147483647";
             foreach (string alias in _namespaces.Namespaces.Keys)
@@ -1151,7 +1152,7 @@ namespace System.Xml.Serialization
         /// <include file='doc\XmlSerializationWriter.uex' path='docs/doc[@for="XmlSerializationWriter.TopLevelElement"]/*' />
         protected void TopLevelElement()
         {
-            _objectsInUse = new InternalHashtable();
+            _objectsInUse = new Dictionary<object, object>();
         }
 
         /// <include file='doc\XmlSerializationWriter.uex' path='docs/doc[@for="XmlSerializationWriter.WriteNamespaceDeclarations"]/*' />
@@ -1160,7 +1161,7 @@ namespace System.Xml.Serialization
         {
             if (xmlns != null)
             {
-                foreach (DictionaryEntry entry in xmlns.Namespaces)
+                foreach (KeyValuePair<string, string> entry in xmlns.Namespaces)
                 {
                     string prefix = (string)entry.Key;
                     string ns = (string)entry.Value;
