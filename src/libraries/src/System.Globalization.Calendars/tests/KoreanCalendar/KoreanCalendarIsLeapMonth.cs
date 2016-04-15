@@ -2,27 +2,24 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
 using Xunit;
 
 namespace System.Globalization.Tests
 {
     public class KoreanCalendarIsLeapMonth
     {
-        public static IEnumerable<object[]> IsLeapMonth_TestData()
-        {
-            yield return new object[] { 1, 1, 1 };
-            yield return new object[] { 9999, 12, 1 };
-            yield return new object[] { 1900, 2, 1 };
-            yield return new object[] { 1200, 2, 1 };
-        }
-
         [Theory]
-        [MemberData(nameof(IsLeapMonth_TestData))]
-        public void IsLeapMonth(int year, int month, int era)
+        [InlineData(1, 1)]
+        [InlineData(9999, 12)]
+        [InlineData(1900, 2)]
+        [InlineData(1200, 2)]
+        public void IsLeapMonth(int year, int month)
         {
-            bool expected = new GregorianCalendar().IsLeapMonth(year, month, era);
-            Assert.Equal(expected, new KoreanCalendar().IsLeapMonth(year + 2333, month, era));
+            KoreanCalendar calendar = new KoreanCalendar();
+            bool expected = new GregorianCalendar().IsLeapMonth(year, month);
+            Assert.Equal(expected, calendar.IsLeapMonth(year + 2333, month));
+            Assert.Equal(expected, calendar.IsLeapMonth(year + 2333, month, 0));
+            Assert.Equal(expected, calendar.IsLeapMonth(year + 2333, month, 1));
         }
     }
 }

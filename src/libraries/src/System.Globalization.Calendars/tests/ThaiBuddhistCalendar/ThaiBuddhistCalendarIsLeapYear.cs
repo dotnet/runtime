@@ -13,18 +13,21 @@ namespace System.Globalization.Tests
 
         public static IEnumerable<object[]> IsLeapYear_TestData()
         {
-            yield return new object[] { 1, 1 };
-            yield return new object[] { 9999, 1 };
-            yield return new object[] { 2000, 1 };
-            yield return new object[] { s_randomDataGenerator.GetInt16(-55) % 9999, 1 };
+            yield return new object[] { 1 };
+            yield return new object[] { 9999 };
+            yield return new object[] { 2000 };
+            yield return new object[] { s_randomDataGenerator.GetInt16(-55) % 9999 };
         }
 
         [Theory]
         [MemberData(nameof(IsLeapYear_TestData))]
-        public void IsLeapYear(int year, int era)
+        public void IsLeapYear(int year)
         {
-            bool expected = new GregorianCalendar().IsLeapYear(year, era);
-            Assert.Equal(expected, new ThaiBuddhistCalendar().IsLeapYear(year + 543, era));
+            ThaiBuddhistCalendar calendar = new ThaiBuddhistCalendar();
+            bool expected = new GregorianCalendar().IsLeapYear(year);
+            Assert.Equal(expected, calendar.IsLeapYear(year + 543));
+            Assert.Equal(expected, calendar.IsLeapYear(year + 543, 0));
+            Assert.Equal(expected, calendar.IsLeapYear(year + 543, 1));
         }
     }
 }

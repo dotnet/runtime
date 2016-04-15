@@ -11,16 +11,19 @@ namespace System.Globalization.Tests
     {
         public static IEnumerable<object[]> IsLeapYear_TestData()
         {
-            yield return new object[] { TaiwanCalendarUtilities.RandomYear(), 1 };
-            yield return new object[] { 2000 - 1911, 1 };
+            yield return new object[] { TaiwanCalendarUtilities.RandomYear() };
+            yield return new object[] { 2000 - 1911 };
         }
 
         [Theory]
         [MemberData(nameof(IsLeapYear_TestData))]
-        public void IsLeapYear(int year, int era)
+        public void IsLeapYear(int year)
         {
-            bool expected = new GregorianCalendar().IsLeapYear(year + 1911, era);
-            Assert.Equal(expected, new TaiwanCalendar().IsLeapYear(year, era));
+            TaiwanCalendar calendar = new TaiwanCalendar();
+            bool expected = new GregorianCalendar().IsLeapYear(year + 1911);
+            Assert.Equal(expected, calendar.IsLeapYear(year));
+            Assert.Equal(expected, calendar.IsLeapYear(year, 0));
+            Assert.Equal(expected, calendar.IsLeapYear(year, 1));
         }
     }
 }
