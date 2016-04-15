@@ -855,11 +855,10 @@ namespace System.Xml.Serialization
                         continue;
                     if (member.IsSequence)
                     {
-                        if (ids.Contains(member.SequenceId))
+                        if (!ids.Add(member.SequenceId))
                         {
                             throw new InvalidOperationException(SR.Format(SR.XmlSequenceUnique, member.SequenceId.ToString(CultureInfo.InvariantCulture), "Order", member.Name));
                         }
-                        ids.Add(member.SequenceId);
                     }
                     else
                     {
@@ -2007,14 +2006,10 @@ namespace System.Xml.Serialization
                 for (int i = 0; i < elements.Count; i++)
                 {
                     Type type = elements[i].Type == null ? accessorType : elements[i].Type;
-                    if (choiceTypes.Contains(type))
+                    if (!choiceTypes.Add(type))
                     {
                         // You need to add {0} to the '{1}'.
                         throw new InvalidOperationException(SR.Format(SR.XmlChoiceIdentiferMissing, typeof(XmlChoiceIdentifierAttribute).Name, accessorName));
-                    }
-                    else
-                    {
-                        choiceTypes.Add(type);
                     }
                 }
             }

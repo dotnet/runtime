@@ -48,10 +48,9 @@ namespace System.Xml.Serialization
 
         internal override void GenerateMethod(TypeMapping mapping)
         {
-            if (GeneratedMethods.Contains(mapping))
+            if (!GeneratedMethods.Add(mapping))
                 return;
 
-            GeneratedMethods.Add(mapping);
             if (mapping is StructMapping)
             {
                 WriteStructMethod((StructMapping)mapping);
@@ -630,7 +629,7 @@ namespace System.Xml.Serialization
                 for (int i = 0; i < constants.Length; i++)
                 {
                     ConstantMapping c = constants[i];
-                    if (!values.Contains(c.Value))
+                    if (values.Add(c.Value))
                     {
                         Label caseLabel = ilg.DefineLabel();
                         ilg.Ldloc(localTmp);
@@ -638,7 +637,6 @@ namespace System.Xml.Serialization
                         ilg.Beq(caseLabel);
                         caseLabels.Add(caseLabel);
                         retValues.Add(GetCSharpString(c.XmlName));
-                        values.Add(c.Value);
                     }
                 }
 
