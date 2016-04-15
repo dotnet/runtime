@@ -1435,7 +1435,7 @@ combinedScenarios.each { scenario ->
                         
                             // Corefx native component.
                             // Pull from main folder in corefx for now, once the corefx branchify PR gets merged this will chnage
-                            def corefxFolder = Utilities.getFolderName('dotnet/corefx')
+                            def corefxFolder = Utilities.getFolderName('dotnet/corefx') + '/' + Utilities.getFolderName(branch)
                             copyArtifacts("${corefxFolder}/nativecomp_${os.toLowerCase()}_release") {
                                 includePatterns('bin/**')
                                 buildSelector {
