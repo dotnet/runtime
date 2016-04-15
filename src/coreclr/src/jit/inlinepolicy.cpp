@@ -321,6 +321,37 @@ void LegacyPolicy::NoteBool(InlineObservation obs, bool value)
                     m_MethodIsMostlyLoadStore = true;
                 }
 
+                // Budget check.
+                //
+                // Conceptually this should happen when we
+                // observe the candidate's IL size.
+                //
+                // However, we do this here to avoid potential
+                // inconsistency between the state of the budget
+                // during candidate scan and the state when the IL is
+                // being scanned.
+                //
+                // Consider the case where we're just below the budget
+                // during candidate scan, and we have three possible
+                // inlines, any two of which put us over budget. We
+                // allow them all to become candidates. We then move
+                // on to inlining and the first two get inlined and
+                // put us over budget. Now the third can't be inlined
+                // anymore, but we have a policy that when we replay
+                // the candidate IL size during the inlining pass it
+                // "reestablishes" candidacy rather than alters
+                // candidacy ... so instead we bail out here.
+
+                if (!m_IsPrejitRoot)
+                {
+                    InlineStrategy* strategy = m_RootCompiler->m_inlineStrategy;
+                    bool overBudget = strategy->BudgetCheck(m_CodeSize);
+                    if (overBudget)
+                    {
+                        SetFailure(InlineObservation::CALLSITE_OVER_BUDGET);
+                    }
+                }
+
                 break;
             }
 
