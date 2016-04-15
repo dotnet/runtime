@@ -16,6 +16,8 @@ namespace System.Globalization.Tests
             yield return new object[] { "!@#$%^&", new int[] { 0, 1, 2, 3, 4, 5, 6 } };
             yield return new object[] { "!\u20D1bo\uFE22\u20D1\u20EB|", new int[] { 0, 2, 3, 7 } };
             yield return new object[] { "1\uDBFF\uDFFF@\uFE22\u20D1\u20EB9", new int[] { 0, 1, 3, 7 } };
+            yield return new object[] { "a\u0300", new int[] { 0 } };
+            yield return new object[] { "\u0300\u0300", new int[] { 0, 1 } };
             yield return new object[] { "   ", new int[] { 0, 1, 2 } };
             yield return new object[] { "", new int[0] };
         }
@@ -30,6 +32,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void ParseCombiningCharacters_InvalidUnicodeChars()
         {
+            // TODO: move into ParseCombiningCharacters_TestData once #7166 is fixed 
             ParseCombiningCharacters("\u0000\uFFFFa", new int[] { 0, 1, 2 }); // Control chars
             ParseCombiningCharacters("\uD800a", new int[] { 0, 1 }); // Unmatched high surrogate
             ParseCombiningCharacters("\uDC00a", new int[] { 0, 1 }); // Unmatched low surrogate

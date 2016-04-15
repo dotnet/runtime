@@ -8,17 +8,15 @@ namespace System.Globalization.Tests
 {
     public class StringInfoString
     {
-        private const int MinStringLength = 8;
-        private const int MaxStringLength = 256;
-        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
-        
-        [Fact]
-        public void String_Set()
+        [Theory]
+        [InlineData("")]
+        [InlineData("abc")]
+        [InlineData("\uD800\uDC00")]
+        public void String_Set(string value)
         {
-            string value = s_randomDataGenerator.GetString(-55, false, MinStringLength, MaxStringLength);
             StringInfo stringInfo = new StringInfo();
             stringInfo.String = value;
-            Assert.Equal(value, stringInfo.String);
+            Assert.Same(value, stringInfo.String);
         }
         
         [Fact]
