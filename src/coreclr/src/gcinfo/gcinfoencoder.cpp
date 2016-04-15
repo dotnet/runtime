@@ -25,6 +25,7 @@
 #ifndef STANDALONE_BUILD
 #include "log.h"
 #include "simplerhash.h"
+#include "bitposition.h"
 #endif
 
 #ifdef MEASURE_GCINFO
