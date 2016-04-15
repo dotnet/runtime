@@ -10,7 +10,6 @@
     </ProjectReference>
     <ProjectReference Include="..\src\System.Net.NetworkInformation.builds" />
 
-    <ProjectReference Include="$(NativePackagePath)\runtime.native.System\runtime.native.System.pkgproj" />
   </ItemGroup>
   <ItemGroup>
     <InboxOnTargetFramework Include="MonoAndroid10" />

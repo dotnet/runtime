@@ -11,7 +11,6 @@
     <ProjectReference Include="..\..\src\redist\System.Runtime.depproj">
       <TargetGroup>netcore50aot</TargetGroup>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\System.Private.Uri\pkg\System.Private.Uri.pkgproj"/>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

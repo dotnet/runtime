@@ -9,7 +9,6 @@
       <SupportedFramework>net46;netcore50;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Data.SqlClient.builds" />
-    <ProjectReference Include="$(NativePackagePath)\runtime.native.System.Data.SqlClient.sni\runtime.native.System.Data.SqlClient.sni.pkgproj" />
   </ItemGroup>
   <ItemGroup>
     <InboxOnTargetFramework Include="MonoAndroid10" />
