@@ -12,6 +12,7 @@
 #include "pal.h"
 
 PerfInfo::PerfInfo(int pid)
+  : m_Stream(nullptr)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -34,8 +35,8 @@ void PerfInfo::LogImage(PEFile* pFile, WCHAR* guid)
         THROWS;
         GC_NOTRIGGER;
         MODE_PREEMPTIVE;
-        PRECONDITION(pFile != NULL);
-        PRECONDITION(guid != NULL);
+        PRECONDITION(pFile != nullptr);
+        PRECONDITION(guid != nullptr);
     } CONTRACTL_END;
 
     SString value;
@@ -59,7 +60,7 @@ void PerfInfo::WriteLine(SString& type, SString& value)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    if (m_Stream == NULL)
+    if (m_Stream == nullptr)
     {
         return;
     }
@@ -92,13 +93,13 @@ void PerfInfo::OpenFile(SString& path)
 
     m_Stream = new (nothrow) CFileStream();
 
-    if (m_Stream != NULL)
+    if (m_Stream != nullptr)
     {
         HRESULT hr = m_Stream->OpenForWrite(path.GetUnicode());
         if (FAILED(hr))
         {
             delete m_Stream;
-            m_Stream = NULL;
+            m_Stream = nullptr;
         }
     }
 }
@@ -108,7 +109,7 @@ PerfInfo::~PerfInfo()
     LIMITED_METHOD_CONTRACT;
 
     delete m_Stream;
-    m_Stream = NULL;
+    m_Stream = nullptr;
 }
 
 
