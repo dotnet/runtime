@@ -18,8 +18,8 @@ namespace System.Xml.Serialization
     internal class ModelScope
     {
         private TypeScope _typeScope;
-        private Dictionary<Type, TypeModel> _models = new Dictionary<Type, TypeModel>();
-        private Dictionary<Type, TypeModel> _arrayModels = new Dictionary<Type, TypeModel>();
+        private readonly Dictionary<Type, TypeModel> _models = new Dictionary<Type, TypeModel>();
+        private readonly Dictionary<Type, TypeModel> _arrayModels = new Dictionary<Type, TypeModel>();
 
         internal ModelScope(TypeScope typeScope)
         {

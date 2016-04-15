@@ -37,7 +37,7 @@ namespace System.Xml.Serialization
     }
     internal class NameTable : INameScope
     {
-        private Dictionary<NameKey, object> _table = new Dictionary<NameKey, object>();
+        private readonly Dictionary<NameKey, object> _table = new Dictionary<NameKey, object>();
 
 
         internal void Add(string name, string ns, object value)

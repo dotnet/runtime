@@ -48,10 +48,10 @@ namespace System.Xml.Serialization
 
         internal override void GenerateMethod(TypeMapping mapping)
         {
-            if (GeneratedMethods.ContainsKey(mapping))
+            if (GeneratedMethods.Contains(mapping))
                 return;
 
-            GeneratedMethods[mapping] = mapping;
+            GeneratedMethods.Add(mapping);
             if (mapping is StructMapping)
             {
                 WriteStructMethod((StructMapping)mapping);
@@ -618,7 +618,7 @@ namespace System.Xml.Serialization
 
             if (constants.Length > 0)
             {
-                var values = new Dictionary<long, long>();
+                var values = new HashSet<long>();
                 List<Label> caseLabels = new List<Label>();
                 List<string> retValues = new List<string>();
                 Label defaultLabel = ilg.DefineLabel();
@@ -630,7 +630,7 @@ namespace System.Xml.Serialization
                 for (int i = 0; i < constants.Length; i++)
                 {
                     ConstantMapping c = constants[i];
-                    if (!values.ContainsKey(c.Value))
+                    if (!values.Contains(c.Value))
                     {
                         Label caseLabel = ilg.DefineLabel();
                         ilg.Ldloc(localTmp);
@@ -638,7 +638,7 @@ namespace System.Xml.Serialization
                         ilg.Beq(caseLabel);
                         caseLabels.Add(caseLabel);
                         retValues.Add(GetCSharpString(c.XmlName));
-                        values.Add(c.Value, c.Value);
+                        values.Add(c.Value);
                     }
                 }
 

@@ -22,7 +22,7 @@ namespace System.Xml.Serialization
 
     internal class XmlSerializationReaderILGen : XmlSerializationILGen
     {
-        private Dictionary<string, string> _idNames = new Dictionary<string, string>();
+        private readonly Dictionary<string, string> _idNames = new Dictionary<string, string>();
         // Mapping name->id_XXXNN field
         private Dictionary<string, FieldBuilder> _idNameFields = new Dictionary<string, FieldBuilder>();
         private Dictionary<string, EnumMapping> _enums;
@@ -219,10 +219,10 @@ namespace System.Xml.Serialization
 
         internal override void GenerateMethod(TypeMapping mapping)
         {
-            if (GeneratedMethods.ContainsKey(mapping))
+            if (GeneratedMethods.Contains(mapping))
                 return;
 
-            GeneratedMethods[mapping] = mapping;
+            GeneratedMethods.Add(mapping);
             if (mapping is StructMapping)
             {
                 WriteStructMethod((StructMapping)mapping);
@@ -1097,15 +1097,15 @@ namespace System.Xml.Serialization
                 ilg.Stloc(localTmp);
                 ilg.Ldloc(localTmp);
                 ilg.Brfalse(defaultLabel);
-                var cases = new Dictionary<string, string>();
+                var cases = new HashSet<string>();
                 for (int i = 0; i < constants.Length; i++)
                 {
                     ConstantMapping c = constants[i];
 
                     CodeIdentifier.CheckValidIdentifier(c.Name);
-                    if (!cases.ContainsKey(c.XmlName))
+                    if (!cases.Contains(c.XmlName))
                     {
-                        cases[c.XmlName] = c.XmlName;
+                        cases.Add(c.XmlName);
                         Label caseLabel = ilg.DefineLabel();
                         ilg.Ldloc(localTmp);
                         ilg.Ldstr(GetCSharpString(c.XmlName));
