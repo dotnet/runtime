@@ -1904,8 +1904,7 @@ int GcInfoDecoder::GetStackReg(int spBase)
 #elif defined(_TARGET_ARM_)
     int esp = 13;
 #elif defined(_TARGET_ARM64_)
-    _ASSERTE("ARM64:NYI");
-    int esp = 30;
+    int esp = 31;
 #endif
 
     if( GC_SP_REL == spBase )
