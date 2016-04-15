@@ -16,8 +16,7 @@ namespace System.Xml.Serialization
     using System.Diagnostics;
     using System.Xml.Extensions;
     using XmlSchema = System.ServiceModel.Dispatcher.XmlSchemaConstants;
-    // this[key] api throws KeyNotFoundException
-    using Hashtable = System.Collections.InternalHashtable;
+    using System.Collections.Generic;
 
     /// <include file='doc\XmlReflectionImporter.uex' path='docs/doc[@for="XmlReflectionImporter"]/*' />
     ///<internalonly/>
@@ -33,8 +32,8 @@ namespace System.Xml.Serialization
         private NameTable _nullables = new NameTable();  // xmltypename + xmlns -> NullableMapping
         private NameTable _elements = new NameTable();   // xmlelementname + xmlns -> ElementAccessor
         private NameTable _xsdAttributes;   // xmlattributetname + xmlns -> AttributeAccessor
-        private Hashtable _specials;   // type -> SpecialMapping
-        private Hashtable _anonymous = new Hashtable();   // type -> AnonymousMapping
+        private Dictionary<Type, SpecialMapping> _specials;   // type -> SpecialMapping
+        private Dictionary<Type, TypeMapping> _anonymous = new Dictionary<Type, TypeMapping>();   // type -> AnonymousMapping
         private StructMapping _root;
         private string _defaultNs;
         private ModelScope _modelScope;
@@ -500,9 +499,9 @@ namespace System.Xml.Serialization
         private SpecialMapping ImportSpecialMapping(Type type, TypeDesc typeDesc, string ns, ImportContext context, RecursionLimiter limiter)
         {
             if (_specials == null)
-                _specials = new Hashtable();
-            SpecialMapping mapping = (SpecialMapping)_specials[type];
-            if (mapping != null)
+                _specials = new Dictionary<Type, SpecialMapping>();
+            SpecialMapping mapping;
+            if (_specials.TryGetValue(type, out mapping))
             {
                 CheckContext(mapping.TypeDesc, context);
                 return mapping;
@@ -597,7 +596,7 @@ namespace System.Xml.Serialization
             }
             else
             {
-                existingMapping = (TypeMapping)_anonymous[type];
+                _anonymous.TryGetValue(type, out existingMapping);
             }
 
             NullableMapping mapping;
@@ -656,9 +655,18 @@ namespace System.Xml.Serialization
         {
             TypeMapping mapping;
             if (typeName == null || typeName.Length == 0)
-                mapping = type == null ? null : (TypeMapping)_anonymous[type];
+            {
+                if (type == null)
+                {
+                    mapping = null;
+                }
+                else
+                {
+                    _anonymous.TryGetValue(type, out mapping);
+                }
+            }
             else
-                mapping = (TypeMapping)typeLib[typeName, ns];
+                mapping = (TypeMapping) typeLib[typeName, ns];
 
             if (mapping == null) return null;
             if (!mapping.IsAnonymousType && mapping.TypeDesc != typeDesc)
@@ -839,7 +847,7 @@ namespace System.Xml.Serialization
             mapping.SetContentModel(textAccesor, hasElements);
             if (isSequence)
             {
-                Hashtable ids = new Hashtable();
+                var ids = new Dictionary<int, MemberMapping>();
                 for (int i = 0; i < members.Count; i++)
                 {
                     MemberMapping member = (MemberMapping)members[i];
@@ -847,7 +855,7 @@ namespace System.Xml.Serialization
                         continue;
                     if (member.IsSequence)
                     {
-                        if (ids[member.SequenceId] != null)
+                        if (ids.ContainsKey(member.SequenceId))
                         {
                             throw new InvalidOperationException(SR.Format(SR.XmlSequenceUnique, member.SequenceId.ToString(CultureInfo.InvariantCulture), "Order", member.Name));
                         }
@@ -1991,7 +1999,7 @@ namespace System.Xml.Serialization
 
         private void CheckAmbiguousChoice(XmlAttributes a, Type accessorType, string accessorName)
         {
-            Hashtable choiceTypes = new Hashtable();
+            var choiceTypes = new Dictionary<Type, bool>();
 
             XmlElementAttributes elements = a.XmlElements;
             if (elements != null && elements.Count >= 2 && a.XmlChoiceIdentifier == null)
@@ -1999,7 +2007,7 @@ namespace System.Xml.Serialization
                 for (int i = 0; i < elements.Count; i++)
                 {
                     Type type = elements[i].Type == null ? accessorType : elements[i].Type;
-                    if (choiceTypes.Contains(type))
+                    if (choiceTypes.ContainsKey(type))
                     {
                         // You need to add {0} to the '{1}'.
                         throw new InvalidOperationException(SR.Format(SR.XmlChoiceIdentiferMissing, typeof(XmlChoiceIdentifierAttribute).Name, accessorName));
@@ -2010,7 +2018,7 @@ namespace System.Xml.Serialization
                     }
                 }
             }
-            if (choiceTypes.Contains(typeof(XmlElement)) && a.XmlAnyElements.Count > 0)
+            if (choiceTypes.ContainsKey(typeof(XmlElement)) && a.XmlAnyElements.Count > 0)
             {
                 // You need to add {0} to the '{1}'.
                 throw new InvalidOperationException(SR.Format(SR.XmlChoiceIdentiferMissing, typeof(XmlChoiceIdentifierAttribute).Name, accessorName));

@@ -18,25 +18,24 @@ namespace System.Xml.Serialization
     using System.Xml;
     using System.Xml.Schema;
     using System.Xml.Extensions;
-    using Hashtable = System.Collections.Generic.Dictionary<object, object>;
     using XmlSchema = System.ServiceModel.Dispatcher.XmlSchemaConstants;
 
     internal class XmlSerializationReaderILGen : XmlSerializationILGen
     {
-        private InternalHashtable _idNames = new InternalHashtable();
+        private Dictionary<string, string> _idNames = new Dictionary<string, string>();
         // Mapping name->id_XXXNN field
         private Dictionary<string, FieldBuilder> _idNameFields = new Dictionary<string, FieldBuilder>();
-        private InternalHashtable _enums;
+        private Dictionary<string, EnumMapping> _enums;
         private int _nextIdNumber = 0;
         private int _nextWhileLoopIndex = 0;
 
-        internal InternalHashtable Enums
+        internal Dictionary<string, EnumMapping> Enums
         {
             get
             {
                 if (_enums == null)
                 {
-                    _enums = new InternalHashtable();
+                    _enums = new Dictionary<string, EnumMapping>();
                 }
                 return _enums;
             }
@@ -220,7 +219,7 @@ namespace System.Xml.Serialization
 
         internal override void GenerateMethod(TypeMapping mapping)
         {
-            if (GeneratedMethods.Contains(mapping))
+            if (GeneratedMethods.ContainsKey(mapping))
                 return;
 
             GeneratedMethods[mapping] = mapping;
@@ -940,8 +939,8 @@ namespace System.Xml.Serialization
         private string MakeUnique(EnumMapping mapping, string name)
         {
             string uniqueName = name;
-            object m = Enums[uniqueName];
-            if (m != null)
+            EnumMapping m;
+            if (Enums.TryGetValue(uniqueName, out m))
             {
                 if (m == mapping)
                 {
@@ -1042,7 +1041,8 @@ namespace System.Xml.Serialization
             if (mapping.IsFlags)
                 WriteHashtable(mapping, mapping.TypeDesc.Name, out get_TableName);
 
-            string methodName = (string)MethodNames[mapping];
+            string methodName;
+            MethodNames.TryGetValue(mapping, out methodName);
             string fullTypeName = mapping.TypeDesc.CSharpName;
             List<Type> argTypes = new List<Type>();
             List<string> argNames = new List<string>();
@@ -1097,13 +1097,13 @@ namespace System.Xml.Serialization
                 ilg.Stloc(localTmp);
                 ilg.Ldloc(localTmp);
                 ilg.Brfalse(defaultLabel);
-                InternalHashtable cases = new InternalHashtable();
+                var cases = new Dictionary<string, string>();
                 for (int i = 0; i < constants.Length; i++)
                 {
                     ConstantMapping c = constants[i];
 
                     CodeIdentifier.CheckValidIdentifier(c.Name);
-                    if (cases[c.XmlName] == null)
+                    if (!cases.ContainsKey(c.XmlName))
                     {
                         cases[c.XmlName] = c.XmlName;
                         Label caseLabel = ilg.DefineLabel();
@@ -1299,7 +1299,8 @@ namespace System.Xml.Serialization
 
         private void WriteNullableMethod(NullableMapping nullableMapping)
         {
-            string methodName = (string)MethodNames[nullableMapping];
+            string methodName;
+            MethodNames.TryGetValue(nullableMapping, out methodName);
             ilg = new CodeGenerator(this.typeBuilder);
             ilg.BeginMethod(
                 nullableMapping.TypeDesc.Type,
@@ -1348,7 +1349,8 @@ namespace System.Xml.Serialization
 
         private void WriteLiteralStructMethod(StructMapping structMapping)
         {
-            string methodName = (string)MethodNames[structMapping];
+            string methodName;
+            MethodNames.TryGetValue(structMapping, out methodName);
             string typeName = structMapping.TypeDesc.CSharpName;
             ilg = new CodeGenerator(this.typeBuilder);
             List<Type> argTypes = new List<Type>();
@@ -1819,8 +1821,8 @@ namespace System.Xml.Serialization
                 //return;
                 name = "";
             }
-            string idName = (string)_idNames[name];
-            if (idName == null)
+            string idName;
+            if (!_idNames.TryGetValue(name, out idName))
             {
                 idName = NextIdName(name);
                 _idNames.Add(name, idName);

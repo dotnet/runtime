@@ -13,12 +13,11 @@ namespace System.Xml.Serialization
     using System.Reflection.Emit;
     using System.Text.RegularExpressions;
     using System.Xml.Extensions;
-    using Hashtable = System.Collections.Generic.Dictionary<object, object>;
 
     internal class XmlSerializationILGen
     {
         private int _nextMethodNumber = 0;
-        private InternalHashtable _methodNames = new InternalHashtable();
+        private Dictionary<TypeMapping, string> _methodNames = new Dictionary<TypeMapping, string>();
         // Lookup name->created Method
         private Dictionary<string, MethodBuilderInfo> _methodBuilders = new Dictionary<string, MethodBuilderInfo>();
         // Lookup name->created Type
@@ -32,7 +31,7 @@ namespace System.Xml.Serialization
         private string _className;
         private TypeMapping[] _referencedMethods;
         private int _references = 0;
-        private InternalHashtable _generatedMethods = new InternalHashtable();
+        private Dictionary<TypeMapping, TypeMapping> _generatedMethods = new Dictionary<TypeMapping, TypeMapping>();
         private ModuleBuilder _moduleBuilder;
         private TypeAttributes _typeAttributes;
         protected TypeBuilder typeBuilder;
@@ -58,8 +57,8 @@ namespace System.Xml.Serialization
         internal TypeDesc QnameTypeDesc { get { return _qnameTypeDesc; } }
         internal string ClassName { get { return _className; } }
         internal TypeScope[] Scopes { get { return _scopes; } }
-        internal InternalHashtable MethodNames { get { return _methodNames; } }
-        internal InternalHashtable GeneratedMethods { get { return _generatedMethods; } }
+        internal Dictionary<TypeMapping, string> MethodNames { get { return _methodNames; } }
+        internal Dictionary<TypeMapping, TypeMapping> GeneratedMethods { get { return _generatedMethods; } }
 
         internal ModuleBuilder ModuleBuilder
         {
@@ -124,12 +123,14 @@ namespace System.Xml.Serialization
 
         internal string ReferenceMapping(TypeMapping mapping)
         {
-            if (_generatedMethods[mapping] == null)
+            if (!_generatedMethods.ContainsKey(mapping))
             {
                 _referencedMethods = EnsureArrayIndex(_referencedMethods, _references);
                 _referencedMethods[_references++] = mapping;
             }
-            return (string)_methodNames[mapping];
+            string methodName;
+            _methodNames.TryGetValue(mapping, out methodName);
+            return methodName;
         }
 
         private TypeMapping[] EnsureArrayIndex(TypeMapping[] a, int index)
@@ -239,7 +240,7 @@ namespace System.Xml.Serialization
                 new Type[] { typeof(Type) },
                 new string[] { "type" },
                 CodeGenerator.PublicOverrideMethodAttributes);
-            InternalHashtable uniqueTypes = new InternalHashtable();
+            var uniqueTypes = new Dictionary<Type, Type>();
             for (int i = 0; i < types.Length; i++)
             {
                 Type type = types[i];
@@ -248,7 +249,7 @@ namespace System.Xml.Serialization
                     continue;
                 if (!type.GetTypeInfo().IsPublic && !type.GetTypeInfo().IsNestedPublic)
                     continue;
-                if (uniqueTypes[type] != null)
+                if (uniqueTypes.ContainsKey(type))
                     continue;
                 // DDB172141: Wrong generated CS for serializer of List<string> type
                 if (type.GetTypeInfo().IsGenericType || type.GetTypeInfo().ContainsGenericParameters)
@@ -409,7 +410,7 @@ namespace System.Xml.Serialization
             return typedSerializerType.Name;
         }
 
-        private FieldBuilder GenerateTypedSerializers(Hashtable serializers, TypeBuilder serializerContractTypeBuilder)
+        private FieldBuilder GenerateTypedSerializers(Dictionary<string, string> serializers, TypeBuilder serializerContractTypeBuilder)
         {
             string privateName = "typedSerializers";
             FieldBuilder fieldBuilder = GenerateHashtableGetBegin(privateName, "TypedSerializers", serializerContractTypeBuilder);
@@ -421,7 +422,7 @@ namespace System.Xml.Serialization
 
             foreach (string key in serializers.Keys)
             {
-                ConstructorInfo ctor = CreatedTypes[(string)serializers[key]].GetConstructor(
+                ConstructorInfo ctor = CreatedTypes[serializers[key]].GetConstructor(
                     CodeGenerator.InstanceBindingFlags,
                     Array.Empty<Type>()
                     );
@@ -435,7 +436,7 @@ namespace System.Xml.Serialization
         }
 
         //GenerateGetSerializer(serializers, xmlMappings);
-        private void GenerateGetSerializer(Hashtable serializers, XmlMapping[] xmlMappings, TypeBuilder serializerContractTypeBuilder)
+        private void GenerateGetSerializer(Dictionary<string, string> serializers, XmlMapping[] xmlMappings, TypeBuilder serializerContractTypeBuilder)
         {
             ilg = new CodeGenerator(serializerContractTypeBuilder);
             ilg.BeginMethod(
@@ -461,7 +462,7 @@ namespace System.Xml.Serialization
                     ilg.Ldc(type);
                     ilg.If(Cmp.EqualTo);
                     {
-                        ConstructorInfo ctor = CreatedTypes[(string)serializers[xmlMappings[i].Key]].GetConstructor(
+                        ConstructorInfo ctor = CreatedTypes[serializers[xmlMappings[i].Key]].GetConstructor(
                             CodeGenerator.InstanceBindingFlags,
                             Array.Empty<Type>()
                             );
@@ -480,7 +481,7 @@ namespace System.Xml.Serialization
             ilg.EndMethod();
         }
 
-        internal void GenerateSerializerContract(string className, XmlMapping[] xmlMappings, Type[] types, string readerType, string[] readMethods, string writerType, string[] writerMethods, Hashtable serializers)
+        internal void GenerateSerializerContract(string className, XmlMapping[] xmlMappings, Type[] types, string readerType, string[] readMethods, string writerType, string[] writerMethods, Dictionary<string, string> serializers)
         {
             TypeBuilder serializerContractTypeBuilder = CodeGenerator.CreateTypeBuilder(
                 _moduleBuilder,
