@@ -9,7 +9,7 @@
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="System.Data.SqlClient.csproj">
-      <TargetGroup>net45</TargetGroup>
+      <TargetGroup>net451</TargetGroup>
     </Project>
     <Project Include="System.Data.SqlClient.csproj">
       <TargetGroup>net46</TargetGroup>
