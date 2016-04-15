@@ -159,7 +159,8 @@ internal static partial class Interop
             Debug.Assert(input != null);
             Debug.Assert(offset >= 0);
             Debug.Assert(count >= 0);
-            Debug.Assert(input.Length >= offset + count);
+            Debug.Assert(offset <= input.Length);
+            Debug.Assert(input.Length - offset >= count);
 
             errorCode = Ssl.SslErrorCode.SSL_ERROR_NONE;
 
