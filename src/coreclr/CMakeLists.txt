@@ -691,6 +691,12 @@ endif()
 
 # End of projects that require usage of platform include files
 
+if(WIN32 AND CLR_CMAKE_PLATFORM_ARCH_I386 AND BUILD_JIT32)
+  set(CLR_BUILD_JIT32 1)
+else()
+  set(CLR_BUILD_JIT32 0)
+endif()
+
 # Enable for UNIX altjit on Windows - set(CLR_CMAKE_PLATFORM_UNIX_TARGET_AMD64 1)
 # Enable for UNIX altjit on Windows - add_definitions(-DCLR_CMAKE_PLATFORM_UNIX=1)
 
