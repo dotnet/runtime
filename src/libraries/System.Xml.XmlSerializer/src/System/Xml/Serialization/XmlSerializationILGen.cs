@@ -249,12 +249,11 @@ namespace System.Xml.Serialization
                     continue;
                 if (!type.GetTypeInfo().IsPublic && !type.GetTypeInfo().IsNestedPublic)
                     continue;
-                if (uniqueTypes.Contains(type))
+                if (!uniqueTypes.Add(type))
                     continue;
                 // DDB172141: Wrong generated CS for serializer of List<string> type
                 if (type.GetTypeInfo().IsGenericType || type.GetTypeInfo().ContainsGenericParameters)
                     continue;
-                uniqueTypes.Add(type);
                 ilg.Ldarg("type");
                 ilg.Ldc(type);
                 ilg.If(Cmp.EqualTo);

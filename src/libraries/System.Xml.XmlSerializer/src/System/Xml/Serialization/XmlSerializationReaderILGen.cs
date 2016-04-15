@@ -219,10 +219,9 @@ namespace System.Xml.Serialization
 
         internal override void GenerateMethod(TypeMapping mapping)
         {
-            if (GeneratedMethods.Contains(mapping))
+            if (!GeneratedMethods.Add(mapping))
                 return;
 
-            GeneratedMethods.Add(mapping);
             if (mapping is StructMapping)
             {
                 WriteStructMethod((StructMapping)mapping);
@@ -1103,9 +1102,8 @@ namespace System.Xml.Serialization
                     ConstantMapping c = constants[i];
 
                     CodeIdentifier.CheckValidIdentifier(c.Name);
-                    if (!cases.Contains(c.XmlName))
+                    if (cases.Add(c.XmlName))
                     {
-                        cases.Add(c.XmlName);
                         Label caseLabel = ilg.DefineLabel();
                         ilg.Ldloc(localTmp);
                         ilg.Ldstr(GetCSharpString(c.XmlName));

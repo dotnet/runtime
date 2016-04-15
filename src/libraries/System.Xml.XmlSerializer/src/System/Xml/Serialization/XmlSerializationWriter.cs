@@ -473,8 +473,8 @@ namespace System.Xml.Serialization
         {
             if (o != null && _objectsInUse != null)
             {
-                if (_objectsInUse.Contains(o)) throw new InvalidOperationException(SR.Format(SR.XmlCircularReference, o.GetType().FullName));
-                _objectsInUse.Add(o);
+                if (!_objectsInUse.Add(o))
+                    throw new InvalidOperationException(SR.Format(SR.XmlCircularReference, o.GetType().FullName));
             }
 
             string prefix = null;
@@ -568,10 +568,7 @@ namespace System.Xml.Serialization
                             if (index <= Int32.MaxValue)
                             {
                                 Int32 newIndex = (Int32)index;
-                                if (!qnIndexes.Contains(newIndex))
-                                {
-                                    qnIndexes.Add(newIndex);
-                                }
+                                qnIndexes.Add(newIndex);
                             }
                         }
                     }
