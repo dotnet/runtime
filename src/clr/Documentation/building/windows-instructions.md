@@ -36,6 +36,9 @@ PowerShell
 ----------
 PowerShell is used in the build system. Ensure that it is accessible via the PATH environment variable. Typically this is %SYSTEMROOT%\System32\WindowsPowerShell\v1.0\.
 
+Powershell version must be 3.0 or higher. This should be the case for Windows 8 and later builds.
+- Windows 7 SP1 can install Powershell version 4 [here](https://www.microsoft.com/en-us/download/details.aspx?id=40855).
+
 Git Setup
 ---------
 
