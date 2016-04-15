@@ -172,9 +172,7 @@ Function:
 
    rand
 
-   The difference between the FreeBSD and Windows implementations is the max
-   of the return value. in FreeBSD, RAND_MAX is 0x7fffffff and in Windows
-   it's 0x7fff.
+   The RAND_MAX value can vary by platform.
 
 See MSDN for more details.
 --*/
