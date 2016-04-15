@@ -91,6 +91,9 @@ elseif(PAL_CMAKE_PLATFORM_ARCH_ARM64)
   )
 endif()
 
+if(CLR_CMAKE_PLATFORM_UNIX_TARGET_ARM)
+set_source_files_properties(exception/seh.cpp PROPERTIES COMPILE_FLAGS -Wno-error=inline-asm)
+endif(CLR_CMAKE_PLATFORM_UNIX_TARGET_ARM)
 set(SOURCES
   cruntime/file.cpp
   cruntime/filecrt.cpp
