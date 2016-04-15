@@ -26,8 +26,8 @@
     "netstandard1.5": {
       "imports": "portable-net45+wp80+win8+wpa81+dnxcore50",
       "dependencies": {
-        "System.Diagnostics.Debug": "4.0.11-rc2-24008",
-        "System.Dynamic.Runtime": "4.0.11-rc2-24008"
+        "System.Diagnostics.Debug": "4.0.11-rc2-24015",
+        "System.Dynamic.Runtime": "4.0.11-rc2-24015"
       }
     }
   },
