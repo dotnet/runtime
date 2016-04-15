@@ -12,7 +12,7 @@
 #include "perfinfo.h"
 #include "pal.h"
 
-PerfMap * PerfMap::s_Current = NULL;
+PerfMap * PerfMap::s_Current = nullptr;
 
 // Initialize the map for the process - called from EEStartupHelper.
 void PerfMap::Initialize()
@@ -35,10 +35,10 @@ void PerfMap::Destroy()
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (s_Current != NULL)
+    if (s_Current != nullptr)
     {
         delete s_Current;
-        s_Current = NULL;
+        s_Current = nullptr;
     }
 }
 
@@ -69,6 +69,8 @@ PerfMap::PerfMap(int pid)
 // Construct a new map without a specified file name.
 // Used for offline creation of NGEN map files.
 PerfMap::PerfMap()
+  : m_FileStream(nullptr)
+  , m_PerfInfo(nullptr)
 {
     LIMITED_METHOD_CONTRACT;
 }
@@ -79,10 +81,10 @@ PerfMap::~PerfMap()
     LIMITED_METHOD_CONTRACT;
 
     delete m_FileStream;
-    m_FileStream = NULL;
+    m_FileStream = nullptr;
 
     delete m_PerfInfo;
-    m_PerfInfo = NULL;
+    m_PerfInfo = nullptr;
 }
 
 // Open the specified destination map file.
@@ -92,13 +94,13 @@ void PerfMap::OpenFile(SString& path)
 
     // Open the file stream.
     m_FileStream = new (nothrow) CFileStream();
-    if(m_FileStream != NULL)
+    if(m_FileStream != nullptr)
     {
         HRESULT hr = m_FileStream->OpenForWrite(path.GetUnicode());
         if(FAILED(hr))
         {
             delete m_FileStream;
-            m_FileStream = NULL;
+            m_FileStream = nullptr;
         }
     }
 }
@@ -136,12 +138,12 @@ void PerfMap::LogMethod(MethodDesc * pMethod, PCODE pCode, size_t codeSize)
         THROWS;
         GC_NOTRIGGER;
         MODE_PREEMPTIVE;
-        PRECONDITION(pMethod != NULL);
-        PRECONDITION(pCode != NULL);
+        PRECONDITION(pMethod != nullptr);
+        PRECONDITION(pCode != nullptr);
         PRECONDITION(codeSize > 0);
     } CONTRACTL_END;
 
-    if (m_FileStream == NULL || m_ErrorEncountered)
+    if (m_FileStream == nullptr || m_ErrorEncountered)
     {
         // A failure occurred, do not log.
         return;
@@ -168,7 +170,7 @@ void PerfMap::LogMethod(MethodDesc * pMethod, PCODE pCode, size_t codeSize)
 
 void PerfMap::LogImageLoad(PEFile * pFile)
 {
-    if (s_Current != NULL)
+    if (s_Current != nullptr)
     {
         s_Current->LogImage(pFile);
     }
@@ -181,11 +183,11 @@ void PerfMap::LogImage(PEFile * pFile)
         THROWS;
         GC_NOTRIGGER;
         MODE_PREEMPTIVE;
-        PRECONDITION(pFile != NULL);
+        PRECONDITION(pFile != nullptr);
     } CONTRACTL_END;
 
 
-    if (m_FileStream == NULL || m_ErrorEncountered)
+    if (m_FileStream == nullptr || m_ErrorEncountered)
     {
         // A failure occurred, do not log.
         return;
@@ -207,7 +209,7 @@ void PerfMap::LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t cod
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (s_Current != NULL)
+    if (s_Current != nullptr)
     {
         s_Current->LogMethod(pMethod, pCode, codeSize);
     }
@@ -216,8 +218,8 @@ void PerfMap::LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t cod
 void PerfMap::GetNativeImageSignature(PEFile * pFile, WCHAR * pwszSig, unsigned int nSigSize)
 {
     CONTRACTL{
-        PRECONDITION(pFile != NULL);
-        PRECONDITION(pwszSig != NULL);
+        PRECONDITION(pFile != nullptr);
+        PRECONDITION(pwszSig != nullptr);
         PRECONDITION(nSigSize >= 39);
     } CONTRACTL_END;
 
@@ -262,7 +264,7 @@ void NativeImagePerfMap::LogDataForModule(Module * pModule)
     STANDARD_VM_CONTRACT;
 
     PEImageLayout * pLoadedLayout = pModule->GetFile()->GetLoaded();
-    _ASSERTE(pLoadedLayout != NULL);
+    _ASSERTE(pLoadedLayout != nullptr);
 
     SIZE_T baseAddr = (SIZE_T)pLoadedLayout->GetBase();
 
