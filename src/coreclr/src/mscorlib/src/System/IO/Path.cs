@@ -908,7 +908,7 @@ namespace System.IO {
 
         // Returns a cryptographically strong random 8.3 string that can be 
         // used as either a folder name or a file name.
-#if FEATURE_PAL
+#if FEATURE_CORECLR
         [System.Security.SecuritySafeCritical]
 #endif
         public static String GetRandomFileName()
