@@ -4,7 +4,6 @@
       "dependencies": {
         "Microsoft.NETCore.Targets": "1.0.0",
         "System.Collections": "4.0.10",
-        "System.Collections.NonGeneric": "4.0.1-rc3-24014-01",
         "System.Diagnostics.Debug": "4.0.10",
         "System.Diagnostics.Tools": "4.0.0",
         "System.Globalization": "4.0.10",
