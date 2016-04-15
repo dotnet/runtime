@@ -1394,7 +1394,7 @@ combinedScenarios.each { scenario ->
                     if (scenario == 'longgc') {
                         // Long GC tests behave very poorly when they are not
                         // the only test running (many of them allocate until OOM).
-                        sequentialString = 'sequential'
+                        sequentialString = '--sequential'
                         
                         // Long GC tests all exist in the ignore list because
                         // they can't run during normal test runs. This is not
