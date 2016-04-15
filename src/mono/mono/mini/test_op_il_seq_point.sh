@@ -6,7 +6,12 @@ USE_AOT=$2
 TMP_FILE_PREFIX=$(basename $0).tmp
 BASEDIR=$(dirname $0)
 
-MONO_PATH=$BASEDIR/../../mcs/class/lib/net_4_x:$BASEDIR
+case "$(uname -s)" in
+	CYGWIN*) PLATFORM_PATH_SEPARATOR=';';;
+	*) PLATFORM_PATH_SEPARATOR=':';;
+esac
+
+MONO_PATH=$BASEDIR/../../mcs/class/lib/net_4_x$PLATFORM_PATH_SEPARATOR$BASEDIR
 RUNTIME=$BASEDIR/../../runtime/mono-wrapper
 
 trap "rm -rf ${TMP_FILE_PREFIX}*" EXIT
@@ -16,7 +21,7 @@ tmp_file () {
 }
 
 clean_aot () {
-	rm -rf *.exe.so *.exe.dylib *.exe.dylib.dSYM
+	rm -rf *.exe.so *.exe.dylib *.exe.dylib.dSYM *.exe.dll
 }
 
 # The test compares the generated native code size between a compilation with and without seq points.
@@ -42,15 +47,19 @@ get_method () {
 }
 
 diff_methods () {
-	TMP_FILE=$(tmp_file)
-	echo "$(MONO_DEBUG=single-imm-size get_methods $1 $2 $3 $4)" >$TMP_FILE
-	diff <(cat $TMP_FILE) <(echo "$(MONO_DEBUG=gen-compact-seq-points,single-imm-size get_methods $1 $2 $3 $4)")
+	TMP_FILE1=$(tmp_file)
+	TMP_FILE2=$(tmp_file)
+	echo "$(MONO_DEBUG=single-imm-size get_methods $1 $2 $3 $4)" >$TMP_FILE1
+	echo "$(MONO_DEBUG=gen-compact-seq-points,single-imm-size get_methods $1 $2 $3 $4)" >$TMP_FILE2
+	diff $TMP_FILE1 $TMP_FILE2
 }
 
 diff_method () {
-	TMP_FILE=$(tmp_file)
-	echo "$(MONO_DEBUG=single-imm-size get_method $1 $2 $3 $4 $5)" >$TMP_FILE
-	sdiff -w 150 <(cat $TMP_FILE) <(echo "$(MONO_DEBUG=gen-compact-seq-points,single-imm-size get_method $1 $2 $3 $4 $5 | grep -Ev il_seq_point)")
+	TMP_FILE1=$(tmp_file)
+	TMP_FILE2=$(tmp_file)
+	echo "$(MONO_DEBUG=single-imm-size get_method $1 $2 $3 $4 $5)" >$TMP_FILE1
+	echo "$(MONO_DEBUG=gen-compact-seq-points,single-imm-size get_method $1 $2 $3 $4 $5 | grep -Ev il_seq_point)" >$TMP_FILE2
+	sdiff -w 150 $TMP_FILE1 $TMP_FILE2
 }
 
 get_method_name () {
