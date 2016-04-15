@@ -14,6 +14,15 @@ namespace System.Collections.Generic
         {
         }
 
+        // .NET Native for UWP toolchain overwrites the Default property with optimized 
+        // instantiation-specific implementation. It depends on subtle implementation details of this
+        // class to do so. Once the packaging infrastructure allows it, the implementation 
+        // of Comparer<T> should be moved to CoreRT repo to avoid the fragile dependency.
+        // Until that happens, nothing in this class can change.
+
+        // TODO: Initialize the _default field via implicit static constructor for better performance
+        // (https://github.com/dotnet/coreclr/pull/4340).
+
         public static Comparer<T> Default
         {
             get
@@ -61,7 +70,43 @@ namespace System.Collections.Generic
     {
         public override int Compare(T x, T y)
         {
-            return LowLevelComparer<T>.DefaultCompareImpl(x, y);
+            // Desktop compat note: If either x or y are null, this api must not invoke either IComparable.Compare or IComparable<T>.Compare on either
+            // x or y.
+            if (x == null)
+            {
+                if (y == null)
+                    return 0;
+                else
+                    return -1;
+            }
+            if (y == null)
+                return 1;
+
+            IComparable<T> igcx = x as IComparable<T>;
+            if (igcx != null)
+                return igcx.CompareTo(y);
+            IComparable<T> igcy = y as IComparable<T>;
+            if (igcy != null)
+                return -igcy.CompareTo(x);
+
+            return CompareUsingIComparable(x, y);
+        }
+
+        private int CompareUsingIComparable(Object a, Object b)
+        {
+            if (a == b) return 0;
+            if (a == null) return -1;
+            if (b == null) return 1;
+
+            IComparable ia = a as IComparable;
+            if (ia != null)
+                return ia.CompareTo(b);
+
+            IComparable ib = b as IComparable;
+            if (ib != null)
+                return -ib.CompareTo(a);
+
+            throw new ArgumentException(SR.Argument_ImplementIComparable);
         }
     }
 
