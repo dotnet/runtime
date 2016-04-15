@@ -19,6 +19,15 @@ namespace System.Collections.Generic
         {
         }
 
+        // .NET Native for UWP toolchain overwrites the Default property with optimized 
+        // instantiation-specific implementation. It depends on subtle implementation details of this
+        // class to do so. Once the packaging infrastructure allows it, the implementation 
+        // of EqualityComparer<T> should be moved to CoreRT repo to avoid the fragile dependency.
+        // Until that happens, nothing in this class can change.
+
+        // TODO: Change the _default field to non-volatile and initialize it via implicit static 
+        // constructor for better performance (https://github.com/dotnet/coreclr/pull/4340).
+
         public static EqualityComparer<T> Default
         {
             get
