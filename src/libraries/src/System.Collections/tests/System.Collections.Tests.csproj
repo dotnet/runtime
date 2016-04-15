@@ -142,6 +142,7 @@
     <Compile Include="Generic\SortedList\SortedList.Generic.Tests.cs" />
     <Compile Include="Generic\SortedSet\SortedSet.Generic.cs" />
     <Compile Include="Generic\SortedSet\SortedSet.Generic.Tests.cs" />
+    <Compile Include="Generic\SortedSet\SortedSet.Tests.cs" />
     <Compile Include="Generic\Stack\Stack.Tests.cs" />
     <Compile Include="Generic\Stack\Stack.Generic.cs" />
     <Compile Include="Generic\Stack\Stack.Generic.Tests.cs" />
