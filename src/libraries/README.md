@@ -63,7 +63,7 @@ or in coreclr.
 
 ## Daily Builds
 
-Daily builds of .NET Core components are published to [dotnet-core MyGet gallery](https://www.myget.org/gallery/dotnet-core).
+Daily builds of .NET Core components are published to [dotnet-core MyGet gallery](https://dotnet.myget.org/gallery/dotnet-core).
 The latest version number of each library can be seen in that gallery.
 
 ## License
