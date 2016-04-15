@@ -30,7 +30,6 @@ namespace System.Security.Principal
     internal static class Win32
     {
         internal const int FALSE = 0;
-        internal const int TRUE = 1;
 
         //
         // Wrapper around advapi32.LsaOpenPolicy
@@ -132,7 +131,7 @@ namespace System.Security.Principal
 
             try
             {
-                if (TRUE != Interop.mincore.ConvertStringSidToSid(stringSid, out ByteArray))
+                if (FALSE == Interop.mincore.ConvertStringSidToSid(stringSid, out ByteArray))
                 {
                     ErrorCode = Marshal.GetLastWin32Error();
                     goto Error;
