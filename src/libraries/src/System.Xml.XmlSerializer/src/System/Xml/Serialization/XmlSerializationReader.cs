@@ -327,7 +327,7 @@ namespace System.Xml.Serialization
 
         private byte[] ReadByteArray(bool isBase64)
         {
-            ArrayList list = new ArrayList();
+            var list = new List<byte[]>();
             const int MAX_ALLOC_SIZE = 64 * 1024;
             int currentSize = 1024;
             byte[] buffer;
@@ -1198,7 +1198,7 @@ namespace System.Xml.Serialization
 
         private object ReadXmlNodes(bool elementCanBeType)
         {
-            ArrayList xmlNodeList = new ArrayList();
+            var xmlNodeList = new List<XmlNode>();
             string elemLocalName = Reader.LocalName;
             string elemNs = Reader.NamespaceURI;
             string elemName = Reader.Name;
@@ -1285,7 +1285,7 @@ namespace System.Xml.Serialization
             if (xmlNodeList.Count <= skippableNodeCount)
                 return new object();
 
-            XmlNode[] childNodes = (XmlNode[])xmlNodeList.ToArray(typeof(XmlNode));
+            XmlNode[] childNodes = xmlNodeList.ToArray();
 
             UnknownNode(unknownNode, null, null);
             return childNodes;

@@ -408,7 +408,7 @@ namespace System.Xml.Serialization
             {
                 if (_constants == null)
                 {
-                    ArrayList list = new ArrayList();
+                    var list = new List<ConstantModel>();
                     FieldInfo[] fields = Type.GetFields();
                     for (int i = 0; i < fields.Length; i++)
                     {
@@ -416,7 +416,7 @@ namespace System.Xml.Serialization
                         ConstantModel constant = GetConstantModel(field);
                         if (constant != null) list.Add(constant);
                     }
-                    _constants = (ConstantModel[])list.ToArray(typeof(ConstantModel));
+                    _constants = list.ToArray();
                 }
                 return _constants;
             }

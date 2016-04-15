@@ -468,9 +468,9 @@ namespace System.Xml.Serialization
             Member anyElement = null;
             Member anyAttribute = null;
 
-            ArrayList membersList = new ArrayList();
-            ArrayList textOrArrayMembersList = new ArrayList();
-            ArrayList attributeMembersList = new ArrayList();
+            var membersList = new List<Member>();
+            var textOrArrayMembersList = new List<Member>();
+            var attributeMembersList = new List<Member>();
 
             for (int i = 0; i < mappings.Length; i++)
             {
@@ -535,8 +535,8 @@ namespace System.Xml.Serialization
                     membersList.Add(member);
                 }
             }
-            Member[] members = (Member[])membersList.ToArray(typeof(Member));
-            Member[] textOrArrayMembers = (Member[])textOrArrayMembersList.ToArray(typeof(Member));
+            Member[] members = membersList.ToArray();
+            Member[] textOrArrayMembers = textOrArrayMembersList.ToArray();
 
             if (members.Length > 0 && members[0].Mapping.IsReturnValue)
             {
@@ -554,7 +554,7 @@ namespace System.Xml.Serialization
 
             if (attributeMembersList.Count > 0)
             {
-                Member[] attributeMembers = (Member[])attributeMembersList.ToArray(typeof(Member));
+                Member[] attributeMembers = attributeMembersList.ToArray();
                 WriteMemberBegin(attributeMembers);
                 WriteAttributes(attributeMembers, anyAttribute, "UnknownNode", localP);
                 WriteMemberEnd(attributeMembers);
@@ -1556,9 +1556,9 @@ namespace System.Xml.Serialization
                 Member anyAttribute = null;
                 bool isSequence = structMapping.HasExplicitSequence();
 
-                ArrayList arraysToDeclareList = new ArrayList(mappings.Length);
-                ArrayList arraysToSetList = new ArrayList(mappings.Length);
-                ArrayList allMembersList = new ArrayList(mappings.Length);
+                var arraysToDeclareList = new List<Member>(mappings.Length);
+                var arraysToSetList = new List<Member>(mappings.Length);
+                var allMembersList = new List<Member>(mappings.Length);
 
                 for (int i = 0; i < mappings.Length; i++)
                 {
@@ -1624,9 +1624,9 @@ namespace System.Xml.Serialization
                 if (anyElement != null) arraysToSetList.Add(anyElement);
                 if (anyText != null && anyText != anyElement) arraysToSetList.Add(anyText);
 
-                Member[] arraysToDeclare = (Member[])arraysToDeclareList.ToArray(typeof(Member));
-                Member[] arraysToSet = (Member[])arraysToSetList.ToArray(typeof(Member));
-                Member[] allMembers = (Member[])allMembersList.ToArray(typeof(Member));
+                Member[] arraysToDeclare = arraysToDeclareList.ToArray();
+                Member[] arraysToSet = arraysToSetList.ToArray();
+                Member[] allMembers = allMembersList.ToArray();
 
                 WriteMemberBegin(arraysToDeclare);
                 WriteParamsRead(mappings.Length);
@@ -1834,7 +1834,7 @@ namespace System.Xml.Serialization
         {
             int count = 0;
             Member xmlnsMember = null;
-            ArrayList attributes = new ArrayList();
+            var attributes = new List<AttributeAccessor>();
 
             // Condition do at the end, so C# looks the same
             MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
@@ -2031,7 +2031,7 @@ namespace System.Xml.Serialization
 
                     for (int i = 0; i < attributes.Count; i++)
                     {
-                        AttributeAccessor attribute = (AttributeAccessor)attributes[i];
+                        AttributeAccessor attribute = attributes[i];
                         if (i > 0)
                             qnames += ", ";
                         qnames += attribute.IsSpecialXmlNamespace ? XmlReservedNs.NsXml : (attribute.Form == XmlSchemaForm.Qualified ? attribute.Namespace : "") + ":" + attribute.Name;

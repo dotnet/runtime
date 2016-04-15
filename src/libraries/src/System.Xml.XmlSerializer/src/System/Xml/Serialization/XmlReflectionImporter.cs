@@ -792,7 +792,7 @@ namespace System.Xml.Serialization
                     return false;
                 }
             }
-            ArrayList members = new ArrayList();
+            var members = new List<MemberMapping>();
             TextAccessor textAccesor = null;
             bool hasElements = false;
             bool isSequence = false;
@@ -850,7 +850,7 @@ namespace System.Xml.Serialization
                 var ids = new HashSet<int>();
                 for (int i = 0; i < members.Count; i++)
                 {
-                    MemberMapping member = (MemberMapping)members[i];
+                    MemberMapping member = members[i];
                     if (!member.IsParticle)
                         continue;
                     if (member.IsSequence)
@@ -868,7 +868,7 @@ namespace System.Xml.Serialization
                 }
                 members.Sort(new MemberMappingComparer());
             }
-            mapping.Members = (MemberMapping[])members.ToArray(typeof(MemberMapping));
+            mapping.Members = members.ToArray();
             if (mapping.BaseMapping == null) mapping.BaseMapping = GetRootMapping();
             if (mapping.XmlnsMember != null && mapping.BaseMapping.HasXmlnsMember)
                 throw new InvalidOperationException(SR.Format(SR.XmlMultipleXmlns, model.Type.FullName));
@@ -1150,7 +1150,7 @@ namespace System.Xml.Serialization
                     _types.Add(typeName, typeNs, mapping);
                 else
                     _anonymous[model.Type] = mapping;
-                ArrayList constants = new ArrayList();
+                var constants = new List<ConstantMapping>();
                 for (int i = 0; i < model.Constants.Length; i++)
                 {
                     ConstantMapping constant = ImportConstantMapping(model.Constants[i]);
@@ -1160,7 +1160,7 @@ namespace System.Xml.Serialization
                 {
                     throw new InvalidOperationException(SR.Format(SR.XmlNoSerializableMembers, model.TypeDesc.FullName));
                 }
-                mapping.Constants = (ConstantMapping[])constants.ToArray(typeof(ConstantMapping));
+                mapping.Constants = constants.ToArray();
                 _typeScope.AddTypeMapping(mapping);
             }
             return mapping;
@@ -1463,7 +1463,7 @@ namespace System.Xml.Serialization
             _savedArrayNamespace = null;
             Type accessorType = model.FieldType;
             string accessorName = model.Name;
-            ArrayList elementList = new ArrayList();
+            var elementList = new List<ElementAccessor>();
             NameTable elements = new NameTable();
             accessor.TypeDesc = _typeScope.GetTypeDesc(accessorType);
             XmlAttributeFlags flags = a.XmlFlags;
@@ -1893,7 +1893,7 @@ namespace System.Xml.Serialization
                     }
                 }
             }
-            accessor.Elements = (ElementAccessor[])elementList.ToArray(typeof(ElementAccessor));
+            accessor.Elements = elementList.ToArray();
             accessor.SequenceId = sequenceId;
 
             if (rpc)
@@ -2227,13 +2227,13 @@ namespace System.Xml.Serialization
 
     internal class WorkItems
     {
-        private ArrayList _list = new ArrayList();
+        private List<ImportStructWorkItem> _list = new List<ImportStructWorkItem>();
 
         internal ImportStructWorkItem this[int index]
         {
             get
             {
-                return (ImportStructWorkItem)_list[index];
+                return _list[index];
             }
             set
             {
