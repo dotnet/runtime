@@ -7,7 +7,6 @@
     </ProjectReference>
     <ProjectReference Include="..\src\System.IO.FileSystem.Watcher.builds" />
 
-    <ProjectReference Include="$(NativePackagePath)\runtime.native.System\runtime.native.System.pkgproj" />
   </ItemGroup>
   <ItemGroup>
     <InboxOnTargetFramework Include="MonoAndroid10" />

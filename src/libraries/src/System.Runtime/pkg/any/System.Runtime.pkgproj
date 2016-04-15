@@ -12,8 +12,6 @@
       <TargetGroup>netcore50</TargetGroup>
     </ProjectReference>
 
-    <ProjectReference Include="..\..\..\System.Private.Uri\pkg\System.Private.Uri.pkgproj"/>
-
     <!-- AOT implementation comes from AOT package -->
     <File Include="$(PlaceholderFile)">
       <TargetPath>runtimes/aot/lib/netcore50</TargetPath>
