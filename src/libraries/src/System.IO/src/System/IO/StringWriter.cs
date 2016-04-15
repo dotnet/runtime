@@ -136,56 +136,49 @@ namespace System.IO
             }
         }
 
-
         #region Task based Async APIs
-#pragma warning disable 1998 // async method with no await
-        private async Task MakeCompletedTask()
-        {
-            // do nothing.  We're taking advantage of the async infrastructure's optimizations, one of which is to
-            // return a cached already-completed Task when possible.
-        }
-#pragma warning restore 1998
-
+        
         public override Task WriteAsync(char value)
         {
             Write(value);
-            return MakeCompletedTask();
+            return Task.CompletedTask;
         }
 
         public override Task WriteAsync(string value)
         {
             Write(value);
-            return MakeCompletedTask();
+            return Task.CompletedTask;
         }
 
         public override Task WriteAsync(char[] buffer, int index, int count)
         {
             Write(buffer, index, count);
-            return MakeCompletedTask();
+            return Task.CompletedTask;
         }
 
         public override Task WriteLineAsync(char value)
         {
             WriteLine(value);
-            return MakeCompletedTask();
+            return Task.CompletedTask;
         }
 
         public override Task WriteLineAsync(string value)
         {
             WriteLine(value);
-            return MakeCompletedTask();
+            return Task.CompletedTask;
         }
 
         public override Task WriteLineAsync(char[] buffer, int index, int count)
         {
             WriteLine(buffer, index, count);
-            return MakeCompletedTask();
+            return Task.CompletedTask;
         }
 
         public override Task FlushAsync()
         {
-            return MakeCompletedTask();
+            return Task.CompletedTask;
         }
+        
         #endregion
 
         // Returns a string containing the characters written to this TextWriter
