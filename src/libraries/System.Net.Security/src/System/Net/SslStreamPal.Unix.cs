@@ -22,7 +22,6 @@ namespace System.Net
         }
 
         internal const bool StartMutualAuthAsAnonymous = false;
-        internal const bool PresizeEncryptBuffer = false;
 
         public static void VerifyPackageInfo()
         {
