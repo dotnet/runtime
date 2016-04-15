@@ -85,6 +85,7 @@ C_FUNC(\Name\()_End):
 
 .macro PUSH_ARGUMENT_REGISTERS
         push {r0-r3}
+        .save {r0-r3}
 .endm
 
 .macro pop_register Reg
