@@ -220,6 +220,11 @@ public:
     }    
 #endif
 
+    static void* operator new(size_t size, IAllocator* allocator)
+    {
+        return allocator->Alloc(size);
+    }
+
 private:
     size_t * m_pData;
     size_t * m_pEndData;
@@ -1836,7 +1841,7 @@ void GcInfoEncoder::Build()
                     UINT32 liveStateOffset = 0;
                     if (!hashMap.Lookup(&liveState, &liveStateOffset))
                     {
-                        BitArray * newLiveState = new (m_pAllocator->Alloc(sizeof(BitArray))) BitArray(m_pAllocator, size_tCount);
+                        BitArray * newLiveState = new (m_pAllocator) BitArray(m_pAllocator, size_tCount);
                         *newLiveState = liveState;
                         hashMap.Set(newLiveState, (UINT32)(-1));
                     }
@@ -1864,7 +1869,7 @@ void GcInfoEncoder::Build()
                 UINT32 liveStateOffset = 0;
                 if (!hashMap.Lookup(&liveState, &liveStateOffset))
                 {
-                    BitArray * newLiveState = new (m_pAllocator->Alloc(sizeof(BitArray))) BitArray(m_pAllocator, size_tCount);
+                    BitArray * newLiveState = new (m_pAllocator) BitArray(m_pAllocator, size_tCount);
                     *newLiveState = liveState;
                     hashMap.Set(newLiveState, (UINT32)(-1));
                 }
