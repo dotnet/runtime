@@ -78,7 +78,6 @@
 #include <windows.h>
 #include <wchar.h>
 #include <stdio.h>
-#include "utilcode.h"
 #include "corjit.h"
 #include "iallocator.h"
 #include "gcinfoarraylist.h"
@@ -318,6 +317,8 @@ enum GENERIC_CONTEXTPARAM_TYPE
     GENERIC_CONTEXTPARAM_THIS = 3,
 };
 
+extern void DECLSPEC_NORETURN ThrowOutOfMemory();
+
 class GcInfoEncoder
 {
 public:
@@ -327,7 +328,7 @@ public:
             ICorJitInfo*                pCorJitInfo,
             CORINFO_METHOD_INFO*        pMethodInfo,
             IAllocator*                 pJitAllocator,
-            NoMemoryFunction            pNoMem = ThrowOutOfMemory
+            NoMemoryFunction            pNoMem = ::ThrowOutOfMemory
             );
 
     struct LifetimeTransition
