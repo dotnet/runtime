@@ -1079,6 +1079,7 @@ void GcInfoEncoder::Build()
     }
 
     _ASSERTE( m_CodeLength > 0 );
+    _ASSERTE(DENORMALIZE_CODE_LENGTH(NORMALIZE_CODE_LENGTH(m_CodeLength)) == m_CodeLength);
     GCINFO_WRITE_VARL_U(m_Info1, NORMALIZE_CODE_LENGTH(m_CodeLength), CODE_LENGTH_ENCBASE, CodeLengthSize);
 
     if(hasGSCookie)
@@ -1216,6 +1217,7 @@ void GcInfoEncoder::Build()
         // (after, of course, adding the size of the call instruction to get the return PC).
         callSite += m_pCallSiteSizes[callSiteIndex] - 1;
 
+        _ASSERTE(DENORMALIZE_CODE_OFFSET(NORMALIZE_CODE_OFFSET(callSite)) == callSite);
         UINT32 normOffset = NORMALIZE_CODE_OFFSET(callSite);
 
         BOOL keepIt = TRUE;
@@ -2032,7 +2034,7 @@ void GcInfoEncoder::Build()
 
         if(!IsEssential(pClause))
             continue;
-        
+
         UINT32 normStartOffset = NORMALIZE_CODE_OFFSET(pClause->TryStartPC);
         UINT32 normStopOffset = NORMALIZE_CODE_OFFSET(pClause->TryEndPC);
         _ASSERTE(normStopOffset > normStartOffset);        
