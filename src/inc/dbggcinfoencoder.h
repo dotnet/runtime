@@ -21,7 +21,6 @@
 #include <wchar.h>
 #include <stdio.h>
 
-#include "utilcode.h"
 #include "corjit.h"
 #include "iallocator.h"
 #include "gcinfoarraylist.h"
