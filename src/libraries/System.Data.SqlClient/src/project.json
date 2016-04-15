@@ -41,9 +41,9 @@
         "System.Xml.ReaderWriter": "4.0.0"
       }
     },
-    "net45": {
+    "net451": {
       "dependencies": {
-        "Microsoft.TargetingPack.NETFramework.v4.5": "1.0.1"
+        "Microsoft.TargetingPack.NETFramework.v4.5.1": "1.0.1"
       }
     },
     "net46": {
