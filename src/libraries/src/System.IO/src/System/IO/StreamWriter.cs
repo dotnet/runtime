@@ -516,7 +516,7 @@ namespace System.IO
             }
             else
             {
-                return MakeCompletedTask();
+                return Task.CompletedTask;
             }
         }
 
@@ -840,23 +840,13 @@ namespace System.IO
             set { _haveWrittenPreamble = value; }
         }
 
-
-#pragma warning disable 1998 // async method with no await
-        private async Task MakeCompletedTask()
-        {
-            // do nothing.  We're taking advantage of the async infrastructure's optimizations, one of which is to
-            // return a cached already-completed Task when possible.
-        }
-#pragma warning restore 1998
-
-
         private Task FlushAsyncInternal(bool flushStream, bool flushEncoder,
                                         char[] sCharBuffer, int sCharPos)
         {
             // Perf boost for Flush on non-dirty writers.
             if (sCharPos == 0 && !flushStream && !flushEncoder)
             {
-                return MakeCompletedTask();
+                return Task.CompletedTask;
             }
 
             Task flushTask = FlushAsyncInternal(this, flushStream, flushEncoder, sCharBuffer, sCharPos, _haveWrittenPreamble,
