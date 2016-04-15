@@ -34,7 +34,6 @@
       <AsFrameworkReference>true</AsFrameworkReference>
     </InboxOnTargetFramework>
 
-    <ProjectReference Include="$(NativePackagePath)\runtime.native.System.IO.Compression\runtime.native.System.IO.Compression.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
