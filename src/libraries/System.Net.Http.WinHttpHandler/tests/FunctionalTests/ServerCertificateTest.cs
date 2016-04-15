@@ -71,7 +71,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
         [Fact]
         public async Task UseCallback_RedirectandValidCertificate_ExpectedValuesDuringCallback()
         {
-            Uri uri = HttpTestServers.RedirectUriForDestinationUri(true, HttpTestServers.SecureRemoteEchoServer, 1);
+            Uri uri = HttpTestServers.RedirectUriForDestinationUri(true, 302, HttpTestServers.SecureRemoteEchoServer, 1);
 
             var handler = new WinHttpHandler();
             handler.ServerCertificateValidationCallback = CustomServerCertificateValidationCallback;
