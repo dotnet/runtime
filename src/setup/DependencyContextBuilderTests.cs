@@ -253,6 +253,24 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         }
 
         [Fact]
+        public void FillsResources()
+        {
+            var context = Build(runtimeExports: new[]
+            {
+                Export(PackageDescription("Pack.Age", version: new NuGetVersion(1, 2, 3)),
+                    resourceAssemblies: new []
+                    {
+                        new LibraryResourceAssembly(new LibraryAsset("Dll", "resources/en-US/Pack.Age.dll", ""), "en-US")
+                    })
+            });
+
+            context.RuntimeLibraries.Should().HaveCount(1);
+
+            var lib = context.RuntimeLibraries.Should().Contain(l => l.Name == "Pack.Age").Subject;
+            lib.ResourceAssemblies.Should().OnlyContain(l => l.Locale == "en-US" && l.Path == "resources/en-US/Pack.Age.dll");
+        }
+
+        [Fact]
         public void ReferenceAssembliesPathRelativeToDefaultRoot()
         {
             var context = Build(compilationExports: new[]
