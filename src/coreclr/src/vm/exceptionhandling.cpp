@@ -4331,18 +4331,6 @@ static void DoEHLog(
 #endif // _DEBUG
 
 #ifdef FEATURE_PAL
-//---------------------------------------------------------------------------------------
-//
-// This function initiates unwinding of native frames during the unwinding of a managed 
-// exception. The managed exception can be propagated over several managed / native ranges 
-// until it is finally handled by a managed handler or leaves the stack unhandled and
-// aborts the current process.
-// This function is an assembler helper.
-//
-// Arguments:
-//      context - context at which to start the native unwinding
-//      ex      - pointer to the exception to use to unwind the native frames
-extern "C" void StartUnwindingNativeFrames(CONTEXT* context, PAL_SEHException* ex);
 
 //---------------------------------------------------------------------------------------
 //
