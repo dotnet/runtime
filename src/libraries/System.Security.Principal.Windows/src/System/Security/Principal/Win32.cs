@@ -30,7 +30,6 @@ namespace System.Security.Principal
     internal static class Win32
     {
         internal const int FALSE = 0;
-        internal const int TRUE = 1;
 
         //
         // Wrapper around advapi32.LsaOpenPolicy
