@@ -11,44 +11,86 @@ namespace System.Tests
     public static class LazyOfTMetadataTests
     {
         [Fact]
-        public static void TestCtor()
+        public static void TestCtor_TMetadata()
         {
-            new Lazy<int, string>(null);
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Lazy<int, string>("test", (LazyThreadSafetyMode)12345));
-            Assert.Throws<ArgumentNullException>(() => new Lazy<int, string>(null, "test"));
-            Assert.Throws<ArgumentNullException>(() => new Lazy<int, string>(null, "test", false));
-            Assert.Throws<ArgumentNullException>(() => new Lazy<int, string>(null, "test", LazyThreadSafetyMode.PublicationOnly));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Lazy<int, string>(() => 42, "test", (LazyThreadSafetyMode)12345));
+            var lazy = new Lazy<int, string>("metadata1");
+            VerifyLazy(lazy, 0, "metadata1");
+
+            lazy = new Lazy<int, string>(null);
+            VerifyLazy(lazy, 0, null);
         }
 
         [Fact]
-        public static void TestMetadataProperty()
+        public static void TestCtor_TMetadata_Bool()
         {
-            Assert.Equal("metadata1", new Lazy<int, string>("metadata1").Metadata);
-            Assert.Equal("metadata2", new Lazy<int, string>("metadata2", false).Metadata);
-            Assert.Equal("metadata3", new Lazy<int, string>("metadata3", LazyThreadSafetyMode.PublicationOnly).Metadata);
-            Assert.Equal(4, new Lazy<object, int>(() => new object(), 4).Metadata);
-            Assert.Equal(5, new Lazy<object, int>(() => new object(), 5, false).Metadata);
-            Assert.Equal(6, new Lazy<object, int>(() => new object(), 6, LazyThreadSafetyMode.None).Metadata);
+            var lazy = new Lazy<int, string>("metadata2", false);
+            VerifyLazy(lazy, 0, "metadata2");
         }
 
         [Fact]
-        public static void TestBasicInitialization()
+        public static void TestCtor_TMetadata_LazyThreadSaftetyMode()
         {
-            Lazy<int, string> lazy;
+            var lazy = new Lazy<int, string>("metadata3", LazyThreadSafetyMode.PublicationOnly);
+            VerifyLazy(lazy, 0, "metadata3");
+        }
 
-            lazy = new Lazy<int, string>("test1");
-            Assert.False(lazy.IsValueCreated);
-            Assert.Equal("test1", lazy.Metadata);
-            Assert.False(lazy.IsValueCreated);
-            Assert.Equal(0, lazy.Value);
-            Assert.True(lazy.IsValueCreated);
+        [Fact]
+        public static void TestCtor_TMetadata_LazyThreadSaftetyMode_Invalid()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("mode", () => new Lazy<int, string>("test", LazyThreadSafetyMode.None - 1)); // Invalid mode
+            Assert.Throws<ArgumentOutOfRangeException>("mode", () => new Lazy<int, string>("test", LazyThreadSafetyMode.ExecutionAndPublication + 1)); // Invalid mode
+        }
 
-            lazy = new Lazy<int, string>(() => 42, "test2");
+        [Fact]
+        public static void TestCtor_ValueFactory_TMetadata()
+        {
+            var lazy = new Lazy<string, int>(() => "foo", 4);
+            VerifyLazy(lazy, "foo", 4);
+        }
+
+        [Fact]
+        public static void TestCtor_ValueFactory_TMetadata_Invalid()
+        {
+            Assert.Throws<ArgumentNullException>("valueFactory", () => new Lazy<int, string>(null, "test")); // Value factory is null
+        }
+
+        [Fact]
+        public static void TestCtor_ValueFactory_TMetadata_Bool()
+        {
+            var lazy = new Lazy<string, int>(() => "foo", 5, false);
+            VerifyLazy(lazy, "foo", 5);
+        }
+
+        [Fact]
+        public static void TestCtor_ValueFactory_TMetadata_Bool_Invalid()
+        {
+            Assert.Throws<ArgumentNullException>("valueFactory", () => new Lazy<int, string>(null, "test", false)); // Value factory is null
+        }
+
+        [Fact]
+        public static void TestCtor_ValueFactory_TMetadata_LazyThreadSaftetyMode()
+        {
+            var lazy = new Lazy<string, int>(() => "foo", 6, LazyThreadSafetyMode.None);
+            VerifyLazy(lazy, "foo", 6);
+        }
+
+        [Fact]
+        public static void TestCtor_ValueFactory_TMetadata_LazyThreadSaftetyMode_Invalid()
+        {
+            Assert.Throws<ArgumentNullException>("valueFactory", () => new Lazy<int, string>(null, "test", LazyThreadSafetyMode.PublicationOnly)); // Value factory is null
+
+            Assert.Throws<ArgumentOutOfRangeException>("mode", () => new Lazy<int, string>(() => 42, "test", LazyThreadSafetyMode.None - 1)); // Invalid mode
+            Assert.Throws<ArgumentOutOfRangeException>("mode", () => new Lazy<int, string>(() => 42, "test", LazyThreadSafetyMode.ExecutionAndPublication + 1)); // Invalid mode
+        }
+
+        public static void VerifyLazy<T, TMetadata>(Lazy<T, TMetadata> lazy, T expectedValue, TMetadata expectedMetadata)
+        {
+            // Accessing metadata doesn't create the value
             Assert.False(lazy.IsValueCreated);
-            Assert.Equal("test2", lazy.Metadata);
+            Assert.Equal(expectedMetadata, lazy.Metadata);
             Assert.False(lazy.IsValueCreated);
-            Assert.Equal(42, lazy.Value);
+
+            Assert.Equal(expectedValue, lazy.Value);
             Assert.True(lazy.IsValueCreated);
         }
     }
