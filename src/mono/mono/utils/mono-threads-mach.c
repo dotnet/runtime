@@ -60,7 +60,11 @@ mono_threads_core_begin_async_suspend (MonoThreadInfo *info, gboolean interrupt_
 
 	g_assert (info);
 
-	ret = thread_suspend (info->native_handle);
+
+	do {
+		ret = thread_suspend (info->native_handle);
+	} while (ret == KERN_ABORTED);
+
 	THREADS_SUSPEND_DEBUG ("SUSPEND %p -> %d\n", (void*)info->native_handle, ret);
 	if (ret != KERN_SUCCESS)
 		return FALSE;
@@ -68,7 +72,10 @@ mono_threads_core_begin_async_suspend (MonoThreadInfo *info, gboolean interrupt_
 	/* We're in the middle of a self-suspend, resume and register */
 	if (!mono_threads_transition_finish_async_suspend (info)) {
 		mono_threads_add_to_pending_operation_set (info);
-		g_assert (thread_resume (info->native_handle) == KERN_SUCCESS);
+		do {
+			ret = thread_resume (info->native_handle);
+		} while (ret == KERN_ABORTED);
+		g_assert (ret == KERN_SUCCESS);
 		THREADS_SUSPEND_DEBUG ("FAILSAFE RESUME/1 %p -> %d\n", (void*)info->native_handle, 0);
 		//XXX interrupt_kernel doesn't make sense in this case as the target is not in a syscall
 		return TRUE;
@@ -81,7 +88,10 @@ mono_threads_core_begin_async_suspend (MonoThreadInfo *info, gboolean interrupt_
 			thread_abort (info->native_handle);
 	} else {
 		mono_threads_transition_async_suspend_compensation (info);
-		g_assert (thread_resume (info->native_handle) == KERN_SUCCESS);
+		do {
+			ret = thread_resume (info->native_handle);
+		} while (ret == KERN_ABORTED);
+		g_assert (ret == KERN_SUCCESS);
 		THREADS_SUSPEND_DEBUG ("FAILSAFE RESUME/2 %p -> %d\n", (void*)info->native_handle, 0);
 	}
 	return res;
@@ -112,7 +122,10 @@ mono_threads_core_begin_async_resume (MonoThreadInfo *info)
 		state = (thread_state_t) alloca (mono_mach_arch_get_thread_state_size ());
 		mctx = (mcontext_t) alloca (mono_mach_arch_get_mcontext_size ());
 
-		ret = mono_mach_arch_get_thread_state (info->native_handle, state, &num_state);
+		do {
+			ret = mono_mach_arch_get_thread_state (info->native_handle, state, &num_state);
+		} while (ret == KERN_ABORTED);
+
 		if (ret != KERN_SUCCESS)
 			return FALSE;
 
@@ -122,12 +135,17 @@ mono_threads_core_begin_async_resume (MonoThreadInfo *info)
 
 		mono_mach_arch_mcontext_to_thread_state (mctx, state);
 
-		ret = mono_mach_arch_set_thread_state (info->native_handle, state, num_state);
+		do {
+			ret = mono_mach_arch_set_thread_state (info->native_handle, state, num_state);
+		} while (ret == KERN_ABORTED);
+
 		if (ret != KERN_SUCCESS)
 			return FALSE;
 	}
 
-	ret = thread_resume (info->native_handle);
+	do {
+		ret = thread_resume (info->native_handle);
+	} while (ret == KERN_ABORTED);
 	THREADS_SUSPEND_DEBUG ("RESUME %p -> %d\n", (void*)info->native_handle, ret);
 
 	return ret == KERN_SUCCESS;

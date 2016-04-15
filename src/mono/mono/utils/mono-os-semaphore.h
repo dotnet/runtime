@@ -131,9 +131,12 @@ static inline int
 mono_os_sem_post (MonoSemType *sem)
 {
 	int res;
-
+retry:
 	res = semaphore_signal (*sem);
 	g_assert (res != KERN_INVALID_ARGUMENT);
+
+	if (res == KERN_ABORTED)
+		goto retry;
 
 	return res != KERN_SUCCESS ? -1 : 0;
 }

@@ -34,7 +34,11 @@
 gboolean
 sgen_resume_thread (SgenThreadInfo *info)
 {
-	return thread_resume (info->client_info.info.native_handle) == KERN_SUCCESS;
+	kern_return_t ret;
+	do {
+		ret = thread_resume (info->client_info.info.native_handle);
+	} while (ret == KERN_ABORTED);
+	return ret == KERN_SUCCESS;
 }
 
 gboolean
@@ -51,11 +55,15 @@ sgen_suspend_thread (SgenThreadInfo *info)
 	state = (thread_state_t) alloca (mono_mach_arch_get_thread_state_size ());
 	mctx = (mcontext_t) alloca (mono_mach_arch_get_mcontext_size ());
 
-	ret = thread_suspend (info->client_info.info.native_handle);
+	do {
+		ret = thread_suspend (info->client_info.info.native_handle);
+	} while (ret == KERN_ABORTED);
 	if (ret != KERN_SUCCESS)
 		return FALSE;
 
-	ret = mono_mach_arch_get_thread_state (info->client_info.info.native_handle, state, &num_state);
+	do {
+		ret = mono_mach_arch_get_thread_state (info->client_info.info.native_handle, state, &num_state);
+	} while (ret == KERN_ABORTED);
 	if (ret != KERN_SUCCESS)
 		return FALSE;
 
@@ -117,7 +125,9 @@ sgen_thread_handshake (BOOL suspend)
 			if (!sgen_suspend_thread (info))
 				continue;
 		} else {
-			ret = thread_resume (info->client_info.info.native_handle);
+			do {
+				ret = thread_resume (info->client_info.info.native_handle);
+			} while (ret == KERN_ABORTED);
 			if (ret != KERN_SUCCESS)
 				continue;
 		}

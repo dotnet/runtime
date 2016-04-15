@@ -502,7 +502,12 @@ mono_determine_physical_ram_available_size (void)
 	mach_port_t host = mach_host_self();
 	vm_size_t page_size;
 	vm_statistics_data_t vmstat;
-	if (KERN_SUCCESS != host_statistics(host, HOST_VM_INFO, (host_info_t)&vmstat, &count)) {
+	kern_return_t ret;
+	do {
+		ret = host_statistics(host, HOST_VM_INFO, (host_info_t)&vmstat, &count);
+	} while (ret == KERN_ABORTED);
+
+	if (ret != KERN_SUCCESS) {
 		g_warning ("Mono was unable to retrieve memory usage!");
 		return 0;
 	}

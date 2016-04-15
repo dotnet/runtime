@@ -517,7 +517,11 @@ clock_init (void)
 {
 	kern_return_t ret;
 
-	if ((ret = host_get_clock_service (mach_host_self (), SYSTEM_CLOCK, &sampling_clock_service)) != KERN_SUCCESS)
+	do {
+		ret = host_get_clock_service (mach_host_self (), SYSTEM_CLOCK, &sampling_clock_service);
+	} while (ret == KERN_ABORTED);
+
+	if (ret != KERN_SUCCESS)
 		g_error ("%s: host_get_clock_service () returned %d", __func__, ret);
 }
 
@@ -526,7 +530,11 @@ clock_cleanup (void)
 {
 	kern_return_t ret;
 
-	if ((ret = mach_port_deallocate (mach_task_self (), sampling_clock_service)) != KERN_SUCCESS)
+	do {
+		ret = mach_port_deallocate (mach_task_self (), sampling_clock_service);
+	} while (ret == KERN_ABORTED);
+
+	if (ret != KERN_SUCCESS)
 		g_error ("%s: mach_port_deallocate () returned %d", __func__, ret);
 }
 
@@ -536,7 +544,11 @@ clock_get_time_ns (void)
 	kern_return_t ret;
 	mach_timespec_t mach_ts;
 
-	if ((ret = clock_get_time (sampling_clock_service, &mach_ts)) != KERN_SUCCESS)
+	do {
+		ret = clock_get_time (sampling_clock_service, &mach_ts);
+	} while (ret == KERN_ABORTED);
+
+	if (ret != KERN_SUCCESS)
 		g_error ("%s: clock_get_time () returned %d", __func__, ret);
 
 	return ((guint64) mach_ts.tv_sec * 1000000000) + (guint64) mach_ts.tv_nsec;
@@ -553,10 +565,11 @@ clock_sleep_ns_abs (guint64 ns_abs)
 
 	do {
 		ret = clock_sleep (sampling_clock_service, TIME_ABSOLUTE, then, &remain_unused);
-
-		if (ret != KERN_SUCCESS && ret != KERN_ABORTED)
-			g_error ("%s: clock_sleep () returned %d", __func__, ret);
 	} while (ret == KERN_ABORTED);
+
+	if (ret != KERN_SUCCESS)
+		g_error ("%s: clock_sleep () returned %d", __func__, ret);
+
 }
 
 #else

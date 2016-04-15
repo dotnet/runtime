@@ -49,11 +49,16 @@ mono_threads_core_abort_syscall (MonoThreadInfo *info)
 {
 	kern_return_t ret;
 
-	ret = thread_suspend (info->native_handle);
+	do {
+		ret = thread_suspend (info->native_handle);
+	} while (ret == KERN_ABORTED);
+
 	if (ret != KERN_SUCCESS)
 		return;
 
-	ret = thread_abort_safely (info->native_handle);
+	do {
+		ret = thread_abort_safely (info->native_handle);
+	} while (ret == KERN_ABORTED);
 
 	/*
 	 * We are doing thread_abort when thread_abort_safely returns KERN_SUCCESS because
@@ -66,7 +71,11 @@ mono_threads_core_abort_syscall (MonoThreadInfo *info)
 	if (ret == KERN_SUCCESS)
 		ret = thread_abort (info->native_handle);
 
-	g_assert (thread_resume (info->native_handle) == KERN_SUCCESS);
+	do {
+		ret = thread_resume (info->native_handle);
+	} while (ret == KERN_ABORTED);
+
+	g_assert (ret == KERN_SUCCESS);
 }
 
 gboolean
