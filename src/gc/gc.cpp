@@ -9636,7 +9636,7 @@ void gc_heap::make_generation (generation& gen, heap_segment* seg, uint8_t* star
 #endif //FREE_USAGE_STATS
 }
 
-void gc_heap::adjust_ephemeral_limits ()
+void gc_heap::adjust_ephemeral_limits (bool is_runtime_suspended)
 {
     ephemeral_low = generation_allocation_start (generation_of (max_generation - 1));
     ephemeral_high = heap_segment_reserved (ephemeral_heap_segment);
@@ -9645,7 +9645,7 @@ void gc_heap::adjust_ephemeral_limits ()
                  (size_t)ephemeral_low, (size_t)ephemeral_high))
 
     // This updates the write barrier helpers with the new info.
-    StompWriteBarrierEphemeral(!!IsSuspendEEThread());
+    StompWriteBarrierEphemeral(is_runtime_suspended);
 }
 
 #if defined(TRACE_GC) || defined(GC_CONFIG_DRIVEN)
@@ -10442,7 +10442,7 @@ gc_heap::init_gc_heap (int  h_number)
     make_background_mark_stack (b_arr);
 #endif //BACKGROUND_GC
 
-    adjust_ephemeral_limits();
+    adjust_ephemeral_limits(true);
 
 #ifdef MARK_ARRAY
     // why would we clear the mark array for this page? it should be cleared..
@@ -15334,7 +15334,7 @@ void gc_heap::gc1()
     if (!settings.concurrent)
 #endif //BACKGROUND_GC
     {
-        adjust_ephemeral_limits();
+        adjust_ephemeral_limits(!!IsSuspendEEThread());
     }
 
 #ifdef BACKGROUND_GC
@@ -16181,7 +16181,7 @@ BOOL gc_heap::expand_soh_with_minimal_gc()
         dd_gc_new_allocation (dynamic_data_of (max_generation)) -= ephemeral_size;
         dd_new_allocation (dynamic_data_of (max_generation)) = dd_gc_new_allocation (dynamic_data_of (max_generation));
 
-        adjust_ephemeral_limits();
+        adjust_ephemeral_limits(!!IsSuspendEEThread());
         return TRUE;
     }
     else
