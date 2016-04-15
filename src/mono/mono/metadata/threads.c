@@ -1634,7 +1634,8 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_ha
 
 	g_free(handles);
 
-	return ret;
+	/* WAIT_FAILED in waithandle.cs is different from WAIT_FAILED in Win32 API */
+	return ret == WAIT_FAILED ? 0x7fffffff : ret;
 }
 
 /* FIXME: exitContext isnt documented */
@@ -1681,7 +1682,8 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_ha
 		return ret - WAIT_ABANDONED_0;
 	}
 	else {
-		return ret;
+		/* WAIT_FAILED in waithandle.cs is different from WAIT_FAILED in Win32 API */
+		return ret == WAIT_FAILED ? 0x7fffffff : ret;
 	}
 }
 
@@ -1705,7 +1707,8 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitOne_internal(HANDLE handle, gin
 	
 	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
 	
-	return ret;
+	/* WAIT_FAILED in waithandle.cs is different from WAIT_FAILED in Win32 API */
+	return ret == WAIT_FAILED ? 0x7fffffff : ret;
 }
 
 gint32
@@ -1727,7 +1730,8 @@ ves_icall_System_Threading_WaitHandle_SignalAndWait_Internal (HANDLE toSignal, H
 	
 	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
 
-	return ret;
+	/* WAIT_FAILED in waithandle.cs is different from WAIT_FAILED in Win32 API */
+	return ret == WAIT_FAILED ? 0x7fffffff : ret;
 }
 
 HANDLE ves_icall_System_Threading_Mutex_CreateMutex_internal (MonoBoolean owned, MonoString *name, MonoBoolean *created)
