@@ -435,7 +435,8 @@ BASE_TEST_CS_SRC=		\
 	pinvoke_ppcs.cs	\
 	pinvoke_ppci.cs	\
 	pinvoke_ppcf.cs	\
-	pinvoke_ppcd.cs
+	pinvoke_ppcd.cs	\
+	bug-29585.cs
 
 TEST_CS_SRC_DIST=	\
 	$(BASE_TEST_CS_SRC)	\

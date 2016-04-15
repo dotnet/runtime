@@ -1130,11 +1130,11 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 	result->sre_method = FALSE;
 	result->signature = NULL;
 
-	if (!context->method_inst) {
+	if (iresult->context.method_inst) {
 		/* Set the generic_container of the result to the generic_container of method */
 		MonoGenericContainer *generic_container = mono_method_get_generic_container (method);
 
-		if (generic_container) {
+		if (generic_container && iresult->context.method_inst == generic_container->context.method_inst) {
 			result->is_generic = 1;
 			mono_method_set_generic_container (result, generic_container);
 		}
