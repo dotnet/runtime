@@ -6,14 +6,12 @@
     <MONO_CFG_DIR>$(MONO_DIR)/runtime/etc</MONO_CFG_DIR>
     <MONO_CONFIG_ARG>--config "$(MONO_DIR)/runtime/etc/mono/config"</MONO_CONFIG_ARG>
     <MONO_MINI_REGRESSION_TEST_DIR>$(MONO_DIR)/mono/mini</MONO_MINI_REGRESSION_TEST_DIR>
-    <MONO_MINI_ALL_REGRESSION_TEST_ARG>--regression basic.exe basic-float.exe basic-long.exe basic-calls.exe objects.exe arrays.exe basic-math.exe exceptions.exe iltests.exe devirtualization.exe generics.exe basic-simd.exe</MONO_MINI_ALL_REGRESSION_TEST_ARG>
-    <MONO_MINI_ONE_REGRESSION_TEST_ARG>--regression basic.exe</MONO_MINI_ONE_REGRESSION_TEST_ARG>
-    <MONO_MINI_REGRESSION_TEST_ARGS>$(MONO_EXECUTABLE_CONFIG_ARG) $(MONO_MINI_ALL_REGRESSION_TEST_ARG)</MONO_MINI_REGRESSION_TEST_ARGS>
+    <MONO_MINI_REGRESSION_TESTS>basic.exe basic-float.exe basic-long.exe basic-calls.exe objects.exe arrays.exe basic-math.exe exceptions.exe iltests.exe devirtualization.exe generics.exe basic-simd.exe</MONO_MINI_REGRESSION_TESTS>
     <MONO_EXECUTABLE>$(MONO_BUILD_DIR_PREFIX)$(Platform)/bin/$(Configuration)/mono$(MONO_TARGET_SUFFIX).exe</MONO_EXECUTABLE>
-    <MONO_EXECUTABLE_ARGS>$(MONO_MINI_REGRESSION_TEST_ARGS)</MONO_EXECUTABLE_ARGS>
     <MONO_EXECUTABLE_DIR>$(MONO_MINI_REGRESSION_TEST_DIR)</MONO_EXECUTABLE_DIR>
     <MONO_PATH_ENV>MONO_PATH=$(MONO_PATH)</MONO_PATH_ENV>
     <MONO_CFG_DIR_ENV>MONO_CFG_DIR=$(MONO_CFG_DIR)</MONO_CFG_DIR_ENV>
+    <MONO_TOOLCHAIN_PATH_ENV>PATH=$(MONO_TOOLCHAIN_PATH)</MONO_TOOLCHAIN_PATH_ENV>
   </PropertyGroup>
   <ItemGroup>
     <BuildMacro Include="MONO_PATH">
@@ -24,41 +22,27 @@
     </BuildMacro>
     <BuildMacro Include="MONO_CONFIG_ARG">
       <Value>$(MONO_CONFIG_ARG)</Value>
-      <EnvironmentVariable>false</EnvironmentVariable>
     </BuildMacro>
     <BuildMacro Include="MONO_MINI_REGRESSION_TEST_DIR">
       <Value>$(MONO_MINI_REGRESSION_TEST_DIR)</Value>
-      <EnvironmentVariable>false</EnvironmentVariable>
     </BuildMacro>
-    <BuildMacro Include="MONO_MINI_ALL_REGRESSION_TEST_ARG">
-      <Value>$(MONO_MINI_ALL_REGRESSION_TEST_ARG)</Value>
-      <EnvironmentVariable>false</EnvironmentVariable>
-    </BuildMacro>
-    <BuildMacro Include="MONO_MINI_ONE_REGRESSION_TEST_ARG">
-      <Value>$(MONO_MINI_ONE_REGRESSION_TEST_ARG)</Value>
-      <EnvironmentVariable>false</EnvironmentVariable>
-    </BuildMacro>
-    <BuildMacro Include="MONO_MINI_REGRESSION_TEST_ARGS">
-      <Value>$(MONO_MINI_REGRESSION_TEST_ARGS)</Value>
-      <EnvironmentVariable>false</EnvironmentVariable>
+    <BuildMacro Include="MONO_MINI_REGRESSION_TESTS">
+      <Value>$(MONO_MINI_REGRESSION_TESTS)</Value>
     </BuildMacro>
     <BuildMacro Include="MONO_EXECUTABLE">
       <Value>$(MONO_EXECUTABLE)</Value>
-      <EnvironmentVariable>false</EnvironmentVariable>
-    </BuildMacro>
-    <BuildMacro Include="MONO_EXECUTABLE_ARGS">
-      <Value>$(MONO_EXECUTABLE_ARGS)</Value>
-      <EnvironmentVariable>false</EnvironmentVariable>
     </BuildMacro>
     <BuildMacro Include="MONO_EXECUTABLE_DIR">
       <Value>$(MONO_EXECUTABLE_DIR)</Value>
-      <EnvironmentVariable>false</EnvironmentVariable>
     </BuildMacro>
     <BuildMacro Include="MONO_PATH_ENV">
       <Value>$(MONO_PATH_ENV)</Value>
     </BuildMacro>
     <BuildMacro Include="MONO_CFG_DIR_ENV">
       <Value>$(MONO_CFG_DIR_ENV)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_TOOLCHAIN_PATH_ENV">
+      <Value>$(MONO_TOOLCHAIN_PATH_ENV)</Value>
     </BuildMacro>
   </ItemGroup>
   <ItemDefinitionGroup />

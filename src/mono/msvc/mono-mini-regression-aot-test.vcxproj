@@ -19,10 +19,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{3E0D229E-C39F-4EDA-9A6A-A33ECEA0322D}</ProjectGuid>
-    <RootNamespace>monoregressiontest</RootNamespace>
+    <ProjectGuid>{D632D664-C0F5-4B60-9375-BDDAD5C7A649}</ProjectGuid>
+    <RootNamespace>monominiregressionaottest</RootNamespace>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
-    <ProjectName>mono-mini-regression-test</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -61,28 +60,28 @@
     <Import Project="mono.props" />
     <Import Project="mono-regression-test-Win32.props" />
     <Import Project="mono-regression-test.props" />
-    <Import Project="mono-mini-regression-test.props" />
+    <Import Project="mono-mini-regression-test-aot.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="mono.props" />
     <Import Project="mono-regression-test-Win32.props" />
     <Import Project="mono-regression-test.props" />
-    <Import Project="mono-mini-regression-test.props" />
+    <Import Project="mono-mini-regression-test-aot.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="mono.props" />
     <Import Project="mono-regression-test-x64.props" />
     <Import Project="mono-regression-test.props" />
-    <Import Project="mono-mini-regression-test.props" />
+    <Import Project="mono-mini-regression-test-aot.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="mono.props" />
     <Import Project="mono-regression-test-x64.props" />
     <Import Project="mono-regression-test.props" />
-    <Import Project="mono-mini-regression-test.props" />
+    <Import Project="mono-mini-regression-test-aot.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -101,21 +100,11 @@
     <OutDir>$(Platform)\lib\$(Configuration)\</OutDir>
     <IntDir>$(Platform)\obj\$(ProjectName)\$(Configuration)\</IntDir>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LocalDebuggerCommand>$(MONO_EXECUTABLE)</LocalDebuggerCommand>
-    <LocalDebuggerCommandArguments>$(MONO_MINI_REGRESSION_TEST_ARGS)</LocalDebuggerCommandArguments>
-    <LocalDebuggerWorkingDirectory>$(MONO_EXECUTABLE_DIR)</LocalDebuggerWorkingDirectory>
-    <LocalDebuggerEnvironment>$(MONO_PATH_ENV)
-$(MONO_CFG_DIR_ENV)
-$(MONO_TOOLCHAIN_PATH_ENV)
-$(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
-    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LocalDebuggerCommand>$(MONO_EXECUTABLE)</LocalDebuggerCommand>
-    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-    <LocalDebuggerCommandArguments>$(MONO_MINI_REGRESSION_TEST_ARGS)</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>$(MONO_MINI_REGRESSION_TEST_AOT_ARGS)</LocalDebuggerCommandArguments>
     <LocalDebuggerWorkingDirectory>$(MONO_EXECUTABLE_DIR)</LocalDebuggerWorkingDirectory>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
     <LocalDebuggerEnvironment>$(MONO_PATH_ENV)
 $(MONO_CFG_DIR_ENV)
 $(MONO_TOOLCHAIN_PATH_ENV)
@@ -123,9 +112,19 @@ $(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LocalDebuggerCommand>$(MONO_EXECUTABLE)</LocalDebuggerCommand>
-    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-    <LocalDebuggerCommandArguments>$(MONO_MINI_REGRESSION_TEST_ARGS)</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>$(MONO_MINI_REGRESSION_TEST_AOT_ARGS)</LocalDebuggerCommandArguments>
     <LocalDebuggerWorkingDirectory>$(MONO_EXECUTABLE_DIR)</LocalDebuggerWorkingDirectory>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <LocalDebuggerEnvironment>$(MONO_PATH_ENV)
+$(MONO_CFG_DIR_ENV)
+$(MONO_TOOLCHAIN_PATH_ENV)
+$(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LocalDebuggerCommand>$(MONO_EXECUTABLE)</LocalDebuggerCommand>
+    <LocalDebuggerCommandArguments>$(MONO_MINI_REGRESSION_TEST_AOT_ARGS)</LocalDebuggerCommandArguments>
+    <LocalDebuggerWorkingDirectory>$(MONO_EXECUTABLE_DIR)</LocalDebuggerWorkingDirectory>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
     <LocalDebuggerEnvironment>$(MONO_PATH_ENV)
 $(MONO_CFG_DIR_ENV)
 $(MONO_TOOLCHAIN_PATH_ENV)
@@ -133,9 +132,9 @@ $(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LocalDebuggerCommand>$(MONO_EXECUTABLE)</LocalDebuggerCommand>
-    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-    <LocalDebuggerCommandArguments>$(MONO_MINI_REGRESSION_TEST_ARGS)</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>$(MONO_MINI_REGRESSION_TEST_AOT_ARGS)</LocalDebuggerCommandArguments>
     <LocalDebuggerWorkingDirectory>$(MONO_EXECUTABLE_DIR)</LocalDebuggerWorkingDirectory>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
     <LocalDebuggerEnvironment>$(MONO_PATH_ENV)
 $(MONO_CFG_DIR_ENV)
 $(MONO_TOOLCHAIN_PATH_ENV)

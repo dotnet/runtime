@@ -18,13 +18,14 @@ IF "" == "%TARGET_ROOT%" (
 )
 
 IF NOT EXIST %SOURCE_ROOT% (
-	ECHO Error: '%SOURCE_ROOT%', directory doesn't eixst.
+	ECHO Error: source directory '%SOURCE_ROOT%', directory doesn't eixst.
 	GOTO ON_ERROR
 )
 
 IF NOT EXIST %TARGET_ROOT% (
-	ECHO Error: '%TARGET_ROOT%', directory doesn't eixst.
-	GOTO ON_ERROR
+	ECHO Target directory '%TARGET_ROOT%', directory doesn't eixst, creating....
+	mkdir %TARGET_ROOT%
+	ECHO Target directory '%TARGET_ROOT%' created.
 )
 
 IF "\" == "%SOURCE_ROOT:~-1%" (
