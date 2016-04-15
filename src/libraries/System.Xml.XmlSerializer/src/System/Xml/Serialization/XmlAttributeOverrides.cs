@@ -18,7 +18,7 @@ namespace System.Xml.Serialization
     /// </devdoc>
     public class XmlAttributeOverrides
     {
-        private Dictionary<Type, Dictionary<string, XmlAttributes>> _types = new Dictionary<Type, Dictionary<string, XmlAttributes>>();
+        private readonly Dictionary<Type, Dictionary<string, XmlAttributes>> _types = new Dictionary<Type, Dictionary<string, XmlAttributes>>();
 
         /// <include file='doc\XmlAttributeOverrides.uex' path='docs/doc[@for="XmlAttributeOverrides.Add"]/*' />
         /// <devdoc>

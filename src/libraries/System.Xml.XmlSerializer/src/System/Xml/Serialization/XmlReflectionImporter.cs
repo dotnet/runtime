@@ -33,7 +33,7 @@ namespace System.Xml.Serialization
         private NameTable _elements = new NameTable();   // xmlelementname + xmlns -> ElementAccessor
         private NameTable _xsdAttributes;   // xmlattributetname + xmlns -> AttributeAccessor
         private Dictionary<Type, SpecialMapping> _specials;   // type -> SpecialMapping
-        private Dictionary<Type, TypeMapping> _anonymous = new Dictionary<Type, TypeMapping>();   // type -> AnonymousMapping
+        private readonly Dictionary<Type, TypeMapping> _anonymous = new Dictionary<Type, TypeMapping>();   // type -> AnonymousMapping
         private StructMapping _root;
         private string _defaultNs;
         private ModelScope _modelScope;
@@ -847,7 +847,7 @@ namespace System.Xml.Serialization
             mapping.SetContentModel(textAccesor, hasElements);
             if (isSequence)
             {
-                var ids = new Dictionary<int, MemberMapping>();
+                var ids = new HashSet<int>();
                 for (int i = 0; i < members.Count; i++)
                 {
                     MemberMapping member = (MemberMapping)members[i];
@@ -855,11 +855,11 @@ namespace System.Xml.Serialization
                         continue;
                     if (member.IsSequence)
                     {
-                        if (ids.ContainsKey(member.SequenceId))
+                        if (ids.Contains(member.SequenceId))
                         {
                             throw new InvalidOperationException(SR.Format(SR.XmlSequenceUnique, member.SequenceId.ToString(CultureInfo.InvariantCulture), "Order", member.Name));
                         }
-                        ids[member.SequenceId] = member;
+                        ids.Add(member.SequenceId);
                     }
                     else
                     {
@@ -1999,7 +1999,7 @@ namespace System.Xml.Serialization
 
         private void CheckAmbiguousChoice(XmlAttributes a, Type accessorType, string accessorName)
         {
-            var choiceTypes = new Dictionary<Type, bool>();
+            var choiceTypes = new HashSet<Type>();
 
             XmlElementAttributes elements = a.XmlElements;
             if (elements != null && elements.Count >= 2 && a.XmlChoiceIdentifier == null)
@@ -2007,18 +2007,18 @@ namespace System.Xml.Serialization
                 for (int i = 0; i < elements.Count; i++)
                 {
                     Type type = elements[i].Type == null ? accessorType : elements[i].Type;
-                    if (choiceTypes.ContainsKey(type))
+                    if (choiceTypes.Contains(type))
                     {
                         // You need to add {0} to the '{1}'.
                         throw new InvalidOperationException(SR.Format(SR.XmlChoiceIdentiferMissing, typeof(XmlChoiceIdentifierAttribute).Name, accessorName));
                     }
                     else
                     {
-                        choiceTypes.Add(type, false);
+                        choiceTypes.Add(type);
                     }
                 }
             }
-            if (choiceTypes.ContainsKey(typeof(XmlElement)) && a.XmlAnyElements.Count > 0)
+            if (choiceTypes.Contains(typeof(XmlElement)) && a.XmlAnyElements.Count > 0)
             {
                 // You need to add {0} to the '{1}'.
                 throw new InvalidOperationException(SR.Format(SR.XmlChoiceIdentiferMissing, typeof(XmlChoiceIdentifierAttribute).Name, accessorName));

@@ -28,8 +28,8 @@ namespace System.Xml.Serialization
         private XmlWriter _w;
         private XmlSerializerNamespaces _namespaces;
         private int _tempNamespacePrefix;
-        private Dictionary<int, int> _usedPrefixes;
-        private Dictionary<object, object> _objectsInUse;
+        private HashSet<int> _usedPrefixes;
+        private HashSet<object> _objectsInUse;
         private string _aliasBase = "q";
         private bool _escapeName = true;
 
@@ -473,8 +473,8 @@ namespace System.Xml.Serialization
         {
             if (o != null && _objectsInUse != null)
             {
-                if (_objectsInUse.ContainsKey(o)) throw new InvalidOperationException(SR.Format(SR.XmlCircularReference, o.GetType().FullName));
-                _objectsInUse.Add(o, o);
+                if (_objectsInUse.Contains(o)) throw new InvalidOperationException(SR.Format(SR.XmlCircularReference, o.GetType().FullName));
+                _objectsInUse.Add(o);
             }
 
             string prefix = null;
@@ -540,9 +540,9 @@ namespace System.Xml.Serialization
             WriteNamespaceDeclarations(xmlns);
         }
 
-        private Dictionary<int, int> ListUsedPrefixes(Dictionary<string, string> nsList, string prefix)
+        private HashSet<int> ListUsedPrefixes(Dictionary<string, string> nsList, string prefix)
         {
-            var qnIndexes = new Dictionary<int, int>();
+            var qnIndexes = new HashSet<int>();
             int prefixLength = prefix.Length;
             const string MaxInt32 = "2147483647";
             foreach (string alias in _namespaces.Namespaces.Keys)
@@ -568,9 +568,9 @@ namespace System.Xml.Serialization
                             if (index <= Int32.MaxValue)
                             {
                                 Int32 newIndex = (Int32)index;
-                                if (!qnIndexes.ContainsKey(newIndex))
+                                if (!qnIndexes.Contains(newIndex))
                                 {
-                                    qnIndexes.Add(newIndex, newIndex);
+                                    qnIndexes.Add(newIndex);
                                 }
                             }
                         }
@@ -646,7 +646,7 @@ namespace System.Xml.Serialization
             {
 #if DEBUG
                 // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-                if (!_objectsInUse.ContainsKey(o)) throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, "missing stack object of type " + o.GetType().FullName));
+                if (!_objectsInUse.Contains(o)) throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, "missing stack object of type " + o.GetType().FullName));
 #endif
 
                 _objectsInUse.Remove(o);
@@ -1152,7 +1152,7 @@ namespace System.Xml.Serialization
         /// <include file='doc\XmlSerializationWriter.uex' path='docs/doc[@for="XmlSerializationWriter.TopLevelElement"]/*' />
         protected void TopLevelElement()
         {
-            _objectsInUse = new Dictionary<object, object>();
+            _objectsInUse = new HashSet<object>();
         }
 
         /// <include file='doc\XmlSerializationWriter.uex' path='docs/doc[@for="XmlSerializationWriter.WriteNamespaceDeclarations"]/*' />
@@ -1190,7 +1190,7 @@ namespace System.Xml.Serialization
             {
                 return _aliasBase + (++_tempNamespacePrefix);
             }
-            while (_usedPrefixes.ContainsKey(++_tempNamespacePrefix)) {; }
+            while (_usedPrefixes.Contains(++_tempNamespacePrefix)) {; }
             return _aliasBase + _tempNamespacePrefix;
         }
     }

@@ -17,7 +17,7 @@ namespace System.Xml.Serialization
     internal class XmlSerializationILGen
     {
         private int _nextMethodNumber = 0;
-        private Dictionary<TypeMapping, string> _methodNames = new Dictionary<TypeMapping, string>();
+        private readonly Dictionary<TypeMapping, string> _methodNames = new Dictionary<TypeMapping, string>();
         // Lookup name->created Method
         private Dictionary<string, MethodBuilderInfo> _methodBuilders = new Dictionary<string, MethodBuilderInfo>();
         // Lookup name->created Type
@@ -31,7 +31,7 @@ namespace System.Xml.Serialization
         private string _className;
         private TypeMapping[] _referencedMethods;
         private int _references = 0;
-        private Dictionary<TypeMapping, TypeMapping> _generatedMethods = new Dictionary<TypeMapping, TypeMapping>();
+        private readonly HashSet<TypeMapping> _generatedMethods = new HashSet<TypeMapping>();
         private ModuleBuilder _moduleBuilder;
         private TypeAttributes _typeAttributes;
         protected TypeBuilder typeBuilder;
@@ -58,7 +58,7 @@ namespace System.Xml.Serialization
         internal string ClassName { get { return _className; } }
         internal TypeScope[] Scopes { get { return _scopes; } }
         internal Dictionary<TypeMapping, string> MethodNames { get { return _methodNames; } }
-        internal Dictionary<TypeMapping, TypeMapping> GeneratedMethods { get { return _generatedMethods; } }
+        internal HashSet<TypeMapping> GeneratedMethods { get { return _generatedMethods; } }
 
         internal ModuleBuilder ModuleBuilder
         {
@@ -123,7 +123,7 @@ namespace System.Xml.Serialization
 
         internal string ReferenceMapping(TypeMapping mapping)
         {
-            if (!_generatedMethods.ContainsKey(mapping))
+            if (!_generatedMethods.Contains(mapping))
             {
                 _referencedMethods = EnsureArrayIndex(_referencedMethods, _references);
                 _referencedMethods[_references++] = mapping;
@@ -240,7 +240,7 @@ namespace System.Xml.Serialization
                 new Type[] { typeof(Type) },
                 new string[] { "type" },
                 CodeGenerator.PublicOverrideMethodAttributes);
-            var uniqueTypes = new Dictionary<Type, Type>();
+            var uniqueTypes = new HashSet<Type>();
             for (int i = 0; i < types.Length; i++)
             {
                 Type type = types[i];
@@ -249,12 +249,12 @@ namespace System.Xml.Serialization
                     continue;
                 if (!type.GetTypeInfo().IsPublic && !type.GetTypeInfo().IsNestedPublic)
                     continue;
-                if (uniqueTypes.ContainsKey(type))
+                if (uniqueTypes.Contains(type))
                     continue;
                 // DDB172141: Wrong generated CS for serializer of List<string> type
                 if (type.GetTypeInfo().IsGenericType || type.GetTypeInfo().ContainsGenericParameters)
                     continue;
-                uniqueTypes[type] = type;
+                uniqueTypes.Add(type);
                 ilg.Ldarg("type");
                 ilg.Ldc(type);
                 ilg.If(Cmp.EqualTo);

@@ -322,12 +322,7 @@ namespace System.Xml.Serialization
             {
                 TempAssembly tempAssembly;
                 if (_cache.TryGetValue(key, out tempAssembly) && tempAssembly == assembly) return;
-                var clone = new Dictionary<TempAssemblyCacheKey, TempAssembly>();
-                foreach (var k in _cache.Keys)
-                {
-                    clone.Add(k, _cache[k]);
-                }
-                _cache = clone;
+                _cache = new Dictionary<TempAssemblyCacheKey, TempAssembly>(_cache); // clone
                 _cache[key] = assembly;
             }
         }

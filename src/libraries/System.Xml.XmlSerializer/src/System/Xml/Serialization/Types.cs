@@ -411,12 +411,12 @@ namespace System.Xml.Serialization
 
     internal class TypeScope
     {
-        private Dictionary<Type, TypeDesc> _typeDescs = new Dictionary<Type, TypeDesc>();
-        private Dictionary<Type, TypeDesc> _arrayTypeDescs = new Dictionary<Type, TypeDesc>();
+        private readonly Dictionary<Type, TypeDesc> _typeDescs = new Dictionary<Type, TypeDesc>();
+        private readonly Dictionary<Type, TypeDesc> _arrayTypeDescs = new Dictionary<Type, TypeDesc>();
         private ArrayList _typeMappings = new ArrayList();
 
-        private static Dictionary<Type, TypeDesc> s_primitiveTypes = new Dictionary<Type, TypeDesc>();
-        private static Dictionary<XmlSchemaType, TypeDesc> s_primitiveDataTypes = new Dictionary<XmlSchemaType, TypeDesc>();
+        private static readonly Dictionary<Type, TypeDesc> s_primitiveTypes = new Dictionary<Type, TypeDesc>();
+        private static readonly Dictionary<XmlSchemaType, TypeDesc> s_primitiveDataTypes = new Dictionary<XmlSchemaType, TypeDesc>();
         private static NameTable s_primitiveNames = new NameTable();
 
         private static string[] s_unsupportedTypes = new string[] {

@@ -20,8 +20,8 @@ namespace System.Xml.Serialization
     /// </devdoc>
     internal class CodeIdentifiers
     {
-        private Dictionary<string, object> _identifiers;
-        private Dictionary<string, object> _reservedIdentifiers;
+        private readonly Dictionary<string, object> _identifiers;
+        private readonly Dictionary<string, object> _reservedIdentifiers;
         private ArrayList _list;
 
         public CodeIdentifiers()
