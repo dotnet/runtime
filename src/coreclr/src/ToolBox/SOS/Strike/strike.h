@@ -44,6 +44,10 @@
 #define _wcsstr     wcsstr
 #endif // !PAL_STDCPP_COMPAT
 
+#ifdef PLATFORM_UNIX
+#define  _vsnprintf vsnprintf
+#endif
+
 #define ___in       _SAL1_Source_(__in, (), _In_)
 #define ___out      _SAL1_Source_(__out, (), _Out_)
 
