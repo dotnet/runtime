@@ -217,7 +217,15 @@ echo %__MsgPrefix%Checking prerequisites
 
 :: Validate that PowerShell is accessibile.
 for %%X in (powershell.exe) do (set __PSDir=%%~$PATH:X)
-if not defined __PSDir goto NoPS
+if not defined __PSDir goto :NoPS
+
+:: Validate Powershell version
+set PS_VERSION_LOG=%~dp0ps-version.log
+powershell -NoProfile -ExecutionPolicy unrestricted -Command "$PSVersionTable.PSVersion.Major" > %PS_VERSION_LOG%
+set /P PS_VERSION=< %PS_VERSION_LOG%
+if %PS_VERSION% LEQ 2 (
+  goto :OldPS
+)
 
 :: Eval the output from probe-win1.ps1
 for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy RemoteSigned "& ""%__SourceDir%\pal\tools\probe-win.ps1"""') do %%a
@@ -260,6 +268,10 @@ REM === Restore Build Tools
 REM ===
 REM =========================================================================================
 call %__ThisScriptPath%init-tools.cmd  
+if errorlevel 1 (
+  echo ERROR: Could not restore build tools.
+  exit /b 1
+)
 
 REM =========================================================================================
 REM ===
@@ -655,14 +667,20 @@ echo        -- builds x64 and x86 architectures, Checked and Release build types
 exit /b 1
 
 :NoPS
-echo PowerShell is a prerequisite to build this repository, but it is not accessible.
+echo PowerShell v3.0 or later is a prerequisite to build this repository, but it is not accessible.
 echo Ensure that it is defined in the PATH environment variable.
 echo Typically it should be %%SYSTEMROOT%%\System32\WindowsPowerShell\v1.0\.
 exit /b 1
 
+:OldPS
+echo PowerShell v3.0 or later is a prerequisite to build this repository.
+echo See: https://github.com/dotnet/coreclr/blob/master/Documentation/building/windows-instructions.md
+echo Download via https://www.microsoft.com/en-us/download/details.aspx?id=40855
+exit /b 1
+
 :NoVS
 echo Visual Studio 2015+ ^(Community is free^) is a prerequisite to build this repository.
-echo See: https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md#prerequisites
+echo See: https://github.com/dotnet/coreclr/blob/master/Documentation/building/windows-instructions.md
 exit /b 1
 
 :NoDIA
