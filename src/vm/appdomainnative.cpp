@@ -762,7 +762,10 @@ void QCALLTYPE AppDomainNative::SetupBindingPaths(__in_z LPCWSTR wszTrustedPlatf
                                             sAppNiPaths));
 
 #ifdef FEATURE_COMINTEROP
-        pDomain->SetWinrtApplicationContext(sappLocalWinMD);
+        if (WinRTSupported())
+        {
+            pDomain->SetWinrtApplicationContext(sappLocalWinMD);
+        }
 #endif
 
     END_QCALL;
