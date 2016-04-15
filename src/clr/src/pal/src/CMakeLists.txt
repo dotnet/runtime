@@ -271,13 +271,16 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
 endif(CMAKE_SYSTEM_NAME STREQUAL Linux)
 
 if(CMAKE_SYSTEM_NAME STREQUAL NetBSD)
+  add_definitions(-D_KMEMUSER)
   find_library(UNWIND unwind)
   find_library(INTL intl)
+  find_library(KVM kvm)
   target_link_libraries(coreclrpal
     pthread
     rt
     ${UNWIND}
     ${INTL}
+    ${KVM}
   )
 endif(CMAKE_SYSTEM_NAME STREQUAL NetBSD)
 

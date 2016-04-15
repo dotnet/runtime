@@ -72,6 +72,13 @@ int CacheLineSize;
 #include <mach-o/dyld.h>
 #endif // __APPLE__
 
+#ifdef __NetBSD__
+#include <sys/cdefs.h>
+#include <sys/param.h>
+#include <sys/sysctl.h>
+#include <kvm.h>
+#endif
+
 using namespace CorUnix;
 
 //
@@ -706,6 +713,31 @@ PAL_IsDebuggerPresent()
         return ((info.kp_proc.p_flag & P_TRACED) != 0);
 
     return FALSE;
+#elif defined(__NetBSD__)
+    int traced;
+    kvm_t *kd;
+    int cnt;
+
+    struct kinfo_proc *info;
+
+    kd = kvm_open(NULL, NULL, NULL, KVM_NO_FILES, "kvm_open");
+    if (kd == NULL)
+        return FALSE;
+
+    info = kvm_getprocs(kd, KERN_PROC_PID, getpid(), &cnt);
+    if (info == NULL || cnt < 1)
+    {
+        kvm_close(kd);
+        return FALSE;
+    }
+
+    traced = info->kp_proc.p_slflag & PSL_TRACED;
+    kvm_close(kd);
+
+    if (traced != 0)
+        return TRUE;
+    else
+        return FALSE;
 #else
     return FALSE;
 #endif
