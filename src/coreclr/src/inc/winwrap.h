@@ -978,14 +978,8 @@ inline int LateboundMessageBoxW(HWND hWnd,
                                 UINT uType)
 {
 #ifndef FEATURE_PAL
-#if defined(FEATURE_CORESYSTEM) && !defined(CROSSGEN_COMPILE)
-    // Some CoreSystem OSs will support MessageBoxW via an extension library. The following technique is what
-    // was recommeded by Philippe Joubert from the CoreSystem team.
-    HMODULE hGuiExtModule = WszLoadLibrary(W("ext-ms-win-ntuser-gui-l1"), NULL, 0);
-#else
-    // Outside of CoreSystem, MessageBoxW lives in User32
+    // User32 should exist on all systems where displaying a message box makes sense.
     HMODULE hGuiExtModule = WszLoadLibrary(W("user32"));
-#endif
     if (hGuiExtModule)
     {
         int result = IDCANCEL;
