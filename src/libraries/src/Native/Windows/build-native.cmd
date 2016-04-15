@@ -111,9 +111,6 @@ echo See: https://github.com/dotnet/coreclr/blob/master/Documentation/project-do
 exit /b 1
 
 :GenVSSolution
-:: Generate Version file
-msbuild /t:GenerateVersionHeader build.proj /p:NativeVersionHeaderFile="%__binDir%\obj\_version.h" /p:GenerateVersionHeader=true
-
 :: Regenerate the VS solution
 pushd "%__IntermediatesDir%"
 call "%__sourceDir%\gen-buildsys-win.bat" %__sourceDir% %__VSVersion% %__BuildArch%
