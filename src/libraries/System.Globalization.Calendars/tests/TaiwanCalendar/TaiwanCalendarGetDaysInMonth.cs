@@ -21,19 +21,19 @@ namespace System.Globalization.Tests
 
         public static IEnumerable<object[]> GetDaysInMonth_TestData()
         {
-            yield return new object[] { 1912, 1, 1 };
-            yield return new object[] { 8088, 12, 1 };
-            yield return new object[] { 2000, 12, 1 };
-            yield return new object[] { TaiwanCalendarUtilities.RandomYear(), TaiwanCalendarUtilities.RandomMonth(), 1 };
+            yield return new object[] { 1912, 1 };
+            yield return new object[] { 8088, 12 };
+            yield return new object[] { 2000, 12 };
+            yield return new object[] { TaiwanCalendarUtilities.RandomYear(), TaiwanCalendarUtilities.RandomMonth() };
         }
 
         [Theory]
         [MemberData(nameof(GetDaysInMonth_TestData))]
-        public static void GetDaysInMonth(int year, int month, int era)
+        public static void GetDaysInMonth(int year, int month)
         {
             TaiwanCalendar calendar = new TaiwanCalendar();
             int expected;
-            if (calendar.IsLeapYear(year, era))
+            if (calendar.IsLeapYear(year))
             {
                 expected = s_daysPerMonthLeapYear[month];
             }
@@ -41,7 +41,9 @@ namespace System.Globalization.Tests
             {
                 expected = s_daysPerMonthCommonYear[month];
             }
-            Assert.Equal(expected, calendar.GetDaysInMonth(year, month, era));
+            Assert.Equal(expected, calendar.GetDaysInMonth(year, month));
+            Assert.Equal(expected, calendar.GetDaysInMonth(year, month, 0));
+            Assert.Equal(expected, calendar.GetDaysInMonth(year, month, 1));
         }
     }
 }
