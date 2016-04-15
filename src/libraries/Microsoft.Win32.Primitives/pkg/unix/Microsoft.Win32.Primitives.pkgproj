@@ -12,8 +12,6 @@
       <!-- the binary is not specific to Linux, but we only do a Linux & OSX pass, not Unix-specific pass -->
       <OSGroup>Linux</OSGroup>
     </ProjectReference>
-
-    <ProjectReference Include="$(NativePackagePath)\runtime.native.System\runtime.native.System.pkgproj" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

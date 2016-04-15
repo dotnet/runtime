@@ -20,12 +20,6 @@
     <InboxOnTargetFramework Include="xamarinmac20" />
     <InboxOnTargetFramework Include="xamarintvos10" />
     <InboxOnTargetFramework Include="xamarinwatchos10" />
-    <ProjectReference Include="..\..\System.Private.DataContractSerialization\pkg\System.Private.DataContractSerialization.pkgproj">
-      <PackageTargetFramework>netstandard1.3</PackageTargetFramework>
-    </ProjectReference>
-    <ProjectReference Include="..\..\System.Private.DataContractSerialization\pkg\System.Private.DataContractSerialization.pkgproj">
-      <PackageTargetFramework>netcore50</PackageTargetFramework>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
