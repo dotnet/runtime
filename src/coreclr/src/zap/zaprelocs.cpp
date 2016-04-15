@@ -272,6 +272,12 @@ void ZapBlobWithRelocs::Save(ZapWriter * pZapWriter)
                 break;
 #endif // defined(_TARGET_ARM_)
 
+#if defined(_TARGET_ARM64_)
+            case IMAGE_REL_ARM64_BRANCH26:
+                targetOffset = (int)GetArm64Rel28((UINT32*)pLocation);
+                break;
+#endif // defined(_TARGET_ARM64_)
+
             default:
                 _ASSERTE(!"Unknown reloc type");
                 break;
