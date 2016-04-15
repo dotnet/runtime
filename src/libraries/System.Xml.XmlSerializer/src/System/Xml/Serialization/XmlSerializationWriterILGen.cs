@@ -1563,7 +1563,7 @@ namespace System.Xml.Serialization
                     doEndIf = true;
                 }
                 int anyCount = 0;
-                ArrayList namedAnys = new ArrayList();
+                var namedAnys = new List<ElementAccessor>();
                 ElementAccessor unnamedAny = null; // can only have one
                 bool wroteFirstIf = false;
                 string enumTypeName = choice == null ? null : choice.Mapping.TypeDesc.FullName;

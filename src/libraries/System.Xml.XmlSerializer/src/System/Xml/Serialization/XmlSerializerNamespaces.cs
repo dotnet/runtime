@@ -81,7 +81,7 @@ namespace System.Xml.Serialization
         {
             if (NamespaceList == null)
                 return Array.Empty<XmlQualifiedName>();
-            return (XmlQualifiedName[])NamespaceList.ToArray(typeof(XmlQualifiedName));
+            return NamespaceList.ToArray();
         }
 
         /// <include file='doc\XmlSerializerNamespaces.uex' path='docs/doc[@for="XmlSerializerNamespaces.Count"]/*' />
@@ -93,13 +93,13 @@ namespace System.Xml.Serialization
             get { return Namespaces.Count; }
         }
 
-        internal ArrayList NamespaceList
+        internal List<XmlQualifiedName> NamespaceList
         {
             get
             {
                 if (_namespaces == null || _namespaces.Count == 0)
                     return null;
-                ArrayList namespaceList = new ArrayList();
+                var namespaceList = new List<XmlQualifiedName>();
                 foreach (string key in Namespaces.Keys)
                 {
                     namespaceList.Add(new XmlQualifiedName(key, (string)Namespaces[key]));

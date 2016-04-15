@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+
 namespace System.Xml.Serialization
 {
     using System.Reflection;
@@ -791,13 +793,10 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class MemberMappingComparer : IComparer
+    internal class MemberMappingComparer : IComparer<MemberMapping>
     {
-        public int Compare(object o1, object o2)
+        public int Compare(MemberMapping m1, MemberMapping m2)
         {
-            MemberMapping m1 = (MemberMapping)o1;
-            MemberMapping m2 = (MemberMapping)o2;
-
             bool m1Text = m1.IsText;
             if (m1Text)
             {

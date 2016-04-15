@@ -22,13 +22,13 @@ namespace System.Xml.Serialization
     {
         private readonly Dictionary<string, object> _identifiers;
         private readonly Dictionary<string, object> _reservedIdentifiers;
-        private ArrayList _list;
+        private readonly List<object> _list;
 
         public CodeIdentifiers()
         {
             _identifiers = new Dictionary<string, object>();
             _reservedIdentifiers = new Dictionary<string, object>();
-            _list = new ArrayList();
+            _list = new List<object>();
         }
 
 
