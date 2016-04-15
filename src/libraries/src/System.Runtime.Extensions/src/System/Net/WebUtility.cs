@@ -395,12 +395,14 @@ namespace System.Net
             // appending each char as char, with exception of %XX constructs
             // that are appended as bytes
 
+            bool needsDecoding = false;
             for (int pos = 0; pos < count; pos++)
             {
                 char ch = value[pos];
 
                 if (ch == '+')
                 {
+                    needsDecoding = true;
                     ch = ' ';
                 }
                 else if (ch == '%' && pos < count - 2)
@@ -415,6 +417,7 @@ namespace System.Net
 
                         // don't add as char
                         helper.AddByte(b);
+                        needsDecoding = true;
                         continue;
                     }
                 }
@@ -424,8 +427,8 @@ namespace System.Net
                 else
                     helper.AddChar(ch);
             }
-
-            return helper.GetString();
+            
+            return needsDecoding ? helper.GetString() : value;
         }
 
         private static byte[] UrlDecodeInternal(byte[] bytes, int offset, int count)
@@ -626,6 +629,9 @@ namespace System.Net
             private void FlushBytes()
             {
                 Debug.Assert(_numBytes > 0);
+                if (_charBuffer == null)
+                    _charBuffer = new char[_bufferSize];
+
                 _numChars += _encoding.GetChars(_byteBuffer, 0, _numBytes, _charBuffer, _numChars);
                 _numBytes = 0;
             }
@@ -635,8 +641,8 @@ namespace System.Net
                 _bufferSize = bufferSize;
                 _encoding = encoding;
 
-                _charBuffer = new char[bufferSize];
-                
+                _charBuffer = null; // char buffer created on demand
+
                 _numChars = 0;
                 _numBytes = 0;
                 _byteBuffer = null; // byte buffer created on demand
@@ -646,6 +652,9 @@ namespace System.Net
             {
                 if (_numBytes > 0)
                     FlushBytes();
+
+                if (_charBuffer == null)
+                    _charBuffer = new char[_bufferSize];
 
                 _charBuffer[_numChars++] = ch;
             }
