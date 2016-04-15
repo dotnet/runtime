@@ -151,7 +151,7 @@ namespace System.Xml.Serialization
         {
             FieldBuilder fieldBuilder = serializerContractTypeBuilder.DefineField(
                 privateName,
-                typeof(Hashtable),
+                typeof(Dictionary<object, object>),
                 FieldAttributes.Private
                 );
             ilg = new CodeGenerator(serializerContractTypeBuilder);
@@ -175,11 +175,11 @@ namespace System.Xml.Serialization
             // this 'if' ends in GenerateHashtableGetEnd
             ilg.If(Cmp.EqualTo);
 
-            ConstructorInfo Hashtable_ctor = typeof(Hashtable).GetConstructor(
+            ConstructorInfo Hashtable_ctor = typeof(Dictionary<object, object>).GetConstructor(
                 CodeGenerator.InstanceBindingFlags,
                 Array.Empty<Type>()
                 );
-            LocalBuilder _tmpLoc = ilg.DeclareLocal(typeof(Hashtable), "_tmp");
+            LocalBuilder _tmpLoc = ilg.DeclareLocal(typeof(Dictionary<object, object>), "_tmp");
             ilg.New(Hashtable_ctor);
             ilg.Stloc(_tmpLoc);
 
@@ -194,7 +194,7 @@ namespace System.Xml.Serialization
             ilg.If(Cmp.EqualTo);
             {
                 ilg.Ldarg(0);
-                ilg.Ldloc(typeof(Hashtable), "_tmp");
+                ilg.Ldloc(typeof(Dictionary<object, object>), "_tmp");
                 ilg.StoreMember(fieldBuilder);
             }
             ilg.EndIf();
@@ -212,7 +212,7 @@ namespace System.Xml.Serialization
             FieldBuilder fieldBuilder = GenerateHashtableGetBegin(privateName, publicName, serializerContractTypeBuilder);
             if (methods != null && methods.Length != 0 && xmlMappings != null && xmlMappings.Length == methods.Length)
             {
-                MethodInfo Hashtable_set_Item = typeof(Hashtable).GetMethod(
+                MethodInfo Hashtable_set_Item = typeof(Dictionary<object, object>).GetMethod(
                     "set_Item",
                     CodeGenerator.InstanceBindingFlags,
                     new Type[] { typeof(Object), typeof(Object) }
@@ -221,7 +221,7 @@ namespace System.Xml.Serialization
                 {
                     if (methods[i] == null)
                         continue;
-                    ilg.Ldloc(typeof(Hashtable), "_tmp");
+                    ilg.Ldloc(typeof(Dictionary<object, object>), "_tmp");
                     ilg.Ldstr(GetCSharpString(xmlMappings[i].Key));
                     ilg.Ldstr(GetCSharpString(methods[i]));
                     ilg.Call(Hashtable_set_Item);
@@ -413,7 +413,7 @@ namespace System.Xml.Serialization
         {
             string privateName = "typedSerializers";
             FieldBuilder fieldBuilder = GenerateHashtableGetBegin(privateName, "TypedSerializers", serializerContractTypeBuilder);
-            MethodInfo Hashtable_Add = typeof(Hashtable).GetMethod(
+            MethodInfo Hashtable_Add = typeof(Dictionary<object, object>).GetMethod(
                 "Add",
                 CodeGenerator.InstanceBindingFlags,
                 new Type[] { typeof(Object), typeof(Object) }
@@ -425,7 +425,7 @@ namespace System.Xml.Serialization
                     CodeGenerator.InstanceBindingFlags,
                     Array.Empty<Type>()
                     );
-                ilg.Ldloc(typeof(Hashtable), "_tmp");
+                ilg.Ldloc(typeof(Dictionary<object, object>), "_tmp");
                 ilg.Ldstr(GetCSharpString(key));
                 ilg.New(ctor);
                 ilg.Call(Hashtable_Add);

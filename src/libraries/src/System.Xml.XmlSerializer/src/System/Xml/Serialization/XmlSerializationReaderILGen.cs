@@ -970,19 +970,19 @@ namespace System.Xml.Serialization
 
             FieldBuilder fieldBuilder = this.typeBuilder.DefineField(
                 memberName,
-                typeof(Hashtable),
+                typeof(Dictionary<object, object>),
                 FieldAttributes.Private
                 );
 
             PropertyBuilder propertyBuilder = this.typeBuilder.DefineProperty(
                 propName,
                 PropertyAttributes.None,
-                typeof(Hashtable),
+                typeof(Dictionary<object, object>),
                 null, null, null, null, null);
 
             ilg = new CodeGenerator(this.typeBuilder);
             ilg.BeginMethod(
-                typeof(Hashtable),
+                typeof(Dictionary<object, object>),
                 "get_" + propName,
                 Array.Empty<Type>(),
                 Array.Empty<string>(),
@@ -993,16 +993,16 @@ namespace System.Xml.Serialization
             ilg.Load(null);
             ilg.If(Cmp.EqualTo);
 
-            ConstructorInfo Hashtable_ctor = typeof(Hashtable).GetConstructor(
+            ConstructorInfo Hashtable_ctor = typeof(Dictionary<object, object>).GetConstructor(
                 CodeGenerator.InstanceBindingFlags,
                 Array.Empty<Type>()
                 );
-            LocalBuilder hLoc = ilg.DeclareLocal(typeof(Hashtable), "h");
+            LocalBuilder hLoc = ilg.DeclareLocal(typeof(Dictionary<object, object>), "h");
             ilg.New(Hashtable_ctor);
             ilg.Stloc(hLoc);
 
             ConstantMapping[] constants = mapping.Constants;
-            MethodInfo Hashtable_Add = typeof(Hashtable).GetMethod(
+            MethodInfo Hashtable_Add = typeof(Dictionary<object, object>).GetMethod(
                 "Add",
                 CodeGenerator.InstanceBindingFlags,
                 new Type[] { typeof(Object), typeof(Object) }
