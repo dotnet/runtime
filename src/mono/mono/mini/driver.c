@@ -1982,7 +1982,7 @@ mono_main (int argc, char* argv[])
 
 	if (enable_profile) {
 		mono_profiler_load (profile_options);
-		mono_profiler_thread_name (mono_native_thread_id_get (), "Main");
+		mono_profiler_thread_name (MONO_NATIVE_THREAD_ID_TO_UINT (mono_native_thread_id_get ()), "Main");
 	}
 
 	mono_attach_parse_options (attach_options);

@@ -455,7 +455,7 @@ static void thread_cleanup (MonoInternalThread *thread)
 	mono_release_type_locks (thread);
 
 	/* Can happen when we attach the profiler helper thread in order to heapshot. */
-	if (!mono_thread_info_lookup (thread->tid)->tools_thread)
+	if (!mono_thread_info_lookup (MONO_UINT_TO_NATIVE_THREAD_ID (thread->tid))->tools_thread)
 		mono_profiler_thread_end (thread->tid);
 
 	if (thread == mono_thread_internal_current ()) {
@@ -730,7 +730,7 @@ static guint32 WINAPI start_wrapper_internal(void *data)
 	if (internal->name && (internal->flags & MONO_THREAD_FLAG_NAME_SET)) {
 		char *tname = g_utf16_to_utf8 (internal->name, internal->name_len, NULL, NULL, NULL);
 		mono_profiler_thread_name (internal->tid, tname);
-		mono_thread_info_set_name (internal->tid, tname);
+		mono_thread_info_set_name (MONO_UINT_TO_NATIVE_THREAD_ID (internal->tid), tname);
 		g_free (tname);
 	}
 	/* start_func is set only for unmanaged start functions */
