@@ -62,7 +62,8 @@ else()
         shlwapi
         bcrypt
         mdwinmd_crossgen
-        msvcrt
+        ${STATIC_MT_CRT_LIB}
+        ${STATIC_MT_VCRT_LIB}
     )
 
 endif(CLR_CMAKE_PLATFORM_UNIX)
