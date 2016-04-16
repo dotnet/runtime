@@ -1058,14 +1058,6 @@ namespace System.Net.Security
                 }
 
                 resultSize = 0;
-
-                int bufferSizeNeeded = checked(size + _headerSize + _trailerSize);
-
-                if (SslStreamPal.PresizeEncryptBuffer &&
-                    (output == null || output.Length < bufferSizeNeeded))
-                {
-                    writeBuffer = new byte[bufferSizeNeeded];
-                }
             }
             catch (Exception e)
             {
