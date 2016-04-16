@@ -1102,6 +1102,13 @@ namespace System.Linq.Expressions.Interpreter
             Emit(EnterTryCatchFinallyInstruction.CreateTryCatch());
         }
 
+        public EnterTryFaultInstruction EmitEnterTryFault(BranchLabel tryEnd)
+        {
+            var instruction = new EnterTryFaultInstruction(EnsureLabelIndex(tryEnd));
+            Emit(instruction);
+            return instruction;
+        }
+
         public void EmitEnterFinally(BranchLabel finallyStartLabel)
         {
             Emit(EnterFinallyInstruction.Create(EnsureLabelIndex(finallyStartLabel)));
@@ -1110,6 +1117,16 @@ namespace System.Linq.Expressions.Interpreter
         public void EmitLeaveFinally()
         {
             Emit(LeaveFinallyInstruction.Instance);
+        }
+
+        public void EmitEnterFault(BranchLabel faultStartLabel)
+        {
+            Emit(EnterFaultInstruction.Create(EnsureLabelIndex(faultStartLabel)));
+        }
+
+        public void EmitLeaveFault()
+        {
+            Emit(LeaveFaultInstruction.Instance);
         }
 
         public void EmitEnterExceptionFilter()

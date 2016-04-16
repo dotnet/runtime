@@ -179,6 +179,22 @@ namespace System.Linq.Expressions.Interpreter
         }
     }
 
+    internal sealed class TryFaultHandler
+    {
+        internal readonly int TryStartIndex;
+        internal readonly int TryEndIndex;
+        internal readonly int FinallyStartIndex;
+        internal readonly int FinallyEndIndex;
+
+        internal TryFaultHandler(int tryStart, int tryEnd, int finallyStart, int finallyEnd)
+        {
+            TryStartIndex = tryStart;
+            TryEndIndex = tryEnd;
+            FinallyStartIndex = finallyStart;
+            FinallyEndIndex = finallyEnd;
+        }
+    }
+
     /// <summary>
     /// The re-throw instruction will throw this exception
     /// </summary>
@@ -1924,132 +1940,170 @@ namespace System.Linq.Expressions.Interpreter
         private void CompileTryExpression(Expression expr)
         {
             var node = (TryExpression)expr;
-
-            BranchLabel end = _instructions.MakeLabel();
-            BranchLabel gotoEnd = _instructions.MakeLabel();
-            int tryStart = _instructions.Count;
-
-            BranchLabel startOfFinally = null;
-            if (node.Finally != null)
+            if (node.Fault != null)
             {
-                startOfFinally = _instructions.MakeLabel();
-                _instructions.EmitEnterTryFinally(startOfFinally);
+                CompileTryFaultExpression(node);
             }
             else
             {
-                _instructions.EmitEnterTryCatch();
-            }
 
-            List<ExceptionHandler> exHandlers = null;
-            var enterTryInstr = _instructions.GetInstruction(tryStart) as EnterTryCatchFinallyInstruction;
-            Debug.Assert(enterTryInstr != null);
+                BranchLabel end = _instructions.MakeLabel();
+                BranchLabel gotoEnd = _instructions.MakeLabel();
+                int tryStart = _instructions.Count;
 
-            PushLabelBlock(LabelScopeKind.Try);
-            bool hasValue = node.Type != typeof(void);
-
-            Compile(node.Body, !hasValue);
-
-            int tryEnd = _instructions.Count;
-
-            // handlers jump here:
-            _instructions.MarkLabel(gotoEnd);
-            _instructions.EmitGoto(end, hasValue, hasValue, hasValue);
-
-            // keep the result on the stack:     
-            if (node.Handlers.Count > 0)
-            {
-                exHandlers = new List<ExceptionHandler>();
-                foreach (var handler in node.Handlers)
+                BranchLabel startOfFinally = null;
+                if (node.Finally != null)
                 {
-                    var parameter = handler.Variable ?? Expression.Parameter(handler.Test);
-
-                    var local = _locals.DefineLocal(parameter, _instructions.Count);
-                    _exceptionForRethrowStack.Push(parameter);
-
-                    ExceptionFilter filter = null;
-
-                    if (handler.Filter != null)
-                    {
-                        PushLabelBlock(LabelScopeKind.Filter);
-
-                        _instructions.EmitEnterExceptionFilter();
-
-                        // at this point the stack balance is prepared for the hidden exception variable:
-                        int filterLabel = _instructions.MarkRuntimeLabel();
-                        int filterStart = _instructions.Count;
-
-                        CompileSetVariable(parameter, true);
-                        Compile(handler.Filter);
-
-                        filter = new ExceptionFilter(filterLabel, filterStart, _instructions.Count);
-
-                        // keep the value of the body on the stack:
-                        _instructions.EmitLeaveExceptionFilter();
-
-                        PopLabelBlock(LabelScopeKind.Filter);
-                    }
-
-                    PushLabelBlock(LabelScopeKind.Catch);
-
-                    // add a stack balancing nop instruction (exception handling pushes the current exception):
-                    if (hasValue)
-                    {
-                        _instructions.EmitEnterExceptionHandlerNonVoid();
-                    }
-                    else
-                    {
-                        _instructions.EmitEnterExceptionHandlerVoid();
-                    }
-
-                    // at this point the stack balance is prepared for the hidden exception variable:
-                    int handlerLabel = _instructions.MarkRuntimeLabel();
-                    int handlerStart = _instructions.Count;
-
-                    CompileSetVariable(parameter, true);
-                    Compile(handler.Body, !hasValue);
-
-                    _exceptionForRethrowStack.Pop();
-
-                    // keep the value of the body on the stack:
-                    _instructions.EmitLeaveExceptionHandler(hasValue, gotoEnd);
-
-                    exHandlers.Add(new ExceptionHandler(handlerLabel, handlerStart, _instructions.Count, handler.Test, filter));
-                    PopLabelBlock(LabelScopeKind.Catch);
-
-                    _locals.UndefineLocal(local, _instructions.Count);
+                    startOfFinally = _instructions.MakeLabel();
+                    _instructions.EmitEnterTryFinally(startOfFinally);
+                }
+                else
+                {
+                    _instructions.EmitEnterTryCatch();
                 }
 
-                // There was an error-check here that could not have been hit in any case.
-                // Assert in the name of caution.
-                Debug.Assert(node.Fault == null);
+                List<ExceptionHandler> exHandlers = null;
+                var enterTryInstr = _instructions.GetInstruction(tryStart) as EnterTryCatchFinallyInstruction;
+                Debug.Assert(enterTryInstr != null);
+
+                PushLabelBlock(LabelScopeKind.Try);
+                bool hasValue = node.Type != typeof(void);
+
+                Compile(node.Body, !hasValue);
+
+                int tryEnd = _instructions.Count;
+
+                // handlers jump here:
+                _instructions.MarkLabel(gotoEnd);
+                _instructions.EmitGoto(end, hasValue, hasValue, hasValue);
+
+                // keep the result on the stack:     
+                if (node.Handlers.Count > 0)
+                {
+                    exHandlers = new List<ExceptionHandler>();
+                    foreach (var handler in node.Handlers)
+                    {
+                        var parameter = handler.Variable ?? Expression.Parameter(handler.Test);
+
+                        var local = _locals.DefineLocal(parameter, _instructions.Count);
+                        _exceptionForRethrowStack.Push(parameter);
+
+                        ExceptionFilter filter = null;
+
+                        if (handler.Filter != null)
+                        {
+                            PushLabelBlock(LabelScopeKind.Filter);
+
+                            _instructions.EmitEnterExceptionFilter();
+
+                            // at this point the stack balance is prepared for the hidden exception variable:
+                            int filterLabel = _instructions.MarkRuntimeLabel();
+                            int filterStart = _instructions.Count;
+
+                            CompileSetVariable(parameter, true);
+                            Compile(handler.Filter);
+
+                            filter = new ExceptionFilter(filterLabel, filterStart, _instructions.Count);
+
+                            // keep the value of the body on the stack:
+                            _instructions.EmitLeaveExceptionFilter();
+
+                            PopLabelBlock(LabelScopeKind.Filter);
+                        }
+
+                        PushLabelBlock(LabelScopeKind.Catch);
+
+                        // add a stack balancing nop instruction (exception handling pushes the current exception):
+                        if (hasValue)
+                        {
+                            _instructions.EmitEnterExceptionHandlerNonVoid();
+                        }
+                        else
+                        {
+                            _instructions.EmitEnterExceptionHandlerVoid();
+                        }
+
+                        // at this point the stack balance is prepared for the hidden exception variable:
+                        int handlerLabel = _instructions.MarkRuntimeLabel();
+                        int handlerStart = _instructions.Count;
+
+                        CompileSetVariable(parameter, true);
+                        Compile(handler.Body, !hasValue);
+
+                        _exceptionForRethrowStack.Pop();
+
+                        // keep the value of the body on the stack:
+                        _instructions.EmitLeaveExceptionHandler(hasValue, gotoEnd);
+
+                        exHandlers.Add(new ExceptionHandler(handlerLabel, handlerStart, _instructions.Count, handler.Test, filter));
+                        PopLabelBlock(LabelScopeKind.Catch);
+
+                        _locals.UndefineLocal(local, _instructions.Count);
+                    }
+                }
+
+                if (node.Finally != null)
+                {
+                    Debug.Assert(startOfFinally != null);
+                    PushLabelBlock(LabelScopeKind.Finally);
+
+                    _instructions.MarkLabel(startOfFinally);
+                    _instructions.EmitEnterFinally(startOfFinally);
+                    CompileAsVoid(node.Finally);
+                    _instructions.EmitLeaveFinally();
+
+                    enterTryInstr.SetTryHandler(
+                        new TryCatchFinallyHandler(tryStart, tryEnd, gotoEnd.TargetIndex,
+                            startOfFinally.TargetIndex, _instructions.Count,
+                            exHandlers != null ? exHandlers.ToArray() : null));
+                    PopLabelBlock(LabelScopeKind.Finally);
+                }
+                else
+                {
+                    Debug.Assert(exHandlers != null);
+                    enterTryInstr.SetTryHandler(
+                        new TryCatchFinallyHandler(tryStart, tryEnd, gotoEnd.TargetIndex, exHandlers.ToArray()));
+                }
+
+                _instructions.MarkLabel(end);
+
+                PopLabelBlock(LabelScopeKind.Try);
             }
+        }
 
-            if (node.Finally != null)
-            {
-                Debug.Assert(startOfFinally != null);
-                PushLabelBlock(LabelScopeKind.Finally);
+        private void CompileTryFaultExpression(TryExpression expr)
+        {
+            Debug.Assert(expr.Finally == null);
+            Debug.Assert(expr.Handlers.Count == 0);
 
-                _instructions.MarkLabel(startOfFinally);
-                _instructions.EmitEnterFinally(startOfFinally);
-                CompileAsVoid(node.Finally);
-                _instructions.EmitLeaveFinally();
+            // Mark where we begin.
+            int tryStart = _instructions.Count;
+            BranchLabel end = _instructions.MakeLabel();
+            var enterTryInstr = _instructions.EmitEnterTryFault(end);
+            Debug.Assert(enterTryInstr == _instructions.GetInstruction(tryStart));
+            
+            // Emit the try block.
+            PushLabelBlock(LabelScopeKind.Try);
+            bool hasValue = expr.Type != typeof(void);
+            Compile(expr.Body, !hasValue);
+            int tryEnd = _instructions.Count;
 
-                enterTryInstr.SetTryHandler(
-                    new TryCatchFinallyHandler(tryStart, tryEnd, gotoEnd.TargetIndex,
-                        startOfFinally.TargetIndex, _instructions.Count,
-                        exHandlers != null ? exHandlers.ToArray() : null));
-                PopLabelBlock(LabelScopeKind.Finally);
-            }
-            else
-            {
-                Debug.Assert(exHandlers != null);
-                enterTryInstr.SetTryHandler(
-                    new TryCatchFinallyHandler(tryStart, tryEnd, gotoEnd.TargetIndex, exHandlers.ToArray()));
-            }
+            // Jump out of the try block to the end of the finally. If we got
+            // This far, then the fault block shouldn't be run.
+            _instructions.EmitGoto(end, hasValue, hasValue, hasValue);
 
-            _instructions.MarkLabel(end);
-
+            // Emit the fault block. The scope kind used is the same as for finally
+            // blocks, which matches the Compiler.LambdaCompiler.EmitTryExpression approach.
+            PushLabelBlock(LabelScopeKind.Finally);
+            BranchLabel startOfFault = _instructions.MakeLabel();
+            _instructions.MarkLabel(startOfFault);
+            _instructions.EmitEnterFault(startOfFault);
+            CompileAsVoid(expr.Fault);
+            _instructions.EmitLeaveFault();
+            enterTryInstr.SetTryHandler(new TryFaultHandler(tryStart, tryEnd, startOfFault.TargetIndex, _instructions.Count));
+            PopLabelBlock(LabelScopeKind.Finally);
             PopLabelBlock(LabelScopeKind.Try);
+            _instructions.MarkLabel(end);
         }
 
         private void CompileMethodCallExpression(Expression expr)
