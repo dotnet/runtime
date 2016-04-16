@@ -23,7 +23,6 @@
     </Compile>
     <Compile Include="BreakTests.cs" />
     <Compile Include="EtwTests.cs" />
-    <Compile Include="Logger.cs" />
     <Compile Include="ParallelFor.cs" />
     <Compile Include="ParallelForBoundary.cs" />
     <Compile Include="ParallelForeachPartitioner.cs" />
