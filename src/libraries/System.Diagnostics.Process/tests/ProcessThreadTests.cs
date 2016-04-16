@@ -108,13 +108,13 @@ namespace System.Diagnostics.Tests
                 {
                     p.Refresh();
                     Assert.Contains(
-                        p.Threads.Cast<ProcessThread>(), 
+                        p.Threads.Cast<ProcessThread>(),
                         t => t.StartTime.ToUniversalTime() >= curTime - allowedWindow);
                 }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [Fact]
         public void TestStartAddressProperty()
         {
             Process p = Process.GetCurrentProcess();
@@ -123,7 +123,14 @@ namespace System.Diagnostics.Tests
                 if (p.Threads.Count != 0)
                 {
                     ProcessThread thread = p.Threads[0];
-                    Assert.Equal(RuntimeInformation.IsOSPlatform(OSPlatform.OSX), thread.StartAddress == IntPtr.Zero);
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    {
+                        Assert.True((long)thread.StartAddress >= 0);
+                    }
+                    else
+                    {
+                        Assert.Equal(RuntimeInformation.IsOSPlatform(OSPlatform.OSX), thread.StartAddress == IntPtr.Zero);
+                    }
                 }
             }
             finally
