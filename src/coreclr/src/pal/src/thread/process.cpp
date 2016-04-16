@@ -54,6 +54,13 @@ Abstract:
 #include <sys/sysctl.h>
 #endif
 
+#ifdef __NetBSD__
+#include <sys/cdefs.h>
+#include <sys/param.h>
+#include <sys/sysctl.h>
+#include <kvm.h>
+#endif
+
 using namespace CorUnix;
 
 SET_DEFAULT_DEBUG_CHANNEL(PROCESS);
@@ -1873,6 +1880,36 @@ GetProcessIdDisambiguationKey(DWORD processId, UINT64 *disambiguationKey)
         _ASSERTE(!"Failed to get start time of a process.");
         return FALSE;
     }
+
+#elif defined(__NetBSD__)
+
+    // On NetBSD, we return the process start time expressed in Unix time (the number of seconds
+    // since the start of the Unix epoch).
+    kvm_t *kd;
+    int cnt;
+    struct kinfo_proc2 *info;
+
+    kd = kvm_open(nullptr, nullptr, nullptr, KVM_NO_FILES, "kvm_open");
+    if (kd == nullptr)
+    {
+        _ASSERTE(!"Failed to get start time of a process.");
+        return FALSE;
+    }
+
+    info = kvm_getproc2(kd, KERN_PROC_PID, processId, sizeof(struct kinfo_proc2), &cnt);
+    if (info == nullptr || cnt < 1)
+    {
+        kvm_close(kd);
+        _ASSERTE(!"Failed to get start time of a process.");
+        return FALSE;
+    }
+
+    kvm_close(kd);
+
+    long secondsSinceEpoch = info->p_ustart_sec;
+    *disambiguationKey = secondsSinceEpoch;
+
+    return TRUE;
 
 #elif defined(HAVE_PROCFS_CTL)
 
