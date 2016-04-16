@@ -21,7 +21,7 @@
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-
+using System.Diagnostics;
 using Xunit;
 
 namespace System.Threading.Tasks.Tests
@@ -50,7 +50,7 @@ namespace System.Threading.Tasks.Tests
         }
         private static void OneMoveNext(int length, bool isOrderable)
         {
-            Logger.LogInformation("Length: {0} IsOrderable: {1}", length, isOrderable);
+            Debug.WriteLine("Length: {0} IsOrderable: {1}", length, isOrderable);
             List<int> ds = new List<int>();
             for (int i = 0; i < length; i++)
                 ds.Add(i);

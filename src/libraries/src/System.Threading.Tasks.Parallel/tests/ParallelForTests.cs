@@ -4,6 +4,7 @@
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Security;
 
 using Xunit;
@@ -206,8 +207,6 @@ namespace System.Threading.Tasks.Tests
         [Fact]
         public static void TestParallelForEachConversions()
         {
-            Logger.LogInformation("* TestParallelForEachConversions()");
-
             ParallelOptions options = new ParallelOptions();
             int[] intArray = new int[] { 1, 3, 5, 7, 9, 2, 4, 6, 8, 0 };
             int targetSum = 0;
@@ -1045,7 +1044,7 @@ namespace System.Threading.Tasks.Tests
                 Parallel.Invoke(parallelOptions, actions);
             });
 
-            Logger.LogInformation("Saw counter get incremented to " + counter + " with 2 degrees of parallelism");
+            Debug.WriteLine("Saw counter get incremented to " + counter + " with 2 degrees of parallelism");
             
             Assert.False((counter == numActions) || (counter > 2),
                     string.Format("TestInvokeDOPAndCancel:    > FAILED!  Cancellation was not correctly effected.  Saw {0} calls to the Action delegate", counter));
@@ -1091,7 +1090,6 @@ namespace System.Threading.Tasks.Tests
             
             // Test that simple example doesn't deadlock
             ManualResetEvent mres = new ManualResetEvent(false);
-            Logger.LogInformation("TestInvokeDOPAndCancel:    About to call a potentially deadlocking Parallel.Invoke()...");
             Parallel.Invoke(
                 () => { },
                 () => { },
@@ -1106,7 +1104,6 @@ namespace System.Threading.Tasks.Tests
                 () => { mres.WaitOne(); },
                 () => { mres.Set(); }
             );
-            Logger.LogInformation("TestInvokeDOPAndCancel:    (Done.)");
 
         }
 
