@@ -91,7 +91,7 @@ struct arguments_t
     pal::string_t own_path;
     pal::string_t app_dir;
     pal::string_t deps_path;
-    pal::string_t dotnet_extensions;
+    pal::string_t core_servicing;
     std::vector<pal::string_t> probe_paths;
     pal::string_t dotnet_packages_cache;
     pal::string_t managed_application;
@@ -105,8 +105,8 @@ struct arguments_t
     {
         if (trace::is_enabled())
         {
-            trace::verbose(_X("-- arguments_t: own_path=%s app_dir=%s deps=%s extensions=%s packages_cache=%s mgd_app=%s"),
-                own_path.c_str(), app_dir.c_str(), deps_path.c_str(), dotnet_extensions.c_str(), dotnet_packages_cache.c_str(), managed_application.c_str());
+            trace::verbose(_X("-- arguments_t: own_path=%s app_dir=%s deps=%s core_svc=%s packages_cache=%s mgd_app=%s"),
+                own_path.c_str(), app_dir.c_str(), deps_path.c_str(), core_servicing.c_str(), dotnet_packages_cache.c_str(), managed_application.c_str());
             for (const auto& probe : probe_paths)
             {
                 trace::verbose(_X("-- arguments_t: probe dir: [%s]"), probe.c_str());

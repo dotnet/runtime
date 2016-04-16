@@ -13,7 +13,7 @@ arguments_t::arguments_t() :
     app_argc(0),
     app_argv(nullptr),
     dotnet_packages_cache(_X("")),
-    dotnet_extensions(_X("")),
+    core_servicing(_X("")),
     deps_path(_X(""))
 {
 }
@@ -94,7 +94,7 @@ bool parse_arguments(
     }
 
     pal::getenv(_X("DOTNET_HOSTING_OPTIMIZATION_CACHE"), &args.dotnet_packages_cache);
-    pal::get_default_extensions_directory(&args.dotnet_extensions);
+    pal::get_default_servicing_directory(&args.core_servicing);
 
     return true;
 }
