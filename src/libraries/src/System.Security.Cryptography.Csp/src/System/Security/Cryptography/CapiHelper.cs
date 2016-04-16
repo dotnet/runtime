@@ -316,6 +316,13 @@ namespace Internal.NativeCrypto
                 //Create a new CSP. This method throws exception on failure
                 CreateCSP(parameters, randomKeyContainer, out safeProvHandle);
             }
+
+            if (parameters.ParentWindowHandle != IntPtr.Zero)
+            {
+                IntPtr parentWindowHandle = parameters.ParentWindowHandle;
+                Interop.CryptSetProvParam(safeProvHandle, CryptGetProvParam.PP_CLIENT_HWND, ref parentWindowHandle, 0);
+            }
+
             return safeProvHandle;
         }
 
@@ -333,7 +340,7 @@ namespace Internal.NativeCrypto
         /// <summary>
         /// This method helps reduce the duplicate code in the GetProviderParameter method
         /// </summary>
-        internal static int GetProviderParameterWorker(SafeProvHandle safeProvHandle, byte[] impType, ref int cb, CryptGetProvParamFlags flags)
+        internal static int GetProviderParameterWorker(SafeProvHandle safeProvHandle, byte[] impType, ref int cb, CryptGetProvParam flags)
         {
             int impTypeReturn = 0;
             if (!Interop.CryptGetProvParam(safeProvHandle, (int)flags, impType, ref cb, 0))
@@ -368,7 +375,7 @@ namespace Internal.NativeCrypto
                 {
                     case Constants.CLR_EXPORTABLE:
                     {
-                        impTypeReturn = GetProviderParameterWorker(safeProvHandle, impType, ref cb, CryptGetProvParamFlags.PP_IMPTYPE);
+                        impTypeReturn = GetProviderParameterWorker(safeProvHandle, impType, ref cb, CryptGetProvParam.PP_IMPTYPE);
                         //If implementation type is not HW
                         if (!IsFlagBitSet((uint)impTypeReturn, (uint)CryptGetProvParamPPImpTypeFlags.CRYPT_IMPL_HARDWARE))
                         {
@@ -397,14 +404,14 @@ namespace Internal.NativeCrypto
                     }
                     case Constants.CLR_REMOVABLE:
                     {
-                        impTypeReturn = GetProviderParameterWorker(safeProvHandle, impType, ref cb, CryptGetProvParamFlags.PP_IMPTYPE);
+                        impTypeReturn = GetProviderParameterWorker(safeProvHandle, impType, ref cb, CryptGetProvParam.PP_IMPTYPE);
                         retVal = IsFlagBitSet((uint)impTypeReturn, (uint)CryptGetProvParamPPImpTypeFlags.CRYPT_IMPL_REMOVABLE);
                         break;
                     }
                     case Constants.CLR_HARDWARE:
                     case Constants.CLR_PROTECTED:
                     {
-                        impTypeReturn = GetProviderParameterWorker(safeProvHandle, impType, ref cb, CryptGetProvParamFlags.PP_IMPTYPE);
+                        impTypeReturn = GetProviderParameterWorker(safeProvHandle, impType, ref cb, CryptGetProvParam.PP_IMPTYPE);
                         retVal = IsFlagBitSet((uint)impTypeReturn, (uint)CryptGetProvParamPPImpTypeFlags.CRYPT_IMPL_HARDWARE);
                         break;
                     }
@@ -417,9 +424,9 @@ namespace Internal.NativeCrypto
                     {
                         returnType = 1;
                         byte[] pb = null;
-                        impTypeReturn = GetProviderParameterWorker(safeProvHandle, pb, ref cb, CryptGetProvParamFlags.PP_UNIQUE_CONTAINER);
+                        impTypeReturn = GetProviderParameterWorker(safeProvHandle, pb, ref cb, CryptGetProvParam.PP_UNIQUE_CONTAINER);
                         pb = new byte[cb];
-                        impTypeReturn = GetProviderParameterWorker(safeProvHandle, pb, ref cb, CryptGetProvParamFlags.PP_UNIQUE_CONTAINER);
+                        impTypeReturn = GetProviderParameterWorker(safeProvHandle, pb, ref cb, CryptGetProvParam.PP_UNIQUE_CONTAINER);
                         // GetProviderParameterWorker allocated the null character, we want to not interpret that.
                         Debug.Assert(cb > 0);
                         Debug.Assert(pb[cb - 1] == 0);
@@ -1418,6 +1425,10 @@ namespace Internal.NativeCrypto
             public static extern bool CryptGetProvParam(SafeProvHandle safeProvHandle, int dwParam, byte[] pbData,
                                                         ref int dwDataLen, int dwFlags);
 
+            [DllImport(AdvapiDll, SetLastError = true)]
+            [return: MarshalAs(UnmanagedType.Bool)]
+            public static extern bool CryptSetProvParam(SafeProvHandle safeProvHandle, CryptGetProvParam dwParam, ref IntPtr pbData, int dwFlags);
+
             [DllImport(AdvapiDll, SetLastError = true, EntryPoint = "CryptGetUserKey")]
             [return: MarshalAs(UnmanagedType.Bool)]
             private static extern bool _CryptGetUserKey(SafeProvHandle safeProvHandle, int dwKeySpec, out SafeKeyHandle safeKeyHandle);
@@ -1606,9 +1617,9 @@ namespace Internal.NativeCrypto
             KP_PERMISSIONS = 6
         }
 
-        [Flags]
-        internal enum CryptGetProvParamFlags : int
+        internal enum CryptGetProvParam : int
         {
+            PP_CLIENT_HWND = 1,
             PP_IMPTYPE = 3,
             PP_UNIQUE_CONTAINER = 36
         }
