@@ -376,7 +376,7 @@ HeapList* HostCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, EEJitManager 
     pHp->bFull           = FALSE;
     pHp->cBlocks         = 0;
 #ifdef _WIN64
-    emitJump(pHp->CLRPersonalityRoutine, (void *)ProcessCLRException);
+    emitJump((LPBYTE)pHp->CLRPersonalityRoutine, (void *)ProcessCLRException);
 #endif
 
     // zero the ref count as now starts the real counter
