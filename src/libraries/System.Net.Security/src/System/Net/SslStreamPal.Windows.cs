@@ -33,7 +33,6 @@ namespace System.Net
         }
 
         internal const bool StartMutualAuthAsAnonymous = true;
-        internal const bool PresizeEncryptBuffer = true;
 
         public static void VerifyPackageInfo()
         {
@@ -129,6 +128,31 @@ namespace System.Net
 
         public static SecurityStatusPal EncryptMessage(SafeDeleteContext securityContext, byte[] input, int offset, int size, int headerSize, int trailerSize, ref byte[] output, out int resultSize)
         {
+            // Ensure that there is sufficient space for the message output.
+            try
+            {
+                int bufferSizeNeeded = checked(size + headerSize + trailerSize);
+
+                if (output == null || output.Length < bufferSizeNeeded)
+                {
+                    output = new byte[bufferSizeNeeded];
+                }
+            }
+            catch (Exception e)
+            {
+                if (!ExceptionCheck.IsFatal(e))
+                {
+                    if (GlobalLog.IsEnabled)
+                    {
+                        GlobalLog.Assert("SslStreamPal.Windows: SecureChannel#" + LoggingHash.HashString(securityContext) + "::Encrypt", "Arguments out of range.");
+                    }
+
+                    Debug.Fail("SslStreamPal.Windows: SecureChannel#" + LoggingHash.HashString(securityContext) + "::Encrypt", "Arguments out of range.");
+                }
+
+                throw;
+            }
+
             byte[] writeBuffer = output;
 
             // Copy the input into the output buffer to prepare for SCHANNEL's expectations
