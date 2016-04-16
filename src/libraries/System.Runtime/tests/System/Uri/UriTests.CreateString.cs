@@ -72,6 +72,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(OriginalString_AbsoluteUri_ToString_TestData))]
+        [ActiveIssue(7791, PlatformID.AnyUnix)]
         public void OriginalString_AbsoluteUri_ToString(string uriString, string absoluteUri, string toString)
         {
             PerformAction(uriString, UriKind.Absolute, uri =>
@@ -391,6 +392,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Scheme_Authority_TestData))]
+        [ActiveIssue(7791, PlatformID.AnyUnix)]
         public void Scheme_Authority_Basic(string uriString, string scheme, string userInfo, string host, UriHostNameType hostNameType, int port, bool isDefaultPort, bool isLoopback)
         {
             string idnHost = host;
@@ -417,6 +419,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Scheme_Authority_IdnHost_TestData))]
+        [ActiveIssue(7791, PlatformID.AnyUnix)]
         public void Scheme_Authority_IdnHost(string uriString, string scheme, string userInfo, string host, string idnHost, string dnsSafeHost, UriHostNameType hostNameType, int port, bool isDefaultPort, bool isLoopback)
         {
             string authority = host;
@@ -714,6 +717,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Path_Query_Fragment_TestData))]
+        [ActiveIssue(7791, PlatformID.AnyUnix)]
         public void Path_Query_Fragment(string uriString, string path, string query, string fragment)
         {
             IEnumerable<string> segments = null;
@@ -1145,6 +1149,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue(7791, PlatformID.AnyUnix)]
         public void Create_String_InvalidUnicode()
         {
             Create_String_Invalid("http://\uD800", UriKind.Absolute);

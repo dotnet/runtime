@@ -537,6 +537,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(GetComponents_Basic_TestData))]
+        [ActiveIssue(7791, PlatformID.AnyUnix)]
         public void GetComponents(Uri uri, UriComponents components, string expected)
         {
             GetComponents(uri, components, UriFormat.SafeUnescaped, expected);
@@ -607,6 +608,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(GetComponents_Advanced_TestData))]
+        [ActiveIssue(7791, PlatformID.AnyUnix)]
         public void GetComponents(Uri uri, UriComponents components, UriFormat format, string expected)
         {
             Assert.Equal(expected, uri.GetComponents(components, format));
