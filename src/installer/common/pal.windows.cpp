@@ -8,8 +8,9 @@
 #include <cassert>
 #include <locale>
 #include <codecvt>
+#include <ShlObj.h>
 
-static std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> g_converter;
+static thread_local std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> t_converter;
 
 pal::string_t pal::to_lower(const pal::string_t& in)
 {
@@ -52,6 +53,18 @@ bool pal::find_coreclr(pal::string_t* recv)
         }
     }
     return false;
+}
+
+bool pal::touch_file(const pal::string_t& path)
+{
+    HANDLE hnd = ::CreateFileW(path.c_str(), 0, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (hnd == INVALID_HANDLE_VALUE)
+    {
+        trace::verbose(_X("Failed to leave breadcrumb"), HRESULT_FROM_WIN32(GetLastError()));
+        return false;
+    }
+    ::CloseHandle(hnd);
+    return true;
 }
 
 void pal::setup_api_sets(const std::unordered_set<pal::string_t>& api_sets)
@@ -154,7 +167,25 @@ void pal::unload_library(dll_t library)
     // No-op. On windows, we pin the library, so it can't be unloaded.
 }
 
-bool pal::get_default_extensions_directory(string_t* recv)
+bool pal::get_default_breadcrumb_store(string_t* recv)
+{
+    recv->clear();
+
+    pal::char_t* prog_dat;
+    HRESULT hr = ::SHGetKnownFolderPath(FOLDERID_ProgramData, 0,  NULL, &prog_dat);
+    if (hr != S_OK)
+    {
+        trace::verbose(_X("Failed to read default breadcrumb store 0x%X"), hr);
+        return false;
+    }
+    recv->assign(prog_dat);
+    append_path(recv, _X("Microsoft"));
+    append_path(recv, _X("NetFramework"));
+    append_path(recv, _X("BreadcrumbStore"));
+    return true;
+}
+
+bool pal::get_default_servicing_directory(string_t* recv)
 {
     recv->clear();
 
@@ -169,7 +200,7 @@ bool pal::get_default_extensions_directory(string_t* recv)
         return false;
     }
 
-    append_path(recv, _X("dotnetextensions"));
+    append_path(recv, _X("coreservicing"));
     return true;
 }
 
@@ -224,22 +255,22 @@ bool pal::get_own_executable_path(string_t* recv)
 
 std::string pal::to_stdstring(const string_t& str)
 {
-    return g_converter.to_bytes(str);
+    return t_converter.to_bytes(str);
 }
 
 pal::string_t pal::to_palstring(const std::string& str)
 {
-    return g_converter.from_bytes(str);
+    return t_converter.from_bytes(str);
 }
 
 void pal::to_palstring(const char* str, pal::string_t* out)
 {
-    out->assign(g_converter.from_bytes(str));
+    out->assign(t_converter.from_bytes(str));
 }
 
 void pal::to_stdstring(const pal::char_t* str, std::string* out)
 {
-    out->assign(g_converter.to_bytes(str));
+    out->assign(t_converter.to_bytes(str));
 }
 
 bool pal::realpath(string_t* path)

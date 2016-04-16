@@ -60,13 +60,17 @@ int execute_app(
 
     if (code != StatusCode::Success)
     {
-        trace::error(_X("Could not load host policy library from [%s]"), impl_dll_dir.c_str());
+        trace::error(_X("Expected to load %s from [%s]"), LIBHOSTPOLICY_NAME, impl_dll_dir.c_str());
         if (init->fx_dir() == impl_dll_dir)
         {
             pal::string_t name = init->fx_name();
             pal::string_t version = init->fx_version();
             trace::error(_X("This may be because the targeted framework [\"%s\": \"%s\"] was not found."),
                 name.c_str(), version.c_str());
+        }
+        else
+        {
+            trace::error(_X("This may be because of an invalid .NET Core FX configuration in the folder."));
         }
         return code;
     }
@@ -86,7 +90,7 @@ int execute_app(
 bool hostpolicy_exists_in_svc(pal::string_t* resolved_dir)
 {
     pal::string_t svc_dir;
-    pal::get_default_extensions_directory(&svc_dir);
+    pal::get_default_servicing_directory(&svc_dir);
     append_path(&svc_dir, _X("pkgs"));
 
     pal::string_t version = _STRINGIFY(HOST_POLICY_PKG_VER);

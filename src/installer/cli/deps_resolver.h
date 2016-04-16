@@ -25,8 +25,6 @@ class deps_resolver_t
 {
 public:
     deps_resolver_t(const hostpolicy_init_t& init, const arguments_t& args)
-        // Important: FX dir should come from "init" than "config",
-        //            since the host could be launching from FX dir.
         : m_fx_dir(init.fx_dir)
         , m_app_dir(args.app_dir)
         , m_coreclr_index(-1)
@@ -62,7 +60,8 @@ public:
 
     bool resolve_probe_paths(
       const pal::string_t& clr_dir,
-      probe_paths_t* probe_paths);
+      probe_paths_t* probe_paths,
+      std::unordered_set<pal::string_t>* breadcrumb);
 
     pal::string_t resolve_coreclr_dir();
 
@@ -93,13 +92,15 @@ private:
     // Resolve order for TPA lookup.
     void resolve_tpa_list(
         const pal::string_t& clr_dir,
-        pal::string_t* output);
+        pal::string_t* output,
+        std::unordered_set<pal::string_t>* breadcrumb);
 
     // Resolve order for culture and native DLL lookup.
     void resolve_probe_dirs(
         deps_entry_t::asset_types asset_type,
         const pal::string_t& clr_dir,
-        pal::string_t* output);
+        pal::string_t* output,
+        std::unordered_set<pal::string_t>* breadcrumb);
 
     // Populate assemblies from the directory.
     void get_dir_assemblies(
