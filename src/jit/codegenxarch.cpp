@@ -2897,7 +2897,7 @@ CodeGen::genLclHeap(GenTreePtr tree)
         regMaskTP pspSymRegMask = genFindLowestBit(tmpRegsMask);
         tmpRegsMask &= ~pspSymRegMask;
         pspSymReg = genRegNumFromMask(pspSymRegMask);
-        getEmitter()->emitIns_R_S(ins_Store(TYP_I_IMPL), EA_PTRSIZE, pspSymReg, compiler->lvaPSPSym, 0);
+        getEmitter()->emitIns_R_S(ins_Load(TYP_I_IMPL), EA_PTRSIZE, pspSymReg, compiler->lvaPSPSym, 0);
     }
 #endif
 
