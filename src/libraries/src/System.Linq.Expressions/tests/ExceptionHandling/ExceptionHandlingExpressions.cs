@@ -76,6 +76,46 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void CannotRethrowWithinFinallyWithinCatch(bool useInterpreter)
+        {
+            LambdaExpression rethrowFinally = Expression.Lambda<Action>(
+                Expression.TryCatch(
+                    Expression.Empty(),
+                    Expression.Catch(
+                        typeof(Exception),
+                        Expression.TryFinally(
+                            Expression.Empty(),
+                            Expression.Rethrow()
+                            )
+                        )
+                    )
+                );
+            Assert.Throws<InvalidOperationException>(() => rethrowFinally.Compile(useInterpreter));
+        }
+
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        [ActiveIssue(3838)]
+        [ActiveIssue(3840)]
+        public void CannotRethrowWithinFaultWithinCatch(bool useInterpreter)
+        {
+            LambdaExpression rethrowFinally = Expression.Lambda<Action>(
+                Expression.TryCatch(
+                    Expression.Empty(),
+                    Expression.Catch(
+                        typeof(Exception),
+                        Expression.TryFault(
+                            Expression.Empty(),
+                            Expression.Rethrow()
+                            )
+                        )
+                    )
+                );
+            Assert.Throws<InvalidOperationException>(() => rethrowFinally.Compile(useInterpreter));
+        }
+
+        [Theory]
         [InlineData(false)]
         public void CanCatchAndThrowNonExceptions(bool useInterpreter)
         {
