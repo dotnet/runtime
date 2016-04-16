@@ -191,9 +191,10 @@ inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode)
 }
 
 //------------------------------------------------------------------------
-inline void emitJump(UINT32* pCode, LPVOID target)
+inline void emitJump(LPBYTE pBuffer, LPVOID target)
 {
     LIMITED_METHOD_CONTRACT;
+    UINT32* pCode = (UINT32*)pBuffer;
 
     // We require 8-byte alignment so the LDR instruction is aligned properly
     _ASSERTE(((UINT_PTR)pCode & 7) == 0);
@@ -246,7 +247,7 @@ inline BOOL isBackToBackJump(PCODE pBuffer)
 inline void emitBackToBackJump(LPBYTE pBuffer, LPVOID target)
 {
     WRAPPER_NO_CONTRACT;
-    emitJump((UINT32*)pBuffer, target);
+    emitJump(pBuffer, target);
 }
 
 //------------------------------------------------------------------------
