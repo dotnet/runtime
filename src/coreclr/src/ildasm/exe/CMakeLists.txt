@@ -64,7 +64,6 @@ else()
     target_link_libraries(ildasm
         ${ILDASM_LINK_LIBRARIES}
         coreclr
-        msvcrt
         ole32
         oleaut32
         shell32
