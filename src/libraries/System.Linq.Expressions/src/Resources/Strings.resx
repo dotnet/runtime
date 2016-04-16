@@ -372,9 +372,6 @@
   <data name="UnsupportedExpressionType" xml:space="preserve">
     <value>The expression type '{0}' is not supported</value>
   </data>
-  <data name="FaultBlockNotSupported" xml:space="preserve">
-    <value>Fault blocks are not supported</value>
-  </data>
   <data name="ParameterExpressionNotValidAsDelegate" xml:space="preserve">
     <value>ParameterExpression of type '{0}' cannot be used for delegate parameter of type '{1}'</value>
   </data>

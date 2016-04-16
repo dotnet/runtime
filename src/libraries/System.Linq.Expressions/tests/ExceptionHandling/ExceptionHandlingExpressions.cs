@@ -94,10 +94,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<InvalidOperationException>(() => rethrowFinally.Compile(useInterpreter));
         }
 
-        [Theory]
-        [ClassData(typeof(CompilationTypes))]
-        [ActiveIssue(3838)]
-        [ActiveIssue(3840)]
+        [Theory, InlineData(true)]
         public void CannotRethrowWithinFaultWithinCatch(bool useInterpreter)
         {
             LambdaExpression rethrowFinally = Expression.Lambda<Action>(
@@ -113,6 +110,12 @@ namespace System.Linq.Expressions.Tests
                     )
                 );
             Assert.Throws<InvalidOperationException>(() => rethrowFinally.Compile(useInterpreter));
+        }
+
+        [Fact, ActiveIssue(3838)]
+        public void CannotRethrowWithinFaultWithinCatchCompiled()
+        {
+            CannotRethrowWithinFaultWithinCatch(false);
         }
 
         [Theory]
@@ -373,9 +376,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(3, Expression.Lambda<Func<int>>(finally2).Compile(useInterpreter)());
         }
 
-        [Theory]
-        [ClassData(typeof(CompilationTypes))]
-        [ActiveIssue(3838)]
+        [Theory, InlineData(true)]
         public void FaultNotTriggeredOnNoThrow(bool useInterpreter)
         {
             ParameterExpression variable = Expression.Parameter(typeof(int));
@@ -393,9 +394,25 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(1, Expression.Lambda<Func<int>>(block).Compile(useInterpreter)());
         }
 
-        [Theory]
-        [ClassData(typeof(CompilationTypes))]
-        [ActiveIssue(3838)]
+        [Theory, InlineData(true)]
+        public void FaultNotTriggeredOnNoThrowNonVoid(bool useInterpreter)
+        {
+            Func<int> func = Expression.Lambda<Func<int>>(
+                Expression.TryFault(
+                    Expression.Constant(42),
+                    Expression.Throw(Expression.Constant(new TestException()))
+                    )
+                ).Compile(useInterpreter);
+            Assert.Equal(42, func());
+        }
+
+        [Fact, ActiveIssue(3838)]
+        public void FaultNotTriggeredOnNoThrowNonVoidCompiled()
+        {
+            FaultNotTriggeredOnNoThrowNonVoid(false);
+        }
+
+        [Theory, InlineData(true)]
         public void FaultTriggeredOnThrow(bool useInterpreter)
         {
             ParameterExpression variable = Expression.Parameter(typeof(int));
@@ -416,6 +433,12 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(2, Expression.Lambda<Func<int>>(block).Compile(useInterpreter)());
         }
 
+        [Fact, ActiveIssue(3838)]
+        public void FaultTriggeredOnThrowCompiled()
+        {
+            FaultTriggeredOnThrow(false);
+        }
+
         [Theory]
         [ClassData(typeof(CompilationTypes))]
         public void FinallyTriggeredOnNoThrow(bool useInterpreter)
@@ -433,6 +456,36 @@ namespace System.Linq.Expressions.Tests
                 Expression.Label(target, Expression.Default(typeof(int)))
                 );
             Assert.Equal(2, Expression.Lambda<Func<int>>(block).Compile(useInterpreter)());
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void ExceptionInFinallyReplacesException(bool useInterpreter)
+        {
+            Action act = Expression.Lambda<Action>(
+                Expression.TryFinally(
+                    Expression.Throw(Expression.Constant(new InvalidOperationException())),
+                    Expression.Throw(Expression.Constant(new TestException()))
+                    )
+                ).Compile(useInterpreter);
+            Assert.Throws<TestException>(act);
+        }
+
+        [Theory, InlineData(true)]
+        public void ExceptionInFaultReplacesException(bool useInterpreter)
+        {
+            Action act = Expression.Lambda<Action>(
+                Expression.TryFault(
+                    Expression.Throw(Expression.Constant(new InvalidOperationException())),
+                    Expression.Throw(Expression.Constant(new TestException()))
+                    )
+                ).Compile(useInterpreter);
+            Assert.Throws<TestException>(act);
+        }
+
+        [Fact, ActiveIssue(3838)]
+        public void ExceptionInFaultReplacesExceptionCompiled()
+        {
+            ExceptionInFaultReplacesException(false);
         }
 
         [Theory]
@@ -750,9 +803,7 @@ namespace System.Linq.Expressions.Tests
             FilterBeforeInnerFinally(false);
         }
 
-        [Theory]
-        [ClassData(typeof(CompilationTypes))]
-        [ActiveIssue(3838)]
+        [Theory, InlineData(true)]
         public void FilterBeforeInnerFault(bool useInterpreter)
         {
             StringBuilder sb = new StringBuilder();
@@ -776,6 +827,11 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal("ACBD", func().ToString());
         }
 
+        [Fact, ActiveIssue(3838)]
+        public void FilterBeforeInnerFaultCompiled()
+        {
+            FilterBeforeInnerFault(false);
+        }
 
         [Theory]
         [InlineData(true)]
