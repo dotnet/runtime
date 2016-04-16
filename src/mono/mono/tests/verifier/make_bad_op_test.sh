@@ -11,7 +11,7 @@ TEST_BYTE_0=$3
 TEST_BYTE_1=$4
 
 
-if [ "$TEST_BYTE_1" == "" ] ; then
+if [ "x$TEST_BYTE_1" = "x" ] ; then
 	TEST_BYTE_1="0";
 fi
 
