@@ -394,15 +394,15 @@ namespace System.Net
             // go through the string's chars collapsing %XX and
             // appending each char as char, with exception of %XX constructs
             // that are appended as bytes
-
-            bool needsDecoding = false;
+            bool needsDecodingUnsafe = false;
+            bool needsDecodingSpaces = false;
             for (int pos = 0; pos < count; pos++)
             {
                 char ch = value[pos];
 
                 if (ch == '+')
                 {
-                    needsDecoding = true;
+                    needsDecodingSpaces = true;
                     ch = ' ';
                 }
                 else if (ch == '%' && pos < count - 2)
@@ -417,7 +417,7 @@ namespace System.Net
 
                         // don't add as char
                         helper.AddByte(b);
-                        needsDecoding = true;
+                        needsDecodingUnsafe = true;
                         continue;
                     }
                 }
@@ -428,7 +428,19 @@ namespace System.Net
                     helper.AddChar(ch);
             }
             
-            return needsDecoding ? helper.GetString() : value;
+            if (!needsDecodingUnsafe)
+            {
+                if (needsDecodingSpaces)
+                {
+                    // Only spaces to decode
+                    return value.Replace('+', ' ');
+                }
+
+                // Nothing to decode
+                return value;
+            }
+
+            return helper.GetString();
         }
 
         private static byte[] UrlDecodeInternal(byte[] bytes, int offset, int count)
