@@ -165,6 +165,7 @@ namespace pal
     inline void to_stdstring(const char_t* str, std::string* out) { out->assign(str); }
 #endif
 
+    bool touch_file(const pal::string_t& path);
     bool realpath(string_t* path);
     bool file_exists(const string_t& path);
     inline bool directory_exists(const string_t& path) { return file_exists(path); }
@@ -173,7 +174,8 @@ namespace pal
 
     bool get_own_executable_path(string_t* recv);
     bool getenv(const char_t* name, string_t* recv);
-    bool get_default_extensions_directory(string_t* recv);
+    bool get_default_servicing_directory(string_t* recv);
+    bool get_default_breadcrumb_store(string_t* recv);
     bool is_path_rooted(const string_t& path);
 
     int xtoi(const char_t* input);

@@ -12,7 +12,7 @@
 #include <sys/types.h>
 #include <pwd.h>
 #include <unistd.h>
-
+#include <fcntl.h>
 #include <fnmatch.h>
 
 #if defined(__APPLE__)
@@ -32,6 +32,18 @@ pal::string_t pal::to_lower(const pal::string_t& in)
     pal::string_t ret = in;
     std::transform(ret.begin(), ret.end(), ret.begin(), ::tolower);
     return ret;
+}
+
+bool pal::touch_file(const pal::string_t& path)
+{
+    int fd = open(path.c_str(), (O_CREAT | O_EXCL), (S_IRUSR | S_IRGRP | S_IROTH));
+    if (fd == -1)
+    {
+        trace::warning(_X("Failed to open() file descriptor in %s(%s)"), __FUNCTION__, path.c_str());
+        return false;
+    }
+    (void) close(fd);
+    return true;
 }
 
 bool pal::getcwd(pal::string_t* recv)
@@ -112,11 +124,68 @@ bool pal::is_path_rooted(const pal::string_t& path)
     return path.front() == '/';
 }
 
-bool pal::get_default_extensions_directory(string_t* recv)
+bool pal::get_default_breadcrumb_store(string_t* recv)
 {
     recv->clear();
-    append_path(recv, _X("opt"));
-    append_path(recv, _X("dotnetextensions"));
+    pal::string_t ext;
+    if (pal::getenv(_X("CORE_BREADCRUMBS"), &ext) && pal::realpath(&ext))
+    {
+        // We should have the path in ext.
+        trace::info(_X("Realpath CORE_BREADCRUMBS [%s]"), ext.c_str());
+    }
+
+    if (!pal::directory_exists(ext))
+    {
+        trace::info(_X("Directory core breadcrumbs [%s] was not specified or found"), ext.c_str());
+        ext.clear();
+        append_path(&ext, _X("opt"));
+        append_path(&ext, _X("corebreadcrumbs"));
+        if (!pal::directory_exists(ext))
+        {
+            trace::info(_X("Fallback directory core breadcrumbs at [%s] was not found"), ext.c_str());
+            return false;
+        }
+    }
+
+    if (access(ext.c_str(), (R_OK | W_OK)) != 0)
+    {
+        trace::info(_X("Breadcrumb store [%s] is not ACL-ed with rw-"), ext.c_str());
+    }
+
+    recv->assign(ext);
+    return true;
+}
+
+bool pal::get_default_servicing_directory(string_t* recv)
+{
+    recv->clear();
+    pal::string_t ext;
+    if (pal::getenv(_X("CORE_SERVICING"), &ext) && pal::realpath(&ext))
+    {
+        // We should have the path in ext.
+        trace::info(_X("Realpath CORE_SERVICING [%s]"), ext.c_str());
+    }
+    
+    if (!pal::directory_exists(ext))
+    {
+        trace::info(_X("Directory core servicing at [%s] was not specified or found"), ext.c_str());
+        ext.clear();
+        append_path(&ext, _X("opt"));
+        append_path(&ext, _X("coreservicing"));
+        if (!pal::directory_exists(ext))
+        {
+            trace::info(_X("Fallback directory core servicing at [%s] was not found"), ext.c_str());
+            return false;
+        }
+    }
+
+    if (access(ext.c_str(), R_OK) != 0)
+    {
+        trace::info(_X("Directory core servicing at [%s] was not ACL-ed properly"), ext.c_str());
+    }
+
+    recv->assign(ext);
+    trace::info(_X("Using core servicing at [%s]"), ext.c_str());
     return true;
 }
 

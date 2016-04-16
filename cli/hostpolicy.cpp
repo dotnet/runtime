@@ -11,6 +11,7 @@
 #include "cpprest/json.h"
 #include "libhost.h"
 #include "error_codes.h"
+#include "breadcrumbs.h"
 
 hostpolicy_init_t g_init;
 
@@ -36,8 +37,18 @@ int run(const arguments_t& args)
         trace::info(_X("CoreCLR directory: %s"), clr_path.c_str());
     }
 
+
+    // Setup breadcrumbs
+    pal::string_t policy_name = _STRINGIFY(HOST_POLICY_PKG_NAME);
+    pal::string_t policy_version = _STRINGIFY(HOST_POLICY_PKG_VER);
+
+    // Always insert the hostpolicy that the code is running on.
+    std::unordered_set<pal::string_t> breadcrumbs;
+    breadcrumbs.insert(policy_name);
+    breadcrumbs.insert(policy_name + _X(",") + policy_version);
+
     probe_paths_t probe_paths;
-    if (!resolver.resolve_probe_paths(clr_path, &probe_paths))
+    if (!resolver.resolve_probe_paths(clr_path, &probe_paths, &breadcrumbs))
     {
         return StatusCode::ResolverResolveFailure;
     }
@@ -52,7 +63,8 @@ int run(const arguments_t& args)
         "AppDomainCompatSwitch",
         // Workaround: mscorlib does not resolve symlinks for AppContext.BaseDirectory dotnet/coreclr/issues/2128
         "APP_CONTEXT_BASE_DIRECTORY",
-        "APP_CONTEXT_DEPS_FILES"
+        "APP_CONTEXT_DEPS_FILES",
+        "FX_DEPS_FILE"
     };
 
     auto tpa_paths_cstr = pal::to_stdstring(probe_paths.tpa);
@@ -60,7 +72,8 @@ int run(const arguments_t& args)
     auto native_dirs_cstr = pal::to_stdstring(probe_paths.native);
     auto resources_dirs_cstr = pal::to_stdstring(probe_paths.resources);
 
-    std::string deps = pal::to_stdstring(resolver.get_deps_file() + _X(";") + resolver.get_fx_deps_file());
+    std::string fx_deps = pal::to_stdstring(resolver.get_fx_deps_file());
+    std::string deps = pal::to_stdstring(resolver.get_deps_file() + _X(";")) + fx_deps;
 
     std::vector<const char*> property_values = {
         // TRUSTED_PLATFORM_ASSEMBLIES
@@ -79,6 +92,8 @@ int run(const arguments_t& args)
         app_base_cstr.c_str(),
         // APP_CONTEXT_DEPS_FILES,
         deps.c_str(),
+        // FX_DEPS_FILE
+        fx_deps.c_str()
     };
 
     for (int i = 0; i < g_init.cfg_keys.size(); ++i)
@@ -155,6 +170,10 @@ int run(const arguments_t& args)
 
     std::string managed_app = pal::to_stdstring(args.managed_application);
 
+    // Leave breadcrumbs for servicing.
+    breadcrumb_writer_t writer(&breadcrumbs);
+    writer.begin_write();
+
     // Execute the application
     unsigned int exit_code = 1;
     hr = coreclr::execute_assembly(
@@ -164,6 +183,7 @@ int run(const arguments_t& args)
         argv.data(),
         managed_app.c_str(),
         &exit_code);
+
     if (!SUCCEEDED(hr))
     {
         trace::error(_X("Failed to execute managed app, HRESULT: 0x%X"), hr);
@@ -178,6 +198,9 @@ int run(const arguments_t& args)
     }
 
     coreclr::unload();
+
+    // Finish breadcrumb writing
+    writer.end_write();
 
     return exit_code;
 }
