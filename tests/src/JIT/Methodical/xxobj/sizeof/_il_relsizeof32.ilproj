@@ -30,8 +30,8 @@
     <DebugType>PdbOnly</DebugType>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Condition="'$(Platform)' == 'x86'" Include="sizeof32.il" />
-    <Compile Condition="'$(Platform)' != 'x86'" Include="64sizeof32.il" />
+    <Compile Condition="'$(BuildArch)' == 'x86'" Include="sizeof32.il" />
+    <Compile Condition="'$(BuildArch)' != 'x86'" Include="64sizeof32.il" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(JitPackagesConfigFileDirectory)minimal\project.json" />
