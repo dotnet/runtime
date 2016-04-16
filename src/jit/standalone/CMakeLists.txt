@@ -27,7 +27,8 @@ if(CLR_CMAKE_PLATFORM_UNIX)
     )
 else()
     list(APPEND RYUJIT_LINK_LIBRARIES
-       msvcrt.lib
+       ${STATIC_MT_CRT_LIB}
+       ${STATIC_MT_VCRT_LIB}
        kernel32.lib
        advapi32.lib
        ole32.lib

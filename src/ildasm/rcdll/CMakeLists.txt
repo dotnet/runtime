@@ -18,7 +18,8 @@ add_library_clr(ildasmrc
 )
 
 target_link_libraries(ildasmrc
-     msvcrt
+	${STATIC_MT_CRT_LIB}
+	${STATIC_MT_VCRT_LIB}
 )
 
 # We will generate PDB only for the debug configuration

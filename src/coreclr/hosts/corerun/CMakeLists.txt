@@ -28,7 +28,8 @@ else()
         oleaut32.lib
         uuid.lib
         user32.lib
-        msvcrt.lib
+        ${STATIC_MT_CRT_LIB}
+        ${STATIC_MT_VCRT_LIB}
     )
 
     # Can't compile on linux yet so only add for windows
