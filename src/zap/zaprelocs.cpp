@@ -112,12 +112,12 @@ void ZapBaseRelocs::WriteReloc(PVOID pSrc, int offset, ZapNode * pTarget, int ta
         {
             TADDR pSite = (TADDR)m_pImage->GetBaseAddress() + rva;
 
-            INT64 relOffset = (INT64)(pActualTarget - (pSite + sizeof(INT64)));
+            INT32 relOffset = (INT32)(pActualTarget - pSite);
             if (!FitsInRel28(relOffset))
             {
                 ThrowHR(COR_E_OVERFLOW);
             }
-            PutArm64Rel28((UINT32 *)pLocation,(INT32)relOffset);
+            PutArm64Rel28((UINT32 *)pLocation,relOffset);
         }
         return;
 #endif
