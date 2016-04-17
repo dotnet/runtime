@@ -54,7 +54,6 @@ namespace System.Threading.Tasks.Tests
         [InlineData(1000, 200)]
         public static void TestFor_Break_64Bits(int loopsize, int breakpoint)
         {
-            Logger.LogInformation("* TestFor64Break(loopsize={0},breakpoint={1})", loopsize, breakpoint);
             var complete = new bool[loopsize];
 
             // Throw a curveball here and loop from just-under-Int32.MaxValue to 
@@ -95,7 +94,6 @@ namespace System.Threading.Tasks.Tests
         [InlineData(1000, 200)]
         public static void TestForEach_Break(int loopsize, int breakpoint)
         {
-            Logger.LogInformation("* TestForEachBreak(loopsize={0},breakpoint={1})", loopsize, breakpoint);
             var complete = new bool[loopsize];
 
             // NOTE: Make sure and use some collection that is NOT a list or an

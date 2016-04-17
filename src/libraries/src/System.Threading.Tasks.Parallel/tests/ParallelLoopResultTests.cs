@@ -207,34 +207,20 @@ Parallel.For(1L, 0L, delegate (long i, ParallelLoopState ps)
             {
                 ParallelLoopResult plr = Parallel.For(0, 1, parallelOptions, body);
 
-                if (excExpected || shouldCancel)
-                {
-                    Logger.LogInformation("For-PLRTest -- {0}    > failed.  Expected an exception.", desc);
-                }
-                else if ((plr.IsCompleted != shouldComplete) ||
-                    (shouldStop && (plr.LowestBreakIteration != null)) ||
-                    (shouldBreak && (plr.LowestBreakIteration == null)))
-                {
-                    string LBIval = "null";
-                    if (plr.LowestBreakIteration != null)
-                        LBIval = plr.LowestBreakIteration.Value.ToString();
-                    Logger.LogInformation("For-PLRTest -- {0}    > failed.  Complete={1}, LBI={2}", desc,
-                        plr.IsCompleted, LBIval);
-                }
+                Assert.False(shouldCancel);
+                Assert.False(excExpected);
+
+                Assert.Equal(shouldComplete, plr.IsCompleted);
+                Assert.Equal(shouldStop, plr.LowestBreakIteration == null);
+                Assert.Equal(shouldBreak, plr.LowestBreakIteration != null);
             }
-            catch (OperationCanceledException oce)
+            catch (OperationCanceledException)
             {
-                if (!shouldCancel)
-                {
-                    Logger.LogInformation("For-PLRTest -- {0}:    > FAILED -- got unexpected OCE: {1}.", desc, oce.Message);
-                }
+                Assert.True(shouldCancel);
             }
-            catch (AggregateException e)
+            catch (AggregateException)
             {
-                if (!excExpected)
-                {
-                    Logger.LogInformation("For-PLRTest -- {0}:    > failed -- unexpected exception from loop. Error: {1}", desc, e.ToString());
-                }
+                Assert.True(excExpected);
             }
         }
 
@@ -264,34 +250,20 @@ Parallel.For(1L, 0L, delegate (long i, ParallelLoopState ps)
             {
                 ParallelLoopResult plr = Parallel.For(0L, 1L, parallelOptions, body);
 
-                if (excExpected || shouldCancel)
-                {
-                    Logger.LogInformation("For64-PLRTest -- {0}    > failed.  Expected an exception.", desc);
-                }
-                else if ((plr.IsCompleted != shouldComplete) ||
-                    (shouldStop && (plr.LowestBreakIteration != null)) ||
-                    (shouldBreak && (plr.LowestBreakIteration == null)))
-                {
-                    string LBIval = "null";
-                    if (plr.LowestBreakIteration != null)
-                        LBIval = plr.LowestBreakIteration.Value.ToString();
-                    Logger.LogInformation("For64-PLRTest -- {0}    > failed.  Complete={1}, LBI={2}",
-                        desc, plr.IsCompleted, LBIval);
-                }
+                Assert.False(shouldCancel);
+                Assert.False(excExpected);
+
+                Assert.Equal(shouldComplete, plr.IsCompleted);
+                Assert.Equal(shouldStop, plr.LowestBreakIteration == null);
+                Assert.Equal(shouldBreak, plr.LowestBreakIteration != null);
             }
             catch (OperationCanceledException)
             {
-                if (!shouldCancel)
-                {
-                    Logger.LogInformation("For64-PLRTest -- {0}    > FAILED -- got unexpected OCE.", desc);
-                }
+                Assert.True(shouldCancel);
             }
-            catch (AggregateException e)
+            catch (AggregateException)
             {
-                if (!excExpected)
-                {
-                    Logger.LogInformation("For64-PLRTest -- {0}:    > failed -- unexpected exception from loop.  Error: {1} ", desc, e.ToString());
-                }
+                Assert.True(excExpected);
             }
         }
 
@@ -322,34 +294,22 @@ Parallel.For(1L, 0L, delegate (long i, ParallelLoopState ps)
 
             try
             {
-                ParallelLoopResult plr =
-                Parallel.ForEach(dict, parallelOptions, body);
+                ParallelLoopResult plr = Parallel.ForEach(dict, parallelOptions, body);
 
-                if (excExpected || shouldCancel)
-                {
-                    Logger.LogInformation("ForEach-PLRTest -- {0}    > failed.  Expected an exception.", desc);
-                }
-                else if ((plr.IsCompleted != shouldComplete) ||
-                    (shouldStop && (plr.LowestBreakIteration != null)) ||
-                    (shouldBreak && (plr.LowestBreakIteration == null)))
-                {
-                    Logger.LogInformation("ForEach-PLRTest -- {0}    > failed.  Complete={1}, LBI={2}",
-                        desc, plr.IsCompleted, plr.LowestBreakIteration);
-                }
+                Assert.False(shouldCancel);
+                Assert.False(excExpected);
+
+                Assert.Equal(shouldComplete, plr.IsCompleted);
+                Assert.Equal(shouldStop, plr.LowestBreakIteration == null);
+                Assert.Equal(shouldBreak, plr.LowestBreakIteration != null);
             }
-            catch (OperationCanceledException oce)
+            catch (OperationCanceledException)
             {
-                if (!shouldCancel)
-                {
-                    Logger.LogInformation("ForEach-PLRTest -- {0}    > FAILED -- got unexpected OCE.  Exception: {1}", desc, oce);
-                }
+                Assert.True(shouldCancel);
             }
-            catch (AggregateException e)
+            catch (AggregateException)
             {
-                if (!excExpected)
-                {
-                    Logger.LogInformation("ForEach-PLRTest -- {0}    > failed -- unexpected exception from loop.  Exception: {1}", desc, e);
-                }
+                Assert.True(excExpected);
             }
         }
 
@@ -371,24 +331,15 @@ Parallel.For(1L, 0L, delegate (long i, ParallelLoopState ps)
                 ParallelLoopResult plr =
                 Parallel.ForEach(mp, body);
 
-                if (excExpected)
-                {
-                    Logger.LogInformation("PartitionerForEach-PLRTest -- {0}:    > failed.  Expected an exception.", desc);
-                }
-                else if ((plr.IsCompleted != shouldComplete) ||
-                    (shouldStop && (plr.LowestBreakIteration != null)) ||
-                    (shouldBreak && (plr.LowestBreakIteration == null)))
-                {
-                    Logger.LogInformation("PartitionerForEach-PLRTest -- {0}    > failed.  Complete={1}, LBI={2}",
-                        desc, plr.IsCompleted, plr.LowestBreakIteration);
-                }
+                Assert.False(excExpected);
+                
+                Assert.Equal(shouldComplete, plr.IsCompleted);
+                Assert.Equal(shouldStop, plr.LowestBreakIteration == null);
+                Assert.Equal(shouldBreak, plr.LowestBreakIteration != null);
             }
-            catch (AggregateException e)
+            catch (AggregateException)
             {
-                if (!excExpected)
-                {
-                    Logger.LogInformation("PartitionerForEach-PLRTest -- {0}    > failed -- unexpected exception from loop.  Exception: {1}", desc, e);
-                }
+                Assert.True(excExpected);
             }
         }
 
@@ -407,27 +358,17 @@ Parallel.For(1L, 0L, delegate (long i, ParallelLoopState ps)
 
             try
             {
-                ParallelLoopResult plr =
-                Parallel.ForEach(mop, body);
+                ParallelLoopResult plr = Parallel.ForEach(mop, body);
+                
+                Assert.False(excExpected);
 
-                if (excExpected)
-                {
-                    Logger.LogInformation("OrderablePartitionerForEach-PLRTest -- {0}:    > failed.  Expected an exception.", desc);
-                }
-                else if ((plr.IsCompleted != shouldComplete) ||
-                    (shouldStop && (plr.LowestBreakIteration != null)) ||
-                    (shouldBreak && (plr.LowestBreakIteration == null)))
-                {
-                    Logger.LogInformation("OrderablePartitionerForEach-PLRTest -- {0}:    > failed.  Complete={1}, LBI={2}",
-                        desc, plr.IsCompleted, plr.LowestBreakIteration);
-                }
+                Assert.Equal(shouldComplete, plr.IsCompleted);
+                Assert.Equal(shouldStop, plr.LowestBreakIteration == null);
+                Assert.Equal(shouldBreak, plr.LowestBreakIteration != null);
             }
-            catch (AggregateException e)
+            catch (AggregateException)
             {
-                if (!excExpected)
-                {
-                    Logger.LogInformation("OrderablePartitionerForEach-PLRTest -- {0}:    > failed -- unexpected exception from loop.  Exception: {1}", desc, e);
-                }
+                Assert.True(excExpected);
             }
         }
 
