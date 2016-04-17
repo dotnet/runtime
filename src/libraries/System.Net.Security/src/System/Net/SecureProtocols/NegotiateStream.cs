@@ -507,7 +507,7 @@ namespace System.Net.Security
 
                 if (!_negoState.CanGetSecureStream)
                 {
-                    return InnerStreamAPM.BeginRead(buffer, offset, count, asyncCallback, asyncState);
+                    return InnerStream.BeginRead(buffer, offset, count, asyncCallback, asyncState);
                 }
 
                 BufferAsyncResult bufferResult = new BufferAsyncResult(this, buffer, offset, count, asyncState, asyncCallback);
@@ -529,7 +529,7 @@ namespace System.Net.Security
 
                 if (!_negoState.CanGetSecureStream)
                 {
-                    return InnerStreamAPM.EndRead(asyncResult);
+                    return InnerStream.EndRead(asyncResult);
                 }
 
 
@@ -579,7 +579,7 @@ namespace System.Net.Security
 
                 if (!_negoState.CanGetSecureStream)
                 {
-                    return InnerStreamAPM.BeginWrite(buffer, offset, count, asyncCallback, asyncState);
+                    return InnerStream.BeginWrite(buffer, offset, count, asyncCallback, asyncState);
                 }
 
                 BufferAsyncResult bufferResult = new BufferAsyncResult(this, buffer, offset, count, true, asyncState, asyncCallback);
@@ -602,7 +602,7 @@ namespace System.Net.Security
 
                 if (!_negoState.CanGetSecureStream)
                 {
-                    InnerStreamAPM.EndWrite(asyncResult);
+                    InnerStream.EndWrite(asyncResult);
                     return;
                 }
 
