@@ -2890,6 +2890,12 @@ case "$host" in
 		AOT_SUPPORTED="yes"
 		CPPFLAGS="$CPPFLAGS -D__ARM_EABI__"
 		;;
+	arm*-netbsd*-eabi*)
+		TARGET=ARM;
+		arch_target=arm;
+		ACCESS_UNALIGNED="no"
+		CPPFLAGS="$CPPFLAGS -D__ARM_EABI__"
+		;;
 # TODO: make proper support for NaCl host.
 #        arm*-*nacl)
 #		TARGET=ARM;
@@ -3003,6 +3009,17 @@ if test "x$host" != "x$target"; then
 			CPPFLAGS="$CPPFLAGS"
 			;;
 		esac
+		;;
+   arm*-netbsd*-eabi*)
+		TARGET=ARM;
+		arch_target=arm;
+		AC_DEFINE(TARGET_ARM, 1, [...])
+		ACCESS_UNALIGNED="no"
+		CPPFLAGS="$CPPFLAGS -D__ARM_EABI__"
+		# Can't use tls, since it depends on the runtime detection of tls offsets
+		# in mono-compiler.h
+		with_tls=pthread
+		target_mach=no
 		;;
    i686*-linux-*)
 		TARGET=X86;
