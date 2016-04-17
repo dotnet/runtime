@@ -355,11 +355,7 @@ namespace System.Linq.Expressions
 
         internal static Expression Create(ExpressionType nodeType, Expression left, Expression right, Type type, MethodInfo method, LambdaExpression conversion)
         {
-            if (nodeType == ExpressionType.Assign)
-            {
-                Debug.Assert(method == null && TypeUtils.AreEquivalent(type, left.Type));
-                return new AssignBinaryExpression(left, right);
-            }
+            Debug.Assert(nodeType != ExpressionType.Assign);
             if (conversion != null)
             {
                 Debug.Assert(method == null && TypeUtils.AreEquivalent(type, right.Type) && nodeType == ExpressionType.Coalesce);
