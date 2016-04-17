@@ -791,7 +791,7 @@ do
  	ZZ=`echo $TYPE2 | grep "*";`
  	T2_PTR=$?
  	
-    if (($T1_PTR -eq 0  ||  $T2_PTR -eq 0)); then
+    if [ $T1_PTR -eq 0 ] || [ $T2_PTR -eq 0 ]; then
 		./make_stack_merge_test.sh stack_merge_${I} unverifiable "$TYPE1" "$TYPE2"
     elif [ "$TYPE1" = "$TYPE2" ]; then
 		./make_stack_merge_test.sh stack_merge_${I} valid "$TYPE1" "$TYPE2"
