@@ -11,7 +11,7 @@ TEST_OP=$3
 TEST_BEFORE_OP=$4
 TEST_CONSTRAINT_TYPE=$5
 
-if [ "$TEST_CONSTRAINT_TYPE" == "" ]; then
+if [ "x$TEST_CONSTRAINT_TYPE" = "x" ]; then
 	TEST_CONSTRAINT_TYPE="IFace";
 fi
 

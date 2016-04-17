@@ -12,7 +12,7 @@ TEST_TYPE2=$5
 TEST_INIT_EXP=$6
 TEST_INIT_VAL=$7
 
-if [ "$TEST_INIT_VAL" == "yes" ]; then
+if [ "$TEST_INIT_VAL" = "yes" ]; then
 	TEST_INIT="$TEST_INIT_EXP\n\t\stloc.1"
 else
 	TEST_INIT=""

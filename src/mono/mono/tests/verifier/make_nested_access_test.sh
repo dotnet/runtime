@@ -12,7 +12,7 @@ TEST_CLASS_ACCESS=$4
 TEST_MEMBER_ACCESS=$5
 TEST_EXTENDS=$6
 
-if [ "$TEST_EXTENDS" == "yes" ]; then
+if [ "$TEST_EXTENDS" = "yes" ]; then
 	TEST_EXTENDS="extends Owner"
 	TEST_CONSTRUCTOR="call instance void Owner::.ctor()"
 else
