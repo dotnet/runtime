@@ -12,7 +12,7 @@ TEST_TYPE2=$4
 TEST_POST_OP=$5
 TEST_NO_BOX=$6
 TEST_BOX="box ${TEST_TYPE1}";
-if [ "${TEST_NO_BOX}" == "yes" ]; then
+if [ "x${TEST_NO_BOX}" = "xyes" ]; then
 	TEST_BOX="";
 fi
 
