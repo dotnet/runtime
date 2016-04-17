@@ -28,22 +28,10 @@ namespace System.Net.Security
 
         private FixedSizeReader _FrameReader;
 
-        // TODO (Issue #3114): Implement using TPL instead of APM.
-        private StreamAsyncHelper _innerStreamAPM;
-
-        internal StreamAsyncHelper InnerStreamAPM
-        {
-            get
-            {
-                return _innerStreamAPM;
-            }
-        }
-
         private void InitializeStreamPart()
         {
             _ReadHeader = new byte[4];
             _FrameReader = new FixedSizeReader(InnerStream);
-            _innerStreamAPM = new StreamAsyncHelper(InnerStream);
         }
 
         private byte[] InternalBuffer
@@ -179,13 +167,13 @@ namespace System.Net.Security
                     {
                         // prepare for the next request
                         asyncRequest.SetNextRequest(buffer, offset + chunkBytes, count - chunkBytes, null);
-                        IAsyncResult ar = InnerStreamAPM.BeginWrite(outBuffer, 0, encryptedBytes, s_writeCallback, asyncRequest);
+                        IAsyncResult ar = InnerStream.BeginWrite(outBuffer, 0, encryptedBytes, s_writeCallback, asyncRequest);
                         if (!ar.CompletedSynchronously)
                         {
                             return;
                         }
 
-                        InnerStreamAPM.EndWrite(ar);
+                        InnerStream.EndWrite(ar);
                     }
                     else
                     {
@@ -415,7 +403,7 @@ namespace System.Net.Security
             try
             {
                 NegotiateStream negoStream = (NegotiateStream)asyncRequest.AsyncObject;
-                negoStream.InnerStreamAPM.EndWrite(transportResult);
+                negoStream.InnerStream.EndWrite(transportResult);
                 if (asyncRequest.Count == 0)
                 {
                     // This was the last chunk.
