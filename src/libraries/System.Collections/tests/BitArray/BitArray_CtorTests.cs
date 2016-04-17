@@ -2,170 +2,160 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using Xunit;
 
-namespace BitArrayTests
+namespace System.Collections.Tests
 {
     public class BitArray_CtorTests
     {
-        /// <summary>
-        /// Test that BitArray(int) is constructed with right size and all bits set to false
-        /// When constructed all values should be set to false
-        /// </summary>
-        [Fact]
-        public static void BitArray_CtorIntTest()
+        [Theory]
+        [InlineData(0)]
+        [InlineData(40)]
+        [InlineData(200)]
+        [InlineData(65551)]
+        public static void Ctor_Int(int length)
         {
-            int arraySize = 40;
-            int i = 0;
+            BitArray bitArray = new BitArray(length);
+            Assert.Equal(length, bitArray.Length);
+            for (int i = 0; i < bitArray.Length; i++)
+            {
+                Assert.False(bitArray[i]);
+                Assert.False(bitArray.Get(i));
+            }
+            ICollection collection = bitArray;
+            Assert.Equal(length, collection.Count);
+            Assert.False(collection.IsSynchronized);
 
-            BitArray bitArray = new BitArray(arraySize);
-
-            for (i = 0; i < 40; i++)
-                if (bitArray.Get(i))
-                    break;
-
-            Assert.Equal(i, arraySize); //"Err_1! i should be equal to size"
-            Assert.Equal(bitArray.Length, arraySize); //"Err_2! ba1.Length should be equal to size"
-
-            arraySize = 200;
-            bitArray = new BitArray(arraySize);
-
-            for (i = 0; i < 200; i++)
-                if (bitArray.Get(i))
-                    break;
-
-            Assert.Equal(i, arraySize); //"Err_3! i should be equal to size"
-            Assert.Equal(bitArray.Length, arraySize); //"Err_4! ba1.Length should be equal to size"
+            Ctor_BitArray(bitArray);
+            Ctor_Int_Bool(length, false);
+            Ctor_Int_Bool(length, true);
         }
 
-        /// <summary>
-        /// Test that BitArray(Boolean[]) is constructed with right values
-        /// </summary>
-        [Fact]
-        public static void BitArray_CtorBoolArrTest()
+        public static void Ctor_Int_Bool(int length, bool defaultValue)
         {
-            BitArray bitArr1;
-            Boolean[] bolArr1;
-
-            int arraySize;
-
-            // Create a bitarray with bool[] and check the results
-            arraySize = 10;
-            int[] valuesArray = new int[] { 5, 1, 8, 0, 1, 2, 7, 3, 3, 6 };
-
-            bolArr1 = new Boolean[arraySize];
-            for (int i = 0; i < arraySize; i++)
+            BitArray bitArray = new BitArray(length, defaultValue);
+            Assert.Equal(length, bitArray.Length);
+            for (int i = 0; i < bitArray.Length; i++)
             {
-                if (valuesArray[i] > 5)
-                    bolArr1[i] = true;
-                else
-                    bolArr1[i] = false;
+                Assert.Equal(defaultValue, bitArray[i]);
+                Assert.Equal(defaultValue, bitArray.Get(i));
             }
-            bitArr1 = new BitArray(bolArr1);
+            ICollection collection = bitArray;
+            Assert.Equal(length, collection.Count);
+            Assert.False(collection.IsSynchronized);
 
-            Assert.Equal(bitArr1.Length, arraySize); //"Err_5! bitArr1.Length should be equal to arraySize"
-
-            for (int i = 0; i < bitArr1.Length; i++)
-            {
-                if (bolArr1[i] != bitArr1[i])
-                {
-                    Assert.Equal(bolArr1[i], bitArr1[i]); //"Err_6! bolArr1[i] should be equal to bitArr1[i]"
-                }
-            }
+            Ctor_BitArray(bitArray);
         }
 
-
-        /// <summary>
-        /// Test that BitArray(BitArray) is constructed with right values
-        /// </summary>
         [Fact]
-        public static void BitArray_CtorBitArrayTest()
+        public static void Ctor_Int_NegativeLength_ThrowsArgumentOutOfRangeException()
         {
-            // Creating bit array with 10 values that have all 1s
-            BitArray ba1 = null;
-            BitArray bits = null;
-            int[] values = null;
-            int i;
-
-            values = new int[10];
-            for (i = 0; i < 10; i++)
-                values[i] = unchecked((int)0xffffffff);
-
-            bits = new BitArray(values);
-            ba1 = new BitArray(bits);
-
-            Assert.Equal(ba1.Length, 320); //"Err_7! ba1.Length should be equal to 320"
-
-            for (i = 0; i < 320; i++)
-            {
-                Assert.True(ba1.Get(i)); //"Err_8! array should contain all 1s"
-            }
-
-            // Creating BitArray with 10 values that have all 0s
-            values = new int[10];
-            for (i = 0; i < 10; i++)
-                values[i] = 0;
-
-            bits = new BitArray(values);
-            ba1 = new BitArray(bits);
-
-            Assert.Equal(ba1.Length, 320); //"Err_9! ba1.Length should be equal to 320"
-
-            for (i = 0; i < 320; i++)
-            {
-                Assert.False(ba1.Get(i)); //"Err_10! array should contain all 0s"
-            }
-
-
-            // Creating BitArray with 10 values that have zeros and ones
-            values = new int[10];
-            for (i = 0; i < 10; i++)
-                values[i] = unchecked((int)0xaaaaaaaa);
-
-            bits = new BitArray(values);
-            ba1 = new BitArray(bits);
-
-            Assert.Equal(ba1.Length, 320); //"Err_11! ba1.Length should be equal to 320"
-
-            for (i = 0; i < 320; i++)
-            {
-                if (i % 2 == 1)
-                    Assert.True(ba1.Get(i)); //"Err_12! index should contain 1"
-                else
-                    Assert.False(ba1.Get(i)); //"Err_13! index should contain 0"
-            }
+            Assert.Throws<ArgumentOutOfRangeException>("length", () => new BitArray(-1));
+            Assert.Throws<ArgumentOutOfRangeException>("length", () => new BitArray(-1, false));
         }
 
-        /// <summary>
-        /// Test that we get ArgumentOutOfRangeException when length is less than zero     
-        /// </summary>
-        [Fact]
-        public static void BitArray_CtorIntTest_Negative()
+        [Theory]
+        [InlineData(new bool[0])]
+        [InlineData(new bool[] { false, false, true, false, false, false, true, false, false, true })]
+        public static void Ctor_BoolArray(bool[] values)
         {
-            int i = -1;
-            Assert.Throws<ArgumentOutOfRangeException>(delegate { new BitArray(i); }); //"Err_14! wrong exception thrown."
+            BitArray bitArray = new BitArray(values);
+            Assert.Equal(values.Length, bitArray.Length);
+            for (int i = 0; i < bitArray.Length; i++)
+            {
+                Assert.Equal(values[i], bitArray[i]);
+                Assert.Equal(values[i], bitArray.Get(i));
+            }
+            ICollection collection = bitArray;
+            Assert.Equal(values.Length, collection.Count);
+            Assert.False(collection.IsSynchronized);
+
+            Ctor_BitArray(bitArray);
         }
 
-        /// <summary>
-        /// Test that we get ArgumentNullException when argument is null
-        /// </summary>
-        [Fact]
-        public static void BitArray_CtorBitArrayTest_Negative()
+        public static void Ctor_BitArray(BitArray bits)
         {
-            BitArray bits = null;
-            Assert.Throws<ArgumentNullException>(delegate { new BitArray(bits); }); //"Err_15! wrong exception thrown."
+            BitArray bitArray = new BitArray(bits);
+            Assert.Equal(bits.Length, bitArray.Length);
+            for (int i = 0; i < bitArray.Length; i++)
+            {
+                Assert.Equal(bits[i], bitArray[i]);
+                Assert.Equal(bits[i], bitArray.Get(i));
+            }
+            ICollection collection = bitArray;
+            Assert.Equal(bits.Length, collection.Count);
+            Assert.False(collection.IsSynchronized);
         }
 
-        /// <summary>
-        /// Test that we get ArgumentNullException when argument is null
-        /// </summary>
-        [Fact]
-        public static void BitArray_CtorBoolArrayTest_Negative()
+        public static IEnumerable<object[]> Ctor_IntArray_TestData()
         {
-            Boolean[] boolArray = null;
-            Assert.Throws<ArgumentNullException>(delegate { new BitArray(boolArray); }); //"Err_16! wrong exception thrown."
+            yield return new object[] { Enumerable.Repeat(unchecked((int)0xffffffff), 10).ToArray(), Enumerable.Repeat(true, 320).ToArray() };
+            yield return new object[] { Enumerable.Repeat(0, 10).ToArray(), Enumerable.Repeat(false, 320).ToArray() };
+            yield return new object[] { Enumerable.Repeat(unchecked((int)0xaaaaaaaa), 10).ToArray(), Enumerable.Range(0, 320).Select(i => i % 2 == 1).ToArray() };
+        }
+
+        [Theory]
+        [MemberData(nameof(Ctor_IntArray_TestData))]
+        public void Ctor_IntArray(int[] array, bool[] expected)
+        {
+            BitArray bitArray = new BitArray(array);
+            Assert.Equal(expected.Length, bitArray.Length);
+            for (int i = 0; i < expected.Length; i++)
+            {
+                Assert.Equal(expected[i], bitArray[i]);
+                Assert.Equal(expected[i], bitArray.Get(i));
+            }
+            ICollection collection = bitArray;
+            Assert.Equal(expected.Length, collection.Count);
+            Assert.False(collection.IsSynchronized);
+        }
+
+        [Fact]
+        public static void Ctor_BitArray_Null_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>("bits", () => new BitArray((BitArray)null));
+        }
+        
+        [Fact]
+        public static void Ctor_BoolArray_Null_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>("values", () => new BitArray((bool[])null));
+        }
+
+        [Fact]
+        public static void Ctor_IntArray_Null_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>("values", () => new BitArray((int[])null));
+        }
+
+        public static IEnumerable<object[]> Ctor_ByteArray_TestData()
+        {
+            yield return new object[] { new byte[] { 255, 255 }, Enumerable.Repeat(true, 16).ToArray() };
+            yield return new object[] { new byte[] { 0, 0 }, Enumerable.Repeat(false, 16).ToArray() };
+        }
+
+        [Theory]
+        [MemberData(nameof(Ctor_ByteArray_TestData))]
+        public static void Ctor_ByteArray(byte[] bytes, bool[] expected)
+        {
+            BitArray bitArray = new BitArray(bytes);
+            Assert.Equal(expected.Length, bitArray.Length);
+            for (int i = 0; i < bitArray.Length; i++)
+            {
+                Assert.Equal(expected[i], bitArray[i]);
+                Assert.Equal(expected[i], bitArray.Get(i));
+            }
+            ICollection collection = bitArray;
+            Assert.Equal(expected.Length, collection.Count);
+            Assert.False(collection.IsSynchronized);
+        }
+
+        [Fact]
+        public static void Ctor_ByteArray_Null_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>("bytes", () => new BitArray((byte[])null));
         }
     }
 }
