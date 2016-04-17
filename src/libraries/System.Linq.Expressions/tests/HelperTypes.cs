@@ -258,4 +258,13 @@ namespace System.Linq.Expressions.Tests
             return GetEnumerator();
         }
     }
+
+    internal class NoOpVisitor : ExpressionVisitor
+    {
+        internal static readonly NoOpVisitor Instance = new NoOpVisitor();
+
+        private NoOpVisitor()
+        {
+        }
+    }
 }
