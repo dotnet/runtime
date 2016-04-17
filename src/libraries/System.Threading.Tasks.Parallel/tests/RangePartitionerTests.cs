@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Concurrent;
-
+using System.Diagnostics;
 using Xunit;
 
 namespace System.Threading.Tasks.Tests
@@ -13,8 +13,6 @@ namespace System.Threading.Tasks.Tests
         [Fact]
         public static void RunPartitionerStaticTest_SingleChunking()
         {
-            Logger.LogInformation("RunPartitionerStaticTest_SingleChunking");
-
             CountdownEvent cde = new CountdownEvent(2);
             Action[] actions = new Action[256];
 
@@ -29,7 +27,7 @@ namespace System.Threading.Tasks.Tests
             actions[254] = () => { cde.Wait(); };
             actions[255] = () => { cde.Signal(); };
 
-            Logger.LogInformation("    * We'll hang here if EnumerablePartitionerOptions.NoBuffering is not working properly");
+            Debug.WriteLine("    * We'll hang here if EnumerablePartitionerOptions.NoBuffering is not working properly");
             Parallel.ForEach(Partitioner.Create(actions, EnumerablePartitionerOptions.NoBuffering), item =>
             {
                 item();
@@ -39,7 +37,6 @@ namespace System.Threading.Tasks.Tests
         [Fact]
         public static void RunPartitionerStaticTest_SingleChunking_Negative()
         {
-            Logger.LogInformation("RunPartitionerStaticTest_SingleChunking_NEG");
             Assert.Throws<ArgumentOutOfRangeException>(() => Partitioner.Create(new int[] { 1, 2, 3, 4, 5 }, (EnumerablePartitionerOptions)1000));
         }
 
@@ -108,7 +105,7 @@ namespace System.Threading.Tasks.Tests
 
         private static void RangePartitionerChunkTest(int from, int to, int rangeSize)
         {
-            Logger.LogInformation("    RangePartitionChunkTest[int]({0},{1},{2})", from, to, rangeSize);
+            Debug.WriteLine("    RangePartitionChunkTest[int]({0},{1},{2})", from, to, rangeSize);
             int numLess = 0;
             int numMore = 0;
 
@@ -133,7 +130,7 @@ namespace System.Threading.Tasks.Tests
 
         private static void RangePartitionerChunkTest(long from, long to, long rangeSize)
         {
-            Logger.LogInformation("    RangePartitionChunkTest[long]({0},{1},{2})", from, to, rangeSize);
+            Debug.WriteLine("    RangePartitionChunkTest[long]({0},{1},{2})", from, to, rangeSize);
             int numLess = 0;
             int numMore = 0;
 
@@ -155,7 +152,7 @@ namespace System.Threading.Tasks.Tests
 
         private static void RangePartitionerCoverageTest(int from, int to, int rangeSize)
         {
-            Logger.LogInformation("    RangePartitionCoverageTest[int]({0},{1},{2})", from, to, rangeSize);
+            Debug.WriteLine("    RangePartitionCoverageTest[int]({0},{1},{2})", from, to, rangeSize);
 
             int range = to - from;
             int[] visits = new int[range];
@@ -180,7 +177,7 @@ namespace System.Threading.Tasks.Tests
 
         private static void RangePartitionerCoverageTest(long from, long to, long rangeSize)
         {
-            Logger.LogInformation("    RangePartitionCoverageTest[long]({0},{1},{2})", from, to, rangeSize);
+            Debug.WriteLine("    RangePartitionCoverageTest[long]({0},{1},{2})", from, to, rangeSize);
 
             long range = to - from;
             long[] visits = new long[range];
