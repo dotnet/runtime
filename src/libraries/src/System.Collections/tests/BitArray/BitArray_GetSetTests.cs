@@ -2,344 +2,218 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using Xunit;
-using BitArrayTests.BitArray_BitArray_GetSetTests;
 
-namespace BitArrayTests
+namespace System.Collections.Tests
 {
-    namespace BitArray_BitArray_GetSetTests
+    public class BitArray_GetSetTests
     {
-        public class BitArray_OperatorsTests
+        private static BitArray s_allTrue = new BitArray(320, true);
+        private static BitArray s_allFalse = new BitArray(320, false);
+        private static BitArray s_alternating = new BitArray(Enumerable.Repeat(unchecked((int)0xaaaaaaaa), 10).ToArray());
+
+        [Theory]
+        [InlineData(new bool[] { true })]
+        [InlineData(new bool[] { false })]
+        [InlineData(new bool[] { true, false, true, true, false, true })]
+        public static void Get_Set(bool[] newValues)
         {
-            /// <summary>
-            /// Test BitArray.Get 
-            /// </summary>
-            [Fact]
-            public static void BitArray_GetTest()
+            BitArray bitArray = new BitArray(newValues.Length, false);
+            for (int i = 0; i < newValues.Length; i++)
             {
-                BitArray ba2 = new BitArray(6, false);
+                bitArray.Set(i, newValues[i]);
+                Assert.Equal(newValues[i], bitArray[i]);
+                Assert.Equal(newValues[i], bitArray.Get(i));
+            }
+        }
 
-                ba2.Set(0, true);
-                ba2.Set(1, false);
-                ba2.Set(2, true);
-                ba2.Set(5, true);
+        [Fact]
+        public static void Get_InvalidIndex_ThrowsArgumentOutOfRangeException()
+        {
+            BitArray bitArray = new BitArray(4);
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => bitArray.Get(-1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => bitArray.Get(bitArray.Length));
 
-                Assert.True(ba2.Get(0)); //"Err_1! Expected ba4.Get(0) to be true"
-                Assert.False(ba2.Get(1)); //"Err_2! Expected ba4.Get(1) to be false"
-                Assert.True(ba2.Get(2)); //"Err_3! Expected ba4.Get(2) to be true"
-                Assert.False(ba2.Get(3)); //"Err_4! Expected ba4.Get(3) to be false"
-                Assert.False(ba2.Get(4)); //"Err_5! Expected ba4.Get(4) to be false"
-                Assert.True(ba2.Get(5)); //"Err_6! Expected ba4.Get(5) to be true"
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => bitArray[-1]);
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => bitArray[bitArray.Length]);
+        }
+
+        [Fact]
+        public static void Set_InvalidIndex_ThrowsArgumentOutOfRangeException()
+        {
+            BitArray bitArray = new BitArray(4);
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => bitArray.Set(-1, true));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => bitArray.Set(bitArray.Length, true));
+
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => bitArray[-1] = true);
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => bitArray[bitArray.Length] = true);
+        }
+
+        [Theory]
+        [InlineData(6, true)]
+        [InlineData(6, false)]
+        [InlineData(0x1000F, true)]
+        public static void SetAll(int size, bool defaultValue)
+        {
+            BitArray bitArray = new BitArray(6, defaultValue);
+            bitArray.SetAll(!defaultValue);
+            for (int i = 0; i < bitArray.Length; i++)
+            {
+                Assert.Equal(!defaultValue, bitArray[i]);
+                Assert.Equal(!defaultValue, bitArray.Get(i));
             }
 
-            /// <summary>
-            /// Test BitArray.Set 
-            /// </summary>
-            [Fact]
-            public static void BitArray_SetTest()
+            bitArray.SetAll(defaultValue);
+            for (int i = 0; i < bitArray.Length; i++)
             {
-                // []  Set true to true, true to false
-                // []  Set false to false and false to true is covered in BitArray_GetTest() above
-                BitArray ba2 = new BitArray(6, true);
-
-                ba2.Set(0, true);
-                ba2.Set(1, false);
-                ba2.Set(2, true);
-                ba2.Set(5, true);
-
-                Assert.True(ba2.Get(0)); //"Err_7! Expected ba4.Get(0) to be true"
-                Assert.False(ba2.Get(1)); //"Err_8! Expected ba4.Get(1) to be false"
-                Assert.True(ba2.Get(2)); //"Err_9! Expected ba4.Get(2) to be true"
+                Assert.Equal(defaultValue, bitArray[i]);
+                Assert.Equal(defaultValue, bitArray.Get(i));
             }
-
-
-            /// <summary>
-            /// Test BitArray.Set 
-            /// </summary>
-            [Fact]
-            public static void BitArray_SetAllTest()
+        }
+            
+        [Theory]
+        [InlineData(new bool[0])]
+        [InlineData(new bool[] { true, false, true, false, true, false, true, false, true, false })]
+        public static void GetEnumerator(bool[] values)
+        {
+            BitArray bitArray = new BitArray(values);
+            Assert.NotSame(bitArray.GetEnumerator(), bitArray.GetEnumerator());
+            IEnumerator enumerator = bitArray.GetEnumerator();
+            for (int i = 0; i < 2; i++)
             {
-                BitArray ba2 = new BitArray(6, false);
-
-                Assert.False(ba2.Get(0)); //"Err_10! Expected ba4.Get(0) to be false"
-                Assert.False(ba2.Get(5)); //"Err_11! Expected ba4.Get(1) to be false"
-
-                // false to true
-                ba2.SetAll(true);
-
-                Assert.True(ba2.Get(0)); //"Err_12! Expected ba4.Get(0) to be true"
-                Assert.True(ba2.Get(5)); //"Err_13! Expected ba4.Get(1) to be true"
-
-
-                // false to false
-                ba2.SetAll(false);
-
-                Assert.False(ba2.Get(0)); //"Err_14! Expected ba4.Get(0) to be false"
-                Assert.False(ba2.Get(5)); //"Err_15! Expected ba4.Get(1) to be false"
-
-                ba2 = new BitArray(6, true);
-
-                Assert.True(ba2.Get(0)); //"Err_16! Expected ba4.Get(0) to be true"
-                Assert.True(ba2.Get(5)); //"Err_17! Expected ba4.Get(1) to be true"
-
-                // true to true
-                ba2.SetAll(true);
-
-                Assert.True(ba2.Get(0)); //"Err_18! Expected ba4.Get(0) to be true"
-                Assert.True(ba2.Get(5)); //"Err_19! Expected ba4.Get(1) to be true"
-
-                // true to false
-                ba2.SetAll(false);
-
-                Assert.False(ba2.Get(0)); //"Err_20! Expected ba4.Get(0) to be false"
-                Assert.False(ba2.Get(5)); //"Err_21! Expected ba4.Get(1) to be false"
-
-                // []  Size stress.
-                int size = 0x1000F;
-                ba2 = new BitArray(size, true);
-
-                Assert.True(ba2.Get(0)); //"Err_22! Expected ba4.Get(0) to be true"
-                Assert.True(ba2.Get(size - 1)); //"Err_23! Expected ba4.Get(size-1) to be true"
-
-                ba2.SetAll(false);
-
-                Assert.False(ba2.Get(0)); //"Err_24! Expected ba4.Get(0) to be false"
-                Assert.False(ba2.Get(size - 1)); //"Err_25! Expected ba4.Get(size-1) to be false"
-            }
-
-
-            /// <summary>
-            /// Test BitArray.GetEnumerator 
-            /// </summary>
-            [Fact]
-            public static void BitArray_GetEnumeratorTest()
-            {
-                int size = 10;
-
-                Boolean[] bolArr1 = new Boolean[size];
-
-                for (int i = 0; i < size; i++)
+                int counter = 0;
+                while (enumerator.MoveNext())
                 {
-                    if (i > 5)
-                        bolArr1[i] = true;
-                    else
-                        bolArr1[i] = false;
+                    Assert.Equal(bitArray[counter], enumerator.Current);
+                    counter++;
                 }
-
-                BitArray bitArr1 = new BitArray(bolArr1);
-                IEnumerator ienm1 = bitArr1.GetEnumerator();
-
-                int iCount = 0;
-
-                while (ienm1.MoveNext())
-                {
-                    Assert.Equal((Boolean)ienm1.Current, bolArr1[iCount++]); //"Err_26! wrong value returned"
-                }
-
-                ienm1.Reset();
-                iCount = 0;
-                while (ienm1.MoveNext())
-                {
-                    Assert.Equal((Boolean)ienm1.Current, bolArr1[iCount++]); //"Err_27! wrong value returned"
-                }
+                Assert.Equal(bitArray.Length, counter);
+                enumerator.Reset();
             }
+        }
 
-            /// <summary>
-            /// Test BitArray.set_Length
-            /// </summary>
-            [Fact]
-            public static void BitArray_SetLengthTest()
+        [Fact]
+        public static void GetEnumerator_Invalid()
+        {
+            BitArray bitArray = new BitArray(10, true);
+            IEnumerator enumerator = bitArray.GetEnumerator();
+
+            // Has not started enumerating
+            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
+
+            // Has finished enumerating
+            while (enumerator.MoveNext()) ;
+            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
+
+            // Has resetted enumerating
+            enumerator.Reset();
+            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
+
+            // Has modified underlying collection
+            enumerator.MoveNext();
+            bitArray[0] = false;
+            Assert.True((bool)enumerator.Current);
+            Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
+            Assert.Throws<InvalidOperationException>(() => enumerator.Reset());
+        }
+
+        [Theory]
+        [InlineData(16, 48)]
+        [InlineData(48, 24)]
+        [InlineData(16384, 256)]
+        [InlineData(48, 48)]
+        public static void Length_Set(int originalSize, int newSize)
+        {
+            BitArray bitArray = new BitArray(originalSize, true);
+            bitArray.Length = newSize;
+            Assert.Equal(newSize, bitArray.Length);
+            for (int i = 0; i < Math.Min(originalSize, bitArray.Length); i++)
             {
-                // []  Standard increase of length.
-                BitArray ba2 = null;
-
-                int size = 16;
-                ba2 = new BitArray(size, true);
-
-                ba2.Length = size * 3;
-
-                // If Length is set to a value that is greater than Count, the new elements are set to false.
-                Assert.False(ba2.Get(size * 2)); //"Err_28! Expected ba2.Get(size * 2) to be false"
-
-
-                ba2 = new BitArray(size, true);
-
-                ba2.Length = size / 2;
-
-                Assert.True(ba2.Get((size / 2) - 2)); //"Err_29! Expected ba2.Get(size * 2) to be true"
-
-
-                size = 16384;
-                ba2 = new BitArray(size);
-
-                for (int i = 0; i < size; i++)
-                {
-                    ba2[i] = 0 == i % 2;
-                }
-
-                ba2.Length = 256;
-
-                for (int i = 0; i < 256; i++)
-                {
-                    Assert.Equal(ba2[i], (0 == i % 2)); //"Err_30! Expected values to be equal"
-                }
-
-                Assert.Equal(ba2.Length, 256); //"Err_31! Expected values to be equal"
-
-                // [A2]  Show original bit values are reset by decreasing-then-increasing size over them.
-                ba2.Length = 0;
-                ba2.Length = size;
-
-                Assert.False(ba2.Get(size - 1)); //"Err_32! Expected ba2.Get(size-1) to be false"
+                Assert.True(bitArray[i]);
+                Assert.True(bitArray.Get(i));
             }
-
-            /// <summary>
-            /// Test BitArray.get_Length
-            /// </summary>
-            [Fact]
-            public static void BitArray_GetLengthTest()
+            for (int i = originalSize; i < newSize; i++)
             {
-                // []  Standard.
-                int size = 6;
-                BitArray ba2 = new BitArray(size, false);
-
-                Assert.Equal(ba2.Length, size); //"Err_33! values are not equal"
-
-                // []  Boundary.
-                size = 0;
-                ba2 = new BitArray(size, false);
-
-                Assert.Equal(ba2.Length, size); //"Err_34! values are not equal"
-
-                // []  Size stress.
-                size = 0x1000F;
-                ba2 = new BitArray(size, false);
-
-                Assert.Equal(ba2.Length, size); //"Err_35! values are not equal"
+                Assert.False(bitArray[i]);
+                Assert.False(bitArray.Get(i));
             }
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => bitArray[newSize]);
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => bitArray.Get(newSize));
 
-            /// <summary>
-            /// Get negative test
-            /// </summary>
-            [Fact]
-            public static void BitArray_GetTest_Negative()
+            // Decrease then increase size
+            bitArray.Length = 0;
+            Assert.Equal(0, bitArray.Length);
+
+            bitArray.Length = newSize;
+            Assert.Equal(newSize, bitArray.Length);
+            Assert.False(bitArray.Get(newSize - 1));
+        }
+
+        [Fact]
+        public static void Length_Set_InvalidLength_ThrowsArgumentOutOfRangeException()
+        {
+            BitArray bitArray = new BitArray(1);
+            Assert.Throws<ArgumentOutOfRangeException>(() => bitArray.Length = -1);
+        }
+
+        public static IEnumerable<object[]> CopyTo_IntArray_TestData()
+        {
+            yield return new object[] { s_allTrue, new int[10], 0, Enumerable.Repeat(unchecked((int)0xffffffff), 10).ToArray(), typeof(int) };
+            yield return new object[] { s_allFalse, new int[11], 1, Enumerable.Repeat(0, 10).ToArray(), typeof(int) };
+            yield return new object[] { s_alternating, new int[12], 1, Enumerable.Repeat(unchecked((int)0xaaaaaaaa), 10).ToArray(), typeof(int) };
+
+            yield return new object[] { s_allTrue, new bool[320], 0, Enumerable.Repeat(true, 320).ToArray(), typeof(bool) };
+            yield return new object[] { s_allFalse, new bool[321], 1, Enumerable.Repeat(false, 320).ToArray(), typeof(bool) };
+            yield return new object[] { s_alternating, new bool[322], 1, Enumerable.Range(0, 320).Select(i => i % 2 == 1).ToArray(), typeof(bool) };
+
+            yield return new object[] { s_allTrue, new byte[40], 0, Enumerable.Repeat((byte)255, 40).ToArray(), typeof(byte) };
+            yield return new object[] { s_allFalse, new byte[41], 1, Enumerable.Repeat((byte)0, 40).ToArray(), typeof(byte) };
+            yield return new object[] { s_alternating, new byte[42], 1, Enumerable.Repeat((byte)170, 40).ToArray(), typeof(byte) };
+        }
+
+        [Theory]
+        [MemberData(nameof(CopyTo_IntArray_TestData))]
+        public void CopyTo(BitArray bitArray, Array array, int index, Array expected, Type arrayType)
+        {
+            object defaultValue = Activator.CreateInstance(arrayType);
+            ICollection collection = bitArray;
+            collection.CopyTo(array, index);
+            for (int i = 0; i < index; i++)
             {
-                BitArray ba = new BitArray(6, false);
-
-                // index is less than zero
-                Assert.Throws<ArgumentOutOfRangeException>(delegate { ba.Get(-3); }); //"Err_36! wrong exception thrown."
-
-                // index is greater than or equal to the number of elements in the BitArray. 
-                Assert.Throws<ArgumentOutOfRangeException>(delegate { ba.Get(10); }); //"Err_37! wrong exception thrown."
+                Assert.Equal(defaultValue, array.GetValue(i));
             }
-
-            /// <summary>
-            /// Set negative test
-            /// </summary>
-            [Fact]
-            public static void BitArray_SetTest_Negative()
+            for (int i = 0; i < expected.Length; i++)
             {
-                BitArray ba = new BitArray(6, false);
-
-                // index is less than zero
-                Assert.Throws<ArgumentOutOfRangeException>(delegate { ba.Set(-3, false); }); //"Err_38! wrong exception thrown."
-
-                // index is greater than or equal to the number of elements in the BitArray. 
-                Assert.Throws<ArgumentOutOfRangeException>(delegate { ba.Set(10, false); }); //"Err_39! wrong exception thrown."
+                Assert.Equal(expected.GetValue(i), array.GetValue(i + index));
             }
-
-            /// <summary>
-            /// GetEnumerator negative test
-            /// </summary>
-            [Fact]
-            public static void BitArray_GetEnumeratorTest_Negative()
+            for (int i = index + expected.Length; i < array.Length; i++)
             {
-                int size = 10;
-
-                Boolean[] bolArr1 = new Boolean[size];
-
-                for (int i = 0; i < size; i++)
-                {
-                    if (i > 5)
-                        bolArr1[i] = true;
-                    else
-                        bolArr1[i] = false;
-                }
-
-                BitArray bitArr1 = new BitArray(bolArr1);
-                IEnumerator ienm1 = bitArr1.GetEnumerator();
-
-                // test that initially enumerator is positioned before the first element in the collection --> Current will be undefined
-                Assert.Throws<InvalidOperationException>(delegate { Object obj = ienm1.Current; }); //"Err_40! wrong exception thrown."
-
-                // get to the end of the collection
-                while (ienm1.MoveNext()) ;
-
-                // test that after MoveNext() returns false (i.e. we are at the end) enumerator is positioned after the last element in the collection --> Current will be undefined
-                Assert.Throws<InvalidOperationException>(delegate { Object obj = ienm1.Current; }); //"Err_41! wrong exception thrown."
-
-
-                //[] we will change the underlying BitArray and see the effect
-                ienm1.Reset();
-                ienm1.MoveNext();
-                bitArr1[0] = false;
-
-                // we do not throw exception when getting Current
-                Object obj2 = ienm1.Current;
-
-                // test that the enumerator is not valid after modifying collection
-                Assert.Throws<InvalidOperationException>(delegate { ienm1.MoveNext(); }); //"Err_42! wrong exception thrown."
-                Assert.Throws<InvalidOperationException>(delegate { ienm1.Reset(); }); //"Err_43! wrong exception thrown."
+                Assert.Equal(defaultValue, array.GetValue(i));
             }
+        }
 
-            /// <summary>
-            /// BitArray.set_Length negative test
-            /// </summary>
-            [Fact]
-            public static void BitArray_SetLengthTest_Negative()
-            {
-                // []  decrease of length.
-                int size = 16;
-                BitArray ba2 = new BitArray(size, true);
-                ba2.Length = size / 2;
+        [Fact]
+        public void CopyTo_Invalid()
+        {
+            ICollection bitArray = new BitArray(10);
+            // Invalid array
+            Assert.Throws<ArgumentNullException>("array", () => bitArray.CopyTo(null, 0));
+            Assert.Throws<ArgumentException>(null, () => bitArray.CopyTo(new long[10], 0));
+            Assert.Throws<ArgumentException>(null, () => bitArray.CopyTo(new int[10, 10], 0));
 
-                Assert.Throws<ArgumentOutOfRangeException>(delegate { ba2.Get(size); }); //"Err_44! wrong exception thrown."
+            // Invalid index
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => bitArray.CopyTo(new byte[10], -1));
+            Assert.Throws<ArgumentException>(null, () => bitArray.CopyTo(new byte[1], 2));
+            Assert.Throws<ArgumentException>(null, () => bitArray.CopyTo(new bool[10], 2));
+        }
 
-
-                // []  LARGE decrease of length.
-                // Our implementation does not actually shrink the size of the array unless there is a decrease greater then 256 * 4 * 8 (8192)bits
-                size = 16384;
-                ba2 = new BitArray(size);
-
-                for (int i = 0; i < size; i++)
-                {
-                    ba2[i] = 0 == i % 2;
-                }
-
-                ba2.Length = 256;
-
-                Assert.Throws<ArgumentOutOfRangeException>(delegate { ba2.Get(265); }); //"Err_45! wrong exception thrown."
-
-
-                // [A1]  Zero length and negative length, Exception.
-                ba2.Length = 0;
-                Assert.Throws<ArgumentOutOfRangeException>(delegate { ba2.Get(0); }); //"Err_46! wrong exception thrown."
-                Assert.Throws<ArgumentOutOfRangeException>(delegate { ba2.Length = -5; }); //"Err_47! wrong exception thrown."
-            }
-
-            /// <summary>
-            /// BitArray.get_Length negative test
-            /// </summary>
-            [Fact]
-            public static void BitArray_GetLengthTest_Negative()
-            {
-                // []  ArgumentException, less than zero.
-                int size = -3;
-
-                Assert.Throws<ArgumentOutOfRangeException>(delegate { new BitArray(size, false); }); //"Err_48! wrong exception thrown."
-            }
+        [Fact]
+        public void SyncRoot()
+        {
+            ICollection bitArray = new BitArray(10);
+            Assert.Same(bitArray.SyncRoot, bitArray.SyncRoot);
         }
     }
 }
