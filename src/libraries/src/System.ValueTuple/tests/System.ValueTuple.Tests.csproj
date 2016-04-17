@@ -6,11 +6,10 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{CBD5AE8D-8595-48E2-848F-1A3492A28FDB}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <AssemblyName>System.Tuples.Tests</AssemblyName>
+    <AssemblyName>System.ValueTuple.Tests</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ValueTuple\UnitTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\Diagnostics\Tracing\TestEventListener.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.ValueTuple.csproj">

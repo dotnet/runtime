@@ -20,7 +20,7 @@ namespace System
     /// <summary>
     /// The ValueTuple types (from arity 0 to 8) comprise the runtime implementation that underlies tuples in C# and struct tuples in F#.
     /// Aside from created via language syntax, they are most easily created via the ValueTuple.Create factory methods.
-    /// The Value Tuple types differ from the System.Tuple types in that:
+    /// The System.ValueTuple types differ from the System.Tuple types in that:
     /// - they are structs rather than classes,
     /// - they are mutable rather than readonly, and
     /// - their members (such as Item1, Item2, etc) are fields rather than properties.
