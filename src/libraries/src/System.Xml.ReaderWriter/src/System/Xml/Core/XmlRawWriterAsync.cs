@@ -114,7 +114,7 @@ namespace System.Xml
         // Forward call to WriteString(string).
         public override Task WriteCharEntityAsync(char ch)
         {
-            return WriteStringAsync(new string(new char[] { ch }));
+            return WriteStringAsync(ch.ToString());
         }
 
         // Forward call to WriteString(string).
