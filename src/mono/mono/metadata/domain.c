@@ -783,7 +783,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 
 	mono_assembly_load_friends (ass);
 
-	mono_defaults.handleref_class = mono_class_load_from_name (
+	mono_defaults.handleref_class = mono_class_try_load_from_name (
 		mono_defaults.corlib, "System.Runtime.InteropServices", "HandleRef");
 
 	mono_defaults.attribute_class = mono_class_load_from_name (
