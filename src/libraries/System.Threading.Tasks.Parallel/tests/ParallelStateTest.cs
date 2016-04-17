@@ -451,9 +451,8 @@ namespace System.Threading.Tasks.Test
                 Assert.False(catchException, "Not getting InvalidOperationException from Stop() when expecting one");
             }
             // If Stop is called after a Break was called then an InvalidOperationException is expected
-            catch (InvalidOperationException)
+            catch (InvalidOperationException) when (catchException)
             {
-                Assert.True(catchException);
             }
         }
 
@@ -544,9 +543,8 @@ namespace System.Threading.Tasks.Test
                 }
                 // If the test is checking the scenario where break is called after stop then 
                 // we expect an InvalidOperationException
-                catch (InvalidOperationException)
+                catch (InvalidOperationException) when (catchException)
                 {
-                    Assert.True(catchException);
                 }
             }
         }
