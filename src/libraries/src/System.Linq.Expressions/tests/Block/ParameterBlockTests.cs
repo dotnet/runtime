@@ -256,6 +256,7 @@ namespace System.Linq.Expressions.Tests
             BlockExpression block = Expression.Block(SingleParameter, expressions);
 
             Assert.Same(block, block.Update(block.Variables, block.Expressions));
+            Assert.Same(block, NoOpVisitor.Instance.Visit(block));
         }
 
         [Theory]
