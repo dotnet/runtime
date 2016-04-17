@@ -27,6 +27,7 @@
 #if defined(_POSIX_VERSION)
 #include <sys/errno.h>
 #include <sys/param.h>
+#include <errno.h>
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
