@@ -421,13 +421,13 @@ namespace System.Net.Security
                     {
                         // Prepare for the next request.
                         asyncRequest.SetNextRequest(buffer, offset + chunkBytes, count - chunkBytes, s_resumeAsyncWriteCallback);
-                        IAsyncResult ar = _sslState.InnerStreamAPM.BeginWrite(outBuffer, 0, encryptedBytes, s_writeCallback, asyncRequest);
+                        IAsyncResult ar = _sslState.InnerStream.BeginWrite(outBuffer, 0, encryptedBytes, s_writeCallback, asyncRequest);
                         if (!ar.CompletedSynchronously)
                         {
                             return;
                         }
 
-                        _sslState.InnerStreamAPM.EndWrite(ar);
+                        _sslState.InnerStream.EndWrite(ar);
 
                     }
                     else
@@ -761,7 +761,7 @@ namespace System.Net.Security
 
             try
             {
-                sslStream._sslState.InnerStreamAPM.EndWrite(transportResult);
+                sslStream._sslState.InnerStream.EndWrite(transportResult);
                 sslStream._sslState.FinishWrite();
 
                 if (asyncRequest.Count == 0)
