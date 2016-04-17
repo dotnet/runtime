@@ -354,12 +354,6 @@
   <data name="security_ServiceNameCollection_EmptyServiceName" xml:space="preserve">
     <value>A service name must not be null or empty.</value>
   </data>
-  <data name="InvalidOperation_WrongAsyncResultOrEndReadCalledMultiple" xml:space="preserve">
-    <value>Either the IAsyncResult object did not come from the corresponding async method on this type, or EndRead was called multiple times with the same IAsyncResult.</value>
-  </data>
-  <data name="InvalidOperation_WrongAsyncResultOrEndWriteCalledMultiple" xml:space="preserve">
-    <value>Either the IAsyncResult object did not come from the corresponding async method on this type, or EndWrite was called multiple times with the same IAsyncResult.</value>
-  </data>
   <data name="ObjectDisposed_StreamIsClosed" xml:space="preserve">
     <value>Cannot access a closed Stream.</value>
   </data>
