@@ -5,6 +5,7 @@
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <ProjectGuid>{4C2655DB-BD9E-4C86-83A6-744ECDDBDF29}</ProjectGuid>
     <PackageTargetFramework>netstandard1.1</PackageTargetFramework>
+    <DocumentationFile>$(OutputPath)$(AssemblyName).xml</DocumentationFile>
     <UseOpenKey Condition="'$(UseOpenKey)'==''">true</UseOpenKey>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.1</NuGetTargetMoniker>
   </PropertyGroup>
