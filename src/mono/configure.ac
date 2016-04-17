@@ -3265,8 +3265,10 @@ case "$host" in
 	GTKX11="libgtk-x11-2.0.dylib"
 	;;
      *-*-*netbsd*)
-	LIBC="libc.so.12"
-	INTL="libintl.so.0"
+	LIBC="libc.so"
+	INTL="libintl.so"
+	SQLITE="libsqlite.so"
+	SQLITE3="libsqlite3.so"
 	;;
      *-*-kfreebsd*-gnu)
 	LIBC="libc.so.0.1"
