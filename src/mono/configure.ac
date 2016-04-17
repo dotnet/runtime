@@ -92,11 +92,11 @@ case "$host" in
 		host_win32=yes
 		mono_cv_clang=no
 		if test "x$cross_compiling" = "xno"; then
-			if test "x$host" == "x$build" -a "x$host" == "x$target"; then
+			if test "x$host" = "x$build" -a "x$host" = "x$target"; then
 				target_win32=yes
 			fi
 		else
-			if test "x$host" == "x$target"; then
+			if test "x$host" = "x$target"; then
 				target_win32=yes
 			fi
 		fi
@@ -2451,7 +2451,7 @@ fi
 AC_ARG_ENABLE(bcl-opt, [  --disable-bcl-opt	BCL is compiled with no optimizations (allows accurate BCL debugging)], test_bcl_opt=$enableval, test_bcl_opt=yes)
 
 AC_ARG_ENABLE(perf-events, [  --enable-perf-events Enable using `perf` for profiling on Linux], test_perf_events=$enableval, test_perf_events=no)
-if test "x$test_perf_events" == "xyes"; then
+if test "x$test_perf_events" = "xyes"; then
 	AC_DEFINE(ENABLE_PERF_EVENTS, 1, [Enable using `perf` for profiling on Linux])
 	AC_SUBST(ENABLE_PERF_EVENTS)
 fi
@@ -2613,7 +2613,7 @@ if test "x$enable_llvm" = "xyes"; then
    AC_MSG_CHECKING(LLVM version)
    AC_MSG_RESULT($llvm_version $llvm_api_version)
    if echo $llvm_version | grep -q 'mono'; then
-	  if test "x$enable_llvm_version_check" == "xyes"; then
+	  if test "x$enable_llvm_version_check" = "xyes"; then
 	  	 if test "$llvm_version" != "$expected_llvm_version"; then
 		 	AC_MSG_ERROR([Expected llvm version $expected_llvm_version, but llvm-config --version returned $llvm_version"])
 	  	 fi
@@ -2648,7 +2648,7 @@ if test "x$enable_llvm" = "xyes"; then
       llvm_jit_libs=""
    fi
    LLVM_LIBS=`$LLVM_CONFIG --libs analysis core bitwriter $llvm_jit_libs`
-   if test "x$LLVM_LIBS" == "x"; then
+   if test "x$LLVM_LIBS" = "x"; then
    	  echo "$LLVM_CONFIG --libs failed."
 	  exit 1
    fi
