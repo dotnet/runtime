@@ -1440,9 +1440,17 @@ ValueNum ValueNumStore::EvalFuncForConstantArgs(var_types typ, VNFunc func, Valu
     switch (TypeOfVN(arg0VN))
     {
     case TYP_INT:
-        return VNForIntCon(EvalOp(func, ConstantValue<int>(arg0VN)));
+        {
+            int resVal = EvalOp(func, ConstantValue<int>(arg0VN));
+            // Unary op on a handle results in a handle.
+            return IsVNHandle(arg0VN) ? VNForHandle(ssize_t(resVal), GetHandleFlags(arg0VN)) : VNForIntCon(resVal);
+        }
     case TYP_LONG:
-        return VNForLongCon(EvalOp(func, ConstantValue<INT64>(arg0VN)));
+        {
+            INT64 resVal = EvalOp(func, ConstantValue<INT64>(arg0VN));
+            // Unary op on a handle results in a handle.
+            return IsVNHandle(arg0VN) ? VNForHandle(ssize_t(resVal), GetHandleFlags(arg0VN)) : VNForLongCon(resVal);
+        }
     case TYP_FLOAT:
         return VNForFloatCon(EvalOp(func, ConstantValue<float>(arg0VN)));
     case TYP_DOUBLE:
