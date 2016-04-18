@@ -469,7 +469,7 @@ namespace System.Net.Sockets
                 Interop.Error errorCode;
                 if (!_asyncEngineToken.TryRegister(_socket, _registeredEvents, events, out errorCode))
                 {
-                    // TODO: throw an appropriate exception
+                    // TODO (#7850): throw an appropriate exception
                     throw new Exception(string.Format("SocketAsyncContext.Register: {0}", errorCode));
                 }
 
