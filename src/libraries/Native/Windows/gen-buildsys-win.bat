@@ -1,6 +1,7 @@
 @if "%_echo%" neq "on" echo off
 rem
 rem This file invokes cmake and generates the build system for windows.
+
 set argC=0
 for %%x in (%*) do Set /A argC+=1
 
@@ -31,7 +32,7 @@ for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy RemoteSigned "&
 popd
 
 :DoGen
-"%CMakePath%" "-DCMAKE_USER_MAKE_RULES_OVERRIDE=%basePath%/windows-compiler-override.txt" "-DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE%" -G "Visual Studio %__VSString%" -B. -H%1
+"%CMakePath%" "-DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE%" "-DCMAKE_INSTALL_PREFIX=%__CMakeBinDir%" -G "Visual Studio %__VSString%" -B. -H%1
 endlocal
 GOTO :DONE
 
@@ -45,9 +46,3 @@ GOTO :DONE
 
 :DONE
   EXIT /B 0
-
-
-
-
-
-
