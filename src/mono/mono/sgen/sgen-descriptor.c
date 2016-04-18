@@ -186,7 +186,7 @@ mono_gc_make_descr_for_array (int vector, gsize *elem_bitmap, int numbits, size_
 		}
 		/* Note: we also handle structs with just ref fields */
 		if (num_set * sizeof (gpointer) == elem_size) {
-			return desc | VECTOR_SUBTYPE_REFS | ((gssize)(-1) << 16);
+			return desc | VECTOR_SUBTYPE_REFS | ((gsize)(-1) << 16);
 		}
 		/* FIXME: try run-len first */
 		/* Note: we can't skip the object header here, because it's not present */
