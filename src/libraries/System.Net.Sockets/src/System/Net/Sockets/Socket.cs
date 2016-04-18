@@ -5070,7 +5070,7 @@ namespace System.Net.Sockets
                 {
                     if (!s_initialized)
                     {
-                        // TODO: Note for PAL implementation: this call is not required for *NIX and should be avoided during PAL design.
+                        // TODO (#7849): this call is not required for *NIX and should be avoided during PAL design.
 
                         // Ensure that WSAStartup has been called once per process.  
                         // The System.Net.NameResolution contract is responsible with the initialization.
