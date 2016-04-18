@@ -182,11 +182,11 @@ private:
     // to be the sizes of the prolog and epilog, respectively.  In DEBUG, makes a check involving the
     // "codePtr", assumed to be a pointer to the start of the generated code.
 #ifdef JIT32_GCENCODER
-    void*               genCreateAndStoreGCInfo     (unsigned codeSize, unsigned prologSize, unsigned epilogSize DEBUG_ARG(void* codePtr));
-    void*               genCreateAndStoreGCInfoJIT32(unsigned codeSize, unsigned prologSize, unsigned epilogSize DEBUG_ARG(void* codePtr));
+    void*               genCreateAndStoreGCInfo     (unsigned codeSize, unsigned prologSize, unsigned epilogSize DEBUGARG(void* codePtr));
+    void*               genCreateAndStoreGCInfoJIT32(unsigned codeSize, unsigned prologSize, unsigned epilogSize DEBUGARG(void* codePtr));
 #else // !JIT32_GCENCODER
-    void                genCreateAndStoreGCInfo     (unsigned codeSize, unsigned prologSize, unsigned epilogSize DEBUG_ARG(void* codePtr));
-    void                genCreateAndStoreGCInfoX64  (unsigned codeSize, unsigned prologSize DEBUG_ARG(void* codePtr));
+    void                genCreateAndStoreGCInfo     (unsigned codeSize, unsigned prologSize, unsigned epilogSize DEBUGARG(void* codePtr));
+    void                genCreateAndStoreGCInfoX64  (unsigned codeSize, unsigned prologSize DEBUGARG(void* codePtr));
 #endif // !JIT32_GCENCODER
 
     /**************************************************************************

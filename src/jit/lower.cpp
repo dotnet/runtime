@@ -1290,7 +1290,7 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
                                                             FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(info->numSlots)
                                                             FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(info->isStruct),
                                                             call->IsFastTailCall() 
-                                                            DEBUG_ARG(call));
+                                                            DEBUGARG(call));
 #else
         putArg = new (comp, GT_PUTARG_STK) GenTreePutArgStk(GT_PUTARG_STK,
                                                             type, 
@@ -1298,7 +1298,7 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
                                                             info->slotNum
                                                             FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(info->numSlots)
                                                             FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(info->isStruct)
-                                                            DEBUG_ARG(call));
+                                                            DEBUGARG(call));
 #endif
 
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING

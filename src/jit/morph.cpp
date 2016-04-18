@@ -3330,7 +3330,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
                                     else
                                     {
                                         // use GT_LCL_FLD to swizzle the single field struct to a new type
-                                        lvaSetVarDoNotEnregister(lclNum DEBUG_ARG(DNER_LocalField));
+                                        lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_LocalField));
                                         argObj->ChangeOper(GT_LCL_FLD);
                                         argObj->gtType = structBaseType;
                                     }
@@ -4257,7 +4257,7 @@ Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call,
     // allocated on stack and address of it needs to be passed.
     if (lclVarIsSIMDType(tmp))
     {
-        lvaSetVarDoNotEnregister(tmp DEBUG_ARG(DNER_IsStruct));
+        lvaSetVarDoNotEnregister(tmp DEBUGARG(DNER_IsStruct));
     }
 
     // Create a reference to the temp
@@ -7416,7 +7416,7 @@ ONE_SIMPLE_ASG:
             {
                 // Could be a non-promoted struct, or a floating point type local, or
                 // an int subject to a partial write.  Don't enregister.
-                lvaSetVarDoNotEnregister(lclNum DEBUG_ARG(DNER_LocalField));
+                lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_LocalField));
                 // Fall through to indirect the dest node.
             }
             // Mark the local var tree as a definition point of the local.
@@ -7487,10 +7487,10 @@ _DoneDest:;
                     // we don't delete it as a dead store later on.
                     unsigned lclVarNum = lclVarTree->gtLclVarCommon.gtLclNum;
                     lvaTable[lclVarNum].lvAddrExposed = true;
-                    lvaSetVarDoNotEnregister(lclVarNum DEBUG_ARG(DNER_AddrExposed));
+                    lvaSetVarDoNotEnregister(lclVarNum DEBUGARG(DNER_AddrExposed));
 
 #else // LEGACY_BACKEND
-                    lvaSetVarDoNotEnregister(lclVarTree->gtLclVarCommon.gtLclNum DEBUG_ARG(DNER_LocalField));
+                    lvaSetVarDoNotEnregister(lclVarTree->gtLclVarCommon.gtLclNum DEBUGARG(DNER_LocalField));
 #endif // LEGACY_BACKEND
 
                     // Fall through to indirect the src node.
@@ -7664,7 +7664,7 @@ GenTreePtr          Compiler::fgMorphInitBlock(GenTreePtr tree)
             if (!destLclVar->lvRegStruct)
             {
                 // Mark it as DoNotEnregister.
-                lvaSetVarDoNotEnregister(destLclNum DEBUG_ARG(DNER_BlockOp));
+                lvaSetVarDoNotEnregister(destLclNum DEBUGARG(DNER_BlockOp));
             }
         }
 
@@ -8048,7 +8048,7 @@ GenTreePtr          Compiler::fgMorphCopyBlock(GenTreePtr tree)
             if (!destLclVar->lvRegStruct)
             {
                 // Mark it as DoNotEnregister.
-                lvaSetVarDoNotEnregister(destLclNum DEBUG_ARG(DNER_BlockOp));
+                lvaSetVarDoNotEnregister(destLclNum DEBUGARG(DNER_BlockOp));
             }
         }
 
@@ -8056,7 +8056,7 @@ GenTreePtr          Compiler::fgMorphCopyBlock(GenTreePtr tree)
         {
             if (!srcLclVar->lvRegStruct)
             {
-                lvaSetVarDoNotEnregister(srcLclNum DEBUG_ARG(DNER_BlockOp));
+                lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DNER_BlockOp));
             }
         }
 
@@ -8233,7 +8233,7 @@ GenTreePtr          Compiler::fgMorphCopyBlock(GenTreePtr tree)
                 {
                     unsigned lclVarNum = addrOp->gtLclVarCommon.gtLclNum;
                     lvaTable[lclVarNum].lvAddrExposed = true;
-                    lvaSetVarDoNotEnregister(lclVarNum DEBUG_ARG(DNER_AddrExposed));
+                    lvaSetVarDoNotEnregister(lclVarNum DEBUGARG(DNER_AddrExposed));
                 }
             }
 #endif // !LEGACY_BACKEND
@@ -11039,7 +11039,7 @@ CM_ADD_OP:
                 }
                 else
                 {
-                    lvaSetVarDoNotEnregister(temp->gtLclVarCommon.gtLclNum DEBUG_ARG(DNER_LocalField));
+                    lvaSetVarDoNotEnregister(temp->gtLclVarCommon.gtLclNum DEBUGARG(DNER_LocalField));
                 }
 
                 // We will turn a GT_LCL_VAR into a GT_LCL_FLD with an gtLclOffs of 'ival'
@@ -13020,7 +13020,7 @@ GenTreePtr          Compiler::fgMorphTree(GenTreePtr tree, MorphAddrContext* mac
     }
 DONE:
 
-    fgMorphTreeDone(tree, oldTree DEBUG_ARG(thisMorphNum));
+    fgMorphTreeDone(tree, oldTree DEBUGARG(thisMorphNum));
 
     return tree;
 }
@@ -13104,7 +13104,7 @@ void                Compiler::fgKillDependentAssertions(unsigned lclNum
 
 void                Compiler::fgMorphTreeDone(GenTreePtr tree,
                                               GenTreePtr oldTree /* == NULL */
-                                              DEBUG_ARG(int morphNum))
+                                              DEBUGARG(int morphNum))
 {
 #ifdef DEBUG
     if (verbose && treesBeforeAfterMorph)
@@ -15465,7 +15465,7 @@ Compiler::fgWalkResult      Compiler::fgMorphLocalField(GenTreePtr tree, fgWalkD
         {
             // There is no existing field that has all the parts that we need
             // So we must ensure that the struct lives in memory.
-            lvaSetVarDoNotEnregister(lclNum DEBUG_ARG(DNER_LocalField));
+            lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_LocalField));
 
 #ifdef DEBUG
             // We can't convert this guy to a float because he really does have his
