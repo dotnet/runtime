@@ -70,7 +70,6 @@ else()
   target_link_libraries(ilasm
     ${ILASM_LINK_LIBRARIES}
     coreclr
-    msvcrt
     ole32
     oleaut32
     shell32
