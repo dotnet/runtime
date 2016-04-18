@@ -1635,7 +1635,6 @@ static bool ConvertSocketFlagsPalToPlatform(int32_t palFlags, int& platformFlags
 
     if ((palFlags & ~SupportedFlagsMask) != 0)
     {
-        // TODO: we may want to simply mask off unsupported flags.
         return false;
     }
 
