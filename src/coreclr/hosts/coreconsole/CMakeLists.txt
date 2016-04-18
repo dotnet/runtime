@@ -23,7 +23,8 @@ else()
     )
 
     target_link_libraries(CoreConsole
-        msvcrt.lib
+        ${STATIC_MT_CRT_LIB}
+        ${STATIC_MT_VCRT_LIB}
     )
 
     # Can't compile on linux yet so only add for windows
