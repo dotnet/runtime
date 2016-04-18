@@ -524,12 +524,15 @@ namespace System
 
         public static void ResetColor()
         {
-            bool succeeded;
-            Interop.mincore.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo(false, out succeeded);
-            if (!succeeded)
-                return; // For code that may be used from Windows app w/ no console
+            if (!_haveReadDefaultColors) // avoid the costs of GetBufferInfo if we already know we checked it
+            {
+                bool succeeded;
+                GetBufferInfo(false, out succeeded);
+                if (!succeeded)
+                    return; // For code that may be used from Windows app w/ no console
 
-            Debug.Assert(_haveReadDefaultColors, "Resetting color before we've read the default foreground color!");
+                Debug.Assert(_haveReadDefaultColors, "Resetting color before we've read the default foreground color!");
+            }
 
             // Ignore errors here - there are some scenarios for running code that wants
             // to print in colors to the console in a Windows application.
@@ -1099,7 +1102,7 @@ namespace System
                 // Fetch the default foreground and background color for the ResetColor method.
                 Debug.Assert((int)Interop.mincore.Color.ColorMask == 0xff, "Make sure one byte is large enough to store a Console color value!");
                 _defaultColors = (byte)(csbi.wAttributes & (short)Interop.mincore.Color.ColorMask);
-                _haveReadDefaultColors = true;
+                _haveReadDefaultColors = true; // also used by ResetColor to know when GetBufferInfo has been called successfully
             }
 
             succeeded = true;
