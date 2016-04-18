@@ -12,7 +12,7 @@ using System.Threading;
 
 namespace System.Net.Sockets.Tests
 {
-    // TODO:
+    // TODO (#7852):
     //
     // - Connect(EndPoint):
     //   - disconnected socket
