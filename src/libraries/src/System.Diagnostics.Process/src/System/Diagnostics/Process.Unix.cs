@@ -406,8 +406,9 @@ namespace System.Diagnostics
         /// <returns>The converted time.</returns>
         internal static DateTime BootTimeToDateTime(TimeSpan timespanAfterBoot)
         {
-            // Use the uptime and the current time to determine the absolute boot time
-            DateTime bootTime = DateTime.UtcNow - TimeSpan.FromMilliseconds(Environment.TickCount);
+            // Use the uptime and the current time to determine the absolute boot time. This implementation is relying on the 
+            // implementation detail that Stopwatch.GetTimestamp() uses a value based on time since boot.
+            DateTime bootTime = DateTime.UtcNow - TimeSpan.FromSeconds(Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency);
 
             // And use that to determine the absolute time for timespan.
             DateTime dt = bootTime + timespanAfterBoot;
