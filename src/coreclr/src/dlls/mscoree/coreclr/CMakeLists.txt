@@ -99,9 +99,10 @@ set(CORECLR_LIBRARIES
 
 if(WIN32)
     list(APPEND CORECLR_LIBRARIES
+        ${STATIC_MT_CRT_LIB}
+        ${STATIC_MT_VCRT_LIB}
         mdwinmd_wks
         comnls_wks
-        msvcrt.lib
         kernel32.lib
         advapi32.lib
         ole32.lib
