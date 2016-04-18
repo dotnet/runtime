@@ -181,7 +181,7 @@ public:
     // current platform. It is indended for logging purposes only.
     // Return:
     //  Numeric id of the current thread or 0 if the 
-    static uint32_t GetCurrentThreadIdForLogging();
+    static uint64_t GetCurrentThreadIdForLogging();
 
     // Get id of the current process
     // Return:
