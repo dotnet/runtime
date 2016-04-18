@@ -13,7 +13,7 @@ JitConfigValues JitConfig;
 
 void JitConfigValues::MethodSet::initialize(const wchar_t* list, ICorJitHost* host)
 {
-    _ASSERTE(m_list == nullptr);
+    assert(m_list == nullptr);
 
     enum State { NO_NAME, CLS_NAME, FUNC_NAME, ARG_LIST }; // parsing state machine
 
@@ -122,7 +122,7 @@ void JitConfigValues::MethodSet::initialize(const wchar_t* list, ICorJitHost* ho
             if (m_list[i] == '\0' || m_list[i] == SEP_CHAR || m_list[i] == '(')
             {
             DONE_FUNC_NAME:
-                _ASSERTE(m_list[i] == '\0' || m_list[i] == SEP_CHAR || m_list[i] == '(');
+                assert(m_list[i] == '\0' || m_list[i] == SEP_CHAR || m_list[i] == '(');
 
                 if (m_list[nameStart] == '*' && !isQuoted)
                 {
@@ -150,7 +150,7 @@ void JitConfigValues::MethodSet::initialize(const wchar_t* list, ICorJitHost* ho
                 }
                 else
                 {
-                    _ASSERTE(m_list[i] == '(');
+                    assert(m_list[i] == '(');
                     currentName.m_numArgs = -1;
                     state = ARG_LIST;
                 }
@@ -166,13 +166,13 @@ void JitConfigValues::MethodSet::initialize(const wchar_t* list, ICorJitHost* ho
                 }
 
             DONE_ARG_LIST:
-                _ASSERTE(m_list[i] == '\0' || m_list[i] == SEP_CHAR || m_list[i] == ')');
+                assert(m_list[i] == '\0' || m_list[i] == SEP_CHAR || m_list[i] == ')');
 
                 // We have parsed an entire method name; create a new entry in the list for it.
                 MethodName* name = (MethodName*)host->allocateMemory(sizeof(MethodName));
                 *name = currentName;
 
-                _ASSERTE(name->m_next == nullptr);
+                assert(name->m_next == nullptr);
                 *lastName = name;
                 lastName = &name->m_next;
 
@@ -204,7 +204,7 @@ void JitConfigValues::MethodSet::initialize(const wchar_t* list, ICorJitHost* ho
             break;
 
         default:
-            _ASSERTE(!"Bad state");
+            assert(!"Bad state");
             break;
         }
     }
@@ -298,7 +298,7 @@ bool JitConfigValues::MethodSet::contains(const char* methodName, const char* cl
 
 void JitConfigValues::initialize(ICorJitHost* host)
 {
-    _ASSERTE(!m_isInitialized);
+    assert(!m_isInitialized);
 
 #define CONFIG_INTEGER(name, key, defaultValue) m_##name = host->getIntConfigValue(key, defaultValue);
 #define CONFIG_STRING(name, key) m_##name = host->getStringConfigValue(key);

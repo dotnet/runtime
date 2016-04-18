@@ -1654,7 +1654,7 @@ public:
 #ifdef DEBUG
   private:
     GenTree& operator=(const GenTree& gt) {
-        _ASSERTE(!"Don't copy");
+        assert(!"Don't copy");
         return *this;
     }
 #endif // DEBUG
@@ -1676,7 +1676,7 @@ public:
     inline void* operator new(size_t sz, class Compiler*, genTreeOps oper);
 
     inline GenTree(genTreeOps oper, var_types type
-                   DEBUG_ARG(bool largeNode = false));
+                   DEBUGARG(bool largeNode = false));
 };
 
 
@@ -1692,16 +1692,16 @@ struct GenTreeUnOp: public GenTree
 
 protected:
     GenTreeUnOp(genTreeOps oper, var_types type 
-                DEBUG_ARG(bool largeNode = false)) : 
+                DEBUGARG(bool largeNode = false)) : 
         GenTree(oper, type 
-                DEBUG_ARG(largeNode)),
+                DEBUGARG(largeNode)),
         gtOp1(nullptr)
         {}
 
     GenTreeUnOp(genTreeOps oper, var_types type, GenTreePtr op1 
-                DEBUG_ARG(bool largeNode = false)) : 
+                DEBUGARG(bool largeNode = false)) : 
         GenTree(oper, type 
-                DEBUG_ARG(largeNode)), 
+                DEBUGARG(largeNode)), 
         gtOp1(op1)
         {
             assert(op1 != nullptr || NullOp1Legal());
@@ -1719,9 +1719,9 @@ struct GenTreeOp: public GenTreeUnOp
     GenTreePtr      gtOp2;
 
     GenTreeOp(genTreeOps oper, var_types type, GenTreePtr op1, GenTreePtr op2 
-              DEBUG_ARG(bool largeNode = false)) : 
+              DEBUGARG(bool largeNode = false)) : 
         GenTreeUnOp(oper, type, op1 
-                    DEBUG_ARG(largeNode)), 
+                    DEBUGARG(largeNode)), 
         gtOp2(op2) 
         {
             // comparisons are always integral types
@@ -1741,9 +1741,9 @@ struct GenTreeOp: public GenTreeUnOp
     // A small set of types are unary operators with optional arguments.  We use
     // this constructor to build those.
     GenTreeOp(genTreeOps oper, var_types type 
-              DEBUG_ARG(bool largeNode = false)) : 
+              DEBUGARG(bool largeNode = false)) : 
         GenTreeUnOp(oper, type 
-                    DEBUG_ARG(largeNode)),
+                    DEBUGARG(largeNode)),
         gtOp2(nullptr)
         {
             // Unary operators with optional arguments:
@@ -1780,9 +1780,9 @@ struct GenTreeIntConCommon: public GenTree
     inline void SetIconValue(ssize_t val);
     
     GenTreeIntConCommon(genTreeOps oper, var_types type
-                        DEBUG_ARG(bool largeNode = false)) : 
+                        DEBUGARG(bool largeNode = false)) : 
         GenTree(oper, type 
-                DEBUG_ARG(largeNode))
+                DEBUGARG(largeNode))
         {}
 
         bool FitsInI32() 
@@ -1839,9 +1839,9 @@ struct GenTreeJumpTable : public GenTreeIntConCommon
     ssize_t        gtJumpTableAddr;
 
     GenTreeJumpTable(var_types type
-                  DEBUG_ARG(bool largeNode = false)) : 
+                  DEBUGARG(bool largeNode = false)) : 
         GenTreeIntConCommon(GT_JMPTABLE, type 
-                            DEBUG_ARG(largeNode)) 
+                            DEBUGARG(largeNode)) 
         {}
 #if DEBUGGABLE_GENTREE
     GenTreeJumpTable() : GenTreeIntConCommon() {}
@@ -1910,18 +1910,18 @@ struct GenTreeIntCon: public GenTreeIntConCommon
 #endif
 
     GenTreeIntCon(var_types type, ssize_t value
-                  DEBUG_ARG(bool largeNode = false)) : 
+                  DEBUGARG(bool largeNode = false)) : 
         GenTreeIntConCommon(GT_CNS_INT, type 
-                            DEBUG_ARG(largeNode)),
+                            DEBUGARG(largeNode)),
         gtIconVal(value),
         gtCompileTimeHandle(0),
         gtFieldSeq(FieldSeqStore::NotAField())
         {}
 
     GenTreeIntCon(var_types type, ssize_t value, FieldSeqNode* fields
-                  DEBUG_ARG(bool largeNode = false)) : 
+                  DEBUGARG(bool largeNode = false)) : 
         GenTreeIntConCommon(GT_CNS_INT, type 
-                            DEBUG_ARG(largeNode)),
+                            DEBUGARG(largeNode)),
         gtIconVal(value),
         gtCompileTimeHandle(0),
         gtFieldSeq(fields)
@@ -2042,9 +2042,9 @@ struct GenTreeStrCon: public GenTree
     // Because this node can come from an inlined method we need to
     // have the scope handle, since it will become a helper call.
     GenTreeStrCon(unsigned sconCPX, CORINFO_MODULE_HANDLE mod
-                  DEBUG_ARG(bool largeNode = false)) : 
+                  DEBUGARG(bool largeNode = false)) : 
         GenTree(GT_CNS_STR, TYP_REF 
-                DEBUG_ARG(largeNode)),
+                DEBUGARG(largeNode)),
         gtSconCPX(sconCPX), gtScpHnd(mod)
         {}
 #if DEBUGGABLE_GENTREE
@@ -2062,9 +2062,9 @@ private:
 
 public:
     GenTreeLclVarCommon(genTreeOps oper, var_types type, unsigned lclNum
-                        DEBUG_ARG(bool largeNode = false)) : 
+                        DEBUGARG(bool largeNode = false)) : 
         GenTreeUnOp(oper, type 
-                DEBUG_ARG(largeNode))
+                DEBUGARG(largeNode))
     {
         SetLclNum(lclNum);
     }
@@ -2109,16 +2109,16 @@ struct GenTreeLclVar: public GenTreeLclVarCommon
     IL_OFFSET       gtLclILoffs;    // instr offset of ref (only for debug info)
 
     GenTreeLclVar(var_types type, unsigned lclNum, IL_OFFSET ilOffs
-                  DEBUG_ARG(bool largeNode = false)) : 
+                  DEBUGARG(bool largeNode = false)) : 
         GenTreeLclVarCommon(GT_LCL_VAR, type, lclNum
-                            DEBUG_ARG(largeNode)),
+                            DEBUGARG(largeNode)),
             gtLclILoffs(ilOffs)
             {}
     
     GenTreeLclVar(genTreeOps oper, var_types type, unsigned lclNum, IL_OFFSET ilOffs
-              DEBUG_ARG(bool largeNode = false)) : 
+              DEBUGARG(bool largeNode = false)) : 
         GenTreeLclVarCommon(oper, type, lclNum
-                            DEBUG_ARG(largeNode)),
+                            DEBUGARG(largeNode)),
             gtLclILoffs(ilOffs)
             {
                 assert(OperIsLocal(oper) || OperIsLocalAddr(oper));
@@ -2228,9 +2228,9 @@ struct GenTreeCast: public GenTreeOp
     var_types       gtCastType;
 
     GenTreeCast(var_types type, GenTreePtr op, var_types castType 
-                DEBUG_ARG(bool largeNode = false)) : 
+                DEBUGARG(bool largeNode = false)) : 
         GenTreeOp(GT_CAST, type, op, nullptr
-                    DEBUG_ARG(largeNode)), 
+                    DEBUGARG(largeNode)), 
         gtCastType(castType) 
         {}
 #if DEBUGGABLE_GENTREE
@@ -2737,7 +2737,7 @@ struct GenTreeQmark : public GenTreeOp
     VARSET_TP       gtThenLiveSet;
     VARSET_TP       gtElseLiveSet;
     
-    // The "Compiler*" argument is not a DEBUG_ARG here because we use it to keep track of the set of
+    // The "Compiler*" argument is not a DEBUGARG here because we use it to keep track of the set of
     // (possible) QMark nodes.
     GenTreeQmark(var_types type, GenTreePtr cond, GenTreePtr colonOp, class Compiler* comp);
 
@@ -3026,7 +3026,7 @@ public:
     bool gtBlkOpGcUnsafe; 
 
     GenTreeBlkOp(genTreeOps oper) :
-        GenTreeOp(oper, TYP_VOID DEBUG_ARG(true)),
+        GenTreeOp(oper, TYP_VOID DEBUGARG(true)),
             gtBlkOpKind(BlkOpKindInvalid),
             gtBlkOpGcUnsafe(false)
     {
@@ -3555,10 +3555,10 @@ struct GenTreePutArgStk: public GenTreeUnOp
             FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(unsigned numSlots)
             FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(bool isStruct),
             bool _putInIncomingArgArea = false
-            DEBUG_ARG(GenTreePtr callNode = NULL)
-            DEBUG_ARG(bool largeNode = false))
+            DEBUGARG(GenTreePtr callNode = NULL)
+            DEBUGARG(bool largeNode = false))
         : 
-        GenTreeUnOp(oper, type DEBUG_ARG(largeNode)),
+        GenTreeUnOp(oper, type DEBUGARG(largeNode)),
         gtSlotNum(slotNum),
         putInIncomingArgArea(_putInIncomingArgArea)
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
@@ -3583,10 +3583,10 @@ struct GenTreePutArgStk: public GenTreeUnOp
             FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(unsigned numSlots)
             FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(bool isStruct),
             bool _putInIncomingArgArea = false
-            DEBUG_ARG(GenTreePtr callNode = NULL)
-            DEBUG_ARG(bool largeNode = false))
+            DEBUGARG(GenTreePtr callNode = NULL)
+            DEBUGARG(bool largeNode = false))
         :
-        GenTreeUnOp(oper, type, op1 DEBUG_ARG(largeNode)), 
+        GenTreeUnOp(oper, type, op1 DEBUGARG(largeNode)), 
         gtSlotNum(slotNum),
         putInIncomingArgArea(_putInIncomingArgArea)
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
@@ -3610,10 +3610,10 @@ struct GenTreePutArgStk: public GenTreeUnOp
             unsigned slotNum
             FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(unsigned numSlots)
             FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(bool isStruct)
-            DEBUG_ARG(GenTreePtr callNode = NULL)
-            DEBUG_ARG(bool largeNode = false))
+            DEBUGARG(GenTreePtr callNode = NULL)
+            DEBUGARG(bool largeNode = false))
         :
-        GenTreeUnOp(oper, type DEBUG_ARG(largeNode)),
+        GenTreeUnOp(oper, type DEBUGARG(largeNode)),
         gtSlotNum(slotNum)
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
         , gtPutArgStkKind(PutArgStkKindInvalid),
@@ -3636,10 +3636,10 @@ struct GenTreePutArgStk: public GenTreeUnOp
             unsigned slotNum
             FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(unsigned numSlots)
             FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(bool isStruct)
-            DEBUG_ARG(GenTreePtr callNode = NULL)
-            DEBUG_ARG(bool largeNode = false))
+            DEBUGARG(GenTreePtr callNode = NULL)
+            DEBUGARG(bool largeNode = false))
         :
-        GenTreeUnOp(oper, type, op1 DEBUG_ARG(largeNode)), 
+        GenTreeUnOp(oper, type, op1 DEBUGARG(largeNode)), 
         gtSlotNum(slotNum)
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
         , gtPutArgStkKind(PutArgStkKindInvalid),

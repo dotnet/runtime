@@ -972,7 +972,7 @@ private:
 
     // A map from bbNum to the block information used during register allocation.
     LsraBlockInfo*              blockInfo;
-    BasicBlock*                 findPredBlockForLiveIn(BasicBlock* block, BasicBlock* prevBlock DEBUG_ARG(bool* pPredBlockIsAllocated));
+    BasicBlock*                 findPredBlockForLiveIn(BasicBlock* block, BasicBlock* prevBlock DEBUGARG(bool* pPredBlockIsAllocated));
 
     // The order in which the blocks will be allocated.
     // This is any array of BasicBlock*, in the order in which they should be traversed.
