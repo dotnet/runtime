@@ -10,17 +10,6 @@ using System.Threading;
 
 namespace System.Net.Sockets
 {
-    // TODO:
-    // - Plumb status through async APIs to avoid callbacks on synchronous completion
-    //     - NOTE: this will require refactoring in the *Async APIs to accommodate the lack
-    //             of completion posting
-    // - Add support for unregistering + reregistering for events
-    //     - This will require a new state for each queue, unregistred, to track whether or
-    //       not the queue is currently registered to receive events
-    // - Audit Close()-related code for the possibility of file descriptor recycling issues
-    //     - It might make sense to change _closeLock to a ReaderWriterLockSlim that is
-    //       acquired for read by all public methods before attempting a completion and
-    //       acquired for write by Close() and HandlEvents()
     //
     // NOTE: the publicly-exposed asynchronous methods should match the behavior of
     //       Winsock overlapped sockets as closely as possible. Especially important are
@@ -41,6 +30,7 @@ namespace System.Net.Sockets
     //       case). The publicly-exposed synchronous methods may also encounter the second
     //       case. In this situation these methods should return SocketError.Interrupted
     //       (which again matches Winsock).
+    //
     internal sealed class SocketAsyncContext
     {
         private abstract class AsyncOperation
