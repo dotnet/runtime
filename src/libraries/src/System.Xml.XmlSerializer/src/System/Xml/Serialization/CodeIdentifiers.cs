@@ -20,18 +20,7 @@ namespace System.Xml.Serialization
     /// </devdoc>
     internal class CodeIdentifiers
     {
-        private readonly Dictionary<string, object> _identifiers;
-        private readonly Dictionary<string, object> _reservedIdentifiers;
-        private readonly List<object> _list;
-
-        public CodeIdentifiers()
-        {
-            _identifiers = new Dictionary<string, object>();
-            _reservedIdentifiers = new Dictionary<string, object>();
-            _list = new List<object>();
-        }
-
-
+        private readonly HashSet<string> _identifiers = new HashSet<string>();
 
         /// <include file='doc\CodeIdentifiers.uex' path='docs/doc[@for="CodeIdentifiers.MakeUnique"]/*' />
         /// <devdoc>
@@ -78,7 +67,7 @@ namespace System.Xml.Serialization
         /// </devdoc>
         public bool IsInUse(string identifier)
         {
-            return _identifiers.ContainsKey(identifier) || _reservedIdentifiers.ContainsKey(identifier);
+            return _identifiers.Contains(identifier);
         }
 
         /// <include file='doc\CodeIdentifiers.uex' path='docs/doc[@for="CodeIdentifiers.Add"]/*' />
@@ -87,8 +76,7 @@ namespace System.Xml.Serialization
         /// </devdoc>
         public void Add(string identifier, object value)
         {
-            _identifiers.Add(identifier, value);
-            _list.Add(value);
+            _identifiers.Add(identifier);
         }
     }
 }

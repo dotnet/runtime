@@ -63,7 +63,8 @@ namespace System.Xml.Serialization
             get
             {
                 object obj;
-                return _table.TryGetValue(new NameKey(name, ns), out obj) ? obj : null;
+                _table.TryGetValue(new NameKey(name, ns), out obj);
+                return obj;
             }
             set
             {
@@ -79,11 +80,7 @@ namespace System.Xml.Serialization
         internal Array ToArray(Type type)
         {
             Array a = Array.CreateInstance(type, _table.Count);
-            int arrayIndex = 0;
-            foreach (var value in _table.Values)
-            {
-                a.SetValue(value, arrayIndex++);
-            }
+            ((ICollection)_table.Values).CopyTo(a, 0);
             return a;
         }
     }

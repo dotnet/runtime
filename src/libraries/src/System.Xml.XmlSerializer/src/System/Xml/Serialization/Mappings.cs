@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
-
 namespace System.Xml.Serialization
 {
     using System.Reflection;
@@ -14,6 +12,7 @@ namespace System.Xml.Serialization
     using System.ComponentModel;
     using System.Xml;
     using System.CodeDom.Compiler;
+    using System.Collections.Generic;
 
     // These classes represent a mapping between classes and a particular XML format.
     // There are two class of mapping information: accessors (such as elements and
