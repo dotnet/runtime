@@ -7,6 +7,13 @@ usage()
     echo "  -s         Fetch source history from all configured remotes"
     echo "             (git fetch --all -p -v)"
     echo "  -p         Restore all NuGet packages for the repository"
+    echo "  -ab        Downloads the latests product packages from Azure."
+    echo "             The following properties are required:'"
+    echo "               /p:CloudDropAccountName='Account name'"
+    echo "               /p:CloudDropAccessToken='Access token'"
+    echo "             To download a specific group of product packages, specify:"
+    echo "               /p:BuildNumberMajor"
+    echo "               /p:BuildNumberMinor"
     echo
     echo "If no option is specified, then \"sync.sh -p -s\" is implied."
     exit 1
@@ -39,6 +46,9 @@ do
         -s)
         sync_src=true
         ;;
+        -ab)
+        azure_blobs=true
+        ;;
         *)
         unprocessedBuildArgs="$unprocessedBuildArgs $1"
     esac
@@ -54,6 +64,18 @@ if [ "$sync_src" == true ]; then
     if [ $? -ne 0 ]; then
         echo -e "\ngit fetch failed. Aborting sync." >> $sync_log
         echo "ERROR: An error occurred while fetching remote source code; see $sync_log for more details."
+        exit 1
+    fi
+fi
+
+if [ "$azure_blobs" == true ]; then
+    echo "Connecting and downloading packages from Azure BLOB ..."
+    echo -e "\n$working_tree_root/Tools/corerun $working_tree_root/Tools/MSBuild.exe $working_tree_root/src/syncAzure.proj $options $unprocessedBuildArgs" >> $sync_log
+    $working_tree_root/Tools/corerun $working_tree_root/Tools/MSBuild.exe $working_tree_root/src/syncAzure.proj $options $unprocessedBuildArgs
+    if [ $? -ne 0 ]
+    then
+        echo -e "\nDownload from Azure failed. Aborting sync." >> $sync_log
+        echo "ERROR: An error occurred while downloading packages from Azure BLOB; see $sync_log for more details. There may have been networking problems, so please try again in a few minutes."
         exit 1
     fi
 fi
