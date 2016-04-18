@@ -271,7 +271,6 @@ namespace System.Net.Sockets
 
         private void CompletionCallback(int bytesTransferred, SocketError socketError)
         {
-            // TODO: plumb SocketFlags through TransferOperation
             if (socketError == SocketError.Success)
             {
                 FinishOperationSuccess(socketError, bytesTransferred, _receivedFlags);
