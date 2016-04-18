@@ -303,6 +303,11 @@ namespace System.Text.RegularExpressions.Tests
         {
             Assert.Equal(expectedSuccess, match.Success);
             Assert.Equal(expectedValue, match.Value);
+
+            // Groups can never be empty
+            Assert.True(match.Groups.Count >= 1);
+            Assert.Equal(expectedSuccess, match.Groups[0].Success);
+            Assert.Equal(expectedValue, match.Groups[0].Value);
         }
 
         [Fact]
@@ -640,6 +645,8 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Equal(expected.Length, match.Groups.Count);
             for (int i = 0; i < match.Groups.Count; i++)
             {
+                Assert.Equal(expectedSuccess, match.Groups[i].Success);
+
                 Assert.Equal(expected[i].Value, match.Groups[i].Value);
                 Assert.Equal(expected[i].Index, match.Groups[i].Index);
                 Assert.Equal(expected[i].Length, match.Groups[i].Length);

@@ -11,24 +11,6 @@ namespace System.Text.RegularExpressions.Tests
     public class GroupCollectionTests
     {
         [Fact]
-        public static void Groups_Get_NeverReturnsEmptyCollection()
-        {
-            string inputWithoutGroup = "Today is a great day for coding.";
-            string inputWithGroup = "I had had an accident.";
-            Regex regex = new Regex(@"(\w+)\s(\1)");
-            Match matchPos = regex.Match(inputWithGroup);
-            Match matchNeg = regex.Match(inputWithoutGroup);
-
-            //test if Success returns true with group(s) present
-            Assert.True(matchPos.Groups[0].Success);
-
-            //public [] operator calling internal GetGroup()
-            //should return internal _emptygroup thus making
-            //call to Success() false
-            Assert.False(matchNeg.Groups[0].Success);
-        }
-
-        [Fact]
         public static void GetEnumerator()
         {
             Regex regex = new Regex(@"(?<A1>a*)(?<A2>b*)(?<A3>c*)");
