@@ -340,7 +340,7 @@ public:
     // Returns the VN representing the union of the two exception sets "xs0" and "xs1".
     // These must be VNForEmtpyExcSet() or applications of VNF_ExcSetCons, obeying
     // the ascending order invariant (which is preserved in the result.)
-    ValueNum VNExcSetUnion(ValueNum xs0, ValueNum xs1 DEBUG_ARG(bool topLevel = true));
+    ValueNum VNExcSetUnion(ValueNum xs0, ValueNum xs1 DEBUGARG(bool topLevel = true));
 
     ValueNumPair VNPExcSetUnion(ValueNumPair xs0vnp, ValueNumPair xs1vnp);
 

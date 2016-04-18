@@ -5469,7 +5469,7 @@ START:
 #if defined(_PREFAST_) || defined(_PREFIX_)             
             PREFIX_ASSUME(pParam->pComp != NULL);
 #else
-            _ASSERTE(pParam->pComp != NULL);
+            assert(pParam->pComp != NULL);
 #endif
             
             pParam->pComp->compInit(pParam->pAlloc, pParam->inlineInfo);

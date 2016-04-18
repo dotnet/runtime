@@ -1847,7 +1847,7 @@ SKIP_QMARK:
                         // If it is a GC-ref type then mark it DoNotEnregister.
                         if (varTypeIsGC(varDsc->TypeGet()))
                         {
-                            lvaSetVarDoNotEnregister(lclNum DEBUG_ARG(DNER_LiveAcrossUnmanagedCall));
+                            lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_LiveAcrossUnmanagedCall));
                         }
                     }
                 }
@@ -2687,7 +2687,7 @@ void                Compiler::fgInterBlockLocalVarLiveness()
              VarSetOps::IsMember(this, filterVars, varDsc->lvVarIndex))
         {
             /* Mark the variable appropriately */
-            lvaSetVarDoNotEnregister(varNum DEBUG_ARG(DNER_LiveInOutOfHandler));
+            lvaSetVarDoNotEnregister(varNum DEBUGARG(DNER_LiveInOutOfHandler));
         }
 
         /* Mark all pointer variables live on exit from a 'finally'
@@ -2696,7 +2696,7 @@ void                Compiler::fgInterBlockLocalVarLiveness()
 
         if  (VarSetOps::IsMember(this, finallyVars, varDsc->lvVarIndex))
         {
-            lvaSetVarDoNotEnregister(varNum DEBUG_ARG(DNER_LiveInOutOfHandler));
+            lvaSetVarDoNotEnregister(varNum DEBUGARG(DNER_LiveInOutOfHandler));
 
             /* Don't set lvMustInit unless we have a non-arg, GC pointer */
 

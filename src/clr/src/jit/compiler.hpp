@@ -839,7 +839,7 @@ void* GenTree::operator new(size_t sz, Compiler* comp, genTreeOps oper)
 
 // GenTree constructor
 inline
-GenTree::GenTree(genTreeOps oper, var_types type DEBUG_ARG(bool largeNode))
+GenTree::GenTree(genTreeOps oper, var_types type DEBUGARG(bool largeNode))
 {
     gtOper     = oper;
     gtType     = type;
@@ -984,7 +984,7 @@ GenTreePtr          Compiler::gtNewLargeOperNode(genTreeOps     oper,
 
     assert(GenTree::s_gtNodeSizes[oper   ] == TREE_NODE_SZ_SMALL);
 
-    GenTreePtr node = new(this, LargeOpOpcode()) GenTreeOp(oper, type, op1, op2 DEBUG_ARG(/*largeNode*/true));
+    GenTreePtr node = new(this, LargeOpOpcode()) GenTreeOp(oper, type, op1, op2 DEBUGARG(/*largeNode*/true));
 #else
     GenTreePtr node = new(this, oper) GenTreeOp(oper, type, op1, op2);
 #endif
@@ -1013,7 +1013,7 @@ GenTreePtr          Compiler::gtNewIconHandleNode(size_t        value,
         fields = FieldSeqStore::NotAField();
 
 #if defined(LATE_DISASM)
-    node = new (this, LargeOpOpcode()) GenTreeIntCon(TYP_I_IMPL, value, fields DEBUG_ARG(/*largeNode*/true));
+    node = new (this, LargeOpOpcode()) GenTreeIntCon(TYP_I_IMPL, value, fields DEBUGARG(/*largeNode*/true));
 
     node->gtIntCon.gtIconHdl.gtIconHdl1 = handle1;
     node->gtIntCon.gtIconHdl.gtIconHdl2 = handle2;
@@ -1395,7 +1395,7 @@ GenTreePtr          Compiler::gtNewCastNodeL(var_types typ, GenTreePtr op1,
 
     /* Make a big node first and then change it to be GT_CAST */
 
-    GenTreePtr res = new (this, LargeOpOpcode()) GenTreeCast(typ, op1, castType DEBUG_ARG(/*largeNode*/true));
+    GenTreePtr res = new (this, LargeOpOpcode()) GenTreeCast(typ, op1, castType DEBUGARG(/*largeNode*/true));
     return res;
 
 }

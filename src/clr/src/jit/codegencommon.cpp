@@ -3189,7 +3189,7 @@ void                CodeGen::genGenerateCode(void * * codePtr,
     void* infoPtr = 
 #endif // DEBUG    
 #endif
-        genCreateAndStoreGCInfo(codeSize, prologSize, epilogSize DEBUG_ARG(codePtr));
+        genCreateAndStoreGCInfo(codeSize, prologSize, epilogSize DEBUGARG(codePtr));
 
 #ifdef  DEBUG
     FILE* dmpf = stdout;
