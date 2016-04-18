@@ -342,7 +342,7 @@ PTR_BYTE ReadyToRunInfo::GetDebugInfo(PTR_RUNTIME_FUNCTION pRuntimeFunction)
     SIZE_T methodIndex = pRuntimeFunction - m_pRuntimeFunctions;
     _ASSERTE(methodIndex < m_nRuntimeFunctions);
 
-    NativeArray debugInfoIndex(&m_nativeReader, pDebugInfoDir->VirtualAddress);
+    NativeArray debugInfoIndex(dac_cast<PTR_NativeReader>(PTR_HOST_INT_TO_TADDR(&m_nativeReader)), pDebugInfoDir->VirtualAddress);
 
     uint offset;
     if (!debugInfoIndex.TryGetAt((DWORD)methodIndex, &offset))
