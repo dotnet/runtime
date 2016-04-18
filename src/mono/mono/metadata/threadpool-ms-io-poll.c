@@ -29,12 +29,6 @@ poll_init (gint wakeup_pipe_fd)
 }
 
 static void
-poll_cleanup (void)
-{
-	g_free (poll_fds);
-}
-
-static void
 poll_register_fd (gint fd, gint events, gboolean is_new)
 {
 	gint i;
@@ -236,7 +230,6 @@ poll_event_wait (void (*callback) (gint fd, gint events, gpointer user_data), gp
 
 static ThreadPoolIOBackend backend_poll = {
 	.init = poll_init,
-	.cleanup = poll_cleanup,
 	.register_fd = poll_register_fd,
 	.remove_fd = poll_remove_fd,
 	.event_wait = poll_event_wait,
