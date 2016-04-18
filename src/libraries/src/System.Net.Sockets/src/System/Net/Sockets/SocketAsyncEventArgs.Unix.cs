@@ -52,7 +52,7 @@ namespace System.Net.Sockets
 
         private void AcceptCompletionCallback(IntPtr acceptedFileDescriptor, byte[] socketAddress, int socketAddressSize, SocketError socketError)
         {
-            // TODO: receive bytes on socket if requested
+            // TODO (#7836): receive bytes on socket if requested
 
             _acceptedFileDescriptor = acceptedFileDescriptor;
             Debug.Assert(socketAddress == null || socketAddress == _acceptBuffer, $"Unexpected socketAddress: {socketAddress}");
