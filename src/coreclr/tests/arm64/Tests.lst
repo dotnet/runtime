@@ -46645,7 +46645,7 @@ RelativePath=CoreMangLib\cti\system\convert\ConvertToUInt6413\ConvertToUInt6413.
 WorkingDir=CoreMangLib\cti\system\convert\ConvertToUInt6413
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri1;RT;UNSTABLE
+Categories=Pri1;RT;EXPECTED_PASS
 HostStyle=0
 [ConvertToUInt6414.cmd_6768]
 RelativePath=CoreMangLib\cti\system\convert\ConvertToUInt6414\ConvertToUInt6414.cmd
@@ -50418,7 +50418,7 @@ RelativePath=CoreMangLib\cti\system\math\MathIEEERemainder\MathIEEERemainder.cmd
 WorkingDir=CoreMangLib\cti\system\math\MathIEEERemainder
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri1;RT;EXPECTED_FAIL;DBG_PASS;NEED_TRIAGE
+Categories=Pri1;RT;EXPECTED_PASS
 HostStyle=0
 [MathLog.cmd_7307]
 RelativePath=CoreMangLib\cti\system\math\MathLog\MathLog.cmd
@@ -50614,7 +50614,7 @@ RelativePath=CoreMangLib\cti\system\math\MathRound2\MathRound2.cmd
 WorkingDir=CoreMangLib\cti\system\math\MathRound2
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri1;RT;EXPECTED_FAIL;NEED_TRIAGE;DBG_PASS
+Categories=Pri1;RT;EXPECTED_PASS
 HostStyle=0
 [MathRound3.cmd_7335]
 RelativePath=CoreMangLib\cti\system\math\MathRound3\MathRound3.cmd
@@ -50628,7 +50628,7 @@ RelativePath=CoreMangLib\cti\system\math\MathRound4\MathRound4.cmd
 WorkingDir=CoreMangLib\cti\system\math\MathRound4
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri1;RT;EXPECTED_FAIL;NEED_TRIAGE;DBG_PASS
+Categories=Pri1;RT;EXPECTED_PASS
 HostStyle=0
 [MathSign1.cmd_7337]
 RelativePath=CoreMangLib\cti\system\math\MathSign1\MathSign1.cmd
