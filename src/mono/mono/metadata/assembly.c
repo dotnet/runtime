@@ -1636,7 +1636,14 @@ mono_assembly_open_full (const char *filename, MonoImageOpenStatus *status, gboo
 	if (!mono_assembly_is_in_gac (fname)) {
 		MonoError error;
 		new_fname = mono_make_shadow_copy (fname, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		if (!is_ok (&error)) {
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY,
+				    "Assembly Loader shadow copy error: %s.", mono_error_get_message (&error));
+			mono_error_cleanup (&error);
+			*status = MONO_IMAGE_IMAGE_INVALID;
+			g_free (fname);
+			return NULL;
+		}
 	}
 	if (new_fname && new_fname != fname) {
 		g_free (fname);
@@ -2597,10 +2604,12 @@ mono_assembly_load_with_partial_name (const char *name, MonoImageOpenStatus *sta
 		MonoReflectionAssembly *refasm;
 
 		refasm = mono_try_assembly_resolve (domain, mono_string_new (domain, name), NULL, FALSE, &error);
-		if (!mono_error_ok (&error)) {
+		if (!is_ok (&error)) {
 			g_free (fullname);
 			mono_assembly_name_free (aname);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			mono_error_cleanup (&error);
+			if (*status == MONO_IMAGE_OK)
+				*status = MONO_IMAGE_IMAGE_INVALID;
 		}
 
 		if (refasm)
