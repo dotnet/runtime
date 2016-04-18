@@ -8,9 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- use Win10 temporarily as the distinguishing factor, in reality the distinction is app-container vs not. -->
     <File Include="$(WinNativePath)..\..\NetCoreForCoreCLR\native\clrcompression.dll">
-      <TargetPath>runtimes/win10-$(PackagePlatform)/native</TargetPath>
+      <TargetPath>runtimes/win10-$(PackagePlatform)/lib/netcore50</TargetPath>
     </File>
   </ItemGroup>
 
