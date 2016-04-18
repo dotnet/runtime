@@ -2056,7 +2056,7 @@ namespace System.Net.Sockets.Tests
 
                 Assert.Equal(connectTo, ipPacketInformation.Address);
 
-                // TODO: Move to NetworkInformation tests.
+                // TODO (#7854): Move to NetworkInformation tests.
                 // Assert.Equal(NetworkInterface.IPv6LoopbackInterfaceIndex, ipPacketInformation.Interface);
             }
         }
@@ -2229,7 +2229,7 @@ namespace System.Net.Sockets.Tests
                 Assert.NotNull(ipPacketInformation);
                 Assert.Equal(connectTo, ipPacketInformation.Address);
 
-                // TODO: Move to NetworkInformation tests.
+                // TODO (#7854): Move to NetworkInformation tests.
                 //Assert.Equal(NetworkInterface.IPv6LoopbackInterfaceIndex, ipPacketInformation.Interface);
             }
         }
@@ -2402,7 +2402,7 @@ namespace System.Net.Sockets.Tests
                 Assert.NotNull(args.ReceiveMessageFromPacketInfo);
                 Assert.Equal(connectTo, args.ReceiveMessageFromPacketInfo.Address);
 
-                // TODO: Move to NetworkInformation tests.
+                // TODO (#7854): Move to NetworkInformation tests.
                 // Assert.Equal(NetworkInterface.IPv6LoopbackInterfaceIndex, args.ReceiveMessageFromPacketInfo.Interface);
             }
         }
