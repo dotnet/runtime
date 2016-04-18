@@ -32,7 +32,6 @@
 
 typedef struct {
 	gboolean (*init) (gint wakeup_pipe_fd);
-	void     (*cleanup) (void);
 	void     (*register_fd) (gint fd, gint events, gboolean is_new);
 	void     (*remove_fd) (gint fd);
 	gint     (*event_wait) (void (*callback) (gint fd, gint events, gpointer user_data), gpointer user_data);
@@ -551,24 +550,6 @@ cleanup (void)
 	selector_thread_wakeup ();
 	while (io_selector_running)
 		mono_thread_info_usleep (1000);
-
-	mono_coop_mutex_destroy (&threadpool_io->updates_lock);
-	mono_coop_cond_destroy (&threadpool_io->updates_cond);
-
-	threadpool_io->backend.cleanup ();
-
-#if !defined(HOST_WIN32)
-	close (threadpool_io->wakeup_pipes [0]);
-	close (threadpool_io->wakeup_pipes [1]);
-#else
-	closesocket (threadpool_io->wakeup_pipes [0]);
-	closesocket (threadpool_io->wakeup_pipes [1]);
-#endif
-
-	g_assert (threadpool_io);
-	g_free (threadpool_io);
-	threadpool_io = NULL;
-	g_assert (!threadpool_io);
 }
 
 void
