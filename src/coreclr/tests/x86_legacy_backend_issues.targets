@@ -286,9 +286,6 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\forceinlining\PositiveCases\PositiveCases.cmd">
       <Issue>needs triage</Issue>
     </ExcludeList>
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-EJIT\V1-M09.5-PDC\b14426\b14426\b14426.cmd">
-      <Issue>needs triage</Issue>
-    </ExcludeList>
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\xxobj\operand\_il_dbglocalloc\_il_dbglocalloc.cmd">
       <Issue>needs triage</Issue>
     </ExcludeList>
