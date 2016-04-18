@@ -130,7 +130,7 @@ if(CLR_CMAKE_PLATFORM_UNIX)
   # Set flag to indicate if this will be a 64bit build
   # CMAKE_SYSTEM_PROCESSOR returns the value of `uname -p`.
   # For the AMD/Intel 64bit architecure two different strings are common.
-  # Linux and Darwin identify it as "x86_64" while FreeBSD uses the
+  # Linux and Darwin identify it as "x86_64" while FreeBSD and NetBSD use the
   # "amd64" string. Accept either of the two here.
   if(CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64 OR CMAKE_SYSTEM_PROCESSOR STREQUAL amd64 OR CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64)
     set(IS_64BIT_BUILD 1)
@@ -411,6 +411,10 @@ if (CLR_CMAKE_PLATFORM_UNIX)
   if(CLR_CMAKE_PLATFORM_FREEBSD)
     message("Detected FreeBSD amd64")
   endif(CLR_CMAKE_PLATFORM_FREEBSD)
+
+  if(CLR_CMAKE_PLATFORM_NETBSD)
+    message("Detected NetBSD amd64")
+  endif(CLR_CMAKE_PLATFORM_NETBSD)
 
   # Disable frame pointer optimizations so profilers can get better call stacks
   add_compile_options(-fno-omit-frame-pointer)
