@@ -303,9 +303,8 @@ bool fx_muxer_t::resolve_hostpolicy_dir(host_mode_t mode,
         return true;
     }
 
-    // If it still couldn't be found, flag an error for the "expected" location.
-    trace::error(_X("Expect required library %s to be present in [%s]"), LIBHOSTPOLICY_NAME, expected.c_str());
-    trace::error(_X("  - This may be because of an invalid .NET Core FX configuration in the directory."));
+    // If it still couldn't be found, somebody upstack messed up. Flag an error for the "expected" location.
+    trace::error(_X("A fatal error was encountered. The library '%s' required to execute the application was not found in '%s'."), LIBHOSTPOLICY_NAME, expected.c_str());
     return false;
 }
 
@@ -612,30 +611,34 @@ int fx_muxer_t::parse_args_and_execute(
         }
 
         app_candidate = argv[cur_i];
-        bool is_app_runnable = (ends_with(app_candidate, _X(".dll"), false) || ends_with(app_candidate, _X(".exe"), false)) && pal::realpath(&app_candidate);
-        trace::verbose(_X("App %s runnable=[%d]"), app_candidate.c_str(), is_app_runnable);
-        // If exec mode is on, then check we have a dll at this point
-        if (exec_mode)
+        bool is_app_managed = (ends_with(app_candidate, _X(".dll"), false) || ends_with(app_candidate, _X(".exe"), false)) && pal::realpath(&app_candidate);
+
+        if (!is_app_managed)
         {
-            if (!is_app_runnable)
+            trace::verbose(_X("Application '%s' is not a managed executable."), app_candidate.c_str());
+
+            *is_an_app = false;
+
+            if (exec_mode)
             {
-                trace::error(_X("dotnet exec needs a .dll or .exe to execute. See usage."));
-                *is_an_app = false;
+                trace::error(_X("dotnet exec needs a managed .dll or .exe extension. The application specified was '%s'"), app_candidate.c_str());
                 return InvalidArgFailure;
             }
-        }
-        // For non-exec, non-standalone there is CLI invocation or app.dll execution after known args.
-        else
-        {
-            // Test if we have a real dll at this point.
-            if (!is_app_runnable)
-            {
-                // No we don't have a dll, this must be routed to the CLI.
-                *is_an_app = false;
-                return AppArgNotRunnable;
-            }
+
+            // Route to CLI.
+            return AppArgNotRunnable;
         }
     }
+
+    // App is managed executable.
+    trace::verbose(_X("Treating application '%s' as a managed executable."), app_candidate.c_str());
+
+    if (!pal::file_exists(app_candidate))
+    {
+        trace::error(_X("The application to execute does not exist: '%s'"), app_candidate.c_str());
+        return InvalidArgFailure;
+    }
+
     if (cur_i != 1)
     {
         vec_argv.resize(argc - cur_i + 1, 0); // +1 for dotnet
@@ -796,4 +799,5 @@ int fx_muxer_t::execute(const int argc, const pal::char_t* argv[])
     trace::verbose(_X("Using dotnet SDK dll=[%s]"), sdk_dotnet.c_str());
     return parse_args_and_execute(own_dir, own_dll, 1, new_argv.size(), new_argv.data(), false, host_mode_t::muxer, &is_an_app);
 }
+
 
