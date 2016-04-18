@@ -660,6 +660,10 @@ public:
     // Inform strategy that there's a new inline candidate.
     void NoteCandidate();
 
+    // See if an inline of this size would fit within the current jit
+    // time budget.
+    bool BudgetCheck(unsigned ilSize);
+
 #if defined(DEBUG) || defined(INLINE_DATA)
 
     // Dump textual description of inlines done so far.
@@ -686,6 +690,10 @@ private:
 
     // Estimate the jit time change because of this inline.
     int EstimateTime(InlineContext* context);
+
+    // EstimateTime helpers
+    int EstimateRootTime(unsigned ilSize);
+    int EstimateInlineTime(unsigned ilSize);
 
 #if defined(DEBUG) || defined(INLINE_DATA)
     static bool    s_DumpDataHeader;

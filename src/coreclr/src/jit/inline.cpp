@@ -663,6 +663,9 @@ InlineStrategy::InlineStrategy(Compiler* compiler)
 //------------------------------------------------------------------------
 // GetRootContext: get the InlineContext for the root method
 //
+// Return Value:
+//    Root context; describes the method being jitted.
+//
 // Note:
 //    Also initializes the jit time estimate and budget.
 
@@ -698,23 +701,65 @@ void InlineStrategy::NoteCandidate()
 
 //------------------------------------------------------------------------
 // EstimateTime: estimate impact of this inline on the method jit time
+//
+// Arguments:
+//     context - context describing this inline
+//
+// Return Value:
+//    Nominal estimate of  jit time.
 
 int InlineStrategy::EstimateTime(InlineContext* context)
 {
-    unsigned ILSize = context->GetCodeSize();
-
     // Simple linear models based on observations
+    // show time is fairly well predicted by IL size.
+    unsigned ilSize = context->GetCodeSize();
 
+    // Prediction varies for root and inlines.
     if (context == m_RootContext)
     {
-        // Root method
-        return 60 + 3 * ILSize;
+        return EstimateRootTime(ilSize);
     }
     else
     {
-        // Inline
-        return -14 + 2 * ILSize;
+        return EstimateInlineTime(ilSize);
     }
+}
+
+//------------------------------------------------------------------------
+// EstimteRootTime: estimate jit time for method of this size with
+// no inlining.
+//
+// Arguments:
+//    ilSize - size of the method's IL
+//
+// Return Value:
+//    Nominal estimate of jit time.
+//
+// Notes:
+//    Based on observational data. Time is nominally microseconds.
+
+int InlineStrategy::EstimateRootTime(unsigned ilSize)
+{
+    return 60 + 3 * ilSize;
+}
+
+//------------------------------------------------------------------------
+// EstimteInlineTime: estimate time impact on jitting for an inline
+// of this size.
+//
+// Arguments:
+//    ilSize - size of the method's IL
+//
+// Return Value:
+//    Nominal increase in jit time.
+//
+// Notes:
+//    Based on observational data. Time is nominally microseconds.
+//    Small inlines will make the jit a bit faster.
+
+int InlineStrategy::EstimateInlineTime(unsigned ilSize)
+{
+    return -14 + 2 * ilSize;
 }
 
 //------------------------------------------------------------------------
@@ -786,6 +831,22 @@ void InlineStrategy::NoteOutcome(InlineContext* context)
         // Update jit time estimate
         m_CurrentTimeEstimate += timeDelta;
     }
+}
+
+//------------------------------------------------------------------------
+// BudgetCheck: return true if as inline of this size would exceed the
+// jit time budget for this method
+//
+// Arguments:
+//     ilSize - size of the method's IL
+//
+// Return Value:
+//     true if the inline would go over budget
+
+bool InlineStrategy::BudgetCheck(unsigned ilSize)
+{
+    int timeDelta = EstimateInlineTime(ilSize);
+    return (timeDelta + m_CurrentTimeEstimate > m_CurrentTimeBudget);
 }
 
 //------------------------------------------------------------------------

@@ -138,6 +138,7 @@ INLINE_OBSERVATION(LDFLD_NEEDS_HELPER,        bool,   "ldfld needs helper",     
 INLINE_OBSERVATION(LDVIRTFN_ON_NON_VIRTUAL,   bool,   "ldvirtfn on non-virtual",       FATAL,       CALLSITE)
 INLINE_OBSERVATION(NOT_CANDIDATE,             bool,   "not inline candidate",          FATAL,       CALLSITE)
 INLINE_OBSERVATION(NOT_PROFITABLE_INLINE,     bool,   "unprofitable inline",           FATAL,       CALLSITE)
+INLINE_OBSERVATION(OVER_BUDGET,               bool,   "inline exceeds budget",         FATAL,       CALLSITE)
 INLINE_OBSERVATION(OVER_INLINE_LIMIT,         bool,   "limited by JitInlineLimit",     FATAL,       CALLSITE)
 INLINE_OBSERVATION(RANDOM_REJECT,             bool,   "random reject",                 FATAL,       CALLSITE)
 INLINE_OBSERVATION(REQUIRES_SAME_THIS,        bool,   "requires same this",            FATAL,       CALLSITE)
