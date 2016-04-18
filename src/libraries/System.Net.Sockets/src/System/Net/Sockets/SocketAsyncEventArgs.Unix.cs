@@ -231,7 +231,7 @@ namespace System.Net.Sockets
 
         internal void LogBuffer(int size)
         {
-            // TODO: implement?
+            // TODO (#7851): implement?
         }
 
         internal void LogSendPacketsBuffers(int size)
