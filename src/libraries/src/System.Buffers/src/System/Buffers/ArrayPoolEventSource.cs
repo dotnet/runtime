@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics.Tracing;
 
 namespace System.Buffers
@@ -22,7 +21,7 @@ namespace System.Buffers
             PoolExhausted
         }
 
-        [Event(1, Level = EventLevel.Informational)]
+        [Event(1, Level = EventLevel.Verbose)]
         internal void BufferRented(int bufferId, int bufferSize, int poolId, int bucketId) { WriteEventHelper(1, bufferId, bufferSize, poolId, bucketId); }
 
         [Event(2, Level = EventLevel.Informational)]
@@ -45,7 +44,7 @@ namespace System.Buffers
              }
         }
 
-        [Event(3, Level = EventLevel.Informational)]
+        [Event(3, Level = EventLevel.Verbose)]
         internal void BufferReturned(int bufferId, int poolId) { WriteEvent(3, bufferId, poolId); }
 
         [Event(4, Level = EventLevel.Warning)]
