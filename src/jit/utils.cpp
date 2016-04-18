@@ -1614,3 +1614,29 @@ unsigned __int64 FloatingPointUtils::convertDoubleToUInt64(double d) {
 
     return u64;
 }
+
+// Rounds a double-precision floating-point value to the nearest integer,
+// and rounds midpoint values to the nearest even number.
+// Note this should align with classlib in floatnative.cpp
+// Specializing for x86 using a x87 instruction is optional since
+// this outcome is identical across targets.
+double FloatingPointUtils::round(double d)
+{
+    // If the number has no fractional part do nothing
+    // This shortcut is necessary to workaround precision loss in borderline cases on some platforms
+    if (d == (double)(__int64)d)
+        return d;
+
+    double tempVal = (d + 0.5);
+    //We had a number that was equally close to 2 integers.
+    //We need to return the even one.
+    double flrTempVal = floor(tempVal);
+    if (flrTempVal == tempVal) {
+        if (fmod(tempVal, 2.0) != 0) {
+            flrTempVal -= 1.0;
+        }
+    }
+
+    flrTempVal = _copysign(flrTempVal, d);
+    return flrTempVal;
+}

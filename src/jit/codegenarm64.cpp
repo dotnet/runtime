@@ -6519,7 +6519,7 @@ CodeGen::genIntrinsic(GenTreePtr treeNode)
 
     case CORINFO_INTRINSIC_Round:
         genConsumeOperands(treeNode->AsOp());
-        getEmitter()->emitInsBinary(INS_frinta, emitTypeSize(treeNode), treeNode, srcNode);
+        getEmitter()->emitInsBinary(INS_frintn, emitTypeSize(treeNode), treeNode, srcNode);
         break;
 
     case CORINFO_INTRINSIC_Sqrt:

@@ -3082,7 +3082,7 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, CorInfoIntrinsics gtMat
             res = fabs(arg0Val); // The result and params are doubles.
             break;
         case CORINFO_INTRINSIC_Round:
-            res = (arg0Val > 0.0 ? floor(arg0Val + 0.5) : ceil(arg0Val - 0.5));
+            res = FloatingPointUtils::round(arg0Val);
             break;
         default:
             unreached(); // the above are the only math intrinsics at the time of this writing.
