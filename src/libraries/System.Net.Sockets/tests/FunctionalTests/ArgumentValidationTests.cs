@@ -489,7 +489,6 @@ namespace System.Net.Sockets.Tests
             Assert.Throws<ArgumentException>(() => GetSocket().SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.NoDelay, new object()));
         }
 
-        // TODO: Select
         [Fact]
         public void Select_NullOrEmptyLists_Throws_ArgumentNull()
         {
