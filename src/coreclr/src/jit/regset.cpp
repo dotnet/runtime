@@ -72,7 +72,7 @@ void                RegSet::rsClearRegsModified()
     rsModifiedRegsMask = RBM_NONE;
 }
 
-void                RegSet::rsSetRegsModified(regMaskTP mask DEBUG_ARG(bool suppressDump))
+void                RegSet::rsSetRegsModified(regMaskTP mask DEBUGARG(bool suppressDump))
 {
     assert(mask != RBM_NONE);
     assert(rsModifiedRegsMaskInitialized);

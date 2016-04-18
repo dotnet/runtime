@@ -5008,10 +5008,10 @@ GenTreePtr          Compiler::gtNewSconNode(int CPX, CORINFO_MODULE_HANDLE scpHa
     assert(GenTree::s_gtNodeSizes[GT_CALL] > GenTree::s_gtNodeSizes[GT_CNS_STR]);
 
     GenTreePtr      node = new(this, GT_CALL) GenTreeStrCon(CPX, scpHandle 
-                                                            DEBUG_ARG(/*largeNode*/true));
+                                                            DEBUGARG(/*largeNode*/true));
 #else
     GenTreePtr      node = new(this, GT_CNS_STR) GenTreeStrCon(CPX, scpHandle
-                                                               DEBUG_ARG(/*largeNode*/true));
+                                                               DEBUGARG(/*largeNode*/true));
 #endif
 
     return node;
@@ -5203,10 +5203,10 @@ GenTreePtr          Compiler::gtNewLclLNode(unsigned   lnum,
 //    assert(GenTree::s_gtNodeSizes[GT_CALL] > GenTree::s_gtNodeSizes[GT_LCL_VAR]);
 
     GenTreePtr node = new(this, GT_CALL) GenTreeLclVar(type, lnum, ILoffs
-                                                       DEBUG_ARG(/*largeNode*/true));
+                                                       DEBUGARG(/*largeNode*/true));
 #else
     GenTreePtr node = new(this, GT_LCL_VAR) GenTreeLclVar(type, lnum, ILoffs
-                                                          DEBUG_ARG(/*largeNode*/true));
+                                                          DEBUGARG(/*largeNode*/true));
 #endif
 
     return node;
@@ -5391,7 +5391,7 @@ bool  Compiler::gtArgIsThisPtr(fgArgTabEntryPtr argEntry)
  *  Create a node that will assign 'src' to 'dst'.
  */
 
-GenTreePtr          Compiler::gtNewAssignNode(GenTreePtr dst, GenTreePtr src DEBUG_ARG(bool isPhiDefn))
+GenTreePtr          Compiler::gtNewAssignNode(GenTreePtr dst, GenTreePtr src DEBUGARG(bool isPhiDefn))
 {
     var_types type = dst->TypeGet();
 
@@ -6007,7 +6007,7 @@ GenTreePtr          Compiler::gtCloneExpr(GenTree * tree,
 
         case GT_CAST:
             copy = new (this, LargeOpOpcode()) GenTreeCast(tree->TypeGet(), tree->gtCast.CastOp(), tree->gtCast.gtCastType
-                                                           DEBUG_ARG(/*largeNode*/TRUE));
+                                                           DEBUGARG(/*largeNode*/TRUE));
             break;
 
             // The nodes below this are not bashed, so they can be allocated at their individual sizes.

@@ -139,7 +139,7 @@ public:
 
     void                rsClearRegsModified();
 
-    void                rsSetRegsModified(regMaskTP mask DEBUG_ARG(bool suppressDump = false));
+    void                rsSetRegsModified(regMaskTP mask DEBUGARG(bool suppressDump = false));
 
     void                rsRemoveRegsModified(regMaskTP mask);
 

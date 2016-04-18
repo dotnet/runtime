@@ -97,12 +97,12 @@ public:
     inline void ensureInit(const wchar_t* rangeStr)
     {
         // make sure that the memory was zero initialized
-        _ASSERTE(m_inited == 0 || m_inited == 1);
+        assert(m_inited == 0 || m_inited == 1);
 
         if (!m_inited)
         {
             initRanges(rangeStr);
-            _ASSERTE(m_inited == 1);
+            assert(m_inited == 1);
         }
     }
 
@@ -432,7 +432,7 @@ class AssemblyNamesList2
 {
     struct AssemblyName
     {
-        LPUTF8          m_assemblyName;
+        char*           m_assemblyName;
         AssemblyName*   m_next;
     };
 
@@ -447,7 +447,7 @@ public:
     ~AssemblyNamesList2();
 
     // Return 'true' if 'assemblyName' (in UTF-8 format) is in the stored list of assembly names.
-    bool IsInList(LPCUTF8 assemblyName);
+    bool IsInList(const char* assemblyName);
 
     // Return 'true' if the assembly name list is empty.
     bool IsEmpty()

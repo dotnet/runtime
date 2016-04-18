@@ -80,15 +80,15 @@ public :
 
     void                gcResetForBB        ();
 
-    void                gcMarkRegSetGCref   (regMaskTP  regMask DEBUG_ARG(bool forceOutput = false));
-    void                gcMarkRegSetByref   (regMaskTP  regMask DEBUG_ARG(bool forceOutput = false));
-    void                gcMarkRegSetNpt     (regMaskTP  regMask DEBUG_ARG(bool forceOutput = false));
+    void                gcMarkRegSetGCref   (regMaskTP  regMask DEBUGARG(bool forceOutput = false));
+    void                gcMarkRegSetByref   (regMaskTP  regMask DEBUGARG(bool forceOutput = false));
+    void                gcMarkRegSetNpt     (regMaskTP  regMask DEBUGARG(bool forceOutput = false));
     void                gcMarkRegPtrVal     (regNumber  reg, var_types type);
     void                gcMarkRegPtrVal     (GenTreePtr tree);
 
 #ifdef DEBUG    
-    void                gcDspGCrefSetChanges(regMaskTP gcRegGCrefSetNew DEBUG_ARG(bool forceOutput = false));
-    void                gcDspByrefSetChanges(regMaskTP gcRegByrefSetNew DEBUG_ARG(bool forceOutput = false));
+    void                gcDspGCrefSetChanges(regMaskTP gcRegGCrefSetNew DEBUGARG(bool forceOutput = false));
+    void                gcDspByrefSetChanges(regMaskTP gcRegByrefSetNew DEBUGARG(bool forceOutput = false));
 #endif // DEBUG    
 
 /*****************************************************************************/

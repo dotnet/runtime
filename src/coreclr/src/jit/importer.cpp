@@ -1597,7 +1597,7 @@ GenTreePtr          Compiler::impLookupToTree(CORINFO_LOOKUP *pLookup, unsigned 
 
         CORINFO_GENERIC_HANDLE handle = 0;
         void *pIndirection = 0;
-        _ASSERTE(pLookup->constLookup.accessType != IAT_PPVALUE);
+        assert(pLookup->constLookup.accessType != IAT_PPVALUE);
 
         if (pLookup->constLookup.accessType == IAT_VALUE)
             handle = pLookup->constLookup.handle;
@@ -1821,7 +1821,7 @@ GenTreePtr          Compiler::impRuntimeLookupToTree(CORINFO_RUNTIME_LOOKUP_KIND
         return gtNewLclvNode(tmp, TYP_I_IMPL);
     }
 
-    _ASSERTE(pLookup->indirections != 0);
+    assert(pLookup->indirections != 0);
 
     impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("bubbling QMark1"));  
     
@@ -3274,7 +3274,7 @@ GenTreePtr      Compiler::impArrayAccessIntrinsic(CORINFO_CLASS_HANDLE  clsHnd,
         }
         else
         {
-            _ASSERTE(intrinsicID == CORINFO_INTRINSIC_Array_Address);
+            assert(intrinsicID == CORINFO_INTRINSIC_Array_Address);
 
             // Fetch the return type
             typeInfo retInfo = verMakeTypeInfo(LocalSig.retType, LocalSig.retTypeClass);
@@ -10067,7 +10067,7 @@ MATH_OP2_FLAGS: // If 'ovfl' and 'callNode' have already been set
                 // That said, as of now it *is* a large node, so we'll do this with an assert rather
                 // than an "if".
                 assert(GenTree::s_gtNodeSizes[GT_CALL] == TREE_NODE_SZ_LARGE);
-                op1 = new (this, GT_CALL) GenTreeOp(oper, type, op1, op2 DEBUG_ARG(/*largeNode*/true));
+                op1 = new (this, GT_CALL) GenTreeOp(oper, type, op1, op2 DEBUGARG(/*largeNode*/true));
             }
             else
 #endif // SMALL_TREE_NODES
