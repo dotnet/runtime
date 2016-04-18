@@ -159,7 +159,7 @@ namespace System.Net.Http
                     new IOException(string.Format(
                         SR.net_http_io_read_incomplete,
                         state.ExpectedBytesToRead.Value,
-                        state.CurrentBytesRead)));
+                        state.CurrentBytesRead)).InitializeStackTrace());
             }
             else
             {
@@ -301,7 +301,7 @@ namespace System.Net.Http
             
             Debug.Assert(state != null, "OnRequestError: state is null");
 
-            var innerException = WinHttpException.CreateExceptionUsingError((int)asyncResult.dwError);
+            var innerException = WinHttpException.CreateExceptionUsingError((int)asyncResult.dwError).InitializeStackTrace();
 
             switch ((uint)asyncResult.dwResult.ToInt32())
             {

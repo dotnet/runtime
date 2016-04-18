@@ -16,6 +16,7 @@
     <CompileItem Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs" />
     <CompileItem Include="$(CommonPath)\System\CharArrayHelpers.cs" />
     <CompileItem Include="$(CommonPath)\System\StringExtensions.cs" />
+    <CompileItem Include="$(CommonPath)\System\Diagnostics\ExceptionExtensions.cs" />
     <CompileItem Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs" />
     <CompileItem Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs" />
     <CompileItem Include="$(CommonPath)\System\Net\HttpStatusDescription.cs" />

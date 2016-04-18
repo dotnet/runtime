@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -156,7 +157,7 @@ namespace System.Net.Http
                                 IntPtr.Zero))
                             {
                                 _state.TcsReadFromResponseStream.TrySetException(
-                                    new IOException(SR.net_http_io_read, WinHttpException.CreateExceptionUsingLastError()));
+                                    new IOException(SR.net_http_io_read, WinHttpException.CreateExceptionUsingLastError().InitializeStackTrace()));
                             }
                         }
                     }
@@ -170,7 +171,7 @@ namespace System.Net.Http
                 if (!Interop.WinHttp.WinHttpQueryDataAvailable(_requestHandle, IntPtr.Zero))
                 {
                     _state.TcsReadFromResponseStream.TrySetException(
-                        new IOException(SR.net_http_io_read, WinHttpException.CreateExceptionUsingLastError()));
+                        new IOException(SR.net_http_io_read, WinHttpException.CreateExceptionUsingLastError().InitializeStackTrace()));
                 }
             }
 
