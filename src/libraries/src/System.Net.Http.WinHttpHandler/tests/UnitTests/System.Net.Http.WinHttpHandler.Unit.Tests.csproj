@@ -46,6 +46,9 @@
     <Compile Include="$(CommonPath)\System\StringExtensions.cs">
       <Link>Common\System\StringExtensions.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Diagnostics\ExceptionExtensions.cs">
+      <Link>Common\System\Diagnostics\ExceptionExtensions.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs">
       <Link>Common\System\Net\HttpKnownHeaderNames.cs</Link>
     </Compile>
