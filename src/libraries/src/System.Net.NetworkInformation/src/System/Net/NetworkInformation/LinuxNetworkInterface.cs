@@ -136,7 +136,7 @@ namespace System.Net.NetworkInformation
         // Maps values from /sys/class/net/<interface>/operstate to OperationStatus values.
         private static OperationalStatus MapState(string state)
         {
-            // TODO: Figure out the possible values that Linux might return.
+            // TODO (#7889): Figure out the possible values that Linux might return.
             switch (state)
             {
                 case "up":
