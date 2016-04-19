@@ -1,0 +1,131 @@
+[TestCase]
+;normal value for flags, but self relative is not set, owner, group, sacl and dacl are not null
+1
+BA
+BG
+64:2:1:BA:false:0
+0:1:1:BO:false:0
+
+[TestCase]
+;flags out of low boundary
+-1
+BA
+BG
+64:2:1:BA:false:0
+0:1:1:BO:false:0
+
+
+[TestCase]
+;flags at low boundary
+0
+BA
+BG
+64:2:1:BA:false:0
+0:1:1:BO:false:0
+
+
+[TestCase]
+;flags out of upper boundary
+65536
+BA
+BG
+64:2:1:BA:false:0
+0:1:1:BO:false:0
+
+[TestCase]
+;flags equals to all bit ORed together
+65535
+BA
+BG
+64:2:1:BA:false:0
+0:1:1:BO:false:0
+
+[TestCase]
+;flag is a valid number
+32768
+BA
+BG
+64:2:1:BA:false:0
+0:1:1:BO:false:0
+
+[TestCase]
+;flag is a valid number
+128
+BA
+BG
+64:2:1:BA:false:0
+0:1:1:BO:false:0
+
+[TestCase]
+;both sacl and dacl present flag are set, owner, group, sacl and dacl are not null
+20
+BA
+BG
+64:2:1:BA:false:0
+0:1:1:BO:false:0
+
+[TestCase]
+;both sacl and dacl present flag are set, owner is null, group, sacl and dacl are not null
+20
+null
+BG
+64:2:1:BA:false:0
+0:1:1:BO:false:0
+
+
+[TestCase]
+;both sacl and dacl present flag are set, group is null, owner, sacl and dacl are not null
+20
+BA
+null
+64:2:1:BA:false:0
+0:1:1:BO:false:0
+
+[TestCase]
+;both sacl and dacl present flag are set, sacl is null, owner, group and dacl are not null
+20
+BA
+BG
+null
+0:1:1:BO:false:0
+
+[TestCase]
+;both sacl and dacl present flag are set, dacl is null, owner, group, and sacl are not null
+20
+BA
+BG
+64:2:1:BA:false:0
+null
+
+[TestCase]
+;both sacl and dacl present flag are set, owner, group, sacl and dacl are null
+20
+null
+null
+null
+null
+
+[TestCase]
+;both sacl and dacl present flag are not set, owner, group are null, sacl and dacl are not null
+1
+null
+null
+64:2:1:BA:false:0
+0:1:1:BO:false:0
+
+
+[TestCase]
+;sacl present flag set, but sacl is null, dacl present flag not set, but dacl is not null , owner, group are not null
+16
+BA
+BG
+null
+0:1:1:BO:false:0
+
+[TestCase]
+;dacl present flag set, but dacl is null, sacl present flag not set, but sacl is not null , owner, group are not null
+4
+BA
+BG
+64:2:1:BA:false:0
+null

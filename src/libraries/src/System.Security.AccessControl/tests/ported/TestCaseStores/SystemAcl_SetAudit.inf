@@ -1,0 +1,150 @@
+;**************************************************************************************************
+;*Case Data Format:                                                                               *
+;*     isContainer -- true/false                                                                  *
+;*     isDS -- true/false                                                                         *
+;*     auditFlags -- None (0), Success(1), Fail(2)                                                *
+;*     securityIdentifier -- string                                                               *
+;*     accessMask -- int                                                                          *
+;*     inheritanceFlags -- None (0), ContainerInherit(1), ObjectInherit(2)                        *
+;*     propagationFlags -- None (0), NoPropagateInherit(1), InheritOnly(2)                        *                                               *
+;*     initialRawAclStr -- string                                                                 *
+;*     verifierRawAclStr -- string                                                                *                                                       *
+;*                                                                                                *
+;*     RawAcl String Format:                                                                      *
+;*              RawAcl := ACE[#ACE]                                                               *
+;*              ACE := aceFlags:aceQualifier:accessMask:sid:isCallback:opaqSize                   *
+;**************************************************************************************************
+[TestCase]
+;
+;case1: 
+;SystemAcl has one explicit Ace with same sid, acequalifer, 
+;set an Ace will remove the existing one then add the new one
+;
+;FA | OI | CI| NP| IO -- 143
+;
+;
+true
+false
+2
+BA
+2
+3
+3
+64:2:1:BA:false:0
+143:2:2:BA:false:0
+
+[TestCase]
+;
+;case2: 
+;SystemAcl has one more than one, the compatible one is at the end of the array
+;explicit Ace with same sid, acequalifer, 
+;set an Ace will remove the existing one then add the new one
+;
+;FA | OI | CI| NP| IO -- 143
+;
+;
+true
+false
+2
+BO
+2
+3
+3
+64:2:1:BA:false:0#64:2:1:BG:false:0#64:2:1:BO:false:0
+64:2:1:BA:false:0#64:2:1:BG:false:0#143:2:2:BO:false:0
+
+[TestCase]
+;
+;case3: 
+;SystemAcl has more than one, the compatible one is at the middle of the array
+;explicit Ace with same sid, acequalifer, 
+;set an Ace will remove the existing one then add the new one
+;
+;FA | OI | CI| NP| IO -- 143
+;
+;
+true
+false
+2
+BG
+2
+3
+3
+64:2:1:BA:false:0#64:2:1:BG:false:0#64:2:1:BO:false:0
+64:2:1:BA:false:0#143:2:2:BG:false:0#64:2:1:BO:false:0
+
+
+[TestCase]
+;
+;case4: 
+;SystemAcl has multiple explicit Ace with same sid, acequalifer but different accessmask, aceflag, 
+;set an Ace will remove all existing one then add the new one
+;
+;AceFlags.FailedAccess | ObjectInherit |ContainerInherit|NoPropagateInherit|InheritOnly -- 143
+;
+true
+false
+2
+BA
+2
+3
+3
+64:2:1:BA:false:0#128:2:2:BA:false:0#64:2:1:BA:false:0
+143:2:2:BA:false:0
+
+[TestCase]
+;
+;case5: 
+;SystemAcl has one explicit Ace with different sid, same acequalifer, 
+;
+;FA | OI | CI | NP| IO -- 143
+;
+true
+false
+2
+BO
+2
+3
+3
+64:2:1:BA:false:0
+64:2:1:BA:false:0#143:2:2:BO:false:0
+
+
+[TestCase]
+;
+;case6: 
+;SystemAcl has one inherit Ace with same sid, acequalifer, 
+;set an Ace will not remove the existing one when add the new one
+;
+;AceFlags.FailedAccess | ObjectInherit |ContainerInherit|NoPropagateInherit|InheritOnly -- 143
+;AceFlags.SuccessfulAccess | Inherited -- 80
+;
+true
+false
+1
+BA
+1
+0
+0
+80:2:1:BA:false:0
+64:2:1:BA:false:0#80:2:1:BA:false:0
+
+
+[TestCase]
+;
+;case7: 
+;SystemAcl has one exactly same explicit Ace, 
+;set an Ace will remove the existing one then add the new one
+;
+;FA | OI | CI| NP| IO -- 143
+;
+;
+true
+false
+2
+BA
+2
+3
+3
+143:2:2:BA:false:0
+143:2:2:BA:false:0

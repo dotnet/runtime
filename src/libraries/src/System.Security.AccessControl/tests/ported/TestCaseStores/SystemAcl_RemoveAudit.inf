@@ -1,0 +1,549 @@
+;**************************************************************************************************
+;*Case Data Format:                                                                               *
+;*     isContainer -- true/false                                                                  *
+;*     isDS -- true/false                                                                         *
+;*     auditFlags -- None (0), Success(1), Failure(2)                                                *
+;*     securityIdentifier -- string                                                               *
+;*     accessMask -- int                                                                          *
+;*     inheritanceFlags -- None (0), ContainerInherit(1), ObjectInherit(2)                        *
+;*     propagationFlags -- None (0), NoPropagateInherit(1), InheritOnly(2)                        *                                               *
+;*     initialRawAclStr -- string                                                                 *
+;*     verifierRawAclStr -- string                                                                *                                                       *
+;*                                                                                                *
+;*     RawAcl String Format:                                                                      *
+;*              RawAcl := ACE[#ACE]                                                               *
+;*              ACE := aceFlags:aceQualifier:accessMask:sid:isCallback:opaqSize                   *
+;**************************************************************************************************
+[TestCase]
+;
+;case 1 (base): 
+;SystemAcl has one Ace,  remove an Ace with same sid, acequalifier, Permission split, Audit split, Merge split
+;
+;SA | FA | CI | OI | NP -- 199
+;FA | CI | OI | NP -- 135
+;SA | CI | OI | NP | IO -- 79
+;
+true
+false
+1
+BA
+1
+0
+0
+199:2:3:BA:false:0
+199:2:2:BA:false:0#135:2:1:BA:false:0#79:2:1:BA:false:0
+true
+
+
+[TestCase]
+;
+;case 2: 
+;SystemAcl has one Ace,  remove an Ace with same sid, acequalifier, Permission split, Audit split, Merge split
+;
+;SA | FA | CI | OI | NP -- 199
+;FA | CI | OI | NP -- 135
+;SA | CI | OI | NP | IO -- 79
+;
+true
+false
+1
+BA
+1
+0
+1
+199:2:3:BA:false:0
+199:2:2:BA:false:0#135:2:1:BA:false:0#79:2:1:BA:false:0
+true
+
+
+[TestCase]
+;
+;case 3: 
+;SystemAcl has one Ace,  remove an Ace with same sid, acequalifier, Permission split, Audit split, Merge split
+;
+;SA | FA | CI | OI | NP -- 199
+;FA | CI | OI | NP -- 135
+;SA | CI | OI | NP | IO -- 79
+;
+true
+false
+1
+BA
+1
+0
+2
+199:2:3:BA:false:0
+199:2:2:BA:false:0#135:2:1:BA:false:0#79:2:1:BA:false:0
+true
+
+[TestCase]
+;
+;case 4: 
+;SystemAcl has one Ace,  remove an Ace with same sid, acequalifier, Permission split, Audit split, Merge split
+;
+;SA | FA | CI | OI | NP -- 199
+;FA | CI | OI | NP -- 135
+;SA | CI | OI | NP | IO -- 79
+;
+true
+false
+1
+BA
+1
+0
+3
+199:2:3:BA:false:0
+199:2:2:BA:false:0#135:2:1:BA:false:0#79:2:1:BA:false:0
+true
+
+[TestCase]
+;
+;case 5: 
+;SystemAcl has one Ace,  remove an Ace with same sid, acequalifier, Permission split check pass, Audit split check pass, Merge Split
+;
+;FA | CI | OI | NP -- 135
+;SA | OI | IO | NP -- 77
+;
+true
+false
+1
+BA
+1
+1
+0
+199:2:3:BA:false:0
+199:2:2:BA:false:0#135:2:1:BA:false:0#77:2:1:BA:false:0
+true
+
+
+[TestCase]
+;
+;case 6: 
+;SystemAcl has one Ace,  remove an Ace with same sid, acequalifier, Permission split, Audit split, Merge split
+;
+;SA | FA | CI | OI | NP -- 199
+;FA | CI | OI | NP -- 135
+;SA | OI | IO | NP -- 77
+;
+true
+false
+1
+BA
+1
+1
+1
+199:2:3:BA:false:0
+199:2:2:BA:false:0#135:2:1:BA:false:0#77:2:1:BA:false:0
+true
+
+
+[TestCase]
+;
+;case 7: 
+;SystemAcl has one Ace,  remove an Ace with same sid, acequalifier, Permission split, Audit split, Merge split
+;
+;SA | FA | CI | OI | NP -- 199
+;FA | CI | OI | NP -- 135
+;SA | OI | NP -- 69
+;
+true
+false
+1
+BA
+1
+1
+2
+199:2:3:BA:false:0
+199:2:2:BA:false:0#135:2:1:BA:false:0#69:2:1:BA:false:0
+true
+
+
+[TestCase]
+;
+;case 8: 
+;SystemAcl has one Ace,  remove an Ace with same sid, acequalifier, Permission split, Audit split, Merge split
+;
+;SA | FA | CI | OI | NP -- 199
+;FA | CI | OI | NP -- 135
+;SA | OI | NP -- 69
+;
+true
+false
+1
+BA
+1
+1
+3
+199:2:3:BA:false:0
+199:2:2:BA:false:0#135:2:1:BA:false:0#69:2:1:BA:false:0
+true
+
+
+[TestCase]
+;
+;case 9: 
+;SystemAcl has one Ace,  remove an Ace with same sid, acequalifier, Permission split check pass, Audit split check pass, Merge Split
+;
+;FA | CI | OI | NP -- 135
+;SA | CI | IO | NP -- 78
+;
+true
+false
+1
+BA
+1
+2
+0
+199:2:3:BA:false:0
+199:2:2:BA:false:0#135:2:1:BA:false:0#78:2:1:BA:false:0
+true
+
+
+[TestCase]
+;
+;case 10: 
+;SystemAcl has one Ace,  remove an Ace with same sid, acequalifier, Permission split pass, Audit split pass, Merge split pass
+;
+;SA | FA | CI | OI | NP -- 199
+;FA | CI | OI | NP -- 135
+;SA | CI | IO | NP -- 78
+;
+true
+false
+1
+BA
+1
+2
+1
+199:2:3:BA:false:0
+199:2:2:BA:false:0#135:2:1:BA:false:0#78:2:1:BA:false:0
+true
+
+
+[TestCase]
+;
+;case 11: 
+;SystemAcl has one Ace,  remove an Ace with same sid, acequalifier, Permission split pass, Audit split pass, Merge split pass
+;
+;SA | FA | CI | OI | NP -- 199
+;FA | CI | OI | NP -- 135
+;SA | CI | NP -- 70
+;
+true
+false
+1
+BA
+1
+2
+2
+199:2:3:BA:false:0
+199:2:2:BA:false:0#135:2:1:BA:false:0#70:2:1:BA:false:0
+true
+
+
+[TestCase]
+;
+;case (Base) 12: 
+;SystemAcl has one Ace,  remove an Ace with same sid, acequalifier, Permission split, Audit split, Merge split
+;
+;SA | FA | CI | OI | NP -- 199
+;FA | CI | OI | NP -- 135
+;SA | CI | NP -- 70
+;
+true
+false
+1
+BA
+1
+2
+3
+199:2:3:BA:false:0
+199:2:2:BA:false:0#135:2:1:BA:false:0#70:2:1:BA:false:0
+true
+
+
+[TestCase]
+;
+;case 13: 
+;SystemAcl has one Ace,  remove an Ace with same sid, acequalifier, Permission split pass, Audit split pass, Merge split result to zero
+;
+;SA | FA | CI | OI | NP -- 199
+;FA | CI | OI | NP -- 135
+;SA | CI | NP -- 70
+;
+true
+false
+1
+BA
+1
+3
+0
+199:2:3:BA:false:0
+199:2:2:BA:false:0#135:2:1:BA:false:0
+true
+
+
+[TestCase]
+;
+;case 14: 
+;SystemAcl has one Ace,  remove an Ace with same sid, acequalifier, Permission split pass, Audit split pass, Merge split result to zero
+;
+;SA | FA | CI | OI | NP -- 199
+;FA | CI | OI | NP -- 135
+;SA | CI | NP -- 70
+;
+true
+false
+1
+BA
+1
+3
+1
+199:2:3:BA:false:0
+199:2:2:BA:false:0#135:2:1:BA:false:0
+true
+
+
+[TestCase]
+;
+;case 15: 
+;SystemAcl has one Ace,  remove an Ace with same sid, acequalifier, Permission split, Audit split, Merge split
+;
+;SA | FA | CI | OI | NP -- 199
+;FA | CI | OI | NP -- 135
+;SA -- 64
+;
+true
+false
+1
+BA
+1
+3
+2
+199:2:3:BA:false:0
+199:2:2:BA:false:0#135:2:1:BA:false:0#64:2:1:BA:false:0
+true
+
+
+[TestCase]
+;
+;case 16: 
+;SystemAcl has one Ace,  remove an Ace with same sid, acequalifier, Permission split, Audit split, Merge split
+;
+;SA | FA | CI | OI | NP -- 199
+;FA | CI | OI | NP -- 135
+;SA -- 64
+;
+true
+false
+1
+BA
+1
+3
+3
+199:2:3:BA:false:0
+199:2:2:BA:false:0#135:2:1:BA:false:0#64:2:1:BA:false:0
+true
+
+[TestCase]
+;case 17: 
+;SystemAcl has more than one Ace, to be removed sits at the right end of the array, remove an Ace with same sid, acequalifier, Permission split, Audit split, Merge split
+;
+;SA | FA | CI | OI | NP -- 199
+;FA | CI | OI | NP -- 135
+;SA -- 64
+;
+true
+false
+1
+BO
+1
+3
+3
+199:2:3:BA:false:0#199:2:3:BG:false:0#199:2:3:BO:false:0
+199:2:3:BA:false:0#199:2:3:BG:false:0#199:2:2:BO:false:0#135:2:1:BO:false:0#64:2:1:BO:false:0
+true
+
+[TestCase]
+;case 18: 
+;SystemAcl has more than one Ace, to be removed sits in the middle the array, remove an Ace with same sid, acequalifier, Permission split, Audit split, Merge split
+;
+;SA | FA | CI | OI | NP -- 199
+;FA | CI | OI | NP -- 135
+;SA -- 64
+;
+true
+false
+1
+BG
+1
+3
+3
+199:2:3:BA:false:0#199:2:3:BG:false:0#199:2:3:BO:false:0
+199:2:3:BA:false:0#199:2:2:BG:false:0#135:2:1:BG:false:0#64:2:1:BG:false:0#199:2:3:BO:false:0
+true
+
+
+[TestCase]
+;
+;case 19: 
+;SystemAcl has mutiple removable Ace, remove action will be applied to each one of them, Permission split, Audit split, Merge split
+;
+;SA | FA | CI | OI | NP -- 199
+;FA | CI | OI | NP -- 135
+;SA -- 64
+;
+true
+false
+1
+BA
+1
+3
+3
+199:2:3:BA:false:0#199:2:3:BA:false:0#199:2:3:BA:false:0
+199:2:2:BA:false:0#135:2:1:BA:false:0#64:2:1:BA:false:0#199:2:2:BA:false:0#135:2:1:BA:false:0#64:2:1:BA:false:0
+true
+
+[TestCase]
+;
+;case 20: 
+;SystemAcl has one Ace,  remove an Ace with same sid, acequalifier, Permission split, Audit split, Merge split
+;
+;SA | FA | CI | OI | NP -- 199
+;FA | CI | OI | NP -- 135
+;SA -- 64
+;
+true
+false
+1
+BA
+5
+3
+3
+199:2:3:BA:false:0
+199:2:2:BA:false:0#135:2:1:BA:false:0#64:2:1:BA:false:0
+true
+
+
+[TestCase]
+;
+;case21: 
+;SystemAcl has one non compatible Ace (different sid), no remove
+;
+true
+false
+1
+BO
+1
+2
+3
+199:2:3:BA:false:0
+199:2:3:BA:false:0
+true
+
+[TestCase]
+;
+;case22: 
+;SystemAcl has one non compatible Ace(existing one is inherited), no remove
+;
+true
+false
+1
+BA
+1
+2
+3
+215:2:3:BA:false:0
+215:2:3:BA:false:0
+true
+
+[TestCase]
+;
+;case23: 
+;SystemAcl has one non compatible Ace (access mask is not included), no remove
+;
+true
+false
+1
+BA
+4
+2
+3
+199:2:3:BA:false:0
+199:2:3:BA:false:0
+true
+
+[TestCase]
+;
+;case24: 
+;SystemAcl has one Ace,  remove an Ace with same sid, acequalifier, Permission split check pass, but Audit split check fail, no remove
+;
+;FA | CI | OI | NP -- 135
+;SA | CI | NP -- 70
+;
+true
+false
+1
+BA
+1
+2
+3
+135:2:3:BA:false:0
+135:2:3:BA:false:0
+true
+
+[TestCase]
+;case 25 : 
+;SystemAcl has one Ace,  remove an Ace with same sid, acequalifier, Permission split, Audit split disappear, Merge split
+;
+;SA | FA | CI | OI | NP -- 199
+;SA | FA | CI | OI | NP | IO -- 207
+;
+true
+false
+3
+BA
+1
+0
+0
+199:2:3:BA:false:0
+199:2:2:BA:false:0#207:2:1:BA:false:0
+true
+
+[TestCase]
+;case 26 : 
+;SystemAcl has one Ace,  remove an Ace with same sid, acequalifier, Permission split disappear, Audit split, Merge split
+;
+;SA | FA | CI | OI | NP -- 199
+;FA | CI | OI | NP -- 135
+;SA | CI | OI | NP | IO -- 79
+;
+true
+false
+1
+BA
+3
+0
+0
+199:2:3:BA:false:0
+135:2:3:BA:false:0#79:2:3:BA:false:0
+true
+
+
+[TestCase]
+;
+;case 27 : 
+;SystemAcl has one Ace,  remove an Ace with same sid, acequalifier, Permission split pass, Audit split pass, Merge split fail
+;
+;SA | FA | CI | IO -- 202
+;
+true
+false
+1
+BA
+1
+1
+3
+202:2:3:BA:false:0
+202:2:3:BA:false:0
+false

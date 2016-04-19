@@ -1,0 +1,51 @@
+[TestCase]
+;normal sddl form with Owner, GROUP, DACL, SACL
+O:LAG:SYD:AI(A;ID;FR;;;BA)S:AI(AU;IDFA;FR;;;BA)
+
+[TestCase]
+;sddl form w/o owner
+G:SYD:AI(A;ID;FR;;;BA)S:AI(AU;IDFA;FR;;;BA)
+
+[TestCase]
+;sddl form w/o GROUP
+O:LAD:AI(A;ID;FR;;;BA)S:AI(AU;IDFA;FR;;;BA)
+
+[TestCase]
+;sddl form DACL w/o ACE
+O:LAG:SYD:S:AI(AU;IDFA;FR;;;BA)
+
+[TestCase]
+;sddl form w/o DACL
+O:LAG:SYS:AI(AU;IDFA;FR;;;BA)
+
+[TestCase]
+;sddl form SACL w/o ACE
+O:LAG:SYD:AI(A;ID;FR;;;BA)S:
+
+[TestCase]
+;sddl form w/o SACL
+O:LAG:SYD:AI(A;ID;FR;;;BA)
+
+[TestCase]
+;sddl form without neither Owner nor GROUP, but DACL, and SACL exist
+D:AI(A;ID;FR;;;BA)S:AI(AU;IDFA;FR;;;BA)
+
+[TestCase]
+;sddl form with Owner, GROUP exist, but DACL, SACL not exist
+O:LAG:SY
+
+[TestCase]
+;sddl form with Object ACE
+O:LAG:SYD:(A;;KA;;;SY)(A;;KA;;;S-1-5-19-1)(OA;;CCDC;bf967aba-0de6-11d0-a285-00aa003049e2;;BA)(OA;;CCDC;bf967a9c-0de6-11d0-a285-00aa003049e2;;BU)(OA;;CCDC;6da8a4ff-0e52-11d0-a286-00aa003049e2;;BG)(OA;;CCDC;bf967aa8-0de6-11d0-a285-00aa003049e2;;PU)(A;;LCRPRC;;;BO)S:(AU;SAFA;CCDCSWWPSDWDWO;;;WD)
+
+[TestCase]
+;some valid sddl
+O:LAG:SYD:AI(A;ID;FA;;;BA)(A;ID;FA;;;BU)(A;ID;FA;;;SY)
+
+[TestCase]
+;some valid sddl
+O:BAG:SYD:AI(D;;DCLCRPCR;;;BU)(D;;CCDCLCSWRPLOCRRC;;;BO)(A;;0x1200a9;;;BA)(A;;0x100116;;;WD)(A;ID;FA;;;BA)(A;ID;FA;;;S-1-5-21-397955417-626881126-188441444-2920937)(A;ID;FA;;;SY)
+
+[TestCase]
+;some valid sddl
+O:S-1-5-21-397955417-626881126-188441444-2920937G:SYD:AI(D;;DCLCRPCR;;;BA)(D;;CCDCLCSWRPLOCRRC;;;S-1-5-21-397955417-626881126-188441444-501)(A;;0x1200a9;;;BO)(A;;0x100116;;;WD)(A;ID;FA;;;BA)(A;ID;FA;;;S-1-5-21-397955417-626881126-188441444-2920937)(A;ID;FA;;;SY)

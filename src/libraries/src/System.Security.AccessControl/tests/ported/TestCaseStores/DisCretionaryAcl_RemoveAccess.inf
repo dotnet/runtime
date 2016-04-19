@@ -1,0 +1,29 @@
+public static IEnumerable<object[]> DiscretionaryACL_RemoveAccess()
+{
+    yield return new object[] { true, false, 0, "BA", 1, 0, 0, "3:0:3:BA:false:0"                                  , "3:0:2:BA:false:0#11:0:1:BA:false:0"                                 , true };
+    yield return new object[] { true, false, 0, "BA", 1, 0, 1, "3:0:3:BA:false:0"                                  , "3:0:2:BA:false:0#11:0:1:BA:false:0"                                 , true };
+    yield return new object[] { true, false, 0, "BA", 1, 0, 2, "3:0:3:BA:false:0"                                  , "3:0:2:BA:false:0#11:0:1:BA:false:0"                                 , true };
+    yield return new object[] { true, false, 0, "BA", 1, 0, 3, "3:0:3:BA:false:0"                                  , "3:0:2:BA:false:0#11:0:1:BA:false:0"                                 , true };
+    yield return new object[] { true, false, 0, "BA", 1, 1, 0, "3:0:3:BA:false:0"                                  , "3:0:2:BA:false:0#9:0:1:BA:false:0"                                  , true };
+    yield return new object[] { true, false, 0, "BA", 1, 1, 1, "3:0:3:BA:false:0"                                  , "3:0:3:BA:false:0"                                                   , false,  };
+    yield return new object[] { true, false, 0, "BA", 1, 1, 2, "3:0:3:BA:false:0"                                  , "3:0:2:BA:false:0#1:0:1:BA:false:0"                                  , true };
+    yield return new object[] { true, false, 0, "BA", 1, 1, 3, "3:0:3:BA:false:0"                                  , "3:0:3:BA:false:0"                                                   , false };
+    yield return new object[] { true, false, 0, "BA", 1, 2, 0, "3:0:3:BA:false:0"                                  , "3:0:2:BA:false:0#10:0:1:BA:false:0"                                 , true };
+    yield return new object[] { true, false, 0, "BA", 1, 2, 1, "3:0:3:BA:false:0"                                  , "3:0:3:BA:false:0"                                                   , false,  };
+    yield return new object[] { true, false, 0, "BA", 1, 2, 2, "3:0:3:BA:false:0"                                  , "3:0:2:BA:false:0#2:0:1:BA:false:0"                                  , true };
+    yield return new object[] { true, false, 0, "BA", 1, 2, 3, "3:0:3:BA:false:0"                                  , "3:0:3:BA:false:0"                                                   , false };
+    yield return new object[] { true, false, 0, "BA", 1, 3, 0, "3:0:3:BA:false:0"                                  , "3:0:2:BA:false:0"                                                   , true };
+    yield return new object[] { true, false, 0, "BA", 1, 3, 1, "3:0:3:BA:false:0"                                  , "3:0:3:BA:false:0"                                                   , false };
+    yield return new object[] { true, false, 0, "BA", 1, 3, 2, "3:0:3:BA:false:0"                                  , "3:0:2:BA:false:0#0:0:1:BA:false:0"                                  , true };
+    yield return new object[] { true, false, 0, "BA", 1, 3, 3, "3:0:3:BA:false:0"                                  , "3:0:3:BA:false:0"                                                   , false };
+    yield return new object[] { true, false, 0, "BO", 1, 2, 3, "7:1:3:BO:false:0#7:0:3:BA:false:0#7:0:3:BO:false:0", "7:1:3:BO:false:0#7:0:3:BA:false:0#7:0:2:BO:false:0#6:0:1:BO:false:0", true };
+    yield return new object[] { true, false, 0, "BA", 1, 2, 3, "7:1:3:BO:false:0#7:0:3:BA:false:0#7:0:3:BO:false:0", "7:1:3:BO:false:0#7:0:2:BA:false:0#6:0:1:BA:false:0#7:0:3:BO:false:0", true };
+    yield return new object[] { true, false, 0, "BA", 1, 2, 3, "7:0:3:BA:false:0#7:0:3:BA:false:0#7:0:3:BA:false:0", "7:0:2:BA:false:0#6:0:1:BA:false:0#7:0:2:BA:false:0#6:0:1:BA:false:0", true };
+    yield return new object[] { true, false, 0, "BA", 5, 2, 3, "7:0:3:BA:false:0"                                  , "7:0:2:BA:false:0#6:0:1:BA:false:0"                                  , true };
+    yield return new object[] { true, false, 0, "BO", 1, 2, 3, "7:0:3:BA:false:0"                                  , "7:0:3:BA:false:0"                                                   , true };
+    yield return new object[] { true, false, 0, "BA", 1, 2, 3, "23:0:3:BA:false:0"                                 , "23:0:3:BA:false:0"                                                  , true ,  };
+    yield return new object[] { true, false, 0, "BA", 4, 2, 3, "7:0:3:BA:false:0"                                  , "7:0:3:BA:false:0"                                                   , true };
+    yield return new object[] { true, false, 0, "BA", 1, 2, 3, "7:1:3:BA:false:0"                                  , "7:1:3:BA:false:0"                                                   , true };
+    yield return new object[] { true, false, 1, "BA", 1, 2, 3, "7:0:3:BA:false:0"                                  , "7:0:3:BA:false:0"                                                   , true };
+    yield return new object[] { true, false, 0, "BA", 3, 0, 0, "3:0:3:BA:false:0"                                  , "11:0:3:BA:false:0"                                                  , true };
+}

@@ -1,0 +1,11 @@
+public static IEnumerable<object[]> DiscretionaryACL_Constructor2()
+{
+    yield return new object[] { false, false, 0, 0       };
+    yield return new object[] { false, true, 127, 0      };
+    yield return new object[] { true, false, 255, 0      };
+    yield return new object[] { true, true, 0, 0         };
+    yield return new object[] { false, false, 127, 1     };
+    yield return new object[] { false, true, 255, 1      };
+    yield return new object[] { true, false, 2, 1        };
+    yield return new object[] { true, true, 4, 1         };
+}
