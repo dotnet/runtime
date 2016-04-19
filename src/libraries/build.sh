@@ -280,6 +280,7 @@ __UnprocessedBuildArgs=
 __CleanBuild=false
 __CrossBuild=0
 __SkipTests=false
+__ServerGC=0
 __VerboseBuild=false
 __ClangMajorVersion=3
 __ClangMinorVersion=5
@@ -380,6 +381,9 @@ while :; do
                 exit 1
             fi
             ;;
+        useservergc)
+            __ServerGC=1
+            ;;
         *)
           if [[ $1 == "/p:OfficialBuildId="* ]]; then
             __OfficialBuildIdArg=$1
@@ -424,6 +428,8 @@ if [ "$__CrossBuild" == 1 ]; then
         export ROOTFS_DIR="$__scriptpath/cross/rootfs/$__BuildArch"
     fi
 fi
+
+export CORECLR_SERVER_GC="$__ServerGC"
 
 if $__buildnative; then
 
