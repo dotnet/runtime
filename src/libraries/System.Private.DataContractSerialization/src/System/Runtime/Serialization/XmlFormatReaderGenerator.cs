@@ -30,12 +30,13 @@ namespace System.Runtime.Serialization
     internal sealed class XmlFormatReaderGenerator
 #endif
     {
-        private static readonly MethodInfo s_getUninitializedObjectMethodInfo =
+        private static readonly Func<Type, object> s_getUninitializedObjectDelegate = (Func<Type, object>)
             typeof(string)
             .GetTypeInfo()
             .Assembly
             .GetType("System.Runtime.Serialization.FormatterServices")
-            ?.GetMethod("GetUninitializedObject", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
+            ?.GetMethod("GetUninitializedObject", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static)
+            ?.CreateDelegate(typeof(Func<Type, object>));
 
         private static readonly Dictionary<Type, bool> s_typeHasDefaultConstructorMap = new Dictionary<Type, bool>();
 
@@ -898,14 +899,7 @@ namespace System.Runtime.Serialization
             return UnsafeGetUninitializedObject(type);
         }
 
-        static internal object TryGetUninitializedObjectWithFormatterServices(Type type)
-        {
-            object obj = null;
-            if (s_getUninitializedObjectMethodInfo != null)
-            {
-                obj = s_getUninitializedObjectMethodInfo.Invoke(null, new object[] { type });
-            }
-            return obj;
-        }
+        static internal object TryGetUninitializedObjectWithFormatterServices(Type type) =>
+            s_getUninitializedObjectDelegate?.Invoke(type);
     }
 }
