@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
+using System.Reflection;
 using Xunit;
 
 namespace System.Linq.Tests
@@ -804,6 +804,18 @@ namespace System.Linq.Tests
         public void EmptyGroupingWithResultCount()
         {
             Assert.Equal(0, Enumerable.Empty<int>().GroupBy(i => i, (x, y) => x + y.Count()).Count());
+        }
+        [Fact]
+        public static void GroupingKeyIsPublic()
+        {
+            // Grouping.Key needs to be public (not explicitly implemented) for the sake of WPF.
+
+            object[] objs = { "Foo", 1.0M, "Bar", new { X = "X" }, 2.00M };
+            object group = objs.GroupBy(x => x.GetType()).First();
+
+            Type grouptype = group.GetType();
+            PropertyInfo key = grouptype.GetProperty("Key", BindingFlags.Instance | BindingFlags.Public);
+            Assert.NotNull(key);
         }
     }
 }
