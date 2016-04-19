@@ -1497,7 +1497,6 @@ namespace System.Linq.Expressions.Interpreter
         private void CompileLoopExpression(Expression expr)
         {
             var node = (LoopExpression)expr;
-            var enterLoop = new EnterLoopInstruction(node, _locals, _instructions.Count);
 
             PushLabelBlock(LabelScopeKind.Statement);
             LabelInfo breakLabel = DefineLabel(node.BreakLabel);
@@ -1506,7 +1505,6 @@ namespace System.Linq.Expressions.Interpreter
             _instructions.MarkLabel(continueLabel.GetLabel(this));
 
             // emit loop body:
-            _instructions.Emit(enterLoop);
             CompileAsVoid(node.Body);
 
             // emit loop branch:
@@ -1515,8 +1513,6 @@ namespace System.Linq.Expressions.Interpreter
             _instructions.MarkLabel(breakLabel.GetLabel(this));
 
             PopLabelBlock(LabelScopeKind.Statement);
-
-            enterLoop.FinishLoop(_instructions.Count);
         }
 
         #endregion
