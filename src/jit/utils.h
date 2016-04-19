@@ -538,6 +538,8 @@ public:
     static float convertUInt64ToFloat(unsigned __int64 u64);
 
     static unsigned __int64 convertDoubleToUInt64(double d);
+
+    static double round(double d);
 };
 
 #endif // _UTILS_H_
