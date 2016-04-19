@@ -111,13 +111,8 @@ Buffer size required to be passed to _gcvt, fcvt and other fp conversion routine
     CASSERT(sizeof(long) == sizeof(int));
 #endif
 
-#ifdef __GNUC_VA_LIST
-    // GCC: short is not int, but GCC promotes va_arg to int
-    #define SHORT_IS_INT     1
-#else
-    #define SHORT_IS_INT     0      /* 1 means short is same size as int */
-        CASSERT(sizeof(short) != sizeof(int));
-#endif
+// GCC: short is not int, but GCC promotes va_arg to int
+#define SHORT_IS_INT     1
 
 #define LONGLONG_IS_INT64 1     /* 1 means long long is same as int64 */
     CASSERT(sizeof(long long) == sizeof(int64_t));
@@ -142,35 +137,6 @@ Buffer size required to be passed to _gcvt, fcvt and other fp conversion routine
     #define PTR_IS_INT64     0      /* 1 means ptr is same size as int64 */
     CASSERT(sizeof(void *) != sizeof(int64_t));
 #endif  /* defined (_WIN64) */
-
-#ifndef __GNUC_VA_LIST
-
-#if LONGLONG_IS_INT64
-    #define get_long_long_arg(x) (long long)get_int64_arg(x)
-#endif  /* LONGLONG_IS_INT64 */
-
-#if LONG_IS_INT
-    #define get_long_arg(x) (long)get_int_arg(x)
-#endif  /* LONG_IS_INT */
-
-#ifndef _UNICODE
-#if SHORT_IS_INT
-    #define get_short_arg(x) (short)get_int_arg(x)
-#endif  /* SHORT_IS_INT */
-#endif  /* _UNICODE */
-
-#if PTR_IS_INT
-    #define get_ptr_arg(x) (void *)(intptr_t)get_int_arg(x)
-#elif PTR_IS_LONG
-    #define get_ptr_arg(x) (void *)(intptr_t)get_long_arg(x)
-#elif PTR_IS_INT64
-    #define get_ptr_arg(x) (void *)get_int64_arg(x)
-#else  /* PTR_IS_INT64 */
-    #error Size of pointer must be same as size of int or long
-#endif  /* PTR_IS_INT64 */
-
-#endif // __GNUC_VA_LIST
-
 
 /* CONSTANTS */
 
@@ -401,39 +367,13 @@ LOCAL(void) write_string(const _TCHAR *string, int len, miniFILE *f, int *numwri
 
 #endif  /* CPRFLAG */
 
-#ifdef __GNUC_VA_LIST
-
-    #define get_short_arg(list)         va_arg(*list, int)  // GCC promotes va_arg shorts into int values
-    #define get_int_arg(list)           va_arg(*list, int)
-    #define get_long_arg(list)          va_arg(*list, long)
-    #define get_long_long_arg(list)     va_arg(*list, long long)
-    #define get_int64_arg(list)         va_arg(*list, __int64)
-    #define get_crtdouble_arg(list)     va_arg(*list, _CRT_DOUBLE)
-    #define get_ptr_arg(list)           va_arg(*list, void *)
-
-#else   // __GNUC_VA_LIST
-
-__inline int __cdecl get_int_arg(va_list *pargptr);
-
-#ifndef _UNICODE
-#if !SHORT_IS_INT
-__inline short __cdecl get_short_arg(va_list *pargptr);
-#endif  /* !SHORT_IS_INT */
-#endif  /* _UNICODE */
-
-#if !LONG_IS_INT
-__inline long __cdecl get_long_arg(va_list *pargptr);
-#endif  /* !LONG_IS_INT */
-
-#if !LONGLONG_IS_INT64
-__inline long long __cdecl get_long_long_arg(va_list *pargptr);
-#endif  /* !LONGLONG_IS_INT64 */
-
-#if _INTEGRAL_MAX_BITS >= 64   
-__inline __int64 __cdecl get_int64_arg(va_list *pargptr);
-#endif  /* _INTEGRAL_MAX_BITS >= 64    */
-
-#endif  // __GNUC_VA_LIST
+#define get_short_arg(list)         va_arg(*list, int)  // GCC promotes va_arg shorts into int values
+#define get_int_arg(list)           va_arg(*list, int)
+#define get_long_arg(list)          va_arg(*list, long)
+#define get_long_long_arg(list)     va_arg(*list, long long)
+#define get_int64_arg(list)         va_arg(*list, __int64)
+#define get_crtdouble_arg(list)     va_arg(*list, _CRT_DOUBLE)
+#define get_ptr_arg(list)           va_arg(*list, void *)
 
 #ifdef CPRFLAG
 LOCAL(int) output(const _TCHAR *, _locale_t , va_list);
@@ -1524,105 +1464,3 @@ LOCAL(void) write_string (
     }
 }
 #endif  /* CPRFLAG */
-
-
-// For GCC 64 bit, we can't cast to va_list *, so we need to make these functions defines.
-#ifndef __GNUC_VA_LIST
-
-/***
-*int get_int_arg(va_list *pargptr)
-*
-*Purpose:
-*   Gets an int argument off the given argument list and updates *pargptr.
-*
-*Entry:
-*   va_list *pargptr - pointer to argument list; updated by function
-*
-*Exit:
-*   Returns the integer argument read from the argument list.
-*
-*Exceptions:
-*
-*******************************************************************************/
-
-__inline int __cdecl get_int_arg (
-    va_list *pargptr
-    )
-{
-    return va_arg(*pargptr, int);
-}
-
-/***
-*long get_long_arg(va_list *pargptr)
-*
-*Purpose:
-*   Gets an long argument off the given argument list and updates *pargptr.
-*
-*Entry:
-*   va_list *pargptr - pointer to argument list; updated by function
-*
-*Exit:
-*   Returns the long argument read from the argument list.
-*
-*Exceptions:
-*
-*******************************************************************************/
-
-#if !LONG_IS_INT
-__inline long __cdecl get_long_arg (
-    va_list *pargptr
-    )
-{
-    return va_arg(*pargptr, long);
-}
-#endif  /* !LONG_IS_INT */
-
-#if !LONGLONG_IS_INT64
-__inline long long __cdecl get_long_long_arg (
-    va_list *pargptr
-    )
-{
-    return va_arg(*pargptr, long long);
-}
-#endif  /* !LONGLONG_IS_INT64 */
-
-#if _INTEGRAL_MAX_BITS >= 64   
-__inline __int64 __cdecl get_int64_arg (
-    va_list *pargptr
-    )
-{
-    return va_arg(*pargptr, __int64);
-}
-#endif  /* _INTEGRAL_MAX_BITS >= 64    */
-
-#ifndef _UNICODE
-/***
-*short get_short_arg(va_list *pargptr)
-*
-*Purpose:
-*   Gets a short argument off the given argument list and updates *pargptr.
-*   *** CURRENTLY ONLY USED TO GET A WCHAR_T, IFDEF _INTL ***
-*
-*Entry:
-*   va_list *pargptr - pointer to argument list; updated by function
-*
-*Exit:
-*   Returns the short argument read from the argument list.
-*
-*Exceptions:
-*
-*******************************************************************************/
-
-#if !SHORT_IS_INT
-__inline short __cdecl get_short_arg (
-    va_list *pargptr
-    )
-{
-    return va_arg(*pargptr, short);
-}
-#endif  /* !SHORT_IS_INT */
-
-#endif  /* _UNICODE */
-
-#endif // __GNUC_VA_LIST
-
