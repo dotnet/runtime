@@ -1251,7 +1251,7 @@ static int32_t GetIPv4PacketInformation(cmsghdr* controlMessage, IPPacketInforma
 #if HAVE_IN_PKTINFO
     packetInfo->InterfaceIndex = static_cast<int32_t>(pktinfo->ipi_ifindex);
 #else
-    // TODO: Figure out how to get interface index with in_addr.
+    // TODO (#7855): Figure out how to get interface index with in_addr.
     // One option is http://www.unix.com/man-page/freebsd/3/if_nametoindex
     // which requires interface name to be known.
     // Meanwhile:
@@ -1595,7 +1595,6 @@ static bool ConvertSocketFlagsPalToPlatform(int32_t palFlags, int& platformFlags
 
     if ((palFlags & ~SupportedFlagsMask) != 0)
     {
-        // TODO: we may want to simply mask off unsupported flags.
         return false;
     }
 

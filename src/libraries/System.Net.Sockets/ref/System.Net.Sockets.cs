@@ -350,9 +350,9 @@ namespace System.Net.Sockets
         UpdateConnectContext = 28688,
         UseLoopback = 64,
     }
-    // TODO: Review note: RemoteEndPoint definition includes the Address and Port.
-    //       PacketInformation includes Address and Interface (physical interface number).
-    //       The redundancy could be removed by replacing RemoteEndPoint with Port.
+    // Review note: RemoteEndPoint definition includes the Address and Port.
+    // PacketInformation includes Address and Interface (physical interface number).
+    // The redundancy could be removed by replacing RemoteEndPoint with Port.
     
     // Alternative:
     //    public struct SocketReceiveFromResult

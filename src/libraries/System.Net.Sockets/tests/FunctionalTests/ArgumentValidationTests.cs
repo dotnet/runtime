@@ -12,7 +12,7 @@ using System.Threading;
 
 namespace System.Net.Sockets.Tests
 {
-    // TODO:
+    // TODO (#7852):
     //
     // - Connect(EndPoint):
     //   - disconnected socket
@@ -489,7 +489,6 @@ namespace System.Net.Sockets.Tests
             Assert.Throws<ArgumentException>(() => GetSocket().SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.NoDelay, new object()));
         }
 
-        // TODO: Select
         [Fact]
         public void Select_NullOrEmptyLists_Throws_ArgumentNull()
         {
