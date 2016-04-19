@@ -10,12 +10,12 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
-    // TODO: This class will eventually be moved to Common once the HttpTestServers are finalized.
+    // TODO (#5525): This class will eventually be moved to Common once the HttpTestServers are finalized.
     public static class TestHelper
     {
         public static bool JsonMessageContainsKeyValue(string message, string key, string value)
         {
-            // TODO: Align with the rest of tests w.r.t response parsing once the test server is finalized.
+            // TODO (#5525): Align with the rest of tests w.r.t response parsing once the test server is finalized.
             // Currently not adding any new dependencies
             string pattern = string.Format(@"""{0}"": ""{1}""", key, value);
             return message.Contains(pattern);
@@ -23,7 +23,7 @@ namespace System.Net.Http.Functional.Tests
 
         public static bool JsonMessageContainsKey(string message, string key)
         {
-            // TODO: Align with the rest of tests w.r.t response parsing once the test server is finalized.
+            // TODO (#5525): Align with the rest of tests w.r.t response parsing once the test server is finalized.
             // Currently not adding any new dependencies
             string pattern = string.Format(@"""{0}"": """, key);
             return message.Contains(pattern);
