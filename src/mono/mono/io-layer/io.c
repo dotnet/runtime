@@ -990,7 +990,14 @@ static gboolean file_setfiletime(gpointer handle,
 			SetLastError (ERROR_INVALID_PARAMETER);
 			return(FALSE);
 		}
-		
+
+		if (sizeof (utbuf.actime) == 4 && ((access_ticks - 116444736000000000ULL) / 10000000) > INT_MAX) {
+			MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: attempt to set write time that is too big for a 32bits time_t",
+				   __func__);
+			SetLastError (ERROR_INVALID_PARAMETER);
+			return(FALSE);
+		}
+
 		utbuf.actime=(access_ticks - 116444736000000000ULL) / 10000000;
 	} else {
 		utbuf.actime=statbuf.st_atime;
@@ -1004,6 +1011,12 @@ static gboolean file_setfiletime(gpointer handle,
 		 */
 		if (write_ticks < 116444736000000000ULL) {
 			MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: attempt to set write time too early",
+				   __func__);
+			SetLastError (ERROR_INVALID_PARAMETER);
+			return(FALSE);
+		}
+		if (sizeof (utbuf.modtime) == 4 && ((write_ticks - 116444736000000000ULL) / 10000000) > INT_MAX) {
+			MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: attempt to set write time that is too big for a 32bits time_t",
 				   __func__);
 			SetLastError (ERROR_INVALID_PARAMETER);
 			return(FALSE);
