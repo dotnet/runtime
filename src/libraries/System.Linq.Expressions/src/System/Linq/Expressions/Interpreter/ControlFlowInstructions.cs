@@ -828,45 +828,4 @@ namespace System.Linq.Expressions.Interpreter
             return _cases.TryGetValue((string)value, out target) ? target : 1;
         }
     }
-
-    internal sealed class EnterLoopInstruction : Instruction
-    {
-        private readonly int _instructionIndex;
-        private Dictionary<ParameterExpression, LocalVariable> _variables;
-        private Dictionary<ParameterExpression, LocalVariable> _closureVariables;
-        private LoopExpression _loop;
-        private int _loopEnd;
-
-        public override string InstructionName
-        {
-            get { return "EnterLoop"; }
-        }
-
-        internal EnterLoopInstruction(LoopExpression loop, LocalVariables locals, int instructionIndex)
-        {
-            _loop = loop;
-            _variables = locals.CopyLocals();
-            _closureVariables = locals.ClosureVariables;
-            _instructionIndex = instructionIndex;
-        }
-
-        internal void FinishLoop(int loopEnd)
-        {
-            _loopEnd = loopEnd;
-        }
-
-        public override int Run(InterpretedFrame frame)
-        {
-            return 1;
-        }
-
-        private bool Compiled
-        {
-            get { return _loop == null; }
-        }
-
-        private void Compile(object frameObj)
-        {
-        }
-    }
 }
