@@ -179,7 +179,7 @@ extern "C" int32_t GlobalizationNative_GetLocaleInfoString(
     switch (localeStringData)
     {
         case LocalizedDisplayName:
-            uloc_getDisplayName(locale, uloc_getDefault(), value, valueLength, &status);
+            uloc_getDisplayName(locale, DetectDefaultLocaleName(), value, valueLength, &status);
             break;
         case EnglishDisplayName:
             uloc_getDisplayName(locale, ULOC_ENGLISH, value, valueLength, &status);
@@ -188,7 +188,7 @@ extern "C" int32_t GlobalizationNative_GetLocaleInfoString(
             uloc_getDisplayName(locale, locale, value, valueLength, &status);
             break;
         case LocalizedLanguageName:
-            uloc_getDisplayLanguage(locale, uloc_getDefault(), value, valueLength, &status);
+            uloc_getDisplayLanguage(locale, DetectDefaultLocaleName(), value, valueLength, &status);
             break;
         case EnglishLanguageName:
             uloc_getDisplayLanguage(locale, ULOC_ENGLISH, value, valueLength, &status);
