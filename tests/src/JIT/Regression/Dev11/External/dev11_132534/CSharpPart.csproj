@@ -30,6 +30,7 @@
     <DebugType>PdbOnly</DebugType>
     <NoLogo>True</NoLogo>
     <DefineConstants>$(DefineConstants);DESKTOP</DefineConstants>
+    <NoWarn>$(NoWarn),8002</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Core.cs" />
