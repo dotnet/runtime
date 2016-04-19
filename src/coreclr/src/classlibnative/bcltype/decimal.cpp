@@ -246,6 +246,10 @@ FCIMPL1(INT32, COMDecimal::ToInt32, FC_DECIMAL d)
             if (i >= 0) return i;
         }
         else {
+            // Int32.MinValue is represented as sign being negative
+            // and Lo32 being 0x80000000 (-ve number). Return that as is without
+            // reversing the sign of the number.
+            if(i == 0x80000000) return i;
             i = -i;
             if (i <= 0) return i;
         }

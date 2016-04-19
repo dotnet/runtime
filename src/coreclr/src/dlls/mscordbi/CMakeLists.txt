@@ -62,14 +62,8 @@ if(WIN32)
         user32.lib
         version.lib
         ${STATIC_MT_CRT_LIB}
+        ${STATIC_MT_VCRT_LIB}
     )
-
-    # ARM64_TODO: Enable this for Windows Arm64
-    if (NOT CLR_CMAKE_PLATFORM_ARCH_ARM64)
-        list(APPEND COREDBI_LIBRARIES 
-          ${STATIC_MT_VCRT_LIB}
-        )
-    endif()
 
     target_link_libraries(mscordbi ${COREDBI_LIBRARIES})
 
