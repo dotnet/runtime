@@ -96,6 +96,18 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         }
 
         [Fact]
+        public void SetsServiceableToTrueForPackageDescriptions()
+        {
+            var context = Build(runtimeExports: new[]
+            {
+                Export(PackageDescription("Pack.Age", servicable: false))
+            });
+
+            var lib = context.RuntimeLibraries.Single();
+            lib.Serviceable.Should().BeTrue();
+        }
+
+        [Fact]
         public void TakesServicableFromPackageDescription()
         {
             var context = Build(runtimeExports: new[]
