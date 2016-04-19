@@ -154,7 +154,6 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        // TODO: Cache and reuse ServerSocketState objects.
         private class ServerSocketState
         {
             private Socket __socket;
