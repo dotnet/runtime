@@ -234,21 +234,6 @@
     <StablePackage Include="System.Security.Principal">
       <Version>4.0.0</Version>
     </StablePackage>
-    <StablePackage Include="System.ServiceModel.Duplex">
-      <Version>4.0.0</Version>
-    </StablePackage>
-    <StablePackage Include="System.ServiceModel.Http">
-      <Version>4.0.10</Version>
-    </StablePackage>
-    <StablePackage Include="System.ServiceModel.NetTcp">
-      <Version>4.0.0</Version>
-    </StablePackage>
-    <StablePackage Include="System.ServiceModel.Primitives">
-      <Version>4.0.0</Version>
-    </StablePackage>
-    <StablePackage Include="System.ServiceModel.Security">
-      <Version>4.0.0</Version>
-    </StablePackage>
     <StablePackage Include="System.Text.Encoding">
       <Version>4.0.10</Version>
     </StablePackage>
@@ -366,9 +351,6 @@
     <StablePackage Include="System.Private.Networking">
       <Version>4.0.0</Version>
     </StablePackage>
-    <StablePackage Include="System.Private.ServiceModel">
-      <Version>4.0.0</Version>
-    </StablePackage>
     <StablePackage Include="System.Private.DataContractSerialization">
       <Version>4.0.0</Version>
     </StablePackage>
@@ -469,18 +451,6 @@
     </StablePackage>
     <StablePackage Include="System.Runtime">
       <Version>4.0.10</Version>
-    </StablePackage>
-    <StablePackage Include="System.ServiceModel.Http">
-      <Version>3.9.0</Version>
-    </StablePackage>
-    <StablePackage Include="System.ServiceModel.Http">
-      <Version>4.0.0</Version>
-    </StablePackage>
-    <StablePackage Include="System.ServiceModel.Primitives">
-      <Version>3.9.0</Version>
-    </StablePackage>
-    <StablePackage Include="System.ServiceModel.Security">
-      <Version>3.9.0</Version>
     </StablePackage>
     <StablePackage Include="System.Text.Encoding.Extensions">
       <Version>4.0.0</Version>

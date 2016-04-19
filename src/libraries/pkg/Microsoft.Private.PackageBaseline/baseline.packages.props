@@ -50,10 +50,10 @@
       <Version>4.0.1</Version>
     </BaseLinePackage>
     <BaseLinePackage Include="System.ComponentModel.Primitives">
-      <Version>4.0.1</Version>
+      <Version>4.1.0</Version>
     </BaseLinePackage>
     <BaseLinePackage Include="System.ComponentModel.TypeConverter">
-      <Version>4.0.1</Version>
+      <Version>4.1.0</Version>
     </BaseLinePackage>
     <BaseLinePackage Include="System.Console">
       <Version>4.0.0</Version>
@@ -331,21 +331,6 @@
     <BaseLinePackage Include="System.Security.Principal.Windows">
       <Version>4.0.0</Version>
     </BaseLinePackage>
-    <BaseLinePackage Include="System.ServiceModel.Duplex">
-      <Version>4.0.1</Version>
-    </BaseLinePackage>
-    <BaseLinePackage Include="System.ServiceModel.Http">
-      <Version>4.1.0</Version>
-    </BaseLinePackage>
-    <BaseLinePackage Include="System.ServiceModel.NetTcp">
-      <Version>4.1.0</Version>
-    </BaseLinePackage>
-    <BaseLinePackage Include="System.ServiceModel.Primitives">
-      <Version>4.1.0</Version>
-    </BaseLinePackage>
-    <BaseLinePackage Include="System.ServiceModel.Security">
-      <Version>4.0.1</Version>
-    </BaseLinePackage>
     <BaseLinePackage Include="System.ServiceProcess.ServiceController">
       <Version>4.1.0</Version>
     </BaseLinePackage>
@@ -394,6 +379,9 @@
     <BaseLinePackage Include="System.Threading.Timer">
       <Version>4.0.1</Version>
     </BaseLinePackage>
+    <BaseLinePackage Include="System.ValueTuple">
+      <Version>4.0.0</Version>
+    </BaseLinePackage>
     <BaseLinePackage Include="System.Xml.ReaderWriter">
       <Version>4.0.11</Version>
     </BaseLinePackage>
@@ -437,9 +425,6 @@
     </BaseLinePackage>
     <BaseLinePackage Include="System.Private.DataContractSerialization">
       <Version>4.1.1</Version>
-    </BaseLinePackage>
-    <BaseLinePackage Include="System.Private.ServiceModel">
-      <Version>4.1.0</Version>
     </BaseLinePackage>
     <BaseLinePackage Include="System.Private.Uri">
       <Version>4.0.1</Version>
