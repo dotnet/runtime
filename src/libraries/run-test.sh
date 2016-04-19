@@ -41,6 +41,8 @@ usage()
     echo "    --restrict-proj <regex>           Run test projects that match regex"
     echo "                                      default: .* (all projects)"
     echo "    --useServerGC                     Enable Server GC for this test run"
+    echo "    --IgnoreForCI                     Passes the IgnoreForCI category trait to the xunit runner to let the tests know they're in CI"
+    echo "    --outerloop                       Includes the OuterLoop tests that are by default excluded."
     echo
     echo "Runtime Code Coverage options:"
     echo "    --coreclr-coverage                Optional argument to get coreclr code coverage reports"
@@ -183,9 +185,9 @@ run_test()
 
   echo
   echo "Running tests in $dirName"
-  echo "./corerun xunit.console.netcore.exe $testProject.dll -xml testResults.xml -notrait category=failing $OuterLoop -notrait category=$xunitOSCategory -notrait Benchmark=true"
+  echo "./corerun xunit.console.netcore.exe $testProject.dll -xml testResults.xml -notrait category=failing $OuterLoop $IgnoreForCI -notrait category=$xunitOSCategory -notrait Benchmark=true"
   echo
-  ./corerun xunit.console.netcore.exe "$testProject.dll" -xml testResults.xml -notrait category=failing $OuterLoop -notrait category=$xunitOSCategory -notrait Benchmark=true
+  ./corerun xunit.console.netcore.exe "$testProject.dll" -xml testResults.xml -notrait category=failing $OuterLoop $IgnoreForCI -notrait category=$xunitOSCategory -notrait Benchmark=true
   exitCode=$?
 
   if [ $exitCode -ne 0 ]
@@ -252,6 +254,7 @@ coreclr_code_coverage()
 
 ((serverGC = 0))
 OuterLoop="-notrait category=outerloop"
+IgnoreForCI =""
 
 while [[ $# > 0 ]]
 do
@@ -295,6 +298,9 @@ do
         ;;
         --outerloop)
         OuterLoop=""
+        ;;
+        --IgnoreForCI)
+        IgnoreForCI="-notrait category=IgnoreForCI"
         ;;
         *)
         ;;
