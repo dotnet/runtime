@@ -30,6 +30,9 @@ namespace System.Runtime.Serialization.Json
         private const string xmlNamespace = "http://www.w3.org/XML/1998/namespace";
         private const string xmlnsNamespace = "http://www.w3.org/2000/xmlns/";
 
+        // This array was part of a perf improvement for escaping characters < WHITESPACE.
+        private static readonly string[] s_escapedJsonStringTables; 
+
         [SecurityCritical]
         private static BinHexEncoding s_binHexEncoding;
 
@@ -69,6 +72,26 @@ namespace System.Runtime.Serialization.Json
                 _indentChars = indentChars;
             }
             InitializeWriter();
+        }
+
+        static XmlJsonWriter()
+        {
+            s_escapedJsonStringTables = new string[WHITESPACE];
+            for(int ch = 0; ch < WHITESPACE; ch++)
+            {
+                string escapedJsonString;
+                char abbrev;
+                if (TryEscapeControlCharacter((char)ch, out abbrev)) 
+                {
+                    escapedJsonString = string.Concat(BACK_SLASH, abbrev);
+                }
+                else
+                {
+                    escapedJsonString = string.Format(CultureInfo.InvariantCulture, "\\u{0:x4}", ch);
+                }
+                
+                s_escapedJsonStringTables[ch] = escapedJsonString;
+            }
         }
 
         private enum JsonDataType
@@ -1387,27 +1410,27 @@ namespace System.Runtime.Serialization.Json
                 for (j = 0; j < str.Length; j++)
                 {
                     char ch = chars[j];
-                    char abbrev;
-                    if (ch == BACK_SLASH || ch == JsonGlobals.QuoteChar || ch == FORWARD_SLASH)
+                    if (ch <= FORWARD_SLASH)
+                    {
+                        if (ch == FORWARD_SLASH || ch == JsonGlobals.QuoteChar)
+                        {
+                            _nodeWriter.WriteChars(chars + i, j - i);
+                            _nodeWriter.WriteText(BACK_SLASH);
+                            _nodeWriter.WriteText(ch);
+                            i = j + 1;
+                        }
+                        else if (ch < WHITESPACE)
+                        {
+                            _nodeWriter.WriteChars(chars + i, j - i);
+                            _nodeWriter.WriteText(s_escapedJsonStringTables[ch]);
+                            i = j + 1;
+                        }
+                    }
+                    else if (ch == BACK_SLASH)
                     {
                         _nodeWriter.WriteChars(chars + i, j - i);
                         _nodeWriter.WriteText(BACK_SLASH);
                         _nodeWriter.WriteText(ch);
-                        i = j + 1;
-                    }
-                    else if (TryEscapeControlCharacter(ch, out abbrev))
-                    {
-                        _nodeWriter.WriteChars(chars + i, j - i);
-                        _nodeWriter.WriteText(BACK_SLASH);
-                        _nodeWriter.WriteText(abbrev);
-                        i = j + 1;
-                    }
-                    else if (ch < WHITESPACE)
-                    {
-                        _nodeWriter.WriteChars(chars + i, j - i);
-                        _nodeWriter.WriteText(BACK_SLASH);
-                        _nodeWriter.WriteText('u');
-                        _nodeWriter.WriteText(string.Format(CultureInfo.InvariantCulture, "{0:x4}", (int)ch));
                         i = j + 1;
                     }
                     else if ((ch >= HIGH_SURROGATE_START && (ch <= LOW_SURROGATE_END || ch >= MAX_CHAR)) || IsUnicodeNewlineCharacter(ch))
@@ -1426,7 +1449,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        private bool TryEscapeControlCharacter(char ch, out char abbrev)
+        private static bool TryEscapeControlCharacter(char ch, out char abbrev)
         {
             switch (ch)
             {
