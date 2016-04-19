@@ -9324,7 +9324,7 @@ void NativeImageDumper::DumpReadyToRun()
 
     IMAGE_DATA_DIRECTORY * pEntryPointsDir = FindReadyToRunSection(READYTORUN_SECTION_METHODDEF_ENTRYPOINTS);
     if (pEntryPointsDir != NULL)
-        m_methodDefEntryPoints = NativeFormat::NativeArray(&m_nativeReader, pEntryPointsDir->VirtualAddress);
+        m_methodDefEntryPoints = NativeFormat::NativeArray((TADDR)&m_nativeReader, pEntryPointsDir->VirtualAddress);
 
     DisplayStartCategory("NativeInfo", NATIVE_INFO);
 
