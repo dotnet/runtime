@@ -2094,8 +2094,6 @@ mono_sample_hit (MonoProfiler *profiler, unsigned char *ip, void *context)
 		InterlockedIncrement (&sample_allocations);
 	}
 
-	mono_lock_free_queue_node_init (&sample->node, TRUE);
-
 	sample->count = 0;
 	mono_stack_walk_async_safe (&async_walk_stack, context, sample);
 
@@ -4316,8 +4314,6 @@ handle_dumper_queue_entry (MonoProfiler *prof)
 	SampleHit *sample;
 
 	if ((sample = (SampleHit *) mono_lock_free_queue_dequeue (&prof->dumper_queue))) {
-		mono_lock_free_queue_node_init (&sample->node, TRUE);
-
 		for (int i = 0; i < sample->count; ++i) {
 			MonoMethod *method = sample->frames [i].method;
 			MonoDomain *domain = sample->frames [i].domain;
