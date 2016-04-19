@@ -2,327 +2,102 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Linq;
 using Xunit;
-using System;
-using System.Collections;
-using System.Collections.Specialized;
-using GenStrings;
 
 namespace System.Collections.Specialized.Tests
 {
-    public class AddObjObjTests
+    public class HybridDictionaryAddTests
     {
-        public const int MAX_LEN = 50;          // max length of random strings
-
-        [Fact]
-        public void Test01()
+        [Theory]
+        [InlineData(50, false)]
+        [InlineData(50, true)]
+        public void Add(int count, bool caseInsensitive)
         {
-            IntlStrings intl;
-            HybridDictionary hd;
-            const int BIG_LENGTH = 100;
+            HybridDictionary hybridDictionary = new HybridDictionary(caseInsensitive);
 
-            // simple string values
-            string[] valuesShort =
+            for (int i = 0; i < count; i++)
             {
-                "",
-                " ",
-                "$%^#",
-                System.DateTime.Today.ToString(),
-                Int32.MaxValue.ToString()
-            };
+                string key = "Key_" + i;
+                string value = "Value_" + i;
+                hybridDictionary.Add(key, value);
 
-            // keys for simple string values
-            string[] keysShort =
-            {
-                Int32.MaxValue.ToString(),
-                " ",
-                System.DateTime.Today.ToString(),
-                "",
-                "$%^#"
-            };
+                Assert.Equal(i + 1, hybridDictionary.Count);
+                Assert.Equal(i + 1, hybridDictionary.Keys.Count);
+                Assert.Equal(i + 1, hybridDictionary.Values.Count);
 
-            string[] valuesLong = new string[BIG_LENGTH];
-            string[] keysLong = new string[BIG_LENGTH];
+                Assert.Contains(key, hybridDictionary.Keys.Cast<object>());
+                Assert.Contains(value, hybridDictionary.Values.Cast<object>());
 
-            int cnt = 0;            // Count
+                Assert.Equal(value, hybridDictionary[key]);
+                Assert.True(hybridDictionary.Contains(key));
 
-            // initialize IntStrings
-            intl = new IntlStrings();
+                // Keys should be case insensitive
+                Assert.Equal(caseInsensitive, hybridDictionary.Contains(key.ToUpperInvariant()));
+                Assert.Equal(caseInsensitive, hybridDictionary.Contains(key.ToLowerInvariant()));
 
-            for (int i = 0; i < BIG_LENGTH; i++)
-            {
-                valuesLong[i] = "Item" + i;
-                keysLong[i] = "keY" + i;
-            }
-
-            // [] HybridDictionary is constructed as expected
-            //-----------------------------------------------------------------
-
-            // [] simple strings
-
-            hd = new HybridDictionary();
-
-
-            for (int i = 0; i < valuesShort.Length; i++)
-            {
-                cnt = hd.Count;
-                hd.Add(keysShort[i], valuesShort[i]);
-                if (hd.Count != cnt + 1)
+                if (caseInsensitive)
                 {
-                    Assert.False(true, string.Format("Error, count is {1} instead of {2}", i, hd.Count, cnt + 1));
-                }
-
-                //  access the item
-                //
-                if (String.Compare(hd[keysShort[i]].ToString(), valuesShort[i]) != 0)
-                {
-                    Assert.False(true, string.Format("Error, returned item \"{1}\" instead of \"{2}\"", i, hd[keysShort[i]], valuesShort[i]));
-                }
-            }
-
-            // increase the number of items
-            for (int i = 0; i < valuesLong.Length; i++)
-            {
-                cnt = hd.Count;
-                hd.Add(keysLong[i], valuesLong[i]);
-                if (hd.Count != cnt + 1)
-                {
-                    Assert.False(true, string.Format("Error, count is {1} instead of {2}", i, hd.Count, cnt + 1));
-                }
-
-                //  access the item
-                //
-                if (String.Compare(hd[keysLong[i]].ToString(), valuesLong[i]) != 0)
-                {
-                    Assert.False(true, string.Format("Error, returned item \"{1}\" instead of \"{2}\"", i, hd[keysLong[i]], valuesLong[i]));
-                }
-            }
-
-            //
-            // [] Intl strings
-            //
-            int len = valuesShort.Length;
-            hd.Clear();
-            string[] intlValues = new string[len * 2];
-
-            // fill array with unique strings
-            //
-            for (int i = 0; i < len * 2; i++)
-            {
-                string val = intl.GetRandomString(MAX_LEN);
-                while (Array.IndexOf(intlValues, val) != -1)
-                    val = intl.GetRandomString(MAX_LEN);
-                intlValues[i] = val;
-            }
-
-            Boolean caseInsensitive = false;
-            for (int i = 0; i < len * 2; i++)
-            {
-                if (intlValues[i].Length != 0 && intlValues[i].ToLower() == intlValues[i].ToUpper())
-                    caseInsensitive = true;
-            }
-
-
-            //
-            // will use first half of array as valuesShort and second half as keysShort
-            //
-            for (int i = 0; i < len; i++)
-            {
-                cnt = hd.Count;
-
-                hd.Add(intlValues[i + len], intlValues[i]);
-                if (hd.Count != cnt + 1)
-                {
-                    Assert.False(true, string.Format("Error, count is {1} instead of {2}", i, hd.Count, cnt + 1));
-                }
-
-                //  access the item
-                //
-                if (String.Compare(hd[intlValues[i + len]].ToString(), intlValues[i]) != 0)
-                {
-                    Assert.False(true, string.Format("Error, returned item \"{1}\" instead of \"{2}\"", i, hd[intlValues[i + len]], intlValues[i]));
-                }
-            }
-
-            // increase the number of items
-            for (int i = 0; i < valuesLong.Length; i++)
-            {
-                cnt = hd.Count;
-                hd.Add(keysLong[i], intlValues[1]);
-                if (hd.Count != cnt + 1)
-                {
-                    Assert.False(true, string.Format("Error, count is {1} instead of {2}", i, hd.Count, cnt + 1));
-                }
-
-                //  access the item
-                //
-                if (String.Compare(hd[keysLong[i]].ToString(), intlValues[1]) != 0)
-                {
-                    Assert.False(true, string.Format("Error, returned item \"{1}\" instead of \"{2}\"", i, hd[keysLong[i]], intlValues[1]));
-                }
-            }
-
-            //
-            // [] Case sensitivity
-            // Casing doesn't change ( keysShort are not converted to lower!)
-            //
-            string[] intlValuesLower = new string[len * 2];
-
-            // fill array with unique strings
-            //
-            for (int i = 0; i < len * 2; i++)
-            {
-                intlValues[i] = intlValues[i].ToUpper();
-            }
-
-            for (int i = 0; i < len * 2; i++)
-            {
-                intlValuesLower[i] = intlValues[i].ToLower();
-            }
-
-            hd.Clear();
-            //
-            // will use first half of array as valuesShort and second half as keysShort
-            //
-            for (int i = 0; i < len; i++)
-            {
-                cnt = hd.Count;
-
-                hd.Add(intlValues[i + len], intlValues[i]);
-                if (hd.Count != cnt + 1)
-                {
-                    Assert.False(true, string.Format("Error, count is {1} instead of {2}", i, hd.Count, cnt + 1));
-                }
-
-                //  access the item
-                //
-                if (hd[intlValues[i + len]] == null)
-                {
-                    Assert.False(true, string.Format("Error, returned null", i));
+                    Assert.Equal(value, hybridDictionary[key.ToUpperInvariant()]);
+                    Assert.Equal(value, hybridDictionary[key.ToLowerInvariant()]);
                 }
                 else
                 {
-                    if (!hd[intlValues[i + len]].Equals(intlValues[i]))
-                    {
-                        Assert.False(true, string.Format("Error, returned item \"{1}\" instead of \"{2}\"", i, hd[intlValues[i + len]], intlValues[i]));
-                    }
-                }
-
-                // verify that dictionary doesn't contains lowercase item
-                //
-                if (!caseInsensitive && hd[intlValuesLower[i + len]] != null)
-                {
-                    Assert.False(true, string.Format("Error, returned non-null", i));
+                    Assert.Null(hybridDictionary[key.ToUpperInvariant()]);
+                    Assert.Null(hybridDictionary[key.ToLowerInvariant()]);
                 }
             }
+        }
 
-            //
-            //   [] Add multiple valuesShort with the same key
-            //   Add multiple valuesShort with the same key - ArgumentException expected
-            //
+        [Theory]
+        [InlineData(5)]
+        [InlineData(50)]
+        public void Add_NullValue(int count)
+        {
+            HybridDictionary hybridDictionary = Helpers.CreateHybridDictionary(count);
+            string nullValueKey = "null-value-key";
+            hybridDictionary.Add(nullValueKey, null);
 
-            hd.Clear();
-            len = valuesShort.Length;
-            string k = "keykey";
-            hd.Add(k, "value");
-            Assert.Throws<ArgumentException>(() => { hd.Add(k, "newvalue"); });
+            Assert.Equal(count + 1, hybridDictionary.Count);
+            Assert.Null(hybridDictionary[nullValueKey]);
+            Assert.True(hybridDictionary.Contains(nullValueKey));
+            Assert.Contains(null, hybridDictionary.Values.Cast<object>());
+        }
 
-            //
-            // [] Add null value
-            //
+        [Theory]
+        [InlineData(5)]
+        [InlineData(50)]
+        public void Add_SameValue(int count)
+        {
+            HybridDictionary hybridDictionary = Helpers.CreateHybridDictionary(count);
+            hybridDictionary.Add("key1", "value");
+            hybridDictionary.Add("key2", "value");
 
-            cnt = hd.Count;
-            k = "kk";
-            hd.Add(k, null);
+            Assert.Equal(count + 2, hybridDictionary.Count);
+            Assert.Equal(count + 2, hybridDictionary.Values.Count);
+        }
 
-            if (hd.Count != cnt + 1)
+        [Theory]
+        [InlineData(5, true)]
+        [InlineData(5, false)]
+        [InlineData(50, true)]
+        [InlineData(50, false)]
+        public void Add_Invalid(int count, bool caseInsensitive)
+        {
+            HybridDictionary hybridDictionary = Helpers.CreateHybridDictionary(count, caseInsensitive);
+            Assert.Throws<ArgumentNullException>("key", () => hybridDictionary.Add(null, "value"));
+
+            hybridDictionary.Add("key", "value");
+            Assert.Throws<ArgumentException>(null, () => hybridDictionary.Add("key", "value"));
+
+            if (caseInsensitive)
             {
-                Assert.False(true, string.Format("Error, count is {0} instead of {1}", hd.Count, cnt + 1));
+                Assert.Throws<ArgumentException>(null, () => hybridDictionary.Add("KEY", "value"));
             }
-
-            // verify that dictionary contains null
-            //
-            if (hd[k] != null)
+            else
             {
-                Assert.False(true, string.Format("Error, returned non-null on place of null"));
-            }
-
-            //
-            // [] Add item with null key
-            // Add item with null key - ArgumentNullException expected
-            //
-
-            cnt = hd.Count;
-            Assert.Throws<ArgumentNullException>(() => { hd.Add(null, "item"); });
-
-            //
-            // [] Add duplicate values
-            //
-            hd.Clear();
-            for (int i = 0; i < valuesShort.Length; i++)
-            {
-                cnt = hd.Count;
-                hd.Add(keysShort[i], "value");
-                if (hd.Count != cnt + 1)
-                {
-                    Assert.False(true, string.Format("Error, count is {1} instead of {2}", i, hd.Count, cnt + 1));
-                }
-
-                //  access the item
-                //
-                if (!hd[keysShort[i]].Equals("value"))
-                {
-                    Assert.False(true, string.Format("Error, returned item \"{1}\" instead of \"{2}\"", i, hd[keysShort[i]], "value"));
-                }
-            }
-            // verify Keys and Values
-
-            if (hd.Keys.Count != valuesShort.Length)
-            {
-                Assert.False(true, string.Format("Error, Keys contains {0} instead of {1}", hd.Keys.Count, valuesShort.Length));
-            }
-            if (hd.Values.Count != valuesShort.Length)
-            {
-                Assert.False(true, string.Format("Error, Values contains {0} instead of {1}", hd.Values.Count, valuesShort.Length));
-            }
-
-            //
-            //  [] add many simple strings
-            //
-            hd = new HybridDictionary();
-            for (int i = 0; i < valuesLong.Length; i++)
-            {
-                cnt = hd.Count;
-                hd.Add(keysLong[i], valuesLong[i]);
-                if (hd.Count != cnt + 1)
-                {
-                    Assert.False(true, string.Format("Error, count is {1} instead of {2}", i, hd.Count, cnt + 1));
-                }
-
-                //  access the item
-                //
-                if (String.Compare(hd[keysLong[i]].ToString(), valuesLong[i]) != 0)
-                {
-                    Assert.False(true, string.Format("Error, returned item \"{1}\" instead of \"{2}\"", i, hd[keysLong[i]], valuesLong[i]));
-                }
-            }
-
-            // increase the number of items
-            for (int i = 0; i < valuesLong.Length; i++)
-            {
-                cnt = hd.Count;
-                hd.Add(keysLong[i] + "_", valuesLong[i] + i);
-                if (hd.Count != cnt + 1)
-                {
-                    Assert.False(true, string.Format("Error, count is {1} instead of {2}", i, hd.Count, cnt + 1));
-                }
-
-                //  access the item
-                //
-                if (String.Compare(hd[keysLong[i] + "_"].ToString(), valuesLong[i] + i) != 0)
-                {
-                    Assert.False(true, string.Format("Error, returned item \"{1}\" instead of \"{2}\"", i, hd[keysLong[i] + "_"], valuesLong[i] + i));
-                }
+                hybridDictionary.Add("KEY", "value");
+                Assert.True(hybridDictionary.Contains("KEY"));
             }
         }
     }
