@@ -1437,9 +1437,10 @@ combinedScenarios.each { scenario ->
                         
                             // Corefx components.  Depending on the OS, we might get this in different ways.  As corefx
                             // transitions to a full stack build on native OS's we will get this data from other places.
-                            if (os == 'Ubuntu') {
-                                // Ubuntu tars up the data
-                                copyArtifacts("${corefxFolder}/ubuntu14.04_release") {
+                            if (os == 'Ubuntu' || os == 'OSX') {
+                                // Ubuntu/OSX tars up the data
+                                def osJobName = (os == 'Ubuntu') ? 'ubuntu14.04' : 'osx'
+                                copyArtifacts("${corefxFolder}/${osJobName}_release") {
                                     includePatterns('bin/build.tar.gz')
                                     buildSelector {
                                         latestSuccessful(true)
