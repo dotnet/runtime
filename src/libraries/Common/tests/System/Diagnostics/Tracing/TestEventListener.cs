@@ -16,10 +16,10 @@ namespace System.Diagnostics.Tracing
         private Action<EventWrittenEventArgs> _eventWritten;
         private List<EventSource> _tmpEventSourceList = new List<EventSource>();
 
-        public TestEventListener(string taretSourceName, EventLevel level)
+        public TestEventListener(string targetSourceName, EventLevel level)
         {
             // Store the arguments
-            _targetSourceName = taretSourceName;
+            _targetSourceName = targetSourceName;
             _level = level;
 
             LoadSourceList();
