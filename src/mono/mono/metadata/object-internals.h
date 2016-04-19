@@ -620,7 +620,7 @@ mono_method_call_message_new (MonoMethod *method, gpointer *params, MonoMethod *
 			      MonoDelegate **cb, MonoObject **state);
 
 void
-mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoArray *out_args);
+mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoArray *out_args, MonoError *error);
 
 void
 mono_delegate_ctor_with_method (MonoObject *this_obj, MonoObject *target, gpointer addr, MonoMethod *method);
@@ -1444,6 +1444,26 @@ mono_remote_class_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mon
 
 void
 mono_upgrade_remote_class (MonoDomain *domain, MonoObject *tproxy, MonoClass *klass);
+
+void*
+mono_load_remote_field_checked (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, void **res, MonoError *error);
+
+MonoObject *
+mono_load_remote_field_new_icall (MonoObject *this_obj, MonoClass *klass, MonoClassField *field);
+
+MonoObject *
+mono_load_remote_field_new_checked (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, MonoError *error);
+
+gboolean
+mono_store_remote_field_checked (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, void* val, MonoError *error);
+
+void
+mono_store_remote_field_new_icall (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, MonoObject *arg);
+
+gboolean
+mono_store_remote_field_new_checked (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, MonoObject *arg, MonoError *error);
+
+
 #endif
 
 gpointer

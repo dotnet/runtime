@@ -194,6 +194,9 @@ mono_remoting_marshal_init (void)
 		register_icall (mono_marshal_xdomain_copy_out_value, "mono_marshal_xdomain_copy_out_value", "void object object", FALSE);
 		register_icall (mono_remoting_wrapper, "mono_remoting_wrapper", "object ptr ptr", FALSE);
 		register_icall (mono_upgrade_remote_class_wrapper, "mono_upgrade_remote_class_wrapper", "void object object", FALSE);
+		/* mono_load_remote_field_new_icall registered  by mini-runtime.c */
+		/* mono_store_remote_field_new_icall registered  by mini-runtime.c */
+
 	}
 
 	icalls_registered = TRUE;
@@ -376,7 +379,8 @@ mono_remoting_wrapper (MonoMethod *method, gpointer *params)
 					/* runtime_invoke expects a boxed instance */
 					if (mono_class_is_nullable (mono_class_from_mono_type (sig->params [i]))) {
 						mparams[i] = mono_nullable_box ((guint8 *)params [i], klass, &error);
-						mono_error_raise_exception (&error); /* FIXME don't raise here */
+						if (!is_ok (&error))
+							goto fail;
 					} else
 						mparams[i] = params [i];
 				}
@@ -386,7 +390,8 @@ mono_remoting_wrapper (MonoMethod *method, gpointer *params)
 		}
 
 		res = mono_runtime_invoke_checked (method, method->klass->valuetype? mono_object_unbox ((MonoObject*)this_obj): this_obj, mparams, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		if (!is_ok (&error))
+			goto fail;
 
 		return res;
 	}
@@ -394,15 +399,30 @@ mono_remoting_wrapper (MonoMethod *method, gpointer *params)
 	msg = mono_method_call_message_new (method, params, NULL, NULL, NULL);
 
 	res = mono_remoting_invoke ((MonoObject *)this_obj->rp, msg, &exc, &out_args, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	if (!is_ok (&error))
+		goto fail;
 
-	if (exc)
-		mono_raise_exception ((MonoException *)exc);
+	if (exc) {
+		mono_error_init (&error);
+		mono_error_set_exception_instance (&error, (MonoException *)exc);
+		goto fail;
+	}
 
-	mono_method_return_message_restore (method, params, out_args);
+	mono_method_return_message_restore (method, params, out_args, &error);
+	if (!is_ok (&error)) goto fail;
 
 	return res;
+fail:
+	/* This icall will be called from managed code, and more over
+	 * from a protected wrapper so interruptions such as pending
+	 * exceptions will not be honored.  (See
+	 * is_running_protected_wrapper () in threads.c and
+	 * mono_marshal_get_remoting_invoke () in remoting.c)
+	 */
+	mono_error_raise_exception (&error);
+	return NULL;
 } 
+
 
 MonoMethod *
 mono_marshal_get_remoting_invoke (MonoMethod *method)
@@ -451,6 +471,11 @@ mono_marshal_get_remoting_invoke (MonoMethod *method)
 	mono_mb_emit_ptr (mb, method);
 	mono_mb_emit_ldloc (mb, params_var);
 	mono_mb_emit_icall (mb, mono_remoting_wrapper);
+	// FIXME: this interrupt checkpoint code is a no-op since 'mb'
+	//  is a MONO_WRAPPER_REMOTING_INVOKE, and
+	//  mono_thread_interruption_checkpoint_request (FALSE)
+	//  considers such wrappers "protected" and always returns
+	//  NULL as if there's no pending interruption.
 	mono_marshal_emit_thread_interrupt_checkpoint (mb);
 
 	if (sig->ret->type == MONO_TYPE_VOID) {
@@ -534,8 +559,10 @@ mono_marshal_set_domain_by_id (gint32 id, MonoBoolean push)
 	MonoDomain *current_domain = mono_domain_get ();
 	MonoDomain *domain = mono_domain_get_by_id (id);
 
-	if (!domain || !mono_domain_set (domain, FALSE))	
-		mono_raise_exception (mono_get_exception_appdomain_unloaded ());
+	if (!domain || !mono_domain_set (domain, FALSE)) {
+		mono_set_pending_exception (mono_get_exception_appdomain_unloaded ());
+		return 0;
+	}
 
 	if (push)
 		mono_thread_push_appdomain_ref (domain);
@@ -1285,7 +1312,7 @@ mono_marshal_get_remoting_invoke_with_check (MonoMethod *method)
 MonoMethod *
 mono_marshal_get_ldfld_remote_wrapper (MonoClass *klass)
 {
-	MonoMethodSignature *sig, *csig;
+	MonoMethodSignature *sig;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	static MonoMethod* cached = NULL;
@@ -1312,15 +1339,7 @@ mono_marshal_get_ldfld_remote_wrapper (MonoClass *klass)
 	mono_mb_emit_ldarg (mb, 1);
 	mono_mb_emit_ldarg (mb, 2);
 
-	csig = mono_metadata_signature_alloc (mono_defaults.corlib, 3);
-	csig->params [0] = &mono_defaults.object_class->byval_arg;
-	csig->params [1] = &mono_defaults.int_class->byval_arg;
-	csig->params [2] = &mono_defaults.int_class->byval_arg;
-	csig->ret = &mono_defaults.object_class->byval_arg;
-	csig->pinvoke = 1;
-
-	mono_mb_emit_native_call (mb, csig, mono_load_remote_field_new);
-	mono_marshal_emit_thread_interrupt_checkpoint (mb);
+	mono_mb_emit_icall (mb, mono_load_remote_field_new_icall);
 
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif
@@ -1643,7 +1662,7 @@ mono_marshal_get_ldflda_wrapper (MonoType *type)
 MonoMethod *
 mono_marshal_get_stfld_remote_wrapper (MonoClass *klass)
 {
-	MonoMethodSignature *sig, *csig;
+	MonoMethodSignature *sig;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	static MonoMethod *cached = NULL;
@@ -1672,16 +1691,7 @@ mono_marshal_get_stfld_remote_wrapper (MonoClass *klass)
 	mono_mb_emit_ldarg (mb, 2);
 	mono_mb_emit_ldarg (mb, 3);
 
-	csig = mono_metadata_signature_alloc (mono_defaults.corlib, 4);
-	csig->params [0] = &mono_defaults.object_class->byval_arg;
-	csig->params [1] = &mono_defaults.int_class->byval_arg;
-	csig->params [2] = &mono_defaults.int_class->byval_arg;
-	csig->params [3] = &mono_defaults.object_class->byval_arg;
-	csig->ret = &mono_defaults.void_class->byval_arg;
-	csig->pinvoke = 1;
-
-	mono_mb_emit_native_call (mb, csig, mono_store_remote_field_new);
-	mono_marshal_emit_thread_interrupt_checkpoint (mb);
+	mono_mb_emit_icall (mb, mono_store_remote_field_new_icall);
 
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif
