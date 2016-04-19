@@ -1433,27 +1433,42 @@ combinedScenarios.each { scenario ->
                                 }
                             }
                         
-                            // Corefx native component.
-                            // Pull from main folder in corefx for now, once the corefx branchify PR gets merged this will chnage
                             def corefxFolder = Utilities.getFolderName('dotnet/corefx') + '/' + Utilities.getFolderName(branch)
-                            copyArtifacts("${corefxFolder}/nativecomp_${os.toLowerCase()}_release") {
-                                includePatterns('bin/**')
-                                buildSelector {
-                                    latestSuccessful(true)
+                        
+                            // Corefx components.  Depending on the OS, we might get this in different ways.  As corefx
+                            // transitions to a full stack build on native OS's we will get this data from other places.
+                            if (os == 'Ubuntu') {
+                                // Ubuntu tars up the data
+                                copyArtifacts("${corefxFolder}/ubuntu14.04_release") {
+                                    includePatterns('bin/build.tar.gz')
+                                    buildSelector {
+                                        latestSuccessful(true)
+                                    }
                                 }
-                            }
                         
-                            // CoreFX Linux binaries
-                            copyArtifacts("${corefxFolder}/${os.toLowerCase()}_release_bld") {
-                                includePatterns('bin/build.pack')
-                                buildSelector {
-                                    latestSuccessful(true)
+                                // Unpack the corefx binaries
+                                shell("tar -xf ./bin/build.tar.gz")
+                            }
+                            else {
+                                copyArtifacts("${corefxFolder}/nativecomp_${os.toLowerCase()}_release") {
+                                    includePatterns('bin/**')
+                                    buildSelector {
+                                        latestSuccessful(true)
+                                    }
                                 }
+                            
+                                // CoreFX Linux binaries
+                                copyArtifacts("${corefxFolder}/${os.toLowerCase()}_release_bld") {
+                                    includePatterns('bin/build.pack')
+                                    buildSelector {
+                                        latestSuccessful(true)
+                                    }
+                                }
+                        
+                                // Unpack the corefx binaries
+                                shell("unpacker ./bin/build.pack ./bin")
                             }
-                        
-                            // Unpack the corefx binaries
-                            shell("unpacker ./bin/build.pack ./bin")
-                        
+                            
                             // Unzip the tests first.  Exit with 0
                             shell("unzip -q -o ./bin/tests/tests.zip -d ./bin/tests/Windows_NT.${architecture}.${configuration} || exit 0")
                         
