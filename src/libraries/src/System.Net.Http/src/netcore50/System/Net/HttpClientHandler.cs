@@ -350,7 +350,7 @@ namespace System.Net.Http
             
             // The .NET Desktop System.Net Http APIs (based on HttpWebRequest/HttpClient) uses no caching by default.
             // To preserve app-compat, we turn off caching (as much as possible) in the WinRT HttpClient APIs.
-            // TODO: use RTHttpCacheReadBehavior.NoCache when available in the next version of WinRT HttpClient API.
+            // TODO (#7877): use RTHttpCacheReadBehavior.NoCache when available in the next version of WinRT HttpClient API.
             this.rtFilter.CacheControl.ReadBehavior = RTHttpCacheReadBehavior.MostRecent; 
             this.rtFilter.CacheControl.WriteBehavior = RTHttpCacheWriteBehavior.NoCache;
         }
