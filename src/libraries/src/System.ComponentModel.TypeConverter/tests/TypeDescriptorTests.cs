@@ -69,7 +69,8 @@ namespace System.ComponentModel.Tests
             new Tuple<Type, Type> (typeof(IBase), typeof(IBaseConverter)),
             new Tuple<Type, Type> (typeof(IDerived), typeof(IBaseConverter)),
             new Tuple<Type, Type> (typeof(ClassIBase), typeof(IBaseConverter)),
-            new Tuple<Type, Type> (typeof(ClassIDerived), typeof(IBaseConverter))
+            new Tuple<Type, Type> (typeof(ClassIDerived), typeof(IBaseConverter)),
+            new Tuple<Type, Type> (typeof(Uri), typeof(UriTypeConverter))
         };
     }
 }
