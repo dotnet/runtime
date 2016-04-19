@@ -12,142 +12,38 @@ using System.Globalization;
 
 namespace System.Data.ProviderBase
 {
-    internal sealed class FieldNameLookup
+    internal sealed class FieldNameLookup : BasicFieldNameLookup
     {
-        // Dictionary stores the index into the _fieldNames, match via case-sensitive
-        private Dictionary<string, int> _fieldNameLookup;
+        private readonly int _defaultLocaleID;
 
-        // original names for linear searches when exact matches fail
-        private string[] _fieldNames;
-
-        // if _defaultLocaleID is -1 then _compareInfo is initialized with InvariantCulture CompareInfo
-        // otherwise it is specified by the server for the correct compare info
-        private CompareInfo _compareInfo;
-        private int _defaultLocaleID;
-
-        public FieldNameLookup(string[] fieldNames, int defaultLocaleID)
+        public FieldNameLookup(string[] fieldNames, int defaultLocaleID) : base(fieldNames)
         {
-            if (null == fieldNames)
-            {
-                throw ADP.ArgumentNull(nameof(fieldNames));
-            }
-            _fieldNames = fieldNames;
             _defaultLocaleID = defaultLocaleID;
         }
 
-        public FieldNameLookup(System.Collections.ObjectModel.ReadOnlyCollection<string> columnNames, int defaultLocaleID)
+        public FieldNameLookup(System.Collections.ObjectModel.ReadOnlyCollection<string> columnNames, int defaultLocaleID) : base(columnNames)
         {
-            int length = columnNames.Count;
-            string[] fieldNames = new string[length];
-            for (int i = 0; i < length; ++i)
-            {
-                fieldNames[i] = columnNames[i];
-            }
-            _fieldNames = fieldNames;
-            _defaultLocaleID = defaultLocaleID;
-            GenerateLookup();
-        }
-
-        public FieldNameLookup(DbDataReader reader, int defaultLocaleID)
-        {
-            int length = reader.FieldCount;
-            string[] fieldNames = new string[length];
-            for (int i = 0; i < length; ++i)
-            {
-                fieldNames[i] = reader.GetName(i);
-            }
-            _fieldNames = fieldNames;
             _defaultLocaleID = defaultLocaleID;
         }
 
-        public int GetOrdinal(string fieldName)
+        public FieldNameLookup(DbDataReader reader, int defaultLocaleID) : base(reader)
         {
-            if (null == fieldName)
-            {
-                throw ADP.ArgumentNull(nameof(fieldName));
-            }
-            int index = IndexOf(fieldName);
-            if (-1 == index)
-            {
-                throw ADP.IndexOutOfRange(fieldName);
-            }
-            return index;
+            _defaultLocaleID = defaultLocaleID;
         }
 
-        public int IndexOfName(string fieldName)
+        //The compare info is specified by the server by specifying the default LocaleId.
+        protected override CompareInfo GetCompareInfo()
         {
-            if (null == _fieldNameLookup)
+            CompareInfo compareInfo = null;
+            if (-1 != _defaultLocaleID)
             {
-                GenerateLookup();
+                compareInfo = CompareInfo.GetCompareInfo(Locale.GetLocaleNameForLcid(_defaultLocaleID));
             }
-
-            int value;
-            // via case sensitive search, first match with lowest ordinal matches
-            return _fieldNameLookup.TryGetValue(fieldName, out value) ? value : -1;
-        }
-
-        public int IndexOf(string fieldName)
-        {
-            if (null == _fieldNameLookup)
-            {
-                GenerateLookup();
-            }
-            int index;
-            // via case sensitive search, first match with lowest ordinal matches
-            if (!_fieldNameLookup.TryGetValue(fieldName, out index))
-            {
-                // via case insensitive search, first match with lowest ordinal matches
-                index = LinearIndexOf(fieldName, CompareOptions.IgnoreCase);
-                if (-1 == index)
-                {
-                    // do the slow search now (kana, width insensitive comparison)
-                    index = LinearIndexOf(fieldName, ADP.compareOptions);
-                }
-            }
-
-            return index;
-        }
-
-        private int LinearIndexOf(string fieldName, CompareOptions compareOptions)
-        {
-            CompareInfo compareInfo = _compareInfo;
             if (null == compareInfo)
             {
-                if (-1 != _defaultLocaleID)
-                {
-                    compareInfo = CompareInfo.GetCompareInfo(Locale.GetLocaleNameForLcid(_defaultLocaleID));
-                }
-                if (null == compareInfo)
-                {
-                    compareInfo = CultureInfo.InvariantCulture.CompareInfo;
-                }
-                _compareInfo = compareInfo;
+                compareInfo = base.GetCompareInfo();
             }
-            int length = _fieldNames.Length;
-            for (int i = 0; i < length; ++i)
-            {
-                if (0 == compareInfo.Compare(fieldName, _fieldNames[i], compareOptions))
-                {
-                    _fieldNameLookup[fieldName] = i; // add an exact match for the future
-                    return i;
-                }
-            }
-            return -1;
-        }
-
-        // RTM common code for generating Dictionary from array of column names
-        private void GenerateLookup()
-        {
-            int length = _fieldNames.Length;
-            Dictionary<string, int> hash = new Dictionary<string, int>(length);
-
-            // via case sensitive search, first match with lowest ordinal matches
-            for (int i = length - 1; 0 <= i; --i)
-            {
-                string fieldName = _fieldNames[i];
-                hash[fieldName] = i;
-            }
-            _fieldNameLookup = hash;
+            return compareInfo;
         }
     }
 }
