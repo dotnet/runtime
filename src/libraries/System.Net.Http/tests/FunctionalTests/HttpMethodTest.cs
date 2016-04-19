@@ -54,17 +54,23 @@ namespace System.Net.Http.Functional.Tests
             Assert.Throws<ArgumentException>(() => { new HttpMethod(null); } );
         }
 
-        // TODO: This should be a [Theory]
-        [Fact]
-        public void Ctor_SeparatorInMethod_Exception()
+        [Theory]
+        [InlineData('(')]
+        [InlineData(')')]
+        [InlineData('<')]
+        [InlineData('>')]
+        [InlineData('@')]
+        [InlineData(',')]
+        [InlineData(';')]
+        [InlineData(':')]
+        [InlineData('\\')]
+        [InlineData('"')]
+        [InlineData('/')]
+        [InlineData('[')]
+        [InlineData(']')]
+        public void Ctor_SeparatorInMethod_Exception(char separator)
         {
-            char[] separators = new char[] { '(', ')', '<', '>', '@', ',', ';', ':', '\\', '"', '/', '[', ']', 
-                '?', '=', '{', '}', ' ', '\t' };
-
-            for (int i = 0; i < separators.Length; i++)
-            {
-                Assert.Throws<FormatException>(() => { new HttpMethod("Get" + separators[i]); } );
-            }
+            Assert.Throws<FormatException>(() => { new HttpMethod("Get" + separator); } );
         }
 
         [Fact]
