@@ -210,6 +210,11 @@ WINBASEAPI WINBOOL WINAPI InitOnceBeginInitialize(LPINIT_ONCE lpInitOnce, DWORD 
 WINBASEAPI WINBOOL WINAPI InitOnceComplete(LPINIT_ONCE lpInitOnce, DWORD dwFlags, LPVOID lpContext);
 WINBASEAPI WINBOOL WINAPI InitOnceExecuteOnce(PINIT_ONCE InitOnce, PINIT_ONCE_FN InitFn, PVOID Parameter, LPVOID *Context);
 
+/* https://msdn.microsoft.com/en-us/library/windows/desktop/ms683477(v=vs.85).aspx */
+WINBASEAPI BOOL WINAPI InitializeCriticalSectionEx(LPCRITICAL_SECTION lpCriticalSection, DWORD dwSpinCount, DWORD Flags);
+
+#define CRITICAL_SECTION_NO_DEBUG_INFO 0x01000000
+
 #endif /* defined __MINGW32__ && !defined __MINGW64_VERSION_MAJOR && (_WIN32_WINNT >= 0x0600) */
 
 typedef CRITICAL_SECTION mono_mutex_t;
@@ -218,14 +223,14 @@ typedef CONDITION_VARIABLE mono_cond_t;
 static inline int
 mono_os_mutex_init (mono_mutex_t *mutex)
 {
-	InitializeCriticalSection (mutex);
+	InitializeCriticalSectionEx (mutex, 0, CRITICAL_SECTION_NO_DEBUG_INFO);
 	return 0;
 }
 
 static inline int
 mono_os_mutex_init_recursive (mono_mutex_t *mutex)
 {
-	InitializeCriticalSection (mutex);
+	InitializeCriticalSectionEx (mutex, 0, CRITICAL_SECTION_NO_DEBUG_INFO);
 	return 0;
 }
 
