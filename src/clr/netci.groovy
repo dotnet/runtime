@@ -1033,16 +1033,16 @@ combinedScenarios.each { scenario ->
                                         buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${architecture} ilasmroundtrip"
                                     }
                                     else if (scenario == 'r2r') {
-                                        buildCommands += "build.cmd ${lowerConfiguration} ${architecture} docrossgen skiptests"
+                                        buildCommands += "build.cmd ${lowerConfiguration} ${architecture} skiptests"
                                         buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${architecture} crossgen"
                                     }
                                     else if (scenario == 'pri1r2r') {
-                                        buildCommands += "build.cmd ${lowerConfiguration} ${architecture} docrossgen skiptests"
+                                        buildCommands += "build.cmd ${lowerConfiguration} ${architecture} skiptests"
                                         buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${architecture} crossgen Priority 1"
                                     }
                                     else if (scenario == 'gcstress15_pri1r2r') {
                                         //Build pri1 R2R tests with GC stress level 15
-                                        buildCommands += "build.cmd ${lowerConfiguration} ${architecture} docrossgen skiptests"
+                                        buildCommands += "build.cmd ${lowerConfiguration} ${architecture} skiptests"
                                         buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${architecture} crossgen Priority 1 gcstresslevel 15"
                                     } else if (scenario == 'longgc') {
                                         buildCommands += "build.cmd ${lowerConfiguration} ${architecture} skiptests"
