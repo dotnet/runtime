@@ -141,7 +141,7 @@ namespace System.Net.Http.Functional.Tests
         // These methods help to validate the response body since the endpoint will echo
         // all request headers.
         //
-        // TODO: This validation will be improved in the future once the test server endpoint
+        // TODO (#7885): This validation will be improved in the future once the test server endpoint
         // is able to provide a custom response header with a SHA1 hash of the expected response body.
         private readonly string[] CustomHeaderValues = new string[] {"abcdefg", "12345678", "A1B2C3D4"};
         private HttpClient GetHttpClient()
