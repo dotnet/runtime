@@ -13,7 +13,7 @@ namespace System.Tests
         public void TickCountTest()
         {
             int start = Environment.TickCount;
-            Assert.True(SpinWait.SpinUntil(() => Environment.TickCount > start, TimeSpan.FromSeconds(1)));
+            Assert.True(SpinWait.SpinUntil(() => Environment.TickCount - start > 0, TimeSpan.FromSeconds(1)));
         }
     }
 }
