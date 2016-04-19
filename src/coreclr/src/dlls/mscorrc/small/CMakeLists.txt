@@ -5,7 +5,4 @@ add_library_clr(mscorrc SHARED
 )
 
 # add the install targets
-install (TARGETS mscorrc DESTINATION .)
-install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/mscorrc.pdb DESTINATION PDB)
-
-
+install_clr (mscorrc)

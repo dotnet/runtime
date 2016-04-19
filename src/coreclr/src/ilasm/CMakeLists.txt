@@ -38,7 +38,7 @@ if(CLR_CMAKE_PLATFORM_UNIX)
   set_source_files_properties( prebuilt/asmparse.c PROPERTIES COMPILE_FLAGS -O0 )
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
-add_executable(ilasm
+_add_executable(ilasm
   ${ILASM_SOURCES}
 )
 

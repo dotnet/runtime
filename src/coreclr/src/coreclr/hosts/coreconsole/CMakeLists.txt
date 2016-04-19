@@ -10,14 +10,14 @@ add_definitions(-DFX_VER_INTERNALNAME_STR=CoreConsole.exe)
 if(CLR_CMAKE_PLATFORM_UNIX)
     # This does not compile on Linux yet
     if(CAN_BE_COMPILED_ON_LINUX)
-        add_executable(CoreConsole
+        _add_executable(CoreConsole
           ${CoreConsole_SOURCES}
           ${CoreConsole_RESOURCES}
         )
     endif(CAN_BE_COMPILED_ON_LINUX)
 
 else()
-    add_executable(CoreConsole
+    _add_executable(CoreConsole
       ${CoreConsole_SOURCES}
       ${CoreConsole_RESOURCES}
     )
