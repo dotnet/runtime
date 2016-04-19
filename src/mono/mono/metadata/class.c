@@ -10308,7 +10308,12 @@ mono_method_can_access_field (MonoMethod *method, MonoClassField *field)
 gboolean
 mono_method_can_access_method (MonoMethod *method, MonoMethod *called)
 {
-	return mono_method_can_access_method_full (method, called, NULL);
+	gboolean res = mono_method_can_access_method_full (method, called, NULL);
+	if (!res) {
+		printf ("FAILED TO VERIFY %s calling %s\n", mono_method_full_name (method, 1), mono_method_full_name (called, 1));
+	}
+
+	return res;
 }
 
 /*
