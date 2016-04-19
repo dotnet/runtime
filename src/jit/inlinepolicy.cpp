@@ -610,10 +610,13 @@ double LegacyPolicy::DetermineMultiplier()
 }
 
 //------------------------------------------------------------------------
-// DetermineNativeCodeSizeEstimate: return estimated native code size for
+// DetermineNativeSizeEstimate: return estimated native code size for
 // this inline candidate.
 //
 // Notes:
+//    This is an estimate for the size of the inlined callee.
+//    It does not include size impact on the caller side.
+//
 //    Uses the results of a state machine model for discretionary
 //    candidates.  Should not be needed for forced or always
 //    candidates.
@@ -627,7 +630,7 @@ int LegacyPolicy::DetermineNativeSizeEstimate()
 }
 
 //------------------------------------------------------------------------
-// DetermineNativeCallsiteSizeEstimate: estimate native size for the
+// DetermineCallsiteNativeSizeEstimate: estimate native size for the
 // callsite.
 //
 // Arguments:
@@ -761,6 +764,33 @@ void LegacyPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
         {
             SetCandidate(InlineObservation::CALLSITE_IS_PROFITABLE_INLINE);
         }
+    }
+}
+
+//------------------------------------------------------------------------
+// CodeSizeEstimate: estimated code size impact of the inline
+//
+// Return Value:
+//    Estimated code size impact, in bytes * 10
+//
+// Notes:
+//    Only meaningful for discretionary inlines (whether successful or
+//    not).  For always or force inlines the legacy policy doesn't
+//    estimate size impact.
+
+int LegacyPolicy::CodeSizeEstimate()
+{
+    if (m_StateMachine != nullptr)
+    {
+        // This is not something the LegacyPolicy explicitly computed,
+        // since it uses a blended evaluation model (mixing size and time
+        // together for overall profitability). But it's effecitvely an
+        // estimate of the size impact.
+        return (m_CalleeNativeSizeEstimate - m_CallsiteNativeSizeEstimate);
+    }
+    else
+    {
+        return 0;
     }
 }
 
@@ -1594,6 +1624,17 @@ void DiscretionaryPolicy::EstimateCodeSize()
 
     // Scaled up and reported as an integer value.
     m_ModelCodeSizeEstimate = (int) (SIZE_SCALE * sizeEstimate);
+}
+
+//------------------------------------------------------------------------
+// CodeSizeEstimate: estimated code size impact of the inline
+//
+// Return Value:
+//    Estimated code size impact, in bytes * 10
+
+int DiscretionaryPolicy::CodeSizeEstimate()
+{
+    return m_ModelCodeSizeEstimate;
 }
 
 //------------------------------------------------------------------------
