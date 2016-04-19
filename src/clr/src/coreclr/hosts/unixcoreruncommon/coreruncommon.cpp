@@ -16,6 +16,7 @@
 #include <string>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/sysctl.h>
 #include "coreruncommon.h"
 #include "coreclrhost.h"
 #include <unistd.h>
@@ -45,7 +46,7 @@ bool GetEntrypointExecutableAbsolutePath(std::string& entrypointExecutable)
 
     // Get path to the executable for the current process using
     // platform specific means.
-#if defined(__linux__)
+#if defined(__linux__) || (defined(__NetBSD__) && !defined(KERN_PROC_PATHNAME))
     // On Linux, fetch the entry point EXE absolute path, inclusive of filename.
     char exe[PATH_MAX];
     ssize_t res = readlink(symlinkEntrypointExecutable, exe, PATH_MAX - 1);
@@ -74,6 +75,23 @@ bool GetEntrypointExecutableAbsolutePath(std::string& entrypointExecutable)
             entrypointExecutable.assign(pResizedPath);
             result = true;
         }
+    }
+#elif defined(__NetBSD__) && defined(KERN_PROC_PATHNAME)
+    static const int name[] = {
+        CTL_KERN, KERN_PROC_ARGS, -1, KERN_PROC_PATHNAME,
+    };
+    char path[MAXPATHLEN];
+    size_t len;
+
+    len = sizeof(path);
+    if (sysctl(name, __arraycount(name), path, &len, NULL, 0) != -1)
+    {
+        entrypointExecutable.assign(path);
+        result = true;
+    }
+    else
+    {
+        result = false;
     }
 #else
     // On non-Mac OS, return the symlink that will be resolved by GetAbsolutePath
@@ -151,7 +169,7 @@ void AddFilesFromDirectoryToTpaList(const char* directory, std::string& tpaList)
                 ".ni.exe",
                 ".exe",
                 };
-                
+
     DIR* dir = opendir(directory);
     if (dir == nullptr)
     {
