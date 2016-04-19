@@ -15,14 +15,22 @@ namespace System.Collections.Specialized.Tests
         public void Keys(int count)
         {
             StringDictionary stringDictionary = Helpers.CreateStringDictionary(count);
-            stringDictionary.Add("duplicatevaluekey1", "value");
-            stringDictionary.Add("duplicatevaluekey2", "value");
 
             ICollection keys = stringDictionary.Keys;
+            Assert.Equal(count, keys.Count);
+
+            stringDictionary.Add("duplicatevaluekey1", "value");
+            stringDictionary.Add("duplicatevaluekey2", "value");
             Assert.Equal(count + 2, keys.Count);
 
+            IEnumerator enumerator = stringDictionary.GetEnumerator();
             foreach (string key in keys)
             {
+                enumerator.MoveNext();
+                DictionaryEntry entry = (DictionaryEntry)enumerator.Current;
+                Assert.Equal(key, entry.Key);
+
+                Assert.False(key.Any(c => char.IsUpper(c)));
                 Assert.True(stringDictionary.ContainsKey(key));
             }
         }
@@ -38,16 +46,20 @@ namespace System.Collections.Specialized.Tests
             ICollection keys = stringDictionary.Keys;
 
             string[] array = new string[count + index + 5];
-
             keys.CopyTo(array, index);
 
+            IEnumerator enumerator = stringDictionary.GetEnumerator();
             for (int i = 0; i < index; i++)
             {
                 Assert.Null(array[i]);
             }
             for (int i = index; i < index + count; i++)
             {
+                enumerator.MoveNext();
+                DictionaryEntry entry = (DictionaryEntry)enumerator.Current;
+
                 string key = array[i];
+                Assert.Equal(entry.Key, key);
                 Assert.True(stringDictionary.ContainsKey(key));
             }
             for (int i = index + count; i < array.Length; i++)

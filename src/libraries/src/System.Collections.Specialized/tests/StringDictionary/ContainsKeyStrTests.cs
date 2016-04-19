@@ -9,16 +9,31 @@ namespace System.Collections.Specialized.Tests
     public class StringDictionaryContainsKeyTests
     {
         [Fact]
-        public void ContainsKey_NonExistentKey_ReturnsFalse()
+        public void ContainsKey_IsCaseInsensitive()
         {
             StringDictionary stringDictionary = new StringDictionary();
+            stringDictionary.Add("key", "value");
+            Assert.True(stringDictionary.ContainsKey("KEY"));
+            Assert.True(stringDictionary.ContainsKey("kEy"));
+            Assert.True(stringDictionary.ContainsKey("key"));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(5)]
+        public void ContainsKey_NonExistentKey_ReturnsFalse(int count)
+        {
+            StringDictionary stringDictionary = Helpers.CreateStringDictionary(count);
             Assert.False(stringDictionary.ContainsKey("key"));
         }
 
-        [Fact]
-        public void ContainsKey_NullKey_ThrowsArgumentNullException()
+        [Theory]
+        [InlineData(0)]
+        [InlineData(5)]
+        public void ContainsKey_NullKey_ThrowsArgumentNullException(int count)
         {
-            Assert.Throws<ArgumentNullException>("key", () => new StringDictionary().ContainsKey(null));
+            StringDictionary stringDictionary = Helpers.CreateStringDictionary(count);
+            Assert.Throws<ArgumentNullException>("key", () => stringDictionary.ContainsKey(null));
         }
     }
 }

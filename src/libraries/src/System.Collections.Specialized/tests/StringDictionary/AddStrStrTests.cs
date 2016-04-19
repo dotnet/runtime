@@ -22,16 +22,8 @@ namespace System.Collections.Specialized.Tests
                 Assert.Equal(i + 1, stringDictionary.Count);
 
                 Assert.True(stringDictionary.ContainsKey(key));
-                Assert.True(stringDictionary.ContainsKey(key.ToUpperInvariant()));
-                Assert.True(stringDictionary.ContainsKey(key.ToLowerInvariant()));
-
                 Assert.True(stringDictionary.ContainsValue(value));
-                Assert.False(stringDictionary.ContainsValue(value.ToUpperInvariant()));
-                Assert.False(stringDictionary.ContainsValue(value.ToLowerInvariant()));
-
                 Assert.Equal(value, stringDictionary[key]);
-                Assert.Equal(value, stringDictionary[key.ToUpperInvariant()]);
-                Assert.Equal(value, stringDictionary[key.ToLowerInvariant()]);
             }
 
             Assert.False(stringDictionary.ContainsValue(null));
