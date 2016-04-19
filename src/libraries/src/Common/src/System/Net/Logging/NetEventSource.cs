@@ -7,7 +7,7 @@ using System.Globalization;
 
 namespace System.Net
 {
-    // TODO: Issue #5101: This class should not change or it can introduce incompatibility issues.
+    // TODO: Issue #5144: This class should not change or it can introduce incompatibility issues.
     [EventSource(Name = "Microsoft-System-Net",
         Guid = "501a994a-eb63-5415-9af1-1b031260f16c")]
     internal sealed class NetEventSource : EventSource
