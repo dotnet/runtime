@@ -1,0 +1,258 @@
+;**************************************************************************************************
+;*Case Data Format:                                                                               *
+;*     isContainer -- true/false                                                                  *
+;*     isDS -- true/false                                                                         *
+;*     auditFlags -- None (0), Success(1), Deny(2)                                                *
+;*     securityIdentifier -- string                                                               *
+;*     accessMask -- int                                                                          *
+;*     inheritanceFlags -- None (0), ContainerInherit(1), ObjectInherit(2)                        *
+;*     propagationFlags -- None (0), NoPropagateInherit(1), InheritOnly(2)                        *                                               *
+;*     initialRawAclStr -- string                                                                 *
+;*     verifierRawAclStr -- string                                                                *                                                       *
+;*                                                                                                *
+;*     RawAcl String Format:                                                                      *
+;*              RawAcl := ACE[#ACE]                                                               *
+;*              ACE := aceFlags:aceQualifier:accessMask:sid:isCallback:opaqSize                   *
+;**************************************************************************************************
+[TestCase]
+;
+;case1: 
+;SystemAcl has more than one Aces, remove a specific one, to be removed at the begining of the array
+;
+true
+false
+1
+BA
+1
+0
+0
+64:2:1:BA:false:0#64:2:1:BG:false:0#64:2:1:BO:false:0
+64:2:1:BG:false:0#64:2:1:BO:false:0
+
+[TestCase]
+;
+;case2: 
+;SystemAcl has more than one Aces, remove a specific one, to be removed at the end of the array
+;
+true
+false
+1
+BO
+1
+0
+0
+64:2:1:BA:false:0#64:2:1:BG:false:0#64:2:1:BO:false:0
+64:2:1:BA:false:0#64:2:1:BG:false:0
+
+
+[TestCase]
+;
+;case3: 
+;SystemAcl has more than one Aces, remove a specific one, to be removed at the middle of the array
+;
+true
+false
+1
+BG
+1
+0
+0
+64:2:1:BA:false:0#64:2:1:BG:false:0#64:2:1:BO:false:0
+64:2:1:BA:false:0#64:2:1:BO:false:0
+
+[TestCase]
+;
+;case4: 
+;SystemAcl has duplicate Aces, remove the specific one will remove all duplication
+;
+true
+false
+1
+BA
+1
+0
+0
+64:2:1:BA:false:0#64:2:1:BA:false:0#64:2:1:BA:false:0#64:2:1:BO:false:0
+64:2:1:BO:false:0
+
+[TestCase]
+;
+;case5: 
+;SystemAcl has one non compatible Ace (existing Ace is inherited), no remove
+;
+true
+false
+1
+BA
+1
+0
+0
+80:2:1:BA:false:0
+80:2:1:BA:false:0
+
+[TestCase]
+;
+;case6: 
+;SystemAcl has one non comatible Ace (different audit flag, existing AuditSuccess, to be removed, AuditFail), no remove
+;
+true
+false
+2
+BA
+1
+0
+0
+64:2:1:BA:false:0
+64:2:1:BA:false:0
+
+[TestCase]
+;
+;case7: 
+;SystemAcl has one non comatible Ace (different audit flag, existing AuditFail, to be removed, AuditSuccess), no remove
+;
+true
+false
+1
+BA
+1
+0
+0
+128:2:1:BA:false:0
+128:2:1:BA:false:0
+
+[TestCase]
+;
+;case8: 
+;SystemAcl has one non compatible Ace ( different sid), no remove
+;
+true
+false
+1
+BA
+1
+0
+0
+64:2:1:BO:false:0
+64:2:1:BO:false:0
+
+[TestCase]
+;
+;case9: 
+;SystemAcl has one non compatible Ace ( different inheritance flag), no remove
+;
+true
+false
+1
+BA
+3
+0
+0
+79:2:3:BA:false:0
+79:2:3:BA:false:0
+
+[TestCase]
+;
+;case10: 
+;SystemAcl has one non compatible Ace ( different inheritance flag), no remove
+;
+true
+false
+1
+BA
+3
+0
+1
+79:2:3:BA:false:0
+79:2:3:BA:false:0
+
+[TestCase]
+;
+;case11: 
+;SystemAcl has one non compatible Ace ( different inheritance flag), no remove
+;
+true
+false
+1
+BA
+3
+0
+3
+79:2:3:BA:false:0
+79:2:3:BA:false:0
+
+[TestCase]
+;
+;case12: 
+;SystemAcl has one non compatible Ace ( different inheritance flag), no remove
+;
+true
+false
+1
+BA
+3
+0
+4
+79:2:3:BA:false:0
+79:2:3:BA:false:0
+
+[TestCase]
+;
+;case13: 
+;SystemAcl has one non compatible Ace ( different inheritance flag), no remove
+;
+true
+false
+1
+BA
+3
+1
+0
+79:2:3:BA:false:0
+79:2:3:BA:false:0
+
+[TestCase]
+;
+;case14: 
+;SystemAcl has one non compatible Ace ( different inheritance flag), no remove
+;
+true
+false
+1
+BA
+3
+3
+1
+79:2:3:BA:false:0
+79:2:3:BA:false:0
+
+[TestCase]
+;
+;case15: 
+;SystemAcl has one non compatible Ace ( different inheritance flag), no remove
+;
+true
+false
+1
+BA
+3
+4
+1
+79:2:3:BA:false:0
+79:2:3:BA:false:0
+
+[TestCase]
+;
+;case16: 
+;SystemAcl has one non compatible Ace ( different access mask), no remove
+;
+true
+false
+1
+BA
+1
+0
+0
+64:2:3:BA:false:0
+64:2:3:BA:false:0
+
+

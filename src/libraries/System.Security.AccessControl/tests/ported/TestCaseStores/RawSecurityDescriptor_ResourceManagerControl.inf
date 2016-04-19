@@ -1,0 +1,19 @@
+[TestCase]
+;normal case
+1
+
+[TestCase]
+;normal case
+64
+
+[TestCase]
+;lower boundary
+0
+
+[TestCase]
+;middle value
+127
+
+[TestCase]
+;upper boundary
+255

@@ -1,0 +1,12 @@
+[TestCase]
+O:LAG:SYD:
+
+[TestCase]
+O:LAG:SYD:AI(A;ID;FA;;;BA)
+
+[TestCase]
+O:LAG:SYD:AI(A;ID;FA;;;BA)(A;ID;FA;;;BO)(A;ID;FA;;;SY)
+
+[TestCase]
+O:NUG:SYD:AI(D;CINP;FA;;;SO)(A;ID;FA;;;BA)(A;ID;FA;;;BO)(A;ID;FA;;;SY)(A;OICI;FA;;;BG)
+
