@@ -472,8 +472,6 @@ namespace System.Net.Http.Functional.Tests
                 }
 
                 Assert.False(requestLogged, "Request was logged while logging disabled.");
-                // TODO: Waiting for one second is not ideal, but how else be reasonably sure that
-                // some logging message hasn't slipped through?
                 WaitForFalse(() => responseLogged, TimeSpan.FromSeconds(1), "Response was logged while logging disabled.");
             }
         }
