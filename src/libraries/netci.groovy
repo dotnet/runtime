@@ -602,7 +602,7 @@ def supportedFullCyclePlatforms = ['Windows_NT', 'Ubuntu14.04']
                         batchFile("C:\\Packer\\Packer.exe .\\bin\\build.pack .\\bin")
                     }
                     else {
-                        shell("HOME=\$WORKSPACE/tempHome ./build.sh /p:ConfigurationGroup=${configurationGroup} /p:TestWithLocalLibraries=true /p:WithoutCategories=IgnoreForCI")
+                        shell("HOME=\$WORKSPACE/tempHome ./build.sh ${configurationGroup.toLowerCase()} /p:ConfigurationGroup=${configurationGroup} /p:TestWithLocalLibraries=true /p:WithoutCategories=IgnoreForCI")
                         // Tar up the appropriate bits
                         shell("tar -czf bin/build.tar.gz bin/${osGroup}.AnyCPU.${configurationGroup} bin/${osGroup}.x64.${configurationGroup} bin/ref bin/packages")
                     }
