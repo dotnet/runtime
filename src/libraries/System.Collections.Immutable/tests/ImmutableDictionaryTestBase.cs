@@ -190,7 +190,6 @@ namespace System.Collections.Immutable.Tests
             Assert.Throws<NotSupportedException>(() => map[3] = 5);
         }
 
-        [ActiveIssue(780)]
         [Fact]
         public void EqualsTest()
         {
