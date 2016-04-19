@@ -564,6 +564,30 @@ regMaskTP           CodeGenInterface::genGetRegMask(GenTreePtr tree)
     return regMask;
 }
 
+//------------------------------------------------------------------------
+// getRegistersFromMask: Given a register mask return the two registers
+//                       specified by the mask.
+//
+// Arguments:
+//    regPairMask:  a register mask that has exactly two bits set
+// Return values:
+//    pLoReg:       the address of where to write the first register
+//    pHiReg:       the address of where to write the second register
+//
+void CodeGenInterface::genGetRegPairFromMask(regMaskTP  regPairMask, regNumber* pLoReg, regNumber* pHiReg)
+{
+    assert(genCountBits(regPairMask) == 2);
+
+    regMaskTP loMask = genFindLowestBit(regPairMask);   // set loMask to a one-bit mask
+    regMaskTP hiMask = regPairMask - loMask;            // set hiMask to the other bit that was in tmpRegMask
+
+    regNumber loReg = genRegNumFromMask(loMask);       // set loReg from loMask
+    regNumber hiReg = genRegNumFromMask(hiMask);       // set hiReg from hiMask
+
+    *pLoReg = loReg;
+    *pHiReg = hiReg;
+}
+
 
 /*****************************************************************************
 *           TRACKING OF FLAGS
@@ -6205,7 +6229,8 @@ void CodeGen::genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& 
                 inst_RV_RV(INS_xorpd, reg, reg, TYP_DOUBLE);
                 fltInitReg = reg;
 #elif defined(_TARGET_ARM64_)
-                NYI("Initialize double-precision floating-point register to zero");
+                // We will just zero out the entire vector register. This sets it to a double zero value
+                getEmitter()->emitIns_R_I(INS_movi, EA_16BYTE, reg, 0x00, INS_OPTS_16B);
 #else // _TARGET_*
 #error Unsupported or unset target architecture
 #endif
