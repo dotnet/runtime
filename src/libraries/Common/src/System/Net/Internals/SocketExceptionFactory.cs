@@ -10,7 +10,7 @@ namespace System.Net.Internals
     {
         public static SocketException CreateSocketException(int socketError, EndPoint endPoint)
         {
-            // TODO: expose SocketException(int, EndPoint) to maintain exception Message compatibility.
+            // TODO (#7873): expose SocketException(int, EndPoint) to maintain exception Message compatibility.
             return new SocketException(socketError);
         }
     }
