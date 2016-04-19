@@ -101,6 +101,11 @@
         "CommonTypes": [ ]
     },
     {
+        "Name": "Microsoft.Private.PackageBaseline",
+        "Description": "Package used by CoreFx build infrastructure to represent the latest package versions in a release.",
+        "CommonTypes": [ ]
+    },
+    {
         "Name": "Microsoft.TargetingPack.NETFramework.v4.6",
         "Description": "Contains the .NET Framework v4.6 targeting pack.",
         "CommonTypes": [ ]

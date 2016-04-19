@@ -72,9 +72,6 @@
   </PropertyGroup>
   <Import Project="$(ToolRuntimePath)/net45/roslyn/build/Microsoft.Net.Compilers.props" Condition="'$(UseRoslynCompilers)'!='false'" />
 
-  <!-- Import packaging props -->
-  <Import Project="$(MSBuildThisFileDirectory)Packaging.props"/>
-
   <!-- Import Build tools common props file where repo-independent properties are found -->
   <Import Project="$(ToolsDir)Build.Common.props" />
 
@@ -108,6 +105,9 @@
       <ExpectedVersion>1.0.0-prerelease-00231-07</ExpectedVersion>
     </ValidationPattern>
   </ItemGroup>
+
+  <!-- Import packaging props -->
+  <Import Project="$(MSBuildThisFileDirectory)Packaging.props"/>
 
   <!-- list of nuget package sources passed to dnu -->
   <ItemGroup Condition="'$(ExcludeInternetFeeds)' != 'true'">
