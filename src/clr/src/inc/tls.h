@@ -15,12 +15,18 @@
 
 #ifdef FEATURE_IMPLICIT_TLS
 #ifdef _WIN64
-#define OFFSETOF__TLS__tls_CurrentThread            0x08
-#define OFFSETOF__TLS__tls_EETlsData                0x18
-#else
-#define OFFSETOF__TLS__tls_CurrentThread            0x04
-#define OFFSETOF__TLS__tls_EETlsData                0x0c
+#ifndef _DEBUG
+#define OFFSETOF__TLS__tls_ThreadLocalInfo 0x10
+#else // _DEBUG
+#define OFFSETOF__TLS__tls_ThreadLocalInfo 0x08
+#endif // _DEBUG
+#else // _WIN64
+#define OFFSETOF__TLS__tls_ThreadLocalInfo 0x04
 #endif // _WIN64
+
+#define OFFSETOF__TLS__tls_CurrentThread         (OFFSETOF__TLS__tls_ThreadLocalInfo+0x0)
+#define OFFSETOF__TLS__tls_EETlsData             (OFFSETOF__TLS__tls_CurrentThread+2*sizeof(void*))
+
 
 #ifdef _TARGET_WIN64_
 #define WINNT_OFFSETOF__TEB__ThreadLocalStoragePointer  0x58

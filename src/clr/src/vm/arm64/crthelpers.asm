@@ -153,6 +153,7 @@ JIT_MemSet_0xd8
     LEAF_END
 
     LEAF_ENTRY JIT_MemSet_End
+    nop
     LEAF_END
 
 
@@ -292,6 +293,7 @@ JIT_MemCpy_0xe8
     LEAF_END
 
     LEAF_ENTRY JIT_MemCpy_End
+    nop
     LEAF_END
 
 ; Must be at very end of file
