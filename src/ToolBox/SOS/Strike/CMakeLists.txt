@@ -14,14 +14,26 @@ if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
   add_definitions(-D_TARGET_WIN64_=1)
   add_definitions(-DDBG_TARGET_64BIT)
   add_definitions(-DDBG_TARGET_WIN64=1)
+  if(WIN32)
+    add_definitions(-DSOS_TARGET_ARM64=1)
+  endif(WIN32)
+  remove_definitions(-D_TARGET_ARM64_=1)
+  add_definitions(-D_TARGET_AMD64_)
+  add_definitions(-DDBG_TARGET_AMD64)
 elseif(CLR_CMAKE_PLATFORM_ARCH_I386)
   add_definitions(-DSOS_TARGET_X86=1)
   add_definitions(-D_TARGET_X86_=1)
   add_definitions(-DDBG_TARGET_32BIT)
+  add_definitions(-DSOS_TARGET_ARM=1)
 elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
   add_definitions(-DSOS_TARGET_ARM=1)
   add_definitions(-D_TARGET_WIN32_=1)
   add_definitions(-DDBG_TARGET_32BIT)
+elseif(CLR_CMAKE_PLATFORM_ARCH_ARM64)
+  add_definitions(-DSOS_TARGET_ARM64=1)
+  add_definitions(-D_TARGET_WIN64_=1)
+  add_definitions(-DDBG_TARGET_64BIT)
+  add_definitions(-DDBG_TARGET_WIN64=1)
 endif()
 add_definitions(-DSTRIKE)  
 
@@ -130,13 +142,24 @@ if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
   set(SOS_SOURCES_ARCH
     disasmX86.cpp
   )
+  if(WIN32)
+    list(APPEND 
+      SOS_SOURCES_ARCH  
+      disasmARM64.cpp
+    )
+  endif(WIN32)
 elseif(CLR_CMAKE_PLATFORM_ARCH_I386)
   set(SOS_SOURCES_ARCH 
     disasmX86.cpp
+    disasmARM.cpp
   )
 elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
   set(SOS_SOURCES_ARCH
     disasmARM.cpp
+  )
+elseif(CLR_CMAKE_PLATFORM_ARCH_ARM64)
+  set(SOS_SOURCES_ARCH
+    disasmARM64.cpp
   )
 endif()
 

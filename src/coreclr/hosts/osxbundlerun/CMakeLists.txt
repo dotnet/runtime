@@ -9,7 +9,7 @@ set(CORERUN_SOURCES
     osxbundlerun.cpp 
 )
 
-add_executable(osxbundlerun
+_add_executable(osxbundlerun
     ${CORERUN_SOURCES}
 )
 

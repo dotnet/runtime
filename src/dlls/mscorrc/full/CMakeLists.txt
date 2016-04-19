@@ -6,9 +6,7 @@ if(WIN32)
     ../include.rc
   )
 
-  # add the install targets
-  install (TARGETS mscorrc.debug DESTINATION .)
-  install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/mscorrc.debug.pdb DESTINATION PDB)
+  install_clr (mscorrc.debug) 
 
 else()
   build_resources(${CMAKE_CURRENT_SOURCE_DIR}/../include.rc mscorrc_debug TARGET_CPP_FILE)
