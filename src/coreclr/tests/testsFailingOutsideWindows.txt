@@ -161,7 +161,6 @@ JIT/Methodical/Boxing/xlang/_relsin_cs_il/_relsin_cs_il.sh
 JIT/Methodical/localloc/call/call01_small/call01_small.sh
 JIT/Regression/Dev11/External/dev11_145295/CSharpPart/CSharpPart.sh
 Interop/StructMarshalling/PInvoke/MarshalStructAsLayoutExp/MarshalStructAsLayoutExp.sh
-Interop/StructMarshalling/PInvoke/MarshalStructAsLayoutSeq/MarshalStructAsLayoutSeq.sh
 GC/LargeMemory/Allocation/finalizertest/finalizertest.sh
 GC/LargeMemory/API/gc/reregisterforfinalize/reregisterforfinalize.sh
 GC/LargeMemory/API/gc/collect/collect.sh
