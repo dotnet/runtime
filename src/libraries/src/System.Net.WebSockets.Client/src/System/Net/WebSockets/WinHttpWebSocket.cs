@@ -16,7 +16,7 @@ namespace System.Net.WebSockets
     internal class WinHttpWebSocket : WebSocket
     {
         #region Constants
-        // TODO: This code needs to be shared with WinHttpClientHandler
+        // TODO (#7893): This code needs to be shared with WinHttpClientHandler
         private const string HeaderNameCookie = "Cookie";
         private const string HeaderNameWebSocketProtocol = "Sec-WebSocket-Protocol";
         #endregion
