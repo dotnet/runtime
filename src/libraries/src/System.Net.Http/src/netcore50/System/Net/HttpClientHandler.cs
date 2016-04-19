@@ -307,7 +307,7 @@ namespace System.Net.Http
 
         public bool CheckCertificateRevocationList
         {
-            // TODO: We can't get this property to actually work yet since the current WinRT Windows.Web.Http APIs don't have a setting for this.
+            // We can't get this property to actually work yet since the current WinRT Windows.Web.Http APIs don't have a setting for this.
             // FYI: The WinRT API always checks for certificate revocation. If the revocation status can't be determined completely, i.e.
             // the revocation server is offline, then the request is still allowed.
             get { return true; }
