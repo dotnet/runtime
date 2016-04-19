@@ -2,15 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics.Tracing;
 
 namespace System.Buffers
 {
-    [EventSource(
-        Guid = "20b30044-b729-457e-8dda-8b41b5dd02e6", 
-        Name = "System.Buffers.BufferPoolEventSource",
-        LocalizationResources = "FxResources.System.Buffers.SR")]
+    [EventSource(Name = "System.Buffers.ArrayPoolEventSource")]
     internal sealed class ArrayPoolEventSource : EventSource
     {
         internal readonly static ArrayPoolEventSource Log = new ArrayPoolEventSource();
@@ -22,8 +18,9 @@ namespace System.Buffers
             PoolExhausted
         }
 
-        [Event(1, Level = EventLevel.Informational)]
-        internal void BufferRented(int bufferId, int bufferSize, int poolId, int bucketId) { WriteEventHelper(1, bufferId, bufferSize, poolId, bucketId); }
+        [Event(1, Level = EventLevel.Verbose)]
+        internal void BufferRented(int bufferId, int bufferSize, int poolId, int bucketId) =>
+            WriteEventHelper(1, bufferId, bufferSize, poolId, bucketId);
 
         [Event(2, Level = EventLevel.Informational)]
         internal void BufferAllocated(int bufferId, int bufferSize, int poolId, int bucketId, BufferAllocationReason reason)
@@ -45,11 +42,13 @@ namespace System.Buffers
              }
         }
 
-        [Event(3, Level = EventLevel.Informational)]
-        internal void BufferReturned(int bufferId, int poolId) { WriteEvent(3, bufferId, poolId); }
+        [Event(3, Level = EventLevel.Verbose)]
+        internal void BufferReturned(int bufferId, int poolId) =>
+            WriteEvent(3, bufferId, poolId);
 
         [Event(4, Level = EventLevel.Warning)]
-        internal void BucketExhausted(int bucketId, int bucketSize, int buffersInBucket, int poolId) { WriteEventHelper(4, bucketId, bucketSize, buffersInBucket, poolId); }
+        internal void BucketExhausted(int bucketId, int bucketSize, int buffersInBucket, int poolId) =>
+            WriteEventHelper(4, bucketId, bucketSize, buffersInBucket, poolId);
         
         [NonEvent]
         private unsafe void WriteEventHelper(int eventId, int arg0, int arg1, int arg2, int arg3)

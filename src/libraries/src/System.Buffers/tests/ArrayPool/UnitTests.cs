@@ -308,9 +308,9 @@ namespace System.Buffers.ArrayPool.Tests
             Assert.Equal(64, pool.Rent(63).Length); // still get original size
         }
 
-        private static void ActionFiresSpecificEvent(Action body, int eventId, AutoResetEvent are)
+        private static void ActionFiresSpecificEvent(Action body, EventLevel level, int eventId, AutoResetEvent are)
         {
-            using (TestEventListener listener = new TestEventListener("System.Buffers.BufferPoolEventSource", EventLevel.Verbose))
+            using (TestEventListener listener = new TestEventListener("System.Buffers.ArrayPoolEventSource", level))
             {
                 listener.RunWithCallback((EventWrittenEventArgs e) =>
                 {
@@ -330,7 +330,7 @@ namespace System.Buffers.ArrayPool.Tests
             {
                 byte[] bt = pool.Rent(16);
                 Assert.True(are.WaitOne(MaxEventWaitTimeoutInMs));
-            }, 1, are);
+            }, EventLevel.Verbose, 1, are);
         }
 
         [Fact]
@@ -344,7 +344,7 @@ namespace System.Buffers.ArrayPool.Tests
                 byte[] bt = pool.Rent(16);
                 pool.Return(bt);
                 Assert.True(are.WaitOne(MaxEventWaitTimeoutInMs));
-            }, 3, are);
+            }, EventLevel.Verbose, 3, are);
         }
 
         [Fact]
@@ -357,7 +357,7 @@ namespace System.Buffers.ArrayPool.Tests
             {
                 byte[] bt = pool.Rent(16);
                 Assert.True(are.WaitOne(MaxEventWaitTimeoutInMs));
-            }, 2, are);
+            }, EventLevel.Informational, 2, are);
         }
 
         [Fact]
@@ -371,7 +371,7 @@ namespace System.Buffers.ArrayPool.Tests
                 byte[] bt = pool.Rent(16);
                 byte[] bt2 = pool.Rent(16);
                 Assert.True(are.WaitOne(MaxEventWaitTimeoutInMs));
-            }, 2, are);
+            }, EventLevel.Informational, 2, are);
         }
 
         [Fact]
@@ -384,7 +384,7 @@ namespace System.Buffers.ArrayPool.Tests
             {
                 byte[] bt = pool.Rent(64);
                 Assert.True(are.WaitOne(MaxEventWaitTimeoutInMs));
-            }, 2, are);
+            }, EventLevel.Informational, 2, are);
         }
         
         [Fact]
@@ -398,7 +398,7 @@ namespace System.Buffers.ArrayPool.Tests
                 byte[] bt = pool.Rent(16);
                 byte[] bt2 = pool.Rent(16);
                 Assert.True(are.WaitOne(MaxEventWaitTimeoutInMs));
-            }, 4, are);
+            }, EventLevel.Warning, 4, are);
         }
 
         [Fact]
