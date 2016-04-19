@@ -2,7 +2,7 @@ project(unixcoreruncommon)
 
 add_compile_options(-fPIC)
 
-add_library(unixcoreruncommon
+_add_library(unixcoreruncommon
     STATIC
     coreruncommon.cpp
 )

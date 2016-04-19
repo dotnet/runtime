@@ -6,10 +6,10 @@ include_directories("../inc")
 # Enable the following for UNIX altjit on Windows
 # add_definitions(-DALT_JIT)
 
-if (CLR_CMAKE_PLATFORM_ARCH_AMD64)
+if (CLR_CMAKE_TARGET_ARCH_AMD64)
   add_definitions(-DFEATURE_SIMD) 
   add_definitions(-DFEATURE_AVX_SUPPORT) 
-endif (CLR_CMAKE_PLATFORM_ARCH_AMD64)
+endif ()
 
 if (ARM_SOFTFP)
   add_definitions(-DARM_SOFTFP)
@@ -70,7 +70,7 @@ set( JIT_SOURCES
   valuenum.cpp
 )
 
-if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
+if(CLR_CMAKE_TARGET_ARCH_AMD64)
   set( ARCH_SOURCES
     codegenxarch.cpp
     emitxarch.cpp
@@ -80,7 +80,7 @@ if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
     targetamd64.cpp
     unwindamd64.cpp
   )
-elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
+elseif(CLR_CMAKE_TARGET_ARCH_ARM)
   set( ARCH_SOURCES
     codegenarm.cpp
     emitarm.cpp
@@ -88,7 +88,7 @@ elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
     targetarm.cpp
     unwindarm.cpp
   )
-elseif(CLR_CMAKE_PLATFORM_ARCH_I386)
+elseif(CLR_CMAKE_TARGET_ARCH_I386)
   set( ARCH_SOURCES
     codegenxarch.cpp
     emitxarch.cpp
@@ -97,7 +97,7 @@ elseif(CLR_CMAKE_PLATFORM_ARCH_I386)
     simdcodegenxarch.cpp
     targetx86.cpp
   )
-elseif(CLR_CMAKE_PLATFORM_ARCH_ARM64)
+elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
   set( ARCH_SOURCES
     codegenarm64.cpp
     emitarm64.cpp
@@ -115,20 +115,20 @@ endif()
 # #ifdef'ed, though it makes the build slightly slower to do so. Note there is only a legacy backend for
 # x86 and ARM.
 
-if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
+if(CLR_CMAKE_TARGET_ARCH_AMD64)
   set( ARCH_LEGACY_SOURCES
   )
-elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
+elseif(CLR_CMAKE_TARGET_ARCH_ARM)
   set( ARCH_LEGACY_SOURCES
     codegenlegacy.cpp
     registerfp.cpp
   )
-elseif(CLR_CMAKE_PLATFORM_ARCH_I386)
+elseif(CLR_CMAKE_TARGET_ARCH_I386)
   set( ARCH_LEGACY_SOURCES
     codegenlegacy.cpp
     stackfp.cpp
   )
-elseif(CLR_CMAKE_PLATFORM_ARCH_ARM64)
+elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
   set( ARCH_LEGACY_SOURCES
   )
 else()

@@ -34,7 +34,7 @@ set(ILDASM_SOURCES
     ../windasm.cpp
 )
 
-add_executable(ildasm
+_add_executable(ildasm
     ${ILDASM_SOURCES}
     ${ILDASM_RESOURCES}
 )
