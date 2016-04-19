@@ -8686,7 +8686,7 @@ mono_marshal_get_isinst_with_cache (void)
 
 	// return obj
 	mono_mb_patch_branch (mb, positive_cache_hit_pos);
-	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_ldarg (mb, obj_arg_position);
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif
 
