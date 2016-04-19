@@ -594,6 +594,7 @@ def supportedFullCyclePlatforms = ['Windows_NT', 'Ubuntu14.04']
             def newJobName = "${os.toLowerCase()}_${configurationGroup.toLowerCase()}"
 
             def newJob = job(Utilities.getFullJobName(project, newJobName, isPR)) {
+                // On Windows we use the packer to put together everything. On *nix we use tar
                 steps {
                     if (os == 'Windows 10' || os == 'Windows 7' || os == 'Windows_NT') {
                         batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd /p:ConfigurationGroup=${configurationGroup} /p:OSGroup=${osGroup}")
@@ -601,6 +602,8 @@ def supportedFullCyclePlatforms = ['Windows_NT', 'Ubuntu14.04']
                     }
                     else {
                         shell("HOME=\$WORKSPACE/tempHome ./build.sh /p:ConfigurationGroup=${configurationGroup} /p:TestWithLocalLibraries=true")
+                        // Tar up the appropriate bits
+                        shell("tar -czf bin/build.tar.gz bin/${osGroup}.AnyCPU.${configurationGroup} bin/${osGroup}.x64.${configurationGroup} bin/ref bin/packages")
                     }
                 }
             }
@@ -611,10 +614,13 @@ def supportedFullCyclePlatforms = ['Windows_NT', 'Ubuntu14.04']
             Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
             // Add the unit test results
             Utilities.addXUnitDotNETResults(newJob, 'bin/tests/**/testResults.xml')
-            def archiveContents = "bin/${osGroup}.AnyCPU.Debug/**,bin/ref/**,bin/packages/**,msbuild.log"
+            def archiveContents = "msbuild.log"
             if (os.contains('Windows')) {
                 // Packer.exe is a .NET Framework application. When we can use it from the tool-runtime, we can archive the ".pack" file here.
                 archiveContents += ",bin/build.pack"
+            }
+            else {
+                archiveContents += ",bin/build.tar.gz"
             }
             // Add archival for the built data.
             Utilities.addArchival(newJob, archiveContents)
