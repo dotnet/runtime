@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <!-- This file contains a map of native-library -> package so that we can harvest package dependencies from native references -->
+
+    <!-- runtime.native.System -->
+    <NativeLibrary Include="System.Native">
+      <Package>runtime.native.System</Package>
+    </NativeLibrary>
+
+    <!-- runtime.native.System.Data.SqlClient.sni -->
+    <NativeLibrary Include="sni.dll">
+      <Package>runtime.native.System.Data.SqlClient.sni</Package>
+    </NativeLibrary>
+    
+    <!-- runtime.native.System.IO.Compression -->
+    <NativeLibrary Include="clrcompression.dll">
+      <Package>runtime.native.System.IO.Compression</Package>
+    </NativeLibrary>
+    <NativeLibrary Include="System.IO.Compression.Native">
+      <Package>runtime.native.System.IO.Compression</Package>
+    </NativeLibrary>
+
+    <!-- runtime.native.System.Net.Http -->
+    <NativeLibrary Include="System.Net.Http.Native">
+      <Package>runtime.native.System.Net.Http</Package>
+    </NativeLibrary>
+
+    <!-- runtime.native.System.Net.Security -->
+    <NativeLibrary Include="System.Net.Security.Native">
+      <Package>runtime.native.System.Net.Security</Package>
+    </NativeLibrary>
+
+    <!-- runtime.native.System.Security.Cryptography -->
+    <NativeLibrary Include="System.Security.Cryptography.Native">
+      <Package>runtime.native.System.Security.Cryptography</Package>
+    </NativeLibrary>
+  </ItemGroup>
+</Project>

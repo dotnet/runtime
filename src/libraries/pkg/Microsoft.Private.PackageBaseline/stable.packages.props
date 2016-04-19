@@ -1,0 +1,510 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <!-- Metadata stable release 1.2 -->
+    <StablePackage Include="System.Reflection.Metadata">
+      <Version>1.2.0</Version>
+    </StablePackage>
+  
+    <!-- Packages shipped stable at VS 2015 Update 2 for UWP 5.1.0 meta-package -->
+    <StablePackage Include="Microsoft.NETCore.UniversalWindowsPlatform">
+      <Version>5.1.0</Version>
+    </StablePackage>
+    <StablePackage Include="Microsoft.NETCore.Runtime">
+      <Version>1.0.1</Version>
+    </StablePackage>
+    <StablePackage Include="Microsoft.NETCore.Runtime.CoreCLR">
+      <Version>1.0.1</Version>
+    </StablePackage>
+    <StablePackage Include="runtime.win8-arm.Microsoft.NETCore.Runtime.CoreCLR">
+      <Version>1.0.1</Version>
+    </StablePackage>
+    <StablePackage Include="runtime.win7-x64.Microsoft.NETCore.Runtime.CoreCLR">
+      <Version>1.0.1</Version>
+    </StablePackage>
+    <StablePackage Include="runtime.win7-x86.Microsoft.NETCore.Runtime.CoreCLR">
+      <Version>1.0.1</Version>
+    </StablePackage>
+    <StablePackage Include="Microsoft.NETCore.Runtime.Native">
+      <Version>1.0.1</Version>
+    </StablePackage>
+    <StablePackage Include="System.Runtime.Serialization.Json">
+      <Version>4.0.1</Version>
+    </StablePackage>
+    <StablePackage Include="System.Runtime.Serialization.Primitives">
+      <Version>4.1.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Runtime.Serialization.Xml">
+      <Version>4.1.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Private.DataContractSerialization">
+      <Version>4.1.0</Version>
+    </StablePackage>
+    <StablePackage Include="runtime.any.System.Private.DataContractSerialization">
+      <Version>4.1.0</Version>
+    </StablePackage>
+    <StablePackage Include="runtime.aot.System.Private.DataContractSerialization">
+      <Version>4.1.0</Version>
+    </StablePackage>
+    
+    <!-- Packages shipped stable at Dev14 RTM -->
+    <StablePackage Include="Microsoft.CSharp">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="Microsoft.VisualBasic">
+      <Version>10.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="Microsoft.Win32.Primitives">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.AppContext">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Collections.Concurrent">
+      <Version>4.0.10</Version>
+    </StablePackage>
+    <StablePackage Include="System.Collections">
+      <Version>4.0.10</Version>
+    </StablePackage>
+    <StablePackage Include="System.Collections.NonGeneric">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Collections.Specialized">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.ComponentModel">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.ComponentModel.Annotations">
+      <Version>4.0.10</Version>
+    </StablePackage>
+    <StablePackage Include="System.ComponentModel.EventBasedAsync">
+      <Version>4.0.10</Version>
+    </StablePackage>
+    <StablePackage Include="System.ComponentModel.Primitives">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.ComponentModel.TypeConverter">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Data.Common">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Diagnostics.Contracts">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Diagnostics.Debug">
+      <Version>4.0.10</Version>
+    </StablePackage>
+    <StablePackage Include="System.Diagnostics.StackTrace">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Diagnostics.Tools">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Diagnostics.Tracing">
+      <Version>4.0.20</Version>
+    </StablePackage>
+    <StablePackage Include="System.Dynamic.Runtime">
+      <Version>4.0.10</Version>
+    </StablePackage>
+    <StablePackage Include="System.Globalization">
+      <Version>4.0.10</Version>
+    </StablePackage>
+    <StablePackage Include="System.Globalization.Calendars">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Globalization.Extensions">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.IO.Compression">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.IO.Compression.ZipFile">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.IO">
+      <Version>4.0.10</Version>
+    </StablePackage>
+    <StablePackage Include="System.IO.FileSystem.Primitives">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.IO.FileSystem">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.IO.UnmanagedMemoryStream">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Linq">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Linq.Expressions">
+      <Version>4.0.10</Version>
+    </StablePackage>
+    <StablePackage Include="System.Linq.Queryable">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Linq.Parallel">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Net.Http">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Net.Http.Rtc">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Net.NetworkInformation">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Net.Primitives">
+      <Version>4.0.10</Version>
+    </StablePackage>
+    <StablePackage Include="System.Net.Requests">
+      <Version>4.0.10</Version>
+    </StablePackage>
+    <StablePackage Include="System.Net.Sockets">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Net.WebHeaderCollection">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Numerics.Vectors">
+      <Version>4.1.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.ObjectModel">
+      <Version>4.0.10</Version>
+    </StablePackage>
+    <StablePackage Include="System.Reflection">
+      <Version>4.0.10</Version>
+    </StablePackage>
+    <StablePackage Include="System.Reflection.Context">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Reflection.DispatchProxy">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Reflection.Extensions">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Reflection.Primitives">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Reflection.TypeExtensions">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Resources.ResourceManager">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Runtime">
+      <Version>4.0.20</Version>
+    </StablePackage>
+    <StablePackage Include="System.Runtime.Extensions">
+      <Version>4.0.10</Version>
+    </StablePackage>
+    <StablePackage Include="System.Runtime.InteropServices">
+      <Version>4.0.20</Version>
+    </StablePackage>
+    <StablePackage Include="System.Runtime.InteropServices.WindowsRuntime">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Runtime.Handles">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Runtime.Numerics">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Runtime.Serialization.Json">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Runtime.Serialization.Primitives">
+      <Version>4.0.10</Version>
+    </StablePackage>
+    <StablePackage Include="System.Runtime.Serialization.Xml">
+      <Version>4.0.10</Version>
+    </StablePackage>
+    <StablePackage Include="System.Runtime.WindowsRuntime">
+      <Version>4.0.10</Version>
+    </StablePackage>
+    <StablePackage Include="System.Runtime.WindowsRuntime.UI.Xaml">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Security.Claims">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Security.Principal">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.ServiceModel.Duplex">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.ServiceModel.Http">
+      <Version>4.0.10</Version>
+    </StablePackage>
+    <StablePackage Include="System.ServiceModel.NetTcp">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.ServiceModel.Primitives">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.ServiceModel.Security">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Text.Encoding">
+      <Version>4.0.10</Version>
+    </StablePackage>
+    <StablePackage Include="System.Text.Encoding.CodePages">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Text.Encoding.Extensions">
+      <Version>4.0.10</Version>
+    </StablePackage>
+    <StablePackage Include="System.Text.RegularExpressions">
+      <Version>4.0.10</Version>
+    </StablePackage>
+    <StablePackage Include="System.Threading">
+      <Version>4.0.10</Version>
+    </StablePackage>
+    <StablePackage Include="System.Threading.Tasks">
+      <Version>4.0.10</Version>
+    </StablePackage>
+    <StablePackage Include="System.Threading.Tasks.Parallel">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Threading.Timer">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Threading.Overlapped">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Xml.ReaderWriter">
+      <Version>4.0.10</Version>
+    </StablePackage>
+    <StablePackage Include="System.Xml.XDocument">
+      <Version>4.0.10</Version>
+    </StablePackage>
+    <StablePackage Include="System.Xml.XmlDocument">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Xml.XmlSerializer">
+      <Version>4.0.10</Version>
+    </StablePackage>
+    <StablePackage Include="System.Xml.XPath">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Xml.XPath.XDocument">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Xml.XPath.XmlDocument">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.IO.IsolatedStorage">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="Microsoft.NETCore">
+      <Version>5.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="Microsoft.NETCore.Platforms">
+      <Version>1.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="Microsoft.NETCore.Portable.Compatibility">
+      <Version>1.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="Microsoft.NETCore.Runtime">
+      <Version>1.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="Microsoft.NETCore.Runtime.CoreCLR-arm">
+      <Version>1.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="Microsoft.NETCore.Runtime.CoreCLR-x64">
+      <Version>1.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="Microsoft.NETCore.Runtime.CoreCLR-x86">
+      <Version>1.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="Microsoft.NETCore.Runtime.Native">
+      <Version>1.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="Microsoft.NETCore.Targets">
+      <Version>1.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="Microsoft.NETCore.Targets.DNXCore">
+      <Version>4.9.0</Version>
+    </StablePackage>
+    <StablePackage Include="Microsoft.NETCore.Targets.NETFramework">
+      <Version>4.6.0</Version>
+    </StablePackage>
+    <StablePackage Include="Microsoft.NETCore.Targets.UniversalWindowsPlatform">
+      <Version>5.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="Microsoft.NETCore.UniversalWindowsPlatform">
+      <Version>5.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="Microsoft.NETCore.Windows.ApiSets-x86">
+      <Version>1.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="Microsoft.NETCore.Windows.ApiSets-x64">
+      <Version>1.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Collections.Immutable">
+      <Version>1.1.37</Version>
+    </StablePackage>
+    <StablePackage Include="System.IO.Compression.clrcompression-arm">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.IO.Compression.clrcompression-x64">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.IO.Compression.clrcompression-x86">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Numerics.Vectors.WindowsRuntime">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Private.Uri">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Private.Networking">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Private.ServiceModel">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Private.DataContractSerialization">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Reflection.Emit">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Reflection.Emit.ILGeneration">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Reflection.Emit.Lightweight">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Reflection.Metadata">
+      <Version>1.0.22</Version>
+    </StablePackage>
+    <StablePackage Include="System.Reflection.Metadata">
+      <Version>1.1.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Threading.Tasks.Dataflow">
+      <Version>4.5.25</Version>
+    </StablePackage>
+    <StablePackage Include="System.Numerics.Vectors.WindowsRuntime">
+      <Version>4.0.0</Version>
+    </StablePackage>
+
+    <!-- Dowlevel packages that shipped in a previous release -->
+    <StablePackage Include="System.Collections.Concurrent">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Collections">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.ComponentModel.Annotations">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.ComponentModel.EventBasedAsync">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Diagnostics.Debug">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Diagnostics.Tracing">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Diagnostics.Tracing">
+      <Version>4.0.10</Version>
+    </StablePackage>
+    <StablePackage Include="System.Dynamic.Runtime">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Globalization">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.IO">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Linq.Expressions">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Net.Primitives">
+      <Version>3.9.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Net.Primitives">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Net.Requests">
+      <Version>3.9.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Net.Requests">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.ObjectModel">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Reflection">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Runtime.Extensions">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Runtime.InteropServices">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Runtime.InteropServices">
+      <Version>4.0.10</Version>
+    </StablePackage>
+    <StablePackage Include="System.Runtime.Serialization.Primitives">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Runtime.Serialization.Xml">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Runtime.WindowsRuntime">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Runtime">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Runtime">
+      <Version>4.0.10</Version>
+    </StablePackage>
+    <StablePackage Include="System.ServiceModel.Http">
+      <Version>3.9.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.ServiceModel.Http">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.ServiceModel.Primitives">
+      <Version>3.9.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.ServiceModel.Security">
+      <Version>3.9.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Text.Encoding.Extensions">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Text.Encoding">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Text.RegularExpressions">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Threading.Tasks">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Threading">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Xml.ReaderWriter">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Xml.XDocument">
+      <Version>4.0.0</Version>
+    </StablePackage>
+    <StablePackage Include="System.Xml.XmlSerializer">
+      <Version>4.0.0</Version>
+    </StablePackage>
+  </ItemGroup>
+</Project>
