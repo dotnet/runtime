@@ -11,18 +11,18 @@ namespace System.Text.Tests
     {
         public static IEnumerable<object[]> GetChars_TestData()
         {
-            byte[] bytes = new byte[] { 85, 84, 70, 55, 32, 69, 110, 99, 111, 100, 105, 110, 103, 32, 69, 120, 97, 109, 112, 108, 101 };
-            int charCount = new UTF8Encoding().GetCharCount(bytes, 1, 2);
-            yield return new object[] { bytes, 1, 2, new char[charCount], 0, new char[] { 'T', 'F' } };
+            byte[] asciiBytes = new byte[] { 85, 84, 70, 56, 32, 69, 110, 99, 111, 100, 105, 110, 103, 32, 69, 120, 97, 109, 112, 108, 101 };
+            yield return new object[] { asciiBytes, 1, 2, "TF".ToCharArray() };
+            yield return new object[] { asciiBytes, 0, asciiBytes.Length, "UTF8 Encoding Example".ToCharArray() };
 
-            yield return new object[] { new byte[0], 0, 0, new char[0], 0, new char[0] };
+            yield return new object[] { new byte[0], 0, 0, new char[0] };
         }
 
         [Theory]
         [MemberData(nameof(GetChars_TestData))]
-        public void GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex, char[] expectedChars)
+        public void GetChars(byte[] bytes, int index, int count, char[] expected)
         {
-            EncodingHelpers.GetChars(new UTF8Encoding(), bytes, byteIndex, byteCount, chars, charIndex, expectedChars);
+            EncodingHelpers.Decode(new UTF8Encoding(), bytes, index, count, expected);
         }
     }
 }
