@@ -22,6 +22,7 @@
     <Compile Include="CastTests.cs" />
     <Compile Include="AppendPrependTests.cs" />
     <Compile Include="ConcatTests.cs" />
+    <Compile Include="ConsistencyTests.cs" />
     <Compile Include="ContainsTests.cs" />
     <Compile Include="CountTests.cs" />
     <Compile Include="DefaultIfEmptyTests.cs" />
