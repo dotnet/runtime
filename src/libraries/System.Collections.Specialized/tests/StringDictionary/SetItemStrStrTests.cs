@@ -58,9 +58,24 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Fact]
-        public void Item_Set_NullKey_ThrowsArgumentNullException()
+        public void Item_Set_IsCaseInsensitive()
         {
-            Assert.Throws<ArgumentNullException>("key", () => new StringDictionary()[null] = "value");
+            StringDictionary stringDictionary = new StringDictionary();
+            stringDictionary["KEY"] = "value1";
+            stringDictionary["kEy"] = "value2";
+            stringDictionary["key"] = "value3";
+
+            Assert.Equal(1, stringDictionary.Count);
+            Assert.Equal("value3", stringDictionary["key"]);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(5)]
+        public void Item_Set_NullKey_ThrowsArgumentNullException(int count)
+        {
+            StringDictionary stringDictionary = Helpers.CreateStringDictionary(count);
+            Assert.Throws<ArgumentNullException>("key", () => stringDictionary[null] = "value");
         }
     }
 }

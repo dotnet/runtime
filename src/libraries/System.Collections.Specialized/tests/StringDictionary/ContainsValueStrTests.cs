@@ -9,9 +9,21 @@ namespace System.Collections.Specialized.Tests
     public class StringDictionaryContainsValueTests
     {
         [Fact]
-        public void ContainsValue_NoSuchValue_ReturnsFalse()
+        public void ContainsValue_IsCaseSensitive()
         {
             StringDictionary stringDictionary = new StringDictionary();
+            stringDictionary.Add("key", "value");
+            Assert.False(stringDictionary.ContainsValue("VALUE"));
+            Assert.False(stringDictionary.ContainsValue("vaLue"));
+            Assert.True(stringDictionary.ContainsValue("value"));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(15)]
+        public void ContainsValue_NoSuchValue_ReturnsFalse(int count)
+        {
+            StringDictionary stringDictionary = Helpers.CreateStringDictionary(count);
             Assert.False(stringDictionary.ContainsValue("value"));
         }
 

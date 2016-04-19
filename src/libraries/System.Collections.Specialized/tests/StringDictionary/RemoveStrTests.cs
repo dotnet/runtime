@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
+
 namespace System.Collections.Specialized.Tests
 {
     public class StringDictionaryRemoveTests
@@ -56,10 +57,13 @@ namespace System.Collections.Specialized.Tests
             Assert.False(stringDictionary.ContainsValue("value"));
         }
 
-        [Fact]
-        public void Remove_NullKey_ThrowsArgumentNullException()
+        [Theory]
+        [InlineData(0)]
+        [InlineData(5)]
+        public void Remove_NullKey_ThrowsArgumentNullException(int count)
         {
-            Assert.Throws<ArgumentNullException>("key", () => new StringDictionary().Remove(null));
+            StringDictionary stringDictionary = Helpers.CreateStringDictionary(count);
+            Assert.Throws<ArgumentNullException>("key", () => stringDictionary.Remove(null));
         }
     }
 }

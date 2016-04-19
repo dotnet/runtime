@@ -16,17 +16,20 @@ namespace System.Collections.Specialized.Tests
         public void CopyTo(int count, int index)
         {
             StringDictionary stringDictionary = Helpers.CreateStringDictionary(count);
-            DictionaryEntry[] array = new DictionaryEntry[count + index + 5];
 
+            DictionaryEntry[] array = new DictionaryEntry[count + index + 5];
             stringDictionary.CopyTo(array, index);
 
+            IEnumerator enumerator = stringDictionary.GetEnumerator();
             for (int i = 0; i < index; i++)
             {
                 Assert.Equal(default(DictionaryEntry), array[i]);
             }
             for (int i = index; i < index + count; i++)
             {
+                enumerator.MoveNext();
                 DictionaryEntry entry = array[i];
+                Assert.Equal(enumerator.Current, entry);
                 Assert.Equal(entry.Value, stringDictionary[(string)entry.Key]);
             }
             for (int i = index + count; i < array.Length; i++)

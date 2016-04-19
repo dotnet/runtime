@@ -9,8 +9,8 @@ namespace System.Collections.Specialized.Tests
     public class StringDictionaryClearTests
     {
         [Theory]
-        [InlineData(10)]
         [InlineData(0)]
+        [InlineData(10)]
         public void Clear(int count)
         {
             StringDictionary stringDictionary = Helpers.CreateStringDictionary(count);

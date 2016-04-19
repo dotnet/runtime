@@ -9,14 +9,26 @@ namespace System.Collections.Specialized.Tests
     public class StringDictionaryItemTests
     {
         [Fact]
-        public void Item_NoSuchKey_ReturnsNull()
+        public void Item_Get_IsCaseInsensitive()
         {
             StringDictionary stringDictionary = new StringDictionary();
+            stringDictionary.Add("key", "value");
+            Assert.Equal("value", stringDictionary["KEY"]);
+            Assert.Equal("value", stringDictionary["kEy"]);
+            Assert.Equal("value", stringDictionary["key"]);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(5)]
+        public void Item_Get_NoSuchKey_ReturnsNull(int count)
+        {
+            StringDictionary stringDictionary = Helpers.CreateStringDictionary(count);
             Assert.Null(stringDictionary["non-existent-key"]);
         }
 
         [Fact]
-        public void Item_DuplicateValues()
+        public void Item_Get_DuplicateValues()
         {
             StringDictionary stringDictionary = new StringDictionary();
             stringDictionary.Add("key1", "value");
@@ -28,10 +40,13 @@ namespace System.Collections.Specialized.Tests
             Assert.Equal("value", stringDictionary["key3"]);
         }
 
-        [Fact]
-        public void Item_NullKey_ThrowsArgumentNullException()
+        [Theory]
+        [InlineData(0)]
+        [InlineData(5)]
+        public void Item_Get_NullKey_ThrowsArgumentNullException(int count)
         {
-            Assert.Throws<ArgumentNullException>("key", () => new StringDictionary()[null]);
+            StringDictionary stringDictionary = Helpers.CreateStringDictionary(count);
+            Assert.Throws<ArgumentNullException>("key", () => stringDictionary[null]);
         }
     }
 }
