@@ -214,7 +214,7 @@ typedef enum {
 	MONO_PROFILER_STAT_MODE_REAL = 1,
 } MonoProfileSamplingMode;
 
-MONO_API void mono_profiler_set_statistical_mode (MonoProfileSamplingMode mode, int64_t sampling_frequency_is_us);
+MONO_API void mono_profiler_set_statistical_mode (MonoProfileSamplingMode mode, int64_t sampling_frequency_hz);
 
 MONO_END_DECLS
 

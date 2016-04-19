@@ -283,7 +283,7 @@ mono_profiler_install_monitor  (MonoProfileMonitorFunc callback)
 }
 
 static MonoProfileSamplingMode sampling_mode = MONO_PROFILER_STAT_MODE_PROCESS;
-static int64_t sampling_frequency = 1000; //1ms
+static int64_t sampling_frequency = 100; // Hz
 
 /**
  * mono_profiler_set_statistical_mode:
@@ -298,10 +298,10 @@ static int64_t sampling_frequency = 1000; //1ms
  * Said that, when using statistical sampling, always assume variable rate sampling as all sort of external factors can interfere.
  */
 void
-mono_profiler_set_statistical_mode (MonoProfileSamplingMode mode, int64_t sampling_frequency_is_us)
+mono_profiler_set_statistical_mode (MonoProfileSamplingMode mode, int64_t sampling_frequency_hz)
 {
 	sampling_mode = mode;
-	sampling_frequency = sampling_frequency_is_us;
+	sampling_frequency = sampling_frequency_hz;
 }
 
 void 
@@ -1147,7 +1147,15 @@ load_embedded_profiler (const char *desc, const char *name)
 	MonoDl *pmodule = NULL;
 	gboolean result;
 
-	pmodule = mono_dl_open (NULL, MONO_DL_LAZY, &err);
+	/*
+	 * Some profilers (such as ours) may need to call back into the runtime
+	 * from their sampling callback (which is called in async-signal context).
+	 * They need to be able to know that all references back to the runtime
+	 * have been resolved; otherwise, calling runtime functions may result in
+	 * invoking the dynamic linker which is not async-signal-safe. Passing
+	 * MONO_DL_EAGER will ask the dynamic linker to resolve everything upfront.
+	 */
+	pmodule = mono_dl_open (NULL, MONO_DL_EAGER, &err);
 	if (!pmodule) {
 		g_warning ("Could not open main executable (%s)", err);
 		g_free (err);
@@ -1175,7 +1183,7 @@ load_profiler_from_directory (const char *directory, const char *libname, const 
 	iter = NULL;
 	err = NULL;
 	while ((path = mono_dl_build_path (directory, libname, &iter))) {
-		pmodule = mono_dl_open (path, MONO_DL_LAZY, &err);
+		pmodule = mono_dl_open (path, MONO_DL_EAGER, &err);
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT, "Attempting to load profiler: %s, %ssuccessful, err: %s", path, pmodule?"":"not ", err);
 		g_free (path);
 		g_free (err);
@@ -1190,7 +1198,7 @@ static gboolean
 load_profiler_from_mono_installation (const char *libname, const char *desc)
 {
 	char *err = NULL;
-	MonoDl *pmodule = mono_dl_open_runtime_lib (libname, MONO_DL_LAZY, &err);
+	MonoDl *pmodule = mono_dl_open_runtime_lib (libname, MONO_DL_EAGER, &err);
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT, "Attempting to load profiler from runtime libs: %s, %ssuccessful, err: %s", libname, pmodule?"":"not ", err);
 	g_free (err);
 	if (pmodule)
