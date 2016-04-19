@@ -158,7 +158,7 @@ RelativePath=Interop\NativeCallable\NativeCallableTest\NativeCallableTest.cmd
 WorkingDir=Interop\NativeCallable\NativeCallableTest
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;RT;EXPECTED_FAIL;NEED_TRIAGE;REL_PASS;ASSERT_ONLY
+Categories=Pri0;RT;EXPECTED_FAIL;ISSUE_4422;REL_PASS;ASSERT_ONLY
 HostStyle=0
 [BoolTest.cmd_23]
 RelativePath=Interop\PrimitiveMarshalling\Bool\BoolTest\BoolTest.cmd
@@ -3980,7 +3980,7 @@ RelativePath=JIT\Directed\prefix\unaligned\1\arglist\arglist.cmd
 WorkingDir=JIT\Directed\prefix\unaligned\1\arglist
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_FAIL
+Categories=Pri0;EXPECTED_FAIL;ISSUE_4424
 HostStyle=0
 [array_tests.cmd_585]
 RelativePath=JIT\Directed\prefix\unaligned\1\array_tests\array_tests.cmd
@@ -4085,7 +4085,7 @@ RelativePath=JIT\Directed\prefix\unaligned\2\arglist\arglist.cmd
 WorkingDir=JIT\Directed\prefix\unaligned\2\arglist
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_FAIL
+Categories=Pri0;EXPECTED_FAIL;ISSUE_4424
 HostStyle=0
 [array_tests.cmd_600]
 RelativePath=JIT\Directed\prefix\unaligned\2\array_tests\array_tests.cmd
@@ -4183,7 +4183,7 @@ RelativePath=JIT\Directed\prefix\unaligned\4\arglist\arglist.cmd
 WorkingDir=JIT\Directed\prefix\unaligned\4\arglist
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_FAIL
+Categories=Pri0;EXPECTED_FAIL;ISSUE_4424
 HostStyle=0
 [array_tests.cmd_614]
 RelativePath=JIT\Directed\prefix\unaligned\4\array_tests\array_tests.cmd
@@ -5051,7 +5051,7 @@ RelativePath=JIT\Directed\tailcall\tailcall\tailcall.cmd
 WorkingDir=JIT\Directed\tailcall\tailcall
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_FAIL
+Categories=Pri0;EXPECTED_FAIL;ISSUE_4420
 HostStyle=0
 [fault.cmd_745]
 RelativePath=JIT\Directed\throwbox\fault\fault.cmd
@@ -23265,7 +23265,7 @@ RelativePath=JIT\Methodical\explicit\misc\_opt_dbgexplicit5\_opt_dbgexplicit5.cm
 WorkingDir=JIT\Methodical\explicit\misc\_opt_dbgexplicit5
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;UNSTABLE;NEED_TRIAGE
+Categories=Pri0;JIT;EXPECTED_PASS
 HostStyle=0
 [_opt_dbgexplicit6.cmd_3384]
 RelativePath=JIT\Methodical\explicit\misc\_opt_dbgexplicit6\_opt_dbgexplicit6.cmd
@@ -23321,7 +23321,7 @@ RelativePath=JIT\Methodical\explicit\misc\_opt_relexplicit5\_opt_relexplicit5.cm
 WorkingDir=JIT\Methodical\explicit\misc\_opt_relexplicit5
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;UNSTABLE;NEED_TRIAGE
+Categories=Pri0;JIT;EXPECTED_PASS
 HostStyle=0
 [_opt_relexplicit6.cmd_3392]
 RelativePath=JIT\Methodical\explicit\misc\_opt_relexplicit6\_opt_relexplicit6.cmd
@@ -31196,7 +31196,7 @@ RelativePath=JIT\Performance\CodeQuality\Roslyn\CscBench\CscBench.cmd
 WorkingDir=JIT\Performance\CodeQuality\Roslyn\CscBench
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_FAIL
+Categories=Pri0;EXPECTED_PASS
 HostStyle=0
 [SciMark.cmd_4544]
 RelativePath=JIT\Performance\CodeQuality\SciMark\SciMark\SciMark.cmd
@@ -31210,14 +31210,14 @@ RelativePath=JIT\Performance\CodeQuality\Serialization\Deserialize\Deserialize.c
 WorkingDir=JIT\Performance\CodeQuality\Serialization\Deserialize
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;UNSTABLE;NEED_TRIAGE
+Categories=Pri0;JIT;EXPECTED_PASS
 HostStyle=0
 [Serialize.cmd_4546]
 RelativePath=JIT\Performance\CodeQuality\Serialization\Serialize\Serialize.cmd
 WorkingDir=JIT\Performance\CodeQuality\Serialization\Serialize
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;UNSTABLE;NEED_TRIAGE
+Categories=Pri0;JIT;EXPECTED_PASS
 HostStyle=0
 [ConsoleMandel.cmd_4547]
 RelativePath=JIT\Performance\CodeQuality\SIMD\ConsoleMandel\ConsoleMandel\ConsoleMandel.cmd
@@ -31231,7 +31231,7 @@ RelativePath=JIT\Performance\CodeQuality\SIMD\RayTracer\RayTracer\RayTracer.cmd
 WorkingDir=JIT\Performance\CodeQuality\SIMD\RayTracer\RayTracer
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_FAIL
+Categories=Pri0;EXPECTED_FAIL;ISSUE_4421
 HostStyle=0
 [Crypto.cmd_4549]
 RelativePath=JIT\Performance\CodeQuality\V8\Crypto\Crypto\Crypto.cmd
@@ -37006,7 +37006,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\V1.2-M01\b02345\b02345\b02345.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1.2-M01\b02345\b02345
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;UNSTABLE;NEED_TRIAGE
+Categories=Pri0;JIT;EXPECTED_PASS
 HostStyle=0
 [b02762.cmd_5387]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1.2-M01\b02762\b02762\b02762.cmd
@@ -37671,7 +37671,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\v2.1\b72218\b72218\b72218.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\v2.1\b72218\b72218
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;UNSTABLE;NEED_TRIAGE
+Categories=Pri0;JIT;EXPECTED_PASS
 HostStyle=0
 [ConstToString.cmd_5486]
 RelativePath=JIT\Regression\CLR-x86-JIT\v2.1\DDB\b121938\ConstToString\ConstToString.cmd
@@ -38245,7 +38245,7 @@ RelativePath=JIT\Regression\JitBlue\devdiv_902271\DevDiv_902271\DevDiv_902271.cm
 WorkingDir=JIT\Regression\JitBlue\devdiv_902271\DevDiv_902271
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_FAIL
+Categories=Pri0;EXPECTED_FAIL;ISSUE_4420
 HostStyle=0
 [DevDiv_911875_d.cmd_5569]
 RelativePath=JIT\Regression\JitBlue\devdiv_911875\DevDiv_911875_d\DevDiv_911875_d.cmd
@@ -39959,8 +39959,8 @@ HostStyle=0
 RelativePath=managed\Compilation\Compilation\Compilation.cmd
 WorkingDir=managed\Compilation\Compilation
 Expected=0
-MaxAllowedDurationSeconds=600
-Categories=Pri0;RT;UNSTABLE;NATIVE_INTEROP;LONG_RUNNING;NEED_TRIAGE
+MaxAllowedDurationSeconds=800
+Categories=Pri0;RT;EXPECTED_PASS;NATIVE_INTEROP;LONG_RUNNING
 HostStyle=0
 [test.cmd_5816]
 RelativePath=Regressions\assemblyref\test\test.cmd
