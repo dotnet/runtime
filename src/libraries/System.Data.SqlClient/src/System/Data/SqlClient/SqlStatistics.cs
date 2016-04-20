@@ -7,6 +7,7 @@
 //------------------------------------------------------------------------------
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Data.Common;
 using System.Diagnostics;
 
@@ -96,31 +97,33 @@ namespace System.Data.SqlClient
             _waitForReply = false;
         }
 
-        internal IDictionary GetHashtable()
+        internal IDictionary GetDictionary()
         {
-            Hashtable ht = new Hashtable();
+            const int Count = 18;
+            var dictionary = new StatisticsDictionary(Count)
+            {
+                { "BuffersReceived", _buffersReceived },
+                { "BuffersSent", _buffersSent },
+                { "BytesReceived", _bytesReceived },
+                { "BytesSent", _bytesSent },
+                { "CursorOpens", _cursorOpens },
+                { "IduCount", _iduCount },
+                { "IduRows", _iduRows },
+                { "PreparedExecs", _preparedExecs },
+                { "Prepares", _prepares },
+                { "SelectCount", _selectCount },
+                { "SelectRows", _selectRows },
+                { "ServerRoundtrips", _serverRoundtrips },
+                { "SumResultSets", _sumResultSets },
+                { "Transactions", _transactions },
+                { "UnpreparedExecs", _unpreparedExecs },
 
-            ht.Add("BuffersReceived", _buffersReceived);
-            ht.Add("BuffersSent", _buffersSent);
-            ht.Add("BytesReceived", _bytesReceived);
-            ht.Add("BytesSent", _bytesSent);
-            ht.Add("CursorOpens", _cursorOpens);
-            ht.Add("IduCount", _iduCount);
-            ht.Add("IduRows", _iduRows);
-            ht.Add("PreparedExecs", _preparedExecs);
-            ht.Add("Prepares", _prepares);
-            ht.Add("SelectCount", _selectCount);
-            ht.Add("SelectRows", _selectRows);
-            ht.Add("ServerRoundtrips", _serverRoundtrips);
-            ht.Add("SumResultSets", _sumResultSets);
-            ht.Add("Transactions", _transactions);
-            ht.Add("UnpreparedExecs", _unpreparedExecs);
-
-            ht.Add("ConnectionTime", ADP.TimerToMilliseconds(_connectionTime));
-            ht.Add("ExecutionTime", ADP.TimerToMilliseconds(_executionTime));
-            ht.Add("NetworkServerTime", ADP.TimerToMilliseconds(_networkServerTime));
-
-            return ht;
+                { "ConnectionTime", ADP.TimerToMilliseconds(_connectionTime) },
+                { "ExecutionTime", ADP.TimerToMilliseconds(_executionTime) },
+                { "NetworkServerTime", ADP.TimerToMilliseconds(_networkServerTime) }
+            };
+            Debug.Assert(dictionary.Count == Count);
+            return dictionary;
         }
 
         internal bool RequestExecutionTimer()
@@ -218,6 +221,114 @@ namespace System.Data.SqlClient
                 _connectionTime = long.MaxValue;
             }
         }
+
+        // We subclass Dictionary to provide our own implementation of CopyTo, Keys.CopyTo, and
+        // Values.CopyTo to match the behavior of Hashtable, which is used in the full framework:
+        //
+        //  - When arrayIndex > array.Length, Hashtable throws ArgumentException whereas Dictionary
+        //    throws ArgumentOutOfRangeException.
+        //
+        //  - Hashtable specifies the ArgumentOutOfRangeException paramName as "arrayIndex" whereas
+        //    Dictionary uses "index".
+        //
+        //  - When the array is of a mismatched type, Hashtable throws InvalidCastException whereas
+        //    Dictionary throws ArrayTypeMismatchException.
+        //
+        //  - Hashtable allows copying values to a long[] array via Values.CopyTo, whereas Dictionary
+        //    throws ArgumentException due to the "Target array type is not compatible with type of
+        //    items in the collection" (when Dictionary<object, object> is used).
+        //
+        // Ideally this would derive from Dictionary<string, long>, but that would break compatibility
+        // with the full framework, which allows adding keys/values of any type.
+        private sealed class StatisticsDictionary : Dictionary<object, object>, IDictionary
+        {
+            private Collection _keys;
+            private Collection _values;
+
+            public StatisticsDictionary(int capacity) : base(capacity) { }
+
+            ICollection IDictionary.Keys => _keys ?? (_keys = new Collection(this, Keys));
+
+            ICollection IDictionary.Values => _values ?? (_values = new Collection(this, Values));
+
+            void ICollection.CopyTo(Array array, int arrayIndex)
+            {
+                ValidateCopyToArguments(array, arrayIndex);
+
+                foreach (KeyValuePair<object, object> pair in this)
+                {
+                    var entry = new DictionaryEntry(pair.Key, pair.Value);
+                    array.SetValue(entry, arrayIndex++);
+                }
+            }
+
+            private void CopyKeys(Array array, int arrayIndex)
+            {
+                ValidateCopyToArguments(array, arrayIndex);
+
+                foreach (KeyValuePair<object, object> pair in this)
+                {
+                    array.SetValue(pair.Key, arrayIndex++);
+                }
+            }
+
+            private void CopyValues(Array array, int arrayIndex)
+            {
+                ValidateCopyToArguments(array, arrayIndex);
+
+                foreach (KeyValuePair<object, object> pair in this)
+                {
+                    array.SetValue(pair.Value, arrayIndex++);
+                }
+            }
+
+            private void ValidateCopyToArguments(Array array, int arrayIndex)
+            {
+                if (array == null)
+                    throw new ArgumentNullException(nameof(array));
+                if (array.Rank != 1)
+                    throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
+                if (arrayIndex < 0)
+                    throw new ArgumentOutOfRangeException(nameof(arrayIndex), SR.ArgumentOutOfRange_NeedNonNegNum);
+                if (array.Length - arrayIndex < Count)
+                    throw new ArgumentException(SR.Arg_ArrayPlusOffTooSmall);
+            }
+
+            private sealed class Collection : ICollection
+            {
+                private readonly StatisticsDictionary _dictionary;
+                private readonly ICollection _collection;
+
+                public Collection(StatisticsDictionary dictionary, ICollection collection)
+                {
+                    Debug.Assert(dictionary != null);
+                    Debug.Assert(collection != null);
+                    Debug.Assert((collection is KeyCollection) || (collection is ValueCollection));
+
+                    _dictionary = dictionary;
+                    _collection = collection;
+                }
+
+                int ICollection.Count => _collection.Count;
+
+                bool ICollection.IsSynchronized => _collection.IsSynchronized;
+
+                object ICollection.SyncRoot => _collection.SyncRoot;
+
+                void ICollection.CopyTo(Array array, int arrayIndex)
+                {
+                    if (_collection is KeyCollection)
+                    {
+                        _dictionary.CopyKeys(array, arrayIndex);
+                    }
+                    else
+                    {
+                        _dictionary.CopyValues(array, arrayIndex);
+                    }
+                }
+
+                IEnumerator IEnumerable.GetEnumerator() => _collection.GetEnumerator();
+            }
+        }
     }
 }
-

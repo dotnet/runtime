@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-
 using Xunit;
 
 namespace System.Collections.Tests
@@ -14,14 +13,14 @@ namespace System.Collections.Tests
     public static class HashtableTests
     {
         [Fact]
-        public static void TestCtor_Empty()
+        public static void Ctor_Empty()
         {
             var hash = new ComparableHashtable();
             VerifyHashtable(hash, null, null);
         }
 
         [Fact]
-        public static void TestCtor_IDictionary()
+        public static void Ctor_IDictionary()
         {
             // No exception
             var hash1 = new ComparableHashtable(new Hashtable());
@@ -37,13 +36,13 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestCtor_IDictionary_Invalid()
+        public static void Ctor_IDictionary_NullDictionary_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => new Hashtable((IDictionary)null)); // Dictionary is null
+            Assert.Throws<ArgumentNullException>("d", () => new Hashtable((IDictionary)null)); // Dictionary is null
         }
 
         [Fact]
-        public static void TestCtor_IEqualityComparer()
+        public static void Ctor_IEqualityComparer()
         {
             // Null comparer
             var hash = new ComparableHashtable((IEqualityComparer)null);
@@ -62,21 +61,21 @@ namespace System.Collections.Tests
         [InlineData(0)]
         [InlineData(10)]
         [InlineData(100)]
-        public static void TestCtor_Capacity(int capacity)
+        public static void Ctor_Int(int capacity)
         {
             var hash = new ComparableHashtable(capacity);
             VerifyHashtable(hash, null, null);
         }
 
         [Fact]
-        public static void TestCtor_Capacity_Invalid()
+        public static void Ctor_Int_Invalid()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Hashtable(-1)); // Capacity < 0
-            Assert.Throws<ArgumentException>(() => new Hashtable(int.MaxValue)); // Capacity / load factor > int.MaxValue
+            Assert.Throws<ArgumentOutOfRangeException>("capacity", () => new Hashtable(-1)); // Capacity < 0
+            Assert.Throws<ArgumentException>("capacity", () => new Hashtable(int.MaxValue)); // Capacity / load factor > int.MaxValue
         }
 
         [Fact]
-        public static void TestCtor_IDictionary_LoadFactor()
+        public static void Ctor_IDictionary_Int()
         {
             // No exception
             var hash1 = new ComparableHashtable(new Hashtable(), 1f);
@@ -92,19 +91,20 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestCtor_IDictionary_LoadFactor_Invalid()
+        public static void Ctor_IDictionary_Int_Invalid()
         {
-            Assert.Throws<ArgumentNullException>(() => new Hashtable(null, 1f)); // Dictionary is null
+            Assert.Throws<ArgumentNullException>("d", () => new Hashtable(null, 1f)); // Dictionary is null
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Hashtable(new Hashtable(), 0.09f)); // Load factor < 0.1f
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Hashtable(new Hashtable(), 1.01f)); // Load factor > 1f
+            Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(new Hashtable(), 0.09f)); // Load factor < 0.1f
+            Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(new Hashtable(), 1.01f)); // Load factor > 1f
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Hashtable(new Hashtable(), float.NaN)); // Load factor is NaN
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Hashtable(new Hashtable(), float.PositiveInfinity)); // Load factor is infinity
+            Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(new Hashtable(), float.NaN)); // Load factor is NaN
+            Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(new Hashtable(), float.PositiveInfinity)); // Load factor is infinity
+            Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(new Hashtable(), float.NegativeInfinity)); // Load factor is infinity
         }
 
         [Fact]
-        public static void TestCtor_IDictionary_IEqualityComparer()
+        public static void Ctor_IDictionary_IEqualityComparer()
         {
             // No exception
             var hash1 = new ComparableHashtable(new Hashtable(), null);
@@ -129,9 +129,9 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestCtor_IDictionary_IEqualityComparer_Invalid()
+        public static void Ctor_IDictionary_IEqualityComparer_NullDictionary_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => new Hashtable(null, null)); // Dictionary is null
+            Assert.Throws<ArgumentNullException>("d", () => new Hashtable(null, null)); // Dictionary is null
         }
 
         [Theory]
@@ -139,14 +139,14 @@ namespace System.Collections.Tests
         [InlineData(10, 0.2)]
         [InlineData(100, 0.3)]
         [InlineData(1000, 1)]
-        public static void TestCtor_Capacity_LoadFactor(int capacity, float loadFactor)
+        public static void Ctor_Int_Int(int capacity, float loadFactor)
         {
             var hash = new ComparableHashtable(capacity, loadFactor);
             VerifyHashtable(hash, null, null);
         }
 
         [Fact]
-        public static void TestCtor_Capacity_LoadFactor_GenerateNewPrime()
+        public static void Ctor_Int_Int_GenerateNewPrime()
         {
             // The ctor for Hashtable performs the following calculation:
             // rawSize = capacity / (loadFactor * 0.72)
@@ -166,16 +166,17 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestCtor_Capacity_LoadFactor_Invalid()
+        public static void Ctor_Int_Int_Invalid()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Hashtable(-1, 1f)); // Capacity < 0
-            Assert.Throws<ArgumentException>(() => new Hashtable(int.MaxValue, 0.1f)); // Capacity / load factor > int.MaxValue
+            Assert.Throws<ArgumentOutOfRangeException>("capacity", () => new Hashtable(-1, 1f)); // Capacity < 0
+            Assert.Throws<ArgumentException>("capacity", () => new Hashtable(int.MaxValue, 0.1f)); // Capacity / load factor > int.MaxValue
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Hashtable(100, 0.09f)); // Load factor < 0.1f
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Hashtable(100, 1.01f)); // Load factor > 1f
+            Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(100, 0.09f)); // Load factor < 0.1f
+            Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(100, 1.01f)); // Load factor > 1f
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Hashtable(100, float.NaN)); // Load factor is NaN
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Hashtable(100, float.PositiveInfinity)); // Load factor is infinity
+            Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(100, float.NaN)); // Load factor is NaN
+            Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(100, float.PositiveInfinity)); // Load factor is infinity
+            Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(100, float.NegativeInfinity)); // Load factor is infinity
         }
 
         [Theory]
@@ -183,7 +184,7 @@ namespace System.Collections.Tests
         [InlineData(10)]
         [InlineData(100)]
         [InlineData(1000)]
-        public static void TestCtor_Capacity_IEqualityComparer(int capacity)
+        public static void Ctor_Int_IEqualityComparer(int capacity)
         {
             // Null comparer
             var hash = new ComparableHashtable(capacity, null);
@@ -199,14 +200,14 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestCtor_Capacity_IEqualityComparer_Invalid()
+        public static void Ctor_Int_IEqualityComparer_Invalid()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Hashtable(-1, null)); // Capacity < 0
-            Assert.Throws<ArgumentException>(() => new Hashtable(int.MaxValue, null)); // Capacity / load factor > int.MaxValue
+            Assert.Throws<ArgumentOutOfRangeException>("capacity", () => new Hashtable(-1, null)); // Capacity < 0
+            Assert.Throws<ArgumentException>("capacity", () => new Hashtable(int.MaxValue, null)); // Capacity / load factor > int.MaxValue
         }
 
         [Fact]
-        public static void TestCtor_IDictionary_LoadFactor_IEqualityComparer()
+        public static void Ctor_IDictionary_Int_IEqualityComparer()
         {
             // No exception
             var hash1 = new ComparableHashtable(new Hashtable(), 1f, null);
@@ -232,15 +233,16 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestCtor_IDictionary_LoadFactor_IEqualityComparer_Invalid()
+        public static void Ctor_IDictionary_LoadFactor_IEqualityComparer_Invalid()
         {
-            Assert.Throws<ArgumentNullException>(() => new Hashtable(null, 1f, null)); // Dictionary is null
+            Assert.Throws<ArgumentNullException>("d", () => new Hashtable(null, 1f, null)); // Dictionary is null
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Hashtable(new Hashtable(), 0.09f, null)); // Load factor < 0.1f
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Hashtable(new Hashtable(), 1.01f, null)); // Load factor > 1f
+            Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(new Hashtable(), 0.09f, null)); // Load factor < 0.1f
+            Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(new Hashtable(), 1.01f, null)); // Load factor > 1f
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Hashtable(new Hashtable(), float.NaN, null)); // Load factor is NaN
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Hashtable(new Hashtable(), float.PositiveInfinity, null)); // Load factor is infinity
+            Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(new Hashtable(), float.NaN, null)); // Load factor is NaN
+            Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(new Hashtable(), float.PositiveInfinity, null)); // Load factor is infinity
+            Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(new Hashtable(), float.NegativeInfinity, null)); // Load factor is infinity
         }
 
         [Theory]
@@ -248,7 +250,7 @@ namespace System.Collections.Tests
         [InlineData(10, 0.2)]
         [InlineData(100, 0.3)]
         [InlineData(1000, 1)]
-        public static void TestCtor_Capacity_LoadFactor_IEqualityComparer(int capacity, float loadFactor)
+        public static void Ctor_Int_Int_IEqualityComparer(int capacity, float loadFactor)
         {
             // Null comparer
             var hash = new ComparableHashtable(capacity, loadFactor, null);
@@ -265,20 +267,21 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestCtor_Capacit_yLoadFactor_IEqualityComparer_Invalid()
+        public static void Ctor_Capacity_LoadFactor_IEqualityComparer_Invalid()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Hashtable(-1, 1f, null)); // Capacity < 0
-            Assert.Throws<ArgumentException>(() => new Hashtable(int.MaxValue, 0.1f, null)); // Capacity / load factor > int.MaxValue
+            Assert.Throws<ArgumentOutOfRangeException>("capacity", () => new Hashtable(-1, 1f, null)); // Capacity < 0
+            Assert.Throws<ArgumentException>("capacity", () => new Hashtable(int.MaxValue, 0.1f, null)); // Capacity / load factor > int.MaxValue
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Hashtable(100, 0.09f, null)); // Load factor < 0.1f
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Hashtable(100, 1.01f, null)); // Load factor > 1f
+            Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(100, 0.09f, null)); // Load factor < 0.1f
+            Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(100, 1.01f, null)); // Load factor > 1f
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Hashtable(100, float.NaN, null)); // Load factor is NaN
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Hashtable(100, float.PositiveInfinity, null)); // Load factor is infinity
+            Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(100, float.NaN, null)); // Load factor is NaN
+            Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(100, float.PositiveInfinity, null)); // Load factor is infinity
+            Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(100, float.NegativeInfinity, null)); // Load factor is infinity
         }
 
         [Fact]
-        public static void TestDebuggerAttribute()
+        public static void DebuggerAttribute()
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(new Hashtable());
 
@@ -293,8 +296,7 @@ namespace System.Collections.Tests
             }
             catch (TargetInvocationException ex)
             {
-                ArgumentNullException nullException = ex.InnerException as ArgumentNullException;
-                threwNull = nullException != null;
+                threwNull = ex.InnerException is ArgumentNullException;
             }
 
             Assert.True(threwNull);
@@ -305,7 +307,7 @@ namespace System.Collections.Tests
         [InlineData(10)]
         [InlineData(100)]
         [InlineData(1000)]
-        public static void TestAdd(int count)
+        public static void Add(int count)
         {
             var hash1 = new Hashtable();
             Helpers.PerformActionOnAllHashtableWrappers(hash1, hash2 =>
@@ -326,7 +328,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestAdd_ReferenceType()
+        public static void Add_ReferenceType()
         {
             var hash1 = new Hashtable();
             Helpers.PerformActionOnAllHashtableWrappers(hash1, hash2 =>
@@ -344,18 +346,18 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestAdd_Invalid()
+        public static void Add_Invalid()
         {
             Hashtable hash1 = Helpers.CreateStringHashtable(100);
             Helpers.PerformActionOnAllHashtableWrappers(hash1, hash2 =>
             {
-                Assert.Throws<ArgumentNullException>(() => hash2.Add(null, 1)); // Key is null
-                Assert.Throws<ArgumentException>(() => hash2.Add("Key_1", "Value_2")); // Key already exists
+                Assert.Throws<ArgumentNullException>("key", () => hash2.Add(null, 1)); // Key is null
+                Assert.Throws<ArgumentException>(null, () => hash2.Add("Key_1", "Value_2")); // Key already exists
             });
         }
 
         [Fact]
-        public static void TestAdd_ClearRepeatedly()
+        public static void Add_ClearRepeatedly()
         {
             const int Iterations = 2;
             const int Count = 2;
@@ -377,7 +379,7 @@ namespace System.Collections.Tests
 
         [Fact]
         [OuterLoop]
-        public static void TestAddRemove_LargeAmountNumbers()
+        public static void AddRemove_LargeAmountNumbers()
         {
             // Generate a random 100,000 array of ints as test data 
             var inputData = new int[100000];
@@ -413,7 +415,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestDuplicatedKeysWithInitialCapacity()
+        public static void DuplicatedKeysWithInitialCapacity()
         {
             // Make rehash get called because to many items with duplicated keys have been added to the hashtable
             var hash = new Hashtable(200);
@@ -440,7 +442,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestDuplicatedKeysWithDefaultCapacity()
+        public static void DuplicatedKeysWithDefaultCapacity()
         {
             // Make rehash get called because to many items with duplicated keys have been added to the hashtable
             var hash = new Hashtable();
@@ -469,7 +471,7 @@ namespace System.Collections.Tests
         [Theory]
         [InlineData(0)]
         [InlineData(100)]
-        public static void TestClear(int count)
+        public static void Clear(int count)
         {
             Hashtable hash1 = Helpers.CreateIntHashtable(count);
             Helpers.PerformActionOnAllHashtableWrappers(hash1, hash2 =>
@@ -490,7 +492,7 @@ namespace System.Collections.Tests
         [Theory]
         [InlineData(0)]
         [InlineData(100)]
-        public static void TestClone(int count)
+        public static void Clone(int count)
         {
             Hashtable hash1 = Helpers.CreateStringHashtable(count);
             Helpers.PerformActionOnAllHashtableWrappers(hash1, hash2 =>
@@ -515,7 +517,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestClone_IsShallowCopy()
+        public static void Clone_IsShallowCopy()
         {
             var hash = new Hashtable();
             for (int i = 0; i < 10; i++)
@@ -540,7 +542,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestClone_HashtableCastedToInterfaces()
+        public static void Clone_HashtableCastedToInterfaces()
         {
             // Try to cast the returned object from Clone() to different types
             Hashtable hash = Helpers.CreateIntHashtable(100);
@@ -553,7 +555,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestContainsKey()
+        public static void ContainsKey()
         {
             Hashtable hash1 = Helpers.CreateStringHashtable(100);
             Helpers.PerformActionOnAllHashtableWrappers(hash1, hash2 =>
@@ -579,7 +581,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestContainsKey_EqualObjects()
+        public static void ContainsKey_EqualObjects()
         {
             var hash1 = new Hashtable();
             Helpers.PerformActionOnAllHashtableWrappers(hash1, hash2 =>
@@ -612,18 +614,18 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestContainsKey_Invalid()
+        public static void ContainsKey_NullKey_ThrowsArgumentNullException()
         {
             var hash1 = new Hashtable();
             Helpers.PerformActionOnAllHashtableWrappers(hash1, hash2 =>
             {
-                Assert.Throws<ArgumentNullException>(() => hash2.ContainsKey(null)); // Key is null
-                Assert.Throws<ArgumentNullException>(() => hash2.Contains(null)); // Key is null
+                Assert.Throws<ArgumentNullException>("key", () => hash2.ContainsKey(null)); // Key is null
+                Assert.Throws<ArgumentNullException>("key", () => hash2.Contains(null)); // Key is null
             });
         }
 
         [Fact]
-        public static void TestContainsValue()
+        public static void ContainsValue()
         {
             Hashtable hash1 = Helpers.CreateStringHashtable(100);
             Helpers.PerformActionOnAllHashtableWrappers(hash1, hash2 =>
@@ -649,7 +651,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestContainsValue_EqualObjects()
+        public static void ContainsValue_EqualObjects()
         {
             var hash1 = new Hashtable();
             Helpers.PerformActionOnAllHashtableWrappers(hash1, hash2 =>
@@ -664,7 +666,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestCopyTo()
+        public static void CopyTo()
         {
             var hash1 = new Hashtable();
 
@@ -720,7 +722,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestCopyTo_EmptyHashtable()
+        public static void CopyTo_EmptyHashtable()
         {
             var hash1 = new Hashtable();
             Helpers.PerformActionOnAllHashtableWrappers(hash1, hash2 =>
@@ -747,27 +749,27 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestCopyTo_Invalid()
+        public static void CopyTo_Invalid()
         {
             Hashtable hash1 = Helpers.CreateIntHashtable(10);
             Helpers.PerformActionOnAllHashtableWrappers(hash1, hash2 =>
             {
-                Assert.Throws<ArgumentNullException>(() => hash2.CopyTo(null, 0)); // Array is null
+                Assert.Throws<ArgumentNullException>("array", () => hash2.CopyTo(null, 0)); // Array is null
 
-                Assert.Throws<ArgumentException>(() => hash2.CopyTo(new object[10, 10], 0)); // Array is multidimensional
+                Assert.Throws<ArgumentException>("array", () => hash2.CopyTo(new object[10, 10], 0)); // Array is multidimensional
                 Assert.Throws<InvalidCastException>(() => hash2.CopyTo(new object[10][], 0)); // Array is invalid
 
-                Assert.Throws<ArgumentOutOfRangeException>(() => hash2.CopyTo(new object[10], -1)); // Index < 0
-                Assert.Throws<ArgumentException>(() => hash2.CopyTo(new object[9], 0)); // Hash.Count + index > array.Length
-                Assert.Throws<ArgumentException>(() => hash2.CopyTo(new object[11], 2)); // Hash.Count + index > array.Length
-                Assert.Throws<ArgumentException>(() => hash2.CopyTo(new object[0], 0)); // Hash.Count + index > array.Length
+                Assert.Throws<ArgumentOutOfRangeException>("arrayIndex", () => hash2.CopyTo(new object[10], -1)); // Index < 0
+                Assert.Throws<ArgumentException>(null,() => hash2.CopyTo(new object[9], 0)); // Hash.Count + index > array.Length
+                Assert.Throws<ArgumentException>(null, () => hash2.CopyTo(new object[11], 2)); // Hash.Count + index > array.Length
+                Assert.Throws<ArgumentException>(null, () => hash2.CopyTo(new object[0], 0)); // Hash.Count + index > array.Length
             });
         }
 
         [Theory]
         [InlineData(0)]
         [InlineData(100)]
-        public static void TestGetEnumerator_IDictionaryEnumerator(int count)
+        public static void GetEnumerator_IDictionaryEnumerator(int count)
         {
             Hashtable hash1 = Helpers.CreateIntHashtable(count);
             Helpers.PerformActionOnAllHashtableWrappers(hash1, hash2 =>
@@ -804,7 +806,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestGetEnumerator_IDictionaryEnumerator_Invalid()
+        public static void GetEnumerator_IDictionaryEnumerator_Invalid()
         {
             Hashtable hash1 = Helpers.CreateIntHashtable(100);
             Helpers.PerformActionOnAllHashtableWrappers(hash1, hash2 =>
@@ -851,7 +853,7 @@ namespace System.Collections.Tests
         [Theory]
         [InlineData(0)]
         [InlineData(100)]
-        public static void TestGetEnumerator_IEnumerator(int count)
+        public static void GetEnumerator_IEnumerator(int count)
         {
             Hashtable hash1 = Helpers.CreateStringHashtable(count);
             Helpers.PerformActionOnAllHashtableWrappers(hash1, hash2 =>
@@ -880,7 +882,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestGetEnumerator_IEnumerator_Invalid()
+        public static void GetEnumerator_IEnumerator_Invalid()
         {
             Hashtable hash1 = Helpers.CreateIntHashtable(100);
             Helpers.PerformActionOnAllHashtableWrappers(hash1, hash2 =>
@@ -913,7 +915,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestGetItem()
+        public static void GetItem()
         {
             Hashtable hash1 = Helpers.CreateStringHashtable(100);
             Helpers.PerformActionOnAllHashtableWrappers(hash1, hash2 =>
@@ -931,17 +933,17 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestGetItem_Invalid()
+        public static void GetItem_NullKey_ThrowsArgumentNullException()
         {
             var hash1 = new Hashtable();
             Helpers.PerformActionOnAllHashtableWrappers(hash1, hash2 =>
             {
-                Assert.Throws<ArgumentNullException>(() => hash2[null]); // Key is null
+                Assert.Throws<ArgumentNullException>("key", () => hash2[null]); // Key is null
             });
         }
 
         [Fact]
-        public static void TestSetItem()
+        public static void SetItem()
         {
             var hash1 = new Hashtable();
             Helpers.PerformActionOnAllHashtableWrappers(hash1, hash2 =>
@@ -968,17 +970,17 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestSetItem_Invalid()
+        public static void SetItem_NullKey_ThrowsArgumentNullException()
         {
             var hash1 = new Hashtable();
             Helpers.PerformActionOnAllHashtableWrappers(hash1, hash2 =>
             {
-                Assert.Throws<ArgumentNullException>(() => hash2[null] = "Value"); // Key is null
+                Assert.Throws<ArgumentNullException>("key", () => hash2[null] = "Value"); // Key is null
             });
         }
 
         [Fact]
-        public static void TestKeys_ICollectionProperties()
+        public static void Keys_ICollectionProperties()
         {
             Hashtable hash1 = Helpers.CreateStringHashtable(100);
             Helpers.PerformActionOnAllHashtableWrappers(hash1, hash2 =>
@@ -997,7 +999,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestKeys_GetEnumerator()
+        public static void Keys_GetEnumerator()
         {
             Hashtable hash1 = Helpers.CreateStringHashtable(100);
             Helpers.PerformActionOnAllHashtableWrappers(hash1, hash2 =>
@@ -1023,7 +1025,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestKeys_ModifyingHashtable_ModifiesCollection()
+        public static void Keys_ModifyingHashtable_ModifiesCollection()
         {
             Hashtable hash = Helpers.CreateStringHashtable(100);
             ICollection keys = hash.Keys;
@@ -1040,7 +1042,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestKeys_CopyTo()
+        public static void Keys_CopyTo()
         {
             Hashtable hash1 = Helpers.CreateStringHashtable(100);
             Helpers.PerformActionOnAllHashtableWrappers(hash1, hash2 =>
@@ -1071,25 +1073,25 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestKeys_CopyToInvalid()
+        public static void Keys_CopyTo_Invalid()
         {
             Hashtable hash1 = Helpers.CreateStringHashtable(100);
             Helpers.PerformActionOnAllHashtableWrappers(hash1, hash2 =>
             {
                 ICollection keys = hash2.Keys;
 
-                Assert.Throws<ArgumentNullException>(() => keys.CopyTo(null, 0)); // Array is null
-                Assert.Throws<ArgumentException>(() => keys.CopyTo(new object[100, 100], 0)); // Array is multidimensional
+                Assert.Throws<ArgumentNullException>("array", () => keys.CopyTo(null, 0)); // Array is null
+                Assert.Throws<ArgumentException>("array", () => keys.CopyTo(new object[100, 100], 0)); // Array is multidimensional
 
-                Assert.Throws<ArgumentException>(() => keys.CopyTo(new object[50], 0)); // Index + array.Length > hash.Count
-                Assert.Throws<ArgumentException>(() => keys.CopyTo(new object[100], 1)); // Index + array.Length > hash.Count
+                Assert.Throws<ArgumentException>(null, () => keys.CopyTo(new object[50], 0)); // Index + array.Length > hash.Count
+                Assert.Throws<ArgumentException>(null, () => keys.CopyTo(new object[100], 1)); // Index + array.Length > hash.Count
 
-                Assert.Throws<ArgumentOutOfRangeException>(() => keys.CopyTo(new object[100], -1)); // Index < 0
+                Assert.Throws<ArgumentOutOfRangeException>("arrayIndex", () => keys.CopyTo(new object[100], -1)); // Index < 0
             });
         }
 
         [Fact]
-        public static void TestRemove()
+        public static void Remove()
         {
             Hashtable hash1 = Helpers.CreateStringHashtable(100);
             Helpers.PerformActionOnAllHashtableWrappers(hash1, hash2 =>
@@ -1106,7 +1108,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestRemove_SameHashcode()
+        public static void Remove_SameHashcode()
         {
             // We want to add and delete items (with the same hashcode) to the hashtable in such a way that the hashtable
             // does not expand but have to tread through collision bit set positions to insert the new elements. We do this
@@ -1149,17 +1151,17 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestRemove_Invalid()
+        public static void Remove_NullKey_ThrowsArgumentNullException()
         {
             var hash1 = new Hashtable();
             Helpers.PerformActionOnAllHashtableWrappers(hash1, hash2 =>
             {
-                Assert.Throws<ArgumentNullException>(() => hash2.Remove(null));
+                Assert.Throws<ArgumentNullException>("key", () => hash2.Remove(null)); // Key is null
             });
         }
 
         [Fact]
-        public static void TestSynchronizedProperties()
+        public static void SynchronizedProperties()
         {
             // Ensure Synchronized correctly reflects a wrapped hashtable
             var hash1 = Helpers.CreateStringHashtable(100);
@@ -1178,13 +1180,13 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestSynchronizedInvalid()
+        public static void Synchronized_NullTable_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => Hashtable.Synchronized(null)); // Table is null
+            Assert.Throws<ArgumentNullException>("table", () => Hashtable.Synchronized(null)); // Table is null
         }
 
         [Fact]
-        public static void TestValues_ICollectionProperties()
+        public static void Values_ICollectionProperties()
         {
             Hashtable hash1 = Helpers.CreateStringHashtable(100);
             Helpers.PerformActionOnAllHashtableWrappers(hash1, hash2 =>
@@ -1203,7 +1205,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestValues_GetEnumerator()
+        public static void Values_GetEnumerator()
         {
             Hashtable hash1 = Helpers.CreateStringHashtable(100);
             Helpers.PerformActionOnAllHashtableWrappers(hash1, hash2 =>
@@ -1229,7 +1231,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestValues_ModifyingHashtable_ModifiesCollection()
+        public static void Values_ModifyingHashtable_ModifiesCollection()
         {
             Hashtable hash = Helpers.CreateStringHashtable(100);
             ICollection values = hash.Values;
@@ -1246,7 +1248,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestValues_CopyTo()
+        public static void Values_CopyTo()
         {
             Hashtable hash1 = Helpers.CreateStringHashtable(100);
             Helpers.PerformActionOnAllHashtableWrappers(hash1, hash2 =>
@@ -1277,20 +1279,20 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestValues_CopyToInvalid()
+        public static void Values_CopyTo_Invalid()
         {
             Hashtable hash1 = Helpers.CreateStringHashtable(100);
             Helpers.PerformActionOnAllHashtableWrappers(hash1, hash2 =>
             {
                 ICollection values = hash2.Values;
 
-                Assert.Throws<ArgumentNullException>(() => values.CopyTo(null, 0)); // Array is null
-                Assert.Throws<ArgumentException>(() => values.CopyTo(new object[100, 100], 0)); // Array is multidimensional
+                Assert.Throws<ArgumentNullException>("array", () => values.CopyTo(null, 0)); // Array is null
+                Assert.Throws<ArgumentException>("array", () => values.CopyTo(new object[100, 100], 0)); // Array is multidimensional
 
-                Assert.Throws<ArgumentException>(() => values.CopyTo(new object[50], 0)); // Index + array.Length > hash.Count
-                Assert.Throws<ArgumentException>(() => values.CopyTo(new object[100], 1)); // Index + array.Length > hash.Count
+                Assert.Throws<ArgumentException>(null, () => values.CopyTo(new object[50], 0)); // Index + array.Length > hash.Count
+                Assert.Throws<ArgumentException>(null, () => values.CopyTo(new object[100], 1)); // Index + array.Length > hash.Count
 
-                Assert.Throws<ArgumentOutOfRangeException>(() => values.CopyTo(new object[100], -1)); // Index < 0
+                Assert.Throws<ArgumentOutOfRangeException>("arrayIndex", () => values.CopyTo(new object[100], -1)); // Index < 0
             });
         }
 
@@ -1379,10 +1381,7 @@ namespace System.Collections.Tests
 
             public new IEqualityComparer EqualityComparer
             {
-                get
-                {
-                    return base.EqualityComparer;
-                }
+                get { return base.EqualityComparer; }
             }
         }
 
@@ -1415,36 +1414,20 @@ namespace System.Collections.Tests
                 return 0;
             }
 
-            public override string ToString()
-            {
-                return Value.ToString();
-            }
+            public override string ToString() => Value.ToString();
         }
 
         private class Foo
         {
-            private string _stringValue = "Hello World";
-            public string StringValue
-            {
-                get { return _stringValue; }
-                set { _stringValue = value; }
-            }
+            public string StringValue { get; set; } = "Hello World";
 
             public override bool Equals(object obj)
             {
                 Foo foo = obj as Foo;
-                if (foo == null)
-                {
-                    return false;
-                }
-
-                return StringValue.Equals(foo.StringValue);
+                return foo != null && StringValue == foo.StringValue;
             }
 
-            public override int GetHashCode()
-            {
-                return StringValue.GetHashCode();
-            }
+            public override int GetHashCode() => StringValue.GetHashCode();
         }
     }
 
@@ -1473,7 +1456,7 @@ namespace System.Collections.Tests
 
         [Fact]
         [OuterLoop]
-        public void TestGetItem_ThreadSafety()
+        public void GetItem_ThreadSafety()
         {
             int i1 = 0x10;
             int i2 = 0x100;
@@ -1566,9 +1549,9 @@ namespace System.Collections.Tests
 
         [Fact]
         [OuterLoop]
-        public void TestSynchronizedThreadSafety()
+        public void SynchronizedThreadSafety()
         {
-            int iNumberOfWorkers = 3;
+            const int NumberOfWorkers = 3;
 
             // Synchronized returns a hashtable that is thread safe
             // We will try to test this by getting a number of threads to write some items
@@ -1576,7 +1559,7 @@ namespace System.Collections.Tests
             var hash1 = new Hashtable();
             _hash2 = Hashtable.Synchronized(hash1);
 
-            var workers = new Task[iNumberOfWorkers];
+            var workers = new Task[NumberOfWorkers];
             for (int i = 0; i < workers.Length; i++)
             {
                 var name = "Thread worker " + i;
@@ -1587,9 +1570,9 @@ namespace System.Collections.Tests
             Task.WaitAll(workers);
 
             // Check time
-            Assert.Equal(_hash2.Count, _iNumberOfElements * iNumberOfWorkers);
+            Assert.Equal(_hash2.Count, _iNumberOfElements * NumberOfWorkers);
 
-            for (int i = 0; i < iNumberOfWorkers; i++)
+            for (int i = 0; i < NumberOfWorkers; i++)
             {
                 for (int j = 0; j < _iNumberOfElements; j++)
                 {
@@ -1600,7 +1583,7 @@ namespace System.Collections.Tests
 
             // We cannot can make an assumption on the order of these items but
             // now we are going to remove all of these
-            workers = new Task[iNumberOfWorkers];
+            workers = new Task[NumberOfWorkers];
             for (int i = 0; i < workers.Length; i++)
             {
                 string name = "Thread worker " + i;
@@ -1634,10 +1617,10 @@ namespace System.Collections.Tests
     {
         private Hashtable _hashDaughter;
         private Hashtable _hashGrandDaughter;
-        private int _iNumberOfElements = 100;
+        private const int NumberOfElements = 100;
 
         [Fact]
-        public void TestSyncRoot()
+        public void SyncRoot()
         {
             // Different hashtables have different SyncRoots
             var hash1 = new Hashtable();
@@ -1655,7 +1638,7 @@ namespace System.Collections.Tests
             Assert.NotEqual(hash1.SyncRoot, hash3.SyncRoot);
 
             // Testing SyncRoot is not as simple as its implementation looks like. This is the working
-            // scenrio we have in mind.
+            // scenario we have in mind.
             // 1) Create your Down to earth mother Hashtable
             // 2) Get a synchronized wrapper from it
             // 3) Get a Synchronized wrapper from 2)
@@ -1663,7 +1646,7 @@ namespace System.Collections.Tests
             // 5) all of these should SyncRoot to the mother earth
 
             var hashMother = new Hashtable();
-            for (int i = 0; i < _iNumberOfElements; i++)
+            for (int i = 0; i < NumberOfElements; i++)
             {
                 hashMother.Add("Key_" + i, "Value_" + i);
             }
@@ -1696,7 +1679,7 @@ namespace System.Collections.Tests
             // Check:
             // Either there should be some elements (the new ones we added and/or the original ones) or none
             var hshPossibleValues = new Hashtable();
-            for (int i = 0; i < _iNumberOfElements; i++)
+            for (int i = 0; i < NumberOfElements; i++)
             {
                 hshPossibleValues.Add("Key_" + i, "Value_" + i);
             }

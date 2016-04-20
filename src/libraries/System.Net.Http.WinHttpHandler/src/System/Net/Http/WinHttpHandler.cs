@@ -116,7 +116,7 @@ namespace System.Net.Http
                 if (value <= 0)
                 {
                     throw new ArgumentOutOfRangeException(
-nameof(value),
+                        nameof(value),
                         value,
                         SR.Format(SR.net_http_value_must_be_greater_than, 0));
                 }
@@ -220,6 +220,7 @@ nameof(value),
 
             set
             {
+                CheckDisposedOrStarted();
                 _checkCertificateRevocationList = value;
             }
         }
@@ -347,7 +348,7 @@ nameof(value),
                     // In WinHTTP, setting this to 0 results in it being reset to 2.
                     // So, we'll only allow settings above 0.
                     throw new ArgumentOutOfRangeException(
-nameof(value),
+                        nameof(value),
                         value,
                         SR.Format(SR.net_http_value_must_be_greater_than, 0));
                 }
@@ -445,7 +446,7 @@ nameof(value),
                 if (value <= 0)
                 {
                     throw new ArgumentOutOfRangeException(
-nameof(value),
+                        nameof(value),
                         value,
                         SR.Format(SR.net_http_value_must_be_greater_than, 0));
                 }
@@ -467,7 +468,7 @@ nameof(value),
                 if (value <= 0)
                 {
                     throw new ArgumentOutOfRangeException(
-nameof(value),
+                        nameof(value),
                         value,
                         SR.Format(SR.net_http_value_must_be_greater_than, 0));
                 }

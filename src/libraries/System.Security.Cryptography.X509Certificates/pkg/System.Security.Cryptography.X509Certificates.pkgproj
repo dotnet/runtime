@@ -19,9 +19,6 @@
     <InboxOnTargetFramework Include="xamarinwatchos10" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(NativePackagePath)\runtime.native.System\runtime.native.System.pkgproj" />
-    <ProjectReference Include="$(NativePackagePath)\runtime.native.System.Net.Http\runtime.native.System.Net.Http.pkgproj" />
-    <ProjectReference Include="$(NativePackagePath)\runtime.native.System.Security.Cryptography\runtime.native.System.Security.Cryptography.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

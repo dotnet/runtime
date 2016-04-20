@@ -12,6 +12,8 @@ namespace System.Globalization.Tests
         public void IsLeapMonth_ReturnsFalse()
         {
             TaiwanCalendar calendar = new TaiwanCalendar();
+            Assert.False(calendar.IsLeapMonth(TaiwanCalendarUtilities.RandomYear(), TaiwanCalendarUtilities.RandomMonth()));
+            Assert.False(calendar.IsLeapMonth(TaiwanCalendarUtilities.RandomYear(), TaiwanCalendarUtilities.RandomMonth(), 0));
             Assert.False(calendar.IsLeapMonth(TaiwanCalendarUtilities.RandomYear(), TaiwanCalendarUtilities.RandomMonth(), 1));
         }
     }

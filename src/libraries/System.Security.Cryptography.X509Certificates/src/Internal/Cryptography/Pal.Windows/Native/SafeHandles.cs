@@ -114,34 +114,39 @@ namespace Internal.Cryptography.Pal.Native
                 {
                     CRYPT_KEY_PROV_INFO* pProvInfo = (CRYPT_KEY_PROV_INFO*)pProvInfoAsBytes;
 
-                    // For UWP the key was opened in a CNG-only context, so it can/should be deleted via CngKey.Delete.
-                    // In all other contexts, the key was loaded into CAPI, so deleting it via CryptAcquireContext is
-                    // the correct action.
-#if NETNATIVE
-                    string providerName = Marshal.PtrToStringUni((IntPtr)(pProvInfo->pwszProvName));
-                    string keyContainerName = Marshal.PtrToStringUni((IntPtr)(pProvInfo->pwszContainerName));
-
-                    try
+                    if (pProvInfo->dwProvType == 0)
                     {
-                        using (CngKey cngKey = CngKey.Open(keyContainerName, new CngProvider(providerName)))
+                        // dwProvType being 0 indicates that the key is stored in CNG.
+                        // dwProvType being non-zero indicates that the key is stored in CAPI.
+                            
+                        string providerName = Marshal.PtrToStringUni((IntPtr)(pProvInfo->pwszProvName));
+                        string keyContainerName = Marshal.PtrToStringUni((IntPtr)(pProvInfo->pwszContainerName));
+
+                        try
                         {
-                            cngKey.Delete();
+                            using (CngKey cngKey = CngKey.Open(keyContainerName, new CngProvider(providerName)))
+                            {
+                                cngKey.Delete();
+                            }
+                        }
+                        catch (CryptographicException)
+                        {
+                            // While leaving the file on disk is undesirable, an inability to perform this cleanup
+                            // should not manifest itself to a user.
                         }
                     }
-                    catch (CryptographicException)
+                    else
                     {
-                        // While leaving the file on disk is undesirable, an inability to perform this cleanup
-                        // should not manifest itself to a user.
-                    }
-#else
-                    CryptAcquireContextFlags flags = (pProvInfo->dwFlags & CryptAcquireContextFlags.CRYPT_MACHINE_KEYSET) | CryptAcquireContextFlags.CRYPT_DELETEKEYSET;
-                    IntPtr hProv;
-                    bool success = Interop.advapi32.CryptAcquireContext(out hProv, pProvInfo->pwszContainerName, pProvInfo->pwszProvName, pProvInfo->dwProvType, flags);
+#if !NETNATIVE // For UWP, CryptAcquireContext() is a disallowed api, even when being used for cleanup. CAPI keys should not exist on that platform, however...
+                        CryptAcquireContextFlags flags = (pProvInfo->dwFlags & CryptAcquireContextFlags.CRYPT_MACHINE_KEYSET) | CryptAcquireContextFlags.CRYPT_DELETEKEYSET;
+                        IntPtr hProv;
+                        bool success = Interop.advapi32.CryptAcquireContext(out hProv, pProvInfo->pwszContainerName, pProvInfo->pwszProvName, pProvInfo->dwProvType, flags);
 
-                    // Called CryptAcquireContext solely for the side effect of deleting the key containers. When called with these flags, no actual
-                    // hProv is returned (so there's nothing to clean up.)
-                    Debug.Assert(hProv == IntPtr.Zero);
+                        // Called CryptAcquireContext solely for the side effect of deleting the key containers. When called with these flags, no actual
+                        // hProv is returned (so there's nothing to clean up.)
+                        Debug.Assert(hProv == IntPtr.Zero);
 #endif
+                    }
                 }
             }
         }

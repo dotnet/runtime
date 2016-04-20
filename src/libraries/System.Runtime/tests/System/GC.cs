@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Runtime;
 using Xunit;
 
 public static class GCTests
@@ -357,4 +358,46 @@ public static class GCTests
             GC.Collect();
         }
     }
+
+    [Theory]
+    [InlineData(GCLargeObjectHeapCompactionMode.CompactOnce)]
+    [InlineData(GCLargeObjectHeapCompactionMode.Default)]
+    public static void TestLargeObjectHeapCompactionModeRoundTrips(GCLargeObjectHeapCompactionMode value)
+    {
+        GCLargeObjectHeapCompactionMode orig = GCSettings.LargeObjectHeapCompactionMode;
+        try
+        {
+            GCSettings.LargeObjectHeapCompactionMode = value;
+            Assert.Equal(value, GCSettings.LargeObjectHeapCompactionMode);
+        }
+        finally
+        {
+            GCSettings.LargeObjectHeapCompactionMode = orig;
+            Assert.Equal(orig, GCSettings.LargeObjectHeapCompactionMode);
+        }
+    }
+
+    [Theory]
+    [InlineData(GCLatencyMode.Batch)]
+    [InlineData(GCLatencyMode.Interactive)]
+    public static void TestLatencyRoundtrips(GCLatencyMode value)
+    {
+        GCLatencyMode orig = GCSettings.LatencyMode;
+        try
+        {
+            GCSettings.LatencyMode = value;
+            Assert.Equal(value, GCSettings.LatencyMode);
+        }
+        finally
+        {
+            GCSettings.LatencyMode = orig;
+            Assert.Equal(orig, GCSettings.LatencyMode);
+        }
+    }
+
+    [Theory]
+    [PlatformSpecific(PlatformID.Windows)] //Concurent GC is not enabled on Unix. Recombine to TestLatencyRoundTrips once addressed.
+    [InlineData(GCLatencyMode.LowLatency)]
+    [InlineData(GCLatencyMode.SustainedLowLatency)]
+    public static void TestLatencyRoundtrips_LowLatency(GCLatencyMode value) => TestLatencyRoundtrips(value);
 }

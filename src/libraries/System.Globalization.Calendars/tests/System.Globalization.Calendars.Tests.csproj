@@ -16,6 +16,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="CalendarHelpers.cs" />
+    <Compile Include="GregorianCalendar\GregorianCalendarCtor.cs" />
     <Compile Include="GregorianCalendar\GregorianCalendarAddMonths.cs" />
     <Compile Include="GregorianCalendar\GregorianCalendarAddYears.cs" />
     <Compile Include="GregorianCalendar\GregorianCalendarEras.cs" />
@@ -26,6 +27,7 @@
     <Compile Include="GregorianCalendar\GregorianCalendarGetDaysInYear.cs" />
     <Compile Include="GregorianCalendar\GregorianCalendarGetEra.cs" />
     <Compile Include="GregorianCalendar\GregorianCalendarGetMonth.cs" />
+    <Compile Include="GregorianCalendar\GregorianCalendarGetLeapMonth.cs" />
     <Compile Include="GregorianCalendar\GregorianCalendarGetMonthsInYear.cs" />
     <Compile Include="GregorianCalendar\GregorianCalendarGetWeekOfYear.cs" />
     <Compile Include="GregorianCalendar\GregorianCalendarGetYear.cs" />
@@ -42,6 +44,7 @@
     <Compile Include="JapaneseCalendar\JapaneseCalendarEras.cs" />
     <Compile Include="JapaneseCalendar\JapaneseCalendarMaxSupportedDateTime.cs" />
     <Compile Include="JapaneseCalendar\JapaneseCalendarMinSupportedDateTime.cs" />
+    <Compile Include="JapaneseCalendar\JapaneseCalendarToFourDigitYear.cs" />
     <Compile Include="JapaneseCalendar\JapaneseCalendarTwoDigitYearMax.cs" />
     <Compile Include="KoreanCalendar\KoreanCalendarToDateTime.cs" />
     <Compile Include="KoreanCalendar\KoreanCalendarAddMonths.cs" />
@@ -116,18 +119,15 @@
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
-
   <PropertyGroup Condition="'$(TargetGroup)' == 'net46'">
     <DefineConstants>$(DefineConstants);net46</DefineConstants>
   </PropertyGroup>
-  
   <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
     <TargetingPackReference Include="System" />
-    <TargetingPackReference Include="System.Threading.Tasks" /> 
-    <TargetingPackReference Include="System.Core" /> 
+    <TargetingPackReference Include="System.Threading.Tasks" />
+    <TargetingPackReference Include="System.Core" />
     <TargetingPackReference Include="System.Runtime" />
-  </ItemGroup>  
-
+  </ItemGroup>
   <ItemGroup>
     <!-- Compile tests against the contract, but copy our local-built implementation for testing -->
     <ProjectReference Include="..\src\System.Globalization.Calendars.csproj">
@@ -138,7 +138,6 @@
     </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
-  
   <PropertyGroup Condition="'$(OSEnvironment)' == 'Windows_NT'">
     <DelaySign>false</DelaySign>
   </PropertyGroup>

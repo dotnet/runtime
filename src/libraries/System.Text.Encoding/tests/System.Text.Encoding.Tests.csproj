@@ -16,9 +16,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="ASCIIEncoding\ASCIIEncodingGetByteCount.cs" />
     <Compile Include="ASCIIEncoding\ASCIIEncodingGetBytes.cs" />
-    <Compile Include="ASCIIEncoding\ASCIIEncodingGetCharCount.cs" />
     <Compile Include="ASCIIEncoding\ASCIIEncodingGetChars.cs" />
     <Compile Include="ASCIIEncoding\ASCIIEncodingGetDecoder.cs" />
     <Compile Include="ASCIIEncoding\ASCIIEncodingGetPreamble.cs" />
@@ -71,38 +69,29 @@
     <Compile Include="Encoding\EncodingUTF8.cs" />
     <Compile Include="Encoding\EncodingWebName.cs" />
     <Compile Include="UnicodeEncoding\UnicodeEncodingEquals.cs" />
-    <Compile Include="UnicodeEncoding\UnicodeEncodingGetByteCount.cs" />
     <Compile Include="UnicodeEncoding\UnicodeEncodingGetBytes.cs" />
-    <Compile Include="UnicodeEncoding\UnicodeEncodingGetCharCount.cs" />
     <Compile Include="UnicodeEncoding\UnicodeEncodingGetChars.cs" />
     <Compile Include="UnicodeEncoding\UnicodeEncodingGetDecoder.cs" />
     <Compile Include="UnicodeEncoding\UnicodeEncodingGetEncoder.cs" />
     <Compile Include="UnicodeEncoding\UnicodeEncodingGetMaxByteCount.cs" />
     <Compile Include="UnicodeEncoding\UnicodeEncodingGetMaxCharCount.cs" />
     <Compile Include="UnicodeEncoding\UnicodeEncodingGetPreamble.cs" />
-    <Compile Include="UnicodeEncoding\UnicodeEncodingGetString.cs" />
     <Compile Include="UTF7Encoding\UTF7EncodingEquals.cs" />
-    <Compile Include="UTF7Encoding\UTF7EncodingGetByteCount.cs" />
     <Compile Include="UTF7Encoding\UTF7EncodingGetBytes.cs" />
-    <Compile Include="UTF7Encoding\UTF7EncodingGetCharCount.cs" />
     <Compile Include="UTF7Encoding\UTF7EncodingGetChars.cs" />
     <Compile Include="UTF7Encoding\UTF7EncodingGetDecoder.cs" />
     <Compile Include="UTF7Encoding\UTF7EncodingGetEncoder.cs" />
     <Compile Include="UTF7Encoding\UTF7EncodingGetHashCode.cs" />
     <Compile Include="UTF7Encoding\UTF7EncodingGetMaxByteCount.cs" />
     <Compile Include="UTF7Encoding\UTF7EncodingGetMaxCharCount.cs" />
-    <Compile Include="UTF7Encoding\UTF7EncodingGetString.cs" />
     <Compile Include="UTF8Encoding\UTF8EncodingEquals.cs" />
-    <Compile Include="UTF8Encoding\UTF8EncodingGetByteCount.cs" />
     <Compile Include="UTF8Encoding\UTF8EncodingGetBytes.cs" />
-    <Compile Include="UTF8Encoding\UTF8EncodingGetCharCount.cs" />
     <Compile Include="UTF8Encoding\UTF8EncodingGetChars.cs" />
     <Compile Include="UTF8Encoding\UTF8EncodingGetDecoder.cs" />
     <Compile Include="UTF8Encoding\UTF8EncodingGetEncoder.cs" />
     <Compile Include="UTF8Encoding\UTF8EncodingGetMaxByteCount.cs" />
     <Compile Include="UTF8Encoding\UTF8EncodingGetMaxCharCount.cs" />
     <Compile Include="UTF8Encoding\UTF8EncodingGetPreamble.cs" />
-    <Compile Include="UTF8Encoding\UTF8EncodingGetString.cs" />
     <Compile Include="$(CommonTestPath)\System\RandomDataGenerator.cs" />
     <!-- Performance Tests -->
     <Compile Include="Performance\Perf.Encoding.cs" />

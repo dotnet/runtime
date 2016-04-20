@@ -18,38 +18,19 @@
   <!-- Compiled Source Files -->
   <ItemGroup>
     <Compile Include="CaptureCollectionTests.cs" />
-    <Compile Include="CaptureTests.cs" />
-    <Compile Include="EscapeUnescapeTests.cs" />
-    <Compile Include="GroupNamesAndNumbers.cs" />
-    <Compile Include="IsMatchMatchSplitTests.cs" />
+    <Compile Include="GroupCollectionTests.cs" />
     <Compile Include="MatchCollectionTests.cs" />
-    <Compile Include="R2LGetGroupNamesMatchTests.cs" />
-    <Compile Include="RegexComponentsSplitTests.cs" />
-    <Compile Include="RegexConstructorTests.cs" />
-    <Compile Include="RegexMatchTests0.cs" />
-    <Compile Include="RegexMatchTests1.cs" />
-    <Compile Include="RegexMatchTests2.cs" />
-    <Compile Include="RegexMatchTests3.cs" />
-    <Compile Include="RegexMatchTests4.cs" />
-    <Compile Include="RegexMatchTests5.cs" />
-    <Compile Include="RegexMatchTests6.cs" />
-    <Compile Include="RegexMatchTests7.cs" />
-    <Compile Include="RegexMatchTests8.cs" />
-    <Compile Include="RegexMatchTests9.cs" />
-    <Compile Include="RegexMatchTests10.cs" />
-    <Compile Include="RegexMatchTests11.cs" />
-    <Compile Include="RegexMatchValueTests.cs" />
-    <Compile Include="RegexReplaceStringTests0.cs" />
-    <Compile Include="RegexReplaceStringTests1.cs" />
-    <Compile Include="RegexSplitTests.cs" />
-    <Compile Include="ReturnValueChecks.cs" />
-    <Compile Include="RightToLeft.cs" />
-    <Compile Include="RightToLeftMatchStartAtTests.cs" />
-    <Compile Include="SplitMatchIsMatchTests.cs" />
-    <Compile Include="RegexUnicodeCharTests.cs" />
-    <Compile Include="RegexLangElementsCoverageTests.cs" />
-    <Compile Include="CharacterClassSubtractionSimple.cs" />
-    <Compile Include="Support.cs" />
+    <Compile Include="PrecompiledRegexScenarioTest.cs" />
+    <Compile Include="Regex.EscapeUnescape.Tests.cs" />
+    <Compile Include="Regex.GetGroupNames.Tests.cs" />
+    <Compile Include="Regex.Ctor.Tests.cs" />
+    <Compile Include="Regex.MultipleMatches.Tests.cs" />
+    <Compile Include="Regex.UnicodeChar.Tests.cs" />
+    <Compile Include="Regex.Groups.Tests.cs" />
+    <Compile Include="Regex.Replace.Tests.cs" />
+    <Compile Include="Regex.Split.Tests.cs" />
+    <Compile Include="Regex.Match.Tests.cs" />
+    <Compile Include="Regex.Tests.Common.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Text.RegularExpressions.csproj">

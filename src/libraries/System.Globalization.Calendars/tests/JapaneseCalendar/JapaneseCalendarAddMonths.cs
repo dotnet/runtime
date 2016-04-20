@@ -5,7 +5,7 @@
 using System.Collections.Generic;
 using Xunit;
 
-namespace System.Globalization.CalendarsTests
+namespace System.Globalization.Tests
 {
     public class JapaneseCalendarAddMonths
     {

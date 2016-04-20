@@ -25,6 +25,7 @@
     <Compile Include="ManualResetEventTests.cs" />
     <Compile Include="ManualResetEventSlimCancellationTests.cs" />
     <Compile Include="ManualResetEventSlimTests.cs" />
+    <Compile Include="MonitorTests.cs" />
     <Compile Include="MutexTests.cs" />
     <Compile Include="SemaphoreSlimCancellationTests.cs" />
     <Compile Include="SemaphoreSlimTests.cs" />

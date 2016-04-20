@@ -10,6 +10,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks.Tests;
 
 using Xunit;
@@ -227,7 +228,7 @@ namespace System.Threading.Tasks.Test
         // Workload for Parallel.For / Foreach with parallelloopstate but no thread local state
         private void WorkWithNoLocalState(int i, ParallelLoopState state)
         {
-            Logger.LogInformation("WorkWithNoLocalState(int) on index {0}, StartIndex: {1}, real index {2}", i, _startIndex, i - _startIndex);
+            Debug.WriteLine("WorkWithNoLocalState(int) on index {0}, StartIndex: {1}, real index {2}", i, _startIndex, i - _startIndex);
             Work(i);
 
             _actions[i].Invoke(i, state);
@@ -236,7 +237,7 @@ namespace System.Threading.Tasks.Test
         // Workload for Parallel.For / Foreach with parallel loopstate and thread local state
         private List<int> WorkWithLocalState(int i, ParallelLoopState state, List<int> threadLocalValue)
         {
-            Logger.LogInformation("WorkWithLocalState(int) on index {0}, StartIndex: {1}, real index {2}", i, _startIndex, i - _startIndex);
+            Debug.WriteLine("WorkWithLocalState(int) on index {0}, StartIndex: {1}, real index {2}", i, _startIndex, i - _startIndex);
             Work(i);
 
             threadLocalValue.Add(i + (int)_startIndex);
@@ -249,7 +250,7 @@ namespace System.Threading.Tasks.Test
         // Workload for Parallel.For / Foreach with index, parallel loop state and thread local state
         private List<int> WorkWithLocalState(int i, int index, ParallelLoopState state, List<int> threadLocalValue)
         {
-            Logger.LogInformation("WorkWithLocalState(int, index) on index {0}, StartIndex: {1}, real index {2}", i, _startIndex, i - _startIndex);
+            Debug.WriteLine("WorkWithLocalState(int, index) on index {0}, StartIndex: {1}, real index {2}", i, _startIndex, i - _startIndex);
             Work(i);
             threadLocalValue.Add(index + (int)_startIndex);
 
@@ -261,7 +262,7 @@ namespace System.Threading.Tasks.Test
         // Workload for Parallel.For with long range
         private void WorkWithNoLocalState(long i, ParallelLoopState state)
         {
-            Logger.LogInformation("WorkWithNoLocalState(long) on index {0}, StartIndex: {1}, real index {2}", i, _startIndex, i - _startIndex);
+            Debug.WriteLine("WorkWithNoLocalState(long) on index {0}, StartIndex: {1}, real index {2}", i, _startIndex, i - _startIndex);
             Work(i);
 
             _actions[(int)(i - _startIndex)].Invoke(i, state);
@@ -270,7 +271,7 @@ namespace System.Threading.Tasks.Test
         // Workload for Parallel.For with long range
         private List<long> WorkWithLocalState(long i, ParallelLoopState state, List<long> threadLocalValue)
         {
-            Logger.LogInformation("WorkWithLocalState(long) on index {0}, StartIndex: {1}, real index {2}", i, _startIndex, i - _startIndex);
+            Debug.WriteLine("WorkWithLocalState(long) on index {0}, StartIndex: {1}, real index {2}", i, _startIndex, i - _startIndex);
             Work(i);
             threadLocalValue.Add(i + _startIndex);
 
@@ -432,7 +433,7 @@ namespace System.Threading.Tasks.Test
         /// <param name="catchException"></param>
         private void StopActionHelper(long i, ParallelLoopState state, bool catchException)
         {
-            Logger.LogInformation("Calling StopAction on index: {0}, StartIndex: {1}, real index {2}", i, _startIndex, i - _startIndex);
+            Debug.WriteLine("Calling StopAction on index: {0}, StartIndex: {1}, real index {2}", i, _startIndex, i - _startIndex);
 
             // We already called Stop() on the Parallel state
             Assert.False(_isStopped && _isStopped != state.IsStopped, String.Format("Expecting IsStopped to be true for iteration {0}", i));
@@ -450,16 +451,8 @@ namespace System.Threading.Tasks.Test
                 Assert.False(catchException, "Not getting InvalidOperationException from Stop() when expecting one");
             }
             // If Stop is called after a Break was called then an InvalidOperationException is expected
-            catch (InvalidOperationException)
+            catch (InvalidOperationException) when (catchException)
             {
-                if (catchException)
-                {
-                    Logger.LogInformation("InvalidOperationException thrown as expected");
-                }
-                else
-                {
-                    throw;
-                }
             }
         }
 
@@ -509,7 +502,7 @@ namespace System.Threading.Tasks.Test
         /// <param name="catchException">whether calling Break will throw an InvalidOperationException</param>
         private void BreakActionHelper(long i, ParallelLoopState state, bool catchException)
         {
-            Logger.LogInformation("Calling BreakAction on index {0}, StartIndex: {1}, real index {2}", i, _startIndex, i - _startIndex);
+            Debug.WriteLine("Calling BreakAction on index {0}, StartIndex: {1}, real index {2}", i, _startIndex, i - _startIndex);
 
             // If we previously called Break() on the parallel state,
             // we expect all iterations to have the same LowestBreakIteration value
@@ -550,16 +543,8 @@ namespace System.Threading.Tasks.Test
                 }
                 // If the test is checking the scenario where break is called after stop then 
                 // we expect an InvalidOperationException
-                catch (InvalidOperationException)
+                catch (InvalidOperationException) when (catchException)
                 {
-                    if (catchException)
-                    {
-                        Logger.LogInformation("InvalidOperationException thrown as expected");
-                    }
-                    else
-                    {
-                        throw;
-                    }
                 }
             }
         }
@@ -632,7 +617,7 @@ namespace System.Threading.Tasks.Test
         /// <param name="state"></param>
         private void ExceptionalAction(long i, ParallelLoopState state)
         {
-            Logger.LogInformation("Calling ExceptionalAction on index {0}, StartIndex: {1}, real index {2}", i, _startIndex, i - _startIndex);
+            Debug.WriteLine("Calling ExceptionalAction on index {0}, StartIndex: {1}, real index {2}", i, _startIndex, i - _startIndex);
 
             Assert.False(_isExceptional != state.IsExceptional, String.Format("IsExceptional is expected to be {0} while getting {1}", _isExceptional, state.IsExceptional));
 
@@ -662,7 +647,7 @@ namespace System.Threading.Tasks.Test
         /// <param name="state"></param>
         private void MultipleExceptionAction(long i, ParallelLoopState state)
         {
-            Logger.LogInformation("Calling ExceptionalAction2 on index {0}, StartIndex: {1}, real index {2}", i, _startIndex, i - _startIndex);
+            Debug.WriteLine("Calling ExceptionalAction2 on index {0}, StartIndex: {1}, real index {2}", i, _startIndex, i - _startIndex);
 
             if (Interlocked.Increment(ref _iterCount) < _parameters.Count / 2)
             {
@@ -765,7 +750,7 @@ namespace System.Threading.Tasks.Test
                 Assert.False(double.MinValue == _results[i], String.Format("results[{0}] has been revisited", i));
 
                 if (_isStopped && 0 == _results[i])
-                    Logger.LogInformation("Stopped calculation at index = {0}", i);
+                    Debug.WriteLine("Stopped calculation at index = {0}", i);
 
                 Assert.True(_isStopped && 0 == _results[i],
                     String.Format("Incorrect results[{0}]. Expected to lie between {1} and {2}, but got {3})", i, minLimit, maxLimit, _results[i]));

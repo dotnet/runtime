@@ -63,6 +63,14 @@ namespace System.Diagnostics
             }
         }
 
+        /// <summary>Additional configuration when a process ID is set.</summary>
+        partial void ConfigureAfterProcessIdSet()
+        {
+            // Make sure that we configure the wait state holder for this process object, which we can only do once we have a process ID.
+            Debug.Assert(_haveProcessId, $"{nameof(ConfigureAfterProcessIdSet)} should only be called once a process ID is set");
+            GetWaitState(); // lazily initializes the wait state
+        }
+
         /// <summary>
         /// Instructs the Process component to wait the specified number of milliseconds for the associated process to exit.
         /// </summary>
@@ -243,8 +251,8 @@ namespace System.Diagnostics
 
             // Store the child's information into this Process object.
             Debug.Assert(childPid >= 0);
-            SetProcessHandle(new SafeProcessHandle(childPid));
             SetProcessId(childPid);
+            SetProcessHandle(new SafeProcessHandle(childPid));
 
             // Configure the parent's ends of the redirection streams.
             // We use UTF8 encoding without BOM by-default(instead of Console encoding as on Windows)
@@ -398,8 +406,9 @@ namespace System.Diagnostics
         /// <returns>The converted time.</returns>
         internal static DateTime BootTimeToDateTime(TimeSpan timespanAfterBoot)
         {
-            // Use the uptime and the current time to determine the absolute boot time
-            DateTime bootTime = DateTime.UtcNow - TimeSpan.FromMilliseconds(Environment.TickCount);
+            // Use the uptime and the current time to determine the absolute boot time. This implementation is relying on the 
+            // implementation detail that Stopwatch.GetTimestamp() uses a value based on time since boot.
+            DateTime bootTime = DateTime.UtcNow - TimeSpan.FromSeconds(Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency);
 
             // And use that to determine the absolute time for timespan.
             DateTime dt = bootTime + timespanAfterBoot;

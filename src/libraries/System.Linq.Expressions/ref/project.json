@@ -4,9 +4,9 @@
     "System.Reflection": "4.0.0"
   },
   "frameworks": {
-    "netstandard1.3": {
+    "netstandard1.5": {
       "imports": [
-        "dotnet5.4"
+        "dotnet"
       ]
     }
   }

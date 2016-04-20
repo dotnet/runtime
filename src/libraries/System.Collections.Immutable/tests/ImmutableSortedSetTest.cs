@@ -78,7 +78,6 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
-        [ActiveIssue(780)]
         public void EmptyTest()
         {
             this.EmptyTestHelper(Empty<int>(), 5, null);
@@ -201,8 +200,8 @@ namespace System.Collections.Immutable.Tests
                 AssertAreSame(item, set[i++]);
             }
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => set[-1]);
-            Assert.Throws<ArgumentOutOfRangeException>(() => set[set.Count]);
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => set[-1]);
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => set[set.Count]);
         }
 
         [Fact]

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <PropertyGroup>
+    <ContainerNamePrefix Condition="'$(ContainerNamePrefix)' == ''">corefx-$(PreReleaseLabel)</ContainerNamePrefix>
+    <ContainerName Condition="'$(ContainerNamePrefix)' != '' and '$(BuildNumberMajor)' != '' and '$(BuildNumberMinor)' != ''">$(ContainerNamePrefix)-$(BuildNumberMajor)-$(BuildNumberMinor)</ContainerName>
+    <DownloadDirectory>$(PackagesDir)AzureTransfer</DownloadDirectory>
+  </PropertyGroup>
+
+  <Import Project="$(ToolsDir)SyncCloudContent.targets" />
+
+  <Target Name="ValidateRequiredProperties">
+    <Error Condition="'$(CloudDropAccountName)' == ''" Text="Missing property CloudDropAccountName." />
+    <Error Condition="'$(CloudDropAccessToken)' == ''" Text="Missing property CloudDropAccessToken." />
+  </Target>
+
+  <Target Name="Build" DependsOnTargets="ValidateRequiredProperties;DownloadBlobsFromAzureTargets" />
+</Project>

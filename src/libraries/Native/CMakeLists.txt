@@ -7,6 +7,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_C_FLAGS "-std=c11")
 set(CMAKE_CXX_FLAGS "-std=c++11")
 set(CMAKE_SHARED_LIBRARY_PREFIX "")
+set(VERSION_FILE_PATH "${CMAKE_BINARY_DIR}/../../version.c")
 
 add_compile_options(-Weverything)
 add_compile_options(-Wno-format-nonliteral)

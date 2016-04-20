@@ -15,8 +15,6 @@ namespace System.Net
     {
         private static readonly AsyncCallback s_readCallback = new AsyncCallback(ReadCallback);
 
-        // TODO (Issue #3114): Implement this using TPL instead of APM.
-        private readonly StreamAsyncHelper _transportAPM;
         private readonly Stream _transport;
         private AsyncProtocolRequest _request;
         private int _totalRead;
@@ -24,7 +22,6 @@ namespace System.Net
         public FixedSizeReader(Stream transport)
         {
             _transport = transport;
-            _transportAPM = new StreamAsyncHelper(transport);
         }
 
         //
@@ -73,7 +70,7 @@ namespace System.Net
         {
             while (true)
             {
-                IAsyncResult ar = _transportAPM.BeginRead(_request.Buffer, _request.Offset + _totalRead, _request.Count - _totalRead, s_readCallback, this);
+                IAsyncResult ar = _transport.BeginRead(_request.Buffer, _request.Offset + _totalRead, _request.Count - _totalRead, s_readCallback, this);
                 if (!ar.CompletedSynchronously)
                 {
 #if DEBUG
@@ -82,7 +79,7 @@ namespace System.Net
                     break;
                 }
 
-                int bytes = _transportAPM.EndRead(ar);
+                int bytes = _transport.EndRead(ar);
 
                 if (CheckCompletionBeforeNextRead(bytes))
                 {
@@ -148,7 +145,7 @@ namespace System.Net
             // Async completion.
             try
             {
-                int bytes = reader._transportAPM.EndRead(transportResult);
+                int bytes = reader._transport.EndRead(transportResult);
 
                 if (reader.CheckCompletionBeforeNextRead(bytes))
                 {

@@ -21,7 +21,7 @@ namespace System.Globalization.Tests
         [InlineData(GregorianCalendarTypes.TransliteratedEnglish)]
         [InlineData(GregorianCalendarTypes.TransliteratedFrench)]
         [InlineData(GregorianCalendarTypes.USEnglish)]
-        public void ToFourDigitYear(GregorianCalendarTypes calendarType)
+        public void TwoDigitYearMax(GregorianCalendarTypes calendarType)
         {
             Calendar calendar = new GregorianCalendar(calendarType);
             Assert.Equal(DefaultTwoDigitMax, calendar.TwoDigitYearMax);

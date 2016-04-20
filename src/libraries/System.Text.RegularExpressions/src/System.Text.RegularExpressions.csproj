@@ -5,7 +5,6 @@
     <ProjectGuid>{BE28323E-327A-4E0F-B7F9-16AB7EAB59DD}</ProjectGuid>
     <AssemblyName>System.Text.RegularExpressions</AssemblyName>
     <AssemblyVersion>4.1.0.0</AssemblyVersion>
-    <AssemblyVersion Condition="'$(AssemblyVersionTransition)' == 'true'">4.1.0.0</AssemblyVersion>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net462'">true</IsPartialFacadeAssembly>
     <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net462'">None</ResourcesSourceOutputDirectory>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.5</PackageTargetFramework>
@@ -37,6 +36,7 @@
     <Compile Include="System\Text\RegularExpressions\RegexRunner.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexTree.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexWriter.cs" />
+    <Compile Include="System\Text\RegularExpressions\RegexRunnerFactory.cs" />
     <!-- Common or Common-branched source files -->
     <Compile Include="$(CommonPath)\System\NotImplemented.cs">
       <Link>Common\System\NotImplemented.cs</Link>

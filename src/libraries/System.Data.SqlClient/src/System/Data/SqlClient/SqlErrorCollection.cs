@@ -2,64 +2,36 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-
-//------------------------------------------------------------------------------
-
 using System.Collections;
-
+using System.Collections.Generic;
 
 namespace System.Data.SqlClient
 {
     public sealed class SqlErrorCollection : ICollection
     {
-        private ArrayList _errors = new ArrayList();
+        // Ideally this would be typed as List<SqlError>, but that would make the non-generic
+        // CopyTo behave differently than the full framework (which uses ArrayList), throwing
+        // ArgumentException instead of the expected InvalidCastException for incompatible types.
+        // Instead, we use List<object>, which makes the non-generic CopyTo behave like
+        // ArrayList.CopyTo.
+        private readonly List<object> _errors = new List<object>();
 
-        internal SqlErrorCollection()
-        {
-        }
+        internal SqlErrorCollection() { }
 
-        public void CopyTo(Array array, int index)
-        {
-            _errors.CopyTo(array, index);
-        }
+        public void CopyTo(Array array, int index) => ((ICollection)_errors).CopyTo(array, index);
 
-        public void CopyTo(SqlError[] array, int index)
-        {
-            _errors.CopyTo(array, index);
-        }
+        public void CopyTo(SqlError[] array, int index) => _errors.CopyTo(array, index);
 
-        public int Count
-        {
-            get { return _errors.Count; }
-        }
+        public int Count => _errors.Count;
 
-        object System.Collections.ICollection.SyncRoot
-        {
-            get { return this; }
-        }
+        object ICollection.SyncRoot => this;
 
-        bool System.Collections.ICollection.IsSynchronized
-        {
-            get { return false; }
-        }
+        bool ICollection.IsSynchronized => false;
 
-        public SqlError this[int index]
-        {
-            get
-            {
-                return (SqlError)_errors[index];
-            }
-        }
+        public SqlError this[int index] => (SqlError)_errors[index];
 
-        public IEnumerator GetEnumerator()
-        {
-            return _errors.GetEnumerator();
-        }
+        public IEnumerator GetEnumerator() => _errors.GetEnumerator();
 
-        internal void Add(SqlError error)
-        {
-            _errors.Add(error);
-        }
+        internal void Add(SqlError error) => _errors.Add(error);
     }
 }

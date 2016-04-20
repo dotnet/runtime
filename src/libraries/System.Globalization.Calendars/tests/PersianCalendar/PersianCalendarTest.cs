@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -28,7 +29,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        public void LeapYears()
+        public void IsLeapYear()
         {
             PersianCalendar calendar = new PersianCalendar();
             int lastNonLeap = 1;
@@ -39,6 +40,110 @@ namespace System.Globalization.Tests
                 Assert.False(calendar.IsLeapYear(lastNonLeap), string.Format("Year {0} is recognized as leap year", lastNonLeap));
                 lastNonLeap = year - 1;
             }
+
+            Assert.False(calendar.IsLeapYear(9378));
+        }
+
+        [Theory]
+        [InlineData(9378, 10)]
+        [InlineData(1, 2)]
+        [InlineData(5, 2)]
+        public void IsLeapMonth(int year, int month)
+        {
+            PersianCalendar calendar = new PersianCalendar();
+            Assert.False(calendar.IsLeapMonth(year, month));
+            Assert.False(calendar.IsLeapMonth(year, month, 0));
+            Assert.False(calendar.IsLeapMonth(year, month, 1));
+        }
+
+        [Theory]
+        [InlineData(9378, 10, 1, false)]
+        [InlineData(1, 2, 28, false)]
+        [InlineData(5, 12, 30, true)]
+        public void IsLeapDay(int year, int month, int day, bool expected)
+        {
+            PersianCalendar calendar = new PersianCalendar();
+            Assert.Equal(expected, calendar.IsLeapDay(year, month, day));
+            Assert.Equal(expected, calendar.IsLeapDay(year, month, day, 0));
+            Assert.Equal(expected, calendar.IsLeapDay(year, month, day, 1));
+        }
+
+        [Theory]
+        [InlineData(9378)]
+        [InlineData(1)]
+        [InlineData(5)]
+        public void GetLeapMonth(int year)
+        {
+            PersianCalendar calendar = new PersianCalendar();
+            int expected = 0;
+            Assert.Equal(expected, calendar.GetLeapMonth(year, 0));
+            Assert.Equal(expected, calendar.GetLeapMonth(year, 1));
+        }
+
+        [Theory]
+        [InlineData(9378, 289)]
+        [InlineData(1, 365)]
+        [InlineData(5, 366)]
+        public void GetDaysInYear(int year, int expected)
+        {
+            PersianCalendar calendar = new PersianCalendar();
+            Assert.Equal(expected, calendar.GetDaysInYear(year));
+            Assert.Equal(expected, calendar.GetDaysInYear(year, 0));
+            Assert.Equal(expected, calendar.GetDaysInYear(year, 1));
+        }
+
+        [Theory]
+        [InlineData(9378, 10)]
+        [InlineData(1, 12)]
+        [InlineData(5, 12)]
+        public void GetMonthsInYear(int year, int expected)
+        {
+            PersianCalendar calendar = new PersianCalendar();
+            Assert.Equal(expected, calendar.GetMonthsInYear(year));
+            Assert.Equal(expected, calendar.GetMonthsInYear(year, 0));
+            Assert.Equal(expected, calendar.GetMonthsInYear(year, 1));
+        }
+
+        public static IEnumerable<object[]> GetDayOfWeek_TestData()
+        {
+            yield return new object[] { DateTime.MinValue };
+            yield return new object[] { new DateTime(5, 12, 30) };
+            yield return new object[] { DateTime.MaxValue };
+        }
+
+        [Theory]
+        [MemberData(nameof(GetDayOfWeek_TestData))]
+        public void GetDayOfWeek(DateTime time)
+        {
+            Assert.Equal(time.DayOfWeek, new PersianCalendar().GetDayOfWeek(time));
+        }
+
+        [Theory]
+        [InlineData(99)]
+        [InlineData(2016)]
+        [InlineData(9378)]
+        public void TwoDigitYearMax_Set(int newTwoDigitYearMax)
+        {
+            PersianCalendar calendar = new PersianCalendar();
+            calendar.TwoDigitYearMax = newTwoDigitYearMax;
+            Assert.Equal(newTwoDigitYearMax, calendar.TwoDigitYearMax);
+        }
+
+        [Theory]
+        [InlineData(99, 1399)]
+        [InlineData(100, 100)]
+        [InlineData(2016, 2016)]
+        public void ToFourDigitYear(int year, int expected)
+        {
+            PersianCalendar calendar = new PersianCalendar();
+            calendar.TwoDigitYearMax = 1410; // Set to the default
+            Assert.Equal(expected, calendar.ToFourDigitYear(year));
+        }
+
+        [Fact]
+        public void Eras()
+        {
+            Assert.Equal(new int[] { 1 }, new PersianCalendar().Eras);
         }
 
         private static int[] s_dates = new int[]

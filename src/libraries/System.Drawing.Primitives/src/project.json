@@ -2,8 +2,8 @@
   "frameworks": {
     "netstandard1.1": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1-rc3-24012-00",
-        "System.Diagnostics.Contracts": "4.0.1-rc3-24012-00",
+        "Microsoft.NETCore.Platforms": "1.0.1-rc3-24018-00",
+        "System.Diagnostics.Contracts": "4.0.1-rc3-24018-00",
         "System.Runtime": "4.0.0",
         "System.Runtime.Extensions": "4.0.0"
       },
@@ -11,9 +11,9 @@
         "dotnet5.2"
       ]
     },
-    "net46": {
+    "net45": {
       "dependencies": {
-        "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
+        "Microsoft.TargetingPack.NETFramework.v4.5": "1.0.1"
       }
     }
   }

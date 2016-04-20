@@ -2,10 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-
-//------------------------------------------------------------------------------
-
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -77,57 +73,60 @@ namespace Microsoft.SqlServer.Server
             SqlDbType.DateTimeOffset,       // System.DateTimeOffset
         };
 
-        // Hash table to map from clr type object to ExtendedClrTypeCodeMap enum
-        // this HashTable should only be accessed from DetermineExtendedTypeCode and class ctor for setup.
-        private static readonly Hashtable s_typeToExtendedTypeCodeMap = CreateTypeToExtendedTypeCodeMap();
+        // Dictionary to map from clr type object to ExtendedClrTypeCodeMap enum.
+        // This dictionary should only be accessed from DetermineExtendedTypeCode and class ctor for setup.
+        private static readonly Dictionary<Type, ExtendedClrTypeCode> s_typeToExtendedTypeCodeMap = CreateTypeToExtendedTypeCodeMap();
 
-        private static Hashtable CreateTypeToExtendedTypeCodeMap()
+        private static Dictionary<Type, ExtendedClrTypeCode> CreateTypeToExtendedTypeCodeMap()
         {
-            // Set up type mapping hash table
+            int Count = 42;
             // Keep this initialization list in the same order as ExtendedClrTypeCode for ease in validating!
-            Hashtable ht = new Hashtable(42);
-            ht.Add(typeof(System.Boolean), ExtendedClrTypeCode.Boolean);
-            ht.Add(typeof(System.Byte), ExtendedClrTypeCode.Byte);
-            ht.Add(typeof(System.Char), ExtendedClrTypeCode.Char);
-            ht.Add(typeof(System.DateTime), ExtendedClrTypeCode.DateTime);
-            ht.Add(typeof(System.DBNull), ExtendedClrTypeCode.DBNull);
-            ht.Add(typeof(System.Decimal), ExtendedClrTypeCode.Decimal);
-            ht.Add(typeof(System.Double), ExtendedClrTypeCode.Double);
-            // lookup code will handle special-case null-ref, omitting the addition of ExtendedTypeCode.Empty
-            ht.Add(typeof(System.Int16), ExtendedClrTypeCode.Int16);
-            ht.Add(typeof(System.Int32), ExtendedClrTypeCode.Int32);
-            ht.Add(typeof(System.Int64), ExtendedClrTypeCode.Int64);
-            ht.Add(typeof(System.SByte), ExtendedClrTypeCode.SByte);
-            ht.Add(typeof(System.Single), ExtendedClrTypeCode.Single);
-            ht.Add(typeof(System.String), ExtendedClrTypeCode.String);
-            ht.Add(typeof(System.UInt16), ExtendedClrTypeCode.UInt16);
-            ht.Add(typeof(System.UInt32), ExtendedClrTypeCode.UInt32);
-            ht.Add(typeof(System.UInt64), ExtendedClrTypeCode.UInt64);
-            ht.Add(typeof(System.Object), ExtendedClrTypeCode.Object);
-            ht.Add(typeof(System.Byte[]), ExtendedClrTypeCode.ByteArray);
-            ht.Add(typeof(System.Char[]), ExtendedClrTypeCode.CharArray);
-            ht.Add(typeof(System.Guid), ExtendedClrTypeCode.Guid);
-            ht.Add(typeof(SqlBinary), ExtendedClrTypeCode.SqlBinary);
-            ht.Add(typeof(SqlBoolean), ExtendedClrTypeCode.SqlBoolean);
-            ht.Add(typeof(SqlByte), ExtendedClrTypeCode.SqlByte);
-            ht.Add(typeof(SqlDateTime), ExtendedClrTypeCode.SqlDateTime);
-            ht.Add(typeof(SqlDouble), ExtendedClrTypeCode.SqlDouble);
-            ht.Add(typeof(SqlGuid), ExtendedClrTypeCode.SqlGuid);
-            ht.Add(typeof(SqlInt16), ExtendedClrTypeCode.SqlInt16);
-            ht.Add(typeof(SqlInt32), ExtendedClrTypeCode.SqlInt32);
-            ht.Add(typeof(SqlInt64), ExtendedClrTypeCode.SqlInt64);
-            ht.Add(typeof(SqlMoney), ExtendedClrTypeCode.SqlMoney);
-            ht.Add(typeof(SqlDecimal), ExtendedClrTypeCode.SqlDecimal);
-            ht.Add(typeof(SqlSingle), ExtendedClrTypeCode.SqlSingle);
-            ht.Add(typeof(SqlString), ExtendedClrTypeCode.SqlString);
-            ht.Add(typeof(SqlChars), ExtendedClrTypeCode.SqlChars);
-            ht.Add(typeof(SqlBytes), ExtendedClrTypeCode.SqlBytes);
-            ht.Add(typeof(SqlXml), ExtendedClrTypeCode.SqlXml);
-            ht.Add(typeof(DbDataReader), ExtendedClrTypeCode.DbDataReader);
-            ht.Add(typeof(IEnumerable<SqlDataRecord>), ExtendedClrTypeCode.IEnumerableOfSqlDataRecord);
-            ht.Add(typeof(System.TimeSpan), ExtendedClrTypeCode.TimeSpan);
-            ht.Add(typeof(System.DateTimeOffset), ExtendedClrTypeCode.DateTimeOffset);
-            return ht;
+            var dictionary = new Dictionary<Type, ExtendedClrTypeCode>(Count)
+            {
+                { typeof(bool), ExtendedClrTypeCode.Boolean },
+                { typeof(byte), ExtendedClrTypeCode.Byte },
+                { typeof(char), ExtendedClrTypeCode.Char },
+                { typeof(DateTime), ExtendedClrTypeCode.DateTime },
+                { typeof(DBNull), ExtendedClrTypeCode.DBNull },
+                { typeof(decimal), ExtendedClrTypeCode.Decimal },
+                { typeof(double), ExtendedClrTypeCode.Double },
+                // lookup code will handle special-case null-ref, omitting the addition of ExtendedTypeCode.Empty
+                { typeof(short), ExtendedClrTypeCode.Int16 },
+                { typeof(int), ExtendedClrTypeCode.Int32 },
+                { typeof(long), ExtendedClrTypeCode.Int64 },
+                { typeof(sbyte), ExtendedClrTypeCode.SByte },
+                { typeof(float), ExtendedClrTypeCode.Single },
+                { typeof(string), ExtendedClrTypeCode.String },
+                { typeof(ushort), ExtendedClrTypeCode.UInt16 },
+                { typeof(uint), ExtendedClrTypeCode.UInt32 },
+                { typeof(ulong), ExtendedClrTypeCode.UInt64 },
+                { typeof(object), ExtendedClrTypeCode.Object },
+                { typeof(byte[]), ExtendedClrTypeCode.ByteArray },
+                { typeof(char[]), ExtendedClrTypeCode.CharArray },
+                { typeof(Guid), ExtendedClrTypeCode.Guid },
+                { typeof(SqlBinary), ExtendedClrTypeCode.SqlBinary },
+                { typeof(SqlBoolean), ExtendedClrTypeCode.SqlBoolean },
+                { typeof(SqlByte), ExtendedClrTypeCode.SqlByte },
+                { typeof(SqlDateTime), ExtendedClrTypeCode.SqlDateTime },
+                { typeof(SqlDouble), ExtendedClrTypeCode.SqlDouble },
+                { typeof(SqlGuid), ExtendedClrTypeCode.SqlGuid },
+                { typeof(SqlInt16), ExtendedClrTypeCode.SqlInt16 },
+                { typeof(SqlInt32), ExtendedClrTypeCode.SqlInt32 },
+                { typeof(SqlInt64), ExtendedClrTypeCode.SqlInt64 },
+                { typeof(SqlMoney), ExtendedClrTypeCode.SqlMoney },
+                { typeof(SqlDecimal), ExtendedClrTypeCode.SqlDecimal },
+                { typeof(SqlSingle), ExtendedClrTypeCode.SqlSingle },
+                { typeof(SqlString), ExtendedClrTypeCode.SqlString },
+                { typeof(SqlChars), ExtendedClrTypeCode.SqlChars },
+                { typeof(SqlBytes), ExtendedClrTypeCode.SqlBytes },
+                { typeof(SqlXml), ExtendedClrTypeCode.SqlXml },
+                { typeof(DbDataReader), ExtendedClrTypeCode.DbDataReader },
+                { typeof(IEnumerable<SqlDataRecord>), ExtendedClrTypeCode.IEnumerableOfSqlDataRecord },
+                { typeof(TimeSpan), ExtendedClrTypeCode.TimeSpan },
+                { typeof(DateTimeOffset), ExtendedClrTypeCode.DateTimeOffset },
+            };
+            Debug.Assert(dictionary.Count == Count);
+            return dictionary;
         }
 
         internal static bool IsCharOrXmlType(SqlDbType type)
@@ -358,35 +357,18 @@ namespace Microsoft.SqlServer.Server
         // Method to map from Type to ExtendedTypeCode
         static internal ExtendedClrTypeCode DetermineExtendedTypeCodeFromType(Type clrType)
         {
-            object result = s_typeToExtendedTypeCodeMap[clrType];
-
             ExtendedClrTypeCode resultCode;
-            if (null == result)
-            {
-                resultCode = ExtendedClrTypeCode.Invalid;
-            }
-            else
-            {
-                resultCode = (ExtendedClrTypeCode)result;
-            }
-
-            return resultCode;
+            return s_typeToExtendedTypeCodeMap.TryGetValue(clrType, out resultCode) ?
+                resultCode :
+                ExtendedClrTypeCode.Invalid;
         }
 
         // Returns the ExtendedClrTypeCode that describes the given value
         static internal ExtendedClrTypeCode DetermineExtendedTypeCode(object value)
         {
-            ExtendedClrTypeCode resultCode;
-            if (null == value)
-            {
-                resultCode = ExtendedClrTypeCode.Empty;
-            }
-            else
-            {
-                resultCode = DetermineExtendedTypeCodeFromType(value.GetType());
-            }
-
-            return resultCode;
+            return value != null ?
+                DetermineExtendedTypeCodeFromType(value.GetType()) :
+                ExtendedClrTypeCode.Empty;
         }
 
         // returns a sqldbtype for the given type code

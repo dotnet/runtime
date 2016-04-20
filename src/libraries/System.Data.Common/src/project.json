@@ -1,8 +1,8 @@
 {
   "frameworks": {
-    "netstandard1.0": {
+    "netstandard1.2": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1-rc3-24012-00",
+        "Microsoft.NETCore.Platforms": "1.0.1-rc3-24018-00",
         "System.Collections": "4.0.0",
         "System.Diagnostics.Debug": "4.0.0",
         "System.Diagnostics.Tools": "4.0.0",
@@ -15,12 +15,12 @@
         "System.Threading.Tasks": "4.0.0"
       },
       "imports": [
-        "dotnet5.1"
+        "dotnet5.3"
       ]
     },
-    "net45": {
+    "net451": {
       "dependencies": {
-        "Microsoft.TargetingPack.NETFramework.v4.5": "1.0.1"
+        "Microsoft.TargetingPack.NETFramework.v4.5.1": "1.0.1"
       }
     }
   }

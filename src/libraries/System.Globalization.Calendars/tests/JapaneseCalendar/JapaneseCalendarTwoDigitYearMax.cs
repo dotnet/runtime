@@ -4,7 +4,7 @@
 
 using Xunit;
 
-namespace System.Globalization.CalendarsTests
+namespace System.Globalization.Tests
 {
     public class JapaneseCalendarTwoDigitYearMax
     {
@@ -14,11 +14,12 @@ namespace System.Globalization.CalendarsTests
             Assert.Equal(99, new JapaneseCalendar().TwoDigitYearMax);
         }
         
-        [Fact]
-        public void TwoDigitYearMax_Set()
+        [Theory]
+        [InlineData(200)]
+        [InlineData(99)]
+        public void TwoDigitYearMax_Set(int newTwoDigitYearMax)
         {
             Calendar calendar = new JapaneseCalendar();
-            int newTwoDigitYearMax = 200;
             calendar.TwoDigitYearMax = newTwoDigitYearMax;
             Assert.Equal(newTwoDigitYearMax, calendar.TwoDigitYearMax);
         }

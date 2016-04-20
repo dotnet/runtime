@@ -139,12 +139,12 @@ namespace System.Net.Http
         {
             _bufferedContent = new MemoryStream(buffer, offset, count, writable: false, publiclyVisible: true);
         }
-        
+
         internal bool TryGetBuffer(out ArraySegment<byte> buffer)
         {
             return _bufferedContent != null && _bufferedContent.TryGetBuffer(out buffer);
         }
-     
+
         protected HttpContent()
         {
             // Log to get an ID for the current content. This ID is used when the content gets associated to a message.

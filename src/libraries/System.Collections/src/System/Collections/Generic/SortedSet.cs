@@ -2178,7 +2178,6 @@ namespace System.Collections.Generic
 
             private Stack<SortedSet<T>.Node> _stack;
             private SortedSet<T>.Node _current;
-            private static SortedSet<T>.Node s_dummyNode = new SortedSet<T>.Node(default(T));
 
             private bool _reverse;
 

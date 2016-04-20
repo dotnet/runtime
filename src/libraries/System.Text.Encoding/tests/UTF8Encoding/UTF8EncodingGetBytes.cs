@@ -11,21 +11,20 @@ namespace System.Text.Tests
     {
         public static IEnumerable<object[]> GetBytes_TestData()
         {
-            string chars1 = "\u0023\u0025\u03a0\u03a3";
-            int charsLength = new UTF8Encoding().GetByteCount(chars1.ToCharArray(), 1, 2);
-            yield return new object[] { chars1, 1, 2, new byte[charsLength], 0, new byte[] { 37, 206, 160 } };
+            yield return new object[] { "\u0023\u0025\u03a0\u03a3", 1, 2, new byte[] { 37, 206, 160 } };
+            
+            string asciiChars = "UTF8 Encoding Example";
+            yield return new object[] { asciiChars, 1, 2, new byte[] { 84, 70} };
+            yield return new object[] { asciiChars, 0, asciiChars.Length, new byte[] { 85, 84, 70, 56, 32, 69, 110, 99, 111, 100, 105, 110, 103, 32, 69, 120, 97, 109, 112, 108, 101 } };
 
-            yield return new object[] { string.Empty, 0, 0, new byte[0], 0, new byte[0] };
-
-            string chars2 = "UTF8 Encoding Example";
-            yield return new object[] { chars2, 1, 2, new byte[chars2.Length], 0, new byte[] { 84, 70} };
+            yield return new object[] { string.Empty, 0, 0, new byte[0] };
         }
 
         [Theory]
         [MemberData(nameof(GetBytes_TestData))]
-        public void GetBytes(string source, int index, int count, byte[] bytes, int byteIndex, byte[] expectedBytes)
+        public void GetBytes(string chars, int index, int count, byte[] expected)
         {
-            EncodingHelpers.GetBytes(new UTF8Encoding(), source, index, count, bytes, byteIndex, expectedBytes);
+            EncodingHelpers.Encode(new UTF8Encoding(), chars, index, count, expected);
         }
     }
 }
