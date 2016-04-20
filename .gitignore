@@ -293,3 +293,6 @@ cross/rootfs/*
 
 #python import files
 *.pyc
+
+# JIT32 files
+src/jit32
