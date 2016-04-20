@@ -964,7 +964,7 @@ debug-casts:
 	@$(MCS) -r:TestDriver.dll $(srcdir)/debug-casts.cs
 	@$(RUNTIME) --debug=casts debug-casts.exe
 
-EXTRA_DIST += sgen-bridge.cs sgen-descriptors.cs sgen-gshared-vtype.cs sgen-bridge-major-fragmentation.cs sgen-domain-unload.cs sgen-weakref-stress.cs sgen-cementing-stress.cs sgen-case-23400.cs 	finalizer-wait.cs critical-finalizers.cs sgen-domain-unload-2.cs sgen-suspend.cs sgen-new-threads-dont-join-stw.cs sgen-bridge-xref.cs bug-17590.cs sgen-toggleref.cs
+EXTRA_DIST += sgen-bridge.cs sgen-descriptors.cs sgen-gshared-vtype.cs sgen-bridge-major-fragmentation.cs sgen-domain-unload.cs sgen-weakref-stress.cs sgen-cementing-stress.cs sgen-case-23400.cs 	finalizer-wait.cs critical-finalizers.cs sgen-domain-unload-2.cs sgen-suspend.cs sgen-new-threads-dont-join-stw.cs sgen-bridge-xref.cs bug-17590.cs sgen-toggleref.cs sgen-bridge-gchandle.cs
 
 
 sgen-tests:
@@ -1104,6 +1104,38 @@ sgen-bridge2-tests-plain-tarjan-bridge: $(SGEN_BRIDGE2_TESTS) test-runner.exe
 	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="bridge=2Bridge" MONO_GC_PARAMS="bridge-implementation=tarjan" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_BRIDGE2_TESTS)
 sgen-bridge2-tests-ms-split-tarjan-bridge: $(SGEN_BRIDGE2_TESTS) test-runner.exe
 	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="bridge=2Bridge" MONO_GC_PARAMS="bridge-implementation=tarjan,minor=split" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_BRIDGE2_TESTS)
+
+
+SGEN_BRIDGE3_TESTS=	\
+	sgen-bridge-gchandle.exe
+
+sgen-bridge3-tests: $(SGEN_BRIDGE3_TESTS)
+	$(MAKE) sgen-bridge3-tests-plain
+	$(MAKE) sgen-bridge3-tests-ms-conc
+	$(MAKE) sgen-bridge3-tests-ms-split
+	$(MAKE) sgen-bridge3-tests-plain-new-bridge
+	$(MAKE) sgen-bridge3-tests-ms-conc-new-bridge
+	$(MAKE) sgen-bridge3-tests-ms-split-new-bridge
+	$(MAKE) sgen-bridge3-tests-plain-tarjan-bridge
+	$(MAKE) sgen-bridge3-tests-ms-split-tarjan-bridge
+
+sgen-bridge3-tests-plain: $(SGEN_bridge3_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="bridge=3Bridge" MONO_GC_PARAMS="" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_BRIDGE3_TESTS)
+sgen-bridge3-tests-ms-conc: $(SGEN_BRIDGE3_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="bridge=3Bridge" MONO_GC_PARAMS="major=marksweep-conc" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_BRIDGE3_TESTS)
+sgen-bridge3-tests-ms-split: $(SGEN_BRIDGE3_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="bridge=3Bridge" MONO_GC_PARAMS="minor=split" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_BRIDGE3_TESTS)
+sgen-bridge3-tests-plain-new-bridge: $(SGEN_BRIDGE3_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="bridge=3Bridge" MONO_GC_PARAMS="bridge-implementation=new" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_BRIDGE3_TESTS)
+sgen-bridge3-tests-ms-conc-new-bridge: $(SGEN_BRIDGE3_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="bridge=3Bridge" MONO_GC_PARAMS="bridge-implementation=new,major=marksweep-conc" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_BRIDGE3_TESTS)
+sgen-bridge3-tests-ms-split-new-bridge: $(SGEN_BRIDGE3_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="bridge=3Bridge" MONO_GC_PARAMS="bridge-implementation=new,minor=split" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_BRIDGE3_TESTS)
+sgen-bridge3-tests-plain-tarjan-bridge: $(SGEN_BRIDGE3_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="bridge=3Bridge" MONO_GC_PARAMS="bridge-implementation=tarjan" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_BRIDGE3_TESTS)
+sgen-bridge3-tests-ms-split-tarjan-bridge: $(SGEN_BRIDGE3_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="bridge=3Bridge" MONO_GC_PARAMS="bridge-implementation=tarjan,minor=split" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_BRIDGE3_TESTS)
+
 
 AOT_CONFIGURATIONS=	\
 	"|regular"	\
