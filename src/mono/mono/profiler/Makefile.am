@@ -15,25 +15,30 @@ if !DISABLE_LIBRARIES
 if !DISABLE_PROFILER
 bin_PROGRAMS = mprof-report
 
+if !BITCODE
+prof_shlibs = \
+	libmono-profiler-aot.la \
+	libmono-profiler-iomap.la \
+	libmono-profiler-log.la
+endif
+
 if HAVE_VTUNE
-vtune_libs = libmono-profiler-vtune.la libmono-profiler-vtune-static.la
+vtune_stlibs = libmono-profiler-vtune-static.la
+if !BITCODE
+vtune_shlibs = libmono-profiler-vtune.la
+endif
 endif
 
 lib_LTLIBRARIES = \
-	libmono-profiler-aot.la \
+	$(prof_shlibs) \
 	libmono-profiler-aot-static.la \
-	libmono-profiler-iomap.la \
 	libmono-profiler-iomap-static.la \
-	libmono-profiler-log.la \
 	libmono-profiler-log-static.la \
-	$(vtune_libs)
+	$(vtune_shlibs) \
+	$(vtune_stlibs)
 
 if PLATFORM_DARWIN
-if BITCODE
-prof_ldflags = -no-undefined
-else
 prof_ldflags = -Wl,-undefined -Wl,suppress -Wl,-flat_namespace
-endif
 endif
 
 if PLATFORM_ANDROID
