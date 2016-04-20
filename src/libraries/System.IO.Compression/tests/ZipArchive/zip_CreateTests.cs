@@ -76,7 +76,7 @@ namespace System.IO.Compression.Tests
         [Theory]
         [InlineData("unicode", true)]
         [InlineData("unicode", false)]
-        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)]
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Jenkins fails with unicode characters [JENKINS-12610]
         public static async Task CreateNormal_Unicode(string folder, bool seekable)
         {
             using (var s = new MemoryStream())
