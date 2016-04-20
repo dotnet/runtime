@@ -9,14 +9,16 @@ set unprocessedBuildArgs=
 set allargs=%*
 set thisArgs=
 
+set src=false
+set packages=false
+set tests=false
+set azureBlobs=false
+
 if [%1]==[] (
   set src=true
   set packages=true
   goto Begin
 )
-
-set src=false
-set packages=false
 
 :Loop
 if [%1]==[] goto Begin
@@ -35,36 +37,59 @@ if /I [%1] == [/s] (
     goto Next
 )
 
-if [!thisArgs!]==[] (
-  set unprocessedBuildArgs=!allargs!
-) else (
-  call set unprocessedBuildArgs=%%allargs:*!thisArgs!=%%
+if /I [%1] == [/t] (
+    set tests=true
+    set packages=true
+    set thisArgs=!thisArgs!%1
+    goto Next
 )
+
+if /I [%1] == [/ab] (
+    set azureBlobs=true
+    set thisArgs=!thisArgs!%1
+    goto Next
+)
+
+set unprocessedBuildArgs=!unprocessedBuildArgs! %1
 
 :Next
 shift /1
 goto Loop
 
 :Begin
-
 echo Running init-tools.cmd
 call %~dp0init-tools.cmd
 
 if [%src%] == [true] (
   echo Fetching git database from remote repos ...
   call git fetch --all -p -v >> %synclog% 2>&1
-  if NOT [%ERRORLEVEL%]==[0] (
+  if NOT [!ERRORLEVEL!]==[0] (
     echo ERROR: An error occurred while fetching remote source code, see %synclog% for more details.
     exit /b
   )
 )
 
+if [%azureBlobs%] == [true] (
+  echo Connecting and downloading packages from Azure BLOB ...
+  echo msbuild.exe %~dp0src\syncAzure.proj !options! !unprocessedBuildArgs! >> %synclog%
+  call msbuild.exe %~dp0src\syncAzure.proj !options! !unprocessedBuildArgs!
+  if NOT [!ERRORLEVEL!]==[0] (
+    echo ERROR: An error occurred while downloading packages from Azure BLOB, see %synclog% for more details. There may have been networking problems so please try again in a few minutes.
+    exit /b
+  )
+)
+
+set targets=BatchRestorePackages
+if [%tests%] == [true] (
+  set options=!options! /p:BuildTestsAgainstPackages=true
+  set targets=BatchGenerateTestProjectJsons;!targets!
+)
+
 if [%packages%] == [true] (
-  echo Restoring all packages ...
-  set options=!options! /t:BatchRestorePackages /p:RestoreDuringBuild=true
+  set options=!options! /t:!targets! /p:RestoreDuringBuild=true
   echo msbuild.exe %~dp0build.proj !options! !unprocessedBuildArgs! >> %synclog%
   call msbuild.exe %~dp0build.proj !options! !unprocessedBuildArgs!
-  if NOT [%ERRORLEVEL%]==[0] (
+  if NOT [!ERRORLEVEL!]==[0] (
     echo ERROR: An error occurred while syncing packages, see %synclog% for more details. There may have been networking problems so please try again in a few minutes.
     exit /b
   )
@@ -83,5 +108,13 @@ echo Options:
 echo     /s     - Fetches source history from all configured remotes
 echo              (git fetch --all -p -v)
 echo     /p     - Restores all nuget packages for repository
+echo     /t     - Generates tests project.json files and then it restores all nuget packages for repository.
+echo     /ab    - Downloads the latests product packages from Azure.
+echo              The following properties are required:
+echo                 /p:CloudDropAccountName="Account name"
+echo                 /p:CloudDropAccessToken="Access token"
+echo              To download a specific group of product packages, specify:
+echo                 /p:BuildNumberMajor
+echo                 /p:BuildNumberMinor
 echo.
 echo If no option is specified then sync.cmd /s /p is implied.

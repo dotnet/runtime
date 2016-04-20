@@ -54,10 +54,30 @@ namespace System.Net.Tests
 
         public static IEnumerable<Tuple<string, string>> UrlDecode_SharedTestData()
         {
-            // Recent change brings function inline with RFC 3986 to return hex-encoded chars in uppercase
+            // Escaping needed - case insensitive hex
             yield return Tuple.Create("%2F%5C%22%09Hello!+%E2%99%A5%3F%2F%5C%22%09World!+%E2%99%A5%3F%E2%99%A5", "/\\\"\tHello! \u2665?/\\\"\tWorld! \u2665?\u2665");
-            yield return Tuple.Create("Hello, world", "Hello, world"); // No special chars
-            yield return Tuple.Create("%F0%90%8F%BF", "\uD800\uDFFF"); // Surrogate pair
+            yield return Tuple.Create("%2f%5c%22%09Hello!+%e2%99%a5%3f%2f%5c%22%09World!+%e2%99%a5%3F%e2%99%a5", "/\\\"\tHello! \u2665?/\\\"\tWorld! \u2665?\u2665");
+
+            // Surrogate pair
+            yield return Tuple.Create("%F0%90%8F%BF", "\uD800\uDFFF");
+            yield return Tuple.Create("\uD800\uDFFF", "\uD800\uDFFF");
+
+            // Spaces
+            yield return Tuple.Create("abc+def", "abc def");
+            yield return Tuple.Create("++++", "    ");
+            yield return Tuple.Create("    ", "    ");
+
+            // No escaping needed
+            yield return Tuple.Create("abc", "abc");
+            yield return Tuple.Create("Hello, world", "Hello, world");
+            yield return Tuple.Create("\u1234\u2345", "\u1234\u2345");
+            yield return Tuple.Create("abc\u1234\u2345def\u1234", "abc\u1234\u2345def\u1234");
+
+            // Invalid percent encoding
+            yield return Tuple.Create("%", "%");
+            yield return Tuple.Create("%A", "%A");
+            yield return Tuple.Create("%G1", "%G1");
+            yield return Tuple.Create("%1G", "%1G");
         }
 
         public static IEnumerable<Tuple<string, string>> UrlEncode_SharedTestData()

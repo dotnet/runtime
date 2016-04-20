@@ -12,9 +12,8 @@ namespace System.Globalization.Tests
     public class GregorianCalendarToDateTime
     {
         private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
-        private static int RandomEra() => s_randomDataGenerator.GetInt32(-55) & 1;
 
-        public static IEnumerable<object[]> ToDateTime_Valid_TestData()
+        public static IEnumerable<object[]> ToDateTime_TestData()
         {
             // Random
             int randomYear = RandomYear();
@@ -24,22 +23,26 @@ namespace System.Globalization.Tests
             int randomMinute = s_randomDataGenerator.GetInt32(-55) % 60; // 0-59
             int randomSecond = s_randomDataGenerator.GetInt32(-55) % 60; // 0-59
             int randomMillisecond = s_randomDataGenerator.GetInt32(-55) % 1000; // 0-999
-            yield return new object[] { randomYear, randomMonth, randomDay, randomHour, randomMinute, randomSecond, randomMillisecond, RandomEra() };
+            yield return new object[] { randomYear, randomMonth, randomDay, randomHour, randomMinute, randomSecond, randomMillisecond };
 
             // Minimum supported DateTime
-            yield return new object[] { 1, 1, 1, 0, 0, 0, 0, RandomEra() };
+            yield return new object[] { 1, 1, 1, 0, 0, 0, 0 };
 
             // Maximum supported DateTime
-            yield return new object[] { 9999, 12, 31, 23, 59, 59, 999, RandomEra() };
+            yield return new object[] { 9999, 12, 31, 23, 59, 59, 999 };
+
+            yield return new object[] { 1600, 1, 1, 0, 0, 0 , 0 };
         }
         
         [Theory]
-        [MemberData(nameof(ToDateTime_Valid_TestData))]
-        public void ToDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int era)
+        [MemberData(nameof(ToDateTime_TestData))]
+        public void ToDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond)
         {
+            GregorianCalendar calendar = new GregorianCalendar();
             DateTime expected = new DateTime(year, month, day, hour, minute, second, millisecond);
-            DateTime actual = new GregorianCalendar().ToDateTime(year, month, day, hour, minute, second, millisecond, era);
-            Assert.Equal(expected, actual);
+            Assert.Equal(expected, calendar.ToDateTime(year, month, day, hour, minute, second, millisecond));
+            Assert.Equal(expected, calendar.ToDateTime(year, month, day, hour, minute, second, millisecond, 0));
+            Assert.Equal(expected, calendar.ToDateTime(year, month, day, hour, minute, second, millisecond, 1));
         }
     }
 }

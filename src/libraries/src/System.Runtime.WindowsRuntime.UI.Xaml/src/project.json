@@ -1,6 +1,6 @@
 {
   "frameworks": {
-    "netstandard1.2": {
+    "netstandard1.3": {
       "dependencies": {
         "System.Globalization": "4.0.0.0",
         "System.Resources.ResourceManager": "4.0.0.0",
@@ -9,7 +9,7 @@
         "System.Runtime.WindowsRuntime": "4.0.0.0"
       },
       "imports": [
-        "dotnet5.3"
+        "dotnet5.4"
       ]
     }
   }

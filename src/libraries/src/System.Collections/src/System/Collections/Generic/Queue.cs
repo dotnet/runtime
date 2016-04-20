@@ -134,7 +134,7 @@ namespace System.Collections.Generic
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             }
 
-            int numToCopy = (arrayLen - arrayIndex < _size) ? (arrayLen - arrayIndex) : _size;
+            int numToCopy = _size;
             if (numToCopy == 0) return;
 
             int firstPart = (_array.Length - _head < numToCopy) ? _array.Length - _head : numToCopy;
@@ -174,7 +174,7 @@ namespace System.Collections.Generic
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             }
 
-            int numToCopy = (arrayLen - index < _size) ? arrayLen - index : _size;
+            int numToCopy =  _size;
             if (numToCopy == 0) return;
 
             try

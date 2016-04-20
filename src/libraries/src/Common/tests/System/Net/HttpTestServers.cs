@@ -91,42 +91,45 @@ namespace System.Net.Test.Common
                     statusDescription));
         }
 
-        public static Uri RedirectUriForDestinationUri(bool secure, Uri destinationUri, int hops)
+        public static Uri RedirectUriForDestinationUri(bool secure, int statusCode, Uri destinationUri, int hops)
         {
             string uriString;
             string destination = Uri.EscapeDataString(destinationUri.AbsoluteUri);
-            
+
             if (hops > 1)
             {
-                uriString = string.Format("{0}://{1}/{2}?uri={3}&hops={4}",
+                uriString = string.Format("{0}://{1}/{2}?statuscode={3}&uri={4}&hops={5}",
                     secure ? HttpsScheme : HttpScheme,
                     Host,
                     RedirectHandler,
+                    statusCode,
                     destination,
                     hops);
             }
             else
             {
-                uriString = string.Format("{0}://{1}/{2}?uri={3}",
+                uriString = string.Format("{0}://{1}/{2}?statuscode={3}&uri={4}",
                     secure ? HttpsScheme : HttpScheme,
                     Host,
                     RedirectHandler,
+                    statusCode,
                     destination);
             }
             
             return new Uri(uriString);
         }
 
-        public static Uri RedirectUriForCreds(bool secure, string userName, string password)
+        public static Uri RedirectUriForCreds(bool secure, int statusCode, string userName, string password)
         {
-                Uri destinationUri = BasicAuthUriForCreds(secure, userName, password);
-                string destination = Uri.EscapeDataString(destinationUri.AbsoluteUri);
-                
-                return new Uri(string.Format("{0}://{1}/{2}?uri={3}",
-                    secure ? HttpsScheme : HttpScheme,
-                    Host,
-                    RedirectHandler,
-                    destination));
+            Uri destinationUri = BasicAuthUriForCreds(secure, userName, password);
+            string destination = Uri.EscapeDataString(destinationUri.AbsoluteUri);
+            
+            return new Uri(string.Format("{0}://{1}/{2}?statuscode={3}&uri={4}",
+                secure ? HttpsScheme : HttpScheme,
+                Host,
+                RedirectHandler,
+                statusCode,
+                destination));
         }
     }
 }

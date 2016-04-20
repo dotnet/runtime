@@ -5,9 +5,9 @@
     "System.IO": "4.0.0"
   },
   "frameworks": {
-    "netstandard1.0": {
+    "netstandard1.2": {
       "imports": [
-        "dotnet5.1"
+        "dotnet5.3"
       ]
     }
   }

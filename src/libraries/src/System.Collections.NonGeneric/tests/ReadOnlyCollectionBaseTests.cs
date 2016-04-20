@@ -20,7 +20,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestSyncRoot()
+        public static void SyncRoot()
         {
             MyReadOnlyCollectionBase collection = CreateCollection();
             Assert.False(collection.SyncRoot is ArrayList);
@@ -28,14 +28,14 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestAddRange_Count()
+        public static void AddRange_Count()
         {
             MyReadOnlyCollectionBase collection = CreateCollection();
             Assert.Equal(100, collection.Count);
         }
         
         [Fact]
-        public static void TestCopyTo_ZeroIndex()
+        public static void CopyTo_ZeroIndex()
         {
             MyReadOnlyCollectionBase collection = CreateCollection();
 
@@ -51,7 +51,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestCopyTo_NonZeroIndex()
+        public static void CopyTo_NonZeroIndex()
         {
             MyReadOnlyCollectionBase collection = CreateCollection();
 
@@ -67,18 +67,18 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestCopyTo_Invalid()
+        public static void CopyTo_Invalid()
         {
             MyReadOnlyCollectionBase collection = CreateCollection();
 
-            Assert.Throws<ArgumentNullException>(() => collection.CopyTo(null, 0)); // Array is null
+            Assert.Throws<ArgumentNullException>("dest", () => collection.CopyTo(null, 0)); // Array is null
 
-            Assert.Throws<ArgumentException>(() => collection.CopyTo(new Foo[100], 50)); // Index + collection.Count > array.Length
-            Assert.Throws<ArgumentOutOfRangeException>(() => collection.CopyTo(new Foo[100], -1)); // Index < 0
+            Assert.Throws<ArgumentException>(string.Empty, () => collection.CopyTo(new Foo[100], 50)); // Index + collection.Count > array.Length
+            Assert.Throws<ArgumentOutOfRangeException>("dstIndex", () => collection.CopyTo(new Foo[100], -1)); // Index < 0
         }
 
         [Fact]
-        public static void TestGetEnumerator()
+        public static void GetEnumerator()
         {
             MyReadOnlyCollectionBase collection = CreateCollection();
 
@@ -107,15 +107,14 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestIsSynchronized()
+        public static void IsSynchronized()
         {
             MyReadOnlyCollectionBase collection = CreateCollection();
-
             Assert.False(((ICollection)collection).IsSynchronized);
         }
 
         [Fact]
-        public static void TestIListMethods()
+        public static void IListMethods()
         {
             MyReadOnlyCollectionBase collection = CreateCollection();
 
@@ -130,28 +129,25 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestIListProperties()
+        public static void IListProperties()
         {
             MyReadOnlyCollectionBase collection = CreateCollection();
-
             Assert.True(collection.IsFixedSize);
             Assert.True(collection.IsReadOnly);
         }
 
         [Fact]
-        public static void TestVirtualMethods()
+        public static void VirtualMethods()
         {
             VirtualTestReadOnlyCollection collectionBase = new VirtualTestReadOnlyCollection();
             Assert.Equal(collectionBase.Count, int.MinValue);
-
             Assert.Null(collectionBase.GetEnumerator());
         }
 
-        // ReadOnlyCollectionBase is provided to be used as the base class for strongly typed collections. Lets use one of our own here.
-        // This collection only allows the type Foo
+        // ReadOnlyCollectionBase is provided to be used as the base class for strongly typed collections.
+        // Let's use one of our own here for the type Foo.
         private class MyReadOnlyCollectionBase : ReadOnlyCollectionBase
         {
-            //we need a way of initializing this collection
             public MyReadOnlyCollectionBase(Foo[] values)
             {
                 InnerList.AddRange(values);
@@ -162,28 +158,16 @@ namespace System.Collections.Tests
                 get { return (Foo)InnerList[indx]; }
             }
 
-            public void CopyTo(Array array, int index)
-            {
-                ((ICollection)this).CopyTo(array, index);// Use the base class explicit implementation of ICollection.CopyTo
-            }
+            public void CopyTo(Array array, int index) => ((ICollection)this).CopyTo(array, index);
 
             public virtual object SyncRoot
             {
-                get
-                {
-                    return ((ICollection)this).SyncRoot;// Use the base class explicit implementation of ICollection.SyncRoot
-                }
+                get { return ((ICollection)this).SyncRoot; }
             }
 
-            public int IndexOf(Foo f)
-            {
-                return ((IList)InnerList).IndexOf(f);
-            }
+            public int IndexOf(Foo f) => ((IList)InnerList).IndexOf(f);
 
-            public bool Contains(Foo f)
-            {
-                return ((IList)InnerList).Contains(f);
-            }
+            public bool Contains(Foo f) => ((IList)InnerList).Contains(f);
 
             public bool IsFixedSize
             {
@@ -200,16 +184,10 @@ namespace System.Collections.Tests
         {
             public override int Count
             {
-                get
-                {
-                    return int.MinValue;
-                }
+                get { return int.MinValue; }
             }
 
-            public override IEnumerator GetEnumerator()
-            {
-                return null;
-            }
+            public override IEnumerator GetEnumerator() => null;
         }
 
         private class Foo
@@ -220,39 +198,22 @@ namespace System.Collections.Tests
 
             public Foo(int intValue, string stringValue)
             {
-                _intValue = intValue;
-                _stringValue = stringValue;
+                IntValue = intValue;
+                StringValue = stringValue;
             }
-
-            private int _intValue;
-            public int IntValue
-            {
-                get { return _intValue; }
-                set { _intValue = value; }
-            }
-
-            private string _stringValue;
-            public string StringValue
-            {
-                get { return _stringValue; }
-                set { _stringValue = value; }
-            }
+            
+            public int IntValue { get; set; }
+            public string StringValue { get; set; }
 
             public override bool Equals(object obj)
             {
+                Foo foo = obj as Foo;
                 if (obj == null)
                     return false;
-                if (!(obj is Foo))
-                    return false;
-                if ((((Foo)obj).IntValue == _intValue) && (((Foo)obj).StringValue == _stringValue))
-                    return true;
-                return false;
+                return foo.IntValue == IntValue && foo.StringValue == StringValue;
             }
 
-            public override int GetHashCode()
-            {
-                return _intValue;
-            }
+            public override int GetHashCode() => IntValue;
         }
     }
 }

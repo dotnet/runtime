@@ -26,9 +26,6 @@ namespace System.Net.Security
 
         private Stream _innerStream;
 
-        // TODO (Issue #3114): Implement using TPL instead of APM.
-        private StreamAsyncHelper _innerStreamAPM;
-
         private SslStreamInternal _secureStream;
 
         private FixedSizeReader _reader;
@@ -81,7 +78,6 @@ namespace System.Net.Security
         internal SslState(Stream innerStream, RemoteCertValidationCallback certValidationCallback, LocalCertSelectionCallback certSelectionCallback, EncryptionPolicy encryptionPolicy)
         {
             _innerStream = innerStream;
-            _innerStreamAPM = new StreamAsyncHelper(innerStream);
             _reader = new FixedSizeReader(innerStream);
             _certValidationDelegate = certValidationCallback;
             _certSelectionDelegate = certSelectionCallback;
@@ -385,14 +381,6 @@ namespace System.Net.Security
             get
             {
                 return _innerStream;
-            }
-        }
-
-        internal StreamAsyncHelper InnerStreamAPM
-        {
-            get
-            {
-                return _innerStreamAPM;
             }
         }
 
@@ -784,7 +772,7 @@ namespace System.Net.Security
                 else
                 {
                     asyncRequest.AsyncState = message;
-                    IAsyncResult ar = InnerStreamAPM.BeginWrite(message.Payload, 0, message.Size, s_writeCallback, asyncRequest);
+                    IAsyncResult ar = InnerStream.BeginWrite(message.Payload, 0, message.Size, s_writeCallback, asyncRequest);
                     if (!ar.CompletedSynchronously)
                     {
 #if DEBUG
@@ -793,7 +781,7 @@ namespace System.Net.Security
                         return;
                     }
 
-                    InnerStreamAPM.EndWrite(ar);
+                    InnerStream.EndWrite(ar);
                 }
             }
 
@@ -987,12 +975,12 @@ namespace System.Net.Security
             else
             {
                 asyncRequest.AsyncState = exception;
-                IAsyncResult ar = InnerStreamAPM.BeginWrite(message.Payload, 0, message.Size, s_writeCallback, asyncRequest);
+                IAsyncResult ar = InnerStream.BeginWrite(message.Payload, 0, message.Size, s_writeCallback, asyncRequest);
                 if (!ar.CompletedSynchronously)
                 {
                     return;
                 }
-                InnerStreamAPM.EndWrite(ar);
+                InnerStream.EndWrite(ar);
             }
 
             exception.Throw();
@@ -1072,7 +1060,7 @@ namespace System.Net.Security
             // Async completion.
             try
             {
-                sslState.InnerStreamAPM.EndWrite(transportResult);
+                sslState.InnerStream.EndWrite(transportResult);
 
                 // Special case for an error notification.
                 object asyncState = asyncRequest.AsyncState;

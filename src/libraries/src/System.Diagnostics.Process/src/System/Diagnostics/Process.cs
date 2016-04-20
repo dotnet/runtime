@@ -1058,7 +1058,11 @@ namespace System.Diagnostics
         {
             _processId = processId;
             _haveProcessId = true;
+            ConfigureAfterProcessIdSet();
         }
+
+        /// <summary>Additional optional configuration hook after a process ID is set.</summary>
+        partial void ConfigureAfterProcessIdSet();
 
         /// <devdoc>
         ///    <para>

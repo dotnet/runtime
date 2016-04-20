@@ -2,68 +2,102 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections;
-using System.Text.RegularExpressions;
 using Xunit;
 
-namespace Test
+namespace System.Text.RegularExpressions.Tests
 {
     public class MatchCollectionTests
     {
         [Fact]
-        public static void EnumeratorTest1()
+        public void GetEnumerator()
         {
             Regex regex = new Regex("e");
-            MatchCollection collection = regex.Matches("dotnet");
-            IEnumerator enumerator = collection.GetEnumerator();
+            MatchCollection matches = regex.Matches("dotnet");
+            IEnumerator enumerator = matches.GetEnumerator();
+            for (int i = 0; i < 2; i++)
+            {
+                int counter = 0;
+                while (enumerator.MoveNext())
+                {
+                    Assert.Same(matches[counter], enumerator.Current);
+                    counter++;
+                }
+                Assert.False(enumerator.MoveNext());
+                Assert.Equal(matches.Count, counter);
+                enumerator.Reset();
+            }
+        }
+
+        [Fact]
+        public void GetEnumerator_Invalid()
+        {
+            Regex regex = new Regex("e");
+            MatchCollection matches = regex.Matches("dotnet");
+            IEnumerator enumerator = matches.GetEnumerator();
 
             Assert.Throws<InvalidOperationException>(() => enumerator.Current);
-            Assert.True(enumerator.MoveNext());
-            Assert.IsAssignableFrom<Match>(enumerator.Current);
-            Assert.Equal(4, ((Match)enumerator.Current).Index);
-            Assert.Equal("e", ((Match)enumerator.Current).Value);
-            Assert.False(enumerator.MoveNext());
+
+            while (enumerator.MoveNext()) ;
             Assert.Throws<InvalidOperationException>(() => enumerator.Current);
 
             enumerator.Reset();
-            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
             Assert.True(enumerator.MoveNext());
-            Assert.IsAssignableFrom<Match>(enumerator.Current);
-            Assert.Equal(4, ((Match)enumerator.Current).Index);
-            Assert.Equal("e", ((Match)enumerator.Current).Value);
-            Assert.False(enumerator.MoveNext());
+            enumerator.Reset();
             Assert.Throws<InvalidOperationException>(() => enumerator.Current);
         }
 
         [Fact]
-        public static void EnumeratorTest2()
+        public void Item_Get_InvalidIndex_ThrowsArgumentOutOfRangeException()
         {
-            Regex regex = new Regex("t");
-            MatchCollection collection = regex.Matches("dotnet");
-            IEnumerator enumerator = collection.GetEnumerator();
+            Regex regex = new Regex("e");
+            MatchCollection matches = regex.Matches("dotnet");
+            Assert.Throws<ArgumentOutOfRangeException>("i", () => matches[-1]);
+            Assert.Throws<ArgumentOutOfRangeException>("i", () => matches[matches.Count]);
+        }
 
-            for (int i = 0; i < collection.Count; i++)
+        [Fact]
+        public void ICollection_Properties()
+        {
+            Regex regex = new Regex("e");
+            MatchCollection matches = regex.Matches("dotnet");
+            ICollection collection = matches;
+
+            Assert.False(collection.IsSynchronized);
+            Assert.Same(matches, collection.SyncRoot);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(5)]
+        public void ICollection_CopyTo(int index)
+        {
+            Regex regex = new Regex("e");
+            MatchCollection matches = regex.Matches("dotnet");
+            ICollection collection = matches;
+
+            Match[] copy = new Match[collection.Count + index];
+            collection.CopyTo(copy, index);
+
+            for (int i = 0; i < index; i++)
             {
-                enumerator.MoveNext();
-
-                Assert.Equal(enumerator.Current, collection[i]);
+                Assert.Null(copy[i]);
             }
-
-            Assert.False(enumerator.MoveNext());
-            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
-
-            enumerator.Reset();
-
-            for (int i = 0; i < collection.Count; i++)
+            for (int i = index; i < copy.Length; i++)
             {
-                enumerator.MoveNext();
-
-                Assert.Equal(enumerator.Current, collection[i]);
+                Assert.Same(matches[i - index], copy[i]);
             }
+        }
 
-            Assert.False(enumerator.MoveNext());
-            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
+        [Fact]
+        public void ICollection_CopyTo_Invalid()
+        {
+            Regex regex = new Regex("e");
+            ICollection collection = regex.Matches("dotnet");
+
+            Assert.Throws<ArgumentNullException>("dest", () => collection.CopyTo(null, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("dstIndex", () => collection.CopyTo(new Match[collection.Count], -1));
+            Assert.Throws<ArgumentException>(string.Empty, () => collection.CopyTo(new Match[collection.Count], collection.Count));
         }
     }
 }

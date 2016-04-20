@@ -19,7 +19,7 @@ namespace System.Globalization.Tests
             {
                 while (!reader.EndOfStream)
                 {
-                    testCases.Add(Parse(reader.ReadLine()));
+                    Parse(testCases, reader.ReadLine());
                 }
             }
             return testCases;
@@ -27,11 +27,12 @@ namespace System.Globalization.Tests
 
         public static List<CharUnicodeInfoTestCase> TestCases => s_testCases.Value;
 
-        private static CharUnicodeInfoTestCase Parse(string line)
+        private static int s_rangeMinCodePoint;
+        private static void Parse(List<CharUnicodeInfoTestCase> testCases, string line)
         {
             // Data is in the format: 
             // code-value;
-            // character-name; (ignored)
+            // character-name;
             // general-category;
             // canonical-combining-classes; (ignored)
             // bidirecional-category; (ignored)
@@ -41,118 +42,76 @@ namespace System.Globalization.Tests
             // number-value;
             string[] data = line.Split(';');
             string charValueString = data[0];
+            string charName = data[1];
             string charCategoryString = data[2];
             string numericValueString = data[8];
 
-            int codeValue = int.Parse(charValueString, NumberStyles.HexNumber);
-            string codeValueRepresentation = codeValue > char.MaxValue ? char.ConvertFromUtf32(codeValue) : ((char)codeValue).ToString();
-
-            double numericValue = ParseNumericValueString(numericValueString);
-
-            UnicodeCategory generalCategory;
-
-            switch (charCategoryString)
+            int codePoint = int.Parse(charValueString, NumberStyles.HexNumber);
+            Parse(testCases, codePoint, charCategoryString, numericValueString);
+            
+            if (charName.EndsWith("First>"))
             {
-                case "Pe":
-                    generalCategory = UnicodeCategory.ClosePunctuation;
-                    break;
-                case "Pc":
-                    generalCategory = UnicodeCategory.ConnectorPunctuation;
-                    break;
-                case "Cc":
-                    generalCategory = UnicodeCategory.Control;
-                    break;
-                case "Sc":
-                    generalCategory = UnicodeCategory.CurrencySymbol;
-                    break;
-                case "Pd":
-                    generalCategory = UnicodeCategory.DashPunctuation;
-                    break;
-                case "Nd":
-                    generalCategory = UnicodeCategory.DecimalDigitNumber;
-                    break;
-                case "Me":
-                    generalCategory = UnicodeCategory.EnclosingMark;
-                    break;
-                case "Pf":
-                    generalCategory = UnicodeCategory.FinalQuotePunctuation;
-                    break;
-                case "Cf":
-                    generalCategory = UnicodeCategory.Format;
-                    break;
-                case "Pi":
-                    generalCategory = UnicodeCategory.InitialQuotePunctuation;
-                    break;
-                case "Nl":
-                    generalCategory = UnicodeCategory.LetterNumber;
-                    break;
-                case "Zl":
-                    generalCategory = UnicodeCategory.LineSeparator;
-                    break;
-                case "Ll":
-                    generalCategory = UnicodeCategory.LowercaseLetter;
-                    break;
-                case "Sm":
-                    generalCategory = UnicodeCategory.MathSymbol;
-                    break;
-                case "Lm":
-                    generalCategory = UnicodeCategory.ModifierLetter;
-                    break;
-                case "Sk":
-                    generalCategory = UnicodeCategory.ModifierSymbol;
-                    break;
-                case "Mn":
-                    generalCategory = UnicodeCategory.NonSpacingMark;
-                    break;
-                case "Ps":
-                    generalCategory = UnicodeCategory.OpenPunctuation;
-                    break;
-                case "Lo":
-                    generalCategory = UnicodeCategory.OtherLetter;
-                    break;
-                case "Cn":
-                    generalCategory = UnicodeCategory.OtherNotAssigned;
-                    break;
-                case "No":
-                    generalCategory = UnicodeCategory.OtherNumber;
-                    break;
-                case "Po":
-                    generalCategory = UnicodeCategory.OtherPunctuation;
-                    break;
-                case "So":
-                    generalCategory = UnicodeCategory.OtherSymbol;
-                    break;
-                case "Zp":
-                    generalCategory = UnicodeCategory.ParagraphSeparator;
-                    break;
-                case "Co":
-                    generalCategory = UnicodeCategory.PrivateUse;
-                    break;
-                case "Zs":
-                    generalCategory = UnicodeCategory.SpaceSeparator;
-                    break;
-                case "Mc":
-                    generalCategory = UnicodeCategory.SpacingCombiningMark;
-                    break;
-                case "Cs":
-                    generalCategory = UnicodeCategory.Surrogate;
-                    break;
-                case "Lt":
-                    generalCategory = UnicodeCategory.TitlecaseLetter;
-                    break;
-                case "Lu":
-                    generalCategory = UnicodeCategory.UppercaseLetter;
-                    break;
-                default:
-                    throw new InvalidOperationException("No such UnicodeCharCategory. Check the test data.");
+                s_rangeMinCodePoint = codePoint;
             }
+            else if (charName.EndsWith("Last>"))
+            {
+                // Assumes that we have already found a range start
+                for (int rangeCodePoint = s_rangeMinCodePoint + 1; rangeCodePoint < codePoint; rangeCodePoint++)
+                {
+                    // Assumes that all code points in the range have the same numeric value
+                    // and general category
+                    Parse(testCases, rangeCodePoint, charCategoryString, numericValueString);
+                }
+            }
+        }
 
-            return new CharUnicodeInfoTestCase()
+        private static Dictionary<string, UnicodeCategory> s_unicodeCategories = new Dictionary<string, UnicodeCategory>
+        {
+            ["Pe"] = UnicodeCategory.ClosePunctuation,
+            ["Pc"] = UnicodeCategory.ConnectorPunctuation,
+            ["Cc"] = UnicodeCategory.Control,
+            ["Sc"] = UnicodeCategory.CurrencySymbol,
+            ["Pd"] = UnicodeCategory.DashPunctuation,
+            ["Nd"] = UnicodeCategory.DecimalDigitNumber,
+            ["Me"] = UnicodeCategory.EnclosingMark,
+            ["Pf"] = UnicodeCategory.FinalQuotePunctuation,
+            ["Cf"] = UnicodeCategory.Format,
+            ["Pi"] = UnicodeCategory.InitialQuotePunctuation,
+            ["Nl"] = UnicodeCategory.LetterNumber,
+            ["Zl"] = UnicodeCategory.LineSeparator,
+            ["Ll"] = UnicodeCategory.LowercaseLetter,
+            ["Sm"] = UnicodeCategory.MathSymbol,
+            ["Lm"] = UnicodeCategory.ModifierLetter,
+            ["Sk"] = UnicodeCategory.ModifierSymbol,
+            ["Mn"] = UnicodeCategory.NonSpacingMark,
+            ["Ps"] = UnicodeCategory.OpenPunctuation,
+            ["Lo"] = UnicodeCategory.OtherLetter,
+            ["Cn"] = UnicodeCategory.OtherNotAssigned,
+            ["No"] = UnicodeCategory.OtherNumber,
+            ["Po"] = UnicodeCategory.OtherPunctuation,
+            ["So"] = UnicodeCategory.OtherSymbol,
+            ["Po"] = UnicodeCategory.OtherPunctuation,
+            ["Zp"] = UnicodeCategory.ParagraphSeparator,
+            ["Co"] = UnicodeCategory.PrivateUse,
+            ["Zs"] = UnicodeCategory.SpaceSeparator,
+            ["Mc"] = UnicodeCategory.SpacingCombiningMark,
+            ["Cs"] = UnicodeCategory.Surrogate,
+            ["Lt"] = UnicodeCategory.TitlecaseLetter,
+            ["Lu"] = UnicodeCategory.UppercaseLetter
+        };
+
+        private static void Parse(List<CharUnicodeInfoTestCase> testCases, int codePoint, string charCategoryString, string numericValueString)
+        {
+            string codeValueRepresentation = codePoint > char.MaxValue ? char.ConvertFromUtf32(codePoint) : ((char)codePoint).ToString();
+            double numericValue = ParseNumericValueString(numericValueString);
+            UnicodeCategory generalCategory = s_unicodeCategories[charCategoryString];
+
+            testCases.Add(new CharUnicodeInfoTestCase()
             {
                 Utf32CodeValue = codeValueRepresentation,
                 GeneralCategory = generalCategory,
                 NumericValue = numericValue
-            };
+            });
         }
 
         private static double ParseNumericValueString(string numericValueString)
@@ -163,14 +122,15 @@ namespace System.Globalization.Tests
                 return -1;
             }
 
-            int fractionDelimeterIndex = numericValueString.IndexOf("/", StringComparison.Ordinal);
+            int fractionDelimeterIndex = numericValueString.IndexOf("/");
             if (fractionDelimeterIndex == -1)
             {
                 // Parsing basic number
                 return double.Parse(numericValueString);
             }
 
-            // Unicode datasets display fractions (e.g. 1/4 instead of 0.25), so we should parse them as such
+            // Unicode datasets display fractions not decimals (e.g. 1/4 instead of 0.25),
+            // so we should parse them as such
             string numeratorString = numericValueString.Substring(0, fractionDelimeterIndex);
             double numerator = double.Parse(numeratorString);
 

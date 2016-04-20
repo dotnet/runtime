@@ -21,7 +21,7 @@ namespace System.Net.Http.Functional.Tests
             var handler = new HttpClientHandler();
             using (var client = new HttpClient(handler))
             {
-                Assert.Null(handler.ServerCertificateValidationCallback);
+                Assert.Null(handler.ServerCertificateCustomValidationCallback);
                 Assert.False(handler.CheckCertificateRevocationList);
 
                 using (HttpResponseMessage response = await client.GetAsync(HttpTestServers.SecureRemoteEchoServer))
@@ -29,7 +29,7 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                 }
 
-                Assert.Throws<InvalidOperationException>(() => handler.ServerCertificateValidationCallback = null);
+                Assert.Throws<InvalidOperationException>(() => handler.ServerCertificateCustomValidationCallback = null);
                 Assert.Throws<InvalidOperationException>(() => handler.CheckCertificateRevocationList = false);
             }
         }
@@ -41,7 +41,7 @@ namespace System.Net.Http.Functional.Tests
             using (var client = new HttpClient(handler))
             {
                 bool callbackCalled = false;
-                handler.ServerCertificateValidationCallback = delegate { callbackCalled = true; return true; };
+                handler.ServerCertificateCustomValidationCallback = delegate { callbackCalled = true; return true; };
 
                 using (HttpResponseMessage response = await client.GetAsync(HttpTestServers.RemoteEchoServer))
                 {
@@ -57,7 +57,13 @@ namespace System.Net.Http.Functional.Tests
             foreach (bool checkRevocation in new[] { true, false })
             {
                 yield return new object[] { HttpTestServers.SecureRemoteEchoServer, checkRevocation };
-                yield return new object[] { HttpTestServers.RedirectUriForDestinationUri(true, HttpTestServers.SecureRemoteEchoServer, 1), checkRevocation };
+                yield return new object[] {
+                    HttpTestServers.RedirectUriForDestinationUri(
+                        secure:true,
+                        statusCode:302,
+                        destinationUri:HttpTestServers.SecureRemoteEchoServer,
+                        hops:1),
+                    checkRevocation };
             }
         }
 
@@ -70,7 +76,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 bool callbackCalled = false;
                 handler.CheckCertificateRevocationList = checkRevocation;
-                handler.ServerCertificateValidationCallback = (request, cert, chain, errors) => {
+                handler.ServerCertificateCustomValidationCallback = (request, cert, chain, errors) => {
                     callbackCalled = true;
                     Assert.NotNull(request);
                     Assert.Equal(SslPolicyErrors.None, errors);
@@ -95,7 +101,7 @@ namespace System.Net.Http.Functional.Tests
             var handler = new HttpClientHandler();
             using (var client = new HttpClient(handler))
             {
-                handler.ServerCertificateValidationCallback = delegate { return false; };
+                handler.ServerCertificateCustomValidationCallback = delegate { return false; };
                 await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(HttpTestServers.SecureRemoteEchoServer));
             }
         }
@@ -107,7 +113,7 @@ namespace System.Net.Http.Functional.Tests
             using (var client = new HttpClient(handler))
             {
                 var e = new DivideByZeroException();
-                handler.ServerCertificateValidationCallback = delegate { throw e; };
+                handler.ServerCertificateCustomValidationCallback = delegate { throw e; };
                 Assert.Same(e, await Assert.ThrowsAsync<DivideByZeroException>(() => client.GetAsync(HttpTestServers.SecureRemoteEchoServer)));
             }
         }
@@ -155,7 +161,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 bool callbackCalled = false;
 
-                handler.ServerCertificateValidationCallback = (request, cert, chain, errors) =>
+                handler.ServerCertificateCustomValidationCallback = (request, cert, chain, errors) =>
                 {
                     callbackCalled = true;
                     Assert.NotNull(request);
@@ -177,7 +183,7 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(nameof(BackendDoesNotSupportCustomCertificateHandling))]
         public async Task SSLBackendNotSupported_Callback_ThrowsPlatformNotSupportedException()
         {
-            using (var client = new HttpClient(new HttpClientHandler() { ServerCertificateValidationCallback = delegate { return true; } }))
+            using (var client = new HttpClient(new HttpClientHandler() { ServerCertificateCustomValidationCallback = delegate { return true; } }))
             {
                 await Assert.ThrowsAsync<PlatformNotSupportedException>(() => client.GetAsync(HttpTestServers.SecureRemoteEchoServer));
             }
@@ -268,5 +274,6 @@ namespace System.Net.Http.Functional.Tests
 
         [DllImport("System.Net.Http.Native", EntryPoint = "HttpNative_GetSslVersionDescription")]
         private static extern string CurlSslVersionDescription();
+
     }
 }

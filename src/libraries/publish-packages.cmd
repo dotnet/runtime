@@ -14,8 +14,8 @@ REM ensure that msbuild is available
 echo Running init-tools.cmd
 call %~dp0init-tools.cmd
 
-echo msbuild.exe %~dp0src\publish.builds !options! !allargs! >> %packagesLog%
-call msbuild.exe %~dp0src\publish.builds !options! !allargs!
+echo msbuild.exe %~dp0src\publish.proj !options! !allargs! >> %packagesLog%
+call msbuild.exe %~dp0src\publish.proj !options! !allargs!
 if NOT [%ERRORLEVEL%]==[0] (
   echo ERROR: An error occurred while publishing packages, see %packagesLog% for more details.
   exit /b

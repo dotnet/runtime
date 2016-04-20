@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Globalization;
-
 using Xunit;
 
 namespace System.Collections.Tests
@@ -23,10 +22,10 @@ namespace System.Collections.Tests
         [InlineData(5, null, 1)]
         [InlineData(null, 5, -1)]
         [InlineData(null, null, 0)]
-        public static void TestCtor_Empty_Compare(object a, object b, int expected)
+        public static void Ctor_Empty_Compare(object a, object b, int expected)
         {
             CaseInsensitiveComparer comparer = new CaseInsensitiveComparer();
-            Assert.Equal(expected, Helpers.NormalizeCompare(comparer.Compare(a, b)));
+            Assert.Equal(expected, Math.Sign(comparer.Compare(a, b)));
         }
 
         [Theory]
@@ -42,7 +41,7 @@ namespace System.Collections.Tests
         [InlineData(5, null, 1)]
         [InlineData(null, 5, -1)]
         [InlineData(null, null, 0)]
-        public static void TestCtor_CultureInfo_Compare(object a, object b, int expected)
+        public static void Ctor_CultureInfo_Compare(object a, object b, int expected)
         {
             var cultureNames = new string[]
             {
@@ -66,12 +65,12 @@ namespace System.Collections.Tests
                 }
 
                 var comparer = new CaseInsensitiveComparer(culture);
-                Assert.Equal(expected, Helpers.NormalizeCompare(comparer.Compare(a, b)));
+                Assert.Equal(expected, Math.Sign(comparer.Compare(a, b)));
             }
         }
 
         [Fact]
-        public static void TestCtor_CultureInfo_Compare_TurkishI()
+        public static void Ctor_CultureInfo_Compare_TurkishI()
         {
             var cultureNames = new string[]
             {
@@ -110,9 +109,9 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestCtor_CultureInfo_Invalid()
+        public static void Ctor_CultureInfo_NullCulture_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => new CaseInsensitiveComparer(null)); // Culture is null
+            Assert.Throws<ArgumentNullException>("culture", () => new CaseInsensitiveComparer(null)); // Culture is null
         }
 
         [Theory]
@@ -129,7 +128,7 @@ namespace System.Collections.Tests
         [InlineData(5, null, 1)]
         [InlineData(null, 5, -1)]
         [InlineData(null, null, 0)]
-        public static void TestDefaultInvariant_Compare(object a, object b, int expected)
+        public static void DefaultInvariant_Compare(object a, object b, int expected)
         {
             var cultureNames = new string[]
             {
@@ -161,7 +160,7 @@ namespace System.Collections.Tests
 
                 // All cultures should sort the same way, irrespective of the thread's culture
                 CaseInsensitiveComparer defaultInvComparer = CaseInsensitiveComparer.DefaultInvariant;
-                Assert.Equal(expected, Helpers.NormalizeCompare(defaultInvComparer.Compare(a, b)));
+                Assert.Equal(expected, Math.Sign(defaultInvComparer.Compare(a, b)));
             }
 
             CultureInfo.DefaultThreadCurrentCulture = culture1;
@@ -181,13 +180,13 @@ namespace System.Collections.Tests
         [InlineData(5, null, 1)]
         [InlineData(null, 5, -1)]
         [InlineData(null, null, 0)]
-        public static void TestDefault_Compare(object a, object b, int expected)
+        public static void Default_Compare(object a, object b, int expected)
         {
-            Assert.Equal(expected, Helpers.NormalizeCompare(CaseInsensitiveComparer.Default.Compare(a, b)));
+            Assert.Equal(expected, Math.Sign(CaseInsensitiveComparer.Default.Compare(a, b)));
         }
 
         [Fact]
-        public static void TestDefault_Compare_TurkishI()
+        public static void Default_Compare_TurkishI()
         {
             // Turkish has lower-case and upper-case version of the dotted "i", so the upper case of "i" (U+0069) isn't "I" (U+0049)
             // but rather "İ" (U+0130)

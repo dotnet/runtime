@@ -21,6 +21,7 @@
     <InboxOnTargetFramework Include="win8" />
     <InboxOnTargetFramework Include="wp80" />
     <InboxOnTargetFramework Include="wpa81" />
+    <InboxOnTargetFramework Include="portable-net45+win8+wp8+wpa81" />
     <InboxOnTargetFramework Include="xamarinios10">
       <AsFrameworkReference>true</AsFrameworkReference>
     </InboxOnTargetFramework>

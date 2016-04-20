@@ -1649,6 +1649,21 @@
         ]
     },
     {
+        "Name": "System.ValueTuple",
+        "Description": "Provides the System.ValueTuple structs, which implement the underlying types for C# 7 tuples.",
+        "CommonTypes": [
+            "System.ValueTuple",
+            "System.ValueTuple<T1>",
+            "System.ValueTuple<T1, T2>",
+            "System.ValueTuple<T1, T2, T3>",
+            "System.ValueTuple<T1, T2, T3, T4>",
+            "System.ValueTuple<T1, T2, T3, T4, T5>",
+            "System.ValueTuple<T1, T2, T3, T4, T5, T6>",
+            "System.ValueTuple<T1, T2, T3, T4, T5, T6, T7>",
+            "System.ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest>"
+        ]
+    },
+    {
         "Name": "System.Xml.ReaderWriter",
         "Description": "Provides provides a fast, non-cached, forward-only way to read and write Extensible Markup Language (XML) data.",
         "CommonTypes": [

@@ -1043,7 +1043,8 @@ namespace System.Net.Security
                 GlobalLog.Dump(buffer, Math.Min(buffer.Length, 128));
             }
 
-            byte[] writeBuffer;
+            byte[] writeBuffer = output;
+
             try
             {
                 if (offset < 0 || offset > (buffer == null ? 0 : buffer.Length))
@@ -1057,18 +1058,6 @@ namespace System.Net.Security
                 }
 
                 resultSize = 0;
-
-                int bufferSizeNeeded = checked(size + _headerSize + _trailerSize);
-                if (output != null && bufferSizeNeeded <= output.Length)
-                {
-                    writeBuffer = output;
-                }
-                else
-                {
-                    writeBuffer = new byte[bufferSizeNeeded];
-                }
-
-                Buffer.BlockCopy(buffer, offset, writeBuffer, _headerSize, size);
             }
             catch (Exception e)
             {
@@ -1085,7 +1074,15 @@ namespace System.Net.Security
                 throw;
             }
 
-            SecurityStatusPal secStatus = SslStreamPal.EncryptMessage(_securityContext, writeBuffer, size, _headerSize, _trailerSize, out resultSize);
+            SecurityStatusPal secStatus = SslStreamPal.EncryptMessage(
+                _securityContext,
+                buffer,
+                offset,
+                size,
+                _headerSize,
+                _trailerSize,
+                ref writeBuffer,
+                out resultSize);
 
             if (secStatus.ErrorCode != SecurityStatusPalErrorCode.OK)
             {

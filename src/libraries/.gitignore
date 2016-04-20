@@ -3,7 +3,7 @@ syntax: glob
 ### VisualStudio ###
 
 # Tool Runtime Dir
-[Tt]ools/
+/[Tt]ools/
 
 # User-specific files
 *.suo

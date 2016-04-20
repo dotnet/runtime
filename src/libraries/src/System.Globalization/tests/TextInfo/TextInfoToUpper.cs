@@ -40,8 +40,20 @@ namespace System.Globalization.Tests
                 // SNOWMAN, which does not have an upper case variant.
                 yield return new object[] { cultureName, "\u2603", "\u2603" };
 
+#if net46
+                if (PlatformDetection.IsWindows7)
+                {
+                    // on Windows 7, Desktop framework is using its own sorting DLL and not calling the OS except with Invariant culture
+                    yield return new object[] { cultureName, "\U00010428", cultureName == "" ? "\U00010428" : "\U00010400" };
+                }
+                else 
+                {
+                    yield return new object[] { cultureName, "\U00010428", "\U00010400" };
+                }
+#else //!net46
                 // DESERT SMALL LETTER LONG I has an upper case variant (but not on Windows 7).
                 yield return new object[] { cultureName, "\U00010428", PlatformDetection.IsWindows7 ? "\U00010428" : "\U00010400" };
+#endif // net46
 
                 // RAINBOW (outside the BMP and does not case)
                 yield return new object[] { cultureName, "\U0001F308", "\U0001F308" };

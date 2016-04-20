@@ -20,8 +20,8 @@ namespace System.Text.RegularExpressions
     /// </summary>
     public class Regex
     {
-        internal string _pattern;                   // The string pattern provided
-        internal RegexOptions _roptions;            // the top-level options from the options string
+        protected internal string pattern;                   // The string pattern provided
+        protected internal RegexOptions roptions;            // the top-level options from the options string
 
         // *********** Match timeout fields { ***********
 
@@ -39,7 +39,7 @@ namespace System.Text.RegularExpressions
         // value as Timeout.InfiniteTimeSpan creating an implementation detail dependency only.
         public static readonly TimeSpan InfiniteMatchTimeout = Timeout.InfiniteTimeSpan;
 
-        internal TimeSpan _internalMatchTimeout;   // timeout for the execution of this regex
+        protected internal TimeSpan internalMatchTimeout;   // timeout for the execution of this regex
 
         // DefaultMatchTimeout specifies the match timeout to use if no other timeout was specified
         // by one means or another. Typically, it is set to InfiniteMatchTimeout.
@@ -47,12 +47,58 @@ namespace System.Text.RegularExpressions
 
         // *********** } match timeout fields ***********
 
+        protected internal RegexRunnerFactory factory;
 
-        internal Dictionary<Int32, Int32> _caps;            // if captures are sparse, this is the hashtable capnum->index
-        internal Dictionary<String, Int32> _capnames;       // if named captures are used, this maps names->index
+        internal Dictionary<int, int> _caps;            // if captures are sparse, this is the hashtable capnum->index
+        internal Dictionary<string, int> _capnames;     // if named captures are used, this maps names->index
 
-        internal String[] _capslist;                        // if captures are sparse or named captures are used, this is the sorted list of names
-        internal int _capsize;                              // the size of the capture array
+        protected internal String[] capslist;              // if captures are sparse or named captures are used, this is the sorted list of names
+        protected internal int capsize;                    // the size of the capture array
+        protected IDictionary Caps
+        {
+            get
+            {
+                return _caps;
+            }
+            set
+            {
+                if (value == null)
+                    throw new ArgumentNullException(nameof(value));
+
+                _caps = value as Dictionary<int, int>;
+                if (_caps == null)
+                {
+                    _caps = new Dictionary<int, int>(value.Count);
+                    foreach (DictionaryEntry entry in value)
+                    {
+                        _caps.Add((int)entry.Key, (int)entry.Value);
+                    }
+                }
+            }
+        }
+
+        protected IDictionary CapNames
+        {
+            get
+            {
+                return _capnames;
+            }
+            set
+            {
+                if (value == null)
+                    throw new ArgumentNullException(nameof(value));
+
+                _capnames = value as Dictionary<string, int>;
+                if (_capnames == null)
+                {
+                    _capnames = new Dictionary<string, int>(value.Count);
+                    foreach (DictionaryEntry entry in value)
+                    {
+                        _capnames.Add((string)entry.Key, (int)entry.Value);
+                    }
+                }
+            }
+        }
 
         internal ExclusiveReference _runnerref;             // cached runner
         internal SharedReference _replref;                  // cached parsed replacement pattern
@@ -66,7 +112,7 @@ namespace System.Text.RegularExpressions
 
         protected Regex()
         {
-            _internalMatchTimeout = DefaultMatchTimeout;
+            internalMatchTimeout = DefaultMatchTimeout;
         }
 
         /// <summary>
@@ -125,22 +171,22 @@ namespace System.Text.RegularExpressions
             var key = new CachedCodeEntryKey(options, cultureKey, pattern);
             cached = LookupCachedAndUpdate(key);
 
-            _pattern = pattern;
-            _roptions = options;
+            this.pattern = pattern;
+            roptions = options;
 
-            _internalMatchTimeout = matchTimeout;
+            internalMatchTimeout = matchTimeout;
 
             if (cached == null)
             {
                 // Parse the input
-                tree = RegexParser.Parse(pattern, _roptions);
+                tree = RegexParser.Parse(pattern, roptions);
 
                 // Extract the relevant information
                 _capnames = tree._capnames;
-                _capslist = tree._capslist;
+                capslist = tree._capslist;
                 _code = RegexWriter.Write(tree);
                 _caps = _code._caps;
-                _capsize = _code._capsize;
+                capsize = _code._capsize;
 
                 InitializeReferences();
 
@@ -152,8 +198,8 @@ namespace System.Text.RegularExpressions
             {
                 _caps = cached._caps;
                 _capnames = cached._capnames;
-                _capslist = cached._capslist;
-                _capsize = cached._capsize;
+                capslist = cached._capslist;
+                capsize = cached._capsize;
                 _code = cached._code;
                 _runnerref = cached._runnerref;
                 _replref = cached._replref;
@@ -169,7 +215,7 @@ namespace System.Text.RegularExpressions
         /// <param name="matchTimeout">The timeout value to validate.</param>
         /// <exception cref="System.ArgumentOutOfRangeException">If the specified timeout is not within a valid range.
         /// </exception>
-        internal static void ValidateMatchTimeout(TimeSpan matchTimeout)
+        protected internal static void ValidateMatchTimeout(TimeSpan matchTimeout)
         {
             if (InfiniteMatchTimeout == matchTimeout)
                 return;
@@ -239,7 +285,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public RegexOptions Options
         {
-            get { return _roptions; }
+            get { return roptions; }
         }
 
 
@@ -248,7 +294,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public TimeSpan MatchTimeout
         {
-            get { return _internalMatchTimeout; }
+            get { return internalMatchTimeout; }
         }
 
         /// <summary>
@@ -267,7 +313,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public override string ToString()
         {
-            return _pattern;
+            return pattern;
         }
 
         /*
@@ -284,9 +330,9 @@ namespace System.Text.RegularExpressions
         {
             String[] result;
 
-            if (_capslist == null)
+            if (capslist == null)
             {
-                int max = _capsize;
+                int max = capsize;
                 result = new String[max];
 
                 for (int i = 0; i < max; i++)
@@ -296,9 +342,9 @@ namespace System.Text.RegularExpressions
             }
             else
             {
-                result = new String[_capslist.Length];
+                result = new String[capslist.Length];
 
-                System.Array.Copy(_capslist, 0, result, 0, _capslist.Length);
+                System.Array.Copy(capslist, 0, result, 0, capslist.Length);
             }
 
             return result;
@@ -319,7 +365,7 @@ namespace System.Text.RegularExpressions
 
             if (_caps == null)
             {
-                int max = _capsize;
+                int max = capsize;
                 result = new int[max];
 
                 for (int i = 0; i < max; i++)
@@ -352,9 +398,9 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public String GroupNameFromNumber(int i)
         {
-            if (_capslist == null)
+            if (capslist == null)
             {
-                if (i >= 0 && i < _capsize)
+                if (i >= 0 && i < capsize)
                     return i.ToString(CultureInfo.InvariantCulture);
 
                 return String.Empty;
@@ -367,8 +413,8 @@ namespace System.Text.RegularExpressions
                         return String.Empty;
                 }
 
-                if (i >= 0 && i < _capslist.Length)
-                    return _capslist[i];
+                if (i >= 0 && i < capslist.Length)
+                    return capslist[i];
 
                 return String.Empty;
             }
@@ -414,7 +460,7 @@ namespace System.Text.RegularExpressions
             }
 
             // return int if it's in range
-            if (result >= 0 && result < _capsize)
+            if (result >= 0 && result < capsize)
                 return result;
 
             return -1;
@@ -682,7 +728,7 @@ namespace System.Text.RegularExpressions
 
             if (repl == null || !repl.Pattern.Equals(replacement))
             {
-                repl = RegexParser.ParseReplacement(replacement, _caps, _capsize, _capnames, _roptions);
+                repl = RegexParser.ParseReplacement(replacement, _caps, capsize, _capnames, roptions);
                 _replref.Cache(repl);
             }
 
@@ -807,7 +853,7 @@ namespace System.Text.RegularExpressions
             return RegexReplacement.Split(this, input, count, startat);
         }
 
-        internal void InitializeReferences()
+        protected void InitializeReferences()
         {
             if (_refsInitialized)
                 throw new NotSupportedException(SR.OnlyAllowedOnce);
@@ -840,13 +886,16 @@ namespace System.Text.RegularExpressions
 
             if (runner == null)
             {
-                runner = new RegexInterpreter(_code, UseOptionInvariant() ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture);
+                if (factory != null)
+                    runner = factory.CreateInstance();
+                else
+                    runner = new RegexInterpreter(_code, UseOptionInvariant() ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture);
             }
 
             try
             {
                 // Do the scan starting at the requested position
-                match = runner.Scan(this, input, beginning, beginning + length, startat, prevlen, quick, _internalMatchTimeout);
+                match = runner.Scan(this, input, beginning, beginning + length, startat, prevlen, quick, internalMatchTimeout);
             }
             finally
             {
@@ -906,7 +955,7 @@ namespace System.Text.RegularExpressions
                 // it wasn't in the cache, so we'll add a new one.  Shortcut out for the case where cacheSize is zero.
                 if (s_cacheSize != 0)
                 {
-                    newcached = new CachedCodeEntry(key, _capnames, _capslist, _code, _caps, _capsize, _runnerref, _replref);
+                    newcached = new CachedCodeEntry(key, _capnames, capslist, _code, _caps, capsize, _runnerref, _replref);
                     s_livecode.AddFirst(newcached);
                     if (s_livecode.Count > s_cacheSize)
                         s_livecode.RemoveLast();
@@ -922,12 +971,12 @@ namespace System.Text.RegularExpressions
          */
         internal bool UseOptionR()
         {
-            return (_roptions & RegexOptions.RightToLeft) != 0;
+            return (roptions & RegexOptions.RightToLeft) != 0;
         }
 
         internal bool UseOptionInvariant()
         {
-            return (_roptions & RegexOptions.CultureInvariant) != 0;
+            return (roptions & RegexOptions.CultureInvariant) != 0;
         }
 
 #if DEBUG
@@ -938,7 +987,7 @@ namespace System.Text.RegularExpressions
         {
             get
             {
-                return (_roptions & RegexOptions.Debug) != 0;
+                return (roptions & RegexOptions.Debug) != 0;
             }
         }
 #endif
@@ -1000,13 +1049,13 @@ namespace System.Text.RegularExpressions
         internal CachedCodeEntryKey _key;
         internal RegexCode _code;
         internal Dictionary<Int32, Int32> _caps;
-        internal Dictionary<String, Int32> _capnames;
+        internal Dictionary<string, int> _capnames;
         internal String[] _capslist;
         internal int _capsize;
         internal ExclusiveReference _runnerref;
         internal SharedReference _replref;
 
-        internal CachedCodeEntry(CachedCodeEntryKey key, Dictionary<String, Int32> capnames, String[] capslist, RegexCode code, Dictionary<Int32, Int32> caps, int capsize, ExclusiveReference runner, SharedReference repl)
+        internal CachedCodeEntry(CachedCodeEntryKey key, Dictionary<string, int> capnames, String[] capslist, RegexCode code, Dictionary<Int32, Int32> caps, int capsize, ExclusiveReference runner, SharedReference repl)
         {
             _key = key;
             _capnames = capnames;

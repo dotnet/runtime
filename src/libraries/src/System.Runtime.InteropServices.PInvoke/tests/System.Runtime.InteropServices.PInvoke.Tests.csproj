@@ -8,6 +8,8 @@
     <RootNamespace>System.Runtime.InteropServices</RootNamespace>
     <AssemblyName>System.Runtime.InteropServices.PInvoke.Tests</AssemblyName>
     <ProjectGuid>{A824F4CD-935B-4496-A1B2-C3664936DA7B}</ProjectGuid>
+    <!-- Don't allow project reference to package dependency conversion -->
+    <KeepAllProjectReferences>true</KeepAllProjectReferences>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />

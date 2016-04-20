@@ -7,8 +7,10 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
+using System.Net.Security;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -43,6 +45,7 @@ namespace System.Net.Http
         private bool useCookies;
         private DecompressionMethods automaticDecompression;
         private IWebProxy proxy;
+        private X509Certificate2Collection clientCertificates;
 
         #endregion Fields
 
@@ -270,6 +273,52 @@ namespace System.Net.Http
             get
             {
                 return s_RTCookieUsageBehaviorSupported.Value;
+            }
+        }
+
+        public X509CertificateCollection ClientCertificates
+        {
+            // TODO: Not yet implemented. Issue #7623.
+            get
+            {
+                if (clientCertificates == null)
+                {
+                    clientCertificates = new X509Certificate2Collection();
+                }
+
+                return clientCertificates;
+            }
+        }
+
+        public Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback
+        {
+            // TODO: Not yet implemented. Issue #7623.
+            get{ return null; }
+            set
+            {
+                CheckDisposedOrStarted();
+                if (value != null)
+                {
+                    throw new PlatformNotSupportedException(String.Format(CultureInfo.InvariantCulture,
+                        SR.net_http_value_not_supported, value, nameof(ServerCertificateCustomValidationCallback)));
+                }
+            }
+        }
+
+        public bool CheckCertificateRevocationList
+        {
+            // TODO: We can't get this property to actually work yet since the current WinRT Windows.Web.Http APIs don't have a setting for this.
+            // FYI: The WinRT API always checks for certificate revocation. If the revocation status can't be determined completely, i.e.
+            // the revocation server is offline, then the request is still allowed.
+            get { return true; }
+            set
+            {
+                CheckDisposedOrStarted();
+                if (!value)
+                {
+                    throw new PlatformNotSupportedException(String.Format(CultureInfo.InvariantCulture,
+                        SR.net_http_value_not_supported, value, nameof(CheckCertificateRevocationList)));
+                }
             }
         }
 

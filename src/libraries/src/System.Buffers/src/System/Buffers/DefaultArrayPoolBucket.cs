@@ -45,6 +45,7 @@ namespace System.Buffers
             // and our lock is very short lived. Wrap in try-finally
             // to protect against thread-aborts
             bool taken = false;
+            bool alloc = false;
             try
             {
                 _lock.Enter(ref taken);
@@ -53,17 +54,7 @@ namespace System.Buffers
                 if (_index < _data.Length)
                 {
                     buffer = _data[_index];
-                    if (buffer == null)
-                    {
-                        buffer = new T[_bufferLength];
-                        if (ArrayPoolEventSource.Log.IsEnabled())
-                            ArrayPoolEventSource.Log.BufferAllocated(
-                                Utilities.GetBufferId(buffer),
-                                _bufferLength,
-                                _poolId,
-                                Utilities.GetBucketId(this),
-                                ArrayPoolEventSource.BufferAllocationReason.Pooled);
-                    }
+                    alloc = buffer == null;
                     _data[_index++] = null;
                 }
                 else if (_exhaustedEventSent == false)
@@ -76,6 +67,18 @@ namespace System.Buffers
             finally
             {
                 if (taken) _lock.Exit(false);
+            }
+
+            if (alloc)
+            {
+                buffer = new T[_bufferLength];
+                if (ArrayPoolEventSource.Log.IsEnabled())
+                    ArrayPoolEventSource.Log.BufferAllocated(
+                        Utilities.GetBufferId(buffer),
+                        _bufferLength,
+                        _poolId,
+                        Utilities.GetBucketId(this),
+                        ArrayPoolEventSource.BufferAllocationReason.Pooled);
             }
 
             return buffer;

@@ -15,6 +15,7 @@
     <InboxOnTargetFramework Include="net451" />
     <InboxOnTargetFramework Include="win81" />
     <InboxOnTargetFramework Include="wpa81" />
+    <InboxOnTargetFramework Include="portable-net451+win81+wpa81" />
     <InboxOnTargetFramework Include="xamarinios10" />
     <InboxOnTargetFramework Include="xamarinmac20" />
     <InboxOnTargetFramework Include="xamarintvos10" />

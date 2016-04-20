@@ -65,38 +65,20 @@ namespace System.Data.SqlClient
     // the controlling class for one result (metadata + rows)
     sealed internal class Result
     {
-        private _SqlMetaDataSet _metadata;
-        private ArrayList _rowset;
+        private readonly _SqlMetaDataSet _metadata;
+        private readonly List<Row> _rowset;
 
         internal Result(_SqlMetaDataSet metadata)
         {
             _metadata = metadata;
-            _rowset = new ArrayList();
+            _rowset = new List<Row>();
         }
 
-        internal int Count
-        {
-            get
-            {
-                return _rowset.Count;
-            }
-        }
+        internal int Count => _rowset.Count;
 
-        internal _SqlMetaDataSet MetaData
-        {
-            get
-            {
-                return _metadata;
-            }
-        }
+        internal _SqlMetaDataSet MetaData => _metadata;
 
-        internal Row this[int index]
-        {
-            get
-            {
-                return (Row)_rowset[index];
-            }
-        }
+        internal Row this[int index] => _rowset[index];
 
         internal void AddRow(Row row)
         {
@@ -107,23 +89,17 @@ namespace System.Data.SqlClient
     // A wrapper object for metadata and rowsets returned by our initial queries
     sealed internal class BulkCopySimpleResultSet
     {
-        private ArrayList _results;                   // the list of results
+        private readonly List<Result> _results;        // the list of results
         private Result _resultSet;                     // the current result
         private int[] _indexmap;                       // associates columnids with indexes in the rowarray
 
         internal BulkCopySimpleResultSet()
         {
-            _results = new ArrayList();
+            _results = new List<Result>();
         }
 
         // indexer
-        internal Result this[int idx]
-        {
-            get
-            {
-                return (Result)_results[idx];
-            }
-        }
+        internal Result this[int idx] => _results[idx];
 
         // callback function for the tdsparser
         // note that setting the metadata adds a resultset

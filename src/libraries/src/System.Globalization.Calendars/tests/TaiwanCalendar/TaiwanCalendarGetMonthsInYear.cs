@@ -11,16 +11,19 @@ namespace System.Globalization.Tests
     {
         public static IEnumerable<object[]> GetMonthsInYear_TestData()
         {
-            yield return new object[] { 1912, 1 };
-            yield return new object[] { 8088, 1 };
-            yield return new object[] { TaiwanCalendarUtilities.RandomYear(), 1 };
+            yield return new object[] { 1912 };
+            yield return new object[] { 8088 };
+            yield return new object[] { TaiwanCalendarUtilities.RandomYear() };
         }
 
         [Theory]
         [MemberData(nameof(GetMonthsInYear_TestData))]
-        public void GetMonthsInYear(int year, int era)
+        public void GetMonthsInYear(int year)
         {
-            Assert.Equal(12, new TaiwanCalendar().GetMonthsInYear(year, era));
+            TaiwanCalendar calendar = new TaiwanCalendar();
+            Assert.Equal(12, calendar.GetMonthsInYear(year));
+            Assert.Equal(12, calendar.GetMonthsInYear(year, 0));
+            Assert.Equal(12, calendar.GetMonthsInYear(year, 1));
         }
     }
 }

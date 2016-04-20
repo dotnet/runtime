@@ -489,19 +489,11 @@ namespace System.IO
         {
             if (buffer == null)
             {
-                return MakeCompletedTask();
+                return Task.CompletedTask;
             }
 
             return WriteAsync(buffer, 0, buffer.Length);
         }
-
-#pragma warning disable 1998 // async method with no await
-        private async Task MakeCompletedTask()
-        {
-            // do nothing.  We're taking advantage of the async infrastructure's optimizations, one of which is to
-            // return a cached already-completed Task when possible.
-        }
-#pragma warning restore 1998
 
         public virtual Task WriteAsync(char[] buffer, int index, int count)
         {
@@ -540,7 +532,7 @@ namespace System.IO
         {
             if (buffer == null)
             {
-                return MakeCompletedTask();
+                return Task.CompletedTask;
             }
 
             return WriteLineAsync(buffer, 0, buffer.Length);

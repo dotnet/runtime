@@ -6,15 +6,14 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Threading.Tasks;
-
 using Xunit;
 
 namespace System.Collections.Tests
 {
-    public static partial class ArrayListTests
+    public static class ArrayListTests
     {
         [Fact]
-        public static void TestCtor_Empty()
+        public static void Ctor_Empty()
         {
             var arrList = new ArrayList();
             Assert.Equal(0, arrList.Count);
@@ -25,11 +24,13 @@ namespace System.Collections.Tests
             Assert.False(arrList.IsSynchronized);
         }
 
-        [Fact]
-        public static void TestCtor_Capacity()
+        [Theory]
+        [InlineData(16)]
+        [InlineData(0)]
+        public static void Ctor_Int(int capacity)
         {
-            var arrList = new ArrayList(16);
-            Assert.Equal(16, arrList.Capacity);
+            var arrList = new ArrayList(capacity);
+            Assert.Equal(capacity, arrList.Capacity);
 
             Assert.False(arrList.IsFixedSize);
             Assert.False(arrList.IsReadOnly);
@@ -37,18 +38,22 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestCtor_Capacity_Invalid()
+        public static void Ctor_Int_NegativeCapacity_ThrowsArgumentOutOfRangeException()
         {
             Assert.Throws<ArgumentOutOfRangeException>("capacity", () => new ArrayList(-1)); // Capacity < 0
         }
 
         [Fact]
-        public static void TestCtor_ICollection()
+        public static void Ctor_ICollection()
         {
             ArrayList sourceList = Helpers.CreateIntArrayList(100);
             var arrList = new ArrayList(sourceList);
 
-            Assert.Equal(100, arrList.Count);
+            Assert.Equal(sourceList.Count, arrList.Count);
+            for (int i = 0; i < arrList.Count; i++)
+            {
+                Assert.Equal(sourceList[i], arrList[i]);
+            }
 
             Assert.False(arrList.IsFixedSize);
             Assert.False(arrList.IsReadOnly);
@@ -56,7 +61,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestCtor_ICollection_Empty()
+        public static void Ctor_ICollection_Empty()
         {
             ICollection arrListCollection = new ArrayList();
             ArrayList arrList = new ArrayList(arrListCollection);
@@ -69,13 +74,13 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestCtor_ICollection_Invalid()
+        public static void Ctor_ICollection_NullCollection_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("c", () => new ArrayList(null)); // Collection is null
         }
 
         [Fact]
-        public static void TestDebuggerAttribute()
+        public static void DebuggerAttribute()
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(new ArrayList());
             DebuggerAttributes.ValidateDebuggerTypeProxyProperties(new ArrayList() { "a", 1, "b", 2 });
@@ -87,15 +92,14 @@ namespace System.Collections.Tests
             }
             catch (TargetInvocationException ex)
             {
-                ArgumentNullException nullException = ex.InnerException as ArgumentNullException;
-                threwNull = nullException != null;
+                threwNull = ex.InnerException is ArgumentNullException;
             }
 
             Assert.True(threwNull);
         }
 
         [Fact]
-        public static void TestAdapter_ArrayList()
+        public static void Adapter_ArrayList()
         {
             ArrayList arrList = ArrayList.Adapter(new ArrayList());
             Assert.False(arrList.IsFixedSize);
@@ -104,7 +108,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestAdapter_FixedSizeArrayList()
+        public static void Adapter_FixedSizeArrayList()
         {
             ArrayList arrList = ArrayList.Adapter(ArrayList.FixedSize(new ArrayList()));
             Assert.True(arrList.IsFixedSize);
@@ -113,7 +117,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestAdapter_ReadOnlyArrayList()
+        public static void Adapter_ReadOnlyArrayList()
         {
             ArrayList arrList = ArrayList.Adapter(ArrayList.ReadOnly(new ArrayList()));
             Assert.True(arrList.IsFixedSize);
@@ -122,7 +126,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestAdapter_SynchronizedArrayList()
+        public static void Adapter_SynchronizedArrayList()
         {
             ArrayList arrList = ArrayList.Adapter(ArrayList.Synchronized(new ArrayList()));
             Assert.False(arrList.IsFixedSize);
@@ -131,7 +135,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestAdapter_PopulateChangesToList()
+        public static void Adapter_PopulateChangesToList()
         {
             const string FromBefore = " from before";
 
@@ -149,7 +153,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestAdapter_ClearList()
+        public static void Adapter_ClearList()
         {
             // Make sure changes through list show up in listAdapter
             ArrayList arrList = Helpers.CreateIntArrayList(100);
@@ -159,7 +163,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestAdapter_Enumerators()
+        public static void Adapter_Enumerators()
         {
             // Test to see if enumerators are correctly enumerate through elements
             ArrayList arrList = Helpers.CreateIntArrayList(10);
@@ -183,7 +187,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestAdapter_EnumeratorsModifiedList()
+        public static void Adapter_EnumeratorsModifiedList()
         {
             // Test to see if enumerators are correctly getting invalidated with list modified through list
             ArrayList arrList = Helpers.CreateIntArrayList(10);
@@ -203,7 +207,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestAdapter_EnumeratorsModifiedAdapter()
+        public static void Adapter_EnumeratorsModifiedAdapter()
         {
             // Test to see if enumerators are correctly getting invalidated with list modified through listAdapter
             ArrayList arrList = Helpers.CreateStringArrayList(10);
@@ -223,7 +227,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestAdapter_InsertRange()
+        public static void Adapter_InsertRange()
         {
             // Test too see if listAdapator modified using InsertRange works
             // Populate the list
@@ -238,7 +242,7 @@ namespace System.Collections.Tests
         }
         
         [Fact]
-        public static void TestAdapter_Capacity_Set()
+        public static void Adapter_Capacity_Set()
         {
             ArrayList arrList = Helpers.CreateIntArrayList(10);
             ArrayList adapter = ArrayList.Adapter(arrList);
@@ -248,13 +252,13 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestAdapter_Invalid()
+        public static void Adapter_NullList_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("list", () => ArrayList.Adapter(null)); // List is null
         }
 
         [Fact]
-        public static void TestAddRange_Basic()
+        public static void AddRange_Basic()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             ArrayList arrList2 = Helpers.CreateIntArrayList(20, 10);
@@ -263,7 +267,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestAddRange_DifferentCollection()
+        public static void AddRange_DifferentCollection()
         {
             ArrayList arrList = Helpers.CreateIntArrayList(10);
             Queue queue = new Queue();
@@ -275,7 +279,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestAddRange_Self()
+        public static void AddRange_Self()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -325,7 +329,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestAddRange_DifferentObjectTypes()
+        public static void AddRange_DifferentObjectTypes()
         {
             // Add an ICollection with different type objects
             ArrayList arrList1 = Helpers.CreateIntArrayList(10); // Array list contains only integers currently
@@ -355,7 +359,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestAddRange_EmptyCollection()
+        public static void AddRange_EmptyCollection()
         {
             var emptyCollection = new Queue();
             ArrayList arrList1 = Helpers.CreateIntArrayList(100);
@@ -372,7 +376,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestAddRange_Invalid()
+        public static void AddRange_NullCollection_ThrowsArgumentNullException()
         {
             var arrList1 = new ArrayList();
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -390,7 +394,7 @@ namespace System.Collections.Tests
         [InlineData(1)]
         [InlineData(10)]
         [InlineData(100)]
-        public static void TestAdd(int count)
+        public static void Add(int count)
         {
             VerifyAdd(new ArrayList(), count);
         }
@@ -399,7 +403,7 @@ namespace System.Collections.Tests
         [InlineData(1)]
         [InlineData(10)]
         [InlineData(100)]
-        public static void TestAdd_SmallCapacity(int count)
+        public static void Add_SmallCapacity(int count)
         {
             VerifyAdd(new ArrayList(1), count);
         }
@@ -432,7 +436,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestBinarySearch_Basic()
+        public static void BinarySearch_Basic()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -446,7 +450,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestBinarySearch_Basic_NotFoundReturnsNextElementIndex()
+        public static void BinarySearch_Basic_NotFoundReturnsNextElementIndex()
         {
             // The zero-based index of the value in the sorted ArrayList, if value is found; otherwise, a negative number,
             // which is the bitwise complement of the index of the next element.
@@ -461,7 +465,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestBinarySearch_Basic_NullObject()
+        public static void BinarySearch_Basic_NullObject()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(100);
             arrList1.Add(null);
@@ -473,7 +477,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestBinarySearch_Basic_DuplicateResults()
+        public static void BinarySearch_Basic_DuplicateResults()
         {
             // If we have duplicate results, return the first.
             var arrList1 = new ArrayList();
@@ -488,7 +492,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestBinarySearch_IComparer()
+        public static void BinarySearch_IComparer()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -502,7 +506,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestBinarySearch_IComparer_NotFoundReturnsNextElementIndex()
+        public static void BinarySearch_IComparer_NotFoundReturnsNextElementIndex()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(100);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -515,7 +519,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestBinarySearch_IComparer_NullObject()
+        public static void BinarySearch_IComparer_NullObject()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(100);
             arrList1.Add(null);
@@ -527,7 +531,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestBinarySearch_IComparer_DuplicateResults()
+        public static void BinarySearch_IComparer_DuplicateResults()
         {
             // If we have duplicate results, return the first.
             var arrList1 = new ArrayList();
@@ -542,7 +546,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestBinarySearch_Int_Int_IComparer()
+        public static void BinarySearch_Int_Int_IComparer()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -556,7 +560,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestBinarySearch_Int_Int_IComparer_ObjectOutsideIndex()
+        public static void BinarySearch_Int_Int_IComparer_ObjectOutsideIndex()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -572,7 +576,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestBinarySearch_Int_Int_IComparer_NullComparer()
+        public static void BinarySearch_Int_Int_IComparer_NullComparer()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -588,7 +592,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestBinarySearch_Int_Int_IComparer_Invalid()
+        public static void BinarySearch_Int_Int_IComparer_Invalid()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -606,7 +610,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestCapacity_Get()
+        public static void Capacity_Get()
         {
             var arrList = Helpers.CreateIntArrayList(10);
             Helpers.PerformActionOnAllArrayListWrappers(arrList, arrList2 =>
@@ -616,7 +620,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestCapacity_Set()
+        public static void Capacity_Set()
         {
             var arrList = Helpers.CreateIntArrayList(10);
             int nCapacity = 2 * arrList.Capacity;
@@ -631,11 +635,11 @@ namespace System.Collections.Tests
             // Range ignores setter
             arrList = new ArrayList(Helpers.CreateIntArray(10)).GetRange(0, arrList.Count);
             arrList.Capacity = 1000;
-            Assert.NotEqual(100, arrList.Capacity);
+            Assert.NotEqual(1000, arrList.Capacity);
         }
 
         [Fact]
-        public static void TestCapacity_Set_Zero()
+        public static void Capacity_Set_Zero()
         {
             var arrList = new ArrayList(1);
 
@@ -650,7 +654,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestCapacity_Set_One()
+        public static void Capacity_Set_One()
         {
             var arrList = new ArrayList(4);
 
@@ -665,7 +669,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestCapacity_Set_Invalid()
+        public static void Capacity_Set_InvalidValue_ThrowsArgumentOutOfRangeException()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -681,7 +685,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestClear()
+        public static void Clear()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             arrList1.Add(null);
@@ -698,7 +702,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestClear_EmptyArrayList()
+        public static void Clear_EmptyArrayList()
         {
             var arrList1 = new ArrayList();
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -715,7 +719,7 @@ namespace System.Collections.Tests
 
 
         [Fact]
-        public static void TestClear_FixedSizeArrayList_Invalid()
+        public static void Clear_FixedSizeArrayList_ThrowsNotSupportedException()
         {
             IList sourceArrList = ArrayList.FixedSize(Helpers.CreateIntArrayList(10));
             ArrayList arrList = ArrayList.Adapter(sourceArrList);
@@ -727,7 +731,7 @@ namespace System.Collections.Tests
         [InlineData(1)]
         [InlineData(10)]
         [InlineData(100)]
-        public static void TestClone(int count)
+        public static void Clone(int count)
         {
             // Clone should exactly replicate a collection to another object reference
             // afterwards these 2 should not hold the same object references
@@ -750,7 +754,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestClone_IsShallowCopy()
+        public static void Clone_IsShallowCopy()
         {
             var arrList = new ArrayList();
             for (int i = 0; i < 10; i++)
@@ -786,7 +790,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestContains()
+        public static void Contains()
         {
             var data = new string[11];
             for (int i = 0; i < 10; i++)
@@ -818,7 +822,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestContains_NonExistentObject()
+        public static void Contains_NonExistentObject()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -830,7 +834,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestContains_EmptyArrayList()
+        public static void Contains_EmptyArrayList()
         {
             var arrList1 = new ArrayList();
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -842,7 +846,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestCopyTo_Basic()
+        public static void CopyTo_Basic()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -858,7 +862,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestCopyTo_Basic_EmptyArrayListToFilledArray()
+        public static void CopyTo_Basic_EmptyArrayListToFilledArray()
         {
             var arrList1 = new ArrayList();
             var arrCopy = new string[10];
@@ -879,7 +883,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestCopyTo_Basic_EmptyArray()
+        public static void CopyTo_Basic_EmptyArray()
         {
             var arrList1 = new ArrayList();
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -891,14 +895,14 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestCopyTo_Basic_Invalid()
+        public static void CopyTo_Basic_Invalid()
         {
-            Assert.Throws<ArgumentNullException>(() => new ArrayList().CopyTo(null)); // Array is null
-            Assert.Throws<ArgumentException>(() => new ArrayList().CopyTo(new object[10, 10])); // Array is multidimensional
+            Assert.Throws<ArgumentNullException>("dest", () => new ArrayList().CopyTo(null)); // Array is null
+            Assert.Throws<ArgumentException>("array", () => new ArrayList().CopyTo(new object[10, 10])); // Array is multidimensional
         }
 
         [Fact]
-        public static void TestCopyTo_Int()
+        public static void CopyTo_Int()
         {
             int index = 1;
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
@@ -924,7 +928,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestCopyTo_Int_EqualToLength()
+        public static void CopyTo_Int_EqualToLength()
         {
             var arrList1 = new ArrayList();
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -935,7 +939,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestCopyTo_Int_EmptyArrayListToFilledArray()
+        public static void CopyTo_Int_EmptyArrayListToFilledArray()
         {
             var arrList1 = new ArrayList();
             var arrCopy = new string[10];
@@ -956,7 +960,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestCopyTo_Int_EmptyArray()
+        public static void CopyTo_Int_EmptyArray()
         {
             var arrList1 = new ArrayList();
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -968,7 +972,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestCopyTo_Int_Invalid()
+        public static void CopyTo_Int_Invalid()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -976,7 +980,7 @@ namespace System.Collections.Tests
                 var arrCopy = new int[arrList2.Count];
 
                 Assert.Throws<ArgumentNullException>(() => arrList2.CopyTo(null)); // Array is null
-                Assert.Throws<ArgumentException>(() => arrList2.CopyTo(new object[10, 10])); // Array is multidimensional
+                Assert.Throws<ArgumentException>("array", () => arrList2.CopyTo(new object[10, 10])); // Array is multidimensional
 
                 Assert.Throws<ArgumentOutOfRangeException>(() => arrList2.CopyTo(arrCopy, -1)); // Index < 0
                 Assert.Throws<ArgumentException>(() => arrList2.CopyTo(new object[11], 2)); // Invalid index and length
@@ -984,7 +988,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestCopyTo_Int_Int()
+        public static void CopyTo_Int_Int()
         {
             int index = 3;
             int count = 3;
@@ -1002,7 +1006,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestCopyTo_Int_Int_EmptyArrayListToFilledArray()
+        public static void CopyTo_Int_Int_EmptyArrayListToFilledArray()
         {
             var arrList1 = new ArrayList();
             var arrCopy = new string[10];
@@ -1023,7 +1027,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestCopyTo_Int_Int_Invalid()
+        public static void CopyTo_Int_Int_Invalid()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -1033,14 +1037,14 @@ namespace System.Collections.Tests
                 Assert.Throws<ArgumentOutOfRangeException>(() => arrList2.CopyTo(-1, arrCopy, 0, 1)); // Index < 0
                 Assert.Throws<ArgumentOutOfRangeException>(() => arrList2.CopyTo(0, arrCopy, 0, -1)); // Count < 0
 
-                Assert.Throws<ArgumentException>(null, () =>
+                Assert.Throws<ArgumentException>(() =>
                 {
                     arrCopy = new string[100];
                     arrList2.CopyTo(arrList2.Count - 1, arrCopy, 0, 24);
                 });
 
                 Assert.Throws<ArgumentNullException>(() => arrList2.CopyTo(0, null, 3, 3)); // Array is null
-                Assert.Throws<ArgumentException>(() => arrList2.CopyTo(0, new object[arrList2.Count, arrList2.Count], 0, arrList2.Count)); // Array is multidimensional
+                Assert.Throws<ArgumentException>("array", () => arrList2.CopyTo(0, new object[arrList2.Count, arrList2.Count], 0, arrList2.Count)); // Array is multidimensional
 
                 // Array index and count is out of bounds
                 Assert.Throws<ArgumentException>(() =>
@@ -1054,7 +1058,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestFixedSize_ArrayList()
+        public static void FixedSize_ArrayList()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             ArrayList arrList2 = ArrayList.FixedSize(arrList1);
@@ -1071,7 +1075,7 @@ namespace System.Collections.Tests
 
             // Remove an object from the original list and verify the object underneath has been cut
             arrList1.RemoveAt(9);
-            Assert.Throws<ArgumentOutOfRangeException>(() => arrList2[9]);
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => arrList2[9]);
 
             // We cant remove or add to the fixed list
             Assert.Throws<NotSupportedException>(() => arrList2.RemoveAt(0));
@@ -1088,7 +1092,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestFixedSize_ReadOnlyArrayList()
+        public static void FixedSize_ReadOnlyArrayList()
         {
             ArrayList arrList = ArrayList.FixedSize(ArrayList.ReadOnly(new ArrayList()));
             Assert.True(arrList.IsFixedSize);
@@ -1097,7 +1101,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestFixedSize_SynchronizedArrayList()
+        public static void FixedSize_SynchronizedArrayList()
         {
             ArrayList arrList = ArrayList.FixedSize(ArrayList.Synchronized(new ArrayList()));
             Assert.True(arrList.IsFixedSize);
@@ -1106,14 +1110,14 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestFixedSize_RangeArrayList()
+        public static void FixedSize_RangeArrayList()
         {
             ArrayList arrList = ArrayList.FixedSize(new ArrayList()).GetRange(0, 0);
             Assert.True(arrList.IsFixedSize);
         }
 
         [Fact]
-        public static void TestFixedSize_ArrayList_CanChangeExistingItems()
+        public static void FixedSize_ArrayList_CanChangeExistingItems()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             ArrayList arrList2 = ArrayList.FixedSize(arrList1);
@@ -1123,13 +1127,13 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestFixedSize_ArrayList_Invalid()
+        public static void FixedSize_ArrayList_NullCollection_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("list", () => ArrayList.FixedSize(null)); // List is null
         }
 
         [Fact]
-        public static void TestFixedSize_IList()
+        public static void FixedSize_IList()
         {
             ArrayList arrList = Helpers.CreateIntArrayList(10);
             IList iList = ArrayList.FixedSize((IList)arrList);
@@ -1146,7 +1150,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestFixedSize_SynchronizedIList()
+        public static void FixedSize_SynchronizedIList()
         {
             IList iList = ArrayList.FixedSize((IList)ArrayList.Synchronized(new ArrayList()));
             Assert.True(iList.IsFixedSize);
@@ -1155,7 +1159,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestFixedSize_IList_Contains()
+        public static void FixedSize_IList_Contains()
         {
             ArrayList arrList = Helpers.CreateIntArrayList(10);
             IList iList = ArrayList.FixedSize((IList)arrList);
@@ -1166,7 +1170,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestFixedSize_IList_IndexOf()
+        public static void FixedSize_IList_IndexOf()
         {
             ArrayList arrList = Helpers.CreateIntArrayList(10);
             IList iList = ArrayList.FixedSize((IList)arrList);
@@ -1177,7 +1181,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestFixedSize_IList_SyncRoot()
+        public static void FixedSize_IList_SyncRoot()
         {
             ArrayList arrList = Helpers.CreateIntArrayList(10);
             IList iList = ArrayList.FixedSize((IList)arrList);
@@ -1186,7 +1190,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestFixedSize_IList_CopyTo()
+        public static void FixedSize_IList_CopyTo()
         {
             ArrayList arrList = Helpers.CreateIntArrayList(10);
             IList iList = ArrayList.FixedSize((IList)arrList);
@@ -1203,7 +1207,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestFixedSize_IList_GetEnumerator()
+        public static void FixedSize_IList_GetEnumerator()
         {
             ArrayList arrList = Helpers.CreateIntArrayList(10);
             IList iList = ArrayList.FixedSize((IList)arrList);
@@ -1220,7 +1224,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestFixedSizeIList_GetEnumerator_Invalid()
+        public static void FixedSizeIList_GetEnumerator_Invalid()
         {
             ArrayList arrList = Helpers.CreateIntArrayList(10);
             IList iList = ArrayList.FixedSize((IList)arrList);
@@ -1243,14 +1247,14 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestFixedSize_IList_NotSupportedMethods()
+        public static void FixedSize_IList_ModifyingCollection_ThrowsNotSupportedException()
         {
             ArrayList arrList = Helpers.CreateIntArrayList(10);
             IList iList = ArrayList.FixedSize((IList)arrList);
 
             // Remove an object from the original list. Verify the object underneath has been cut
             arrList.RemoveAt(9);
-            Assert.Throws<ArgumentOutOfRangeException>(() => iList[9]);
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => iList[9]);
 
             // We cant remove or add to the fixed list
             Assert.Throws<NotSupportedException>(() => iList.RemoveAt(0));
@@ -1261,7 +1265,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestFixedSize_IList_CanChangeExistingItems()
+        public static void FixedSize_IList_CanChangeExistingItems()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             IList iList = ArrayList.FixedSize((IList)arrList1);
@@ -1272,13 +1276,13 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestFixedSize_IList_Invalid()
+        public static void FixedSize_IList_NullList_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => ArrayList.FixedSize((IList)null)); // List is null
+            Assert.Throws<ArgumentNullException>("list", () => ArrayList.FixedSize((IList)null)); // List is null
         }
 
         [Fact]
-        public static void TestGetEnumerator_Basic()
+        public static void GetEnumerator_Basic()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -1307,7 +1311,7 @@ namespace System.Collections.Tests
         }
         
         [Fact]
-        public static void TestGetEnumerator_Basic_ArrayListContainingItself()
+        public static void GetEnumerator_Basic_ArrayListContainingItself()
         {
             // Verify the enumerator works correctly when the ArrayList itself is in the ArrayList
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
@@ -1330,7 +1334,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestGetEnumerator_Basic_DerivedArrayList()
+        public static void GetEnumerator_Basic_DerivedArrayList()
         {
             // The enumerator for a derived (subclassed) ArrayList is different to a normal ArrayList as it does not run an optimized MoveNext() function
             var arrList = new DerivedArrayList(Helpers.CreateIntArrayList(10));
@@ -1348,7 +1352,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestGetEnumerator_Basic_Invalid()
+        public static void GetEnumerator_Basic_Invalid()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -1389,7 +1393,7 @@ namespace System.Collections.Tests
         }
         
         [Fact]
-        public static void TestGetEnumerator_Int_Int()
+        public static void GetEnumerator_Int_Int()
         {
             int index = 3;
             int count = 3;
@@ -1411,7 +1415,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestGetEnumerator_Int_Int_ArrayListContainingItself()
+        public static void GetEnumerator_Int_Int_ArrayListContainingItself()
         {
             // Verify the enumerator works correctly when the ArrayList itself is in the ArrayList
             int[] data = Helpers.CreateIntArray(10);
@@ -1468,7 +1472,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestGetEnumerator_Int_Int_ZeroCount()
+        public static void GetEnumerator_Int_Int_ZeroCount()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -1480,7 +1484,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestGetEnumerator_Int_Int_Invalid()
+        public static void GetEnumerator_Int_Int_Invalid()
         {
             int index = 3;
             int count = 3;
@@ -1518,15 +1522,15 @@ namespace System.Collections.Tests
                 Assert.Throws<InvalidOperationException>(() => enumerator.Current);
 
                 // Invalid parameters    
-                Assert.Throws<ArgumentOutOfRangeException>(() => arrList2.GetEnumerator(-1, arrList2.Count)); // Index < 0
-                Assert.Throws<ArgumentOutOfRangeException>(() => arrList2.GetEnumerator(0, -1)); // Count < 0
-                Assert.Throws<ArgumentException>(() => arrList2.GetEnumerator(0, arrList2.Count + 1)); // Count + list.Count
-                Assert.Throws<ArgumentOutOfRangeException>(() => arrList2.GetEnumerator(-1, arrList2.Count + 1)); // Index < 0 and count > list.Count
+                Assert.Throws<ArgumentOutOfRangeException>("index", () => arrList2.GetEnumerator(-1, arrList2.Count)); // Index < 0
+                Assert.Throws<ArgumentOutOfRangeException>("count", () => arrList2.GetEnumerator(0, -1)); // Count < 0
+                Assert.Throws<ArgumentException>(null, () => arrList2.GetEnumerator(0, arrList2.Count + 1)); // Count + list.Count
+                Assert.Throws<ArgumentOutOfRangeException>("index", () => arrList2.GetEnumerator(-1, arrList2.Count + 1)); // Index < 0 and count > list.Count
             });
         }
 
         [Fact]
-        public static void TestGetRange()
+        public static void GetRange()
         {
             int index = 10;
             int count = 50;
@@ -1552,7 +1556,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestGetRange_ChangeUnderlyingCollection()
+        public static void GetRange_ChangeUnderlyingCollection()
         {
             int index = 10;
             int count = 50;
@@ -1598,7 +1602,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestGetRange_ChangeUnderlyingCollection_Invalid()
+        public static void GetRange_ChangeUnderlyingCollection_Invalid()
         {
             int index = 10;
             int count = 50;
@@ -1636,7 +1640,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestGetRange_Invalid()
+        public static void GetRange_Invalid()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(100);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -1650,7 +1654,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestGetRange_Empty()
+        public static void GetRange_Empty()
         {
             // We should be able to get a range of 0
             var arrList1 = new ArrayList();
@@ -1662,7 +1666,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestSetRange()
+        public static void SetRange()
         {
             int index = 3;
 
@@ -1686,7 +1690,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestSetRange_Invalid()
+        public static void SetRange_Invalid()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -1706,7 +1710,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestSetRange_EmptyCollection()
+        public static void SetRange_EmptyCollection()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             ICollection emptyCollection = new ArrayList();
@@ -1727,7 +1731,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestIndexOf_Basic()
+        public static void IndexOf_Basic()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -1740,7 +1744,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestIndexOf_Basic_DuplicateItems()
+        public static void IndexOf_Basic_DuplicateItems()
         {
             var arrList1 = new ArrayList();
             arrList1.Add(null);
@@ -1754,7 +1758,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestIndexOf_Basic_NonExistentObject()
+        public static void IndexOf_Basic_NonExistentObject()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -1766,7 +1770,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestIndexOf_Int()
+        public static void IndexOf_Int()
         {
             int startIndex = 3;
 
@@ -1791,7 +1795,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestIndexOf_Int_NonExistentObject()
+        public static void IndexOf_Int_NonExistentObject()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -1803,7 +1807,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestIndexOf_Int_ExistentObjectNotInRange()
+        public static void IndexOf_Int_ExistentObjectNotInRange()
         {
             // Find an existing object before the index (expects -1)
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
@@ -1814,20 +1818,20 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestIndexOf_Int_Invalid()
+        public static void IndexOf_Int_InvalidStartIndex_ThrowsArgumentOutOfRangeException()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
             {
-                Assert.Throws<ArgumentOutOfRangeException>(() => arrList2.IndexOf("Batman", -1)); // Start index < 0                
-                Assert.Throws<ArgumentOutOfRangeException>(() => arrList2.IndexOf("Batman", arrList2.Count + 1)); // Start index > list.Count
+                Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => arrList2.IndexOf("Batman", -1)); // Start index < 0                
+                Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => arrList2.IndexOf("Batman", arrList2.Count + 1)); // Start index > list.Count
 
                 Assert.Equal(-1, arrList2.IndexOf("Batman", arrList2.Count, 0)); // Index = list.Count
             });
         }
 
         [Fact]
-        public static void TestIndexOf_Int_Int()
+        public static void IndexOf_Int_Int()
         {
             int startIndex = 0;
             int count = 5;
@@ -1853,7 +1857,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestIndexOf_Int_Int_NonExistentObject()
+        public static void IndexOf_Int_Int_NonExistentObject()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -1865,7 +1869,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestIndexOf_Int_Int_ExistentObjectNotInRange()
+        public static void IndexOf_Int_Int_ExistentObjectNotInRange()
         {
             // Find an existing object before the startIndex or after startIndex + count (expects -1)
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
@@ -1877,22 +1881,22 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestIndexOf_Int_Int_Invalid()
+        public static void IndexOf_Int_Int_InvalidIndexCount_ThrowsArgumentOutOfRangeException()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
             {
-                Assert.Throws<ArgumentOutOfRangeException>(() => arrList2.IndexOf("Batman", -1, arrList2.Count)); // Start index < 0
-                Assert.Throws<ArgumentOutOfRangeException>(() => arrList2.IndexOf("Batman", arrList2.Count + 1, arrList2.Count)); // Start index > Count
-                Assert.Throws<ArgumentOutOfRangeException>(() => arrList2.IndexOf("Batman", 0, -1)); // Count < 0
-                Assert.Throws<ArgumentOutOfRangeException>(() => arrList2.IndexOf("Batman", 3, arrList2.Count + 1)); // Count > list.Count
+                Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => arrList2.IndexOf("Batman", -1, arrList2.Count)); // Start index < 0
+                Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => arrList2.IndexOf("Batman", arrList2.Count + 1, arrList2.Count)); // Start index > Count
+                Assert.Throws<ArgumentOutOfRangeException>("count", () => arrList2.IndexOf("Batman", 0, -1)); // Count < 0
+                Assert.Throws<ArgumentOutOfRangeException>("count", () => arrList2.IndexOf("Batman", 3, arrList2.Count + 1)); // Count > list.Count
 
                 Assert.Equal(-1, arrList2.IndexOf("Batman", arrList2.Count, 0)); // Index = list.Count
             });
         }
 
         [Fact]
-        public static void TestInsertRange()
+        public static void InsertRange()
         {
             int index = 3;
 
@@ -1915,7 +1919,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestInsertRange_LargeCapacity()
+        public static void InsertRange_LargeCapacity()
         {
             // Add a range large enough to increase the capacity of the arrayList by more than a factor of two
             var arrList1 = new ArrayList();
@@ -1937,7 +1941,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestInsertRange_EmptyCollection()
+        public static void InsertRange_EmptyCollection()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             var emptyCollection = new Queue();
@@ -1954,7 +1958,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestInsertRange_WrappedNonArrayList()
+        public static void InsertRange_WrappedNonArrayList()
         {
             // Create an array list by wrapping a non-ArrayList object (e.g. List<T>)
             var list = new List<int>(Helpers.CreateIntArray(10));
@@ -1969,7 +1973,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestInsertRange_Itself()
+        public static void InsertRange_Itself()
         {
             int[] data = Helpers.CreateIntArray(10);
             var arrList1 = new ArrayList(data);
@@ -2038,7 +2042,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestInsert()
+        public static void Insert()
         {
             int start = 3;
 
@@ -2064,7 +2068,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestInsert_Invalid()
+        public static void Insert_InvalidIndex_ThrowsArguentOutOfRangeException()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -2074,13 +2078,13 @@ namespace System.Collections.Tests
                     return;
                 }
 
-                Assert.Throws<ArgumentOutOfRangeException>(() => arrList2.Insert(-1, "Batman")); // Index < 0
-                Assert.Throws<ArgumentOutOfRangeException>(() => arrList2.Insert(arrList2.Count + 1, "Batman")); // Index > count
+                Assert.Throws<ArgumentOutOfRangeException>("index", () => arrList2.Insert(-1, "Batman")); // Index < 0
+                Assert.Throws<ArgumentOutOfRangeException>("index", () => arrList2.Insert(arrList2.Count + 1, "Batman")); // Index > count
             });
         }
 
         [Fact]
-        public static void TestItem_Get()
+        public static void Item_Get()
         {
             int[] data = Helpers.CreateIntArray(10);
             var arrList1 = new ArrayList(data);
@@ -2094,7 +2098,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestItem_Get_Invalid()
+        public static void Item_Get_InvalidIndex_ThrowsArgumentOutOfRangeException()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -2105,7 +2109,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestItem_Set()
+        public static void Item_Set()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -2124,7 +2128,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestItem_Set_Invalid()
+        public static void Item_Set_InvalidIndex_ThrowsArgumentOutOfRangeException()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -2140,7 +2144,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestLastIndexOf_Basic()
+        public static void LastIndexOf_Basic()
         {
             var data = new string[20];
             for (int i = 0; i < 10; i++)
@@ -2164,7 +2168,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestLastIndexOf_Basic_EmptyArrayList()
+        public static void LastIndexOf_Basic_EmptyArrayList()
         {
             var arrList1 = new ArrayList();
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -2174,7 +2178,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestLastIndexOf_Basic_NonExistentObject()
+        public static void LastIndexOf_Basic_NonExistentObject()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -2186,7 +2190,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestLastIndexOf_Int()
+        public static void LastIndexOf_Int()
         {
             int startIndex = 3;
 
@@ -2213,7 +2217,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestLastIndexOf_Int_NonExistentObject()
+        public static void LastIndexOf_Int_NonExistentObject()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -2225,7 +2229,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestLastIndexOf_Int_ObjectOutOfRange()
+        public static void LastIndexOf_Int_ObjectOutOfRange()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -2236,18 +2240,18 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestLastIndexOf_Int_Invalid()
+        public static void LastIndexOf_Int_InvalidStartIndex_ThrowsArgumentOutOfRangeException()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
             {
-                Assert.Throws<ArgumentOutOfRangeException>(() => arrList2.LastIndexOf(0, -1)); // Index < 0
-                Assert.Throws<ArgumentOutOfRangeException>(() => arrList2.LastIndexOf(0, arrList2.Count)); // Index >= list.Count
+                Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => arrList2.LastIndexOf(0, -1)); // StartIndex < 0
+                Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => arrList2.LastIndexOf(0, arrList2.Count)); // StartIndex >= list.Count
             });
         }
 
         [Fact]
-        public static void TestLastIndexOf_Int_Int()
+        public static void LastIndexOf_Int_Int()
         {
             int startIndex = 15;
             int count = 10;
@@ -2275,7 +2279,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestLastIndexOf_Int_Int_EmptyArrayList()
+        public static void LastIndexOf_Int_Int_EmptyArrayList()
         {
             var arrList1 = new ArrayList();
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -2285,7 +2289,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestLastIndexOf_Int_Int_NonExistentObject()
+        public static void LastIndexOf_Int_Int_NonExistentObject()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -2295,7 +2299,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestLastIndexOf_Int_Int_ObjectOutOfRange()
+        public static void LastIndexOf_Int_Int_ObjectOutOfRange()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -2309,7 +2313,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestLastIndexOf_Int_Int_Invalid()
+        public static void LastIndexOf_Int_Int_InvalidStartIndexCount_ThrowsArgumentOutOfRangeException()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -2324,7 +2328,7 @@ namespace System.Collections.Tests
             });
         }
         [Fact]
-        public static void TestReadOnly_ArrayList()
+        public static void ReadOnly_ArrayList()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             ArrayList arrList2 = ArrayList.ReadOnly(arrList1);
@@ -2341,7 +2345,7 @@ namespace System.Collections.Tests
 
             // Remove an object from the original list and verify the object underneath has been cut
             arrList1.RemoveAt(9);
-            Assert.Throws<ArgumentOutOfRangeException>(() => arrList2[9]);
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => arrList2[9]);
 
             // We cant remove, change or add to the readonly list
             Assert.Throws<NotSupportedException>(() => arrList2.RemoveAt(0));
@@ -2372,7 +2376,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestReadOnly_SynchronizedArrayList()
+        public static void ReadOnly_SynchronizedArrayList()
         {
             ArrayList arrList = ArrayList.ReadOnly(ArrayList.Synchronized(new ArrayList()));
             Assert.True(arrList.IsFixedSize);
@@ -2381,13 +2385,13 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestReadOnly_ArrayList_Invalid()
+        public static void ReadOnly_ArrayList_NullList_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("list", () => ArrayList.ReadOnly(null)); // List is null
         }
 
         [Fact]
-        public static void TestReadOnly_IList()
+        public static void ReadOnly_IList()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             IList iList = ArrayList.ReadOnly((IList)arrList1);
@@ -2404,7 +2408,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestReadOnly_SynchronizedIList()
+        public static void ReadOnly_SynchronizedIList()
         {
             IList iList = ArrayList.ReadOnly((IList)ArrayList.Synchronized(new ArrayList()));
             Assert.True(iList.IsFixedSize);
@@ -2413,7 +2417,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestReadOnly_IList_Contains()
+        public static void ReadOnly_IList_Contains()
         {
             ArrayList arrList = Helpers.CreateIntArrayList(10);
             IList iList = ArrayList.ReadOnly((IList)arrList);
@@ -2424,7 +2428,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestReadOnly_IList_IndexOf()
+        public static void ReadOnly_IList_IndexOf()
         {
             ArrayList arrList = Helpers.CreateIntArrayList(10);
             IList iList = ArrayList.ReadOnly((IList)arrList);
@@ -2435,7 +2439,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestReadOnly_IList_SyncRoot()
+        public static void ReadOnly_IList_SyncRoot()
         {
             ArrayList arrList = Helpers.CreateIntArrayList(10);
             IList iList = ArrayList.ReadOnly((IList)arrList);
@@ -2444,7 +2448,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestReadOnly_IList_CopyTo()
+        public static void ReadOnly_IList_CopyTo()
         {
             ArrayList arrList = Helpers.CreateIntArrayList(10);
             IList iList = ArrayList.ReadOnly((IList)arrList);
@@ -2461,7 +2465,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestReadOnly_IList_GetEnumerator()
+        public static void ReadOnly_IList_GetEnumerator()
         {
             ArrayList arrList = Helpers.CreateIntArrayList(10);
             IList iList = ArrayList.ReadOnly((IList)arrList);
@@ -2478,7 +2482,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestReadOnly_IList_GetEnumerator_Invalid()
+        public static void ReadOnly_IList_GetEnumerator_Invalid()
         {
             ArrayList arrList = Helpers.CreateIntArrayList(10);
             IList iList = ArrayList.ReadOnly((IList)arrList);
@@ -2501,14 +2505,14 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestReadOnly_IList_NotSupportedMethods()
+        public static void ReadOnly_IList_NotSupportedMethods()
         {
             ArrayList arrList = Helpers.CreateIntArrayList(10);
             IList iList = ArrayList.ReadOnly((IList)arrList);
 
             // Remove an object from the original list. Verify the object underneath has been cut
             arrList.RemoveAt(9);
-            Assert.Throws<ArgumentOutOfRangeException>(() => iList[9]);
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => iList[9]);
 
             // We cant remove or add to the fixed list
             Assert.Throws<NotSupportedException>(() => iList.RemoveAt(0));
@@ -2523,13 +2527,13 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestReadOnly_IList_Invalid()
+        public static void ReadOnly_IList_NullList_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("list", () => ArrayList.ReadOnly((IList)null)); // List is null
         }
 
         [Fact]
-        public static void TestRemoveAt()
+        public static void RemoveAt()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -2549,7 +2553,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestRemoveAt_Invalid()
+        public static void RemoveAt_InvalidIndex_ThrowsArgumentOutOfRangeException()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -2565,7 +2569,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestRemoveRange()
+        public static void RemoveRange()
         {
             int index = 3;
             int count = 3;
@@ -2590,7 +2594,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestRemoveRange_ZeroCount()
+        public static void RemoveRange_ZeroCount()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -2612,7 +2616,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestRemoveRange_Invalid()
+        public static void RemoveRange_Invalid()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -2622,17 +2626,17 @@ namespace System.Collections.Tests
                     return;
                 }
 
-                Assert.Throws<ArgumentOutOfRangeException>(() => arrList2.RemoveRange(-1, 1)); // Index < 0
-                Assert.Throws<ArgumentOutOfRangeException>(() => arrList2.RemoveRange(1, -1)); // Count < 0
+                Assert.Throws<ArgumentOutOfRangeException>("index", () => arrList2.RemoveRange(-1, 1)); // Index < 0
+                Assert.Throws<ArgumentOutOfRangeException>("count", () => arrList2.RemoveRange(1, -1)); // Count < 0
 
-                Assert.Throws<ArgumentException>(() => arrList2.RemoveRange(arrList2.Count, 1)); // Index > list.Count
-                Assert.Throws<ArgumentException>(() => arrList2.RemoveRange(0, arrList2.Count + 1)); // Count > list.Count
-                Assert.Throws<ArgumentException>(() => arrList2.RemoveRange(5, arrList2.Count - 1)); // Index + count > list.Count
+                Assert.Throws<ArgumentException>(null, () => arrList2.RemoveRange(arrList2.Count, 1)); // Index > list.Count
+                Assert.Throws<ArgumentException>(null, () => arrList2.RemoveRange(0, arrList2.Count + 1)); // Count > list.Count
+                Assert.Throws<ArgumentException>(null, () => arrList2.RemoveRange(5, arrList2.Count - 1)); // Index + count > list.Count
             });
         }
 
         [Fact]
-        public static void TestRemove()
+        public static void Remove()
         {
             ArrayList arrList = Helpers.CreateIntArrayList(10);
             arrList.Add(null);
@@ -2645,7 +2649,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestRemove_Null()
+        public static void Remove_Null()
         {
             var arrList = new ArrayList();
 
@@ -2660,7 +2664,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestRemove_NonExistentObject()
+        public static void Remove_NonExistentObject()
         {
             var arrList = new ArrayList();
             arrList.Remove(null);
@@ -2668,7 +2672,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestRepeat()
+        public static void Repeat()
         {
             ArrayList arrList = ArrayList.Repeat(5, 100);
             for (int i = 0; i < arrList.Count; i++)
@@ -2678,7 +2682,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestRepeat_Null()
+        public static void Repeat_Null()
         {
             ArrayList arrList = ArrayList.Repeat(null, 100);
             for (int i = 0; i < arrList.Count; i++)
@@ -2688,20 +2692,20 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestRepeat_ZeroCount()
+        public static void Repeat_ZeroCount()
         {
             ArrayList arrList = ArrayList.Repeat(5, 0);
             Assert.Equal(0, arrList.Count);
         }
 
         [Fact]
-        public static void TestRepeat_Invalid()
+        public static void Repeat_NegativeCount_ThrowsArgumentOutOfRangeException()
         {
             Assert.Throws<ArgumentOutOfRangeException>("count", () => ArrayList.Repeat(5, -1)); // Count < 0
         }
 
         [Fact]
-        public static void TestReverse_Basic()
+        public static void Reverse_Basic()
         {
             int[] expected = Helpers.CreateIntArray(10);
             var arrList1 = new ArrayList(expected);
@@ -2724,7 +2728,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestReverse_Basic_EmptyArrayList()
+        public static void Reverse_Basic_EmptyArrayList()
         {
             var arrList1 = new ArrayList();
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -2740,7 +2744,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestReverse_Basic_SingleObjectArrayList()
+        public static void Reverse_Basic_SingleObjectArrayList()
         {
             var arrList1 = new ArrayList();
             arrList1.Add(0);
@@ -2760,7 +2764,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestReverse_Int_Int()
+        public static void Reverse_Int_Int()
         {
             int index = 5;
             int count = 4;
@@ -2786,7 +2790,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestReverse_Int_Int_ZeroCount()
+        public static void Reverse_Int_Int_ZeroCount()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -2808,7 +2812,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestReverse_Int_Int_Invalid()
+        public static void Reverse_Int_Int_Invalid()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -2825,7 +2829,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestSort_Basic()
+        public static void Sort_Basic()
         {
             int[] expected = Helpers.CreateIntArray(10);
             var arrList1 = new ArrayList(expected);
@@ -2846,7 +2850,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestSort_Basic_EmptyArrayList()
+        public static void Sort_Basic_EmptyArrayList()
         {
             var arrList1 = new ArrayList();
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -2862,7 +2866,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestSort_Basic_SingleObjectArrayList()
+        public static void Sort_Basic_SingleObjectArrayList()
         {
             var arrList1 = new ArrayList();
             arrList1.Add(1);
@@ -2879,7 +2883,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestSort_IComparer()
+        public static void Sort_IComparer()
         {
             int[] data = Helpers.CreateIntArray(10);
             int[] ascendingData = Helpers.CreateIntArray(10);
@@ -2916,7 +2920,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestSort_Int_Int_IComparer()
+        public static void Sort_Int_Int_IComparer()
         {
             int index = 3;
             int count = 5;
@@ -2940,7 +2944,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestSort_Int_Int_IComparer_Invalid()
+        public static void Sort_Int_Int_IComparer_Invalid()
         {
             ArrayList arrList1 = Helpers.CreateIntArrayList(10);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -2950,16 +2954,16 @@ namespace System.Collections.Tests
                     return;
                 }
 
-                Assert.Throws<ArgumentOutOfRangeException>(() => arrList2.Sort(-1, arrList2.Count, null)); // Index < 0
-                Assert.Throws<ArgumentOutOfRangeException>(() => arrList2.Sort(0, -1, null)); // Count < 0
+                Assert.Throws<ArgumentOutOfRangeException>("index", () => arrList2.Sort(-1, arrList2.Count, null)); // Index < 0
+                Assert.Throws<ArgumentOutOfRangeException>("count", () => arrList2.Sort(0, -1, null)); // Count < 0
 
-                Assert.Throws<ArgumentException>(() => arrList2.Sort(arrList2.Count, arrList2.Count, null)); // Index >= list.Count
-                Assert.Throws<ArgumentException>(() => arrList2.Sort(0, arrList2.Count + 1, null)); // Count = list.Count
+                Assert.Throws<ArgumentException>(null, () => arrList2.Sort(arrList2.Count, arrList2.Count, null)); // Index >= list.Count
+                Assert.Throws<ArgumentException>(null, () => arrList2.Sort(0, arrList2.Count + 1, null)); // Count = list.Count
             });
         }
 
         [Fact]
-        public static void TestSort_MultipleDataTypes_ThrowsInvalidOperationException()
+        public static void Sort_MultipleDataTypes_ThrowsInvalidOperationException()
         {
             var arrList1 = new ArrayList();
             arrList1.Add((short)1);
@@ -2981,7 +2985,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestSynchronized_ArrayList()
+        public static void Synchronized_ArrayList()
         {
             ArrayList arrList = ArrayList.Synchronized(new ArrayList());
             Assert.False(arrList.IsFixedSize);
@@ -2990,7 +2994,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestSynchronized_FixedSizeArrayList()
+        public static void Synchronized_FixedSizeArrayList()
         {
             ArrayList arrList = ArrayList.Synchronized(ArrayList.FixedSize(new ArrayList()));
             Assert.True(arrList.IsFixedSize);
@@ -2999,7 +3003,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestSynchronized_ReadOnlyArrayList()
+        public static void Synchronized_ReadOnlyArrayList()
         {
             ArrayList arrList = ArrayList.Synchronized(ArrayList.ReadOnly(new ArrayList()));
             Assert.True(arrList.IsFixedSize);
@@ -3008,13 +3012,13 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestSynchronized_ArrayList_Invalid()
+        public static void Synchronized_ArrayList_NullList_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => ArrayList.Synchronized(null)); // List is null
+            Assert.Throws<ArgumentNullException>("list", () => ArrayList.Synchronized(null)); // List is null
         }
 
         [Fact]
-        public static void TestSynchronized_IList()
+        public static void Synchronized_IList()
         {
             IList iList = ArrayList.Synchronized((IList)new ArrayList());
             Assert.False(iList.IsFixedSize);
@@ -3023,7 +3027,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestSynchronized_FixedSizeIList()
+        public static void Synchronized_FixedSizeIList()
         {
             IList iList = ArrayList.Synchronized((IList)ArrayList.FixedSize(new ArrayList()));
             Assert.True(iList.IsFixedSize);
@@ -3032,7 +3036,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestSynchronized_ReadOnlyIList()
+        public static void Synchronized_ReadOnlyIList()
         {
             IList iList = ArrayList.Synchronized((IList)ArrayList.ReadOnly(new ArrayList()));
             Assert.True(iList.IsFixedSize);
@@ -3041,7 +3045,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestSynchronized_IList_Indexer()
+        public static void Synchronized_IList_Indexer()
         {
             ArrayList arrList = Helpers.CreateIntArrayList(10);
             IList iList = ArrayList.Synchronized((IList)arrList);
@@ -3055,7 +3059,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestSynchronized_IList_Add_Remove()
+        public static void Synchronized_IList_Add_Remove()
         {
             var arrList = new ArrayList();
             IList iList = ArrayList.Synchronized((IList)arrList);
@@ -3075,7 +3079,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestSynchronized_IList_InsertRemoveAt()
+        public static void Synchronized_IList_InsertRemoveAt()
         {
             var arrList = new ArrayList();
             IList iList = ArrayList.Synchronized((IList)arrList);
@@ -3095,7 +3099,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestSynchronized_IList_Clear()
+        public static void Synchronized_IList_Clear()
         {
             ArrayList arrList = Helpers.CreateIntArrayList(10);
             IList iList = ArrayList.Synchronized((IList)arrList);
@@ -3105,7 +3109,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestSynchronized_IList_Contains()
+        public static void Synchronized_IList_Contains()
         {
             ArrayList arrList = Helpers.CreateIntArrayList(10);
             IList iList = ArrayList.Synchronized((IList)arrList);
@@ -3116,7 +3120,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestSynchronized_IList_IndexOf()
+        public static void Synchronized_IList_IndexOf()
         {
             ArrayList arrList = Helpers.CreateIntArrayList(10);
             IList iList = ArrayList.Synchronized((IList)arrList);
@@ -3127,7 +3131,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestSynchronized_IList_SyncRoot()
+        public static void Synchronized_IList_SyncRoot()
         {
             ArrayList arrList = Helpers.CreateIntArrayList(10);
             IList iList = ArrayList.Synchronized((IList)arrList);
@@ -3136,7 +3140,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestSynchronized_IList_CopyTo()
+        public static void Synchronized_IList_CopyTo()
         {
             ArrayList arrList = Helpers.CreateIntArrayList(10);
             IList iList = ArrayList.Synchronized((IList)arrList);
@@ -3153,7 +3157,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestSynchronized_IList_GetEnumerator()
+        public static void Synchronized_IList_GetEnumerator()
         {
             ArrayList arrList = Helpers.CreateIntArrayList(10);
             IList iList = ArrayList.Synchronized((IList)arrList);
@@ -3170,7 +3174,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestSynchronizedIList_GetEnumerator_Invalid()
+        public static void SynchronizedIList_GetEnumerator_Invalid()
         {
             ArrayList arrList = Helpers.CreateIntArrayList(10);
             IList iList = ArrayList.Synchronized((IList)arrList);
@@ -3193,13 +3197,13 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestSynchronized_IList_Invalid()
+        public static void Synchronized_IList_NullList_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => ArrayList.Synchronized((IList)null)); // List is null
+            Assert.Throws<ArgumentNullException>("list", () => ArrayList.Synchronized((IList)null)); // List is null
         }
 
         [Fact]
-        public static void TestToArray()
+        public static void ToArray()
         {
             // ToArray returns an array of this. We will not extensively test this method as
             // this is a thin wrapper on Array.Copy which is extensively tested
@@ -3218,7 +3222,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestToArray_EmptyArrayList()
+        public static void ToArray_EmptyArrayList()
         {
             var arrList1 = new ArrayList();
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
@@ -3232,20 +3236,19 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void TestToArray_Invalid()
+        public static void ToArray_Invalid()
         {
-
             ArrayList arrList1 = Helpers.CreateIntArrayList(100);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
             {
                 // This should be covered in Array.Copy, but lets do it for completion's sake
                 Assert.Throws<InvalidCastException>(() => arrList2.ToArray(typeof(string))); // Objects stored are not strings
-                Assert.Throws<ArgumentNullException>(() => arrList2.ToArray(null)); // Type is null
+                Assert.Throws<ArgumentNullException>("type", () => arrList2.ToArray(null)); // Type is null
             });
         }
 
         [Fact]
-        public static void TestTrimToSize()
+        public static void TrimToSize()
         {
             ArrayList arrList = Helpers.CreateIntArrayList(10);
             arrList.Capacity = 2 * arrList.Count;
@@ -3285,12 +3288,7 @@ namespace System.Collections.Tests
 
         private class Foo
         {
-            private string _stringValue = "Hello World";
-            public string StringValue
-            {
-                get { return _stringValue; }
-                set { _stringValue = value; }
-            }
+            public string StringValue { get; set; } = "Hello World";
         }
 
         private class MyCollection : ICollection
@@ -3306,42 +3304,27 @@ namespace System.Collections.Tests
 
             public Array Array
             {
-                get
-                {
-                    return _array;
-                }
+                get { return _array; }
             }
 
             public int StartIndex
             {
-                get
-                {
-                    return _startIndex;
-                }
+                get { return _startIndex; }
             }
 
             public int Count
             {
-                get
-                {
-                    return _collection.Count;
-                }
+                get { return _collection.Count; }
             }
 
             public object SyncRoot
             {
-                get
-                {
-                    return _collection.SyncRoot;
-                }
+                get { return _collection.SyncRoot; }
             }
 
             public bool IsSynchronized
             {
-                get
-                {
-                    return _collection.IsSynchronized;
-                }
+                get {return _collection.IsSynchronized; }
             }
 
             public void CopyTo(Array array, int startIndex)
@@ -3359,18 +3342,12 @@ namespace System.Collections.Tests
 
         private class AscendingComparer : IComparer
         {
-            public virtual int Compare(object x, object y)
-            {
-                return ((int)x).CompareTo((int)y);
-            }
+            public virtual int Compare(object x, object y) => ((int)x).CompareTo((int)y);
         }
 
         private class DescendingComparer : IComparer
         {
-            public virtual int Compare(object x, object y)
-            {
-                return -((int)x).CompareTo((int)y);
-            }
+            public virtual int Compare(object x, object y) => -((int)x).CompareTo((int)y);
         }
 
         private class DerivedArrayList : ArrayList
@@ -3387,23 +3364,20 @@ namespace System.Collections.Tests
         private ArrayList _arrGrandDaughter;
 
         [Fact]
-        public void TestGetSyncRoot()
+        public void GetSyncRoot()
         {
-            int iNumberOfElements = 100;
-            int iValue;
-            bool fDescending;
-
-            int iNumberOfWorkers = 10;
+            const int NumberOfElements = 100;
+            const int NumberOfWorkers = 10;
 
             // Testing SyncRoot is not as simple as its implementation looks like. This is the working
-            // scenrio we have in mind.
+            // scenario we have in mind.
             // 1) Create your Down to earth mother ArrayList
             // 2) Get a Fixed wrapper from it
             // 3) Get a Synchronized wrapper from 2)
             // 4) Get a synchronized wrapper of the mother from 1)
             // 5) all of these should SyncRoot to the mother earth
 
-            ArrayList arrMother1 = Helpers.CreateIntArrayList(iNumberOfElements);
+            ArrayList arrMother1 = Helpers.CreateIntArrayList(NumberOfElements);
             Helpers.PerformActionOnAllArrayListWrappers(arrMother1, arrMother2 =>
             {
                 ArrayList arrSon1 = ArrayList.FixedSize(arrMother2);
@@ -3420,7 +3394,7 @@ namespace System.Collections.Tests
                 Assert.False(_arrGrandDaughter.SyncRoot is ArrayList);
 
                 arrMother2 = new ArrayList();
-                for (int i = 0; i < iNumberOfElements; i++)
+                for (int i = 0; i < NumberOfElements; i++)
                 {
                     arrMother2.Add(i);
                 }
@@ -3431,10 +3405,10 @@ namespace System.Collections.Tests
                 _arrDaughter = ArrayList.Synchronized(arrMother2);
 
                 // We are going to rumble with the ArrayLists with 2 threads
-                var workers = new Task[iNumberOfWorkers];
+                var workers = new Task[NumberOfWorkers];
                 var action1 = new Action(SortElements);
                 var action2 = new Action(ReverseElements);
-                for (int iThreads = 0; iThreads < iNumberOfWorkers; iThreads += 2)
+                for (int iThreads = 0; iThreads < NumberOfWorkers; iThreads += 2)
                 {
                     workers[iThreads] = Task.Run(action1);
                     workers[iThreads + 1] = Task.Run(action2);
@@ -3446,35 +3420,27 @@ namespace System.Collections.Tests
                 // Now lets see how this is done.
                 // Reverse and sort - ascending more likely
                 // Sort followed up Reverse - descending
-                fDescending = false;
-                if (((int)arrMother2[0]).CompareTo((int)arrMother2[1]) > 0)
-                    fDescending = true;
+                bool fDescending = ((int)arrMother2[0]).CompareTo((int)arrMother2[1]) > 0;
 
-                iValue = (int)arrMother2[0];
-                for (int i = 1; i < iNumberOfElements; i++)
+                int valye = (int)arrMother2[0];
+                for (int i = 1; i < NumberOfElements; i++)
                 {
                     if (fDescending)
                     {
-                        Assert.True(iValue.CompareTo((int)arrMother2[i]) > 0);
+                        Assert.True(valye.CompareTo((int)arrMother2[i]) > 0);
                     }
                     else
                     {
-                        Assert.True(iValue.CompareTo((int)arrMother2[i]) < 0);
+                        Assert.True(valye.CompareTo((int)arrMother2[i]) < 0);
                     }
-                    iValue = (int)arrMother2[i];
+                    valye = (int)arrMother2[i];
                 }
             });
         }
 
-        private void SortElements()
-        {
-            _arrGrandDaughter.Sort();
-        }
+        private void SortElements() => _arrGrandDaughter.Sort();
 
-        private void ReverseElements()
-        {
-            _arrDaughter.Reverse();
-        }
+        private void ReverseElements() => _arrDaughter.Reverse();
     }
 
     public class ArrayList_SynchronizedTests
@@ -3681,14 +3647,14 @@ namespace System.Collections.Tests
         };
 
         private IList _iList;
-        private int _iNumberOfElements = 10;
-        private const string _prefix = "String_";
+        private const int NumberOfElements = 10;
+        private const string Prefix = "String_";
 
         public ArrayList _arrList;
         public Hashtable _hash; // This will verify that threads will only add elements the num of times they are specified to
 
         [Fact]
-        public void TestSynchronized_ArrayList()
+        public void Synchronized_ArrayList()
         {
             // Make 40 threads which add strHeroes to an ArrayList
             // the outcome is that the length of the ArrayList should be the same size as the strHeroes array
@@ -3710,7 +3676,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public void TestSynchronized_IList()
+        public void Synchronized_IList()
         {
             int iNumberOfWorkers = 10;
 
@@ -3727,14 +3693,14 @@ namespace System.Collections.Tests
             Task.WaitAll(workers);
 
             // Checking time
-            Assert.Equal(_iNumberOfElements * iNumberOfWorkers, _iList.Count);
+            Assert.Equal(NumberOfElements * iNumberOfWorkers, _iList.Count);
 
-            for (int i = 0; i < _iNumberOfElements; i++)
+            for (int i = 0; i < NumberOfElements; i++)
             {
                 int iNumberOfTimes = 0;
                 for (int j = 0; j < _iList.Count; j++)
                 {
-                    if (((string)_iList[j]).Equals(_prefix + i))
+                    if (((string)_iList[j]).Equals(Prefix + i))
                         iNumberOfTimes++;
                 }
 
@@ -3783,17 +3749,17 @@ namespace System.Collections.Tests
 
         private void AddElements()
         {
-            for (int i = 0; i < _iNumberOfElements; i++)
+            for (int i = 0; i < NumberOfElements; i++)
             {
-                _iList.Add(_prefix + i);
+                _iList.Add(Prefix + i);
             }
         }
 
         private void RemoveElements()
         {
-            for (int i = 0; i < _iNumberOfElements; i++)
+            for (int i = 0; i < NumberOfElements; i++)
             {
-                _iList.Remove(_prefix + i);
+                _iList.Remove(Prefix + i);
             }
         }
     }

@@ -27,7 +27,11 @@ namespace System.Globalization.Tests
         [MemberData(nameof(IsLeapYear_TestData))]
         public void IsLeapYearTest(int year)
         {
-            Assert.Equal(IsLeapYear(year), new GregorianCalendar().IsLeapYear(year, 1));
+            GregorianCalendar calendar = new GregorianCalendar();
+            bool expected = IsLeapYear(year);
+            Assert.Equal(expected, calendar.IsLeapYear(year));
+            Assert.Equal(expected, calendar.IsLeapYear(year, 0));
+            Assert.Equal(expected, calendar.IsLeapYear(year, 1));
         }
     }
 }

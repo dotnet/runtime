@@ -4,11 +4,11 @@
   <PropertyGroup>
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
     <OutputType>Library</OutputType>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.0</NuGetTargetMoniker>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.2</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup Condition="'$(PackageTargetFramework)' == ''">
-    <PackageDestination Include="ref/netstandard1.0">
-      <TargetFramework>netstandard1.0</TargetFramework>
+    <PackageDestination Include="ref/netstandard1.2">
+      <TargetFramework>netstandard1.2</TargetFramework>
     </PackageDestination>
     <PackageDestination Include="ref/portable-net45+win8+wp8+wpa81">
       <TargetFramework>portable-net45+win8+wp8+wpa81</TargetFramework>

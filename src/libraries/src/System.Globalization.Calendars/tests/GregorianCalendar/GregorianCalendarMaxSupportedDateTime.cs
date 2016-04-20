@@ -4,7 +4,7 @@
 
 using Xunit;
 
-namespace System.Globalization.CalendarTests
+namespace System.Globalization.Tests
 {
     public class GregorianCalendarMaxSupportedDateTime
     {

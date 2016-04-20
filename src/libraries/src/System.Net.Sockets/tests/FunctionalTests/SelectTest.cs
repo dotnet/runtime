@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -50,8 +49,8 @@ namespace System.Net.Sockets.Tests
                     pair.Value.Send(new byte[1] { 42 });
                 }
 
-                ArrayList readList = new ArrayList(readPairs.Select(p => p.Key).ToArray());
-                ArrayList writeList = new ArrayList(writePairs.Select(p => p.Key).ToArray());
+                var readList = new List<Socket>(readPairs.Select(p => p.Key).ToArray());
+                var writeList = new List<Socket>(writePairs.Select(p => p.Key).ToArray());
 
                 Socket.Select(readList, writeList, null, FailTimeoutMicroseconds);
 
@@ -97,8 +96,8 @@ namespace System.Net.Sockets.Tests
             var errorPairs = Enumerable.Range(0, errors).Select(_ => CreateConnectedSockets()).ToArray();
             try
             {
-                ArrayList readList = new ArrayList(readPairs.Select(p => p.Key).ToArray());
-                ArrayList errorList = new ArrayList(errorPairs.Select(p => p.Key).ToArray());
+                var readList = new List<Socket>(readPairs.Select(p => p.Key).ToArray());
+                var errorList = new List<Socket>(errorPairs.Select(p => p.Key).ToArray());
 
                 Socket.Select(readList, null, errorList, SmallTimeoutMicroseconds);
 
@@ -131,7 +130,7 @@ namespace System.Net.Sockets.Tests
                     int next = rand.Next(0, readPairs.Count);
                     readPairs[next].Value.Send(new byte[1] { 42 });
 
-                    IList readList = new ArrayList(readPairs.Select(p => p.Key).ToArray());
+                    var readList = new List<Socket>(readPairs.Select(p => p.Key).ToArray());
                     Socket.Select(readList, null, null, FailTimeoutMicroseconds);
 
                     Assert.Equal(1, readList.Count);
@@ -160,7 +159,7 @@ namespace System.Net.Sockets.Tests
                     int next = rand.Next(0, errorPairs.Count);
                     errorPairs[next].Value.Send(new byte[1] { 42 }, SocketFlags.OutOfBand);
 
-                    IList errorList = new ArrayList(errorPairs.Select(p => p.Key).ToArray());
+                    var errorList = new List<Socket>(errorPairs.Select(p => p.Key).ToArray());
                     Socket.Select(null, null, errorList, FailTimeoutMicroseconds);
 
                     Assert.Equal(1, errorList.Count);

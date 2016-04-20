@@ -85,7 +85,7 @@ namespace System.Net.Http
         private CredentialCache _credentialCache = null; // protected by LockObject
         private CookieContainer _cookieContainer = new CookieContainer();
         private bool _useCookie = HttpHandlerDefaults.DefaultUseCookies;
-        private TimeSpan _connectTimeout = Timeout.InfiniteTimeSpan; // TODO: Use the WinHttp default once we determine how to expose this. HttpHandlerDefaults.DefaultConnectTimeout;
+        private TimeSpan _connectTimeout = Timeout.InfiniteTimeSpan;
         private bool _automaticRedirection = HttpHandlerDefaults.DefaultAutomaticRedirection;
         private int _maxAutomaticRedirections = HttpHandlerDefaults.DefaultMaxAutomaticRedirections;
         private int _maxConnectionsPerServer = HttpHandlerDefaults.DefaultMaxConnectionsPerServer;

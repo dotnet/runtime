@@ -219,13 +219,5 @@ namespace System.Collections.Tests
                 CultureInfo.DefaultThreadCurrentCulture = currentCulture;
             }
         }
-
-        public static int NormalizeCompare(int i)
-        {
-            return
-                i == 0 ? 0 :
-                i > 0 ? 1 :
-                -1;
-        }
     }
 }

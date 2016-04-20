@@ -79,7 +79,9 @@
     <Compile Include="System\UInt32.cs" />
     <Compile Include="System\UInt64.cs" />
     <Compile Include="System\UIntPtr.cs" />
-    <Compile Include="System\Uri.cs" />
+    <Compile Include="System\Uri.CreateString.cs" />
+    <Compile Include="System\Uri.CreateUri.cs" />
+    <Compile Include="System\Uri.Methods.cs" />
     <Compile Include="System\ValueType.cs" />
     <Compile Include="System\Version.cs" />
     <Compile Include="System\WeakReference.cs" />
@@ -131,7 +133,7 @@
       <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
-      <OSGroup>Windows_NT</OSGroup>
+      <OSGroup>$(InputOSGroup)</OSGroup>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

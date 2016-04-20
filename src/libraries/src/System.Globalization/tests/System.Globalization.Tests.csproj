@@ -9,13 +9,13 @@
     <RootNamespace>System.Globalization.Tests</RootNamespace>
     <AssemblyName>System.Globalization.Tests</AssemblyName>
     <IncludePerformanceTests>true</IncludePerformanceTests>
+    <DefineConstants Condition="'$(TargetGroup)' == 'net46'">$(DefineConstants);net46</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
-
   <ItemGroup>
     <Compile Include="CharUnicodeInfo\CharUnicodeInfoTestData.cs" />
     <Compile Include="CharUnicodeInfo\CharUnicodeInfoTests.cs" />
@@ -118,7 +118,6 @@
     <Compile Include="StringInfo\StringInfoEquals.cs" />
     <Compile Include="StringInfo\StringInfoGetNextTextElement.cs" />
     <Compile Include="StringInfo\StringInfoGetTextElementEnumerator.cs" />
-    <Compile Include="StringInfo\StringInfoLengthInTextElements.cs" />
     <Compile Include="StringInfo\StringInfoParseCombiningCharacters.cs" />
     <Compile Include="StringInfo\StringInfoString.cs" />
     <Compile Include="TextElementEnumerator\TextElementEnumeratorTests.cs" />
@@ -158,23 +157,21 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
     <TargetingPackReference Include="System" />
-    <TargetingPackReference Include="System.Threading.Tasks" /> 
-    <TargetingPackReference Include="System.Core" /> 
+    <TargetingPackReference Include="System.Threading.Tasks" />
+    <TargetingPackReference Include="System.Core" />
     <TargetingPackReference Include="System.Runtime" />
-  </ItemGroup>  
+  </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="$(CommonTestPath)\Data\UnicodeData.8.0.txt">
-        <Link>CharUnicodeInfo\UnicodeData8.0.txt</Link>
-        <LogicalName>UnicodeData.8.0.txt</LogicalName>
+      <Link>CharUnicodeInfo\UnicodeData8.0.txt</Link>
+      <LogicalName>UnicodeData.8.0.txt</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
-
   <PropertyGroup Condition="'$(OSEnvironment)' == 'Windows_NT'">
     <DelaySign>false</DelaySign>
   </PropertyGroup>
-
 </Project>

@@ -7,10 +7,11 @@
   <PropertyGroup>
     <ProjectGuid>{D4550556-4745-457F-BA8F-3EBF3836D6B4}</ProjectGuid>
     <AssemblyName>System.Data.SqlClient</AssemblyName>
-    <AssemblyVersion Condition="'$(TargetGroup)' == 'net45'">4.0.0.0</AssemblyVersion>
-    <AssemblyVersion Condition="'$(TargetGroup)' != 'net45'">4.1.0.0</AssemblyVersion>
+    <AssemblyVersion Condition="'$(TargetGroup)' == 'net451'">4.0.0.0</AssemblyVersion>
+    <AssemblyVersion Condition="'$(TargetGroup)' != 'net451'">4.1.0.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net45' OR '$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net451' OR '$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
+    <PackageTargetFramework Condition="'$(TargetGroup)' == 'net451'">net451</PackageTargetFramework>
     <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.3</PackageTargetFramework>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
     <UsePackageTargetRuntimeDefaults Condition="'$(TargetGroup)' == ''">true</UsePackageTargetRuntimeDefaults>
@@ -22,8 +23,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net45_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net45_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net451_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net451_Release|AnyCPU'" />
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="Microsoft\SqlServer\Server\ITypedGetters.cs" />
     <Compile Include="Microsoft\SqlServer\Server\ITypedGettersV3.cs" />
@@ -58,7 +59,9 @@
     <Compile Include="System\Data\Common\DbConnectionPoolKey.cs" />
     <Compile Include="System\Data\Common\DbConnectionStringCommon.cs" />
     <Compile Include="System\Data\Common\DbEnumerator.cs" />
-    <Compile Include="System\Data\Common\FieldNameLookup.cs" />
+    <Compile Include="$(CommonPath)\System\Data\Common\FieldNameLookup.cs">
+        <Link>System\Data\Common\FieldNameLookup.cs</Link>
+    </Compile>
     <Compile Include="System\Data\Common\MultipartIdentifier.cs" />
     <Compile Include="System\Data\Common\NameValuePair.cs" />
     <Compile Include="System\Data\ProviderBase\DbConnectionClosed.cs" />
@@ -147,16 +150,22 @@
     <Compile Include="System\Data\SqlTypes\SQLUtility.cs" />
     <Compile Include="System\Data\SqlTypes\SqlXml.cs" />
     <Compile Include="$(CommonPath)\System\NotImplemented.cs" />
-    <Compile Include="System\Data\Locale\Locale.cs" />
+    <Compile Include="$(CommonPath)\System\Data\Locale\Locale.cs">
+        <Link>System\Data\Locale\Locale.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(IsPartialFacadeAssembly)' != 'true' ">
-    <Compile Include="Interop\LocaleMapper.Windows.cs" />
+    <Compile Include="$(CommonPath)\System\Data\Locale\LocaleMapper.Windows.cs">
+        <Link>System\Data\Locale\LocaleMapper.Windows.cs</Link>
+    </Compile>
     <Compile Include="System\Data\ProviderBase\DbConnectionPoolIdentity.Windows.cs" />
     <Compile Include="Interop\SNINativeMethodWrapper.Windows.cs" />
     <Compile Include="System\Data\SqlClient\TdsParserSafeHandles.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' != 'true' And '$(IsPartialFacadeAssembly)' != 'true' ">
-    <Compile Include="System\Data\Locale\LocaleMapper.Unix.cs" />
+    <Compile Include="$(CommonPath)\System\Data\Locale\LocaleMapper.Unix.cs">
+        <Link>System\Data\Locale\LocaleMapper.Unix.cs</Link>
+    </Compile>
     <Compile Include="System\Data\ProviderBase\DbConnectionPoolIdentity.Unix.cs" />
     <Compile Include="Interop\SNINativeMethodWrapper.Unix.cs" />
     <Compile Include="System\Data\SqlClient\SNI\SNIError.cs" />

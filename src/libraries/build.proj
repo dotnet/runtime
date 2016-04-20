@@ -63,6 +63,12 @@
       $(TraversalBuildDependsOn);
     </TraversalBuildDependsOn>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(BuildTestsAgainstPackages)' == 'true'">
+    <TraversalBuildDependsOn>
+      BatchGenerateTestProjectJsons;
+      $(TraversalBuildDependsOn);
+    </TraversalBuildDependsOn>
+  </PropertyGroup>
 
   <UsingTask TaskName="GatherDirectoriesToRestore" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" />
 
@@ -77,6 +83,17 @@
           ContinueOnError="ErrorAndContinue" />
 
     <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages...Done." />
+  </Target>
+
+  <!-- Evaluate our test projects (in src\tests.builds) -->
+  <Target Name="BatchGenerateTestProjectJsons"
+          Condition="'$(BuildTestsAgainstPackages)' == 'true'" 
+          DependsOnTargets="FilterProjects"
+          BeforeTargets="RestorePackages">
+      <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Generating Test project.json's..." />
+      <MSBuild Targets="GenerateAllTestProjectJsons"
+               Projects="src\tests.builds" />
+      <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Generating Test project.json's...done" />
   </Target>
 
   <!-- Task from buildtools that validates dependencies contained in project.json files. -->

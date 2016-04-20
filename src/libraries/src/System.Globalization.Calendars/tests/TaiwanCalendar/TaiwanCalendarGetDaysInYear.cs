@@ -11,27 +11,21 @@ namespace System.Globalization.Tests
     {
         public static IEnumerable<object[]> GetDaysInYear_TestData()
         {
-            yield return new object[] { 1912, 1 };
-            yield return new object[] { 8088, 1 };
-            yield return new object[] { 2000, 1 };
-            yield return new object[] { TaiwanCalendarUtilities.RandomYear(), 1 };
+            yield return new object[] { 1912 };
+            yield return new object[] { 8088 };
+            yield return new object[] { 2000 };
+            yield return new object[] { TaiwanCalendarUtilities.RandomYear() };
         }
 
         [Theory]
         [MemberData(nameof(GetDaysInYear_TestData))]
-        public void GetDaysInYear(int year, int era)
+        public void GetDaysInYear(int year)
         {
             TaiwanCalendar calendar = new TaiwanCalendar();
-            int expected;
-            if (calendar.IsLeapYear(year, era))
-            {
-                expected = 366;
-            }
-            else
-            {
-                expected = 365;
-            }
-            Assert.Equal(expected, new TaiwanCalendar().GetDaysInYear(year, era));
+            int expected = calendar.IsLeapYear(year) ? 366 : 365;
+            Assert.Equal(expected, calendar.GetDaysInYear(year));
+            Assert.Equal(expected, calendar.GetDaysInYear(year, 0));
+            Assert.Equal(expected, calendar.GetDaysInYear(year, 1));
         }
     }
 }

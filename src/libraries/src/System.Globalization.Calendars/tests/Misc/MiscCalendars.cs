@@ -2,11 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
 using Xunit;
 
-namespace System.Globalization.CalendarsTests
+namespace System.Globalization.Tests
 {
     public static class MiscCalendarsTests
     {
@@ -39,35 +37,11 @@ namespace System.Globalization.CalendarsTests
         }
 
         [Fact]
-        public static void GregorianTest()
-        {
-            GregorianCalendar gCal = new GregorianCalendar();
-            DateTime dTest = gCal.ToDateTime(1600, 1, 1, 0, 0, 0, 0);
-            Assert.Equal(dTest, new DateTime(1600, 1, 1));
-        }
-
-        [Fact]
         public static void JapaneseTest()
         {
             JapaneseCalendar jCal = new JapaneseCalendar();
             DateTime dTest = jCal.ToDateTime(1, 1, 8, 0, 0, 0, 0);
             Assert.Equal(dTest, new DateTime(1989, 1, 8));
-        }
-
-        [Fact]
-        public static void KoreanTest()
-        {
-            KoreanCalendar jCal = new KoreanCalendar();
-            DateTime dTest = jCal.ToDateTime(3933, 1, 1, 0, 0, 0, 0);
-            Assert.Equal(dTest, new DateTime(1600, 1, 1));
-        }
-
-        [Fact]
-        public static void ThaiTest()
-        {
-            ThaiBuddhistCalendar tCal = new ThaiBuddhistCalendar();
-            DateTime dTest = tCal.ToDateTime(2143, 1, 1, 0, 0, 0, 0);
-            Assert.Equal(dTest, new DateTime(1600, 1, 1));
         }
     }
 }
