@@ -391,17 +391,11 @@ endlocal
 
 REM =========================================================================================
 REM ===
-REM === Mscorlib build section.
+REM === Mscorlib and NuGet package build section.
 REM ===
 REM =========================================================================================
 
 :PerformMScorlibBuild
-if defined __SkipMscorlibBuild (
-    echo %__MsgPrefix%Skipping Mscorlib build
-    goto SkipMscorlibBuild
-)
-
-echo %__MsgPrefix%Commencing build of mscorlib for %__BuildOS%.%__BuildArch%.%__BuildType%
 
 REM setlocal to prepare for vsdevcmd.bat
 setlocal EnableDelayedExpansion EnableExtensions
@@ -412,6 +406,13 @@ set Platform=
 :: Set the environment for the managed build
 echo %__MsgPrefix%Using environment: "%__VSToolsRoot%\VsDevCmd.bat"
 call                                 "%__VSToolsRoot%\VsDevCmd.bat"
+
+if defined __SkipMscorlibBuild (
+    echo %__MsgPrefix%Skipping Mscorlib build
+    goto SkipMscorlibBuild
+)
+
+echo %__MsgPrefix%Commencing build of mscorlib for %__BuildOS%.%__BuildArch%.%__BuildType%
 
 set "__BuildLog=%__LogsDir%\MScorlib_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
 set "__BuildWrn=%__LogsDir%\MScorlib_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
@@ -455,6 +456,8 @@ if errorlevel 1 (
     exit /b 1
 )
 
+:SkipMscorlibBuild
+
 :GenerateNuget
 if /i "%__BuildArch%" =="arm64" goto :SkipNuget
 
@@ -468,24 +471,34 @@ set __msbuildLogArgs=^
 /consoleloggerparameters:Summary ^
 /verbosity:minimal
 
-set __msbuildArgs="%__ProjectFilesDir%\src\.nuget\Microsoft.NETCore.Runtime.CoreClr\Microsoft.NETCore.Runtime.CoreCLR.builds" /p:Platform=%__BuildArch%
-%_msbuildexe% %__msbuildArgs% %__msbuildLogArgs%
-if errorlevel 1 (
-    echo %__MsgPrefix%Error: Nuget package generation failed build failed. Refer to the build log files for details:
-    echo     %__BuildLog%
-    echo     %__BuildWrn%
-    echo     %__BuildErr%
-    exit /b 1
+if not defined __SkipMscorlibBuild (
+	set __msbuildArgs="%__ProjectFilesDir%\src\.nuget\Microsoft.NETCore.Runtime.CoreClr\Microsoft.NETCore.Runtime.CoreCLR.builds" /p:Platform=%__BuildArch%
+	%_msbuildexe% !__msbuildArgs! %__msbuildLogArgs%
+	if errorlevel 1 (
+	    echo %__MsgPrefix%Error: Nuget package generation failed build failed. Refer to the build log files for details:
+	    echo     %__BuildLog%
+	    echo     %__BuildWrn%
+	    echo     %__BuildErr%
+	    exit /b 1
+	)
+)
+
+if not defined __SkipNativeBuild (
+	set __msbuildArgs="%__ProjectFilesDir%\src\.nuget\Microsoft.NETCore.Jit\Microsoft.NETCore.Jit.builds" /p:Platform=%__BuildArch%
+	%_msbuildexe% !__msbuildArgs! %__msbuildLogArgs%
+	if errorlevel 1 (
+	    echo %__MsgPrefix%Error: Nuget package generation failed build failed. Refer to the build log files for details:
+	    echo     %__BuildLog%
+	    echo     %__BuildWrn%
+	    echo     %__BuildErr%
+	    exit /b 1
+	)
 )
 
 :SkipNuget
 
-:SkipCrossGenBuild
-
 REM endlocal to rid us of environment changes from vsdevenv.bat
 endlocal
-
-:SkipMscorlibBuild
 
 REM =========================================================================================
 REM ===
