@@ -661,6 +661,12 @@ public:
     // Root context
     InlineContext* GetRootContext();
 
+    // Get IL size for maximum allowable inline
+    unsigned GetMaxInlineILSize()
+    {
+        return m_MaxInlineSize;
+    }
+
     // Number of successful inlines into the root.
     unsigned GetInlineCount()
     {
@@ -679,11 +685,17 @@ public:
     // Dump textual description of inlines done so far.
     void Dump();
 
-
     // Dump data-format description of inlines done so far.
     void DumpData();
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
+
+    // Some inline limit values
+    enum
+    {
+        ALWAYS_INLINE_SIZE = 16,
+        IMPLEMENTATION_MAX_INLINE_SIZE= _UI16_MAX
+    };
 
 private:
 
@@ -696,7 +708,10 @@ private:
     // Cap on allowable increase in jit time due to inlining.
     // Multiplicative, so BUDGET = 10 means up to 10x increase
     // in jit time.
-    enum { BUDGET = 10 };
+    enum
+    {
+        BUDGET = 10
+    };
 
     // Estimate the jit time change because of this inline.
     int EstimateTime(InlineContext* context);
@@ -718,6 +733,7 @@ private:
     unsigned       m_CandidateCount;
     unsigned       m_InlineAttemptCount;
     unsigned       m_InlineCount;
+    unsigned       m_MaxInlineSize;
     int            m_InitialTimeBudget;
     int            m_InitialTimeEstimate;
     int            m_CurrentTimeBudget;
