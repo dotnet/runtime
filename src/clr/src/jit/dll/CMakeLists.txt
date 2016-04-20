@@ -9,13 +9,13 @@ if(CLR_CMAKE_PLATFORM_UNIX)
     add_compile_options(-fPIC)
     add_definitions(-DFEATURE_MERGE_JIT_AND_ENGINE)
 
-    add_library_clr(ClrJit
+    add_library_clr(${JIT_BASE_NAME}_static
       STATIC
       ${SHARED_LIB_SOURCES}
     )
-    add_dependencies(ClrJit coreclrpal gcinfo)
+    add_dependencies(${JIT_BASE_NAME}_static coreclrpal gcinfo)
 else()
-    add_library_clr(ClrJit
+    add_library_clr(${JIT_BASE_NAME}_static
        ${SOURCES}
     )
 # Disable up to here (see above) the following for UNIX altjit on Windows 
