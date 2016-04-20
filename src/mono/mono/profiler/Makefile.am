@@ -35,10 +35,6 @@ endif
 endif
 endif
 
-if HAVE_OPROFILE
-# Do something that uses OPROFILE_CFLAGS and OPROFILE_LIBS
-endif
-
 if SUPPORT_BOEHM
 if DISABLE_EXECUTABLES
 LIBMONO=$(top_builddir)/mono/mini/$(LIBMONO_LA)
