@@ -273,8 +273,8 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                         Utilities.addGithubPushTrigger(job)
                         break
                     case 'arm64':
-                        Utilities.addGithubPushTrigger(job)
                         if (os == 'Windows_NT') {
+                            Utilities.addGithubPushTrigger(job)
                             addEmailPublisher(job, 'dotnetonarm64@microsoft.com')
                         }
                         break
