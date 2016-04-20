@@ -255,24 +255,22 @@ struct GcStackSlot
 
 #elif defined(_TARGET_ARM64_)
 
-// ARM64TODO: these were copied from AMD64, and need to be reviewed
-
 #ifndef TARGET_POINTER_SIZE
 #define TARGET_POINTER_SIZE 8    // equal to sizeof(void*) and the managed pointer size in bytes for this target
 #endif
 #define NUM_NORM_CODE_OFFSETS_PER_CHUNK (64)
 #define NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 (6)
-#define NORMALIZE_STACK_SLOT(x) ((x)>>3)
+#define NORMALIZE_STACK_SLOT(x) ((x)>>3)   // GC Pointers are 8-bytes aligned
 #define DENORMALIZE_STACK_SLOT(x) ((x)<<3)
-#define NORMALIZE_CODE_LENGTH(x) (x)
-#define DENORMALIZE_CODE_LENGTH(x) (x)
-#define NORMALIZE_STACK_BASE_REGISTER(x) ((x) ^ 5)
-#define DENORMALIZE_STACK_BASE_REGISTER(x) ((x) ^ 5)
+#define NORMALIZE_CODE_LENGTH(x) ((x)>>2)   // All Instructions are 4 bytes long
+#define DENORMALIZE_CODE_LENGTH(x) ((x)<<2) 
+#define NORMALIZE_STACK_BASE_REGISTER(x) ((x)^29) // Encode Frame pointer X29 as zero
+#define DENORMALIZE_STACK_BASE_REGISTER(x) ((x)^29)
 #define NORMALIZE_SIZE_OF_STACK_AREA(x) ((x)>>3)
 #define DENORMALIZE_SIZE_OF_STACK_AREA(x) ((x)<<3)
 #define CODE_OFFSETS_NEED_NORMALIZATION 0
-#define NORMALIZE_CODE_OFFSET(x) (x)
-#define DENORMALIZE_CODE_OFFSET(x) (x)
+#define NORMALIZE_CODE_OFFSET(x) (x)   // Instructions are 4 bytes long, but the safe-point
+#define DENORMALIZE_CODE_OFFSET(x) (x) // offsets are encoded with a -1 adjustment.
 #define NORMALIZE_REGISTER(x) (x)
 #define DENORMALIZE_REGISTER(x) (x)
 #define NORMALIZE_NUM_SAFE_POINTS(x) (x)
@@ -285,10 +283,10 @@ struct GcStackSlot
 #define SECURITY_OBJECT_STACK_SLOT_ENCBASE 6
 #define GS_COOKIE_STACK_SLOT_ENCBASE 6
 #define CODE_LENGTH_ENCBASE 8
-#define STACK_BASE_REGISTER_ENCBASE 3
+#define STACK_BASE_REGISTER_ENCBASE 2 // FP encoded as 0, SP as 2.
 #define SIZE_OF_STACK_AREA_ENCBASE 3
 #define SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE 4
-#define NUM_REGISTERS_ENCBASE 2
+#define NUM_REGISTERS_ENCBASE 3
 #define NUM_STACK_SLOTS_ENCBASE 2
 #define NUM_UNTRACKED_SLOTS_ENCBASE 1
 #define NORM_PROLOG_SIZE_ENCBASE 5
@@ -300,7 +298,7 @@ struct GcStackSlot
 #define REGISTER_DELTA_ENCBASE 2
 #define STACK_SLOT_ENCBASE 6
 #define STACK_SLOT_DELTA_ENCBASE 4
-#define NUM_SAFE_POINTS_ENCBASE 2
+#define NUM_SAFE_POINTS_ENCBASE 3
 #define NUM_INTERRUPTIBLE_RANGES_ENCBASE 1
 #define NUM_EH_CLAUSES_ENCBASE 2
 #define POINTER_SIZE_ENCBASE 3
