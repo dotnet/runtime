@@ -16,71 +16,66 @@ if !DISABLE_PROFILER
 bin_PROGRAMS = mprof-report
 
 if HAVE_VTUNE
-vtune_lib = libmono-profiler-vtune.la
+vtune_libs = libmono-profiler-vtune.la libmono-profiler-vtune-static.la
 endif
 
-lib_LTLIBRARIES = libmono-profiler-aot.la libmono-profiler-iomap.la libmono-profiler-log.la libmono-profiler-log-static.la $(vtune_lib)
+lib_LTLIBRARIES = \
+	libmono-profiler-aot.la \
+	libmono-profiler-aot-static.la \
+	libmono-profiler-iomap.la \
+	libmono-profiler-iomap-static.la \
+	libmono-profiler-log.la \
+	libmono-profiler-log-static.la \
+	$(vtune_libs)
 
 if PLATFORM_DARWIN
 if BITCODE
-libmono_profiler_log_la_LDFLAGS = -no-undefined
+prof_ldflags = -no-undefined
 else
-libmono_profiler_log_la_LDFLAGS = -Wl,-undefined -Wl,suppress -Wl,-flat_namespace
+prof_ldflags = -Wl,-undefined -Wl,suppress -Wl,-flat_namespace
 endif
 endif
+
 if PLATFORM_ANDROID
-libmono_profiler_log_la_LDFLAGS = -avoid-version
+prof_ldflags = -avoid-version
 endif
+
 endif
 endif
 endif
 
-if SUPPORT_BOEHM
-if DISABLE_EXECUTABLES
-LIBMONO=$(top_builddir)/mono/mini/$(LIBMONO_LA)
-else
-if !SHARED_MONO
-static_libs=	\
-	$(top_builddir)/mono/metadata/libmonoruntime-static.la	\
-	$(top_builddir)/mono/io-layer/libwapi.la	\
-	$(top_builddir)/mono/utils/libmonoutils.la \
-	$(GLIB_LIBS) $(LIBICONV) \
-	$(LIBGC_STATIC_LIBS)
-
-LIBMONO=$(top_builddir)/mono/mini/$(LIBMONO_LA) $(static_libs)
-else
-LIBMONO=$(top_builddir)/mono/mini/$(LIBMONO_LA)
-endif
-endif
-else
-LIBMONO=$(top_builddir)/mono/mini/libmonosgen-$(API_VER).la
-endif
-
-libmono_profiler_aot_la_SOURCES = mono-profiler-aot.c
-libmono_profiler_aot_la_LIBADD = $(GLIB_LIBS) $(LIBICONV)
-if BITCODE
-libmono_profiler_aot_la_LDFLAGS = -no-undefined
-endif
-libmono_profiler_iomap_la_SOURCES = mono-profiler-iomap.c
-libmono_profiler_iomap_la_LIBADD = $(GLIB_LIBS) $(LIBICONV)
-if BITCODE
-libmono_profiler_iomap_la_LDFLAGS = -no-undefined
-endif
-libmono_profiler_log_la_SOURCES = proflog.c
-libmono_profiler_log_la_LIBADD = $(GLIB_LIBS) $(Z_LIBS)
-if HAVE_VTUNE
-libmono_profiler_vtune_la_SOURCES = mono-profiler-vtune.c
-libmono_profiler_vtune_la_CFLAGS = $(VTUNE_CFLAGS)
-libmono_profiler_vtune_la_LIBADD = $(VTUNE_LIBS) $(GLIB_LIBS) $(LIBICONV)
-endif
-
-# The log profile uses eglib functions, so it needs to be linked against
+# The log profiler uses eglib functions, so it needs to be linked against
 # libeglib in shared mode, but not in static mode, since that would
 # leads to duplicate symbols when it is linked into an app which
 # also uses eglib (e.g. the runtime). Automake doesn't support this
 # functionality, so create a separate static version of the library.
+
+libmono_profiler_aot_la_SOURCES = mono-profiler-aot.c
+libmono_profiler_aot_la_LIBADD = $(GLIB_LIBS) $(LIBICONV)
+libmono_profiler_aot_la_LDFLAGS = $(prof_ldflags)
+libmono_profiler_aot_static_la_SOURCES = mono-profiler-aot.c
+libmono_profiler_aot_static_la_LDFLAGS = -static
+
+libmono_profiler_iomap_la_SOURCES = mono-profiler-iomap.c
+libmono_profiler_iomap_la_LIBADD = $(GLIB_LIBS) $(LIBICONV)
+libmono_profiler_iomap_la_LDFLAGS = $(prof_ldflags)
+libmono_profiler_iomap_static_la_SOURCES = mono-profiler-iomap.c
+libmono_profiler_iomap_static_la_LDFLAGS = -static
+
+libmono_profiler_log_la_SOURCES = proflog.c
+libmono_profiler_log_la_LIBADD = $(GLIB_LIBS) $(Z_LIBS)
+libmono_profiler_log_la_LDFLAGS = $(prof_ldflags)
 libmono_profiler_log_static_la_SOURCES = proflog.c
 libmono_profiler_log_static_la_LDFLAGS = -static
+
+if HAVE_VTUNE
+libmono_profiler_vtune_la_SOURCES = mono-profiler-vtune.c
+libmono_profiler_vtune_la_CFLAGS = $(VTUNE_CFLAGS)
+libmono_profiler_vtune_la_LIBADD = $(VTUNE_LIBS) $(GLIB_LIBS) $(LIBICONV)
+libmono_profiler_vtune_la_LDFLAGS = $(prof_ldflags)
+libmono_profiler_vtune_static_la_SOURCES = mono-profiler-vtune.c
+libmono_profiler_vtune_static_la_LDFLAGS = -static
+endif
 
 mprof_report_SOURCES = decode.c
 mprof_report_LDADD = $(Z_LIBS) $(GLIB_LIBS) $(LIBICONV)
