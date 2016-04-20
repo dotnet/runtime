@@ -5,7 +5,6 @@ Z_LIBS=
 endif
 
 AM_CPPFLAGS = \
-	-fexceptions -DMONO_USE_EXC_TABLES	\
 	-DSUPPRESSION_DIR=\""$(datadir)/mono-$(API_VER)/mono/profiler"\"        \
 	-I$(top_srcdir) 	\
 	$(GLIB_CFLAGS)
