@@ -51,7 +51,6 @@ set __SkipConfigure=
 set __SkipMscorlibBuild=
 set __SkipNativeBuild=
 set __SkipTestBuild=
-set __DoCrossgen=
 set __BuildSequential=
 set __msbuildCleanBuildArgs=
 set __msbuildExtraArgs=
@@ -113,7 +112,6 @@ if /i "%1" == "skipconfigure"       (set __SkipConfigure=1&shift&goto Arg_Loop)
 if /i "%1" == "skipmscorlib"        (set __SkipMscorlibBuild=1&shift&goto Arg_Loop)
 if /i "%1" == "skipnative"          (set __SkipNativeBuild=1&shift&goto Arg_Loop)
 if /i "%1" == "skiptests"           (set __SkipTestBuild=1&shift&goto Arg_Loop)
-if /i "%1" == "docrossgen"          (set __DoCrossgen=1&shift&goto Arg_Loop)
 if /i "%1" == "sequential"          (set __BuildSequential=1&shift&goto Arg_Loop)
 if /i "%1" == "disableoss"          (set __SignTypeReal="/p:SignType=real"&shift&goto Arg_Loop)
 if /i "%1" == "priority"            (set __TestPriority=%2&set __PassThroughArgs=%__PassThroughArgs% %2&shift&shift&goto Arg_Loop)
@@ -162,8 +160,11 @@ if %__TotalSpecifiedBuildArch% GTR 1 (
 
 if %__BuildArchX64%==1      set __BuildArch=x64
 if %__BuildArchX86%==1      set __BuildArch=x86
-if %__BuildArchArm%==1      set __BuildArch=arm
-if %__BuildArchArm64%==1    set __BuildArch=arm64
+if %__BuildArchArm%==1      set __BuildArch=arm 
+if %__BuildArchArm64%==1 (
+    set __BuildArch=arm64
+    set __CrossArch=x64
+)
 
 set /A __TotalSpecifiedBuildType=__BuildTypeDebug + __BuildTypeChecked + __BuildTypeRelease
 if %__TotalSpecifiedBuildType% GTR 1 (
@@ -184,6 +185,8 @@ set "__PackagesBinDir=%__BinDir%\.nuget"
 set "__TestRootDir=%__RootBinDir%\tests"
 set "__TestBinDir=%__TestRootDir%\%__BuildOS%.%__BuildArch%.%__BuildType%"
 set "__TestIntermediatesDir=%__RootBinDir%\tests\obj\%__BuildOS%.%__BuildArch%.%__BuildType%"
+set "__CrossComponentBinDir=%__BinDir%
+if defined __CrossArch set __CrossComponentBinDir=%__CrossComponentBinDir%\%__CrossArch%
 
 :: Generate path to be set for CMAKE_INSTALL_PREFIX to contain forward slash
 set "__CMakeBinDir=%__BinDir%"
@@ -431,18 +434,11 @@ if defined __MscorlibOnly (
     exit /b 0
 )
 
-REM Consider doing crossgen build of mscorlib unless we are skipping it intentionally
-if /i "%__BuildArch%" == "arm64" (
-    if not defined __DoCrossgen (
-        echo %__MsgPrefix%Skipping Crossgen
-        goto SkipCrossGenBuild
-    )
-)
-
 echo %__MsgPrefix%Generating native image of mscorlib for %__BuildOS%.%__BuildArch%.%__BuildType%
 
 set "__CrossGenMScorlibLog=%__LogsDir%\CrossgenMScorlib_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
-"%__BinDir%\crossgen.exe" "%__BinDir%\mscorlib.dll" > "%__CrossGenMScorlibLog%" 2>&1
+set "__CrossgenExe=%__CrossComponentBinDir%\crossgen.exe"
+"%__CrossgenExe%" /Platform_Assemblies_Paths "%__BinDir%" /out "%__BinDir%\mscorlib.ni.dll" "%__BinDir%\mscorlib.dll" > "%__CrossGenMScorlibLog%" 2>&1
 if errorlevel 1 (
     echo %__MsgPrefix%Error: CrossGen mscorlib build failed. Refer to the build log file for details:
     echo     %__CrossGenMScorlibLog%
@@ -635,7 +631,6 @@ echo Build architecture: one of x64, x86, arm, arm64 ^(default: x64^).
 echo Build type: one of Debug, Checked, Release ^(default: Debug^).
 echo Visual Studio version: ^(default: VS2015^).
 echo clean: force a clean build ^(default is to perform an incremental build^).
-echo docrossgen: do a crossgen build of mscorlib.
 echo msbuildargs ... : all arguments following this tag will be passed directly to msbuild.
 echo mscorlib version: one of freebsdmscorlib, linuxmscorlib, netbsdmscorlib, osxmscorlib,
 echo     or windowsmscorlib. If one of these is passed, only mscorlib is built,
