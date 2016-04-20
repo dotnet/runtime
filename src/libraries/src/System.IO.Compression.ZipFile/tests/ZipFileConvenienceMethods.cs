@@ -19,7 +19,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
-        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)]
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Jenkins fails with unicode characters [JENKINS-12610]
         public async Task CreateFromDirectoryUnicodel()
         {
             await TestCreateDirectory(zfolder("unicode"), true);
@@ -80,7 +80,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
-        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)]
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Jenkins fails with unicode characters [JENKINS-12610]
         public void ExtractToDirectoryUnicode()
         {
             TestExtract(zfile("unicode.zip"), zfolder("unicode"));
@@ -172,7 +172,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
-        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)]
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Jenkins fails with unicode characters [JENKINS-12610]
         public void ExtractToDirectoryTest_Unicode()
         {
             using (ZipArchive archive = ZipFile.OpenRead(zfile("unicode.zip")))
