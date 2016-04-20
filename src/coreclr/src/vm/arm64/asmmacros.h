@@ -86,6 +86,23 @@ __PWTB_ArgumentRegisters SETA __PWTB_StackAlloc + 96
     MEND
 
 ;-----------------------------------------------------------------------------
+; Provides a matching epilog to PROLOG_WITH_TRANSITION_BLOCK and returns to caller.
+;
+    MACRO
+        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+        EPILOG_STACK_FREE                 __PWTB_StackAlloc
+       
+        EPILOG_RESTORE_REG_PAIR   x19, x20, #16
+        EPILOG_RESTORE_REG_PAIR   x21, x22, #32
+        EPILOG_RESTORE_REG_PAIR   x23, x24, #48
+        EPILOG_RESTORE_REG_PAIR   x25, x26, #64
+        EPILOG_RESTORE_REG_PAIR   x27, x28, #80
+        EPILOG_RESTORE_REG_PAIR   fp, lr,   #160!
+		EPILOG_RETURN
+    MEND	
+	
+;-----------------------------------------------------------------------------
 ; Provides a matching epilog to PROLOG_WITH_TRANSITION_BLOCK and ends by preparing for tail-calling.
 ; Since this is a tail call argument registers are restored.
 ;
