@@ -241,6 +241,9 @@ public:
     // Policy policies
     virtual bool PropagateNeverToRuntime() const = 0;
 
+    // Policy estimates
+    virtual int CodeSizeEstimate() = 0;
+
 #if defined(DEBUG) || defined(INLINE_DATA)
 
     // Name of the policy
@@ -591,9 +594,15 @@ public:
     }
 
     // Get the IL code size for this inline.
-    unsigned GetCodeSize() const
+    unsigned GetILSize() const
     {
-        return m_CodeSize;
+        return m_ILSize;
+    }
+
+    // Get the native code size estimate for this inline.
+    unsigned GetCodeSizeEstimate() const
+    {
+        return m_CodeSizeEstimate;
     }
 
 private:
@@ -602,22 +611,23 @@ private:
 
 private:
 
-    InlineStrategy*       m_InlineStrategy; // overall strategy
-    InlineContext*        m_Parent;      // logical caller (parent)
-    InlineContext*        m_Child;       // first child
-    InlineContext*        m_Sibling;     // next child of the parent
-    IL_OFFSETX            m_Offset;      // call site location within parent
-    BYTE*                 m_Code;        // address of IL buffer for the method
-    unsigned              m_CodeSize;    // size of IL buffer for the method
-    InlineObservation     m_Observation; // what lead to this inline
-    bool                  m_Success;     // true if this was a successful inline
+    InlineStrategy*       m_InlineStrategy;   // overall strategy
+    InlineContext*        m_Parent;           // logical caller (parent)
+    InlineContext*        m_Child;            // first child
+    InlineContext*        m_Sibling;          // next child of the parent
+    BYTE*                 m_Code;             // address of IL buffer for the method
+    unsigned              m_ILSize;           // size of IL buffer for the method
+    IL_OFFSETX            m_Offset;           // call site location within parent
+    InlineObservation     m_Observation;      // what lead to this inline
+    int                   m_CodeSizeEstimate; // in bytes * 10
+    bool                  m_Success;          // true if this was a successful inline
 
 #if defined(DEBUG) || defined(INLINE_DATA)
 
-    InlinePolicy*         m_Policy;      // policy that evaluated this inline
-    CORINFO_METHOD_HANDLE m_Callee;      // handle to the method
-    unsigned              m_TreeID;      // ID of the GenTreeCall
-    unsigned              m_Ordinal;     // Ordinal number of this inline
+    InlinePolicy*         m_Policy;           // policy that evaluated this inline
+    CORINFO_METHOD_HANDLE m_Callee;           // handle to the method
+    unsigned              m_TreeID;           // ID of the GenTreeCall
+    unsigned              m_Ordinal;          // Ordinal number of this inline
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
@@ -695,6 +705,9 @@ private:
     int EstimateRootTime(unsigned ilSize);
     int EstimateInlineTime(unsigned ilSize);
 
+    // Estimate native code size change because of this inline.
+    int EstimateSize(InlineContext* context);
+
 #if defined(DEBUG) || defined(INLINE_DATA)
     static bool    s_DumpDataHeader;
 #endif // defined(DEBUG) || defined(INLINE_DATA)
@@ -709,6 +722,8 @@ private:
     int            m_InitialTimeEstimate;
     int            m_CurrentTimeBudget;
     int            m_CurrentTimeEstimate;
+    int            m_InitialSizeEstimate;
+    int            m_CurrentSizeEstimate;
     bool           m_HasForceViaDiscretionary;
 };
 

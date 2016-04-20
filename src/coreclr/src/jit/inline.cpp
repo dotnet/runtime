@@ -326,10 +326,11 @@ InlineContext::InlineContext(InlineStrategy* strategy)
     , m_Parent(nullptr)
     , m_Child(nullptr)
     , m_Sibling(nullptr)
-    , m_Offset(BAD_IL_OFFSET)
     , m_Code(nullptr)
-    , m_CodeSize(0)
+    , m_ILSize(0)
+    , m_Offset(BAD_IL_OFFSET)
     , m_Observation(InlineObservation::CALLEE_UNUSED_INITIAL)
+    , m_CodeSizeEstimate(0)
     , m_Success(true)
 #if defined(DEBUG) || defined(INLINE_DATA)
     , m_Policy(nullptr)
@@ -654,6 +655,8 @@ InlineStrategy::InlineStrategy(Compiler* compiler)
     , m_InitialTimeEstimate(0)
     , m_CurrentTimeBudget(0)
     , m_CurrentTimeEstimate(0)
+    , m_InitialSizeEstimate(0)
+    , m_CurrentSizeEstimate(0)
     , m_HasForceViaDiscretionary(false)
 {
     // Verify compiler is a root compiler instance
@@ -686,6 +689,14 @@ InlineContext* InlineStrategy::GetRootContext()
         // only pathological runaway inline cases.
         m_InitialTimeBudget = BUDGET * m_InitialTimeEstimate;
         m_CurrentTimeBudget = m_InitialTimeBudget;
+
+        // Estimate the code size  if there's no inlining
+        m_InitialSizeEstimate = EstimateSize(m_RootContext);
+        m_CurrentSizeEstimate = m_InitialSizeEstimate;
+
+        // Sanity check
+        assert(m_CurrentTimeEstimate > 0);
+        assert(m_CurrentSizeEstimate > 0);
     }
 
     return m_RootContext;
@@ -712,7 +723,7 @@ int InlineStrategy::EstimateTime(InlineContext* context)
 {
     // Simple linear models based on observations
     // show time is fairly well predicted by IL size.
-    unsigned ilSize = context->GetCodeSize();
+    unsigned ilSize = context->GetILSize();
 
     // Prediction varies for root and inlines.
     if (context == m_RootContext)
@@ -760,6 +771,36 @@ int InlineStrategy::EstimateRootTime(unsigned ilSize)
 int InlineStrategy::EstimateInlineTime(unsigned ilSize)
 {
     return -14 + 2 * ilSize;
+}
+
+//------------------------------------------------------------------------
+// EstimateSize: estimate impact of this inline on the method size
+//
+// Arguments:
+//     context - context describing this inline
+//
+// Return Value:
+//    Nominal estimate of method size (bytes * 10)
+
+int InlineStrategy::EstimateSize(InlineContext* context)
+{
+    // Prediction varies for root and inlines.
+    if (context == m_RootContext)
+    {
+        // Simple linear models based on observations show root method
+        // native code size is fairly well predicted by IL size.
+        //
+        // Model below is for x64 on windows.
+        unsigned ilSize = context->GetILSize();
+        int estimate = (1312 + 228 * ilSize) / 10;
+
+        return estimate;
+    }
+    else
+    {
+        // Use context's code size estimate.
+        return context->GetCodeSizeEstimate();
+    }
 }
 
 //------------------------------------------------------------------------
@@ -828,8 +869,22 @@ void InlineStrategy::NoteOutcome(InlineContext* context)
             }
         }
 
-        // Update jit time estimate
+        // Update time estimate.
         m_CurrentTimeEstimate += timeDelta;
+
+        // Update size estimate.
+        //
+        // Sometimes estimates don't make sense. Don't let the method
+        // size go negative.
+        int sizeDelta = EstimateSize(context);
+
+        if (m_CurrentSizeEstimate + sizeDelta <= 0)
+        {
+            sizeDelta = 0;
+        }
+
+        // Update the code size estimate.
+        m_CurrentSizeEstimate += sizeDelta;
     }
 }
 
@@ -864,7 +919,7 @@ InlineContext* InlineStrategy::NewRoot()
 {
     InlineContext* rootContext = new (m_Compiler, CMK_Inlining) InlineContext(this);
 
-    rootContext->m_CodeSize = m_Compiler->info.compILCodeSize;
+    rootContext->m_ILSize = m_Compiler->info.compILCodeSize;
 
 #if defined(DEBUG) || defined(INLINE_DATA)
 
@@ -892,13 +947,13 @@ InlineContext* InlineStrategy::NewSuccess(InlineInfo* inlineInfo)
     InlineContext* calleeContext = new (m_Compiler, CMK_Inlining) InlineContext(this);
     GenTree*       stmt          = inlineInfo->iciStmt;
     BYTE*          calleeIL      = inlineInfo->inlineCandidateInfo->methInfo.ILCode;
-    unsigned       calleeSize    = inlineInfo->inlineCandidateInfo->methInfo.ILCodeSize;
+    unsigned       calleeILSize  = inlineInfo->inlineCandidateInfo->methInfo.ILCodeSize;
     InlineContext* parentContext = stmt->gtStmt.gtInlineContext;
 
     noway_assert(parentContext != nullptr);
 
     calleeContext->m_Code = calleeIL;
-    calleeContext->m_CodeSize = calleeSize;
+    calleeContext->m_ILSize = calleeILSize;
     calleeContext->m_Parent = parentContext;
     // Push on front here will put siblings in reverse lexical
     // order which we undo in the dumper
@@ -911,7 +966,10 @@ InlineContext* InlineStrategy::NewSuccess(InlineInfo* inlineInfo)
 
 #if defined(DEBUG) || defined(INLINE_DATA)
 
-    calleeContext->m_Policy = inlineInfo->inlineResult->GetPolicy();
+    InlinePolicy* policy = inlineInfo->inlineResult->GetPolicy();
+
+    calleeContext->m_Policy = policy;
+    calleeContext->m_CodeSizeEstimate = policy->CodeSizeEstimate();
     calleeContext->m_Callee = inlineInfo->fncHandle;
     // +1 here since we set this before calling NoteOutcome.
     calleeContext->m_Ordinal = m_InlineCount + 1;
@@ -1017,6 +1075,10 @@ void InlineStrategy::Dump()
     {
         printf("Budget: discretionary inline caused a force inline\n");
     }
+
+    printf("Budget: initialSize=%d, finalSize=%d\n",
+           m_InitialSizeEstimate,
+           m_CurrentSizeEstimate);
 }
 
 // Static to track emission of the inline data header
@@ -1067,7 +1129,7 @@ void InlineStrategy::DumpData()
                             "*** Inline Data: Policy=%s JitInlineLimit=%d ***\n",
                             m_LastSuccessfulPolicy->GetName(),
                             limit);
-                    fprintf(stderr, "Method,Version,HotSize,ColdSize,JitTime");
+                    fprintf(stderr, "Method,Version,HotSize,ColdSize,JitTime,SizeEstimate,TimeEstimate");
                     m_LastSuccessfulPolicy->DumpSchema(stderr);
                     fprintf(stderr, "\n");
                 }
@@ -1096,12 +1158,14 @@ void InlineStrategy::DumpData()
             }
 
             fprintf(stderr,
-                    "%08X,%u,%u,%u,%u",
+                    "%08X,%u,%u,%u,%u,%d,%d",
                     currentMethodToken,
                     m_InlineCount,
                     info.compTotalHotCodeSize,
                     info.compTotalColdCodeSize,
-                    microsecondsSpentJitting);
+                    microsecondsSpentJitting,
+                    m_CurrentSizeEstimate / 10,
+                    m_CurrentTimeEstimate);
             m_LastSuccessfulPolicy->DumpData(stderr);
             fprintf(stderr, "\n");
         }
@@ -1109,4 +1173,3 @@ void InlineStrategy::DumpData()
 }
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
-
