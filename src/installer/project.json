@@ -18,7 +18,6 @@
       "type": "build",
       "version": "1.0.0-rc2-20459"
     },
-    "Microsoft.Extensions.PlatformAbstractions": "1.0.0-rc2-20459",
     "Newtonsoft.Json": "7.0.1"
   },
   "frameworks": {
