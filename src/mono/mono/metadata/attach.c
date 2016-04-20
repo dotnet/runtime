@@ -302,18 +302,30 @@ mono_attach_load_agent (MonoDomain *domain, char *agent, char *args, MonoObject 
 		return 1;
 	}
 	
-	if (args) {
-		main_args = (MonoArray*)mono_array_new (domain, mono_defaults.string_class, 1);
-		mono_array_set (main_args, MonoString*, 0, mono_string_new (domain, args));
-	} else {
-		main_args = (MonoArray*)mono_array_new (domain, mono_defaults.string_class, 0);
+	
+	main_args = (MonoArray*)mono_array_new_checked (domain, mono_defaults.string_class, (args == NULL) ? 0 : 1, &error);
+	if (main_args == NULL) {
+		g_print ("Could not allocate main method args due to %s\n", mono_error_get_message (&error));
+		mono_error_cleanup (&error);
+		g_free (agent);
+		return 1;
 	}
 
-	g_free (agent);
+	if (args) {
+		mono_array_set (main_args, MonoString*, 0, mono_string_new (domain, args));
+	}
+
 
 	pa [0] = main_args;
 	mono_runtime_try_invoke (method, NULL, pa, exc, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	if (!is_ok (&error)) {
+		g_print ("The entry point method of assembly '%s' could not be executed due to %s\n", agent, mono_error_get_message (&error));
+		mono_error_cleanup (&error);
+		g_free (agent);
+		return 1;
+	}
+
+	g_free (agent);
 
 	return 0;
 }

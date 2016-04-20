@@ -709,12 +709,16 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 
 	if (ta == NULL) {
 		/* Exception is not thrown yet */
-		return mono_array_new (domain, mono_defaults.stack_frame_class, 0);
+		res = mono_array_new_checked (domain, mono_defaults.stack_frame_class, 0, &error);
+		mono_error_set_pending_exception (&error);
+		return res;
 	}
 
 	len = mono_array_length (ta) >> 1;
 
-	res = mono_array_new (domain, mono_defaults.stack_frame_class, len > skip ? len - skip : 0);
+	res = mono_array_new_checked (domain, mono_defaults.stack_frame_class, len > skip ? len - skip : 0, &error);
+	if (mono_error_set_pending_exception (&error))
+		return NULL;
 
 	for (i = skip; i < len; i++) {
 		MonoJitInfo *ji;
@@ -1278,8 +1282,9 @@ wrap_non_exception_throws (MonoMethod *m)
 
 #define MAX_UNMANAGED_BACKTRACE 128
 static MonoArray*
-build_native_trace (void)
+build_native_trace (MonoError *error)
 {
+	mono_error_init (error);
 /* This puppy only makes sense on mobile, IOW, ARM. */
 #if defined (HAVE_BACKTRACE_SYMBOLS) && defined (TARGET_ARM)
 	MonoArray *res;
@@ -1289,7 +1294,8 @@ build_native_trace (void)
 
 	if (!size)
 		return NULL;
-	res = mono_array_new (mono_domain_get (), mono_defaults.int_class, size);
+	res = mono_array_new_checked (mono_domain_get (), mono_defaults.int_class, size, error);
+	return_val_if_nok (error, NULL);
 
 	for (i = 0; i < size; i++)
 		mono_array_set (res, gpointer, i, native_trace [i]);
@@ -1304,8 +1310,12 @@ setup_stack_trace (MonoException *mono_ex, GSList *dynamic_methods, MonoArray *i
 {
 	if (mono_ex && !initial_trace_ips) {
 		*trace_ips = g_list_reverse (*trace_ips);
-		MONO_OBJECT_SETREF (mono_ex, trace_ips, mono_glist_to_array (*trace_ips, mono_defaults.int_class));
-		MONO_OBJECT_SETREF (mono_ex, native_trace_ips, build_native_trace ());
+		MonoError error;
+		MonoArray *ips_arr = mono_glist_to_array (*trace_ips, mono_defaults.int_class, &error);
+		mono_error_assert_ok (&error);
+		MONO_OBJECT_SETREF (mono_ex, trace_ips, ips_arr);
+		MONO_OBJECT_SETREF (mono_ex, native_trace_ips, build_native_trace (&error));
+		mono_error_assert_ok (&error);
 		if (dynamic_methods) {
 			/* These methods could go away anytime, so save a reference to them in the exception object */
 			GSList *l;
@@ -2910,7 +2920,9 @@ throw_exception (MonoObject *ex, gboolean rethrow)
 			trace = g_list_append (trace, l->data);
 			trace = g_list_append (trace, NULL);
 		}
-		MONO_OBJECT_SETREF (mono_ex, trace_ips, mono_glist_to_array (trace, mono_defaults.int_class));
+		MonoArray *ips_arr = mono_glist_to_array (trace, mono_defaults.int_class, &error);
+		mono_error_assert_ok (&error);
+		MONO_OBJECT_SETREF (mono_ex, trace_ips, ips_arr);
 		g_list_free (l);
 		g_list_free (trace);
 #endif
@@ -2967,6 +2979,7 @@ mono_llvm_resume_exception (void)
 MonoObject *
 mono_llvm_load_exception (void)
 {
+		MonoError error;
 	MonoJitTlsData *jit_tls = mono_get_jit_tls ();
 
 	MonoException *mono_ex = (MonoException*)mono_gchandle_get_target (jit_tls->thrown_exc);
@@ -2990,14 +3003,18 @@ mono_llvm_load_exception (void)
 		// FIXME: Does this work correctly for rethrows?
 		// We may be discarding useful information
 		// when this gets GC'ed
-		MONO_OBJECT_SETREF (mono_ex, trace_ips, mono_glist_to_array (trace_ips, mono_defaults.int_class));
+		MonoArray *ips_arr = mono_glist_to_array (trace_ips, mono_defaults.int_class, &error);
+		mono_error_assert_ok (&error);
+		MONO_OBJECT_SETREF (mono_ex, trace_ips, ips_arr);
 		g_list_free (trace_ips);
 
 		// FIXME:
 		//MONO_OBJECT_SETREF (mono_ex, stack_trace, ves_icall_System_Exception_get_trace (mono_ex));
 	} else {
-		MONO_OBJECT_SETREF (mono_ex, trace_ips, mono_array_new (mono_domain_get (), mono_defaults.int_class, 0));
-		MONO_OBJECT_SETREF (mono_ex, stack_trace, mono_array_new (mono_domain_get (), mono_defaults.stack_frame_class, 0));
+		MONO_OBJECT_SETREF (mono_ex, trace_ips, mono_array_new_checked (mono_domain_get (), mono_defaults.int_class, 0, &error));
+		mono_error_assert_ok (&error);
+		MONO_OBJECT_SETREF (mono_ex, stack_trace, mono_array_new_checked (mono_domain_get (), mono_defaults.stack_frame_class, 0, &error));
+		mono_error_assert_ok (&error);
 	}
 
 	return &mono_ex->object;

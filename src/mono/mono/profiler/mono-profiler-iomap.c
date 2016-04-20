@@ -18,6 +18,7 @@
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/class.h>
 #include <mono/metadata/class-internals.h>
+#include <mono/metadata/object-internals.h>
 #include <mono/metadata/image.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/debug-helpers.h>
@@ -185,6 +186,7 @@ static inline guint32 calc_strings_hash (const gchar *str1, const gchar *str2, g
 
 static inline void print_report (const gchar *format, ...)
 {
+	MonoError error;
 	MonoClass *klass;
 	MonoProperty *prop;
 	MonoString *str;
@@ -199,7 +201,8 @@ static inline void print_report (const gchar *format, ...)
 	klass = mono_class_load_from_name (mono_get_corlib (), "System", "Environment");
 	mono_class_init (klass);
 	prop = mono_class_get_property_from_name (klass, "StackTrace");
-	str = (MonoString*)mono_property_get_value (prop, NULL, NULL, NULL);
+	str = (MonoString*)mono_property_get_value_checked (prop, NULL, NULL, &error);
+	mono_error_assert_ok (&error);
 	stack_trace = mono_string_to_utf8 (str);
 
 	fprintf (stdout, "-= Stack Trace =-\n%s\n\n", stack_trace);

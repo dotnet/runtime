@@ -7868,11 +7868,17 @@ mono_method_body_get_object_checked (MonoDomain *domain, MonoMethod *method, Mon
 	ret->init_locals = header->init_locals;
 	ret->max_stack = header->max_stack;
 	ret->local_var_sig_token = local_var_sig_token;
-	MONO_OBJECT_SETREF (ret, il, mono_array_new_cached (domain, mono_defaults.byte_class, header->code_size));
+	MonoArray *il_arr = mono_array_new_cached (domain, mono_defaults.byte_class, header->code_size, error);
+	if (!is_ok (error))
+		goto fail;
+	MONO_OBJECT_SETREF (ret, il, il_arr);
 	memcpy (mono_array_addr (ret->il, guint8, 0), header->code, header->code_size);
 
 	/* Locals */
-	MONO_OBJECT_SETREF (ret, locals, mono_array_new_cached (domain, mono_class_get_local_variable_info_class (), header->num_locals));
+	MonoArray *locals_arr = mono_array_new_cached (domain, mono_class_get_local_variable_info_class (), header->num_locals, error);
+	if (!is_ok (error))
+		goto fail;
+	MONO_OBJECT_SETREF (ret, locals, locals_arr);
 	for (i = 0; i < header->num_locals; ++i) {
 		MonoReflectionLocalVariableInfo *info = (MonoReflectionLocalVariableInfo*)mono_object_new_checked (domain, mono_class_get_local_variable_info_class (), error);
 		if (!is_ok (error))
@@ -7890,7 +7896,10 @@ mono_method_body_get_object_checked (MonoDomain *domain, MonoMethod *method, Mon
 	}
 
 	/* Exceptions */
-	MONO_OBJECT_SETREF (ret, clauses, mono_array_new_cached (domain, mono_class_get_exception_handling_clause_class (), header->num_clauses));
+	MonoArray *exn_clauses = mono_array_new_cached (domain, mono_class_get_exception_handling_clause_class (), header->num_clauses, error);
+	if (!is_ok (error))
+		goto fail;
+	MONO_OBJECT_SETREF (ret, clauses, exn_clauses);
 	for (i = 0; i < header->num_clauses; ++i) {
 		MonoReflectionExceptionHandlingClause *info = (MonoReflectionExceptionHandlingClause*)mono_object_new_checked (domain, mono_class_get_exception_handling_clause_class (), error);
 		if (!is_ok (error))
@@ -9057,7 +9066,7 @@ handle_enum:
 		}
 		slen = mono_metadata_decode_value (p, &p);
 		*end = p + slen;
-		return mono_string_new_len (mono_domain_get (), p, slen);
+		return mono_string_new_len_checked (mono_domain_get (), p, slen, error);
 	case MONO_TYPE_CLASS: {
 		MonoReflectionType *rt;
 		char *n;
@@ -9165,7 +9174,8 @@ handle_type:
 			*end = p;
 			return NULL;
 		}
-		arr = mono_array_new (mono_domain_get(), tklass, alen);
+		arr = mono_array_new_checked (mono_domain_get(), tklass, alen, error);
+		return_val_if_nok (error, NULL);
 		basetype = tklass->byval_arg.type;
 		if (basetype == MONO_TYPE_VALUETYPE && tklass->enumtype)
 			basetype = mono_class_enum_basetype (tklass)->type;
@@ -9531,9 +9541,13 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 			}
 
 
-			mono_property_set_value (prop, attr, pparams, NULL);
+			mono_property_set_value_checked (prop, attr, pparams, error);
 			if (!type_is_reference (prop_type))
 				g_free (pparams [0]);
+			if (!is_ok (error)) {
+				g_free (name);
+				goto fail;
+			}
 		}
 		g_free (name);
 	}
@@ -9587,8 +9601,9 @@ mono_reflection_create_custom_attr_data_args (MonoImage *image, MonoMethod *meth
 	if (len < 2 || read16 (p) != 0x0001) /* Prolog */
 		return;
 
-	typedargs = mono_array_new (domain, mono_get_object_class (), mono_method_signature (method)->param_count);
-	
+	typedargs = mono_array_new_checked (domain, mono_get_object_class (), mono_method_signature (method)->param_count, error);
+	return_if_nok (error);
+
 	/* skip prolog */
 	p += 2;
 	for (i = 0; i < mono_method_signature (method)->param_count; ++i) {
@@ -9601,7 +9616,8 @@ mono_reflection_create_custom_attr_data_args (MonoImage *image, MonoMethod *meth
 
 	named = p;
 	num_named = read16 (named);
-	namedargs = mono_array_new (domain, mono_get_object_class (), num_named);
+	namedargs = mono_array_new_checked (domain, mono_get_object_class (), num_named, error);
+	return_if_nok (error);
 	named += 2;
 	attrklass = method->klass;
 
@@ -9820,7 +9836,8 @@ mono_custom_attrs_construct_by_type (MonoCustomAttrInfo *cinfo, MonoClass *attr_
 			n ++;
 	}
 
-	result = mono_array_new_cached (mono_domain_get (), mono_defaults.attribute_class, n);
+	result = mono_array_new_cached (mono_domain_get (), mono_defaults.attribute_class, n, error);
+	return_val_if_nok (error, NULL);
 	n = 0;
 	for (i = 0; i < cinfo->num_attrs; ++i) {
 		if (!cinfo->attrs [i].ctor) {
@@ -9858,7 +9875,8 @@ mono_custom_attrs_data_construct (MonoCustomAttrInfo *cinfo, MonoError *error)
 	int i;
 	
 	mono_error_init (error);
-	result = mono_array_new (mono_domain_get (), mono_defaults.customattribute_data_class, cinfo->num_attrs);
+	result = mono_array_new_checked (mono_domain_get (), mono_defaults.customattribute_data_class, cinfo->num_attrs, error);
+	return_val_if_nok (error, NULL);
 	for (i = 0; i < cinfo->num_attrs; ++i) {
 		attr = create_custom_attr_data (cinfo->image, &cinfo->attrs [i], error);
 		return_val_if_nok (error, NULL);
@@ -10455,7 +10473,7 @@ mono_reflection_get_custom_attrs_by_type (MonoObject *obj, MonoClass *attr_klass
 		if (!result)
 			return NULL;
 	} else {
-		result = mono_array_new_cached (mono_domain_get (), mono_defaults.attribute_class, 0);
+		result = mono_array_new_cached (mono_domain_get (), mono_defaults.attribute_class, 0, error);
 	}
 
 	return result;
@@ -10519,8 +10537,8 @@ mono_reflection_get_custom_attrs_data_checked (MonoObject *obj, MonoError *error
 		if (!cinfo->cached)
 			mono_custom_attrs_free (cinfo);
 		return_val_if_nok (error, NULL);
-	} else
-		result = mono_array_new (mono_domain_get (), mono_defaults.customattribute_data_class, 0);
+	} else 
+		result = mono_array_new_checked (mono_domain_get (), mono_defaults.customattribute_data_class, 0, error);
 
 	return result;
 }
@@ -11390,7 +11408,9 @@ mono_reflection_get_custom_attrs_blob_checked (MonoReflectionAssembly *assembly,
 
 	g_assert (p - buffer <= buflen);
 	buflen = p - buffer;
-	result = mono_array_new (mono_domain_get (), mono_defaults.byte_class, buflen);
+	result = mono_array_new_checked (mono_domain_get (), mono_defaults.byte_class, buflen, error);
+	if (!is_ok (error))
+		goto leave;
 	p = mono_array_addr (result, char, 0);
 	memcpy (p, buffer, buflen);
 leave:
@@ -13479,7 +13499,8 @@ reflection_sighelper_get_signature_local (MonoReflectionSigHelper *sig, MonoErro
 	}
 
 	buflen = buf.p - buf.buf;
-	result = mono_array_new (mono_domain_get (), mono_defaults.byte_class, buflen);
+	result = mono_array_new_checked (mono_domain_get (), mono_defaults.byte_class, buflen, error);
+	if (!is_ok (error)) goto fail;
 	memcpy (mono_array_addr (result, char, 0), buf.buf, buflen);
 	sigbuffer_free (&buf);
 	return result;
@@ -13522,7 +13543,8 @@ reflection_sighelper_get_signature_field (MonoReflectionSigHelper *sig, MonoErro
 	}
 
 	buflen = buf.p - buf.buf;
-	result = mono_array_new (mono_domain_get (), mono_defaults.byte_class, buflen);
+	result = mono_array_new_checked (mono_domain_get (), mono_defaults.byte_class, buflen, error);
+	if (!is_ok (error)) goto fail;
 	memcpy (mono_array_addr (result, char, 0), buf.buf, buflen);
 	sigbuffer_free (&buf);
 

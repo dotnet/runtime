@@ -1361,6 +1361,7 @@ mono_threadpool_ms_begin_invoke (MonoDomain *domain, MonoObject *target, MonoMet
 MonoObject *
 mono_threadpool_ms_end_invoke (MonoAsyncResult *ares, MonoArray **out_args, MonoObject **exc)
 {
+	MonoError error;
 	MonoAsyncCall *ac;
 
 	g_assert (exc);
@@ -1390,7 +1391,9 @@ mono_threadpool_ms_end_invoke (MonoAsyncResult *ares, MonoArray **out_args, Mono
 		} else {
 			wait_event = CreateEvent (NULL, TRUE, FALSE, NULL);
 			g_assert(wait_event);
-			MONO_OBJECT_SETREF (ares, handle, (MonoObject*) mono_wait_handle_new (mono_object_domain (ares), wait_event));
+			MonoWaitHandle *wait_handle = mono_wait_handle_new (mono_object_domain (ares), wait_event, &error);
+			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			MONO_OBJECT_SETREF (ares, handle, (MonoObject*) wait_handle);
 		}
 		mono_monitor_exit ((MonoObject*) ares);
 		MONO_PREPARE_BLOCKING;

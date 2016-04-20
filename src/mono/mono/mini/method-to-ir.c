@@ -11869,7 +11869,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					EMIT_NEW_CLASSCONST (cfg, iargs [1], klass);
 					iargs [2] = sp [0];
 
-					ins = mono_emit_jit_icall (cfg, mono_array_new, iargs);
+					ins = mono_emit_jit_icall (cfg, ves_icall_array_new, iargs);
 				} else {
 					/* Decompose later since it is needed by abcrem */
 					MonoClass *array_type = mono_array_class_get (klass, 1);

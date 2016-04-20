@@ -847,7 +847,8 @@ create_object_from_sockaddr (struct sockaddr *saddr, int sa_size, gint32 *werror
 	 * the length of the entire sockaddr_in/in6, including
 	 * sizeof (unsigned short) of the family */
 	/* We can't really avoid the +2 as all code below depends on this size - INCLUDING unix domain sockets.*/
-	data = mono_array_new_cached (domain, mono_get_byte_class (), sa_size + 2);
+	data = mono_array_new_cached (domain, mono_get_byte_class (), sa_size + 2, error);
+	return_val_if_nok (error, NULL);
 
 	/* The data buffer is laid out as follows:
 	 * bytes 0 and 1 are the address family
@@ -1924,12 +1925,9 @@ ves_icall_System_Net_Sockets_Socket_Select_internal (MonoArray **sockets, gint32
 }
 
 static MonoObject*
-int_to_object (MonoDomain *domain, int val)
+int_to_object (MonoDomain *domain, int val, MonoError *error)
 {
-	MonoError error;
-	MonoObject *result = mono_value_box_checked (domain, mono_get_int32_class (), &val, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
-	return result;
+	return mono_value_box_checked (domain, mono_get_int32_class (), &val, error);
 }
 
 void
@@ -1976,7 +1974,8 @@ ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal (SOCKET sock, g
 		return;
 	}
 	if (ret == -2) {
-		*obj_val = int_to_object (domain, 0);
+		*obj_val = int_to_object (domain, 0, &error);
+		mono_error_set_pending_exception (&error);
 		return;
 	}
 
@@ -2037,11 +2036,13 @@ ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal (SOCKET sock, g
 		break;
 	case SocketOptionName_DontLinger:
 		/* construct a bool int in val - true if linger is off */
-		obj = int_to_object (domain, !linger.l_onoff);
+		obj = int_to_object (domain, !linger.l_onoff, &error);
+		mono_error_set_pending_exception (&error);
 		break;
 	case SocketOptionName_SendTimeout:
 	case SocketOptionName_ReceiveTimeout:
-		obj = int_to_object (domain, time_ms);
+		obj = int_to_object (domain, time_ms, &error);
+		mono_error_set_pending_exception (&error);
 		break;
 
 #ifdef SO_PEERCRED
@@ -2087,7 +2088,8 @@ ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal (SOCKET sock, g
 		if (level == SocketOptionLevel_Socket && name == SocketOptionName_ExclusiveAddressUse)
 			val = val ? 0 : 1;
 #endif
-		obj = int_to_object (domain, val);
+		obj = int_to_object (domain, val, &error);
+		mono_error_set_pending_exception (&error);
 	}
 
 	*obj_val = obj;
@@ -2480,7 +2482,7 @@ ves_icall_System_Net_Sockets_Socket_IOControl_internal (SOCKET sock, gint32 code
 }
 
 static gboolean 
-addrinfo_to_IPHostEntry(MonoAddressInfo *info, MonoString **h_name, MonoArray **h_aliases, MonoArray **h_addr_list, gboolean add_local_ips)
+addrinfo_to_IPHostEntry (MonoAddressInfo *info, MonoString **h_name, MonoArray **h_aliases, MonoArray **h_addr_list, gboolean add_local_ips, MonoError *error)
 {
 	gint32 count, i;
 	MonoAddressEntry *ai = NULL;
@@ -2491,14 +2493,19 @@ addrinfo_to_IPHostEntry(MonoAddressInfo *info, MonoString **h_name, MonoArray **
 	int addr_index;
 	MonoDomain *domain = mono_domain_get ();
 
+	mono_error_init (error);
 	addr_index = 0;
-	*h_aliases = mono_array_new (domain, mono_get_string_class (), 0);
+	*h_aliases = mono_array_new_checked (domain, mono_get_string_class (), 0, error);
+	return_val_if_nok (error, FALSE);
 	if (add_local_ips) {
 		local_in = (struct in_addr *) mono_get_local_interfaces (AF_INET, &nlocal_in);
 		local_in6 = (struct in6_addr *) mono_get_local_interfaces (AF_INET6, &nlocal_in6);
 		if (nlocal_in || nlocal_in6) {
 			char addr [INET6_ADDRSTRLEN];
-			*h_addr_list = mono_array_new (domain, mono_get_string_class (), nlocal_in + nlocal_in6);
+			*h_addr_list = mono_array_new_checked (domain, mono_get_string_class (), nlocal_in + nlocal_in6, error);
+			if (!is_ok (error))
+				goto leave;
+			
 			if (nlocal_in) {
 				MonoString *addr_string;
 				int i;
@@ -2529,11 +2536,12 @@ addrinfo_to_IPHostEntry(MonoAddressInfo *info, MonoString **h_name, MonoArray **
 				}
 			}
 
+		leave:
 			g_free (local_in);
 			g_free (local_in6);
 			if (info)
 				mono_free_address_info (info);
-			return TRUE;
+			return is_ok (error);;
 		}
 
 		g_free (local_in);
@@ -2546,7 +2554,9 @@ addrinfo_to_IPHostEntry(MonoAddressInfo *info, MonoString **h_name, MonoArray **
 		count++;
 	}
 
-	*h_addr_list = mono_array_new (domain, mono_get_string_class (), count);
+	*h_addr_list = mono_array_new_checked (domain, mono_get_string_class (), count, error);
+	if (!is_ok (error))
+		goto leave2;
 
 	for (ai = info->entries, i = 0; ai != NULL; ai = ai->next) {
 		MonoAddress maddr;
@@ -2576,10 +2586,11 @@ addrinfo_to_IPHostEntry(MonoAddressInfo *info, MonoString **h_name, MonoArray **
 		addr_index++;
 	}
 
+leave2:
 	if (info)
 		mono_free_address_info (info);
 
-	return TRUE;
+	return is_ok (error);
 }
 
 static int
@@ -2640,8 +2651,11 @@ ves_icall_System_Net_Dns_GetHostByName_internal (MonoString *host, MonoString **
 
 	g_free(hostname);
 
-	if (add_info_ok)
-		return addrinfo_to_IPHostEntry (info, h_name, h_aliases, h_addr_list, add_local_ips);
+	if (add_info_ok) {
+		MonoBoolean result = addrinfo_to_IPHostEntry (info, h_name, h_aliases, h_addr_list, add_local_ips, &error);
+		mono_error_set_pending_exception (&error);
+		return result;
+	}
 	return FALSE;
 }
 
@@ -2706,7 +2720,9 @@ ves_icall_System_Net_Dns_GetHostByAddr_internal (MonoString *addr, MonoString **
 	if (mono_get_address_info (hostname, 0, hint | MONO_HINT_CANONICAL_NAME | MONO_HINT_CONFIGURED_ONLY, &info) != 0)
 		return FALSE;
 
-	return addrinfo_to_IPHostEntry (info, h_name, h_aliases, h_addr_list, FALSE);
+	MonoBoolean result = addrinfo_to_IPHostEntry (info, h_name, h_aliases, h_addr_list, FALSE, &error);
+	mono_error_set_pending_exception (&error);
+	return result;
 }
 
 MonoBoolean

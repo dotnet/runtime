@@ -1442,17 +1442,18 @@ ves_icall_System_Threading_Thread_SetPriority (MonoThread *this_obj, int priorit
 /* If the array is already in the requested domain, we just return it,
    otherwise we return a copy in that domain. */
 static MonoArray*
-byte_array_to_domain (MonoArray *arr, MonoDomain *domain)
+byte_array_to_domain (MonoArray *arr, MonoDomain *domain, MonoError *error)
 {
 	MonoArray *copy;
 
+	mono_error_init (error);
 	if (!arr)
 		return NULL;
 
 	if (mono_object_domain (arr) == domain)
 		return arr;
 
-	copy = mono_array_new (domain, mono_defaults.byte_class, arr->max_length);
+	copy = mono_array_new_checked (domain, mono_defaults.byte_class, arr->max_length, error);
 	memmove (mono_array_addr (copy, guint8, 0), mono_array_addr (arr, guint8, 0), arr->max_length);
 	return copy;
 }
@@ -1460,13 +1461,19 @@ byte_array_to_domain (MonoArray *arr, MonoDomain *domain)
 MonoArray*
 ves_icall_System_Threading_Thread_ByteArrayToRootDomain (MonoArray *arr)
 {
-	return byte_array_to_domain (arr, mono_get_root_domain ());
+	MonoError error;
+	MonoArray *result = byte_array_to_domain (arr, mono_get_root_domain (), &error);
+	mono_error_set_pending_exception (&error);
+	return result;
 }
 
 MonoArray*
 ves_icall_System_Threading_Thread_ByteArrayToCurrentDomain (MonoArray *arr)
 {
-	return byte_array_to_domain (arr, mono_domain_get ());
+	MonoError error;
+	MonoArray *result = byte_array_to_domain (arr, mono_domain_get (), &error);
+	mono_error_set_pending_exception (&error);
+	return result;
 }
 
 MonoThread *
@@ -2274,8 +2281,9 @@ mono_thread_internal_reset_abort (MonoInternalThread *thread)
 MonoObject*
 ves_icall_System_Threading_Thread_GetAbortExceptionState (MonoThread *this_obj)
 {
+	MonoError error;
 	MonoInternalThread *thread = this_obj->internal_thread;
-	MonoObject *state, *deserialized = NULL, *exc;
+	MonoObject *state, *deserialized = NULL;
 	MonoDomain *domain;
 
 	if (!thread->abort_state_handle)
@@ -2288,12 +2296,14 @@ ves_icall_System_Threading_Thread_GetAbortExceptionState (MonoThread *this_obj)
 	if (mono_object_domain (state) == domain)
 		return state;
 
-	deserialized = mono_object_xdomain_representation (state, domain, &exc);
+	deserialized = mono_object_xdomain_representation (state, domain, &error);
 
 	if (!deserialized) {
 		MonoException *invalid_op_exc = mono_get_exception_invalid_operation ("Thread.ExceptionState cannot access an ExceptionState from a different AppDomain");
-		if (exc)
+		if (!is_ok (&error)) {
+			MonoObject *exc = (MonoObject*)mono_error_convert_to_exception (&error);
 			MONO_OBJECT_SETREF (invalid_op_exc, inner_ex, exc);
+		}
 		mono_set_pending_exception (invalid_op_exc);
 		return NULL;
 	}
@@ -3530,8 +3540,12 @@ mono_threads_get_thread_dump (MonoArray **out_threads, MonoArray **out_stack_fra
 	ud.frames = g_new0 (MonoStackFrameInfo, 256);
 	ud.max_frames = 256;
 
-	*out_threads = mono_array_new (domain, mono_defaults.thread_class, nthreads);
-	*out_stack_frames = mono_array_new (domain, mono_defaults.array_class, nthreads);
+	*out_threads = mono_array_new_checked (domain, mono_defaults.thread_class, nthreads, &error);
+	if (!is_ok (&error))
+		goto leave;
+	*out_stack_frames = mono_array_new_checked (domain, mono_defaults.array_class, nthreads, &error);
+	if (!is_ok (&error))
+		goto leave;
 
 	for (tindex = 0; tindex < nthreads; ++tindex) {
 		MonoInternalThread *thread = thread_array [tindex];
@@ -3550,7 +3564,9 @@ mono_threads_get_thread_dump (MonoArray **out_threads, MonoArray **out_stack_fra
 
 		mono_array_setref_fast (*out_threads, tindex, mono_thread_current_for_thread (thread));
 
-		thread_frames = mono_array_new (domain, mono_defaults.stack_frame_class, ud.nframes);
+		thread_frames = mono_array_new_checked (domain, mono_defaults.stack_frame_class, ud.nframes, &error);
+		if (!is_ok (&error))
+			goto leave;
 		mono_array_setref_fast (*out_stack_frames, tindex, thread_frames);
 
 		for (i = 0; i < ud.nframes; ++i) {
