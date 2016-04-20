@@ -11,7 +11,7 @@
     "System.Collections": "4.0.11-rc3-24022-00",
     "System.Collections.Concurrent": "4.0.12-rc3-24022-00",
     "System.ComponentModel": "4.0.1-rc3-24022-00",
-    "System.ComponentModel.TypeConverter": "4.0.1-rc3-24022-00",
+    "System.ComponentModel.TypeConverter": "4.1.0-rc3-24022-00",
     "System.Console": "4.0.0-rc3-24022-00",
     "System.Data.Common": "4.0.1-rc3-24022-00",
     "System.Diagnostics.Contracts": "4.0.1-rc3-24022-00",
