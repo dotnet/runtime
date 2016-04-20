@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
@@ -28,15 +28,23 @@
     <Compile Include="FileSystemWatcher.NotifyFilter.cs" />
     <Compile Include="FileSystemWatcher.Renamed.cs" />
     <Compile Include="FileSystemWatcher.MoveFile.cs" />
-    <Compile Include="Utility\TemporaryTestDirectory.cs" />
-    <Compile Include="Utility\TemporaryTestFile.cs" />
     <Compile Include="Utility\TestFileSystemWatcher.cs" />
-    <Compile Include="Utility\Utility.cs" />
+    <Compile Include="Utility\FileSystemWatcherTest.cs" />
     <Compile Include="ErrorEventArgs.unit.cs" />
     <Compile Include="FileSystemEventArgs.unit.cs" />
     <Compile Include="FileSystemWatcher.unit.cs" />
     <Compile Include="RenamedEventArgs.unit.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
+    <!-- Helpers -->
+    <Compile Include="$(CommonTestPath)\System\IO\FileCleanupTestBase.cs">
+      <Link>Common\System\IO\FileCleanupTestBase.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
+      <Link>Common\System\IO\TempFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\TempDirectory.cs">
+      <Link>Common\System\IO\TempDirectory.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
