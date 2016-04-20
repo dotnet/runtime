@@ -461,7 +461,7 @@ def static addCopyCoreClrAndRunTestSteps(def job, def coreclrBranch, String os, 
 // and then a build for the test of corefx on the target platform.  Then we link them with a build
 // flow job.
 
-def innerLoopNonWindowsOSs = ['Ubuntu15.10', 'Debian8.2', 'OSX', 'CentOS7.1', 'OpenSUSE13.2', 'RHEL7.2']
+def innerLoopNonWindowsOSs = ['Ubuntu15.10', 'Debian8.2', 'CentOS7.1', 'OpenSUSE13.2', 'RHEL7.2']
 [true, false].each { isPR ->
     ['Debug', 'Release'].each { configurationGroup ->
         innerLoopNonWindowsOSs.each { os ->
@@ -508,9 +508,6 @@ def innerLoopNonWindowsOSs = ['Ubuntu15.10', 'Debian8.2', 'OSX', 'CentOS7.1', 'O
             // Archive the results
             Utilities.addArchival(newBuildJob, "bin/build.pack,bin/osGroup.AnyCPU.${configurationGroup}/**,bin/ref/**,bin/packages/**,msbuild.log")
 
-            // Use Server GC for Ubuntu/OSX Debug PR build & test
-            def useServerGC = ((os == 'Ubuntu15.10' || os == 'OSX') && configurationGroup == 'Release' && isPR)
-
             //
             // Then we set up a job that runs the test on the target OS
             //
@@ -522,7 +519,7 @@ def innerLoopNonWindowsOSs = ['Ubuntu15.10', 'Debian8.2', 'OSX', 'CentOS7.1', 'O
             
             def newTestJob = job(Utilities.getFullJobName(project, newTestJobName, isPR)) { }
 
-            addCopyCoreClrAndRunTestSteps(newTestJob, branch, os, osGroup, fullNativeCompBuildJobName, fullCoreFXBuildJobName, configurationGroup, 'Release', false, useServerGC)
+            addCopyCoreClrAndRunTestSteps(newTestJob, branch, os, osGroup, fullNativeCompBuildJobName, fullCoreFXBuildJobName, configurationGroup, 'Release', false, false)
             
             // Set the affinity.  All of these run on the target
             Utilities.setMachineAffinity(newTestJob, os, 'latest-or-auto')
@@ -566,7 +563,7 @@ def innerLoopNonWindowsOSs = ['Ubuntu15.10', 'Debian8.2', 'OSX', 'CentOS7.1', 'O
             if (isPR) {
                 // Set PR trigger.
                 // Set of OS's that work currently. 
-                if (os in ['OSX', 'OpenSUSE13.2', 'CentOS7.1']) {
+                if (os in ['OpenSUSE13.2', 'CentOS7.1']) {
                     // TODO #6070: Temporarily disabled due to failing globalization tests on OpenSUSE.
                     if (os != 'OpenSUSE13.2') {
                         Utilities.addGithubPRTriggerForBranch(newFlowJob, branch, "Innerloop ${os} ${configurationGroup} Build and Test")
@@ -584,9 +581,9 @@ def innerLoopNonWindowsOSs = ['Ubuntu15.10', 'Debian8.2', 'OSX', 'CentOS7.1', 'O
     }
 }
 
-// Generate the build and test versions for Windows_NT and Ubuntu14.04.  When full build/run is supported on a platform, those platforms
+// Generate the build and test versions for Windows_NT, Ubuntu14.04 and OSX.  When full build/run is supported on a platform, those platforms
 // could be removed from above and then added in below.
-def supportedFullCyclePlatforms = ['Windows_NT', 'Ubuntu14.04']
+def supportedFullCyclePlatforms = ['Windows_NT', 'Ubuntu14.04', 'OSX']
 
 [true, false].each { isPR ->
     ['Debug', 'Release'].each { configurationGroup ->
@@ -602,7 +599,9 @@ def supportedFullCyclePlatforms = ['Windows_NT', 'Ubuntu14.04']
                         batchFile("C:\\Packer\\Packer.exe .\\bin\\build.pack .\\bin")
                     }
                     else {
-                        shell("HOME=\$WORKSPACE/tempHome ./build.sh ${configurationGroup.toLowerCase()} /p:ConfigurationGroup=${configurationGroup} /p:TestWithLocalLibraries=true /p:WithoutCategories=IgnoreForCI")
+                        // Use Server GC for Ubuntu/OSX Debug PR build & test
+                        def useServerGC = (configurationGroup == 'Release' && isPR) ? 'useServerGC' : ''
+                        shell("HOME=\$WORKSPACE/tempHome ./build.sh ${useServerGC} ${configurationGroup.toLowerCase()} /p:ConfigurationGroup=${configurationGroup} /p:TestWithLocalLibraries=true /p:WithoutCategories=IgnoreForCI")
                         // Tar up the appropriate bits
                         shell("tar -czf bin/build.tar.gz bin/${osGroup}.AnyCPU.${configurationGroup} bin/${osGroup}.x64.${configurationGroup} bin/ref bin/packages")
                     }
