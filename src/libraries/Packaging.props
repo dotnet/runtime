@@ -13,6 +13,8 @@
     <NativePackagePath>$(MSBuildThisFileDirectory)src/Native/pkg</NativePackagePath>
   </PropertyGroup>
 
+  <Import Condition="Exists('pkg/baseline/baseline.props')" Project="pkg/baseline/baseline.props" />
+
   <PropertyGroup Condition="'$(OsEnvironment)'=='Unix'">
     <!--
       Building packages fails for two reasons.
