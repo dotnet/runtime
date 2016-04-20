@@ -182,6 +182,7 @@
     <Compile Include="Lifted\NonLiftedComparisonNotEqualNullableTests.cs" />
     <Compile Include="ListInit\ElementInitTests.cs" />
     <Compile Include="ListInit\ListInitExpressionTests.cs" />
+    <Compile Include="Loop\LoopTests.cs" />
     <Compile Include="MemberInit\BindTests.cs" />
     <Compile Include="MemberInit\ListBindTests.cs" />
     <Compile Include="MemberInit\MemberBindTests.cs" />
