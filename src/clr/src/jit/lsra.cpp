@@ -2478,19 +2478,7 @@ LinearScan::getKillSetForNode(GenTree* tree)
         }
         break;
     case GT_RETURNTRAP:
-        // if there is no FP used, we can ignore the FP kills
-        if (compiler->compFloatingPointUsed)
-        {
-            killMask = RBM_CALLEE_TRASH;
-        }
-        else
-        {
-            killMask = RBM_INT_CALLEE_TRASH;
-        }
-#if defined(_TARGET_AMD64_) || defined (_TARGET_ARM_)
-        // AMD (and ARM) helpers for this save the return value
-        killMask &= ~(RBM_INTRET | RBM_FLOATRET);
-#endif
+        killMask = compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
         break;
     case GT_CALL:
         // if there is no FP used, we can ignore the FP kills
