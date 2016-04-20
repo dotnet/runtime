@@ -25,7 +25,7 @@
     "System.Xml.XmlDocument": "4.0.1-rc3-24018-00",
     "System.Xml.XmlSerializer": "4.0.10",
     "xunit": "2.1.0",
-    "xunit.netcore.extensions": "1.0.0-prerelease-00231-07",
+    "xunit.netcore.extensions": "1.0.0-prerelease-00312-04",
     "test-runtime": {
       "target": "project",
       "exclude": "compile"

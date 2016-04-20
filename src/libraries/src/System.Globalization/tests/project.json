@@ -3,7 +3,7 @@
     "System.Runtime": "4.1.0-rc3-24018-00",
     "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0029",
     "xunit": "2.1.0",
-    "xunit.netcore.extensions": "1.0.0-prerelease-00231-07",
+    "xunit.netcore.extensions": "1.0.0-prerelease-00312-04",
     "Microsoft.NETCore.Platforms": "1.0.1-rc3-24018-00"
   },
   "frameworks": {
