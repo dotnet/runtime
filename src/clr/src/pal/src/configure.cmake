@@ -939,6 +939,41 @@ int main(int argc, char **argv)
         return 0;
 }" UNWIND_CONTEXT_IS_UCONTEXT_T)
 
+set(CMAKE_REQUIRED_LIBRARIES pthread)
+check_cxx_source_compiles("
+#include <errno.h>
+#include <pthread.h>
+#include <time.h>
+
+int main()
+{
+    pthread_mutexattr_t mutexAttributes;
+    pthread_mutexattr_init(&mutexAttributes);
+    pthread_mutexattr_setpshared(&mutexAttributes, PTHREAD_PROCESS_SHARED);
+    pthread_mutexattr_settype(&mutexAttributes, PTHREAD_MUTEX_RECURSIVE);
+    pthread_mutexattr_setrobust(&mutexAttributes, PTHREAD_MUTEX_ROBUST);
+
+    pthread_mutex_t mutex;
+    pthread_mutex_init(&mutex, &mutexAttributes);
+
+    pthread_mutexattr_destroy(&mutexAttributes);
+
+    struct timespec timeoutTime;
+    timeoutTime.tv_sec = 1; // not the right way to specify absolute time, but just checking availability of timed lock
+    timeoutTime.tv_nsec = 0;
+    pthread_mutex_timedlock(&mutex, &timeoutTime);
+    pthread_mutex_consistent(&mutex);
+
+    pthread_mutex_destroy(&mutex);
+
+    int error = EOWNERDEAD;
+    error = ENOTRECOVERABLE;
+    error = ETIMEDOUT;
+    error = 0;
+    return error;
+}" HAVE_FULLY_FEATURED_PTHREAD_MUTEXES)
+set(CMAKE_REQUIRED_LIBRARIES)
+
 if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
   if(NOT HAVE_LIBUUID_H)
     unset(HAVE_LIBUUID_H CACHE)

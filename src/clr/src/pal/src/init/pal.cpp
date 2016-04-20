@@ -28,6 +28,7 @@ Abstract:
 #include "pal/seh.hpp"
 #include "pal/palinternal.h"
 #include "pal/dbgmsg.h"
+#include "pal/sharedmemory.h"
 #include "pal/shmemory.h"
 #include "pal/process.h"
 #include "../thread/procprivate.hpp"
@@ -237,8 +238,9 @@ Initialize(
 
     if (init_count == 0)
     {
-        // Set our pid.
+        // Set our pid and sid.
         gPID = getpid();
+        gSID = getsid(gPID);
 
         fFirstTimeInit = true;
 
@@ -280,6 +282,7 @@ Initialize(
             // we use large numbers of threads or have many open files.
         }
 
+        SharedMemoryManager::StaticInitialize();
 
         /* initialize the shared memory infrastructure */
         if (!SHMInitialize())
@@ -894,6 +897,8 @@ PALCommonCleanup()
         // Let the synchronization manager know we're about to shutdown
         //
         CPalSynchMgrController::PrepareForShutdown();
+
+        SharedMemoryManager::StaticClose();
 
 #ifdef _DEBUG
         PROCDumpThreadList();

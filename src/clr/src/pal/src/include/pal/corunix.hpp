@@ -178,6 +178,7 @@ namespace CorUnix
         otiAutoResetEvent = 0,
         otiManualResetEvent,
         otiMutex,
+        otiNamedMutex,
         otiSemaphore,
         otiFile,
         otiFileMapping,
