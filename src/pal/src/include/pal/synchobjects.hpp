@@ -22,6 +22,7 @@ Abstract:
 
 #include "corunix.hpp"
 #include "threadinfo.hpp"
+#include "mutex.hpp"
 #include "shm.hpp"
 #include "list.h"
 
@@ -108,20 +109,21 @@ namespace CorUnix
         friend class CPalSynchronizationManager;
         friend class CSynchWaitController;
 
-        THREAD_STATE          m_tsThreadState; 
-        SharedID              m_shridWaitAwakened;
-        Volatile<LONG>        m_lLocalSynchLockCount;
-        Volatile<LONG>        m_lSharedSynchLockCount;
-        LIST_ENTRY            m_leOwnedObjsList;
+        THREAD_STATE           m_tsThreadState; 
+        SharedID               m_shridWaitAwakened;
+        Volatile<LONG>         m_lLocalSynchLockCount;
+        Volatile<LONG>         m_lSharedSynchLockCount;
+        LIST_ENTRY             m_leOwnedObjsList;
+        NamedMutexProcessData *m_ownedNamedMutexListHead;
 
-        ThreadNativeWaitData  m_tnwdNativeData;
-        ThreadWaitInfo        m_twiWaitInfo;
+        ThreadNativeWaitData   m_tnwdNativeData;
+        ThreadWaitInfo         m_twiWaitInfo;
 
 #ifdef SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING
-        static const int      PendingSignalingsArraySize = 10;
-        LONG                  m_lPendingSignalingCount;
-        CPalThread *          m_rgpthrPendingSignalings[PendingSignalingsArraySize];
-        LIST_ENTRY            m_lePendingSignalingsOverflowList;
+        static const int       PendingSignalingsArraySize = 10;
+        LONG                   m_lPendingSignalingCount;
+        CPalThread *           m_rgpthrPendingSignalings[PendingSignalingsArraySize];
+        LIST_ENTRY             m_lePendingSignalingsOverflowList;
 #endif // SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING
 
     public:
@@ -166,6 +168,11 @@ namespace CorUnix
         void AddObjectToOwnedList(POwnedObjectsListNode pooln);
         void RemoveObjectFromOwnedList(POwnedObjectsListNode pooln);
         POwnedObjectsListNode RemoveFirstObjectFromOwnedList(void);
+
+        void AddOwnedNamedMutex(NamedMutexProcessData *processData);
+        void RemoveOwnedNamedMutex(NamedMutexProcessData *processData);
+        NamedMutexProcessData *RemoveFirstOwnedNamedMutex();
+        bool OwnsNamedMutex(NamedMutexProcessData *processData) const;
 
         // The following methods provide access to the native wait lock for 
         // those implementations that need a lock to protect the support for 
