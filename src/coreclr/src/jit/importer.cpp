@@ -67,21 +67,6 @@ void                Compiler::impInit()
 #endif
 
     seenConditionalJump = false;  
-       
-#ifndef DEBUG
-    impInlineSize = DEFAULT_MAX_INLINE_SIZE;
-#else
-    impInlineSize = JitConfig.JitInlineSize();
-
-    if (compInlineStress())
-        impInlineSize *= 10;
-
-    if (impInlineSize > IMPLEMENTATION_MAX_INLINE_SIZE)
-        impInlineSize = IMPLEMENTATION_MAX_INLINE_SIZE;
-
-    assert(impInlineSize >= ALWAYS_INLINE_SIZE);
-    assert(impInlineSize <= IMPLEMENTATION_MAX_INLINE_SIZE);
-#endif
 }
 
 /*****************************************************************************

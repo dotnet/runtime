@@ -651,6 +651,7 @@ InlineStrategy::InlineStrategy(Compiler* compiler)
     , m_CandidateCount(0)
     , m_InlineAttemptCount(0)
     , m_InlineCount(0)
+    , m_MaxInlineSize(DEFAULT_MAX_INLINE_SIZE)
     , m_InitialTimeBudget(0)
     , m_InitialTimeEstimate(0)
     , m_CurrentTimeBudget(0)
@@ -661,6 +662,33 @@ InlineStrategy::InlineStrategy(Compiler* compiler)
 {
     // Verify compiler is a root compiler instance
     assert(m_Compiler->impInlineRoot() == m_Compiler);
+
+#ifdef DEBUG
+
+    // Possibly modify the max inline size.
+    //
+    // Default value of JitInlineSize is the same as our default.
+    // So normally this next line does not change the size.
+    m_MaxInlineSize = JitConfig.JitInlineSize();
+
+    // Up the max size under stress
+    if (m_Compiler->compInlineStress())
+    {
+        m_MaxInlineSize *= 10;
+    }
+
+    // But don't overdo it
+    if (m_MaxInlineSize > IMPLEMENTATION_MAX_INLINE_SIZE)
+    {
+        m_MaxInlineSize = IMPLEMENTATION_MAX_INLINE_SIZE;
+    }
+
+    // Verify: not too small, not too big.
+    assert(m_MaxInlineSize >= ALWAYS_INLINE_SIZE);
+    assert(m_MaxInlineSize <= IMPLEMENTATION_MAX_INLINE_SIZE);
+
+#endif // DEBUG
+
 }
 
 //------------------------------------------------------------------------
@@ -1148,8 +1176,7 @@ void InlineStrategy::DumpData()
 
             // Convert time spent jitting into microseconds
             unsigned microsecondsSpentJitting = 0;
-            // TBD
-            unsigned __int64 compCycles = 0;
+            unsigned __int64 compCycles = m_Compiler->getInlineCycleCount();
             if (compCycles > 0)
             {
                 double countsPerSec = CycleTimer::CyclesPerSecond();
