@@ -50,7 +50,13 @@ namespace System.Text.Tests
             Decode(validSurrogateBytes, 2, 2, "\uFFFD\uFFFD");
             Decode(validSurrogateBytes, 2, 1, "\uFFFD");
 
+            // These are examples of overlong sequences. This can cause security
+            // vulnerabilities (e.g. MS00-078) so it is important we parse these as invalid.
             Decode(new byte[] { 0xC0, 0xAF }, 0, 2, "\uFFFD\uFFFD");
+            Decode(new byte[] { 0xE0, 0x80, 0xBF }, 0, 3, "\uFFFD\uFFFD");
+            Decode(new byte[] { 0xF0, 0x80, 0x80, 0xBF }, 0, 4, "\uFFFD\uFFFD\uFFFD");
+            Decode(new byte[] { 0xF8, 0x80, 0x80, 0x80, 0xBF }, 0, 5, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD");
+            Decode(new byte[] { 0xFC, 0x80, 0x80, 0x80, 0x80, 0xBF }, 0, 6, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD");
         }
     }
 }
