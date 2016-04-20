@@ -477,7 +477,7 @@ null_link_if (gpointer hidden, GCHandleType handle_type, int max_generation, gpo
 		return hidden;
 
 	if (closure->predicate (obj, closure->data))
-		return NULL;
+		return MONO_GC_HANDLE_METADATA_POINTER (sgen_client_default_metadata (), GC_HANDLE_TYPE_IS_WEAK (handle_type));
 
 	return hidden;
 }
