@@ -9,9 +9,8 @@ all invoke one of the test artifacts (as defined in the `Tests` assembly) and co
 in which the child process runs, as well as a number of other metrics on Windows platforms.
 
 ## Building the test framework
-The test framework currently does not build as part of the CoreCLR test build. The framework
-builds using the `dnu` build tool in order to target both DNX46 (Desktop) or DNXCORE5 (CoreCLR)
-depending on the platform on which the tests are to be invoked.
+The test framework currently does not build as part of the CoreCLR test build. The
+framework targets Desktop CLR and compiles using msbuild.
 
 The Desktop (DNX46) target of the test framework contains a number of custom metrics that are given
 to `xunit.performance` to evaluate the test run. These metrics provide a number of interesting
@@ -20,47 +19,54 @@ durations, and number of garbage collections for each generation.
 
 The CoreCLR (DNXCORE5) target of the test framework consists only of the tests themselves and not
 the metrics. This is because metric definitions have a dependency on TraceEvent, which is itself
-not available currently on CoreCLR.
+not available currently on CoreCLR. This target is temporarily disabled for now.
 
 ## Running the tests on Windows
 Since the Desktop CLR is already installed on Windows machines, we can use the host CLR to
 invoke the `xunit.performance.run` test runner, even if we are testing CoreCLR.
 
-Regardless of whether or not we are testing the Desktop CLR or CoreCLR, we need to copy all of our
-test dependencies to the same location, some sort of scratch folder:
+Regardless of whether or not we are testing the Desktop CLR or CoreCLR, we first need to set up
+the coreclr repo by building a build that we will be testing:
+
+```
+build.cmd Release
+tests\runtest.cmd Release GenerateLayoutOnly
+```
+
+Then, we create a temporary directory somewhere on our system and set up all of our dependencies:
 
 ```
 mkdir sandbox
 pushd sandbox
 
 REM Get the xunit-performance console runner
-xcopy /s C:\<path_to_your_coreclr>\coreclr\tests\packages\Microsoft.DotNet.xunit.performance.runner.Windows\1.0.0-alpha-build0025\tools\* .
+xcopy /sy C:\<path_to_your_coreclr>\coreclr\packages\Microsoft.DotNet.xunit.performance.runner.Windows\1.0.0-alpha-build0029\tools\* .
 
 REM Get the xunit-performance analysis engine
-xcopy /sy C:\<path_to_your_coreclr>\coreclr\tests\packages\Microsoft.DotNet.xunit.performance.analysis\1.0.0-alpha-build0025\tools\* .
+xcopy /sy C:\<path_to_your_coreclr>\coreclr\packages\Microsoft.DotNet.xunit.performance.analysis\1.0.0-alpha-build0029\tools\* .
 
 REM Get the xunit console runner
-xcopy /sy C:\<path_to_your_coreclr>\coreclr\tests\packages\xunit.console.netcore\1.0.2-prerelease-00128\runtimes\any\native\* .
+xcopy /sy C:\<path_to_your_coreclr>\coreclr\packages\xunit.runner.console\2.1.0\tools\* .
 
 REM Get the test executables' dependencies
 xcopy /sy C:\<path_to_your_coreclr>\coreclr\bin\tests\Windows_NT.x64.Release\Tests\Core_Root\* .
 
 REM Get the test executables themselves
-for /r C:\<path_to_your_coreclr>\coreclr\bin\tests\Windows_NT.x64.Release\GC\Performance\Tests\ %ff in (*) do xcopy "%%f" .
+for /r C:\<path_to_your_coreclr>\coreclr\bin\tests\Windows_NT.x64.Release\GC\Performance\Tests\ %%f in (*) do xcopy /sy "%%f" .
 
 REM Get the test framework assembly
-xcopy /sy C:\<path_to_your_coreclr>\coreclr\tests\src\GC\Performance\Framework\bin\Debug\dnx46\* .
+xcopy /sy C:\<path_to_your_coreclr>\coreclr\tests\src\GC\Performance\Framework\bin\Release\* .
+
+REM Instruct the framework to 1) run using CoreRun (coreclr) and 2) find CoreRun in the current directory
+REM If not set, the framework will test the currently running Desktop CLR instead.
+set GC_PERF_TEST_CORECLR=1
+set GC_PERF_TEST_CORE_RUN_PROBE_PATH=.
 ```
 
 Once all of our dependencies are in the same place, we can run the tests:
 ```
-xunit.performance.run.exe Framework.dll -runner xunit.console.exe -verbose -runid PerformanceTest
+xunit.performance.run.exe GCPerfTestFramework.dll -runner xunit.console.exe -verbose -runid PerformanceTest
 ```
-
-In order to test CoreCLR, we need to set two environment variables: `GC_PERF_TEST_CORE_RUN_PROBE_PATH`, indicating
-where to look for `CoreRun.exe`, and `GC_PERF_TEST_CORECLR`, which when set to "1" indicates the test runner
-to launch subprocesses under `CoreRun`. All other commands should be exactly the same. (See the Environment Variables
-section for more details on what environment variables the test framework respects).
 
 The result of this invocation will be `PerformanceTest.etl`, an ETW trace, and `PerformanceTest.xml`, a file
 containing a summary of every test run and the metrics that were calculated for every test iteration. A summary
@@ -70,31 +76,11 @@ XML file can be created using the analysis executable:
 xunit.performance.analysis.exe PerformanceTest.xml -xml PerformanceTestSummary.xml
 ```
 
+This summary XML only contains test durations and discards all custom metrics.
+
 ## Running on other platforms
-In order to run performance tests on other platforms, it's necessary to obtain the required components as
-specified above, possibly from an existing CoreCLR build on Windows. However, there are three major differences:
-
-First, instead of using the `xunit.performance.run.exe` obtained from the 
-`Microsoft.DotNet.xunit.performance.runner.Windows` nuget package, we must instead install the command:
-
-```
-dnu commands install Microsoft.DotNet.xunit.performance.runner.dnx 1.0.0-alpha-build0027 -f https://www.myget.org/F/dotnet-buildtools/
-```
-
-Second, instead of using the `xunit.console.exe` test runner, we must use `xunit.console.netcore.exe`, which
-is available as part of the CoreCLR test build, through NuGet at https://www.myget.org/F/dotnet-buildtools/, or
-on GitHub: https://github.com/dotnet/buildtools/tree/master/src/xunit.console.netcore.
-
-Finally, we must use the `dnxcore5` target when building the test framework, since custom metrics are not available
-on non-Windows platforms currently.
-
-With all of the above in place, we can run:
-
-```
-xunit.performance.run.exe Framework.dll -verbose -runner ./xunit.console.netcore.exe -runnerhost ./corerun -runid PerformanceTest.xml
-```
-
-Only the Duration metric will be available in the resulting XML.
+The GC performance test framework is temporarily not available on non-Windows platform. It will be brought to
+non-Windows platforms in the very near future!
 
 ## Environment Variables
 On Windows, the test runner respects the following environment variables:
