@@ -4,7 +4,7 @@
 
 namespace System
 {
-    // TODO: Move this class to System.Net.Common.
+    // TODO (#5715): Move this class to System.Net.Common.
     internal class UriShim
     {
         private const char c_DummyChar = (char)0xFFFF;
