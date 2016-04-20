@@ -82,6 +82,9 @@
           CustomErrorRegularExpression="(^Unable to locate .*)|(^Updating the invalid lock file with .*)"
           ContinueOnError="ErrorAndContinue" />
 
+    <!-- Given we ErrorAndContinue we need to propagate the error if the overall task failed -->
+    <Error Condition="'$(MSBuildLastTaskResult)'=='false'" />
+    
     <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages...Done." />
   </Target>
 
