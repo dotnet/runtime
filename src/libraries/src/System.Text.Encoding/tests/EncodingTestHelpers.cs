@@ -96,11 +96,11 @@ namespace System.Text.Tests
             }
         }
         
-        public static void Decode(Encoding encoding, byte[] bytes, int index, int count, char[] expected)
+        public static void Decode(Encoding encoding, byte[] bytes, int index, int count, string expected)
         {
             GetCharCount(encoding, bytes, index, count, expected.Length);
-            GetChars(encoding, bytes, index, count, expected);
-            GetString(encoding, bytes, index, count, new string(expected));
+            GetChars(encoding, bytes, index, count, expected.ToCharArray());
+            GetString(encoding, bytes, index, count, expected);
         }
 
         private static void GetCharCount(Encoding encoding, byte[] bytes, int index, int count, int expected)
