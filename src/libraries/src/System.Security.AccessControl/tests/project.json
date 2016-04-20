@@ -23,14 +23,14 @@
     "System.Text.RegularExpressions": "4.0.12-rc3-24018-00",
     "System.Threading.Tasks": "4.0.11-rc3-24018-00",
     "xunit": "2.1.0",
-    "xunit.netcore.extensions": "1.0.0-prerelease-00231-07",
+    "xunit.netcore.extensions": "1.0.0-prerelease-00312-04",
     "System.Security.Principal": "4.0.0-rc3-24018-00",
     "System.Security.Principal.Windows": "4.0.0-rc3-24018-00",
     "System.Security.AccessControl": "4.0.0-rc3-24018-00",
     "System.Reflection": "4.0.0",
     "System.Threading": "4.0.10",
     "System.Threading.Thread": "4.0.0-rc3-24018-00",
-     "test-runtime": {
+    "test-runtime": {
       "target": "project",
       "exclude": "compile"
     }
