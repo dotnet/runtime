@@ -4475,7 +4475,9 @@ mono_runtime_exec_managed_code (MonoDomain *domain,
 				MonoMainThreadFunc main_func,
 				gpointer main_args)
 {
-	mono_thread_create (domain, main_func, main_args);
+	MonoError error;
+	mono_thread_create_checked (domain, main_func, main_args, &error);
+	mono_error_assert_ok (&error);
 
 	mono_thread_manage ();
 }

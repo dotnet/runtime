@@ -851,6 +851,7 @@ small_id_thread_func (gpointer arg)
 static void
 jit_info_table_test (MonoDomain *domain)
 {
+	MonoError error;
 	int i;
 
 	g_print ("testing jit_info_table\n");
@@ -879,8 +880,10 @@ jit_info_table_test (MonoDomain *domain)
 	sleep (2);
 	*/
 
-	for (i = 0; i < num_threads; ++i)
-		mono_thread_create (domain, test_thread_func, &thread_datas [i]);
+	for (i = 0; i < num_threads; ++i) {
+		mono_thread_create_checked (domain, test_thread_func, &thread_datas [i], &error);
+		mono_error_assert_ok (&error);
+	}
 }
 #endif
 
@@ -973,6 +976,7 @@ compile_all_methods_thread_main (CompileAllThreadArgs *args)
 static void
 compile_all_methods (MonoAssembly *ass, int verbose, guint32 opts, guint32 recompilation_times)
 {
+	MonoError error;
 	CompileAllThreadArgs args;
 
 	args.ass = ass;
@@ -984,7 +988,8 @@ compile_all_methods (MonoAssembly *ass, int verbose, guint32 opts, guint32 recom
 	 * Need to create a mono thread since compilation might trigger
 	 * running of managed code.
 	 */
-	mono_thread_create (mono_domain_get (), compile_all_methods_thread_main, &args);
+	mono_thread_create_checked (mono_domain_get (), compile_all_methods_thread_main, &args, &error);
+	mono_error_assert_ok (&error);
 
 	mono_thread_manage ();
 }
