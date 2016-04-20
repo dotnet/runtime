@@ -108,6 +108,9 @@ public:
     // Policy policies
     bool PropagateNeverToRuntime() const override { return true; }
 
+    // Policy estimates
+    int CodeSizeEstimate() override;
+
 #if defined(DEBUG) || defined(INLINE_DATA)
 
     const char* GetName() const override { return "LegacyPolicy"; }
@@ -169,6 +172,12 @@ public:
     // Policy policies
     bool PropagateNeverToRuntime() const override { return true; }
 
+    // Policy estimates
+    int CodeSizeEstimate() override
+    {
+        return 0;
+    }
+
     const char* GetName() const override { return "RandomPolicy"; }
 
 private:
@@ -209,6 +218,9 @@ public:
     // Policy determinations
     void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo) override;
 
+    // Policy estimates
+    int CodeSizeEstimate() override;
+
     // Externalize data
     void DumpData(FILE* file) const override;
     void DumpSchema(FILE* file) const override;
@@ -217,7 +229,7 @@ public:
     const char* GetName() const override { return "DiscretionaryPolicy"; }
 
 protected:
-    
+
     void ComputeOpcodeBin(OPCODE opcode);
     void EstimateCodeSize();
     void MethodInfoObservations(CORINFO_METHOD_INFO* methodInfo);
