@@ -9,7 +9,7 @@ if(CLR_CMAKE_PLATFORM_LINUX OR CLR_CMAKE_PLATFORM_NETBSD)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic -Bsymbolic-functions")
 endif(CLR_CMAKE_PLATFORM_LINUX OR CLR_CMAKE_PLATFORM_NETBSD)
 
-add_library_clr(ryujit
+add_library_clr(${JIT_BASE_NAME}
    SHARED
    ${SHARED_LIB_SOURCES}
 )
@@ -43,9 +43,9 @@ else()
     )
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
-target_link_libraries(ryujit
+target_link_libraries(${JIT_BASE_NAME}
    ${RYUJIT_LINK_LIBRARIES}
 )
 
 # add the install targets
-install_clr(ryujit)
+install_clr(${JIT_BASE_NAME})
