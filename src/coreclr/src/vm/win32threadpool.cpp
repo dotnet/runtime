@@ -2669,7 +2669,7 @@ BOOL ThreadpoolMgr::RegisterWaitForSingleObject(PHANDLE phNewWaitObject,
         // thread that will PostQueuedCompletionStatus (the dedicated WaitThread).
         // This event correlates with ThreadPoolIODequeue in ThreadpoolMgr::AsyncCallbackCompletion
         if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, ThreadPoolIOEnqueue))
-            FireEtwThreadPoolIOEnqueue((LPOVERLAPPED)waitInfo, Callback, (dwFlag & WAIT_SINGLE_EXECUTION) == 0, GetClrInstanceId());
+            FireEtwThreadPoolIOEnqueue((LPOVERLAPPED)waitInfo, reinterpret_cast<void*>(Callback), (dwFlag & WAIT_SINGLE_EXECUTION) == 0, GetClrInstanceId());
     
         BOOL status = QueueUserAPC((PAPCFUNC)InsertNewWaitForSelf, threadCB->threadHandle, (size_t) waitInfo);
 
@@ -3233,7 +3233,7 @@ DWORD __stdcall ThreadpoolMgr::AsyncCallbackCompletion(PVOID pArgs)
         // We fire the "dequeue" ETW event here, before executing the user code, to enable correlation with
         // the ThreadPoolIOEnqueue fired in ThreadpoolMgr::RegisterWaitForSingleObject
         if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, ThreadPoolIODequeue))
-            FireEtwThreadPoolIODequeue(waitInfo, waitInfo->Callback, GetClrInstanceId());
+            FireEtwThreadPoolIODequeue(waitInfo, reinterpret_cast<void*>(waitInfo->Callback), GetClrInstanceId());
 
         // the user callback can throw, the host must be prepared to handle it.
         // SQL is ok, since they have a top-level SEH handler. However, there's
