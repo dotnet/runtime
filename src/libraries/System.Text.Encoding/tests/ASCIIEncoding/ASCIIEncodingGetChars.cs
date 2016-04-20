@@ -40,7 +40,7 @@ namespace System.Text.Tests
             {
                 expectedChars[i] = (char)bytes[i + index]; 
             }
-            EncodingHelpers.Decode(new ASCIIEncoding(), bytes, index, count, expectedChars);
+            EncodingHelpers.Decode(new ASCIIEncoding(), bytes, index, count, new string(expectedChars));
         }
     }
 }
