@@ -184,6 +184,7 @@ set(SOURCES
   safecrt/wsplitpath_s.c
   safecrt/xtoa_s.c
   safecrt/xtow_s.c
+  sharedmemory/sharedmemory.cpp
   shmemory/shmemory.cpp
   sync/cs.cpp
   synchobj/event.cpp
