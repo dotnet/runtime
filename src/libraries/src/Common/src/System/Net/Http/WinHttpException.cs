@@ -8,7 +8,6 @@ using System.Runtime.InteropServices;
 
 namespace System.Net.Http
 {
-    // TODO(Issue 2542): Unify this code (and other common code) with WinHttpHandler.
     internal class WinHttpException : Win32Exception
     {
         public WinHttpException(int error, string message) : base(error, message)
