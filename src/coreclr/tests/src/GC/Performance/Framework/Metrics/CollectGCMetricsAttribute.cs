@@ -14,7 +14,7 @@ namespace GCPerfTestFramework.Metrics
     /// </summary>
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class | AttributeTargets.Assembly)]
 #if WINDOWS
-    [PerformanceMetricDiscoverer("GCPerfTestFramework.Metrics.GCMetricDiscoverer", "Framework")]
+    [PerformanceMetricDiscoverer("GCPerfTestFramework.Metrics.GCMetricDiscoverer", "GCPerfTestFramework")]
 #endif
     public class CollectGCMetricsAttribute : 
         Attribute
