@@ -1076,25 +1076,6 @@ mono_monitor_threads_sync_members_offset (int *status_offset, int *nest_offset)
 	*nest_offset = ENCODE_OFF_SIZE (MONO_STRUCT_OFFSET (MonoThreadsSync, nest), sizeof (ts.nest));
 }
 
-gboolean 
-ves_icall_System_Threading_Monitor_Monitor_try_enter (MonoObject *obj, guint32 ms)
-{
-	gint32 res;
-
-	do {
-		res = mono_monitor_try_enter_internal (obj, ms, TRUE);
-		if (res == -1) {
-			MonoException *exc = mono_thread_interruption_checkpoint ();
-			if (exc) {
-				mono_set_pending_exception (exc);
-				return FALSE;
-			}
-		}
-	} while (res == -1);
-	
-	return res == 1;
-}
-
 void
 ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (MonoObject *obj, guint32 ms, char *lockTaken)
 {

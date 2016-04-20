@@ -6110,12 +6110,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			return NULL;
 	} else if (cmethod->klass == mono_defaults.monitor_class) {
 		gboolean is_enter = FALSE;
-		gboolean is_v4 = FALSE;
 
-		if (!strcmp (cmethod->name, "enter_with_atomic_var") && mono_method_signature (cmethod)->param_count == 2) {
-			is_enter = TRUE;
-			is_v4 = TRUE;
-		}
 		if (!strcmp (cmethod->name, "Enter") && mono_method_signature (cmethod)->param_count == 1)
 			is_enter = TRUE;
 
@@ -6128,10 +6123,10 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 			NEW_BBLOCK (cfg, end_bb);
 
-			ins = mono_emit_jit_icall (cfg, is_v4 ? (gpointer)mono_monitor_enter_v4_fast : (gpointer)mono_monitor_enter_fast, args);
+			ins = mono_emit_jit_icall (cfg, (gpointer)mono_monitor_enter_fast, args);
 			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ICOMPARE_IMM, -1, ins->dreg, 0);
 			MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_IBNE_UN, end_bb);
-			ins = mono_emit_jit_icall (cfg, is_v4 ? (gpointer)mono_monitor_enter_v4 : (gpointer)mono_monitor_enter, args);
+			ins = mono_emit_jit_icall (cfg, (gpointer)mono_monitor_enter, args);
 			MONO_START_BB (cfg, end_bb);
 			return ins;
 		}
