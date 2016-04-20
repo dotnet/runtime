@@ -65,11 +65,6 @@ if (CLR_CMAKE_PLATFORM_UNIX)
     set(LIB_UNWINDER unwinder_wks)
 endif (CLR_CMAKE_PLATFORM_UNIX)
 
-set(LIB_JIT ClrJit)
-if (CLR_BUILD_JIT32)
-    set(LIB_JIT ClrJit32)
-endif()
-
 # IMPORTANT! Please do not rearrange the order of the libraries. The linker on Linux is
 # order dependent and changing the order can result in undefined symbols in the shared 
 # library.
@@ -87,7 +82,7 @@ set(CORECLR_LIBRARIES
     mdhotdata_full
     bcltype
     ceefgen
-    ${LIB_JIT}
+    clrjit_static
     comfloat_wks
     corguids
     gcinfo # Condition="'$(TargetCpu)'=='amd64' or '$(TargetCpu)' == 'arm' or '$(TargetCpu)' == 'arm64'"
