@@ -164,19 +164,19 @@ namespace System.Linq.Expressions.Tests
             Assert.IsType<ResultExpression>(new DefaultVisitor().Visit(new SourceExpression()));
         }
 
-        [Fact, ActiveIssue(7820)]
+        [Fact]
         public void VisitNullCollection()
         {
             Assert.Throws<ArgumentNullException>(() => new DefaultVisitor().Visit(default(ReadOnlyCollection<Expression>)));
         }
 
-        [Fact, ActiveIssue(7820)]
+        [Fact]
         public void VisitNullCollectionWithVisitorFunction()
         {
             Assert.Throws<ArgumentNullException>(() => ExpressionVisitor.Visit(null, (Expression i) => i));
         }
 
-        [Fact, ActiveIssue(7820)]
+        [Fact]
         public void VisitCollectionVisitorWithNullFunction()
         {
             Assert.Throws<ArgumentNullException>(() => ExpressionVisitor.Visit(new List<Expression> { Expression.Empty() }.AsReadOnly(), null));
@@ -188,7 +188,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Null(new DefaultVisitor().VisitAndConvert(default(Expression), ""));
         }
 
-        [Fact, ActiveIssue(7820)]
+        [Fact]
         public void VisitAndConvertNullCollection()
         {
             Assert.Throws<ArgumentNullException>(() => new DefaultVisitor().VisitAndConvert(default(ReadOnlyCollection<Expression>), ""));
