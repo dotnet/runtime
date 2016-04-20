@@ -6805,15 +6805,38 @@ VOID ETW::MethodLog::SendEventsForNgenMethods(Module *pModule, DWORD dwEventOpti
     } CONTRACTL_END;
 
 #ifdef FEATURE_PREJIT
-    if(!pModule || !pModule->HasNativeImage())
+    if (!pModule)
         return;
 
-    MethodIterator mi(pModule);
+    PEImageLayout * pLoadedLayout = pModule->GetFile()->GetLoaded();
+    _ASSERTE(pLoadedLayout != NULL);
 
-    while(mi.Next())
+#ifdef FEATURE_READYTORUN
+    if (pLoadedLayout->HasReadyToRunHeader())
     {
-        MethodDesc *hotDesc = (MethodDesc *)mi.GetMethodDesc();
-        ETW::MethodLog::SendMethodEvent(hotDesc, dwEventOptions, FALSE);
+        ReadyToRunInfo::MethodIterator mi(pModule->GetReadyToRunInfo());
+        while (mi.Next())
+        {
+            // Call GetMethodDesc_NoRestore instead of GetMethodDesc to avoid restoring methods at shutdown.
+            MethodDesc *hotDesc = (MethodDesc *)mi.GetMethodDesc_NoRestore();
+            if (hotDesc != NULL)
+            {
+                ETW::MethodLog::SendMethodEvent(hotDesc, dwEventOptions, FALSE);
+            }
+        }
+
+        return;
+    }
+#endif // FEATURE_READYTORUN
+    if (pModule->HasNativeImage())
+    {
+        MethodIterator mi(pModule);
+
+        while (mi.Next())
+        {
+            MethodDesc *hotDesc = (MethodDesc *)mi.GetMethodDesc();
+            ETW::MethodLog::SendMethodEvent(hotDesc, dwEventOptions, FALSE);
+        }
     }
 #endif // FEATURE_PREJIT
 }
