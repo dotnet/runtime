@@ -409,7 +409,7 @@ namespace System.Net.Http
                 EventSourceTrace("Proxy: {0}", proxyUri);
 
                 KeyValuePair<NetworkCredential, CURLAUTH> credentialScheme = GetCredentials(
-                    proxyUri, _handler.Proxy.Credentials, AuthTypesPermittedByCredentialKind(_handler.Proxy.Credentials));
+                    proxyUri, _handler.Proxy.Credentials, s_orderedAuthTypes);
                 SetProxyCredentials(credentialScheme.Key);
             }
 
