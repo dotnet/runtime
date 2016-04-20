@@ -2921,15 +2921,17 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
             case NFT_ANSICHAR:
             case NFT_WINBOOL:
             case NFT_CBOOL:
+            case NFT_DELEGATE:
+            case NFT_SAFEHANDLE:
+            case NFT_CRITICALHANDLE:
                 fieldClassificationType = SystemVClassificationTypeInteger;
                 break;
 
-            case NFT_DELEGATE:
+            // It's not clear what the right behavior for NTF_DECIMAL and NTF_DATE is
+            // But those two types would only make sense on windows. We can revisit this later
             case NFT_DECIMAL:
             case NFT_DATE:
             case NFT_ILLEGAL:
-            case NFT_SAFEHANDLE:
-            case NFT_CRITICALHANDLE:
             default:
                 return false;
             }
