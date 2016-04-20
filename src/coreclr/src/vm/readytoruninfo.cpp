@@ -531,7 +531,13 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, BOOL fFixups /*=TRUE*/)
 
 BOOL ReadyToRunInfo::MethodIterator::Next()
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        GC_TRIGGERS;
+        THROWS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     while (++m_methodDefIndex < (int)m_pInfo->m_methodDefEntryPoints.GetCount())
     {
@@ -547,6 +553,47 @@ MethodDesc * ReadyToRunInfo::MethodIterator::GetMethodDesc()
     STANDARD_VM_CONTRACT;
 
     return MemberLoader::GetMethodDescFromMethodDef(m_pInfo->m_pModule, mdtMethodDef | (m_methodDefIndex + 1), FALSE);
+}
+
+MethodDesc * ReadyToRunInfo::MethodIterator::GetMethodDesc_NoRestore()
+{
+    CONTRACTL
+    {
+        GC_TRIGGERS;
+        THROWS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    uint offset;
+    if (!m_pInfo->m_methodDefEntryPoints.TryGetAt(m_methodDefIndex, &offset))
+    {
+        return NULL;
+    }
+
+    uint id;
+    offset = m_pInfo->m_nativeReader.DecodeUnsigned(offset, &id);
+
+    if (id & 1)
+    {
+        if (id & 2)
+        {
+            uint val;
+            m_pInfo->m_nativeReader.DecodeUnsigned(offset, &val);
+            offset -= val;
+        }
+
+        id >>= 2;
+    }
+    else
+    {
+        id >>= 1;
+    }
+
+    _ASSERTE(id < m_pInfo->m_nRuntimeFunctions);
+    PCODE pEntryPoint = dac_cast<TADDR>(m_pInfo->m_pLayout->GetBase()) + m_pInfo->m_pRuntimeFunctions[id].BeginAddress;
+
+    return m_pInfo->GetMethodDescForEntryPoint(pEntryPoint);
 }
 
 PCODE ReadyToRunInfo::MethodIterator::GetMethodStartAddress()
