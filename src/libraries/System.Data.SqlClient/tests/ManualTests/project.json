@@ -5,7 +5,7 @@
     }
   },
   "dependencies": {
-    "NETStandard.Library": "1.0.0-rc3-24018-00",
+    "NETStandard.Library": "1.5.0-rc3-24018-00",
     "Microsoft.CSharp": "4.0.1-rc3-24018-00",
     "Microsoft.Win32.Primitives": "4.0.1-rc3-24018-00",
     "System.Collections": "4.0.11-rc3-24018-00",
@@ -42,7 +42,7 @@
     "System.Security.Principal.Windows": "4.0.0-rc3-24018-00",
     "System.Text.Encoding": "4.0.11-rc3-24018-00",
     "System.Text.Encoding.Extensions": "4.0.11-rc3-24018-00",
-    "System.Text.RegularExpressions": "4.0.12-rc3-24018-00",
+    "System.Text.RegularExpressions": "4.1.0-rc3-24018-00",
     "System.Threading": "4.0.11-rc3-24018-00",
     "System.Threading.Tasks": "4.0.11-rc3-24018-00",
     "System.Threading.Thread": "4.0.0-rc3-24018-00",
