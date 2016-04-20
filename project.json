@@ -10,7 +10,7 @@
     "keyFile": "../../tools/Key.snk"
   },
   "dependencies": {
-    "Microsoft.Extensions.PlatformAbstractions": "1.0.0-rc2-20459"
+    "Microsoft.Extensions.PlatformAbstractions": "1.0.0-rc2-20581"
   },
   "frameworks": {
     "net451": {},
