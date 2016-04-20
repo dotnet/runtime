@@ -2090,6 +2090,7 @@ mono_sample_hit (MonoProfiler *profiler, unsigned char *ip, void *context)
 
 		sample = mono_lock_free_alloc (&profiler->sample_allocator);
 		sample->prof = profiler;
+		mono_lock_free_queue_node_init (&sample->node, TRUE);
 
 		InterlockedIncrement (&sample_allocations);
 	}
