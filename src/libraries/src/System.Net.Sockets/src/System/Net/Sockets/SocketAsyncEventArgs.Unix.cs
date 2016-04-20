@@ -52,8 +52,6 @@ namespace System.Net.Sockets
 
         private void AcceptCompletionCallback(IntPtr acceptedFileDescriptor, byte[] socketAddress, int socketAddressSize, SocketError socketError)
         {
-            // TODO (#7836): receive bytes on socket if requested
-
             _acceptedFileDescriptor = acceptedFileDescriptor;
             Debug.Assert(socketAddress == null || socketAddress == _acceptBuffer, $"Unexpected socketAddress: {socketAddress}");
             _acceptAddressBufferCount = socketAddressSize;
@@ -63,11 +61,16 @@ namespace System.Net.Sockets
 
         internal unsafe SocketError DoOperationAccept(Socket socket, SafeCloseSocket handle, SafeCloseSocket acceptHandle, out int bytesTransferred)
         {
+            if (_buffer != null)
+            {
+                throw new PlatformNotSupportedException(SR.net_sockets_accept_receive_notsupported);
+            }
+
             Debug.Assert(acceptHandle == null, $"Unexpected acceptHandle: {acceptHandle}");
 
             bytesTransferred = 0;
 
-            return handle.AsyncContext.AcceptAsync(_buffer ?? _acceptBuffer, _acceptAddressBufferCount / 2, AcceptCompletionCallback);
+            return handle.AsyncContext.AcceptAsync(_acceptBuffer, _acceptAddressBufferCount / 2, AcceptCompletionCallback);
         }
 
         private void InnerStartOperationConnect()
