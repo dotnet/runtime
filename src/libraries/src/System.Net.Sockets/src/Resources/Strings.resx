@@ -282,4 +282,7 @@
   <data name="net_sockets_dualmode_receivefrom_notsupported" xml:space="preserve">
     <value>This platform does not support packet information for dual-mode sockets.  If packet information is not required, use Socket.Receive.  If packet information is required set Socket.DualMode to false.</value>
   </data>
+  <data name="net_sockets_accept_receive_notsupported" xml:space="preserve">
+    <value>This platform does not support receiving data with Socket.AcceptAsync.  Instead, make a separate call to Socket.ReceiveAsync.</value>
+  </data>
 </root>

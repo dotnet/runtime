@@ -1287,6 +1287,7 @@ namespace System.Net.Sockets
         public static SocketError AcceptAsync(Socket socket, SafeCloseSocket handle, SafeCloseSocket acceptHandle, int receiveSize, int socketAddressSize, AcceptOverlappedAsyncResult asyncResult)
         {
             Debug.Assert(acceptHandle == null, $"Unexpected acceptHandle: {acceptHandle}");
+            Debug.Assert(receiveSize == 0, $"Unexpected receiveSize: {receiveSize}");
 
             byte[] socketAddressBuffer = new byte[socketAddressSize];
 

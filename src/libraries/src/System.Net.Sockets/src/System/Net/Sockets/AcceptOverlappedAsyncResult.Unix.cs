@@ -28,8 +28,6 @@ namespace System.Net.Sockets
 
         public void CompletionCallback(IntPtr acceptedFileDescriptor, byte[] socketAddress, int socketAddressLen, SocketError errorCode)
         {
-            // TODO #7836: receive bytes on accepted socket if requested
-
             _buffer = null;
             _localBytesTransferred = 0;
 
