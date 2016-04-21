@@ -251,21 +251,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        public static void SafeX509ChainHandle_InvalidHandle_IsInvalid()
-        {
-            Assert.True(SafeX509ChainHandle.InvalidHandle.IsInvalid);
-        }
-
-        [Fact]
-        public static void SafeX509ChainHandle_InvalidHandle_StaticObject()
-        {
-            SafeX509ChainHandle firstCall = SafeX509ChainHandle.InvalidHandle;
-            SafeX509ChainHandle secondCall = SafeX509ChainHandle.InvalidHandle;
-
-            Assert.Same(firstCall, secondCall);
-        }
-
-        [Fact]
         [OuterLoop( /* May require using the network, to download CRLs and intermediates */)]
         public static void VerifyWithRevocation()
         {
