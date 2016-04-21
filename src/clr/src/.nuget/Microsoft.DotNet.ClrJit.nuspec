@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package >
   <metadata>
-    <id>Microsoft.DotNet.RyuJit</id>
+    <id>Microsoft.DotNet.ClrJit</id>
     <version>1.0.8-prerelease</version>
     <title>Microsoft DotNet Standalone Managed to Native Code-Generator</title>
     <authors>Microsoft</authors>

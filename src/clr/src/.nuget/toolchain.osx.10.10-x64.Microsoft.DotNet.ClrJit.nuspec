@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package >
   <metadata>
-    <id>toolchain.win7-x64.Microsoft.DotNet.RyuJit</id>
+    <id>toolchain.osx.10.10-x64.Microsoft.DotNet.ClrJit</id>
     <version>1.0.8-prerelease</version>
     <title>Microsoft DotNet Standalone Managed to Native Code-Generator</title>
     <authors>Microsoft</authors>
@@ -15,7 +15,6 @@
     <copyright>Copyright &#169; Microsoft Corporation</copyright>
   </metadata>
   <files>
-    <file src="..\ryujit.dll" target="runtimes\win7-x64\native\ryujit.dll" />
-    <file src="..\PDB\ryujit.pdb" target="runtimes\win7-x64\native\ryujit.pdb" />
+    <file src="../libclrjit.dylib" target="runtimes/osx.10.10-x64/native/libclrjit.dylib" />
   </files>
 </package>
