@@ -138,9 +138,11 @@
                                              var_types      type  = TYP_INT,
                                              insFlags       flags = INS_FLAGS_DONT_CARE);
 
-    void                genCodeForShift     (GenTreePtr dst,
-                                             GenTreePtr src,
-                                             GenTreePtr treeNode);
+    void                genCodeForShift          (GenTreePtr tree);
+
+#ifdef _TARGET_XARCH_
+    void                genCodeForShiftRMW       (GenTreeStoreInd* storeInd);
+#endif // _TARGET_XARCH_
 
     void                genCodeForCpObj          (GenTreeCpObj* cpObjNode);
 

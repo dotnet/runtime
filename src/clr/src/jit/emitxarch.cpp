@@ -1876,13 +1876,14 @@ UNATIVE_OFFSET      emitter::emitInsSizeAM(instrDesc* id, size_t code)
     // ideally these should really be the only idInsFmts that we see here
     //  but we have some outliers to deal with:
     //     emitIns_R_L adds IF_RWR_LABEL and calls emitInsSizeAM
-    //     emitInsRMW adds IF_MRW_CNS, IF_MRW_RRD and calls emitInsSizeAM
+    //     emitInsRMW adds IF_MRW_CNS, IF_MRW_RRD, IF_MRW_SHF, and calls emitInsSizeAM
 
     switch (id->idInsFmt())
     {
     case IF_RWR_LABEL:
     case IF_MRW_CNS:
     case IF_MRW_RRD:
+    case IF_MRW_SHF:
         reg = REG_NA;
         rgx = REG_NA;
         break;
@@ -2448,10 +2449,108 @@ void emitter::emitIns(instruction ins, emitAttr attr)
 }
 
 
-// fill in all the fields
-void emitter::emitHandleMemOp(GenTree* mem, instrDesc* id, bool isSrc)
+//------------------------------------------------------------------------
+// emitMapFmtForIns: map the instruction format based on the instruction.
+// Shift-by-a-constant instructions have a special format.
+//
+// Arguments:
+//    fmt - the instruction format to map
+//    ins - the instruction
+//
+// Returns:
+//    The mapped instruction format.
+//
+emitter::insFormat emitter::emitMapFmtForIns(insFormat fmt, instruction ins)
 {
-    GenTreeIndir* indir = mem->AsIndir();
+    switch (ins)
+    {
+    case INS_rol_N:
+    case INS_ror_N:
+    case INS_rcl_N:
+    case INS_rcr_N:
+    case INS_shl_N:
+    case INS_shr_N:
+    case INS_sar_N:
+        {
+            switch (fmt)
+            {
+            case IF_RRW_CNS: return IF_RRW_SHF;
+            case IF_MRW_CNS: return IF_MRW_SHF;
+            case IF_SRW_CNS: return IF_SRW_SHF;
+            case IF_ARW_CNS: return IF_ARW_SHF;
+            default: unreached();
+            }
+        }
+
+    default:
+        return fmt;
+    }
+}
+
+
+//------------------------------------------------------------------------
+// emitMapFmtAtoM: map the address mode formats ARD, ARW, and AWR to their direct address equivalents.
+//
+// Arguments:
+//    fmt - the instruction format to map
+//
+// Returns:
+//    The mapped instruction format.
+// 
+emitter::insFormat emitter::emitMapFmtAtoM(insFormat fmt)
+{
+    switch (fmt)
+    {
+    case IF_ARD:        return IF_MRD;
+    case IF_AWR:        return IF_MWR;
+    case IF_ARW:        return IF_MRW;
+
+    case IF_RRD_ARD:    return IF_RRD_MRD;
+    case IF_RWR_ARD:    return IF_RWR_MRD;
+    case IF_RRW_ARD:    return IF_RRW_MRD;
+
+    case IF_ARD_RRD:    return IF_MRD_RRD;
+    case IF_AWR_RRD:    return IF_MWR_RRD;
+    case IF_ARW_RRD:    return IF_MRW_RRD;
+
+    case IF_ARD_CNS:    return IF_MRD_CNS;
+    case IF_AWR_CNS:    return IF_MWR_CNS;
+    case IF_ARW_CNS:    return IF_MRW_CNS;
+
+    case IF_ARW_SHF:    return IF_MRW_SHF;
+
+    default: unreached();
+    }
+}
+
+
+//------------------------------------------------------------------------
+// emitHandleMemOp: For a memory operand, fill in the relevant fields of the instrDesc.
+//
+// Arguments:
+//    indir - the memory operand.
+//    id - the instrDesc to fill in.
+//    fmt - the instruction format to use. This must be one of the ARD, AWR, or ARW formats. If necessary (such as for
+//          GT_CLS_VAR_ADDR), this function will map it to the correct format.
+//    ins - the instruction we are generating. This might affect the instruction format we choose.
+//
+// Assumptions:
+//    The correctly sized instrDesc must already be created, e.g., via emitNewInstrAmd() or emitNewInstrAmdCns();
+//
+// Post-conditions:
+//    For base address of int constant:
+//        -- the caller must have added the int constant base to the instrDesc when creating it via emitNewInstrAmdCns().
+//    For simple address modes (base + scale * index + offset):
+//        -- the base register, index register, and scale factor are set.
+//        -- the caller must have added the addressing mode offset int constant to the instrDesc when creating it via emitNewInstrAmdCns().
+//
+//    The instruction format is set.
+//
+//    idSetIsDspReloc() is called if necessary.
+// 
+void emitter::emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt, instruction ins)
+{
+    assert(fmt != IF_NONE);
 
     GenTree* memBase = indir->Base();
 
@@ -2474,14 +2573,7 @@ void emitter::emitHandleMemOp(GenTree* mem, instrDesc* id, bool isSrc)
         }
 
         id->idAddr()->iiaFieldHnd = fldHnd;
-        if (isSrc)
-        {
-            id->idInsFmt(IF_RRD_MRD);
-        }
-        else
-        {
-            id->idInsFmt(IF_MRD_RRD);
-        }
+        id->idInsFmt(emitMapFmtForIns(emitMapFmtAtoM(fmt), ins));
     }
     else if ((memBase != nullptr) && memBase->IsCnsIntOrI() && memBase->isContained())
     {
@@ -2496,18 +2588,13 @@ void emitter::emitHandleMemOp(GenTree* mem, instrDesc* id, bool isSrc)
             id->idSetIsDspReloc();
         }
 
-        if (isSrc)
-        {
-            id->idInsFmt(IF_RRD_ARD);
-        }
-        else
-        {
-            id->idInsFmt(IF_ARD_RRD);
-        }
-
         id->idAddr()->iiaAddrMode.amBaseReg = REG_NA;
         id->idAddr()->iiaAddrMode.amIndxReg = REG_NA;
+        id->idAddr()->iiaAddrMode.amScale   = emitter::OPSZ1; // for completeness
 
+        id->idInsFmt(emitMapFmtForIns(fmt, ins));
+
+        // Absolute address must have already been set in the instrDesc constructor.
         assert(emitGetInsAmdAny(id) == memBase->AsIntConCommon()->IconValue());
     }
     else
@@ -2531,7 +2618,9 @@ void emitter::emitHandleMemOp(GenTree* mem, instrDesc* id, bool isSrc)
         }
         id->idAddr()->iiaAddrMode.amScale   = emitEncodeScale(indir->Scale());
 
-        // already set disp in ctor
+        id->idInsFmt(emitMapFmtForIns(fmt, ins));
+
+        // disp must have already been set in the instrDesc constructor.
         assert(emitGetInsAmdAny(id) == ssize_t(indir->Offset())); // make sure "disp" is stored properly
     }
 }
@@ -2585,42 +2674,30 @@ void emitter::emitInsMov(instruction ins, emitAttr attr, GenTree* node)
     case GT_IND:
         {
             GenTreeIndir* mem = node->AsIndir();
+            GenTreePtr addr = mem->Addr();
             
-            if (mem->Addr()->OperGet() == GT_CLS_VAR_ADDR)
+            if (addr->OperGet() == GT_CLS_VAR_ADDR)
             {
-                emitIns_R_C(ins, attr, node->gtRegNum, mem->Addr()->gtClsVar.gtClsVarHnd, 0);
+                emitIns_R_C(ins, attr, mem->gtRegNum, addr->gtClsVar.gtClsVarHnd, 0);
                 return;
             }
-            else if (mem->Addr()->OperGet() == GT_LCL_VAR_ADDR)
+            else if (addr->OperGet() == GT_LCL_VAR_ADDR)
             {
-                GenTreeLclVarCommon* varNode = mem->Addr()->AsLclVarCommon();
-                emitIns_R_S(ins, attr, node->gtRegNum, varNode->GetLclNum(), 0);
+                GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
+                emitIns_R_S(ins, attr, mem->gtRegNum, varNode->GetLclNum(), 0);
                 codeGen->genUpdateLife(varNode);
                 return;
             }
             else
             {
-                GenTreePtr addr = mem->Addr();
-
                 assert (addr->OperIsAddrMode() ||
                         (addr->IsCnsIntOrI() && addr->isContained()) ||
                         !addr->isContained());
                 size_t offset = mem->Offset();
                 id = emitNewInstrAmd(attr, offset);
                 id->idIns(ins);
-                id->idReg1(node->gtRegNum);
-                id->idInsFmt(IF_RWR_ARD);
-                emitHandleMemOp(node, id, true); // may overwrite format
-
-                if (addr->IsCnsIntOrI() && addr->isContained())
-                {
-                    // Absolute addresses marked as contained should fit within the base of addr mode.
-                    assert(addr->AsIntConCommon()->FitsInAddrBase(emitComp));
-
-                    // Case of "ins re, [disp]" and should use IF_RWR_ARD as format
-                    id->idInsFmt(IF_RWR_ARD);
-                }
-
+                id->idReg1(mem->gtRegNum);
+                emitHandleMemOp(mem, id, IF_RWR_ARD, ins);
                 sz = emitInsSizeAM(id, insCodeRM(ins));
                 id->idCodeSize(sz);
             }
@@ -2629,68 +2706,55 @@ void emitter::emitInsMov(instruction ins, emitAttr attr, GenTree* node)
 
     case GT_STOREIND:
         {
-            GenTreeIndir* mem = node->AsIndir();
-            GenTree* memBase = mem->Base();
+            GenTreeStoreInd* mem = node->AsStoreInd();
+            GenTreePtr addr = mem->Addr();
             size_t offset = mem->Offset();
-            GenTree* data = node->gtOp.gtOp2;
+            GenTree* data = mem->Data();
 
-            if (mem->Addr()->OperGet() == GT_CLS_VAR_ADDR)
+            if (addr->OperGet() == GT_CLS_VAR_ADDR)
             {
-                if (data->isContained())
+                if (data->isContainedIntOrIImmed())
                 {
-                    emitIns_C_I(ins, attr, mem->Addr()->gtClsVar.gtClsVarHnd, 0, (int) data->AsIntConCommon()->IconValue());
+                    emitIns_C_I(ins, attr, addr->gtClsVar.gtClsVarHnd, 0, (int) data->AsIntConCommon()->IconValue());
                 }
                 else
                 {
-                    emitIns_C_R(ins, attr, mem->Addr()->gtClsVar.gtClsVarHnd, data->gtRegNum, 0);
+                    assert(!data->isContained());
+                    emitIns_C_R(ins, attr, addr->gtClsVar.gtClsVarHnd, data->gtRegNum, 0);
                 }
                 return;
             }
-
-            if (mem->Addr()->OperGet() == GT_LCL_VAR_ADDR)
+            else if (addr->OperGet() == GT_LCL_VAR_ADDR)
             {
-                GenTreeLclVarCommon* varNode = memBase->AsLclVarCommon();
+                GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
                 if (data->isContainedIntOrIImmed())
                 {
                     emitIns_S_I(ins, attr, varNode->GetLclNum(), 0, (int) data->AsIntConCommon()->IconValue());
-                    codeGen->genUpdateLife(varNode);
                 }
                 else
                 {
                     assert(!data->isContained());
                     emitIns_S_R(ins, attr, data->gtRegNum, varNode->GetLclNum(), 0);
-                    codeGen->genUpdateLife(varNode);
                 }
+                codeGen->genUpdateLife(varNode);
                 return;
             }
-
-            if (data->isContainedIntOrIImmed())
+            else if (data->isContainedIntOrIImmed())
             {
                 int icon = (int) data->AsIntConCommon()->IconValue();
                 id = emitNewInstrAmdCns(attr, offset, icon);
                 id->idIns(ins);
-                id->idInsFmt(IF_AWR_CNS);
-                emitHandleMemOp(node, id, false); // may overwrite format
-
-                if ((memBase != nullptr) && memBase->IsCnsIntOrI() && memBase->isContained())
-                {                    
-                    // Absolute addresses marked as contained should fit within the base of addr mode.
-                    assert(memBase->AsIntConCommon()->FitsInAddrBase(emitComp));
-
-                    // Case of "ins [disp], immed " and should use IF_AWR_CNS as format
-                    id->idInsFmt(IF_AWR_CNS);
-                }
-
+                emitHandleMemOp(mem, id, IF_AWR_CNS, ins);
                 sz = emitInsSizeAM(id, insCodeMI(ins), icon);
                 id->idCodeSize(sz);
             }
             else
             {
+                assert(!data->isContained());
                 id = emitNewInstrAmd(attr, offset);
                 id->idIns(ins);
-                id->idInsFmt(IF_AWR_RRD);
-                emitHandleMemOp(node, id, false); // may overwrite format
-                id->idReg1(node->gtOp.gtOp2->gtRegNum);
+                emitHandleMemOp(mem, id, IF_AWR_RRD, ins);
+                id->idReg1(data->gtRegNum);
                 sz = emitInsSizeAM(id, insCodeMR(ins));
                 id->idCodeSize(sz);
             }
@@ -2700,22 +2764,20 @@ void emitter::emitInsMov(instruction ins, emitAttr attr, GenTree* node)
     case GT_STORE_LCL_VAR:
         {
             GenTreeLclVarCommon* varNode = node->AsLclVarCommon();
-
-            GenTree* data = node->gtOp.gtOp1->gtEffectiveVal();
+            GenTree* data = varNode->gtOp.gtOp1->gtEffectiveVal();
             codeGen->inst_set_SV_var(varNode);
             assert(varNode->gtRegNum == REG_NA); // stack store
 
             if (data->isContainedIntOrIImmed())
             {
                 emitIns_S_I(ins, attr, varNode->GetLclNum(), 0, (int) data->AsIntConCommon()->IconValue());
-                codeGen->genUpdateLife(varNode);
             }
             else
             {
                 assert(!data->isContained());
                 emitIns_S_R(ins, attr, data->gtRegNum, varNode->GetLclNum(), 0);
-                codeGen->genUpdateLife(varNode);
             }
+            codeGen->genUpdateLife(varNode);
         }
         return;
 
@@ -2990,8 +3052,6 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
 
     id->idIns(ins);    // Set the instruction.
 
-    emitHandleMemOp(mem, id, mem == src);
-
     // Determine the instruction format
     //
     insFormat fmt = IF_NONE;
@@ -3019,8 +3079,7 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
         }
     }
     assert(fmt != IF_NONE);
-
-    id->idInsFmt(fmt);
+    emitHandleMemOp(mem, id, fmt, ins);
 
     // Determine the instruction size
     //
@@ -3063,88 +3122,65 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
     return result;
 }
 
-/** Emit logic for Read-Modify-Write Instructions
- *  Responsible for encoding a single instruction that will perform an operation of the form
- *  *addr op= operand for example
- *  ADD [RAX], RCX
- *
- *  Preconditions:  Lowering has taken care of recognizing the StoreInd pattern of
- *                  StoreInd( AddressTree, BinOp( Ind ( AddressTree ), Operand )
- *                  The address to store is already sitting in a register.
- *
- *                  This is a no-produce operation, meaning that no register output will
- *                  be produced for future use in the code stream.
- *
- * The caller is responsible for calling genConsumeReg() on all source registers, and
- * genProduceReg on the target register, if any.
- */
-void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTree* dstAddr, GenTree* src)
+//------------------------------------------------------------------------
+// emitInsRMW: Emit logic for Read-Modify-Write binary instructions.
+//
+// Responsible for emitting a single instruction that will perform an operation of the form:
+//      *addr = *addr <BinOp> src
+// For example:
+//      ADD [RAX], RCX
+//
+// Arguments:
+//    ins - instruction to generate
+//    attr - emitter attribute for instruction
+//    storeInd - indir for RMW addressing mode
+//    src - source operand of instruction
+//
+// Assumptions:
+//    Lowering has taken care of recognizing the StoreInd pattern of:
+//          StoreInd( AddressTree, BinOp( Ind ( AddressTree ), Operand ) )
+//    The address to store is already sitting in a register.
+//
+// Notes:
+//    This is a no-produce operation, meaning that no register output will
+//    be produced for future use in the code stream.
+//
+void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeInd, GenTree* src)
 {
-    assert(dstAddr->isIndir());
-    GenTreeIndir* indir = dstAddr->AsIndir();
-    GenTreePtr mem = indir->Addr();
-    assert(mem->gtSkipReloadOrCopy()->OperGet() == GT_LCL_VAR ||
-           mem->gtSkipReloadOrCopy()->OperGet() == GT_LCL_VAR_ADDR ||
-           mem->gtSkipReloadOrCopy()->OperGet() == GT_LEA ||
-           mem->gtSkipReloadOrCopy()->OperGet() == GT_CLS_VAR_ADDR ||
-           mem->gtSkipReloadOrCopy()->OperGet() == GT_CNS_INT);
+    GenTreePtr addr = storeInd->Addr();
+    addr = addr->gtSkipReloadOrCopy();
+    assert(addr->OperGet() == GT_LCL_VAR ||
+           addr->OperGet() == GT_LCL_VAR_ADDR ||
+           addr->OperGet() == GT_LEA ||
+           addr->OperGet() == GT_CLS_VAR_ADDR ||
+           addr->OperGet() == GT_CNS_INT);
 
     instrDesc* id = nullptr;
-    UNATIVE_OFFSET  sz;
+    UNATIVE_OFFSET sz;
 
     size_t offset = 0;
-    if (mem->gtSkipReloadOrCopy()->OperGet() != GT_CLS_VAR_ADDR)
+    if (addr->OperGet() != GT_CLS_VAR_ADDR)
     {
-        offset = indir->Offset();
+        offset = storeInd->Offset();
     }
 
-    // find immed (if any) - it cannot be a dst
-    GenTreeIntConCommon* intConst = nullptr;
     if (src->isContainedIntOrIImmed())
     {
-        intConst = src->AsIntConCommon();
-    }
-
-    if (intConst != nullptr)
-    {
+        GenTreeIntConCommon* intConst = src->AsIntConCommon();
         id = emitNewInstrAmdCns(attr, offset, (int) intConst->IconValue());
-    }
-    else
-    {
-        // ind, reg
-        id = emitNewInstrAmd(attr, offset);
-        // there must be one non-contained src
-        assert(!src->isContained());
-        id->idReg1(src->gtRegNum);
-        // fmt is set below
-    }
-
-    id->idIns(ins);
-
-    emitHandleMemOp(dstAddr, id, false);
-
-    if (src->isContainedIntOrIImmed())
-    {
-        if (mem->gtSkipReloadOrCopy()->OperGet() == GT_CLS_VAR_ADDR)
-        {
-            id->idInsFmt(IF_MRW_CNS);
-        }
-        else
-        {
-            id->idInsFmt(IF_ARW_CNS);
-        }
+        emitHandleMemOp(storeInd, id, IF_ARW_CNS, ins);
+        id->idIns(ins);
         sz = emitInsSizeAM(id, insCodeMI(ins), (int) intConst->IconValue());
     }
     else
     {
-        if (mem->gtSkipReloadOrCopy()->OperGet() == GT_CLS_VAR_ADDR)
-        {
-            id->idInsFmt(IF_MRW_RRD);
-        }
-        else
-        {
-            id->idInsFmt(IF_ARW_RRD);
-        }
+        assert(!src->isContained()); // there must be one non-contained src
+
+        // ind, reg
+        id = emitNewInstrAmd(attr, offset);
+        emitHandleMemOp(storeInd, id, IF_ARW_RRD, ins);
+        id->idReg1(src->gtRegNum);
+        id->idIns(ins);
         sz = emitInsSizeAM(id, insCodeMR(ins));
     }
 
@@ -3155,51 +3191,47 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTree* dstAddr, GenTr
 }
 
 
-/** Emit logic for Read-Modify-Write Instructions on unary operators
- *  Responsible for encoding a single instruction that will perform an operation of the form
- *  *addr = UnaryOp *addr operand for example
- *  NOT [RAX]
- *
- *  Preconditions:  Lowering has taken care of recognizing the StoreInd pattern of
- *                  StoreInd( AddressTree, UnOp( Ind ( AddressTree ) )
- *                  The address to store is already sitting in a register.
- *
- *                  This is a no-produce operation, meaning that no register output will
- *                  be produced for future use in the code stream.
- */
-void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTree* dstAddr)
+//------------------------------------------------------------------------
+// emitInsRMW: Emit logic for Read-Modify-Write unary instructions.
+//
+// Responsible for emitting a single instruction that will perform an operation of the form:
+//      *addr = UnaryOp *addr
+// For example:
+//      NOT [RAX]
+//
+// Arguments:
+//    ins - instruction to generate
+//    attr - emitter attribute for instruction
+//    storeInd - indir for RMW addressing mode
+//
+// Assumptions:
+//    Lowering has taken care of recognizing the StoreInd pattern of:
+//          StoreInd( AddressTree, UnaryOp( Ind ( AddressTree ) ) )
+//    The address to store is already sitting in a register.
+//
+// Notes:
+//    This is a no-produce operation, meaning that no register output will
+//    be produced for future use in the code stream.
+//
+void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeInd)
 {
-    assert(ins == INS_not || ins == INS_neg);
-    assert(dstAddr->isIndir());
-    GenTreeIndir* indir = dstAddr->AsIndir();
-    GenTreePtr mem = indir->Addr();
-    assert(mem->gtSkipReloadOrCopy()->OperGet() == GT_LCL_VAR ||
-           mem->gtSkipReloadOrCopy()->OperGet() == GT_LCL_VAR_ADDR ||
-           mem->gtSkipReloadOrCopy()->OperGet() == GT_CLS_VAR_ADDR ||
-           mem->gtSkipReloadOrCopy()->OperGet() == GT_LEA ||
-           mem->gtSkipReloadOrCopy()->OperGet() == GT_CNS_INT);
+    GenTreePtr addr = storeInd->Addr();
+    addr = addr->gtSkipReloadOrCopy();
+    assert(addr->OperGet() == GT_LCL_VAR ||
+           addr->OperGet() == GT_LCL_VAR_ADDR ||
+           addr->OperGet() == GT_CLS_VAR_ADDR ||
+           addr->OperGet() == GT_LEA ||
+           addr->OperGet() == GT_CNS_INT);
 
     size_t offset = 0;
-    if (mem->gtSkipReloadOrCopy()->OperGet() != GT_CLS_VAR_ADDR)
+    if (addr->OperGet() != GT_CLS_VAR_ADDR)
     {
-        offset = indir->Offset();
+        offset = storeInd->Offset();
     }
 
     instrDesc* id = emitNewInstrAmd(attr, offset);
-
-    emitHandleMemOp(dstAddr, id, true);
-
+    emitHandleMemOp(storeInd, id, IF_ARW, ins);
     id->idIns(ins);
-
-    if(mem->OperGet() == GT_CLS_VAR_ADDR)
-    {
-        id->idInsFmt(IF_MRW);
-    }
-    else
-    {
-        id->idInsFmt(IF_ARW);
-    }
-
     UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeMR(ins));
     id->idCodeSize(sz);
 
@@ -4205,9 +4237,7 @@ void                emitter::emitIns_I_AR  (instruction ins,
     case INS_shl_N:
     case INS_shr_N:
     case INS_sar_N:
-#ifdef _TARGET_X86_
         assert(val != 1);
-#endif
         fmt  = IF_ARW_SHF;
         val &= 0x7F;
         break;
