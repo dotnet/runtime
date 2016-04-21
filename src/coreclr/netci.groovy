@@ -1230,13 +1230,17 @@ combinedScenarios.each { scenario ->
                                             buildCommands += "rm -rf ./bin/obj/Linux.x64.Release/src/dlls/dbgshim"
                                             buildCommands += "rm -rf ./bin/obj/Linux.x64.Release/src/dlls/mscordac"
                                             buildCommands += "rm -rf ./bin/obj/Linux.x64.Release/src/dlls/mscordbi"
-                                            buildCommands += "rm -rf ./bin/obj/Linux.x64.Release/src/pal/tests"
                                         }
                                         else
                                         {
                                             buildCommands += "./build.sh verbose ${lowerConfiguration} ${architecture}"
                                         }
                                         buildCommands += "src/pal/tests/palsuite/runpaltests.sh \${WORKSPACE}/bin/obj/${osGroup}.${architecture}.${configuration} \${WORKSPACE}/bin/paltestout"
+
+                                        // Delete PAL test obj files after we run them, if this is a coverage job
+                                        if (scenario == 'coverage') {
+                                            buildCommands += "rm -rf ./bin/obj/Linux.x64.Release/src/pal/tests"
+                                        }
                                     
                                         // Set time out
                                         setTestJobTimeOut(newJob, scenario)
