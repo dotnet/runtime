@@ -14,10 +14,7 @@
 #define STRESS_THREAD
 #endif
 
-// On CoreCLR, define VERIFY_HEAP only in debug builds
-#if defined(_DEBUG) || !defined(FEATURE_CORECLR)
 #define VERIFY_HEAP
-#endif
 
 #define GC_CONFIG_DRIVEN
 
