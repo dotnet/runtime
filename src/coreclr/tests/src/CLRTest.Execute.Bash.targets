@@ -165,10 +165,6 @@ then
   exit 0
 fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>
-      <BashCLRTestGCLongTestSkipCondition Condition="'$(GCLongRunning)' == 'true' And '$(IsLongRunningGCTest)' != 'true'"><![CDATA[
-echo Skipping execution because this is not a long-running GC test
-exit 0
-      ]]></BashCLRTestGCLongTestSkipCondition>
       <BashCLRTestExitCodePrep Condition="$(_CLRTestNeedsToRun)">
 <![CDATA[CLRTestExpectedExitCode=$(CLRTestExitCode)
 echo BEGIN EXECUTION]]>
@@ -316,7 +312,6 @@ $__TestEnv
 
 $(BashEnvironmentVariables)
 $(BashCLRTestEnvironmentCompatibilityCheck)
-$(BashCLRTestGCLongTestSkipCondition)
 $(BashCLRTestArgPrep)
 $(BashCLRTestExitCodePrep)
 # CrossGen Script (when /p:CrossGen=true)
