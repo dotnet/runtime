@@ -3463,7 +3463,8 @@ mono_field_get_value_object_checked (MonoDomain *domain, MonoClassField *field, 
 			get_default_field_value (domain, field, &o, error);
 			return_val_if_nok (error, NULL);
 		} else if (is_static) {
-			mono_field_static_get_value (vtable, field, &o);
+			mono_field_static_get_value_checked (vtable, field, &o, error);
+			return_val_if_nok (error, NULL);
 		} else {
 			mono_field_get_value (obj, field, &o);
 		}
@@ -3487,7 +3488,8 @@ mono_field_get_value_object_checked (MonoDomain *domain, MonoClassField *field, 
 			get_default_field_value (domain, field, v, error);
 			return_val_if_nok (error, NULL);
 		} else if (is_static) {
-			mono_field_static_get_value (vtable, field, v);
+			mono_field_static_get_value_checked (vtable, field, v, error);
+			return_val_if_nok (error, NULL);
 		} else {
 			mono_field_get_value (obj, field, v);
 		}
@@ -3517,7 +3519,8 @@ mono_field_get_value_object_checked (MonoDomain *domain, MonoClassField *field, 
 		get_default_field_value (domain, field, v, error);
 		return_val_if_nok (error, NULL);
 	} else if (is_static) {
-		mono_field_static_get_value (vtable, field, v);
+		mono_field_static_get_value_checked (vtable, field, v, error);
+		return_val_if_nok (error, NULL);
 	} else {
 		mono_field_get_value (obj, field, v);
 	}
@@ -3635,9 +3638,36 @@ mono_field_static_get_value (MonoVTable *vt, MonoClassField *field, void *value)
 	MONO_REQ_GC_NEUTRAL_MODE;
 
 	MonoError error;
+	mono_field_static_get_value_checked (vt, field, value, &error);
+	mono_error_cleanup (&error);
+}
 
-	mono_field_static_get_value_for_thread (mono_thread_internal_current (), vt, field, value, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+/**
+ * mono_field_static_get_value_checked:
+ * @vt: vtable to the object
+ * @field: MonoClassField describing the field to fetch information from
+ * @value: where the value is returned
+ * @error: set on error
+ *
+ * Use this routine to get the value of the static field @field value.
+ *
+ * The pointer provided by value must be of the field type, for reference
+ * types this is a MonoObject*, for value types its the actual pointer to
+ * the value type.
+ *
+ * For example:
+ *     int i;
+ *     mono_field_static_get_value_checked (vt, int_field, &i, error);
+ *     if (!is_ok (error)) { ... }
+ *
+ * On failure sets @error.
+ */
+void
+mono_field_static_get_value_checked (MonoVTable *vt, MonoClassField *field, void *value, MonoError *error)
+{
+	MONO_REQ_GC_NEUTRAL_MODE;
+
+	mono_field_static_get_value_for_thread (mono_thread_internal_current (), vt, field, value, error);
 }
 
 /**
