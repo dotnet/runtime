@@ -1102,6 +1102,13 @@
         ]
     },
     {
+        "Name": "System.Runtime.CompilerServices.Unsafe",
+        "Description": "Provides the System.Runtime.CompilerServices.Unsafe class, which provides generic, low-level functionality for manipulating pointers.",
+        "CommonTypes": [
+            "System.Runtime.CompilerServices.Unsafe",
+        ]
+    },
+    {
         "Name": "System.Runtime.CompilerServices.VisualC",
         "Description": "Provides support for C++/CLI language features.",
         "CommonTypes": [
@@ -1658,13 +1665,6 @@
         "CommonTypes": [
             "System.Threading.Timer",
             "System.Threading.TimerCallback"
-        ]
-    },
-    {
-        "Name": "System.Unsafe",
-        "Description": "Provides the System.Unsafe class, which provides generic, low-level functionality for manipulating pointers.",
-        "CommonTypes": [
-            "System.Unsafe",
         ]
     },
     {

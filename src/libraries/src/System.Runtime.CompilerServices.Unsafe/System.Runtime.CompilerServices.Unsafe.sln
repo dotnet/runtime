@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.25022.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Unsafe.Tests", "tests\System.Unsafe.Tests.csproj", "{76EF80B0-B3F5-493C-A78F-647D0DD26205}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.CompilerServices.Unsafe.Tests", "tests\System.Runtime.CompilerServices.Unsafe.Tests.csproj", "{76EF80B0-B3F5-493C-A78F-647D0DD26205}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
