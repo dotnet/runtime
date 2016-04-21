@@ -7,114 +7,108 @@ using System.Threading;
 
 namespace System.Buffers
 {
-    /// <summary>
-    /// Provides a thread-safe bucket containing buffers that can be Rented and Returned as part 
-    /// of a buffer pool; it should not be used independent of the pool.
-    /// </summary>
-    internal sealed class DefaultArrayPoolBucket<T>
+    internal sealed partial class DefaultArrayPool<T> : ArrayPool<T>
     {
-        private int _index;
-        private readonly T[][] _data;
-        internal readonly int _bufferLength;
-        private SpinLock _lock;
-        private bool _exhaustedEventSent;
-        private readonly int _poolId;
-
-        /// <summary>
-        /// Creates the pool with numberOfBuffers arrays where each buffer is of bufferLength length.
-        /// </summary>
-        internal DefaultArrayPoolBucket(int bufferLength, int numberOfBuffers, int poolId)
+        /// <summary>Provides a thread-safe bucket containing buffers that can be Rent'd and Return'd.</summary>
+        private sealed class Bucket
         {
-            _lock = new SpinLock(Debugger.IsAttached); // only enable thread tracking if debugger is attached; it adds non-trivial overheads to Enter/Exit
-            _data = new T[numberOfBuffers][];
-            _bufferLength = bufferLength;
-            _exhaustedEventSent = false;
-            _poolId = poolId;
-        }
+            internal readonly int _bufferLength;
+            private readonly T[][] _buffers;
+            private readonly int _poolId;
 
-        /// <summary>
-        /// Returns an array from the Bucket sized according to the Bucket size.
-        /// If the Bucket is empty, null is returned.
-        /// </summary>
-        /// <returns>Returns a valid buffer when the bucket has free buffers; otherwise, returns null</returns>
-        internal T[] Rent()
-        {
-            T[] buffer = null;
+            private SpinLock _lock; // do not make this readonly; it's a mutable struct
+            private int _index;
 
-            // Use a SpinLock since it is super lightweight
-            // and our lock is very short lived. Wrap in try-finally
-            // to protect against thread-aborts
-            bool taken = false;
-            bool alloc = false;
-            try
+            /// <summary>
+            /// Creates the pool with numberOfBuffers arrays where each buffer is of bufferLength length.
+            /// </summary>
+            internal Bucket(int bufferLength, int numberOfBuffers, int poolId)
             {
-                _lock.Enter(ref taken);
+                _lock = new SpinLock(Debugger.IsAttached); // only enable thread tracking if debugger is attached; it adds non-trivial overheads to Enter/Exit
+                _buffers = new T[numberOfBuffers][];
+                _bufferLength = bufferLength;
+                _poolId = poolId;
+            }
 
-                // Check if all of our buffers have been rented
-                if (_index < _data.Length)
+            /// <summary>Gets an ID for the bucket to use with events.</summary>
+            internal int Id => GetHashCode();
+
+            /// <summary>Takes an array from the bucket.  If the bucket is empty, returns null.</summary>
+            internal T[] Rent()
+            {
+                T[][] buffers = _buffers;
+                T[] buffer = null;
+
+                // While holding the lock, grab whatever is at the next available index and
+                // update the index.  We do as little work as possible while holding the spin
+                // lock to minimize contention with other threads.  The try/finally is
+                // necessary to properly handle thread aborts on platforms which have them.
+                bool lockTaken = false, allocateBuffer = false;
+                try
                 {
-                    buffer = _data[_index];
-                    alloc = buffer == null;
-                    _data[_index++] = null;
+                    _lock.Enter(ref lockTaken);
+
+                    if (_index < buffers.Length)
+                    {
+                        buffer = buffers[_index];
+                        buffers[_index++] = null;
+                        allocateBuffer = buffer == null;
+                    }
                 }
-                else if (_exhaustedEventSent == false)
+                finally
                 {
-                    if (ArrayPoolEventSource.Log.IsEnabled())
-                        ArrayPoolEventSource.Log.BucketExhausted(Utilities.GetBucketId(this), _bufferLength, _data.Length, _poolId);
-                    _exhaustedEventSent = true;
+                    if (lockTaken) _lock.Exit(false);
                 }
-            }
-            finally
-            {
-                if (taken) _lock.Exit(false);
-            }
 
-            if (alloc)
-            {
-                buffer = new T[_bufferLength];
-                if (ArrayPoolEventSource.Log.IsEnabled())
-                    ArrayPoolEventSource.Log.BufferAllocated(
-                        Utilities.GetBufferId(buffer),
-                        _bufferLength,
-                        _poolId,
-                        Utilities.GetBucketId(this),
-                        ArrayPoolEventSource.BufferAllocationReason.Pooled);
-            }
-
-            return buffer;
-        }
-
-        /// <summary>
-        /// Attempts to return a Buffer to the bucket. This can fail
-        /// if the buffer being returned was allocated and we don't have
-        /// room for it in the bucket.
-        /// </summary>
-        internal void Return(T[] buffer)
-        {
-            // Check to see if the buffer is the correct size for this bucket
-            if (buffer.Length != _bufferLength)
-                throw new ArgumentException(SR.ArgumentException_BufferNotFromPool, nameof(buffer));
-
-            // Use a SpinLock since it is super lightweight
-            // and our lock is very short lived. Wrap in try-finally
-            // to protect against thread-aborts
-            bool taken = false;
-            try
-            {
-                _lock.Enter(ref taken);
-
-                // If we have space to put the buffer back, do it. If we don't
-                // then there was a buffer alloc'd that was returned instead so
-                // we can just drop this buffer
-                if (_index != 0)
+                // While we were holding the lock, we grabbed whatever was at the next available index, if
+                // there was one.  If we tried and if we got back null, that means we hadn't yet allocated
+                // for that slot, in which case we should do so now.
+                if (allocateBuffer)
                 {
-                    _data[--_index] = buffer;
-                    _exhaustedEventSent = false; // always setting this should be cheaper than a branch
+                    buffer = new T[_bufferLength];
+
+                    var log = ArrayPoolEventSource.Log;
+                    if (log.IsEnabled())
+                    {
+                        log.BufferAllocated(buffer.GetHashCode(), _bufferLength, _poolId, Id,
+                            ArrayPoolEventSource.BufferAllocatedReason.Pooled);
+                    }
                 }
+
+                return buffer;
             }
-            finally
+
+            /// <summary>
+            /// Attempts to return the buffer to the bucket.  If successful, the buffer will be stored
+            /// in the bucket and true will be returned; otherwise, the buffer won't be stored, and false
+            /// will be returned.
+            /// </summary>
+            internal void Return(T[] array)
             {
-                if (taken) _lock.Exit(false);
+                // Check to see if the buffer is the correct size for this bucket
+                if (array.Length != _bufferLength)
+                {
+                    throw new ArgumentException(SR.ArgumentException_BufferNotFromPool, nameof(array));
+                }
+
+                // While holding the spin lock, if there's room available in the bucket,
+                // put the buffer into the next available slot.  Otherwise, we just drop it.
+                // The try/finally is necessary to properly handle thread aborts on platforms
+                // which have them.
+                bool lockTaken = false;
+                try
+                {
+                    _lock.Enter(ref lockTaken);
+
+                    if (_index != 0)
+                    {
+                        _buffers[--_index] = array;
+                    }
+                }
+                finally
+                {
+                    if (lockTaken) _lock.Exit(false);
+                }
             }
         }
     }

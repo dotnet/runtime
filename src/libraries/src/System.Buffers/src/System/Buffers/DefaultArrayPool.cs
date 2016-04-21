@@ -4,77 +4,101 @@
 
 namespace System.Buffers
 {
-    internal sealed class DefaultArrayPool<T> : ArrayPool<T>
+    internal sealed partial class DefaultArrayPool<T> : ArrayPool<T>
     {
-        /// <summary>The default maximum number of arrays per bucket that are available for rent.</summary>
-        private const int DefaultMaxNumberOfArraysPerBucket = 50;
         /// <summary>The default maximum length of each array in the pool (2^20).</summary>
         private const int DefaultMaxArrayLength = 1024 * 1024;
-        /// <summary>The minimum length of an array in the pool.</summary>
-        private const int MinimumArrayLength = 16;
+        /// <summary>The default maximum number of arrays per bucket that are available for rent.</summary>
+        private const int DefaultMaxNumberOfArraysPerBucket = 50;
+        /// <summary>Lazily-allocated empty array used when arrays of length 0 are requested.</summary>
+        private static T[] s_emptyArray; // we support contracts earlier than those with Array.Empty<T>()
 
-        private readonly DefaultArrayPoolBucket<T>[] _buckets;
+        private readonly Bucket[] _buckets;
 
         internal DefaultArrayPool() : this(DefaultMaxArrayLength, DefaultMaxNumberOfArraysPerBucket)
         {
         }
 
-        internal DefaultArrayPool(int maxLength, int arraysPerBucket)
+        internal DefaultArrayPool(int maxArrayLength, int maxArraysPerBucket)
         {
-            if (maxLength <= 0)
-                throw new ArgumentOutOfRangeException(nameof(maxLength));
-            if (arraysPerBucket <= 0)
-                throw new ArgumentOutOfRangeException(nameof(arraysPerBucket));
+            if (maxArrayLength <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(maxArrayLength));
+            }
+            if (maxArraysPerBucket <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(maxArraysPerBucket));
+            }
 
-            // Our bucketing algorithm has a minimum length of 16
-            if (maxLength < MinimumArrayLength)
-                maxLength = MinimumArrayLength;
+            // Our bucketing algorithm has a min length of 2^4 and a max length of 2^30.
+            // Constrain the actual max used to those values.
+            const int MinimumArrayLength = 0x10, MaximumArrayLength = 0x40000000;
+            if (maxArrayLength > MaximumArrayLength)
+            {
+                maxArrayLength = MaximumArrayLength;
+            }
+            else if (maxArrayLength < MinimumArrayLength)
+            {
+                maxArrayLength = MinimumArrayLength;
+            }
 
-            int maxBuckets = Utilities.SelectBucketIndex(maxLength);
-            _buckets = new DefaultArrayPoolBucket<T>[maxBuckets + 1];
-            for (int i = 0; i < _buckets.Length; i++)
-                _buckets[i] = new DefaultArrayPoolBucket<T>(Utilities.GetMaxSizeForBucket(i), arraysPerBucket, Utilities.GetPoolId(this));
+            // Create the buckets.
+            int poolId = Id;
+            int maxBuckets = Utilities.SelectBucketIndex(maxArrayLength);
+            var buckets = new Bucket[maxBuckets + 1];
+            for (int i = 0; i < buckets.Length; i++)
+            {
+                buckets[i] = new Bucket(Utilities.GetMaxSizeForBucket(i), maxArraysPerBucket, poolId);
+            }
+            _buckets = buckets;
         }
+
+        /// <summary>Gets an ID for the pool to use with events.</summary>
+        private int Id => GetHashCode();
 
         public override T[] Rent(int minimumLength)
         {
-            if (minimumLength <= 0)
+            // Arrays can't be smaller than zero.  We allow requesting zero-length arrays (even though
+            // pooling such an array isn't valuable) as it's a valid length array, and we want the pool
+            // to be usable in general instead of using `new`, even for computed lengths.
+            if (minimumLength < 0)
+            {
                 throw new ArgumentOutOfRangeException(nameof(minimumLength));
-                
-            var log = ArrayPoolEventSource.Log;
+            }
+            else if (minimumLength == 0)
+            {
+                // No need for events with the empty array.  Our pool is effectively infinite
+                // and we'll never allocate for rents and never store for returns.
+                return s_emptyArray ?? (s_emptyArray = new T[0]);
+            }
 
+            var log = ArrayPoolEventSource.Log;
             T[] buffer = null;
+
             int index = Utilities.SelectBucketIndex(minimumLength);
             if (index < _buckets.Length)
             {
                 // Search for an array starting at the 'index' bucket. If the bucket is empty, bump up to the
-                // next higher bucket and try that one. Only try a max number of buckets, e.g. a max of 2 will
-                // guarantee that for a request that maps to a bucket of size N, we'll not return a buffer larger
-                // than N*2, and for a max of 3, we'll not return a buffer larger than N*4, etc.
-
+                // next higher bucket and try that one, but only try at most a few buckets.
                 const int MaxBucketsToTry = 2;
-                int maxIndex = index + MaxBucketsToTry;
-                if (maxIndex >= _buckets.Length)
+                int i = index;
+                do
                 {
-                    maxIndex = _buckets.Length;
-                }
-
-                for (int i = index; i < maxIndex; i++)
-                {
+                    // Attempt to rent from the bucket.  If we get a buffer from it, return it.
                     buffer = _buckets[i].Rent();
-
-                    // If the bucket has an array left and returned it, give it to the caller
                     if (buffer != null)
                     {
                         if (log.IsEnabled())
                         {
-                            log.BufferRented(Utilities.GetBufferId(buffer), buffer.Length, Utilities.GetBucketId(_buckets[i]), Utilities.GetPoolId(this));
+                            log.BufferRented(buffer.GetHashCode(), buffer.Length, Id, _buckets[i].Id);
                         }
                         return buffer;
                     }
                 }
+                while (++i < _buckets.Length && i != index + MaxBucketsToTry);
 
-                // The pool was exhausted.  Allocate a new buffer with a size corresponding to the appropriate bucket.
+                // The pool was exhausted for this buffer size.  Allocate a new buffer with a size corresponding
+                // to the appropriate bucket.
                 buffer = new T[_buckets[index]._bufferLength];
             }
             else
@@ -84,40 +108,54 @@ namespace System.Buffers
                 buffer = new T[minimumLength];
             }
 
-            // We had to allocate a buffer, so log that fact.
             if (log.IsEnabled())
             {
-                log.BufferAllocated(
-                    Utilities.GetBufferId(buffer),
-                    buffer.Length,
-                    Utilities.GetPoolId(this),
-                    -1, // no bucket for an on-demand allocated buffer,
-                    index >= _buckets.Length ? 
-                        ArrayPoolEventSource.BufferAllocationReason.OverMaximumSize :
-                        ArrayPoolEventSource.BufferAllocationReason.PoolExhausted);
+                int bufferId = buffer.GetHashCode(), bucketId = -1; // no bucket for an on-demand allocated buffer
+                log.BufferRented(bufferId, buffer.Length, Id, bucketId);
+                log.BufferAllocated(bufferId, buffer.Length, Id, bucketId, index >= _buckets.Length ?
+                    ArrayPoolEventSource.BufferAllocatedReason.OverMaximumSize : ArrayPoolEventSource.BufferAllocatedReason.PoolExhausted);
             }
 
             return buffer;
         }
 
-        public override void Return(T[] buffer, bool clearArray = false)
+        public override void Return(T[] array, bool clearArray = false)
         {
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer));
+            if (array == null)
+            {
+                throw new ArgumentNullException(nameof(array));
+            }
+            else if (array.Length == 0)
+            {
+                // Ignore empty arrays.  When a zero-length array is rented, we return a singleton
+                // rather than actually taking a buffer out of the lowest bucket.
+                return;
+            }
+
+            // Determine with what bucket this array length is associated
+            int bucket = Utilities.SelectBucketIndex(array.Length);
 
             // If we can tell that the buffer was allocated, drop it. Otherwise, check if we have space in the pool
-            int bucket = Utilities.SelectBucketIndex(buffer.Length);
             if (bucket < _buckets.Length)
             {
                 // Clear the array if the user requests
-                if (clearArray) Array.Clear(buffer, 0, buffer.Length);
+                if (clearArray)
+                {
+                    Array.Clear(array, 0, array.Length);
+                }
 
-                _buckets[bucket].Return(buffer);
+                // Return the buffer to its bucket.  In the future, we might consider having Return return false
+                // instead of dropping a bucket, in which case we could try to return to a lower-sized bucket,
+                // just as how in Rent we allow renting from a higher-sized bucket.
+                _buckets[bucket].Return(array);
             }
 
+            // Log that the buffer was returned
             var log = ArrayPoolEventSource.Log;
             if (log.IsEnabled())
-                log.BufferReturned(Utilities.GetBufferId(buffer), Utilities.GetPoolId(this));
+            {
+                log.BufferReturned(array.GetHashCode(), array.Length, Id);
+            }
         }
     }
 }

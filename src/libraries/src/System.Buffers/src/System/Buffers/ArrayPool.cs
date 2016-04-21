@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace System.Buffers
@@ -37,17 +38,16 @@ namespace System.Buffers
         /// </remarks>
         public static ArrayPool<T> Shared
         {
-            get
-            {
-                ArrayPool<T> instance = Volatile.Read(ref s_sharedInstance);
-                if (instance == null)
-                {
-                    Interlocked.CompareExchange(ref s_sharedInstance, Create(), null);
-                    instance = s_sharedInstance;
-                }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return Volatile.Read(ref s_sharedInstance) ?? EnsureSharedCreated(); }
+        }
 
-                return instance;
-            }
+        /// <summary>Ensures that <see cref="s_sharedInstance"/> has been initialized to a pool and returns it.</summary>
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static ArrayPool<T> EnsureSharedCreated()
+        {
+            Interlocked.CompareExchange(ref s_sharedInstance, Create(), null);
+            return s_sharedInstance;
         }
 
         /// <summary>
@@ -97,12 +97,12 @@ namespace System.Buffers
         /// Returns to the pool an array that was previously obtained via <see cref="Rent"/> on the same 
         /// <see cref="ArrayPool{T}"/> instance.
         /// </summary>
-        /// <param name="buffer">
+        /// <param name="array">
         /// The buffer previously obtained from <see cref="Rent"/> to return to the pool.
         /// </param>
         /// <param name="clearArray">
         /// If <c>true</c> and if the pool will store the buffer to enable subsequent reuse, <see cref="Return"/>
-        /// will clear <paramref name="buffer"/> of its contents so that a subsequent consumer via <see cref="Rent"/> 
+        /// will clear <paramref name="array"/> of its contents so that a subsequent consumer via <see cref="Rent"/> 
         /// will not see the previous consumer's content.  If <c>false</c> or if the pool will release the buffer,
         /// the array's contents are left unchanged.
         /// </param>
@@ -113,6 +113,6 @@ namespace System.Buffers
         /// may hold onto the returned buffer in order to rent it again, or it may release the returned buffer
         /// if it's determined that the pool already has enough buffers stored.
         /// </remarks>
-        public abstract void Return(T[] buffer, bool clearArray = false);
+        public abstract void Return(T[] array, bool clearArray = false);
     }
 }
