@@ -176,7 +176,7 @@ Newtonsoft.Json/7.0.1/lib/netstandard1.0/Newtonsoft.Json.dll
 
 #### Generating dependency references
 
-Unlike previous PCL packages, targeting the .NET Platform Standard requires the package dependencies to be fully specified. The specific version of the dependency doesn't matter but stating the dependency does. To aid in making this simple in the short term [Oren Novotny](https://github.com/onovotny) built a tool that can be used to generate the correct depenencies for nuspec metadata for your .NET Platform Standard based projects/assemblies:
+Unlike previous PCL packages, targeting the .NET Platform Standard requires the package dependencies to be fully specified. The specific version of the dependency doesn't matter but stating the dependency does. To aid in making this simple in the short term [Oren Novotny](https://github.com/onovotny) built a tool that can be used to generate the correct dependencies for nuspec metadata for your .NET Platform Standard based projects/assemblies:
 
 https://github.com/onovotny/ReferenceGenerator
 
