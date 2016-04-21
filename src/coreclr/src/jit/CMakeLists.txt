@@ -168,6 +168,11 @@ endif()
 
 set(CLR_EXPORTED_SYMBOL_FILE ${CLRJIT_EXPORTS_DEF})
 
+set(JIT_BASE_NAME clrjit)
+if (CLR_BUILD_JIT32)
+  set(JIT_BASE_NAME ryujit)
+endif()
+
 add_subdirectory(dll)
 add_subdirectory(crossgen)
 add_subdirectory(standalone)
