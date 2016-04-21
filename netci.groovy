@@ -1451,10 +1451,9 @@ combinedScenarios.each { scenario ->
                     // of in parallel. Only used for long GC tests.
                     def sequentialString = ''
                     
-                    // Whether or not this test run should only run failing test.
-                    // Only used for long GC tests, because they are all ignored in
-                    // normal test runs.
-                    def runFailingString = ''
+                    // Whether or not this test run should run a specific playlist.
+                    // Only used for long GC tests.
+                    def playlistString = ''
                      
                     if (os == 'Ubuntu' && isPR){
                         serverGCString = '--useServerGC'
@@ -1471,11 +1470,9 @@ combinedScenarios.each { scenario ->
                         // the only test running (many of them allocate until OOM).
                         sequentialString = '--sequential'
                         
-                        // Long GC tests all exist in the ignore list because
-                        // they can't run during normal test runs. This is not
-                        // particularly pretty but, until we get a more generalized
-                        // mechanism for coming up with test playlists, it works.
-                        runFailingString = '--runFailingTestsOnly'
+                        // The Long GC playlist contains all of the tests that are
+                        // going to be run.
+                        playlistString = '--playlist ./tests/longRunningGcTests.txt'
                     }
                     
 
@@ -1613,7 +1610,7 @@ combinedScenarios.each { scenario ->
                 --mscorlibDir=\"\${WORKSPACE}/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
                 --coreFxBinDir=\"\${WORKSPACE}/bin/${osGroup}.AnyCPU.Release\" \\
                 --coreFxNativeBinDir=\"\${WORKSPACE}/bin/${osGroup}.${architecture}.Release\" \\
-                ${testEnvOpt} ${serverGCString} ${crossgenStr} ${sequentialString} ${runFailingString}""")
+                ${testEnvOpt} ${serverGCString} ${crossgenStr} ${sequentialString} ${playlistString}""")
                             }
                         }
                     }
