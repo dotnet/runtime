@@ -134,4 +134,7 @@
     <RemoveDir Directories="$(BinDir)" />
   </Target>
 
+  <!-- Hook that can be used to insert custom build tasks to the build process such as setup and/or cleanup tasks -->
+  <Import Project="build.override.targets" Condition="Exists('build.override.targets')" />
+
 </Project>
