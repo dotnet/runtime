@@ -199,6 +199,13 @@ namespace System.Net.Http
                 Queue(new IncomingRequest { Easy = easy, Type = IncomingRequestType.Unpause });
             }
 
+            /// <summary>Requests that the request associated with the easy operation be canceled..</summary>
+            internal void RequestCancel(EasyRequest easy)
+            {
+                EventSourceTrace(null, easy: easy);
+                Queue(new IncomingRequest { Easy = easy, Type = IncomingRequestType.Cancel });
+            }
+
             /// <summary>Creates and configures a new multi handle.</summary>
             private Interop.Http.SafeCurlMultiHandle CreateAndConfigureMultiHandle()
             {
@@ -467,7 +474,6 @@ namespace System.Net.Http
 
                     case IncomingRequestType.Cancel:
                         Debug.Assert(easy._associatedMultiAgent == this, "Should only cancel associated easy requests");
-                        Debug.Assert(easy._cancellationToken.IsCancellationRequested, "Cancellation should have been requested");
                         FindAndFailActiveRequest(easy, new OperationCanceledException(easy._cancellationToken));
                         break;
 
@@ -533,17 +539,14 @@ namespace System.Net.Http
 
                 // And if cancellation can be requested, hook up a cancellation callback.
                 // This callback will put the easy request back into the queue, which will
-                // ensure that a wake-up request has been issued.  When we pull
-                // the easy request out of the request queue, we'll see that it's already
-                // associated with this agent, meaning that it's a cancellation request,
-                // and we'll deal with it appropriately.
+                // ensure that a wake-up request has been issued.
                 var cancellationReg = default(CancellationTokenRegistration);
                 if (easy._cancellationToken.CanBeCanceled)
                 {
                     cancellationReg = easy._cancellationToken.Register(s =>
                     {
                         EasyRequest e = (EasyRequest)s;
-                        e._associatedMultiAgent.Queue(new IncomingRequest { Easy = e, Type = IncomingRequestType.Cancel });
+                        e._associatedMultiAgent.RequestCancel(e);
                     }, easy);
                 }
 
