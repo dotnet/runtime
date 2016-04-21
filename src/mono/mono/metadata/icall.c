@@ -3486,7 +3486,8 @@ write_enum_value (char *mem, int type, guint64 value)
 		break;
 	}
 	case MONO_TYPE_U2:
-	case MONO_TYPE_I2: {
+	case MONO_TYPE_I2:
+	case MONO_TYPE_CHAR: {
 		guint16 *p = (guint16 *)mem;
 		*p = value;
 		break;
