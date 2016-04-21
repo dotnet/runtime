@@ -346,7 +346,7 @@ namespace System.Net.Http
             }
 
             /// <summary>Notifies the stream that no more data will be written.</summary>
-            internal void SignalComplete(Exception error = null)
+            internal void SignalComplete(Exception error = null, bool forceCancel = false)
             {
                 lock (_lockObject)
                 {
@@ -362,6 +362,17 @@ namespace System.Net.Http
                     _completed = error != null ?
                         error :
                         s_completionSentinel;
+
+                    // If the request wasn't already completed, and if requested, send a cancellation
+                    // request to ensure that the connection gets cleaned up.  This is only necessary
+                    // to do if this method is being called for a reason other than the request/response
+                    // completing naturally, e.g. if the response stream is being disposed of before
+                    // all of the response has been downloaded.
+                    if (forceCancel)
+                    {
+                        EventSourceTrace("Completing the response stream prematurely.");
+                        _easy._associatedMultiAgent.RequestCancel(_easy);
+                    }
 
                     // If there's a pending read request, complete it, either with 0 bytes for success
                     // or with the exception/CancellationToken for failure.
@@ -405,7 +416,7 @@ namespace System.Net.Http
                 if (disposing && !_disposed)
                 {
                     _disposed = true;
-                    SignalComplete();
+                    SignalComplete(forceCancel: true);
                 }
 
                 base.Dispose(disposing);
