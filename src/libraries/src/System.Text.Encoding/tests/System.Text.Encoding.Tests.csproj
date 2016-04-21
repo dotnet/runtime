@@ -70,8 +70,8 @@
     <Compile Include="Encoding\EncodingUTF8.cs" />
     <Compile Include="Encoding\EncodingWebName.cs" />
     <Compile Include="UnicodeEncoding\UnicodeEncodingEquals.cs" />
-    <Compile Include="UnicodeEncoding\UnicodeEncodingGetBytes.cs" />
-    <Compile Include="UnicodeEncoding\UnicodeEncodingGetChars.cs" />
+    <Compile Include="UnicodeEncoding\UnicodeEncodingEncode.cs" />
+    <Compile Include="UnicodeEncoding\UnicodeEncodingDecode.cs" />
     <Compile Include="UnicodeEncoding\UnicodeEncodingGetDecoder.cs" />
     <Compile Include="UnicodeEncoding\UnicodeEncodingGetEncoder.cs" />
     <Compile Include="UnicodeEncoding\UnicodeEncodingGetMaxByteCount.cs" />
