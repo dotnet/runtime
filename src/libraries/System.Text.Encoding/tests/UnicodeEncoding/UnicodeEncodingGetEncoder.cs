@@ -11,7 +11,7 @@ namespace System.Text.Tests
         [Fact]
         public void GetEncoder()
         {
-            char[] chars = EncodingHelpers.GetRandomString(10).ToCharArray();
+            char[] chars = "abc\u1234\uD800\uDC00defg".ToCharArray();
             byte[] bytes = new UnicodeEncoding().GetBytes(chars);
             byte[] desBytes = new byte[20];
             int buffer;

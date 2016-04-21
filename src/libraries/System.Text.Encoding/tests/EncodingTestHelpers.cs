@@ -8,8 +8,6 @@ namespace System.Text.Tests
 {
     public static class EncodingHelpers
     {
-        private static readonly RandomDataGenerator s_randomGenerator = new RandomDataGenerator();
-
         public static void Encode(Encoding encoding, string chars, int index, int count, byte[] expected)
         {
             GetByteCount(encoding, chars, index, count, expected.Length);
@@ -181,26 +179,6 @@ namespace System.Text.Tests
             }
             // Use GetString(byte[], int, int)
             Assert.Equal(expected, encoding.GetString(bytes, index, count));
-        }
-
-        public static string GetString() => GetString(2, 260);
-        public static string GetString(int length) => GetString(length, length);
-        public static string GetString(int minLength, int maxLength) => s_randomGenerator.GetString(-55, false, minLength, maxLength);
-
-        public static string GetRandomString(int length)
-        {
-            string result = string.Empty;
-            int i = 0;
-            while (i < length)
-            {
-                char temp = s_randomGenerator.GetChar(-55);
-                if (!char.IsSurrogate(temp))
-                {
-                    result = result + temp.ToString();
-                    i++;
-                }
-            }
-            return result;
         }
     }
 }
