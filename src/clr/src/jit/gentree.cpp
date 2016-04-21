@@ -9760,6 +9760,11 @@ GenTreePtr                  Compiler::gtFoldExprConst(GenTreePtr tree)
         return tree;
     }
 
+    if (tree->OperGet() == GT_NOP)
+    {
+        return tree;
+    }
+
 #ifdef FEATURE_SIMD
     if (tree->OperGet() == GT_SIMD)
     {
@@ -9776,6 +9781,7 @@ GenTreePtr                  Compiler::gtFoldExprConst(GenTreePtr tree)
         case TYP_INT:
 
             /* Fold constant INT unary operator */
+            assert(op1->gtIntCon.ImmedValCanBeFolded(this, tree->OperGet()));
             i1 = (int) op1->gtIntCon.gtIconVal;
 
             // If we fold a unary oper, then the folded constant 
@@ -9890,6 +9896,7 @@ CHK_OVF:
 
             /* Fold constant LONG unary operator */
 
+            assert(op1->gtIntConCommon.ImmedValCanBeFolded(this, tree->OperGet()));
             lval1 = op1->gtIntConCommon.LngValue();
 
             switch (tree->gtOper)
@@ -10214,6 +10221,9 @@ CHK_OVF:
         //
         assert(!varTypeIsGC(op1->gtType) && !varTypeIsGC(op2->gtType));
 
+        assert(op1->gtIntConCommon.ImmedValCanBeFolded(this, tree->OperGet()));
+        assert(op2->gtIntConCommon.ImmedValCanBeFolded(this, tree->OperGet()));
+
         i1 = op1->gtIntConCommon.IconValue();
         i2 = op2->gtIntConCommon.IconValue();
 
@@ -10535,6 +10545,9 @@ OVF:
         // op1 is known to be a TYP_LONG, op2 is normally a TYP_LONG, unless we have a shift operator in which case it is a TYP_INT
         //
         assert((op2->gtType == TYP_LONG) || (op2->gtType == TYP_INT));
+
+        assert(op1->gtIntConCommon.ImmedValCanBeFolded(this, tree->OperGet()));
+        assert(op2->gtIntConCommon.ImmedValCanBeFolded(this, tree->OperGet()));
 
         lval1 = op1->gtIntConCommon.LngValue();
         
@@ -12571,6 +12584,42 @@ size_t GenTreeIndir::Offset()
         return 0;
 }
 
+//------------------------------------------------------------------------
+// GenTreeIntConCommon::ImmedValNeedsReloc: does this immediate value needs recording a relocation with the VM?
+//
+// Arguments:
+//    comp - Compiler instance
+//
+// Return Value:
+//    True if this immediate value needs recording a relocation with the VM; false otherwise.
+
+bool GenTreeIntConCommon::ImmedValNeedsReloc(Compiler* comp)
+{
+#ifdef RELOC_SUPPORT
+    return comp->opts.compReloc && (gtOper == GT_CNS_INT) && IsIconHandle();
+#else
+    return false;
+#endif
+}
+
+//------------------------------------------------------------------------
+// ImmedValCanBeFolded: can this immediate value be folded for op?
+//
+// Arguments:
+//    comp - Compiler instance
+//    op - Tree operator
+//
+// Return Value:
+//    True if this immediate value can be folded for op; false otherwise.
+
+bool GenTreeIntConCommon::ImmedValCanBeFolded(Compiler* comp, genTreeOps op)
+{
+    // In general, immediate values that need relocations can't be folded.
+    // There are cases where we do want to allow folding of handle comparisons
+    // (e.g., typeof(T) == typeof(int)).
+    return !ImmedValNeedsReloc(comp) || (op == GT_EQ) || (op == GT_NE);
+}
+
 #ifdef _TARGET_AMD64_
 // Returns true if this absolute address fits within the base of an addr mode.
 // On Amd64 this effectively means, whether an absolute indirect address can
@@ -12616,12 +12665,6 @@ bool GenTreeIntConCommon::FitsInAddrBase(Compiler* comp)
     }    
 }
 
-// Returns true if this icon value is encoded as immediate value needs recording a relocation with VM
-bool GenTreeIntConCommon::ImmedValNeedsReloc(Compiler* comp)
-{
-    return comp->opts.compReloc && IsIconHandle();
-}
-
 // Returns true if this icon value is encoded as addr needs recording a relocation with VM
 bool GenTreeIntConCommon::AddrNeedsReloc(Compiler* comp)
 {
@@ -12655,12 +12698,6 @@ bool GenTreeIntConCommon::FitsInAddrBase(Compiler* comp)
     //TODO-x86 - TLS field handles are excluded for now as they are accessed relative to FS segment.
     //Handling of TLS field handles is a NYI and this needs to be relooked after implementing it.
     return IsCnsIntOrI() && !IsIconHandle(GTF_ICON_TLS_HDL);
-}
-
-// Returns true if this icon value is encoded as immediate value needs recording a relocation with VM
-bool GenTreeIntConCommon::ImmedValNeedsReloc(Compiler* comp)
-{
-    return comp->opts.compReloc && IsIconHandle();
 }
 
 // Returns true if this icon value is encoded as addr needs recording a relocation with VM
