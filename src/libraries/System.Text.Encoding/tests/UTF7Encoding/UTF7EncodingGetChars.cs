@@ -12,15 +12,15 @@ namespace System.Text.Tests
         public static IEnumerable<object[]> GetChars_TestData()
         {
             byte[] bytes = new byte[] { 85, 84, 70, 55, 32, 69, 110, 99, 111, 100, 105, 110, 103, 32, 69, 120, 97, 109, 112, 108, 101 };
-            yield return new object[] { bytes, 2, 8, "F7 Encod".ToCharArray() };
-            yield return new object[] { bytes, 0, bytes.Length, "UTF7 Encoding Example".ToCharArray() };
+            yield return new object[] { bytes, 2, 8, "F7 Encod" };
+            yield return new object[] { bytes, 0, bytes.Length, "UTF7 Encoding Example" };
 
-            yield return new object[] { new byte[0], 0, 0, new char[0] };
+            yield return new object[] { new byte[0], 0, 0, string.Empty };
         }
 
         [Theory]
         [MemberData(nameof(GetChars_TestData))]
-        public void GetChars(byte[] bytes, int index, int count, char[] expected)
+        public void GetChars(byte[] bytes, int index, int count, string expected)
         {
             EncodingHelpers.Decode(new UTF7Encoding(), bytes, index, count, expected);
         }
