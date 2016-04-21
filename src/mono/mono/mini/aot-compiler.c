@@ -379,17 +379,86 @@ report_loader_error (MonoAotCompile *acfg, MonoError *error, const char *format,
 
 /* Wrappers around the image writer functions */
 
+#define MAX_SYMBOL_SIZE 256
+
+static inline const char *
+mangle_symbol (const char * symbol, char * mangled_symbol, gsize length)
+{
+	gsize needed_size = length;
+
+	g_assert (NULL != symbol);
+	g_assert (NULL != mangled_symbol);
+	g_assert (0 != length);
+
+#if defined(TARGET_WIN32) && defined(TARGET_X86)
+	if (symbol && '_' != symbol [0]) {
+		needed_size = g_snprintf (mangled_symbol, length, "_%s", symbol);
+	} else {
+		needed_size = g_snprintf (mangled_symbol, length, "%s", symbol);
+	}
+#else
+	needed_size = g_snprintf (mangled_symbol, length, "%s", symbol);
+#endif
+
+	g_assert (0 <= needed_size && needed_size < length);
+	return mangled_symbol;
+}
+
+static inline char *
+mangle_symbol_alloc (const char * symbol)
+{
+	g_assert (NULL != symbol);
+
+#if defined(TARGET_WIN32) && defined(TARGET_X86)
+	if (symbol && '_' != symbol [0]) {
+		return g_strdup_printf ("_%s", symbol);
+	}
+	else {
+		return g_strdup_printf ("%s", symbol);
+	}
+#else
+	return g_strdup_printf ("%s", symbol);
+#endif
+}
+
 static inline void
 emit_section_change (MonoAotCompile *acfg, const char *section_name, int subsection_index)
 {
 	mono_img_writer_emit_section_change (acfg->w, section_name, subsection_index);
 }
 
+#if defined(TARGET_WIN32) && defined(TARGET_X86)
+
+static inline void
+emit_local_symbol (MonoAotCompile *acfg, const char *name, const char *end_label, gboolean func)
+{
+	const char * mangled_symbol_name = name;
+	char * mangled_symbol_name_alloc = NULL;
+
+	if (TRUE == func) {
+		mangled_symbol_name_alloc = mangle_symbol_alloc (name);
+		mangled_symbol_name = mangled_symbol_name_alloc;
+	}
+
+	if (name != mangled_symbol_name && 0 != g_strcasecmp (name, mangled_symbol_name)) {
+		mono_img_writer_emit_label (acfg->w, mangled_symbol_name);
+	}
+	mono_img_writer_emit_local_symbol (acfg->w, mangled_symbol_name, end_label, func);
+
+	if (NULL != mangled_symbol_name_alloc) {
+		g_free (mangled_symbol_name_alloc);
+	}
+}
+
+#else
+
 static inline void
 emit_local_symbol (MonoAotCompile *acfg, const char *name, const char *end_label, gboolean func) 
 { 
-	mono_img_writer_emit_local_symbol (acfg->w, name, end_label, func); 
+	mono_img_writer_emit_local_symbol (acfg->w, name, end_label, func);
 }
+
+#endif
 
 static inline void
 emit_label (MonoAotCompile *acfg, const char *name) 
@@ -507,11 +576,36 @@ emit_nacl_call_alignment (MonoAotCompile *acfg)
 }
 #endif
 
+#if defined(TARGET_WIN32) && defined(TARGET_X86)
+
+static G_GNUC_UNUSED void
+emit_global_inner (MonoAotCompile *acfg, const char *name, gboolean func)
+{
+	const char * mangled_symbol_name = name;
+	char * mangled_symbol_name_alloc = NULL;
+
+	mangled_symbol_name_alloc = mangle_symbol_alloc (name);
+	mangled_symbol_name = mangled_symbol_name_alloc;
+	
+	if (0 != g_strcasecmp (name, mangled_symbol_name)) {
+		mono_img_writer_emit_label (acfg->w, mangled_symbol_name);
+	}
+	mono_img_writer_emit_global (acfg->w, mangled_symbol_name, func);
+
+	if (NULL != mangled_symbol_name_alloc) {
+		g_free (mangled_symbol_name_alloc);
+	}
+}
+
+#else
+
 static G_GNUC_UNUSED void
 emit_global_inner (MonoAotCompile *acfg, const char *name, gboolean func)
 {
 	mono_img_writer_emit_global (acfg->w, name, func);
 }
+
+#endif
 
 static void
 emit_global (MonoAotCompile *acfg, const char *name, gboolean func)
@@ -520,7 +614,7 @@ emit_global (MonoAotCompile *acfg, const char *name, gboolean func)
 		g_ptr_array_add (acfg->globals, g_strdup (name));
 		mono_img_writer_emit_local_symbol (acfg->w, name, NULL, func);
 	} else {
-		mono_img_writer_emit_global (acfg->w, name, func);
+		emit_global_inner (acfg, name, func);
 	}
 }
 
@@ -534,7 +628,7 @@ emit_symbol_size (MonoAotCompile *acfg, const char *name, const char *end_label)
 static void
 emit_info_symbol (MonoAotCompile *acfg, const char *name)
 {
-	char symbol [256];
+	char symbol [MAX_SYMBOL_SIZE];
 
 	if (acfg->llvm) {
 		emit_label (acfg, name);
@@ -1362,8 +1456,8 @@ static void
 arch_emit_objc_selector_ref (MonoAotCompile *acfg, guint8 *code, int index, int *code_size)
 {
 #if defined(TARGET_ARM)
-	char symbol1 [256];
-	char symbol2 [256];
+	char symbol1 [MAX_SYMBOL_SIZE];
+	char symbol2 [MAX_SYMBOL_SIZE];
 	int lindex = acfg->objc_selector_index_2 ++;
 
 	/* Emit ldr.imm/b */
@@ -5562,6 +5656,11 @@ get_debug_sym (MonoMethod *method, const char *prefix, GHashTable *cache)
 		prefix = "_";
 #endif
 
+#if defined(TARGET_WIN32) && defined(TARGET_X86)
+	char adjustedPrefix [MAX_SYMBOL_SIZE];
+	prefix = mangle_symbol (prefix, adjustedPrefix, G_N_ELEMENTS (adjustedPrefix));
+#endif
+
 	len = strlen (name1);
 	name2 = (char *)malloc (strlen (prefix) + len + 16);
 	memcpy (name2, prefix, strlen (prefix));
@@ -6375,7 +6474,11 @@ get_plt_entry_debug_sym (MonoAotCompile *acfg, MonoJumpInfo *ji, GHashTable *cac
 		/* Need to add a prefix to create unique symbols */
 		prefix = g_strdup_printf ("plt_%s_", acfg->assembly_name_sym);
 	} else {
+#if defined(TARGET_WIN32) && defined(TARGET_X86)
+		prefix = mangle_symbol_alloc ("plt_");
+#else
 		prefix = g_strdup ("plt_");
+#endif
 	}
 
 	switch (ji->type) {
@@ -6543,9 +6646,9 @@ emit_plt (MonoAotCompile *acfg)
 static G_GNUC_UNUSED void
 emit_trampoline_full (MonoAotCompile *acfg, int got_offset, MonoTrampInfo *info, gboolean emit_tinfo)
 {
-	char start_symbol [256];
-	char end_symbol [256];
-	char symbol [256];
+	char start_symbol [MAX_SYMBOL_SIZE];
+	char end_symbol [MAX_SYMBOL_SIZE];
+	char symbol [MAX_SYMBOL_SIZE];
 	guint32 buf_size, info_offset;
 	MonoJumpInfo *patch_info;
 	guint8 *buf, *p;
@@ -6637,7 +6740,7 @@ emit_trampoline_full (MonoAotCompile *acfg, int got_offset, MonoTrampInfo *info,
 
 	/* Emit debug info */
 	if (unwind_ops) {
-		char symbol2 [256];
+		char symbol2 [MAX_SYMBOL_SIZE];
 
 		sprintf (symbol, "%s", name);
 		sprintf (symbol2, "%snamed_%s", acfg->temp_prefix, name);
@@ -6656,8 +6759,8 @@ emit_trampoline (MonoAotCompile *acfg, int got_offset, MonoTrampInfo *info)
 static void
 emit_trampolines (MonoAotCompile *acfg)
 {
-	char symbol [256];
-	char end_symbol [256];
+	char symbol [MAX_SYMBOL_SIZE];
+	char end_symbol [MAX_SYMBOL_SIZE];
 	int i, tramp_got_offset;
 	int ntype;
 #ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES
@@ -8403,7 +8506,7 @@ emit_code (MonoAotCompile *acfg)
 {
 	int oindex, i, prev_index;
 	gboolean saved_unbox_info = FALSE;
-	char symbol [256];
+	char symbol [MAX_SYMBOL_SIZE];
 
 	if (acfg->aot_opts.llvm_only)
 		return;
@@ -8524,6 +8627,7 @@ emit_code (MonoAotCompile *acfg)
 	 * To work around linker issues, we emit a table of branches, and disassemble them at runtime.
 	 * This is PIE code, and the linker can update it if needed.
 	 */
+	
 	sprintf (symbol, "method_addresses");
 	emit_section_change (acfg, ".text", 1);
 	emit_alignment_code (acfg, 8);
@@ -8540,11 +8644,11 @@ emit_code (MonoAotCompile *acfg)
 		if (acfg->cfgs [i]) {
 			if (acfg->aot_opts.llvm_only && acfg->cfgs [i]->compile_llvm)
 				/* Obtained by calling a generated function in the LLVM image */
-				arch_emit_direct_call (acfg, "method_addresses", FALSE, FALSE, NULL, &call_size);
+				arch_emit_direct_call (acfg, symbol, FALSE, FALSE, NULL, &call_size);
 			else
 				arch_emit_direct_call (acfg, acfg->cfgs [i]->asm_symbol, FALSE, acfg->thumb_mixed && acfg->cfgs [i]->compile_llvm, NULL, &call_size);
 		} else {
-			arch_emit_direct_call (acfg, "method_addresses", FALSE, FALSE, NULL, &call_size);
+			arch_emit_direct_call (acfg, symbol, FALSE, FALSE, NULL, &call_size);
 		}
 #endif
 	}
@@ -9269,7 +9373,7 @@ emit_got_info (MonoAotCompile *acfg, gboolean llvm)
 static void
 emit_got (MonoAotCompile *acfg)
 {
-	char symbol [256];
+	char symbol [MAX_SYMBOL_SIZE];
 
 	if (acfg->aot_opts.llvm_only)
 		return;
@@ -9468,7 +9572,7 @@ init_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 static void
 emit_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 {
-	char symbol [256];
+	char symbol [MAX_SYMBOL_SIZE];
 	int i, sindex;
 	const char **symbols;
 
@@ -9629,7 +9733,7 @@ emit_file_info (MonoAotCompile *acfg)
 	init_aot_file_info (acfg, info);
 
 	if (acfg->aot_opts.static_link) {
-		char symbol [256];
+		char symbol [MAX_SYMBOL_SIZE];
 		char *p;
 
 		/*
@@ -10046,7 +10150,13 @@ compile_asm (MonoAotCompile *acfg)
 	}
 #endif
 
-	rename (tmp_outfile_name, outfile_name);
+	if (0 != rename (tmp_outfile_name, outfile_name)) {
+		if (G_FILE_ERROR_EXIST == g_file_error_from_errno (errno)) {
+			/* Since we are rebuilding the module we need to be able to replace any old copies. Remove old file and retry rename operation. */
+			unlink (outfile_name);
+			rename (tmp_outfile_name, outfile_name);
+		}
+	}
 
 #if defined(TARGET_MACH)
 	command = g_strdup_printf ("dsymutil \"%s\"", outfile_name);
