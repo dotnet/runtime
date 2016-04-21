@@ -807,7 +807,7 @@ namespace System.Net.Http
             private static ulong CurlSendCallback(IntPtr buffer, ulong size, ulong nitems, IntPtr context)
             {
                 int length = checked((int)(size * nitems));
-                Debug.Assert(length <= RequestBufferSize, $"length {length} should not be larger than RequestBufferSize {RequestBufferSize}");
+                Debug.Assert(length <= MaxRequestBufferSize, $"length {length} should not be larger than RequestBufferSize {MaxRequestBufferSize}");
                 if (length == 0)
                 {
                     return 0;
@@ -921,7 +921,13 @@ namespace System.Net.Http
                 else // sts == null
                 {
                     // Allocate a transfer state object to use for the remainder of this request.
-                    easy._sendTransferState = sts = new EasyRequest.SendTransferState();
+                    Debug.Assert(easy._requestMessage.Content != null, "Content shouldn't be null, since we already got a content request stream");
+                    long bufferSize = easy._requestMessage.Content.Headers.ContentLength.GetValueOrDefault();
+                    if (bufferSize <= 0 || bufferSize > MaxRequestBufferSize)
+                    {
+                        bufferSize = MaxRequestBufferSize;
+                    }
+                    easy._sendTransferState = sts = new EasyRequest.SendTransferState((int)bufferSize);
                 }
 
                 Debug.Assert(sts != null, "By this point we should have a transfer object");
