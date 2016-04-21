@@ -864,8 +864,8 @@ combinedScenarios.each { scenario ->
 					// Skip totally unimplemented (in CI) configurations.
                     switch (architecture) {
                         case 'arm64':
-                            // Windows or cross compiled Ubuntu
-                            if (os != 'Windows_NT' && os != 'Ubuntu') {
+                            // Windows only
+                            if (os != 'Windows_NT') {
                                 return
                             }
                             break
