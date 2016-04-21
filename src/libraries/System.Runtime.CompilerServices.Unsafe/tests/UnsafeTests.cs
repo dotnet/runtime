@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Xunit;
 
-namespace System.Numerics.Tests
+namespace System.Runtime.CompilerServices
 {
     public class UnsafeTests
     {
@@ -14,7 +14,7 @@ namespace System.Numerics.Tests
         public static unsafe void ReadInt32()
         {
             int expected = 10;
-            void* address = &expected;
+            void* address = Unsafe.AsPointer(ref expected);
             int ret = Unsafe.Read<int>(address);
             Assert.Equal(expected, ret);
         }
@@ -23,7 +23,7 @@ namespace System.Numerics.Tests
         public static unsafe void WriteInt32()
         {
             int value = 10;
-            int* address = &value;
+            int* address = (int*)Unsafe.AsPointer(ref value);
             int expected = 20;
             Unsafe.Write(address, expected);
 
@@ -36,11 +36,11 @@ namespace System.Numerics.Tests
         public static unsafe void WriteBytesIntoInt32()
         {
             int value = 20;
-            int* intAddress = &value;
+            int* intAddress = (int*)Unsafe.AsPointer(ref value);
             byte* byteAddress = (byte*)intAddress;
             for (int i = 0; i < 4; i++)
             {
-                Unsafe.Write(byteAddress + i, i);
+                Unsafe.Write(byteAddress + i, (byte)i);
             }
 
             Assert.Equal(0, Unsafe.Read<byte>(byteAddress));
@@ -62,7 +62,7 @@ namespace System.Numerics.Tests
         public static unsafe void LongIntoCompoundStruct()
         {
             long value = 1234567891011121314L;
-            long* longAddress = &value;
+            long* longAddress = (long*)Unsafe.AsPointer(ref value);
             Byte4Short2 b4s2 = Unsafe.Read<Byte4Short2>(longAddress);
             Assert.Equal(162, b4s2.B0);
             Assert.Equal(48, b4s2.B1);
@@ -89,12 +89,13 @@ namespace System.Numerics.Tests
         {
             int value1 = 10;
             int value2 = 20;
-            int* valueAddress = &value1;
+            int* valueAddress = (int*)Unsafe.AsPointer(ref value1);
             int** valueAddressPtr = &valueAddress;
             Unsafe.Write(valueAddressPtr, new IntPtr(&value2));
 
             Assert.Equal(20, *(*valueAddressPtr));
             Assert.Equal(20, Unsafe.Read<int>(valueAddress));
+            Assert.Equal(new IntPtr(valueAddress), Unsafe.Read<IntPtr>(valueAddressPtr));
             Assert.Equal(20, Unsafe.Read<int>(Unsafe.Read<IntPtr>(valueAddressPtr).ToPointer()));
         }
 
@@ -121,6 +122,88 @@ namespace System.Numerics.Tests
             yield return new object[] { 4, new Byte4() };
             yield return new object[] { 8, new Byte4Short2() };
             yield return new object[] { 512, new Byte512() };
+        }
+
+        [Theory]
+        [MemberData(nameof(InitBlockData))]
+        public static unsafe void InitBlockStack(int numBytes, byte value)
+        {
+            byte* stackPtr = stackalloc byte[numBytes];
+            Unsafe.InitBlock(stackPtr, value, (uint)numBytes);
+            for (int i = 0; i < numBytes; i++)
+            {
+                Assert.Equal(stackPtr[i], value);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(InitBlockData))]
+        public static unsafe void InitBlockUnmanaged(int numBytes, byte value)
+        {
+            IntPtr allocatedMemory = PInvokeMarshal.AllocateMemory(numBytes);
+            byte* bytePtr = (byte*)allocatedMemory.ToPointer();
+            Unsafe.InitBlock(bytePtr, value, (uint)numBytes);
+            for (int i = 0; i < numBytes; i++)
+            {
+                Assert.Equal(bytePtr[i], value);
+            }
+        }
+
+        public static IEnumerable<object[]> InitBlockData()
+        {
+            yield return new object[] { 0, 1 };
+            yield return new object[] { 1, 1 };
+            yield return new object[] { 10, 0 };
+            yield return new object[] { 10, 2 };
+            yield return new object[] { 10, 255 };
+            yield return new object[] { 10000, 255 };
+        }
+
+        [Theory]
+        [MemberData(nameof(CopyBlockData))]
+        public static unsafe void CopyBlock(int numBytes)
+        {
+            byte* source = stackalloc byte[numBytes];
+            byte* destination = stackalloc byte[numBytes];
+
+            for (int i = 0; i < numBytes; i++)
+            {
+                byte value = (byte)(i % 255);
+                source[i] = value;
+            }
+
+            Unsafe.CopyBlock(destination, source, (uint)numBytes);
+
+            for (int i = 0; i < numBytes; i++)
+            {
+                byte value = (byte)(i % 255);
+                Assert.Equal(value, destination[i]);
+                Assert.Equal(source[i], destination[i]);
+            }
+        }
+
+        public static IEnumerable<object[]> CopyBlockData()
+        {
+            yield return new object[] { 0 };
+            yield return new object[] { 1 };
+            yield return new object[] { 10 };
+            yield return new object[] { 100 };
+            yield return new object[] { 100000 };
+        }
+
+        [Fact]
+        public static void As()
+        {
+            object o = "Hello";
+            Assert.Equal("Hello", Unsafe.As<string>(o));
+        }
+
+        [Fact]
+        public static void DangerousAs()
+        {
+            // Verify that As does not perform type checks
+            object o = new Object();
+            Assert.IsType(typeof(Object), Unsafe.As<string>(o));
         }
     }
 
