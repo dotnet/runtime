@@ -3140,6 +3140,7 @@ int mono_marshal_safe_array_get_ubound (gpointer psa, guint nDim, glong* plUboun
 	return result;
 }
 
+/* This is an icall */
 static gboolean
 mono_marshal_safearray_begin (gpointer safearray, MonoArray **result, gpointer *indices, gpointer empty, gpointer parameter, gboolean allocateNewArray)
 {
@@ -3183,14 +3184,16 @@ mono_marshal_safearray_begin (gpointer safearray, MonoArray **result, gpointer *
 				hr = mono_marshal_safe_array_get_lbound (safearray, i+1, &lbound);
 				if (hr < 0) {
 					cominterop_set_hr_error (&error, hr);
-					mono_error_raise_exception (&error); /* FIXME don't raise here */
+					if (mono_error_set_pending_exception (&error))
+						return FALSE;
 				}
 				if (lbound != 0)
 					bounded = TRUE;
 				hr = mono_marshal_safe_array_get_ubound (safearray, i+1, &ubound);
 				if (hr < 0) {
 					cominterop_set_hr_error (&error, hr);
-					mono_error_raise_exception (&error); /* FIXME don't raise here */
+					if (mono_error_set_pending_exception (&error))
+						return FALSE;
 				}
 				cursize = ubound-lbound+1;
 				sizes [i] = cursize;
@@ -3205,7 +3208,8 @@ mono_marshal_safearray_begin (gpointer safearray, MonoArray **result, gpointer *
 			if (allocateNewArray) {
 				aklass = mono_bounded_array_class_get (mono_defaults.object_class, dim, bounded);
 				*result = mono_array_new_full_checked (mono_domain_get (), aklass, sizes, bounds, &error);
-				mono_error_raise_exception (&error); /* FIXME don't raise here */
+				if (mono_error_set_pending_exception (&error))
+					return FALSE;
 			} else {
 				*result = (MonoArray *)parameter;
 			}
@@ -3214,6 +3218,7 @@ mono_marshal_safearray_begin (gpointer safearray, MonoArray **result, gpointer *
 	return TRUE;
 }
 
+/* This is an icall */
 static 
 gpointer mono_marshal_safearray_get_value (gpointer safearray, gpointer indices)
 {
@@ -3223,14 +3228,16 @@ gpointer mono_marshal_safearray_get_value (gpointer safearray, gpointer indices)
 	int hr = SafeArrayPtrOfIndex (safearray, indices, &result);
 	if (hr < 0) {
 			cominterop_set_hr_error (&error, hr);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			mono_error_set_pending_exception (&error);
+			return NULL;
 	}
 #else
 	if (com_provider == MONO_COM_MS && init_com_provider_ms ()) {
 		int hr = safe_array_ptr_of_index_ms (safearray, (glong *)indices, &result);
 		if (hr < 0) {
 			cominterop_set_hr_error (&error, hr);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			mono_error_set_pending_exception (&error);
+			return NULL;
 		}
 	} else {
 		g_assert_not_reached ();
@@ -3239,6 +3246,7 @@ gpointer mono_marshal_safearray_get_value (gpointer safearray, gpointer indices)
 	return result;
 }
 
+/* This is an icall */
 static 
 gboolean mono_marshal_safearray_next (gpointer safearray, gpointer indices)
 {
@@ -3256,7 +3264,8 @@ gboolean mono_marshal_safearray_next (gpointer safearray, gpointer indices)
 		hr = mono_marshal_safe_array_get_ubound (safearray, i+1, &ubound);
 		if (hr < 0) {
 			cominterop_set_hr_error (&error, hr);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			mono_error_set_pending_exception (&error);
+			return FALSE;
 		}
 
 		if (++pIndices[i] <= ubound) {
@@ -3266,7 +3275,8 @@ gboolean mono_marshal_safearray_next (gpointer safearray, gpointer indices)
 		hr = mono_marshal_safe_array_get_lbound (safearray, i+1, &lbound);
 		if (hr < 0) {
 			cominterop_set_hr_error (&error, hr);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			mono_error_set_pending_exception (&error);
+			return FALSE;
 		}
 
 		pIndices[i] = lbound;
@@ -3338,6 +3348,7 @@ mono_marshal_safearray_create (MonoArray *input, gpointer *newsafearray, gpointe
 	return TRUE;
 }
 
+/* This is an icall */
 static 
 void mono_marshal_safearray_set_value (gpointer safearray, gpointer indices, gpointer value)
 {
@@ -3346,14 +3357,16 @@ void mono_marshal_safearray_set_value (gpointer safearray, gpointer indices, gpo
 	int hr = SafeArrayPutElement (safearray, indices, value);
 	if (hr < 0) {
 		cominterop_set_hr_error (&error, hr);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		mono_error_set_pending_exception (&error);
+		return;
 	}
 #else
 	if (com_provider == MONO_COM_MS && init_com_provider_ms ()) {
 		int hr = safe_array_put_element_ms (safearray, (glong *)indices, (void **)value);
 		if (hr < 0) {
 			cominterop_set_hr_error (&error, hr);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			mono_error_set_pending_exception (&error);
+			return;
 		}
 	} else
 		g_assert_not_reached ();
