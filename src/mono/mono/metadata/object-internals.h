@@ -1403,7 +1403,7 @@ gboolean
 mono_image_build_metadata (MonoReflectionModuleBuilder *module, MonoError *error);
 
 int
-mono_get_constant_value_from_blob (MonoDomain* domain, MonoTypeEnum type, const char *blob, void *value);
+mono_get_constant_value_from_blob (MonoDomain* domain, MonoTypeEnum type, const char *blob, void *value, MonoError *error);
 
 void
 mono_release_type_locks (MonoInternalThread *thread);

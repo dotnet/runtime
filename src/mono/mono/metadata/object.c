@@ -3523,11 +3523,11 @@ mono_field_get_value_object_checked (MonoDomain *domain, MonoClassField *field, 
 }
 
 int
-mono_get_constant_value_from_blob (MonoDomain* domain, MonoTypeEnum type, const char *blob, void *value)
+mono_get_constant_value_from_blob (MonoDomain* domain, MonoTypeEnum type, const char *blob, void *value, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoError error;
+	mono_error_init (error);
 	int retval = 0;
 	const char *p = blob;
 	mono_metadata_decode_blob_size (p, &p);
@@ -3558,8 +3558,7 @@ mono_get_constant_value_from_blob (MonoDomain* domain, MonoTypeEnum type, const 
 		readr8 (p, (double*) value);
 		break;
 	case MONO_TYPE_STRING:
-		*(gpointer*) value = mono_ldstr_metadata_sig (domain, blob, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		*(gpointer*) value = mono_ldstr_metadata_sig (domain, blob, error);
 		break;
 	case MONO_TYPE_CLASS:
 		*(gpointer*) value = NULL;
@@ -3576,11 +3575,13 @@ get_default_field_value (MonoDomain* domain, MonoClassField *field, void *value)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 
+	MonoError error;
 	MonoTypeEnum def_type;
 	const char* data;
 	
 	data = mono_class_get_field_default_value (field, &def_type);
-	mono_get_constant_value_from_blob (domain, def_type, data, value);
+	mono_get_constant_value_from_blob (domain, def_type, data, value, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 }
 
 void

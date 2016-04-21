@@ -8050,7 +8050,7 @@ mono_get_object_from_blob (MonoDomain *domain, MonoType *type, const char *blob,
 		retval = &object;
 	}
 			
-	if (!mono_get_constant_value_from_blob (domain, basetype->type,  blob, retval))
+	if (!mono_get_constant_value_from_blob (domain, basetype->type,  blob, retval, error))
 		return object;
 	else
 		return NULL;
