@@ -67,7 +67,7 @@ class Constants {
                'gcstress0xc_minopts_heapverify1' : ['COMPlus_GCStress'  : '0xC', 'COMPlus_JITMinOpts'  : '1', 'COMPlus_HeapVerify'  : '1']
                ]
     // This is the basic set of scenarios
-    def static basicScenarios = ['default', 'pri1', 'ilrt', 'r2r', 'pri1r2r', 'gcstress15_pri1r2r', 'longgc']
+    def static basicScenarios = ['default', 'pri1', 'ilrt', 'r2r', 'pri1r2r', 'gcstress15_pri1r2r', 'longgc', 'coverage']
     // This is the set of configurations
     def static configurationList = ['Debug', 'Checked', 'Release']
     // This is the set of architectures
@@ -111,6 +111,10 @@ def static isR2R(def scenario) {
     return (scenario == 'r2r' || scenario == 'pri1r2r')
 }
 
+def static isCoverage(def scenario) {
+    return (scenario == 'coverage')
+}
+
 def static setTestJobTimeOut(newJob, scenario) {
     if (isGCStressRelatedTesting(scenario)) {
         Utilities.setJobTimeout(newJob, 1440)
@@ -123,6 +127,9 @@ def static setTestJobTimeOut(newJob, scenario) {
     }
     else if (isR2R(scenario)) {
         Utilities.setJobTimeout(newJob, 240)
+    }
+    else if (isCoverage(scenario)) {
+        Utilities.setJobTimeout(newJob, 1440)  
     }
     // Non-test jobs use the default timeout value.
 }
@@ -363,6 +370,12 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     }
                 }
                 break
+            case 'coverage':
+                assert (os == 'Ubuntu' || os == 'Windows_NT')
+                assert configuration == 'Release'
+                assert architecture == 'x64'
+                Utilities.addPeriodicTrigger(job, '@weekly')
+                break
             case 'jitstressregs1':
             case 'jitstressregs2':
             case 'jitstressregs3':
@@ -424,6 +437,13 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
     def osGroup = getOSGroup(os)
     switch (architecture) {
         case 'x64':
+            if (scenario == 'coverage') {
+                assert configuration == 'Release'
+                if (os == 'Ubuntu') {
+                    Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Coverage Build & Test", "(?i).*test\\W+coverage.*")
+                }
+                break
+            }
             switch (os) {
                 // OpenSUSE, Debian & RedHat get trigger phrases for pri 0 build, and pri 1 build & test
                 case 'OpenSUSE13.2':
@@ -775,25 +795,25 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                            Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build", "(?i).*test\\W+${os}\\W+${architecture}.*")
                            break
                     }
-					break
+                    break
                 case 'Windows_NT':
-				    switch(architecture) {
-					    case "arm":
-						    // Not yet supported.
-						    break
+                    switch(architecture) {
+                        case "arm":
+                            // Not yet supported.
+                            break
                         case "arm64":
                             // Set up a private trigger
-					        def contextString = "${os} ${architecture} Cross ${configuration} Build"
-							// Debug builds only.
-					        if (configuration != 'Debug') {
-					            contextString += " and Test"
-					        }
+                            def contextString = "${os} ${architecture} Cross ${configuration} Build"
+                            // Debug builds only.
+                            if (configuration != 'Debug') {
+                                contextString += " and Test"
+                            }
                             Utilities.addPrivateGithubPRTriggerForBranch(job, branch, contextString,
                             "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}.*", null, ['erozenfeld', 'kyulee1', 'pgavlin', 'russellhadley', 'swaroop-sridhar', 'JosephTremoulet', 'jashook', 'RussKeldorph', 'gkhanna79', 'briansull', 'cmckinsey', 'jkotas', 'ramarag', 'markwilkie', 'rahku', 'tzwlai', 'weshaggard', 'LLITCHEV'])
                             addEmailPublisher(job, 'dotnetonarm64@microsoft.com')
                             break
-					}
-				    break
+                    }
+                    break
             }
             break
         case 'x86':
@@ -861,7 +881,7 @@ combinedScenarios.each { scenario ->
                         os = 'Windows_NT'
                     }
                     
-					// Skip totally unimplemented (in CI) configurations.
+                    // Skip totally unimplemented (in CI) configurations.
                     switch (architecture) {
                         case 'arm64':
                             // Windows only
@@ -912,7 +932,6 @@ combinedScenarios.each { scenario ->
                         }
                     }
                     else {
-                        def basicCrossList = ['Ubuntu', 'OSX', 'CentOS7.1']
                         // Skip scenarios
                         switch (scenario) {
                             case 'pri1':
@@ -980,6 +999,18 @@ combinedScenarios.each { scenario ->
                                     return
                                 }
                                 break
+                            // We need Windows & Ubuntu x64 Release bits for the code coverage build
+                            case 'coverage':
+                                if (os != 'Windows_NT' && os != 'Ubuntu') {
+                                    return
+                                }
+                                if (architecture != 'x64') {
+                                    return
+                                }
+                                if (configuration != 'Release') {
+                                    return
+                                }
+                                break
                             case 'default':
                                 // Nothing skipped
                                 break
@@ -1044,9 +1075,14 @@ combinedScenarios.each { scenario ->
                                         //Build pri1 R2R tests with GC stress level 15
                                         buildCommands += "build.cmd ${lowerConfiguration} ${architecture} skiptests"
                                         buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${architecture} crossgen Priority 1 gcstresslevel 15"
-                                    } else if (scenario == 'longgc') {
+                                    }
+                                    else if (scenario == 'longgc') {
                                         buildCommands += "build.cmd ${lowerConfiguration} ${architecture} skiptests"
                                         buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${architecture} longgctests"
+                                    }
+                                    else if (scenario == 'coverage') {
+                                        buildCommands += "build.cmd ${lowerConfiguration} ${architecture} skiptests"
+                                        buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${architecture} crossgen Priority 1"
                                     }
                                     else {
                                         println("Unknown scenario: ${scenario}")
@@ -1180,6 +1216,22 @@ combinedScenarios.each { scenario ->
                                         {
                                             buildCommands += "./build.sh skipmscorlib verbose ${lowerConfiguration} ${architecture}"
                                         }
+                                        else if (scenario == 'coverage')
+                                        {
+                                            assert os == 'Ubuntu'
+                                            assert lowerConfiguration == 'release'
+                                            buildCommands += "./build.sh coverage verbose ${lowerConfiguration} ${architecture}"
+
+                                            // Remove folders from obj that we don't expect to be covered. May update this later.
+                                            buildCommands += "rm -rf ./bin/obj/Linux.x64.Release/src/ToolBox"
+                                            buildCommands += "rm -rf ./bin/obj/Linux.x64.Release/src/debug"
+                                            buildCommands += "rm -rf ./bin/obj/Linux.x64.Release/src/ilasm"
+                                            buildCommands += "rm -rf ./bin/obj/Linux.x64.Release/src/ildasm"
+                                            buildCommands += "rm -rf ./bin/obj/Linux.x64.Release/src/dlls/dbgshim"
+                                            buildCommands += "rm -rf ./bin/obj/Linux.x64.Release/src/dlls/mscordac"
+                                            buildCommands += "rm -rf ./bin/obj/Linux.x64.Release/src/dlls/mscordbi"
+                                            buildCommands += "rm -rf ./bin/obj/Linux.x64.Release/src/pal/tests"
+                                        }
                                         else
                                         {
                                             buildCommands += "./build.sh verbose ${lowerConfiguration} ${architecture}"
@@ -1189,7 +1241,13 @@ combinedScenarios.each { scenario ->
                                         // Set time out
                                         setTestJobTimeOut(newJob, scenario)
                                         // Basic archiving of the build
-                                        Utilities.addArchival(newJob, "bin/Product/**,bin/obj/*/tests/**/*.dylib,bin/obj/*/tests/**/*.so")
+                                        if (scenario == 'coverage')
+                                        {
+                                            Utilities.addArchival(newJob, "bin/Product/**,bin/obj/Linux.x64.Release/src/**")
+                                        }
+                                        else {
+                                            Utilities.addArchival(newJob, "bin/Product/**,bin/obj/*/tests/**/*.dylib,bin/obj/*/tests/**/*.so")
+                                        }
                                         // And pal tests
                                         Utilities.addXUnitDotNETResults(newJob, '**/pal_tests.xml')
                                     }
@@ -1342,6 +1400,14 @@ combinedScenarios.each { scenario ->
                                     return
                                 }
                                 break
+                            case 'coverage':
+                                //We only want Ubuntu Release for coverage
+                                if (os != 'Ubuntu') {
+                                    return
+                                }
+                                if (configuration != 'Release') {
+                                    return
+                                }
                             case 'default':
                                 // Nothing skipped
                                 break
@@ -1355,8 +1421,13 @@ combinedScenarios.each { scenario ->
                     def lowerConfiguration = configuration.toLowerCase()
                     def osGroup = getOSGroup(os)
                     def jobName = getJobName(configuration, architecture, os, scenario, false) + "_tst"
+                    // Unless this is a coverage test run, we want to copy over the default build of coreclr.
+                    def inputScenario = 'default'
+                    if (scenario == 'coverage') {
+                        inputScenario = 'coverage'
+                    }
                     def inputCoreCLRBuildName = projectFolder + '/' + 
-                        Utilities.getFullJobName(project, getJobName(configuration, architecture, os, 'default', false), isPR)
+                        Utilities.getFullJobName(project, getJobName(configuration, architecture, os, inputScenario, false), isPR)
                     // If this is a stress scenario, there isn't any difference in the build job
                     // so we didn't create a build only job for windows_nt specific to that stress mode.  Just copy
                     // from the default scenario
@@ -1432,72 +1503,121 @@ combinedScenarios.each { scenario ->
                                     buildNumber('${CORECLR_WINDOWS_BUILD}')
                                 }
                             }
-                        
-                            def corefxFolder = Utilities.getFolderName('dotnet/corefx') + '/' + Utilities.getFolderName(branch)
-                        
-                            // Corefx components.  Depending on the OS, we might get this in different ways.  As corefx
-                            // transitions to a full stack build on native OS's we will get this data from other places.
-                            if (os == 'Ubuntu' || os == 'OSX') {
-                                // Ubuntu/OSX tars up the data
-                                def osJobName = (os == 'Ubuntu') ? 'ubuntu14.04' : 'osx'
-                                copyArtifacts("${corefxFolder}/${osJobName}_release") {
-                                    includePatterns('bin/build.tar.gz')
-                                    buildSelector {
-                                        latestSuccessful(true)
-                                    }
-                                }
-                        
-                                // Unpack the corefx binaries
-                                shell("tar -xf ./bin/build.tar.gz")
+
+                            if (scenario == 'coverage') {
+                                // Move coreclr to clr directory
+                                shell("rm -rf .clr; mkdir .clr; mv * .clr; mv .git .clr; mv .clr clr")
+                                // Get corefx
+                                shell("git clone https://github.com/dotnet/corefx fx")
+                                shell("cd fx")
+                                // Build Linux corefx
+                                shell("./build.sh x64 release Linux skiptests")
+                                // Check contents of bin directory - this can be removed after we confirm everything is as expected
+                                shell("ls bin")
+                                shell("cd ${WORKSPACE}")
+
+                                // Run corefx tests
+                                shell("""./fx/run-test.sh \\
+                --coreclr-bins ${WORKSPACE}/clr/bin/Product/${osGroup}.${architecture}.${configuration} \\
+                --mscorlib-bins ${WORKSPACE}/clr/bin/Product/${osGroup}.${architecture}.${configuration} \\
+                --corefx-tests ${WORKSPACE}/fx/bin/tests/{osGroup}.AnyCPU.{configuration} \\
+                --corefx-native-bins ${WORKSPACE}/fx/bin/${osGroup}.${architecture}.${configuration}""")
+
+                                // Run coreclr GC tests w/ server GC enabled
+                                shell("""./clr/tests/runtest.sh \\
+                --testRootDir=\"\${WORKSPACE}/clr/bin/tests/Windows_NT.${architecture}.${configuration}/GC\" \\
+                --testNativeBinDir=\"\${WORKSPACE}/clr/bin/obj/${osGroup}.${architecture}.${configuration}/tests\" \\
+                --coreOverlayDir=\"\${WORKSPACE}/clr/bin/tests/Windows_NT.${architecture}.${configuration}/Tests/coreoverlay\" \\
+                --crossgen --useServerGC""")
+
+                                // Run coreclr tests w/ workstation GC & produce coverage reports
+                                shell("""./clr/tests/runtest.sh \\
+                --testRootDir=\"\${WORKSPACE}/clr/bin/tests/Windows_NT.${architecture}.${configuration}\" \\
+                --testNativeBinDir=\"\${WORKSPACE}/clr/bin/obj/${osGroup}.${architecture}.${configuration}/tests\" \\
+                --coreClrBinDir=\"\${WORKSPACE}/clr/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
+                --mscorlibDir=\"\${WORKSPACE}/clr/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
+                --coreFxBinDir=\"\${WORKSPACE}/fx/bin/${osGroup}.AnyCPU.Release\" \\
+                --coreFxNativeBinDir=\"\${WORKSPACE}/fx/bin/${osGroup}.${architecture}.Release\" \\
+                --crossgen --coreclr-coverage \\
+                --coreclr-objs=\"\${WORKSPACE}/clr/bin/obj/${osGroup}.${architecture}.${configuration}\" \\
+                --coreclr-src=\"\${WORKSPACE}/clr/src\" \\
+                --coverage-output-dir=\"\${WORKSPACE}/coverage\" """)
+
                             }
                             else {
-                                copyArtifacts("${corefxFolder}/nativecomp_${os.toLowerCase()}_release") {
-                                    includePatterns('bin/**')
-                                    buildSelector {
-                                        latestSuccessful(true)
+
+                                def corefxFolder = Utilities.getFolderName('dotnet/corefx') + '/' + Utilities.getFolderName(branch)
+                        
+                                // Corefx components.  Depending on the OS, we might get this in different ways.  As corefx
+                                // transitions to a full stack build on native OS's we will get this data from other places.
+                                if (os == 'Ubuntu' || os == 'OSX') {
+                                    // Ubuntu/OSX tars up the data
+                                    def osJobName = (os == 'Ubuntu') ? 'ubuntu14.04' : 'osx'
+                                    copyArtifacts("${corefxFolder}/${osJobName}_release") {
+                                        includePatterns('bin/build.tar.gz')
+                                        buildSelector {
+                                            latestSuccessful(true)
+                                        }
+                                    }
+                            
+                                    // Unpack the corefx binaries
+                                    shell("tar -xf ./bin/build.tar.gz")
+                                }
+                                else {
+                                    copyArtifacts("${corefxFolder}/nativecomp_${os.toLowerCase()}_release") {
+                                        includePatterns('bin/**')
+                                        buildSelector {
+                                            latestSuccessful(true)
+                                        }
+                                    }
+                                
+                                    // CoreFX Linux binaries
+                                    copyArtifacts("${corefxFolder}/${os.toLowerCase()}_release_bld") {
+                                        includePatterns('bin/build.pack')
+                                        buildSelector {
+                                            latestSuccessful(true)
+                                        }
+                                    }
+                            
+                                    // Unpack the corefx binaries
+                                    shell("unpacker ./bin/build.pack ./bin")
+                                }
+                                
+                                // Unzip the tests first.  Exit with 0
+                                shell("unzip -q -o ./bin/tests/tests.zip -d ./bin/tests/Windows_NT.${architecture}.${configuration} || exit 0")
+                            
+                                // Execute the tests
+                                // If we are running a stress mode, we'll set those variables first
+                                def testEnvOpt = ""
+                                if (Constants.jitStressModeScenarios.containsKey(scenario)) {
+                                    def scriptFileName = "\$WORKSPACE/set_stress_test_env.sh"
+                                    def createScriptCmds = genStressModeScriptStep(os, scenario, Constants.jitStressModeScenarios[scenario], scriptFileName)
+                                    if (createScriptCmds != "") {
+                                        shell("${createScriptCmds}")
+                                        testEnvOpt = "--test-env=" + scriptFileName
                                     }
                                 }
-                            
-                                // CoreFX Linux binaries
-                                copyArtifacts("${corefxFolder}/${os.toLowerCase()}_release_bld") {
-                                    includePatterns('bin/build.pack')
-                                    buildSelector {
-                                        latestSuccessful(true)
-                                    }
+                                
+                                if (isGCStressRelatedTesting(scenario)) {
+                                    shell('./init-tools.sh')
                                 }
-                        
-                                // Unpack the corefx binaries
-                                shell("unpacker ./bin/build.pack ./bin")
+                                
+                                shell("""./tests/runtest.sh \\
+                --testRootDir=\"\${WORKSPACE}/bin/tests/Windows_NT.${architecture}.${configuration}\" \\
+                --testNativeBinDir=\"\${WORKSPACE}/bin/obj/${osGroup}.${architecture}.${configuration}/tests\" \\
+                --coreClrBinDir=\"\${WORKSPACE}/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
+                --mscorlibDir=\"\${WORKSPACE}/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
+                --coreFxBinDir=\"\${WORKSPACE}/bin/${osGroup}.AnyCPU.Release\" \\
+                --coreFxNativeBinDir=\"\${WORKSPACE}/bin/${osGroup}.${architecture}.Release\" \\
+                ${testEnvOpt} ${serverGCString} ${crossgenStr} ${sequentialString} ${runFailingString}""")
                             }
-                            
-                            // Unzip the tests first.  Exit with 0
-                            shell("unzip -q -o ./bin/tests/tests.zip -d ./bin/tests/Windows_NT.${architecture}.${configuration} || exit 0")
-                        
-                            // Execute the tests
-                            // If we are running a stress mode, we'll set those variables first
-                            def testEnvOpt = ""
-                            if (Constants.jitStressModeScenarios.containsKey(scenario)) {
-                                def scriptFileName = "\$WORKSPACE/set_stress_test_env.sh"
-                                def createScriptCmds = genStressModeScriptStep(os, scenario, Constants.jitStressModeScenarios[scenario], scriptFileName)
-                                if (createScriptCmds != "") {
-                                    shell("${createScriptCmds}")
-                                    testEnvOpt = "--test-env=" + scriptFileName
-                                }
-                            }
-                            
-                            if (isGCStressRelatedTesting(scenario)) {
-                                shell('./init-tools.sh')
-                            }
-                            
-                            shell("""./tests/runtest.sh \\
-            --testRootDir=\"\${WORKSPACE}/bin/tests/Windows_NT.${architecture}.${configuration}\" \\
-            --testNativeBinDir=\"\${WORKSPACE}/bin/obj/${osGroup}.${architecture}.${configuration}/tests\" \\
-            --coreClrBinDir=\"\${WORKSPACE}/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
-            --mscorlibDir=\"\${WORKSPACE}/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
-            --coreFxBinDir=\"\${WORKSPACE}/bin/${osGroup}.AnyCPU.Release\" \\
-            --coreFxNativeBinDir=\"\${WORKSPACE}/bin/${osGroup}.${architecture}.Release\" \\
-            ${testEnvOpt} ${serverGCString} ${crossgenStr} ${sequentialString} ${runFailingString}""")
                         }
+                    }
+
+                    if (scenario == 'coverage') {
+                        // Publish coverage reports
+                        Utilities.addHtmlPublisher(newJob, '${WORKSPACE}/coverage', 'Code Coverage Report', 'coreclr.html')
+                        addEmailPublisher(newJob, 'clrcoverage@microsoft.com')
                     }
 
                     setMachineAffinity(newJob, os, architecture)
