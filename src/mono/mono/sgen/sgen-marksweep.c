@@ -375,11 +375,14 @@ ms_get_empty_block (void)
  * list, where it will either be freed later on, or reused in nursery collections.
  */
 static void
-ms_free_block (void *block)
+ms_free_block (MSBlockInfo *info)
 {
 	void *empty;
+	char *block = MS_BLOCK_FOR_BLOCK_INFO (info);
 
 	sgen_memgov_release_space (MS_BLOCK_SIZE, SPACE_MAJOR);
+	if (info->cardtable_mod_union)
+		sgen_card_table_free_mod_union (info->cardtable_mod_union, block, MS_BLOCK_SIZE);
 	memset (block, 0, MS_BLOCK_SIZE);
 
 	do {
@@ -1507,10 +1510,8 @@ ensure_block_is_checked_for_sweeping (guint32 block_index, gboolean wait, gboole
 
 	count = MS_BLOCK_FREE / block->obj_size;
 
-	if (block->cardtable_mod_union) {
-		sgen_card_table_free_mod_union (block->cardtable_mod_union, MS_BLOCK_FOR_BLOCK_INFO (block), MS_BLOCK_SIZE);
-		block->cardtable_mod_union = NULL;
-	}
+	if (block->cardtable_mod_union)
+		memset (block->cardtable_mod_union, 0, CARDS_PER_BLOCK);
 
 	/* Count marked objects in the block */
 	for (i = 0; i < MS_NUM_MARK_WORDS; ++i)
@@ -2484,10 +2485,21 @@ update_cardtable_mod_union (void)
 	MSBlockInfo *block;
 
 	FOREACH_BLOCK_NO_LOCK (block) {
-		size_t num_cards;
-		guint8 *mod_union = get_cardtable_mod_union_for_block (block, TRUE);
-		sgen_card_table_update_mod_union (mod_union, MS_BLOCK_FOR_BLOCK_INFO (block), MS_BLOCK_SIZE, &num_cards);
-		SGEN_ASSERT (6, num_cards == CARDS_PER_BLOCK, "Number of cards calculation is wrong");
+		gpointer *card_start = (gpointer*) sgen_card_table_get_card_address ((mword)MS_BLOCK_FOR_BLOCK_INFO (block));
+		gboolean has_dirty_cards = FALSE;
+		int i;
+		for (i = 0; i < CARDS_PER_BLOCK / sizeof(gpointer); i++) {
+			if (card_start [i]) {
+				has_dirty_cards = TRUE;
+				break;
+			}
+		}
+		if (has_dirty_cards) {
+			size_t num_cards;
+			guint8 *mod_union = get_cardtable_mod_union_for_block (block, TRUE);
+			sgen_card_table_update_mod_union (mod_union, MS_BLOCK_FOR_BLOCK_INFO (block), MS_BLOCK_SIZE, &num_cards);
+			SGEN_ASSERT (6, num_cards == CARDS_PER_BLOCK, "Number of cards calculation is wrong");
+		}
 	} END_FOREACH_BLOCK_NO_LOCK;
 }
 
