@@ -1799,9 +1799,11 @@ struct GenTreeIntConCommon: public GenTree
 #endif
         }
 
+        bool ImmedValNeedsReloc(Compiler* comp);
+        bool GenTreeIntConCommon::ImmedValCanBeFolded(Compiler* comp, genTreeOps op);
+
 #ifdef _TARGET_XARCH_
         bool FitsInAddrBase(Compiler* comp);
-        bool ImmedValNeedsReloc(Compiler* comp);
         bool AddrNeedsReloc(Compiler* comp);
 #endif
 
