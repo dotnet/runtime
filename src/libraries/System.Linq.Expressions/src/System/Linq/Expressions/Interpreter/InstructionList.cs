@@ -38,11 +38,6 @@ namespace System.Linq.Expressions.Interpreter
             Labels = labels;
         }
 
-        internal int Length
-        {
-            get { return Instructions.Length; }
-        }
-
         #region Debug View
 
         internal sealed class DebugView
