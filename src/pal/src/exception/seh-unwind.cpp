@@ -253,9 +253,7 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
     {
         return FALSE;
     }
-#endif
 
-#if !UNWIND_CONTEXT_IS_UCONTEXT_T
     UpdateUnwindContextWithWinContext(context, &unwContext);
 #endif
 
