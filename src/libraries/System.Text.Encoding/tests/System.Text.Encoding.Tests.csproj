@@ -44,8 +44,6 @@
     <Compile Include="Encoding\EncodingBigEndianUnicode.cs" />
     <Compile Include="Encoding\EncodingConvert1.cs" />
     <Compile Include="Encoding\EncodingConvert2.cs" />
-    <Compile Include="Encoding\EncodingCtor1.cs" />
-    <Compile Include="Encoding\EncodingEquals.cs" />
     <Compile Include="Encoding\EncodingGetByteCount.cs" />
     <Compile Include="Encoding\EncodingGetByteCount1.cs" />
     <Compile Include="Encoding\EncodingGetByteCount2.cs" />
@@ -67,7 +65,6 @@
     <Compile Include="Encoding\EncodingGetPreamble.cs" />
     <Compile Include="Encoding\EncodingGetString.cs" />
     <Compile Include="Encoding\EncodingUnicode.cs" />
-    <Compile Include="Encoding\EncodingUTF8.cs" />
     <Compile Include="Encoding\EncodingWebName.cs" />
     <Compile Include="UnicodeEncoding\UnicodeEncodingEquals.cs" />
     <Compile Include="UnicodeEncoding\UnicodeEncodingEncode.cs" />
@@ -85,6 +82,7 @@
     <Compile Include="UTF7Encoding\UTF7EncodingGetHashCode.cs" />
     <Compile Include="UTF7Encoding\UTF7EncodingGetMaxByteCount.cs" />
     <Compile Include="UTF7Encoding\UTF7EncodingGetMaxCharCount.cs" />
+    <Compile Include="UTF8Encoding\UTF8EncodingProperties.cs" />
     <Compile Include="UTF8Encoding\UTF8EncodingEquals.cs" />
     <Compile Include="UTF8Encoding\UTF8EncodingEncode.cs" />
     <Compile Include="UTF8Encoding\UTF8EncodingDecode.cs" />

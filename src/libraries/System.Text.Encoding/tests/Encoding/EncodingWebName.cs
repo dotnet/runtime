@@ -13,7 +13,6 @@ namespace System.Text.Tests
         [Fact]
         public void PosTest1()
         {
-            Assert.Equal("utf-8", Encoding.UTF8.WebName);
             Assert.Equal("utf-16", Encoding.Unicode.WebName);
         }
 
@@ -21,7 +20,6 @@ namespace System.Text.Tests
         [Fact]
         public void PosTest2()
         {
-            Assert.Equal(Encoding.UTF8, Encoding.GetEncoding(Encoding.UTF8.WebName));
             Assert.Equal(Encoding.Unicode, Encoding.GetEncoding(Encoding.Unicode.WebName));
             Assert.Equal(Encoding.BigEndianUnicode, Encoding.GetEncoding(Encoding.BigEndianUnicode.WebName));
         }

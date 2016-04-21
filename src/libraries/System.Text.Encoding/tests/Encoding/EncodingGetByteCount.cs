@@ -12,19 +12,6 @@ namespace System.Text.Tests
         [Fact]
         public void PosTests()
         {
-            PositiveTestString(Encoding.UTF8, "TestString", 10, "00A");
-            PositiveTestString(Encoding.UTF8, "", 0, "00B");
-            PositiveTestString(Encoding.UTF8, "FooBA\u0400R", 8, "00C");
-            PositiveTestString(Encoding.UTF8, "\u00C0nima\u0300l", 9, "00D");
-            PositiveTestString(Encoding.UTF8, "Test\uD803\uDD75Test", 12, "00E");
-            PositiveTestString(Encoding.UTF8, "Test\uD803Test", 11, "00F");
-            PositiveTestString(Encoding.UTF8, "Test\uDD75Test", 11, "00G");
-            PositiveTestString(Encoding.UTF8, "TestTest\uDD75", 11, "00H");
-            PositiveTestString(Encoding.UTF8, "TestTest\uD803", 11, "00I");
-            PositiveTestString(Encoding.UTF8, "\uDD75", 3, "00J");
-            PositiveTestString(Encoding.UTF8, "\uD803\uDD75\uD803\uDD75\uD803\uDD75", 12, "00K");
-            PositiveTestString(Encoding.UTF8, "\u0130", 2, "00L");
-
             PositiveTestString(Encoding.Unicode, "TestString", 20, "00A3");
             PositiveTestString(Encoding.Unicode, "", 0, "00B3");
             PositiveTestString(Encoding.Unicode, "FooBA\u0400R", 14, "00C3");
@@ -61,19 +48,11 @@ namespace System.Text.Tests
         [Fact]
         public void NegTests()
         {
-            NegativeTestString<ArgumentNullException>(new UTF8Encoding(), null, "00N");
             NegativeTestString<ArgumentNullException>(new UnicodeEncoding(), null, "00N3");
             NegativeTestString<ArgumentNullException>(new UnicodeEncoding(true, false), null, "00N4");
-
-            NegativeTestChars<ArgumentNullException>(new UTF8Encoding(), null, "00O");
+            
             NegativeTestChars<ArgumentNullException>(new UnicodeEncoding(), null, "00O3");
             NegativeTestChars<ArgumentNullException>(new UnicodeEncoding(true, false), null, "00O4");
-
-            NegativeTestChars2<ArgumentNullException>(new UTF8Encoding(), null, 0, 0, "00P");
-            NegativeTestChars2<ArgumentOutOfRangeException>(new UTF8Encoding(), new char[] { 't' }, -1, 1, "00P");
-            NegativeTestChars2<ArgumentOutOfRangeException>(new UTF8Encoding(), new char[] { 't' }, 1, -1, "00Q");
-            NegativeTestChars2<ArgumentOutOfRangeException>(new UTF8Encoding(), new char[] { 't' }, 0, 10, "00R");
-            NegativeTestChars2<ArgumentOutOfRangeException>(new UTF8Encoding(), new char[] { 't' }, 2, 0, "00S");
 
             NegativeTestChars2<ArgumentNullException>(new UnicodeEncoding(), null, 0, 0, "00P3");
             NegativeTestChars2<ArgumentOutOfRangeException>(new UnicodeEncoding(), new char[] { 't' }, -1, 1, "00P3");

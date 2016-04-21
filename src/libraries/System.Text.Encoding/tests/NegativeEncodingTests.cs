@@ -13,7 +13,8 @@ namespace System.Text.Tests
         {
             yield return new object[] { new UnicodeEncoding() };
             yield return new object[] { new UTF7Encoding() };
-            yield return new object[] { new UTF8Encoding() };
+            yield return new object[] { new UTF8Encoding(true) };
+            yield return new object[] { new UTF8Encoding(false) };
             yield return new object[] { new ASCIIEncoding() };
         }
         
@@ -227,6 +228,12 @@ namespace System.Text.Tests
         public static void GetMaxCharCount_Invalid(Encoding encoding)
         {
             Assert.Throws<ArgumentOutOfRangeException>("byteCount", () => encoding.GetMaxCharCount(-1));
+
+            // TODO: find a more generic way to find what byteCount is invalid
+            if (encoding is UTF8Encoding)
+            {
+                Assert.Throws<ArgumentOutOfRangeException>("byteCount", () => encoding.GetMaxCharCount(int.MaxValue));
+            }
         }
 
         [Theory]

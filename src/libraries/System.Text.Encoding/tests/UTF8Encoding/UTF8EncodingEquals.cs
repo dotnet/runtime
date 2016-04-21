@@ -35,6 +35,11 @@ namespace System.Text.Tests
             yield return new object[] { new UTF8Encoding(true, false), new UTF8Encoding(true, false), true };
             yield return new object[] { new UTF8Encoding(true, false), new UTF8Encoding(false, true), false };
 
+            yield return new object[] { Encoding.UTF8, Encoding.UTF8, true };
+            yield return new object[] { Encoding.GetEncoding("utf-8"), Encoding.UTF8, true };
+            yield return new object[] { Encoding.UTF8, new UTF8Encoding(true), true };
+            yield return new object[] { Encoding.UTF8, new UTF8Encoding(false), false };
+
             yield return new object[] { new UTF8Encoding(), new TimeSpan(), false };
             yield return new object[] { new UTF8Encoding(), null, false };
         }
