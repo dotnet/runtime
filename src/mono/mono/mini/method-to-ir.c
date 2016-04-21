@@ -5343,8 +5343,10 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 				return FALSE;
 			if (!cfg->compile_aot) {
 				MonoError error;
-				if (!mono_runtime_class_init_full (vtable, &error))
-					mono_error_raise_exception (&error); /* FIXME don't raise here */
+				if (!mono_runtime_class_init_full (vtable, &error)) {
+					mono_error_cleanup (&error);
+					return FALSE;
+				}
 			}
 		} else if (method->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT) {
 			if (cfg->run_cctors && method->klass->has_cctor) {
@@ -5361,8 +5363,10 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 				if (! vtable->initialized)
 					return FALSE;
 				MonoError error;
-				if (!mono_runtime_class_init_full (vtable, &error))
-					mono_error_raise_exception (&error); /* FIXME don't raise here */
+				if (!mono_runtime_class_init_full (vtable, &error)) {
+					mono_error_cleanup (&error);
+					return FALSE;
+				}
 			}
 		} else if (mono_class_needs_cctor_run (method->klass, NULL)) {
 			if (!method->klass->runtime_info)
