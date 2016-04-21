@@ -89,6 +89,7 @@ namespace System.Net.Http
             /// <summary>Disposes of the agent.</summary>
             public void Dispose()
             {
+                QueueIfRunning(new IncomingRequest { Type = IncomingRequestType.Shutdown });
                 _multiHandle?.Dispose();
             }
 
@@ -100,6 +101,22 @@ namespace System.Net.Http
                     // Add the request, then initiate processing.
                     _incomingRequests.Enqueue(request);
                     EnsureWorkerIsRunning();
+                }
+            }
+
+            /// <summary>Queues a request for the multi handle to process, but only if there's already an active worker running.</summary>
+            public void QueueIfRunning(IncomingRequest request)
+            {
+                lock (_incomingRequests)
+                {
+                    if (_runningWorker != null)
+                    {
+                        _incomingRequests.Enqueue(request);
+                        if (_incomingRequests.Count == 1)
+                        {
+                            RequestWakeup();
+                        }
+                    }
                 }
             }
 
@@ -280,7 +297,7 @@ namespace System.Net.Http
                             // more requests could have been added.  If they were,
                             // kick off another processing loop.
                             _runningWorker = null;
-                            if (_incomingRequests.Count > 0)
+                            if (_incomingRequests.Count > 0 && !_associatedHandler._disposed)
                             {
                                 EnsureWorkerIsRunning();
                             }
@@ -289,9 +306,11 @@ namespace System.Net.Http
                 }
                 catch (Exception exc)
                 {
-                    // Something went very wrong.  This should not happen.
+                    // Something went very wrong.  In general this should not happen.  The only time it might reasonably
+                    // happen is if CurlHandler is disposed of while it's actively processing, in which case we could
+                    // get an ObjectDisposedException.
                     EventSourceTrace("Unexpected worker failure: {0}", exc);
-                    Debug.Fail($"Unexpected exception from processing loop: {exc}");
+                    Debug.Assert(exc is ObjectDisposedException, $"Unexpected exception from processing loop: {exc}");
 
                     // At this point if there any queued requests but there's no worker,
                     // those queued requests are potentially going to sit there waiting forever,
@@ -432,17 +451,26 @@ namespace System.Net.Http
                 catch (Exception exc)
                 {
                     eventLoopError = exc;
-                    throw;
+                    if (!(exc is HandlerShutdownException))
+                    {
+                        throw;
+                    }
                 }
                 finally
                 {
-                    // If we got an unexpected exception, something very bad happened. We may have some 
-                    // operations that we initiated but that weren't completed. Make sure to clean up any 
+                    // If we got an unexpected exception, either shutdown was requested or something bad happened. We
+                    // may have some  operations that we initiated but that weren't completed. Make sure to clean up any 
                     // such operations, failing them and releasing their resources.
                     if (_activeOperations.Count > 0)
                     {
-                        Debug.Assert(eventLoopError != null, "We should only have remaining operations if we got an unexpected exception");
-                        foreach (KeyValuePair<IntPtr, ActiveRequest> pair in _activeOperations)
+                        EventSourceTrace("Shutting down {0} active operations.", _activeOperations.Count);
+
+                        // Copy the operations to a tmp array so that we don't try to modify the dictionary while enumerating it
+                        var activeOps = new KeyValuePair<IntPtr, ActiveRequest>[_activeOperations.Count];
+                        ((IDictionary<IntPtr, ActiveRequest>)_activeOperations).CopyTo(activeOps, 0);
+
+                        // Fail all active ops
+                        foreach (KeyValuePair<IntPtr, ActiveRequest> pair in activeOps)
                         {
                             ActiveRequest failingOperation = pair.Value;
                             IntPtr failingOperationGcHandle = pair.Key;
@@ -496,6 +524,10 @@ namespace System.Net.Http
                             }
                         }
                         break;
+
+                    case IncomingRequestType.Shutdown:
+                        Debug.Assert(easy == null, "Expected null easy for a Shutdown request");
+                        throw new ObjectDisposedException(nameof(CurlHandler)); // force all active operations to close, failing them with this exception
 
                     default:
                         Debug.Fail("Invalid request type: " + request.Type);
@@ -1073,7 +1105,15 @@ namespace System.Net.Http
                 /// <summary>A request to cancel a request previously submitted to the agent.</summary>
                 Cancel,
                 /// <summary>A request to unpause the connection associated with a request previously submitted to the agent.</summary>
-                Unpause
+                Unpause,
+                /// <summary>A request to shutdown the agent and all active operations.  No easy request is associated with this type.</summary>
+                Shutdown
+            }
+
+            /// <summary>Exception thrown when the handler has been disposed of while there are active operations.</summary>
+            internal sealed class HandlerShutdownException : OperationCanceledException
+            {
+                internal HandlerShutdownException() { }
             }
         }
 
