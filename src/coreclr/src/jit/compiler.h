@@ -8804,7 +8804,11 @@ public:
                                          unsigned __int8* offset0,
                                          unsigned __int8* offset1);
     void fgMorphSystemVStructArgs(GenTreeCall* call, bool hasStructArgument);
-#endif 
+#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+
+    void          fgMorphMultiregStructArgs(GenTreeCall* call);
+    GenTreePtr    fgMorphMultiregStructArg (GenTreePtr   arg);
+
 }; // end of class Compiler
 
 // Inline methods of CompAllocator.
