@@ -14,7 +14,7 @@ namespace System.Text.Tests
             GetBytes(encoding, chars, index, count, expected);
         }
 
-        private static void GetByteCount(Encoding encoding, string chars, int index, int count, int expected)
+        private static unsafe void GetByteCount(Encoding encoding, string chars, int index, int count, int expected)
         {
             char[] charArray = chars.ToCharArray();
             if (index == 0 && count == chars.Length)
@@ -25,6 +25,12 @@ namespace System.Text.Tests
             }
             // Use GetByteCount(char[], int, int)
             Assert.Equal(expected, encoding.GetByteCount(charArray, index, count));
+
+            fixed (char* pChars = chars)
+            {
+                // Use GetByteCount(char*, int)
+                Assert.Equal(expected, encoding.GetByteCount(pChars + index, count));
+            }
         }
 
         private static void GetBytes(Encoding encoding, string source, int index, int count, byte[] expectedBytes)
@@ -45,7 +51,7 @@ namespace System.Text.Tests
             }
         }
 
-        private static void VerifyGetBytes(Encoding encoding, string source, int index, int count, byte[] bytes, int byteIndex, byte[] expectedBytes)
+        private static unsafe void VerifyGetBytes(Encoding encoding, string source, int index, int count, byte[] bytes, int byteIndex, byte[] expectedBytes)
         {
             byte[] originalBytes = (byte[])bytes.Clone();
 
@@ -74,6 +80,19 @@ namespace System.Text.Tests
             int charArrayByteCount = encoding.GetBytes(source.ToCharArray(), index, count, charArrayBytes, byteIndex);
             VerifyGetBytes(charArrayBytes, byteIndex, charArrayByteCount, originalBytes, expectedBytes);
             Assert.Equal(expectedBytes.Length, charArrayByteCount);
+
+            // Use GetBytes(char*, int, byte*, int) - only works for non-null/non-empty char* or byte*
+            if (expectedBytes.Length > 0)
+            {
+                byte[] charPointerBytes = (byte[])bytes.Clone();
+                fixed (char* pChars = source.ToCharArray())
+                fixed (byte* pBytes = charPointerBytes)
+                {
+                    int charPointerByteCount = encoding.GetBytes(pChars + index, count, pBytes + byteIndex, charPointerBytes.Length - byteIndex);
+                    Assert.Equal(expectedBytes.Length, charPointerByteCount);
+                }
+                VerifyGetBytes(charPointerBytes, byteIndex, charArrayByteCount, originalBytes, expectedBytes);
+            }
         }
 
         private static void VerifyGetBytes(byte[] bytes, int byteIndex, int byteCount, byte[] originalBytes, byte[] expectedBytes)
@@ -101,7 +120,7 @@ namespace System.Text.Tests
             GetString(encoding, bytes, index, count, expected);
         }
 
-        private static void GetCharCount(Encoding encoding, byte[] bytes, int index, int count, int expected)
+        private static unsafe void GetCharCount(Encoding encoding, byte[] bytes, int index, int count, int expected)
         {
             if (index == 0 && count == bytes.Length)
             {
@@ -110,6 +129,15 @@ namespace System.Text.Tests
             }
             // Use GetCharCount(byte[], int, int)
             Assert.Equal(expected, encoding.GetCharCount(bytes, index, count));
+
+            // Use GetCharCount(byte*, int) - only works for non-null/non-empty byte*
+            if (expected > 0)
+            {
+                fixed (byte* pBytes = bytes)
+                {
+                    Assert.Equal(expected, encoding.GetCharCount(pBytes + index, count));
+                }
+            }
         }
 
         private static void GetChars(Encoding encoding, byte[] bytes, int index, int count, char[]
@@ -131,7 +159,7 @@ namespace System.Text.Tests
             }
         }
 
-        private static void VerifyGetChars(Encoding encoding, byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex, char[] expectedChars)
+        private static unsafe void VerifyGetChars(Encoding encoding, byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex, char[] expectedChars)
         {
             char[] originalChars = (char[])chars.Clone();
 
@@ -145,11 +173,25 @@ namespace System.Text.Tests
             // Use GetChars(byte[], int, int)
             char[] resultAdvanced = encoding.GetChars(bytes, byteIndex, byteCount);
             VerifyGetChars(resultAdvanced, 0, resultAdvanced.Length, originalChars, expectedChars);
-            
+
             // Use GetChars(byte[], int, int, char[], int)
-            int charCount = encoding.GetChars(bytes, byteIndex, byteCount, chars, charIndex);
-            VerifyGetChars(chars, charIndex, charCount, originalChars, expectedChars);
+            char[] byteChars = (char[])chars.Clone();
+            int charCount = encoding.GetChars(bytes, byteIndex, byteCount, byteChars, charIndex);
+            VerifyGetChars(byteChars, charIndex, charCount, originalChars, expectedChars);
             Assert.Equal(expectedChars.Length, charCount);
+
+            // Use GetCharCount(byte*, int, char*, int) - only works for non-null/non-empty byte* or char*
+            if (expectedChars.Length > 0)
+            {
+                char[] bytePointerChars = (char[])chars.Clone();
+                fixed (byte* pBytes = bytes)
+                fixed (char* pChars = bytePointerChars)
+                {
+                    int charPointerCount = encoding.GetChars(pBytes + byteIndex, byteCount, pChars + charIndex, bytePointerChars.Length - charIndex);
+                    Assert.Equal(expectedChars.Length, charPointerCount);
+                }
+                VerifyGetChars(bytePointerChars, charIndex, charCount, originalChars, expectedChars);
+            }
         }
 
         private static void VerifyGetChars(char[] chars, int charIndex, int charCount, char[] originalChars, char[] expectedChars)
