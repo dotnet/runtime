@@ -234,7 +234,14 @@ namespace System.Net.Sockets
 
         internal void LogBuffer(int size)
         {
-            // TODO (#7851): implement?
+            if (_buffer != null)
+            {
+                SocketsEventSource.Dump(_buffer, _offset, size);
+            }
+            else if (_acceptBuffer != null)
+            {
+                SocketsEventSource.Dump(_acceptBuffer, 0, size);
+            }
         }
 
         internal void LogSendPacketsBuffers(int size)
