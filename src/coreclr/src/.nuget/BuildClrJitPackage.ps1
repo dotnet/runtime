@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-Builds and publishes the cross-platform and combined pacakges for RyuJit. Cross-platform binaries
+Builds and publishes the cross-platform and combined pacakges for ClrJit. Cross-platform binaries
 are sourced from Azure Blob Storage.
 #>
 
@@ -137,7 +137,7 @@ catch
 }
 
 # Gather the bits from the Ubuntu and OSX blobs into the bin directory
-Copy-Item -Path @("$ubuntuDirectory\libryujit.so", "$osxDirectory\libryujit.dylib") -Destination $binariesDir
+Copy-Item -Path @("$ubuntuDirectory\libclrjit.so", "$osxDirectory\libclrjit.dylib") -Destination $binariesDir
 if ($LastExitCode -ne 0)
 {
     Write-Error "Failed to copy cross-platform bits to $binariesDir."
@@ -146,10 +146,10 @@ if ($LastExitCode -ne 0)
 
 # Gather the .nuspecs and their dependencies into the package output directory
 $files = @(
-    "$nuspecDir\Microsoft.DotNet.RyuJit.nuspec",
+    "$nuspecDir\Microsoft.DotNet.ClrJit.nuspec",
     "$nuspecDir\runtime.json",
-    "$nuspecDir\toolchain.osx.10.10-x64.Microsoft.DotNet.RyuJit.nuspec",
-    "$nuspecDir\toolchain.ubuntu.14.04-x64.Microsoft.DotNet.RyuJit.nuspec"
+    "$nuspecDir\toolchain.osx.10.10-x64.Microsoft.DotNet.ClrJit.nuspec",
+    "$nuspecDir\toolchain.ubuntu.14.04-x64.Microsoft.DotNet.ClrJit.nuspec"
 )
 Copy-Item -Path $files -Destination $packageOutputDir
 if ($LastExitCode -ne 0)
@@ -160,9 +160,9 @@ if ($LastExitCode -ne 0)
 
 # Create the packages.
 $packages = @(
-    "toolchain.osx.10.10-x64.Microsoft.DotNet.RyuJit",
-    "toolchain.ubuntu.14.04-x64.Microsoft.DotNet.RyuJit",
-    "Microsoft.DotNet.RyuJit"
+    "toolchain.osx.10.10-x64.Microsoft.DotNet.ClrJit",
+    "toolchain.ubuntu.14.04-x64.Microsoft.DotNet.ClrJit",
+    "Microsoft.DotNet.ClrJit"
 )
 
 $packageVersion = "1.0.8-prerelease"
@@ -178,4 +178,4 @@ foreach ($package in $packages) {
     Invoke-Expression "$nugetPath push -NonInteractive $packageOutputDir\$package.nupkg -s $feed $apiKey"
 }
 
-Invoke-Expression "$nugetPath push -NonInteractive $packageOutputDir\toolchain.win7-x64.Microsoft.DotNet.RyuJit.nupkg -s $feed $apiKey"
+Invoke-Expression "$nugetPath push -NonInteractive $packageOutputDir\toolchain.win7-x64.Microsoft.DotNet.ClrJit.nupkg -s $feed $apiKey"
