@@ -20,6 +20,7 @@ usage()
     echo "skipmscorlib - do not build mscorlib.dll."
     echo "skiptests - skip the tests in the 'tests' subdirectory."
     echo "disableoss - Disable Open Source Signing for mscorlib."
+    echo "generateversion - if building native only, pass this in to get a version on the build output."
     echo "cmakeargs - user-settable additional arguments passed to CMake."
 
     exit 1
@@ -144,6 +145,18 @@ build_coreclr()
     fi
 
     if [ $__SkipConfigure == 0 ]; then
+        # if managed build is suported, then set __GenerateVersionSource to true
+        if [ $__SkipMSCorLib == 0 ]; then __GenerateVersionSource=true; fi
+        # Drop version.c file
+        __versionSourceFile=$__IntermediatesDir/version.cpp
+        if [ $__GenerateVersionSource == true ]; then
+            "$__ProjectRoot/init-tools.sh" > "$__ProjectRoot/init-tools.log"
+            echo "Running: \"$__ProjectRoot/Tools/corerun\" \"$__ProjectRoot/Tools/MSBuild.exe\" \"$__ProjectRoot/build.proj\" /t:GenerateVersionSourceFile /p:NativeVersionSourceFile=$__versionSourceFile /p:GenerateVersionSourceFile=true /v:minimal $__OfficialBuildIdArg"
+            "$__ProjectRoot/Tools/corerun" "$__ProjectRoot/Tools/MSBuild.exe" "$__ProjectRoot/build.proj" /t:GenerateVersionSourceFile /p:NativeVersionSourceFile=$__versionSourceFile /p:GenerateVersionSourceFile=true /v:minimal $__OfficialBuildIdArg
+        else
+            __versionSourceLine="static char sccsid[] __attribute__((used)) = \"@(#)No version information produced\";"
+            echo $__versionSourceLine > $__versionSourceFile
+        fi
         # Regenerate the CMake solution
         echo "Invoking \"$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh\" \"$__ProjectRoot\" $__ClangMajorVersion $__ClangMinorVersion $__BuildArch $__BuildType $__CodeCoverage $__IncludeTests $generator $__cmakeargs"
         "$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh" "$__ProjectRoot" $__ClangMajorVersion $__ClangMinorVersion $__BuildArch $__BuildType $__CodeCoverage $__IncludeTests $generator "$__cmakeargs"
@@ -272,7 +285,7 @@ build_mscorlib()
        elif [[ ( "$__HostArch" == "arm64" ) && ( "$__BuildArch" == "arm" ) ]]; then
            build_mscorlib_ni
        else 
-	   exit 1
+           exit 1
        fi
     fi 
 }
@@ -419,6 +432,8 @@ __MSBuildPath=$__ProjectRoot/Tools/MSBuild.exe
 __NuGetPath="$__PackagesDir/NuGet.exe"
 __DistroName=""
 __cmakeargs=""
+__OfficialBuildIdArg=
+__GenerateVersionSource=false
 
 while :; do
     if [ $# -le 0 ]; then
@@ -529,6 +544,10 @@ while :; do
             __SkipMSCorLib=1
             ;;
 
+        generateversion)
+            __GenerateVersionSource=true
+            ;;
+
         includetests)
             ;;
 
@@ -551,7 +570,11 @@ while :; do
             ;;
 
         *)
-            __UnprocessedBuildArgs="$__UnprocessedBuildArgs $1"
+            if [[ $1 == "/p:OfficialBuildId="* ]]; then
+                __OfficialBuildIdArg=$1
+            else
+                __UnprocessedBuildArgs="$__UnprocessedBuildArgs $1"
+            fi
             ;;
     esac
 
