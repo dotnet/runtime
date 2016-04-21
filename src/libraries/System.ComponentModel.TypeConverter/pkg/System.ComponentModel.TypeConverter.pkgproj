@@ -2,11 +2,14 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
+    <ProjectReference Include="..\ref\4.0\System.ComponentModel.TypeConverter.depproj">
+      <SupportedFramework>net45;netcore45;wp8;wpa81</SupportedFramework>
+    </ProjectReference>
     <ProjectReference Include="..\ref\System.ComponentModel.TypeConverter.csproj">
-      <SupportedFramework>net45;netcore45;netstandardapp1.5;wp8;wpa81</SupportedFramework>
+      <SupportedFramework>net462;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.ComponentModel.TypeConverter.builds" />
-  </ItemGroup>
+  </ItemGroup>  
   <ItemGroup>
     <InboxOnTargetFramework Include="MonoAndroid10" />
     <InboxOnTargetFramework Include="MonoTouch10" />
