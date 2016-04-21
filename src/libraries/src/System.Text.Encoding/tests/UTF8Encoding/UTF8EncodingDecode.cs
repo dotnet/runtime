@@ -19,6 +19,19 @@ namespace System.Text.Tests
                 yield return new object[] { new byte[] { 97, (byte)c, 98 }, 0, 3, "a" + c.ToString() + "b" };
             }
 
+            yield return new object[] { new byte[] { 84, 101, 115, 116, 83, 116, 114, 105, 110, 103 }, 0, 10, "TestString" };
+            yield return new object[] { new byte[] { 84, 101, 115, 116, 84, 101, 115, 116 }, 0, 8, "TestTest" };
+
+            // Mixture of ASCII and Unicode
+            yield return new object[] { new byte[] { 70, 111, 111, 66, 65, 208, 128, 82 }, 0, 8, "FooBA\u0400R" };
+            yield return new object[] { new byte[] { 195, 128, 110, 105, 109, 97, 204, 128, 108 }, 0, 9, "\u00C0nima\u0300l" };
+            yield return new object[] { new byte[] { 84, 101, 115, 116, 240, 144, 181, 181, 84, 101, 115, 116 }, 0, 12, "Test\uD803\uDD75Test" };
+            yield return new object[] { new byte[] { 0, 84, 101, 10, 115, 116, 0, 9, 0, 84, 15, 101, 115, 116, 0 }, 0, 15, "\0Te\nst\0\t\0T\u000Fest\0" };
+            yield return new object[] { new byte[] { 196, 84, 101, 115, 116, 196, 196, 196, 176, 176, 84, 101, 115, 116, 176 }, 0, 15, "\uFFFDTest\uFFFD\uFFFD\u0130\uFFFDTest\uFFFD" };
+            yield return new object[] { new byte[] { 240, 144, 181, 181, 240, 144, 181, 181, 240, 144, 181, 181 }, 0, 12, "\uD803\uDD75\uD803\uDD75\uD803\uDD75" };
+            yield return new object[] { new byte[] { 196, 176 }, 0, 2, "\u0130" };
+            yield return new object[] { new byte[] { 240, 240, 144, 181, 181, 240, 144, 181, 181, 240, 144, 240 }, 0, 12, "\uFFFD\uD803\uDD75\uD803\uDD75\uFFFD\uFFFD" };
+
             // Surrogate pairs
             yield return new object[] { new byte[] { 240, 144, 128, 128 }, 0, 4, "\uD800\uDC00" };
             yield return new object[] { new byte[] { 97, 240, 144, 128, 128, 98 }, 0, 6, "a\uD800\uDC00b" };
@@ -31,6 +44,7 @@ namespace System.Text.Tests
         public void Decode(byte[] bytes, int index, int count, string expected)
         {
             EncodingHelpers.Decode(new UTF8Encoding(), bytes, index, count, expected);
+            EncodingHelpers.Decode(new UTF8Encoding(true), bytes, index, count, expected);
         }
 
         [Fact]
@@ -57,6 +71,9 @@ namespace System.Text.Tests
             Decode(new byte[] { 0xF0, 0x80, 0x80, 0xBF }, 0, 4, "\uFFFD\uFFFD\uFFFD");
             Decode(new byte[] { 0xF8, 0x80, 0x80, 0x80, 0xBF }, 0, 5, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD");
             Decode(new byte[] { 0xFC, 0x80, 0x80, 0x80, 0x80, 0xBF }, 0, 6, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD");
+
+            Decode(new byte[] { 176 }, 0, 1, "\uFFFD");
+            Decode(new byte[] { 196 }, 0, 1, "\uFFFD");
         }
     }
 }

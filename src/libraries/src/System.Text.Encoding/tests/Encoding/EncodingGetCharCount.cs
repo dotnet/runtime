@@ -9,84 +9,7 @@ namespace System.Text.Tests
     public class EncodingGetCharCount
     {
         #region Positive Test Cases
-        [Fact]
-        public void PosTest1()
-        {
-            PositiveTestString(Encoding.UTF8, 10, new byte[] { 84, 101, 115, 116, 83, 116, 114, 105, 110, 103 }, "00A");
-        }
-
-        [Fact]
-        public void PosTest2()
-        {
-            PositiveTestString(Encoding.UTF8, 0, new byte[] { }, "00B");
-        }
-
-        [Fact]
-        public void PosTest3()
-        {
-            PositiveTestString(Encoding.UTF8, 7, new byte[] { 70, 111, 111, 66, 65, 208, 128, 82 }, "00C");
-        }
-
-        [Fact]
-        public void PosTest4()
-        {
-            PositiveTestString(Encoding.UTF8, 7, new byte[] { 195, 128, 110, 105, 109, 97, 204, 128, 108 }, "00D");
-        }
-
-        [Fact]
-        public void PosTest5()
-        {
-            PositiveTestString(Encoding.UTF8, 10, new byte[] { 84, 101, 115, 116, 240, 144, 181, 181, 84, 101, 115, 116 }, "00E");
-        }
-
-        [Fact]
-        public void PosTest6()
-        {
-            PositiveTestString(Encoding.UTF8, 15, new byte[] { 0, 84, 101, 10, 115, 116, 0, 9, 0, 84, 15, 101, 115, 116, 0 }, "00F");
-        }
-
-        [Fact]
-        public void PosTest7()
-        {
-            PositiveTestString(Encoding.UTF8, 14, new byte[] { 196, 84, 101, 115, 116, 196, 196, 196, 176, 176, 84, 101, 115, 116, 176 }, "00G");
-        }
-
-        [Fact]
-        public void PosTest8()
-        {
-            PositiveTestString(Encoding.UTF8, 8, new byte[] { 84, 101, 115, 116, 84, 101, 115, 116 }, "00H");
-        }
-
-        [Fact]
-        public void PosTest9()
-        {
-            PositiveTestString(Encoding.UTF8, 1, new byte[] { 176 }, "00I");
-        }
-
-        [Fact]
-        public void PosTest10()
-        {
-            PositiveTestString(Encoding.UTF8, 1, new byte[] { 196 }, "00J");
-        }
-
-        [Fact]
-        public void PosTest11()
-        {
-            PositiveTestString(Encoding.UTF8, 6, new byte[] { 240, 144, 181, 181, 240, 144, 181, 181, 240, 144, 181, 181 }, "00K");
-        }
-
-        [Fact]
-        public void PosTest12()
-        {
-            PositiveTestString(Encoding.UTF8, 1, new byte[] { 196, 176 }, "00L");
-        }
-
-        [Fact]
-        public void PosTest13()
-        {
-            PositiveTestString(Encoding.UTF8, 7, new byte[] { 240, 240, 144, 181, 181, 240, 144, 181, 181, 240, 144, 240 }, "0A2");
-        }
-
+        
         [Fact]
         public void PosTest14()
         {
@@ -244,11 +167,6 @@ namespace System.Text.Tests
         }
         #endregion
         #region Negative Test Cases
-        [Fact]
-        public void NegTest1()
-        {
-            NegativeTestChars<ArgumentNullException>(new UTF8Encoding(), null, "00O");
-        }
 
         [Fact]
         public void NegTest2()
@@ -261,37 +179,7 @@ namespace System.Text.Tests
         {
             NegativeTestChars<ArgumentNullException>(new UnicodeEncoding(true, false), null, "00O4");
         }
-
-        [Fact]
-        public void NegTest4()
-        {
-            NegativeTestChars2<ArgumentNullException>(new UTF8Encoding(), null, 0, 0, "00P");
-        }
-
-        [Fact]
-        public void NegTest5()
-        {
-            NegativeTestChars2<ArgumentOutOfRangeException>(new UTF8Encoding(), new byte[] { 0, 0 }, -1, 1, "00P");
-        }
-
-        [Fact]
-        public void NegTest6()
-        {
-            NegativeTestChars2<ArgumentOutOfRangeException>(new UTF8Encoding(), new byte[] { 0, 0 }, 1, -1, "00Q");
-        }
-
-        [Fact]
-        public void NegTest7()
-        {
-            NegativeTestChars2<ArgumentOutOfRangeException>(new UTF8Encoding(), new byte[] { 0, 0 }, 0, 10, "00R");
-        }
-
-        [Fact]
-        public void NegTest8()
-        {
-            NegativeTestChars2<ArgumentOutOfRangeException>(new UTF8Encoding(), new byte[] { 0, 0 }, 3, 0, "00S");
-        }
-
+        
         [Fact]
         public void NegTest9()
         {

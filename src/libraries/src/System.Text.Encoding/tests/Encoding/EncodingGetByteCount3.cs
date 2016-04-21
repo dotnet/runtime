@@ -15,26 +15,10 @@ namespace System.Text.Tests
         public void PosTest1()
         {
             string testStr = "za\u0306\u01FD\u03B2\uD8ff\uDCFF";
-            Encoding u8 = Encoding.UTF8;
             Encoding u16LE = Encoding.Unicode;
             Encoding u16BE = Encoding.BigEndianUnicode;
-
-            Assert.Equal(12, u8.GetByteCount(testStr));
             Assert.Equal(14, u16LE.GetByteCount(testStr));
             Assert.Equal(14, u16BE.GetByteCount(testStr));
-        }
-        #endregion
-
-        #region Negative Test Cases
-        [Fact]
-        public void NegTest1()
-        {
-            string testStr = null;
-            Encoding u7 = Encoding.UTF8;
-            Assert.Throws<ArgumentNullException>(() =>
-            {
-                int i = u7.GetByteCount(testStr);
-            });
         }
         #endregion
     }
