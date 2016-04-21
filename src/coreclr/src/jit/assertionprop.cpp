@@ -2212,12 +2212,19 @@ GenTreePtr Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTreePtr stmt,
     case TYP_LONG:
         {
             INT64 value = vnStore->ConstantValue<INT64>(vnCns);
-#ifdef _TARGET_64BIT_           
+#ifdef _TARGET_64BIT_
             if (vnStore->IsVNHandle(vnCns))
             {
-                newTree = gtNewIconHandleNode(value, vnStore->GetHandleFlags(vnCns));
-                newTree->gtVNPair = ValueNumPair(vnLib, vnCns);
-                newTree = optPrepareTreeForReplacement(tree, newTree);
+                // Don't perform constant folding that involves a handle that needs
+                // to be recorded as a relocation with the VM.
+#ifdef RELOC_SUPPORT
+                if (!opts.compReloc)
+#endif
+                {
+                    newTree = gtNewIconHandleNode(value, vnStore->GetHandleFlags(vnCns));
+                    newTree->gtVNPair = ValueNumPair(vnLib, vnCns);
+                    newTree = optPrepareTreeForReplacement(tree, newTree);
+                }
             }
             else
 #endif
@@ -2277,9 +2284,16 @@ GenTreePtr Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTreePtr stmt,
 #ifndef _TARGET_64BIT_
             if (vnStore->IsVNHandle(vnCns))
             {
-                newTree = gtNewIconHandleNode(value, vnStore->GetHandleFlags(vnCns));
-                newTree->gtVNPair = ValueNumPair(vnLib, vnCns);
-                newTree = optPrepareTreeForReplacement(tree, newTree);
+                // Don't perform constant folding that involves a handle that needs
+                // to be recorded as a relocation with the VM.
+#ifdef RELOC_SUPPORT
+                if (!opts.compReloc)
+#endif
+                {
+                    newTree = gtNewIconHandleNode(value, vnStore->GetHandleFlags(vnCns));
+                    newTree->gtVNPair = ValueNumPair(vnLib, vnCns);
+                    newTree = optPrepareTreeForReplacement(tree, newTree);
+                }
             }
             else
 #endif
