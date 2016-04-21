@@ -645,10 +645,16 @@ namespace System.Net.Http
 
             internal sealed class SendTransferState
             {
-                internal readonly byte[] _buffer = new byte[RequestBufferSize]; // PERF TODO (#7884): Determine if this should be optimized to start smaller and grow
+                internal readonly byte[] _buffer;
                 internal int _offset;
                 internal int _count;
                 internal Task<int> _task;
+
+                internal SendTransferState(int bufferLength)
+                {
+                    Debug.Assert(bufferLength > 0 && bufferLength <= MaxRequestBufferSize, $"Expected 0 < bufferLength <= {MaxRequestBufferSize}, got {bufferLength}");
+                    _buffer = new byte[bufferLength];
+                }
 
                 internal void SetTaskOffsetCount(Task<int> task, int offset, int count)
                 {
