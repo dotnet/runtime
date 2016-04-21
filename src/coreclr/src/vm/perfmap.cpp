@@ -73,6 +73,9 @@ PerfMap::PerfMap()
   , m_PerfInfo(nullptr)
 {
     LIMITED_METHOD_CONTRACT;
+
+    // Initialize with no failures.
+    m_ErrorEncountered = false;
 }
 
 // Clean-up resources.
