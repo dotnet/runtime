@@ -8593,9 +8593,7 @@ void                CodeGen::genCodeForShift(GenTreePtr tree,
                                              regMaskTP  destReg,
                                              regMaskTP  bestReg)
 {
-    assert(tree->OperGet() == GT_LSH ||
-           tree->OperGet() == GT_RSH ||
-           tree->OperGet() == GT_RSZ);
+    assert(tree->OperIsShift());
 
     const genTreeOps oper    = tree->OperGet();
     GenTreePtr      op1      = tree->gtOp.gtOp1;

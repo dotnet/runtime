@@ -10105,7 +10105,7 @@ DONE_MORPHING_CHILDREN:
     // could mark the trees just before argument processing, but it would require a full
     // tree walk of the argument tree, so we just do it here, instead, even though we'll
     // mark non-argument trees (that will still get converted to calls, anyway).
-    if ((oper == GT_LSH || oper == GT_RSH || oper == GT_RSZ) &&
+    if (GenTree::OperIsShift(oper) &&
         (tree->TypeGet() == TYP_LONG) &&
         (op2->OperGet() != GT_CNS_INT))
     {
@@ -11819,8 +11819,7 @@ CM_ADD_OP:
                 /* for the shift nodes the type of op2 can differ from the tree type */
                 if ((typ == TYP_LONG) && (genActualType(op2->gtType) == TYP_INT))
                 {
-                    noway_assert((oper == GT_LSH) || (oper == GT_RSH) || (oper == GT_RSZ) ||
-                                 (oper == GT_ROL) || (oper == GT_ROR));
+                    noway_assert(GenTree::OperIsShiftOrRotate(oper));
 
                     GenTreePtr commaOp2 = op2->gtOp.gtOp2;
 
@@ -12992,7 +12991,7 @@ GenTreePtr Compiler::fgRecognizeAndMorphBitwiseRotation(GenTreePtr tree)
 
         if (rotateIndex != nullptr)
         {
-            noway_assert((rotateOp == GT_ROL) || (rotateOp == GT_ROR));
+            noway_assert(GenTree::OperIsRotate(rotateOp));
 
             unsigned inputTreeEffects = tree->gtFlags & GTF_ALL_EFFECT;
 
