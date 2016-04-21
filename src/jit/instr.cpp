@@ -2640,46 +2640,15 @@ void        CodeGen::inst_RV_SH(instruction  ins,
     assert(val < 256);
 #endif
 
-    assert(ins == INS_rcl  ||
-           ins == INS_rcr  ||
-           ins == INS_rol  ||
-           ins == INS_ror  ||
-           ins == INS_shl  ||
-           ins == INS_shr  ||
-           ins == INS_sar);
-
-    /* Which format should we use? */
+    ins = genMapShiftInsToShiftByConstantIns(ins, val);
 
     if  (val == 1)
     {
-        /* Use the shift-by-one format */
-
-        assert(INS_rcl + 1 == INS_rcl_1);
-        assert(INS_rcr + 1 == INS_rcr_1);
-        assert(INS_rol + 1 == INS_rol_1);
-        assert(INS_ror + 1 == INS_ror_1);
-        assert(INS_shl + 1 == INS_shl_1);
-        assert(INS_shr + 1 == INS_shr_1);
-        assert(INS_sar + 1 == INS_sar_1);
-
-        getEmitter()->emitIns_R((instruction)(ins+1), size, reg);
+        getEmitter()->emitIns_R(ins, size, reg);
     }
     else
     {
-        /* Use the shift-by-NNN format */
-
-        assert(INS_rcl + 2 == INS_rcl_N);
-        assert(INS_rcr + 2 == INS_rcr_N);
-        assert(INS_rol + 2 == INS_rol_N);
-        assert(INS_ror + 2 == INS_ror_N);
-        assert(INS_shl + 2 == INS_shl_N);
-        assert(INS_shr + 2 == INS_shr_N);
-        assert(INS_sar + 2 == INS_sar_N);
-
-        getEmitter()->emitIns_R_I((instruction)(ins+2),
-                                 size,
-                                 reg,
-                                 val);
+        getEmitter()->emitIns_R_I(ins, size, reg, val);
     }
 
 #else
@@ -2698,43 +2667,20 @@ void                CodeGen::inst_TT_SH(instruction   ins,
                                         unsigned      offs)
 {
 #ifdef _TARGET_XARCH_
-    /* Which format should we use? */
-
-    switch (val)
+    if (val == 0)
     {
-    case 1:
-
-        /* Use the shift-by-one format */
-
-        assert(INS_rcl + 1 == INS_rcl_1);
-        assert(INS_rcr + 1 == INS_rcr_1);
-        assert(INS_shl + 1 == INS_shl_1);
-        assert(INS_shr + 1 == INS_shr_1);
-        assert(INS_sar + 1 == INS_sar_1);
-
-        inst_TT((instruction)(ins+1), tree, offs, 0, emitTypeSize(tree->TypeGet()));
-
-        break;
-
-    case 0:
-
         // Shift by 0 - why are you wasting our precious time????
-
         return;
+    }
 
-    default:
-
-        /* Use the shift-by-NNN format */
-
-        assert(INS_rcl + 2 == INS_rcl_N);
-        assert(INS_rcr + 2 == INS_rcr_N);
-        assert(INS_shl + 2 == INS_shl_N);
-        assert(INS_shr + 2 == INS_shr_N);
-        assert(INS_sar + 2 == INS_sar_N);
-
-        inst_TT((instruction)(ins+2), tree, offs, val, emitTypeSize(tree->TypeGet()));
-
-        break;
+    ins = genMapShiftInsToShiftByConstantIns(ins, val);
+    if (val == 1)
+    {
+        inst_TT(ins, tree, offs, 0, emitTypeSize(tree->TypeGet()));
+    }
+    else
+    {
+        inst_TT(ins, tree, offs, val, emitTypeSize(tree->TypeGet()));
     }
 #endif // _TARGET_XARCH_
 

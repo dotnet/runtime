@@ -3096,7 +3096,7 @@ bool Lowering::IsBinOpInRMWStoreInd(GenTreePtr tree)
  // to be correct and functional.
  //     IndirsAreEquivalent()
  //     NodesAreEquivalentLeaves()
- //     Codegen of GT_STOREIND and genCodeForShift()
+ //     Codegen of GT_STOREIND and genCodeForShiftRMW()
  //     emitInsRMW()
  //     
  //  TODO-CQ: Enable support for more complex indirections (if needed) or use the value numbering
@@ -3194,21 +3194,13 @@ bool Lowering::IsRMWMemOpRootedAtStoreInd(GenTreePtr tree, GenTreePtr *outIndirC
             oper != GT_AND &&
             oper != GT_OR  &&
             oper != GT_XOR &&
-            oper != GT_LSH &&
-            oper != GT_RSH &&
-            oper != GT_RSZ &&
-            oper != GT_ROL &&
-            oper != GT_ROR)
+            !GenTree::OperIsShiftOrRotate(oper))
         {
             storeInd->SetRMWStatus(STOREIND_RMW_UNSUPPORTED_OPER);
             return false;
         }
 
-        if ((oper == GT_LSH ||
-            oper == GT_RSH ||
-            oper == GT_RSZ ||
-            oper == GT_ROL ||
-            oper == GT_ROR) &&
+        if (GenTree::OperIsShiftOrRotate(oper) &&
             varTypeIsSmall(storeInd))
         {
             // In ldind, Integer values smaller than 4 bytes, a boolean, or a character converted to 4 bytes
