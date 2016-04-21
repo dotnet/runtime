@@ -55,6 +55,7 @@ set __BuildSequential=
 set __msbuildCleanBuildArgs=
 set __msbuildExtraArgs=
 set __SignTypeReal=
+set __OfficialBuildIdArg=
 
 set __BuildAll=
 
@@ -130,6 +131,15 @@ if /i not "%1" == "msbuildargs" goto SkipMsbuildArgs
 :CollectMsbuildArgs
 shift
 if "%1"=="" goto ArgsDone
+if /i [%1] == [/p:OfficialBuildId] (
+    if /I [%2]==[] (
+        echo Error: /p:OfficialBuildId arg should have a value
+        exit /b 1
+    )
+    set __OfficialBuildIdArg=/p:OfficialBuildId=%2
+    shift
+    goto CollectMsbuildArgs
+)
 set __msbuildExtraArgs=%__msbuildExtraArgs% %1
 set __PassThroughArgs=%__PassThroughArgs% %1
 goto CollectMsbuildArgs
@@ -284,7 +294,7 @@ REM ============================================================================
 
 :: Generate _version.h
 if exist "%__RootBinDir%\obj\_version.h" del "%__RootBinDir%\obj\_version.h"
-%_msbuildexe% "%__ProjectFilesDir%\build.proj" /t:GenerateVersionHeader /p:NativeVersionHeaderFile="%__RootBinDir%\obj\_version.h" /p:GenerateVersionHeader=true
+%_msbuildexe% "%__ProjectFilesDir%\build.proj" /t:GenerateVersionHeader /p:NativeVersionHeaderFile="%__RootBinDir%\obj\_version.h" /p:GenerateVersionHeader=true %__OfficialBuildIdArg%
 if defined __MscorlibOnly goto PerformMScorlibBuild
 
 if defined __SkipNativeBuild (
