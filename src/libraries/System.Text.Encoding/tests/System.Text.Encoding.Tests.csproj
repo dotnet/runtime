@@ -16,8 +16,8 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="ASCIIEncoding\ASCIIEncodingGetBytes.cs" />
-    <Compile Include="ASCIIEncoding\ASCIIEncodingGetChars.cs" />
+    <Compile Include="ASCIIEncoding\ASCIIEncodingEncode.cs" />
+    <Compile Include="ASCIIEncoding\ASCIIEncodingDecode.cs" />
     <Compile Include="ASCIIEncoding\ASCIIEncodingGetDecoder.cs" />
     <Compile Include="ASCIIEncoding\ASCIIEncodingGetPreamble.cs" />
     <Compile Include="ASCIIEncoding\ASCIIEncodingGetEncoder.cs" />
