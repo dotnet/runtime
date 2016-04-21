@@ -3588,18 +3588,18 @@ get_default_field_value (MonoDomain* domain, MonoClassField *field, void *value,
 }
 
 void
-mono_field_static_get_value_for_thread (MonoInternalThread *thread, MonoVTable *vt, MonoClassField *field, void *value)
+mono_field_static_get_value_for_thread (MonoInternalThread *thread, MonoVTable *vt, MonoClassField *field, void *value, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoError error;
 	void *src;
+
+	mono_error_init (error);
 
 	g_return_if_fail (field->type->attrs & FIELD_ATTRIBUTE_STATIC);
 	
 	if (field->type->attrs & FIELD_ATTRIBUTE_LITERAL) {
-		get_default_field_value (vt->domain, field, value, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		get_default_field_value (vt->domain, field, value, error);
 		return;
 	}
 
@@ -3634,7 +3634,10 @@ mono_field_static_get_value (MonoVTable *vt, MonoClassField *field, void *value)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 
-	mono_field_static_get_value_for_thread (mono_thread_internal_current (), vt, field, value);
+	MonoError error;
+
+	mono_field_static_get_value_for_thread (mono_thread_internal_current (), vt, field, value, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 }
 
 /**

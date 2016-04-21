@@ -1604,7 +1604,7 @@ MonoObject *
 mono_object_new_alloc_specific_checked (MonoVTable *vtable, MonoError *error);
 
 void
-mono_field_static_get_value_for_thread (MonoInternalThread *thread, MonoVTable *vt, MonoClassField *field, void *value);
+mono_field_static_get_value_for_thread (MonoInternalThread *thread, MonoVTable *vt, MonoClassField *field, void *value, MonoError *error);
 
 /* exported, used by the debugger */
 MONO_API void *

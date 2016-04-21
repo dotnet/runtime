@@ -8159,7 +8159,9 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 
 			vtable = mono_class_vtable (domain, f->parent);
 			val = (guint8 *)g_malloc (mono_class_instance_size (mono_class_from_mono_type (f->type)));
-			mono_field_static_get_value_for_thread (thread ? thread : mono_thread_internal_current (), vtable, f, val);
+			mono_field_static_get_value_for_thread (thread ? thread : mono_thread_internal_current (), vtable, f, val, &error);
+			if (!is_ok (&error))
+				return ERR_INVALID_FIELDID;
 			buffer_add_value (buf, f->type, val, domain);
 			g_free (val);
 		}
