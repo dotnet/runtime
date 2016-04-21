@@ -9,8 +9,6 @@ namespace System.Text.Tests
 {
     public class UnicodeEncodingDecode
     {
-        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
-
         public static IEnumerable<object[]> Decode_TestData()
         {
             // All ASCII chars
