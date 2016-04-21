@@ -83,18 +83,7 @@ namespace System.Text.Tests
         #endregion
 
         #region Negative Test Cases
-        [Fact]
-        public void NegTest1()
-        {
-            NegativeTest<ArgumentOutOfRangeException>(Encoding.UTF8, -1, "00D6");
-        }
-
-        [Fact]
-        public void NegTest2()
-        {
-            NegativeTest<ArgumentOutOfRangeException>(Encoding.UTF8, Int32.MaxValue, "00E6");
-        }
-
+        
         [Fact]
         public void NegTest3()
         {
@@ -117,18 +106,6 @@ namespace System.Text.Tests
         public void NegTest6()
         {
             NegativeTest<ArgumentOutOfRangeException>(Encoding.BigEndianUnicode, Int32.MaxValue, "00EA");
-        }
-
-        [Fact]
-        public void NegTest7()
-        {
-            NegativeTest<ArgumentOutOfRangeException>(Encoding.UTF8, Int32.MaxValue, "00EB");
-        }
-
-        [Fact]
-        public void NegTest8()
-        {
-            NegativeTest<ArgumentOutOfRangeException>(Encoding.UTF8, -1, "00DB");
         }
         #endregion
 
