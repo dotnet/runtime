@@ -2523,11 +2523,12 @@ public :
     InlineInfo*          impInlineInfo;
     InlineStrategy*      m_inlineStrategy;
 
-    // Get the maximum IL size allowed for an inline
-    unsigned             getImpInlineSize() const { return impInlineSize; }
-
     // The Compiler* that is the root of the inlining tree of which "this" is a member.
     Compiler*            impInlineRoot();
+
+#if defined(DEBUG) || defined(INLINE_DATA)
+    unsigned __int64     getInlineCycleCount() { return m_compCycles; }
+#endif // defined(DEBUG) || defined(INLINE_DATA)
 
     bool                 fgNoStructPromotion;        // Set to TRUE to turn off struct promotion for this method.
     bool                 fgNoStructParamPromotion;   // Set to TRUE to turn off struct promotion for parameters this method.
@@ -3087,8 +3088,6 @@ private:
 #endif // DEBUG
 
     bool                seenConditionalJump;
-
-    unsigned            impInlineSize; // max IL size for inlining
 
     static BOOL         impIsAddressInLocal(GenTreePtr tree, GenTreePtr * lclVarTreeOut);
 
@@ -8588,10 +8587,8 @@ public:
     static fgWalkPreFn      gsMarkPtrsAndAssignGroups;  // Shadow param analysis tree-walk
     static fgWalkPreFn      gsReplaceShadowParams;      // Shadow param replacement tree-walk
 
-#define ALWAYS_INLINE_SIZE               16         // Method with <= ALWAYS_INLINE_SIZE IL bytes will always be inlined.
 #define DEFAULT_MAX_INLINE_SIZE         100         // Method with >  DEFAULT_MAX_INLINE_SIZE IL bytes will never be inlined.
                                                     // This can be overwritten by setting complus_JITInlineSize env variable.
-#define IMPLEMENTATION_MAX_INLINE_SIZE  _UI16_MAX   // Maximum method size supported by this implementation 
                                          
 private:
 #ifdef FEATURE_JIT_METHOD_PERF
