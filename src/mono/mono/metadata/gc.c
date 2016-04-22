@@ -95,11 +95,13 @@ guarded_wait (HANDLE handle, guint32 timeout, gboolean alertable)
 static void
 add_thread_to_finalize (MonoInternalThread *thread)
 {
+	MonoError error;
 	mono_finalizer_lock ();
 	if (!threads_to_finalize)
 		MONO_GC_REGISTER_ROOT_SINGLE (threads_to_finalize, MONO_ROOT_SOURCE_FINALIZER_QUEUE, "finalizable threads list");
-	threads_to_finalize = mono_mlist_append (threads_to_finalize, (MonoObject*)thread);
+	threads_to_finalize = mono_mlist_append_checked (threads_to_finalize, (MonoObject*)thread, &error);
 	mono_finalizer_unlock ();
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 }
 
 static gboolean suspend_finalizers = FALSE;
