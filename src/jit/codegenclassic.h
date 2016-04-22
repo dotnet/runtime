@@ -286,6 +286,9 @@
                                                              regMaskTP  destReg,
                                                              regMaskTP  bestReg);
 
+    void                genCodeForBlkOp                     (GenTreePtr tree,
+                                                             regMaskTP  destReg);
+
     void                genCodeForTreeSmpOp (GenTreePtr     tree,
                                              regMaskTP      destReg,
                                              regMaskTP      bestReg = RBM_NONE);

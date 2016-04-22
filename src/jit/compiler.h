@@ -6008,6 +6008,11 @@ private:
 
     void                rpPredictRefAssign  (unsigned       lclNum);
 
+    regMaskTP           rpPredictBlkAsgRegUse(GenTreePtr    tree,
+                                              rpPredictReg  predictReg,
+                                              regMaskTP     lockedRegs,
+                                              regMaskTP     rsvdRegs);
+
     regMaskTP           rpPredictTreeRegUse (GenTreePtr     tree,
                                              rpPredictReg   predictReg,
                                              regMaskTP      lockedRegs,
