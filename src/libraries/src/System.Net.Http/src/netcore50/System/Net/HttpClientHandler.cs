@@ -307,7 +307,7 @@ namespace System.Net.Http
 
         public bool CheckCertificateRevocationList
         {
-            // TODO: We can't get this property to actually work yet since the current WinRT Windows.Web.Http APIs don't have a setting for this.
+            // We can't get this property to actually work yet since the current WinRT Windows.Web.Http APIs don't have a setting for this.
             // FYI: The WinRT API always checks for certificate revocation. If the revocation status can't be determined completely, i.e.
             // the revocation server is offline, then the request is still allowed.
             get { return true; }
@@ -350,7 +350,7 @@ namespace System.Net.Http
             
             // The .NET Desktop System.Net Http APIs (based on HttpWebRequest/HttpClient) uses no caching by default.
             // To preserve app-compat, we turn off caching (as much as possible) in the WinRT HttpClient APIs.
-            // TODO: use RTHttpCacheReadBehavior.NoCache when available in the next version of WinRT HttpClient API.
+            // TODO (#7877): use RTHttpCacheReadBehavior.NoCache when available in the next version of WinRT HttpClient API.
             this.rtFilter.CacheControl.ReadBehavior = RTHttpCacheReadBehavior.MostRecent; 
             this.rtFilter.CacheControl.WriteBehavior = RTHttpCacheWriteBehavior.NoCache;
         }

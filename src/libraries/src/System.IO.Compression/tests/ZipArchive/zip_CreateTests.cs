@@ -5,6 +5,7 @@
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.NetCore.Extensions;
 
 namespace System.IO.Compression.Tests
 {
@@ -75,7 +76,7 @@ namespace System.IO.Compression.Tests
         [Theory]
         [InlineData("unicode", true)]
         [InlineData("unicode", false)]
-        [ActiveIssue(5096, PlatformID.AnyUnix)]
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Jenkins fails with unicode characters [JENKINS-12610]
         public static async Task CreateNormal_Unicode(string folder, bool seekable)
         {
             using (var s = new MemoryStream())

@@ -13,18 +13,7 @@ namespace System.Text.Tests
         private const string c_TEST_STR = "za\u0306\u01FD\u03B2\uD8FF\uDCFF";
         #endregion
 
-        #region Positive Test Cases 
-        // PosTest1: Verify method GetBytes(System.String) with UTF8.
-        [Fact]
-        public void PosTest1()
-        {
-            Encoding u8 = Encoding.UTF8;
-
-            byte[] actualBytesUTF8 = new byte[] {
-                0x7A, 0x61, 0xCC ,0x86, 0xC7 ,0xBD,
-                0xCE ,0xB2 ,0xF1, 0x8F ,0xB3 ,0xBF};
-            VerifyByteItemValue(u8.GetBytes(c_TEST_STR), actualBytesUTF8);
-        }
+        #region Positive Test Cases
 
         // PosTest2: Verify method GetBytes(System.String) with Unicode.
         [Fact]

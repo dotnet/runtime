@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Tests
@@ -479,7 +480,10 @@ namespace System.Tests
 
             Uri invalidPunicodeUri = new Uri("http://xn--\u1234pck.com");
             yield return new object[] { invalidPunicodeUri, UriComponents.Host, "xn--\u1234pck.com" };
-            yield return new object[] { invalidPunicodeUri, UriComponents.NormalizedHost, "xn--\u1234pck.com" };
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // TODO: [ActiveIssue(7921, PlatformID.AnyUnix)]
+            {
+                yield return new object[] { invalidPunicodeUri, UriComponents.NormalizedHost, "xn--\u1234pck.com" };
+            }
 
             // Custom port
             Uri customPortUri = new Uri("http://www.domain.com:50");
@@ -537,7 +541,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(GetComponents_Basic_TestData))]
-        [ActiveIssue(7791, PlatformID.AnyUnix)]
         public void GetComponents(Uri uri, UriComponents components, string expected)
         {
             GetComponents(uri, components, UriFormat.SafeUnescaped, expected);
@@ -608,7 +611,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(GetComponents_Advanced_TestData))]
-        [ActiveIssue(7791, PlatformID.AnyUnix)]
         public void GetComponents(Uri uri, UriComponents components, UriFormat format, string expected)
         {
             Assert.Equal(expected, uri.GetComponents(components, format));

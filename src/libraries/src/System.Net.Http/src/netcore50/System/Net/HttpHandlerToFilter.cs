@@ -90,7 +90,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    // TODO: We need to throw an exception here similar to .NET Desktop
+                    // TODO (#7878): We need to throw an exception here similar to .NET Desktop
                     // throw new ArgumentException(SR.GetString(SR.net_wrongversion), "value");
                     //
                     // But we need to do that checking in the HttpClientHandler object itself.

@@ -13,13 +13,14 @@ namespace System.Text.Tests
         {
             yield return new object[] { new UnicodeEncoding() };
             yield return new object[] { new UTF7Encoding() };
-            yield return new object[] { new UTF8Encoding() };
+            yield return new object[] { new UTF8Encoding(true) };
+            yield return new object[] { new UTF8Encoding(false) };
             yield return new object[] { new ASCIIEncoding() };
         }
         
         [Theory]
         [MemberData(nameof(Encodings_TestData))]
-        public static void GetByteCount_Invalid(Encoding encoding)
+        public static unsafe void GetByteCount_Invalid(Encoding encoding)
         {
             // Chars is null
             Assert.Throws<ArgumentNullException>(encoding is ASCIIEncoding ? "chars" : "s", () => encoding.GetByteCount((string)null));
@@ -36,11 +37,19 @@ namespace System.Text.Tests
             Assert.Throws<ArgumentOutOfRangeException>("chars", () => encoding.GetByteCount(new char[3], 2, 2));
             Assert.Throws<ArgumentOutOfRangeException>("chars", () => encoding.GetByteCount(new char[3], 3, 1));
             Assert.Throws<ArgumentOutOfRangeException>("chars", () => encoding.GetByteCount(new char[3], 4, 0));
+
+            char[] chars = new char[3];
+            fixed (char* pChars = chars)
+            {
+                char* pCharsLocal = pChars;
+                Assert.Throws<ArgumentNullException>("chars", () => encoding.GetByteCount(null, 0));
+                Assert.Throws<ArgumentOutOfRangeException>("count", () => encoding.GetByteCount(pCharsLocal, -1));
+            }
         }
         
         [Theory]
         [MemberData(nameof(Encodings_TestData))]
-        public static void GetBytes_Invalid(Encoding encoding)
+        public static unsafe void GetBytes_Invalid(Encoding encoding)
         {
             string expectedStringParamName = encoding is ASCIIEncoding ? "chars" : "s";
 
@@ -85,11 +94,34 @@ namespace System.Text.Tests
             // Bytes does not have enough capacity to accomodate result
             Assert.Throws<ArgumentException>("bytes", () => encoding.GetBytes("abc", 0, 3, new byte[1], 0));
             Assert.Throws<ArgumentException>("bytes", () => encoding.GetBytes(new char[3], 0, 3, new byte[1], 0));
+
+            char[] chars = new char[3];
+            byte[] bytes = new byte[3];
+            byte[] smallBytes = new byte[1];
+            fixed (char* pChars = chars)
+            fixed (byte* pBytes = bytes)
+            fixed (byte* pSmallBytes = smallBytes)
+            {
+                char* pCharsLocal = pChars;
+                byte* pBytesLocal = pBytes;
+                byte* pSmallBytesLocal = pSmallBytes;
+
+                // Bytes or chars is null
+                Assert.Throws<ArgumentNullException>("chars", () => encoding.GetBytes((char*)null, 0, pBytesLocal, bytes.Length));
+                Assert.Throws<ArgumentNullException>("bytes", () => encoding.GetBytes(pCharsLocal, chars.Length, (byte*)null, bytes.Length));
+
+                // CharCount or byteCount is negative
+                Assert.Throws<ArgumentOutOfRangeException>("charCount", () => encoding.GetBytes(pCharsLocal, -1, pBytesLocal, bytes.Length));
+                Assert.Throws<ArgumentOutOfRangeException>("byteCount", () => encoding.GetBytes(pCharsLocal, chars.Length, pBytesLocal, -1));
+
+                // Bytes does not have enough capacity to accomodate result
+                Assert.Throws<ArgumentException>("bytes", () => encoding.GetBytes(pCharsLocal, chars.Length, pSmallBytesLocal, smallBytes.Length));
+            }
         }
 
         [Theory]
         [MemberData(nameof(Encodings_TestData))]
-        public static void GetCharCount_Invalid(Encoding encoding)
+        public static unsafe void GetCharCount_Invalid(Encoding encoding)
         {
             // Bytes is null
             Assert.Throws<ArgumentNullException>("bytes", () => encoding.GetCharCount(null));
@@ -106,11 +138,19 @@ namespace System.Text.Tests
             Assert.Throws<ArgumentOutOfRangeException>("bytes", () => encoding.GetCharCount(new byte[4], 2, 3));
             Assert.Throws<ArgumentOutOfRangeException>("bytes", () => encoding.GetCharCount(new byte[4], 1, 4));
             Assert.Throws<ArgumentOutOfRangeException>("bytes", () => encoding.GetCharCount(new byte[4], 0, 5));
+
+            byte[] bytes = new byte[4];
+            fixed (byte* pBytes = bytes)
+            {
+                byte* pBytesLocal = pBytes;
+                Assert.Throws<ArgumentNullException>("bytes", () => encoding.GetCharCount(null, 0));
+                Assert.Throws<ArgumentOutOfRangeException>("count", () => encoding.GetCharCount(pBytesLocal, -1));
+            }
         }
 
         [Theory]
         [MemberData(nameof(Encodings_TestData))]
-        public static void GetChars_Invalid(Encoding encoding)
+        public static unsafe void GetChars_Invalid(Encoding encoding)
         {
             // Bytes is null
             Assert.Throws<ArgumentNullException>("bytes", () => encoding.GetChars(null));
@@ -146,6 +186,29 @@ namespace System.Text.Tests
 
             // Chars does not have enough capacity to accomodate result
             Assert.Throws<ArgumentException>("chars", () => encoding.GetChars(new byte[4], 0, 4, new char[1], 1));
+
+            byte[] bytes = new byte[4];
+            char[] chars = new char[4];
+            char[] smallChars = new char[1];
+            fixed (byte* pBytes = bytes)
+            fixed (char* pChars = chars)
+            fixed (char* pSmallChars = smallChars)
+            {
+                byte* pBytesLocal = pBytes;
+                char* pCharsLocal = pChars;
+                char* pSmallCharsLocal = pSmallChars;
+
+                // Bytes or chars is null
+                Assert.Throws<ArgumentNullException>("bytes", () => encoding.GetChars((byte*)null, 0, pCharsLocal, chars.Length));
+                Assert.Throws<ArgumentNullException>("chars", () => encoding.GetChars(pBytesLocal, bytes.Length, (char*)null, chars.Length));
+
+                // ByteCount or charCount is negative
+                Assert.Throws<ArgumentOutOfRangeException>("byteCount", () => encoding.GetChars(pBytesLocal, -1, pCharsLocal, chars.Length));
+                Assert.Throws<ArgumentOutOfRangeException>("charCount", () => encoding.GetChars(pBytesLocal, bytes.Length, pCharsLocal, -1));
+
+                // Chars does not have enough capacity to accomodate result
+                Assert.Throws<ArgumentException>("chars", () => encoding.GetChars(pBytesLocal, bytes.Length, pSmallCharsLocal, smallChars.Length));
+            }
         }
 
         [Theory]
@@ -165,6 +228,12 @@ namespace System.Text.Tests
         public static void GetMaxCharCount_Invalid(Encoding encoding)
         {
             Assert.Throws<ArgumentOutOfRangeException>("byteCount", () => encoding.GetMaxCharCount(-1));
+
+            // TODO: find a more generic way to find what byteCount is invalid
+            if (encoding is UTF8Encoding)
+            {
+                Assert.Throws<ArgumentOutOfRangeException>("byteCount", () => encoding.GetMaxCharCount(int.MaxValue));
+            }
         }
 
         [Theory]

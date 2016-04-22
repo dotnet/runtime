@@ -3,250 +3,79 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
-using System;
-using System.Collections;
-using System.Collections.Specialized;
-using GenStrings;
 
 namespace System.Collections.Specialized.Tests
 {
-    public class SetItemStrStrStringDictionaryTests
+    public class StringDictionaryItemSetTests
     {
-        public const int MAX_LEN = 50;          // max length of random strings
+        [Theory]
+        [InlineData(0)]
+        [InlineData(5)]
+        public void Item_Set(int count)
+        {
+            StringDictionary stringDictionary = Helpers.CreateStringDictionary(count);
+
+            for (int i = 0; i < stringDictionary.Count; i++)
+            {
+                string key = "Key_" + i;
+                string value = "Value" + i * 2;
+                if (i == 0)
+                {
+                    stringDictionary[key.ToUpperInvariant()] = value.ToUpperInvariant();
+                    Assert.False(stringDictionary.ContainsValue(value));
+                    Assert.True(stringDictionary.ContainsValue(value.ToUpperInvariant()));
+                    Assert.False(stringDictionary.ContainsValue(value.ToLowerInvariant()));
+                }
+                else if (i == 1)
+                {
+                    stringDictionary[key.ToLowerInvariant()] = value.ToLowerInvariant();
+                    Assert.False(stringDictionary.ContainsValue(value));
+                    Assert.False(stringDictionary.ContainsValue(value.ToUpperInvariant()));
+                    Assert.True(stringDictionary.ContainsValue(value.ToLowerInvariant()));
+                }
+                else
+                {
+                    stringDictionary[key] = value;
+                    Assert.True(stringDictionary.ContainsValue(value));
+                    Assert.False(stringDictionary.ContainsValue(value.ToUpperInvariant()));
+                    Assert.False(stringDictionary.ContainsValue(value.ToLowerInvariant()));
+                }
+                Assert.True(stringDictionary.ContainsKey(key));
+                Assert.Equal(count, stringDictionary.Count);
+            }
+
+            stringDictionary["new-key"] = "new-value";
+            Assert.Equal(count + 1, stringDictionary.Count);
+            Assert.True(stringDictionary.ContainsKey("new-key"));
+            Assert.True(stringDictionary.ContainsValue("new-value"));
+            Assert.Equal("new-value", stringDictionary["new-key"]);
+
+            stringDictionary["new-null-key"] = null;
+            Assert.Equal(count + 2, stringDictionary.Count);
+            Assert.True(stringDictionary.ContainsKey("new-null-key"));
+            Assert.True(stringDictionary.ContainsValue(null));
+            Assert.Null(stringDictionary["new-null-key"]);
+        }
 
         [Fact]
-        public void Test01()
+        public void Item_Set_IsCaseInsensitive()
         {
-            IntlStrings intl;
-            StringDictionary sd;
-            // simple string values
-            string[] values =
-            {
-                "",
-                " ",
-                "a",
-                "aa",
-                "text",
-                "     spaces",
-                "1",
-                "$%^#",
-                "2222222222222222222222222",
-                System.DateTime.Today.ToString(),
-                Int32.MaxValue.ToString()
-            };
+            StringDictionary stringDictionary = new StringDictionary();
+            stringDictionary["KEY"] = "value1";
+            stringDictionary["kEy"] = "value2";
+            stringDictionary["key"] = "value3";
 
-            // keys for simple string values
-            string[] keys =
-            {
-                "zero",
-                "one",
-                " ",
-                "",
-                "aa",
-                "1",
-                System.DateTime.Today.ToString(),
-                "$%^#",
-                Int32.MaxValue.ToString(),
-                "     spaces",
-                "2222222222222222222222222"
-            };
+            Assert.Equal(1, stringDictionary.Count);
+            Assert.Equal("value3", stringDictionary["key"]);
+        }
 
-            string itm;         // returned Item
-            // initialize IntStrings
-            intl = new IntlStrings();
-
-
-            // [] StringDictionary is constructed as expected
-            //-----------------------------------------------------------------
-
-            sd = new StringDictionary();
-
-            // [] set Item on empty dictionary
-            //
-
-            // item with given key should be added
-            for (int i = 0; i < keys.Length; i++)
-            {
-                if (sd.Count > 0)
-                    sd.Clear();
-                sd[keys[i]] = values[i];
-                if (sd.Count != 1)
-                {
-                    Assert.False(true, string.Format("Error, didn't add item with {0} key", i));
-                }
-                if (String.Compare(sd[keys[i]], values[i]) != 0)
-                {
-                    Assert.False(true, string.Format("Error, added wrong value", i));
-                }
-            }
-
-            //
-            // [] set Item on filled dictionary
-            //
-            int len = values.Length;
-            sd.Clear();
-            for (int i = 0; i < len; i++)
-            {
-                sd.Add(keys[i], values[i]);
-            }
-            if (sd.Count != len)
-            {
-                Assert.False(true, string.Format("Error, count is {0} instead of {1}", sd.Count, len));
-            }
-
-            for (int i = 0; i < len; i++)
-            {
-                itm = "item" + i;
-                sd[keys[i]] = itm;
-
-                if (String.Compare(sd[keys[i]], itm) != 0)
-                {
-                    Assert.False(true, string.Format("Error, returned {1} instead of {2}", i, sd[keys[i]], itm));
-                }
-            }
-
-
-
-            //
-            // [] set Item on dictionary with identical values
-            //
-
-            sd.Clear();
-            string intlStr = intl.GetRandomString(MAX_LEN);
-            string intlStr1 = intl.GetRandomString(MAX_LEN);
-
-            sd.Add("keykey1", intlStr);        // 1st duplicate
-            for (int i = 0; i < len; i++)
-            {
-                sd.Add(keys[i], values[i]);
-            }
-            sd.Add("keykey2", intlStr);        // 2nd duplicate
-            if (sd.Count != len + 2)
-            {
-                Assert.False(true, string.Format("Error, count is {0} instead of {1}", sd.Count, len + 2));
-            }
-
-            // set/get Item
-            //
-            sd["keykey1"] = intlStr1;
-            if (String.Compare(sd["keykey1"], intlStr1) != 0)
-            {
-                Assert.False(true, string.Format("Error, returned {1} instead of {2}", sd["keykey1"], intlStr1));
-            }
-
-            sd["keykey2"] = intlStr1;
-            if (String.Compare(sd["keykey2"], intlStr1) != 0)
-            {
-                Assert.False(true, string.Format("Error, returned {1} instead of {2}", sd["keykey2"], intlStr1));
-            }
-
-            //
-            // Intl strings
-            // [] set Item on dictionary filled with Intl strings
-            //
-
-            string[] intlValues = new string[len * 2];
-            string[] intlSets = new string[len];
-            // fill array with unique strings
-            //
-            for (int i = 0; i < len * 2; i++)
-            {
-                string val = intl.GetRandomString(MAX_LEN);
-                while (Array.IndexOf(intlValues, val) != -1)
-                    val = intl.GetRandomString(MAX_LEN);
-                intlValues[i] = val;
-            }
-            for (int i = 0; i < len; i++)
-            {
-                intlSets[i] = intl.GetRandomString(MAX_LEN);
-            }
-
-            //
-            // will use first half of array as values and second half as keys
-            //
-            sd.Clear();
-            for (int i = 0; i < len; i++)
-            {
-                sd.Add(intlValues[i + len], intlValues[i]);
-            }
-            if (sd.Count != len)
-            {
-                Assert.False(true, string.Format("Error, count is {0} instead of {1}", sd.Count, len));
-            }
-
-            // get item
-            for (int i = 0; i < len; i++)
-            {
-                sd[intlValues[i + len]] = intlSets[i];
-                if (String.Compare(sd[intlValues[i + len]], intlSets[i]) != 0)
-                {
-                    Assert.False(true, string.Format("Error, returned {1} instead of {2}", i, sd[intlValues[i + len]], intlSets[i]));
-                }
-            }
-
-            //
-            // [] Case sensitivity: keys are always lowercased
-            //
-
-            sd.Clear();
-
-            string[] intlValuesUpper = new string[len];
-
-            // fill array with unique strings
-            //
-            for (int i = 0; i < len * 2; i++)
-            {
-                intlValues[i] = intlValues[i].ToLowerInvariant();
-            }
-
-            // array of uppercase keys
-            for (int i = 0; i < len; i++)
-            {
-                intlValuesUpper[i] = intlValues[i].ToUpperInvariant();
-            }
-
-            sd.Clear();
-            //
-            // will use first half of array as values and second half as keys
-            //
-            for (int i = 0; i < len; i++)
-            {
-                sd.Add(intlValues[i + len], intlValues[i]);     // adding lowercase strings
-            }
-            if (sd.Count != len)
-            {
-                Assert.False(true, string.Format("Error, count is {0} instead of {1}", sd.Count, len));
-            }
-
-            // set/get Item
-            for (int i = 0; i < len; i++)
-            {
-                sd[intlValues[i + len]] = intlValuesUpper[i];
-                if (String.Compare(sd[intlValues[i + len]], intlValuesUpper[i]) != 0)
-                {
-                    Assert.False(true, string.Format("Error, returned {1} instead of {2}", i, sd[intlValues[i + len]], intlValuesUpper[i]));
-                }
-            }
-
-            //
-            // [] Invalid parameter - set Item(null)
-            //
-            Assert.Throws<ArgumentNullException>(() => { sd[null] = intlStr; });
-
-            //
-            // [] set to null
-            //
-
-
-            if (!sd.ContainsKey(keys[0]))
-            {
-                sd.Add(keys[0], values[0]);
-            }
-            sd[keys[0]] = null;
-            if (sd[keys[0]] != null)
-            {
-                Assert.False(true, string.Format("Error, returned non-null"));
-            }
+        [Theory]
+        [InlineData(0)]
+        [InlineData(5)]
+        public void Item_Set_NullKey_ThrowsArgumentNullException(int count)
+        {
+            StringDictionary stringDictionary = Helpers.CreateStringDictionary(count);
+            Assert.Throws<ArgumentNullException>("key", () => stringDictionary[null] = "value");
         }
     }
 }

@@ -409,7 +409,7 @@ namespace System.Net.Http
                 EventSourceTrace("Proxy: {0}", proxyUri);
 
                 KeyValuePair<NetworkCredential, CURLAUTH> credentialScheme = GetCredentials(
-                    proxyUri, _handler.Proxy.Credentials, AuthTypesPermittedByCredentialKind(_handler.Proxy.Credentials));
+                    proxyUri, _handler.Proxy.Credentials, s_orderedAuthTypes);
                 SetProxyCredentials(credentialScheme.Key);
             }
 
@@ -645,10 +645,16 @@ namespace System.Net.Http
 
             internal sealed class SendTransferState
             {
-                internal readonly byte[] _buffer = new byte[RequestBufferSize]; // PERF TODO: Determine if this should be optimized to start smaller and grow
+                internal readonly byte[] _buffer;
                 internal int _offset;
                 internal int _count;
                 internal Task<int> _task;
+
+                internal SendTransferState(int bufferLength)
+                {
+                    Debug.Assert(bufferLength > 0 && bufferLength <= MaxRequestBufferSize, $"Expected 0 < bufferLength <= {MaxRequestBufferSize}, got {bufferLength}");
+                    _buffer = new byte[bufferLength];
+                }
 
                 internal void SetTaskOffsetCount(Task<int> task, int offset, int count)
                 {

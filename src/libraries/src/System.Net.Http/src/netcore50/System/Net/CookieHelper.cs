@@ -27,7 +27,7 @@ namespace System.Net
             }
             catch (InternalCookieException)
             {
-                // TODO: We should log this.  But there isn't much we can do about it other
+                // TODO (#7856): We should log this.  But there isn't much we can do about it other
                 // than to drop the rest of the cookies.
             }
             

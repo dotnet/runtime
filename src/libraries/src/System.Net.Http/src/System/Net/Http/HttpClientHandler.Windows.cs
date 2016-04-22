@@ -136,7 +136,7 @@ namespace System.Net.Http
             // 'Transfer-Encoding: chunked'. The handler will never automatically buffer in the request content.
             get { return 0; }
             
-            // TODO: Add message/link to exception explaining the deprecation. 
+            // TODO (#7879): Add message/link to exception explaining the deprecation. 
             // Update corresponding exception in HttpClientHandler.Unix.cs if/when this is updated.
             set { throw new PlatformNotSupportedException(); }
         }

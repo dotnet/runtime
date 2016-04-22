@@ -10,14 +10,6 @@ namespace System.Text.Tests
     public class EncodingGetCharCount1
     {
         #region PositiveTest
-        [Fact]
-        public void PosTest1()
-        {
-            byte[] bytes = new byte[0];
-            Encoding myEncode = Encoding.UTF8;
-            int intVal = myEncode.GetCharCount(bytes);
-            Assert.Equal(0, intVal);
-        }
 
         [Fact]
         public void PosTest2()

@@ -183,10 +183,10 @@ namespace System.Net.WebSockets
                 SR.net_webstatus_ConnectFailure,
                 innerException);
 
-            // TODO: handle SSL related exceptions.
+            // TODO (#2509): handle SSL related exceptions.
             state.UpdateState(WebSocketState.Closed);
 
-            // TODO: Create exception from WINHTTP_CALLBACK_STATUS_SECURE_FAILURE flags.
+            // TODO (#2509): Create exception from WINHTTP_CALLBACK_STATUS_SECURE_FAILURE flags.
             state.TcsUpgrade.TrySetException(exception);
         }
         #endregion

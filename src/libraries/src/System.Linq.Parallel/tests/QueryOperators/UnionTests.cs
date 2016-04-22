@@ -21,7 +21,7 @@ namespace System.Linq.Parallel.Tests
             }
         }
 
-        // Union returns only the ordered portion ordered.  See Issue #1331
+        // Union returns only the ordered portion ordered.
         // Get two ranges, both ordered.
         public static IEnumerable<object[]> UnionData(int[] leftCounts, int[] rightCounts)
         {

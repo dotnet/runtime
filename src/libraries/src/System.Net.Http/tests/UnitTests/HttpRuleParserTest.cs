@@ -15,28 +15,44 @@ namespace System.Net.Http.Tests
     {
         private const string ValidTokenChars = "!#$%&'*+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz^_`|~";
 
-        [Fact]
-        public void IsTokenChar_IterateArrayWithAllValidTokenChars_AllCharsConsideredValid()
+        public static IEnumerable<object[]> ValidTokenCharsArguments
         {
-            for (int i = 0; i < ValidTokenChars.Length; i++)
+            get
             {
-                // TODO: This test should be a [Theory]
-                Assert.True(HttpRuleParser.IsTokenChar(ValidTokenChars[i]));
+                foreach (var c in ValidTokenChars)
+                {
+                    yield return new object[] { c };
+                }
             }
         }
 
-        [Fact]
-        public void IsTokenChar_IterateArrayWithAllInvalidTokenChars_AllCharsConsideredInvalid()
+        public static IEnumerable<object[]> InvalidTokenCharsArguments
         {
-            // All octets not in 'validTokenChars' must be considered invalid characters.
-            for (int i = 0; i < 256; i++)
+            get
             {
-                if (ValidTokenChars.IndexOf((char)i) == -1)
+                // All octets not in 'ValidTokenChars' must be considered invalid characters.
+                for (int i = 0; i < 256; i++)
                 {
-                    // TODO: This test should be a [Theory]
-                    Assert.False(HttpRuleParser.IsTokenChar((char)i));
+                    if (ValidTokenChars.IndexOf((char)i) == -1)
+                    {
+                        yield return new object[] { (char)i };
+                    }
                 }
             }
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidTokenCharsArguments))]
+        public void IsTokenChar_ValidTokenChars_ConsideredValid(char token)
+        {
+            Assert.True(HttpRuleParser.IsTokenChar(token));
+        }
+
+        [Theory]
+        [MemberData(nameof(InvalidTokenCharsArguments))]
+        public void IsTokenChar_InvalidTokenChars_ConsideredInvalid(char token)
+        {
+            Assert.False(HttpRuleParser.IsTokenChar(token));
         }
 
         [Fact]

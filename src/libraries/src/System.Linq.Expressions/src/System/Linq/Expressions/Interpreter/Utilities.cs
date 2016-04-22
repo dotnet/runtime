@@ -219,7 +219,9 @@ namespace System.Linq.Expressions.Interpreter
 
     internal static class ExceptionHelpers
     {
+#if FEATURE_STACK_TRACES
         private const string prevStackTraces = "PreviousStackTraces";
+#endif
 
         /// <summary>
         /// Updates an exception before it's getting re-thrown so

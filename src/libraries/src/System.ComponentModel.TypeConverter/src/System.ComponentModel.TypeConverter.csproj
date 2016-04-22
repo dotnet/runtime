@@ -89,6 +89,7 @@
     <Compile Include="System\ComponentModel\UInt16Converter.cs" />
     <Compile Include="System\ComponentModel\UInt32Converter.cs" />
     <Compile Include="System\ComponentModel\UInt64Converter.cs" />
+    <Compile Include="System\ComponentModel\UriTypeConverter.cs" />
     <Compile Include="System\ComponentModel\WeakHashtable.cs" />
     <Compile Include="System\ComponentModel\Design\IDictionaryService.cs" />
     <Compile Include="System\ComponentModel\Design\IExtenderListService.cs" />

@@ -694,7 +694,7 @@ namespace System.Dynamic.Utils
         /// NOTE: This was designed to satisfy the needs of op_True and
         /// op_False, because we have to do runtime lookup for those. It may
         /// not work right for unary operators in general.
-        ///// </summary>
+        /// </summary>
         public static MethodInfo GetBooleanOperator(Type type, string name)
         {
             do

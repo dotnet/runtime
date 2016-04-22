@@ -89,7 +89,6 @@ namespace System.Net.NetworkInformation
             uint bufferSize = 0;
             SafeLocalAllocHandle buffer = null;
 
-            // TODO: #2485: This will probably require changes in the PAL for HostInformation.
             Interop.IpHlpApi.FIXED_INFO fixedInfo = HostInformationPal.GetFixedInfo();
             List<SystemNetworkInterface> interfaceList = new List<SystemNetworkInterface>();
 

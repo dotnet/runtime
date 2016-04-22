@@ -106,7 +106,6 @@ namespace System.Globalization.Tests
         [InlineData("en_GB", "en-GB")]
         [InlineData("fr-FR", "fr-FR")]
         [InlineData("ru", "ru")]
-        [InlineData("", "en-US-POSIX")]
         public void CurrentCulture_BasedOnLangEnvVar(string langEnvVar, string expectedCultureName)
         {
             var psi = new ProcessStartInfo();
