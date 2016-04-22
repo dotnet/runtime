@@ -8,157 +8,164 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using Xunit;
 
-public class DeletedTests
+namespace System.IO.Tests
 {
-    [Fact]
-    public static void FileSystemWatcher_Deleted_File()
+    public class DeletedTests : FileSystemWatcherTest
     {
-        using (var watcher = new FileSystemWatcher("."))
+        [Fact]
+        public void FileSystemWatcher_Deleted_File()
         {
-            string fileName = Guid.NewGuid().ToString();
-            watcher.Filter = fileName;
-            AutoResetEvent eventOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Deleted);
-
-
-            using (var file = new TemporaryTestFile(fileName))
+            using (var testDirectory = new TempDirectory(GetTestFilePath()))
+            using (var watcher = new FileSystemWatcher(testDirectory.Path))
             {
-                watcher.EnableRaisingEvents = true;
-            }
+                string fileName = Path.Combine(testDirectory.Path, GetTestFileName());
+                watcher.Filter = Path.GetFileName(fileName);
+                AutoResetEvent eventOccurred = WatchForEvents(watcher, WatcherChangeTypes.Deleted);
 
-            Utility.ExpectEvent(eventOccurred, "deleted");
-        }
-    }
-
-    [Fact]
-    public static void FileSystemWatcher_Deleted_Directory()
-    {
-        using (var watcher = new FileSystemWatcher("."))
-        {
-            string dirName = Guid.NewGuid().ToString();
-            watcher.Filter = dirName;
-            AutoResetEvent eventOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Deleted);
-
-            using (var dir = new TemporaryTestDirectory(dirName))
-            {
-                watcher.EnableRaisingEvents = true;
-            }
-
-            Utility.ExpectEvent(eventOccurred, "deleted");
-        }
-    }
-
-    [Fact]
-    public static void FileSystemWatcher_Deleted_Negative()
-    {
-        using (var dir = Utility.CreateTestDirectory())
-        using (var watcher = new FileSystemWatcher())
-        {
-            // put everything in our own directory to avoid collisions
-            watcher.Path = Path.GetFullPath(dir.Path);
-            watcher.Filter = "*.*";
-            AutoResetEvent eventOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Deleted);
-
-            // run all scenarios together to avoid unnecessary waits, 
-            // assert information is verbose enough to trace to failure cause
-
-            watcher.EnableRaisingEvents = true;
-
-            // create a file
-            using (var testFile = new TemporaryTestFile(Path.Combine(dir.Path, "file")))
-            using (var testDir = new TemporaryTestDirectory(Path.Combine(dir.Path, "dir")))
-            {
-                // change a file
-                testFile.WriteByte(0xFF);
-                testFile.Flush();
-
-                // renaming a directory
-                //
-                // We don't do this on Linux and OSX because depending on the timing of MOVED_FROM and MOVED_TO events,
-                // a rename can trigger delete + create as a deliberate handling of an edge case, and this
-                // test is checking that no delete events are raised.
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                using (var file = new TempFile(fileName))
                 {
-                    testDir.Move(testDir.Path + "_rename");
+                    watcher.EnableRaisingEvents = true;
+                }
+                Assert.False(File.Exists(fileName));
+
+                ExpectEvent(eventOccurred, "deleted");
+            }
+        }
+
+        [Fact]
+        public void FileSystemWatcher_Deleted_Directory()
+        {
+            using (var testDirectory = new TempDirectory(GetTestFilePath()))
+            using (var watcher = new FileSystemWatcher(testDirectory.Path))
+            {
+                string dirName = Path.Combine(testDirectory.Path, GetTestFileName());
+                watcher.Filter = Path.GetFileName(dirName);
+                AutoResetEvent eventOccurred = WatchForEvents(watcher, WatcherChangeTypes.Deleted);
+
+                using (var dir = new TempDirectory(dirName))
+                {
+                    watcher.EnableRaisingEvents = true;
                 }
 
-                Utility.ExpectNoEvent(eventOccurred, "deleted");
+                ExpectEvent(eventOccurred, "deleted");
             }
         }
-    }
 
-    [Fact]
-    public static void FileSystemWatcher_Deleted_NestedDirectories()
-    {
-        using (var dir = Utility.CreateTestDirectory())
-        using (var watcher = new FileSystemWatcher())
+        [Fact]
+        public void FileSystemWatcher_Deleted_Negative()
         {
-            AutoResetEvent createOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created); // not "using" to avoid race conditions with FSW callbacks
-            AutoResetEvent eventOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Deleted);
-
-            watcher.Path = Path.GetFullPath(dir.Path);
-            watcher.Filter = "*";
-            watcher.IncludeSubdirectories = true;
-            watcher.EnableRaisingEvents = true;
-
-            using (var firstDir = new TemporaryTestDirectory(Path.Combine(dir.Path, "dir1")))
+            using (var testDirectory = new TempDirectory(GetTestFilePath()))
+            using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, GetTestFileName())))
+            using (var watcher = new FileSystemWatcher())
             {
-                // Wait for the created event
-                Utility.ExpectEvent(createOccurred, "create");
+                // put everything in our own directory to avoid collisions
+                watcher.Path = Path.GetFullPath(dir.Path);
+                watcher.Filter = "*.*";
+                AutoResetEvent eventOccurred = WatchForEvents(watcher, WatcherChangeTypes.Deleted);
 
-                using (var secondDir = new TemporaryTestDirectory(Path.Combine(firstDir.Path, "dir2")))
+                // run all scenarios together to avoid unnecessary waits, 
+                // assert information is verbose enough to trace to failure cause
+
+                watcher.EnableRaisingEvents = true;
+
+                // create a file
+                using (var testFile = new TempFile(Path.Combine(dir.Path, "file")))
+                using (var testDir = new TempDirectory(Path.Combine(dir.Path, "dir")))
                 {
-                    // Wait for the created event
-                    Utility.ExpectEvent(createOccurred, "create");
+                    // change a file
+                    File.WriteAllText(testFile.Path, "change");
 
-                    using (var nestedDir = new TemporaryTestDirectory(Path.Combine(secondDir.Path, "nested")))
+                    // renaming a directory
+                    //
+                    // We don't do this on Linux and OSX because depending on the timing of MOVED_FROM and MOVED_TO events,
+                    // a rename can trigger delete + create as a deliberate handling of an edge case, and this
+                    // test is checking that no delete events are raised.
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                     {
-                        // Wait for the created event
-                        Utility.ExpectEvent(createOccurred, "create");
+                        Directory.Move(testDir.Path, testDir.Path + "_rename");
                     }
 
-                    Utility.ExpectEvent(eventOccurred, "deleted");
+                    ExpectNoEvent(eventOccurred, "deleted");
                 }
-
-                Utility.ExpectEvent(eventOccurred, "deleted");
             }
-
-            Utility.ExpectEvent(eventOccurred, "deleted");
         }
-    }
 
-    [Fact]
-    public static void FileSystemWatcher_Deleted_FileDeletedInNestedDirectory()
-    {
-        using (var dir = Utility.CreateTestDirectory())
-        using (var watcher = new FileSystemWatcher())
+        [Fact]
+        public void FileSystemWatcher_Deleted_NestedDirectories()
         {
-            AutoResetEvent createOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created); // not "using" to avoid race conditions with FSW callbacks
-            AutoResetEvent eventOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Deleted);
-
-            watcher.Path = Path.GetFullPath(dir.Path);
-            watcher.Filter = "*";
-            watcher.IncludeSubdirectories = true;
-            watcher.EnableRaisingEvents = true;
-
-            using (var firstDir = new TemporaryTestDirectory(Path.Combine(dir.Path, "dir1")))
+            using (var testDirectory = new TempDirectory(GetTestFilePath()))
+            using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, GetTestFileName())))
+            using (var watcher = new FileSystemWatcher())
             {
-                // Wait for the created event
-                Utility.ExpectEvent(createOccurred, "create");
+                AutoResetEvent createOccurred = WatchForEvents(watcher, WatcherChangeTypes.Created); // not "using" to avoid race conditions with FSW callbacks
+                AutoResetEvent eventOccurred = WatchForEvents(watcher, WatcherChangeTypes.Deleted);
 
-                using (var secondDir = new TemporaryTestDirectory(Path.Combine(dir.Path, "dir2")))
+                watcher.Path = Path.GetFullPath(dir.Path);
+                watcher.Filter = "*";
+                watcher.IncludeSubdirectories = true;
+                watcher.EnableRaisingEvents = true;
+
+                using (var firstDir = new TempDirectory(Path.Combine(dir.Path, "dir1")))
                 {
                     // Wait for the created event
-                    Utility.ExpectEvent(createOccurred, "create");
+                    ExpectEvent(createOccurred, "create");
 
-                    using (var nestedDir = new TemporaryTestFile(Path.Combine(secondDir.Path, "nestedFile"))) { }
+                    using (var secondDir = new TempDirectory(Path.Combine(firstDir.Path, "dir2")))
+                    {
+                        // Wait for the created event
+                        ExpectEvent(createOccurred, "create");
 
-                    Utility.ExpectEvent(eventOccurred, "deleted");
+                        using (var nestedDir = new TempDirectory(Path.Combine(secondDir.Path, "nested")))
+                        {
+                            // Wait for the created event
+                            ExpectEvent(createOccurred, "create");
+                        }
+
+                        ExpectEvent(eventOccurred, "deleted");
+                    }
+
+                    ExpectEvent(eventOccurred, "deleted");
                 }
 
-                Utility.ExpectEvent(eventOccurred, "deleted");
+                ExpectEvent(eventOccurred, "deleted");
             }
+        }
 
-            Utility.ExpectEvent(eventOccurred, "deleted");
+        [Fact]
+        public void FileSystemWatcher_Deleted_FileDeletedInNestedDirectory()
+        {
+            using (var testDirectory = new TempDirectory(GetTestFilePath()))
+            using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, GetTestFileName())))
+            using (var watcher = new FileSystemWatcher())
+            {
+                AutoResetEvent createOccurred = WatchForEvents(watcher, WatcherChangeTypes.Created); // not "using" to avoid race conditions with FSW callbacks
+                AutoResetEvent eventOccurred = WatchForEvents(watcher, WatcherChangeTypes.Deleted);
+
+                watcher.Path = Path.GetFullPath(dir.Path);
+                watcher.Filter = "*";
+                watcher.IncludeSubdirectories = true;
+                watcher.EnableRaisingEvents = true;
+
+                using (var firstDir = new TempDirectory(Path.Combine(dir.Path, "dir1")))
+                {
+                    // Wait for the created event
+                    ExpectEvent(createOccurred, "create");
+
+                    using (var secondDir = new TempDirectory(Path.Combine(dir.Path, "dir2")))
+                    {
+                        // Wait for the created event
+                        ExpectEvent(createOccurred, "create");
+
+                        using (var nesteddir = new TempDirectory(Path.Combine(secondDir.Path, "nestedFile"))) { }
+
+                        ExpectEvent(eventOccurred, "deleted");
+                    }
+
+                    ExpectEvent(eventOccurred, "deleted");
+                }
+
+                ExpectEvent(eventOccurred, "deleted");
+            }
         }
     }
 }

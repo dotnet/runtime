@@ -82,6 +82,9 @@
           CustomErrorRegularExpression="(^Unable to locate .*)|(^Updating the invalid lock file with .*)"
           ContinueOnError="ErrorAndContinue" />
 
+    <!-- Given we ErrorAndContinue we need to propagate the error if the overall task failed -->
+    <Error Condition="'$(MSBuildLastTaskResult)'=='false'" />
+    
     <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages...Done." />
   </Target>
 
@@ -130,5 +133,8 @@
   <Target Name="Clean">
     <RemoveDir Directories="$(BinDir)" />
   </Target>
+
+  <!-- Hook that can be used to insert custom build tasks to the build process such as setup and/or cleanup tasks -->
+  <Import Project="build.override.targets" Condition="Exists('build.override.targets')" />
 
 </Project>

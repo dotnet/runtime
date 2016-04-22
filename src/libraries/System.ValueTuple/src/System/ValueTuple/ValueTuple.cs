@@ -223,7 +223,7 @@ namespace System
         /// <typeparam name="T5">The type of the fifth component of the tuple.</typeparam>
         /// <typeparam name="T6">The type of the sixth component of the tuple.</typeparam>
         /// <typeparam name="T7">The type of the seventh component of the tuple.</typeparam>
-        /// <typeparam name="TRest">The type of the eigth component of the tuple.</typeparam>
+        /// <typeparam name="T8">The type of the eigth component of the tuple.</typeparam>
         /// <param name="item1">The value of the first component of the tuple.</param>
         /// <param name="item2">The value of the second component of the tuple.</param>
         /// <param name="item3">The value of the third component of the tuple.</param>
@@ -231,10 +231,10 @@ namespace System
         /// <param name="item5">The value of the fifth component of the tuple.</param>
         /// <param name="item6">The value of the sixth component of the tuple.</param>
         /// <param name="item7">The value of the seventh component of the tuple.</param>
-        /// <param name="rest">The value of the eighth component of the tuple.</param>
-        /// <returns>An 8-tuple (octuple) whose value is (item1, item2, item3, item4, item5, item6, item7, rest).</returns>
-        public static ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest> Create<T1, T2, T3, T4, T5, T6, T7, TRest>(T1 item1, T2 item2, T3 item3, T4 item4, T5 item5, T6 item6, T7 item7, TRest rest) =>
-            new ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest>(item1, item2, item3, item4, item5, item6, item7, rest);
+        /// <param name="item8">The value of the eighth component of the tuple.</param>
+        /// <returns>An 8-tuple (octuple) whose value is (item1, item2, item3, item4, item5, item6, item7, item8).</returns>
+        public static ValueTuple<T1, T2, T3, T4, T5, T6, T7, ValueTuple<T8>> Create<T1, T2, T3, T4, T5, T6, T7, T8>(T1 item1, T2 item2, T3 item3, T4 item4, T5 item5, T6 item6, T7 item7, T8 item8) =>
+            new ValueTuple<T1, T2, T3, T4, T5, T6, T7, ValueTuple<T8>>(item1, item2, item3, item4, item5, item6, item7, ValueTuple.Create(item8));
 
         // From System.Web.Util.HashCodeCombiner
         internal static int CombineHashCodes(int h1, int h2)
@@ -1654,6 +1654,7 @@ namespace System
     /// <typeparam name="TRest">The type of the tuple's eigth component.</typeparam>
     public struct ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest>
         : IEquatable<ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest>>, IStructuralEquatable, IStructuralComparable, IComparable, IComparable<ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest>>, ITupleInternal
+        where TRest : struct
     {
         /// <summary>
         /// The current <see cref="ValueTuple{T1, T2, T3, T4, T5, T6, T7, TRest}"/> instance's first component.

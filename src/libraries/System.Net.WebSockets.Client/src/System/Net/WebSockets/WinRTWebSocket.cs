@@ -380,7 +380,7 @@ namespace System.Net.WebSockets
         }
 
         #region State // Code related to state management
-        // TODO: Refactor state into encapsulated class
+        // TODO (#7896): Refactor state into encapsulated class
         public void InterlockedCheckValidStates(WebSocketState[] validStates)
         {
             lock (_stateLock)

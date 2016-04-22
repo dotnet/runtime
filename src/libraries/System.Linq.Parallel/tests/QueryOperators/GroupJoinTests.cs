@@ -17,7 +17,7 @@ namespace System.Linq.Parallel.Tests
         {
             foreach (object[] parms in UnorderedSources.BinaryRanges(leftCounts, rightCounts))
             {
-                yield return new object[] { ((Labeled<ParallelQuery<int>>)parms[0]).Order(), parms[1], parms[2], parms[3] };
+                yield return new object[] { ((Labeled<ParallelQuery<int>>)parms[0]).Order(), parms[1], ((Labeled<ParallelQuery<int>>)parms[2]).Order(), parms[3] };
             }
         }
 
@@ -180,6 +180,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
+        [ActiveIssue(1155)]
         [MemberData(nameof(GroupJoinData), new[] { 0, 1, 2, 15, 16 }, new[] { 0, 1, 16 })]
         // GroupJoin doesn't always return elements from the right in order.  See Issue #1155
         public static void GroupJoin_Multiple(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
@@ -193,9 +194,13 @@ namespace System.Linq.Parallel.Tests
                     Assert.Equal(seenOuter++, p.Key);
                     if (p.Key < (rightCount + (KeyFactor - 1)) / KeyFactor)
                     {
-                        IntegerRangeSet seenInner = new IntegerRangeSet(p.Key * KeyFactor, Math.Min(rightCount - p.Key * KeyFactor, KeyFactor));
-                        Assert.All(p.Value, y => { Assert.Equal(p.Key, y / KeyFactor); seenInner.Add(y); });
-                        seenInner.AssertComplete();
+                        int seenInner = p.Key * KeyFactor;
+                        Assert.All(p.Value, y =>
+                           {
+                               Assert.Equal(p.Key, y / KeyFactor);
+                               Assert.Equal(seenInner++, y);
+                           });
+                        Assert.Equal(Math.Min((p.Key + 1) * KeyFactor, rightCount), seenInner);
                     }
                     else
                     {
@@ -206,6 +211,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
+        [ActiveIssue(1155)]
         [OuterLoop]
         [MemberData(nameof(GroupJoinData), new[] { 1024 * 4, 1024 * 8 }, new[] { 0, 1, 1024 * 4, 1024 * 8 })]
         public static void GroupJoin_Multiple_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
@@ -247,6 +253,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
+        [ActiveIssue(1155)]
         [MemberData(nameof(GroupJoinData), new[] { 0, 1, 2, 16 }, new[] { 0, 1, 16 })]
         public static void GroupJoin_CustomComparator(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
@@ -259,9 +266,13 @@ namespace System.Linq.Parallel.Tests
                     Assert.Equal(seenOuter++, p.Key);
                     if (p.Key % KeyFactor < Math.Min(ElementFactor, rightCount))
                     {
-                        IntegerRangeSet seenInner = new IntegerRangeSet(0, (rightCount + (ElementFactor - 1) - p.Key % ElementFactor) / ElementFactor);
-                        Assert.All(p.Value, y => { Assert.Equal(p.Key % KeyFactor, y % ElementFactor); seenInner.Add(y / ElementFactor); });
-                        seenInner.AssertComplete();
+                        int seenInner = p.Key % (KeyFactor / 2) - (KeyFactor / 2);
+                        Assert.All(p.Value, y =>
+                            {
+                                Assert.Equal(p.Key % KeyFactor, y % (KeyFactor / 2));
+                                Assert.Equal(seenInner += (KeyFactor / 2), y);
+                            });
+                        Assert.Equal(Math.Max(p.Key % (KeyFactor / 2), rightCount + (p.Key % (KeyFactor / 2) - (KeyFactor / 2))), seenInner);
                     }
                     else
                     {
@@ -272,6 +283,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
+        [ActiveIssue(1155)]
         [OuterLoop]
         [MemberData(nameof(GroupJoinData), new[] { 512, 1024 }, new[] { 0, 1, 1024, 1024 * 4 })]
         public static void GroupJoin_CustomComparator_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)

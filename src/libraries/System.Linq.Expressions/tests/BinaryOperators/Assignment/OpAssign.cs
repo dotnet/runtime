@@ -47,6 +47,7 @@ namespace System.Linq.Expressions.Tests
 
         private class Box<T>
         {
+            public static T StaticValue { get; set; }
             public T Value { get; set; }
             public T this[int index]
             {
@@ -98,6 +99,32 @@ namespace System.Linq.Expressions.Tests
                 }
         }
 
+        [Theory, PerCompilationType(nameof(AssignAndEquivalentMethods))]
+        public void AssignmentEquivalentsWithStaticMemberAccess(MethodInfo nonAssign, MethodInfo assign, Type type, bool useInterpreter)
+        {
+            Func<Expression, Expression, Expression> withoutAssignment = (Func<Expression, Expression, Expression>)nonAssign.CreateDelegate(typeof(Func<Expression, Expression, Expression>));
+            Func<Expression, Expression, Expression> withAssignment = (Func<Expression, Expression, Expression>)assign.CreateDelegate(typeof(Func<Expression, Expression, Expression>));
+
+            foreach (object x in new[] { 0, -1, 1, 10 }.Select(i => Convert.ChangeType(i, type)))
+                foreach (object y in new[] { -1, 1, 10 }.Select(i => Convert.ChangeType(i, type)))
+                {
+                    ConstantExpression xExp = Expression.Constant(x);
+                    ConstantExpression yExp = Expression.Constant(y);
+                    Expression woAssign = withoutAssignment(xExp, yExp);
+                    Type boxType = typeof(Box<>).MakeGenericType(type);
+                    var prop = boxType.GetProperty("StaticValue");
+                    prop.SetValue(null, x);
+                    Expression property = Expression.Property(null, prop);
+                    Expression assignment = withAssignment(property, yExp);
+                    Assert.True(Expression.Lambda<Func<bool>>(Expression.Equal(woAssign, assignment)).Compile(useInterpreter)());
+                    prop.SetValue(null, x);
+                    Expression wAssignReturningVariable = Expression.Block(
+                        assignment,
+                        property
+                        );
+                    Assert.True(Expression.Lambda<Func<bool>>(Expression.Equal(woAssign, wAssignReturningVariable)).Compile(useInterpreter)());
+                }
+        }
         [Theory]
         [PerCompilationType(nameof(AssignAndEquivalentMethods))]
         public void AssignmentEquivalentsWithIndexAccess(MethodInfo nonAssign, MethodInfo assign, Type type, bool useInterpreter)

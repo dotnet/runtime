@@ -190,6 +190,7 @@ namespace System.Linq.Expressions.Interpreter
         }
 #endif
 
+#if FEATURE_FAST_CREATE
         /// <summary>
         /// Gets the next type or null if no more types are available.
         /// </summary>
@@ -224,6 +225,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             return pi.Length != index || (pi.Length == index && !target.IsStatic);
         }
+#endif
 
 #if FEATURE_DLG_INVOKE
         /// <summary>

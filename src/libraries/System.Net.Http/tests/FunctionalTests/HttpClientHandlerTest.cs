@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 
 using Xunit;
 using Xunit.Abstractions;
+using System.Net.Sockets;
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -648,6 +649,27 @@ namespace System.Net.Http.Functional.Tests
                 _output.WriteLine("Bytes read from stream: {0}", bytesRead);
                 Assert.True(bytesRead < buffer.Length, "bytesRead should be less than buffer.Length");
             }            
+        }
+
+        [Fact]
+        public async Task Dispose_DisposingHandlerCancelsActiveOperations()
+        {
+            using (var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                socket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                socket.Listen(1);
+                Task<Socket> accept = socket.AcceptAsync();
+
+                IPEndPoint local = (IPEndPoint)socket.LocalEndPoint;
+                var client = new HttpClient();
+                Task<string> download = client.GetStringAsync($"http://{local.Address}:{local.Port}");
+
+                using (Socket acceptedSocket = await accept)
+                {
+                    client.Dispose();
+                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => download);
+                }
+            }
         }
 
         #region Post Methods Tests

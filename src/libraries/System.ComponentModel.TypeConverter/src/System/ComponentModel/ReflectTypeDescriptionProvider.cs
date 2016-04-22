@@ -141,6 +141,7 @@ namespace System.ComponentModel
                     temp[typeof(Array)] = typeof(ArrayConverter);
                     temp[typeof(ICollection)] = typeof(CollectionConverter);
                     temp[typeof(Enum)] = typeof(EnumConverter);
+                    temp[typeof(Uri)] = typeof(UriTypeConverter);
 
                     // Special cases for things that are not bound to a specific type
                     //

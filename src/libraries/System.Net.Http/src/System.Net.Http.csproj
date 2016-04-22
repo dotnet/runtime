@@ -11,8 +11,11 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Net.Http</AssemblyName>
     <AssemblyVersion>4.1.0.0</AssemblyVersion>
+    <WindowsRID>win</WindowsRID>
     <PackageTargetFramework Condition="'$(TargetsUnix)' == 'true'">netstandard1.4</PackageTargetFramework>
     <PackageTargetRuntime Condition="'$(TargetsUnix)' == 'true'">unix</PackageTargetRuntime>
+    <!-- we must package netcore50 as RID-specific so that it will override the netstandard impl -->
+    <PackageTargetRuntime Condition="'$(TargetGroup)' == 'netcore50'">$(WindowsRID)</PackageTargetRuntime>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
     <NuGetTargetMoniker Condition="'$(TargetsUnix)' == 'true'">.NETStandard,Version=v1.4</NuGetTargetMoniker>
   </PropertyGroup>
@@ -20,8 +23,8 @@
     <ProjectJson>unix/project.json</ProjectJson>
     <ProjectLockJson>unix/project.lock.json</ProjectLockJson>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <PackageDestination Include="runtimes/win/lib/netstandard1.3">
+  <ItemGroup Condition="'$(TargetGroup)' == '' AND '$(TargetsWindows)' == 'true'">
+    <PackageDestination Include="runtimes/$(WindowsRID)/lib/netstandard1.3">
       <TargetFramework>netstandard1.3</TargetFramework>
     </PackageDestination>
     <PackageDestination Include="lib/net46">

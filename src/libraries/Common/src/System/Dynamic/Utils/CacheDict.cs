@@ -41,7 +41,7 @@ namespace System.Dynamic.Utils
         /// <summary>
         /// Creates a dictionary-like object used for caches.
         /// </summary>
-        /// <param name="maxSize">The maximum number of elements to store will be this number aligned to next ^2.</param>
+        /// <param name="size">The maximum number of elements to store will be this number aligned to next ^2.</param>
         internal CacheDict(int size)
         {
             var alignedSize = AlignSize(size);

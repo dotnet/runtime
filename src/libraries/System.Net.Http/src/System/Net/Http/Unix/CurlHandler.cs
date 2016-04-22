@@ -30,8 +30,8 @@ namespace System.Net.Http
         private const string UriSchemeHttps = "https";
         private const string EncodingNameGzip = "gzip";
         private const string EncodingNameDeflate = "deflate";
-
-        private const int RequestBufferSize = 16384; // Default used by libcurl
+        
+        private const int MaxRequestBufferSize = 16384; // Default used by libcurl
         private const string NoTransferEncoding = HttpKnownHeaderNames.TransferEncoding + ":";
         private const string NoContentType = HttpKnownHeaderNames.ContentType + ":";
         private const int CurlAge = 5;
@@ -41,20 +41,9 @@ namespace System.Net.Http
 
         #region Fields
 
-        // To enable developers to opt-in to support certain auth types that we don't want
-        // to enable by default (e.g. NTLM), we allow for such types to be specified explicitly
-        // when credentials are added to a credential cache, but we don't enable them
-        // when no auth type is specified, e.g. when a NetworkCredential is provided directly
-        // to the handler.  As such, we have two different sets of auth types that we use
-        // for when the supplied creds are a cache vs not.
-        private static readonly KeyValuePair<string,CURLAUTH>[] s_orderedAuthTypesCredentialCache = new KeyValuePair<string, CURLAUTH>[] {
+        private static readonly KeyValuePair<string,CURLAUTH>[] s_orderedAuthTypes = new KeyValuePair<string, CURLAUTH>[] {
             new KeyValuePair<string,CURLAUTH>("Negotiate", CURLAUTH.Negotiate),
-            new KeyValuePair<string,CURLAUTH>("NTLM", CURLAUTH.NTLM), // only available when credentials supplied via a credential cache
-            new KeyValuePair<string,CURLAUTH>("Digest", CURLAUTH.Digest),
-            new KeyValuePair<string,CURLAUTH>("Basic", CURLAUTH.Basic),
-        };
-        private static readonly KeyValuePair<string, CURLAUTH>[] s_orderedAuthTypesICredential = new KeyValuePair<string, CURLAUTH>[] {
-            new KeyValuePair<string,CURLAUTH>("Negotiate", CURLAUTH.Negotiate),
+            new KeyValuePair<string,CURLAUTH>("NTLM", CURLAUTH.NTLM),
             new KeyValuePair<string,CURLAUTH>("Digest", CURLAUTH.Digest),
             new KeyValuePair<string,CURLAUTH>("Basic", CURLAUTH.Basic),
         };
@@ -434,10 +423,6 @@ namespace System.Net.Http
 
         private KeyValuePair<NetworkCredential, CURLAUTH> GetCredentials(Uri requestUri)
         {
-            // Get the auth types (Negotiate, Digest, etc.) that are allowed to be selected automatically
-            // based on the type of the ICredentials provided.
-            KeyValuePair<string, CURLAUTH>[] validAuthTypes = AuthTypesPermittedByCredentialKind(_serverCredentials);
-
             // If preauthentication is enabled, we may have populated our internal credential cache,
             // so first check there to see if we have any credentials for this uri.
             if (_preAuthenticate)
@@ -446,7 +431,7 @@ namespace System.Net.Http
                 lock (LockObject)
                 {
                     Debug.Assert(_credentialCache != null, "Expected non-null credential cache");
-                    ncAndScheme = GetCredentials(requestUri, _credentialCache, validAuthTypes);
+                    ncAndScheme = GetCredentials(requestUri, _credentialCache, s_orderedAuthTypes);
                 }
                 if (ncAndScheme.Key != null)
                 {
@@ -456,7 +441,7 @@ namespace System.Net.Http
 
             // We either weren't preauthenticating or we didn't have any cached credentials
             // available, so check the credentials on the handler.
-            return GetCredentials(requestUri, _serverCredentials, validAuthTypes);
+            return GetCredentials(requestUri, _serverCredentials, s_orderedAuthTypes);
         }
 
         private void TransferCredentialsToCache(Uri serverUri, CURLAUTH serverAuthAvail)
@@ -467,15 +452,10 @@ namespace System.Net.Http
                 return;
             }
 
-            // Get the auth types valid based on the type of the ICredentials used.  We're effectively
-            // going to intersect this (the types we allow to be used) with those the server supports
-            // and with the credentials we have available.  The best of that resulting intersection
-            // will be added to the cache.
-            KeyValuePair<string, CURLAUTH>[] validAuthTypes = AuthTypesPermittedByCredentialKind(_serverCredentials);
-
             lock (LockObject)
             {
                 // For each auth type we allow, check whether it's one supported by the server.
+                KeyValuePair<string, CURLAUTH>[] validAuthTypes = s_orderedAuthTypes;
                 for (int i = 0; i < validAuthTypes.Length; i++)
                 {
                     // Is it supported by the server?
@@ -500,16 +480,6 @@ namespace System.Net.Http
                     }
                 }
             }
-        }
-
-        private static KeyValuePair<string, CURLAUTH>[] AuthTypesPermittedByCredentialKind(ICredentials c)
-        {
-            // Special-case CredentialCache for auth types, as credentials put into the cache are put
-            // in explicitly tagged with an auth type, and thus credentials are opted-in to potentially
-            // less secure auth types we might otherwise want disabled by default.
-            return c is CredentialCache ?
-                s_orderedAuthTypesCredentialCache :
-                s_orderedAuthTypesICredential;
         }
 
         private void AddResponseCookies(EasyRequest state, string cookieHeader)
@@ -713,7 +683,7 @@ namespace System.Net.Http
                 // anything other than a CredentialCache. We allow credentials in a CredentialCache since they 
                 // are specifically tied to URIs.
                 var creds = state._handler.Credentials as CredentialCache;
-                KeyValuePair<NetworkCredential, CURLAUTH> ncAndScheme = GetCredentials(forwardUri, creds, AuthTypesPermittedByCredentialKind(creds));
+                KeyValuePair<NetworkCredential, CURLAUTH> ncAndScheme = GetCredentials(forwardUri, creds, s_orderedAuthTypes);
                 if (ncAndScheme.Key != null)
                 {
                     state.SetCredentialsOptions(ncAndScheme);

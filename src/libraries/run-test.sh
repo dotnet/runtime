@@ -254,7 +254,7 @@ coreclr_code_coverage()
 
 ((serverGC = 0))
 OuterLoop="-notrait category=outerloop"
-IgnoreForCI =""
+IgnoreForCI=""
 
 while [[ $# > 0 ]]
 do

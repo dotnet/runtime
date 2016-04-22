@@ -29,8 +29,6 @@ namespace System.Net.NetworkInformation
             return s_fixedInfo.domainName;
         }
 
-        // TODO: #2485: Temporarily made GetFixedInfo() public to make things build.
-        // This function needs to be switched back to private since it has no correspondent in the Unix world.
         public static Interop.IpHlpApi.FIXED_INFO GetFixedInfo()
         {
             Interop.IpHlpApi.FIXED_INFO fixedInfo = new Interop.IpHlpApi.FIXED_INFO();

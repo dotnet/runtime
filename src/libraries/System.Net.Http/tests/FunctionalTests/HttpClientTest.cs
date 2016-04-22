@@ -380,7 +380,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop]
         public void Timeout_SetTo60AndGetResponseFromServerWhichTakes40_Success()
         {
-            // TODO: This server path will change once the final test infrastructure is in place (Issue #1477).
+            // TODO: This is a placeholder until GitHub Issue #2383 gets resolved.
             const string SlowServer = "http://httpbin.org/drip?numbytes=1&duration=1&delay=40&code=200";
             
             using (var client = new HttpClient())
@@ -472,8 +472,6 @@ namespace System.Net.Http.Functional.Tests
                 }
 
                 Assert.False(requestLogged, "Request was logged while logging disabled.");
-                // TODO: Waiting for one second is not ideal, but how else be reasonably sure that
-                // some logging message hasn't slipped through?
                 WaitForFalse(() => responseLogged, TimeSpan.FromSeconds(1), "Response was logged while logging disabled.");
             }
         }

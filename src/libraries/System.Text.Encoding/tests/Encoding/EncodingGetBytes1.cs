@@ -9,83 +9,6 @@ namespace System.Text.Tests
     public class EncodingGetBytes1
     {
         #region Positive Test Cases
-        [Fact]
-        public void PosTest1()
-        {
-            PositiveTestString(Encoding.UTF8, "TestString", new byte[] { 84, 101, 115, 116, 83, 116, 114, 105, 110, 103 }, "00A");
-        }
-
-        [Fact]
-        public void PosTest2()
-        {
-            PositiveTestString(Encoding.UTF8, "", new byte[] { }, "00B");
-        }
-
-        [Fact]
-        public void PosTest3()
-        {
-            PositiveTestString(Encoding.UTF8, "FooBA\u0400R", new byte[] { 70, 111, 111, 66, 65, 208, 128, 82 }, "00C");
-        }
-
-        [Fact]
-        public void PosTest4()
-        {
-            PositiveTestString(Encoding.UTF8, "\u00C0nima\u0300l", new byte[] { 195, 128, 110, 105, 109, 97, 204, 128, 108 }, "00D");
-        }
-
-        [Fact]
-        public void PosTest5()
-        {
-            PositiveTestString(Encoding.UTF8, "Test\uD803\uDD75Test", new byte[] { 84, 101, 115, 116, 240, 144, 181, 181, 84, 101, 115, 116 }, "00E");
-        }
-
-        [Fact]
-        public void PosTest6()
-        {
-            PositiveTestString(Encoding.UTF8, "Test\uD803Test", new byte[] { 84, 101, 115, 116, 239, 191, 189, 84, 101, 115, 116 }, "00F");
-        }
-
-        [Fact]
-        public void PosTest7()
-        {
-            PositiveTestString(Encoding.UTF8, "Test\uDD75Test", new byte[] { 84, 101, 115, 116, 239, 191, 189, 84, 101, 115, 116 }, "00G");
-        }
-
-        [Fact]
-        public void PosTest8()
-        {
-            PositiveTestString(Encoding.UTF8, "TestTest\uDD75", new byte[] { 84, 101, 115, 116, 84, 101, 115, 116, 239, 191, 189 }, "00H");
-        }
-
-        [Fact]
-        public void PosTest9()
-        {
-            PositiveTestString(Encoding.UTF8, "TestTest\uD803", new byte[] { 84, 101, 115, 116, 84, 101, 115, 116, 239, 191, 189 }, "00I");
-        }
-
-        [Fact]
-        public void PosTest10()
-        {
-            PositiveTestString(Encoding.UTF8, "\uDD75", new byte[] { 239, 191, 189 }, "00J");
-        }
-
-        [Fact]
-        public void PosTest11()
-        {
-            PositiveTestString(Encoding.UTF8, "\uD803\uDD75\uD803\uDD75\uD803\uDD75", new byte[] { 240, 144, 181, 181, 240, 144, 181, 181, 240, 144, 181, 181 }, "00K");
-        }
-
-        [Fact]
-        public void PosTest12()
-        {
-            PositiveTestString(Encoding.UTF8, "\u0130", new byte[] { 196, 176 }, "00L");
-        }
-
-        [Fact]
-        public void PosTest13()
-        {
-            PositiveTestString(Encoding.UTF8, "\uDD75\uDD75\uD803\uDD75\uDD75\uDD75\uDD75\uD803\uD803\uD803\uDD75\uDD75\uDD75\uDD75", new byte[] { 239, 191, 189, 239, 191, 189, 240, 144, 181, 181, 239, 191, 189, 239, 191, 189, 239, 191, 189, 239, 191, 189, 239, 191, 189, 240, 144, 181, 181, 239, 191, 189, 239, 191, 189, 239, 191, 189 }, "0A2");
-        }
 
         [Fact]
         public void PosTest14()
@@ -242,13 +165,7 @@ namespace System.Text.Tests
         {
             PositiveTestString(Encoding.BigEndianUnicode, "\uDD75\uDD75\uD803\uDD75\uDD75\uDD75\uDD75\uD803\uD803\uD803\uDD75\uDD75\uDD75\uDD75", new byte[] { 255, 253, 255, 253, 216, 3, 221, 117, 255, 253, 255, 253, 255, 253, 255, 253, 255, 253, 216, 3, 221, 117, 255, 253, 255, 253, 255, 253 }, "0A24");
         }
-
-        [Fact]
-        public void PosTest40()
-        {
-            PositiveTestChars(Encoding.UTF8, new char[] { 'T', 'e', 's', 't', 'S', 't', 'r', 'i', 'n', 'g' }, new byte[] { 84, 101, 115, 116, 83, 116, 114, 105, 110, 103 }, "00M");
-        }
-
+        
         [Fact]
         public void PosTest41()
         {
@@ -262,12 +179,7 @@ namespace System.Text.Tests
         }
         #endregion
         #region Negative Test Cases
-        [Fact]
-        public void NegTest1()
-        {
-            NegativeTestString<ArgumentNullException>(new UTF8Encoding(), null, "00N");
-        }
-
+        
         [Fact]
         public void NegTest2()
         {
@@ -281,12 +193,6 @@ namespace System.Text.Tests
         }
 
         [Fact]
-        public void NegTest4()
-        {
-            NegativeTestChars<ArgumentNullException>(new UTF8Encoding(), null, "00O");
-        }
-
-        [Fact]
         public void NegTest5()
         {
             NegativeTestChars<ArgumentNullException>(new UnicodeEncoding(), null, "00O3");
@@ -296,36 +202,6 @@ namespace System.Text.Tests
         public void NegTest6()
         {
             NegativeTestChars<ArgumentNullException>(new UnicodeEncoding(true, false), null, "00O4");
-        }
-
-        [Fact]
-        public void NegTest7()
-        {
-            NegativeTestChars2<ArgumentNullException>(new UTF8Encoding(), null, 0, 0, "00P");
-        }
-
-        [Fact]
-        public void NegTest8()
-        {
-            NegativeTestChars2<ArgumentOutOfRangeException>(new UTF8Encoding(), new char[] { 't' }, -1, 1, "00P");
-        }
-
-        [Fact]
-        public void NegTest9()
-        {
-            NegativeTestChars2<ArgumentOutOfRangeException>(new UTF8Encoding(), new char[] { 't' }, 1, -1, "00Q");
-        }
-
-        [Fact]
-        public void NegTest10()
-        {
-            NegativeTestChars2<ArgumentOutOfRangeException>(new UTF8Encoding(), new char[] { 't' }, 0, 10, "00R");
-        }
-
-        [Fact]
-        public void NegTest11()
-        {
-            NegativeTestChars2<ArgumentOutOfRangeException>(new UTF8Encoding(), new char[] { 't' }, 2, 0, "00S");
         }
 
         [Fact]
@@ -389,61 +265,7 @@ namespace System.Text.Tests
         }
 
         private static byte[] s_output = new byte[20];
-
-        [Fact]
-        public void NegTest22()
-        {
-            NegativeTestChars3<ArgumentNullException>(Encoding.UTF8, null, 0, 0, s_output, 0, "00T");
-        }
-
-        [Fact]
-        public void NegTest23()
-        {
-            NegativeTestChars3<ArgumentNullException>(Encoding.UTF8, new char[] { 't' }, 0, 0, null, 0, "00U");
-        }
-
-        [Fact]
-        public void NegTest24()
-        {
-            NegativeTestChars3<ArgumentOutOfRangeException>(Encoding.UTF8, new char[] { 't' }, -1, 0, s_output, 0, "00V");
-        }
-
-        [Fact]
-        public void NegTest25()
-        {
-            NegativeTestChars3<ArgumentOutOfRangeException>(Encoding.UTF8, new char[] { 't' }, 0, 0, s_output, -1, "00W");
-        }
-
-        [Fact]
-        public void NegTest26()
-        {
-            NegativeTestChars3<ArgumentOutOfRangeException>(Encoding.UTF8, new char[] { 't' }, 2, 0, s_output, 0, "00X");
-        }
-
-        [Fact]
-        public void NegTest27()
-        {
-            NegativeTestChars3<ArgumentOutOfRangeException>(Encoding.UTF8, new char[] { 't' }, 0, 0, s_output, 21, "00Y");
-        }
-
-        [Fact]
-        public void NegTest28()
-        {
-            NegativeTestChars3<ArgumentOutOfRangeException>(Encoding.UTF8, new char[] { 't' }, 0, 10, s_output, 0, "00Z");
-        }
-
-        [Fact]
-        public void NegTest29()
-        {
-            NegativeTestChars3<ArgumentException>(Encoding.UTF8, new char[] { 't' }, 0, 1, s_output, 20, "0A0");
-        }
-
-        [Fact]
-        public void NegTest30()
-        {
-            NegativeTestChars3<ArgumentOutOfRangeException>(Encoding.UTF8, new char[] { 't' }, 0, -1, s_output, 0, "0A1");
-        }
-
+        
         [Fact]
         public void NegTest31()
         {
@@ -550,60 +372,6 @@ namespace System.Text.Tests
         public void NegTest48()
         {
             NegativeTestChars3<ArgumentOutOfRangeException>(Encoding.BigEndianUnicode, new char[] { 't' }, 0, -1, s_output, 0, "0A14");
-        }
-
-        [Fact]
-        public void NegTest49()
-        {
-            NegativeTestString1<ArgumentNullException>(Encoding.UTF8, null, 0, 0, s_output, 0, "00Ta");
-        }
-
-        [Fact]
-        public void NegTest50()
-        {
-            NegativeTestString1<ArgumentNullException>(Encoding.UTF8, "t", 0, 0, null, 0, "00Ua");
-        }
-
-        [Fact]
-        public void NegTest51()
-        {
-            NegativeTestString1<ArgumentOutOfRangeException>(Encoding.UTF8, "t", -1, 0, s_output, 0, "00Va");
-        }
-
-        [Fact]
-        public void NegTest52()
-        {
-            NegativeTestString1<ArgumentOutOfRangeException>(Encoding.UTF8, "t", 0, 0, s_output, -1, "00Wa");
-        }
-
-        [Fact]
-        public void NegTest53()
-        {
-            NegativeTestString1<ArgumentOutOfRangeException>(Encoding.UTF8, "t", 2, 0, s_output, 0, "00Xa");
-        }
-
-        [Fact]
-        public void NegTest54()
-        {
-            NegativeTestString1<ArgumentOutOfRangeException>(Encoding.UTF8, "t", 0, 0, s_output, 21, "00Ya");
-        }
-
-        [Fact]
-        public void NegTest55()
-        {
-            NegativeTestString1<ArgumentOutOfRangeException>(Encoding.UTF8, "t", 0, 10, s_output, 0, "00Za");
-        }
-
-        [Fact]
-        public void NegTest56()
-        {
-            NegativeTestString1<ArgumentException>(Encoding.UTF8, "t", 0, 1, s_output, 20, "0A0a");
-        }
-
-        [Fact]
-        public void NegTest57()
-        {
-            NegativeTestString1<ArgumentOutOfRangeException>(Encoding.UTF8, "t", 0, -1, s_output, 0, "0A1a");
         }
 
         [Fact]

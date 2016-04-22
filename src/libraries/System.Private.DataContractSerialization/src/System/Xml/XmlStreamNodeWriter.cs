@@ -464,12 +464,7 @@ namespace System.Xml
                             chars++;
                         }
 
-                        string tmp = new string(charsStart, 0, (int)(chars - charsStart));
-                        byte[] newBytes = _encoding != null ? _encoding.GetBytes(tmp) : s_UTF8Encoding.GetBytes(tmp);
-                        int toCopy = Math.Min(newBytes.Length, (int)(bytesMax - bytes));
-                        Buffer.BlockCopy(newBytes, 0, buffer, (int)(bytes - _bytes) + offset, toCopy);
-
-                        bytes += toCopy;
+                        bytes += (_encoding ?? s_UTF8Encoding).GetBytes(charsStart, (int)(chars - charsStart), bytes, (int)(bytesMax - bytes));
 
                         if (chars >= charsMax)
                             break;

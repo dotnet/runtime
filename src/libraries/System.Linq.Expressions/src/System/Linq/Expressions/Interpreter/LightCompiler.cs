@@ -342,7 +342,7 @@ namespace System.Linq.Expressions.Interpreter
             foreach (var p in node.Parameters)
             {
                 var local = _locals.DefineLocal(p, 0);
-                _instructions.EmitInitializeParameter(local.Index, p.Type);
+                _instructions.EmitInitializeParameter(local.Index);
             }
 
             Compile(node.Body);
@@ -765,21 +765,6 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        private bool EmitLiftedNullCheck(Expression node, BranchLabel makeCall)
-        {
-            Compile(node);
-            if (TypeUtils.IsNullableType(node.Type) || !node.Type.GetTypeInfo().IsValueType)
-            {
-                _instructions.EmitDup();
-                _instructions.EmitLoad(null, typeof(object));
-                _instructions.EmitNotEqual(typeof(object));
-                _instructions.EmitBranch(makeCall);
-                _instructions.EmitPop();
-                return true;
-            }
-            return false;
-        }
-
         private static bool IsNullableOrReferenceType(Type t)
         {
             return !t.GetTypeInfo().IsValueType || TypeUtils.IsNullableType(t);
@@ -827,7 +812,6 @@ namespace System.Linq.Expressions.Interpreter
                                 goto default;
                             }
 
-                            Type resultType = TypeUtils.GetNullableType(node.Type);
                             BranchLabel testRight = _instructions.MakeLabel();
                             BranchLabel callMethod = _instructions.MakeLabel();
 
@@ -878,7 +862,7 @@ namespace System.Linq.Expressions.Interpreter
                         default:
                             BranchLabel loadDefault = _instructions.MakeLabel();
 
-                            if (!node.Left.Type.GetTypeInfo().IsValueType || TypeUtils.IsNullableType(node.Left.Type))
+                            if (IsNullableOrReferenceType(node.Left.Type))
                             {
                                 _instructions.EmitLoadLocal(leftTemp.Index);
                                 _instructions.EmitLoad(null, typeof(object));
@@ -886,7 +870,7 @@ namespace System.Linq.Expressions.Interpreter
                                 _instructions.EmitBranchTrue(loadDefault);
                             }
 
-                            if (!node.Right.Type.GetTypeInfo().IsValueType || TypeUtils.IsNullableType(node.Right.Type))
+                            if (IsNullableOrReferenceType(node.Right.Type))
                             {
                                 _instructions.EmitLoadLocal(rightTemp.Index);
                                 _instructions.EmitLoad(null, typeof(object));
@@ -1497,7 +1481,6 @@ namespace System.Linq.Expressions.Interpreter
         private void CompileLoopExpression(Expression expr)
         {
             var node = (LoopExpression)expr;
-            var enterLoop = new EnterLoopInstruction(node, _locals, _instructions.Count);
 
             PushLabelBlock(LabelScopeKind.Statement);
             LabelInfo breakLabel = DefineLabel(node.BreakLabel);
@@ -1506,7 +1489,6 @@ namespace System.Linq.Expressions.Interpreter
             _instructions.MarkLabel(continueLabel.GetLabel(this));
 
             // emit loop body:
-            _instructions.Emit(enterLoop);
             CompileAsVoid(node.Body);
 
             // emit loop branch:
@@ -1515,8 +1497,6 @@ namespace System.Linq.Expressions.Interpreter
             _instructions.MarkLabel(breakLabel.GetLabel(this));
 
             PopLabelBlock(LabelScopeKind.Statement);
-
-            enterLoop.FinishLoop(_instructions.Count);
         }
 
         #endregion

@@ -6,23 +6,26 @@ using System;
 using System.IO;
 using Xunit;
 
-public class ErrorEventArgsTests
+namespace System.IO.Tests
 {
-    private static void ValidateErrorEventArgs(Exception exception)
+    public class ErrorEventArgsTests
     {
-        ErrorEventArgs args = new ErrorEventArgs(exception);
+        private static void ValidateErrorEventArgs(Exception exception)
+        {
+            ErrorEventArgs args = new ErrorEventArgs(exception);
 
-        Assert.Equal(exception, args.GetException());
+            Assert.Equal(exception, args.GetException());
 
-        // Make sure method is consistent.
-        Assert.Equal(exception, args.GetException());
-    }
+            // Make sure method is consistent.
+            Assert.Equal(exception, args.GetException());
+        }
 
-    [Fact]
-    public static void ErrorEventArgs_ctor()
-    {
-        ValidateErrorEventArgs(null);
+        [Fact]
+        public void ErrorEventArgs_ctor()
+        {
+            ValidateErrorEventArgs(null);
 
-        ValidateErrorEventArgs(new Exception());
+            ValidateErrorEventArgs(new Exception());
+        }
     }
 }

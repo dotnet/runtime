@@ -14,14 +14,6 @@ namespace System.Text.Tests
         #endregion
 
         #region Positive Test Cases
-        // PosTest1: Verify method GetBytes(System.String) with UTF8.
-        [Fact]
-        public void PosTest1()
-        {
-            Encoding u8 = Encoding.UTF8;
-            byte[] bytes = new byte[u8.GetMaxByteCount(3)];
-            Assert.Equal(6, u8.GetBytes(c_TEST_STR, 4, 3, bytes, bytes.GetLowerBound(0)));
-        }
 
         // PosTest2: Verify method GetBytes(System.String) with Unicode
         [Fact]

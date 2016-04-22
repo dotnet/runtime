@@ -9,11 +9,13 @@ namespace System.Text.Tests
     public class UTF8EncodingGetMaxByteCount
     {
         [Theory]
-        [InlineData(0, 3)]
-        [InlineData(8, 27)]
-        public void GetMaxByteCount(int charCount, int expected)
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(10)]
+        [InlineData(int.MaxValue / 3 - 1)]
+        public void GetMaxByteCount(int charCount)
         {
-            Assert.Equal(expected, new UTF8Encoding().GetMaxByteCount(charCount));
+            Assert.Equal((charCount + 1) * 3, new UTF8Encoding().GetMaxByteCount(charCount));
         }
     }
 }
