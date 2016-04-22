@@ -941,7 +941,7 @@ namespace CorUnix
                     break;
                 }
 
-                Ctrlrs.pWaitCtrlrs[uIdx]->SetProcessLocalData(pProcLocData);
+                Ctrlrs.pWaitCtrlrs[uIdx]->SetProcessData(rgObjects[uIdx], pProcLocData);
                 pDataLock->ReleaseLock(pthrCurrent, false);
             }
         }
@@ -3337,6 +3337,7 @@ namespace CorUnix
     PAL_ERROR CPalSynchronizationManager::RegisterProcessForMonitoring(
         CPalThread * pthrCurrent,
         CSynchData *psdSynchData,
+        IPalObject *pProcessObject,
         CProcProcessLocalData * pProcLocalData)
     {
         PAL_ERROR palErr = NO_ERROR;
@@ -3380,6 +3381,8 @@ namespace CorUnix
             pmpln->lRefCount      = 1;
             pmpln->dwPid          = pProcLocalData->dwProcessId;
             pmpln->dwExitCode     = 0;
+            pmpln->pProcessObject = pProcessObject;
+            pmpln->pProcessObject->AddReference();
             pmpln->pProcLocalData = pProcLocalData;
 
             // Acquire SynchData and AddRef it
@@ -3470,6 +3473,7 @@ namespace CorUnix
                 }
 
                 m_lMonitoredProcessesCount--;
+                pmpln->pProcessObject->ReleaseReference(pthrCurrent);
                 pmpln->psdSynchData->Release(pthrCurrent);                
                 InternalDelete(pmpln);
             }
@@ -3675,6 +3679,9 @@ namespace CorUnix
                 // by calling ReleaseAllLocalWaiters
                 pNode->psdSynchData->ReleaseAllLocalWaiters(pthrCurrent);
 
+                // We are done with pProcLocalData, so we can release the process object
+                pNode->pProcessObject->ReleaseReference(pthrCurrent);
+
                 // Release the reference to the SynchData
                 pNode->psdSynchData->Release(pthrCurrent);
 
@@ -3728,6 +3735,7 @@ namespace CorUnix
         {
             pNode = m_pmplnMonitoredProcesses;
             m_pmplnMonitoredProcesses = pNode->pNext;
+            pNode->pProcessObject->ReleaseReference(pthrCurrent);
             pNode->psdSynchData->Release(pthrCurrent);
             InternalDelete(pNode);
         }
