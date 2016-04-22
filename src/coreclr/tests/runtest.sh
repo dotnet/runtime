@@ -80,13 +80,18 @@ xunitTestOutputPath=
 OSName=$(uname -s)
 libExtension=
 case $OSName in
+    Darwin)
+        libExtension="dylib"
+        ;;
+
     Linux)
         libExtension="so"
         ;;
 
-    Darwin)
-        libExtension="dylib"
+    NetBSD)
+        libExtension="so"
         ;;
+
     *)
         echo "Unsupported OS $OSName detected, configuring as if for Linux"
         libExtension="so"
@@ -520,7 +525,13 @@ function run_test {
 }
 
 # Variables for running tests in the background
-((maxProcesses = $(getconf _NPROCESSORS_ONLN) * 3 / 2)) # long tests delay process creation, use a few more processors
+if [ `uname` = "NetBSD" ]; then
+    NumProc=$(getconf NPROCESSORS_ONLN)
+else
+    NumProc=$(getconf _NPROCESSORS_ONLN)
+fi
+((maxProcesses = $NumProc * 3 / 2)) # long tests delay process creation, use a few more processors
+
 ((nextProcessIndex = 0))
 ((processCount = 0))
 declare -a scriptFilePaths
