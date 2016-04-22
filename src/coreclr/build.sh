@@ -20,7 +20,7 @@ usage()
     echo "skipmscorlib - do not build mscorlib.dll."
     echo "skiptests - skip the tests in the 'tests' subdirectory."
     echo "disableoss - Disable Open Source Signing for mscorlib."
-    echo "generateversion - if building native only, pass this in to get a version on the build output."
+    echo "skipgenerateversion - disable version generation even if MSBuild is supported."
     echo "cmakeargs - user-settable additional arguments passed to CMake."
 
     exit 1
@@ -145,11 +145,11 @@ build_coreclr()
     fi
 
     if [ $__SkipConfigure == 0 ]; then
-        # if managed build is suported, then set __GenerateVersionSource to true
-        if [ $__SkipMSCorLib == 0 ]; then __GenerateVersionSource=true; fi
+        # if msbuild is not supported, then set __SkipGenerateVersion to 1
+        if [ $__isMSBuildOnNETCoreSupported == 0 ]; then __SkipGenerateVersion=1; fi
         # Drop version.c file
         __versionSourceFile=$__IntermediatesDir/version.cpp
-        if [ $__GenerateVersionSource == true ]; then
+        if [ $__SkipGenerateVersion == 0 ]; then
             "$__ProjectRoot/init-tools.sh" > "$__ProjectRoot/init-tools.log"
             echo "Running: \"$__ProjectRoot/Tools/corerun\" \"$__ProjectRoot/Tools/MSBuild.exe\" \"$__ProjectRoot/build.proj\" /t:GenerateVersionSourceFile /p:NativeVersionSourceFile=$__versionSourceFile /p:GenerateVersionSourceFile=true /v:minimal $__OfficialBuildIdArg"
             "$__ProjectRoot/Tools/corerun" "$__ProjectRoot/Tools/MSBuild.exe" "$__ProjectRoot/build.proj" /t:GenerateVersionSourceFile /p:NativeVersionSourceFile=$__versionSourceFile /p:GenerateVersionSourceFile=true /v:minimal $__OfficialBuildIdArg
@@ -433,7 +433,7 @@ __NuGetPath="$__PackagesDir/NuGet.exe"
 __DistroName=""
 __cmakeargs=""
 __OfficialBuildIdArg=
-__GenerateVersionSource=false
+__SkipGenerateVersion=0
 
 while :; do
     if [ $# -le 0 ]; then
@@ -544,8 +544,8 @@ while :; do
             __SkipMSCorLib=1
             ;;
 
-        generateversion)
-            __GenerateVersionSource=true
+        skipgenerateversion)
+            __SkipGenerateVersion=1
             ;;
 
         includetests)
