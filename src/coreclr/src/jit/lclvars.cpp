@@ -1560,7 +1560,8 @@ void   Compiler::lvaCanPromoteStructType(CORINFO_CLASS_HANDLE     typeHnd,
         if (sortFields)
         {
             // Sort the fields according to the increasing order of the field offset.
-            // This is needed because the fields need to be pushed on stack (for GT_LDOBJ) in order.
+            // This is needed because the fields need to be pushed on stack (when referenced
+            // as a struct) in order.
             qsort(StructPromotionInfo->fields, 
                   StructPromotionInfo->fieldCnt, 
                   sizeof(*StructPromotionInfo->fields), 
