@@ -111,6 +111,13 @@ namespace System.Linq.Expressions.Tests
 #pragma warning restore 0618
         }
 
+        private class IrreducibleWithTypeAndNodeType : Expression
+        {
+            public override Type Type => typeof(void);
+
+            public override ExpressionType NodeType => ExpressionType.Extension;
+        }
+
         public static IEnumerable<object[]> AllNodeTypesPlusSomeInvalid
         {
             get
@@ -389,6 +396,13 @@ namespace System.Linq.Expressions.Tests
         public void ConfirmCanWrite(Expression writableExpression)
         {
             Expression.Assign(writableExpression, Expression.Default(writableExpression.Type));
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void CompileIrreduciebleExtension(bool useInterpreter)
+        {
+            var exp = Expression.Lambda<Action>(new IrreducibleWithTypeAndNodeType());
+            Assert.Throws<ArgumentException>(() => exp.Compile(useInterpreter));
         }
     }
 }

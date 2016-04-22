@@ -2564,14 +2564,7 @@ namespace System.Linq.Expressions.Interpreter
                 return;
             }
 
-            if (expr.CanReduce)
-            {
-                Compile(expr.Reduce());
-            }
-            else
-            {
-                throw new PlatformNotSupportedException(SR.NonReducibleExpressionExtensionsNotSupported);
-            }
+            Compile(expr.ReduceAndCheck());
         }
 
 
