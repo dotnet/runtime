@@ -17,56 +17,80 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net45_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net45_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)'==''">
+  
+  <PropertyGroup Condition="'$(TargetGroup)'=='netstandard1.0'">
+      <DefineConstants>NETSTANDARD10</DefineConstants>
+  </PropertyGroup>
+  
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.0'">
+      <Compile Include="System\ComponentModel\ReflectTypeDescriptionProvider.NetStandard10.cs" />
+      <Compile Include="System\ComponentModel\TypeDescriptor.NetStandard10.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetGroup)'=='' OR '$(TargetGroup)'=='netstandard1.0'">
     <Compile Include="System\ComponentModel\ArrayConverter.cs" />
-    <Compile Include="System\ComponentModel\AttributeCollection.cs" />
-    <Compile Include="System\ComponentModel\AttributeProviderAttribute.cs" />
     <Compile Include="System\ComponentModel\BaseNumberConverter.cs" />
     <Compile Include="System\ComponentModel\BooleanConverter.cs" />
     <Compile Include="System\ComponentModel\ByteConverter.cs" />
-    <Compile Include="System\ComponentModel\CancelEventHandler.cs" />
     <Compile Include="System\ComponentModel\CharConverter.cs" />
+    <Compile Include="System\ComponentModel\CollectionConverter.cs" />
+    <Compile Include="System\ComponentModel\DateTimeConverter.cs" />
+    <Compile Include="System\ComponentModel\DateTimeOffsetConverter.cs" />
+    <Compile Include="System\ComponentModel\DecimalConverter.cs" />
+    <Compile Include="System\ComponentModel\DoubleConverter.cs" />
+    <Compile Include="System\ComponentModel\EnumConverter.cs" />
+    <Compile Include="System\ComponentModel\GuidConverter.cs" />
+    <Compile Include="System\ComponentModel\Int16Converter.cs" />
+    <Compile Include="System\ComponentModel\Int32Converter.cs" />
+    <Compile Include="System\ComponentModel\Int64Converter.cs" />
+    <Compile Include="System\ComponentModel\ITypeDescriptorContext.cs" />
+    <Compile Include="System\ComponentModel\MultilineStringConverter.cs" />
+    <Compile Include="System\ComponentModel\NullableConverter.cs" />
+    <Compile Include="System\ComponentModel\PropertyDescriptor.cs" />
+    <Compile Include="System\ComponentModel\SByteConverter.cs" />
+    <Compile Include="System\ComponentModel\SingleConverter.cs" />
+    <Compile Include="System\ComponentModel\StringConverter.cs" />
+    <Compile Include="System\ComponentModel\TimeSpanConverter.cs" />
+    <Compile Include="System\ComponentModel\TypeConverter.cs" />
+    <Compile Include="System\ComponentModel\TypeConverterAttribute.cs" />
+    <Compile Include="System\ComponentModel\TypeListConverter.cs" />
+    <Compile Include="System\ComponentModel\UInt16Converter.cs" />
+    <Compile Include="System\ComponentModel\UInt32Converter.cs" />
+    <Compile Include="System\ComponentModel\UInt64Converter.cs" />
+    <Compile Include="System\ComponentModel\UriTypeConverter.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetGroup)'==''">
+    <Compile Include="System\ComponentModel\AttributeCollection.cs" />
+    <Compile Include="System\ComponentModel\AttributeProviderAttribute.cs" />
+    <Compile Include="System\ComponentModel\CancelEventHandler.cs" />
     <Compile Include="System\ComponentModel\CollectionChangeAction.cs" />
     <Compile Include="System\ComponentModel\CollectionChangeEventArgs.cs" />
     <Compile Include="System\ComponentModel\CollectionChangeEventHandler.cs" />
-    <Compile Include="System\ComponentModel\CollectionConverter.cs" />
     <!-- CultureInfoConverter is excluded because it relies on enumerating the execution
          environment's supported cultures, which is impossible on some platforms -->
     <!--<Compile Include="System\ComponentModel\CultureInfoConverter.cs" />-->
     <Compile Include="System\ComponentModel\CustomTypeDescriptor.cs" />
-    <Compile Include="System\ComponentModel\DateTimeConverter.cs" />
-    <Compile Include="System\ComponentModel\DateTimeOffsetConverter.cs" />
-    <Compile Include="System\ComponentModel\DecimalConverter.cs" />
     <Compile Include="System\ComponentModel\DefaultEventAttribute.cs" />
     <Compile Include="System\ComponentModel\DefaultPropertyAttribute.cs" />
     <Compile Include="System\ComponentModel\DelegatingTypeDescriptionProvider.cs" />
     <Compile Include="System\ComponentModel\DesignerSerializationVisibility.cs" />
     <Compile Include="System\ComponentModel\DesignerSerializationVisibilityAttribute.cs" />
-    <Compile Include="System\ComponentModel\DoubleConverter.cs" />
-    <Compile Include="System\ComponentModel\EnumConverter.cs" />
     <Compile Include="System\ComponentModel\EventDescriptor.cs" />
     <Compile Include="System\ComponentModel\EventDescriptorCollection.cs" />
     <Compile Include="System\ComponentModel\EventHandlerList.cs" />
     <Compile Include="System\ComponentModel\ExtendedPropertyDescriptor.cs" />
     <Compile Include="System\ComponentModel\ExtenderProvidedPropertyAttribute.cs" />
-    <Compile Include="System\ComponentModel\GuidConverter.cs" />
     <Compile Include="System\ComponentModel\HandledEventArgs.cs" />
     <Compile Include="System\ComponentModel\HandledEventHandler.cs" />
     <!--<Compile Include="System\ComponentModel\Design\IDesignerHost.cs" />-->
-    <Compile Include="System\ComponentModel\Int16Converter.cs" />
-    <Compile Include="System\ComponentModel\Int32Converter.cs" />
-    <Compile Include="System\ComponentModel\Int64Converter.cs" />
     <Compile Include="System\ComponentModel\ICustomTypeDescriptor.cs" />
     <Compile Include="System\ComponentModel\IExtenderProvider.cs" />
     <Compile Include="System\ComponentModel\IListSource.cs" />
     <Compile Include="System\ComponentModel\InvalidAsynchronousStateException.cs" />
     <Compile Include="System\InvariantComparer.cs" />
-    <Compile Include="System\ComponentModel\ITypeDescriptorContext.cs" />
     <Compile Include="System\ComponentModel\ITypedList.cs" />
     <Compile Include="System\ComponentModel\MemberDescriptor.cs" />
-    <Compile Include="System\ComponentModel\MultilineStringConverter.cs" />
-    <Compile Include="System\ComponentModel\NullableConverter.cs" />
-    <Compile Include="System\ComponentModel\PropertyDescriptor.cs" />
     <Compile Include="System\ComponentModel\PropertyDescriptorCollection.cs" />
     <Compile Include="System\ComponentModel\ProvidePropertyAttribute.cs" />
     <!-- ReferenceConverter is excluded because its purpose is to enable displaying the properties of an
@@ -78,20 +102,9 @@
     <Compile Include="System\ComponentModel\ReflectTypeDescriptionProvider.ReflectedTypeData.cs" />
     <Compile Include="System\ComponentModel\RefreshEventArgs.cs" />
     <Compile Include="System\ComponentModel\RefreshEventHandler.cs" />
-    <Compile Include="System\ComponentModel\SByteConverter.cs" />
-    <Compile Include="System\ComponentModel\SingleConverter.cs" />
-    <Compile Include="System\ComponentModel\StringConverter.cs" />
-    <Compile Include="System\ComponentModel\TimeSpanConverter.cs" />
-    <Compile Include="System\ComponentModel\TypeConverter.cs" />
-    <Compile Include="System\ComponentModel\TypeConverterAttribute.cs" />
     <Compile Include="System\ComponentModel\TypeDescriptor.cs" />
     <Compile Include="System\ComponentModel\TypeDescriptionProvider.cs" />
     <Compile Include="System\ComponentModel\TypeDescriptionProviderAttribute.cs" />
-    <Compile Include="System\ComponentModel\TypeListConverter.cs" />
-    <Compile Include="System\ComponentModel\UInt16Converter.cs" />
-    <Compile Include="System\ComponentModel\UInt32Converter.cs" />
-    <Compile Include="System\ComponentModel\UInt64Converter.cs" />
-    <Compile Include="System\ComponentModel\UriTypeConverter.cs" />
     <Compile Include="System\ComponentModel\WeakHashtable.cs" />
     <Compile Include="System\ComponentModel\Design\IDictionaryService.cs" />
     <Compile Include="System\ComponentModel\Design\IExtenderListService.cs" />
