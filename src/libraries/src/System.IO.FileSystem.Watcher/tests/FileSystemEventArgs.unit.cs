@@ -6,32 +6,35 @@ using System;
 using System.IO;
 using Xunit;
 
-public class FileSystemEventArgsTests
+namespace System.IO.Tests
 {
-    private static void ValidateFileSystemEventArgs(WatcherChangeTypes changeType, string directory, string name)
+    public class FileSystemEventArgsTests
     {
-        FileSystemEventArgs args = new FileSystemEventArgs(changeType, directory, name);
-
-        if (!directory.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal))
+        private static void ValidateFileSystemEventArgs(WatcherChangeTypes changeType, string directory, string name)
         {
-            directory += Path.DirectorySeparatorChar;
+            FileSystemEventArgs args = new FileSystemEventArgs(changeType, directory, name);
+
+            if (!directory.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal))
+            {
+                directory += Path.DirectorySeparatorChar;
+            }
+
+            Assert.Equal(changeType, args.ChangeType);
+            Assert.Equal(directory + name, args.FullPath);
+            Assert.Equal(name, args.Name);
         }
 
-        Assert.Equal(changeType, args.ChangeType);
-        Assert.Equal(directory + name, args.FullPath);
-        Assert.Equal(name, args.Name);
-    }
+        [Fact]
+        public void FileSystemEventArgs_ctor()
+        {
+            ValidateFileSystemEventArgs(WatcherChangeTypes.Changed, "C:" + Path.DirectorySeparatorChar, "foo.txt");
+            ValidateFileSystemEventArgs(WatcherChangeTypes.Changed, "C:", "foo.txt");
+            ValidateFileSystemEventArgs(WatcherChangeTypes.All, "C:" + Path.DirectorySeparatorChar, "foo.txt");
 
-    [Fact]
-    public static void FileSystemEventArgs_ctor()
-    {
-        ValidateFileSystemEventArgs(WatcherChangeTypes.Changed, "C:" + Path.DirectorySeparatorChar, "foo.txt");
-        ValidateFileSystemEventArgs(WatcherChangeTypes.Changed, "C:", "foo.txt");
-        ValidateFileSystemEventArgs(WatcherChangeTypes.All, "C:" + Path.DirectorySeparatorChar, "foo.txt");
+            ValidateFileSystemEventArgs((WatcherChangeTypes)0, String.Empty, String.Empty);
+            ValidateFileSystemEventArgs((WatcherChangeTypes)0, String.Empty, null);
 
-        ValidateFileSystemEventArgs((WatcherChangeTypes)0, String.Empty, String.Empty);
-        ValidateFileSystemEventArgs((WatcherChangeTypes)0, String.Empty, null);
-
-        Assert.Throws<NullReferenceException>(() => new FileSystemEventArgs((WatcherChangeTypes)0, null, String.Empty));
+            Assert.Throws<NullReferenceException>(() => new FileSystemEventArgs((WatcherChangeTypes)0, null, String.Empty));
+        }
     }
 }

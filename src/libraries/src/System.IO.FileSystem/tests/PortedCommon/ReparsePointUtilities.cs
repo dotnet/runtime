@@ -34,15 +34,19 @@ public static class MountHelper
     /// <param name="targetPath"></param>
     public static bool CreateSymbolicLink(string linkPath, string targetPath, bool isDirectory)
     {
-        Process symLinkProcess = null;
+        Process symLinkProcess = new Process();
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            symLinkProcess = Process.Start("cmd", string.Format("/c mklink{0} \"{1}\" \"{2}\"", isDirectory ? " /D" : "", linkPath, targetPath));
+            symLinkProcess.StartInfo.FileName = "cmd";
+            symLinkProcess.StartInfo.Arguments = string.Format("/c mklink{0} \"{1}\" \"{2}\"", isDirectory ? " /D" : "", linkPath, targetPath);
         }
         else
         {
-            symLinkProcess = Process.Start("ln", string.Format("-s \"{0}\" \"{1}\"", targetPath, linkPath));
+            symLinkProcess.StartInfo.FileName = "ln";
+            symLinkProcess.StartInfo.Arguments = string.Format("-s \"{0}\" \"{1}\"", targetPath, linkPath);
         }
+        symLinkProcess.StartInfo.RedirectStandardOutput = true;
+        symLinkProcess.Start();
 
         if (symLinkProcess != null)
         {
