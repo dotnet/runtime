@@ -96,6 +96,7 @@ namespace System.Text.Tests
         }
         
         [Theory]
+        [MemberData(nameof(Decode_BigEndian_TestData))]
         public void Decode_BigEndian(byte[] bytes, int index, int count, string expected)
         {
             EncodingHelpers.Decode(new UnicodeEncoding(true, false), bytes, index, count, expected);
