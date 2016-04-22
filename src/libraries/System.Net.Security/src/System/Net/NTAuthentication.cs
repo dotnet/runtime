@@ -486,10 +486,5 @@ namespace System.Net
             }
             return spn;
         }
-
-        private int DecryptNtlm(byte[] payload, int offset, int count, out int newOffset, uint expectedSeqNumber)
-        {
-            return NegotiateStreamPal.DecryptNtlm(_securityContext, payload, offset, count, IsConfidentialityFlag, out newOffset, expectedSeqNumber);
-        }
     }
 }
