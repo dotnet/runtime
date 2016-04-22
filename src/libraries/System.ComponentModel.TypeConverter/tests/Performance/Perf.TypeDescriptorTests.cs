@@ -44,6 +44,7 @@ namespace System.ComponentModel.Tests
         [InlineData(typeof(IDerived), typeof(IBaseConverter))]
         [InlineData(typeof(ClassIBase), typeof(IBaseConverter))]
         [InlineData(typeof(ClassIDerived), typeof(IBaseConverter))]
+        [InlineData(typeof(Uri), typeof(UriTypeConverter))]
         public static void GetConverter(Type typeToConvert, Type expectedConverter)
         {
             const int innerIterations = 100;
