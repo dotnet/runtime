@@ -14,6 +14,19 @@ namespace System.Text.Tests
             yield return new object[] { new UnicodeEncoding(), new UnicodeEncoding(), true };
             yield return new object[] { new UnicodeEncoding(), new UnicodeEncoding(false, true), true };
             yield return new object[] { new UnicodeEncoding(), new UnicodeEncoding(false, false), false };
+
+            yield return new object[] { Encoding.Unicode, Encoding.Unicode, true };
+            yield return new object[] { Encoding.Unicode, Encoding.GetEncoding("Unicode"), true };
+            yield return new object[] { Encoding.Unicode, Encoding.GetEncoding("utf-16"), true };
+            yield return new object[] { Encoding.Unicode, Encoding.GetEncoding("utf-16LE"), true };
+            yield return new object[] { Encoding.Unicode, new UnicodeEncoding(false, true), true };
+            yield return new object[] { Encoding.Unicode, new UnicodeEncoding(true, true), false };
+
+            yield return new object[] { Encoding.BigEndianUnicode, Encoding.BigEndianUnicode, true };
+            yield return new object[] { Encoding.BigEndianUnicode, Encoding.GetEncoding("utf-16BE"), true };
+            yield return new object[] { Encoding.BigEndianUnicode, new UnicodeEncoding(true, true), true };
+            yield return new object[] { Encoding.BigEndianUnicode, new UnicodeEncoding(false, true), false };
+
             yield return new object[] { new UnicodeEncoding(), new TimeSpan(), false };
             yield return new object[] { new UnicodeEncoding(), null, false };
         }
