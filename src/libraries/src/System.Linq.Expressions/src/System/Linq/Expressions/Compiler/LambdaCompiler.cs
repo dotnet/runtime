@@ -175,7 +175,6 @@ namespace System.Linq.Expressions.Compiler
         /// Compiler entry point
         /// </summary>
         /// <param name="lambda">LambdaExpression to compile.</param>
-        /// <param name="debugInfoGenerator">Debug info generator.</param>
         /// <returns>The compiled delegate.</returns>
         internal static Delegate Compile(LambdaExpression lambda)
         {
