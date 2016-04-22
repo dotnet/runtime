@@ -623,14 +623,14 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal void EmitInitializeParameter(int index, Type parameterType)
+        internal void EmitInitializeParameter(int index)
         {
-            Emit(Parameter(index, parameterType));
+            Emit(Parameter(index));
         }
 
-        internal static Instruction Parameter(int index, Type parameterType)
+        internal static Instruction Parameter(int index)
         {
-            return new InitializeLocalInstruction.Parameter(index, parameterType);
+            return new InitializeLocalInstruction.Parameter(index);
         }
 
         internal static Instruction ParameterBox(int index)
