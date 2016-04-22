@@ -18,6 +18,7 @@
     "System.Runtime.Handles": "4.0.1-rc3-24022-00",
     "System.Runtime.InteropServices": "4.1.0-rc3-24022-00",
     "System.Text.RegularExpressions": "4.1.0-rc3-24022-00",
+    "System.Threading.Thread": "4.0.0-rc3-24022-00",
     "System.Threading.Tasks": "4.0.11-rc3-24022-00",
     "System.Threading.Tasks.Parallel": "4.0.1-rc3-24022-00",
     "xunit": "2.1.0",
