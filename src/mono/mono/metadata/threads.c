@@ -915,19 +915,20 @@ guint32 mono_threads_get_default_stacksize (void)
  *   ARG should not be a GC reference.
  */
 MonoInternalThread*
-mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, gboolean threadpool_thread, guint32 stack_size)
+mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, gboolean threadpool_thread, guint32 stack_size, MonoError *error)
 {
-	MonoError error;
 	MonoThread *thread;
 	MonoInternalThread *internal;
 	StartInfo *start_info;
 	gboolean res;
 
-	thread = create_thread_object (domain, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	mono_error_init (error);
 
-	internal = create_internal_thread (&error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	thread = create_thread_object (domain, error);
+	return_val_if_nok (error, NULL);
+
+	internal = create_internal_thread (error);
+	return_val_if_nok (error, NULL);
 
 	MONO_OBJECT_SETREF (thread, internal_thread, internal);
 
@@ -936,11 +937,8 @@ mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, gb
 	start_info->obj = thread;
 	start_info->start_arg = arg;
 
-	res = create_thread (thread, internal, start_info, threadpool_thread, stack_size, &error);
-	if (!res) {
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
-		return NULL;
-	}
+	res = create_thread (thread, internal, start_info, threadpool_thread, stack_size, error);
+	return_val_if_nok (error, NULL);
 
 	/* Check that the managed and unmanaged layout of MonoInternalThread matches */
 #ifndef MONO_CROSS_COMPILE
@@ -954,7 +952,15 @@ mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, gb
 void
 mono_thread_create (MonoDomain *domain, gpointer func, gpointer arg)
 {
-	mono_thread_create_internal (domain, func, arg, FALSE, 0);
+	MonoError error;
+	if (!mono_thread_create_checked (domain, func, arg, &error))
+		mono_error_cleanup (&error);
+}
+
+gboolean
+mono_thread_create_checked (MonoDomain *domain, gpointer func, gpointer arg, MonoError *error)
+{
+	return (NULL != mono_thread_create_internal (domain, func, arg, FALSE, 0, error));
 }
 
 MonoThread *

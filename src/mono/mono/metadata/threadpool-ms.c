@@ -742,7 +742,8 @@ worker_try_create (void)
 		counter._.active ++;
 	});
 
-	if ((thread = mono_thread_create_internal (mono_get_root_domain (), worker_thread, NULL, TRUE, 0)) != NULL) {
+	MonoError error;
+	if ((thread = mono_thread_create_internal (mono_get_root_domain (), worker_thread, NULL, TRUE, 0, &error)) != NULL) {
 		threadpool->worker_creation_current_count += 1;
 
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] try create worker, created %p, now = %d count = %d", mono_native_thread_id_get (), thread->tid, now, threadpool->worker_creation_current_count);
@@ -750,7 +751,8 @@ worker_try_create (void)
 		return TRUE;
 	}
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] try create worker, failed: could not create thread", mono_native_thread_id_get ());
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] try create worker, failed: could not create thread due to %s", mono_native_thread_id_get (), mono_error_get_message (&error));
+	mono_error_cleanup (&error);
 
 	COUNTER_ATOMIC (counter, {
 		counter._.working --;
@@ -965,6 +967,7 @@ monitor_thread (void)
 static void
 monitor_ensure_running (void)
 {
+	MonoError error;
 	for (;;) {
 		switch (monitor_status) {
 		case MONITOR_STATUS_REQUESTED:
@@ -976,8 +979,10 @@ monitor_ensure_running (void)
 			if (mono_runtime_is_shutting_down ())
 				return;
 			if (InterlockedCompareExchange (&monitor_status, MONITOR_STATUS_REQUESTED, MONITOR_STATUS_NOT_RUNNING) == MONITOR_STATUS_NOT_RUNNING) {
-				if (!mono_thread_create_internal (mono_get_root_domain (), monitor_thread, NULL, TRUE, SMALL_STACK))
+				if (!mono_thread_create_internal (mono_get_root_domain (), monitor_thread, NULL, TRUE, SMALL_STACK, &error)) {
 					monitor_status = MONITOR_STATUS_NOT_RUNNING;
+					mono_error_cleanup (&error);
+				}
 				return;
 			}
 			break;
