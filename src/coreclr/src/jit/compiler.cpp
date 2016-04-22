@@ -4292,7 +4292,7 @@ DoneCleanUp:
 }
 
 #ifdef DEBUG
-unsigned        Compiler::Info::compMethodHash()
+unsigned        Compiler::Info::compMethodHash() const
 {
     if (compMethodHashPrivate == 0)
     {
@@ -4373,6 +4373,7 @@ void Compiler::compCompileFinish()
 #if defined(DEBUG) || defined(INLINE_DATA)
 
     m_inlineStrategy->DumpData();
+    m_inlineStrategy->DumpXml();
 
 #endif
 
