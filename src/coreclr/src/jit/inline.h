@@ -562,10 +562,13 @@ public:
 #if defined(DEBUG) || defined(INLINE_DATA)
 
     // Dump the full subtree, including failures
-    void Dump(int indent = 0);
+    void Dump(unsigned indent = 0);
 
     // Dump only the success subtree, with rich data
-    void DumpData(int indent = 0);
+    void DumpData(unsigned indent = 0);
+
+    // Dump full subtree in xml format
+    void DumpXml(FILE* file = stderr, unsigned indent = 0);
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
@@ -687,6 +690,9 @@ public:
 
     // Dump data-format description of inlines done so far.
     void DumpData();
+
+    // Dump xml-formatted description of inlines
+    void DumpXml(FILE* file = stderr, unsigned indent = 0);
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
