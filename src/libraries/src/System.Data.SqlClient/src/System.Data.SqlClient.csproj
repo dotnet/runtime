@@ -14,7 +14,8 @@
     <PackageTargetFramework Condition="'$(TargetGroup)' == 'net451'">net451</PackageTargetFramework>
     <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.3</PackageTargetFramework>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
-    <UsePackageTargetRuntimeDefaults Condition="'$(TargetGroup)' == ''">true</UsePackageTargetRuntimeDefaults>
+    <PackageTargetRuntime Condition="'$(TargetsWindows)' == 'true'">win</PackageTargetRuntime>
+    <PackageTargetRuntime Condition="'$(TargetsUnix)' == 'true'">unix</PackageTargetRuntime>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsWindows)' != 'true' ">
     <DefineConstants>$(DefineConstants);MANAGED_SNI</DefineConstants>

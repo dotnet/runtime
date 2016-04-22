@@ -27,6 +27,9 @@
     <PackageDestination Include="runtimes/$(WindowsRID)/lib/netstandard1.3">
       <TargetFramework>netstandard1.3</TargetFramework>
     </PackageDestination>
+    <PackageDestination Include="runtimes/win/lib/net46">
+      <TargetFramework>net46</TargetFramework>
+    </PackageDestination>
     <PackageDestination Include="lib/net46">
       <TargetFramework>net46</TargetFramework>
     </PackageDestination>

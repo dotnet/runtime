@@ -18,7 +18,8 @@
     <PackageTargetFramework Condition="'$(PackageTargetFramework)'==''">netstandard1.4</PackageTargetFramework>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net46' OR '$(TargetGroup)'=='net461'">true</IsPartialFacadeAssembly>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.4</NuGetTargetMoniker>
-    <UsePackageTargetRuntimeDefaults Condition=" '$(IsPartialFacadeAssembly)' != 'true' ">true</UsePackageTargetRuntimeDefaults>
+    <PackageTargetRuntime Condition="'$(TargetsWindows)' == 'true'">win</PackageTargetRuntime>
+    <PackageTargetRuntime Condition="'$(TargetsUnix)' == 'true'">unix</PackageTargetRuntime>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
