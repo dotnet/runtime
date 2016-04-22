@@ -396,8 +396,14 @@ namespace System.Net
                 }
             }
 
-            if (cSafe == value.Length)
+            if (cSafe + cSpaces == value.Length)
             {
+                if (cSpaces != 0)
+                {
+                    // Only spaces to encode
+                    return value.Replace(' ', '+');
+                }
+
                 // Nothing to expand
                 return value;
             }
