@@ -11,7 +11,10 @@ namespace System.Text.Tests
     {
         public static IEnumerable<object[]> Encodings_TestData()
         {
-            yield return new object[] { new UnicodeEncoding() };
+            yield return new object[] { new UnicodeEncoding(false, false) };
+            yield return new object[] { new UnicodeEncoding(true, false) };
+            yield return new object[] { new UnicodeEncoding(true, true) };
+            yield return new object[] { new UnicodeEncoding(true, true) };
             yield return new object[] { new UTF7Encoding() };
             yield return new object[] { new UTF8Encoding(true) };
             yield return new object[] { new UTF8Encoding(false) };

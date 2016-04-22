@@ -11,9 +11,6 @@ namespace System.Text.Tests
     {
         private static byte[] s_UTF32LEBom = new byte[] { 0xFF, 0xFE, 0x0, 0x0 };
         private static byte[] s_UTF32BEBom = new byte[] { 0x0, 0x0, 0xFE, 0xFF, };
-        private static byte[] s_UTF8Bom = new byte[] { 0xEF, 0xBB, 0xBF };
-        private static byte[] s_UTF16LEBom = new byte[] { 0xFF, 0xFE };
-        private static byte[] s_UTF8BEBom = new byte[] { 0xFE, 0xFF };
 
         [Fact]
         public static void TestGetEncoding()
@@ -26,18 +23,6 @@ namespace System.Text.Tests
 
             encoding = Encoding.GetEncoding("UTF-32BE");
             Assert.Equal<byte>(encoding.GetPreamble(), s_UTF32BEBom);
-
-            encoding = Encoding.UTF8;
-            Assert.Equal<byte>(encoding.GetPreamble(), s_UTF8Bom);
-
-            encoding = Encoding.GetEncoding("UTF-16BE");
-            Assert.Equal<byte>(encoding.GetPreamble(), s_UTF8BEBom);
-
-            encoding = Encoding.GetEncoding("UTF-16LE");
-            Assert.Equal<byte>(encoding.GetPreamble(), s_UTF16LEBom);
-
-            encoding = Encoding.Unicode;
-            Assert.Equal<byte>(encoding.GetPreamble(), s_UTF16LEBom);
         }
 
         private static byte[] s_asciiBytes = new byte[] { (byte)'A', (byte)'B', (byte)'C', (byte)'D', (byte)'E', (byte)'F', (byte)'G', (byte)'H', };
