@@ -31,26 +31,10 @@ namespace System.Text.Tests
         [Fact]
         public static void TestEncodingDecoding()
         {
-            Encoding encoding = Encoding.ASCII;
+            Encoding encoding = Encoding.GetEncoding("latin1");
             byte[] bytes = encoding.GetBytes(s_asciiString);
             Assert.Equal<byte>(bytes, s_asciiBytes);
             string s = encoding.GetString(bytes, 0, bytes.Length);
-            Assert.True(s.Equals(s_asciiString));
-            s = encoding.GetString(bytes);
-            Assert.True(s.Equals(s_asciiString));
-
-            encoding = Encoding.GetEncoding("us-ascii");
-            bytes = encoding.GetBytes(s_asciiString);
-            Assert.Equal<byte>(bytes, s_asciiBytes);
-            s = encoding.GetString(bytes, 0, bytes.Length);
-            Assert.True(s.Equals(s_asciiString));
-            s = encoding.GetString(bytes);
-            Assert.True(s.Equals(s_asciiString));
-
-            encoding = Encoding.GetEncoding("latin1");
-            bytes = encoding.GetBytes(s_asciiString);
-            Assert.Equal<byte>(bytes, s_asciiBytes);
-            s = encoding.GetString(bytes, 0, bytes.Length);
             Assert.True(s.Equals(s_asciiString));
             s = encoding.GetString(bytes);
             Assert.True(s.Equals(s_asciiString));
