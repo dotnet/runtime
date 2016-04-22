@@ -342,7 +342,7 @@ namespace System.Linq.Expressions.Interpreter
             foreach (var p in node.Parameters)
             {
                 var local = _locals.DefineLocal(p, 0);
-                _instructions.EmitInitializeParameter(local.Index, p.Type);
+                _instructions.EmitInitializeParameter(local.Index);
             }
 
             Compile(node.Body);

@@ -406,7 +406,7 @@ namespace System.Linq.Expressions.Interpreter
 
         internal sealed class Parameter : InitializeLocalInstruction, IBoxableInstruction
         {
-            internal Parameter(int index, Type parameterType)
+            internal Parameter(int index)
                 : base(index)
             {
             }
