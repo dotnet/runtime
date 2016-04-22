@@ -14,6 +14,8 @@ namespace System.Text.Tests
             string testString = "Hello World123#?!";
             yield return new object[] { testString, 0, testString.Length };
             yield return new object[] { testString, 4, 5 };
+
+            yield return new object[] { "ABCDEFGH", 0, 8 };
                         
             yield return new object[] { "\u1234\u2345", 0, 2 };
             yield return new object[] { "a\u1234\u2345b", 0, 4 };
