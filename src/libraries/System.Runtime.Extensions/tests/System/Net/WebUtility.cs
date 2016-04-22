@@ -13,14 +13,43 @@ namespace System.Net.Tests
     public class WebUtilityTests
     {
         // HtmlEncode + HtmlDecode
-
         public static IEnumerable<object[]> HtmlDecode_TestData()
         {
+            // Needs decoding
             yield return new object[] { "Hello! &apos;&quot;&lt;&amp;&gt;\u2665&hearts;\u00E7&#xe7;&#231;", "Hello! '\"<&>\u2665\u2665\u00E7\u00E7\u00E7" };
-            yield return new object[] { "Hello, world! \"<>\u2665\u00E7", "Hello, world! \"<>\u2665\u00E7" }; // No special chars
-            yield return new object[] { null, null };
+            yield return new object[] { "&#xD7FF;&#xd7ff;", "\uD7FF\uD7FF" };
+            yield return new object[] { "&#xE000;&#xe000;", "\uE000\uE000" };
+            yield return new object[] { "&#97;&#98;&#99;", "abc" };
 
+            // Surrogate pairs
+            yield return new object[] { "&#65536;", "\uD800\uDC00" };
+            yield return new object[] { "a&#65536;b", "a\uD800\uDC00b" };
             yield return new object[] { "&#144308;", char.ConvertFromUtf32(144308) };
+
+            // Invalid encoding
+            yield return new object[] { "&", "&" };
+            yield return new object[] { "&#", "&#" };
+            yield return new object[] { "&#x", "&#x" };
+            yield return new object[] { "&abc", "&abc" };
+            yield return new object[] { "&abc;", "&abc;" };
+            yield return new object[] { "&#65536", "&#65536" };
+            yield return new object[] { "&#xD7FF", "&#xD7FF" };
+            yield return new object[] { "&#xG123;", "&#xG123;" };
+            yield return new object[] { "&#xD800;", "&#xD800;" };
+            yield return new object[] { "&#xDFFF;", "&#xDFFF;" };
+            yield return new object[] { "&#1114112;", "&#1114112;" };
+            yield return new object[] { "&#x110000;", "&#x110000;" };
+            yield return new object[] { "&#4294967296;", "&#4294967296;" };
+            yield return new object[] { "&#x100000000;", "&#x100000000;" };
+
+            // Basic
+            yield return new object[] { "Hello, world!", "Hello, world!" };
+            yield return new object[] { "Hello, world! \"<>\u2665\u00E7", "Hello, world! \"<>\u2665\u00E7" };
+            yield return new object[] { "    ", "    " };
+
+            // Empty
+            yield return new object[] { "", "" };
+            yield return new object[] { null, null };
         }
 
         [Theory]
@@ -30,17 +59,41 @@ namespace System.Net.Tests
             Assert.Equal(expected, WebUtility.HtmlDecode(value));
         }
 
+        [Fact]
+        public static void HtmlDecode_InvalidUnicode()
+        {
+            // TODO: add into HtmlDecode_TestData when #7166 is fixed
+            // High BMP non-chars
+            HtmlDecode("\uFFFD", "\uFFFD");
+            HtmlDecode("\uFFFE", "\uFFFE");
+            HtmlDecode("\uFFFF", "\uFFFF");
+        }
+
         public static IEnumerable<object[]> HtmlEncode_TestData()
         {
             // Single quotes need to be encoded as &#39; rather than &apos; since &#39; is valid both for
             // HTML and XHTML, but &apos; is valid only for XHTML.
             // For more info: http://fishbowl.pastiche.org/2003/07/01/the_curse_of_apos/
             yield return new object[] { "'", "&#39;" };
-            yield return new object[] { "Hello! '\"<&>\u2665\u00E7 World", "Hello! &#39;&quot;&lt;&amp;&gt;\u2665&#231; World" };
-            yield return new object[] { null, null };
-            yield return new object[] { "Hello, world!", "Hello, world!" }; // No special chars
 
-            yield return new object[] { char.ConvertFromUtf32(144308), "&#144308;" }; // Default strict settings
+            yield return new object[] { "Hello! '\"<&>\u2665\u00E7 World", "Hello! &#39;&quot;&lt;&amp;&gt;\u2665&#231; World" };
+            yield return new object[] { "<>\"\\&", "&lt;&gt;&quot;\\&amp;" };
+            yield return new object[] { "\u00A0", "&#160;" };
+            yield return new object[] { "\u00FF", "&#255;" };
+            yield return new object[] { "\u0100", "\u0100" };
+
+            // Surrogate pairs - default strict settings
+            yield return new object[] { char.ConvertFromUtf32(144308), "&#144308;" };
+            yield return new object[] { "\uD800\uDC00", "&#65536;" };
+            yield return new object[] { "a\uD800\uDC00b", "a&#65536;b" };
+
+            // Basic
+            yield return new object[] { "Hello, world!", "Hello, world!" };
+            yield return new object[] { "    ", "    " };
+
+            // Empty string
+            yield return new object[] { "", "" };
+            yield return new object[] { null, null };
         }
 
         [Theory]
@@ -48,6 +101,29 @@ namespace System.Net.Tests
         public static void HtmlEncode(string value, string expected)
         {
             Assert.Equal(expected, WebUtility.HtmlEncode(value));
+        }
+
+        [Fact]
+        public static void HtmlEncode_InvalidUnicode()
+        {
+            // TODO: add into HtmlEncode_TestData when #7166 is fixed
+            // High BMP non-chars
+            HtmlEncode("\uFFFD", "\uFFFD");
+            HtmlEncode("\uFFFE", "\uFFFE");
+            HtmlEncode("\uFFFF", "\uFFFF");
+            
+            // Lone high surrogate
+            HtmlEncode("\uD800", "\uFFFD");
+            HtmlEncode("\uD800a", "\uFFFDa");
+
+            // Lone low surrogate
+            HtmlEncode("\uDC00", "\uFFFD");
+            HtmlEncode("\uDC00a", "\uFFFDa");
+
+            // Invalid surrogate pairs
+            HtmlEncode("\uD800\uD800", "\uFFFD\uFFFD"); // High, high
+            HtmlEncode("\uDC00\uD800", "\uFFFD\uFFFD"); // Low, high
+            HtmlEncode("\uDC00\uDC00", "\uFFFD\uFFFD"); // Low, low
         }
 
         // Shared test data for UrlEncode + Decode and their ToBytes counterparts
