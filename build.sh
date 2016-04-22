@@ -103,6 +103,7 @@ esac
 __cmake_defines="${__cmake_defines} ${__arch_define}"
 
 
+# __rid_plat is the base RID that corehost is shipped for, effectively, the name of the folder in "runtimes/{__rid_plat}/native/" inside the nupkgs.
 __rid_plat=
 if [ "$(uname -s)" == "Darwin" ]; then
     __rid_plat=osx.10.10
