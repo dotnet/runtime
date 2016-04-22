@@ -18,6 +18,7 @@
     <ProjectReference Include="..\src\System.Security.Cryptography.Cng.csproj">
       <Project>{4C1BD451-6A99-45E7-9339-79C77C42EE9E}</Project>
       <Name>System.Security.Cryptography.Cng</Name>
+      <KeepProjectReference>true</KeepProjectReference>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
