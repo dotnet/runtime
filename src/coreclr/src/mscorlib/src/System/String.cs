@@ -93,22 +93,14 @@ namespace System {
             if (values.Length == 0 || values[0] == null)
                 return String.Empty;
 
-            if (separator == null)
-                separator = String.Empty;
-
             StringBuilder result = StringBuilderCache.Acquire();
 
-            String value = values[0].ToString();           
-            if (value != null)
-                result.Append(value);
+            result.Append(values[0].ToString());
 
             for (int i = 1; i < values.Length; i++) {
                 result.Append(separator);
                 if (values[i] != null) {
-                    // handle the case where their ToString() override is broken
-                    value = values[i].ToString();
-                    if (value != null)
-                        result.Append(value);
+                    result.Append(values[i].ToString());
                 }
             }
             return StringBuilderCache.GetStringAndRelease(result);
@@ -121,30 +113,23 @@ namespace System {
             Contract.Ensures(Contract.Result<String>() != null);
             Contract.EndContractBlock();
 
-            if (separator == null)
-                separator = String.Empty;
-
             using(IEnumerator<T> en = values.GetEnumerator()) {
                 if (!en.MoveNext())
                     return String.Empty;
 
                 StringBuilder result = StringBuilderCache.Acquire();
-                if (en.Current != null) {
-                    // handle the case that the enumeration has null entries
-                    // and the case where their ToString() override is broken
-                    string value = en.Current.ToString();
-                    if (value != null)
-                        result.Append(value);
+                T currentValue = en.Current;
+
+                if (currentValue != null) {
+                    result.Append(currentValue.ToString());
                 }
 
                 while (en.MoveNext()) {
+                    currentValue = en.Current;
+
                     result.Append(separator);
-                    if (en.Current != null) {
-                        // handle the case that the enumeration has null entries
-                        // and the case where their ToString() override is broken
-                        string value = en.Current.ToString();
-                        if (value != null)
-                            result.Append(value);
+                    if (currentValue != null) {
+                        result.Append(currentValue.ToString());
                     }
                 }            
                 return StringBuilderCache.GetStringAndRelease(result);
@@ -3202,12 +3187,10 @@ namespace System {
             StringBuilder result = StringBuilderCache.Acquire();
             using(IEnumerator<T> en = values.GetEnumerator()) {
                 while (en.MoveNext()) {
-                    if (en.Current != null) {
-                        // handle the case that the enumeration has null entries
-                        // and the case where their ToString() override is broken
-                        string value = en.Current.ToString();
-                        if (value != null)
-                            result.Append(value);
+                    T currentValue = en.Current;
+
+                    if (currentValue != null) {
+                        result.Append(currentValue.ToString());
                     }
                 }            
             }
@@ -3225,9 +3208,7 @@ namespace System {
             StringBuilder result = StringBuilderCache.Acquire();
             using(IEnumerator<String> en = values.GetEnumerator()) {
                 while (en.MoveNext()) {
-                    if (en.Current != null) {
-                        result.Append(en.Current);
-                    }
+                     result.Append(en.Current);
                 }            
             }
             return StringBuilderCache.GetStringAndRelease(result);            
