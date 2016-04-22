@@ -355,13 +355,19 @@ namespace System.Net.Http
                         // First handle any requests in the incoming requests queue.
                         while (true)
                         {
+                            // Get the next request
                             IncomingRequest request;
                             lock (_incomingRequests)
                             {
                                 if (_incomingRequests.Count == 0) break;
                                 request = _incomingRequests.Dequeue();
                             }
-                            HandleIncomingRequest(request);
+
+                            // Act on it.  If it's a shutdown request, we exit.
+                            if (!HandleIncomingRequest(request))
+                            {
+                                return;
+                            }
                         }
 
                         // If we have no active operations, there's no work to do right now.
@@ -451,16 +457,12 @@ namespace System.Net.Http
                 catch (Exception exc)
                 {
                     eventLoopError = exc;
-                    if (!(exc is HandlerShutdownException))
-                    {
-                        throw;
-                    }
+                    throw;
                 }
                 finally
                 {
-                    // If we got an unexpected exception, either shutdown was requested or something bad happened. We
-                    // may have some  operations that we initiated but that weren't completed. Make sure to clean up any 
-                    // such operations, failing them and releasing their resources.
+                    // There may still be active operations, if either an unexpected exception occurred or we received
+                    // a shutdown request. Make sure to clean up any remaining operations, failing them and releasing their resources.
                     if (_activeOperations.Count > 0)
                     {
                         EventSourceTrace("Shutting down {0} active operations.", _activeOperations.Count);
@@ -478,7 +480,7 @@ namespace System.Net.Http
                             DeactivateActiveRequest(failingOperation.Easy, failingOperationGcHandle, failingOperation.CancellationRegistration);
 
                             // Complete the operation's task and clean up any of its resources
-                            failingOperation.Easy.FailRequest(CreateHttpRequestException(eventLoopError));
+                            failingOperation.Easy.FailRequest(CreateHttpRequestException(eventLoopError ?? new OperationCanceledException(SR.net_http_unix_handler_disposed)));
                             failingOperation.Easy.Cleanup(); // no active processing remains, so cleanup
                         }
 
@@ -488,7 +490,7 @@ namespace System.Net.Http
                 }
             }
 
-            private void HandleIncomingRequest(IncomingRequest request)
+            private bool HandleIncomingRequest(IncomingRequest request)
             {
                 Debug.Assert(!Monitor.IsEntered(_incomingRequests), "Incoming requests lock should only be held while accessing the queue");
                 EventSourceTrace("Type: {0}", request.Type, easy: request.Easy);
@@ -498,12 +500,12 @@ namespace System.Net.Http
                 {
                     case IncomingRequestType.New:
                         ActivateNewRequest(easy);
-                        break;
+                        return true;
 
                     case IncomingRequestType.Cancel:
                         Debug.Assert(easy._associatedMultiAgent == this, "Should only cancel associated easy requests");
                         FindAndFailActiveRequest(easy, new OperationCanceledException(easy._cancellationToken));
-                        break;
+                        return true;
 
                     case IncomingRequestType.Unpause:
                         Debug.Assert(easy._associatedMultiAgent == this, "Should only unpause associated easy requests");
@@ -523,15 +525,15 @@ namespace System.Net.Http
                                 FindAndFailActiveRequest(easy, exc);
                             }
                         }
-                        break;
+                        return true;
 
                     case IncomingRequestType.Shutdown:
                         Debug.Assert(easy == null, "Expected null easy for a Shutdown request");
-                        throw new ObjectDisposedException(nameof(CurlHandler)); // force all active operations to close, failing them with this exception
+                        return false; // exit processing
 
                     default:
                         Debug.Fail("Invalid request type: " + request.Type);
-                        break;
+                        return true;
                 }
             }
 
@@ -1108,12 +1110,6 @@ namespace System.Net.Http
                 Unpause,
                 /// <summary>A request to shutdown the agent and all active operations.  No easy request is associated with this type.</summary>
                 Shutdown
-            }
-
-            /// <summary>Exception thrown when the handler has been disposed of while there are active operations.</summary>
-            internal sealed class HandlerShutdownException : OperationCanceledException
-            {
-                internal HandlerShutdownException() { }
             }
         }
 
