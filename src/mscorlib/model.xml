@@ -8057,7 +8057,6 @@
       <Member Name="get_Position" />
       <Member Name="get_ReadTimeout" />
       <Member Name="get_WriteTimeout" />
-      <Member Status="ImplRoot" Name="InternalCopyTo(System.IO.Stream,System.Int32)" />
       <Member Name="Read(System.Byte[],System.Int32,System.Int32)" />
       <Member Name="ReadByte" />
       <Member Name="ReadAsync(System.Byte[],System.Int32,System.Int32)"  />
