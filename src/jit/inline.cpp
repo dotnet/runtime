@@ -350,7 +350,7 @@ InlineContext::InlineContext(InlineStrategy* strategy)
 // Arguments:
 //    indent   - indentation level for this node
 
-void InlineContext::Dump(int indent)
+void InlineContext::Dump(unsigned indent)
 {
     // Handle fact that siblings are in reverse order.
     if (m_Sibling != nullptr)
@@ -393,20 +393,17 @@ void InlineContext::Dump(int indent)
         const char* inlineReason = InlGetObservationString(m_Observation);
         const char* inlineResult = m_Success ? "" : "FAILED: ";
 
-        for (int i = 0; i < indent; i++)
-        {
-            printf(" ");
-        }
-
         if (m_Offset == BAD_IL_OFFSET)
         {
-            printf("[%u IL=???? TR=%06u %08X] [%s%s] %s\n", m_Ordinal, m_TreeID, calleeToken,
+            printf("%*s[%u IL=???? TR=%06u %08X] [%s%s] %s\n", indent, "",
+                   m_Ordinal, m_TreeID, calleeToken,
                    inlineResult, inlineReason, calleeName);
         }
         else
         {
             IL_OFFSET offset = jitGetILoffs(m_Offset);
-            printf("[%u IL=%04d TR=%06u %08X] [%s%s] %s\n", m_Ordinal, offset, m_TreeID, calleeToken,
+            printf("%*s[%u IL=%04d TR=%06u %08X] [%s%s] %s\n", indent, "",
+                   m_Ordinal, offset, m_TreeID, calleeToken,
                    inlineResult, inlineReason, calleeName);
         }
     }
@@ -425,7 +422,7 @@ void InlineContext::Dump(int indent)
 // Arguments:
 //    indent   - indentation level for this node
 
-void InlineContext::DumpData(int indent)
+void InlineContext::DumpData(unsigned indent)
 {
     // Handle fact that siblings are in reverse order.
     if (m_Sibling != nullptr)
@@ -453,13 +450,7 @@ void InlineContext::DumpData(int indent)
     else if (m_Success)
     {
         const char* inlineReason = InlGetObservationString(m_Observation);
-
-        for (int i = 0; i < indent; i++)
-        {
-            printf(" ");
-        }
-
-        printf("%u,\"%s\",\"%s\"", m_Ordinal, inlineReason, calleeName);
+        printf("%*s%u,\"%s\",\"%s\"", indent, "", m_Ordinal, inlineReason, calleeName);
         m_Policy->DumpData(stdout);
         printf("\n");
     }
@@ -468,6 +459,63 @@ void InlineContext::DumpData(int indent)
     if (m_Child != nullptr)
     {
         m_Child->DumpData(indent + 2);
+    }
+}
+
+//------------------------------------------------------------------------
+// DumpXml: Dump an InlineContext entry and all descendants in xml format
+//
+// Arguments:
+//    file     - file for output
+//    indent   - indentation level for this node
+
+void InlineContext::DumpXml(FILE* file, unsigned indent)
+{
+    // Handle fact that siblings are in reverse order.
+    if (m_Sibling != nullptr)
+    {
+        m_Sibling->DumpXml(file, indent);
+    }
+
+    Compiler* compiler = m_InlineStrategy->GetCompiler();
+
+    mdMethodDef calleeToken =
+        compiler->info.compCompHnd->getMethodDefFromMethod(m_Callee);
+
+    const bool isRoot = m_Parent == nullptr;
+    const bool hasChild = m_Child != nullptr;
+    const char* inlineType = m_Success ? "Inline" : "FailedInline";
+
+    if (isRoot)
+    {
+        fprintf(file, "%*s<Inlines%s>\n", indent, "", hasChild ? "" : "/");
+    }
+    else
+    {
+        const char* inlineReason = InlGetObservationString(m_Observation);
+        int offset = -1;
+        if (m_Offset != BAD_IL_OFFSET)
+        {
+            offset = (int) jitGetILoffs(m_Offset);
+        }
+
+        fprintf(file, "%*s<%s method=\"%08X\" offset=\"%d\" reason=\"%s\"%s>\n",
+                indent, "", inlineType, calleeToken, offset, inlineReason, hasChild ? "" : "/");
+    }
+
+    // Recurse to children, then close out
+    if (hasChild)
+    {
+        m_Child->DumpXml(file, indent + 2);
+
+        if (isRoot)
+        {
+            fprintf(file, "%*s</Inlines>\n", indent, "");
+        }
+        else
+        {
+            fprintf(file, "%*s</%s>\n", indent, "", inlineType);
+        }
     }
 }
 
@@ -1120,83 +1168,159 @@ bool InlineStrategy::s_DumpDataHeader = false;
 void InlineStrategy::DumpData()
 {
     // Inliner data display
-    if (JitConfig.JitInlineDumpData() != 0)
+    if (JitConfig.JitInlineDumpData() == 0)
     {
-        // Don't dump anything if limiting is on and we didn't reach
-        // the limit while inlining.
-        //
-        // This serves to filter out duplicate data.
-        const int limit = JitConfig.JitInlineLimit();
+        return;
+    }
 
-        if ((limit < 0) || (m_InlineCount == static_cast<unsigned>(limit)))
+    // Don't dump anything if limiting is on and we didn't reach
+    // the limit while inlining.
+    //
+    // This serves to filter out duplicate data.
+    const int limit = JitConfig.JitInlineLimit();
+
+    if ((limit >= 0) && (m_InlineCount < static_cast<unsigned>(limit)))
+    {
+        return;
+    }
+
+    // Cache references to compiler substructures.
+    const Compiler::Info& info = m_Compiler->info;
+    const Compiler::Options& opts = m_Compiler->opts;
+
+    // If there weren't any successful inlines (no limit, or
+    // limit=0 case), we won't have a successful policy, so
+    // fake one up.
+    if (m_LastSuccessfulPolicy == nullptr)
+    {
+        assert(limit <= 0);
+        const bool isPrejitRoot = (opts.eeFlags & CORJIT_FLG_PREJIT) != 0;
+        m_LastSuccessfulPolicy = InlinePolicy::GetPolicy(m_Compiler, isPrejitRoot);
+
+        // Add in a bit of data....
+        const bool isForceInline = (info.compFlags & CORINFO_FLG_FORCEINLINE) != 0;
+        m_LastSuccessfulPolicy->NoteBool(InlineObservation::CALLEE_IS_FORCE_INLINE, isForceInline);
+        m_LastSuccessfulPolicy->NoteInt(InlineObservation::CALLEE_IL_CODE_SIZE, info.compMethodInfo->ILCodeSize);
+    }
+
+    if (!s_DumpDataHeader)
+    {
+        if (limit == 0)
         {
-            // Cache references to compiler substructures.
-            const Compiler::Info& info = m_Compiler->info;
-            const Compiler::Options& opts = m_Compiler->opts;
-
-            // If there weren't any successful inlines (no limit, or
-            // limit=0 case), we won't have a successful policy, so
-            // fake one up.
-            if (m_LastSuccessfulPolicy == nullptr)
-            {
-                assert(limit <= 0);
-                const bool isPrejitRoot = (opts.eeFlags & CORJIT_FLG_PREJIT) != 0;
-                m_LastSuccessfulPolicy = InlinePolicy::GetPolicy(m_Compiler, isPrejitRoot);
-
-                // Add in a bit of data....
-                const bool isForceInline = (info.compFlags & CORINFO_FLG_FORCEINLINE) != 0;
-                m_LastSuccessfulPolicy->NoteBool(InlineObservation::CALLEE_IS_FORCE_INLINE, isForceInline);
-                m_LastSuccessfulPolicy->NoteInt(InlineObservation::CALLEE_IL_CODE_SIZE, info.compMethodInfo->ILCodeSize);
-            }
-
-            if (!s_DumpDataHeader)
-            {
-                if (limit == 0)
-                {
-                    fprintf(stderr,
-                            "*** Inline Data: Policy=%s JitInlineLimit=%d ***\n",
-                            m_LastSuccessfulPolicy->GetName(),
-                            limit);
-                    fprintf(stderr, "Method,Version,HotSize,ColdSize,JitTime,SizeEstimate,TimeEstimate");
-                    m_LastSuccessfulPolicy->DumpSchema(stderr);
-                    fprintf(stderr, "\n");
-                }
-
-                s_DumpDataHeader = true;
-            }
-
-            // We'd really like the method identifier to be unique and
-            // durable across crossgen invocations. Not clear how to
-            // accomplish this, so we'll use the token for now.
-            //
-            // Post processing will have to filter out all data from
-            // methods where the root entry appears multiple times.
-            mdMethodDef currentMethodToken =
-                info.compCompHnd->getMethodDefFromMethod(info.compMethodHnd);
-
-            // Convert time spent jitting into microseconds
-            unsigned microsecondsSpentJitting = 0;
-            unsigned __int64 compCycles = m_Compiler->getInlineCycleCount();
-            if (compCycles > 0)
-            {
-                double countsPerSec = CycleTimer::CyclesPerSecond();
-                double counts = (double) compCycles;
-                microsecondsSpentJitting = (unsigned) ((counts / countsPerSec) * 1000 * 1000);
-            }
-
             fprintf(stderr,
-                    "%08X,%u,%u,%u,%u,%d,%d",
-                    currentMethodToken,
-                    m_InlineCount,
-                    info.compTotalHotCodeSize,
-                    info.compTotalColdCodeSize,
-                    microsecondsSpentJitting,
-                    m_CurrentSizeEstimate / 10,
-                    m_CurrentTimeEstimate);
-            m_LastSuccessfulPolicy->DumpData(stderr);
+                    "*** Inline Data: Policy=%s JitInlineLimit=%d ***\n",
+                    m_LastSuccessfulPolicy->GetName(),
+                    limit);
+            fprintf(stderr, "Method,Version,HotSize,ColdSize,JitTime,SizeEstimate,TimeEstimate");
+            m_LastSuccessfulPolicy->DumpSchema(stderr);
             fprintf(stderr, "\n");
         }
+
+        s_DumpDataHeader = true;
     }
+
+    // We'd really like the method identifier to be unique and
+    // durable across crossgen invocations. Not clear how to
+    // accomplish this, so we'll use the token for now.
+    //
+    // Post processing will have to filter out all data from
+    // methods where the root entry appears multiple times.
+    mdMethodDef currentMethodToken =
+        info.compCompHnd->getMethodDefFromMethod(info.compMethodHnd);
+
+    // Convert time spent jitting into microseconds
+    unsigned microsecondsSpentJitting = 0;
+    unsigned __int64 compCycles = m_Compiler->getInlineCycleCount();
+    if (compCycles > 0)
+    {
+        double countsPerSec = CycleTimer::CyclesPerSecond();
+        double counts = (double) compCycles;
+        microsecondsSpentJitting = (unsigned) ((counts / countsPerSec) * 1000 * 1000);
+    }
+
+    fprintf(stderr,
+            "%08X,%u,%u,%u,%u,%d,%d",
+            currentMethodToken,
+            m_InlineCount,
+            info.compTotalHotCodeSize,
+            info.compTotalColdCodeSize,
+            microsecondsSpentJitting,
+            m_CurrentSizeEstimate / 10,
+            m_CurrentTimeEstimate);
+    m_LastSuccessfulPolicy->DumpData(stderr);
+    fprintf(stderr, "\n");
+}
+
+//------------------------------------------------------------------------
+// DumpXML: dump xml-formatted version of the inline tree.
+//
+// Arguments
+//    file - file for data output
+//    indent - indent level of this element
+
+void InlineStrategy::DumpXml(FILE* file, unsigned indent)
+{
+    if (JitConfig.JitInlineDumpXml() == 0)
+    {
+        return;
+    }
+
+    // Cache references to compiler substructures.
+    const Compiler::Info& info = m_Compiler->info;
+    const Compiler::Options& opts = m_Compiler->opts;
+
+    const bool isPrejitRoot = (opts.eeFlags & CORJIT_FLG_PREJIT) != 0;
+    const bool isForceInline = (info.compFlags & CORINFO_FLG_FORCEINLINE) != 0;
+
+    // We'd really like the method identifier to be unique and
+    // durable across crossgen invocations. Not clear how to
+    // accomplish this, so we'll use the token for now.
+    //
+    // Post processing will have to filter out all data from
+    // methods where the root entry appears multiple times.
+    mdMethodDef currentMethodToken =
+        info.compCompHnd->getMethodDefFromMethod(info.compMethodHnd);
+
+#ifdef DEBUG
+    unsigned hash = info.compMethodHash();
+#else
+    unsigned hash = 0;
+#endif
+
+    // Convert time spent jitting into microseconds
+    unsigned microsecondsSpentJitting = 0;
+    unsigned __int64 compCycles = m_Compiler->getInlineCycleCount();
+    if (compCycles > 0)
+    {
+        double countsPerSec = CycleTimer::CyclesPerSecond();
+        double counts = (double) compCycles;
+        microsecondsSpentJitting = (unsigned) ((counts / countsPerSec) * 1000 * 1000);
+    }
+
+    fprintf(file, "%*s<Method token=\"%08X\" hash=\"%08X\">\n", indent, "", currentMethodToken, hash);
+    fprintf(file, "%*s<InlineCount>%u</InlineCount>\n", indent + 2, "", m_InlineCount);
+    fprintf(file, "%*s<HotSize>%u</HotSize>\n", indent + 2, "", info.compTotalHotCodeSize);
+    fprintf(file, "%*s<ColdSize>%u</ColdSize>\n", indent + 2, "", info.compTotalColdCodeSize);
+    fprintf(file, "%*s<JitTime>%u</JitTime>\n", indent + 2, "", microsecondsSpentJitting);
+    fprintf(file, "%*s<SizeEstimate>%u</SizeEstimate>\n", indent + 2, "", m_CurrentSizeEstimate / 10);
+    fprintf(file, "%*s<TimeEstimate>%u</TimeEstimate>\n", indent + 2, "",  m_CurrentTimeEstimate);
+
+    // Root context will be null if we're not optimizing the method.
+    //
+    // Note there are cases of this in mscorlib even in release builds,
+    // eg Task.NotifyDebuggerOfWaitCompletion.
+    //
+    // For such methods there aren't any inlines.
+    if (m_RootContext != nullptr)
+    {
+        m_RootContext->DumpXml(file, indent + 2);
+    }
+    else
+    {
+        fprintf(file, "%*s<Inlines/>\n", indent + 2, "");
+    }
+
+    fprintf(file, "%*s</Method>\n", indent, "");
 }
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
