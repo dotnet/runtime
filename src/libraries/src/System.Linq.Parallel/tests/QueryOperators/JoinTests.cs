@@ -16,7 +16,7 @@ namespace System.Linq.Parallel.Tests
         {
             foreach (object[] parms in UnorderedSources.BinaryRanges(leftCounts, rightCounts))
             {
-                yield return new object[] { ((Labeled<ParallelQuery<int>>)parms[0]).Order(), parms[1], parms[2], parms[3] };
+                yield return new object[] { ((Labeled<ParallelQuery<int>>)parms[0]).Order(), parms[1], ((Labeled<ParallelQuery<int>>)parms[2]).Order(), parms[3] };
             }
         }
 
@@ -137,33 +137,24 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
+        [ActiveIssue(1155)]
         [MemberData(nameof(JoinData), new[] { 0, 1, 2, 16 }, new[] { 0, 1, 16 })]
-        // Join doesn't always return items from the right ordered.  See Issue #1155
         public static void Join_Multiple(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             ParallelQuery<int> leftQuery = left.Item;
             ParallelQuery<int> rightQuery = right.Item;
-            int seenOuter = 0;
-            int previousOuter = -1;
-            IntegerRangeSet seenInner = new IntegerRangeSet(0, 0);
+            int seen = 0;
             Assert.All(leftQuery.Join(rightQuery, x => x, y => y / KeyFactor, (x, y) => KeyValuePair.Create(x, y)),
                 p =>
                 {
-                    if (p.Key != previousOuter)
-                    {
-                        Assert.Equal(seenOuter++, p.Key);
-                        seenInner.AssertComplete();
-                        seenInner = new IntegerRangeSet(p.Key * KeyFactor, Math.Min(rightCount - p.Key * KeyFactor, KeyFactor));
-                        previousOuter = p.Key;
-                    }
-                    seenInner.Add(p.Value);
                     Assert.Equal(p.Key, p.Value / KeyFactor);
+                    Assert.Equal(seen++, p.Value);
                 });
-            Assert.Equal(Math.Min(leftCount, (rightCount + (KeyFactor - 1)) / KeyFactor), seenOuter);
-            seenInner.AssertComplete();
+            Assert.Equal(Math.Min(leftCount * KeyFactor, rightCount), seen);
         }
 
         [Theory]
+        [ActiveIssue(1155)]
         [OuterLoop]
         [MemberData(nameof(JoinData), new[] { 1024 * 4, 1024 * 8 }, new[] { 0, 1, 1024 * 8, 1024 * 16 })]
         public static void Join_Multiple_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
@@ -209,6 +200,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
+        [ActiveIssue(1155)]
         [MemberData(nameof(JoinData), new[] { 0, 1, 2, 16 }, new[] { 0, 1, 16 })]
         public static void Join_CustomComparator(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
@@ -216,7 +208,8 @@ namespace System.Linq.Parallel.Tests
             ParallelQuery<int> rightQuery = right.Item;
             int seenOuter = 0;
             int previousOuter = -1;
-            IntegerRangeSet seenInner = new IntegerRangeSet(0, 0);
+            int seenInner = Math.Max(previousOuter % KeyFactor, rightCount - KeyFactor + previousOuter % KeyFactor);
+
             Assert.All(leftQuery.Join(rightQuery, x => x, y => y,
                 (x, y) => KeyValuePair.Create(x, y), new ModularCongruenceComparer(KeyFactor)),
                 p =>
@@ -224,20 +217,22 @@ namespace System.Linq.Parallel.Tests
                     if (p.Key != previousOuter)
                     {
                         Assert.Equal(seenOuter, p.Key);
-                        // If there aren't sufficient elements in the RHS (< KeyFactor), the LHS skips an entry at the end of the mod cycle.
-                        seenOuter = Math.Min(leftCount, seenOuter + (p.Key % KeyFactor + 1 == rightCount ? 8 - p.Key % KeyFactor : 1));
-                        seenInner.AssertComplete();
+                        Assert.Equal(p.Key % 8, p.Value);
+                        // If there aren't sufficient elements in the RHS (< 8), the LHS skips an entry at the end of the mod cycle.
+                        seenOuter = Math.Min(leftCount, seenOuter + (p.Key % KeyFactor + 1 == rightCount ? KeyFactor - p.Key % KeyFactor : 1));
+                        Assert.Equal(Math.Max(previousOuter % KeyFactor, rightCount - KeyFactor + previousOuter % KeyFactor), seenInner);
                         previousOuter = p.Key;
-                        seenInner = new IntegerRangeSet(0, (rightCount + (KeyFactor - 1) - p.Key % KeyFactor) / KeyFactor);
+                        seenInner = (p.Key % KeyFactor) - KeyFactor;
                     }
                     Assert.Equal(p.Key % KeyFactor, p.Value % KeyFactor);
-                    seenInner.Add(p.Value / KeyFactor);
+                    Assert.Equal(seenInner += KeyFactor, p.Value);
                 });
             Assert.Equal(rightCount == 0 ? 0 : leftCount, seenOuter);
-            seenInner.AssertComplete();
+            Assert.Equal(Math.Max(previousOuter % KeyFactor, rightCount - KeyFactor + previousOuter % KeyFactor), seenInner);
         }
 
         [Theory]
+        [ActiveIssue(1155)]
         [OuterLoop]
         [MemberData(nameof(JoinData), new[] { 512, 1024 }, new[] { 0, 1, 1024 })]
         public static void Join_CustomComparator_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)

@@ -36,6 +36,34 @@ namespace System.Linq.Parallel.Tests
         [Theory]
         [MemberData(nameof(UnaryUnorderedOperators))]
         [MemberData(nameof(BinaryUnorderedOperators))]
+        public static void Concat_Unordered(LabeledOperation source, LabeledOperation operation)
+        {
+            IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
+            foreach (int i in operation.Item(DefaultStart, DefaultSize / 2, source.Item)
+                .Concat(operation.Item(DefaultStart + DefaultSize / 2, DefaultSize / 2, source.Item)))
+            {
+                seen.Add(i);
+            }
+            seen.AssertComplete();
+        }
+
+        [Theory]
+        [MemberData(nameof(UnaryUnorderedOperators))]
+        [MemberData(nameof(BinaryUnorderedOperators))]
+        public static void Concat_Unordered_NotPipelined(LabeledOperation source, LabeledOperation operation)
+        {
+            IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
+            Assert.All(
+                operation.Item(DefaultStart, DefaultSize / 2, source.Item)
+                    .Concat(operation.Item(DefaultStart + DefaultSize / 2, DefaultSize / 2, source.Item)).ToList(),
+                x => seen.Add(x)
+                );
+            seen.AssertComplete();
+        }
+
+        [Theory]
+        [MemberData(nameof(UnaryUnorderedOperators))]
+        [MemberData(nameof(BinaryUnorderedOperators))]
         public static void DefaultIfEmpty_Unordered(LabeledOperation source, LabeledOperation operation)
         {
             IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
@@ -193,6 +221,40 @@ namespace System.Linq.Parallel.Tests
         [Theory]
         [MemberData(nameof(UnaryUnorderedOperators))]
         [MemberData(nameof(BinaryUnorderedOperators))]
+        public static void GroupJoin_Unordered(LabeledOperation source, LabeledOperation operation)
+        {
+            IntegerRangeSet seenKey = new IntegerRangeSet(DefaultStart / GroupFactor, DefaultSize / GroupFactor);
+            foreach (KeyValuePair<int, IEnumerable<int>> group in operation.Item(DefaultStart / GroupFactor, DefaultSize / GroupFactor, source.Item)
+                .GroupJoin(operation.Item(DefaultStart, DefaultSize, source.Item), x => x, y => y / GroupFactor, (k, g) => new KeyValuePair<int, IEnumerable<int>>(k, g)))
+            {
+                Assert.True(seenKey.Add(group.Key));
+                IntegerRangeSet seenElement = new IntegerRangeSet(group.Key * GroupFactor, GroupFactor);
+                Assert.All(group.Value, x => seenElement.Add(x));
+                seenElement.AssertComplete();
+            }
+            seenKey.AssertComplete();
+        }
+
+        [Theory]
+        [MemberData(nameof(UnaryUnorderedOperators))]
+        [MemberData(nameof(BinaryUnorderedOperators))]
+        public static void GroupJoin_Unordered_NotPipelined(LabeledOperation source, LabeledOperation operation)
+        {
+            IntegerRangeSet seenKey = new IntegerRangeSet(DefaultStart / GroupFactor, DefaultSize / GroupFactor);
+            foreach (KeyValuePair<int, IEnumerable<int>> group in operation.Item(DefaultStart / GroupFactor, DefaultSize / GroupFactor, source.Item)
+                .GroupJoin(operation.Item(DefaultStart, DefaultSize, source.Item), x => x, y => y / GroupFactor, (k, g) => new KeyValuePair<int, IEnumerable<int>>(k, g)).ToList())
+            {
+                Assert.True(seenKey.Add(group.Key));
+                IntegerRangeSet seenElement = new IntegerRangeSet(group.Key * GroupFactor, GroupFactor);
+                Assert.All(group.Value, x => seenElement.Add(x));
+                seenElement.AssertComplete();
+            }
+            seenKey.AssertComplete();
+        }
+
+        [Theory]
+        [MemberData(nameof(UnaryUnorderedOperators))]
+        [MemberData(nameof(BinaryUnorderedOperators))]
         public static void Intersect_Unordered(LabeledOperation source, LabeledOperation operation)
         {
             IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
@@ -214,6 +276,38 @@ namespace System.Linq.Parallel.Tests
             ParallelQuery<int> query = operation.Item(DefaultStart - DefaultSize / 2, DefaultSize + DefaultSize / 2, source.Item)
                 .Intersect(operation.Item(DefaultStart, DefaultSize + DefaultSize / 2, source.Item));
             Assert.All(query.ToList(), x => seen.Add((int)x));
+            seen.AssertComplete();
+        }
+
+        [Theory]
+        [MemberData(nameof(UnaryUnorderedOperators))]
+        [MemberData(nameof(BinaryUnorderedOperators))]
+        public static void Join_Unordered(LabeledOperation source, LabeledOperation operation)
+        {
+            IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
+            ParallelQuery<KeyValuePair<int, int>> query = operation.Item(DefaultStart / GroupFactor, DefaultSize / GroupFactor, source.Item)
+                .Join(operation.Item(DefaultStart, DefaultSize, source.Item), x => x, y => y / GroupFactor, (x, y) => new KeyValuePair<int, int>(x, y));
+            foreach (KeyValuePair<int, int> p in query)
+            {
+                Assert.Equal(p.Key, p.Value / GroupFactor);
+                seen.Add(p.Value);
+            }
+            seen.AssertComplete();
+        }
+
+        [Theory]
+        [MemberData(nameof(UnaryUnorderedOperators))]
+        [MemberData(nameof(BinaryUnorderedOperators))]
+        public static void Join_Unordered_NotPipelined(LabeledOperation source, LabeledOperation operation)
+        {
+            IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
+            ParallelQuery<KeyValuePair<int, int>> query = operation.Item(DefaultStart / GroupFactor, DefaultSize / GroupFactor, source.Item)
+                .Join(operation.Item(DefaultStart, DefaultSize, source.Item), x => x, y => y / GroupFactor, (x, y) => new KeyValuePair<int, int>(x, y));
+            foreach (KeyValuePair<int, int> p in query.ToList())
+            {
+                Assert.Equal(p.Key, p.Value / GroupFactor);
+                seen.Add(p.Value);
+            }
             seen.AssertComplete();
         }
 

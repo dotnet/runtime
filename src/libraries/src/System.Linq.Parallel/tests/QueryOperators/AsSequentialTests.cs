@@ -46,7 +46,6 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [ActiveIssue("AsSequential.Cast<T>() retains origin type")]
         [MemberData(nameof(Sources.Ranges), new[] { 0, 16 }, MemberType = typeof(Sources))]
         public static void AsSequential_LinqBinding(Labeled<ParallelQuery<int>> labeled, int count)
         {

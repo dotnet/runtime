@@ -46,7 +46,6 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [ActiveIssue("AsEnumerable.Cast<T>() retains origin type")]
         [MemberData(nameof(Sources.Ranges), new[] { 0, 16 }, MemberType = typeof(Sources))]
         public static void AsEnumerable_LinqBinding(Labeled<ParallelQuery<int>> labeled, int count)
         {
