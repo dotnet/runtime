@@ -99,6 +99,7 @@ namespace System.ComponentModel
             return base.CanConvertTo(context, destinationType);
         }
 
+#if !NETSTANDARD10
         /// <devdoc>
         ///     <para>
         ///         Gets an <see cref='System.Collections.IComparer'/> interface that can
@@ -112,6 +113,7 @@ namespace System.ComponentModel
                 return InvariantComparer.Default;
             }
         }
+#endif // !NETSTANDARD10
 
         /// <internalonly/>
         /// <devdoc>
@@ -233,6 +235,7 @@ namespace System.ComponentModel
             return base.ConvertTo(context, culture, value, destinationType);
         }
 
+#if !NETSTANDARD10
         /// <internalonly/>
         /// <devdoc>
         ///    <para>Gets a collection of standard values for the data type this validator is
@@ -337,5 +340,6 @@ namespace System.ComponentModel
         {
             return Enum.IsDefined(_type, value);
         }
+#endif // !NETSTANDARD10
     }
 }
