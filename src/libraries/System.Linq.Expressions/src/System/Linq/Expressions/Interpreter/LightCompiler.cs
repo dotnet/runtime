@@ -2557,13 +2557,6 @@ namespace System.Linq.Expressions.Interpreter
 
         private void CompileExtensionExpression(Expression expr)
         {
-            var instructionProvider = expr as IInstructionProvider;
-            if (instructionProvider != null)
-            {
-                instructionProvider.AddInstructions(this);
-                return;
-            }
-
             Compile(expr.ReduceAndCheck());
         }
 
