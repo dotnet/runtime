@@ -1513,29 +1513,27 @@ combinedScenarios.each { scenario ->
                                 shell("rm -rf .clr; mkdir .clr; mv * .clr; mv .git .clr; mv .clr clr")
                                 // Get corefx
                                 shell("git clone https://github.com/dotnet/corefx fx")
-                                shell("cd fx")
                                 // Build Linux corefx
-                                shell("./build.sh x64 release Linux skiptests")
+                                shell("${WORKSPACE}/fx/build.sh x64 release Linux skiptests")
                                 // Check contents of bin directory - this can be removed after we confirm everything is as expected
-                                shell("ls bin")
-                                shell("cd ${WORKSPACE}")
+                                shell("ls ${WORKSPACE}/fx/bin")
 
                                 // Run corefx tests
-                                shell("""./fx/run-test.sh \\
+                                shell("""${WORKSPACE}/fx/run-test.sh \\
                 --coreclr-bins ${WORKSPACE}/clr/bin/Product/${osGroup}.${architecture}.${configuration} \\
                 --mscorlib-bins ${WORKSPACE}/clr/bin/Product/${osGroup}.${architecture}.${configuration} \\
                 --corefx-tests ${WORKSPACE}/fx/bin/tests/{osGroup}.AnyCPU.{configuration} \\
                 --corefx-native-bins ${WORKSPACE}/fx/bin/${osGroup}.${architecture}.${configuration}""")
 
                                 // Run coreclr GC tests w/ server GC enabled
-                                shell("""./clr/tests/runtest.sh \\
+                                shell("""${WORKSPACE}/clr/tests/runtest.sh \\
                 --testRootDir=\"\${WORKSPACE}/clr/bin/tests/Windows_NT.${architecture}.${configuration}/GC\" \\
                 --testNativeBinDir=\"\${WORKSPACE}/clr/bin/obj/${osGroup}.${architecture}.${configuration}/tests\" \\
                 --coreOverlayDir=\"\${WORKSPACE}/clr/bin/tests/Windows_NT.${architecture}.${configuration}/Tests/coreoverlay\" \\
                 --crossgen --useServerGC""")
 
                                 // Run coreclr tests w/ workstation GC & produce coverage reports
-                                shell("""./clr/tests/runtest.sh \\
+                                shell("""${WORKSPACE}/clr/tests/runtest.sh \\
                 --testRootDir=\"\${WORKSPACE}/clr/bin/tests/Windows_NT.${architecture}.${configuration}\" \\
                 --testNativeBinDir=\"\${WORKSPACE}/clr/bin/obj/${osGroup}.${architecture}.${configuration}/tests\" \\
                 --coreClrBinDir=\"\${WORKSPACE}/clr/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
