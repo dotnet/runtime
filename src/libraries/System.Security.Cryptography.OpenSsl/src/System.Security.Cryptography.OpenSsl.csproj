@@ -14,7 +14,7 @@
     <PackageTargetFramework>netstandard1.4</PackageTargetFramework>
     <NuGetTargetMoniker>.NETStandard,Version=v1.4</NuGetTargetMoniker>
     <PackageTargetRuntime Condition="'$(TargetsUnix)' == 'true'">unix</PackageTargetRuntime>
-    <PackageTargetRuntime Condition="'$(TargetsWindows)' == 'true'">win</PackageTargetRuntime>
+    <!--PackageTargetRuntime Condition="'$(TargetsWindows)' == 'true'">win</PackageTargetRuntime-->
     <GeneratePlatformNotSupportedAssembly Condition="'$(TargetsWindows)' == 'true'">true</GeneratePlatformNotSupportedAssembly>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />

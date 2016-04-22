@@ -16,7 +16,8 @@
     <CLSCompliant>false</CLSCompliant>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.4</PackageTargetFramework>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net46' OR '$(TargetGroup)'=='net461'">true</IsPartialFacadeAssembly>
-    <UsePackageTargetRuntimeDefaults Condition="'$(IsPartialFacadeAssembly)' != 'true'">true</UsePackageTargetRuntimeDefaults>
+    <PackageTargetRuntime Condition="'$(TargetsWindows)' == 'true'">win</PackageTargetRuntime>
+    <PackageTargetRuntime Condition="'$(TargetsUnix)' == 'true'">unix</PackageTargetRuntime>
     <NuGetTargetMoniker Condition="'$(TargetGroup)'==''">.NETStandard,Version=v1.4</NuGetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetGroup)' == 'netcore50' and '$(ProjectJson)' == '' ">

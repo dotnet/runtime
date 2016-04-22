@@ -9,9 +9,11 @@
       <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="System.Security.Cryptography.Cng.csproj">
+      <OSGroup>Windows_NT</OSGroup>
       <TargetGroup>net46</TargetGroup>
     </Project>
     <Project Include="System.Security.Cryptography.Cng.csproj">
+      <OSGroup>Windows_NT</OSGroup>
       <TargetGroup>net461</TargetGroup>
     </Project>
   </ItemGroup>
