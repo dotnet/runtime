@@ -215,8 +215,8 @@ struct GcStackSlot
 #define NORMALIZE_SIZE_OF_STACK_AREA(x) ((x)>>2)
 #define DENORMALIZE_SIZE_OF_STACK_AREA(x) ((x)<<2)
 #define CODE_OFFSETS_NEED_NORMALIZATION 1
-#define NORMALIZE_CODE_OFFSET(x) ((x)>>1)
-#define DENORMALIZE_CODE_OFFSET(x) ((x)<<1)
+#define NORMALIZE_CODE_OFFSET(x) (x)   // Instructions are 2/4 bytes long in Thumb/ARM states, 
+#define DENORMALIZE_CODE_OFFSET(x) (x) // but the safe-point offsets are encoded with a -1 adjustment.
 #define NORMALIZE_REGISTER(x) (x)
 #define DENORMALIZE_REGISTER(x) (x)
 #define NORMALIZE_NUM_SAFE_POINTS(x) (x)
