@@ -118,7 +118,7 @@ bool runtime_config_t::ensure_dev_config_parsed()
             parse_opts(iter->second);
         }
     }
-    catch (const web::json::json_exception& je)
+    catch (const std::exception& je)
     {
         pal::string_t jes = pal::to_palstring(je.what());
         trace::error(_X("A JSON parsing exception occurred in [%s]: %s"), m_dev_path.c_str(), jes.c_str());
@@ -165,7 +165,7 @@ bool runtime_config_t::ensure_parsed()
             parse_opts(iter->second);
         }
     }
-    catch (const web::json::json_exception& je)
+    catch (const std::exception& je)
     {
         pal::string_t jes = pal::to_palstring(je.what());
         trace::error(_X("A JSON parsing exception occurred in [%s]: %s"), m_path.c_str(), jes.c_str());
