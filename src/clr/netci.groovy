@@ -1505,11 +1505,18 @@ combinedScenarios.each { scenario ->
                                 }
                             }
 
+
+                            // Unzip the tests first.  Exit with 0
+                            shell("unzip -q -o ./bin/tests/tests.zip -d ./clr/bin/tests/Windows_NT.${architecture}.${configuration} || exit 0")
+
                             if (scenario == 'coverage') {
                                 // Move coreclr to clr directory
                                 shell("rm -rf .clr; mkdir .clr; mv * .clr; mv .git .clr; mv .clr clr")
+                                shell("ls clr")
                                 // Get corefx
                                 shell("git clone https://github.com/dotnet/corefx fx")
+                                shell("ls")
+                                shell("pwd")
                                 // Build Linux corefx
                                 shell("${WORKSPACE}/fx/build.sh x64 release Linux skiptests")
                                 // Check contents of bin directory - this can be removed after we confirm everything is as expected
@@ -1581,9 +1588,6 @@ combinedScenarios.each { scenario ->
                                     // Unpack the corefx binaries
                                     shell("unpacker ./bin/build.pack ./bin")
                                 }
-                                
-                                // Unzip the tests first.  Exit with 0
-                                shell("unzip -q -o ./bin/tests/tests.zip -d ./bin/tests/Windows_NT.${architecture}.${configuration} || exit 0")
                             
                                 // Execute the tests
                                 // If we are running a stress mode, we'll set those variables first
