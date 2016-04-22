@@ -23,9 +23,9 @@ Build Status
 Building the Repo
 -------------
 
-|Linux   |Windows |Mac OS X |FreeBSD  |
-|--------|--------|---------|---------|
-| [Instructions](Documentation/building/linux-instructions.md) | [Instructions](Documentation/building/windows-instructions.md) | [Instructions](Documentation/building/osx-instructions.md) | [Instructions](Documentation/building/freebsd-instructions.md) |
+|Linux   |Windows |Mac OS X |FreeBSD  | NetBSD |
+|--------|--------|---------|---------|--------|
+| [Instructions](Documentation/building/linux-instructions.md) | [Instructions](Documentation/building/windows-instructions.md) | [Instructions](Documentation/building/osx-instructions.md) | [Instructions](Documentation/building/freebsd-instructions.md) | [Instructions](Documentation/building/netbsd-instructions.md) |
 
 Get .NET Core
 ----------------------
@@ -91,4 +91,3 @@ There are many .NET projects on GitHub.
 [coreclr blog post]: http://blogs.msdn.com/b/dotnet/archive/2015/02/03/coreclr-is-now-open-source.aspx
 [corefx]: http://github.com/dotnet/corefx
 [coreclr]: http://github.com/dotnet/coreclr
-
