@@ -6,7 +6,7 @@
 **
 **
 **
-** Purpose: Container for assemblies.
+** Purpose: Attribute for multiple parameters.
 **
 **
 =============================================================================*/
