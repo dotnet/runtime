@@ -36,7 +36,7 @@ namespace System.Net.Security.Tests
         public static void GetDefaultKerberosCredentials(string username, string password)
         {
             // Fetch a Kerberos TGT which gets saved in the default cache
-            SafeGssCredHandle.Create(username, password, string.Empty).Dispose();
+            SafeGssCredHandle.Create(username, password, isNtlmOnly:false).Dispose();
         }
 
         private static void ServerLoop(object state)

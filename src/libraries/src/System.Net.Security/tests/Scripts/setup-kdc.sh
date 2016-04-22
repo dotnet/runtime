@@ -4,11 +4,14 @@ OS=`cat /etc/os-release | grep "^ID=" | sed 's/ID=//g' | sed 's/["]//g' | awk '{
 echo -e "Operating System: ${OS}\n"
 
 realm="TEST.COREFX.NET"
+domain="TEST"
 
 principal1="TESTHOST/testfqdn.test.corefx.net"
-principal2="TESTHTTP"
+principal2="TESTHTTP/localhost"
 krb_user="krb_user"
-password="password"
+krb_password="password"
+ntlm_user="ntlm_user"
+ntlm_password="ntlm_password"
 
 kadmin="kadmin.local"
 krb5kdc="krb5kdc"
@@ -17,6 +20,9 @@ kdb5_util="kdb5_util"
 krb_conf="krb5.conf"
 krb_conf_location="/etc/krb5.conf"
 keytabfile="/etc/krb5.keytab"
+
+# NTLM credentials file
+ntlm_user_file="/var/tmp/ntlm_user_file"
 
 PROGNAME=$(basename $0)
 usage()
@@ -30,11 +36,6 @@ clean_up()
 {
     echo "Stopping KDC.."
     if pgrep krb5kdc 2> /dev/null; then pkill krb5kdc 2> /dev/null ; fi
-
-    echo "Removing config files"
-    if [ -f ${krb_conf_location} ]; then
-        rm -f ${krb_conf_location}
-    fi
 
     case ${OS} in
         "ubuntu" | "debian")
@@ -68,8 +69,25 @@ clean_up()
             ;;
     esac
 
+    echo "Removing config files"
+    if [ -f ${krb_conf_location} ]; then
+        rm -f ${krb_conf_location}
+    fi
+
     if [ -f ${kdc_conf_location} ]; then
         rm -f ${kdc_conf_location}
+    fi
+
+    echo "Removing KDC database"
+    rm -f ${database_files}
+
+    if [ -f ${keytabfile} ]; then
+        rm -f ${keytabfile}
+    fi
+
+    echo "Removing NTLM credentials file"
+    if [ -f ${ntlm_user_file} ]; then
+        rm -f ${ntlm_user_file}
     fi
 
     echo "Cleanup completed"
@@ -92,7 +110,7 @@ configure_kdc()
     # Remove database files if exist
     rm -f ${database_files}
 
-    add_principal_cmd="add_principal -pw ${password}"
+    add_principal_cmd="add_principal -pw ${krb_password}"
     # Create/copy krb5.conf and kdc.conf
     echo "Copying krb5.conf and kdc.conf.."
     cp ${krb_conf} ${krb_conf_location} || \
@@ -102,7 +120,7 @@ configure_kdc()
     error_exit "Cannot copy ${kdc_conf} to ${kdc_conf_location}"
 
     echo "Creating KDC database for realm ${realm}.."
-    ${kdb5_util} create -r ${realm} -P ${password} -s || \
+    ${kdb5_util} create -r ${realm} -P ${krb_password} -s || \
     error_exit "Cannot create KDC database for realm ${realm}"
 
     echo "Adding principal ${principal1}.."
@@ -150,7 +168,7 @@ while true; do
         -h|--help) usage; exit 0;;
         -y|--yes) force=1; shift ;;
         -u|--uninstall) uninstall=1; shift;;
-        -p|--password) shift; password=$1; shift;;
+        -p|--password) shift; krb_password=$1; shift;;
         --) shift; break;;
         *) usage; exit 1;;
     esac
@@ -273,4 +291,11 @@ case ${OS} in
         ;;
 esac
 
+# Create NTLM credentials file
+grep -ir gssntlmssp.so /etc/gss/mech.d > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+    echo "$domain:$ntlm_user:$ntlm_password" > $ntlm_user_file
+    echo "$realm:$krb_user:$krb_password" >> $ntlm_user_file
+    chmod +r $ntlm_user_file
+fi
 chmod +r ${keytabfile}

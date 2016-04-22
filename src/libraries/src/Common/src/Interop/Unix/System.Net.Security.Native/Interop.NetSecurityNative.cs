@@ -57,6 +57,7 @@ internal static partial class Interop
         [DllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_InitiateCredWithPassword")]
         internal static extern Status InitiateCredWithPassword(
             out Status minorStatus,
+            bool isNtlm,
             SafeGssNameHandle desiredName,
             string password,
             int passwordLen,
@@ -72,13 +73,14 @@ internal static partial class Interop
             out Status minorStatus,
             SafeGssCredHandle initiatorCredHandle,
             ref SafeGssContextHandle contextHandle,
-            bool isNtlm,
+            bool isNtlmOnly,
             SafeGssNameHandle targetName,
             uint reqFlags,
             byte[] inputBytes,
             int inputLength,
             ref GssBuffer token,
-            out uint retFlags);
+            out uint retFlags,
+            out int isNtlmUsed);
 
         [DllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_AcceptSecContext")]
         internal static extern Status AcceptSecContext(
