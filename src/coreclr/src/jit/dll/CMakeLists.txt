@@ -7,7 +7,6 @@ endif(CLR_CMAKE_PLATFORM_ARCH_I386 OR CLR_CMAKE_PLATFORM_ARCH_ARM)
 # Disable the following for UNIX altjit on Windows
 if(CLR_CMAKE_PLATFORM_UNIX)
     add_compile_options(-fPIC)
-    add_definitions(-DFEATURE_MERGE_JIT_AND_ENGINE)
 
     add_library_clr(${JIT_BASE_NAME}_static
       STATIC

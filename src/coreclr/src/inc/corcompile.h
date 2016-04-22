@@ -837,6 +837,7 @@ typedef enum
 {
 #ifdef FEATURE_CORECLR
     CORECLR_INFO,
+    CROSSGEN_COMPILER_INFO,
 #else
     CLR_INFO,
     NGEN_COMPILER_INFO,

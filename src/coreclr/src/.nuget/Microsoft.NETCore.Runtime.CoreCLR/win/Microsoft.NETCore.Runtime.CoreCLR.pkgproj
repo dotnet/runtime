@@ -12,6 +12,7 @@
   
   <ItemGroup>
     <ArchitectureSpecificNativeFile Include="$(BinDir)clretwrc.dll"/>
+    <ArchitectureSpecificNativeFile Include="$(BinDir)clrjit.dll"/>
     <ArchitectureSpecificNativeFile Include="$(BinDir)coreclr.dll"/>
     <ArchitectureSpecificNativeFile Include="$(BinDir)dbgshim.dll"/>
     <ArchitectureSpecificNativeFile Include="$(BinDir)mscordaccore.dll"/>
