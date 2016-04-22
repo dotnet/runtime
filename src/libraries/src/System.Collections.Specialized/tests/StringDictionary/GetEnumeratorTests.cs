@@ -1,226 +1,75 @@
-// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.---
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
-using System;
-using System.Collections;
-using System.Collections.Specialized;
 
 namespace System.Collections.Specialized.Tests
 {
-    public class GetEnumeratorStringDictionaryTests
+    public class StringDictionaryGetEnumeratorTests
     {
-        public const int MAX_LEN = 50;          // max length of random strings
+        [Theory]
+        [InlineData(0)]
+        [InlineData(5)]
+        public void GetEnumerator(int count)
+        {
+            StringDictionary stringDictionary = Helpers.CreateStringDictionary(count);
+
+            IEnumerator enumerator = stringDictionary.GetEnumerator();
+            Assert.NotSame(stringDictionary.GetEnumerator(), stringDictionary.GetEnumerator());
+            for (int i = 0; i < 2; i++)
+            {
+                int counter = 0;
+                while (enumerator.MoveNext())
+                {
+                    DictionaryEntry current = (DictionaryEntry)enumerator.Current;
+
+                    string key = (string)current.Key;
+                    string value = (string)current.Value;
+                    Assert.True(stringDictionary.ContainsKey(key));
+                    Assert.True(stringDictionary.ContainsValue(value));
+
+                    counter++;
+                }
+                Assert.Equal(stringDictionary.Count, counter);
+                enumerator.Reset();
+            }
+        }
 
         [Fact]
-        public void Test01()
+        public void GetEnumerator_Invalid()
         {
-            StringDictionary sd;
-            IEnumerator en;
-            DictionaryEntry curr;        // Enumerator.Current value
-            // simple string values
-            string[] values =
-            {
-                "a",
-                "aa",
-                "",
-                " ",
-                "text",
-                "     spaces",
-                "1",
-                "$%^#",
-                "2222222222222222222222222",
-                System.DateTime.Today.ToString(),
-                Int32.MaxValue.ToString()
-            };
+            StringDictionary stringDictionary = Helpers.CreateStringDictionary(10);
+            IEnumerator enumerator = stringDictionary.GetEnumerator();
 
-            // keys for simple string values
-            string[] keys =
-            {
-                "zero",
-                "one",
-                " ",
-                "",
-                "aa",
-                "1",
-                System.DateTime.Today.ToString(),
-                "$%^#",
-                Int32.MaxValue.ToString(),
-                "     spaces",
-                "2222222222222222222222222"
-            };
+            // Enumerator has not started
+            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
 
-            // [] StringDictionary GetEnumerator()
-            //-----------------------------------------------------------------
+            // Enumerator has finished
+            while (enumerator.MoveNext()) ;
+            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
+            Assert.False(enumerator.MoveNext());
 
-            sd = new StringDictionary();
+            // Enumerator has been reset
+            enumerator.Reset();
+            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
+            Assert.True(enumerator.MoveNext());
 
-            // [] Enumerator for empty dictionary
-            //
-            en = sd.GetEnumerator();
-            string type = en.GetType().ToString();
-            if (type.IndexOf("Enumerator", 0) == 0)
-            {
-                Assert.False(true, string.Format("Error, type is not Enumerator"));
-            }
+            // Modifying collection during enumeration
+            object previousCurrent = enumerator.Current;
+            stringDictionary.Add("newkey1", "newvalue");
+            Assert.Equal(previousCurrent, enumerator.Current);
+            Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
+            Assert.Throws<InvalidOperationException>(() => enumerator.Reset());
 
-            //
-            //  MoveNext should return false
-            //
-            bool res = en.MoveNext();
-            if (res)
-            {
-                Assert.False(true, string.Format("Error, MoveNext returned true"));
-            }
-
-            //
-            //  Attempt to get Current should result in exception
-            //
-            Assert.Throws<InvalidOperationException>(() => { curr = (DictionaryEntry)en.Current; });
-
-            //
-            //   Filled collection
-            // [] Enumerator for filled dictionary
-            //
-            for (int i = 0; i < values.Length; i++)
-            {
-                sd.Add(keys[i], values[i]);
-            }
-
-            en = sd.GetEnumerator();
-            type = en.GetType().ToString();
-            if (type.IndexOf("Enumerator", 0) == 0)
-            {
-                Assert.False(true, string.Format("Error, type is not Enumerator"));
-            }
-
-            //
-            //  MoveNext should return true
-            //
-
-            for (int i = 0; i < sd.Count; i++)
-            {
-                res = en.MoveNext();
-                if (!res)
-                {
-                    Assert.False(true, string.Format("Error, MoveNext returned false", i));
-                }
-
-                curr = (DictionaryEntry)en.Current;
-                //
-                //enumerator enumerates in different than added order
-                // so we'll check Contains
-                //
-                if (!sd.ContainsValue(curr.Value.ToString()))
-                {
-                    Assert.False(true, string.Format("Error, Current dictionary doesn't contain value from enumerator", i));
-                }
-                if (!sd.ContainsKey(curr.Key.ToString()))
-                {
-                    Assert.False(true, string.Format("Error, Current dictionary doesn't contain key from enumerator", i));
-                }
-                if (String.Compare(sd[curr.Key.ToString()], curr.Value.ToString()) != 0)
-                {
-                    Assert.False(true, string.Format("Error, Value for current Key is different in dictionary", i));
-                }
-
-                // while we didn't MoveNext, Current should return the same value
-                DictionaryEntry curr1 = (DictionaryEntry)en.Current;
-                if (!curr.Equals(curr1))
-                {
-                    Assert.False(true, string.Format("Error, second call of Current returned different result", i));
-                }
-            }
-
-            // next MoveNext should bring us outside of the collection
-            //
-            res = en.MoveNext();
-            res = en.MoveNext();
-            if (res)
-            {
-                Assert.False(true, string.Format("Error, MoveNext returned true"));
-            }
-
-            //
-            //  Attempt to get Current should result in exception
-            //
-            Assert.Throws<InvalidOperationException>(() => { curr = (DictionaryEntry)en.Current; });
-            en.Reset();
-
-            //
-            //  Attempt to get Current should result in exception
-            //
-            Assert.Throws<InvalidOperationException>(() => { curr = (DictionaryEntry)en.Current; });
-
-            //
-            // [] Modify dictionary when enumerating
-            //
-            if (sd.Count < 1)
-            {
-                for (int i = 0; i < values.Length; i++)
-                {
-                    sd.Add(keys[i], values[i]);
-                }
-            }
-
-            en = sd.GetEnumerator();
-            res = en.MoveNext();
-            if (!res)
-            {
-                Assert.False(true, string.Format("Error, MoveNext returned false"));
-            }
-            curr = (DictionaryEntry)en.Current;
-            int cnt = sd.Count;
-            sd.Remove(keys[0]);
-            if (sd.Count != cnt - 1)
-            {
-                Assert.False(true, string.Format("Error, didn't remove item with 0th key"));
-            }
-
-            // will return just removed item
-            DictionaryEntry curr2 = (DictionaryEntry)en.Current;
-            if (!curr.Equals(curr2))
-            {
-                Assert.False(true, string.Format("Error, current returned different value after modification"));
-            }
-
-            // exception expected
-            Assert.Throws<InvalidOperationException>(() => { res = en.MoveNext(); });
-
-            //
-            // [] Modify dictionary when enumerated beyond the end
-            //
-            sd.Clear();
-            for (int i = 0; i < values.Length; i++)
-            {
-                sd.Add(keys[i], values[i]);
-            }
-
-            en = sd.GetEnumerator();
-            for (int i = 0; i < sd.Count; i++)
-            {
-                en.MoveNext();
-            }
-            curr = (DictionaryEntry)en.Current;
-
-            curr = (DictionaryEntry)en.Current;
-            cnt = sd.Count;
-            sd.Remove(keys[0]);
-            if (sd.Count != cnt - 1)
-            {
-                Assert.False(true, string.Format("Error, didn't remove item with 0th key"));
-            }
-
-            // will return just removed item
-            curr2 = (DictionaryEntry)en.Current;
-            if (!curr.Equals(curr2))
-            {
-                Assert.False(true, string.Format("Error, current returned different value after modification"));
-            }
-
-            // exception expected
-            Assert.Throws<InvalidOperationException>(() => { res = en.MoveNext(); });
+            // Modifying collection after enumeration
+            enumerator = stringDictionary.GetEnumerator();
+            enumerator.MoveNext();
+            previousCurrent = enumerator.Current;
+            stringDictionary.Add("newkey2", "newvalue");
+            Assert.Equal(previousCurrent, enumerator.Current);
+            Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
+            Assert.Throws<InvalidOperationException>(() => enumerator.Reset());
         }
     }
 }

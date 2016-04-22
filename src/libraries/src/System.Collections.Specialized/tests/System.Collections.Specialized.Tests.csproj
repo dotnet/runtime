@@ -76,6 +76,7 @@
     <Compile Include="NameValueCollection\SetStrStrTests.cs" />
     <Compile Include="OrderedDictionary\CaseInsensitiveEqualityComparer.cs" />
     <Compile Include="OrderedDictionary\OrderedDictionaryTests.cs" />
+    <Compile Include="Helpers.cs" />
     <Compile Include="StringCollectionTests.cs" />
     <Compile Include="StringDictionary\AddStrStrTests.cs" />
     <Compile Include="StringDictionary\ClearTests.cs" />
@@ -83,9 +84,7 @@
     <Compile Include="StringDictionary\ContainsValueStrTests.cs" />
     <Compile Include="StringDictionary\CopyToArrayIntTests.cs" />
     <Compile Include="StringDictionary\CtorTests.cs" />
-    <Compile Include="StringDictionary\GetCountTests.cs" />
     <Compile Include="StringDictionary\GetEnumeratorTests.cs" />
-    <Compile Include="StringDictionary\GetIsSynchronizedTests.cs" />
     <Compile Include="StringDictionary\GetItemStrTests.cs" />
     <Compile Include="StringDictionary\GetKeysTests.cs" />
     <Compile Include="StringDictionary\GetSyncRootTests.cs" />
