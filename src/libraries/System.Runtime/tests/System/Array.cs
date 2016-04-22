@@ -10,7 +10,7 @@ using Xunit;
 public static class ArrayTests
 {
     [Fact]
-    public static void TestIList_GetSetItem()
+    public static void IList_GetSetItem()
     {
         var intArray = new int[] { 7, 8, 9, 10, 11, 12, 13 };
         IList<int> iList = intArray;
@@ -27,7 +27,7 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestIList_GetSetItem_Invalid()
+    public static void IList_GetSetItem_Invalid()
     {
         IList iList = new int[] { 7, 8, 9, 10, 11, 12, 13 };
         Assert.Throws<IndexOutOfRangeException>(() => iList[-1]); // Index < 0
@@ -37,12 +37,12 @@ public static class ArrayTests
         Assert.Throws<IndexOutOfRangeException>(() => iList[iList.Count] = 0); // Index >= list.Count
 
         iList = new int[,] { { 1 }, { 2 } };
-        Assert.Throws<ArgumentException>(() => iList[0]); // Array is multidimensional
-        Assert.Throws<ArgumentException>(() => iList[0] = 0); // Array is multidimensional
+        Assert.Throws<ArgumentException>(null, () => iList[0]); // Array is multidimensional
+        Assert.Throws<ArgumentException>(null, () => iList[0] = 0); // Array is multidimensional
     }
 
     [Fact]
-    public static void TestIList_IndexOf()
+    public static void IList_IndexOf()
     {
         IList iList = new int[] { 1, 2, 3, 4 };
         for (int i = 0; i < iList.Count; i++)
@@ -55,7 +55,7 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestIList_CantBeModified()
+    public static void IList_ModifyingArray_ThrowsNotSupportedException()
     {
         var array = new int[] { 7, 8, 9, 10, 11, 12, 13 };
         IList<int> iList = array;
@@ -71,7 +71,7 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestIList_Contains()
+    public static void IList_Contains()
     {
         IList iList = new int[] { 1, 2, 3, 4 };
         for (int i = 0; i < iList.Count; i++)
@@ -84,7 +84,7 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestCastAsIListOfT()
+    public static void CastAs_IListOfT()
     {
         var sa = new string[] { "Hello", "There" };
         Assert.True(sa is IList<string>);
@@ -99,7 +99,7 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestIList_GetEnumerator()
+    public static void IList_GetEnumerator()
     {
         var intArray = new int[] { 7, 8, 9, 10, 11, 12, 13 };
         IList<int> iList = intArray;
@@ -120,7 +120,7 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestIList_GetEnumerator_Invalid()
+    public static void IList_GetEnumerator_Invalid()
     {
         IList<int> iList = new int[] { 7, 8, 9, 10, 11, 12, 13 };
         IEnumerator<int> enumerator = iList.GetEnumerator();
@@ -139,7 +139,7 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestConstruction()
+    public static void Construction()
     {
         // Check a number of the simple APIs on Array for dimensions up to 4.
         Array array = new int[] { 1, 2, 3 };
@@ -156,7 +156,7 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestConstruction_MultiDimensionalArray()
+    public static void Construction_MultiDimensionalArray()
     {
         // This C# initialization syntax generates some peculiar looking IL.
         // Initializations of this form are handled specially on Desktop and in .NET Native by UTC.
@@ -186,7 +186,7 @@ public static class ArrayTests
 
     [Theory]
     [MemberData(nameof(BinarySearch_TestData))]
-    public static void TestBinarySearch<T>(T[] array, T value, IComparer comparer, IComparer<T> genericComparer, Func<int, bool> verifier)
+    public static void BinarySearch<T>(T[] array, T value, IComparer comparer, IComparer<T> genericComparer, Func<int, bool> verifier)
     {
         int idx = Array.BinarySearch(array, value, comparer);
         Assert.True(verifier(idx));
@@ -220,7 +220,7 @@ public static class ArrayTests
 
     [Theory]
     [MemberData(nameof(BinarySearch_Range_TestData))]
-    public static void TestBinarySearch_Range<T>(T[] array, int index, int length, T value, IComparer comparer, IComparer<T> genericComparer, Func<int, bool> verifier)
+    public static void BinarySearch_Range<T>(T[] array, int index, int length, T value, IComparer comparer, IComparer<T> genericComparer, Func<int, bool> verifier)
     {
         int idx = Array.BinarySearch(array, index, length, value, comparer);
         Assert.True(verifier(idx));
@@ -236,7 +236,7 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestBinarySearch_Invalid()
+    public static void BinarySearch_Invalid()
     {
         var objectArray = new object[] { new object(), new object() };
 
@@ -297,7 +297,7 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestGetValue_SetValue()
+    public static void GetValue_SetValue()
     {
         var intArray = new int[3] { 7, 8, 9 };
         Array array = intArray;
@@ -322,14 +322,14 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestGetValue_Invalid()
+    public static void GetValue_Invalid()
     {
         Assert.Throws<IndexOutOfRangeException>(() => new int[10].GetValue(-1)); // Index < 0
         Assert.Throws<IndexOutOfRangeException>(() => new int[10].GetValue(10)); // Index >= array.Length
-        Assert.Throws<ArgumentException>(() => new int[10, 10].GetValue(0)); // Array is multidimensional
+        Assert.Throws<ArgumentException>(null, () => new int[10, 10].GetValue(0)); // Array is multidimensional
 
         Assert.Throws<ArgumentNullException>("indices", () => new int[10].GetValue(null)); // Indices is null
-        Assert.Throws<ArgumentException>(() => new int[10, 10].GetValue(new int[] { 1, 2, 3 })); // Indices.Length > array.Rank
+        Assert.Throws<ArgumentException>(null, () => new int[10, 10].GetValue(new int[] { 1, 2, 3 })); // Indices.Length > array.Rank
 
         Assert.Throws<IndexOutOfRangeException>(() => new int[8, 10].GetValue(new int[] { -1, 2 })); // Indices[0] < 0
         Assert.Throws<IndexOutOfRangeException>(() => new int[8, 10].GetValue(new int[] { 9, 2 })); // Indices[0] > array.GetLength(0)
@@ -349,7 +349,7 @@ public static class ArrayTests
     [InlineData(new string[] { "0x1234567", "0x789abcde", "0x22334455", "0x66778899", "0x11335577", "0x22446688" }, 2, 3, new string[] { "0x1234567", "0x789abcde", null, null, null, "0x22446688" })]
     [InlineData(new string[] { "0x1234567", "0x789abcde", "0x22334455", "0x66778899", "0x11335577", "0x22446688" }, 6, 0, new string[] { "0x1234567", "0x789abcde", "0x22334455", "0x66778899", "0x11335577", "0x22446688" })]
     [InlineData(new string[] { "0x1234567", "0x789abcde", "0x22334455", "0x66778899", "0x11335577", "0x22446688" }, 0, 0, new string[] { "0x1234567", "0x789abcde", "0x22334455", "0x66778899", "0x11335577", "0x22446688" })]
-    public static void TestClear(Array array, int index, int length, Array expected)
+    public static void Clear(Array array, int index, int length, Array expected)
     {
         if (index == 0 && length == array.Length)
         {
@@ -363,7 +363,7 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestClear_Struct_WithReferenceAndValueTypeFields_Array()
+    public static void Clear_Struct_WithReferenceAndValueTypeFields_Array()
     {
         var array = new G[]
         {
@@ -410,7 +410,7 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestClear_Invalid()
+    public static void Clear_Invalid()
     {
         Assert.Throws<ArgumentNullException>("array", () => Array.Clear(null, 0, 0)); // Array is null
 
@@ -427,7 +427,7 @@ public static class ArrayTests
     [Theory]
     [InlineData(new int[0])]
     [InlineData(new char[] { '1', '2', '3' })]
-    public static void TestClone(Array array)
+    public static void Clone(Array array)
     {
         Array clone = (Array)array.Clone();
         Assert.Equal(clone, array);
@@ -452,14 +452,14 @@ public static class ArrayTests
 
     [Theory]
     [MemberData(nameof(ConstrainedCopy_TestData))]
-    public static void TestConstrainedCopy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, Array expected)
+    public static void ConstrainedCopy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, Array expected)
     {
         Array.ConstrainedCopy(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
         Assert.Equal(expected, destinationArray);
     }
 
     [Fact]
-    public static void TestConstrainedCopy_Struct_WithReferenceAndValueTypeFields_Array()
+    public static void ConstrainedCopy_Struct_WithReferenceAndValueTypeFields_Array()
     {
         var src = new G[]
         {
@@ -503,7 +503,7 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestConstrainedCopy_Invalid()
+    public static void ConstrainedCopy_Invalid()
     {
         Assert.Throws<ArgumentNullException>("source", () => Array.ConstrainedCopy(null, 0, new string[10], 0, 0)); // Source array is null
         Assert.Throws<ArgumentNullException>("dest", () => Array.ConstrainedCopy(new string[10], 0, null, 0, 0)); // Destination array is null
@@ -553,7 +553,7 @@ public static class ArrayTests
 
     [Theory]
     [MemberData(nameof(Copy_TestData))]
-    public static void TestCopy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, Array expected)
+    public static void Copy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, Array expected)
     {
         if (sourceIndex == 0 && destinationIndex == 0)
         {
@@ -568,7 +568,7 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestCopy_ValueTypeArray_ToObjectArray()
+    public static void Copy_ValueTypeArray_ToObjectArray()
     {
         var src = new G[]
         {
@@ -592,7 +592,7 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestCopy_Struct_WithReferenceAndValueTypeFields_Array()
+    public static void Copy_Struct_WithReferenceAndValueTypeFields_Array()
     {
         var src = new G[]
         {
@@ -636,7 +636,7 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestCopy_Invalid()
+    public static void Copy_Invalid()
     {
         Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(new int[10], 0, new IEnumerable<int>[10], 0, 10)); // Different array types
         Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(new string[10], 0, new int[10], 0, 10)); // Different array types
@@ -663,7 +663,7 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestCopy_Array_Array_Int_Invalid()
+    public static void Copy_Array_Array_Int_Invalid()
     {
         Assert.Throws<ArgumentNullException>("sourceArray", () => Array.Copy(null, new string[10], 0)); // Source array is null
         Assert.Throws<ArgumentNullException>("destinationArray", () => Array.Copy(new string[10], null, 0)); // Destination array is null
@@ -678,7 +678,7 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestCopy_Array_Int_Array_Int_Int_Invalid()
+    public static void Copy_Array_Int_Array_Int_Int_Invalid()
     {
         Assert.Throws<ArgumentNullException>("source", () => Array.Copy(null, 0, new string[10], 0, 0)); // Source array is null
         Assert.Throws<ArgumentNullException>("dest", () => Array.Copy(new string[10], 0, null, 0, 0)); // Destination array is null            
@@ -711,19 +711,19 @@ public static class ArrayTests
 
     [Theory]
     [MemberData(nameof(CopyTo_TestData))]
-    public static void TestCopyTo(Array source, Array destination, int index, Array expected)
+    public static void CopyTo(Array source, Array destination, int index, Array expected)
     {
         source.CopyTo(destination, index);
         Assert.Equal(expected, destination);
     }
 
     [Fact]
-    public static void TestCopyTo_Invalid()
+    public static void CopyTo_Invalid()
     {
         Assert.Throws<RankException>(() => new int[3, 3].CopyTo(new int[3], 0)); // Source is multidimensional
 
         Assert.Throws<ArgumentNullException>("dest", () => new int[3].CopyTo(null, 0)); // Destination is null
-        Assert.Throws<ArgumentException>(() => new int[3].CopyTo(new int[10, 10], 0)); // Destination array is multidimensional
+        Assert.Throws<ArgumentException>(null, () => new int[3].CopyTo(new int[10, 10], 0)); // Destination array is multidimensional
 
         Assert.Throws<ArrayTypeMismatchException>(() => new int[3].CopyTo(new string[10], 0)); // Source and destination types are incompatible
         Assert.Throws<ArrayTypeMismatchException>(() => new B1[10].CopyTo(new B2[10], 0));// Source and destination types hold uncovertible types
@@ -736,7 +736,7 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestCreateInstance_Type_Int()
+    public static void CreateInstance_Type_Int()
     {
         string[] stringArray = (string[])Array.CreateInstance(typeof(string), 10);
         Assert.Equal(stringArray, new string[10]);
@@ -752,7 +752,7 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestCreateInstance_Type_Int_Invalid()
+    public static void CreateInstance_Type_Int_Invalid()
     {
         Assert.Throws<ArgumentNullException>("elementType", () => Array.CreateInstance(null, 0)); // Element type is null
 
@@ -764,7 +764,7 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestCreateInstance_Type_IntArray()
+    public static void CreateInstance_Type_IntArray()
     {
         string[] stringArray = (string[])Array.CreateInstance(typeof(string), new int[] { 10 });
         Assert.Equal(stringArray, new string[10]);
@@ -793,7 +793,7 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestCreateInstance_Type_IntArray_Invalid()
+    public static void CreateInstance_Type_IntArray_Invalid()
     {
         Assert.Throws<ArgumentNullException>("elementType", () => Array.CreateInstance(null, new int[] { 10 })); // Element type is null
 
@@ -802,12 +802,12 @@ public static class ArrayTests
         Assert.Throws<NotSupportedException>(() => Array.CreateInstance(typeof(int).MakeByRefType(), new int[] { 1 })); // Element type is not supported (ref)
 
         Assert.Throws<ArgumentNullException>("lengths", () => Array.CreateInstance(typeof(int), null)); // Lengths is null
-        Assert.Throws<ArgumentException>(() => Array.CreateInstance(typeof(int), new int[0])); // Lengths is empty
+        Assert.Throws<ArgumentException>(null, () => Array.CreateInstance(typeof(int), new int[0])); // Lengths is empty
         Assert.Throws<ArgumentOutOfRangeException>("lengths[0]", () => Array.CreateInstance(typeof(int), new int[] { -1 })); // Lengths contains negative integers
     }
 
     [Fact]
-    public static void TestCreateInstance_Type_IntArray_IntArray()
+    public static void CreateInstance_Type_IntArray_IntArray()
     {
         int[] intArray1 = (int[])Array.CreateInstance(typeof(int), new int[] { 5 }, new int[] { 0 });
         Assert.Equal(intArray1, new int[5]);
@@ -819,7 +819,7 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestCreateInstance_Type_IntArray_IntArray_Invalid()
+    public static void CreateInstance_Type_IntArray_IntArray_Invalid()
     {
         Assert.Throws<ArgumentNullException>("elementType", () => Array.CreateInstance(null, new int[] { 1 }, new int[] { 1 })); // Element type is null
 
@@ -828,16 +828,16 @@ public static class ArrayTests
         Assert.Throws<NotSupportedException>(() => Array.CreateInstance(typeof(int).MakeByRefType(), new int[] { 1 }, new int[] { 1 })); // Element type is not supported (ref)
 
         Assert.Throws<ArgumentNullException>("lengths", () => Array.CreateInstance(typeof(int), null, new int[] { 1 })); // Lengths is null
-        Assert.Throws<ArgumentException>(() => Array.CreateInstance(typeof(int), new int[0], new int[0])); // Lengths is empty
+        Assert.Throws<ArgumentException>(null, () => Array.CreateInstance(typeof(int), new int[0], new int[0])); // Lengths is empty
         Assert.Throws<ArgumentOutOfRangeException>("lengths[0]", () => Array.CreateInstance(typeof(int), new int[] { -1 }, new int[] { 1 })); // Lengths contains negative integers
 
         Assert.Throws<ArgumentNullException>("lowerBounds", () => Array.CreateInstance(typeof(int), new int[] { 1 }, null)); // Lower bounds is null
 
-        Assert.Throws<ArgumentException>(() => Array.CreateInstance(typeof(int), new int[] { 1 }, new int[] { 1, 2 })); // Lengths and lower bounds have different lengths
+        Assert.Throws<ArgumentException>(null, () => Array.CreateInstance(typeof(int), new int[] { 1 }, new int[] { 1, 2 })); // Lengths and lower bounds have different lengths
     }
 
     [Fact]
-    public static void TestEmpty()
+    public static void Empty()
     {
         Assert.True(Array.Empty<int>() != null);
         Assert.Equal(0, Array.Empty<int>().Length);
@@ -851,7 +851,7 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestFind()
+    public static void Find()
     {
         var intArray = new int[] { 7, 8, 9 };
 
@@ -897,21 +897,21 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestExists_Invalid()
+    public static void Exists_Invalid()
     {
         Assert.Throws<ArgumentNullException>("array", () => Array.Exists((int[])null, i => i == 43)); // Array is null
         Assert.Throws<ArgumentNullException>("match", () => Array.Exists(new int[0], null)); // Match is null
     }
 
     [Fact]
-    public static void TestFind_Invalid()
+    public static void Find_Invalid()
     {
         Assert.Throws<ArgumentNullException>("array", () => Array.Find((int[])null, i => i == 43)); // Array is null
         Assert.Throws<ArgumentNullException>("match", () => Array.Find(new int[0], null)); // Match is null
     }
 
     [Fact]
-    public static void TestFindIndex_Invalid()
+    public static void FindIndex_Invalid()
     {
         // Array is null
         Assert.Throws<ArgumentNullException>("array", () => Array.FindIndex((int[])null, i => i == 43));
@@ -936,21 +936,21 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestFindAll_Invalid()
+    public static void FindAll_Invalid()
     {
         Assert.Throws<ArgumentNullException>("array", () => Array.FindAll((int[])null, i => i == 43)); // Array is null
         Assert.Throws<ArgumentNullException>("match", () => Array.FindAll(new int[0], null)); // Match is null
     }
 
     [Fact]
-    public static void TestFindLast_Invalid()
+    public static void FindLast_Invalid()
     {
         Assert.Throws<ArgumentNullException>("array", () => Array.FindLast((int[])null, i => i == 43)); // Array is null
         Assert.Throws<ArgumentNullException>("match", () => Array.FindLast(new int[0], null)); // Match is null
     }
 
     [Fact]
-    public static void TestFindLastIndex_Invalid()
+    public static void FindLastIndex_Invalid()
     {
         // Array is null
         Assert.Throws<ArgumentNullException>("array", () => Array.FindLastIndex((int[])null, i => i == 43));
@@ -983,7 +983,7 @@ public static class ArrayTests
     [Theory]
     [InlineData(new int[] { 7, 8, 9 })]
     [InlineData(new char[] { '7', '8', '9' })]
-    public static void TestGetEnumerator(Array array)
+    public static void GetEnumerator(Array array)
     {
         IEnumerator enumerator = array.GetEnumerator();
 
@@ -1002,7 +1002,7 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestGetEnumerator_Invalid()
+    public static void GetEnumerator_Invalid()
     {
         IEnumerator enumerator = new int[3].GetEnumerator();
 
@@ -1058,7 +1058,7 @@ public static class ArrayTests
     [Theory]
     [MemberData(nameof(IndexOf_NonGeneric_TestData))]
     [MemberData(nameof(IndexOf_Generic_TestData))]
-    public static void TestIndexOf_NonGeneric(Array array, object value, int startIndex, int count, int expected)
+    public static void IndexOf_NonGeneric(Array array, object value, int startIndex, int count, int expected)
     {
         if (startIndex + count == array.Length)
         {
@@ -1077,7 +1077,7 @@ public static class ArrayTests
 
     [Theory]
     [MemberData(nameof(IndexOf_Generic_TestData))]
-    public static void TestIndexOf_Generic(int[] array, int value, int startIndex, int count, int expected)
+    public static void IndexOf_Generic(int[] array, int value, int startIndex, int count, int expected)
     {
         if (startIndex + count == array.Length)
         {
@@ -1095,7 +1095,7 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestIndexOf_Invalid()
+    public static void IndexOf_Invalid()
     {
         var intArray = new int[] { 1, 2, 3 };
         var stringArray = new string[] { "a", "b", "c" };
@@ -1166,7 +1166,7 @@ public static class ArrayTests
     [Theory]
     [MemberData(nameof(LastIndexOf_NonGeneric_TestData))]
     [MemberData(nameof(LastIndexOf_Generic_TestData))]
-    public static void TestLastIndexOf_NonGeneric(Array array, object value, int startIndex, int count, int expected)
+    public static void LastIndexOf_NonGeneric(Array array, object value, int startIndex, int count, int expected)
     {
         if (count - startIndex - 1 == 0)
         {
@@ -1185,7 +1185,7 @@ public static class ArrayTests
 
     [Theory]
     [MemberData(nameof(LastIndexOf_Generic_TestData))]
-    public static void TestLastIndexOf_Generic(int[] array, int value, int startIndex, int count, int expected)
+    public static void LastIndexOf_Generic(int[] array, int value, int startIndex, int count, int expected)
     {
         if (count - startIndex - 1 == 0)
         {
@@ -1203,7 +1203,7 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestLastIndexOf_Invalid()
+    public static void LastIndexOf_Invalid()
     {
         var intArray = new int[] { 1, 2, 3 };
         var stringArray = new string[] { "a", "b", "c" };
@@ -1260,14 +1260,14 @@ public static class ArrayTests
 
     [Theory]
     [MemberData(nameof(IStructuralComparable_TestData))]
-    public static void TestIStructuralComparable(Array array, object other, IComparer comparer, int expected)
+    public static void IStructuralComparable(Array array, object other, IComparer comparer, int expected)
     {
         IStructuralComparable comparable = array;
         Assert.Equal(expected, Math.Sign(comparable.CompareTo(other, comparer)));
     }
 
     [Fact]
-    public static void TestIStructuralComparable_Invalid()
+    public static void IStructuralComparable_Invalid()
     {
         IStructuralComparable comparable = new int[] { 1, 2, 3 };
         Assert.Throws<ArgumentException>("other", () => comparable.CompareTo(new int[] { 1, 2 }, new IntegerComparer())); // Arrays have different lengths
@@ -1298,7 +1298,7 @@ public static class ArrayTests
 
     [Theory]
     [MemberData(nameof(IStructuralEquatable_TestData))]
-    public static void TestIStructuralEquatable(Array array, object other, IEqualityComparer comparer, bool expected, bool expectHashEquality)
+    public static void IStructuralEquatable(Array array, object other, IEqualityComparer comparer, bool expected, bool expectHashEquality)
     {
         IStructuralEquatable equatable = array;
         Assert.Equal(expected, equatable.Equals(other, comparer));
@@ -1310,7 +1310,7 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestIStructuralEquatable_Invalid()
+    public static void IStructuralEquatable_Invalid()
     {
         IStructuralEquatable equatable = new int[] { 1, 2, 3 };
         Assert.Throws<NullReferenceException>(() => equatable.Equals(new int[] { 1, 2, 3 }, null)); // Comparer is null
@@ -1321,7 +1321,7 @@ public static class ArrayTests
     [InlineData(new int[] { 1, 2, 3, 4, 5 }, 7, new int[] { 1, 2, 3, 4, 5, default(int), default(int) })]
     [InlineData(new int[] { 1, 2, 3, 4, 5 }, 3, new int[] { 1, 2, 3 })]
     [InlineData(null, 3, new int[] { default(int), default(int), default(int) })]
-    public static void TestResize(int[] array, int newSize, int[] expected)
+    public static void Resize(int[] array, int newSize, int[] expected)
     {
         int[] testArray = array;
         Array.Resize(ref testArray, newSize);
@@ -1330,7 +1330,7 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestResize_NegativeNewSize_ThrowsArgumentOutOfRangeException()
+    public static void Resize_NegativeNewSize_ThrowsArgumentOutOfRangeException()
     {
         var array = new int[0];
         Assert.Throws<ArgumentOutOfRangeException>("newSize", () => Array.Resize(ref array, -1)); // New size < 0
@@ -1351,7 +1351,7 @@ public static class ArrayTests
 
     [Theory]
     [MemberData(nameof(Reverse_TestData))]
-    public static void TestReverse(Array array, int index, int length, Array expected)
+    public static void Reverse(Array array, int index, int length, Array expected)
     {
         if (index == 0 && length == array.Length)
         {
@@ -1366,7 +1366,7 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestReverse_Invalid()
+    public static void Reverse_Invalid()
     {
         // Array is null
         Assert.Throws<ArgumentNullException>("array", () => Array.Reverse(null));
@@ -1418,7 +1418,7 @@ public static class ArrayTests
     [Theory]
     [MemberData(nameof(Sort_Array_NonGeneric_TestData))]
     [MemberData(nameof(Sort_Array_Generic_TestData))]
-    public static void TestSort_Array_NonGeneric(Array array, int index, int length, IComparer comparer, Array expected)
+    public static void Sort_Array_NonGeneric(Array array, int index, int length, IComparer comparer, Array expected)
     {
         Array sortedArray;
         if (index == 0 && length == array.Length)
@@ -1451,7 +1451,7 @@ public static class ArrayTests
 
     [Theory]
     [MemberData(nameof(Sort_Array_Generic_TestData))]
-    public static void TestSort_Array_Generic(string[] array, int index, int length, IComparer comparer, string[] expected)
+    public static void Sort_Array_Generic(string[] array, int index, int length, IComparer comparer, string[] expected)
     {
         string[] sortedArray;
         if (index == 0 && length == array.Length)
@@ -1483,7 +1483,7 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestSort_Array_Invalid()
+    public static void Sort_Array_Invalid()
     {
         Assert.Throws<ArgumentNullException>("array", () => Array.Sort(null)); // Array is null
         Assert.Throws<ArgumentNullException>("array", () => Array.Sort((int[])null)); // Array is null
@@ -1495,7 +1495,7 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestSort_Array_IComparer_Invalid()
+    public static void Sort_Array_IComparer_Invalid()
     {
         // Array is null
         Assert.Throws<ArgumentNullException>("array", () => Array.Sort(null, (IComparer)null));
@@ -1509,14 +1509,14 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestSort_Array_Comparison_Invalid()
+    public static void Sort_Array_Comparison_Invalid()
     {
         Assert.Throws<ArgumentNullException>("array", () => Array.Sort(null, (Comparison<int>)null)); // Array is null
         Assert.Throws<ArgumentNullException>("comparison", () => Array.Sort(new int[10], (Comparison<int>)null)); // Comparison is null
     }
 
     [Fact]
-    public static void TestSort_Array_Int_Int_Invalid()
+    public static void Sort_Array_Int_Int_Invalid()
     {
         // Array is null
         Assert.Throws<ArgumentNullException>("keys", () => Array.Sort(null, 0, 0));
@@ -1546,7 +1546,7 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestSort_Array_Int_Int_IComparer_Invalid()
+    public static void Sort_Array_Int_Int_IComparer_Invalid()
     {
         // Array is null
         Assert.Throws<ArgumentNullException>("keys", () => Array.Sort(null, 0, 0, null));
@@ -1567,12 +1567,12 @@ public static class ArrayTests
         Assert.Throws<ArgumentOutOfRangeException>("length", () => Array.Sort(new int[10], 0, -1, null));
 
         // Index + length > list.Count
-        Assert.Throws<ArgumentException>(() => Array.Sort((Array)new int[10], 11, 0, null));
-        Assert.Throws<ArgumentException>(() => Array.Sort(new int[10], 11, 0, null));
-        Assert.Throws<ArgumentException>(() => Array.Sort((Array)new int[10], 10, 1, null));
-        Assert.Throws<ArgumentException>(() => Array.Sort(new int[10], 10, 1, null));
-        Assert.Throws<ArgumentException>(() => Array.Sort((Array)new int[10], 9, 2, null));
-        Assert.Throws<ArgumentException>(() => Array.Sort(new int[10], 9, 2, null));
+        Assert.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], 11, 0, null));
+        Assert.Throws<ArgumentException>(null, () => Array.Sort(new int[10], 11, 0, null));
+        Assert.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], 10, 1, null));
+        Assert.Throws<ArgumentException>(null, () => Array.Sort(new int[10], 10, 1, null));
+        Assert.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], 9, 2, null));
+        Assert.Throws<ArgumentException>(null, () => Array.Sort(new int[10], 9, 2, null));
     }
 
     public static IEnumerable<object[]> Sort_Array_Array_NonGeneric_TestData()
@@ -1623,7 +1623,7 @@ public static class ArrayTests
     [Theory]
     [MemberData(nameof(Sort_Array_Array_NonGeneric_TestData))]
     [MemberData(nameof(Sort_Array_Array_Generic_TestData))]
-    public static void TestSort_Array_Array_NonGeneric(Array keys, Array items, int index, int length, IComparer comparer, Array expectedKeys, Array expectedItems)
+    public static void Sort_Array_Array_NonGeneric(Array keys, Array items, int index, int length, IComparer comparer, Array expectedKeys, Array expectedItems)
     {
         Array sortedKeysArray = null;
         Array sortedItemsArray = null;
@@ -1677,7 +1677,7 @@ public static class ArrayTests
 
     [Theory]
     [MemberData(nameof(Sort_Array_Array_Generic_TestData))]
-    public static void TestSort_Array_Array_Generic(string[] keys, string[] items, int index, int length, IComparer comparer, string[] expectedKeys, string[] expectedItems)
+    public static void Sort_Array_Array_Generic(string[] keys, string[] items, int index, int length, IComparer comparer, string[] expectedKeys, string[] expectedItems)
     {
         string[] sortedKeysArray = null;
         string[] sortedItemsArray = null;
@@ -1730,22 +1730,22 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestSort_Array_Array_Invalid()
+    public static void Sort_Array_Array_Invalid()
     {
         // Keys is null
         Assert.Throws<ArgumentNullException>("keys", () => Array.Sort(null, new int[10]));
         Assert.Throws<ArgumentNullException>("keys", () => Array.Sort((int[])null, new int[10]));
 
         // Keys.Length > items.Length
-        Assert.Throws<ArgumentException>(() => Array.Sort((Array)new int[10], new int[9]));
-        Assert.Throws<ArgumentException>(() => Array.Sort(new int[10], new int[9]));
+        Assert.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], new int[9]));
+        Assert.Throws<ArgumentException>(null, () => Array.Sort(new int[10], new int[9]));
         
         Assert.Throws<RankException>(() => Array.Sort(new int[10, 10], new int[10])); // Keys is multidimensional
         Assert.Throws<RankException>(() => Array.Sort(new int[10], new int[10, 10])); // Items is multidimensional
 
         Array keys = Array.CreateInstance(typeof(object), new int[] { 1 }, new int[] { 1 });
         Array items = Array.CreateInstance(typeof(object), new int[] { 1 }, new int[] { 2 });
-        Assert.Throws<ArgumentException>(() => Array.Sort(keys, items)); // Keys and items have different lower bounds
+        Assert.Throws<ArgumentException>(null, () => Array.Sort(keys, items)); // Keys and items have different lower bounds
 
         // One or more objects in keys do not implement IComparable
         Assert.Throws<InvalidOperationException>(() => Array.Sort((Array)new object[] { "1", 2, new object() }, new object[3]));
@@ -1753,22 +1753,22 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestSort_Array_Array_IComparer_Invalid()
+    public static void Sort_Array_Array_IComparer_Invalid()
     {
         // Keys is null
         Assert.Throws<ArgumentNullException>("keys", () => Array.Sort(null, new int[10], null));
         Assert.Throws<ArgumentNullException>("keys", () => Array.Sort((int[])null, new int[10], null));
 
         // Keys.Length > items.Length
-        Assert.Throws<ArgumentException>(() => Array.Sort((Array)new int[10], new int[9], null));
-        Assert.Throws<ArgumentException>(() => Array.Sort(new int[10], new int[9], null));
+        Assert.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], new int[9], null));
+        Assert.Throws<ArgumentException>(null, () => Array.Sort(new int[10], new int[9], null));
 
         Assert.Throws<RankException>(() => Array.Sort(new int[10, 10], new int[10], null)); // Keys is multidimensional
         Assert.Throws<RankException>(() => Array.Sort(new int[10], new int[10, 10], null)); // Items is multidimensional
 
         Array keys = Array.CreateInstance(typeof(object), new int[] { 1 }, new int[] { 1 });
         Array items = Array.CreateInstance(typeof(object), new int[] { 1 }, new int[] { 2 });
-        Assert.Throws<ArgumentException>(() => Array.Sort(keys, items, null)); // Keys and items have different lower bounds
+        Assert.Throws<ArgumentException>(null, () => Array.Sort(keys, items, null)); // Keys and items have different lower bounds
 
         // One or more objects in keys do not implement IComparable
         Assert.Throws<InvalidOperationException>(() => Array.Sort((Array)new object[] { "1", 2, new object() }, new object[3], null));
@@ -1776,22 +1776,22 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestSort_Array_Array_Int_Int_Invalid()
+    public static void Sort_Array_Array_Int_Int_Invalid()
     {
         // Keys is null
         Assert.Throws<ArgumentNullException>("keys", () => Array.Sort(null, new int[10], 0, 0));
         Assert.Throws<ArgumentNullException>("keys", () => Array.Sort((int[])null, new int[10], 0, 0));
 
         // Keys.Length > items.Length
-        Assert.Throws<ArgumentException>(() => Array.Sort((Array)new int[10], new int[9], 0, 10));
-        Assert.Throws<ArgumentException>(() => Array.Sort(new int[10], new int[9], 0, 10));
+        Assert.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], new int[9], 0, 10));
+        Assert.Throws<ArgumentException>(null, () => Array.Sort(new int[10], new int[9], 0, 10));
 
         Assert.Throws<RankException>(() => Array.Sort(new int[10, 10], new int[10], 0, 0)); // Keys is multidimensional
         Assert.Throws<RankException>(() => Array.Sort(new int[10], new int[10, 10], 0, 0)); // Items is multidimensional
 
         Array keys = Array.CreateInstance(typeof(object), new int[] { 1 }, new int[] { 1 });
         Array items = Array.CreateInstance(typeof(object), new int[] { 1 }, new int[] { 2 });
-        Assert.Throws<ArgumentException>(() => Array.Sort(keys, items, 0, 1)); // Keys and items have different lower bounds
+        Assert.Throws<ArgumentException>(null, () => Array.Sort(keys, items, 0, 1)); // Keys and items have different lower bounds
 
         // One or more objects in keys do not implement IComparable
         Assert.Throws<InvalidOperationException>(() => Array.Sort((Array)new object[] { "1", 2, new object() }, new object[3], 0, 3));
@@ -1806,31 +1806,31 @@ public static class ArrayTests
         Assert.Throws<ArgumentOutOfRangeException>("length", () => Array.Sort(new int[10], new int[10], 0, -1));
 
         // Index + length > list.Count
-        Assert.Throws<ArgumentException>(() => Array.Sort((Array)new int[10], new int[10], 11, 0));
-        Assert.Throws<ArgumentException>(() => Array.Sort(new int[10], new int[10], 11, 0));
-        Assert.Throws<ArgumentException>(() => Array.Sort((Array)new int[10], new int[10], 10, 1));
-        Assert.Throws<ArgumentException>(() => Array.Sort(new int[10], new int[10], 10, 1));
-        Assert.Throws<ArgumentException>(() => Array.Sort((Array)new int[10], new int[10], 9, 2));
-        Assert.Throws<ArgumentException>(() => Array.Sort(new int[10], new int[10], 9, 2));
+        Assert.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], new int[10], 11, 0));
+        Assert.Throws<ArgumentException>(null, () => Array.Sort(new int[10], new int[10], 11, 0));
+        Assert.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], new int[10], 10, 1));
+        Assert.Throws<ArgumentException>(null, () => Array.Sort(new int[10], new int[10], 10, 1));
+        Assert.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], new int[10], 9, 2));
+        Assert.Throws<ArgumentException>(null, () => Array.Sort(new int[10], new int[10], 9, 2));
     }
 
     [Fact]
-    public static void TestSort_Array_Array_Int_Int_IComparer_Invalid()
+    public static void Sort_Array_Array_Int_Int_IComparer_Invalid()
     {
         // Keys is null
         Assert.Throws<ArgumentNullException>("keys", () => Array.Sort(null, new int[10], 0, 0, null));
         Assert.Throws<ArgumentNullException>("keys", () => Array.Sort((int[])null, new int[10], 0, 0, null));
 
         // Keys.Length > items.Length
-        Assert.Throws<ArgumentException>(() => Array.Sort((Array)new int[10], new int[9], 0, 10, null));
-        Assert.Throws<ArgumentException>(() => Array.Sort(new int[10], new int[9], 0, 10, null));
+        Assert.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], new int[9], 0, 10, null));
+        Assert.Throws<ArgumentException>(null, () => Array.Sort(new int[10], new int[9], 0, 10, null));
 
         Assert.Throws<RankException>(() => Array.Sort(new int[10, 10], new int[10], 0, 0, null)); // Keys is multidimensional
         Assert.Throws<RankException>(() => Array.Sort(new int[10], new int[10, 10], 0, 0, null)); // Items is multidimensional
 
         Array keys = Array.CreateInstance(typeof(object), new int[] { 1 }, new int[] { 1 });
         Array items = Array.CreateInstance(typeof(object), new int[] { 1 }, new int[] { 2 });
-        Assert.Throws<ArgumentException>(() => Array.Sort(keys, items, 0, 1, null)); // Keys and items have different lower bounds
+        Assert.Throws<ArgumentException>(null, () => Array.Sort(keys, items, 0, 1, null)); // Keys and items have different lower bounds
 
         // One or more objects in keys do not implement IComparable
         Assert.Throws<InvalidOperationException>(() => Array.Sort((Array)new object[] { "1", 2, new object() }, new object[3], 0, 3, null));
@@ -1845,16 +1845,16 @@ public static class ArrayTests
         Assert.Throws<ArgumentOutOfRangeException>("length", () => Array.Sort(new int[10], new int[10], 0, -1, null));
 
         // Index + length > list.Count
-        Assert.Throws<ArgumentException>(() => Array.Sort((Array)new int[10], new int[10], 11, 0, null));
-        Assert.Throws<ArgumentException>(() => Array.Sort(new int[10], new int[10], 11, 0, null));
-        Assert.Throws<ArgumentException>(() => Array.Sort((Array)new int[10], new int[10], 10, 1, null));
-        Assert.Throws<ArgumentException>(() => Array.Sort(new int[10], new int[10], 10, 1, null));
-        Assert.Throws<ArgumentException>(() => Array.Sort((Array)new int[10], new int[10], 9, 2, null));
-        Assert.Throws<ArgumentException>(() => Array.Sort(new int[10], new int[10], 9, 2, null));
+        Assert.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], new int[10], 11, 0, null));
+        Assert.Throws<ArgumentException>(null, () => Array.Sort(new int[10], new int[10], 11, 0, null));
+        Assert.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], new int[10], 10, 1, null));
+        Assert.Throws<ArgumentException>(null, () => Array.Sort(new int[10], new int[10], 10, 1, null));
+        Assert.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], new int[10], 9, 2, null));
+        Assert.Throws<ArgumentException>(null, () => Array.Sort(new int[10], new int[10], 9, 2, null));
     }
 
     [Fact]
-    public static void TestSetValue_Casting()
+    public static void SetValue_Casting()
     {
         // Null -> default(null)
         var arr1 = new S[3];
@@ -1888,7 +1888,7 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestSetValue_Casting_Invalid()
+    public static void SetValue_Casting_Invalid()
     {
         // Unlike most of the other reflection apis, converting or widening a primitive to an enum is NOT allowed.
         var arr1 = new E1[3];
@@ -1896,7 +1896,7 @@ public static class ArrayTests
 
         // Primitive widening must be value-preserving
         var arr2 = new int[3];
-        Assert.Throws<ArgumentException>(() => arr2.SetValue((uint)42, new int[] { 1 }));
+        Assert.Throws<ArgumentException>(null, () => arr2.SetValue((uint)42, new int[] { 1 }));
 
         // T -> Nullable<T>  T must be exact
         var arr3 = new int?[3];
@@ -1904,17 +1904,17 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestSetValue_Invalid()
+    public static void SetValue_Invalid()
     {
         Assert.Throws<InvalidCastException>(() => new int[10].SetValue("1", 1)); // Value has an incompatible type
         Assert.Throws<InvalidCastException>(() => new int[10, 10].SetValue("1", new int[] { 1, 1 })); // Value has an incompatible type
 
         Assert.Throws<IndexOutOfRangeException>(() => new int[10].SetValue(1, -1)); // Index < 0
         Assert.Throws<IndexOutOfRangeException>(() => new int[10].SetValue(1, 10)); // Index >= array.Length
-        Assert.Throws<ArgumentException>(() => new int[10, 10].SetValue(1, 0)); // Array is multidimensional
+        Assert.Throws<ArgumentException>(null, () => new int[10, 10].SetValue(1, 0)); // Array is multidimensional
 
         Assert.Throws<ArgumentNullException>("indices", () => new int[10].SetValue(1, null)); // Indices is null
-        Assert.Throws<ArgumentException>(() => new int[10, 10].SetValue(1, new int[] { 1, 2, 3 })); // Indices.Length > array.Length
+        Assert.Throws<ArgumentException>(null, () => new int[10, 10].SetValue(1, new int[] { 1, 2, 3 })); // Indices.Length > array.Length
 
         Assert.Throws<IndexOutOfRangeException>(() => new int[8, 10].SetValue(1, new int[] { -1, 2 })); // Indices[0] < 0
         Assert.Throws<IndexOutOfRangeException>(() => new int[8, 10].SetValue(1, new int[] { 9, 2 })); // Indices[0] > array.GetLength(0)
@@ -1932,13 +1932,13 @@ public static class ArrayTests
 
     [Theory]
     [MemberData(nameof(TrueForAll_TestData))]
-    public static void TestTrueForAll(int[] array, Predicate<int> match, bool expected)
+    public static void TrueForAll(int[] array, Predicate<int> match, bool expected)
     {
         Assert.Equal(expected, Array.TrueForAll(array, match));
     }
 
     [Fact]
-    public static void TestTrueForAll_Null_ThrowsArgumentNullException()
+    public static void TrueForAll_Null_ThrowsArgumentNullException()
     {
         // Array is null
         Assert.Throws<ArgumentNullException>("array", () => Array.TrueForAll((int[])null, i => i > 0));
@@ -1946,7 +1946,7 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestICollection_IsSynchronized()
+    public static void ICollection_IsSynchronized()
     {
         ICollection array = new int[] { 1, 2, 3 };
         Assert.False(array.IsSynchronized);
@@ -1954,7 +1954,7 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestIEnumerable_GetEnumerator()
+    public static void IEnumerable_GetEnumerator()
     {
         var intArray = new int[] { 7, 8, 9, 10, 11, 12, 13 };
         IEnumerable iList = intArray;
@@ -1975,7 +1975,7 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestIEnumerable_GetEnumerator_Invalid()
+    public static void IEnumerable_GetEnumerator_Invalid()
     {
         IEnumerable enumerable = new int[] { 7, 8, 9, 10, 11, 12, 13 };
         IEnumerator enumerator = enumerable.GetEnumerator();
@@ -1996,7 +1996,7 @@ public static class ArrayTests
     [Theory]
     [InlineData(new int[] { 0, 1, 2, 3, 4 }, new int[] { 9, 9, 9, 9, 9 }, 0, new int[] { 0, 1, 2, 3, 4 })]
     [InlineData(new int[] { 0, 1, 2, 3, 4 }, new int[] { 9, 9, 9, 9, 9, 9, 9, 9 }, 2, new int[] { 9, 9, 0, 1, 2, 3, 4, 9 })]
-    public static void TestIList_CopyTo(Array array, Array destinationArray, int index, Array expected)
+    public static void IList_CopyTo(Array array, Array destinationArray, int index, Array expected)
     {
         IList iList = array;
         iList.CopyTo(destinationArray, index);
@@ -2004,7 +2004,7 @@ public static class ArrayTests
     }
 
     [Fact]
-    public static void TestIList_CopyTo_Invalid()
+    public static void IList_CopyTo_Invalid()
     {
         IList iList = new int[] { 7, 8, 9, 10, 11, 12, 13 };
         Assert.Throws<ArgumentNullException>("dest", () => iList.CopyTo(null, 0)); // Destination array is null
@@ -2099,52 +2099,25 @@ public static class ArrayTests
 
     private class IntegerComparer : IComparer, IComparer<int>, IEqualityComparer
     {
-        public int Compare(object x, object y)
-        {
-            return Compare((int)x, (int)y);
-        }
+        public int Compare(object x, object y) => Compare((int)x, (int)y);
 
-        public int Compare(int x, int y)
-        {
-            return x - y;
-        }
+        public int Compare(int x, int y) => x - y;
 
-        bool IEqualityComparer.Equals(object x, object y)
-        {
-            return ((int)x) == ((int)y);
-        }
+        bool IEqualityComparer.Equals(object x, object y) => ((int)x) == ((int)y);
 
-        public int GetHashCode(object obj)
-        {
-            return ((int)obj) >> 2;
-        }
+        public int GetHashCode(object obj) => ((int)obj) >> 2;
     }
 
     public class ReverseIntegerComparer : IComparer
     {
-        public int Compare(object x, object y)
-        {
-            return -((int)x).CompareTo((int)y);
-        }
+        public int Compare(object x, object y) => -((int)x).CompareTo((int)y);
     }
 
     private class StringComparer : IComparer, IComparer<string>
     {
-        public int Compare(object x, object y)
-        {
-            return Compare((string)x, (string)y);
-        }
+        public int Compare(object x, object y) => Compare((string)x, (string)y);
 
-        public int Compare(string x, string y)
-        {
-            if (x == y)
-                return 0;
-            if (x == null)
-                return -1;
-            if (y == null)
-                return 1;
-            return x.CompareTo(y);
-        }
+        public int Compare(string x, string y) => string.Compare(x, y);
     }
 
     private class ComparableRefType : IComparable, IEquatable<ComparableRefType>
@@ -2159,39 +2132,19 @@ public static class ArrayTests
         public int CompareTo(object other)
         {
             ComparableRefType o = (ComparableRefType)other;
-            if (o.Id == Id)
-            {
-                return 0;
-            }
-            else if (Id > o.Id)
-            {
-                return 1;
-            }
-            else
-            {
-                return -1;
-            }
+            return Id.CompareTo(o.Id);
         }
 
-        public override string ToString()
-        {
-            return "C:" + Id;
-        }
+        public override string ToString() => "C:" + Id;
 
         public override bool Equals(object obj)
         {
             return obj is ComparableRefType && ((ComparableRefType)obj).Id == Id;
         }
 
-        public bool Equals(ComparableRefType other)
-        {
-            return other.Id == Id;
-        }
+        public bool Equals(ComparableRefType other) => other.Id == Id;
 
-        public override int GetHashCode()
-        {
-            return Id.GetHashCode();
-        }
+        public override int GetHashCode() => Id.GetHashCode();
     }
 
     private struct ComparableValueType : IComparable, IEquatable<ComparableValueType>
@@ -2206,65 +2159,33 @@ public static class ArrayTests
         public int CompareTo(object other)
         {
             ComparableValueType o = (ComparableValueType)other;
-            if (o.Id == Id)
-            {
-                return 0;
-            }
-            else if (Id > o.Id)
-            {
-                return 1;
-            }
-            else
-            {
-                return -1;
-            }
+            return Id.CompareTo(o.Id);
         }
 
-        public override string ToString()
-        {
-            return "S:" + Id;
-        }
+        public override string ToString() => "S:" + Id;
 
         public override bool Equals(object obj)
         {
             return obj is ComparableValueType && ((ComparableValueType)obj).Equals(this);
         }
 
-        public bool Equals(ComparableValueType other)
-        {
-            return other.Id == Id;
-        }
+        public bool Equals(ComparableValueType other) => other.Id == Id;
 
-        public override int GetHashCode()
-        {
-            return Id.GetHashCode();
-        }
+        public override int GetHashCode() => Id.GetHashCode();
     }
 
     private class ReferenceTypeNormalComparer : IComparer
     {
-        public int Compare(ComparableRefType x, ComparableRefType y)
-        {
-            return x.CompareTo(y);
-        }
+        public int Compare(ComparableRefType x, ComparableRefType y) => x.CompareTo(y);
 
-        public int Compare(object x, object y)
-        {
-            return Compare((ComparableRefType)x, (ComparableRefType)y);
-        }
+        public int Compare(object x, object y) => Compare((ComparableRefType)x, (ComparableRefType)y);
     }
 
     private class ReferenceTypeReverseComparer : IComparer
     {
-        public int Compare(ComparableRefType x, ComparableRefType y)
-        {
-            return -1 * x.CompareTo(y);
-        }
+        public int Compare(ComparableRefType x, ComparableRefType y) => -x.CompareTo(y);
 
-        public int Compare(object x, object y)
-        {
-            return Compare((ComparableRefType)x, (ComparableRefType)y);
-        }
+        public int Compare(object x, object y) => Compare((ComparableRefType)x, (ComparableRefType)y);
     }
 
     private enum E1 : sbyte

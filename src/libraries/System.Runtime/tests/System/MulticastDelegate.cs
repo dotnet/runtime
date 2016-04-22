@@ -4,13 +4,12 @@
 
 using System;
 using System.Runtime.CompilerServices;
-
 using Xunit;
 
 public static unsafe class MulticastDelegateTests
 {
     [Fact]
-    public static void TestGetInvocationList()
+    public static void GetInvocationList()
     {
         DFoo dfoo = new C().Foo;
         Delegate[] delegates = dfoo.GetInvocationList();
@@ -20,7 +19,7 @@ public static unsafe class MulticastDelegateTests
     }
 
     [Fact]
-    public static void TestEquals()
+    public static void Equals()
     {
         C c = new C();
         DFoo d1 = c.Foo;
@@ -57,7 +56,7 @@ public static unsafe class MulticastDelegateTests
     }
 
     [Fact]
-    public static void TestCombineReturn()
+    public static void CombineReturn()
     {
         Tracker t = new Tracker();
         DRet dret1 = new DRet(t.ARet);
@@ -70,7 +69,7 @@ public static unsafe class MulticastDelegateTests
     }
 
     [Fact]
-    public static void TestCombine()
+    public static void Combine()
     {
         Tracker t1 = new Tracker();
         D a = new D(t1.A);
@@ -109,7 +108,7 @@ public static unsafe class MulticastDelegateTests
     }
 
     [Fact]
-    public static void TestRemove()
+    public static void Remove()
     {
         Tracker t1 = new Tracker();
         D a = new D(t1.A);
@@ -228,15 +227,9 @@ public static unsafe class MulticastDelegateTests
 
         public string S;
 
-        public void Clear()
-        {
-            S = "";
-        }
+        public void Clear() => S = "";
 
-        public void A(int x)
-        {
-            S = S + "A" + x;
-        }
+        public void A(int x) => S = S + "A" + x;
 
         public string ARet(int x)
         {
@@ -244,10 +237,7 @@ public static unsafe class MulticastDelegateTests
             return "ARet" + x;
         }
 
-        public void B(int x)
-        {
-            S = S + "B" + x;
-        }
+        public void B(int x) => S = S + "B" + x;
 
         public string BRet(int x)
         {
@@ -255,25 +245,13 @@ public static unsafe class MulticastDelegateTests
             return "BRet" + x;
         }
 
-        public void C(int x)
-        {
-            S = S + "C" + x;
-        }
+        public void C(int x) => S = S + "C" + x;
 
-        public void D(int x)
-        {
-            S = S + "D" + x;
-        }
+        public void D(int x) => S = S + "D" + x;
 
-        public void E(int x)
-        {
-            S = S + "E" + x;
-        }
+        public void E(int x) => S = S + "E" + x;
 
-        public void F(int x)
-        {
-            S = S + "F" + x;
-        }
+        public void F(int x) => S = S + "F" + x;
     }
 
     private delegate void D(int x);
@@ -284,14 +262,8 @@ public static unsafe class MulticastDelegateTests
 
     private class C
     {
-        public string Foo(int x)
-        {
-            return new string('A', x);
-        }
+        public string Foo(int x) => new string('A', x);
 
-        public string Goo(int x)
-        {
-            return new string('A', x);
-        }
+        public string Goo(int x) => new string('A', x);
     }
 }

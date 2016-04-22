@@ -9,7 +9,7 @@ using Xunit;
 public static class NullableTests
 {
     [Fact]
-    public static void TestBasics()
+    public static void Basics()
     {
         // Nullable and Nullable<T> are mostly verbatim ports so we don't test much here.
         int? n = default(int?);
@@ -41,7 +41,7 @@ public static class NullableTests
     }
 
     [Fact]
-    public static void TestBoxing()
+    public static void Boxing()
     {
         int? n = new int?(42);
         Unbox(n);
@@ -58,18 +58,18 @@ public static class NullableTests
     [InlineData(typeof(int?), typeof(int))]
     [InlineData(typeof(int), null)]
     [InlineData(typeof(G<int>), null)]
-    public static void TestGetUnderlyingType(Type nullableType, Type expected)
+    public static void GetUnderlyingType(Type nullableType, Type expected)
     {
         Assert.Equal(expected, Nullable.GetUnderlyingType(nullableType));
     }
 
     [Fact]
-    public static void TestGetUnderlyingType_NullType_ThrowsArgumentNullException()
+    public static void GetUnderlyingType_NullType_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>("nullableType", () => Nullable.GetUnderlyingType((Type)null));
     }
 
-    public static IEnumerable<object[]> CompareEquals_TestData()
+    public static IEnumerable<object[]> Compare_Equals_TestData()
     {
         yield return new object[] { default(int?), default(int?), 0 };
         yield return new object[] { new int?(7), default(int?), 1 };
@@ -80,8 +80,8 @@ public static class NullableTests
     }
 
     [Theory]
-    [MemberData(nameof(CompareEquals_TestData))]
-    public static void TestCompare_Equals(int? n1, int? n2, int expected)
+    [MemberData(nameof(Compare_Equals_TestData))]
+    public static void Compare_Equals(int? n1, int? n2, int expected)
     {
         Assert.Equal(expected == 0, Nullable.Equals(n1, n2));
         Assert.Equal(expected, Nullable.Compare(n1, n2));

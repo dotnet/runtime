@@ -46,7 +46,7 @@ public static unsafe class DelegateTests
     public delegate TestStruct StructReturningDelegate();
 
     [Fact]
-    public static void TestClosedStaticDelegate()
+    public static void ClosedStaticDelegate()
     {
         TestClass foo = new TestClass();
         foo.structField.o1 = new object();
@@ -69,7 +69,7 @@ public static unsafe class DelegateTests
     }
 
     [Fact]
-    public static void TestDynamicInvoke()
+    public static void DynamicInvoke()
     {
         A a1 = new A();
         A a2 = new A();
@@ -105,7 +105,7 @@ public static unsafe class DelegateTests
     }
 
     [Fact]
-    public static void TestDynamicInvokeCastingDefaultValues()
+    public static void DynamicInvoke_CastingDefaultValues()
     {
         {
             // Passing Type.Missing without providing default.
@@ -118,12 +118,10 @@ public static unsafe class DelegateTests
             Delegate d = new DFoo1WithDefault(Foo1);
             d.DynamicInvoke(7, Type.Missing);
         }
-
-        return;
     }
 
     [Fact]
-    public static void TestDynamicInvokeCastingByRef()
+    public static void DynamicInvoke_CastingByRef()
     {
         {
             Delegate d = new DFoo2(Foo2);
@@ -161,12 +159,10 @@ public static unsafe class DelegateTests
             object[] args = { E4.One };
             Assert.Throws<ArgumentException>(() => d.DynamicInvoke(args));
         }
-
-        return;
     }
 
     [Fact]
-    public static void TestDynamicInvokeCastingPrimitiveWiden()
+    public static void DynamicInvoke_CastingPrimitiveWiden()
     {
         {
             // For primitives, value-preserving widenings allowed.
@@ -216,12 +212,10 @@ public static unsafe class DelegateTests
             object[] args = { 7, U4.Seven };
             Assert.Throws<ArgumentException>(() => d.DynamicInvoke(args));
         }
-
-        return;
     }
 
     [Fact]
-    public static void TestDynamicInvokeCastingMisc()
+    public static void DynamicInvoke_CastingMisc()
     {
         {
             // DynamicInvoke allows "null" for any value type (converts to default(valuetype)).
@@ -250,8 +244,6 @@ public static unsafe class DelegateTests
             object[] args = { E4.Seven };
             Assert.Throws<ArgumentException>(() => d.DynamicInvoke(args));
         }
-
-        return;
     }
 
     private static void Foo1(int expected, int actual)
@@ -298,13 +290,13 @@ public static unsafe class DelegateTests
 
     private delegate void DFoo5(MyStruct s);
 
-    private static void Foo6(Nullable<int> n)
+    private static void Foo6(int? n)
     {
         Assert.True(n.HasValue);
         Assert.Equal(n.Value, 7);
     }
 
-    private delegate void DFoo6(Nullable<int> s);
+    private delegate void DFoo6(int? s);
 
     private enum E2 : short
     {

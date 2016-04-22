@@ -10,7 +10,7 @@ public static class MissingFieldExceptionTests
     private const int COR_E_MISSINGFIELD = unchecked((int)0x80131511);
 
     [Fact]
-    public static void TestCtor_Empty()
+    public static void Ctor_Empty()
     {
         var exception = new MissingFieldException();
         Assert.NotEmpty(exception.Message);
@@ -18,7 +18,7 @@ public static class MissingFieldExceptionTests
     }
 
     [Fact]
-    public static void TestCtor_String()
+    public static void Ctor_String()
     {
         string message = "Created MissingFieldException";
         var exception = new MissingFieldException(message);
@@ -27,7 +27,7 @@ public static class MissingFieldExceptionTests
     }
 
     [Fact]
-    public static void TestCtor_String_Exception()
+    public static void Ctor_String_Exception()
     {
         string message = "Created MissingFieldException";
         var innerException = new Exception("Created inner exception");

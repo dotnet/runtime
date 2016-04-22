@@ -12,7 +12,7 @@ public static class GuidTests
     private static readonly Guid s_testGuid = new Guid("a8a110d5-fc49-43c5-bf46-802db8f843ff");
 
     [Fact]
-    public static void TestEmpty()
+    public static void Empty()
     {
         Assert.Equal(new Guid(0, 0, 0, new byte[] { 0, 0, 0, 0, 0, 0, 0, 0 }), Guid.Empty);
     }
@@ -27,29 +27,29 @@ public static class GuidTests
 
     [Theory]
     [MemberData(nameof(Ctor_ByteArray_TestData))]
-    public static void TestCtor_ByteArray(byte[] b, Guid expected)
+    public static void Ctor_ByteArray(byte[] b, Guid expected)
     {
         Assert.Equal(expected, new Guid(b));
     }
 
     [Fact]
-    public static void TestCtor_ByteArray_Invalid()
+    public static void Ctor_ByteArray_Invalid()
     {
         Assert.Throws<ArgumentNullException>("b", () => new Guid((byte[])null)); // Byte array is null
-        Assert.Throws<ArgumentException>(() => new Guid(new byte[15])); // Byte array is not 16 bytes long
-        Assert.Throws<ArgumentException>(() => new Guid(new byte[17])); // Byte array is not 16 bytes long
+        Assert.Throws<ArgumentException>("b", () => new Guid(new byte[15])); // Byte array is not 16 bytes long
+        Assert.Throws<ArgumentException>("b", () => new Guid(new byte[17])); // Byte array is not 16 bytes long
     }
 
     [Theory]
     [MemberData(nameof(GuidStrings_Valid_TestData))]
-    public static void TestCtor_String(string input, string _, Guid expected)
+    public static void Ctor_String(string input, string _, Guid expected)
     {
         Assert.Equal(expected, new Guid(input));
     }
 
     [Theory]
     [MemberData(nameof(GuidStrings_Invalid_TestData))]
-    public static void TestCtor_String_Invalid(string value, Type exceptionType)
+    public static void Ctor_String_Invalid(string value, Type exceptionType)
     {
         Assert.Throws(exceptionType, () => new Guid(value));
     }
@@ -63,29 +63,29 @@ public static class GuidTests
 
     [Theory]
     [MemberData(nameof(Ctor_Int_Short_Short_ByteArray_TestData))]
-    public static void TestCtor_Int_Short_Short_ByteArray(int a, short b, short c, byte[] d, Guid expected)
+    public static void Ctor_Int_Short_Short_ByteArray(int a, short b, short c, byte[] d, Guid expected)
     {
         Assert.Equal(expected, new Guid(a, b, c, d));
         Assert.Equal(expected, new Guid(a, b, c, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]));
     }
 
     [Fact]
-    public static void TestCtor_Int_Short_Short_ByteArray_Invalid()
+    public static void Ctor_Int_Short_Short_ByteArray_Invalid()
     {
         Assert.Throws<ArgumentNullException>("d", () => new Guid(0, 0, 0, null)); // Byte array is null
-        Assert.Throws<ArgumentException>(() => new Guid(0, 0, 0, new byte[7])); // Byte array is not 8 bytes long
-        Assert.Throws<ArgumentException>(() => new Guid(0, 0, 0, new byte[9])); // Byte array is not 8 bytes long
+        Assert.Throws<ArgumentException>("d", () => new Guid(0, 0, 0, new byte[7])); // Byte array is not 8 bytes long
+        Assert.Throws<ArgumentException>("d", () => new Guid(0, 0, 0, new byte[9])); // Byte array is not 8 bytes long
     }
 
     [Fact]
-    public static void TestCtor_UInt_UShort_UShort_Byte_Byte_Byte_Byte_Byte_Byte_Byte_Byte()
+    public static void Ctor_UInt_UShort_UShort_Byte_Byte_Byte_Byte_Byte_Byte_Byte_Byte()
     {
         var guid = new Guid(0xa8a110d5, 0xfc49, 0x43c5, 0xbf, 0x46, 0x80, 0x2d, 0xb8, 0xf8, 0x43, 0xff);
         Assert.Equal(s_testGuid, guid);
     }
 
     [Fact]
-    public static void TestNewGuid()
+    public static void NewGuid()
     {
         Guid guid1 = Guid.NewGuid();
         Assert.NotEqual(Guid.Empty, guid1);
@@ -95,7 +95,7 @@ public static class GuidTests
     }
 
     [Fact]
-    public static void TestNewGuid_Randomness()
+    public static void NewGuid_Randomness()
     {
         const int Iterations = 100;
         const int GuidSize = 16;
@@ -126,7 +126,7 @@ public static class GuidTests
 
     [Theory]
     [MemberData(nameof(GuidStrings_Valid_TestData))]
-    public static void TestParse(string input, string format, Guid expected)
+    public static void Parse(string input, string format, Guid expected)
     {
         Assert.Equal(expected, Guid.Parse(input));
         Assert.Equal(expected, Guid.ParseExact(input, format.ToUpperInvariant()));
@@ -147,7 +147,7 @@ public static class GuidTests
 
     [Theory]
     [MemberData(nameof(GuidStrings_Invalid_TestData))]
-    public static void TestParse_Invalid(string input, Type exceptionType)
+    public static void Parse_Invalid(string input, Type exceptionType)
     {
         // Overflow exceptions throw as format exceptions in Parse
         if (exceptionType.Equals(typeof(OverflowException)))
@@ -184,12 +184,13 @@ public static class GuidTests
 
     [Theory]
     [MemberData(nameof(GuidStrings_Format_Invalid_TestData))]
-    public static void TestParseExact_Invalid(string input, string format, Type exceptionType)
+    public static void ParseExact_Invalid(string input, string format, Type exceptionType)
     {
         Assert.Throws(exceptionType, () => Guid.ParseExact(input, format));
 
         Guid result;
         Assert.False(Guid.TryParseExact(input, format, out result));
+        Assert.Equal(Guid.Empty, result);
     }
 
     public static IEnumerable<object[]> CompareTo_TestData()
@@ -205,7 +206,7 @@ public static class GuidTests
 
     [Theory]
     [MemberData(nameof(CompareTo_TestData))]
-    public static void TestCompareTo(Guid guid, object obj, int expected)
+    public static void CompareTo(Guid guid, object obj, int expected)
     {
         if (obj is Guid)
         {
@@ -216,10 +217,10 @@ public static class GuidTests
     }
 
     [Fact]
-    public static void TestCompareTo_Invalid()
+    public static void CompareTo_ValueNotGuid_ThrowsArgumentException()
     {
         IComparable comparable = s_testGuid;
-        Assert.Throws<ArgumentException>(() => comparable.CompareTo("a8a110d5-fc49-43c5-bf46-802db8f843ff")); // Obj is not a guid
+        Assert.Throws<ArgumentException>("value", () => comparable.CompareTo("a8a110d5-fc49-43c5-bf46-802db8f843ff")); // Value is not a guid
     }
 
     public static IEnumerable<object[]> Equals_TestData()
@@ -234,7 +235,7 @@ public static class GuidTests
 
     [Theory]
     [MemberData(nameof(Equals_TestData))]
-    public static void TestEquals(Guid guid1, object obj, bool expected)
+    public static void Equals(Guid guid1, object obj, bool expected)
     {
         if (obj is Guid)
         {
@@ -248,7 +249,7 @@ public static class GuidTests
     }
 
     [Fact]
-    public static void TestToByteArray()
+    public static void ToByteArray()
     {
         Assert.Equal(new byte[] { 0xd5, 0x10, 0xa1, 0xa8, 0x49, 0xfc, 0xc5, 0x43, 0xbf, 0x46, 0x80, 0x2d, 0xb8, 0xf8, 0x43, 0xff }, s_testGuid.ToByteArray());
     }
@@ -267,7 +268,7 @@ public static class GuidTests
 
     [Theory]
     [MemberData(nameof(ToString_TestData))]
-    public static void TestToString(Guid guid, string format, string expected)
+    public static void ToString(Guid guid, string format, string expected)
     {
         IFormattable formattable = guid;
         if (string.IsNullOrEmpty(format) || format == "D")
@@ -280,7 +281,7 @@ public static class GuidTests
     }
 
     [Fact]
-    public static void TestToString_Invalid()
+    public static void ToString_InvalidFormat_ThrowsFormatException()
     {
         Assert.Throws<FormatException>(() => s_testGuid.ToString("Y")); // Invalid format
         Assert.Throws<FormatException>(() => s_testGuid.ToString("XX")); // Invalid format

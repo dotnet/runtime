@@ -19,7 +19,7 @@ public static class StringTests
     [InlineData(new char[] { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', '\0', 'i', 'j' }, "abcdefgh")]
     [InlineData(new char[] { 'a', '\0' }, "a")]
     [InlineData(new char[] { '\0' }, "")]
-    public static unsafe void TestCtor_CharPtr(char[] valueArray, string expected)
+    public static unsafe void Ctor_CharPtr(char[] valueArray, string expected)
     {
         fixed (char* value = valueArray)
         {
@@ -28,7 +28,7 @@ public static class StringTests
     }
 
     [Fact]
-    public static unsafe void TestCtor_CharPtr_Empty()
+    public static unsafe void Ctor_CharPtr_Empty()
     {
         Assert.Same(string.Empty, new string((char*)null));
     }
@@ -41,7 +41,7 @@ public static class StringTests
     [InlineData(new char[] { '\0' }, 0, 1, "\0")]
     [InlineData(new char[] { 'a', 'b', 'c' }, 0, 0, "")]
     [InlineData(new char[] { 'a', 'b', 'c' }, 1, 0, "")]
-    public static unsafe void TestCtor_CharPtr_Int_Int(char[] valueArray, int startIndex, int length, string expected)
+    public static unsafe void Ctor_CharPtr_Int_Int(char[] valueArray, int startIndex, int length, string expected)
     {
         fixed (char* value = valueArray)
         {
@@ -50,13 +50,13 @@ public static class StringTests
     }
 
     [Fact]
-    public static unsafe void TestCtor_CharPtr_Int_Int_Empty()
+    public static unsafe void Ctor_CharPtr_Int_Int_Empty()
     {
         Assert.Same(string.Empty, new string((char*)null, 0, 0));
     }
 
     [Fact]
-    public static unsafe void TestCtor_CharPtr_Int_Int_Invalid()
+    public static unsafe void Ctor_CharPtr_Int_Int_Invalid()
     {
         var valueArray = new char[] { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', '\0' };
 
@@ -86,13 +86,13 @@ public static class StringTests
     [InlineData('a', 9, "aaaaaaaaa")]
     [InlineData('\0', 1, "\0")]
     [InlineData('\0', 2, "\0\0")]
-    public static void TestCtor_Char_Int(char c, int count, string expected)
+    public static void Ctor_Char_Int(char c, int count, string expected)
     {
         Assert.Equal(expected, new string(c, count));
     }
 
     [Fact]
-    public static void TestCtor_Char_Int_Invalid()
+    public static void Ctor_Char_Int_Negative_Count_ThrowsArgumentOutOfRangeException()
     {
         Assert.Throws<ArgumentOutOfRangeException>("count", () => new string('a', -1)); // Count < 0
     }
@@ -107,7 +107,7 @@ public static class StringTests
     [InlineData(new char[] { 'П', 'Р', 'И', 'В', 'Е', 'Т' }, 0, 6, "ПРИВЕТ")]
     [InlineData(new char[0], 0, 0, "")]
     [InlineData(null, 0, 0, "")]
-    public static void TestCtor_CharArray(char[] value, int startIndex, int length, string expected)
+    public static void Ctor_CharArray(char[] value, int startIndex, int length, string expected)
     {
         if (value == null)
         {
@@ -122,7 +122,7 @@ public static class StringTests
     }
 
     [Fact]
-    public static void TestCtor_CharArray_Invalid()
+    public static void Ctor_CharArray_Invalid()
     {
         var value = new char[] { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h' };
 
@@ -141,13 +141,13 @@ public static class StringTests
     [InlineData("Hello", 3, 'l')]
     [InlineData("Hello", 4, 'o')]
     [InlineData("\0", 0, '\0')]
-    public static void TestGetItem(string s, int index, char expected)
+    public static void Item_Get(string s, int index, char expected)
     {
         Assert.Equal(expected, s[index]);
     }
 
     [Fact]
-    public static void TestGetItem_Invalid()
+    public static void Item_Get_InvalidIndex_ThrowsIndexOutOfRangeException()
     {
         Assert.Throws<IndexOutOfRangeException>(() => "Hello"[-1]); // Index < 0
         Assert.Throws<IndexOutOfRangeException>(() => "Hello"[5]); // Index >= string.Length
@@ -159,7 +159,7 @@ public static class StringTests
     [InlineData("\0", 1)]
     [InlineData("abc", 3)]
     [InlineData("hello", 5)]
-    public static void TestLength(string s, int expected)
+    public static void Length(string s, int expected)
     {
         Assert.Equal(expected, s.Length);
     }
@@ -200,7 +200,7 @@ public static class StringTests
 
     [Theory]
     [MemberData(nameof(Concat_Strings_TestData))]
-    public static void TestConcat_String(string[] values, string expected)
+    public static void Concat_String(string[] values, string expected)
     {
         if (values.Length == 2)
         {
@@ -252,7 +252,7 @@ public static class StringTests
 
     [Theory]
     [MemberData(nameof(Concat_Objects_TestData))]
-    public static void TestConcat_Objects(object[] values, string expected)
+    public static void Concat_Objects(object[] values, string expected)
     {
         if (values.Length == 1)
         {
@@ -275,7 +275,7 @@ public static class StringTests
     }
 
     [Fact]
-    public static void TestConcat_Invalid()
+    public static void Concat_Invalid()
     {
         Assert.Throws<ArgumentNullException>("values", () => string.Concat((IEnumerable<string>)null)); // Values is null
         Assert.Throws<ArgumentNullException>("values", () => string.Concat(null)); // Values is null
@@ -292,7 +292,7 @@ public static class StringTests
     [InlineData("Hello", 0, 7, 3, new char[] { '\0', '\0', '\0', '\0', '\0', '\0', '\0', 'H', 'e', 'l' })]
     [InlineData("Hello", 5, 10, 0, new char[] { '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0' })]
     [InlineData("H" + c_SoftHyphen + "ello", 0, 0, 3, new char[] { 'H', '\u00AD', 'e' })]
-    public static void TestCopyTo(string s, int sourceIndex, int destinationIndex, int count, char[] expected)
+    public static void CopyTo(string s, int sourceIndex, int destinationIndex, int count, char[] expected)
     {
         char[] dst = new char[expected.Length];
         s.CopyTo(sourceIndex, dst, destinationIndex, count);
@@ -300,7 +300,7 @@ public static class StringTests
     }
 
     [Fact]
-    public static void TestCopyTo_Invalid()
+    public static void CopyTo_Invalid()
     {
         string s = "Hello";
         char[] dst = new char[10];
@@ -407,7 +407,7 @@ public static class StringTests
     [InlineData(null, 0, null, 0, 0, StringComparison.OrdinalIgnoreCase, 0)]
     [InlineData("Hello", 0, null, 0, 5, StringComparison.OrdinalIgnoreCase, 1)]
     [InlineData(null, 0, "Hello", 0, 5, StringComparison.OrdinalIgnoreCase, -1)]
-    public static void TestCompare(string strA, int indexA, string strB, int indexB, int length, StringComparison comparisonType, int expected)
+    public static void Compare(string strA, int indexA, string strB, int indexB, int length, StringComparison comparisonType, int expected)
     {
         bool hasNullInputs = (strA == null || strB == null);
         bool indexesReferToEntireString = (strA != null && strB != null && indexA == 0 && indexB == 0 && (length == strB.Length || length == strA.Length));
@@ -454,14 +454,14 @@ public static class StringTests
     }
 
     [Fact]
-    public static void TestCompare_LongString()
+    public static void Compare_LongString()
     {
         int result = string.Compare("{Policy_PS_Nothing}", 0, "<NamedPermissionSets><PermissionSet class=\u0022System.Security.NamedPermissionSet\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022 Name=\u0022FullTrust\u0022 Description=\u0022{Policy_PS_FullTrust}\u0022/><PermissionSet class=\u0022System.Security.NamedPermissionSet\u0022version=\u00221\u0022 Name=\u0022Everything\u0022 Description=\u0022{Policy_PS_Everything}\u0022><Permission class=\u0022System.Security.Permissions.IsolatedStorageFilePermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><Permission class=\u0022System.Security.Permissions.EnvironmentPermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><Permission class=\u0022System.Security.Permissions.FileIOPermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><Permission class=\u0022System.Security.Permissions.FileDialogPermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><Permission class=\u0022System.Security.Permissions.ReflectionPermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><Permission class=\u0022System.Security.Permissions.SecurityPermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Flags=\u0022Assertion, UnmanagedCode, Execution, ControlThread, ControlEvidence, ControlPolicy, ControlAppDomain, SerializationFormatter, ControlDomainPolicy, ControlPrincipal, RemotingConfiguration, Infrastructure, BindingRedirects\u0022/><Permission class=\u0022System.Security.Permissions.UIPermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Net.SocketPermission, System, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Net.WebPermission, System, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Net.DnsPermission, System, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Security.Permissions.KeyContainerPermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><Permission class=\u0022System.Security.Permissions.RegistryPermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Drawing.Printing.PrintingPermission, System.Drawing, Version={VERSION}, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Diagnostics.EventLogPermission, System, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Security.Permissions.StorePermission, System, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022 version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Diagnostics.PerformanceCounterPermission, System, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Data.OleDb.OleDbPermission, System.Data, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022 version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Data.SqlClient.SqlClientPermission, System.Data, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022 version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Security.Permissions.DataProtectionPermission, System.Security, Version={VERSION}, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a\u0022 version=\u00221\u0022 Unrestricted=\u0022true\u0022/></PermissionSet><PermissionSet class=\u0022System.Security.NamedPermissionSet\u0022version=\u00221\u0022 Name=\u0022Nothing\u0022 Description=\u0022{Policy_PS_Nothing}\u0022/><PermissionSet class=\u0022System.Security.NamedPermissionSet\u0022version=\u00221\u0022 Name=\u0022Execution\u0022 Description=\u0022{Policy_PS_Execution}\u0022><Permission class=\u0022System.Security.Permissions.SecurityPermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Flags=\u0022Execution\u0022/></PermissionSet><PermissionSet class=\u0022System.Security.NamedPermissionSet\u0022version=\u00221\u0022 Name=\u0022SkipVerification\u0022 Description=\u0022{Policy_PS_SkipVerification}\u0022><Permission class=\u0022System.Security.Permissions.SecurityPermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Flags=\u0022SkipVerification\u0022/></PermissionSet></NamedPermissionSets>", 4380, 19, StringComparison.Ordinal);
         Assert.True(result < 0);
     }
 
     [Fact]
-    public static void TestCompare_Invalid()
+    public static void Compare_Invalid()
     {
         // Invalid comparison type
         Assert.Throws<ArgumentException>("comparisonType", () => string.Compare("a", "bb", StringComparison.CurrentCulture - 1));
@@ -491,7 +491,7 @@ public static class StringTests
     }
 
     [Fact]
-    public static void TestCompareOrdinal_Invalid()
+    public static void CompareOrdinal_Invalid()
     {
         // IndexA < 0 or IndexA > strA.Length
         Assert.Throws<ArgumentOutOfRangeException>("indexA", () => string.CompareOrdinal("a", -1, "bb", 0, 0));
@@ -513,13 +513,13 @@ public static class StringTests
     [InlineData("", "", true)]
     [InlineData("", "hello", false)]
     [InlineData("Hello", "", true)]
-    public static void TestContains(string s, string value, bool expected)
+    public static void Contains(string s, string value, bool expected)
     {
         Assert.Equal(expected, s.Contains(value));
     }
 
     [Fact]
-    public static void TestContains_Null_ThrowsArgumentNullException()
+    public static void Contains_NullValue_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>("value", () => "foo".Contains(null));
     }
@@ -584,7 +584,7 @@ public static class StringTests
     [InlineData("Hello", "llo" + c_SoftHyphen, StringComparison.OrdinalIgnoreCase, false)]
     [InlineData("", "", StringComparison.OrdinalIgnoreCase, true)]
     [InlineData("", "a", StringComparison.OrdinalIgnoreCase, false)]
-    public static void TestEndsWith(string s, string value, StringComparison comparisonType, bool expected)
+    public static void EndsWith(string s, string value, StringComparison comparisonType, bool expected)
     {
         if (comparisonType == StringComparison.CurrentCulture)
         {
@@ -598,7 +598,7 @@ public static class StringTests
     [InlineData(StringComparison.CurrentCultureIgnoreCase)]
     [InlineData(StringComparison.Ordinal)]
     [InlineData(StringComparison.OrdinalIgnoreCase)]
-    public static void TestEndsWith_NullInStrings(StringComparison comparison)
+    public static void EndsWith_NullInStrings(StringComparison comparison)
     {
         Assert.True("\0test".EndsWith("test", comparison));
         Assert.True("te\0st".EndsWith("e\0st", comparison));
@@ -608,7 +608,7 @@ public static class StringTests
     }
 
     [Fact]
-    public static void TestEndsWith_Invalid()
+    public static void EndsWith_Invalid()
     {
         // Value is null
         Assert.Throws<ArgumentNullException>("value", () => "foo".EndsWith(null));
@@ -623,7 +623,7 @@ public static class StringTests
     [Theory]
     [InlineData("abc")]
     [InlineData("")]
-    public static void TestGetEnumerator_NonGeneric(string s)
+    public static void GetEnumerator_NonGeneric(string s)
     {
         IEnumerable enumerable = s;
         IEnumerator enumerator = enumerable.GetEnumerator();
@@ -643,7 +643,7 @@ public static class StringTests
     }
 
     [Fact]
-    public static void TestGetEnumerator_NonGeneric_IsIDisposable()
+    public static void GetEnumerator_NonGeneric_IsIDisposable()
     {
         IEnumerable enumerable = "abc";
         IEnumerator enumerator = enumerable.GetEnumerator();
@@ -662,7 +662,7 @@ public static class StringTests
     }
 
     [Fact]
-    public static void TestGetEnumerator_NonGeneric_Invalid()
+    public static void GetEnumerator_NonGeneric_Invalid()
     {
         IEnumerable enumerable = "foo";
         IEnumerator enumerator = enumerable.GetEnumerator();
@@ -683,7 +683,7 @@ public static class StringTests
     [Theory]
     [InlineData("abc")]
     [InlineData("")]
-    public static void TestGetEnumerator_Generic(string s)
+    public static void GetEnumerator_Generic(string s)
     {
         IEnumerable<char> enumerable = s;
         IEnumerator<char> enumerator = enumerable.GetEnumerator();
@@ -703,7 +703,7 @@ public static class StringTests
     }
 
     [Fact]
-    public static void TestGetEnumerator_Generic_Invalid()
+    public static void GetEnumerator_Generic_Invalid()
     {
         IEnumerable<char> enumerable = "foo";
         IEnumerator<char> enumerator = enumerable.GetEnumerator();
@@ -799,7 +799,7 @@ public static class StringTests
     [InlineData("", "Hello", StringComparison.OrdinalIgnoreCase, false)]
     [InlineData("", "", StringComparison.OrdinalIgnoreCase, true)]
     [InlineData("123", 123, StringComparison.OrdinalIgnoreCase, false)] // Not a string
-    public static void TestEquals(string s1, object obj, StringComparison comparisonType, bool expected)
+    public static void Equals(string s1, object obj, StringComparison comparisonType, bool expected)
     {
         string s2 = obj as string;
         if (s1 != null)
@@ -835,7 +835,7 @@ public static class StringTests
     [Theory]
     [InlineData(StringComparison.CurrentCulture -1)]
     [InlineData(StringComparison.OrdinalIgnoreCase + 1)]
-    public static void TestEquals_InvalidComparisonType_ThrowsArgumentOutOfRangeException(StringComparison comparisonType)
+    public static void Equals_InvalidComparisonType_ThrowsArgumentOutOfRangeException(StringComparison comparisonType)
     {
         // Invalid comparison type
         Assert.Throws<ArgumentException>("comparisonType", () => string.Equals("a", "b", comparisonType));
@@ -843,7 +843,7 @@ public static class StringTests
     }
 
     [Fact]
-    public static void TestFormat()
+    public static void Format()
     {
         string s = string.Format(null, "0 = {0} 1 = {1} 2 = {2} 3 = {3} 4 = {4}", "zero", "one", "two", "three", "four");
         Assert.Equal("0 = zero 1 = one 2 = two 3 = three 4 = four", s);
@@ -854,7 +854,7 @@ public static class StringTests
     }
 
     [Fact]
-    public static void TestFormat_Invalid()
+    public static void Format_Invalid()
     {
         var formatter = new TestFormatter();
         var obj1 = new object();
@@ -915,7 +915,7 @@ public static class StringTests
     [InlineData("Hello", 'x', 1, 4, -1)]
     [InlineData("Hello", 'o', 5, 0, -1)]
     [InlineData("H" + c_SoftHyphen + "ello", 'e', 0, 3, 2)]
-    public static void TestIndexOf_SingleLetter(string s, char target, int startIndex, int count, int expected)
+    public static void IndexOf_SingleLetter(string s, char target, int startIndex, int count, int expected)
     {
         if (count + startIndex == s.Length)
         {
@@ -944,14 +944,14 @@ public static class StringTests
     [InlineData("Hello", "lo\0", -1)]
     [InlineData("Hello", "\0lo", -1)]
     [InlineData("Hello", "l\0o", -1)]
-    public static void TestIndexOf_NullInStrings(string s, string value, int expected)
+    public static void IndexOf_NullInStrings(string s, string value, int expected)
     {
         Assert.Equal(expected, s.IndexOf(value));
     }
 
     [Theory]
     [MemberData(nameof(AllSubstringsAndComparisons), new object[] { "abcde" })]
-    public static void TestIndexOf_AllSubstrings(string s, string value, int startIndex, StringComparison comparison)
+    public static void IndexOf_AllSubstrings(string s, string value, int startIndex, StringComparison comparison)
     {
         bool ignoringCase = comparison == StringComparison.OrdinalIgnoreCase || comparison == StringComparison.CurrentCultureIgnoreCase;
 
@@ -978,7 +978,7 @@ public static class StringTests
     }
 
     [Fact]
-    public static void TestIndexOf_TurkishI()
+    public static void IndexOf_TurkishI()
     {
         string s = "Turkish I \u0131s TROUBL\u0130NG!";
         PerformActionWithCulture(new CultureInfo("tr-TR"), () =>
@@ -1021,7 +1021,7 @@ public static class StringTests
     }
 
     [Fact]
-    public static void TestIndexOf_HungarianDoubleCompression()
+    public static void IndexOf_HungarianDoubleCompression()
     {
         string source = "dzsdzs";
         string target = "ddzs";
@@ -1050,7 +1050,7 @@ public static class StringTests
     }
 
     [Fact]
-    public static void TestIndexOf_EquivalentDiacritics()
+    public static void IndexOf_EquivalentDiacritics()
     {
         string s = "Exhibit a\u0300\u00C0";
         string value = "\u00C0";
@@ -1087,7 +1087,7 @@ public static class StringTests
     }
 
     [Fact]
-    public static void TestIndexOf_CyrillicE()
+    public static void IndexOf_CyrillicE()
     {
         string s = "Foo\u0400Bar";
         string value = "\u0400";
@@ -1124,7 +1124,7 @@ public static class StringTests
     }
 
     [Fact]
-    public static void TestIndexOf_Invalid()
+    public static void IndexOf_Invalid()
     {
         // Value is null
         Assert.Throws<ArgumentNullException>("value", () => "foo".IndexOf(null));
@@ -1176,7 +1176,7 @@ public static class StringTests
     [InlineData("Hello", new char[0], 2, 3, -1)]
     [InlineData("H" + c_SoftHyphen + "ello", new char[] { 'a', '\u00AD', 'c' }, 0, 2, 1)]
     [InlineData("", new char[] { 'd', 'e', 'f' }, 0, 0, -1)]
-    public static void TestIndexOfAny(string s, char[] anyOf, int startIndex, int count, int expected)
+    public static void IndexOfAny(string s, char[] anyOf, int startIndex, int count, int expected)
     {
         if (startIndex + count == s.Length)
         {
@@ -1190,7 +1190,7 @@ public static class StringTests
     }
 
     [Fact]
-    public static void TestIndexOfAny_Invalid()
+    public static void IndexOfAny_Invalid()
     {
         // AnyOf is null
         Assert.Throws<ArgumentNullException>("anyOf", () => "foo".IndexOfAny(null));
@@ -1223,13 +1223,13 @@ public static class StringTests
     [InlineData("Hello", 5, "!$%", "Hello!$%")]
     [InlineData("Hello", 3, "", "Hello")]
     [InlineData("", 0, "", "")]
-    public static void TestInsert(string s, int startIndex, string value, string expected)
+    public static void Insert(string s, int startIndex, string value, string expected)
     {
         Assert.Equal(expected, s.Insert(startIndex, value));
     }
 
     [Fact]
-    public static void TestInsert_Invalid()
+    public static void Insert_Invalid()
     {
         Assert.Throws<ArgumentNullException>("value", () => "Hello".Insert(0, null)); // Value is null
 
@@ -1242,7 +1242,7 @@ public static class StringTests
     [InlineData("", true)]
     [InlineData("foo", false)]
     [InlineData("   ", false)]
-    public static void TestIsNullOrEmpty(string value, bool expected)
+    public static void IsNullOrEmpty(string value, bool expected)
     {
         Assert.Equal(expected, string.IsNullOrEmpty(value));
     }
@@ -1265,7 +1265,7 @@ public static class StringTests
 
     [Theory]
     [MemberData(nameof(IsNullOrWhitespace_TestData))]
-    public static void TestIsNullOrWhitespace(string value, bool expected)
+    public static void IsNullOrWhitespace(string value, bool expected)
     {
         Assert.Equal(expected, string.IsNullOrWhiteSpace(value));
     }
@@ -1280,7 +1280,7 @@ public static class StringTests
     [InlineData("$$", new string[] { "Foo", "Bar", "Baz" }, 0, 3, "Foo$$Bar$$Baz")]
     [InlineData("$$", new string[] { "Foo", "Bar", "Baz" }, 3, 0, "")]
     [InlineData("$$", new string[] { "Foo", "Bar", "Baz" }, 1, 1, "Bar")]
-    public static void TestJoin_StringArray(string seperator, string[] values, int startIndex, int count, string expected)
+    public static void Join_StringArray(string seperator, string[] values, int startIndex, int count, string expected)
     {
         if (startIndex + count == values.Length && count != 0)
         {
@@ -1299,7 +1299,7 @@ public static class StringTests
     }
 
     [Fact]
-    public static void TestJoin_StringArray_Invalid()
+    public static void Join_StringArray_Invalid()
     {
         // Values is null
         Assert.Throws<ArgumentNullException>("value", () => string.Join("$$", null));
@@ -1331,7 +1331,7 @@ public static class StringTests
 
     [Theory]
     [MemberData(nameof(Join_ObjectArray_TestData))]
-    public static void TestJoin_ObjectArray(string seperator, object[] values, string expected)
+    public static void Join_ObjectArray(string seperator, object[] values, string expected)
     {
         Assert.Equal(expected, string.Join(seperator, values));
         if (!(values.Length > 0 && values[0] == null))
@@ -1341,7 +1341,7 @@ public static class StringTests
     }
 
     [Fact]
-    public static void TestJoin_ObjectArray_Null_ThrowsArgumentNullException()
+    public static void Join_ObjectArray_Null_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>("values", () => string.Join("$$", (object[])null));
         Assert.Throws<ArgumentNullException>("values", () => string.Join("--", (IEnumerable<object>)null));
@@ -1362,7 +1362,7 @@ public static class StringTests
     [InlineData("Hello", 'l', 0, 1, -1)]
     [InlineData("Hello", 'x', 3, 4, -1)]
     [InlineData("H" + c_SoftHyphen + "ello", 'H', 2, 3, 0)]
-    public static void TestLastIndexOf_SingleLetter(string s, char value, int startIndex, int count, int expected)
+    public static void LastIndexOf_SingleLetter(string s, char value, int startIndex, int count, int expected)
     {
         if (count == s.Length)
         {
@@ -1391,14 +1391,14 @@ public static class StringTests
     [InlineData("Hello", "lo\0", -1)]
     [InlineData("Hello", "\0lo", -1)]
     [InlineData("Hello", "l\0o", -1)]
-    public static void TestLastIndexOf_NullInStrings(string s, string value, int expected)
+    public static void LastIndexOf_NullInStrings(string s, string value, int expected)
     {
         Assert.Equal(expected, s.LastIndexOf(value));
     }
 
     [Theory]
     [MemberData(nameof(AllSubstringsAndComparisons), new object[] { "abcde" })]
-    public static void TestLastIndexOf_AllSubstrings(string s, string value, int startIndex, StringComparison comparisonType)
+    public static void LastIndexOf_AllSubstrings(string s, string value, int startIndex, StringComparison comparisonType)
     {
         bool ignoringCase = comparisonType == StringComparison.OrdinalIgnoreCase || comparisonType == StringComparison.CurrentCultureIgnoreCase;
 
@@ -1429,7 +1429,7 @@ public static class StringTests
     }
 
     [Fact]
-    public static void TestLastIndexOf_Invalid()
+    public static void LastIndexOf_Invalid()
     {
         string s = "foo";
 
@@ -1476,7 +1476,7 @@ public static class StringTests
     }
 
     [Fact]
-    public static void TestLastIndexOf_TurkishI()
+    public static void LastIndexOf_TurkishI()
     {
         string s = "Turkish I \u0131s TROUBL\u0130NG!";
         PerformActionWithCulture(new CultureInfo("tr-TR"), () =>
@@ -1522,7 +1522,7 @@ public static class StringTests
     [InlineData("foo", 2)]
     [InlineData("hello", 4)]
     [InlineData("", 0)]
-    public static void TestLastIndexOf_EmptyString(string s, int expected)
+    public static void LastIndexOf_EmptyString(string s, int expected)
     {
         Assert.Equal(expected, s.LastIndexOf("", StringComparison.OrdinalIgnoreCase));
     }
@@ -1535,7 +1535,7 @@ public static class StringTests
     [InlineData("Hello", new char[0], 2, 3, -1)]
     [InlineData("H" + c_SoftHyphen + "ello", new char[] { 'a', '\u00AD', 'c' }, 2, 3, 1)]
     [InlineData("", new char[] { 'd', 'e', 'f' }, -1, -1, -1)]
-    public static void TestLastIndexOfAny(string s, char[] anyOf, int startIndex, int count, int expected)
+    public static void LastIndexOfAny(string s, char[] anyOf, int startIndex, int count, int expected)
     {
         if (count == startIndex + 1)
         {
@@ -1549,7 +1549,7 @@ public static class StringTests
     }
 
     [Fact]
-    public static void TestLastIndexOfAny_Invalid()
+    public static void LastIndexOfAny_Invalid()
     {
         // AnyOf is null
         Assert.Throws<ArgumentNullException>(() => "foo".LastIndexOfAny(null));
@@ -1577,7 +1577,7 @@ public static class StringTests
     [InlineData("Hello", 7, ' ', "  Hello")]
     [InlineData("Hello", 7, '.', "..Hello")]
     [InlineData("", 0, '.', "")]
-    public static void TestPadLeft(string s, int totalWidth, char paddingChar, string expected)
+    public static void PadLeft(string s, int totalWidth, char paddingChar, string expected)
     {
         if (paddingChar == ' ')
         {
@@ -1587,7 +1587,7 @@ public static class StringTests
     }
 
     [Fact]
-    public static void TestPadLeft_NegativeTotalWidth_ThrowsArgumentOutOfRangeException()
+    public static void PadLeft_NegativeTotalWidth_ThrowsArgumentOutOfRangeException()
     {
         Assert.Throws<ArgumentOutOfRangeException>("totalWidth", () => "".PadLeft(-1, '.'));
     }
@@ -1597,7 +1597,7 @@ public static class StringTests
     [InlineData("Hello", 7, ' ', "Hello  ")]
     [InlineData("Hello", 7, '.', "Hello..")]
     [InlineData("", 0, '.', "")]
-    public static void TestPadRight(string s, int totalWidth, char paddingChar, string expected)
+    public static void PadRight(string s, int totalWidth, char paddingChar, string expected)
     {
         if (paddingChar == ' ')
         {
@@ -1607,7 +1607,7 @@ public static class StringTests
     }
 
     [Fact]
-    public static void TestPadRight_NegativeTotalWidth_ThrowsArgumentOutOfRangeException()
+    public static void PadRight_NegativeTotalWidth_ThrowsArgumentOutOfRangeException()
     {
         Assert.Throws<ArgumentOutOfRangeException>("totalWidth", () => "".PadRight(-1, '.'));
     }
@@ -1619,7 +1619,7 @@ public static class StringTests
     [InlineData("Hello", 5, 0, "Hello")]
     [InlineData("Hello", 0, 0, "Hello")]
     [InlineData("", 0, 0, "")]
-    public static void TestRemove(string s, int startIndex, int count, string expected)
+    public static void Remove(string s, int startIndex, int count, string expected)
     {
         if (startIndex + count == s.Length && count != 0)
         {
@@ -1629,7 +1629,7 @@ public static class StringTests
     }
 
     [Fact]
-    public static void TestRemove_Invalid()
+    public static void Remove_Invalid()
     {
         string s = "Hello";
 
@@ -1652,7 +1652,7 @@ public static class StringTests
     [Theory]
     [InlineData("Hello", 'l', '!', "He!!o")]
     [InlineData("Hello", 'a', 'b', "Hello")]
-    public static void TestReplace_Char_Char(string s, char oldChar, char newChar, string expected)
+    public static void Replace_Char_Char(string s, char oldChar, char newChar, string expected)
     {
         Assert.Equal(expected, s.Replace(oldChar, newChar));
     }
@@ -1660,7 +1660,7 @@ public static class StringTests
     [Theory]
     [InlineData("XYZ", '1', '2')]
     [InlineData("", '1', '2')]
-    public static void TestReplace_Char_Char_DoesntAllocateIfNothingIsReplaced(string s, char oldChar, char newChar)
+    public static void Replace_Char_Char_DoesntAllocateIfNothingIsReplaced(string s, char oldChar, char newChar)
     {
         Assert.Same(s, s.Replace(oldChar, newChar));
     }
@@ -1680,7 +1680,7 @@ public static class StringTests
     [InlineData("Aa1Bbb1Cccc1Ddddd1Eeeeee1Fffffff", "1", "23", "Aa23Bbb23Cccc23Ddddd23Eeeeee23Fffffff")]
     [InlineData("11111111111111111111111", "1", "11", "1111111111111111111111111111111111111111111111")] //  Checks if we handle the max # of matches
     [InlineData("11111111111111111111111", "1", "", "")] // Checks if we handle the max # of matches
-    public static void TestReplace_String_String(string s, string oldValue, string newValue, string expected)
+    public static void Replace_String_String(string s, string oldValue, string newValue, string expected)
     {
         Assert.Equal(expected, s.Replace(oldValue, newValue));
     }
@@ -1688,13 +1688,13 @@ public static class StringTests
     [Theory]
     [InlineData("XYZ", "1", "2")]
     [InlineData("", "1", "2")]
-    public static void TestReplace_String_String_DoesntAllocateIfNothingIsReplaced(string s, string oldValue, string newValue)
+    public static void Replace_String_String_DoesntAllocateIfNothingIsReplaced(string s, string oldValue, string newValue)
     {
         Assert.Same(s, s.Replace(oldValue, newValue));
     }
 
     [Fact]
-    public static void TestReplace_String_StringInvalid()
+    public static void Replace_String_StringInvalid()
     {
         Assert.Throws<ArgumentNullException>("oldValue", () => "Hello".Replace(null, "")); // Old value is null
         Assert.Throws<ArgumentException>("oldValue", () => "Hello".Replace("", "l")); // Old value is empty
@@ -1766,7 +1766,7 @@ public static class StringTests
     [InlineData("Hello", c_SoftHyphen + "Hel", StringComparison.OrdinalIgnoreCase, false)]
     [InlineData("", "", StringComparison.OrdinalIgnoreCase, true)]
     [InlineData("", "hello", StringComparison.OrdinalIgnoreCase, false)]
-    public static void TestStartsWith(string s, string value, StringComparison comparisonType, bool expected)
+    public static void StartsWith(string s, string value, StringComparison comparisonType, bool expected)
     {
         if (comparisonType == StringComparison.CurrentCulture)
         {
@@ -1780,7 +1780,7 @@ public static class StringTests
     [InlineData(StringComparison.CurrentCultureIgnoreCase)]
     [InlineData(StringComparison.Ordinal)]
     [InlineData(StringComparison.OrdinalIgnoreCase)]
-    public static void TestStartsWith_NullInStrings(StringComparison comparison)
+    public static void StartsWith_NullInStrings(StringComparison comparison)
     {
         Assert.False("\0test".StartsWith("test", comparison));
         Assert.False("te\0st".StartsWith("test", comparison));
@@ -1790,7 +1790,7 @@ public static class StringTests
     }
 
     [Fact]
-    public static void TestStartsWith_Invalid()
+    public static void StartsWith_Invalid()
     {
         string s = "Hello";
 
@@ -1811,7 +1811,7 @@ public static class StringTests
     [InlineData("Hello", 2, 3, "llo")]
     [InlineData("Hello", 5, 0, "")]
     [InlineData("", 0, 0, "")]
-    public static void TestSubstring(string s, int startIndex, int length, string expected)
+    public static void Substring(string s, int startIndex, int length, string expected)
     {
         if (startIndex + length == s.Length)
         {
@@ -1821,7 +1821,7 @@ public static class StringTests
     }
 
     [Fact]
-    public static void TestSubstring_Invalid()
+    public static void Substring_Invalid()
     {
         // Start index < 0
         Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => "foo".Substring(-1));
@@ -1845,7 +1845,7 @@ public static class StringTests
     [InlineData("Hello", 2, 3, new char[] { 'l', 'l', 'o' })]
     [InlineData("Hello", 5, 0, new char[0])]
     [InlineData("", 0, 0, new char[0])]
-    public static void TestToCharArray(string s, int startIndex, int length, char[] expected)
+    public static void ToCharArray(string s, int startIndex, int length, char[] expected)
     {
         if (startIndex == 0 && length == s.Length)
         {
@@ -1855,7 +1855,7 @@ public static class StringTests
     }
 
     [Fact]
-    public static void TestToCharArray_Invalid()
+    public static void ToCharArray_Invalid()
     {
         // StartIndex < 0 or startIndex > string.Length
         Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => "foo".ToCharArray(-1, 0));
@@ -1874,13 +1874,13 @@ public static class StringTests
     [InlineData("HELLO", "hello")]
     [InlineData("hello", "hello")]
     [InlineData("", "")]
-    public static void TestToLower(string s, string expected)
+    public static void ToLower(string s, string expected)
     {
         Assert.Equal(expected, s.ToLower());
     }
 
     [Fact]
-    public static void TestToLower_TurkishI()
+    public static void ToLower_TurkishI()
     {
         PerformActionWithCulture(new CultureInfo("tr-TR"), () =>
         {
@@ -1908,7 +1908,7 @@ public static class StringTests
     [InlineData("HELLO", "hello")]
     [InlineData("hello", "hello")]
     [InlineData("", "")]
-    public static void TestToLowerInvariant(string s, string expected)
+    public static void ToLowerInvariant(string s, string expected)
     {
         Assert.Equal(expected, s.ToLowerInvariant());
     }
@@ -1916,7 +1916,7 @@ public static class StringTests
     [Theory]
     [InlineData("")]
     [InlineData("hello")]
-    public static void TestToString(string s)
+    public static void ToString(string s)
     {
         Assert.Same(s, s.ToString());
     }
@@ -1925,13 +1925,13 @@ public static class StringTests
     [InlineData("hello", "HELLO")]
     [InlineData("HELLO", "HELLO")]
     [InlineData("", "")]
-    public static void TestToUpper(string s, string expected)
+    public static void ToUpper(string s, string expected)
     {
         Assert.Equal(expected, s.ToUpper());
     }
 
     [Fact]
-    public static void TestToUpper_TurkishI()
+    public static void ToUpper_TurkishI()
     {
         PerformActionWithCulture(new CultureInfo("tr-TR"), () =>
         {
@@ -1959,13 +1959,13 @@ public static class StringTests
     [InlineData("hello", "HELLO")]
     [InlineData("HELLO", "HELLO")]
     [InlineData("", "")]
-    public static void TestToUpperInvariant(string s, string expected)
+    public static void ToUpperInvariant(string s, string expected)
     {
         Assert.Equal(expected, s.ToUpperInvariant());
     }
 
     [Fact]
-    public static void TestToLowerToUpperInvariant_ASCII()
+    public static void ToLowerToUpperInvariant_ASCII()
     {
         var asciiChars = new char[128];
         var asciiCharsUpper = new char[128];
@@ -1998,7 +1998,7 @@ public static class StringTests
     [InlineData("  Hello  ", new char[0], "Hello")]
     [InlineData("      \t      ", null, "")]
     [InlineData("", null, "")]
-    public static void TestTrim(string s, char[] trimChars, string expected)
+    public static void Trim(string s, char[] trimChars, string expected)
     {
         if (trimChars == null || trimChars.Length == 0 || (trimChars.Length == 1 && trimChars[0] == ' '))
         {
@@ -2016,7 +2016,7 @@ public static class StringTests
     [InlineData("  Hello  ", new char[0], "  Hello")]
     [InlineData("      \t      ", null, "")]
     [InlineData("", null, "")]
-    public static void TestTrimEnd(string s, char[] trimChars, string expected)
+    public static void TrimEnd(string s, char[] trimChars, string expected)
     {
         if (trimChars == null || trimChars.Length == 0 || (trimChars.Length == 1 && trimChars[0] == ' '))
         {
@@ -2034,7 +2034,7 @@ public static class StringTests
     [InlineData("  Hello  ", new char[0], "Hello  ")]
     [InlineData("      \t      ", null, "")]
     [InlineData("", null, "")]
-    public static void TestTrimStart(string s, char[] trimChars, string expected)
+    public static void TrimStart(string s, char[] trimChars, string expected)
     {
         if (trimChars == null || trimChars.Length == 0 || (trimChars.Length == 1 && trimChars[0] == ' '))
         {
@@ -2044,7 +2044,7 @@ public static class StringTests
     }
 
     [Fact]
-    public static void TestEqualityOperators()
+    public static void EqualityOperators()
     {
         var s1 = new string(new char[] { 'a' });
         var s1a = new string(new char[] { 'a' });
@@ -2095,10 +2095,7 @@ public static class StringTests
 
     private class ObjectWithNullToString
     {
-        public override string ToString()
-        {
-            return null;
-        }
+        public override string ToString() => null;
     }
 
     private class TestFormatter : IFormatProvider, ICustomFormatter

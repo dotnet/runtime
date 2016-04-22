@@ -10,7 +10,7 @@ public static class MissingMethodExceptionTests
     private const int COR_E_MISSINGMETHOD = unchecked((int)0x80131513);
 
     [Fact]
-    public static void TestCtor_Empty()
+    public static void Ctor_Empty()
     {
         var exception = new MissingMethodException();
         Assert.NotEmpty(exception.Message);
@@ -18,7 +18,7 @@ public static class MissingMethodExceptionTests
     }
 
     [Fact]
-    public static void TestCtor_String()
+    public static void Ctor_String()
     {
         string message = "Created MissingMethodException";
         var exception = new MissingMethodException(message);
@@ -27,7 +27,7 @@ public static class MissingMethodExceptionTests
     }
 
     [Fact]
-    public static void TestCtor_Exception()
+    public static void Ctor_String_Exception()
     {
         string message = "Created MissingMethodException";
         var innerException = new Exception("Created inner exception");

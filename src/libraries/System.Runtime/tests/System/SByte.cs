@@ -10,27 +10,27 @@ using Xunit;
 public static class SByteTests
 {
     [Fact]
-    public static void TestCtor_Empty()
+    public static void Ctor_Empty()
     {
         var i = new sbyte();
         Assert.Equal(0, i);
     }
 
     [Fact]
-    public static void TestCtor_Value()
+    public static void Ctor_Value()
     {
         sbyte i = 41;
         Assert.Equal(41, i);
     }
 
     [Fact]
-    public static void TestMaxValue()
+    public static void MaxValue()
     {
         Assert.Equal(0x7F, sbyte.MaxValue);
     }
 
     [Fact]
-    public static void TestMinValue()
+    public static void MinValue()
     {
         Assert.Equal(-0x80, sbyte.MinValue);
     }
@@ -43,7 +43,7 @@ public static class SByteTests
     [InlineData((sbyte)114, (sbyte)123, -1)]
     [InlineData((sbyte)114, sbyte.MaxValue, -1)]
     [InlineData((sbyte)114, null, 1)]
-    public static void TestCompareTo(sbyte i, object value, int expected)
+    public static void CompareTo(sbyte i, object value, int expected)
     {
         if (value is sbyte)
         {
@@ -55,7 +55,7 @@ public static class SByteTests
     }
 
     [Fact]
-    public static void TestCompareTo_Invalid()
+    public static void CompareTo_ObjectNotSByte_ThrowsArgumentException()
     {
         IComparable comparable = (sbyte)114;
         Assert.Throws<ArgumentException>(null, () => comparable.CompareTo("a")); // Obj is not a sbyte
@@ -72,7 +72,7 @@ public static class SByteTests
     [InlineData((sbyte)78, null, false)]
     [InlineData((sbyte)78, "78", false)]
     [InlineData((sbyte)78, 78, false)]
-    public static void TestEquals(sbyte i1, object obj, bool expected)
+    public static void Equals(sbyte i1, object obj, bool expected)
     {
         if (obj is sbyte)
         {
@@ -105,7 +105,7 @@ public static class SByteTests
 
     [Theory]
     [MemberData(nameof(ToString_TestData))]
-    public static void TestToString(sbyte i, string format, IFormatProvider provider, string expected)
+    public static void ToString(sbyte i, string format, IFormatProvider provider, string expected)
     {
         // Format is case insensitive
         string upperFormat = format.ToUpperInvariant();
@@ -136,25 +136,11 @@ public static class SByteTests
     }
 
     [Fact]
-    public static void TestToString_Invalid()
+    public static void ToString_InvalidFormat_ThrowsFormatException()
     {
-        var numberFormat = new NumberFormatInfo();
-
-        sbyte i1 = 63;
-        Assert.Equal("63", i1.ToString("G", numberFormat));
-
-        sbyte i2 = 82;
-        Assert.Equal("82", i2.ToString("g", numberFormat));
-
-        numberFormat.NegativeSign = "xx"; // setting it to trash to make sure it doesn't show up
-        numberFormat.NumberGroupSeparator = "*";
-        numberFormat.NumberNegativePattern = 0;
-        numberFormat.NumberDecimalSeparator = ".";
-        sbyte i3 = 24;
-        Assert.Equal("24.00", i3.ToString("N", numberFormat));
-
-        sbyte i4 = -10;
-        Assert.Equal("F6", i4.ToString("X", numberFormat));
+        IComparable comparable = (sbyte)123;
+        Assert.Throws<ArgumentException>(null, () => comparable.CompareTo("a")); // Obj is not a sbyte
+        Assert.Throws<ArgumentException>(null, () => comparable.CompareTo(234)); // Obj is not a sbyte
     }
 
     public static IEnumerable<object[]> ParseValidData()
@@ -213,7 +199,7 @@ public static class SByteTests
 
     [Theory]
     [MemberData(nameof(Parse_Valid_TestData))]
-    public static void TestParse(string value, NumberStyles style, IFormatProvider provider, sbyte expected)
+    public static void Parse(string value, NumberStyles style, IFormatProvider provider, sbyte expected)
     {
         sbyte result;
         // If no style is specified, use the (String) or (String, IFormatProvider) overload
@@ -281,7 +267,7 @@ public static class SByteTests
 
     [Theory]
     [MemberData(nameof(Parse_Invalid_TestData))]
-    public static void TestParse_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
+    public static void Parse_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
     {
         sbyte result;
         // If no style is specified, use the (String) or (String, IFormatProvider) overload
@@ -314,7 +300,7 @@ public static class SByteTests
     [Theory]
     [InlineData(NumberStyles.HexNumber | NumberStyles.AllowParentheses)]
     [InlineData(unchecked((NumberStyles)0xFFFFFC00))]
-    public static void TestTryParse_InvalidNumberStyle_ThrowsArgumentException(NumberStyles style)
+    public static void TryParse_InvalidNumberStyle_ThrowsArgumentException(NumberStyles style)
     {
         sbyte result = 0;
         Assert.Throws<ArgumentException>(() => sbyte.TryParse("1", style, null, out result));

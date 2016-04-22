@@ -60,7 +60,6 @@ public class CollectionTestBase
                 _calledMembers |= IListApi.IndexerGet;
                 return default(T);
             }
-
             set
             {
                 _calledMembers |= IListApi.IndexerSet;

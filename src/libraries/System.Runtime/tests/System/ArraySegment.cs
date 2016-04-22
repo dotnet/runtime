@@ -5,13 +5,12 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-
 using Xunit;
 
 public static class ArraySegmentTests
 {
     [Fact]
-    public static void TestCtor_Empty()
+    public static void Ctor_Empty()
     {
         var segment = new ArraySegment<int>();
         Assert.Null(segment.Array);
@@ -22,7 +21,7 @@ public static class ArraySegmentTests
     [Theory]
     [InlineData(new int[] { 7, 8, 9, 10, 11 })]
     [InlineData(new int[0])]
-    public static void TestCtor_Array(int[] array)
+    public static void Ctor_Array(int[] array)
     {
         var segment = new ArraySegment<int>(array);
 
@@ -32,7 +31,7 @@ public static class ArraySegmentTests
     }
 
     [Fact]
-    public static void TestCtor_Array_Invalid()
+    public static void Ctor_Array_NullArray_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>("array", () => new ArraySegment<int>(null)); // Array is null
     }
@@ -41,7 +40,7 @@ public static class ArraySegmentTests
     [InlineData(new int[] { 7, 8, 9, 10, 11 }, 2, 3)]
     [InlineData(new int[] { 7, 8, 9, 10, 11 }, 0, 5)]
     [InlineData(new int[0], 0, 0)]
-    public static void TestCtor_Array_Int_Int(int[] array, int offset, int count)
+    public static void Ctor_Array_Int_Int(int[] array, int offset, int count)
     {
         var segment = new ArraySegment<int>(array, offset, count);
 
@@ -51,7 +50,7 @@ public static class ArraySegmentTests
     }
 
     [Fact]
-    public static void TestCtor_Array_Int_Int_Invalid()
+    public static void Ctor_Array_Int_Int_Invalid()
     {
         Assert.Throws<ArgumentNullException>("array", () => new ArraySegment<int>(null, 0, 0)); // Array is null
 
@@ -83,7 +82,7 @@ public static class ArraySegmentTests
 
     [Theory]
     [MemberData(nameof(Equals_TestData))]
-    public static void TestEquals(ArraySegment<int> segment1, object obj, bool expected)
+    public static void Equals(ArraySegment<int> segment1, object obj, bool expected)
     {
         if (obj is ArraySegment<int>)
         {
@@ -98,7 +97,7 @@ public static class ArraySegmentTests
     }
 
     [Fact]
-    public static void TestIList_GetSetItem()
+    public static void IList_GetSetItem()
     {
         var intArray = new int[] { 7, 8, 9, 10, 11, 12, 13 };
         var segment = new ArraySegment<int>(intArray, 2, 3);
@@ -116,7 +115,7 @@ public static class ArraySegmentTests
     }
 
     [Fact]
-    public static void TestIList_GetSetItem_Invalid()
+    public static void IList_GetSetItem_Invalid()
     {
         IList<int> iList = new ArraySegment<int>();
         Assert.Throws<InvalidOperationException>(() => iList[0]); // Array is null
@@ -132,7 +131,7 @@ public static class ArraySegmentTests
     }
 
     [Fact]
-    public static void TestIReadOnlyList_GetItem()
+    public static void IReadOnlyList_GetItem()
     {
         var intArray = new int[] { 7, 8, 9, 10, 11, 12, 13 };
         var seg = new ArraySegment<int>(intArray, 2, 3);
@@ -144,7 +143,7 @@ public static class ArraySegmentTests
     }
 
     [Fact]
-    public static void TestIReadOnlyList_GetItem_Invalid()
+    public static void IReadOnlyList_GetItem_Invalid()
     {
         IReadOnlyList<int> iList = new ArraySegment<int>();
         Assert.Throws<InvalidOperationException>(() => iList[0]); // Array is null
@@ -156,7 +155,7 @@ public static class ArraySegmentTests
     }
 
     [Fact]
-    public static void TestIList_IndexOf()
+    public static void IList_IndexOf()
     {
         var intArray = new int[] { 7, 8, 9, 10, 11, 12, 13 };
         var segment = new ArraySegment<int>(intArray, 2, 3);
@@ -171,14 +170,14 @@ public static class ArraySegmentTests
     }
 
     [Fact]
-    public static void TestIList_IndexOf_Invalid()
+    public static void IList_IndexOf_NullArray_ThrowsInvalidOperationException()
     {
         IList<int> iList = new ArraySegment<int>();
         Assert.Throws<InvalidOperationException>(() => iList.IndexOf(0)); // Array is null
     }
 
     [Fact]
-    public static void TestIList_CantBeModified()
+    public static void IList_ModifyingCollection_ThrowsNotSupportedException()
     {
         var intArray = new int[] { 7, 8, 9, 10, 11, 12, 13 };
         var segment = new ArraySegment<int>(intArray, 2, 3);
@@ -193,7 +192,7 @@ public static class ArraySegmentTests
     }
 
     [Fact]
-    public static void TestIList_Contains()
+    public static void IList_Contains()
     {
         var intArray = new int[] { 7, 8, 9, 10, 11, 12, 13 };
         var segment = new ArraySegment<int>(intArray, 2, 3);
@@ -208,14 +207,14 @@ public static class ArraySegmentTests
     }
 
     [Fact]
-    public static void TestIList_Contains_Invalid()
+    public static void IList_Contains_NullArray_ThrowsInvalidOperationException()
     {
         IList<int> iList = new ArraySegment<int>();
         Assert.Throws<InvalidOperationException>(() => iList.Contains(0)); // Array is null
     }
 
     [Fact]
-    public static void TestIList_GetEnumerator()
+    public static void IList_GetEnumerator()
     {
         var intArray = new int[] { 7, 8, 9, 10, 11, 12, 13 };
         IList<int> iList = new ArraySegment<int>(intArray, 2, 3);
@@ -236,7 +235,7 @@ public static class ArraySegmentTests
     }
 
     [Fact]
-    public static void TestIList_GetEnumerator_Invalid()
+    public static void IList_GetEnumerator_Invalid()
     {
         var intArray = new int[] { 7, 8, 9, 10, 11, 12, 13 };
         IList<int> iList = new ArraySegment<int>(intArray, 2, 3);
@@ -259,7 +258,7 @@ public static class ArraySegmentTests
     }
 
     [Fact]
-    public static void TestIEnumerable_GetEnumerator()
+    public static void IEnumerable_GetEnumerator()
     {
         var intArray = new int[] { 7, 8, 9, 10, 11, 12, 13 };
         var segment = new ArraySegment<int>(intArray, 2, 3);
@@ -281,7 +280,7 @@ public static class ArraySegmentTests
     }
 
     [Fact]
-    public static void TestIEnumerable_GetEnumerator_Invalid()
+    public static void IEnumerable_GetEnumerator_Invalid()
     {
         var intArray = new int[] { 7, 8, 9, 10, 11, 12, 13 };
         IEnumerable enumerable = new ArraySegment<int>(intArray, 2, 3);
@@ -304,7 +303,7 @@ public static class ArraySegmentTests
     }
 
     [Fact]
-    public static void TestIList_CopyTo()
+    public static void IList_CopyTo()
     {
         var stringArray = new string[] { "0", "1", "2", "3", "4" };
         IList<string> stringSegment = new ArraySegment<string>(stringArray, 1, 3);
@@ -328,7 +327,7 @@ public static class ArraySegmentTests
     }
 
     [Fact]
-    public static void TestIList_CopyTo_Invalid()
+    public static void IList_CopyTo_Invalid()
     {
         IList<int> iList = new ArraySegment<int>();
         Assert.Throws<InvalidOperationException>(() => iList.CopyTo(new int[7], 0)); // Array is null

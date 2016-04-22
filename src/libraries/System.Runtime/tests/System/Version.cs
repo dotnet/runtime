@@ -10,14 +10,14 @@ public class VersionTests
 {
     [Theory]
     [MemberData(nameof(Parse_Valid_TestData))]
-    public static void TestCtor_String(string input, Version expected)
+    public static void Ctor_String(string input, Version expected)
     {
         Assert.Equal(expected, new Version(input));
     }
 
     [Theory]
     [MemberData(nameof(Parse_Invalid_TestData))]
-    public static void TestCtor_String_Invalid(string input, Type exceptionType)
+    public static void Ctor_String_Invalid(string input, Type exceptionType)
     {
         Assert.Throws(exceptionType, () => new Version(input)); // Input is invalid
     }
@@ -26,13 +26,13 @@ public class VersionTests
     [InlineData(0, 0)]
     [InlineData(2, 3)]
     [InlineData(int.MaxValue, int.MaxValue)]
-    public static void TestCtor_Int_Int(int major, int minor)
+    public static void Ctor_Int_Int(int major, int minor)
     {
         VerifyVersion(new Version(major, minor), major, minor, -1, -1);
     }
 
     [Fact]
-    public static void TestCtor_Int_Int_Invalid()
+    public static void Ctor_Int_Int_Invalid()
     {
         Assert.Throws<ArgumentOutOfRangeException>("major", () => new Version(-1, 0)); // Major < 0
         Assert.Throws<ArgumentOutOfRangeException>("minor", () => new Version(0, -1)); // Minor < 0
@@ -42,13 +42,13 @@ public class VersionTests
     [InlineData(0, 0, 0)]
     [InlineData(2, 3, 4)]
     [InlineData(int.MaxValue, int.MaxValue, int.MaxValue)]
-    public static void TestCtor_Int_Int_Int(int major, int minor, int build)
+    public static void Ctor_Int_Int_Int(int major, int minor, int build)
     {
         VerifyVersion(new Version(major, minor, build), major, minor, build, -1);
     }
 
     [Fact]
-    public static void TestCtor_Int_Int_Int_Invalid()
+    public static void Ctor_Int_Int_Int_Invalid()
     {
         Assert.Throws<ArgumentOutOfRangeException>("major", () => new Version(-1, 0, 0)); // Major < 0
         Assert.Throws<ArgumentOutOfRangeException>("minor", () => new Version(0, -1, 0)); // Minor < 0
@@ -66,13 +66,13 @@ public class VersionTests
     [InlineData(2, 3, 4, 2147450879)]
     [InlineData(2, 3, 4, 2147418112)]
     [InlineData(int.MaxValue, int.MaxValue, int.MaxValue, int.MaxValue)]
-    public static void TestCtor_Int_Int_Int_Int(int major, int minor, int build, int revision)
+    public static void Ctor_Int_Int_Int_Int(int major, int minor, int build, int revision)
     {
         VerifyVersion(new Version(major, minor, build, revision), major, minor, build, revision);
     }
 
     [Fact]
-    public static void TestCtor_Int_Int_Int_Int_Invalid()
+    public static void Ctor_Int_Int_Int_Int_Invalid()
     {
         Assert.Throws<ArgumentOutOfRangeException>("major", () => new Version(-1, 0, 0, 0)); // Major < 0
         Assert.Throws<ArgumentOutOfRangeException>("minor", () => new Version(0, -1, 0, 0)); // Minor < 0
@@ -80,7 +80,7 @@ public class VersionTests
         Assert.Throws<ArgumentOutOfRangeException>("revision", () => new Version(0, 0, 0, -1)); // Revision < 0
     }
 
-    public static IEnumerable<object[]> CompareToTestData()
+    public static IEnumerable<object[]> CompareTo_TestData()
     {
         yield return new object[] { new Version(1, 2), null, 1 };
         yield return new object[] { new Version(1, 2), new Version(1, 2), 0 };
@@ -103,8 +103,8 @@ public class VersionTests
     }
 
     [Theory]
-    [MemberData(nameof(CompareToTestData))]
-    public static void TestCompareTo(Version version1, Version version2, int expectedSign)
+    [MemberData(nameof(CompareTo_TestData))]
+    public static void CompareTo(Version version1, Version version2, int expectedSign)
     {
         Assert.Equal(expectedSign, Math.Sign(version1.CompareTo(version2)));
         if (version1 != null && version2 != null)
@@ -136,7 +136,7 @@ public class VersionTests
     }
 
     [Fact]
-    public static void TestCompareTo_Invalid()
+    public static void CompareTo_Invalid()
     {
         IComparable comparable = new Version(1, 1);
         Assert.Throws<ArgumentException>(null, () => comparable.CompareTo(1)); // Obj is not a version
@@ -150,7 +150,7 @@ public class VersionTests
         Assert.Throws<ArgumentNullException>("v1", () => nullVersion <= testVersion); // V1 is null
     }
 
-    private static IEnumerable<object[]> EqualsTestData()
+    private static IEnumerable<object[]> Equals_TestData()
     {
         yield return new object[] { new Version(2, 3), new Version(2, 3), true };
         yield return new object[] { new Version(2, 3), new Version(2, 4), false };
@@ -173,8 +173,8 @@ public class VersionTests
     }
 
     [Theory]
-    [MemberData(nameof(EqualsTestData))]
-    public static void TestEquals(Version version1, object obj, bool expected)
+    [MemberData(nameof(Equals_TestData))]
+    public static void Equals(Version version1, object obj, bool expected)
     {
         Version version2 = obj as Version;
 
@@ -202,7 +202,7 @@ public class VersionTests
 
     [Theory]
     [MemberData(nameof(Parse_Valid_TestData))]
-    public static void TestParse(string input, Version expected)
+    public static void Parse(string input, Version expected)
     {
         Assert.Equal(expected, Version.Parse(input));
 
@@ -244,15 +244,16 @@ public class VersionTests
 
     [Theory]
     [MemberData(nameof(Parse_Invalid_TestData))]
-    public static void TestParse_Invalid(string input, Type exceptionType)
+    public static void Parse_Invalid(string input, Type exceptionType)
     {
         Assert.Throws(exceptionType, () => Version.Parse(input));
+
         Version version;
         Assert.False(Version.TryParse(input, out version));
         Assert.Null(version);
     }
 
-    public static IEnumerable<object[]> ToStringTestData()
+    public static IEnumerable<object[]> ToString_TestData()
     {
         yield return new object[] { new Version(1, 2), new string[] { "", "1", "1.2" } };
         yield return new object[] { new Version(1, 2, 3), new string[] { "", "1", "1.2", "1.2.3" } };
@@ -260,8 +261,8 @@ public class VersionTests
     }
 
     [Theory]
-    [MemberData(nameof(ToStringTestData))]
-    public static void TestToString(Version version, string[] expected)
+    [MemberData(nameof(ToString_TestData))]
+    public static void ToString(Version version, string[] expected)
     {
         for (int i = 0; i < expected.Length; i++)
         {

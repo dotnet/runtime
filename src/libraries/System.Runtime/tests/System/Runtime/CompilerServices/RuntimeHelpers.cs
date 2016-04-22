@@ -4,13 +4,12 @@
 
 using System;
 using System.Runtime.CompilerServices;
-
 using Xunit;
 
 public static class RuntimeHelpersTests
 {
     [Fact]
-    public static void TestGetHashCode()
+    public static void GetHashCodeTest()
     {
         // Int32 RuntimeHelpers.GetHashCode(Object)
         object obj1 = new object();
@@ -42,16 +41,14 @@ public static class RuntimeHelpersTests
 
             TestStruct that = (TestStruct)obj;
 
-            return this.i1 == that.i1 && this.i2 == that.i2;
+            return i1 == that.i1 && i2 == that.i2;
         }
-        public override int GetHashCode()
-        {
-            return i1 ^ i2;
-        }
+
+        public override int GetHashCode() =>  i1 ^ i2;
     }
 
     [Fact]
-    public static unsafe void TestGetObjectValue()
+    public static unsafe void GetObjectValue()
     {
         // Object RuntimeHelpers.GetObjectValue(Object)
         TestStruct t = new TestStruct() { i1 = 2, i2 = 4 };
@@ -68,7 +65,7 @@ public static class RuntimeHelpersTests
     }
 
     [Fact]
-    public static unsafe void TestOffsetToStringData()
+    public static unsafe void OffsetToStringData()
     {
         // RuntimeHelpers.OffsetToStringData
         char[] expectedValues = new char[] { 'a', 'b', 'c', 'd', 'e', 'f' };
@@ -84,14 +81,14 @@ public static class RuntimeHelpersTests
     }
 
     [Fact]
-    public static void TestInitializeArray()
+    public static void InitializeArray()
     {
         // Void RuntimeHelpers.InitializeArray(Array, RuntimeFieldHandle)
         char[] expected = new char[] { 'a', 'b', 'c' }; // Compiler will use RuntimeHelpers.InitializeArrary these
     }
 
     [Fact]
-    public static void TestRunClassConstructor()
+    public static void RunClassConstructor()
     {
         RuntimeTypeHandle t = typeof(HasCctor).TypeHandle;
         RuntimeHelpers.RunClassConstructor(t);

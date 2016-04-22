@@ -20,13 +20,13 @@ public class ReadOnlyCollection : CollectionTestBase
     private static readonly ReadOnlyCollection<int> s_empty = new ReadOnlyCollection<int>(new int[0]);
 
     [Fact]
-    public static void CreateFromNull()
+    public static void Ctor_NullList_ThrowsArgumentNullException()
     {
-        Assert.Throws<ArgumentNullException>(() => new ReadOnlyCollection<int>(null));
+        Assert.Throws<ArgumentNullException>("list", () => new ReadOnlyCollection<int>(null));
     }
 
     [Fact]
-    public static void CreateFromIList()
+    public static void Ctor_IList()
     {
         var collection = new TestCollection<int>(s_intArray);
         Assert.Same(s_intArray, collection.GetItems());
@@ -41,21 +41,26 @@ public class ReadOnlyCollection : CollectionTestBase
     }
 
     [Fact]
-    public static void Indexer()
+    public static void Item_Get()
     {
         var collection = new Collection<int>(s_intArray);
         for (int i = 0; i < s_intArray.Length; i++)
         {
             Assert.Equal(s_intArray[i], collection[i]);
         }
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => { var x = collection[-1]; });
-        Assert.Throws<ArgumentOutOfRangeException>(() => { var x = collection[s_intArray.Length]; });
-        Assert.Throws<ArgumentOutOfRangeException>(() => { var x = s_empty[0]; });
     }
 
     [Fact]
-    public static void IsReadOnly()
+    public static void Item_Get_InvalidIndex_ThrowsArgumentOutOfRangeException()
+    {
+        var collection = new Collection<int>(s_intArray);
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => collection[-1]);
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => collection[s_intArray.Length]);
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => s_empty[0]);
+    }
+
+    [Fact]
+    public static void IsReadOnly_ReturnsTrue()
     {
         var collection = new ReadOnlyCollection<int>(s_intArray);
         Assert.True(((IList)collection).IsReadOnly);
@@ -150,11 +155,11 @@ public class ReadOnlyCollection : CollectionTestBase
     }
 
     [Fact]
-    public void MutatingMethodsThrow()
+    public void ModifyingCollection_ThrowsNotSupportedException()
     {
         var collection = (IList<int>)new ReadOnlyCollection<int>(s_intArray);
 
-        Assert.Throws<NotSupportedException>(() => { collection[0] = 0; });
+        Assert.Throws<NotSupportedException>(() => collection[0] = 0);
         Assert.Throws<NotSupportedException>(() => collection.Add(0));
         Assert.Throws<NotSupportedException>(() => collection.Clear());
         Assert.Throws<NotSupportedException>(() => collection.Insert(0, 0));
@@ -168,9 +173,6 @@ public class ReadOnlyCollection : CollectionTestBase
         {
         }
 
-        public IList<T> GetItems()
-        {
-            return this.Items;
-        }
+        public IList<T> GetItems() => Items;
     }
 }

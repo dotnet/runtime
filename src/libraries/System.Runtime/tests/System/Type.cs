@@ -8,14 +8,12 @@ using Xunit;
 
 internal class Outside
 {
-    public class Inside
-    { }
+    public class Inside { }
 }
 
 internal class Outside<T>
 {
-    public class Inside<U>
-    { }
+    public class Inside<U> { }
 }
 
 public static class TypeTests
@@ -27,7 +25,7 @@ public static class TypeTests
     [InlineData(typeof(Outside.Inside[]), null)]
     [InlineData(typeof(Outside<int>), null)]
     [InlineData(typeof(Outside<int>.Inside<double>), typeof(Outside<>))]
-    public static void TestDeclaringType(Type t, Type expected)
+    public static void DeclaringType(Type t, Type expected)
     {
         Assert.Equal(expected, t.DeclaringType);
     }
@@ -37,7 +35,7 @@ public static class TypeTests
     [InlineData(typeof(int[]))]
     [InlineData(typeof(IList<int>))]
     [InlineData(typeof(IList<>))]
-    public static void TestGenericParameterPositionInvalid(Type t)
+    public static void GenericParameterPosition_Invalid(Type t)
     {
         Assert.Throws<InvalidOperationException>(() => t.GenericParameterPosition);
     }
@@ -47,7 +45,7 @@ public static class TypeTests
     [InlineData(typeof(IDictionary<int, string>), new[] { typeof(int), typeof(string) })]
     [InlineData(typeof(IList<int>), new[] { typeof(int) })]
     [InlineData(typeof(IList<>), new Type[0])]
-    public static void TestGenericTypeArguments(Type t, Type[] expected)
+    public static void GenericTypeArguments(Type t, Type[] expected)
     {
         Type[] result = t.GenericTypeArguments;
         Assert.Equal(expected.Length, result.Length);
@@ -62,7 +60,7 @@ public static class TypeTests
     [InlineData(typeof(int[]), true)]
     [InlineData(typeof(IList<int>), false)]
     [InlineData(typeof(IList<>), false)]
-    public static void TestHasElementType(Type t, bool expected)
+    public static void HasElementType(Type t, bool expected)
     {
         Assert.Equal(expected, t.HasElementType);
     }
@@ -72,7 +70,7 @@ public static class TypeTests
     [InlineData(typeof(int[]), true)]
     [InlineData(typeof(IList<int>), false)]
     [InlineData(typeof(IList<>), false)]
-    public static void TestIsArray(Type t, bool expected)
+    public static void IsArray(Type t, bool expected)
     {
         Assert.Equal(expected, t.IsArray);
     }
@@ -82,7 +80,7 @@ public static class TypeTests
     [InlineData(typeof(int[]), false)]
     [InlineData(typeof(IList<int>), false)]
     [InlineData(typeof(IList<>), false)]
-    public static void TestIsByRef(Type t, bool expected)
+    public static void IsByRef(Type t, bool expected)
     {
         Assert.Equal(expected, t.IsByRef);
         Assert.True(t.MakeByRefType().IsByRef);
@@ -94,7 +92,7 @@ public static class TypeTests
     [InlineData(typeof(IList<int>), false)]
     [InlineData(typeof(IList<>), false)]
     [InlineData(typeof(int *), true)]
-    public static void testIsPointer(Type t, bool expected)
+    public static void IsPointer(Type t, bool expected)
     {
         Assert.Equal(expected, t.IsPointer);
         Assert.True(t.MakePointerType().IsPointer);
@@ -105,7 +103,7 @@ public static class TypeTests
     [InlineData(typeof(int[]), false)]
     [InlineData(typeof(IList<int>), true)]
     [InlineData(typeof(IList<>), false)]
-    public static void TestIsConstructedGenericType(Type t, bool expected)
+    public static void IsConstructedGenericType(Type t, bool expected)
     {
         Assert.Equal(expected, t.IsConstructedGenericType);
     }
@@ -115,7 +113,7 @@ public static class TypeTests
     [InlineData(typeof(int[]), false)]
     [InlineData(typeof(IList<int>), false)]
     [InlineData(typeof(IList<>), false)]
-    public static void TestIsGenericParameter(Type t, bool expected)
+    public static void IsGenericParameter(Type t, bool expected)
     {
         Assert.Equal(expected, t.IsGenericParameter);
     }
@@ -127,7 +125,7 @@ public static class TypeTests
     [InlineData(typeof(Outside.Inside[]), false)]
     [InlineData(typeof(Outside<int>), false)]
     [InlineData(typeof(Outside<int>.Inside<double>), true)]
-    public static void TestIsNested(Type t, bool expected)
+    public static void IsNested(Type t, bool expected)
     {
         Assert.Equal(expected, t.IsNested);
     }
@@ -136,7 +134,7 @@ public static class TypeTests
     [InlineData(typeof(int), typeof(int))]
     [InlineData(typeof(int[]), typeof(int[]))]
     [InlineData(typeof(Outside<int>), typeof(Outside<int>))]
-    public static void TestTypeHandle(Type t1, Type t2)
+    public static void TypeHandle(Type t1, Type t2)
     {
         RuntimeTypeHandle r1 = t1.TypeHandle;
         RuntimeTypeHandle r2 = t2.TypeHandle;
@@ -147,7 +145,7 @@ public static class TypeTests
     }
 
     [Fact]
-    public static void TestGetTypeFromDefaultHandle()
+    public static void GetTypeFromDefaultHandle()
     {
         Assert.Null(Type.GetTypeFromHandle(default(RuntimeTypeHandle)));
     }
@@ -155,7 +153,7 @@ public static class TypeTests
     [Theory]
     [InlineData(typeof(int[]), 1)]
     [InlineData(typeof(int[,,]), 3)]
-    public static void TestGetArrayRank(Type t, int expected)
+    public static void GetArrayRank(Type t, int expected)
     {
         Assert.Equal(expected, t.GetArrayRank());
     }
@@ -164,7 +162,7 @@ public static class TypeTests
     [InlineData(typeof(int))]
     [InlineData(typeof(IList<int>))]
     [InlineData(typeof(IList<>))]
-    public static void TestGetArrayRankInvalid(Type t)
+    public static void GetArrayRank_Invalid(Type t)
     {
         Assert.Throws<ArgumentException>(() => t.GetArrayRank());
     }
@@ -176,14 +174,14 @@ public static class TypeTests
     [InlineData(typeof(Outside<int>.Inside<double>[]), typeof(Outside<int>.Inside<double>))]
     [InlineData(typeof(Outside<int>), null)]
     [InlineData(typeof(Outside<int>.Inside<double>), null)]
-    public static void TestGetElementType(Type t, Type expected)
+    public static void GetElementType(Type t, Type expected)
     {
         Assert.Equal(expected, t.GetElementType());
     }
 
     [Theory]
     [InlineData(typeof(int), typeof(int[]))]
-    public static void TestMakeArrayType(Type t, Type tArrayExpected)
+    public static void MakeArrayType(Type t, Type tArrayExpected)
     {
         Type tArray = t.MakeArrayType();
 
@@ -200,7 +198,7 @@ public static class TypeTests
 
     [Theory]
     [InlineData(typeof(int))]
-    public static void TestMakeByRefType(Type t)
+    public static void MakeByRefType(Type t)
     {
         Type tRef1 = t.MakeByRefType();
         Type tRef2 = t.MakeByRefType();
@@ -227,7 +225,7 @@ public static class TypeTests
     [InlineData("Outside[,,]", typeof(Outside[,,]))]
     [InlineData("Outside[][]", typeof(Outside[][]))]
     [InlineData("Outside`1[System.Nullable`1[System.Boolean]]", typeof(Outside<bool?>))]
-    public static void TestGetTypeByName(string typeName, Type expectedType)
+    public static void GetTypeByName(string typeName, Type expectedType)
     {
         Type t = Type.GetType(typeName, throwOnError: false, ignoreCase: false);
         Assert.Equal(expectedType, t);
@@ -243,7 +241,7 @@ public static class TypeTests
     [InlineData("System.Int32[,*,]", typeof(ArgumentException), false)]
     [InlineData("Outside`2", typeof(TypeLoadException), false)]
     [InlineData("Outside`1[System.Boolean, System.Int32]", typeof(ArgumentException), true)]
-    public static void TestGetTypeByNameInvalid(string typeName, Type expectedException, bool alwaysThrowsException)
+    public static void GetTypeByName_Invalid(string typeName, Type expectedException, bool alwaysThrowsException)
     {
         if (!alwaysThrowsException)
         {

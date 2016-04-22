@@ -12,7 +12,7 @@ public static class DirectoryNotFoundExceptionInteropTests
     [InlineData(HResults.COR_E_DIRECTORYNOTFOUND)]
     [InlineData(HResults.STG_E_PATHNOTFOUND)]
     [InlineData(HResults.CTL_E_PATHNOTFOUND)]
-    public static void TestFrom_HR(int hr)
+    public static void From_HR(int hr)
     {
         DirectoryNotFoundException exception = Marshal.GetExceptionForHR(hr) as DirectoryNotFoundException;
         Assert.NotNull(exception);
