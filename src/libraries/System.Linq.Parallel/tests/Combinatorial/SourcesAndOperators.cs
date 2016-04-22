@@ -49,6 +49,14 @@ namespace System.Linq.Parallel.Tests
             yield return Label("ThenByDescending", (start, count, source) => source(start, count).OrderBy(x => 0).ThenByDescending(x => x, ReverseComparer.Instance));
         }
 
+        private static IEnumerable<LabeledOperation> ReverseOrderOperators()
+        {
+            yield return Label("OrderBy", (start, count, source) => source(start, count).OrderBy(x => x, ReverseComparer.Instance));
+            yield return Label("OrderByDescending", (start, count, source) => source(start, count).OrderByDescending(x => -x, ReverseComparer.Instance));
+            yield return Label("ThenBy", (start, count, source) => source(start, count).OrderBy(x => 0).ThenBy(x => x, ReverseComparer.Instance));
+            yield return Label("ThenByDescending", (start, count, source) => source(start, count).OrderBy(x => 0).ThenByDescending(x => -x, ReverseComparer.Instance));
+        }
+
         public static IEnumerable<object[]> OrderFailingOperators()
         {
             LabeledOperation source = UnorderedRangeSources().First();
@@ -280,26 +288,19 @@ namespace System.Linq.Parallel.Tests
                 // Each binary can work differently, depending on which of the two source queries (or both) is ordered.
 
                 // For most, only the ordering of the first query is important
-                foreach (LabeledOperation operation in BinaryOperations(unordered).Where(op => !(op.ToString().StartsWith("Union") || op.ToString().StartsWith("Zip")) && op.ToString().Contains("Right")))
+                foreach (LabeledOperation operation in BinaryOperations(unordered).Where(op => !(op.ToString().StartsWith("Union") || op.ToString().StartsWith("Zip") || op.ToString().StartsWith("Concat")) && op.ToString().Contains("Right")))
                 {
                     yield return new object[] { source, operation };
                 }
 
-                // Concat currently doesn't play nice if only the right query is ordered via OrderBy et al.  Issue #1332
-                // For Concat, since either one can be ordered the other side has to be tested
-                //foreach (var operation in BinaryOperations().Where(op => op.ToString().Contains("Concat") && op.ToString().Contains("Left")))
-                //{
-                //    yield return new object[] { source, operation };
-                //}
+                // For Concat and Union, both sources must be ordered
+                foreach (var operation in BinaryOperations(RangeSources().First()).Where(op => op.ToString().StartsWith("Concat") || op.ToString().StartsWith("Union")))
+                {
+                    yield return new object[] { source, operation };
+                }
 
                 // Zip is the same as Concat, but has a special check for matching indices (as compared to unordered)
                 foreach (LabeledOperation operation in Zip_Ordered_Operation(unordered))
-                {
-                    yield return new object[] { source, operation };
-                }
-
-                // Union is an odd duck that (currently) orders only the portion that came from an ordered source.
-                foreach (LabeledOperation operation in BinaryOperations(RangeSources().First()).Where(op => op.ToString().StartsWith("Union")))
                 {
                     yield return new object[] { source, operation };
                 }

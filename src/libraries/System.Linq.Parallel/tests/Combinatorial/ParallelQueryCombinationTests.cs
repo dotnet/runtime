@@ -135,6 +135,34 @@ namespace System.Linq.Parallel.Tests
         [Theory]
         [MemberData(nameof(UnaryOperators))]
         [MemberData(nameof(BinaryOperators))]
+        public static void Concat(LabeledOperation source, LabeledOperation operation)
+        {
+            int seen = DefaultStart;
+            foreach (int i in operation.Item(DefaultStart, DefaultSize / 2, source.Item)
+                .Concat(operation.Item(DefaultStart + DefaultSize / 2, DefaultSize / 2, source.Item)))
+            {
+                Assert.Equal(seen++, i);
+            }
+            Assert.Equal(DefaultStart + DefaultSize, seen);
+        }
+
+        [Theory]
+        [MemberData(nameof(UnaryOperators))]
+        [MemberData(nameof(BinaryOperators))]
+        public static void Concat_NotPipelined(LabeledOperation source, LabeledOperation operation)
+        {
+            int seen = DefaultStart;
+            Assert.All(
+                operation.Item(DefaultStart, DefaultSize / 2, source.Item)
+                    .Concat(operation.Item(DefaultStart + DefaultSize / 2, DefaultSize / 2, source.Item)).ToList(),
+                x => Assert.Equal(seen++, x)
+                );
+            Assert.Equal(DefaultStart + DefaultSize, seen);
+        }
+
+        [Theory]
+        [MemberData(nameof(UnaryOperators))]
+        [MemberData(nameof(BinaryOperators))]
         public static void Contains_True(LabeledOperation source, LabeledOperation operation)
         {
             Assert.True(operation.Item(DefaultStart, DefaultSize, source.Item).Contains(DefaultStart + DefaultSize / 2));
@@ -412,6 +440,42 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
+        [ActiveIssue(1155)]
+        [MemberData(nameof(UnaryOperators))]
+        [MemberData(nameof(BinaryOperators))]
+        public static void GroupJoin(LabeledOperation source, LabeledOperation operation)
+        {
+            int seenKey = DefaultStart / GroupFactor;
+            foreach (KeyValuePair<int, IEnumerable<int>> group in operation.Item(DefaultStart / GroupFactor, DefaultSize / GroupFactor, source.Item)
+                .GroupJoin(operation.Item(DefaultStart, DefaultSize, source.Item), x => x, y => y / GroupFactor, (k, g) => new KeyValuePair<int, IEnumerable<int>>(k, g)))
+            {
+                Assert.Equal(seenKey++, group.Key);
+                int seenElement = group.Key * GroupFactor;
+                Assert.All(group.Value, x => Assert.Equal(seenElement++, x));
+                Assert.Equal((group.Key + 1) * GroupFactor, seenElement);
+            }
+            Assert.Equal((DefaultStart + DefaultSize) / GroupFactor, seenKey);
+        }
+
+        [Theory]
+        [ActiveIssue(1155)]
+        [MemberData(nameof(UnaryOperators))]
+        [MemberData(nameof(BinaryOperators))]
+        public static void GroupJoin_NotPipelined(LabeledOperation source, LabeledOperation operation)
+        {
+            int seenKey = DefaultStart / GroupFactor;
+            foreach (KeyValuePair<int, IEnumerable<int>> group in operation.Item(DefaultStart / GroupFactor, DefaultSize / GroupFactor, source.Item)
+                .GroupJoin(operation.Item(DefaultStart, DefaultSize, source.Item), x => x, y => y / GroupFactor, (k, g) => new KeyValuePair<int, IEnumerable<int>>(k, g)).ToList())
+            {
+                Assert.Equal(seenKey++, group.Key);
+                int seenElement = group.Key * GroupFactor;
+                Assert.All(group.Value, x => Assert.Equal(seenElement++, x));
+                Assert.Equal((group.Key + 1) * GroupFactor, seenElement);
+            }
+            Assert.Equal((DefaultStart + DefaultSize) / GroupFactor, seenKey);
+        }
+
+        [Theory]
         [MemberData(nameof(UnaryOperators))]
         [MemberData(nameof(BinaryOperators))]
         public static void Intersect(LabeledOperation source, LabeledOperation operation)
@@ -435,6 +499,40 @@ namespace System.Linq.Parallel.Tests
             ParallelQuery<int> query = operation.Item(DefaultStart - DefaultSize / 2, DefaultSize + DefaultSize / 2, source.Item)
                 .Intersect(operation.Item(DefaultStart, DefaultSize + DefaultSize / 2, source.Item));
             Assert.All(query.ToList(), x => Assert.Equal(seen++, x));
+            Assert.Equal(DefaultStart + DefaultSize, seen);
+        }
+
+        [Theory]
+        [ActiveIssue(1155)]
+        [MemberData(nameof(UnaryOperators))]
+        [MemberData(nameof(BinaryOperators))]
+        public static void Join(LabeledOperation source, LabeledOperation operation)
+        {
+            int seen = DefaultStart;
+            ParallelQuery<KeyValuePair<int, int>> query = operation.Item(DefaultStart / GroupFactor, DefaultSize / GroupFactor, source.Item)
+                  .Join(operation.Item(DefaultStart, DefaultSize, source.Item), x => x, y => y / GroupFactor, (x, y) => new KeyValuePair<int, int>(x, y));
+            foreach (KeyValuePair<int, int> p in query)
+            {
+                Assert.Equal(seen++, p.Value);
+                Assert.Equal(p.Key, p.Value / GroupFactor);
+            }
+            Assert.Equal(DefaultStart + DefaultSize, seen);
+        }
+
+        [Theory]
+        [ActiveIssue(1155)]
+        [MemberData(nameof(UnaryOperators))]
+        [MemberData(nameof(BinaryOperators))]
+        public static void Join_NotPipelined(LabeledOperation source, LabeledOperation operation)
+        {
+            int seen = DefaultStart;
+            ParallelQuery<KeyValuePair<int, int>> query = operation.Item(DefaultStart / GroupFactor, DefaultSize / GroupFactor, source.Item)
+                 .Join(operation.Item(DefaultStart, DefaultSize, source.Item), x => x, y => y / GroupFactor, (x, y) => new KeyValuePair<int, int>(x, y));
+            foreach (KeyValuePair<int, int> p in query.ToList())
+            {
+                Assert.Equal(seen++, p.Value);
+                Assert.Equal(p.Key, p.Value / GroupFactor);
+            }
             Assert.Equal(DefaultStart + DefaultSize, seen);
         }
 
