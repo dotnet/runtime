@@ -24,6 +24,10 @@ add_executable_clr(crossgen
   ${crossgen_RESOURCES}
 )
 
+if(FEATURE_MERGE_JIT_AND_ENGINE)
+    set(CLRJIT_CROSSGEN clrjit_crossgen)
+endif(FEATURE_MERGE_JIT_AND_ENGINE)
+
 target_link_libraries(crossgen
     cee_crossgen
     mdcompiler_crossgen
@@ -31,7 +35,7 @@ target_link_libraries(crossgen
     mdruntimerw_crossgen
     mdhotdata_crossgen
     corguids
-    clrjit_crossgen
+    ${CLRJIT_CROSSGEN}
     gcinfo_crossgen
     corzap_crossgen
     mscorlib_crossgen

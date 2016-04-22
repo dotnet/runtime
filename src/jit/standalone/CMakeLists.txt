@@ -4,6 +4,10 @@ add_definitions(-DSELF_NO_HOST)
 add_definitions(-DFEATURE_READYTORUN_COMPILER)
 remove_definitions(-DFEATURE_MERGE_JIT_AND_ENGINE)
 
+if(CLR_CMAKE_TARGET_ARCH_I386 OR CLR_CMAKE_TARGET_ARCH_ARM)
+  add_definitions(-DLEGACY_BACKEND)
+endif()
+
 if(CLR_CMAKE_PLATFORM_LINUX OR CLR_CMAKE_PLATFORM_NETBSD)
     # This is required to force using our own PAL, not one that we are loaded with.
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic -Bsymbolic-functions")
