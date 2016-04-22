@@ -4548,6 +4548,8 @@ public:
             *pPlatform = CORDB_PLATFORM_POSIX_X86;
         else if(platformKind == IMAGE_FILE_MACHINE_AMD64)
             *pPlatform = CORDB_PLATFORM_POSIX_AMD64;
+        else if(platformKind == IMAGE_FILE_MACHINE_ARMNT)
+            *pPlatform = CORDB_PLATFORM_POSIX_ARM;
         else
             return E_FAIL;
 #else
