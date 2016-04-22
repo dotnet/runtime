@@ -68,6 +68,7 @@ extern "C" {
 #define DEBUG_CLASS_IMAGE_FILE    3
 
 #define IMAGE_FILE_MACHINE_I386              0x014c  // Intel 386.
+#define IMAGE_FILE_MACHINE_ARMNT             0x01c4  // ARM Thumb-2 Little-Endian
 #define IMAGE_FILE_MACHINE_AMD64             0x8664  // AMD64 (K8)
 
 // Execution status codes used for waiting,
