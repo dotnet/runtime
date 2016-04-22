@@ -9,14 +9,14 @@ using Xunit;
 public static class DirectoryNotFoundExceptionTests
 {
     [Fact]
-    public static void TestCtor_Empty()
+    public static void Ctor_Empty()
     {
         var exception = new DirectoryNotFoundException();
         ExceptionUtility.ValidateExceptionProperties(exception, hResult: HResults.COR_E_DIRECTORYNOTFOUND, validateMessage: false);
     }
 
     [Fact]
-    public static void TestCtor_String()
+    public static void Ctor_String()
     {
         string message = "That page was missing from the directory.";
         var exception = new DirectoryNotFoundException(message);
@@ -24,7 +24,7 @@ public static class DirectoryNotFoundExceptionTests
     }
 
     [Fact]
-    public static void TestCtor_String_Exception()
+    public static void Ctor_String_Exception()
     {
         string message = "That page was missing from the directory.";
         var innerException = new Exception("Inner exception");

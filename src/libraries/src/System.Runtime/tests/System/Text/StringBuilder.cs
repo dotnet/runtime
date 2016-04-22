@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
-
 using Xunit;
 
 public static class StringBuilderTests
@@ -16,7 +15,7 @@ public static class StringBuilderTests
     private static StringBuilder StringBuilderWithMultipleChunks() => new StringBuilder(20).Append(s_chunkSplitSource);
 
     [Fact]
-    public static void TestCtor_Empty()
+    public static void Ctor_Empty()
     {
         var builder = new StringBuilder();
         Assert.Same(string.Empty, builder.ToString());
@@ -25,7 +24,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestCtor_Int()
+    public static void Ctor_Int()
     {
         var builder = new StringBuilder(42);
         Assert.Same(string.Empty, builder.ToString());
@@ -35,13 +34,13 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestCtor_Int_Invalid()
+    public static void Ctor_Int_NegativeCapacity_ThrowsArgumentOutOfRangeException()
     {
         Assert.Throws<ArgumentOutOfRangeException>("capacity", () => new StringBuilder(-1)); // Capacity < 0
     }
 
     [Fact]
-    public static void TestCtor_Int_Int()
+    public static void Ctor_Int_Int()
     {
         // The second int parameter is MaxCapacity but in CLR4.0 and later, StringBuilder isn't required to honor it.
         var builder = new StringBuilder(42, 50);
@@ -53,7 +52,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestCtor_Int_Int_Invalid()
+    public static void Ctor_Int_Int_Invalid()
     {
         Assert.Throws<ArgumentOutOfRangeException>("capacity", () => new StringBuilder(-1, 1)); // Capacity < 0
         Assert.Throws<ArgumentOutOfRangeException>("maxCapacity", () => new StringBuilder(0, 0)); // MaxCapacity < 1
@@ -65,7 +64,7 @@ public static class StringBuilderTests
     [InlineData("Hello")]
     [InlineData("")]
     [InlineData(null)]
-    public static void TestCtor_String(string value)
+    public static void Ctor_String(string value)
     {
         var builder = new StringBuilder(value);
 
@@ -78,7 +77,7 @@ public static class StringBuilderTests
     [InlineData("Hello")]
     [InlineData("")]
     [InlineData(null)]
-    public static void TestCtor_String_Int(string value)
+    public static void Ctor_String_Int(string value)
     {
         var builder = new StringBuilder(value, 42);
 
@@ -90,7 +89,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestCtor_String_Int_Invalid()
+    public static void Ctor_String_Int_NegativeCapacity_ThrowsArgumentOutOfRangeException()
     {
         Assert.Throws<ArgumentOutOfRangeException>("capacity", () => new StringBuilder("", -1)); // Capacity < 0
     }
@@ -100,7 +99,7 @@ public static class StringBuilderTests
     [InlineData("Hello", 2, 3)]
     [InlineData("", 0, 0)]
     [InlineData(null, 0, 0)]
-    public static void TestCtor_String_Int_Int_Int(string value, int startIndex, int length)
+    public static void Ctor_String_Int_Int_Int(string value, int startIndex, int length)
     {
         var builder = new StringBuilder(value, startIndex, length, 42);
 
@@ -113,7 +112,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestCtor_String_Int_Int_Int_Invalid()
+    public static void Ctor_String_Int_Int_Int_Invalid()
     {
         Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => new StringBuilder("foo", -1, 0, 0)); // Start index < 0
         Assert.Throws<ArgumentOutOfRangeException>("length", () => new StringBuilder("foo", 0, -1, 0)); // Length < 0
@@ -124,7 +123,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestItem_Get_Set()
+    public static void Item_Get_Set()
     {
         string s = "Hello";
         var builder = new StringBuilder(s);
@@ -141,7 +140,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestItem_Get_Set_Invalid()
+    public static void Item_Get_Set_InvalidIndex()
     {
         var builder = new StringBuilder("Hello");
 
@@ -153,7 +152,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestCapacity_Get_Set()
+    public static void Capacity_Get_Set()
     {
         var builder = new StringBuilder("Hello");
         Assert.True(builder.Capacity >= builder.Length);
@@ -171,7 +170,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestCapacity_Set_Invalid()
+    public static void Capacity_Set_Invalid_ThrowsArgumentOutOfRangeException()
     {
         var builder = new StringBuilder(10, 10);
         builder.Append("Hello");
@@ -181,7 +180,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestLength_Get_Set()
+    public static void Length_Get_Set()
     {
         var builder = new StringBuilder("Hello");
 
@@ -195,7 +194,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestLength_Set_Invalid()
+    public static void Length_Set_InvalidValue_ThrowsArgumentOutOfRangeException()
     {
         var builder = new StringBuilder(10, 10);
         builder.Append("Hello");
@@ -208,7 +207,7 @@ public static class StringBuilderTests
     [InlineData("Hello", (ushort)0, "Hello0")]
     [InlineData("Hello", (ushort)123, "Hello123")]
     [InlineData("", (ushort)456, "456")]
-    public static void TestAppend_UShort(string original, ushort value, string expected)
+    public static void Append_UShort(string original, ushort value, string expected)
     {
         var builder = new StringBuilder(original);
         builder.Append(value);
@@ -216,7 +215,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestAppend_UShort_Invalid()
+    public static void Append_UShort_NoSpareCapacity_ThrowsArgumentOutOfRangeException()
     {
         var builder = new StringBuilder(0, 5);
         builder.Append("Hello");
@@ -228,7 +227,7 @@ public static class StringBuilderTests
     [InlineData("Hello", true, "HelloTrue")]
     [InlineData("Hello", false, "HelloFalse")]
     [InlineData("", false, "False")]
-    public static void TestAppend_Bool(string original, bool value, string expected)
+    public static void Append_Bool(string original, bool value, string expected)
     {
         var builder = new StringBuilder(original);
         builder.Append(value);
@@ -236,7 +235,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestAppend_Bool_Invalid()
+    public static void Append_Bool_NoSpareCapacity_ThrowsArgumentOutOfRangeException()
     {
         var builder = new StringBuilder(0, 5);
         builder.Append("Hello");
@@ -248,7 +247,7 @@ public static class StringBuilderTests
     [InlineData("Hello", (double)0, "Hello0")]
     [InlineData("Hello", 1.23, "Hello1.23")]
     [InlineData("", -4.56, "-4.56")]
-    public static void TestAppend_Decimal(string original, double doubleValue, string expected)
+    public static void Append_Decimal(string original, double doubleValue, string expected)
     {
         var builder = new StringBuilder(original);
         builder.Append(new decimal(doubleValue));
@@ -256,7 +255,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestAppend_Decimal_Invalid()
+    public static void Append_Decimal_NoSpareCapacity_ThrowsArgumentOutOfRangeException()
     {
         var builder = new StringBuilder(0, 5);
         builder.Append("Hello");
@@ -268,7 +267,7 @@ public static class StringBuilderTests
     [InlineData("Hello", (double)0, "Hello0")]
     [InlineData("Hello", 1.23, "Hello1.23")]
     [InlineData("", -4.56, "-4.56")]
-    public static void TestAppend_Double(string original, double value, string expected)
+    public static void Append_Double(string original, double value, string expected)
     {
         var builder = new StringBuilder(original);
         builder.Append(value);
@@ -276,7 +275,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestAppend_Double_Invalid()
+    public static void Append_Double_NoSpareCapacity_ThrowsArgumentOutOfRangeException()
     {
         var builder = new StringBuilder(0, 5);
         builder.Append("Hello");
@@ -288,7 +287,7 @@ public static class StringBuilderTests
     [InlineData("Hello", (short)0, "Hello0")]
     [InlineData("Hello", (short)123, "Hello123")]
     [InlineData("", (short)-456, "-456")]
-    public static void TestAppend_Short(string original, short value, string expected)
+    public static void Append_Short(string original, short value, string expected)
     {
         var builder = new StringBuilder(original);
         builder.Append(value);
@@ -296,7 +295,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestAppend_Short_Invalid()
+    public static void Append_Short_NoSpareCapacity_ThrowsArgumentOutOfRangeException()
     {
         var builder = new StringBuilder(0, 5);
         builder.Append("Hello");
@@ -308,7 +307,7 @@ public static class StringBuilderTests
     [InlineData("Hello", 0, "Hello0")]
     [InlineData("Hello", 123, "Hello123")]
     [InlineData("", -456, "-456")]
-    public static void TestAppend_Int(string original, int value, string expected)
+    public static void Append_Int(string original, int value, string expected)
     {
         var builder = new StringBuilder(original);
         builder.Append(value);
@@ -316,7 +315,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestAppend_Int_Invalid()
+    public static void Append_Int_NoSpareCapacity_ThrowsArgumentOutOfRangeException()
     {
         var builder = new StringBuilder(0, 5);
         builder.Append("Hello");
@@ -328,7 +327,7 @@ public static class StringBuilderTests
     [InlineData("Hello", (long)0, "Hello0")]
     [InlineData("Hello", (long)123, "Hello123")]
     [InlineData("", (long)-456, "-456")]
-    public static void TestAppend_Long(string original, long value, string expected)
+    public static void Append_Long(string original, long value, string expected)
     {
         var builder = new StringBuilder(original);
         builder.Append(value);
@@ -336,7 +335,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestAppend_Long_Invalid()
+    public static void Append_Long_NoSpareCapacity_ThrowsArgumentOutOfRangeException()
     {
         var builder = new StringBuilder(0, 5);
         builder.Append("Hello");
@@ -350,7 +349,7 @@ public static class StringBuilderTests
     [InlineData("", "g", "g")]
     [InlineData("Hello", "", "Hello")]
     [InlineData("Hello", null, "Hello")]
-    public static void TestAppend_Object(string original, object value, string expected)
+    public static void Append_Object(string original, object value, string expected)
     {
         var builder = new StringBuilder(original);
         builder.Append(value);
@@ -358,7 +357,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestAppend_Object_Invalid()
+    public static void Append_Object_NoSpareCapacity_ThrowsArgumentOutOfRangeException()
     {
         var builder = new StringBuilder(0, 5);
         builder.Append("Hello");
@@ -370,7 +369,7 @@ public static class StringBuilderTests
     [InlineData("Hello", (sbyte)0, "Hello0")]
     [InlineData("Hello", (sbyte)123, "Hello123")]
     [InlineData("", (sbyte)-123, "-123")]
-    public static void TestAppend_SByte(string original, sbyte value, string expected)
+    public static void Append_SByte(string original, sbyte value, string expected)
     {
         var builder = new StringBuilder(original);
         builder.Append(value);
@@ -378,7 +377,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestAppend_SByte_Invalid()
+    public static void Append_SByte_NoSpareCapacity_ThrowsArgumentOutOfRangeException()
     {
         var builder = new StringBuilder(0, 5);
         builder.Append("Hello");
@@ -390,7 +389,7 @@ public static class StringBuilderTests
     [InlineData("Hello", (float)0, "Hello0")]
     [InlineData("Hello", (float)1.23, "Hello1.23")]
     [InlineData("", (float)-4.56, "-4.56")]
-    public static void TestAppend_Float(string original, float value, string expected)
+    public static void Append_Float(string original, float value, string expected)
     {
         var builder = new StringBuilder(original);
         builder.Append(value);
@@ -398,7 +397,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestAppend_Float_Invalid()
+    public static void Append_Float_NoSpareCapacity_ThrowsArgumentOutOfRangeException()
     {
         var builder = new StringBuilder(0, 5);
         builder.Append("Hello");
@@ -410,7 +409,7 @@ public static class StringBuilderTests
     [InlineData("Hello", (byte)0, "Hello0")]
     [InlineData("Hello", (byte)123, "Hello123")]
     [InlineData("", (byte)123, "123")]
-    public static void TestAppend_Byte(string original, byte value, string expected)
+    public static void Append_Byte(string original, byte value, string expected)
     {
         var builder = new StringBuilder(original);
         builder.Append(value);
@@ -418,7 +417,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestAppend_Byte_Invalid()
+    public static void Append_Byte_NoSpareCapacity_ThrowsArgumentOutOfRangeException()
     {
         var builder = new StringBuilder(0, 5);
         builder.Append("Hello");
@@ -430,7 +429,7 @@ public static class StringBuilderTests
     [InlineData("Hello", (uint)0, "Hello0")]
     [InlineData("Hello", (uint)123, "Hello123")]
     [InlineData("", (uint)456, "456")]
-    public static void TestAppend_UInt(string original, uint value, string expected)
+    public static void Append_UInt(string original, uint value, string expected)
     {
         var builder = new StringBuilder(original);
         builder.Append(value);
@@ -438,7 +437,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestAppend_UInt_Invalid()
+    public static void Append_UInt_NoSpareCapacity_ThrowsArgumentOutOfRangeException()
     {
         var builder = new StringBuilder(0, 5);
         builder.Append("Hello");
@@ -450,7 +449,7 @@ public static class StringBuilderTests
     [InlineData("Hello", (ulong)0, "Hello0")]
     [InlineData("Hello", (ulong)123, "Hello123")]
     [InlineData("", (ulong)456, "456")]
-    public static void TestAppend_ULong(string original, ulong value, string expected)
+    public static void Append_ULong(string original, ulong value, string expected)
     {
         var builder = new StringBuilder(original);
         builder.Append(value);
@@ -458,7 +457,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestAppend_ULong_Invalid()
+    public static void Append_ULong_NoSpareCapacity_ThrowsArgumentOutOfRangeException()
     {
         var builder = new StringBuilder(0, 5);
         builder.Append("Hello");
@@ -472,7 +471,7 @@ public static class StringBuilderTests
     [InlineData("", 'b', 1, "b")]
     [InlineData("Hello", 'c', 2, "Hellocc")]
     [InlineData("Hello", '\0', 0, "Hello")]
-    public static void TestAppend_Char(string original, char value, int repeatCount, string expected)
+    public static void Append_Char(string original, char value, int repeatCount, string expected)
     {
         StringBuilder builder;
         if (repeatCount == 1)
@@ -489,7 +488,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestAppend_Char_Invalid()
+    public static void Append_Char_Invalid()
     {
         var builder = new StringBuilder(0, 5);
         builder.Append("Hello");
@@ -508,7 +507,7 @@ public static class StringBuilderTests
     [InlineData("", new char[] { 'a' }, 0, "")]
     [InlineData("Hello", new char[0], 0, "Hello")]
     [InlineData("Hello", null, 0, "Hello")]
-    public static unsafe void TestAppend_CharPointer(string original, char[] charArray, int valueCount, string expected)
+    public static unsafe void Append_CharPointer(string original, char[] charArray, int valueCount, string expected)
     {
         fixed (char* value = charArray)
         {
@@ -519,13 +518,10 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static unsafe void TestAppend_CharPointer_Invalid()
+    public static unsafe void Append_CharPointer_Invalid()
     {
         var builder = new StringBuilder();
-        Assert.Throws<NullReferenceException>(() =>
-        {
-            fixed (char* value = "a") { builder.Append(null, 2); } // Value is null
-        });
+        Assert.Throws<NullReferenceException>(() => builder.Append(null, 2)); // Value is null
 
         builder = new StringBuilder(0, 5);
         builder.Append("Hello");
@@ -550,7 +546,7 @@ public static class StringBuilderTests
     [InlineData("Hello", "g", 0, 0, "Hello")]
     [InlineData("Hello", "", 0, 0, "Hello")]
     [InlineData("Hello", null, 0, 0, "Hello")]
-    public static void TestAppend_String(string original, string value, int startIndex, int count, string expected)
+    public static void Append_String(string original, string value, int startIndex, int count, string expected)
     {
         StringBuilder builder;
         if (startIndex == 0 && count == (value?.Length ?? 0))
@@ -567,7 +563,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestAppend_String_Invalid()
+    public static void Append_String_Invalid()
     {
         var builder = new StringBuilder(0, 5);
         builder.Append("Hello");
@@ -594,7 +590,7 @@ public static class StringBuilderTests
     [InlineData("Hello", new char[] { 'e' }, 0, 0, "Hello")]
     [InlineData("Hello", new char[0], 0, 0, "Hello")]
     [InlineData("Hello", null, 0, 0, "Hello")]
-    public static void TestAppend_CharArray(string original, char[] value, int startIndex, int charCount, string expected)
+    public static void Append_CharArray(string original, char[] value, int startIndex, int charCount, string expected)
     {
         StringBuilder builder;
         if (startIndex == 0 && charCount == (value?.Length ?? 0))
@@ -611,7 +607,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestAppend_CharArray_Invalid()
+    public static void Append_CharArray_Invalid()
     {
         var builder = new StringBuilder(0, 5);
         builder.Append("Hello");
@@ -671,7 +667,7 @@ public static class StringBuilderTests
 
     [Theory]
     [MemberData(nameof(AppendFormat_TestData))]
-    public static void TestAppendFormat(string original, IFormatProvider provider, string format, object[] values, string expected)
+    public static void AppendFormat(string original, IFormatProvider provider, string format, object[] values, string expected)
     {
         StringBuilder builder;
         if (values != null)
@@ -737,7 +733,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestAppendFormat_Invalid()
+    public static void AppendFormat_Invalid()
     {
         var builder = new StringBuilder(0, 5);
         builder.Append("Hello");
@@ -827,7 +823,7 @@ public static class StringBuilderTests
 
     [Theory]
     [MemberData(nameof(AppendLine_TestData))]
-    public static void TestAppendLine(string original, string value, string expected)
+    public static void AppendLine(string original, string value, string expected)
     {
         StringBuilder builder;
         if (string.IsNullOrEmpty(value))
@@ -844,7 +840,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestAppendLine_Invalid()
+    public static void AppendLine_NoSpareCapacity_ThrowsArgumentOutOfRangeException()
     {
         var builder = new StringBuilder(0, 5);
         builder.Append("Hello");
@@ -854,7 +850,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestClear()
+    public static void Clear()
     {
         var builder = new StringBuilder("Hello");
         builder.Clear();
@@ -867,7 +863,7 @@ public static class StringBuilderTests
     [InlineData("Hello", 0, new char[] { '\0', '\0', '\0', '\0', '\0', '\0' }, 1, 5, new char[] { '\0', 'H', 'e', 'l', 'l', 'o' })]
     [InlineData("Hello", 0, new char[] { '\0', '\0', '\0', '\0' }, 0, 4, new char[] { 'H', 'e', 'l', 'l' })]
     [InlineData("Hello", 1, new char[] { '\0', '\0', '\0', '\0', '\0', '\0', '\0' }, 2, 4, new char[] { '\0', '\0', 'e', 'l', 'l', 'o', '\0' })]
-    public static void TestCopyTo(string value, int sourceIndex, char[] destination, int destinationIndex, int count, char[] expected)
+    public static void CopyTo(string value, int sourceIndex, char[] destination, int destinationIndex, int count, char[] expected)
     {
         var builder = new StringBuilder(value);
         builder.CopyTo(sourceIndex, destination, destinationIndex, count);
@@ -875,7 +871,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestCopyTo_StringBuilderWithMultipleChunks()
+    public static void CopyTo_StringBuilderWithMultipleChunks()
     {
         StringBuilder builder = StringBuilderWithMultipleChunks();
         char[] destination = new char[builder.Length];
@@ -884,7 +880,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestCopyTo_Invalid()
+    public static void CopyTo_Invalid()
     {
         var builder = new StringBuilder("Hello");
         Assert.Throws<ArgumentNullException>("destination", () => builder.CopyTo(0, null, 0, 0)); // Destination is null
@@ -903,7 +899,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestEnsureCapacity()
+    public static void EnsureCapacity()
     {
         var builder = new StringBuilder(40);
 
@@ -920,7 +916,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestEnsureCapacity_Invalid()
+    public static void EnsureCapacity_InvalidCapacity_ThrowsArgumentOutOfRangeException()
     {
         var builder = new StringBuilder("Hello", 10);
         Assert.Throws<ArgumentOutOfRangeException>("capacity", () => builder.EnsureCapacity(-1)); // Capacity < 0
@@ -970,7 +966,7 @@ public static class StringBuilderTests
 
     [Theory]
     [MemberData(nameof(Equals_TestData))]
-    public static void TestEquals(StringBuilder sb1, StringBuilder sb2, bool expected)
+    public static void Equals(StringBuilder sb1, StringBuilder sb2, bool expected)
     {
         Assert.Equal(expected, sb1.Equals(sb2));
     }
@@ -979,7 +975,7 @@ public static class StringBuilderTests
     [InlineData("Hello", 0, (uint)0, "0Hello")]
     [InlineData("Hello", 3, (uint)123, "Hel123lo")]
     [InlineData("Hello", 5, (uint)456, "Hello456")]
-    public static void TestInsert_UInt(string original, int index, uint value, string expected)
+    public static void Insert_UInt(string original, int index, uint value, string expected)
     {
         var builder = new StringBuilder(original);
         builder.Insert(index, value);
@@ -987,7 +983,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestInsert_UInt_Invalid()
+    public static void Insert_UInt_Invalid()
     {
         var builder = new StringBuilder(0, 5);
         builder.Append("Hello");
@@ -1001,7 +997,7 @@ public static class StringBuilderTests
     [InlineData("Hello", 0, true, "TrueHello")]
     [InlineData("Hello", 3, false, "HelFalselo")]
     [InlineData("Hello", 5, false, "HelloFalse")]
-    public static void TestInsert_Bool(string original, int index, bool value, string expected)
+    public static void Insert_Bool(string original, int index, bool value, string expected)
     {
         var builder = new StringBuilder(original);
         builder.Insert(index, value);
@@ -1009,7 +1005,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestInsert_Bool_Invalid()
+    public static void Insert_Bool_Invalid()
     {
         var builder = new StringBuilder(0, 5);
         builder.Append("Hello");
@@ -1023,7 +1019,7 @@ public static class StringBuilderTests
     [InlineData("Hello", 0, (byte)0, "0Hello")]
     [InlineData("Hello", 3, (byte)123, "Hel123lo")]
     [InlineData("Hello", 5, (byte)123, "Hello123")]
-    public static void TestInsert_Byte(string original, int index, byte value, string expected)
+    public static void Insert_Byte(string original, int index, byte value, string expected)
     {
         var builder = new StringBuilder(original);
         builder.Insert(index, value);
@@ -1031,7 +1027,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestInsert_Byte_Invalid()
+    public static void Insert_Byte_Invalid()
     {
         var builder = new StringBuilder(0, 5);
         builder.Append("Hello");
@@ -1045,7 +1041,7 @@ public static class StringBuilderTests
     [InlineData("Hello", 0, (ulong)0, "0Hello")]
     [InlineData("Hello", 3, (ulong)123, "Hel123lo")]
     [InlineData("Hello", 5, (ulong)456, "Hello456")]
-    public static void TestInsert_ULong(string original, int index, ulong value, string expected)
+    public static void Insert_ULong(string original, int index, ulong value, string expected)
     {
         var builder = new StringBuilder(original);
         builder.Insert(index, value);
@@ -1053,7 +1049,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestInsert_ULong_Invalid()
+    public static void Insert_ULong_Invalid()
     {
         var builder = new StringBuilder(0, 5);
         builder.Append("Hello");
@@ -1067,7 +1063,7 @@ public static class StringBuilderTests
     [InlineData("Hello", 0, (ushort)0, "0Hello")]
     [InlineData("Hello", 3, (ushort)123, "Hel123lo")]
     [InlineData("Hello", 5, (ushort)456, "Hello456")]
-    public static void TestInsert_UShort(string original, int index, ushort value, string expected)
+    public static void Insert_UShort(string original, int index, ushort value, string expected)
     {
         var builder = new StringBuilder(original);
         builder.Insert(index, value);
@@ -1075,7 +1071,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestInsert_UShort_Invalid()
+    public static void Insert_UShort_Invalid()
     {
         var builder = new StringBuilder(0, 5);
         builder.Append("Hello");
@@ -1089,7 +1085,7 @@ public static class StringBuilderTests
     [InlineData("Hello", 0, '\0', "\0Hello")]
     [InlineData("Hello", 3, 'a', "Helalo")]
     [InlineData("Hello", 5, 'b', "Hellob")]
-    public static void TestInsert_Char(string original, int index, char value, string expected)
+    public static void Insert_Char(string original, int index, char value, string expected)
     {
         var builder = new StringBuilder(original);
         builder.Insert(index, value);
@@ -1097,7 +1093,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestInsert_Char_Invalid()
+    public static void Insert_Char_Invalid()
     {
         var builder = new StringBuilder(0, 5);
         builder.Append("Hello");
@@ -1111,7 +1107,7 @@ public static class StringBuilderTests
     [InlineData("Hello", 0, (float)0, "0Hello")]
     [InlineData("Hello", 3, (float)1.23, "Hel1.23lo")]
     [InlineData("Hello", 5, (float)-4.56, "Hello-4.56")]
-    public static void TestInsert_Float(string original, int index, float value, string expected)
+    public static void Insert_Float(string original, int index, float value, string expected)
     {
         var builder = new StringBuilder(original);
         builder.Insert(index, value);
@@ -1119,7 +1115,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestInsert_Float_Invalid()
+    public static void Insert_Float_Invalid()
     {
         var builder = new StringBuilder(0, 5);
         builder.Append("Hello");
@@ -1135,7 +1131,7 @@ public static class StringBuilderTests
     [InlineData("Hello", 5, "def", "Hellodef")]
     [InlineData("Hello", 0, "", "Hello")]
     [InlineData("Hello", 0, null, "Hello")]
-    public static void TestInsert_Object(string original, int index, object value, string expected)
+    public static void Insert_Object(string original, int index, object value, string expected)
     {
         var builder = new StringBuilder(original);
         builder.Insert(index, value);
@@ -1143,7 +1139,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestInsert_Object_Invalid()
+    public static void Insert_Object_Invalid()
     {
         var builder = new StringBuilder(0, 5);
         builder.Append("Hello");
@@ -1157,7 +1153,7 @@ public static class StringBuilderTests
     [InlineData("Hello", 0, (long)0, "0Hello")]
     [InlineData("Hello", 3, (long)123, "Hel123lo")]
     [InlineData("Hello", 5, (long)-456, "Hello-456")]
-    public static void TestInsert_Long(string original, int index, long value, string expected)
+    public static void Insert_Long(string original, int index, long value, string expected)
     {
         var builder = new StringBuilder(original);
         builder.Insert(index, value);
@@ -1165,7 +1161,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestInsert_Long_Invalid()
+    public static void Insert_Long_Invalid()
     {
         var builder = new StringBuilder(0, 5);
         builder.Append("Hello");
@@ -1179,7 +1175,7 @@ public static class StringBuilderTests
     [InlineData("Hello", 0, 0, "0Hello")]
     [InlineData("Hello", 3, 123, "Hel123lo")]
     [InlineData("Hello", 5, -456, "Hello-456")]
-    public static void TestInsert_Int(string original, int index, int value, string expected)
+    public static void Insert_Int(string original, int index, int value, string expected)
     {
         var builder = new StringBuilder(original);
         builder.Insert(index, value);
@@ -1187,7 +1183,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestInsert_Int_Invalid()
+    public static void Insert_Int_Invalid()
     {
         var builder = new StringBuilder(0, 5);
         builder.Append("Hello");
@@ -1201,7 +1197,7 @@ public static class StringBuilderTests
     [InlineData("Hello", 0, (short)0, "0Hello")]
     [InlineData("Hello", 3, (short)123, "Hel123lo")]
     [InlineData("Hello", 5, (short)-456, "Hello-456")]
-    public static void TestInsert_Short(string original, int index, short value, string expected)
+    public static void Insert_Short(string original, int index, short value, string expected)
     {
         var builder = new StringBuilder(original);
         builder.Insert(index, value);
@@ -1209,7 +1205,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestInsert_Short_Invalid()
+    public static void Insert_Short_Invalid()
     {
         var builder = new StringBuilder(0, 5);
         builder.Append("Hello");
@@ -1223,7 +1219,7 @@ public static class StringBuilderTests
     [InlineData("Hello", 0, (double)0, "0Hello")]
     [InlineData("Hello", 3, 1.23, "Hel1.23lo")]
     [InlineData("Hello", 5, -4.56, "Hello-4.56")]
-    public static void TestInsert_Double(string original, int index, double value, string expected)
+    public static void Insert_Double(string original, int index, double value, string expected)
     {
         var builder = new StringBuilder(original);
         builder.Insert(index, value);
@@ -1231,7 +1227,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestInsert_Double_Invalid()
+    public static void Insert_Double_Invalid()
     {
         var builder = new StringBuilder(0, 5);
         builder.Append("Hello");
@@ -1245,7 +1241,7 @@ public static class StringBuilderTests
     [InlineData("Hello", 0, (double)0, "0Hello")]
     [InlineData("Hello", 3, 1.23, "Hel1.23lo")]
     [InlineData("Hello", 5, -4.56, "Hello-4.56")]
-    public static void TestInsert_Decimal(string original, int index, double doubleValue, string expected)
+    public static void Insert_Decimal(string original, int index, double doubleValue, string expected)
     {
         var builder = new StringBuilder(original);
         builder.Insert(index, new decimal(doubleValue));
@@ -1253,7 +1249,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestInsert_Decimal_Invalid()
+    public static void Insert_Decimal_Invalid()
     {
         var builder = new StringBuilder(0, 5);
         builder.Append("Hello");
@@ -1267,7 +1263,7 @@ public static class StringBuilderTests
     [InlineData("Hello", 0, (sbyte)0, "0Hello")]
     [InlineData("Hello", 3, (sbyte)123, "Hel123lo")]
     [InlineData("Hello", 5, (sbyte)-123, "Hello-123")]
-    public static void TestInsert_SByte(string original, int index, sbyte value, string expected)
+    public static void Insert_SByte(string original, int index, sbyte value, string expected)
     {
         var builder = new StringBuilder(original);
         builder.Insert(index, value);
@@ -1275,7 +1271,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestInsert_SByte_Invalid()
+    public static void Insert_SByte_Invalid()
     {
         var builder = new StringBuilder(0, 5);
         builder.Append("Hello");
@@ -1294,7 +1290,7 @@ public static class StringBuilderTests
     [InlineData("Hello", 0, null, 1, "Hello")]
     [InlineData("Hello", 3, "abc", 2, "Helabcabclo")]
     [InlineData("Hello", 5, "def", 2, "Hellodefdef")]
-    public static void TestInsert_String_Count(string original, int index, string value, int count, string expected)
+    public static void Insert_String_Count(string original, int index, string value, int count, string expected)
     {
         StringBuilder builder;
         if (count == 1)
@@ -1311,7 +1307,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestInsert_String_Count_Invalid()
+    public static void Insert_String_Count_Invalid()
     {
         var builder = new StringBuilder(0, 6);
         builder.Append("Hello");
@@ -1340,7 +1336,7 @@ public static class StringBuilderTests
     [InlineData("Hello", 3, new char[] { 'a', 'b', 'c' }, 1, 1, "Helblo")]
     [InlineData("Hello", 3, new char[] { 'a', 'b', 'c' }, 1, 2, "Helbclo")]
     [InlineData("Hello", 3, new char[] { 'a', 'b', 'c' }, 0, 2, "Helablo")]
-    public static void TestInsert_CharArray(string original, int index, char[] value, int startIndex, int charCount, string expected)
+    public static void Insert_CharArray(string original, int index, char[] value, int startIndex, int charCount, string expected)
     {
         StringBuilder builder;
         if (startIndex == 0 && charCount == (value?.Length ?? 0))
@@ -1357,7 +1353,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestInsert_CharArray_Invalid()
+    public static void Insert_CharArray_Invalid()
     {
         var builder = new StringBuilder(0, 5);
         builder.Append("Hello");
@@ -1388,7 +1384,7 @@ public static class StringBuilderTests
     [InlineData("Hello", 1, 4, "H")]
     [InlineData("Hello", 1, 0, "Hello")]
     [InlineData("Hello", 5, 0, "Hello")]
-    public static void TestRemove(string value, int startIndex, int length, string expected)
+    public static void Remove(string value, int startIndex, int length, string expected)
     {
         var builder = new StringBuilder(value);
         builder.Remove(startIndex, length);
@@ -1400,7 +1396,7 @@ public static class StringBuilderTests
     [InlineData(0, 29, "a")]
     [InlineData(20, 10, "aaaaaaaaaaaaaaaaaaaa")]
     [InlineData(0, 15, "aaaaaaaaaaaaaaa")]
-    public static void TestRemove_StringBuilderWithMultipleChunks(int startIndex, int count, string expected)
+    public static void Remove_StringBuilderWithMultipleChunks(int startIndex, int count, string expected)
     {
         StringBuilder builder = StringBuilderWithMultipleChunks();
         builder.Remove(startIndex, count);
@@ -1408,7 +1404,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestRemove_Invalid()
+    public static void Remove_Invalid()
     {
         var builder = new StringBuilder("Hello");
         Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => builder.Remove(-1, 0)); // Start index < 0
@@ -1428,7 +1424,7 @@ public static class StringBuilderTests
     [InlineData("aaaabbbbccccdddd", 'b', '!', 0, 0, "aaaabbbbccccdddd")]
     [InlineData("aaaabbbbccccdddd", 'a', '!', 16, 0, "aaaabbbbccccdddd")]
     [InlineData("aaaabbbbccccdddd", 'e', '!', 0, 16, "aaaabbbbccccdddd")]
-    public static void TestReplace_Char(string value, char oldChar, char newChar, int startIndex, int count, string expected)
+    public static void Replace_Char(string value, char oldChar, char newChar, int startIndex, int count, string expected)
     {
         StringBuilder builder;
         if (startIndex == 0 && count == value.Length)
@@ -1445,7 +1441,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestReplace_Char_StringBuilderWithMultipleChunks()
+    public static void Replace_Char_StringBuilderWithMultipleChunks()
     {
         StringBuilder builder = StringBuilderWithMultipleChunks();
         builder.Replace('a', 'b', 0, builder.Length);
@@ -1453,7 +1449,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestReplace_Char_Invalid()
+    public static void Replace_Char_Invalid()
     {
         var builder = new StringBuilder("Hello");
         Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => builder.Replace('a', 'b', -1, 0)); // Start index < 0
@@ -1482,7 +1478,7 @@ public static class StringBuilderTests
     [InlineData("aaaabbbbccccdddd", "aaaabbbbccccdddd", "", 16, 0, "aaaabbbbccccdddd")]
     [InlineData("aaaabbbbccccdddd", "aaaabbbbccccdddde", "", 0, 16, "aaaabbbbccccdddd")]
     [InlineData("aaaaaaaaaaaaaaaa", "a", "b", 0, 16, "bbbbbbbbbbbbbbbb")]
-    public static void TestReplace_String(string value, string oldValue, string newValue, int startIndex, int count, string expected)
+    public static void Replace_String(string value, string oldValue, string newValue, int startIndex, int count, string expected)
     {
         StringBuilder builder;
         if (startIndex == 0 && count == value.Length)
@@ -1499,7 +1495,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestReplace_String_StringBuilderWithMultipleChunks()
+    public static void Replace_String_StringBuilderWithMultipleChunks()
     {
         StringBuilder builder = StringBuilderWithMultipleChunks();
         builder.Replace("a", "b", builder.Length - 10, 10);
@@ -1507,7 +1503,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestReplace_String_StringBuilderWithMultipleChunks_WholeString()
+    public static void Replace_String_StringBuilderWithMultipleChunks_WholeString()
     {
         StringBuilder builder = StringBuilderWithMultipleChunks();
         builder.Replace(builder.ToString(), "");
@@ -1515,7 +1511,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestReplace_String_StringBuilderWithMultipleChunks_LongString()
+    public static void Replace_String_StringBuilderWithMultipleChunks_LongString()
     {
         StringBuilder builder = StringBuilderWithMultipleChunks();
         builder.Replace(builder.ToString() + "b", "");
@@ -1523,7 +1519,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestReplace_String_Invalid()
+    public static void Replace_String_Invalid()
     {
         var builder = new StringBuilder(0, 5);
         builder.Append("Hello");
@@ -1553,7 +1549,7 @@ public static class StringBuilderTests
     [InlineData("Hello", 4, 0, "")]
     [InlineData("Hello", 0, 0, "")]
     [InlineData("", 0, 0, "")]
-    public static void TestToString(string value, int startIndex, int length, string expected)
+    public static void ToString(string value, int startIndex, int length, string expected)
     {
         var builder = new StringBuilder(value);
         if (startIndex == 0 && length == value.Length)
@@ -1564,7 +1560,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestToString_StringBuilderWithMultipleChunks()
+    public static void ToString_StringBuilderWithMultipleChunks()
     {
         StringBuilder builder = StringBuilderWithMultipleChunks();
         Assert.Equal(s_chunkSplitSource, builder.ToString());
@@ -1574,7 +1570,7 @@ public static class StringBuilderTests
     }
 
     [Fact]
-    public static void TestToString_Invalid()
+    public static void ToString_Invalid()
     {
         var builder = new StringBuilder("Hello");
         Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => builder.ToString(-1, 0)); // Start index < 0

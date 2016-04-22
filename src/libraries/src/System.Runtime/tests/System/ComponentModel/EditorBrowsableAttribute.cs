@@ -13,7 +13,7 @@ namespace System.ComponentModel.Tests
         [InlineData(EditorBrowsableState.Always)]
         [InlineData(EditorBrowsableState.Never)]
         [InlineData((EditorBrowsableState)12345)]
-        public static void TestCtor_EditableBrowserState(EditorBrowsableState state)
+        public static void Ctor_EditableBrowserState(EditorBrowsableState state)
         {
             Assert.Equal(state, new EditorBrowsableAttribute(state).State);
         }
@@ -25,7 +25,7 @@ namespace System.ComponentModel.Tests
         [InlineData((EditorBrowsableState)12345, (EditorBrowsableState)12345, true)]
         [InlineData(EditorBrowsableState.Advanced, EditorBrowsableState.Always, false)]
         [InlineData(EditorBrowsableState.Advanced, EditorBrowsableState.Never, false)]
-        public static void TestEquals(EditorBrowsableState state1, EditorBrowsableState state2, bool equal)
+        public static void Equals(EditorBrowsableState state1, EditorBrowsableState state2, bool equal)
         {
             var attr1 = new EditorBrowsableAttribute(state1);
             var attr2 = new EditorBrowsableAttribute(state2);
@@ -37,13 +37,13 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
-        public static void TestEquals_Null()
+        public static void Equals_Null()
         {
             Assert.False(new EditorBrowsableAttribute(EditorBrowsableState.Advanced).Equals(null));
         }
 
         [Fact]
-        public static void TestEnumValues()
+        public static void EnumValues()
         {
             Assert.Equal(0, (int)EditorBrowsableState.Always);
             Assert.Equal(1, (int)EditorBrowsableState.Never);

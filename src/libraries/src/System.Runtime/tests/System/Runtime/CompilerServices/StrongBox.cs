@@ -9,7 +9,7 @@ namespace System.Runtime.CompilerServices.Tests
     public static class StrongBoxTests
     {
         [Fact]
-        public static void TestCtor()
+        public static void Ctor()
         {
             StrongBox<int> boxedInt32 = new StrongBox<int>();
             Assert.Equal(default(int), boxedInt32.Value);
@@ -23,7 +23,7 @@ namespace System.Runtime.CompilerServices.Tests
         }
 
         [Fact]
-        public static void TestValue()
+        public static void Value()
         {
             StrongBox<int> sb = new StrongBox<int>();
             Assert.Equal(0, sb.Value);

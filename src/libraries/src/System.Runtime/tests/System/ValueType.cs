@@ -7,7 +7,7 @@ using Xunit;
 public static class ValueTypeTests
 {
     [Fact]
-    public static void TestToString()
+    public static void ToStringTest()
     {
         object obj = new S();
         Assert.Equal(obj.ToString(), obj.GetType().ToString());

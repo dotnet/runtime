@@ -10,27 +10,27 @@ using Xunit;
 public static class Int64Tests
 {
     [Fact]
-    public static void TestCtor_Empty()
+    public static void Ctor_Empty()
     {
         var i = new long();
         Assert.Equal(0, i);
     }
 
     [Fact]
-    public static void TestCtor_Value()
+    public static void Ctor_Value()
     {
         long i = 41;
         Assert.Equal(41, i);
     }
 
     [Fact]
-    public static void TestMaxValue()
+    public static void MaxValue()
     {
         Assert.Equal(0x7FFFFFFFFFFFFFFF, long.MaxValue);
     }
 
     [Fact]
-    public static void TestMinValue()
+    public static void MinValue()
     {
         Assert.Equal(unchecked((long)0x8000000000000000), long.MinValue);
     }
@@ -47,7 +47,7 @@ public static class Int64Tests
     [InlineData((long)-234, (long)234, -1)]
     [InlineData((long)-234, (long)-432, 1)]
     [InlineData((long)234, null, 1)]
-    public static void TestCompareTo(long i, object value, long expected)
+    public static void CompareTo(long i, object value, long expected)
     {
         if (value is long)
         {
@@ -58,7 +58,7 @@ public static class Int64Tests
     }
 
     [Fact]
-    public static void TestCompareTo_Invalid()
+    public static void CompareTo_ObjectNotLong_ThrowsArgumentException()
     {
         IComparable comparable = (long)234;
         Assert.Throws<ArgumentException>(null, () => comparable.CompareTo("a")); // Obj is not a long
@@ -75,7 +75,7 @@ public static class Int64Tests
     [InlineData((long)789, null, false)]
     [InlineData((long)789, "789", false)]
     [InlineData((long)789, 789, false)]
-    public static void TestEquals(long i1, object obj, bool expected)
+    public static void Equals(long i1, object obj, bool expected)
     {
         if (obj is long)
         {
@@ -108,7 +108,7 @@ public static class Int64Tests
 
     [Theory]
     [MemberData(nameof(ToString_TestData))]
-    public static void TestToString(long i, string format, IFormatProvider provider, string expected)
+    public static void ToString(long i, string format, IFormatProvider provider, string expected)
     {
         // Format is case insensitive
         string upperFormat = format.ToUpperInvariant();
@@ -139,7 +139,7 @@ public static class Int64Tests
     }
 
     [Fact]
-    public static void TestToString_Invalid()
+    public static void ToString_InvalidFormat_ThrowsFormatException()
     {
         long i = 123;
         Assert.Throws<FormatException>(() => i.ToString("Y")); // Invalid format
@@ -177,7 +177,7 @@ public static class Int64Tests
 
     [Theory]
     [MemberData(nameof(Parse_Valid_TestData))]
-    public static void TestParse(string value, NumberStyles style, IFormatProvider provider, long expected)
+    public static void Parse(string value, NumberStyles style, IFormatProvider provider, long expected)
     {
         long result;
         // If no style is specified, use the (String) or (String, IFormatProvider) overload
@@ -245,7 +245,7 @@ public static class Int64Tests
 
     [Theory]
     [MemberData(nameof(Parse_Invalid_TestData))]
-    public static void TestParse_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
+    public static void Parse_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
     {
         long result;
         // If no style is specified, use the (String) or (String, IFormatProvider) overload
@@ -278,7 +278,7 @@ public static class Int64Tests
     [Theory]
     [InlineData(NumberStyles.HexNumber | NumberStyles.AllowParentheses)]
     [InlineData(unchecked((NumberStyles)0xFFFFFC00))]
-    public static void TestTryParse_InvalidNumberStyle_ThrowsArgumentException(NumberStyles style)
+    public static void TryParse_InvalidNumberStyle_ThrowsArgumentException(NumberStyles style)
     {
         long result = 0;
         Assert.Throws<ArgumentException>(() => long.TryParse("1", style, null, out result));

@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-
 using Xunit;
 
 // TODO: Remove these extension methods when the actual methods are available on String in System.Runtime.dll
@@ -43,7 +42,7 @@ internal static class TemporaryStringSplitExtensions
 public static class StringSplitTests
 {
     [Fact]
-    public static void TestSplitInvalidCount()
+    public static void SplitInvalidCount()
     {
         const string value = "a,b";
         const int count = -1;
@@ -57,7 +56,7 @@ public static class StringSplitTests
     }
 
     [Fact]
-    public static void TestSplitInvalidOptions()
+    public static void SplitInvalidOptions()
     {
         const string value = "a,b";
         const int count = int.MaxValue;
@@ -83,7 +82,7 @@ public static class StringSplitTests
     }
 
     [Fact]
-    public static void TestSplitZeroCountEmptyResult()
+    public static void SplitZeroCountEmptyResult()
     {
         const string value = "a,b";
         const int count = 0;
@@ -99,7 +98,7 @@ public static class StringSplitTests
     }
 
     [Fact]
-    public static void TestSplitEmptyValueWithRemoveEmptyEntriesOptionEmptyResult()
+    public static void SplitEmptyValueWithRemoveEmptyEntriesOptionEmptyResult()
     {
         string value = string.Empty;
         const int count = int.MaxValue;
@@ -118,7 +117,7 @@ public static class StringSplitTests
     }
 
     [Fact]
-    public static void TestSplitOneCountSingleResult()
+    public static void SplitOneCountSingleResult()
     {
         const string value = "a,b";
         const int count = 1;
@@ -134,7 +133,7 @@ public static class StringSplitTests
     }
 
     [Fact]
-    public static void TestSplitNoMatchSingleResult()
+    public static void SplitNoMatchSingleResult()
     {
         const string value = "a b";
         const int count = int.MaxValue;
@@ -451,7 +450,7 @@ public static class StringSplitTests
     [InlineData("first,second,third", ' ', M, StringSplitOptions.RemoveEmptyEntries, new[] { "first,second,third" })]
     [InlineData("Foo Bar Baz", ' ', 2, StringSplitOptions.RemoveEmptyEntries, new[] { "Foo", "Bar Baz" })]
     [InlineData("Foo Bar Baz", ' ', M, StringSplitOptions.None, new[] { "Foo", "Bar", "Baz" })]
-    public static void TestSplitCharSeparator(string value, char separator, int count, StringSplitOptions options, string[] expected)
+    public static void SplitCharSeparator(string value, char separator, int count, StringSplitOptions options, string[] expected)
     {
         Assert.Equal(expected, value.Split(separator, count, options));
         Assert.Equal(expected, value.Split(new[] { separator }, count, options));
@@ -465,7 +464,7 @@ public static class StringSplitTests
     [InlineData("aaabaaabaaa", "aa", M, StringSplitOptions.None, new[] { "", "ab", "ab", "a" })]
     [InlineData("aaabaaabaaa", "aa", M, StringSplitOptions.RemoveEmptyEntries, new[] { "ab", "ab", "a" })]
     [InlineData("this, is, a, string, with some spaces", ", ", M, StringSplitOptions.None, new[] { "this", "is", "a", "string", "with some spaces" })]
-    public static void TestSplitStringSeparator(string value, string separator, int count, StringSplitOptions options, string[] expected)
+    public static void SplitStringSeparator(string value, string separator, int count, StringSplitOptions options, string[] expected)
     {
         Assert.Equal(expected, value.Split(separator, count, options));
         Assert.Equal(expected, value.Split(new[] { separator }, count, options));
@@ -480,7 +479,7 @@ public static class StringSplitTests
     [InlineData("this, is, a, string, with some spaces", new[] { ',', ' ' }, M, StringSplitOptions.None, new[] { "this", "", "is", "", "a", "", "string", "", "with", "some", "spaces" })]
     [InlineData("this, is, a, string, with some spaces", new[] { ' ', ',' }, M, StringSplitOptions.RemoveEmptyEntries, new[] { "this", "is", "a", "string", "with", "some", "spaces" })]
     [InlineData("this, is, a, string, with some spaces", new[] { ',', ' ' }, M, StringSplitOptions.RemoveEmptyEntries, new[] { "this", "is", "a", "string", "with", "some", "spaces" })]
-    public static void TestSplitCharArraySeparator(string value, char[] separators, int count, StringSplitOptions options, string[] expected)
+    public static void SplitCharArraySeparator(string value, char[] separators, int count, StringSplitOptions options, string[] expected)
     {
         Assert.Equal(expected, value.Split(separators, count, options));
         Assert.Equal(expected, value.Split(ToStringArray(separators), count, options));
@@ -497,7 +496,7 @@ public static class StringSplitTests
     [InlineData("this, is, a, string, with some spaces", new[] { ", ", " " }, M, StringSplitOptions.None, new[] { "this", "is", "a", "string", "with", "some", "spaces" })]
     [InlineData("this, is, a, string, with some spaces", new[] { " ", ", " }, M, StringSplitOptions.RemoveEmptyEntries, new[] { "this", "is", "a", "string", "with", "some", "spaces" })]
     [InlineData("this, is, a, string, with some spaces", new[] { ", ", " " }, M, StringSplitOptions.RemoveEmptyEntries, new[] { "this", "is", "a", "string", "with", "some", "spaces" })]
-    public static void TestSplitStringArraySeparator(string value, string[] separators, int count, StringSplitOptions options, string[] expected)
+    public static void SplitStringArraySeparator(string value, string[] separators, int count, StringSplitOptions options, string[] expected)
     {
         Assert.Equal(expected, value.Split(separators, count, options));
     }

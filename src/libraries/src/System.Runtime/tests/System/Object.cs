@@ -23,7 +23,7 @@ public static class ObjectTests
 
     [Theory]
     [MemberData(nameof(Equals_TestData))]
-    public static void TestEquals(object obj1, object obj2, bool expected)
+    public static void Equals(object obj1, object obj2, bool expected)
     {
         if (obj1 != null)
         {
@@ -39,7 +39,7 @@ public static class ObjectTests
     }
 
     [Fact]
-    public static void TestReferenceEquals()
+    public static void ReferenceEquals()
     {
         var e1 = new EOverrider(7);
         var e2 = new EOverrider(8);
@@ -80,13 +80,13 @@ public static class ObjectTests
 
     [Theory]
     [MemberData(nameof(GetType_TestData))]
-    public static void TestGetType(object obj, Type expected)
+    public static void GetType(object obj, Type expected)
     {
         Assert.Equal(expected, obj.GetType());
     }
 
     [Fact]
-    public static void TestToString()
+    public static void ToStringTest()
     {
         var obj = new object();
         Assert.Equal("System.Object", obj.ToString());
@@ -94,7 +94,7 @@ public static class ObjectTests
     }
 
     [Fact]
-    public static void TestMemberwiseClone()
+    public static void MemberwiseCloneTest()
     {
         var c1 = new C("Hello", 7, 8);
         var c2 = c1.CallMemberwiseClone();
