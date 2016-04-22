@@ -137,19 +137,7 @@ namespace System.IO {
         [ComVisible(false)]
         public virtual Task CopyToAsync(Stream destination, Int32 bufferSize, CancellationToken cancellationToken)
         {
-            if (destination == null)
-                throw new ArgumentNullException("destination");
-            if (bufferSize <= 0)
-                throw new ArgumentOutOfRangeException("bufferSize", Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));
-            if (!CanRead && !CanWrite)
-                throw new ObjectDisposedException(null, Environment.GetResourceString("ObjectDisposed_StreamClosed"));
-            if (!destination.CanRead && !destination.CanWrite)
-                throw new ObjectDisposedException("destination", Environment.GetResourceString("ObjectDisposed_StreamClosed"));
-            if (!CanRead)
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_UnreadableStream"));
-            if (!destination.CanWrite)
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_UnwritableStream"));
-            Contract.EndContractBlock();
+            ValidateCopyToArguments(destination, bufferSize);
 
             return CopyToAsyncInternal(destination, bufferSize, cancellationToken);
         }
@@ -174,54 +162,18 @@ namespace System.IO {
         // the current position.
         public void CopyTo(Stream destination)
         {
-            if (destination == null)
-                throw new ArgumentNullException("destination");
-            if (!CanRead && !CanWrite)
-                throw new ObjectDisposedException(null, Environment.GetResourceString("ObjectDisposed_StreamClosed"));
-            if (!destination.CanRead && !destination.CanWrite)
-                throw new ObjectDisposedException("destination", Environment.GetResourceString("ObjectDisposed_StreamClosed"));
-            if (!CanRead)
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_UnreadableStream"));
-            if (!destination.CanWrite)
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_UnwritableStream"));
-            Contract.EndContractBlock();
-
-            InternalCopyTo(destination, _DefaultCopyBufferSize);
+            CopyTo(destination, _DefaultCopyBufferSize);
         }
 
         public void CopyTo(Stream destination, int bufferSize)
         {
-            if (destination == null)
-                throw new ArgumentNullException("destination");
-            if (bufferSize <= 0)
-                throw new ArgumentOutOfRangeException("bufferSize",
-                        Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));
-            if (!CanRead && !CanWrite)
-                throw new ObjectDisposedException(null, Environment.GetResourceString("ObjectDisposed_StreamClosed"));
-            if (!destination.CanRead && !destination.CanWrite)
-                throw new ObjectDisposedException("destination", Environment.GetResourceString("ObjectDisposed_StreamClosed"));
-            if (!CanRead)
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_UnreadableStream"));
-            if (!destination.CanWrite)
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_UnwritableStream"));
-            Contract.EndContractBlock();
-
-            InternalCopyTo(destination, bufferSize);
-        }
-
-        private void InternalCopyTo(Stream destination, int bufferSize)
-        {
-            Contract.Requires(destination != null);
-            Contract.Requires(CanRead);
-            Contract.Requires(destination.CanWrite);
-            Contract.Requires(bufferSize > 0);
+            ValidateCopyToArguments(destination, bufferSize);
             
             byte[] buffer = new byte[bufferSize];
             int read;
             while ((read = Read(buffer, 0, buffer.Length)) != 0)
                 destination.Write(buffer, 0, read);
         }
-
 
         // Stream used to require that all cleanup logic went into Close(),
         // which was thought up before we invented IDisposable.  However, we
@@ -871,6 +823,23 @@ namespace System.IO {
         {
             SynchronousAsyncResult.EndWrite(asyncResult);
         }
+        
+        internal void ValidateCopyToArguments(Stream destination, int bufferSize)
+        {
+            if (destination == null)
+                throw new ArgumentNullException("destination");
+            if (bufferSize <= 0)
+                throw new ArgumentOutOfRangeException("bufferSize", Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));
+            if (!CanRead && !CanWrite)
+                throw new ObjectDisposedException(null, Environment.GetResourceString("ObjectDisposed_StreamClosed"));
+            if (!destination.CanRead && !destination.CanWrite)
+                throw new ObjectDisposedException("destination", Environment.GetResourceString("ObjectDisposed_StreamClosed"));
+            if (!CanRead)
+                throw new NotSupportedException(Environment.GetResourceString("NotSupported_UnreadableStream"));
+            if (!destination.CanWrite)
+                throw new NotSupportedException(Environment.GetResourceString("NotSupported_UnwritableStream"));
+            Contract.EndContractBlock();
+        }
 
         [Serializable]
         private sealed class NullStream : Stream
@@ -899,6 +868,17 @@ namespace System.IO {
             public override long Position {
                 get { return 0; }
                 set {}
+            }
+            
+            public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+            {
+                // Validate arguments here for compat, since previously this method
+                // was inherited from Stream (which did check its arguments).
+                ValidateCopyToArguments(destination, bufferSize);
+                
+                return cancellationToken.IsCancellationRequested ?
+                    Task.FromCancellation(cancellationToken) :
+                    Task.CompletedTask;
             }
 
             protected override void Dispose(bool disposing)
