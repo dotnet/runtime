@@ -89,6 +89,7 @@ namespace System.Net.Http
             /// <summary>Disposes of the agent.</summary>
             public void Dispose()
             {
+                QueueIfRunning(new IncomingRequest { Type = IncomingRequestType.Shutdown });
                 _multiHandle?.Dispose();
             }
 
@@ -100,6 +101,22 @@ namespace System.Net.Http
                     // Add the request, then initiate processing.
                     _incomingRequests.Enqueue(request);
                     EnsureWorkerIsRunning();
+                }
+            }
+
+            /// <summary>Queues a request for the multi handle to process, but only if there's already an active worker running.</summary>
+            public void QueueIfRunning(IncomingRequest request)
+            {
+                lock (_incomingRequests)
+                {
+                    if (_runningWorker != null)
+                    {
+                        _incomingRequests.Enqueue(request);
+                        if (_incomingRequests.Count == 1)
+                        {
+                            RequestWakeup();
+                        }
+                    }
                 }
             }
 
@@ -280,7 +297,7 @@ namespace System.Net.Http
                             // more requests could have been added.  If they were,
                             // kick off another processing loop.
                             _runningWorker = null;
-                            if (_incomingRequests.Count > 0)
+                            if (_incomingRequests.Count > 0 && !_associatedHandler._disposed)
                             {
                                 EnsureWorkerIsRunning();
                             }
@@ -289,9 +306,11 @@ namespace System.Net.Http
                 }
                 catch (Exception exc)
                 {
-                    // Something went very wrong.  This should not happen.
+                    // Something went very wrong.  In general this should not happen.  The only time it might reasonably
+                    // happen is if CurlHandler is disposed of while it's actively processing, in which case we could
+                    // get an ObjectDisposedException.
                     EventSourceTrace("Unexpected worker failure: {0}", exc);
-                    Debug.Fail($"Unexpected exception from processing loop: {exc}");
+                    Debug.Assert(exc is ObjectDisposedException, $"Unexpected exception from processing loop: {exc}");
 
                     // At this point if there any queued requests but there's no worker,
                     // those queued requests are potentially going to sit there waiting forever,
@@ -336,13 +355,19 @@ namespace System.Net.Http
                         // First handle any requests in the incoming requests queue.
                         while (true)
                         {
+                            // Get the next request
                             IncomingRequest request;
                             lock (_incomingRequests)
                             {
                                 if (_incomingRequests.Count == 0) break;
                                 request = _incomingRequests.Dequeue();
                             }
-                            HandleIncomingRequest(request);
+
+                            // Act on it.  If it's a shutdown request, we exit.
+                            if (!HandleIncomingRequest(request))
+                            {
+                                return;
+                            }
                         }
 
                         // If we have no active operations, there's no work to do right now.
@@ -436,13 +461,18 @@ namespace System.Net.Http
                 }
                 finally
                 {
-                    // If we got an unexpected exception, something very bad happened. We may have some 
-                    // operations that we initiated but that weren't completed. Make sure to clean up any 
-                    // such operations, failing them and releasing their resources.
+                    // There may still be active operations, if either an unexpected exception occurred or we received
+                    // a shutdown request. Make sure to clean up any remaining operations, failing them and releasing their resources.
                     if (_activeOperations.Count > 0)
                     {
-                        Debug.Assert(eventLoopError != null, "We should only have remaining operations if we got an unexpected exception");
-                        foreach (KeyValuePair<IntPtr, ActiveRequest> pair in _activeOperations)
+                        EventSourceTrace("Shutting down {0} active operations.", _activeOperations.Count);
+
+                        // Copy the operations to a tmp array so that we don't try to modify the dictionary while enumerating it
+                        var activeOps = new KeyValuePair<IntPtr, ActiveRequest>[_activeOperations.Count];
+                        ((IDictionary<IntPtr, ActiveRequest>)_activeOperations).CopyTo(activeOps, 0);
+
+                        // Fail all active ops
+                        foreach (KeyValuePair<IntPtr, ActiveRequest> pair in activeOps)
                         {
                             ActiveRequest failingOperation = pair.Value;
                             IntPtr failingOperationGcHandle = pair.Key;
@@ -450,7 +480,7 @@ namespace System.Net.Http
                             DeactivateActiveRequest(failingOperation.Easy, failingOperationGcHandle, failingOperation.CancellationRegistration);
 
                             // Complete the operation's task and clean up any of its resources
-                            failingOperation.Easy.FailRequest(CreateHttpRequestException(eventLoopError));
+                            failingOperation.Easy.FailRequest(CreateHttpRequestException(eventLoopError ?? new OperationCanceledException(SR.net_http_unix_handler_disposed)));
                             failingOperation.Easy.Cleanup(); // no active processing remains, so cleanup
                         }
 
@@ -460,7 +490,7 @@ namespace System.Net.Http
                 }
             }
 
-            private void HandleIncomingRequest(IncomingRequest request)
+            private bool HandleIncomingRequest(IncomingRequest request)
             {
                 Debug.Assert(!Monitor.IsEntered(_incomingRequests), "Incoming requests lock should only be held while accessing the queue");
                 EventSourceTrace("Type: {0}", request.Type, easy: request.Easy);
@@ -470,12 +500,12 @@ namespace System.Net.Http
                 {
                     case IncomingRequestType.New:
                         ActivateNewRequest(easy);
-                        break;
+                        return true;
 
                     case IncomingRequestType.Cancel:
                         Debug.Assert(easy._associatedMultiAgent == this, "Should only cancel associated easy requests");
                         FindAndFailActiveRequest(easy, new OperationCanceledException(easy._cancellationToken));
-                        break;
+                        return true;
 
                     case IncomingRequestType.Unpause:
                         Debug.Assert(easy._associatedMultiAgent == this, "Should only unpause associated easy requests");
@@ -495,11 +525,15 @@ namespace System.Net.Http
                                 FindAndFailActiveRequest(easy, exc);
                             }
                         }
-                        break;
+                        return true;
+
+                    case IncomingRequestType.Shutdown:
+                        Debug.Assert(easy == null, "Expected null easy for a Shutdown request");
+                        return false; // exit processing
 
                     default:
                         Debug.Fail("Invalid request type: " + request.Type);
-                        break;
+                        return true;
                 }
             }
 
@@ -1073,7 +1107,9 @@ namespace System.Net.Http
                 /// <summary>A request to cancel a request previously submitted to the agent.</summary>
                 Cancel,
                 /// <summary>A request to unpause the connection associated with a request previously submitted to the agent.</summary>
-                Unpause
+                Unpause,
+                /// <summary>A request to shutdown the agent and all active operations.  No easy request is associated with this type.</summary>
+                Shutdown
             }
         }
 
