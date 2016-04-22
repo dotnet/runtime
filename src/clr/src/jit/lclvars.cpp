@@ -4731,16 +4731,25 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     // If the frame pointer is used, then we'll save FP/LR at the bottom of the stack.
     // Otherwise, we won't store FP, and we'll store LR at the top, with the other callee-save
     // registers (if any).
+    int initialStkOffs = 0;
     if (isFramePointerUsed())
     {
         // Subtract off FP and LR.
         assert(compCalleeRegsPushed >= 2);
-        stkOffs -= (compCalleeRegsPushed - 2) * REGSIZE_BYTES;
+        initialStkOffs = (compCalleeRegsPushed - 2) * REGSIZE_BYTES;
     }
     else
     {
-        stkOffs -= compCalleeRegsPushed * REGSIZE_BYTES;
+        initialStkOffs = compCalleeRegsPushed * REGSIZE_BYTES;
     }
+
+    if (info.compIsVarArgs)
+    {
+        initialStkOffs += MAX_REG_ARG * REGSIZE_BYTES;
+    }
+
+    stkOffs -= initialStkOffs;
+
 #else // !_TARGET_ARM64_
     stkOffs -= compCalleeRegsPushed * REGSIZE_BYTES;
 #endif // !_TARGET_ARM64_
@@ -5093,6 +5102,15 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 if  (!varDsc->lvIsRegArg)
                     continue;
 
+#ifdef _TARGET_ARM64_
+                if (info.compIsVarArgs)
+                {
+                    // Stack offset to varargs (parameters) should point to home area which will be preallocated.
+                    varDsc->lvStkOffs = -initialStkOffs + genMapIntRegNumToRegArgNum(varDsc->GetArgReg()) * REGSIZE_BYTES;
+                    continue;
+                }
+#endif
+
 #ifdef _TARGET_ARM_
                 // On ARM we spill the registers in codeGen->regSet.rsMaskPreSpillRegArg
                 // in the prolog, thus they don't need stack frame space.
@@ -5321,6 +5339,14 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     // compLclFrameSize equals our negated virtual stack offset minus the pushed registers and return address
     // and the pushed frame pointer register which for some strange reason isn't part of 'compCalleeRegsPushed'.
     int pushedCount = compCalleeRegsPushed;
+
+#ifdef _TARGET_ARM64_
+    if (info.compIsVarArgs)
+    {
+        pushedCount += MAX_REG_ARG;
+    }
+#endif
+
 #ifdef _TARGET_XARCH_
     if (codeGen->doubleAlignOrFramePointerUsed())
         pushedCount += 1;                        // pushed EBP (frame pointer)

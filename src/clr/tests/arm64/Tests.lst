@@ -3980,7 +3980,7 @@ RelativePath=JIT\Directed\prefix\unaligned\1\arglist\arglist.cmd
 WorkingDir=JIT\Directed\prefix\unaligned\1\arglist
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_FAIL;ISSUE_4424
+Categories=Pri0;EXPECTED_PASS
 HostStyle=0
 [array_tests.cmd_585]
 RelativePath=JIT\Directed\prefix\unaligned\1\array_tests\array_tests.cmd
@@ -4085,7 +4085,7 @@ RelativePath=JIT\Directed\prefix\unaligned\2\arglist\arglist.cmd
 WorkingDir=JIT\Directed\prefix\unaligned\2\arglist
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_FAIL;ISSUE_4424
+Categories=Pri0;EXPECTED_PASS
 HostStyle=0
 [array_tests.cmd_600]
 RelativePath=JIT\Directed\prefix\unaligned\2\array_tests\array_tests.cmd
@@ -4183,7 +4183,7 @@ RelativePath=JIT\Directed\prefix\unaligned\4\arglist\arglist.cmd
 WorkingDir=JIT\Directed\prefix\unaligned\4\arglist
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_FAIL;ISSUE_4424
+Categories=Pri0;EXPECTED_PASS
 HostStyle=0
 [array_tests.cmd_614]
 RelativePath=JIT\Directed\prefix\unaligned\4\array_tests\array_tests.cmd
@@ -4288,7 +4288,7 @@ RelativePath=JIT\Directed\prefix\volatile\1\arglist\arglist.cmd
 WorkingDir=JIT\Directed\prefix\volatile\1\arglist
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_FAIL
+Categories=Pri0;EXPECTED_PASS
 HostStyle=0
 [array_tests.cmd_629]
 RelativePath=JIT\Directed\prefix\volatile\1\array_tests\array_tests.cmd

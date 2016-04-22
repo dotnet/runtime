@@ -1135,6 +1135,12 @@ void                CodeGen::genCaptureFuncletPrologEpilogInfo()
 
     unsigned saveRegsCount = genCountBits(rsMaskSaveRegs);
     unsigned saveRegsPlusPSPSize = saveRegsCount * REGSIZE_BYTES + /* PSPSym */ REGSIZE_BYTES;
+    if (compiler->info.compIsVarArgs)
+    {
+        // For varargs we always save all of the integer register arguments
+        // so that they are contiguous with the incoming stack arguments.
+        saveRegsPlusPSPSize += MAX_REG_ARG * REGSIZE_BYTES;
+    }
     unsigned saveRegsPlusPSPSizeAligned = (unsigned)roundUp(saveRegsPlusPSPSize, STACK_ALIGN);
 
     assert(compiler->lvaOutgoingArgSpaceSize % REGSIZE_BYTES == 0);
