@@ -1505,39 +1505,39 @@ combinedScenarios.each { scenario ->
                                 }
                             }
 
-
-                            // Unzip the tests first.  Exit with 0
-                            shell("unzip -q -o ./bin/tests/tests.zip -d ./clr/bin/tests/Windows_NT.${architecture}.${configuration} || exit 0")
-
                             if (scenario == 'coverage') {
                                 // Move coreclr to clr directory
                                 shell("rm -rf .clr; mkdir .clr; mv * .clr; mv .git .clr; mv .clr clr")
+                                
+                                // Unzip the tests first.  Exit with 0
+                                shell("unzip -q -o ./bin/tests/tests.zip -d ./clr/bin/tests/Windows_NT.${architecture}.${configuration} || exit 0")
+
                                 shell("ls clr")
                                 // Get corefx
                                 shell("git clone https://github.com/dotnet/corefx fx")
                                 shell("ls")
                                 shell("pwd")
                                 // Build Linux corefx
-                                shell("${WORKSPACE}/fx/build.sh x64 release Linux skiptests")
+                                shell("./fx/build.sh x64 release Linux skiptests")
                                 // Check contents of bin directory - this can be removed after we confirm everything is as expected
-                                shell("ls ${WORKSPACE}/fx/bin")
+                                shell("ls ./fx/bin")
 
                                 // Run corefx tests
-                                shell("""${WORKSPACE}/fx/run-test.sh \\
+                                shell("""./fx/run-test.sh \\
                 --coreclr-bins ${WORKSPACE}/clr/bin/Product/${osGroup}.${architecture}.${configuration} \\
                 --mscorlib-bins ${WORKSPACE}/clr/bin/Product/${osGroup}.${architecture}.${configuration} \\
                 --corefx-tests ${WORKSPACE}/fx/bin/tests/{osGroup}.AnyCPU.{configuration} \\
                 --corefx-native-bins ${WORKSPACE}/fx/bin/${osGroup}.${architecture}.${configuration}""")
 
                                 // Run coreclr GC tests w/ server GC enabled
-                                shell("""${WORKSPACE}/clr/tests/runtest.sh \\
+                                shell("""./clr/tests/runtest.sh \\
                 --testRootDir=\"\${WORKSPACE}/clr/bin/tests/Windows_NT.${architecture}.${configuration}/GC\" \\
                 --testNativeBinDir=\"\${WORKSPACE}/clr/bin/obj/${osGroup}.${architecture}.${configuration}/tests\" \\
                 --coreOverlayDir=\"\${WORKSPACE}/clr/bin/tests/Windows_NT.${architecture}.${configuration}/Tests/coreoverlay\" \\
                 --crossgen --useServerGC""")
 
                                 // Run coreclr tests w/ workstation GC & produce coverage reports
-                                shell("""${WORKSPACE}/clr/tests/runtest.sh \\
+                                shell("""./clr/tests/runtest.sh \\
                 --testRootDir=\"\${WORKSPACE}/clr/bin/tests/Windows_NT.${architecture}.${configuration}\" \\
                 --testNativeBinDir=\"\${WORKSPACE}/clr/bin/obj/${osGroup}.${architecture}.${configuration}/tests\" \\
                 --coreClrBinDir=\"\${WORKSPACE}/clr/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
@@ -1588,6 +1588,9 @@ combinedScenarios.each { scenario ->
                                     // Unpack the corefx binaries
                                     shell("unpacker ./bin/build.pack ./bin")
                                 }
+
+                                // Unzip the tests first.  Exit with 0
+                                shell("unzip -q -o ./bin/tests/tests.zip -d ./bin/tests/Windows_NT.${architecture}.${configuration} || exit 0")
                             
                                 // Execute the tests
                                 // If we are running a stress mode, we'll set those variables first
