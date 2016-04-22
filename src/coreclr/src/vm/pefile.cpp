@@ -1748,11 +1748,11 @@ static void RuntimeVerifyLog(DWORD level, LoggableAssembly *pLogAsm, const WCHAR
 static const LPCWSTR CorCompileRuntimeDllNames[NUM_RUNTIME_DLLS] =
 {
 #ifdef FEATURE_CORECLR
-    MAKEDLLNAME_W(W("CORECLR"))
+    MAKEDLLNAME_W(W("coreclr")),
 #else
     MAKEDLLNAME_W(W("CLR")),
-    MAKEDLLNAME_W(W("CLRJIT"))
 #endif
+    MAKEDLLNAME_W(W("clrjit"))
 };
 
 #if !defined(FEATURE_CORECLR) && !defined(CROSSGEN_COMPILE)
@@ -1828,7 +1828,7 @@ extern HMODULE CorCompileGetRuntimeDll(CorCompileRuntimeDlls id)
 
     // Currently special cased for every entry.
 #ifdef FEATURE_CORECLR
-    static_assert_no_msg(NUM_RUNTIME_DLLS == 1);
+    static_assert_no_msg(NUM_RUNTIME_DLLS == 2);
     static_assert_no_msg(CORECLR_INFO == 0);
 #else // !FEATURE_CORECLR
     static_assert_no_msg(NUM_RUNTIME_DLLS == 2);

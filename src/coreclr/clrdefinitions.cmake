@@ -130,10 +130,13 @@ add_definitions(-DFEATURE_MANAGED_ETW)
 add_definitions(-DFEATURE_MANAGED_ETW_CHANNELS)
 add_definitions(-DFEATURE_MAIN_CLR_MODULE_USES_CORE_NAME)
 add_definitions(-DFEATURE_MERGE_CULTURE_SUPPORT_AND_ENGINE)
-if(WIN32)
-# Disable the following for UNIX altjit on Windows
-add_definitions(-DFEATURE_MERGE_JIT_AND_ENGINE)
-endif(WIN32)
+
+# TODO_DJIT: Remove this "set" to commence loading JIT dynamically.
+set(FEATURE_MERGE_JIT_AND_ENGINE 1)
+if(FEATURE_MERGE_JIT_AND_ENGINE)
+  # Disable the following for UNIX altjit on Windows
+  add_definitions(-DFEATURE_MERGE_JIT_AND_ENGINE)
+endif(FEATURE_MERGE_JIT_AND_ENGINE)
 add_definitions(-DFEATURE_MULTICOREJIT)
 add_definitions(-DFEATURE_NORM_IDNA_ONLY)
 if(CLR_CMAKE_PLATFORM_UNIX)
