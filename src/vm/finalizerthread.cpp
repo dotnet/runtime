@@ -1284,7 +1284,6 @@ BOOL FinalizerThread::FinalizerThreadWatchDog()
         
         BOOL fTimeOut = (status == WAIT_TIMEOUT) ? TRUE : FALSE;
 
-#ifndef GOLDEN
         if (fTimeOut) 
         {
             if (dwBreakOnFinalizeTimeOut) {
@@ -1292,7 +1291,6 @@ BOOL FinalizerThread::FinalizerThreadWatchDog()
                 DebugBreak();
             }
         }
-#endif // GOLDEN
 
         if (pThread)
         {
@@ -1448,13 +1446,12 @@ BOOL FinalizerThread::FinalizerThreadWatchDogHelper()
         }
     }
 
-#ifndef GOLDEN
-    if (fTimeOut) 
+    if (fTimeOut)
     {
         if (dwBreakOnFinalizeTimeOut){
             DebugBreak();
         }
     }
-#endif
+
     return fTimeOut;
 }

@@ -9,8 +9,7 @@
 #include "sstring.h"
 
 //=============================================================================
-// ALL THE PERF LOG CODE IS COMPILED ONLY IF THE ENABLE_PERF_LOG WAS DEFINED.
-// ENABLE_PERF_LOGis defined if GOLDEN or DISABLE_PERF_LOG is not defined.
+// ALL THE PERF LOG CODE IS COMPILED ONLY IF ENABLE_PERF_LOG IS DEFINED.
 #if defined (ENABLE_PERF_LOG)
 //=============================================================================
 
