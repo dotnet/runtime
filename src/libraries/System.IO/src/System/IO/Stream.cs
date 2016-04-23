@@ -104,30 +104,7 @@ namespace System.IO
 
         public virtual Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
-            if (destination == null)
-            {
-                throw new ArgumentNullException(nameof(destination));
-            }
-            if (bufferSize <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
-            }
-            if (!CanRead && !CanWrite)
-            {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
-            }
-            if (!destination.CanRead && !destination.CanWrite)
-            {
-                throw new ObjectDisposedException(nameof(destination), SR.ObjectDisposed_StreamClosed);
-            }
-            if (!CanRead)
-            {
-                throw new NotSupportedException(SR.NotSupported_UnreadableStream);
-            }
-            if (!destination.CanWrite)
-            {
-                throw new NotSupportedException(SR.NotSupported_UnwritableStream);
-            }
+            ValidateCopyToArguments(destination, bufferSize);
 
             return CopyToAsyncInternal(destination, bufferSize, cancellationToken);
         }
@@ -152,66 +129,12 @@ namespace System.IO
         // the current position.
         public void CopyTo(Stream destination)
         {
-            if (destination == null)
-            {
-                throw new ArgumentNullException(nameof(destination));
-            }
-            if (!CanRead && !CanWrite)
-            {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
-            }
-            if (!destination.CanRead && !destination.CanWrite)
-            {
-                throw new ObjectDisposedException(nameof(destination), SR.ObjectDisposed_StreamClosed);
-            }
-            if (!CanRead)
-            {
-                throw new NotSupportedException(SR.NotSupported_UnreadableStream);
-            }
-            if (!destination.CanWrite)
-            {
-                throw new NotSupportedException(SR.NotSupported_UnwritableStream);
-            }
-
-            InternalCopyTo(destination, DefaultCopyBufferSize);
+            CopyTo(destination, DefaultCopyBufferSize);
         }
 
         public void CopyTo(Stream destination, int bufferSize)
         {
-            if (destination == null)
-            {
-                throw new ArgumentNullException(nameof(destination));
-            }
-            if (bufferSize <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
-            }
-            if (!CanRead && !CanWrite)
-            {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
-            }
-            if (!destination.CanRead && !destination.CanWrite)
-            {
-                throw new ObjectDisposedException(nameof(destination), SR.ObjectDisposed_StreamClosed);
-            }
-            if (!CanRead)
-            {
-                throw new NotSupportedException(SR.NotSupported_UnreadableStream);
-            }
-            if (!destination.CanWrite)
-            {
-                throw new NotSupportedException(SR.NotSupported_UnwritableStream);
-            }
-
-            InternalCopyTo(destination, bufferSize);
-        }
-
-        private void InternalCopyTo(Stream destination, int bufferSize)
-        {
-            Debug.Assert(destination != null);
-            Debug.Assert(CanRead);
-            Debug.Assert(destination.CanWrite);
-            Debug.Assert(bufferSize > 0);
+            ValidateCopyToArguments(destination, bufferSize);
 
             byte[] buffer = new byte[bufferSize];
             int read;
@@ -221,13 +144,11 @@ namespace System.IO
             }
         }
 
-
         public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
         }
-
 
         protected virtual void Dispose(bool disposing)
         {
@@ -362,6 +283,34 @@ namespace System.IO
             oneByteArray[0] = value;
             Write(oneByteArray, 0, 1);
         }
+        
+        internal void ValidateCopyToArguments(Stream destination, int bufferSize)
+        {
+            if (destination == null)
+            {
+                throw new ArgumentNullException(nameof(destination));
+            }
+            if (bufferSize <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
+            }
+            if (!CanRead && !CanWrite)
+            {
+                throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
+            }
+            if (!destination.CanRead && !destination.CanWrite)
+            {
+                throw new ObjectDisposedException(nameof(destination), SR.ObjectDisposed_StreamClosed);
+            }
+            if (!CanRead)
+            {
+                throw new NotSupportedException(SR.NotSupported_UnreadableStream);
+            }
+            if (!destination.CanWrite)
+            {
+                throw new NotSupportedException(SR.NotSupported_UnwritableStream);
+            }
+        }
 
         private sealed class NullStream : Stream
         {
@@ -397,6 +346,17 @@ namespace System.IO
             {
                 get { return 0; }
                 set { }
+            }
+            
+            public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+            {
+                // Validate arguments for compat, since previously this
+                // method was inherited from Stream, which did check its arguments.
+                ValidateCopyToArguments(destination, bufferSize);
+                
+                return cancellationToken.IsCancellationRequested ?
+                    Task.FromCanceled(cancellationToken) :
+                    Task.CompletedTask;
             }
 
             protected override void Dispose(bool disposing)
