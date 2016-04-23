@@ -338,6 +338,9 @@ def outerloopLinuxOSes = ['Ubuntu15.10', 'CentOS7.1', 'OpenSUSE13.2', 'RHEL7.2']
             if (os == 'Ubuntu14.04') {
                 Utilities.setMachineAffinity(newJob, os, "outer-latest-or-auto")    
             }
+            else if (os == 'Windows_NT') {
+                 Utilities.setMachineAffinity(newJob, os, "latest-or-auto-elevated")
+            }
             else {
                 Utilities.setMachineAffinity(newJob, os, 'latest-or-auto')
             }
