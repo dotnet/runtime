@@ -227,6 +227,11 @@ DebugExtensionInitialize(PULONG Version, PULONG Flags)
     {
         return Hr;
     }
+    
+    // Fixes the "Unable to read dynamic function table entries" error messages by disabling the WinDbg security
+    // feature that prevents the loading of unknown out of proc tack walkers.
+    DebugControl->Execute(DEBUG_OUTCTL_IGNORE, ".settings set EngineInitialization.VerifyFunctionTableCallbacks=false", 
+        DEBUG_EXECUTE_NOT_LOGGED | DEBUG_EXECUTE_NO_REPEAT);
 
     ExtQuery(DebugClient);
     if (IsMiniDumpFileNODAC())

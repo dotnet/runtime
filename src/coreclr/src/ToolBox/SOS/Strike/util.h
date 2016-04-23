@@ -1032,6 +1032,7 @@ DefineFormatClass(ThreadID, Formats::Hex, Output::DML_ThreadID);
 DefineFormatClass(RCWrapper, Formats::Pointer, Output::DML_RCWrapper);
 DefineFormatClass(CCWrapper, Formats::Pointer, Output::DML_CCWrapper);
 DefineFormatClass(InstructionPtr, Formats::Pointer, Output::DML_IP);
+DefineFormatClass(NativePtr, Formats::Pointer, Output::DML_None);
 
 DefineFormatClass(Decimal, Formats::Decimal, Output::DML_None);
 DefineFormatClass(Pointer, Formats::Pointer, Output::DML_None);

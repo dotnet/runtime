@@ -5921,6 +5921,7 @@ PALIMPORT WCHAR * __cdecl PAL_wcstok(WCHAR *, const WCHAR *);
 PALIMPORT size_t __cdecl PAL_wcscspn(const WCHAR *, const WCHAR *);
 PALIMPORT int __cdecl PAL_swprintf(WCHAR *, const WCHAR *, ...);
 PALIMPORT int __cdecl PAL_vswprintf(WCHAR *, const WCHAR *, va_list);
+PALIMPORT int __cdecl PAL__vsnprintf(LPSTR Buffer, size_t Count, LPCSTR Format, va_list ap);
 PALIMPORT int __cdecl _snwprintf(WCHAR *, size_t, const WCHAR *, ...);
 PALIMPORT int __cdecl PAL_swscanf(const WCHAR *, const WCHAR *, ...);
 PALIMPORT LONG __cdecl PAL_wcstol(const WCHAR *, WCHAR **, int);
