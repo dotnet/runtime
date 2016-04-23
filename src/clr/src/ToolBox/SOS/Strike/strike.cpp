@@ -12066,7 +12066,7 @@ public:
             if (SUCCEEDED(frameDataResult) && FrameData.frameAddr)
             {
                 // Skip the instruction pointer because it doesn't really mean anything for method frames
-                out.WriteColumn(1, bFull ? String("") : InstructionPtr(ip));
+                out.WriteColumn(1, bFull ? String("") : NativePtr(ip));
                 
                 // This is a clr!Frame.
                 out.WriteColumn(2, GetFrameFromAddress(TO_TADDR(FrameData.frameAddr), pStackWalk, bFull));
@@ -12100,8 +12100,10 @@ public:
                 if (bParams || bLocals)
                     PrintArgsAndLocals(pStackWalk, bParams, bLocals);
             }
-            if(bDisplayRegVals)
+
+            if (bDisplayRegVals)
                 PrintManagedFrameContext(pStackWalk);
+
         } while (pStackWalk->Next() == S_OK);
 
 #ifdef _TARGET_WIN64_
@@ -12201,7 +12203,7 @@ public:
         ULONG64 ip = frame->InstructionOffset;
 
         out.WriteColumn(0, frame->StackOffset);
-        out.WriteColumn(1, InstructionPtr(ip));
+        out.WriteColumn(1, NativePtr(ip));
 
         HRESULT hr = g_ExtSymbols->GetNameByOffset(TO_CDADDR(ip), symbol, _countof(symbol), NULL, &displacement);
         if (SUCCEEDED(hr) && symbol[0] != '\0')
