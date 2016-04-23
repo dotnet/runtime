@@ -527,6 +527,7 @@ namespace Mono.Linker.Steps {
 			if (type.HasMethods) {
 				MarkMethodsIf (type.Methods, IsVirtualAndHasPreservedParent);
 				MarkMethodsIf (type.Methods, IsStaticConstructorPredicate);
+				MarkMethodsIf (type.Methods, HasSerializationAttribute);
 			}
 
 			DoAdditionalTypeProcessing (type);
@@ -738,6 +739,25 @@ namespace Mono.Linker.Steps {
 		static bool IsStaticConstructor (MethodDefinition method)
 		{
 			return method.IsConstructor && method.IsStatic;
+		}
+
+		static bool HasSerializationAttribute (MethodDefinition method)
+		{
+			if (!method.HasCustomAttributes)
+				return false;
+			foreach (var ca in method.CustomAttributes) {
+				var cat = ca.AttributeType;
+				if (cat.Namespace != "System.Runtime.Serialization")
+					continue;
+				switch (cat.Name) {
+				case "OnDeserializedAttribute":
+				case "OnDeserializingAttribute":
+				case "OnSerializedAttribute":
+				case "OnSerializingAttribute":
+					return true;
+				}
+			}
+			return false;
 		}
 
 		static bool IsSerializable (TypeDefinition td)
