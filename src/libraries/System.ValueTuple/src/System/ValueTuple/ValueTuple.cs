@@ -15,6 +15,7 @@ namespace System
     {
         int GetHashCode(IEqualityComparer comparer);
         int Size { get; }
+        string ToStringEnd();
     }
 
     /// <summary>
@@ -115,6 +116,11 @@ namespace System
         public override string ToString()
         {
             return "()";
+        }
+
+        string ITupleInternal.ToStringEnd()
+        {
+            return ")";
         }
 
         int ITupleInternal.Size => 0;
@@ -405,7 +411,12 @@ namespace System
         /// </remarks>
         public override string ToString()
         {
-            return "(" + Item1 + ")";
+            return "(" + Item1.ToString() + ")";
+        }
+
+        string ITupleInternal.ToStringEnd()
+        {
+            return Item1.ToString() + ")";
         }
 
         int ITupleInternal.Size => 1;
@@ -585,7 +596,12 @@ namespace System
         /// </remarks>
         public override string ToString()
         {
-            return "(" + Item1 + ", " + Item2 + ")";
+            return "(" + Item1.ToString() + ", " + Item2.ToString() + ")";
+        }
+
+        string ITupleInternal.ToStringEnd()
+        {
+            return Item1.ToString() + ", " + Item2.ToString() + ")";
         }
 
         int ITupleInternal.Size => 2;
@@ -761,7 +777,12 @@ namespace System
         /// </remarks>
         public override string ToString()
         {
-            return "(" + Item1 + ", " + Item2 + ", " + Item3 + ")";
+            return "(" + Item1.ToString() + ", " + Item2.ToString() + ", " + Item3.ToString() + ")";
+        }
+
+        string ITupleInternal.ToStringEnd()
+        {
+            return Item1.ToString() + ", " + Item2.ToString() + ", " + Item3.ToString() + ")";
         }
 
         int ITupleInternal.Size => 3;
@@ -954,7 +975,12 @@ namespace System
         /// </remarks>
         public override string ToString()
         {
-            return "(" + Item1 + ", " + Item2 + ", " + Item3 + ", " + Item4 + ")";
+            return "(" + Item1.ToString() + ", " + Item2.ToString() + ", " + Item3.ToString() + ", " + Item4.ToString() + ")";
+        }
+
+        string ITupleInternal.ToStringEnd()
+        {
+            return Item1.ToString() + ", " + Item2.ToString() + ", " + Item3.ToString() + ", " + Item4.ToString() + ")";
         }
 
         int ITupleInternal.Size => 4;
@@ -1164,7 +1190,12 @@ namespace System
         /// </remarks>
         public override string ToString()
         {
-            return "(" + Item1 + ", " + Item2 + ", " + Item3 + ", " + Item4 + ", " + Item5 + ")";
+            return "(" + Item1.ToString() + ", " + Item2.ToString() + ", " + Item3.ToString() + ", " + Item4.ToString() + ", " + Item5.ToString() + ")";
+        }
+
+        string ITupleInternal.ToStringEnd()
+        {
+            return Item1.ToString() + ", " + Item2.ToString() + ", " + Item3.ToString() + ", " + Item4.ToString() + ", " + Item5.ToString() + ")";
         }
 
         int ITupleInternal.Size => 5;
@@ -1391,7 +1422,12 @@ namespace System
         /// </remarks>
         public override string ToString()
         {
-            return "(" + Item1 + ", " + Item2 + ", " + Item3 + ", " + Item4 + ", " + Item5 + ", " + Item6 + ")";
+            return "(" + Item1.ToString() + ", " + Item2.ToString() + ", " + Item3.ToString() + ", " + Item4.ToString() + ", " + Item5.ToString() + ", " + Item6.ToString() + ")";
+        }
+
+        string ITupleInternal.ToStringEnd()
+        {
+            return Item1.ToString() + ", " + Item2.ToString() + ", " + Item3.ToString() + ", " + Item4.ToString() + ", " + Item5.ToString() + ", " + Item6.ToString() + ")";
         }
 
         int ITupleInternal.Size => 6;
@@ -1635,7 +1671,12 @@ namespace System
         /// </remarks>
         public override string ToString()
         {
-            return "(" + Item1 + ", " + Item2 + ", " + Item3 + ", " + Item4 + ", " + Item5 + ", " + Item6 + ", " + Item7 + ")";
+            return "(" + Item1.ToString() + ", " + Item2.ToString() + ", " + Item3.ToString() + ", " + Item4.ToString() + ", " + Item5.ToString() + ", " + Item6.ToString() + ", " + Item7.ToString() + ")";
+        }
+
+        string ITupleInternal.ToStringEnd()
+        {
+            return Item1.ToString() + ", " + Item2.ToString() + ", " + Item3.ToString() + ", " + Item4.ToString() + ", " + Item5.ToString() + ", " + Item6.ToString() + ", " + Item7.ToString() + ")";
         }
 
         int ITupleInternal.Size => 7;
@@ -1995,14 +2036,36 @@ namespace System
         /// </remarks>
         public override string ToString()
         {
-            return "(" + Item1 + ", " + Item2 + ", " + Item3 + ", " + Item4 + ", " + Item5 + ", " + Item6 + ", " + Item7 + ", " + Rest + ")";
+            ITupleInternal rest = Rest as ITupleInternal;
+            if (rest == null)
+            {
+                return "(" + Item1.ToString() + ", " + Item2.ToString() + ", " + Item3.ToString() + ", " + Item4.ToString() + ", " + Item5.ToString() + ", " + Item6.ToString() + ", " + Item7.ToString() + ", " + Rest.ToString() + ")";
+            }
+            else
+            {
+                return "(" + Item1.ToString() + ", " + Item2.ToString() + ", " + Item3.ToString() + ", " + Item4.ToString() + ", " + Item5.ToString() + ", " + Item6.ToString() + ", " + Item7.ToString() + ", " + rest.ToStringEnd();
+            }
+        }
+
+        string ITupleInternal.ToStringEnd()
+        {
+            ITupleInternal rest = Rest as ITupleInternal;
+            if (rest == null)
+            {
+                return Item1.ToString() + ", " + Item2.ToString() + ", " + Item3.ToString() + ", " + Item4.ToString() + ", " + Item5.ToString() + ", " + Item6.ToString() + ", " + Item7.ToString() + ", " + Rest.ToString() + ")";
+            }
+            else
+            {
+                return Item1.ToString() + ", " + Item2.ToString() + ", " + Item3.ToString() + ", " + Item4.ToString() + ", " + Item5.ToString() + ", " + Item6.ToString() + ", " + Item7.ToString() + ", " + rest.ToStringEnd();
+            }
         }
 
         int ITupleInternal.Size
         {
             get
             {
-                return 7 + ((ITupleInternal)Rest).Size;
+                ITupleInternal rest = Rest as ITupleInternal;
+                return rest == null ? 8 : 7 + rest.Size;
             }
         }
     }
