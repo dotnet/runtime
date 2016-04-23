@@ -10,7 +10,7 @@ namespace System.Tests
     public static class LazyTests
     {
         [Fact]
-        public static void Test_Ctor()
+        public static void Ctor()
         {
             var lazyString = new Lazy<string>();
             VerifyLazy(lazyString, "", false);
@@ -22,14 +22,14 @@ namespace System.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public static void TestCtor_Bool(bool isThreadSafe)
+        public static void Ctor_Bool(bool isThreadSafe)
         {
             var lazyString = new Lazy<string>(isThreadSafe);
             VerifyLazy(lazyString, "", false);
         }
 
         [Fact]
-        public static void TestCtor_ValueFactory()
+        public static void Ctor_ValueFactory()
         {
             var lazyString = new Lazy<string>(() => "foo");
             VerifyLazy(lazyString, "foo", true);
@@ -39,20 +39,20 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void TestCtor_ValueFactory_Invalid()
+        public static void Ctor_ValueFactory_NullValueFactory_ThrowsArguentNullException()
         {
             Assert.Throws<ArgumentNullException>("valueFactory", () => new Lazy<object>(null)); // Value factory is null
         }
 
         [Fact]
-        public static void TestCtor_LazyThreadSafetyMode()
+        public static void Ctor_LazyThreadSafetyMode()
         {
             var lazyString = new Lazy<string>(LazyThreadSafetyMode.PublicationOnly);
             VerifyLazy(lazyString, "", false);
         }
 
         [Fact]
-        public static void TestCtor_LazyThreadSafetyMode_Invalid()
+        public static void Ctor_LazyThreadSafetyMode_InvalidMode_ThrowsArgumentOutOfRangeException()
         {
             Assert.Throws<ArgumentOutOfRangeException>("mode", () => new Lazy<string>(LazyThreadSafetyMode.None - 1)); // Invalid thread saftety mode
             Assert.Throws<ArgumentOutOfRangeException>("mode", () => new Lazy<string>(LazyThreadSafetyMode.ExecutionAndPublication + 1)); // Invalid thread saftety mode
@@ -61,20 +61,20 @@ namespace System.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public static void TestCtor_ValueFactor_Bool(bool isThreadSafe)
+        public static void Ctor_ValueFactor_Bool(bool isThreadSafe)
         {
             var lazyString = new Lazy<string>(() => "foo", isThreadSafe);
             VerifyLazy(lazyString, "foo", true);
         }
 
         [Fact]
-        public static void TestCtor_ValueFactory_Bool_NullValueFactory_ThrowsArgumentNullException()
+        public static void Ctor_ValueFactory_Bool_NullValueFactory_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("valueFactory", () => new Lazy<object>(null, false)); // Value factory is null
         }
 
         [Fact]
-        public static void TestCtor_ValueFactor_LazyThreadSafetyMode()
+        public static void Ctor_ValueFactor_LazyThreadSafetyMode()
         {
             var lazyString = new Lazy<string>(() => "foo", LazyThreadSafetyMode.PublicationOnly);
             VerifyLazy(lazyString, "foo", true);
@@ -84,7 +84,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void TestCtor_ValueFactor_LazyThreadSafetyMode_Invalid()
+        public static void Ctor_ValueFactor_LazyThreadSafetyMode_Invalid()
         {
             Assert.Throws<ArgumentNullException>("valueFactory", () => new Lazy<object>(null, LazyThreadSafetyMode.PublicationOnly)); // Value factory is null
 
@@ -93,7 +93,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void TestToString_DoesntForceAllocation()
+        public static void ToString_DoesntForceAllocation()
         {
             var lazy = new Lazy<object>(() => 1);
             Assert.NotEqual("1", lazy.ToString());
@@ -104,7 +104,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void TestValue_Invalid()
+        public static void Value_Invalid()
         {
             string lazilyAllocatedValue = "abc";
 
@@ -119,7 +119,7 @@ namespace System.Tests
         [Theory]
         [InlineData(LazyThreadSafetyMode.ExecutionAndPublication)]
         [InlineData(LazyThreadSafetyMode.None)]
-        public static void TestValue_ThrownException_DoesntCreateValue(LazyThreadSafetyMode mode)
+        public static void Value_ThrownException_DoesntCreateValue(LazyThreadSafetyMode mode)
         {
             var lazy = new Lazy<string>(() => { throw new DivideByZeroException(); }, mode);
 
@@ -131,7 +131,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void TestValue_ThrownException_DoesntCreateValue_PublicationOnly()
+        public static void Value_ThrownException_DoesntCreateValue_PublicationOnly()
         {
             var lazy = new Lazy<string>(() => { throw new DivideByZeroException(); }, LazyThreadSafetyMode.PublicationOnly);
 
@@ -143,7 +143,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void TestEnsureInitalized_SimpleRefTypes()
+        public static void EnsureInitalized_SimpleRefTypes()
         {
             var hdcTemplate = new HasDefaultCtor();
             string strTemplate = "foo";
@@ -174,7 +174,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void TestEnsureInitalized_SimpleRefTypes_Invalid()
+        public static void EnsureInitalized_SimpleRefTypes_Invalid()
         {
             // Func based initialization (nulls not permitted).
             string e = null;
@@ -186,7 +186,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void TestEnsureInitialized_ComplexRefTypes()
+        public static void EnsureInitialized_ComplexRefTypes()
         {
             string strTemplate = "foo";
             var hdcTemplate = new HasDefaultCtor();
@@ -232,7 +232,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void TestEnsureInitalized_ComplexRefTypes_Invalid()
+        public static void EnsureInitalized_ComplexRefTypes_Invalid()
         {
             // Activator.CreateInstance (for a type without a default ctor).
             NoDefaultCtor ndc = null;
@@ -242,7 +242,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void TestLazyInitializerComplexValueTypes()
+        public static void LazyInitializerComplexValueTypes()
         {
             var empty = new LIX();
             var template = new LIX(33);

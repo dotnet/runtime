@@ -10,7 +10,7 @@ public static class FieldAccessExceptionTests
     private const int COR_E_FIELDACCESS = unchecked((int)0x80131507);
 
     [Fact]
-    public static void TestCtor_Empty()
+    public static void Ctor_Empty()
     {
         var exception = new FieldAccessException();
         Assert.NotEmpty(exception.Message);
@@ -18,7 +18,7 @@ public static class FieldAccessExceptionTests
     }
 
     [Fact]
-    public static void TestCtor_String()
+    public static void Ctor_String()
     {
         string message = "Created FieldAccessException";
         var exception = new FieldAccessException(message);
@@ -27,7 +27,7 @@ public static class FieldAccessExceptionTests
     }
 
     [Fact]
-    public static void TestCtor_String_Exception()
+    public static void Ctor_String_Exception()
     {
         string message = "Created FieldAccessException";
         var innerException = new Exception("Created inner exception");

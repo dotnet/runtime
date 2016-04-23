@@ -10,27 +10,27 @@ using Xunit;
 public static class Int16Tests
 {
     [Fact]
-    public static void TestCtor_Empty()
+    public static void Ctor_Empty()
     {
         var i = new short();
         Assert.Equal(0, i);
     }
 
     [Fact]
-    public static void TestCtor_Value()
+    public static void Ctor_Value()
     {
         short i = 41;
         Assert.Equal(41, i);
     }
 
     [Fact]
-    public static void TestMaxValue()
+    public static void MaxValue()
     {
         Assert.Equal(0x7FFF, short.MaxValue);
     }
 
     [Fact]
-    public static void TestMinValue()
+    public static void MinValue()
     {
         Assert.Equal(unchecked((short)0x8000), short.MinValue);
     }
@@ -47,7 +47,7 @@ public static class Int16Tests
     [InlineData((short)-234, (short)234, -1)]
     [InlineData((short)-234, (short)-432, 1)]
     [InlineData((short)234, null, 1)]
-    public static void TestCompareTo(short i, object obj, int expected)
+    public static void CompareTo(short i, object obj, int expected)
     {
         if (obj is short)
         {
@@ -58,7 +58,7 @@ public static class Int16Tests
     }
 
     [Fact]
-    public static void TestCompareTo_Invalid()
+    public static void CompareTo_ObjectNotShort_ThrowsArgumentException()
     {
         IComparable comparable = (short)234;
         Assert.Throws<ArgumentException>(null, () => comparable.CompareTo("a")); // Obj is not a short
@@ -75,7 +75,7 @@ public static class Int16Tests
     [InlineData((short)789, null, false)]
     [InlineData((short)789, "789", false)]
     [InlineData((short)789, 789, false)]
-    public static void TestEquals(short i1, object obj, bool expected)
+    public static void Equals(short i1, object obj, bool expected)
     {
         if (obj is short)
         {
@@ -110,7 +110,7 @@ public static class Int16Tests
 
     [Theory]
     [MemberData(nameof(ToString_TestData))]
-    public static void TestToString(short i, string format, IFormatProvider provider, string expected)
+    public static void ToString(short i, string format, IFormatProvider provider, string expected)
     {
         // Format is case insensitive
         string upperFormat = format.ToUpperInvariant();
@@ -141,7 +141,7 @@ public static class Int16Tests
     }
 
     [Fact]
-    public static void TestToString_Invalid()
+    public static void ToString_InvalidFormat_ThrowsFormatException()
     {
         short i = 123;
         Assert.Throws<FormatException>(() => i.ToString("Y")); // Invalid format
@@ -179,7 +179,7 @@ public static class Int16Tests
 
     [Theory]
     [MemberData(nameof(Parse_Valid_TestData))]
-    public static void TestParse(string value, NumberStyles style, IFormatProvider provider, short expected)
+    public static void Parse(string value, NumberStyles style, IFormatProvider provider, short expected)
     {
         short result;
         // If no style is specified, use the (String) or (String, IFormatProvider) overload
@@ -252,7 +252,7 @@ public static class Int16Tests
 
     [Theory]
     [MemberData(nameof(Parse_Invalid_TestData))]
-    public static void TestParse_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
+    public static void Parse_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
     {
         short result;
         // If no style is specified, use the (String) or (String, IFormatProvider) overload
@@ -285,7 +285,7 @@ public static class Int16Tests
     [Theory]
     [InlineData(NumberStyles.HexNumber | NumberStyles.AllowParentheses)]
     [InlineData(unchecked((NumberStyles)0xFFFFFC00))]
-    public static void TestTryParse_InvalidNumberStyle_ThrowsArgumentException(NumberStyles style)
+    public static void TryParse_InvalidNumberStyle_ThrowsArgumentException(NumberStyles style)
     {
         short result = 0;
         Assert.Throws<ArgumentException>(() => short.TryParse("1", style, null, out result));

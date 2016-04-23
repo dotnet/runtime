@@ -10,27 +10,27 @@ using Xunit;
 public static class UInt64Tests
 {
     [Fact]
-    public static void TestCtor_Empty()
+    public static void Ctor_Empty()
     {
         var i = new ulong();
         Assert.Equal((ulong)0, i);
     }
 
     [Fact]
-    public static void TestCtor_Value()
+    public static void Ctor_Value()
     {
         ulong i = 41;
         Assert.Equal((ulong)41, i);
     }
 
     [Fact]
-    public static void TestMaxValue()
+    public static void MaxValue()
     {
         Assert.Equal(0xFFFFFFFFFFFFFFFF, ulong.MaxValue);
     }
 
     [Fact]
-    public static void TestMinValue()
+    public static void MinValue()
     {
         Assert.Equal((ulong)0, ulong.MinValue);
     }
@@ -43,7 +43,7 @@ public static class UInt64Tests
     [InlineData((ulong)234, (ulong)456, -1)]
     [InlineData((ulong)234, ulong.MaxValue, -1)]
     [InlineData((ulong)234, null, 1)]
-    public static void TestCompareTo(ulong i, object value, int expected)
+    public static void CompareTo(ulong i, object value, int expected)
     {
         if (value is ulong)
         {
@@ -54,7 +54,7 @@ public static class UInt64Tests
     }
 
     [Fact]
-    public static void TestCompareTo_Invalid()
+    public static void CompareTo_ObjectNotULong_ThrowsArgumentException()
     {
         IComparable comparable = (ulong)234;
         Assert.Throws<ArgumentException>(null, () => comparable.CompareTo("a")); // Obj is not a ulong
@@ -68,7 +68,7 @@ public static class UInt64Tests
     [InlineData((ulong)789, null, false)]
     [InlineData((ulong)789, "789", false)]
     [InlineData((ulong)789, 789, false)]
-    public static void TestEquals(ulong i1, object obj, bool expected)
+    public static void Equals(ulong i1, object obj, bool expected)
     {
         if (obj is ulong)
         {
@@ -99,7 +99,7 @@ public static class UInt64Tests
 
     [Theory]
     [MemberData(nameof(ToStringTestData))]
-    public static void TestToString(ulong i, string format, IFormatProvider provider, string expected)
+    public static void ToString(ulong i, string format, IFormatProvider provider, string expected)
     {
         // Format is case insensitive
         string upperFormat = format.ToUpperInvariant();
@@ -130,7 +130,7 @@ public static class UInt64Tests
     }
 
     [Fact]
-    public static void TestToString_Invalid()
+    public static void ToString_InvalidFormat_ThrowsFormatException()
     {
         ulong i = 123;
         Assert.Throws<FormatException>(() => i.ToString("Y")); // Invalid format
@@ -165,7 +165,7 @@ public static class UInt64Tests
 
     [Theory]
     [MemberData(nameof(Parse_Valid_TestData))]
-    public static void TestParse(string value, NumberStyles style, IFormatProvider provider, ulong expected)
+    public static void Parse(string value, NumberStyles style, IFormatProvider provider, ulong expected)
     {
         ulong result;
         // If no style is specified, use the (String) or (String, IFormatProvider) overload
@@ -234,7 +234,7 @@ public static class UInt64Tests
 
     [Theory]
     [MemberData(nameof(Parse_Invalid_TestData))]
-    public static void TestParse_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
+    public static void Parse_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
     {
         ulong result;
         // If no style is specified, use the (String) or (String, IFormatProvider) overload
@@ -267,7 +267,7 @@ public static class UInt64Tests
     [Theory]
     [InlineData(NumberStyles.HexNumber | NumberStyles.AllowParentheses)]
     [InlineData(unchecked((NumberStyles)0xFFFFFC00))]
-    public static void TestTryParse_InvalidNumberStyle_ThrowsArgumentException(NumberStyles style)
+    public static void TryParse_InvalidNumberStyle_ThrowsArgumentException(NumberStyles style)
     {
         ulong result = 0;
         Assert.Throws<ArgumentException>(() => ulong.TryParse("1", style, null, out result));

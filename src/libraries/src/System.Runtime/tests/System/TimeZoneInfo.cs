@@ -6,7 +6,6 @@ using System;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Runtime.InteropServices;
-
 using Xunit;
 
 public static class TimeZoneInfoTests
@@ -51,7 +50,7 @@ public static class TimeZoneInfoTests
     private static readonly int s_sydneyOffsetLastWeekOfMarch2006 = s_isWindows ? 10 : 11;
 
     [Fact]
-    public static void TestKind()
+    public static void Kind()
     {
         TimeZoneInfo tzi = TimeZoneInfo.Local;
         Assert.Equal(tzi, TimeZoneInfo.Local);
@@ -60,7 +59,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    public static void TestNames()
+    public static void Names()
     {
         TimeZoneInfo local = TimeZoneInfo.Local;
         TimeZoneInfo utc = TimeZoneInfo.Utc;
@@ -89,7 +88,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    public static void ValidateLibyaTimeZoneTest()
+    public static void LibyaTimeZone()
     {
         TimeZoneInfo tripoli;
         // Make sure first the timezone data is updated in the machine as it should include Libya Timezone
@@ -113,7 +112,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    public static void ValidateRussiaTimeZoneTest()
+    public static void RussianTimeZone()
     {
         TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById(s_strRussian);
         var inputUtcDate = new DateTime(2013, 6, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -128,7 +127,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    public static void ValidateExceptionsTest()
+    public static void ConvertTime_DateTimeOffset_Invalid()
     {
         DateTimeOffset time1 = new DateTimeOffset(2006, 5, 12, 0, 0, 0, TimeSpan.Zero);
 
@@ -155,7 +154,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    public static void NearMinMaxDateTimeOffsetConvertTest()
+    public static void ConvertTime_DateTimeOffset_NearMinMaxValue()
     {
         VerifyConvert(DateTimeOffset.MaxValue, TimeZoneInfo.Utc.Id, DateTimeOffset.MaxValue);
         VerifyConvert(DateTimeOffset.MaxValue, s_strPacific, new DateTimeOffset(DateTime.MaxValue.AddHours(-8), new TimeSpan(-8, 0, 0)));
@@ -187,7 +186,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    public static void DateTimeOffsetVariousSystemTimeZonesTest()
+    public static void ConvertTime_DateTimeOffset_VariousSystemTimeZones()
     {
         var time1 = new DateTimeOffset(2006, 5, 12, 5, 17, 42, new TimeSpan(-7, 0, 0));
         var time2 = new DateTimeOffset(2006, 5, 12, 22, 17, 42, new TimeSpan(10, 0, 0));
@@ -295,7 +294,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    public static void SameTimeZonesTest()
+    public static void ConvertTime_SameTimeZones()
     {
         var time1 = new DateTimeOffset(2003, 10, 26, 3, 0, 1, new TimeSpan(-2, 0, 0));
         VerifyConvert(time1, s_strBrasil, time1);
@@ -330,7 +329,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    public static void NearMinMaxDateTimeConvertTest()
+    public static void ConvertTime_DateTime_NearMinAndMaxValue()
     {
         DateTime time1 = new DateTime(2006, 5, 12);
 
@@ -352,7 +351,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    public static void DateTimeVariousSystemTimeZonesTest()
+    public static void ConverTime_DateTime_VariousSystemTimeZonesTest()
     {
         var time1utc = new DateTime(2006, 5, 12, 5, 17, 42, DateTimeKind.Utc);
         var time1 = new DateTime(2006, 5, 12, 5, 17, 42);
@@ -411,7 +410,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    public static void PerthRulesTest()
+    public static void ConvertTime_DateTime_PerthRules()
     {
         var time1utc = new DateTime(2005, 12, 31, 15, 59, 59, DateTimeKind.Utc);
         var time1 = new DateTime(2005, 12, 31, 15, 59, 59);
@@ -483,7 +482,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    public static void UtcToUtcTest()
+    public static void ConvertTime_DateTime_UtcToUtc()
     {
         var time1utc = new DateTime(2003, 3, 30, 0, 0, 23, DateTimeKind.Utc);
         VerifyConvert(time1utc, TimeZoneInfo.Utc.Id, time1utc);
@@ -500,7 +499,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    public static void UtcToLocalTest()
+    public static void ConvertTime_DateTime_UtcToLocal()
     {
         if (s_localIsPST)
         {
@@ -538,7 +537,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    public static void LocalToSystemTest()
+    public static void ConvertTime_DateTime_LocalToSystem()
     {
         var time1 = new DateTime(2006, 5, 12, 5, 17, 42);
         var time1local = new DateTime(2006, 5, 12, 5, 17, 42, DateTimeKind.Local);
@@ -631,7 +630,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    public static void LocalToLocalTest()
+    public static void ConvertTime_DateTime_LocalToLocal()
     {
         if (s_localIsPST)
         {
@@ -689,7 +688,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    public static void LocalToUtcTest()
+    public static void ConvertTime_DateTime_LocalToUtc()
     {
         var time1 = new DateTime(1964, 6, 19, 12, 45, 10);
         VerifyConvert(time1, TimeZoneInfo.Utc.Id, time1.Subtract(TimeZoneInfo.Local.GetUtcOffset(time1)), DateTimeKind.Utc);
@@ -766,7 +765,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    public static void DtKindTest()
+    public static void ConvertTime_DateTime_VariousDateTimeKinds()
     {
         VerifyConvertException<ArgumentException>(new DateTime(2006, 2, 13, 5, 37, 48, DateTimeKind.Utc), s_strPacific, s_strSydney);
         VerifyConvertException<ArgumentException>(new DateTime(2006, 2, 13, 5, 37, 48, DateTimeKind.Utc), s_strSydney, s_strPacific);
@@ -782,7 +781,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    public static void MiscUtcTests()
+    public static void ConvertTime_DateTime_MiscUtc()
     {
         VerifyConvert(new DateTime(2003, 4, 6, 1, 30, 0, DateTimeKind.Utc), "UTC", DateTime.SpecifyKind(new DateTime(2003, 4, 6, 1, 30, 0), DateTimeKind.Utc));
         VerifyConvert(new DateTime(2003, 4, 6, 2, 30, 0, DateTimeKind.Utc), "UTC", DateTime.SpecifyKind(new DateTime(2003, 4, 6, 2, 30, 0), DateTimeKind.Utc));
@@ -837,7 +836,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    public static void BrasiliaTests()
+    public static void ConvertTime_Brasilia()
     {
         var time1 = new DateTimeOffset(2003, 10, 26, 3, 0, 1, new TimeSpan(-2, 0, 0));
         VerifyConvert(time1, s_strBrasilia, time1);
@@ -856,7 +855,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    public static void TongaTests()
+    public static void ConvertTime_Tonga()
     {
         var time1 = new DateTime(2006, 5, 12, 5, 17, 42, DateTimeKind.Utc);
         VerifyConvert(time1, s_strTonga, DateTime.SpecifyKind(time1.AddHours(13), DateTimeKind.Unspecified));
@@ -907,7 +906,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    public static void ThrowOnAmbiguousOffsetsTests()
+    public static void GetAmbiguousTimeOffsets_Invalid()
     {
         VerifyAmbiguousOffsetsException<ArgumentException>(TimeZoneInfo.Utc, new DateTime(2006, 1, 15, 7, 15, 23));
         VerifyAmbiguousOffsetsException<ArgumentException>(TimeZoneInfo.Utc, new DateTime(2050, 2, 15, 8, 30, 24));
@@ -944,7 +943,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    public static void ThrowOnNairobiAmbiguousOffsetsTests()
+    public static void GetAmbiguousTimeOffsets_Nairobi_Invalid()
     {
         VerifyAmbiguousOffsetsException<ArgumentException>(s_nairobiTz, new DateTime(2006, 1, 15, 7, 15, 23));
         VerifyAmbiguousOffsetsException<ArgumentException>(s_nairobiTz, new DateTime(2050, 2, 15, 8, 30, 24));
@@ -959,7 +958,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    public static void AmsterdamAmbiguousOffsetsTests()
+    public static void GetAmbiguousTimeOffsets_Amsterdam()
     {
         //
         // * 00:59:59 Sunday March 26, 2006 in Universal converts to
@@ -1202,7 +1201,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    public static void LocalAmbiguousOffsetsTests()
+    public static void GetAmbiguousTimeOffsets_LocalAmbiguousOffsets()
     {
         if (!s_localIsPST)
             return; // Test valid for Pacific TZ only
@@ -1241,7 +1240,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    public static void DstTests()
+    public static void IsDaylightSavingTime()
     {
         VerifyDST(TimeZoneInfo.Utc, new DateTime(2006, 1, 15, 7, 15, 23), false);
         VerifyDST(TimeZoneInfo.Utc, new DateTime(2050, 2, 15, 8, 30, 24), false);
@@ -1443,7 +1442,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    public static void InvalidTimeTests()
+    public static void IsInvalidTime()
     {
         VerifyInv(TimeZoneInfo.Utc, new DateTime(2006, 1, 15, 7, 15, 23), false);
         VerifyInv(TimeZoneInfo.Utc, new DateTime(2050, 2, 15, 8, 30, 24), false);
@@ -1658,7 +1657,7 @@ public static class TimeZoneInfoTests
 
     [Fact]
     [PlatformSpecific(PlatformID.AnyUnix)]
-    public static void TestCatamarcaMultiYearDaylightSavings()
+    public static void IsDaylightSavingTime_CatamarcaMultiYearDaylightSavings()
     {
         // America/Catamarca had DST from
         //     1946-10-01T04:00:00.0000000Z {-03:00:00 DST=True}
@@ -1690,7 +1689,7 @@ public static class TimeZoneInfoTests
     [InlineData("1945-11-17T01:00:00.0000000Z", true, "1:00:00")]
     [InlineData("1945-11-17T22:59:59.0000000Z", true, "1:00:00")]
     [InlineData("1945-11-17T23:00:00.0000000Z", false, "0:00:00")]
-    public static void TestCasablancaMultiYearDaylightSavings(string dateTimeString, bool expectedDST, string expectedOffsetString)
+    public static void IsDaylightSavingTime_CasablancaMultiYearDaylightSavings(string dateTimeString, bool expectedDST, string expectedOffsetString)
     {
         // Africa/Casablanca had DST from
         //     1940-02-25T00:00:00.0000000Z {+01:00:00 DST=True}
@@ -1718,7 +1717,7 @@ public static class TimeZoneInfoTests
     [InlineData("1996-10-28T01:00:00.0000000Z", false, "0:00:00")]
     [InlineData("1997-03-30T00:59:59.0000000Z", false, "0:00:00")]
     [InlineData("1997-03-30T01:00:00.0000000Z", true, "1:00:00")]
-    public static void TestLisbonDaylightSavingsWithNoOffsetChange(string dateTimeString, bool expectedDST, string expectedOffsetString)
+    public static void IsDaylightSavingTime_LisbonDaylightSavingsWithNoOffsetChange(string dateTimeString, bool expectedDST, string expectedOffsetString)
     {
         DateTime dt = DateTime.ParseExact(dateTimeString, "o", CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal);
         VerifyDST(s_LisbonTz, dt, expectedDST);
@@ -1743,7 +1742,7 @@ public static class TimeZoneInfoTests
     [InlineData("2015-11-01T02:00:00", false, false, false, "-3:30:00", "-7:00:00")]
     [InlineData("2015-11-01T05:29:59", false, false, false, "-3:30:00", "-7:00:00")]
     [InlineData("2015-11-01T05:30:00", false, false, false, "-3:30:00", "-8:00:00")]
-    public static void TestNewfoundlandTimeZone(string dateTimeString, bool expectedDST, bool isInvalidTime, bool isAmbiguousTime,
+    public static void NewfoundlandTimeZone(string dateTimeString, bool expectedDST, bool isInvalidTime, bool isAmbiguousTime,
         string expectedOffsetString, string pacificOffsetString)
     {
         DateTime dt = DateTime.ParseExact(dateTimeString, "s", CultureInfo.InvariantCulture);
@@ -1763,7 +1762,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    public static void TestGetSystemTimeZones()
+    public static void GetSystemTimeZones()
     {
         ReadOnlyCollection<TimeZoneInfo> timeZones = TimeZoneInfo.GetSystemTimeZones();
         Assert.NotEmpty(timeZones);
@@ -1802,7 +1801,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    public static void TestDaylightTransitionsExactTime()
+    public static void DaylightTransitionsExactTime()
     {
         TimeZoneInfo zone = TimeZoneInfo.FindSystemTimeZoneById(s_strPacific);
 
@@ -1822,7 +1821,7 @@ public static class TimeZoneInfoTests
     /// </summary>
     [Fact]
     [PlatformSpecific(PlatformID.AnyUnix)]
-    public static void TestDaylightTransitionsExactTime_Johannesburg()
+    public static void DaylightTransitionsExactTime_Johannesburg()
     {
         DateTimeOffset transition = new DateTimeOffset(1943, 3, 20, 23, 0, 0, TimeSpan.Zero);
 

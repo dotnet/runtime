@@ -10,26 +10,26 @@ using Xunit;
 public static class DateTimeOffsetTests
 {
     [Fact]
-    public static void TestMaxValue()
+    public static void MaxValue()
     {
         VerifyDateTimeOffset(DateTimeOffset.MaxValue, 9999, 12, 31, 23, 59, 59, 999, TimeSpan.Zero);
     }
 
     [Fact]
-    public static void TestMinValue()
+    public static void MinValue()
     {
         VerifyDateTimeOffset(DateTimeOffset.MinValue, 1, 1, 1, 0, 0, 0, 0, TimeSpan.Zero);
     }
 
     [Fact]
-    public static void TestCtor_Empty()
+    public static void Ctor_Empty()
     {
         VerifyDateTimeOffset(new DateTimeOffset(), 1, 1, 1, 0, 0, 0, 0, TimeSpan.Zero);
         VerifyDateTimeOffset(default(DateTimeOffset), 1, 1, 1, 0, 0, 0, 0, TimeSpan.Zero);
     }
 
     [Fact]
-    public static void TestCtor_DateTime()
+    public static void Ctor_DateTime()
     {
         var dateTimeOffset = new DateTimeOffset(new DateTime(2012, 6, 11, 0, 0, 0, 0, DateTimeKind.Utc));
         VerifyDateTimeOffset(dateTimeOffset, 2012, 6, 11, 0, 0, 0, 0, TimeSpan.Zero);
@@ -47,7 +47,7 @@ public static class DateTimeOffsetTests
     }
 
     [Fact]
-    public static void TestCtor_DateTime_Invalid()
+    public static void Ctor_DateTime_Invalid()
     {
         // DateTime < DateTimeOffset.MinValue
         DateTimeOffset min = DateTimeOffset.MinValue;
@@ -71,7 +71,7 @@ public static class DateTimeOffsetTests
     }
 
     [Fact]
-    public static void TestCtor_DateTime_TimeSpan()
+    public static void Ctor_DateTime_TimeSpan()
     {
         var dateTimeOffset = new DateTimeOffset(DateTime.MinValue, TimeSpan.FromHours(-14));
         VerifyDateTimeOffset(dateTimeOffset, 1, 1, 1, 0, 0, 0, 0, TimeSpan.FromHours(-14));
@@ -84,7 +84,7 @@ public static class DateTimeOffsetTests
     }
 
     [Fact]
-    public static void TestCtor_DateTime_TimeSpan_Invalid()
+    public static void Ctor_DateTime_TimeSpan_Invalid()
     {
         Assert.Throws<ArgumentException>("offset", () => new DateTimeOffset(DateTime.Now, TimeSpan.FromHours(15))); // Local time and non timezone timespan
         Assert.Throws<ArgumentException>("offset", () => new DateTimeOffset(DateTime.Now, TimeSpan.FromHours(-15))); // Local time and non timezone timespan
@@ -118,7 +118,7 @@ public static class DateTimeOffsetTests
     }
 
     [Fact]
-    public static void TestCtor_Long_TimeSpan()
+    public static void Ctor_Long_TimeSpan()
     {
         var expected = new DateTime(1, 2, 3, 4, 5, 6, 7);
         var dateTimeOffset = new DateTimeOffset(expected.Ticks, TimeSpan.Zero);
@@ -126,7 +126,7 @@ public static class DateTimeOffsetTests
     }
 
     [Fact]
-    public static void TestCtor_Long_TimeSpan_Invalid()
+    public static void Ctor_Long_TimeSpan_Invalid()
     {
         Assert.Throws<ArgumentException>("offset", () => new DateTimeOffset(0, new TimeSpan(0, 0, 3))); // TimeSpan is not whole minutes
         Assert.Throws<ArgumentException>("offset", () => new DateTimeOffset(0, new TimeSpan(0, 0, -3))); // TimeSpan is not whole minutes
@@ -141,14 +141,14 @@ public static class DateTimeOffsetTests
     }
 
     [Fact]
-    public static void TestCtor_Int_Int_Int_Int_Int_Int_Int_TimeSpan()
+    public static void Ctor_Int_Int_Int_Int_Int_Int_Int_TimeSpan()
     {
         var dateTimeOffset = new DateTimeOffset(1973, 10, 6, 14, 30, 0, 500, TimeSpan.Zero);
         VerifyDateTimeOffset(dateTimeOffset, 1973, 10, 6, 14, 30, 0, 500, TimeSpan.Zero);
     }
 
     [Fact]
-    public static void TestCtor_Int_Int_Int_Int_Int_Int_Int_TimeSpan_Invalid()
+    public static void Ctor_Int_Int_Int_Int_Int_Int_Int_TimeSpan_Invalid()
     {
         Assert.Throws<ArgumentException>("offset", () => new DateTimeOffset(1, 1, 1, 1, 1, 1, 1, new TimeSpan(0, 0, 3))); // TimeSpan is not whole minutes
         Assert.Throws<ArgumentException>("offset", () => new DateTimeOffset(1, 1, 1, 1, 1, 1, 1, new TimeSpan(0, 0, -3))); // TimeSpan is not whole minutes
@@ -202,14 +202,14 @@ public static class DateTimeOffsetTests
     }
 
     [Fact]
-    public static void TestCtor_Int_Int_Int_Int_Int_Int_TimeSpan()
+    public static void Ctor_Int_Int_Int_Int_Int_Int_TimeSpan()
     {
         var dateTimeOffset = new DateTimeOffset(1973, 10, 6, 14, 30, 0, TimeSpan.Zero);
         VerifyDateTimeOffset(dateTimeOffset, 1973, 10, 6, 14, 30, 0, 0, TimeSpan.Zero);
     }
 
     [Fact]
-    public static void TestCtor_Int_Int_Int_Int_Int_Int_TimeSpan_Invalid()
+    public static void Ctor_Int_Int_Int_Int_Int_Int_TimeSpan_Invalid()
     {
         Assert.Throws<ArgumentException>("offset", () => new DateTimeOffset(1, 1, 1, 1, 1, 1, new TimeSpan(0, 0, 3))); // TimeSpan is not whole minutes
         Assert.Throws<ArgumentException>("offset", () => new DateTimeOffset(1, 1, 1, 1, 1, 1, new TimeSpan(0, 0, -3))); // TimeSpan is not whole minutes
@@ -258,7 +258,7 @@ public static class DateTimeOffsetTests
     }
 
     [Fact]
-    public static void TestAddSubtract_TimeSpan()
+    public static void AddSubtract_TimeSpan()
     {
         var dateTimeOffset = new DateTimeOffset(new DateTime(2012, 6, 18, 10, 5, 1, 0));
         TimeSpan timeSpan = dateTimeOffset.TimeOfDay;
@@ -278,7 +278,7 @@ public static class DateTimeOffsetTests
 
     [Theory]
     [MemberData(nameof(Subtract_TimeSpan_TestData))]
-    public static void TestSubtract_TimeSpan(DateTimeOffset dt, TimeSpan ts, DateTimeOffset expected)
+    public static void Subtract_TimeSpan(DateTimeOffset dt, TimeSpan ts, DateTimeOffset expected)
     {
         Assert.Equal(expected, dt - ts);
         Assert.Equal(expected, dt.Subtract(ts));
@@ -297,14 +297,14 @@ public static class DateTimeOffsetTests
 
     [Theory]
     [MemberData(nameof(Subtract_DateTimeOffset_TestData))]
-    public static void TestSubtract_DateTimeOffset(DateTimeOffset dt1, DateTimeOffset dt2, TimeSpan expected)
+    public static void Subtract_DateTimeOffset(DateTimeOffset dt1, DateTimeOffset dt2, TimeSpan expected)
     {
         Assert.Equal(expected, dt1 - dt2);
         Assert.Equal(expected, dt1.Subtract(dt2));
     }
 
     [Fact]
-    public static void TestAddition()
+    public static void Addition()
     {
         var dateTimeOffset = new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70));
         Assert.Equal(17, dateTimeOffset.AddDays(2).Day);
@@ -330,14 +330,14 @@ public static class DateTimeOffsetTests
     }
 
     [Fact]
-    public static void TestDayOfWeek()
+    public static void DayOfWeekTest()
     {
         var dateTimeOffset = new DateTimeOffset(new DateTime(2012, 6, 18));
         Assert.Equal(DayOfWeek.Monday, dateTimeOffset.DayOfWeek);
     }
 
     [Fact]
-    public static void TestToFromFileTime()
+    public static void ToFromFileTime()
     {
         var today = new DateTimeOffset(DateTime.Today);
 
@@ -346,7 +346,7 @@ public static class DateTimeOffsetTests
     }
 
     [Fact]
-    public static void TestUtcDateTime()
+    public static void UtcDateTime()
     {
         DateTime now = DateTime.Now;
         var dateTimeOffset = new DateTimeOffset(now);
@@ -372,7 +372,7 @@ public static class DateTimeOffsetTests
 
     [Theory]
     [MemberData(nameof(UnixTime_TestData))]
-    public static void TestToUnixTimeMilliseconds(TestTime test)
+    public static void ToUnixTimeMilliseconds(TestTime test)
     {
         long expectedMilliseconds = test.UnixTimeMilliseconds;
         long actualMilliseconds = test.DateTimeOffset.ToUnixTimeMilliseconds();
@@ -381,15 +381,15 @@ public static class DateTimeOffsetTests
 
     [Theory]
     [MemberData(nameof(UnixTime_TestData))]
-    public static void TesToUnixTimeMilliseconds_RountTrip(TestTime test)
+    public static void oUnixTimeMilliseconds_RountTrip(TestTime test)
     {
         long unixTimeMilliseconds = test.DateTimeOffset.ToUnixTimeMilliseconds();
-        TestFromUnixTimeMilliseconds(TestTime.FromMilliseconds(test.DateTimeOffset, unixTimeMilliseconds));
+        FromUnixTimeMilliseconds(TestTime.FromMilliseconds(test.DateTimeOffset, unixTimeMilliseconds));
     }
 
     [Theory]
     [MemberData(nameof(UnixTime_TestData))]
-    public static void TestToUnixTimeSeconds(TestTime test)
+    public static void ToUnixTimeSeconds(TestTime test)
     {
         long expectedSeconds = test.UnixTimeSeconds;
         long actualSeconds = test.DateTimeOffset.ToUnixTimeSeconds();
@@ -398,15 +398,15 @@ public static class DateTimeOffsetTests
 
     [Theory]
     [MemberData(nameof(UnixTime_TestData))]
-    public static void TesToUnixTimeSeconds_RoundTrip(TestTime test)
+    public static void oUnixTimeSeconds_RoundTrip(TestTime test)
     {
         long unixTimeSeconds = test.DateTimeOffset.ToUnixTimeSeconds();
-        TestFromUnixTimeSeconds(TestTime.FromSeconds(test.DateTimeOffset, unixTimeSeconds));
+        FromUnixTimeSeconds(TestTime.FromSeconds(test.DateTimeOffset, unixTimeSeconds));
     }
 
     [Theory]
     [MemberData(nameof(UnixTime_TestData))]
-    public static void TestFromUnixTimeMilliseconds(TestTime test)
+    public static void FromUnixTimeMilliseconds(TestTime test)
     {
         // Only assert that expected == actual up to millisecond precision for conversion from milliseconds
         long expectedTicks = (test.DateTimeOffset.UtcTicks / TimeSpan.TicksPerMillisecond) * TimeSpan.TicksPerMillisecond;
@@ -415,7 +415,7 @@ public static class DateTimeOffsetTests
     }
 
     [Fact]
-    public static void TestFromUnixTimeMilliseconds_Invalid()
+    public static void FromUnixTimeMilliseconds_Invalid()
     {
         Assert.Throws<ArgumentOutOfRangeException>("milliseconds", () => DateTimeOffset.FromUnixTimeMilliseconds(-62135596800001)); // Milliseconds < DateTimeOffset.MinValue
         Assert.Throws<ArgumentOutOfRangeException>("milliseconds", () => DateTimeOffset.FromUnixTimeMilliseconds(253402300800000)); // Milliseconds > DateTimeOffset.MaxValue
@@ -426,7 +426,7 @@ public static class DateTimeOffsetTests
 
     [Theory]
     [MemberData(nameof(UnixTime_TestData))]
-    public static void TestFromUnixTimeSeconds(TestTime test)
+    public static void FromUnixTimeSeconds(TestTime test)
     {
         // Only assert that expected == actual up to second precision for conversion from seconds
         long expectedTicks = (test.DateTimeOffset.UtcTicks / TimeSpan.TicksPerSecond) * TimeSpan.TicksPerSecond;
@@ -435,7 +435,7 @@ public static class DateTimeOffsetTests
     }
 
     [Fact]
-    public static void TestFromUnixTimeSeconds_Invalid()
+    public static void FromUnixTimeSeconds_Invalid()
     {
         Assert.Throws<ArgumentOutOfRangeException>("seconds", () => DateTimeOffset.FromUnixTimeSeconds(-62135596801));// Seconds < DateTimeOffset.MinValue
         Assert.Throws<ArgumentOutOfRangeException>("seconds", () => DateTimeOffset.FromUnixTimeSeconds(253402300800)); // Seconds > DateTimeOffset.MaxValue
@@ -446,22 +446,22 @@ public static class DateTimeOffsetTests
 
     [Theory]
     [MemberData(nameof(UnixTime_TestData))]
-    public static void TestFromUnixTimeMilliseconds_RoundTrip(TestTime test)
+    public static void FromUnixTimeMilliseconds_RoundTrip(TestTime test)
     {
         DateTimeOffset dateTime = DateTimeOffset.FromUnixTimeMilliseconds(test.UnixTimeMilliseconds);
-        TestToUnixTimeMilliseconds(TestTime.FromMilliseconds(dateTime, test.UnixTimeMilliseconds));
+        ToUnixTimeMilliseconds(TestTime.FromMilliseconds(dateTime, test.UnixTimeMilliseconds));
     }
 
     [Theory]
     [MemberData(nameof(UnixTime_TestData))]
-    public static void TestFromUnixTimeSeconds_RoundTrip(TestTime test)
+    public static void FromUnixTimeSeconds_RoundTrip(TestTime test)
     {
         DateTimeOffset dateTime = DateTimeOffset.FromUnixTimeSeconds(test.UnixTimeSeconds);
-        TestToUnixTimeSeconds(TestTime.FromSeconds(dateTime, test.UnixTimeSeconds));
+        ToUnixTimeSeconds(TestTime.FromSeconds(dateTime, test.UnixTimeSeconds));
     }
 
     [Fact]
-    public static void TestParse_String()
+    public static void Parse_String()
     {
         DateTimeOffset expected = DateTimeOffset.MaxValue;
         string expectedString = expected.ToString();
@@ -471,7 +471,7 @@ public static class DateTimeOffsetTests
     }
 
     [Fact]
-    public static void TestParse_String_FormatProvider()
+    public static void Parse_String_FormatProvider()
     {
         DateTimeOffset expected = DateTimeOffset.MaxValue;
         string expectedString = expected.ToString();
@@ -481,7 +481,7 @@ public static class DateTimeOffsetTests
     }
 
     [Fact]
-    public static void TestParse_String_FormatProvider_DateTimeStyles()
+    public static void Parse_String_FormatProvider_DateTimeStyles()
     {
         DateTimeOffset expected = DateTimeOffset.MaxValue;
         string expectedString = expected.ToString();
@@ -491,7 +491,7 @@ public static class DateTimeOffsetTests
     }
 
     [Fact]
-    public static void TestParse_Japanese()
+    public static void Parse_Japanese()
     {
         var expected = new DateTimeOffset(new DateTime(2012, 12, 21, 10, 8, 6));
         var cultureInfo = new CultureInfo("ja-JP");
@@ -501,7 +501,7 @@ public static class DateTimeOffsetTests
     }
 
     [Fact]
-    public static void TestTryParse_String()
+    public static void TryParse_String()
     {
         DateTimeOffset expected = DateTimeOffset.MaxValue;
         string expectedString = expected.ToString("u");
@@ -512,7 +512,7 @@ public static class DateTimeOffsetTests
     }
 
     [Fact]
-    public static void TestTryParse_String_FormatProvider_DateTimeStyles_U()
+    public static void TryParse_String_FormatProvider_DateTimeStyles_U()
     {
         DateTimeOffset expected = DateTimeOffset.MaxValue;
         string expectedString = expected.ToString("u");
@@ -523,7 +523,7 @@ public static class DateTimeOffsetTests
     }
 
     [Fact]
-    public static void TestTryParse_String_FormatProvider_DateTimeStyles_G()
+    public static void TryParse_String_FormatProvider_DateTimeStyles_G()
     {
         DateTimeOffset expected = DateTimeOffset.MaxValue;
         string expectedString = expected.ToString("g");
@@ -534,7 +534,7 @@ public static class DateTimeOffsetTests
     }
 
     [Fact]
-    public static void TestTryParse_TimeDesignators()
+    public static void TryParse_TimeDesignators()
     {
         DateTimeOffset result;
         Assert.True(DateTimeOffset.TryParse("4/21 5am", new CultureInfo("en-US"), DateTimeStyles.None, out result));
@@ -549,7 +549,7 @@ public static class DateTimeOffsetTests
     }
 
     [Fact]
-    public static void TestParseExact_String_String_FormatProvider()
+    public static void ParseExact_String_String_FormatProvider()
     {
         DateTimeOffset expected = DateTimeOffset.MaxValue;
         string expectedString = expected.ToString("u");
@@ -559,7 +559,7 @@ public static class DateTimeOffsetTests
     }
 
     [Fact]
-    public static void TestParseExact_String_String_FormatProvider_DateTimeStyles_U()
+    public static void ParseExact_String_String_FormatProvider_DateTimeStyles_U()
     {
         DateTimeOffset expected = DateTimeOffset.MaxValue;
         string expectedString = expected.ToString("u");
@@ -569,7 +569,7 @@ public static class DateTimeOffsetTests
     }
 
     [Fact]
-    public static void TestParseExact_String_String_FormatProvider_DateTimeStyles_G()
+    public static void ParseExact_String_String_FormatProvider_DateTimeStyles_G()
     {
         DateTimeOffset expected = DateTimeOffset.MaxValue;
         string expectedString = expected.ToString("g");
@@ -579,7 +579,7 @@ public static class DateTimeOffsetTests
     }
 
     [Fact]
-    public static void TestParseExact_String_String_FormatProvider_DateTimeStyles_O()
+    public static void ParseExact_String_String_FormatProvider_DateTimeStyles_O()
     {
         DateTimeOffset expected = DateTimeOffset.MaxValue;
         string expectedString = expected.ToString("o");
@@ -589,7 +589,7 @@ public static class DateTimeOffsetTests
     }
 
     [Fact]
-    public static void TestParseExact_String_String_FormatProvider_DateTimeStyles_CustomFormatProvider()
+    public static void ParseExact_String_String_FormatProvider_DateTimeStyles_CustomFormatProvider()
     {
         var formatter = new MyFormatter();
         string dateBefore = DateTime.Now.ToString();
@@ -599,7 +599,7 @@ public static class DateTimeOffsetTests
     }
 
     [Fact]
-    public static void TestParseExact_String_StringArray_FormatProvider_DateTimeStyles()
+    public static void ParseExact_String_StringArray_FormatProvider_DateTimeStyles()
     {
         DateTimeOffset expected = DateTimeOffset.MaxValue;
         string expectedString = expected.ToString("g");
@@ -610,7 +610,7 @@ public static class DateTimeOffsetTests
     }
 
     [Fact]
-    public static void TestTryParseExact_String_String_FormatProvider_DateTimeStyles_NullFormatProvider()
+    public static void TryParseExact_String_String_FormatProvider_DateTimeStyles_NullFormatProvider()
     {
         DateTimeOffset expected = DateTimeOffset.MaxValue;
         string expectedString = expected.ToString("g");
@@ -621,7 +621,7 @@ public static class DateTimeOffsetTests
     }
 
     [Fact]
-    public static void TestTryParseExact_String_StringArray_FormatProvider_DateTimeStyles()
+    public static void TryParseExact_String_StringArray_FormatProvider_DateTimeStyles()
     {
         DateTimeOffset expected = DateTimeOffset.MaxValue;
         string expectedString = expected.ToString("g");

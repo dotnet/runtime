@@ -11,13 +11,13 @@ public static class IntPtrTests
     private static unsafe bool Is64Bit => sizeof(void*) == 8;
 
     [Fact]
-    public static void TestZero()
+    public static void Zero()
     {
         VerifyPointer(IntPtr.Zero, 0);
     }
 
     [Fact]
-    public static void TestCtor_Int()
+    public static void Ctor_Int()
     {
         int i = 42;
         VerifyPointer(new IntPtr(i), i);
@@ -29,7 +29,7 @@ public static class IntPtrTests
     }
 
     [ConditionalFact(nameof(Is64Bit))]
-    public static void TestCtor_Long()
+    public static void Ctor_Long()
     {
         long l = 0x0fffffffffffffff;
         VerifyPointer(new IntPtr(l), l);
@@ -37,7 +37,7 @@ public static class IntPtrTests
     }
 
     [ConditionalFact(nameof(Is64Bit))]
-    public static unsafe void TestCtor_VoidPointer_ToPointer()
+    public static unsafe void Ctor_VoidPointer_ToPointer()
     {
         void* pv = new IntPtr(42).ToPointer();
         VerifyPointer(new IntPtr(pv), 42);
@@ -45,7 +45,7 @@ public static class IntPtrTests
     }
 
     [ConditionalFact(nameof(Is64Bit))]
-    public static unsafe void TestSize()
+    public static unsafe void Size()
     {
         Assert.Equal(sizeof(void*), IntPtr.Size);
     }
@@ -61,7 +61,7 @@ public static class IntPtrTests
 
     [ConditionalTheory(nameof(Is64Bit))]
     [MemberData(nameof(Add_TestData))]
-    public static void TestAdd(IntPtr ptr, int offset, long expected)
+    public static void Add(IntPtr ptr, int offset, long expected)
     {
         IntPtr p1 = IntPtr.Add(ptr, offset);
         VerifyPointer(p1, expected);
@@ -83,7 +83,7 @@ public static class IntPtrTests
 
     [ConditionalTheory(nameof(Is64Bit))]
     [MemberData(nameof(Subtract_TestData))]
-    public static void TestSubtract(IntPtr ptr, int offset, long expected)
+    public static void Subtract(IntPtr ptr, int offset, long expected)
     {
         IntPtr p1 = IntPtr.Subtract(ptr, offset);
         VerifyPointer(p1, expected);
@@ -106,7 +106,7 @@ public static class IntPtrTests
 
     [Theory]
     [MemberData(nameof(Equals_TestData))]
-    public static void TestEquals(IntPtr ptr1, object obj, bool expected)
+    public static void Equals(IntPtr ptr1, object obj, bool expected)
     {
         if (obj is IntPtr)
         {
@@ -120,7 +120,7 @@ public static class IntPtrTests
     }
 
     [ConditionalFact(nameof(Is64Bit))]
-    public static unsafe void TestImplicitCast()
+    public static unsafe void ImplicitCast()
     {
         var ptr = new IntPtr(42);
 
@@ -140,7 +140,7 @@ public static class IntPtrTests
     }
 
     [ConditionalFact(nameof(Is64Bit))]
-    public static void TestGetHashCodeRespectAllBits()
+    public static void GetHashCodeRespectAllBits()
     {
         var ptr1 = new IntPtr(0x123456FFFFFFFF);
         var ptr2 = new IntPtr(0x654321FFFFFFFF);

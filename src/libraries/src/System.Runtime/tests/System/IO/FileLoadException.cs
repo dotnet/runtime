@@ -8,7 +8,7 @@ using Xunit;
 public static class FileLoadExceptionTests
 {
     [Fact]
-    public static void TestCtor_Empty()
+    public static void Ctor_Empty()
     {
         var exception = new FileLoadException();
         ExceptionUtility.ValidateExceptionProperties(exception, hResult: HResults.COR_E_FILELOAD, validateMessage: false);
@@ -16,7 +16,7 @@ public static class FileLoadExceptionTests
     }
 
     [Fact]
-    public static void TestCtor_String()
+    public static void Ctor_String()
     {
         string message = "this is not the file you're looking for";
         var exception = new FileLoadException(message);
@@ -25,7 +25,7 @@ public static class FileLoadExceptionTests
     }
 
     [Fact]
-    public static void TestCtor_String_Exception()
+    public static void Ctor_String_Exception()
     {
         string message = "this is not the file you're looking for";
         var innerException = new Exception("Inner exception");
@@ -35,7 +35,7 @@ public static class FileLoadExceptionTests
     }
 
     [Fact]
-    public static void TestCtor_String_String()
+    public static void Ctor_String_String()
     {
         string message = "this is not the file you're looking for";
         string fileName = "file.txt";
@@ -45,7 +45,7 @@ public static class FileLoadExceptionTests
     }
 
     [Fact]
-    public static void TestCtor_String_String_Exception()
+    public static void Ctor_String_String_Exception()
     {
         string message = "this is not the file you're looking for";
         string fileName = "file.txt";
@@ -56,7 +56,7 @@ public static class FileLoadExceptionTests
     }
 
     [Fact]
-    public static void TestToString()
+    public static void ToStringTest()
     {
         string message = "this is not the file you're looking for";
         string fileName = "file.txt";

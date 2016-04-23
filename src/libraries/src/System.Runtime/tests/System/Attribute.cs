@@ -42,7 +42,7 @@ public static class AttributeTests
 
     [Theory]
     [MemberData(nameof(Equals_TestData))]
-    public static void TestEquals(Attribute attr1, object obj, bool expected, bool hashEqualityExpected)
+    public static void Equals(Attribute attr1, object obj, bool expected, bool hashEqualityExpected)
     {
         Assert.Equal(expected, attr1.Equals(obj));
 

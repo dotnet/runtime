@@ -35,7 +35,7 @@ public static class FileLoadExceptionInteropTests
     [InlineData(HResults.CORSEC_E_MISSING_STRONGNAME)]
     [InlineData(HResults.MSEE_E_ASSEMBLYLOADINPROGRESS)]
     [InlineData(HResults.ERROR_FILE_INVALID)]
-    public static void TestFom_HR(int hr)
+    public static void Fom_HR(int hr)
     {
         var fileLoadException = Marshal.GetExceptionForHR(hr) as FileLoadException;
         Assert.NotNull(fileLoadException);

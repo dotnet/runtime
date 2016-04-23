@@ -14,14 +14,14 @@ public static class NullReferenceExceptionTests
     private const uint E_POINTER = 0x80004003;
 
     [Fact]
-    public static void NullReferenceException_Ctor1()
+    public static void NullReferenceException_Ctor_Empty()
     {
         NullReferenceException i = new NullReferenceException();
         Assert.Equal(E_POINTER, (uint)i.HResult);
     }
 
     [Fact]
-    public static void NullReferenceException_Ctor2()
+    public static void NullReferenceException_Ctor_String()
     {
         NullReferenceException i = new NullReferenceException(exceptionMessage);
         Assert.Equal(exceptionMessage, i.Message);
@@ -29,7 +29,7 @@ public static class NullReferenceExceptionTests
     }
 
     [Fact]
-    public static void NullReferenceException_Ctor3()
+    public static void NullReferenceException_Ctor_String_Exception()
     {
         Exception ex = new Exception(innerExceptionMessage);
         NullReferenceException i = new NullReferenceException(exceptionMessage, ex);
@@ -41,14 +41,14 @@ public static class NullReferenceExceptionTests
     }
 
     [Fact]
-    public static void EndOfStreamException_Ctor1()
+    public static void EndOfStreamException_Ctor_Empty()
     {
         EndOfStreamException i = new EndOfStreamException();
         Assert.Equal(COR_E_ENDOFSTREAM, (uint)i.HResult);
     }
 
     [Fact]
-    public static void EndOfStreamException_Ctor2()
+    public static void EndOfStreamException_Ctor_String()
     {
         EndOfStreamException i = new EndOfStreamException(exceptionMessage);
         Assert.Equal(exceptionMessage, i.Message);
@@ -56,7 +56,7 @@ public static class NullReferenceExceptionTests
     }
 
     [Fact]
-    public static void EndOfStreamException_Ctor3()
+    public static void EndOfStreamException_Ctor_String_Exception()
     {
         Exception ex = new Exception(innerExceptionMessage);
         EndOfStreamException i = new EndOfStreamException(exceptionMessage, ex);

@@ -10,59 +10,59 @@ using Xunit;
 public static class TimeSpanTests
 {
     [Fact]
-    public static void TestMaxValue()
+    public static void MaxValue()
     {
         VerifyTimeSpan(TimeSpan.MaxValue, 10675199, 2, 48, 5, 477);
     }
 
     [Fact]
-    public static void TestMinValue()
+    public static void MinValue()
     {
         VerifyTimeSpan(TimeSpan.MinValue, -10675199, -2, -48, -5, -477);
     }
 
     [Fact]
-    public static void TestZero()
+    public static void Zero()
     {
         VerifyTimeSpan(TimeSpan.Zero, 0, 0, 0, 0, 0);
     }
 
     [Fact]
-    public static void TestCtor_Empty()
+    public static void Ctor_Empty()
     {
         VerifyTimeSpan(new TimeSpan(), 0, 0, 0, 0, 0);
         VerifyTimeSpan(default(TimeSpan), 0, 0, 0, 0, 0);
     }
 
     [Fact]
-    public static void TestCtor_Long()
+    public static void Ctor_Long()
     {
         VerifyTimeSpan(new TimeSpan(999999999999999999), 1157407, 9, 46, 39, 999);
     }
 
     [Fact]
-    public static void TestCtor_Int_Int_Int()
+    public static void Ctor_Int_Int_Int()
     {
         var timeSpan = new TimeSpan(10, 9, 8);
         VerifyTimeSpan(timeSpan, 0, 10, 9, 8, 0);
     }
 
     [Fact]
-    public static void TestCtor_Int_Int_Int_Invalid()
+    public static void Ctor_Int_Int_Int_Invalid()
     {
         Assert.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan((int)TimeSpan.MinValue.TotalHours - 1, 0, 0)); // TimeSpan < TimeSpan.MinValue
         Assert.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan((int)TimeSpan.MaxValue.TotalHours + 1, 0, 0)); // TimeSpan > TimeSpan.MaxValue
     }
 
     [Fact]
-    public static void TestCtor_Int_Int_Int_Int_Int()
+    public static void Ctor_Int_Int_Int_Int_Int()
     {
         var timeSpan = new TimeSpan(10, 9, 8, 7, 6);
         VerifyTimeSpan(timeSpan, 10, 9, 8, 7, 6);
     }
 
     [Fact]
-    public static void TestCtor_Int_Int_Int_Int_Int_Invalid()
+    public static void Ctor_Int_Int_Int_Int_Int_Invalid()
     {
         // TimeSpan > TimeSpan.MinValue
         TimeSpan min = TimeSpan.MinValue;
@@ -92,7 +92,7 @@ public static class TimeSpanTests
 
     [Theory]
     [MemberData(nameof(Total_Days_Hours_Minutes_Seconds_Milliseconds_TestData))]
-    public static void TestTotal_Days_Hours_Minutes_Seconds_Milliseconds(TimeSpan timeSpan, double expectedDays, double expectedHours, double expectedMinutes, double expectedSeconds, double expectedMilliseconds)
+    public static void Total_Days_Hours_Minutes_Seconds_Milliseconds(TimeSpan timeSpan, double expectedDays, double expectedHours, double expectedMinutes, double expectedSeconds, double expectedMilliseconds)
     {
         // Use ToString() to prevent any rounding errors when comparing
         Assert.Equal(expectedDays.ToString(), timeSpan.TotalDays.ToString());
@@ -103,7 +103,7 @@ public static class TimeSpanTests
     }
 
     [Fact]
-    public static void TestTotalMilliseconds_Invalid()
+    public static void TotalMilliseconds_Invalid()
     {
         long maxMilliseconds = long.MaxValue / 10000;
         long minMilliseconds = long.MinValue / 10000;
@@ -124,14 +124,14 @@ public static class TimeSpanTests
 
     [Theory]
     [MemberData(nameof(Add_TestData))]
-    public static void TestAdd(TimeSpan timeSpan1, TimeSpan timeSpan2, TimeSpan expected)
+    public static void Add(TimeSpan timeSpan1, TimeSpan timeSpan2, TimeSpan expected)
     {
         Assert.Equal(expected, timeSpan1.Add(timeSpan2));
         Assert.Equal(expected, timeSpan1 + timeSpan2);
     }
 
     [Fact]
-    public static void TestAdd_Invalid()
+    public static void Add_Invalid()
     {
         Assert.Throws<OverflowException>(() => TimeSpan.MaxValue.Add(new TimeSpan(1))); // Result > TimeSpan.MaxValue
         Assert.Throws<OverflowException>(() => TimeSpan.MinValue.Add(new TimeSpan(-1))); // Result < TimeSpan.MinValue
@@ -181,7 +181,7 @@ public static class TimeSpanTests
 
     [Theory]
     [MemberData(nameof(CompareTo_TestData))]
-    public static void TestCompareTo(TimeSpan timeSpan1, object obj, int expected)
+    public static void CompareTo(TimeSpan timeSpan1, object obj, int expected)
     {
         if (obj is TimeSpan)
         {
@@ -215,7 +215,7 @@ public static class TimeSpanTests
     }
 
     [Fact]
-    public static void TestCompareTo_Invalid()
+    public static void CompareTo_ObjectNotTimeSpan_ThrowsArgumentException()
     {
         IComparable comparable = new TimeSpan(10000);
         Assert.Throws<ArgumentException>(null, () => comparable.CompareTo("10000")); // Obj is not a time span
@@ -232,13 +232,13 @@ public static class TimeSpanTests
 
     [Theory]
     [MemberData(nameof(Duration_TestData))]
-    public static void TestDuration(TimeSpan timeSpan, TimeSpan expected)
+    public static void Duration(TimeSpan timeSpan, TimeSpan expected)
     {
         Assert.Equal(expected, timeSpan.Duration());
     }
 
     [Fact]
-    public static void TestDuration_Invalid()
+    public static void Duration_Invalid()
     {
         Assert.Throws<OverflowException>(() => TimeSpan.MinValue.Duration()); // TimeSpan.Ticks == TimeSpan.MinValue.Ticks
         Assert.Throws<OverflowException>(() => new TimeSpan(TimeSpan.MinValue.Ticks).Duration()); // TimeSpan.Ticks == TimeSpan.MinValue.Ticks
@@ -282,7 +282,7 @@ public static class TimeSpanTests
 
     [Theory]
     [MemberData(nameof(Equals_TestData))]
-    public static void TestEquals(TimeSpan timeSpan1, object obj, bool expected)
+    public static void Equals(TimeSpan timeSpan1, object obj, bool expected)
     {
         if (obj is TimeSpan)
         {
@@ -310,13 +310,13 @@ public static class TimeSpanTests
 
     [Theory]
     [MemberData(nameof(FromDays_TestData))]
-    public static void TestFromDays(double value, TimeSpan expected)
+    public static void FromDays(double value, TimeSpan expected)
     {
         Assert.Equal(expected, TimeSpan.FromDays(value));
     }
 
     [Fact]
-    public static void TestFromDays_Invalid()
+    public static void FromDays_Invalid()
     {
         double maxDays = long.MaxValue / (TimeSpan.TicksPerMillisecond / 1000.0 / 60.0 / 60.0 / 24.0);
 
@@ -342,13 +342,13 @@ public static class TimeSpanTests
 
     [Theory]
     [MemberData(nameof(FromHours_TestData))]
-    public static void TestFromHours(double value, TimeSpan expected)
+    public static void FromHours(double value, TimeSpan expected)
     {
         Assert.Equal(expected, TimeSpan.FromHours(value));
     }
 
     [Fact]
-    public static void TestFromHours_Invalid()
+    public static void FromHours_Invalid()
     {
         double maxHours = long.MaxValue / (TimeSpan.TicksPerMillisecond / 1000.0 / 60.0 / 60.0);
 
@@ -374,13 +374,13 @@ public static class TimeSpanTests
 
     [Theory]
     [MemberData(nameof(FromMinutes_TestData))]
-    public static void TestFromMinutes(double value, TimeSpan expected)
+    public static void FromMinutes(double value, TimeSpan expected)
     {
         Assert.Equal(expected, TimeSpan.FromMinutes(value));
     }
 
     [Fact]
-    public static void TestFromMinutes_Invalid()
+    public static void FromMinutes_Invalid()
     {
         double maxMinutes = long.MaxValue / (TimeSpan.TicksPerMillisecond / 1000.0 / 60.0);
 
@@ -406,13 +406,13 @@ public static class TimeSpanTests
 
     [Theory]
     [MemberData(nameof(FromSeconds_TestData))]
-    public static void TestFromSeconds(double value, TimeSpan expected)
+    public static void FromSeconds(double value, TimeSpan expected)
     {
         Assert.Equal(expected, TimeSpan.FromSeconds(value));
     }
 
     [Fact]
-    public static void TestFromSeconds_Invalid()
+    public static void FromSeconds_Invalid()
     {
         double maxSeconds = long.MaxValue / (TimeSpan.TicksPerMillisecond / 1000.0);
 
@@ -438,13 +438,13 @@ public static class TimeSpanTests
 
     [Theory]
     [MemberData(nameof(FromMilliseconds_TestData))]
-    public static void TestFromMilliseconds(double value, TimeSpan expected)
+    public static void FromMilliseconds(double value, TimeSpan expected)
     {
         Assert.Equal(expected, TimeSpan.FromMilliseconds(value));
     }
 
     [Fact]
-    public static void TestFromMilliseconds_Invalid()
+    public static void FromMilliseconds_Invalid()
     {
         double maxMilliseconds = long.MaxValue / TimeSpan.TicksPerMillisecond;
 
@@ -476,7 +476,7 @@ public static class TimeSpanTests
 
     [Theory]
     [MemberData(nameof(FromTicks_TestData))]
-    public static void TestFromTicks(long value, TimeSpan expected)
+    public static void FromTicks(long value, TimeSpan expected)
     {
         Assert.Equal(expected, TimeSpan.FromTicks(value));
     }
@@ -492,14 +492,14 @@ public static class TimeSpanTests
 
     [Theory]
     [MemberData(nameof(Negate_TestData))]
-    public static void TestNegate(TimeSpan timeSpan, TimeSpan expected)
+    public static void Negate(TimeSpan timeSpan, TimeSpan expected)
     {
         Assert.Equal(expected, timeSpan.Negate());
         Assert.Equal(expected, -timeSpan);
     }
 
     [Fact]
-    public static void TestNegate_Invalid()
+    public static void Negate_Invalid()
     {
         Assert.Throws<OverflowException>(() => TimeSpan.MinValue.Negate()); // TimeSpan.MinValue cannot be negated
         Assert.Throws<OverflowException>(() => -TimeSpan.MinValue); // TimeSpan.MinValue cannot be negated
@@ -525,7 +525,7 @@ public static class TimeSpanTests
 
     [Theory]
     [MemberData(nameof(Parse_Valid_TestData))]
-    public static void TestParse(string input, IFormatProvider provider, TimeSpan expected)
+    public static void Parse(string input, IFormatProvider provider, TimeSpan expected)
     {
         TimeSpan result;
         if (provider == null)
@@ -559,15 +559,19 @@ public static class TimeSpanTests
 
     [Theory]
     [MemberData(nameof(Parse_Invalid_TestData))]
-    public static void TestParse_Invalid(string input, IFormatProvider provider, Type exceptionType)
+    public static void Parse_Invalid(string input, IFormatProvider provider, Type exceptionType)
     {
         TimeSpan result;
         if (provider == null)
         {
             Assert.False(TimeSpan.TryParse(input, out result));
+            Assert.Equal(TimeSpan.Zero, result);
+
             Assert.Throws(exceptionType, () => TimeSpan.Parse(input));
         }
         Assert.False(TimeSpan.TryParse(input, provider, out result));
+        Assert.Equal(TimeSpan.Zero, result);
+
         Assert.Throws(exceptionType, () => TimeSpan.Parse(input, provider));
     }
 
@@ -592,7 +596,7 @@ public static class TimeSpanTests
 
     [Theory]
     [MemberData(nameof(ParseExact_Valid_TestData))]
-    public static void TestParseExact(string input, string format, TimeSpan expected)
+    public static void ParseExact(string input, string format, TimeSpan expected)
     {
         TimeSpan result;
         Assert.Equal(expected, TimeSpan.ParseExact(input, format, new CultureInfo("en-US")));
@@ -656,14 +660,14 @@ public static class TimeSpanTests
 
     [Theory]
     [MemberData(nameof(Subtract_TestData))]
-    public static void TestSubtract(TimeSpan ts1, TimeSpan ts2, TimeSpan expected)
+    public static void Subtract(TimeSpan ts1, TimeSpan ts2, TimeSpan expected)
     {
         Assert.Equal(expected, ts1.Subtract(ts2));
         Assert.Equal(expected, ts1 - ts2);
     }
 
     [Fact]
-    public static void TestSubtract_Invalid()
+    public static void Subtract_Invalid()
     {
         Assert.Throws<OverflowException>(() => TimeSpan.MaxValue.Subtract(new TimeSpan(-1))); // Result > TimeSpan.MaxValue
         Assert.Throws<OverflowException>(() => TimeSpan.MinValue.Subtract(new TimeSpan(1))); // Result < TimeSpan.MinValue
@@ -673,7 +677,7 @@ public static class TimeSpanTests
     }
 
     [Fact]
-    public static void TestToString()
+    public static void ToStringTest()
     {
         var timeSpan1 = new TimeSpan(1, 2, 3);
         var timeSpan2 = new TimeSpan(1, 2, 3);
@@ -707,7 +711,7 @@ public static class TimeSpanTests
     }
 
     [Fact]
-    public static void TestToString_Invalid()
+    public static void ToString_InvalidFormat_ThrowsFormatException()
     {
         var timeSpan = new TimeSpan();
         Assert.Throws<FormatException>(() => timeSpan.ToString("y")); // Invalid format

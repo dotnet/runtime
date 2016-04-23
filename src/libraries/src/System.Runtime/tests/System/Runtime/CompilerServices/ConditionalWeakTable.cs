@@ -10,7 +10,7 @@ using Xunit;
 public class ConditionalWeakTableTests
 {
     [Fact]
-    public static void AddTest()
+    public static void Add()
     {
         ConditionalWeakTable<object, object> cwt = new ConditionalWeakTable<object, object>();
         object key = new object();
@@ -36,7 +36,7 @@ public class ConditionalWeakTableTests
     }
 
     [Fact]
-    public static void GetOrCreateValueTest()
+    public static void GetOrCreateValue()
     {
         ConditionalWeakTable<object, object> cwt = new ConditionalWeakTable<object, object>();
         object key = new object();
@@ -60,7 +60,7 @@ public class ConditionalWeakTableTests
     }
 
     [Fact]
-    public static void GetValueTest()
+    public static void GetValue()
     {
         ConditionalWeakTable<object, object> cwt = new ConditionalWeakTable<object, object>();
         object key = new object();

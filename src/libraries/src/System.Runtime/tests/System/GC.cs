@@ -11,7 +11,7 @@ public static class GCTests
     private static bool s_is32Bits = IntPtr.Size == 4; // Skip IntPtr tests on 32-bit platforms
 
     [Fact]
-    public static void TestAddMemoryPressure_Invalid()
+    public static void AddMemoryPressure_InvalidBytesAllocated_ThrowsArgumentOutOfRangeException()
     {
         Assert.Throws<ArgumentOutOfRangeException>("bytesAllocated", () => GC.AddMemoryPressure(-1)); // Bytes allocated < 0
 
@@ -22,7 +22,7 @@ public static class GCTests
     }
 
     [Fact]
-    public static void TestCollect_Int()
+    public static void Collect_Int()
     {
         for (int i = 0; i < GC.MaxGeneration + 10; i++)
         {
@@ -31,7 +31,7 @@ public static class GCTests
     }
 
     [Fact]
-    public static void TestCollect_Int_Invalid()
+    public static void Collect_Int_NegativeGeneration_ThrowsArgumentOutOfRangeException()
     {
         Assert.Throws<ArgumentOutOfRangeException>("generation", () => GC.Collect(-1)); // Generation < 0
     }
@@ -39,7 +39,7 @@ public static class GCTests
     [Theory]
     [InlineData(GCCollectionMode.Default)]
     [InlineData(GCCollectionMode.Forced)]
-    public static void TestCollect_Int_GCCollectionMode(GCCollectionMode mode)
+    public static void Collect_Int_GCCollectionMode(GCCollectionMode mode)
     {
         for (int gen = 0; gen <= 2; gen++)
         {
@@ -54,7 +54,7 @@ public static class GCTests
     }
 
     [Fact]
-    public static void TestCollect_Int_GCCollectionMode_Invalid()
+    public static void Collect_Int_GCCollectionMode_Invalid()
     {
         Assert.Throws<ArgumentOutOfRangeException>("generation", () => GC.Collect(-1, GCCollectionMode.Default)); // Generation < 0
 
@@ -63,7 +63,7 @@ public static class GCTests
     }
 
     [Fact]
-    public static void TestCollect_Int_GCCollectionMode_Bool_Invalid()
+    public static void Collect_Int_GCCollectionMode_Bool_Invalid()
     {
         Assert.Throws<ArgumentOutOfRangeException>("generation", () => GC.Collect(-1, GCCollectionMode.Default, false)); // Generation < 0
 
@@ -72,7 +72,7 @@ public static class GCTests
     }
 
     [Fact]
-    public static void TestCollect_CallsFinalizer()
+    public static void Collect_CallsFinalizer()
     {
         FinalizerTest.Run();
     }
@@ -179,7 +179,7 @@ public static class GCTests
     }
 
     [Fact]
-    public static void KeepAliveRecursive()
+    public static void KeepAlive_Recursive()
     {
         KeepAliveRecursiveTest.Run();
     }
@@ -218,7 +218,7 @@ public static class GCTests
     }
 
     [Fact]
-    public static void TestSuppressFinalizer()
+    public static void SuppressFinalizer()
     {
         SuppressFinalizerTest.Run();
     }
@@ -249,19 +249,19 @@ public static class GCTests
     }
 
     [Fact]
-    public static void TestSuppressFinalizer_Invalid()
+    public static void SuppressFinalizer_NullObject_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>("obj", () => GC.SuppressFinalize(null)); // Obj is null
     }
 
     [Fact]
-    public static void TestReRegisterForFinalize()
+    public static void ReRegisterForFinalize()
     {
         ReRegisterForFinalizeTest.Run();
     }
 
     [Fact]
-    public static void TestReRegisterFoFinalize()
+    public static void ReRegisterFoFinalize()
     {
         Assert.Throws<ArgumentNullException>("obj", () => GC.ReRegisterForFinalize(null)); // Obj is null
     }
@@ -304,13 +304,13 @@ public static class GCTests
     }
 
     [Fact]
-    public static void TestCollectionCount_Invalid()
+    public static void CollectionCount_NegativeGeneration_ThrowsArgumentOutOfRangeException()
     {
         Assert.Throws<ArgumentOutOfRangeException>("generation", () => GC.CollectionCount(-1)); // Generation < 0
     }
 
     [Fact]
-    public static void TestRemoveMemoryPressure_Invalid()
+    public static void RemoveMemoryPressure_InvalidBytesAllocated_ThrowsArgumentOutOfRangeException()
     {
         Assert.Throws<ArgumentOutOfRangeException>("bytesAllocated", () => GC.RemoveMemoryPressure(-1)); // Bytes allocated < 0
 
@@ -321,7 +321,7 @@ public static class GCTests
     }
 
     [Fact]
-    public static void TestGetTotalMemoryTest_ForceCollection()
+    public static void GetTotalMemoryTest_ForceCollection()
     {
         // We don't test GetTotalMemory(false) at all because a collection
         // could still occur even if not due to the GetTotalMemory call,
@@ -343,7 +343,7 @@ public static class GCTests
     }
 
     [Fact]
-    public static void TestGetGeneration()
+    public static void GetGeneration()
     {
         // We don't test a tighter bound on GetGeneration as objects
         // can actually get demoted or stay in the same generation
@@ -362,7 +362,7 @@ public static class GCTests
     [Theory]
     [InlineData(GCLargeObjectHeapCompactionMode.CompactOnce)]
     [InlineData(GCLargeObjectHeapCompactionMode.Default)]
-    public static void TestLargeObjectHeapCompactionModeRoundTrips(GCLargeObjectHeapCompactionMode value)
+    public static void LargeObjectHeapCompactionModeRoundTrips(GCLargeObjectHeapCompactionMode value)
     {
         GCLargeObjectHeapCompactionMode orig = GCSettings.LargeObjectHeapCompactionMode;
         try
@@ -380,7 +380,7 @@ public static class GCTests
     [Theory]
     [InlineData(GCLatencyMode.Batch)]
     [InlineData(GCLatencyMode.Interactive)]
-    public static void TestLatencyRoundtrips(GCLatencyMode value)
+    public static void LatencyRoundtrips(GCLatencyMode value)
     {
         GCLatencyMode orig = GCSettings.LatencyMode;
         try
@@ -399,5 +399,5 @@ public static class GCTests
     [PlatformSpecific(PlatformID.Windows)] //Concurent GC is not enabled on Unix. Recombine to TestLatencyRoundTrips once addressed.
     [InlineData(GCLatencyMode.LowLatency)]
     [InlineData(GCLatencyMode.SustainedLowLatency)]
-    public static void TestLatencyRoundtrips_LowLatency(GCLatencyMode value) => TestLatencyRoundtrips(value);
+    public static void LatencyRoundtrips_LowLatency(GCLatencyMode value) => LatencyRoundtrips(value);
 }

@@ -10,14 +10,14 @@ using Xunit;
 public static class PathTooLongExceptionTests
 {
     [Fact]
-    public static void TestCtor_Empty()
+    public static void Ctor_Empty()
     {
         var exception = new PathTooLongException();
         ExceptionUtility.ValidateExceptionProperties(exception, hResult: HResults.COR_E_PATHTOOLONG, validateMessage: false);
     }
 
     [Fact]
-    public static void TestCtor_String()
+    public static void Ctor_String()
     {
         string message = "This path is too long to hike in a single day.";
         var exception = new PathTooLongException(message);
@@ -25,7 +25,7 @@ public static class PathTooLongExceptionTests
     }
 
     [Fact]
-    public static void TestCtor_String_Exception()
+    public static void Ctor_String_Exception()
     {
         string message = "This path is too long to hike in a single day.";
         var innerException = new Exception("Inner exception");
@@ -34,7 +34,7 @@ public static class PathTooLongExceptionTests
     }
 
     [Fact]
-    public static void TestIsThrownWhenPathIsTooLong()
+    public static void OverlyLongPath_ThrowsPathTooLongException()
     {
         // This test case ensures that the PathTooLongException defined in System.IO.Primitives is the same that
         // is thrown by Path.  The S.IO.FS.P implementation forwards to the core assembly to ensure this is true.

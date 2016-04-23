@@ -10,61 +10,61 @@ using Xunit;
 public static class DecimalTests
 {
     [Fact]
-    public static void TestMaxValue()
+    public static void MaxValue()
     {
         Assert.Equal(79228162514264337593543950335m, decimal.MaxValue);
     }
 
     [Fact]
-    public static void TestMinusOne()
+    public static void MinusOne()
     {
         Assert.Equal(-1, decimal.MinusOne);
     }
 
     [Fact]
-    public static void TestMinValue()
+    public static void MinValue()
     {
         Assert.Equal(-79228162514264337593543950335m, decimal.MinValue);
     }
 
     [Fact]
-    public static void TestOne()
+    public static void One()
     {
         Assert.Equal(1, decimal.One);
     }
 
     [Fact]
-    public static void TestZero()
+    public static void Zero()
     {
         Assert.Equal(0, decimal.Zero);
     }
 
     [Fact]
-    public static void TestCtor_ULong()
+    public static void Ctor_ULong()
     {
         Assert.Equal(ulong.MaxValue, new decimal(ulong.MaxValue));
     }
 
     [Fact]
-    public static void TestCtor_UInt()
+    public static void Ctor_UInt()
     {
         Assert.Equal(uint.MaxValue, new decimal(uint.MaxValue));
     }
 
     [Fact]
-    public static void TestCtor_Float()
+    public static void Ctor_Float()
     {
         Assert.Equal((decimal)((float)123456789.123456), new decimal((float)123456789.123456));
     }
 
     [Fact]
-    public static void TestCtor_Long()
+    public static void Ctor_Long()
     {
         Assert.Equal(long.MaxValue, new decimal(long.MaxValue));
     }
 
     [Fact]
-    public static void TestCtor_IntArray()
+    public static void Ctor_IntArray()
     {
         var d1 = new decimal(new int[] { 1, 1, 1, 0 });
         decimal d2 = 3;
@@ -74,7 +74,7 @@ public static class DecimalTests
     }
 
     [Fact]
-    public static void TestCtor_IntArray_Invalid()
+    public static void Ctor_IntArray_Invalid()
     {
         Assert.Throws<ArgumentNullException>("bits", () => new decimal(null)); // Bits is null
         Assert.Throws<ArgumentException>(null, () => new decimal(new int[3])); // Bits.Length is not 4
@@ -82,19 +82,19 @@ public static class DecimalTests
     }
 
     [Fact]
-    public static void TestCtor_Int()
+    public static void Ctor_Int()
     {
         Assert.Equal(int.MaxValue, new decimal(int.MaxValue));
     }
 
     [Fact]
-    public static void TestCtor_Double()
+    public static void Ctor_Double()
     {
         Assert.Equal((decimal)123456789.123456, new decimal(123456789.123456));
     }
 
     [Fact]
-    public static void TestCtor_Int_Int_Int_Bool_Byte()
+    public static void Ctor_Int_Int_Int_Bool_Byte()
     {
         var d1 = new decimal(1, 1, 1, false, 0);
         decimal d2 = 3;
@@ -125,7 +125,7 @@ public static class DecimalTests
 
     [Theory]
     [MemberData(nameof(Add_Valid_TestData))]
-    public static void TestAdd(decimal d1, decimal d2, decimal expected)
+    public static void Add(decimal d1, decimal d2, decimal expected)
     {
         Assert.Equal(expected, d1 + d2);
         Assert.Equal(expected, decimal.Add(d1, d2));
@@ -144,7 +144,7 @@ public static class DecimalTests
 
     [Theory]
     [MemberData(nameof(Add_Invalid_TestData))]
-    public static void TestAdd_Invalid(decimal d1, decimal d2)
+    public static void Add_Invalid(decimal d1, decimal d2)
     {
         Assert.Throws<OverflowException>(() => d1 + d2);
         Assert.Throws<OverflowException>(() => decimal.Add(d1, d2));
@@ -153,7 +153,7 @@ public static class DecimalTests
         Assert.Throws<OverflowException>(() => d3 += d2);
     }
 
-    public static IEnumerable<object[]> CeilingTestData()
+    public static IEnumerable<object[]> Ceiling_TestData()
     {
         yield return new object[] { 123m, 123m };
         yield return new object[] { 123.123m, 124m };
@@ -163,13 +163,13 @@ public static class DecimalTests
     }
 
     [Theory]
-    [MemberData(nameof(CeilingTestData))]
-    public static void TestCeiling(decimal d, decimal expected)
+    [MemberData(nameof(Ceiling_TestData))]
+    public static void Ceiling(decimal d, decimal expected)
     {
         Assert.Equal(expected, decimal.Ceiling(d));
     }
 
-    public static IEnumerable<object[]> CompareTestData()
+    public static IEnumerable<object[]> Compare_TestData()
     {
         yield return new object[] { 5m, 15m, -1 };
         yield return new object[] { 15m, 15m, 0 };
@@ -187,8 +187,8 @@ public static class DecimalTests
     }
 
     [Theory]
-    [MemberData(nameof(CompareTestData))]
-    public static void TestCompare(decimal d1, object obj, int expected)
+    [MemberData(nameof(Compare_TestData))]
+    public static void Compare(decimal d1, object obj, int expected)
     {
         if (obj is decimal)
         {
@@ -221,7 +221,7 @@ public static class DecimalTests
     }
 
     [Fact]
-    public static void TestCompare_Invalid()
+    public static void CompareTo_ObjectNotDecimal_ThrowsArgumentException()
     {
         IComparable comparable = 248m;
         Assert.Throws<ArgumentException>(null, () => comparable.CompareTo("248")); // Obj is not a decimal
@@ -305,7 +305,7 @@ public static class DecimalTests
 
     [Theory]
     [MemberData(nameof(Divide_Valid_TestData))]
-    public static void TestDivide(decimal d1, decimal d2, decimal expected)
+    public static void Divide(decimal d1, decimal d2, decimal expected)
     {
         Assert.Equal(expected, d1 / d2);
         Assert.Equal(expected, decimal.Divide(d1, d2));
@@ -350,13 +350,13 @@ public static class DecimalTests
 
     [Theory]
     [MemberData(nameof(Divide_Invalid_TestData))]
-    public static void TestDivide_Invalid(decimal d1, decimal d2, Type exceptionType)
+    public static void Divide_Invalid(decimal d1, decimal d2, Type exceptionType)
     {
         Assert.Throws(exceptionType, () => d1 / d2);
         Assert.Throws(exceptionType, () => decimal.Divide(d1, d2));
     }
 
-    public static IEnumerable<object[]> EqualsTestData()
+    public static IEnumerable<object[]> Equals_TestData()
     {
         yield return new object[] { decimal.Zero, decimal.Zero, true };
         yield return new object[] { decimal.Zero, decimal.One, false };
@@ -370,8 +370,8 @@ public static class DecimalTests
     }
 
     [Theory]
-    [MemberData(nameof(EqualsTestData))]
-    public static void TestEquals(object obj1, object obj2, bool expected)
+    [MemberData(nameof(Equals_TestData))]
+    public static void Equals(object obj1, object obj2, bool expected)
     {
         if (obj1 is decimal)
         {
@@ -395,7 +395,7 @@ public static class DecimalTests
         Assert.Equal(expected, Equals(obj1, obj2));
     }
 
-    public static IEnumerable<object[]> FloorTestData()
+    public static IEnumerable<object[]> Floor_TestData()
     {
         yield return new object[] { 123m, 123m };
         yield return new object[] { 123.123m, 123m };
@@ -405,13 +405,13 @@ public static class DecimalTests
     }
 
     [Theory]
-    [MemberData(nameof(FloorTestData))]
-    public static void TestFloor(decimal d, decimal expected)
+    [MemberData(nameof(Floor_TestData))]
+    public static void Floor(decimal d, decimal expected)
     {
         Assert.Equal(expected, decimal.Floor(d));
     }
 
-    public static IEnumerable<object[]> GetBitsTestData()
+    public static IEnumerable<object[]> GetBits_TestData()
     {
         yield return new object[] { 1M, new int[] { 0x00000001, 0x00000000, 0x00000000, 0x00000000 } };
         yield return new object[] { 100000000000000M, new int[] { 0x107A4000, 0x00005AF3, 0x00000000, 0x00000000 } };
@@ -429,8 +429,8 @@ public static class DecimalTests
     }
 
     [Theory]
-    [MemberData(nameof(GetBitsTestData))]
-    public static void TestGetBits(decimal input, int[] expected)
+    [MemberData(nameof(GetBits_TestData))]
+    public static void GetBits(decimal input, int[] expected)
     {
         int[] bits = decimal.GetBits(input);
 
@@ -462,7 +462,7 @@ public static class DecimalTests
 
     [Theory]
     [MemberData(nameof(Multiply_Valid_TestData))]
-    public static void TestMultiply(decimal d1, decimal d2, decimal expected)
+    public static void Multiply(decimal d1, decimal d2, decimal expected)
     {
         Assert.Equal(expected, d1 * d2);
         Assert.Equal(expected, decimal.Multiply(d1, d2));
@@ -504,13 +504,13 @@ public static class DecimalTests
 
     [Theory]
     [MemberData(nameof(Multiply_Invalid_TestData))]
-    public static void TestMultiply_Invalid(decimal d1, decimal d2)
+    public static void Multiply_Invalid(decimal d1, decimal d2)
     {
         Assert.Throws<OverflowException>(() => d1 * d2);
         Assert.Throws<OverflowException>(() => decimal.Multiply(d1, d2));
     }
 
-    public static IEnumerable<object[]> NegateTestData()
+    public static IEnumerable<object[]> Negate_TestData()
     {
         yield return new object[] { 1m, -1m };
         yield return new object[] { 0m, 0m };
@@ -520,8 +520,8 @@ public static class DecimalTests
     }
 
     [Theory]
-    [MemberData(nameof(NegateTestData))]
-    public static void TestNegate(decimal d, decimal expected)
+    [MemberData(nameof(Negate_TestData))]
+    public static void Negate(decimal d, decimal expected)
     {
         Assert.Equal(expected, decimal.Negate(d));
     }
@@ -573,7 +573,7 @@ public static class DecimalTests
 
     [Theory]
     [MemberData(nameof(Parse_Valid_TestData))]
-    public static void TestParse(string value, NumberStyles style, IFormatProvider provider, decimal expected)
+    public static void Parse(string value, NumberStyles style, IFormatProvider provider, decimal expected)
     {
         decimal d;
         // If no style is specified, use the (String) or (String, IFormatProvider) overload
@@ -633,7 +633,7 @@ public static class DecimalTests
 
     [Theory]
     [MemberData(nameof(Parse_Invalid_TestData))]
-    public static void TestParse_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
+    public static void Parse_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
     {
         decimal d;
         // If no style is specified, use the (String) or (String, IFormatProvider) overload
@@ -723,7 +723,7 @@ public static class DecimalTests
 
     [Theory]
     [MemberData(nameof(Remainder_Valid_TestData))]
-    public static void TestRemainder(decimal d1, decimal d2, decimal expected)
+    public static void Remainder(decimal d1, decimal d2, decimal expected)
     {
         Assert.Equal(expected, d1 % d2);
         Assert.Equal(expected, decimal.Remainder(d1, d2));
@@ -737,7 +737,7 @@ public static class DecimalTests
 
     [Theory]
     [MemberData(nameof(Remainder_Invalid_TestData))]
-    public static void TestRemainder_Invalid(decimal d1, decimal d2, Type exceptionType)
+    public static void Remainder_Invalid(decimal d1, decimal d2, Type exceptionType)
     {
         Assert.Throws(exceptionType, () => d1 % d2);
         Assert.Throws(exceptionType, () => decimal.Remainder(d1, d2));
@@ -766,7 +766,7 @@ public static class DecimalTests
 
     [Theory]
     [MemberData(nameof(Subtract_Valid_TestData))]
-    public static void TestSubtract(decimal d1, decimal d2, decimal expected)
+    public static void Subtract(decimal d1, decimal d2, decimal expected)
     {
         Assert.Equal(expected, d1 - d2);
         Assert.Equal(expected, decimal.Subtract(d1, d2));
@@ -784,7 +784,7 @@ public static class DecimalTests
 
     [Theory]
     [MemberData(nameof(Subtract_Invalid_TestData))]
-    public static void TestSubtract_Invalid(decimal d1, decimal d2)
+    public static void Subtract_Invalid(decimal d1, decimal d2)
     {
         Assert.Throws<OverflowException>(() => decimal.Subtract(d1, d2));
         Assert.Throws<OverflowException>(() => d1 - d2);
@@ -794,7 +794,7 @@ public static class DecimalTests
     }
 
     [Fact]
-    public static void TestToByte()
+    public static void ToByte()
     {
         Assert.Equal(byte.MinValue, decimal.ToByte(byte.MinValue));
         Assert.Equal(123, decimal.ToByte(123));
@@ -803,14 +803,14 @@ public static class DecimalTests
     }
 
     [Fact]
-    public static void TestToByte_Invalid()
+    public static void ToByte_Invalid()
     {
         Assert.Throws<OverflowException>(() => decimal.ToByte(byte.MinValue - 1)); // Decimal < byte.MinValue
         Assert.Throws<OverflowException>(() => decimal.ToByte(byte.MaxValue + 1)); // Decimal > byte.MaxValue
     }
 
     [Fact]
-    public static void TestToDouble()
+    public static void ToDouble()
     {
         double d = decimal.ToDouble(new decimal(0, 0, 1, false, 0));
 
@@ -833,7 +833,7 @@ public static class DecimalTests
     }
 
     [Fact]
-    public static void TestToInt16()
+    public static void ToInt16()
     {
         Assert.Equal(short.MinValue, decimal.ToInt16(short.MinValue));
         Assert.Equal(-123, decimal.ToInt16(-123));
@@ -844,7 +844,7 @@ public static class DecimalTests
     }
 
     [Fact]
-    public static void TestToInt16_Invalid()
+    public static void ToInt16_Invalid()
     {
         Assert.Throws<OverflowException>(() => decimal.ToInt16(short.MinValue - 1)); // Decimal < short.MinValue
         Assert.Throws<OverflowException>(() => decimal.ToInt16(short.MaxValue + 1)); // Decimal > short.MaxValue
@@ -854,7 +854,7 @@ public static class DecimalTests
     }
 
     [Fact]
-    public static void TestToInt32()
+    public static void ToInt32()
     {
         Assert.Equal(int.MinValue, decimal.ToInt32(int.MinValue));
         Assert.Equal(-123, decimal.ToInt32(-123));
@@ -865,14 +865,14 @@ public static class DecimalTests
     }
 
     [Fact]
-    public static void TestToInt32_Invalid()
+    public static void ToInt32_Invalid()
     {
         Assert.Throws<OverflowException>(() => decimal.ToInt32((long)int.MinValue - 1)); // Decimal < int.MinValue
         Assert.Throws<OverflowException>(() => decimal.ToInt32((long)int.MaxValue + 1)); // Decimal > int.MaxValue
     }
 
     [Fact]
-    public static void TestToInt64()
+    public static void ToInt64()
     {
         Assert.Equal(long.MinValue, decimal.ToInt64(long.MinValue));
         Assert.Equal(-123, decimal.ToInt64(-123));
@@ -883,14 +883,14 @@ public static class DecimalTests
     }
 
     [Fact]
-    public static void TestToInt64_Invalid()
+    public static void ToInt64_Invalid()
     {
         Assert.Throws<OverflowException>(() => decimal.ToUInt64(decimal.MinValue)); // Decimal < long.MinValue
         Assert.Throws<OverflowException>(() => decimal.ToUInt64(decimal.MaxValue)); // Decimal > long.MaxValue
     }
 
     [Fact]
-    public static void TestToSByte()
+    public static void ToSByte()
     {
         Assert.Equal(sbyte.MinValue, decimal.ToSByte(sbyte.MinValue));
         Assert.Equal(-123, decimal.ToSByte(-123));
@@ -901,7 +901,7 @@ public static class DecimalTests
     }
 
     [Fact]
-    public static void TestToSByte_Invalid()
+    public static void ToSByte_Invalid()
     {
         Assert.Throws<OverflowException>(() => decimal.ToSByte(sbyte.MinValue - 1)); // Decimal < sbyte.MinValue
         Assert.Throws<OverflowException>(() => decimal.ToSByte(sbyte.MaxValue + 1)); // Decimal > sbyte.MaxValue
@@ -911,7 +911,7 @@ public static class DecimalTests
     }
 
     [Fact]
-    public static void TestToSingle()
+    public static void ToSingle()
     {
         float f = 12345.12f;
         Assert.Equal(f, decimal.ToSingle((decimal)f));
@@ -927,7 +927,7 @@ public static class DecimalTests
     }
 
     [Fact]
-    public static void TestToUInt16()
+    public static void ToUInt16()
     {
         Assert.Equal(ushort.MinValue, decimal.ToUInt16(ushort.MinValue));
         Assert.Equal(123, decimal.ToByte(123));
@@ -936,14 +936,14 @@ public static class DecimalTests
     }
 
     [Fact]
-    public static void TestToUInt16_Invalid()
+    public static void ToUInt16_Invalid()
     {
         Assert.Throws<OverflowException>(() => decimal.ToUInt16(ushort.MinValue - 1)); // Decimal < ushort.MinValue
         Assert.Throws<OverflowException>(() => decimal.ToUInt16(ushort.MaxValue + 1)); // Decimal > ushort.MaxValue
     }
 
     [Fact]
-    public static void TestToUInt32()
+    public static void ToUInt32()
     {
         Assert.Equal(uint.MinValue, decimal.ToUInt32(uint.MinValue));
         Assert.Equal((uint)123, decimal.ToUInt32(123));
@@ -952,14 +952,14 @@ public static class DecimalTests
     }
 
     [Fact]
-    public static void TestToUInt32_Invalid()
+    public static void ToUInt32_Invalid()
     {
         Assert.Throws<OverflowException>(() => decimal.ToUInt32((long)uint.MinValue - 1)); // Decimal < uint.MinValue
         Assert.Throws<OverflowException>(() => decimal.ToUInt32((long)uint.MaxValue + 1)); // Decimal > uint.MaxValue
     }
 
     [Fact]
-    public static void TestToUInt64()
+    public static void ToUInt64()
     {
         Assert.Equal(ulong.MinValue, decimal.ToUInt64(ulong.MinValue));
         Assert.Equal((ulong)123, decimal.ToUInt64(123));
@@ -968,12 +968,12 @@ public static class DecimalTests
     }
 
     [Fact]
-    public static void TestToUInt64_Invalid()
+    public static void ToUInt64_Invalid()
     {
         Assert.Throws<OverflowException>(() => decimal.ToUInt64((long)ulong.MinValue - 1)); // Decimal < uint.MinValue
     }
 
-    public static IEnumerable<object[]> ToStringTestData()
+    public static IEnumerable<object[]> ToString_TestData()
     {
         var emptyFormat = NumberFormatInfo.CurrentInfo;
         yield return new object[] { decimal.MinValue, "G", emptyFormat, "-79228162514264337593543950335" };
@@ -1010,8 +1010,8 @@ public static class DecimalTests
     }
 
     [Theory]
-    [MemberData(nameof(ToStringTestData))]
-    public static void TestToString(decimal f, string format, IFormatProvider provider, string expected)
+    [MemberData(nameof(ToString_TestData))]
+    public static void ToString(decimal f, string format, IFormatProvider provider, string expected)
     {
         bool isDefaultProvider = (provider == null || provider == NumberFormatInfo.CurrentInfo);
         if (string.IsNullOrEmpty(format) || format.ToUpperInvariant() == "G")
@@ -1035,14 +1035,14 @@ public static class DecimalTests
     }
 
     [Fact]
-    public static void TestToString_Invalid()
+    public static void ToString_InvalidFormat_ThrowsFormatException()
     {
         decimal f = 123;
         Assert.Throws<FormatException>(() => f.ToString("Y")); // Invalid format
         Assert.Throws<FormatException>(() => f.ToString("Y", null)); // Invalid format
     }
 
-    public static IEnumerable<object[]> TruncateTestData()
+    public static IEnumerable<object[]> Truncate_TestData()
     {
         yield return new object[] { 123m, 123m };
         yield return new object[] { 123.123m, 123m };
@@ -1052,13 +1052,13 @@ public static class DecimalTests
     }
 
     [Theory]
-    [MemberData(nameof(TruncateTestData))]
-    public static void TestTruncate(decimal d, decimal expected)
+    [MemberData(nameof(Truncate_TestData))]
+    public static void Truncate(decimal d, decimal expected)
     {
         Assert.Equal(expected, decimal.Truncate(d));
     }
 
-    public static IEnumerable<object[]> IncrementTestData()
+    public static IEnumerable<object[]> Increment_TestData()
     {
         yield return new object[] { 1m, 2m };
         yield return new object[] { 0m, 1m };
@@ -1069,13 +1069,13 @@ public static class DecimalTests
     }
 
     [Theory]
-    [MemberData(nameof(IncrementTestData))]
-    public static void TestIncrementOperator(decimal d, decimal expected)
+    [MemberData(nameof(Increment_TestData))]
+    public static void IncrementOperator(decimal d, decimal expected)
     {
         Assert.Equal(expected, ++d);
     }
 
-    public static IEnumerable<object[]> DecrementTestData()
+    public static IEnumerable<object[]> Decrement_TestData()
     {
         yield return new object[] { 1m, 0m };
         yield return new object[] { 0m, -1m };
@@ -1086,8 +1086,8 @@ public static class DecimalTests
     }
 
     [Theory]
-    [MemberData(nameof(DecrementTestData))]
-    public static void TestDecrementOperator(decimal d, decimal expected)
+    [MemberData(nameof(Decrement_TestData))]
+    public static void DecrementOperator(decimal d, decimal expected)
     {
         Assert.Equal(expected, --d);
     }
