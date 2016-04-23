@@ -8853,7 +8853,664 @@ void                CodeGen::genCodeForRelop(GenTreePtr tree,
     genCodeForTree_DONE(tree, reg);
 }
 
+void                CodeGen::genCodeForBlkOp(GenTreePtr tree,
+                                             regMaskTP  destReg)
+{
+    genTreeOps      oper     = tree->OperGet();
+    GenTreePtr      op1      = tree->gtOp.gtOp1;
+    GenTreePtr      op2      = tree->gtGetOp2();
+    regMaskTP       needReg  = destReg;
+    regMaskTP       regs     = regSet.rsMaskUsed;
+    GenTreePtr      opsPtr[3];
+    regMaskTP       regsPtr[3];
 
+    noway_assert(oper == GT_COPYBLK || oper == GT_INITBLK);
+    noway_assert(op1->IsList());
+
+#ifdef _TARGET_ARM_
+    if (tree->AsBlkOp()->IsVolatile())
+    {
+        // Emit a memory barrier instruction before the InitBlk/CopyBlk
+        instGen_MemoryBarrier();
+    }
+#endif
+    {
+        GenTreePtr destPtr, srcPtrOrVal;
+        destPtr = op1->gtOp.gtOp1;
+        srcPtrOrVal = op1->gtOp.gtOp2;
+        noway_assert(destPtr->TypeGet() == TYP_BYREF || varTypeIsIntegral(destPtr->TypeGet()));
+        noway_assert((oper == GT_COPYBLK &&
+            (srcPtrOrVal->TypeGet() == TYP_BYREF || varTypeIsIntegral(srcPtrOrVal->TypeGet())))
+            ||
+            (oper == GT_INITBLK &&
+            varTypeIsIntegral(srcPtrOrVal->TypeGet())));
+
+        noway_assert(op1 && op1->IsList());
+        noway_assert(destPtr && srcPtrOrVal);
+
+#if CPU_USES_BLOCK_MOVE 
+        regs = (oper == GT_INITBLK) ? RBM_EAX : RBM_ESI;   // What is the needReg for Val/Src
+
+        /* Some special code for block moves/inits for constant sizes */
+
+        //
+        // Is this a fixed size COPYBLK?
+        //      or a fixed size INITBLK with a constant init value?
+        //
+        if ((op2->IsCnsIntOrI()) &&
+            ((oper == GT_COPYBLK) || (srcPtrOrVal->IsCnsIntOrI())))
+        {
+            size_t length = (size_t)op2->gtIntCon.gtIconVal;
+            size_t initVal = 0;
+            instruction ins_P, ins_PR, ins_B;
+
+            if (oper == GT_INITBLK)
+            {
+                ins_P = INS_stosp;
+                ins_PR = INS_r_stosp;
+                ins_B = INS_stosb;
+
+                /* Properly extend the init constant from a U1 to a U4 */
+                initVal = 0xFF & ((unsigned)op1->gtOp.gtOp2->gtIntCon.gtIconVal);
+
+                /* If it is a non-zero value we have to replicate      */
+                /* the byte value four times to form the DWORD         */
+                /* Then we change this new value into the tree-node      */
+
+                if (initVal)
+                {
+                    initVal = initVal | (initVal << 8) | (initVal << 16) | (initVal << 24);
+#ifdef _TARGET_64BIT_
+                    if (length > 4)
+                    {
+                        initVal = initVal | (initVal << 32);
+                        op1->gtOp.gtOp2->gtType = TYP_LONG;
+                    }
+                    else
+                    {
+                        op1->gtOp.gtOp2->gtType = TYP_INT;
+                    }
+#endif // _TARGET_64BIT_
+                }
+                op1->gtOp.gtOp2->gtIntCon.gtIconVal = initVal;
+            }
+            else
+            {
+                ins_P = INS_movsp;
+                ins_PR = INS_r_movsp;
+                ins_B = INS_movsb;
+            }
+
+            // Determine if we will be using SSE2
+            unsigned movqLenMin = 8;
+            unsigned movqLenMax = 24;
+
+            bool bWillUseSSE2 = false;
+            bool bWillUseOnlySSE2 = false;
+            bool bNeedEvaluateCnst = true;   // If we only use SSE2, we will just load the constant there. 
+
+#ifdef _TARGET_64BIT_
+
+            // Until we get SSE2 instructions that move 16 bytes at a time instead of just 8
+            // there is no point in wasting space on the bigger instructions
+
+#else // !_TARGET_64BIT_
+
+            if (compiler->opts.compCanUseSSE2)
+            {
+                unsigned curBBweight = compiler->compCurBB->getBBWeight(compiler);
+
+                /* Adjust for BB weight */
+                if (curBBweight == BB_ZERO_WEIGHT)
+                {
+                    // Don't bother with this optimization in
+                    // rarely run blocks
+                    movqLenMax = movqLenMin = 0;
+                }
+                else if (curBBweight < BB_UNITY_WEIGHT)
+                {
+                    // Be less aggressive when we are inside a conditional
+                    movqLenMax = 16;
+                }
+                else if (curBBweight >= (BB_LOOP_WEIGHT*BB_UNITY_WEIGHT) / 2)
+                {
+                    // Be more aggressive when we are inside a loop
+                    movqLenMax = 48;
+                }
+
+                if ((compiler->compCodeOpt() == Compiler::FAST_CODE) || (oper == GT_INITBLK))
+                {
+                    // Be more aggressive when optimizing for speed
+                    // InitBlk uses fewer instructions
+                    movqLenMax += 16;
+                }
+
+                if (compiler->compCodeOpt() != Compiler::SMALL_CODE &&
+                    length >= movqLenMin &&
+                    length <= movqLenMax)
+                {
+                    bWillUseSSE2 = true;
+
+                    if ((length % 8) == 0)
+                    {
+                        bWillUseOnlySSE2 = true;
+                        if (oper == GT_INITBLK && (initVal == 0))
+                        {
+                            bNeedEvaluateCnst = false;
+                            noway_assert((op1->gtOp.gtOp2->OperGet() == GT_CNS_INT));
+                        }
+                    }
+                }
+            }
+
+#endif // !_TARGET_64BIT_
+
+            const bool bWillTrashRegSrc = ((oper == GT_COPYBLK) && !bWillUseOnlySSE2);
+            /* Evaluate dest and src/val */
+
+            if (op1->gtFlags & GTF_REVERSE_OPS)
+            {
+                if (bNeedEvaluateCnst)
+                {
+                    genComputeReg(op1->gtOp.gtOp2, regs, RegSet::EXACT_REG, RegSet::KEEP_REG, bWillTrashRegSrc);
+                }
+                genComputeReg(op1->gtOp.gtOp1, RBM_EDI, RegSet::EXACT_REG, RegSet::KEEP_REG, !bWillUseOnlySSE2);
+                if (bNeedEvaluateCnst)
+                {
+                    genRecoverReg(op1->gtOp.gtOp2, regs, RegSet::KEEP_REG);
+                }
+            }
+            else
+            {
+                genComputeReg(op1->gtOp.gtOp1, RBM_EDI, RegSet::EXACT_REG, RegSet::KEEP_REG, !bWillUseOnlySSE2);
+                if (bNeedEvaluateCnst)
+                {
+                    genComputeReg(op1->gtOp.gtOp2, regs, RegSet::EXACT_REG, RegSet::KEEP_REG, bWillTrashRegSrc);
+                }
+                genRecoverReg(op1->gtOp.gtOp1, RBM_EDI, RegSet::KEEP_REG);
+            }
+
+            bool bTrashedESI = false;
+            bool bTrashedEDI = false;
+
+            if (bWillUseSSE2)
+            {
+                int      blkDisp = 0;
+                regNumber xmmReg = REG_XMM0;
+
+                if (oper == GT_INITBLK)
+                {
+                    if (initVal)
+                    {
+                        getEmitter()->emitIns_R_R(INS_mov_i2xmm, EA_4BYTE, xmmReg, REG_EAX);
+                        getEmitter()->emitIns_R_R(INS_punpckldq, EA_4BYTE, xmmReg, xmmReg);
+                    }
+                    else
+                    {
+                        getEmitter()->emitIns_R_R(INS_xorps, EA_8BYTE, xmmReg, xmmReg);
+                    }
+                }
+
+                JITLOG_THIS(compiler, (LL_INFO100, "Using XMM instructions for %3d byte %s while compiling %s\n",
+                    length, (oper == GT_INITBLK) ? "initblk" : "copyblk", compiler->info.compFullName));
+
+                while (length > 7)
+                {
+                    if (oper == GT_INITBLK)
+                    {
+                        getEmitter()->emitIns_AR_R(INS_movq, EA_8BYTE, xmmReg, REG_EDI, blkDisp);
+                    }
+                    else
+                    {
+                        getEmitter()->emitIns_R_AR(INS_movq, EA_8BYTE, xmmReg, REG_ESI, blkDisp);
+                        getEmitter()->emitIns_AR_R(INS_movq, EA_8BYTE, xmmReg, REG_EDI, blkDisp);
+                    }
+                    blkDisp += 8;
+                    length -= 8;
+                }
+
+                if (length > 0)
+                {
+                    noway_assert(bNeedEvaluateCnst);
+                    noway_assert(!bWillUseOnlySSE2);
+
+                    if (oper == GT_COPYBLK)
+                    {
+                        inst_RV_IV(INS_add, REG_ESI, blkDisp, emitActualTypeSize(srcPtrOrVal->TypeGet()));
+                        bTrashedESI = true;
+                    }
+
+                    inst_RV_IV(INS_add, REG_EDI, blkDisp, emitActualTypeSize(destPtr->TypeGet()));
+                    bTrashedEDI = true;
+
+                    if (length >= REGSIZE_BYTES)
+                    {
+                        instGen(ins_P);
+                        length -= REGSIZE_BYTES;
+                    }
+                }
+            }
+            else if (compiler->compCodeOpt() == Compiler::SMALL_CODE)
+            {
+                /* For small code, we can only use ins_DR to generate fast
+                    and small code. We also can't use "rep movsb" because
+                    we may not atomically reading and writing the DWORD */
+
+                noway_assert(bNeedEvaluateCnst);
+
+                goto USE_DR;
+            }
+            else if (length <= 4 * REGSIZE_BYTES)
+            {
+                noway_assert(bNeedEvaluateCnst);
+
+                while (length >= REGSIZE_BYTES)
+                {
+                    instGen(ins_P);
+                    length -= REGSIZE_BYTES;
+                }
+
+                bTrashedEDI = true;
+                if (oper == GT_COPYBLK)
+                    bTrashedESI = true;
+            }
+            else
+            {
+            USE_DR:
+                noway_assert(bNeedEvaluateCnst);
+
+                /* set ECX to length/REGSIZE_BYTES (in pointer-sized words) */
+                genSetRegToIcon(REG_ECX, length / REGSIZE_BYTES, TYP_I_IMPL);
+
+                length &= (REGSIZE_BYTES - 1);
+
+                instGen(ins_PR);
+
+                regTracker.rsTrackRegTrash(REG_ECX);
+
+                bTrashedEDI = true;
+                if (oper == GT_COPYBLK)
+                    bTrashedESI = true;
+            }
+
+            /* Now take care of the remainder */
+
+#ifdef _TARGET_64BIT_
+            if (length > 4)
+            {
+                noway_assert(bNeedEvaluateCnst);
+                noway_assert(length < 8);
+
+                instGen((oper == GT_INITBLK) ? INS_stosd : INS_movsd);
+                length -= 4;
+
+                bTrashedEDI = true;
+                if (oper == GT_COPYBLK)
+                    bTrashedESI = true;
+            }
+
+#endif // _TARGET_64BIT_
+
+            if (length)
+            {
+                noway_assert(bNeedEvaluateCnst);
+
+                while (length--)
+                {
+                    instGen(ins_B);
+                }
+
+                bTrashedEDI = true;
+                if (oper == GT_COPYBLK)
+                    bTrashedESI = true;
+            }
+
+            noway_assert(bTrashedEDI == !bWillUseOnlySSE2);
+            if (bTrashedEDI)
+                regTracker.rsTrackRegTrash(REG_EDI);
+            if (bTrashedESI)
+                regTracker.rsTrackRegTrash(REG_ESI);
+            // else No need to trash EAX as it wasnt destroyed by the "rep stos"
+
+            genReleaseReg(op1->gtOp.gtOp1);
+            if (bNeedEvaluateCnst) genReleaseReg(op1->gtOp.gtOp2);
+
+        }
+        else
+        {
+            //
+            // This a variable-sized COPYBLK/INITBLK,
+            //   or a fixed size INITBLK with a variable init value,
+            //
+
+            // What order should the Dest, Val/Src, and Size be calculated
+
+            compiler->fgOrderBlockOps(tree, RBM_EDI, regs, RBM_ECX,
+                opsPtr, regsPtr); // OUT arguments
+
+            noway_assert(((oper == GT_INITBLK) && (regs == RBM_EAX)) || ((oper == GT_COPYBLK) && (regs == RBM_ESI)));
+            genComputeReg(opsPtr[0], regsPtr[0], RegSet::EXACT_REG, RegSet::KEEP_REG, (regsPtr[0] != RBM_EAX));
+            genComputeReg(opsPtr[1], regsPtr[1], RegSet::EXACT_REG, RegSet::KEEP_REG, (regsPtr[1] != RBM_EAX));
+            genComputeReg(opsPtr[2], regsPtr[2], RegSet::EXACT_REG, RegSet::KEEP_REG, (regsPtr[2] != RBM_EAX));
+
+            genRecoverReg(opsPtr[0], regsPtr[0], RegSet::KEEP_REG);
+            genRecoverReg(opsPtr[1], regsPtr[1], RegSet::KEEP_REG);
+
+            noway_assert((op1->gtOp.gtOp1->gtFlags & GTF_REG_VAL) &&  // Dest
+                (op1->gtOp.gtOp1->gtRegNum == REG_EDI));
+
+            noway_assert((op1->gtOp.gtOp2->gtFlags & GTF_REG_VAL) &&  // Val/Src
+                (genRegMask(op1->gtOp.gtOp2->gtRegNum) == regs));
+
+            noway_assert((op2->gtFlags & GTF_REG_VAL) &&              // Size
+                (op2->gtRegNum == REG_ECX));
+
+            if (oper == GT_INITBLK)
+                instGen(INS_r_stosb);
+            else
+                instGen(INS_r_movsb);
+
+            regTracker.rsTrackRegTrash(REG_EDI);
+            regTracker.rsTrackRegTrash(REG_ECX);
+
+            if (oper == GT_COPYBLK)
+                regTracker.rsTrackRegTrash(REG_ESI);
+            // else No need to trash EAX as it wasnt destroyed by the "rep stos"
+
+            genReleaseReg(opsPtr[0]);
+            genReleaseReg(opsPtr[1]);
+            genReleaseReg(opsPtr[2]);
+        }
+
+#else // !CPU_USES_BLOCK_MOVE 
+
+#ifndef _TARGET_ARM_
+        // Currently only the ARM implementation is provided
+#error "COPYBLK/INITBLK non-ARM && non-CPU_USES_BLOCK_MOVE"
+#endif
+        //
+        // Is this a fixed size COPYBLK?
+        //      or a fixed size INITBLK with a constant init value?
+        //
+        if ((op2->OperGet() == GT_CNS_INT) &&
+            ((oper == GT_COPYBLK) || (srcPtrOrVal->OperGet() == GT_CNS_INT)))
+        {
+            GenTreePtr  dstOp = op1->gtOp.gtOp1;
+            GenTreePtr  srcOp = op1->gtOp.gtOp2;
+            unsigned    length = (unsigned)op2->gtIntCon.gtIconVal;
+            unsigned    fullStoreCount = length / TARGET_POINTER_SIZE;
+            unsigned    initVal = 0;
+            bool        useLoop = false;
+
+            if (oper == GT_INITBLK)
+            {
+                /* Properly extend the init constant from a U1 to a U4 */
+                initVal = 0xFF & ((unsigned)srcOp->gtIntCon.gtIconVal);
+
+                /* If it is a non-zero value we have to replicate      */
+                /* the byte value four times to form the DWORD         */
+                /* Then we store this new value into the tree-node      */
+
+                if (initVal != 0)
+                {
+                    initVal = initVal | (initVal << 8) | (initVal << 16) | (initVal << 24);
+                    op1->gtOp.gtOp2->gtIntCon.gtIconVal = initVal;
+                }
+            }
+
+            // Will we be using a loop to implement this INITBLK/COPYBLK?
+            if (((oper == GT_COPYBLK) && (fullStoreCount >= 8)) ||
+                ((oper == GT_INITBLK) && (fullStoreCount >= 16)))
+            {
+                useLoop = true;
+            }
+
+            regMaskTP    usedRegs;
+            regNumber    regDst;
+            regNumber    regSrc;
+            regNumber    regTemp;
+
+            /* Evaluate dest and src/val */
+
+            if (op1->gtFlags & GTF_REVERSE_OPS)
+            {
+                genComputeReg(srcOp, (needReg & ~dstOp->gtRsvdRegs), RegSet::ANY_REG, RegSet::KEEP_REG, useLoop);
+                assert(srcOp->gtFlags & GTF_REG_VAL);
+
+                genComputeReg(dstOp, needReg, RegSet::ANY_REG, RegSet::KEEP_REG, useLoop);
+                assert(dstOp->gtFlags & GTF_REG_VAL);
+                regDst = dstOp->gtRegNum;
+
+                genRecoverReg(srcOp, needReg, RegSet::KEEP_REG);
+                regSrc = srcOp->gtRegNum;
+            }
+            else
+            {
+                genComputeReg(dstOp, (needReg & ~srcOp->gtRsvdRegs), RegSet::ANY_REG, RegSet::KEEP_REG, useLoop);
+                assert(dstOp->gtFlags & GTF_REG_VAL);
+
+                genComputeReg(srcOp, needReg, RegSet::ANY_REG, RegSet::KEEP_REG, useLoop);
+                assert(srcOp->gtFlags & GTF_REG_VAL);
+                regSrc = srcOp->gtRegNum;
+
+                genRecoverReg(dstOp, needReg, RegSet::KEEP_REG);
+                regDst = dstOp->gtRegNum;
+            }
+            assert(dstOp->gtFlags & GTF_REG_VAL);
+            assert(srcOp->gtFlags & GTF_REG_VAL);
+
+            regDst = dstOp->gtRegNum;
+            regSrc = srcOp->gtRegNum;
+            usedRegs = (genRegMask(regSrc) | genRegMask(regDst));
+            bool dstIsOnStack = (dstOp->gtOper == GT_ADDR && (dstOp->gtFlags & GTF_ADDR_ONSTACK));
+            emitAttr dstType = (varTypeIsGC(dstOp) && !dstIsOnStack) ? EA_BYREF : EA_PTRSIZE;
+            emitAttr srcType;
+
+            if (oper == GT_COPYBLK)
+            {
+                // Prefer a low register,but avoid one of the ones we've already grabbed
+                regTemp = regSet.rsGrabReg(regSet.rsNarrowHint(regSet.rsRegMaskCanGrab() & ~usedRegs, RBM_LOW_REGS));
+                usedRegs |= genRegMask(regTemp);
+                bool srcIsOnStack = (srcOp->gtOper == GT_ADDR && (srcOp->gtFlags & GTF_ADDR_ONSTACK));
+                srcType = (varTypeIsGC(srcOp) && !srcIsOnStack) ? EA_BYREF : EA_PTRSIZE;
+            }
+            else
+            {
+                regTemp = REG_STK;
+                srcType = EA_PTRSIZE;
+            }
+
+            instruction  loadIns = ins_Load(TYP_I_IMPL);   // INS_ldr
+            instruction  storeIns = ins_Store(TYP_I_IMPL);  // INS_str
+
+            int       finalOffset;
+
+            // Can we emit a small number of ldr/str instructions to implement this INITBLK/COPYBLK?
+            if (!useLoop)
+            {
+                for (unsigned i = 0; i < fullStoreCount; i++)
+                {
+                    if (oper == GT_COPYBLK)
+                    {
+                        getEmitter()->emitIns_R_R_I(loadIns, EA_4BYTE, regTemp, regSrc, i * TARGET_POINTER_SIZE);
+                        getEmitter()->emitIns_R_R_I(storeIns, EA_4BYTE, regTemp, regDst, i * TARGET_POINTER_SIZE);
+                        gcInfo.gcMarkRegSetNpt(genRegMask(regTemp));
+                        regTracker.rsTrackRegTrash(regTemp);
+                    }
+                    else
+                    {
+                        getEmitter()->emitIns_R_R_I(storeIns, EA_4BYTE, regSrc, regDst, i * TARGET_POINTER_SIZE);
+                    }
+                }
+
+                finalOffset = fullStoreCount * TARGET_POINTER_SIZE;
+                length -= finalOffset;
+            }
+            else  // We will use a loop to implement this INITBLK/COPYBLK
+            {
+                unsigned   pairStoreLoopCount = fullStoreCount / 2;
+
+                // We need a second temp register for CopyBlk
+                regNumber  regTemp2 = REG_STK;
+                if (oper == GT_COPYBLK)
+                {
+                    // Prefer a low register, but avoid one of the ones we've already grabbed
+                    regTemp2 = regSet.rsGrabReg(regSet.rsNarrowHint(regSet.rsRegMaskCanGrab() & ~usedRegs, RBM_LOW_REGS));
+                    usedRegs |= genRegMask(regTemp2);
+                }
+
+                // Pick and initialize the loop counter register
+                regNumber regLoopIndex;
+                regLoopIndex = regSet.rsGrabReg(regSet.rsNarrowHint(regSet.rsRegMaskCanGrab() & ~usedRegs, RBM_LOW_REGS));
+                genSetRegToIcon(regLoopIndex, pairStoreLoopCount, TYP_INT);
+
+                // Create and define the Basic Block for the loop top
+                BasicBlock * loopTopBlock = genCreateTempLabel();
+                genDefineTempLabel(loopTopBlock);
+
+                // The loop body
+                if (oper == GT_COPYBLK)
+                {
+                    getEmitter()->emitIns_R_R_I(loadIns, EA_4BYTE, regTemp, regSrc, 0);
+                    getEmitter()->emitIns_R_R_I(loadIns, EA_4BYTE, regTemp2, regSrc, TARGET_POINTER_SIZE);
+                    getEmitter()->emitIns_R_R_I(storeIns, EA_4BYTE, regTemp, regDst, 0);
+                    getEmitter()->emitIns_R_R_I(storeIns, EA_4BYTE, regTemp2, regDst, TARGET_POINTER_SIZE);
+                    getEmitter()->emitIns_R_I(INS_add, srcType, regSrc, 2 * TARGET_POINTER_SIZE);
+                    gcInfo.gcMarkRegSetNpt(genRegMask(regTemp));
+                    gcInfo.gcMarkRegSetNpt(genRegMask(regTemp2));
+                    regTracker.rsTrackRegTrash(regSrc);
+                    regTracker.rsTrackRegTrash(regTemp);
+                    regTracker.rsTrackRegTrash(regTemp2);
+                }
+                else // GT_INITBLK
+                {
+                    getEmitter()->emitIns_R_R_I(storeIns, EA_4BYTE, regSrc, regDst, 0);
+                    getEmitter()->emitIns_R_R_I(storeIns, EA_4BYTE, regSrc, regDst, TARGET_POINTER_SIZE);
+                }
+
+                getEmitter()->emitIns_R_I(INS_add, dstType, regDst, 2 * TARGET_POINTER_SIZE);
+                regTracker.rsTrackRegTrash(regDst);
+                getEmitter()->emitIns_R_I(INS_sub, EA_4BYTE, regLoopIndex, 1, INS_FLAGS_SET);
+                emitJumpKind jmpGTS = genJumpKindForOper(GT_GT, CK_SIGNED);
+                inst_JMP(jmpGTS, loopTopBlock);
+
+                regTracker.rsTrackRegIntCns(regLoopIndex, 0);
+
+                length -= (pairStoreLoopCount * (2 * TARGET_POINTER_SIZE));
+
+                if (length & TARGET_POINTER_SIZE)
+                {
+                    if (oper == GT_COPYBLK)
+                    {
+                        getEmitter()->emitIns_R_R_I(loadIns, EA_4BYTE, regTemp, regSrc, 0);
+                        getEmitter()->emitIns_R_R_I(storeIns, EA_4BYTE, regTemp, regDst, 0);
+                    }
+                    else
+                    {
+                        getEmitter()->emitIns_R_R_I(storeIns, EA_4BYTE, regSrc, regDst, 0);
+                    }
+                    finalOffset = TARGET_POINTER_SIZE;
+                    length -= TARGET_POINTER_SIZE;
+                }
+                else
+                {
+                    finalOffset = 0;
+                }
+            }
+
+            if (length & sizeof(short))
+            {
+                loadIns = ins_Load(TYP_USHORT);   // INS_ldrh
+                storeIns = ins_Store(TYP_USHORT);  // INS_strh
+
+                if (oper == GT_COPYBLK)
+                {
+                    getEmitter()->emitIns_R_R_I(loadIns, EA_2BYTE, regTemp, regSrc, finalOffset);
+                    getEmitter()->emitIns_R_R_I(storeIns, EA_2BYTE, regTemp, regDst, finalOffset);
+                    gcInfo.gcMarkRegSetNpt(genRegMask(regTemp));
+                    regTracker.rsTrackRegTrash(regTemp);
+                }
+                else
+                {
+                    getEmitter()->emitIns_R_R_I(storeIns, EA_2BYTE, regSrc, regDst, finalOffset);
+                }
+                length -= sizeof(short);
+                finalOffset += sizeof(short);
+            }
+
+            if (length & sizeof(char))
+            {
+                loadIns = ins_Load(TYP_UBYTE);   // INS_ldrb
+                storeIns = ins_Store(TYP_UBYTE);  // INS_strb
+
+                if (oper == GT_COPYBLK)
+                {
+                    getEmitter()->emitIns_R_R_I(loadIns, EA_1BYTE, regTemp, regSrc, finalOffset);
+                    getEmitter()->emitIns_R_R_I(storeIns, EA_1BYTE, regTemp, regDst, finalOffset);
+                    gcInfo.gcMarkRegSetNpt(genRegMask(regTemp));
+                    regTracker.rsTrackRegTrash(regTemp);
+                }
+                else
+                {
+                    getEmitter()->emitIns_R_R_I(storeIns, EA_1BYTE, regSrc, regDst, finalOffset);
+                }
+                length -= sizeof(char);
+            }
+            assert(length == 0);
+
+            genReleaseReg(dstOp);
+            genReleaseReg(srcOp);
+        }
+        else
+        {
+            //
+            // This a variable-sized COPYBLK/INITBLK,
+            //   or a fixed size INITBLK with a variable init value,
+            //
+
+            // What order should the Dest, Val/Src, and Size be calculated
+
+            compiler->fgOrderBlockOps(tree, RBM_ARG_0, RBM_ARG_1, RBM_ARG_2,
+                opsPtr, regsPtr); // OUT arguments
+
+            genComputeReg(opsPtr[0], regsPtr[0], RegSet::EXACT_REG, RegSet::KEEP_REG);
+            genComputeReg(opsPtr[1], regsPtr[1], RegSet::EXACT_REG, RegSet::KEEP_REG);
+            genComputeReg(opsPtr[2], regsPtr[2], RegSet::EXACT_REG, RegSet::KEEP_REG);
+
+            genRecoverReg(opsPtr[0], regsPtr[0], RegSet::KEEP_REG);
+            genRecoverReg(opsPtr[1], regsPtr[1], RegSet::KEEP_REG);
+
+            noway_assert((op1->gtOp.gtOp1->gtFlags & GTF_REG_VAL) && // Dest
+                (op1->gtOp.gtOp1->gtRegNum == REG_ARG_0));
+
+            noway_assert((op1->gtOp.gtOp2->gtFlags & GTF_REG_VAL) && // Val/Src
+                (op1->gtOp.gtOp2->gtRegNum == REG_ARG_1));
+
+            noway_assert((op2->gtFlags & GTF_REG_VAL) &&             // Size
+                (op2->gtRegNum == REG_ARG_2));
+
+            regSet.rsLockUsedReg(RBM_ARG_0 | RBM_ARG_1 | RBM_ARG_2);
+
+            genEmitHelperCall(oper == GT_COPYBLK ? CORINFO_HELP_MEMCPY
+                /* GT_INITBLK */ : CORINFO_HELP_MEMSET,
+                0, EA_UNKNOWN);
+
+            regTracker.rsTrackRegMaskTrash(RBM_CALLEE_TRASH);
+
+            regSet.rsUnlockUsedReg(RBM_ARG_0 | RBM_ARG_1 | RBM_ARG_2);
+            genReleaseReg(opsPtr[0]);
+            genReleaseReg(opsPtr[1]);
+            genReleaseReg(opsPtr[2]);
+        }
+
+        if ((oper == GT_COPYBLK) && tree->AsBlkOp()->IsVolatile())
+        {
+            // Emit a memory barrier instruction after the CopyBlk 
+            instGen_MemoryBarrier();
+        }
+#endif // !CPU_USES_BLOCK_MOVE 
+    }
+}
 BasicBlock dummyBB;
 
 #ifdef _PREFAST_
@@ -9708,656 +10365,8 @@ void                CodeGen::genCodeForTreeSmpOp(GenTreePtr tree,
         case GT_COPYBLK:
         case GT_INITBLK:
 
-            noway_assert(oper == GT_COPYBLK || oper == GT_INITBLK);
-            noway_assert(op1->IsList());
-
-#ifdef _TARGET_ARM_
-            if (tree->AsBlkOp()->IsVolatile())
-            {
-                // Emit a memory barrier instruction before the InitBlk/CopyBlk
-                instGen_MemoryBarrier();
-            }
-#endif
-            {
-                GenTreePtr destPtr, srcPtrOrVal;
-                destPtr = op1->gtOp.gtOp1;
-                srcPtrOrVal = op1->gtOp.gtOp2;
-                noway_assert(destPtr->TypeGet() == TYP_BYREF || varTypeIsIntegral(destPtr->TypeGet()));
-                noway_assert((oper == GT_COPYBLK &&
-                    (srcPtrOrVal->TypeGet() == TYP_BYREF || varTypeIsIntegral(srcPtrOrVal->TypeGet())))
-                    ||
-                    (oper == GT_INITBLK &&
-                    varTypeIsIntegral(srcPtrOrVal->TypeGet())));
-
-                noway_assert(op1 && op1->IsList());
-                noway_assert(destPtr && srcPtrOrVal);
-
-#if CPU_USES_BLOCK_MOVE 
-                regs = (oper == GT_INITBLK) ? RBM_EAX : RBM_ESI;   // What is the needReg for Val/Src
-
-                /* Some special code for block moves/inits for constant sizes */
-
-                //
-                // Is this a fixed size COPYBLK?
-                //      or a fixed size INITBLK with a constant init value?
-                //
-                if ((op2->IsCnsIntOrI()) &&
-                    ((oper == GT_COPYBLK) || (srcPtrOrVal->IsCnsIntOrI())))
-                {
-                    size_t length = (size_t)op2->gtIntCon.gtIconVal;
-                    size_t initVal = 0;
-                    instruction ins_P, ins_PR, ins_B;
-
-                    if (oper == GT_INITBLK)
-                    {
-                        ins_P = INS_stosp;
-                        ins_PR = INS_r_stosp;
-                        ins_B = INS_stosb;
-
-                        /* Properly extend the init constant from a U1 to a U4 */
-                        initVal = 0xFF & ((unsigned)op1->gtOp.gtOp2->gtIntCon.gtIconVal);
-
-                        /* If it is a non-zero value we have to replicate      */
-                        /* the byte value four times to form the DWORD         */
-                        /* Then we change this new value into the tree-node      */
-
-                        if (initVal)
-                        {
-                            initVal = initVal | (initVal << 8) | (initVal << 16) | (initVal << 24);
-#ifdef _TARGET_64BIT_
-                            if (length > 4)
-                            {
-                                initVal = initVal | (initVal << 32);
-                                op1->gtOp.gtOp2->gtType = TYP_LONG;
-                            }
-                            else
-                            {
-                                op1->gtOp.gtOp2->gtType = TYP_INT;
-                            }
-#endif // _TARGET_64BIT_
-                        }
-                        op1->gtOp.gtOp2->gtIntCon.gtIconVal = initVal;
-                    }
-                    else
-                    {
-                        ins_P = INS_movsp;
-                        ins_PR = INS_r_movsp;
-                        ins_B = INS_movsb;
-                    }
-
-                    // Determine if we will be using SSE2
-                    unsigned movqLenMin = 8;
-                    unsigned movqLenMax = 24;
-
-                    bool bWillUseSSE2 = false;
-                    bool bWillUseOnlySSE2 = false;
-                    bool bNeedEvaluateCnst = true;   // If we only use SSE2, we will just load the constant there. 
-
-#ifdef _TARGET_64BIT_
-
-                    // Until we get SSE2 instructions that move 16 bytes at a time instead of just 8
-                    // there is no point in wasting space on the bigger instructions
-
-#else // !_TARGET_64BIT_
-
-                    if (compiler->opts.compCanUseSSE2)
-                    {
-                        unsigned curBBweight = compiler->compCurBB->getBBWeight(compiler);
-
-                        /* Adjust for BB weight */
-                        if (curBBweight == BB_ZERO_WEIGHT)
-                        {
-                            // Don't bother with this optimization in
-                            // rarely run blocks
-                            movqLenMax = movqLenMin = 0;
-                        }
-                        else if (curBBweight < BB_UNITY_WEIGHT)
-                        {
-                            // Be less aggressive when we are inside a conditional
-                            movqLenMax = 16;
-                        }
-                        else if (curBBweight >= (BB_LOOP_WEIGHT*BB_UNITY_WEIGHT) / 2)
-                        {
-                            // Be more aggressive when we are inside a loop
-                            movqLenMax = 48;
-                        }
-
-                        if ((compiler->compCodeOpt() == Compiler::FAST_CODE) || (oper == GT_INITBLK))
-                        {
-                            // Be more aggressive when optimizing for speed
-                            // InitBlk uses fewer instructions
-                            movqLenMax += 16;
-                        }
-
-                        if (compiler->compCodeOpt() != Compiler::SMALL_CODE &&
-                            length >= movqLenMin &&
-                            length <= movqLenMax)
-                        {
-                            bWillUseSSE2 = true;
-
-                            if ((length % 8) == 0)
-                            {
-                                bWillUseOnlySSE2 = true;
-                                if (oper == GT_INITBLK && (initVal == 0))
-                                {
-                                    bNeedEvaluateCnst = false;
-                                    noway_assert((op1->gtOp.gtOp2->OperGet() == GT_CNS_INT));
-                                }
-                            }
-                        }
-                    }
-
-#endif // !_TARGET_64BIT_
-
-                    const bool bWillTrashRegSrc = ((oper == GT_COPYBLK) && !bWillUseOnlySSE2);
-                    /* Evaluate dest and src/val */
-
-                    if (op1->gtFlags & GTF_REVERSE_OPS)
-                    {
-                        if (bNeedEvaluateCnst)
-                        {
-                            genComputeReg(op1->gtOp.gtOp2, regs, RegSet::EXACT_REG, RegSet::KEEP_REG, bWillTrashRegSrc);
-                        }
-                        genComputeReg(op1->gtOp.gtOp1, RBM_EDI, RegSet::EXACT_REG, RegSet::KEEP_REG, !bWillUseOnlySSE2);
-                        if (bNeedEvaluateCnst)
-                        {
-                            genRecoverReg(op1->gtOp.gtOp2, regs, RegSet::KEEP_REG);
-                        }
-                    }
-                    else
-                    {
-                        genComputeReg(op1->gtOp.gtOp1, RBM_EDI, RegSet::EXACT_REG, RegSet::KEEP_REG, !bWillUseOnlySSE2);
-                        if (bNeedEvaluateCnst)
-                        {
-                            genComputeReg(op1->gtOp.gtOp2, regs, RegSet::EXACT_REG, RegSet::KEEP_REG, bWillTrashRegSrc);
-                        }
-                        genRecoverReg(op1->gtOp.gtOp1, RBM_EDI, RegSet::KEEP_REG);
-                    }
-
-                    bool bTrashedESI = false;
-                    bool bTrashedEDI = false;
-
-                    if (bWillUseSSE2)
-                    {
-                        int      blkDisp = 0;
-                        regNumber xmmReg = REG_XMM0;
-
-                        if (oper == GT_INITBLK)
-                        {
-                            if (initVal)
-                            {
-                                getEmitter()->emitIns_R_R(INS_mov_i2xmm, EA_4BYTE, xmmReg, REG_EAX);
-                                getEmitter()->emitIns_R_R(INS_punpckldq, EA_4BYTE, xmmReg, xmmReg);
-                            }
-                            else
-                            {
-                                getEmitter()->emitIns_R_R(INS_xorps, EA_8BYTE, xmmReg, xmmReg);
-                            }
-                        }
-
-                        JITLOG_THIS(compiler, (LL_INFO100, "Using XMM instructions for %3d byte %s while compiling %s\n",
-                            length, (oper == GT_INITBLK) ? "initblk" : "copyblk", compiler->info.compFullName));
-
-                        while (length > 7)
-                        {
-                            if (oper == GT_INITBLK)
-                            {
-                                getEmitter()->emitIns_AR_R(INS_movq, EA_8BYTE, xmmReg, REG_EDI, blkDisp);
-                            }
-                            else
-                            {
-                                getEmitter()->emitIns_R_AR(INS_movq, EA_8BYTE, xmmReg, REG_ESI, blkDisp);
-                                getEmitter()->emitIns_AR_R(INS_movq, EA_8BYTE, xmmReg, REG_EDI, blkDisp);
-                            }
-                            blkDisp += 8;
-                            length -= 8;
-                        }
-
-                        if (length > 0)
-                        {
-                            noway_assert(bNeedEvaluateCnst);
-                            noway_assert(!bWillUseOnlySSE2);
-
-                            if (oper == GT_COPYBLK)
-                            {
-                                inst_RV_IV(INS_add, REG_ESI, blkDisp, emitActualTypeSize(srcPtrOrVal->TypeGet()));
-                                bTrashedESI = true;
-                            }
-
-                            inst_RV_IV(INS_add, REG_EDI, blkDisp, emitActualTypeSize(destPtr->TypeGet()));
-                            bTrashedEDI = true;
-
-                            if (length >= REGSIZE_BYTES)
-                            {
-                                instGen(ins_P);
-                                length -= REGSIZE_BYTES;
-                            }
-                        }
-                    }
-                    else if (compiler->compCodeOpt() == Compiler::SMALL_CODE)
-                    {
-                        /* For small code, we can only use ins_DR to generate fast
-                           and small code. We also can't use "rep movsb" because
-                           we may not atomically reading and writing the DWORD */
-
-                        noway_assert(bNeedEvaluateCnst);
-
-                        goto USE_DR;
-                    }
-                    else if (length <= 4 * REGSIZE_BYTES)
-                    {
-                        noway_assert(bNeedEvaluateCnst);
-
-                        while (length >= REGSIZE_BYTES)
-                        {
-                            instGen(ins_P);
-                            length -= REGSIZE_BYTES;
-                        }
-
-                        bTrashedEDI = true;
-                        if (oper == GT_COPYBLK)
-                            bTrashedESI = true;
-                    }
-                    else
-                    {
-                    USE_DR:
-                        noway_assert(bNeedEvaluateCnst);
-
-                        /* set ECX to length/REGSIZE_BYTES (in pointer-sized words) */
-                        genSetRegToIcon(REG_ECX, length / REGSIZE_BYTES, TYP_I_IMPL);
-
-                        length &= (REGSIZE_BYTES - 1);
-
-                        instGen(ins_PR);
-
-                        regTracker.rsTrackRegTrash(REG_ECX);
-
-                        bTrashedEDI = true;
-                        if (oper == GT_COPYBLK)
-                            bTrashedESI = true;
-                    }
-
-                    /* Now take care of the remainder */
-
-#ifdef _TARGET_64BIT_
-                    if (length > 4)
-                    {
-                        noway_assert(bNeedEvaluateCnst);
-                        noway_assert(length < 8);
-
-                        instGen((oper == GT_INITBLK) ? INS_stosd : INS_movsd);
-                        length -= 4;
-
-                        bTrashedEDI = true;
-                        if (oper == GT_COPYBLK)
-                            bTrashedESI = true;
-                    }
-
-#endif // _TARGET_64BIT_
-
-                    if (length)
-                    {
-                        noway_assert(bNeedEvaluateCnst);
-
-                        while (length--)
-                        {
-                            instGen(ins_B);
-                        }
-
-                        bTrashedEDI = true;
-                        if (oper == GT_COPYBLK)
-                            bTrashedESI = true;
-                    }
-
-                    noway_assert(bTrashedEDI == !bWillUseOnlySSE2);
-                    if (bTrashedEDI)
-                        regTracker.rsTrackRegTrash(REG_EDI);
-                    if (bTrashedESI)
-                        regTracker.rsTrackRegTrash(REG_ESI);
-                    // else No need to trash EAX as it wasnt destroyed by the "rep stos"
-
-                    genReleaseReg(op1->gtOp.gtOp1);
-                    if (bNeedEvaluateCnst) genReleaseReg(op1->gtOp.gtOp2);
-
-                }
-                else
-                {
-                    //
-                    // This a variable-sized COPYBLK/INITBLK,
-                    //   or a fixed size INITBLK with a variable init value,
-                    //
-
-                    // What order should the Dest, Val/Src, and Size be calculated
-
-                    compiler->fgOrderBlockOps(tree, RBM_EDI, regs, RBM_ECX,
-                        opsPtr, regsPtr); // OUT arguments
-
-                    noway_assert(((oper == GT_INITBLK) && (regs == RBM_EAX)) || ((oper == GT_COPYBLK) && (regs == RBM_ESI)));
-                    genComputeReg(opsPtr[0], regsPtr[0], RegSet::EXACT_REG, RegSet::KEEP_REG, (regsPtr[0] != RBM_EAX));
-                    genComputeReg(opsPtr[1], regsPtr[1], RegSet::EXACT_REG, RegSet::KEEP_REG, (regsPtr[1] != RBM_EAX));
-                    genComputeReg(opsPtr[2], regsPtr[2], RegSet::EXACT_REG, RegSet::KEEP_REG, (regsPtr[2] != RBM_EAX));
-
-                    genRecoverReg(opsPtr[0], regsPtr[0], RegSet::KEEP_REG);
-                    genRecoverReg(opsPtr[1], regsPtr[1], RegSet::KEEP_REG);
-
-                    noway_assert((op1->gtOp.gtOp1->gtFlags & GTF_REG_VAL) &&  // Dest
-                        (op1->gtOp.gtOp1->gtRegNum == REG_EDI));
-
-                    noway_assert((op1->gtOp.gtOp2->gtFlags & GTF_REG_VAL) &&  // Val/Src
-                        (genRegMask(op1->gtOp.gtOp2->gtRegNum) == regs));
-
-                    noway_assert((op2->gtFlags & GTF_REG_VAL) &&              // Size
-                        (op2->gtRegNum == REG_ECX));
-
-                    if (oper == GT_INITBLK)
-                        instGen(INS_r_stosb);
-                    else
-                        instGen(INS_r_movsb);
-
-                    regTracker.rsTrackRegTrash(REG_EDI);
-                    regTracker.rsTrackRegTrash(REG_ECX);
-
-                    if (oper == GT_COPYBLK)
-                        regTracker.rsTrackRegTrash(REG_ESI);
-                    // else No need to trash EAX as it wasnt destroyed by the "rep stos"
-
-                    genReleaseReg(opsPtr[0]);
-                    genReleaseReg(opsPtr[1]);
-                    genReleaseReg(opsPtr[2]);
-                }
-
-#else // !CPU_USES_BLOCK_MOVE 
-
-#ifndef _TARGET_ARM_
-                // Currently only the ARM implementation is provided
-#error "COPYBLK/INITBLK non-ARM && non-CPU_USES_BLOCK_MOVE"
-#endif
-                //
-                // Is this a fixed size COPYBLK?
-                //      or a fixed size INITBLK with a constant init value?
-                //
-                if ((op2->OperGet() == GT_CNS_INT) &&
-                    ((oper == GT_COPYBLK) || (srcPtrOrVal->OperGet() == GT_CNS_INT)))
-                {
-                    GenTreePtr  dstOp = op1->gtOp.gtOp1;
-                    GenTreePtr  srcOp = op1->gtOp.gtOp2;
-                    unsigned    length = (unsigned)op2->gtIntCon.gtIconVal;
-                    unsigned    fullStoreCount = length / TARGET_POINTER_SIZE;
-                    unsigned    initVal = 0;
-                    bool        useLoop = false;
-
-                    if (oper == GT_INITBLK)
-                    {
-                        /* Properly extend the init constant from a U1 to a U4 */
-                        initVal = 0xFF & ((unsigned)srcOp->gtIntCon.gtIconVal);
-
-                        /* If it is a non-zero value we have to replicate      */
-                        /* the byte value four times to form the DWORD         */
-                        /* Then we store this new value into the tree-node      */
-
-                        if (initVal != 0)
-                        {
-                            initVal = initVal | (initVal << 8) | (initVal << 16) | (initVal << 24);
-                            op1->gtOp.gtOp2->gtIntCon.gtIconVal = initVal;
-                        }
-                    }
-
-                    // Will we be using a loop to implement this INITBLK/COPYBLK?
-                    if (((oper == GT_COPYBLK) && (fullStoreCount >= 8)) ||
-                        ((oper == GT_INITBLK) && (fullStoreCount >= 16)))
-                    {
-                        useLoop = true;
-                    }
-
-                    regMaskTP    usedRegs;
-                    regNumber    regDst;
-                    regNumber    regSrc;
-                    regNumber    regTemp;
-
-                    /* Evaluate dest and src/val */
-
-                    if (op1->gtFlags & GTF_REVERSE_OPS)
-                    {
-                        genComputeReg(srcOp, (needReg & ~dstOp->gtRsvdRegs), RegSet::ANY_REG, RegSet::KEEP_REG, useLoop);
-                        assert(srcOp->gtFlags & GTF_REG_VAL);
-
-                        genComputeReg(dstOp, needReg, RegSet::ANY_REG, RegSet::KEEP_REG, useLoop);
-                        assert(dstOp->gtFlags & GTF_REG_VAL);
-                        regDst = dstOp->gtRegNum;
-
-                        genRecoverReg(srcOp, needReg, RegSet::KEEP_REG);
-                        regSrc = srcOp->gtRegNum;
-                    }
-                    else
-                    {
-                        genComputeReg(dstOp, (needReg & ~srcOp->gtRsvdRegs), RegSet::ANY_REG, RegSet::KEEP_REG, useLoop);
-                        assert(dstOp->gtFlags & GTF_REG_VAL);
-
-                        genComputeReg(srcOp, needReg, RegSet::ANY_REG, RegSet::KEEP_REG, useLoop);
-                        assert(srcOp->gtFlags & GTF_REG_VAL);
-                        regSrc = srcOp->gtRegNum;
-
-                        genRecoverReg(dstOp, needReg, RegSet::KEEP_REG);
-                        regDst = dstOp->gtRegNum;
-                    }
-                    assert(dstOp->gtFlags & GTF_REG_VAL);
-                    assert(srcOp->gtFlags & GTF_REG_VAL);
-
-                    regDst = dstOp->gtRegNum;
-                    regSrc = srcOp->gtRegNum;
-                    usedRegs = (genRegMask(regSrc) | genRegMask(regDst));
-                    bool dstIsOnStack = (dstOp->gtOper == GT_ADDR && (dstOp->gtFlags & GTF_ADDR_ONSTACK));
-                    emitAttr dstType = (varTypeIsGC(dstOp) && !dstIsOnStack) ? EA_BYREF : EA_PTRSIZE;
-                    emitAttr srcType;
-
-                    if (oper == GT_COPYBLK)
-                    {
-                        // Prefer a low register,but avoid one of the ones we've already grabbed
-                        regTemp = regSet.rsGrabReg(regSet.rsNarrowHint(regSet.rsRegMaskCanGrab() & ~usedRegs, RBM_LOW_REGS));
-                        usedRegs |= genRegMask(regTemp);
-                        bool srcIsOnStack = (srcOp->gtOper == GT_ADDR && (srcOp->gtFlags & GTF_ADDR_ONSTACK));
-                        srcType = (varTypeIsGC(srcOp) && !srcIsOnStack) ? EA_BYREF : EA_PTRSIZE;
-                    }
-                    else
-                    {
-                        regTemp = REG_STK;
-                        srcType = EA_PTRSIZE;
-                    }
-
-                    instruction  loadIns = ins_Load(TYP_I_IMPL);   // INS_ldr
-                    instruction  storeIns = ins_Store(TYP_I_IMPL);  // INS_str
-
-                    int       finalOffset;
-
-                    // Can we emit a small number of ldr/str instructions to implement this INITBLK/COPYBLK?
-                    if (!useLoop)
-                    {
-                        for (unsigned i = 0; i < fullStoreCount; i++)
-                        {
-                            if (oper == GT_COPYBLK)
-                            {
-                                getEmitter()->emitIns_R_R_I(loadIns, EA_4BYTE, regTemp, regSrc, i * TARGET_POINTER_SIZE);
-                                getEmitter()->emitIns_R_R_I(storeIns, EA_4BYTE, regTemp, regDst, i * TARGET_POINTER_SIZE);
-                                gcInfo.gcMarkRegSetNpt(genRegMask(regTemp));
-                                regTracker.rsTrackRegTrash(regTemp);
-                            }
-                            else
-                            {
-                                getEmitter()->emitIns_R_R_I(storeIns, EA_4BYTE, regSrc, regDst, i * TARGET_POINTER_SIZE);
-                            }
-                        }
-
-                        finalOffset = fullStoreCount * TARGET_POINTER_SIZE;
-                        length -= finalOffset;
-                    }
-                    else  // We will use a loop to implement this INITBLK/COPYBLK
-                    {
-                        unsigned   pairStoreLoopCount = fullStoreCount / 2;
-
-                        // We need a second temp register for CopyBlk
-                        regNumber  regTemp2 = REG_STK;
-                        if (oper == GT_COPYBLK)
-                        {
-                            // Prefer a low register, but avoid one of the ones we've already grabbed
-                            regTemp2 = regSet.rsGrabReg(regSet.rsNarrowHint(regSet.rsRegMaskCanGrab() & ~usedRegs, RBM_LOW_REGS));
-                            usedRegs |= genRegMask(regTemp2);
-                        }
-
-                        // Pick and initialize the loop counter register
-                        regNumber regLoopIndex;
-                        regLoopIndex = regSet.rsGrabReg(regSet.rsNarrowHint(regSet.rsRegMaskCanGrab() & ~usedRegs, RBM_LOW_REGS));
-                        genSetRegToIcon(regLoopIndex, pairStoreLoopCount, TYP_INT);
-
-                        // Create and define the Basic Block for the loop top
-                        BasicBlock * loopTopBlock = genCreateTempLabel();
-                        genDefineTempLabel(loopTopBlock);
-
-                        // The loop body
-                        if (oper == GT_COPYBLK)
-                        {
-                            getEmitter()->emitIns_R_R_I(loadIns, EA_4BYTE, regTemp, regSrc, 0);
-                            getEmitter()->emitIns_R_R_I(loadIns, EA_4BYTE, regTemp2, regSrc, TARGET_POINTER_SIZE);
-                            getEmitter()->emitIns_R_R_I(storeIns, EA_4BYTE, regTemp, regDst, 0);
-                            getEmitter()->emitIns_R_R_I(storeIns, EA_4BYTE, regTemp2, regDst, TARGET_POINTER_SIZE);
-                            getEmitter()->emitIns_R_I(INS_add, srcType, regSrc, 2 * TARGET_POINTER_SIZE);
-                            gcInfo.gcMarkRegSetNpt(genRegMask(regTemp));
-                            gcInfo.gcMarkRegSetNpt(genRegMask(regTemp2));
-                            regTracker.rsTrackRegTrash(regSrc);
-                            regTracker.rsTrackRegTrash(regTemp);
-                            regTracker.rsTrackRegTrash(regTemp2);
-                        }
-                        else // GT_INITBLK
-                        {
-                            getEmitter()->emitIns_R_R_I(storeIns, EA_4BYTE, regSrc, regDst, 0);
-                            getEmitter()->emitIns_R_R_I(storeIns, EA_4BYTE, regSrc, regDst, TARGET_POINTER_SIZE);
-                        }
-
-                        getEmitter()->emitIns_R_I(INS_add, dstType, regDst, 2 * TARGET_POINTER_SIZE);
-                        regTracker.rsTrackRegTrash(regDst);
-                        getEmitter()->emitIns_R_I(INS_sub, EA_4BYTE, regLoopIndex, 1, INS_FLAGS_SET);
-                        emitJumpKind jmpGTS = genJumpKindForOper(GT_GT, CK_SIGNED);
-                        inst_JMP(jmpGTS, loopTopBlock);
-
-                        regTracker.rsTrackRegIntCns(regLoopIndex, 0);
-
-                        length -= (pairStoreLoopCount * (2 * TARGET_POINTER_SIZE));
-
-                        if (length & TARGET_POINTER_SIZE)
-                        {
-                            if (oper == GT_COPYBLK)
-                            {
-                                getEmitter()->emitIns_R_R_I(loadIns, EA_4BYTE, regTemp, regSrc, 0);
-                                getEmitter()->emitIns_R_R_I(storeIns, EA_4BYTE, regTemp, regDst, 0);
-                            }
-                            else
-                            {
-                                getEmitter()->emitIns_R_R_I(storeIns, EA_4BYTE, regSrc, regDst, 0);
-                            }
-                            finalOffset = TARGET_POINTER_SIZE;
-                            length -= TARGET_POINTER_SIZE;
-                        }
-                        else
-                        {
-                            finalOffset = 0;
-                        }
-                    }
-
-                    if (length & sizeof(short))
-                    {
-                        loadIns = ins_Load(TYP_USHORT);   // INS_ldrh
-                        storeIns = ins_Store(TYP_USHORT);  // INS_strh
-
-                        if (oper == GT_COPYBLK)
-                        {
-                            getEmitter()->emitIns_R_R_I(loadIns, EA_2BYTE, regTemp, regSrc, finalOffset);
-                            getEmitter()->emitIns_R_R_I(storeIns, EA_2BYTE, regTemp, regDst, finalOffset);
-                            gcInfo.gcMarkRegSetNpt(genRegMask(regTemp));
-                            regTracker.rsTrackRegTrash(regTemp);
-                        }
-                        else
-                        {
-                            getEmitter()->emitIns_R_R_I(storeIns, EA_2BYTE, regSrc, regDst, finalOffset);
-                        }
-                        length -= sizeof(short);
-                        finalOffset += sizeof(short);
-                    }
-
-                    if (length & sizeof(char))
-                    {
-                        loadIns = ins_Load(TYP_UBYTE);   // INS_ldrb
-                        storeIns = ins_Store(TYP_UBYTE);  // INS_strb
-
-                        if (oper == GT_COPYBLK)
-                        {
-                            getEmitter()->emitIns_R_R_I(loadIns, EA_1BYTE, regTemp, regSrc, finalOffset);
-                            getEmitter()->emitIns_R_R_I(storeIns, EA_1BYTE, regTemp, regDst, finalOffset);
-                            gcInfo.gcMarkRegSetNpt(genRegMask(regTemp));
-                            regTracker.rsTrackRegTrash(regTemp);
-                        }
-                        else
-                        {
-                            getEmitter()->emitIns_R_R_I(storeIns, EA_1BYTE, regSrc, regDst, finalOffset);
-                        }
-                        length -= sizeof(char);
-                    }
-                    assert(length == 0);
-
-                    genReleaseReg(dstOp);
-                    genReleaseReg(srcOp);
-                }
-                else
-                {
-                    //
-                    // This a variable-sized COPYBLK/INITBLK,
-                    //   or a fixed size INITBLK with a variable init value,
-                    //
-
-                    // What order should the Dest, Val/Src, and Size be calculated
-
-                    compiler->fgOrderBlockOps(tree, RBM_ARG_0, RBM_ARG_1, RBM_ARG_2,
-                        opsPtr, regsPtr); // OUT arguments
-
-                    genComputeReg(opsPtr[0], regsPtr[0], RegSet::EXACT_REG, RegSet::KEEP_REG);
-                    genComputeReg(opsPtr[1], regsPtr[1], RegSet::EXACT_REG, RegSet::KEEP_REG);
-                    genComputeReg(opsPtr[2], regsPtr[2], RegSet::EXACT_REG, RegSet::KEEP_REG);
-
-                    genRecoverReg(opsPtr[0], regsPtr[0], RegSet::KEEP_REG);
-                    genRecoverReg(opsPtr[1], regsPtr[1], RegSet::KEEP_REG);
-
-                    noway_assert((op1->gtOp.gtOp1->gtFlags & GTF_REG_VAL) && // Dest
-                        (op1->gtOp.gtOp1->gtRegNum == REG_ARG_0));
-
-                    noway_assert((op1->gtOp.gtOp2->gtFlags & GTF_REG_VAL) && // Val/Src
-                        (op1->gtOp.gtOp2->gtRegNum == REG_ARG_1));
-
-                    noway_assert((op2->gtFlags & GTF_REG_VAL) &&             // Size
-                        (op2->gtRegNum == REG_ARG_2));
-
-                    regSet.rsLockUsedReg(RBM_ARG_0 | RBM_ARG_1 | RBM_ARG_2);
-
-                    genEmitHelperCall(oper == GT_COPYBLK ? CORINFO_HELP_MEMCPY
-                        /* GT_INITBLK */ : CORINFO_HELP_MEMSET,
-                        0, EA_UNKNOWN);
-
-                    regTracker.rsTrackRegMaskTrash(RBM_CALLEE_TRASH);
-
-                    regSet.rsUnlockUsedReg(RBM_ARG_0 | RBM_ARG_1 | RBM_ARG_2);
-                    genReleaseReg(opsPtr[0]);
-                    genReleaseReg(opsPtr[1]);
-                    genReleaseReg(opsPtr[2]);
-                }
-
-                if ((oper == GT_COPYBLK) && tree->AsBlkOp()->IsVolatile())
-                {
-                    // Emit a memory barrier instruction after the CopyBlk 
-                    instGen_MemoryBarrier();
-                }
-#endif // !CPU_USES_BLOCK_MOVE 
-
-                reg = REG_NA;
-            }
-
-            genCodeForTree_DONE(tree, reg);
+            genCodeForBlkOp(tree, destReg);
+            genCodeForTree_DONE(tree, REG_NA);
             return;
 
         case GT_EQ:
