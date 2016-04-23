@@ -74,9 +74,8 @@ namespace System.Security.Cryptography.Cng.Tests
             }
         }
 
-        [ActiveIssue(7465)]
         [OuterLoop(/* Creates/Deletes a persisted key, limit exposure to key leaking */)]
-        [ConditionalFact(nameof(SupportsPersistedSymmetricKeys))]
+        [ConditionalFact(nameof(SupportsPersistedSymmetricKeys), nameof(IsAdministrator))]
         public static void VerifyMachineKey()
         {
             SymmetricCngTestHelpers.VerifyMachineKey(
@@ -89,6 +88,11 @@ namespace System.Security.Cryptography.Cng.Tests
         public static bool SupportsPersistedSymmetricKeys
         {
             get { return SymmetricCngTestHelpers.SupportsPersistedSymmetricKeys; }
+        }
+
+        public static bool IsAdministrator
+        {
+            get { return SymmetricCngTestHelpers.IsAdministrator; }
         }
     }
 }

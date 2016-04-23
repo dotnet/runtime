@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
+using System.Security.Principal;
 using Xunit;
 
 namespace System.Security.Cryptography.Cng.Tests
@@ -255,6 +256,7 @@ namespace System.Security.Cryptography.Cng.Tests
                 cngKey.Delete();
             }
         }
+
         private static bool? s_supportsPersistedSymmetricKeys;
         internal static bool SupportsPersistedSymmetricKeys
         {
@@ -270,6 +272,18 @@ namespace System.Security.Cryptography.Cng.Tests
                 return s_supportsPersistedSymmetricKeys.Value;
             }
         }
+
+        private static readonly Lazy<bool> s_isAdministrator = new Lazy<bool>(
+            () =>
+            {
+                using (WindowsIdentity identity = WindowsIdentity.GetCurrent())
+                {
+                    WindowsPrincipal principal = new WindowsPrincipal(identity);
+                    return principal.IsInRole(WindowsBuiltInRole.Administrator);
+                }
+            });
+
+        internal static bool IsAdministrator => s_isAdministrator.Value;
 
         internal static byte[] GenerateRandom(int count)
         {
