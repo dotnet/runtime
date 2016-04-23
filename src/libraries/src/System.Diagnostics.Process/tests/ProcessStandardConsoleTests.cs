@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
@@ -12,7 +13,7 @@ namespace System.Diagnostics.Tests
     {
         private const int s_ConsoleEncoding = 437;
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [Fact]
         public void TestChangesInConsoleEncoding()
         {
             Action<int> run = expectedCodePage =>
@@ -49,6 +50,8 @@ namespace System.Diagnostics.Tests
                     run(Encoding.UTF8.CodePage);
                 }
 
+                // Don't test this on Windows Nano, Windows Nano only supports UTF8.
+                if (File.Exists(Path.Combine(Environment.GetEnvironmentVariable("windir"), "regedit.exe")))
                 {
                     Interop.SetConsoleCP(s_ConsoleEncoding);
                     Interop.SetConsoleOutputCP(s_ConsoleEncoding);
