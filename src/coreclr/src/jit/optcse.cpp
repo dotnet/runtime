@@ -2128,7 +2128,7 @@ bool                Compiler::optIsCSEcandidate(GenTreePtr tree)
     var_types   type = tree->TypeGet();
     genTreeOps  oper = tree->OperGet();
 
-    // TODO-1stClassStructs: Enable CSE for TYP_SIMD (depends on either transforming
+    // TODO-1stClassStructs: Enable CSE for struct types (depends on either transforming
     // to use regular assignments, or handling copyObj.
     if (varTypeIsStruct(type) || type == TYP_VOID)
         return false;
