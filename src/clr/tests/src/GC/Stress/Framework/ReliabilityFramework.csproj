@@ -1,7 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -14,11 +13,11 @@
     <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <ReferencePath>$(ProgramFiles)\Common Files\microsoft shared\VSTT\11.0\UITestExtensionPackages</ReferencePath>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
-    <CLRTestKind>BuildOnly</CLRTestKind>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <CLRTestPriority>1</CLRTestPriority>
+    <CLRTestExecutionArguments>testmix_gc.config /maximumExecutionTime:-1</CLRTestExecutionArguments>
     <NuGetPackageImportStamp>7a9bfb7d</NuGetPackageImportStamp>
     <DefineConstants>$(DefineConstants);STATIC;PROJECTK_BUILD</DefineConstants>
-    <!--This test is to be run manually for now -->
-    <GenerateRunScript>false</GenerateRunScript>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
@@ -51,17 +50,12 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
-  
   <ItemGroup>
     <StressTests Include="..\Tests\*.csproj" />
   </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   
   <Target Name="AfterBuild">
-    <MSBuild Projects="@(StressTests)" />
-    <MakeDir Directories="$(OutDir)\Tests" />
-    <ItemGroup>
-      <TestExesToCopy Include="$(OutDir)..\Tests\*.*" />
-    </ItemGroup>
-    <Copy SourceFiles="@(TestExesToCopy)" DestinationFolder="$(OutDir)\Tests" />
+    <MSBuild Projects="@(StressTests)" Properties="OutputPath=$(OutDir)\Tests" />
   </Target>
 </Project>
