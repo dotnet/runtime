@@ -20,9 +20,7 @@ using System.Threading.Tasks;
 
 using System.Runtime;
 using System.Runtime.InteropServices;
-#if NEW_EXPERIMENTAL_ASYNC_IO
 using System.Runtime.CompilerServices;
-#endif
 using System.Runtime.ExceptionServices;
 using System.Security;
 using System.Security.Permissions;
@@ -48,7 +46,6 @@ namespace System.IO {
         // improvement in Copy performance.
         private const int _DefaultCopyBufferSize = 81920;
 
-#if NEW_EXPERIMENTAL_ASYNC_IO
         // To implement Async IO operations on streams that don't support async IO
 
         [NonSerialized]
@@ -62,7 +59,6 @@ namespace System.IO {
             // WaitHandle, we don't need to worry about Disposing it.
             return LazyInitializer.EnsureInitialized(ref _asyncActiveSemaphore, () => new SemaphoreSlim(1, 1));
         }
-#endif
 
         public abstract bool CanRead {
             [Pure]
@@ -253,9 +249,6 @@ namespace System.IO {
             Contract.Ensures(Contract.Result<IAsyncResult>() != null);
             if (!CanRead) __Error.ReadNotSupported();
 
-#if !NEW_EXPERIMENTAL_ASYNC_IO
-            return BlockingBeginRead(buffer, offset, count, callback, state);
-#else
             // To avoid a race with a stream's position pointer & generating race conditions 
             // with internal buffer indexes in our own streams that 
             // don't natively support async IO operations when there are multiple 
@@ -309,7 +302,6 @@ namespace System.IO {
 
             
             return asyncResult; // return it
-#endif
         }
 
         public virtual int EndRead(IAsyncResult asyncResult)
@@ -319,9 +311,6 @@ namespace System.IO {
             Contract.Ensures(Contract.Result<int>() >= 0);
             Contract.EndContractBlock();
 
-#if !NEW_EXPERIMENTAL_ASYNC_IO
-            return BlockingEndRead(asyncResult);
-#else
             var readTask = _activeReadWriteTask;
 
             if (readTask == null)
@@ -345,7 +334,6 @@ namespace System.IO {
             {
                 FinishTrackingAsyncOperation();
             }
-#endif
         }
 
         [HostProtection(ExternalThreading = true)]
@@ -409,9 +397,7 @@ namespace System.IO {
         {
             Contract.Ensures(Contract.Result<IAsyncResult>() != null);
             if (!CanWrite) __Error.WriteNotSupported();
-#if !NEW_EXPERIMENTAL_ASYNC_IO
-            return BlockingBeginWrite(buffer, offset, count, callback, state);
-#else
+            
             // To avoid a race condition with a stream's position pointer & generating conditions 
             // with internal buffer indexes in our own streams that 
             // don't natively support async IO operations when there are multiple 
@@ -465,10 +451,8 @@ namespace System.IO {
                 RunReadWriteTask(asyncResult);
 
             return asyncResult; // return it
-#endif
         }
 
-#if NEW_EXPERIMENTAL_ASYNC_IO
         private void RunReadWriteTaskWhenReady(Task asyncWaiter, ReadWriteTask readWriteTask)
         {
             Contract.Assert(readWriteTask != null);  // Should be Contract.Requires, but CCRewrite is doing a poor job with
@@ -511,7 +495,6 @@ namespace System.IO {
             Contract.Assert(_asyncActiveSemaphore != null, "Must have been initialized in order to get here.");
             _asyncActiveSemaphore.Release();
         }
-#endif
 
         public virtual void EndWrite(IAsyncResult asyncResult)
         {
@@ -519,9 +502,6 @@ namespace System.IO {
                 throw new ArgumentNullException("asyncResult");
             Contract.EndContractBlock();
 
-#if !NEW_EXPERIMENTAL_ASYNC_IO
-            BlockingEndWrite(asyncResult);
-#else
             var writeTask = _activeReadWriteTask;
             if (writeTask == null)
             {
@@ -545,10 +525,8 @@ namespace System.IO {
             {
                 FinishTrackingAsyncOperation();
             }
-#endif
         }
 
-#if NEW_EXPERIMENTAL_ASYNC_IO
         // Task used by BeginRead / BeginWrite to do Read / Write asynchronously.
         // A single instance of this task serves four purposes:
         // 1. The work item scheduled to run the Read / Write operation
@@ -658,7 +636,6 @@ namespace System.IO {
 
             bool ITaskCompletionAction.InvokeMayRunArbitraryCode { get { return true; } }
         }
-#endif
 
         [HostProtection(ExternalThreading = true)]
         [ComVisible(false)]
