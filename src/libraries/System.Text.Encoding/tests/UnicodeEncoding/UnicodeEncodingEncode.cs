@@ -93,5 +93,16 @@ namespace System.Text.Tests
             Encode("\uFFFE", 0, 1, new byte[] { 254, 255 });
             Encode("\uFFFF", 0, 1, new byte[] { 255, 255 });
         }
+
+        [Fact]
+        public unsafe void GetByteCount_OverlyLargeCount_ThrowsArgumentOutOfRangeException()
+        {
+            UnicodeEncoding encoding = new UnicodeEncoding();
+            fixed (char* pChars = "abc")
+            {
+                char* pCharsLocal = pChars;
+                Assert.Throws<ArgumentOutOfRangeException>("count", () => encoding.GetByteCount(pCharsLocal, int.MaxValue / 2 + 1));
+            }
+        }
     }
 }
