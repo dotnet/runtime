@@ -259,6 +259,8 @@ namespace System.Text.Tests
 
         public static unsafe void Encode_Invalid(Encoding encoding, string chars, int index, int count)
         {
+            Assert.Equal(EncoderFallback.ExceptionFallback, encoding.EncoderFallback);
+
             char[] charsArray = chars.ToCharArray();
             byte[] bytes = new byte[encoding.GetMaxByteCount(count)];
 
@@ -287,6 +289,8 @@ namespace System.Text.Tests
         }
         public static unsafe void Decode_Invalid(Encoding encoding, byte[] bytes, int index, int count)
         {
+            Assert.Equal(DecoderFallback.ExceptionFallback, encoding.DecoderFallback);
+
             char[] chars = new char[encoding.GetMaxCharCount(count)];
 
             if (index == 0 && count == bytes.Length)
