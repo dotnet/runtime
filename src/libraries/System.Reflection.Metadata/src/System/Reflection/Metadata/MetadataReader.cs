@@ -61,6 +61,10 @@ namespace System.Reflection.Metadata
         /// Use <see cref="PEReaderExtensions.GetMetadataReader(PortableExecutable.PEReader, MetadataReaderOptions, MetadataStringDecoder)"/> to obtain 
         /// metadata from a PE image.
         /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="length"/> is not positive.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="metadata"/> is null.</exception>
+        /// <exception cref="ArgumentException">The encoding of <paramref name="utf8Decoder"/> is not <see cref="UTF8Encoding"/>.</exception>
+        /// <exception cref="PlatformNotSupportedException">The current platform is big-endian.</exception>
         public unsafe MetadataReader(byte* metadata, int length, MetadataReaderOptions options, MetadataStringDecoder utf8Decoder)
         {
             if (length <= 0)
