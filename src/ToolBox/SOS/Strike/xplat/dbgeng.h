@@ -72,7 +72,7 @@ public:
     {
         va_list args;
         va_start (args, format);
-        HRESULT result = OutputVaList(mask, format, args);
+        HRESULT result = m_lldbservices->OutputVaList(mask, format, args);
         va_end (args);
         return result;
     }
@@ -83,7 +83,13 @@ public:
         PCSTR format,
         va_list args)
     {
-        return m_lldbservices->OutputVaList(mask, format, args);
+        char str[4096];
+        int length = PAL__vsnprintf(str, sizeof(str), format, args);
+        if (length > 0)
+        {
+            return Output(mask, "%s", str);
+        }
+        return E_FAIL;
     }
 
     // The following methods allow direct control
