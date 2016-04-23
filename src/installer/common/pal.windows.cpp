@@ -253,11 +253,6 @@ bool pal::get_own_executable_path(string_t* recv)
     return true;
 }
 
-std::string pal::to_stdstring(const string_t& str)
-{
-    return t_converter.to_bytes(str);
-}
-
 pal::string_t pal::to_palstring(const std::string& str)
 {
     return t_converter.from_bytes(str);
@@ -268,9 +263,29 @@ void pal::to_palstring(const char* str, pal::string_t* out)
     out->assign(t_converter.from_bytes(str));
 }
 
-void pal::to_stdstring(const pal::char_t* str, std::string* out)
+void pal::to_clrstring(const pal::string_t& str, std::vector<char>* out)
 {
-    out->assign(t_converter.to_bytes(str));
+    // Pass -1 as we want explicit null termination in the char buffer.
+    size_t size = ::WideCharToMultiByte(CP_ACP, 0, str.c_str(), -1, nullptr, 0, nullptr, nullptr);
+    out->resize(size, '\0');
+    if (size == 0)
+    {
+        return;
+    }
+    ::WideCharToMultiByte(CP_ACP, 0, str.c_str(), -1, out->data(), out->size(), nullptr, nullptr);
+}
+
+void pal::clr_palstring(const char* out, pal::string_t* str)
+{
+    // No need of explicit null termination, so pass in the actual length.
+    int len = ::strlen(out);
+    size_t size = ::MultiByteToWideChar(CP_ACP, 0, out, len, nullptr, 0);
+    str->resize(size, '\0');
+    if (size == 0)
+    {
+        return;
+    }
+    ::MultiByteToWideChar(CP_ACP, 0, out, len, &(*str)[0], str->size());
 }
 
 bool pal::realpath(string_t* path)
