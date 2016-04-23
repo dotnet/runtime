@@ -76,5 +76,35 @@ namespace System.Reflection.Internal
             }
             return totalBytesRead;
         }
+
+        /// <summary>
+        /// Resolve image size as either the given user-specified size or distance from current position to end-of-stream.
+        /// Also performs the relevant argument validation and publicly visible caller has same argument names.
+        /// </summary>
+        /// <exception cref="ArgumentException">size is 0 and distance from current position to end-of-stream can't fit in Int32.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Size is negative or extends past the end-of-stream from current position.</exception>
+        internal static int GetAndValidateSize(Stream stream, int size, string streamParameterName)
+        {
+            long maxSize = stream.Length - stream.Position;
+
+            if (size != 0)
+            {
+                if (size > maxSize)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(size));
+                }
+
+                return size;
+            }
+            else
+            {
+                if (maxSize > int.MaxValue)
+                {
+                    throw new ArgumentException(SR.StreamTooLarge, streamParameterName);
+                }
+
+                return (int)maxSize;
+            }
+        }
     }
 }

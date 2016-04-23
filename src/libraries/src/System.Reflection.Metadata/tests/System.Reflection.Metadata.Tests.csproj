@@ -56,10 +56,13 @@
     <Compile Include="PortableExecutable\PEReaderTests.cs" />
     <Compile Include="PortableExecutable\SectionHeaderTests.cs" />
     <Compile Include="PortableExecutable\StreamExtensionsTests.cs" />
+    <Compile Include="Metadata\MetadataReaderProviderTests.cs" />
+    <None Include="Resources\PortablePdbs\Documents.cs" />
     <Compile Include="Resources\TestResources.cs" />
     <Compile Include="TestUtilities\AssertEx.cs" />
     <Compile Include="TestUtilities\DiffUtil.cs" />
     <Compile Include="TestUtilities\TestMetadataResolver.cs" />
+    <Compile Include="TestUtilities\TestStream.cs" />
     <Compile Include="Utilities\StringUtilsTests.cs" />
     <Compile Include="Utilities\BlobReaderTests.cs" />
     <Compile Include="Utilities\CompressedIntegerTests.cs" />
@@ -98,6 +101,9 @@
     <None Include="Resources\NetModule\ModuleVB01.vb" />
     <EmbeddedResource Include="Resources\WinRT\Lib.winmd" />
     <None Include="Resources\WinRT\Lib.cs" />
+    <EmbeddedResource Include="Resources\PortablePdbs\Documents.dll" />
+    <EmbeddedResource Include="Resources\PortablePdbs\Documents.pdb" />
+    <None Include="Resources\PortablePdbs\Documents.cmd" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />

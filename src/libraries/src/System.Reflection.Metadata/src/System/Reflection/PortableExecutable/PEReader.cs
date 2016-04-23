@@ -64,9 +64,6 @@ namespace System.Reflection.PortableExecutable
         /// </summary>
         /// <param name="peStream">PE image stream.</param>
         /// <exception cref="ArgumentNullException"><paramref name="peStream"/> is null.</exception>
-        /// <exception cref="BadImageFormatException">
-        /// <see cref="PEStreamOptions.PrefetchMetadata"/> is specified and the PE headers of the image are invalid.
-        /// </exception>
         /// <remarks>
         /// Ownership of the stream is transferred to the <see cref="PEReader"/> upon successful validation of constructor arguments. It will be 
         /// disposed by the <see cref="PEReader"/> and the caller must not manipulate it.
@@ -101,7 +98,7 @@ namespace System.Reflection.PortableExecutable
         /// <see cref="PEStreamOptions.PrefetchMetadata"/> is specified and the PE headers of the image are invalid.
         /// </exception>
         public PEReader(Stream peStream, PEStreamOptions options)
-            : this(peStream, options, (int?)null)
+            : this(peStream, options, 0)
         {
         }
 
@@ -126,13 +123,7 @@ namespace System.Reflection.PortableExecutable
         /// after construction.
         /// </param>
         /// <exception cref="ArgumentOutOfRangeException">Size is negative or extends past the end of the stream.</exception>
-        public PEReader(Stream peStream, PEStreamOptions options, int size)
-            : this(peStream, options, (int?)size)
-
-        {
-        }
-
-        private unsafe PEReader(Stream peStream, PEStreamOptions options, int? sizeOpt)
+        public unsafe PEReader(Stream peStream, PEStreamOptions options, int size)
         {
             if (peStream == null)
             {
@@ -150,7 +141,7 @@ namespace System.Reflection.PortableExecutable
             }
 
             long start = peStream.Position;
-            int size = PEBinaryReader.GetAndValidateSize(peStream, sizeOpt);
+            int actualSize = StreamExtensions.GetAndValidateSize(peStream, size, nameof(peStream));
 
             bool closeStream = true;
             try
@@ -159,7 +150,7 @@ namespace System.Reflection.PortableExecutable
 
                 if ((options & (PEStreamOptions.PrefetchMetadata | PEStreamOptions.PrefetchEntireImage)) == 0)
                 {
-                    _peImage = new StreamMemoryBlockProvider(peStream, start, size, isFileStream, (options & PEStreamOptions.LeaveOpen) != 0);
+                    _peImage = new StreamMemoryBlockProvider(peStream, start, actualSize, isFileStream, (options & PEStreamOptions.LeaveOpen) != 0);
                     closeStream = false;
                 }
                 else
@@ -167,7 +158,7 @@ namespace System.Reflection.PortableExecutable
                     // Read in the entire image or metadata blob:
                     if ((options & PEStreamOptions.PrefetchEntireImage) != 0)
                     {
-                        var imageBlock = StreamMemoryBlockProvider.ReadMemoryBlockNoLock(peStream, isFileStream, 0, (int)Math.Min(peStream.Length, int.MaxValue));
+                        var imageBlock = StreamMemoryBlockProvider.ReadMemoryBlockNoLock(peStream, isFileStream, start, actualSize);
                         _lazyImageBlock = imageBlock;
                         _peImage = new ExternalMemoryBlockProvider(imageBlock.Pointer, imageBlock.Size);
 
@@ -223,36 +214,21 @@ namespace System.Reflection.PortableExecutable
         /// </remarks>
         public void Dispose()
         {
-            var image = _peImage;
-            if (image != null)
-            {
-                image.Dispose();
-                _peImage = null;
-            }
+            _peImage?.Dispose();
+            _peImage = null;
 
-            var imageBlock = _lazyImageBlock;
-            if (imageBlock != null)
-            {
-                imageBlock.Dispose();
-                _lazyImageBlock = null;
-            }
+            _lazyImageBlock?.Dispose();
+            _lazyImageBlock = null;
 
-            var metadataBlock = _lazyMetadataBlock;
-            if (metadataBlock != null)
-            {
-                metadataBlock.Dispose();
-                _lazyMetadataBlock = null;
-            }
+            _lazyMetadataBlock?.Dispose();
+            _lazyMetadataBlock = null;
 
             var peSectionBlocks = _lazyPESectionBlocks;
             if (peSectionBlocks != null)
             {
                 foreach (var block in peSectionBlocks)
                 {
-                    if (block != null)
-                    {
-                        block.Dispose();
-                    }
+                    block?.Dispose();
                 }
 
                 _lazyPESectionBlocks = null;
