@@ -8,13 +8,13 @@ using Xunit;
 public static class BooleanTests
 {
     [Fact]
-    public static void TestTrueString()
+    public static void TrueString()
     {
         Assert.Equal("True", bool.TrueString);
     }
 
     [Fact]
-    public static void TestFalseString()
+    public static void FalseString()
     {
         Assert.Equal("False", bool.FalseString);
     }
@@ -34,7 +34,7 @@ public static class BooleanTests
     [InlineData("False  ", false)]
     [InlineData("False\0", false)]
     [InlineData("  False \0\0\0  ", false)]
-    public static void TestParse(string value, bool expected)
+    public static void Parse(string value, bool expected)
     {
         bool result;
         Assert.True(bool.TryParse(value, out result));
@@ -57,7 +57,7 @@ public static class BooleanTests
     [InlineData("T", typeof(FormatException))]
     [InlineData("0", typeof(FormatException))]
     [InlineData("1", typeof(FormatException))]
-    public static void TestParse_Invalid(string value, Type exceptionType)
+    public static void Parse_Invalid(string value, Type exceptionType)
     {
         Assert.Throws(exceptionType, () => bool.Parse(value));
 
@@ -67,7 +67,7 @@ public static class BooleanTests
     }
 
     [Fact]
-    public static void TestToString()
+    public static void ToStringTest()
     {
         Assert.Equal(bool.TrueString, true.ToString());
         Assert.Equal(bool.FalseString, false.ToString());
@@ -80,7 +80,7 @@ public static class BooleanTests
     [InlineData(false, false, 0)]
     [InlineData(false, true, -1)]
     [InlineData(false, null, 1)]
-    public static void TestCompareTo(bool b, object obj, int expected)
+    public static void CompareTo(bool b, object obj, int expected)
     {
         if (obj is bool)
         {
@@ -96,7 +96,7 @@ public static class BooleanTests
     [InlineData(true, "true")]
     [InlineData(false, 0)]
     [InlineData(false, "false")]
-    private static void TestCompareTo_Invalid(IComparable b, object obj)
+    private static void CompareTo_ObjectNotBool_ThrowsArgumentException(IComparable b, object obj)
     {
         Assert.Throws<ArgumentException>(null, () => b.CompareTo(obj));
     }
@@ -112,7 +112,7 @@ public static class BooleanTests
     [InlineData(false, "0", false)]
     [InlineData(false, "False", false)]
     [InlineData(false, null, false)]
-    public static void TestEquals(bool b1, object obj, bool expected)
+    public static void Equals(bool b1, object obj, bool expected)
     {
         if (obj is bool)
         {
@@ -123,7 +123,7 @@ public static class BooleanTests
     }
 
     [Fact]
-    public static void TestGetHashCode()
+    public static void GetHashCodeTest()
     {
         Assert.Equal(1, true.GetHashCode());
         Assert.Equal(0, false.GetHashCode());

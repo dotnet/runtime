@@ -4,7 +4,6 @@
 
 using System;
 using System.Threading;
-
 using Xunit;
 
 public static class WaitHandleTests
@@ -44,7 +43,7 @@ public static class WaitHandleTests
     }
 
     [Fact]
-    public static void WaitAnySameHandles()
+    public static void WaitAny_SameHandles()
     {
         ManualResetEvent[] wh = new ManualResetEvent[2];
         wh[0] = new ManualResetEvent(true);
@@ -73,7 +72,7 @@ public static class WaitHandleTests
     }
 
     [Fact]
-    public static void WaitAllSameHandles()
+    public static void WaitAll_SameHandles()
     {
         ManualResetEvent[] wh = new ManualResetEvent[2];
         wh[0] = new ManualResetEvent(true);
@@ -84,7 +83,7 @@ public static class WaitHandleTests
 
     [Fact]
     [PlatformSpecific(PlatformID.Windows)] // names aren't supported on Unix
-    public static void WaitAllSameNames()
+    public static void WaitAll_SameNames()
     {
         Mutex[] wh = new Mutex[2];
         wh[0] = new Mutex(false, "test");

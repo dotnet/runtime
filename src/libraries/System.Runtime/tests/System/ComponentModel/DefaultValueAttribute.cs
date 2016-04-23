@@ -10,7 +10,7 @@ namespace System.ComponentModel.Tests
     public static class DefaultValueAttributeTests
     {
         [Fact]
-        public static void TestCtor()
+        public static void Ctor()
         {
             Assert.Equal(true, new DefaultValueAttribute(true).Value);
             Assert.Equal(false, new DefaultValueAttribute(false).Value);
@@ -48,7 +48,7 @@ namespace System.ComponentModel.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public static void TestEquals(DefaultValueAttribute attr1, object obj, bool expected)
+        public static void Equals(DefaultValueAttribute attr1, object obj, bool expected)
         {
             Assert.Equal(expected, attr1.Equals(obj));
 

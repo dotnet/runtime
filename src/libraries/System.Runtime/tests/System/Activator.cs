@@ -10,7 +10,7 @@ using Xunit;
 public static class ActivatorTests
 {
     [Fact]
-    public static void TestCreateInstance()
+    public static void CreateInstance()
     {
         // Passing null args is equivalent to an empty array of args.
         Choice1 c = (Choice1)(Activator.CreateInstance(typeof(Choice1), null));
@@ -32,7 +32,7 @@ public static class ActivatorTests
     }
 
     [Fact]
-    public static void TestCreateInstance_ConstructorWithPrimitive_PerformsPrimitiveWidening()
+    public static void CreateInstance_ConstructorWithPrimitive_PerformsPrimitiveWidening()
     {
         // Primitive widening is allowed by the binder, but not by Dynamic.DelegateInvoke().
         Choice1 c = (Choice1)(Activator.CreateInstance(typeof(Choice1), new object[] { (short)-2 }));
@@ -40,7 +40,7 @@ public static class ActivatorTests
     }
 
     [Fact]
-    public static void TestCreateInstance_ConstructorWithParamsParameter()
+    public static void CreateInstance_ConstructorWithParamsParameter()
     {
         // C# params arguments are honored by Activator.CreateInstance()
         Choice1 c = (Choice1)(Activator.CreateInstance(typeof(Choice1), new object[] { new VarArgs() }));
@@ -63,7 +63,7 @@ public static class ActivatorTests
     }
 
     [Fact]
-    public static void TestCreateInstance_Invalid()
+    public static void CreateInstance_Invalid()
     {
         Assert.Throws<ArgumentNullException>("type", () => Activator.CreateInstance(null)); // Type is null
         Assert.Throws<ArgumentNullException>("type", () => Activator.CreateInstance(null, new object[0])); // Type is null
@@ -90,7 +90,7 @@ public static class ActivatorTests
     }
 
     [Fact]
-    public static void TestCreateInstance_Generic()
+    public static void CreateInstance_Generic()
     {
         Choice1 c = Activator.CreateInstance<Choice1>();
         Assert.Equal(1, c.I);
@@ -100,7 +100,7 @@ public static class ActivatorTests
     }
 
     [Fact]
-    public static void TestCreateInstance_Generic_Invalid()
+    public static void CreateInstance_Generic_Invalid()
     {
         Assert.ThrowsAny<MissingMemberException>(() => Activator.CreateInstance<int[]>()); // Cannot create array type
 
@@ -130,7 +130,7 @@ public static class ActivatorTests
     }
 
     [Fact]
-    public static void TestCreateInstance_Type_Bool()
+    public static void CreateInstance_Type_Bool()
     {
         Assert.Equal(typeof(PrivateType), Activator.CreateInstance(typeof(PrivateType), true).GetType());
         Assert.Equal(typeof(PrivateType), Activator.CreateInstance(typeof(PrivateType), false).GetType());

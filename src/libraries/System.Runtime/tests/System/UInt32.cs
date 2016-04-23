@@ -10,27 +10,27 @@ using Xunit;
 public static class UInt32Tests
 {
     [Fact]
-    public static void TestCtor_Empty()
+    public static void Ctor_Empty()
     {
         var i = new uint();
         Assert.Equal((uint)0, i);
     }
 
     [Fact]
-    public static void TestCtor_Value()
+    public static void Ctor_Value()
     {
         uint i = 41;
         Assert.Equal((uint)41, i);
     }
 
     [Fact]
-    public static void TestMaxValue()
+    public static void MaxValue()
     {
         Assert.Equal(0xFFFFFFFF, uint.MaxValue);
     }
 
     [Fact]
-    public static void TestMinValue()
+    public static void MinValue()
     {
         Assert.Equal((uint)0, uint.MinValue);
     }
@@ -43,7 +43,7 @@ public static class UInt32Tests
     [InlineData((uint)234, (uint)456, -1)]
     [InlineData((uint)234, uint.MaxValue, -1)]
     [InlineData((uint)234, null, 1)]
-    public static void TestCompareTo(uint i, object value, int expected)
+    public static void CompareTo(uint i, object value, int expected)
     {
         if (value is uint)
         {
@@ -54,7 +54,7 @@ public static class UInt32Tests
     }
 
     [Fact]
-    public static void TestCompareTo_Invalid()
+    public static void CompareTo_ObjectNotUInt_ThrowsArgumentException()
     {
         IComparable comparable = (uint)234;
         Assert.Throws<ArgumentException>(null, () => comparable.CompareTo("a")); // Obj is not a uint
@@ -68,7 +68,7 @@ public static class UInt32Tests
     [InlineData((uint)789, null, false)]
     [InlineData((uint)789, "789", false)]
     [InlineData((uint)789, 789, false)]
-    public static void TestEquals(uint i1, object obj, bool expected)
+    public static void Equals(uint i1, object obj, bool expected)
     {
         if (obj is uint)
         {
@@ -99,7 +99,7 @@ public static class UInt32Tests
 
     [Theory]
     [MemberData(nameof(ToString_TestData))]
-    public static void TestToString(uint i, string format, IFormatProvider provider, string expected)
+    public static void ToString(uint i, string format, IFormatProvider provider, string expected)
     {
         // Format is case insensitive
         string upperFormat = format.ToUpperInvariant();
@@ -130,7 +130,7 @@ public static class UInt32Tests
     }
 
     [Fact]
-    public static void TestToString_Invalid()
+    public static void ToString_InvalidFormat_ThrowsFormatException()
     {
         uint i = 123;
         Assert.Throws<FormatException>(() => i.ToString("Y")); // Invalid format
@@ -165,7 +165,7 @@ public static class UInt32Tests
 
     [Theory]
     [MemberData(nameof(Parse_Valid_TestData))]
-    public static void TestParse(string value, NumberStyles style, IFormatProvider provider, uint expected)
+    public static void Parse(string value, NumberStyles style, IFormatProvider provider, uint expected)
     {
         uint result;
         // If no style is specified, use the (String) or (String, IFormatProvider) overload
@@ -235,7 +235,7 @@ public static class UInt32Tests
 
     [Theory]
     [MemberData(nameof(Parse_Invalid_TestData))]
-    public static void TestParse_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
+    public static void Parse_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
     {
         uint result;
         // If no style is specified, use the (String) or (String, IFormatProvider) overload
@@ -268,7 +268,7 @@ public static class UInt32Tests
     [Theory]
     [InlineData(NumberStyles.HexNumber | NumberStyles.AllowParentheses)]
     [InlineData(unchecked((NumberStyles)0xFFFFFC00))]
-    public static void TestTryParse_InvalidNumberStyle_ThrowsArgumentException(NumberStyles style)
+    public static void TryParse_InvalidNumberStyle_ThrowsArgumentException(NumberStyles style)
     {
         uint result = 0;
         Assert.Throws<ArgumentException>(() => uint.TryParse("1", style, null, out result));

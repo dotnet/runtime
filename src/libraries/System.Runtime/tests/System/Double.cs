@@ -10,14 +10,14 @@ using Xunit;
 public static class DoubleTests
 {
     [Fact]
-    public static void TestCtor_Empty()
+    public static void Ctor_Empty()
     {
         var i = new double();
         Assert.Equal(0, i);
     }
 
     [Fact]
-    public static void TestCtor_Value()
+    public static void Ctor_Value()
     {
         double d = 41;
         Assert.Equal(41, d);
@@ -27,19 +27,19 @@ public static class DoubleTests
     }
 
     [Fact]
-    public static void TestMaxValue()
+    public static void MaxValue()
     {
         Assert.Equal(1.7976931348623157E+308, double.MaxValue);
     }
 
     [Fact]
-    public static void TestMinValue()
+    public static void MinValue()
     {
         Assert.Equal(-1.7976931348623157E+308, double.MinValue);
     }
 
     [Fact]
-    public static void TestEpsilon()
+    public static void Epsilon()
     {
         Assert.Equal(4.9406564584124654E-324, double.Epsilon);
     }
@@ -49,13 +49,13 @@ public static class DoubleTests
     [InlineData(double.NegativeInfinity, true)]
     [InlineData(double.NaN, false)]
     [InlineData(0.0, false)]
-    public static void TestIsInfinity(double d, bool expected)
+    public static void IsInfinity(double d, bool expected)
     {
         Assert.Equal(expected, double.IsInfinity(d));
     }
 
     [Fact]
-    public static void TestNaN()
+    public static void NaN()
     {
         Assert.Equal(0.0 / 0.0, double.NaN);
     }
@@ -65,13 +65,13 @@ public static class DoubleTests
     [InlineData(double.NegativeInfinity, false)]
     [InlineData(double.NaN, true)]
     [InlineData(0.0, false)]
-    public static void TestIsNaN(double d, bool expected)
+    public static void IsNaN(double d, bool expected)
     {
         Assert.Equal(expected, double.IsNaN(d));
     }
 
     [Fact]
-    public static void TestNegativeInfinity()
+    public static void NegativeInfinity()
     {
         Assert.Equal(-1.0 / 0.0, double.NegativeInfinity);
     }
@@ -81,13 +81,13 @@ public static class DoubleTests
     [InlineData(double.PositiveInfinity, false)]
     [InlineData(double.NaN, false)]
     [InlineData(0.0, false)]
-    public static void TestIsNegativeInfinity(double d, bool expected)
+    public static void IsNegativeInfinity(double d, bool expected)
     {
         Assert.Equal(expected, double.IsNegativeInfinity(d));
     }
 
     [Fact]
-    public static void TestPositiveInfinity()
+    public static void PositiveInfinity()
     {
         Assert.Equal(1.0 / 0.0, double.PositiveInfinity);
     }
@@ -97,7 +97,7 @@ public static class DoubleTests
     [InlineData(double.NegativeInfinity, false)]
     [InlineData(double.NaN, false)]
     [InlineData(0.0, false)]
-    public static void TestIsPositiveInfinity(double d, bool expected)
+    public static void IsPositiveInfinity(double d, bool expected)
     {
         Assert.Equal(expected, double.IsPositiveInfinity(d));
     }
@@ -114,7 +114,7 @@ public static class DoubleTests
     [InlineData(double.NaN, double.NaN, 0)]
     [InlineData(double.NaN, (double)0, -1)]
     [InlineData((double)234, null, 1)]
-    public static void TestCompareTo(double d1, object value, int expected)
+    public static void CompareTo(double d1, object value, int expected)
     {
         if (value is double)
         {
@@ -156,7 +156,7 @@ public static class DoubleTests
     }
 
     [Fact]
-    public static void TestCompareTo_Invalid()
+    public static void CompareTo_ObjectNotDouble_ThrowsArgumentException()
     {
         IComparable comparable = (double)234;
         Assert.Throws<ArgumentException>(null, () => comparable.CompareTo((float)234)); // Obj is not a double
@@ -170,7 +170,7 @@ public static class DoubleTests
     [InlineData(double.NaN, double.NaN, true)]
     [InlineData((double)789, (float)789, false)]
     [InlineData((double)789, "789", false)]
-    public static void TestEquals(double d1, object value, bool expected)
+    public static void Equals(double d1, object value, bool expected)
     {
         if (value is double)
         {
@@ -238,7 +238,7 @@ public static class DoubleTests
 
     [Theory]
     [MemberData(nameof(ToString_TestData))]
-    public static void TestToString(double d, string format, IFormatProvider provider, string expected)
+    public static void ToString(double d, string format, IFormatProvider provider, string expected)
     {
         bool isDefaultProvider = (provider == null || provider == NumberFormatInfo.CurrentInfo);
         if (string.IsNullOrEmpty(format) || format.ToUpperInvariant() == "G")
@@ -262,7 +262,7 @@ public static class DoubleTests
     }
 
     [Fact]
-    public static void TestToString_Invalid()
+    public static void ToString_InvalidFormat_ThrowsFormatException()
     {
         double d = 123;
         Assert.Throws<FormatException>(() => d.ToString("Y")); // Invalid format
@@ -316,7 +316,7 @@ public static class DoubleTests
 
     [Theory]
     [MemberData(nameof(Parse_Valid_TestData))]
-    public static void TestParse(string value, NumberStyles style, IFormatProvider provider, double expected)
+    public static void Parse(string value, NumberStyles style, IFormatProvider provider, double expected)
     {
         double d;
         // If no style is specified, use the (String) or (String, IFormatProvider) overload
@@ -377,7 +377,7 @@ public static class DoubleTests
 
     [Theory]
     [MemberData(nameof(Parse_Invalid_TestData))]
-    public static void TestParse_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
+    public static void Parse_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
     {
         double d;
         // If no style is specified, use the (String) or (String, IFormatProvider) overload

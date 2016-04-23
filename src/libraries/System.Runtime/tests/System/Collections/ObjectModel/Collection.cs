@@ -20,34 +20,28 @@ public class CollectionTests : CollectionTestBase
     private static readonly Collection<int> s_empty = new Collection<int>();
 
     [Fact]
-    public static void CreateEmpty()
+    public static void Ctor_Empty()
     {
-        Assert.Empty(new Collection<int>());
+        Collection<int> collection = new Collection<int>();
+        Assert.Empty(collection);
     }
 
     [Fact]
-    public static void CreateFromNull()
+    public static void Ctor_NullList_ThrowsArgumentNullException()
     {
-        Assert.Throws<ArgumentNullException>(() => new Collection<int>(null));
+        Assert.Throws<ArgumentNullException>("list", () => new Collection<int>(null));
     }
 
     [Fact]
-    public static void CreateFromIList()
+    public static void Ctor_IList()
     {
         var collection = new TestCollection<int>(s_intArray);
         Assert.Same(s_intArray, collection.GetItems());
-    }
-
-    [Fact]
-    public static void Count()
-    {
-        var collection = new Collection<int>(s_intArray);
         Assert.Equal(s_intArray.Length, collection.Count);
-        Assert.Equal(0, s_empty.Count);
     }
 
     [Fact]
-    public static void ItemsPropertyCastableToList()
+    public static void GetItems_CastableToList()
     {
         //
         // Although MSDN only documents that Collection<T>.Items returns an IList<T>,
@@ -68,7 +62,7 @@ public class CollectionTests : CollectionTestBase
     }
 
     [Fact]
-    public static void Indexer()
+    public static void Item_Get_Set()
     {
         var collection = new ModifiableCollection<int>(s_intArray);
         for (int i = 0; i < s_intArray.Length; i++)
@@ -76,24 +70,30 @@ public class CollectionTests : CollectionTestBase
             collection[i] = i;
             Assert.Equal(i, collection[i]);
         }
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => { var x = collection[-1]; });
-        Assert.Throws<ArgumentOutOfRangeException>(() => { var x = collection[s_intArray.Length]; });
-        Assert.Throws<ArgumentOutOfRangeException>(() => { var x = s_empty[0]; });
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => { collection[-1] = 0; });
-        Assert.Throws<ArgumentOutOfRangeException>(() => { collection[s_intArray.Length] = 0; });
     }
 
     [Fact]
-    public static void IndexerSetInvalidType()
+    public static void Item_Get_Set_InvalidIndex_ThrowsArgumentOutOfRangeException()
+    {
+        var collection = new ModifiableCollection<int>(s_intArray);
+
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => collection[-1]);
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => collection[s_intArray.Length]);
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => s_empty[0]);
+
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => collection[-1] = 0);
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => collection[s_intArray.Length] = 0);
+    }
+
+    [Fact]
+    public static void Item_Set_InvalidType_ThrowsArgumentException()
     {
         var collection = new Collection<int>(new Collection<int>(s_intArray));
-        Assert.Throws<ArgumentException>(() => { ((IList)collection)[1] = "Two"; });
+        Assert.Throws<ArgumentException>("value", () => ((IList)collection)[1] = "Two");
     }
 
     [Fact]
-    public static void IsReadOnly()
+    public static void IsReadOnly_ReturnsTrue()
     {
         var collection = new Collection<int>(s_intArray);
         Assert.True(((IList)collection).IsReadOnly);
@@ -101,7 +101,7 @@ public class CollectionTests : CollectionTestBase
     }
 
     [Fact]
-    public static void InsertAtBeginning()
+    public static void Insert_ZeroIndex()
     {
         const int itemsToInsert = 5;
         var collection = new ModifiableCollection<int>();
@@ -118,7 +118,7 @@ public class CollectionTests : CollectionTestBase
     }
 
     [Fact]
-    public static void InsertInMiddle()
+    public static void Insert_MiddleIndex()
     {
         const int insertIndex = 3;
         const int itemsToInsert = 5;
@@ -150,7 +150,7 @@ public class CollectionTests : CollectionTestBase
     }
 
     [Fact]
-    public static void InsertAtEnd()
+    public static void Insert_EndIndex()
     {
         const int itemsToInsert = 5;
 
@@ -168,11 +168,11 @@ public class CollectionTests : CollectionTestBase
     }
 
     [Fact]
-    public static void InsertAtInvalidIndex()
+    public static void Insert_InvalidIndex_ThrowsArgumentOutOfRangeException()
     {
         var collection = new ModifiableCollection<int>(s_intArray);
-        Assert.Throws<ArgumentOutOfRangeException>(() => collection.Insert(-1, 0));
-        Assert.Throws<ArgumentOutOfRangeException>(() => collection.Insert(s_intArray.Length + 1, 0));
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => collection.Insert(-1, 0));
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => collection.Insert(s_intArray.Length + 1, 0));
     }
 
     [Fact]
@@ -266,11 +266,11 @@ public class CollectionTests : CollectionTestBase
     }
 
     [Fact]
-    public static void RemoveAtInvalidIndex()
+    public static void RemoveAt_InvalidIndex_ThrowsArgumentOutOfRangeException()
     {
         var collection = new ModifiableCollection<int>(s_intSequence);
-        Assert.Throws<ArgumentOutOfRangeException>(() => collection.RemoveAt(-1));
-        Assert.Throws<ArgumentOutOfRangeException>(() => collection.RemoveAt(s_intArray.Length));
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => collection.RemoveAt(-1));
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => collection.RemoveAt(s_intArray.Length));
     }
 
     [Fact]
@@ -312,11 +312,11 @@ public class CollectionTests : CollectionTestBase
     }
 
     [Fact]
-    public void MutatingMethodsThrowIfReadOnly()
+    public void ReadOnly_ModifyingCollection_ThrowsNotSupportedException()
     {
         var collection = new Collection<int>(s_intArray);
 
-        Assert.Throws<NotSupportedException>(() => { collection[0] = 0; });
+        Assert.Throws<NotSupportedException>(() => collection[0] = 0);
         Assert.Throws<NotSupportedException>(() => collection.Add(0));
         Assert.Throws<NotSupportedException>(() => collection.Clear());
         Assert.Throws<NotSupportedException>(() => collection.Insert(0, 0));
@@ -334,10 +334,7 @@ public class CollectionTests : CollectionTestBase
         {
         }
 
-        public IList<T> GetItems()
-        {
-            return this.Items;
-        }
+        public IList<T> GetItems() => Items;
     }
 
     private class ModifiableCollection<T> : Collection<T>

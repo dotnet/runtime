@@ -10,27 +10,27 @@ using Xunit;
 public static class ByteTests
 {
     [Fact]
-    public static void TestCtor_Empty()
+    public static void Ctor_Empty()
     {
         var b = new byte();
         Assert.Equal(0, b);
     }
 
     [Fact]
-    public static void TestCtor_Value()
+    public static void Ctor_Value()
     {
         byte b = 41;
         Assert.Equal(41, b);
     }
 
     [Fact]
-    public static void TestMaxValue()
+    public static void MaxValue()
     {
         Assert.Equal(0xFF, byte.MaxValue);
     }
 
     [Fact]
-    public static void TestMinValue()
+    public static void MinValue()
     {
         Assert.Equal(0, byte.MinValue);
     }
@@ -43,7 +43,7 @@ public static class ByteTests
     [InlineData((byte)234, (byte)235, -1)]
     [InlineData((byte)234, byte.MaxValue, -1)]
     [InlineData((byte)234, null, 1)]
-    public static void TestCompareTo(byte b, object value, int expected)
+    public static void CompareTo(byte b, object value, int expected)
     {
         if (value is byte)
         {
@@ -54,7 +54,7 @@ public static class ByteTests
     }
 
     [Fact]
-    public static void TestCompareTo_Invalid()
+    public static void CompareTo_ObjectNotByte_ThrowsArgumentException()
     {
         IComparable comparable = (byte)234;
         Assert.Throws<ArgumentException>(null, () => comparable.CompareTo("a")); // Obj is not a byte
@@ -68,7 +68,7 @@ public static class ByteTests
     [InlineData((byte)78, null, false)]
     [InlineData((byte)78, "78", false)]
     [InlineData((byte)78, 78, false)]
-    public static void TestEquals(byte b, object obj, bool expected)
+    public static void Equals(byte b, object obj, bool expected)
     {
         if (obj is byte)
         {
@@ -99,7 +99,7 @@ public static class ByteTests
 
     [Theory]
     [MemberData(nameof(ToString_TestData))]
-    public static void TestToString(byte b, string format, IFormatProvider provider, string expected)
+    public static void ToString(byte b, string format, IFormatProvider provider, string expected)
     {
         // Format is case insensitive
         string upperFormat = format.ToUpperInvariant();
@@ -130,7 +130,7 @@ public static class ByteTests
     }
 
     [Fact]
-    public static void TestToString_Invalid()
+    public static void ToString_InvalidFormat_ThrowsFormatException()
     {
         byte b = 123;
         Assert.Throws<FormatException>(() => b.ToString("Y")); // Invalid format
@@ -165,7 +165,7 @@ public static class ByteTests
 
     [Theory]
     [MemberData(nameof(Parse_Valid_TestData))]
-    public static void TestParse(string value, NumberStyles style, IFormatProvider provider, byte expected)
+    public static void Parse(string value, NumberStyles style, IFormatProvider provider, byte expected)
     {
         byte result;
         // If no style is specified, use the (String) or (String, IFormatProvider) overload
@@ -236,7 +236,7 @@ public static class ByteTests
 
     [Theory]
     [MemberData(nameof(Parse_Invalid_TestData))]
-    public static void TestParse_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
+    public static void Parse_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
     {
         byte result;
         // If no style is specified, use the (String) or (String, IFormatProvider) overload
@@ -269,7 +269,7 @@ public static class ByteTests
     [Theory]
     [InlineData(NumberStyles.HexNumber | NumberStyles.AllowParentheses)]
     [InlineData(unchecked((NumberStyles)0xFFFFFC00))]
-    public static void TestTryParse_InvalidNumberStyle_ThrowsArgumentException(NumberStyles style)
+    public static void TryParse_InvalidNumberStyle_ThrowsArgumentException(NumberStyles style)
     {
         byte result = 0;
         Assert.Throws<ArgumentException>(() => byte.TryParse("1", style, null, out result));

@@ -10,7 +10,7 @@ public static class MethodAccessExceptionTests
     private const int COR_E_METHODACCESS = unchecked((int)0x80131510);
 
     [Fact]
-    public static void TestCtor_Empty()
+    public static void Ctor_Empty()
     {
         var exception = new MethodAccessException();
         Assert.NotEmpty(exception.Message);
@@ -18,7 +18,7 @@ public static class MethodAccessExceptionTests
     }
 
     [Fact]
-    public static void TestCtor_String()
+    public static void Ctor_String()
     {
         string message = "Created MethodAccessException";
         var exception = new MethodAccessException(message);
@@ -27,7 +27,7 @@ public static class MethodAccessExceptionTests
     }
 
     [Fact]
-    public static void TestCtor_Exception()
+    public static void Ctor_String_Exception()
     {
         string message = "Created MethodAccessException";
         var innerException = new Exception("Created inner exception");

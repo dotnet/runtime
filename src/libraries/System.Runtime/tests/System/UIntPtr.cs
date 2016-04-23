@@ -11,13 +11,13 @@ public static class UIntPtrTests
     private static unsafe bool Is64Bit => sizeof(void*) == 8;
 
     [Fact]
-    public static void TestZero()
+    public static void Zero()
     {
         VerifyPointer(UIntPtr.Zero, 0);
     }
 
     [Fact]
-    public static void TestCtor_UInt()
+    public static void Ctor_UInt()
     {
         uint i = 42;
         VerifyPointer(new UIntPtr(i), i);
@@ -25,7 +25,7 @@ public static class UIntPtrTests
     }
 
     [ConditionalFact(nameof(Is64Bit))]
-    public static void TestCtor_ULong()
+    public static void Ctor_ULong()
     {
         ulong l = 0x0fffffffffffffff;
         VerifyPointer(new UIntPtr(l), l);
@@ -58,7 +58,7 @@ public static class UIntPtrTests
 
     [ConditionalTheory(nameof(Is64Bit))]
     [MemberData(nameof(Add_TestData))]
-    public static void TestAdd(UIntPtr ptr, int offset, ulong expected)
+    public static void Add(UIntPtr ptr, int offset, ulong expected)
     {
         UIntPtr p1 = UIntPtr.Add(ptr, offset);
         VerifyPointer(p1, expected);
@@ -80,7 +80,7 @@ public static class UIntPtrTests
 
     [ConditionalTheory(nameof(Is64Bit))]
     [MemberData(nameof(Subtract_TestData))]
-    public static void TestSubtract(UIntPtr ptr, int offset, ulong expected)
+    public static void Subtract(UIntPtr ptr, int offset, ulong expected)
     {
         UIntPtr p1 = UIntPtr.Subtract(ptr, offset);
         VerifyPointer(p1, expected);
@@ -103,7 +103,7 @@ public static class UIntPtrTests
 
     [Theory]
     [MemberData(nameof(Equals_TestData))]
-    public static void TestEquals(UIntPtr ptr1, object obj, bool expected)
+    public static void Equals(UIntPtr ptr1, object obj, bool expected)
     {
         if (obj is UIntPtr)
         {
@@ -137,7 +137,7 @@ public static class UIntPtrTests
     }
 
     [ConditionalFact(nameof(Is64Bit))]
-    public static void TestGetHashCodeRespectAllBits()
+    public static void GetHashCodeRespectAllBits()
     {
         var ptr1 = new UIntPtr(0x123456FFFFFFFF);
         var ptr2 = new UIntPtr(0x654321FFFFFFFF);

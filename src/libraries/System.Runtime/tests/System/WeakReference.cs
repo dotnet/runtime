@@ -4,7 +4,6 @@
 
 using System;
 using System.Runtime.CompilerServices;
-
 using Xunit;
 
 public static unsafe class WeakReferenceTests
@@ -26,7 +25,7 @@ public static unsafe class WeakReferenceTests
     }
 
     [Fact]
-    public static void TestNonGeneric()
+    public static void NonGeneric()
     {
         object o1 = new char[10];
         WeakReference w = new WeakReference(o1);
@@ -75,7 +74,7 @@ public static unsafe class WeakReferenceTests
     }
 
     [Fact]
-    public static void TestGeneric()
+    public static void Generic()
     {
         object o1 = new char[10];
         WeakReference<object> w = new WeakReference<object>(o1);

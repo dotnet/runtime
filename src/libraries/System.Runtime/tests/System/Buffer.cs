@@ -9,7 +9,7 @@ using Xunit;
 public static class BufferTests
 {
     [Fact]
-    public static void TestBlockCopy()
+    public static void BlockCopy()
     {
         byte[] src = new byte[] { 0x1a, 0x2b, 0x3c, 0x4d };
         byte[] dst = new byte[] { 0x6f, 0x6f, 0x6f, 0x6f, 0x6f, 0x6f };
@@ -26,7 +26,7 @@ public static class BufferTests
     }
 
     [Fact]
-    public static void TestBlockCopy_Invalid()
+    public static void BlockCopy_Invalid()
     {
         Assert.Throws<ArgumentNullException>("src", () => Buffer.BlockCopy(null, 0, new int[3], 0, 0)); // Src is null
         Assert.Throws<ArgumentNullException>("dst", () => Buffer.BlockCopy(new string[3], 0, null, 0, 0)); // Dst is null
@@ -68,7 +68,7 @@ public static class BufferTests
 
     [Theory]
     [MemberData(nameof(ByteLength_TestData))]
-    public static void TestByteLength(Type type, int size)
+    public static void ByteLength(Type type, int size)
     {
         const int Length = 25;
         Array array = Array.CreateInstance(type, Length);
@@ -76,7 +76,7 @@ public static class BufferTests
     }
 
     [Fact]
-    public static void TestByteLength_Invalid()
+    public static void ByteLength_Invalid()
     {
         Assert.Throws<ArgumentNullException>("array", () => Buffer.ByteLength(null)); // Array is null
 
@@ -88,13 +88,13 @@ public static class BufferTests
     [Theory]
     [InlineData(new uint[] { 0x01234567, 0x89abcdef }, 0, 0x67)]
     [InlineData(new uint[] { 0x01234567, 0x89abcdef }, 7, 0x89)]
-    public static void TestGetByte(Array array, int index, int expected)
+    public static void GetByte(Array array, int index, int expected)
     {
         Assert.Equal(expected, Buffer.GetByte(array, index));
     }
 
     [Fact]
-    public static void TestGetByte_Invalid()
+    public static void GetByte_Invalid()
     {
         var array = new uint[] { 0x01234567, 0x89abcdef };
 
@@ -128,7 +128,7 @@ public static class BufferTests
     [InlineData(100, 0, 100, 0, 15)]
     [InlineData(100, 0, 100, 0, 16)]
     [InlineData(100, 0, 100, 0, 17)]
-    public static unsafe void TestMemoryCopy(int sourceLength, int sourceIndexOffset, int destinationLength, int destinationIndexOffset, long sourceBytesToCopy)
+    public static unsafe void MemoryCopy(int sourceLength, int sourceIndexOffset, int destinationLength, int destinationIndexOffset, long sourceBytesToCopy)
     {
         var sourceArray = new byte[sourceLength];
         for (int i = 0; i < sourceArray.Length; i++)
@@ -163,7 +163,7 @@ public static class BufferTests
     [Theory]
     [InlineData(200, 50, 100)]
     [InlineData(200, 5, 15)]
-    public static unsafe void TestMemoryCopy_OverlappingBuffers(int sourceLength, int destinationIndexOffset, int sourceBytesToCopy)
+    public static unsafe void MemoryCopy_OverlappingBuffers(int sourceLength, int destinationIndexOffset, int sourceBytesToCopy)
     {
         var array = new int[sourceLength];
         for (int i = 0; i < array.Length; i++)
@@ -183,7 +183,7 @@ public static class BufferTests
     }
 
     [Fact]
-    public static unsafe void TestMemoryCopy_Invalid()
+    public static unsafe void MemoryCopy_Invalid()
     {
         var sourceArray = new int[5000];
         var destinationArray = new int[1000];
@@ -208,14 +208,14 @@ public static class BufferTests
     [Theory]
     [InlineData(new uint[] { 0x01234567, 0x89abcdef }, 0, 0x42, new uint[] { 0x01234542, 0x89abcdef })]
     [InlineData(new uint[] { 0x01234542, 0x89abcdef }, 7, 0xa2, new uint[] { 0x01234542, 0xa2abcdef })]
-    public static void TestSetByte(Array array, int index, byte value, Array expected)
+    public static void SetByte(Array array, int index, byte value, Array expected)
     {
         Buffer.SetByte(array, index, value);
         Assert.Equal(expected, array);
     }
 
     [Fact]
-    public static void TestSetByte_Invalid()
+    public static void SetByte_Invalid()
     {
         var array = new uint[] { 0x01234567, 0x89abcdef };
 

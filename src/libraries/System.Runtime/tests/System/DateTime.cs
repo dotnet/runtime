@@ -11,38 +11,38 @@ using Xunit;
 public static class DateTimeTests
 {
     [Fact]
-    public static void TestMaxValue()
+    public static void MaxValue()
     {
         VerifyDateTime(DateTime.MaxValue, 9999, 12, 31, 23, 59, 59, 999, DateTimeKind.Unspecified);
     }
 
     [Fact]
-    public static void TestMinValue()
+    public static void MinValue()
     {
         VerifyDateTime(DateTime.MinValue, 1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified);
     }
 
     [Fact]
-    public static void TestCtor_Long()
+    public static void Ctor_Long()
     {
         VerifyDateTime(new DateTime(999999999999999999), 3169, 11, 16, 9, 46, 39, 999, DateTimeKind.Unspecified);
     }
 
     [Fact]
-    public static void TestCtor_Long_Invalid()
+    public static void Ctor_Long_InvalidTicks_ThrowsArgumentOutOfRangeException()
     {
         Assert.Throws<ArgumentOutOfRangeException>("ticks", () => new DateTime(DateTime.MinValue.Ticks - 1)); // Ticks < DateTime.MinValue.Ticks
         Assert.Throws<ArgumentOutOfRangeException>("ticks", () => new DateTime(DateTime.MaxValue.Ticks + 1)); // Ticks > DateTime.MaxValue.Ticks
     }
 
     [Fact]
-    public static void TestCtor_Long_DateTimeKind()
+    public static void Ctor_Long_DateTimeKind()
     {
         VerifyDateTime(new DateTime(999999999999999999, DateTimeKind.Utc), 3169, 11, 16, 9, 46, 39, 999, DateTimeKind.Utc);
     }
 
     [Fact]
-    public static void TestCtor_Long_DateTimeKind_Invalid()
+    public static void Ctor_Long_DateTimeKind_Invalid()
     {
         Assert.Throws<ArgumentOutOfRangeException>("ticks", () => new DateTime(DateTime.MinValue.Ticks - 1, DateTimeKind.Utc)); // Ticks < DateTime.MinValue.Ticks
         Assert.Throws<ArgumentOutOfRangeException>("ticks", () => new DateTime(DateTime.MaxValue.Ticks + 1, DateTimeKind.Utc)); // Ticks > DateTime.MaxValue.Ticks
@@ -52,14 +52,14 @@ public static class DateTimeTests
     }
 
     [Fact]
-    public static void TestCtor_Int_Int_Int()
+    public static void Ctor_Int_Int_Int()
     {
         var dateTime = new DateTime(2012, 6, 11);
         VerifyDateTime(dateTime, 2012, 6, 11, 0, 0, 0, 0, DateTimeKind.Unspecified);
     }
 
     [Fact]
-    public static void TestCtor_Int_Int_Int_Invalid()
+    public static void Ctor_Int_Int_Int_Invalid()
     {
         Assert.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(0, 1, 1)); // Year < 0
         Assert.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(10000, 1, 1)); // Year > 9999
@@ -72,14 +72,14 @@ public static class DateTimeTests
     }
 
     [Fact]
-    public static void TestCtor_Int_Int_Int_Int_Int_Int()
+    public static void Ctor_Int_Int_Int_Int_Int_Int()
     {
         var dateTime = new DateTime(2012, 12, 31, 13, 50, 10);
         VerifyDateTime(dateTime, 2012, 12, 31, 13, 50, 10, 0, DateTimeKind.Unspecified);
     }
 
     [Fact]
-    public static void TestCtor_Int_Int_Int_Int_Int_Int_Invalid()
+    public static void Ctor_Int_Int_Int_Int_Int_Int_Invalid()
     {
         Assert.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(0, 1, 1, 1, 1, 1)); // Year < 1
         Assert.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(10000, 1, 1, 1, 1, 1)); // Year > 9999
@@ -101,14 +101,14 @@ public static class DateTimeTests
     }
 
     [Fact]
-    public static void TestCtor_Int_Int_Int_Int_Int_Int_Int_DateTimeKind()
+    public static void Ctor_Int_Int_Int_Int_Int_Int_Int_DateTimeKind()
     {
         var dateTime = new DateTime(1986, 8, 15, 10, 20, 5, DateTimeKind.Local);
         VerifyDateTime(dateTime, 1986, 8, 15, 10, 20, 5, 0, DateTimeKind.Local);
     }
 
     [Fact]
-    public static void TestCtor_Int_Int_Int_Int_Int_Int_DateTimeKind_Invalid()
+    public static void Ctor_Int_Int_Int_Int_Int_Int_DateTimeKind_Invalid()
     {
         Assert.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(0, 1, 1, 1, 1, 1, DateTimeKind.Utc)); // Year < 1
         Assert.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(10000, 1, 1, 1, 1, 1, DateTimeKind.Utc)); // Year > 9999
@@ -133,14 +133,14 @@ public static class DateTimeTests
     }
 
     [Fact]
-    public static void TestCtor_Int_Int_Int_Int_Int_Int_Int()
+    public static void Ctor_Int_Int_Int_Int_Int_Int_Int()
     {
         var dateTime = new DateTime(1973, 10, 6, 14, 30, 0, 500);
         VerifyDateTime(dateTime, 1973, 10, 6, 14, 30, 0, 500, DateTimeKind.Unspecified);
     }
 
     [Fact]
-    public static void TestCtor_Int_Int_Int_Int_Int_Int_Int_Invalid()
+    public static void Ctor_Int_Int_Int_Int_Int_Int_Int_Invalid()
     {
         Assert.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(0, 1, 1, 1, 1, 1, 1)); // Year < 1
         Assert.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(10000, 1, 1, 1, 1, 1, 1)); // Year > 9999
@@ -165,14 +165,14 @@ public static class DateTimeTests
     }
 
     [Fact]
-    public static void TestCtor_Int_Int_Int_Int_Int_Int_Int_Int_DateTimeKind()
+    public static void Ctor_Int_Int_Int_Int_Int_Int_Int_Int_DateTimeKind()
     {
         var dateTime = new DateTime(1986, 8, 15, 10, 20, 5, 600, DateTimeKind.Local);
         VerifyDateTime(dateTime, 1986, 8, 15, 10, 20, 5, 600, DateTimeKind.Local);
     }
 
     [Fact]
-    public static void TestCtor_Int_Int_Int_Int_Int_Int_Int_DateTimeKind_Invalid()
+    public static void Ctor_Int_Int_Int_Int_Int_Int_Int_DateTimeKind_Invalid()
     {
         Assert.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(0, 1, 1, 1, 1, 1, 1, DateTimeKind.Utc)); // Year < 1
         Assert.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(10000, 1, 1, 1, 1, 1, 1, DateTimeKind.Utc)); // Year > 9999
@@ -202,20 +202,20 @@ public static class DateTimeTests
     [Theory]
     [InlineData(2004, true)]
     [InlineData(2005, false)]
-    public static void TestLeapYears(int year, bool expected)
+    public static void LeapYears(int year, bool expected)
     {
         Assert.Equal(expected, DateTime.IsLeapYear(year));
     }
 
     [Fact]
-    public static void TestLeapYears_Invalid()
+    public static void LeapYears_InvalidYear_ThrowsArgumentOutOfRangeException()
     {
         Assert.Throws<ArgumentOutOfRangeException>("year", () => DateTime.IsLeapYear(0));
         Assert.Throws<ArgumentOutOfRangeException>("year", () => DateTime.IsLeapYear(10000));
     }
 
     [Fact]
-    public static void TestAddition()
+    public static void Addition()
     {
         var dateTime = new DateTime(1986, 8, 15, 10, 20, 5, 70);
         Assert.Equal(17, dateTime.AddDays(2).Day);
@@ -241,21 +241,21 @@ public static class DateTimeTests
     }
 
     [Fact]
-    public static void TestDayOfWeek()
+    public static void DayOfWeekTest()
     {
         var dateTime = new DateTime(2012, 6, 18);
         Assert.Equal(DayOfWeek.Monday, dateTime.DayOfWeek);
     }
 
     [Fact]
-    public static void TestDayOfYear()
+    public static void DayOfYear()
     {
         var dateTime = new DateTime(2012, 6, 18);
         Assert.Equal(170, dateTime.DayOfYear);
     }
 
     [Fact]
-    public static void TestTimeOfDay()
+    public static void TimeOfDay()
     {
         var dateTime = new DateTime(2012, 6, 18, 10, 5, 1, 0);
         TimeSpan ts = dateTime.TimeOfDay;
@@ -266,7 +266,7 @@ public static class DateTimeTests
     }
 
     [Fact]
-    public static void TestToday()
+    public static void Today()
     {
         DateTime today = DateTime.Today;
         DateTime now = DateTime.Now;
@@ -278,7 +278,7 @@ public static class DateTimeTests
     }
 
     [Fact]
-    public static void TestConversion()
+    public static void Conversion()
     {
         DateTime today = DateTime.Today;
         long dateTimeRaw = today.ToBinary();
@@ -304,7 +304,7 @@ public static class DateTimeTests
 
     [Theory]
     [MemberData(nameof(Subtract_TimeSpan_TestData))]
-    public static void TestSubtract_TimeSpan(DateTime dateTime, TimeSpan timeSpan, DateTime expected)
+    public static void Subtract_TimeSpan(DateTime dateTime, TimeSpan timeSpan, DateTime expected)
     {
         Assert.Equal(expected, dateTime - timeSpan);
         Assert.Equal(expected, dateTime.Subtract(timeSpan));
@@ -323,14 +323,14 @@ public static class DateTimeTests
 
     [Theory]
     [MemberData(nameof(Subtract_DateTime_TestData))]
-    public static void TestSubtract_DateTime(DateTime dateTime1, DateTime dateTime2, TimeSpan expected)
+    public static void Subtract_DateTime(DateTime dateTime1, DateTime dateTime2, TimeSpan expected)
     {
         Assert.Equal(expected, dateTime1 - dateTime2);
         Assert.Equal(expected, dateTime1.Subtract(dateTime2));
     }
 
     [Fact]
-    public static void TestSubtract_DateTime_Invalid()
+    public static void Subtract_DateTime_Invalid()
     {
         DateTime date1 = DateTime.MinValue.ToLocalTime();
         Assert.Throws<ArgumentOutOfRangeException>(() => date1.Subtract(new TimeSpan(365, 0, 0, 0)));
@@ -340,7 +340,7 @@ public static class DateTimeTests
     }
 
     [Fact]
-    public static void TestParse_String()
+    public static void Parse_String()
     {
         DateTime expected = DateTime.MaxValue;
         string expectedString = expected.ToString();
@@ -350,7 +350,7 @@ public static class DateTimeTests
     }
 
     [Fact]
-    public static void TestParse_String_FormatProvider()
+    public static void Parse_String_FormatProvider()
     {
         DateTime expected = DateTime.MaxValue;
         string expectedString = expected.ToString();
@@ -360,7 +360,7 @@ public static class DateTimeTests
     }
 
     [Fact]
-    public static void TestParse_String_FormatProvider_DateTimeStyles()
+    public static void Parse_String_FormatProvider_DateTimeStyles()
     {
         DateTime expected = DateTime.MaxValue;
         string expectedString = expected.ToString();
@@ -370,7 +370,7 @@ public static class DateTimeTests
     }
 
     [Fact]
-    public static void TestParse_Japanese()
+    public static void Parse_Japanese()
     {
         var expected = new DateTime(2012, 12, 21, 10, 8, 6);
         var cultureInfo = new CultureInfo("ja-JP");
@@ -380,13 +380,13 @@ public static class DateTimeTests
     }
 
     [Fact]
-    public static void TestParse_Invalid()
+    public static void Parse_NullString_ThrowsArgumentNullException()
     {
-        Assert.Throws<ArgumentNullException>(() => DateTime.Parse(null, new MyFormatter(), DateTimeStyles.NoCurrentDateDefault));
+        Assert.Throws<ArgumentNullException>("s", () => DateTime.Parse(null, new MyFormatter(), DateTimeStyles.NoCurrentDateDefault));
     }
 
     [Fact]
-    public static void TestTryParse_String()
+    public static void TryParse_String()
     {
         DateTime expected = DateTime.MaxValue;
         string expectedString = expected.ToString("g");
@@ -397,7 +397,7 @@ public static class DateTimeTests
     }
 
     [Fact]
-    public static void TestTryParse_String_FormatProvider_DateTimeStyles_U()
+    public static void TryParse_String_FormatProvider_DateTimeStyles_U()
     {
         DateTime expected = DateTime.MaxValue;
         string expectedString = expected.ToString("u");
@@ -408,7 +408,7 @@ public static class DateTimeTests
     }
 
     [Fact]
-    public static void TestTryParse_String_FormatProvider_DateTimeStyles_G()
+    public static void TryParse_String_FormatProvider_DateTimeStyles_G()
     {
         DateTime expected = DateTime.MaxValue;
         string expectedString = expected.ToString("g");
@@ -419,7 +419,7 @@ public static class DateTimeTests
     }
 
     [Fact]
-    public static void TestTryParse_TimeDesignators()
+    public static void TryParse_TimeDesignators()
     {
         DateTime result;
         Assert.True(DateTime.TryParse("4/21 5am", new CultureInfo("en-US"), DateTimeStyles.None, out result));
@@ -434,7 +434,7 @@ public static class DateTimeTests
     }
 
     [Fact]
-    public static void TestParseExact_String_String_FormatProvider()
+    public static void ParseExact_String_String_FormatProvider()
     {
         DateTime expected = DateTime.MaxValue;
         string expectedString = expected.ToString("G");
@@ -444,7 +444,7 @@ public static class DateTimeTests
     }
 
     [Fact]
-    public static void TestParseExact_String_String_FormatProvider_DateTimeStyles_U()
+    public static void ParseExact_String_String_FormatProvider_DateTimeStyles_U()
     {
         DateTime expected = DateTime.MaxValue;
         string expectedString = expected.ToString("u");
@@ -454,7 +454,7 @@ public static class DateTimeTests
     }
 
     [Fact]
-    public static void TestParseExact_String_String_FormatProvider_DateTimeStyles_G()
+    public static void ParseExact_String_String_FormatProvider_DateTimeStyles_G()
     {
         DateTime expected = DateTime.MaxValue;
         string expectedString = expected.ToString("g");
@@ -464,7 +464,7 @@ public static class DateTimeTests
     }
 
     [Fact]
-    public static void TestParseExact_String_String_FormatProvider_DateTimeStyles_O()
+    public static void ParseExact_String_String_FormatProvider_DateTimeStyles_O()
     {
         DateTime expected = DateTime.MaxValue;
         string expectedString = expected.ToString("o");
@@ -474,7 +474,7 @@ public static class DateTimeTests
     }
 
     [Fact]
-    public static void TestParseExact_String_String_FormatProvider_DateTimeStyles_CustomFormatProvider()
+    public static void ParseExact_String_String_FormatProvider_DateTimeStyles_CustomFormatProvider()
     {
         var formatter = new MyFormatter();
         string dateBefore = DateTime.Now.ToString();
@@ -484,7 +484,7 @@ public static class DateTimeTests
     }
 
     [Fact]
-    public static void TestParseExact_String_StringArray_FormatProvider_DateTimeStyles()
+    public static void ParseExact_String_StringArray_FormatProvider_DateTimeStyles()
     {
         DateTime expected = DateTime.MaxValue;
         string expectedString = expected.ToString("g");
@@ -495,7 +495,7 @@ public static class DateTimeTests
     }
 
     [Fact]
-    public static void TestTryParseExact_String_String_FormatProvider_DateTimeStyles_NullFormatProvider()
+    public static void TryParseExact_String_String_FormatProvider_DateTimeStyles_NullFormatProvider()
     {
         DateTime expected = DateTime.MaxValue;
         string expectedString = expected.ToString("g");
@@ -506,7 +506,7 @@ public static class DateTimeTests
     }
 
     [Fact]
-    public static void TestTryParseExact_String_StringArray_FormatProvider_DateTimeStyles()
+    public static void TryParseExact_String_StringArray_FormatProvider_DateTimeStyles()
     {
         DateTime expected = DateTime.MaxValue;
         string expectedString = expected.ToString("g");
@@ -517,7 +517,7 @@ public static class DateTimeTests
         Assert.Equal(expectedString, result.ToString("g"));
     }
 
-    public static void TestParseExact_EscapedSingleQuotes()
+    public static void ParseExact_EscapedSingleQuotes()
     {
         var formatInfo = DateTimeFormatInfo.GetInstance(new CultureInfo("mt-MT"));
         const string format = @"dddd, d' ta\' 'MMMM yyyy";
@@ -537,7 +537,7 @@ public static class DateTimeTests
     [InlineData("sr-Latn-ME")]
     [InlineData("sr-Latn-RS")]
     [InlineData("sr-Latn-XK")]
-    public static void TestParse_SpecialCultures(string cultureName)
+    public static void Parse_SpecialCultures(string cultureName)
     {
         // Test DateTime parsing with cultures which has the date separator and time separator are same
         CultureInfo cultureInfo;
@@ -600,7 +600,7 @@ public static class DateTimeTests
     }
 
     [Fact]
-    public static void TestGetDateTimeFormats()
+    public static void GetDateTimeFormats()
     {
         var allStandardFormats = new char[]
         {
@@ -632,7 +632,7 @@ public static class DateTimeTests
     }
 
     [Fact]
-    public static void TestGetDateTimeFormats_FormatSpecifier_InvalidFormat()
+    public static void GetDateTimeFormats_FormatSpecifier_InvalidFormat()
     {
         var dateTime = new DateTime(2009, 7, 28, 5, 23, 15);
         Assert.Throws<FormatException>(() => dateTime.GetDateTimeFormats('x')); // No such format

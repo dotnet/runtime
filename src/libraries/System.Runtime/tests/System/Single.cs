@@ -10,14 +10,14 @@ using Xunit;
 public static class SingleTests
 {
     [Fact]
-    public static void TestCtor_Empty()
+    public static void Ctor_Empty()
     {
         var f = new float();
         Assert.Equal(0, f);
     }
 
     [Fact]
-    public static void TestCtor_Value()
+    public static void Ctor_Value()
     {
         float f = 41;
         Assert.Equal(41, f);
@@ -27,19 +27,19 @@ public static class SingleTests
     }
 
     [Fact]
-    public static void TestMaxValue()
+    public static void MaxValue()
     {
         Assert.Equal((float)3.40282346638528859e+38, float.MaxValue);
     }
 
     [Fact]
-    public static void TestMinValue()
+    public static void MinValue()
     {
         Assert.Equal((float)-3.40282346638528859e+38, float.MinValue);
     }
 
     [Fact]
-    public static void TestEpsilon()
+    public static void Epsilon()
     {
         Assert.Equal((float)1.4e-45, float.Epsilon);
     }
@@ -49,13 +49,13 @@ public static class SingleTests
     [InlineData(float.NegativeInfinity, true)]
     [InlineData(float.NaN, false)]
     [InlineData(0.0, false)]
-    public static void TestIsInfinity(float f, bool expected)
+    public static void IsInfinity(float f, bool expected)
     {
         Assert.Equal(expected, float.IsInfinity(f));
     }
 
     [Fact]
-    public static void TestNaN()
+    public static void NaN()
     {
         Assert.Equal((float)0.0 / (float)0.0, float.NaN);
     }
@@ -65,13 +65,13 @@ public static class SingleTests
     [InlineData(float.PositiveInfinity, false)]
     [InlineData(float.NaN, true)]
     [InlineData(0.0, false)]
-    public static void TestIsNaN(float f, bool expected)
+    public static void IsNaN(float f, bool expected)
     {
         Assert.Equal(expected, float.IsNaN(f));
     }
 
     [Fact]
-    public static void TestNegativeInfinity()
+    public static void NegativeInfinity()
     {
         Assert.Equal((float)-1.0 / (float)0.0, float.NegativeInfinity);
     }
@@ -81,13 +81,13 @@ public static class SingleTests
     [InlineData(float.PositiveInfinity, false)]
     [InlineData(float.NaN, false)]
     [InlineData(0.0, false)]
-    public static void TestIsNegativeInfinity(float f, bool expected)
+    public static void IsNegativeInfinity(float f, bool expected)
     {
         Assert.Equal(expected, float.IsNegativeInfinity(f));
     }
 
     [Fact]
-    public static void TestPositiveInfinity()
+    public static void PositiveInfinity()
     {
         Assert.Equal((float)1.0 / (float)0.0, float.PositiveInfinity);
     }
@@ -97,7 +97,7 @@ public static class SingleTests
     [InlineData(float.NegativeInfinity, false)]
     [InlineData(float.NaN, false)]
     [InlineData(0.0, false)]
-    public static void TestIsPositiveInfinity(float f, bool expected)
+    public static void IsPositiveInfinity(float f, bool expected)
     {
         Assert.Equal(expected, float.IsPositiveInfinity(f));
     }
@@ -114,7 +114,7 @@ public static class SingleTests
     [InlineData(float.NaN, float.NaN, 0)]
     [InlineData(float.NaN, (float)0, -1)]
     [InlineData((float)234, null, 1)]
-    public static void TestCompareTo(float f1, object value, int expected)
+    public static void CompareTo(float f1, object value, int expected)
     {
         if (value is float)
         {
@@ -156,7 +156,7 @@ public static class SingleTests
     }
 
     [Fact]
-    public static void TestCompareTo_Invalid()
+    public static void CompareTo_ObjectNotFloat_ThrowsArgumentException()
     {
         IComparable comparable = (float)234;
         Assert.Throws<ArgumentException>(null, () => comparable.CompareTo((double)234)); // Obj is not a float
@@ -170,7 +170,7 @@ public static class SingleTests
     [InlineData(float.NaN, float.NaN, true)]
     [InlineData((float)789, (double)789, false)]
     [InlineData((float)789, "789", false)]
-    public static void TestEquals(float f1, object value, bool expected)
+    public static void Equals(float f1, object value, bool expected)
     {
         if (value is float)
         {
@@ -238,7 +238,7 @@ public static class SingleTests
 
     [Theory]
     [MemberData(nameof(ToString_TestData))]
-    public static void TestToString(float f, string format, IFormatProvider provider, string expected)
+    public static void ToString(float f, string format, IFormatProvider provider, string expected)
     {
         bool isDefaultProvider = (provider == null || provider == NumberFormatInfo.CurrentInfo);
         if (string.IsNullOrEmpty(format) || format.ToUpperInvariant() == "G")
@@ -262,7 +262,7 @@ public static class SingleTests
     }
 
     [Fact]
-    public static void TestToString_Invalid()
+    public static void ToString_InvalidFormat_ThrowsFormatException()
     {
         float f = 123;
         Assert.Throws<FormatException>(() => f.ToString("Y")); // Invalid format
@@ -316,7 +316,7 @@ public static class SingleTests
 
     [Theory]
     [MemberData(nameof(Parse_Valid_TestData))]
-    public static void TestParse(string value, NumberStyles style, IFormatProvider provider, float expected)
+    public static void Parse(string value, NumberStyles style, IFormatProvider provider, float expected)
     {
         float f;
         // If no style is specified, use the (String) or (String, IFormatProvider) overload
@@ -375,7 +375,7 @@ public static class SingleTests
 
     [Theory]
     [MemberData(nameof(Parse_Invalid_TestData))]
-    public static void TestParse_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
+    public static void Parse_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
     {
         float f;
         // If no style is specified, use the (String) or (String, IFormatProvider) overload

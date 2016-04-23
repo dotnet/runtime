@@ -9,7 +9,7 @@ using Xunit;
 public static class PathTooLongExceptionInteropTests
 {
     [Fact]
-    public static void TestFrom_HR()
+    public static void From_HR()
     {
         int hr = HResults.COR_E_PATHTOOLONG;
         PathTooLongException exception = Marshal.GetExceptionForHR(hr) as PathTooLongException;
