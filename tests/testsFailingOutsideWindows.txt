@@ -182,3 +182,4 @@ GC/Features/SustainedLowLatency/sustainedlowlatency_race_reverse/sustainedlowlat
 GC/Features/SustainedLowLatency/scenario/scenario.sh
 GC/Features/SustainedLowLatency/sustainedlowlatency_race/sustainedlowlatency_race.sh
 GC/Regressions/dev10bugs/536168/536168/536168.sh
+GC/Stress/Framework/ReliabilityFramework/ReliabilityFramework.sh

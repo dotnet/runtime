@@ -12,15 +12,15 @@ This is a pretty crude implementation. Feel free to improve it!
 
 It has 3 parts:
 
-The stress framework is built from <REPO_ROOT>\tests\src\GC\Stress\Framework and the resulting .exe is in <REPO_ROOT>\binaries\tests\<arch>\<buildtype>\GC\Stress\Framework\ReliabilityFramework.exe.
+The stress framework is built from <REPO_ROOT>\tests\src\GC\Stress\Framework
 
-The tests are built from <REPO_ROOT>\tests\src\GC\Stress\Tests and the resulting .exe's are in <REPO_ROOT>\binaries\tests\<arch>\<buildtype>\GC\Stress\Framework\*.exe.
+The tests are built from <REPO_ROOT>\tests\src\GC\Stress\Tests
 
 The config is at <REPO_ROOT>NDP\clr\tests\src\GC\Stress\testmix_gc.config, this will be copied to the output folder of Framework
 
 3. Running stress
 
-The test .exe's need to be in a directory called Tests next to ReliabilityFramework.exe. So if you keep ReliabilityFramework.exe where it is, you should see the test binaries copied to the <REPO_ROOT>\tests\src\GC\Stress\Framework\Tests.
+The test .exe's need to be in a directory called Tests next to ReliabilityFramework.exe. So if you keep ReliabilityFramework.exe where it is, you should see the test binaries copied to the <TestBin>\GC\Stress\Framework\ReliabilityFramework\Tests.
 
 To run stress:
 
