@@ -14,42 +14,40 @@ namespace System.Net.Http.Functional.Tests
 {
     public class HttpClientMiniStress
     {
-        public static IEnumerable<object[]> StressOptions()
-        {
-            foreach (int numRequests in new[] { 5000 })
-                foreach (int dop in new[] { 1, 32 })
-                    foreach (var completionoption in new[] { HttpCompletionOption.ResponseContentRead, HttpCompletionOption.ResponseHeadersRead })
-                        yield return new object[] { numRequests, dop, completionoption };
-        }
-
-        [OuterLoop]
-        [Theory]
+        [ConditionalTheory(nameof(HttpStressEnabled))] // Too stressful for CI; set "HTTP_STRESS"="1" env var
         [MemberData(nameof(StressOptions))]
         public void SingleClient_ManyRequests(int numRequests, int dop, HttpCompletionOption completionOption)
         {
             string responseText = CreateResponse("abcdefghijklmnopqrstuvwxyz");
             using (var client = new HttpClient())
             {
-                Parallel.For(0, numRequests, new ParallelOptions { MaxDegreeOfParallelism = dop }, _ =>
+                Parallel.For(0, numRequests, new ParallelOptions { MaxDegreeOfParallelism = dop, TaskScheduler = new ThreadPerTaskScheduler() }, _ =>
                 {
                     CreateServerAndMakeRequest(client, completionOption, responseText);
                 });
             }
         }
 
-        [OuterLoop]
-        [Theory]
+        [ConditionalTheory(nameof(HttpStressEnabled))] // Too stressful for CI; set "HTTP_STRESS"="1" env var
         [MemberData(nameof(StressOptions))]
         public void ManyClients_ManyRequests(int numRequests, int dop, HttpCompletionOption completionOption)
         {
             string responseText = CreateResponse("abcdefghijklmnopqrstuvwxyz");
-            Parallel.For(0, numRequests, new ParallelOptions { MaxDegreeOfParallelism = dop }, _ =>
+            Parallel.For(0, numRequests, new ParallelOptions { MaxDegreeOfParallelism = dop, TaskScheduler = new ThreadPerTaskScheduler() }, _ =>
             {
                 using (var client = new HttpClient())
                 {
                     CreateServerAndMakeRequest(client, completionOption, responseText);
                 }
             });
+        }
+
+        public static IEnumerable<object[]> StressOptions()
+        {
+            foreach (int numRequests in new[] { 5000 }) // number of requests
+                foreach (int dop in new[] { 1, 32 }) // number of threads
+                    foreach (var completionoption in new[] { HttpCompletionOption.ResponseContentRead, HttpCompletionOption.ResponseHeadersRead })
+                        yield return new object[] { numRequests, dop, completionoption };
         }
 
         private static void CreateServerAndMakeRequest(HttpClient client, HttpCompletionOption completionOption, string responseText)
@@ -78,7 +76,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ActiveIssue(7962, PlatformID.AnyUnix)]
-        [OuterLoop]
+        [OuterLoop] // could take several seconds under load
         [Fact]
         public void UnreadResponseMessage_Collectible()
         {
@@ -116,5 +114,17 @@ namespace System.Net.Http.Functional.Tests
 
         private static string CreateResponse(string asciiBody) =>
             $"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {asciiBody.Length}\r\n\r\n{asciiBody}\r\n";
+
+        private sealed class ThreadPerTaskScheduler : TaskScheduler
+        {
+            protected override void QueueTask(Task task) =>
+                Task.Factory.StartNew(() => TryExecuteTask(task), CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+
+            protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued) => TryExecuteTask(task);
+
+            protected override IEnumerable<Task> GetScheduledTasks() => null;
+        }
+
+        private static bool HttpStressEnabled => Environment.GetEnvironmentVariable("HTTP_STRESS") == "1";
     }
 }
