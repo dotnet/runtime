@@ -403,7 +403,7 @@ void log_va_msg(const char *fmt, va_list args)
 
     pBuffer[0] = '\n';
     int buffer_start = 1;
-    int pid_len = sprintf_s (&pBuffer[buffer_start], BUFFERSIZE - buffer_start, "[%5d]", GCToOSInterface::GetCurrentThreadIdForLogging());
+    int pid_len = sprintf_s (&pBuffer[buffer_start], BUFFERSIZE - buffer_start, "[%5d]", (uint32_t)GCToOSInterface::GetCurrentThreadIdForLogging());
     buffer_start += pid_len;
     memset(&pBuffer[buffer_start], '-', BUFFERSIZE - buffer_start);
     int msg_len = _vsnprintf(&pBuffer[buffer_start], BUFFERSIZE - buffer_start, fmt, args );
@@ -27041,7 +27041,7 @@ uint32_t gc_heap::bgc_thread_function()
     Thread* current_thread = GetThread();
     BOOL cooperative_mode = TRUE;
     bgc_thread_id.SetToCurrentThread();
-    dprintf (1, ("bgc_thread_id is set to %Ix", GCToOSInterface::GetCurrentThreadIdForLogging()));
+    dprintf (1, ("bgc_thread_id is set to %x", (uint32_t)GCToOSInterface::GetCurrentThreadIdForLogging()));
     //this also indicates that the thread is ready.
     background_gc_create_event.Set();
     while (1)
@@ -35882,7 +35882,6 @@ size_t GCHeap::GetValidGen0MaxSize(size_t seg_size)
 
     if ((gen0size == 0) || !GCHeap::IsValidGen0MaxSize(gen0size))
     {
-#if !defined(FEATURE_REDHAWK)
 #ifdef SERVER_GC
         // performance data seems to indicate halving the size results
         // in optimal perf.  Ask for adjusted gen0 size.
@@ -35914,9 +35913,6 @@ size_t GCHeap::GetValidGen0MaxSize(size_t seg_size)
 #else //SERVER_GC
         gen0size = max((4*GCToOSInterface::GetLargestOnDieCacheSize(TRUE)/5),(256*1024));
 #endif //SERVER_GC
-#else //!FEATURE_REDHAWK
-        gen0size = (256*1024);
-#endif //!FEATURE_REDHAWK
     }
 
     // Generation 0 must never be more than 1/2 the segment size.
