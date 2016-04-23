@@ -720,28 +720,6 @@ namespace System.Linq.Expressions.Tests
             Expression<Predicate<Atom>> d = atom => atom && atom[atom];
         }
 
-        [Theory]
-        [ClassData(typeof(CompilationTypes))]
-        public static void Lambda(bool useInterpreter)
-        {
-            var paramI = Expression.Parameter(typeof(int), "i");
-            var paramJ = Expression.Parameter(typeof(double), "j");
-            var paramK = Expression.Parameter(typeof(decimal), "k");
-            var paramL = Expression.Parameter(typeof(short), "l");
-
-            Expression lambda = (Expression<Func<int, double, decimal, int>>)((int i, double j, decimal k) => i);
-
-            Assert.Equal(typeof(Func<int, double, decimal, Func<int, double, decimal, int>>),
-                Expression.Lambda(lambda, new[] { paramI, paramJ, paramK }).Type);
-
-            lambda = (Expression<Func<int, double, decimal, short, int>>)((int i, double j, decimal k, short l) => i);
-
-            Assert.Equal(typeof(Func<int, double, decimal, short, Func<int, double, decimal, short, int>>),
-                Expression.Lambda(lambda, new[] { paramI, paramJ, paramK, paramL }).Compile(useInterpreter).GetType());
-
-            Assert.False(String.IsNullOrEmpty(lambda.ToString()));
-        }
-
         [Fact]
         public static void Arrays()
         {
@@ -1043,15 +1021,6 @@ namespace System.Linq.Expressions.Tests
             Assert.NotNull(u.Method);
             Assert.Equal(opName, u.Method.Name);
             Assert.Equal(expected, u.Type);
-        }
-
-        [Fact]
-        public static void TestFuncLambda()
-        {
-            ParameterExpression p = Expression.Parameter(typeof(NWindProxy.Customer), "c");
-            Expression body = Expression.PropertyOrField(p, "contactname");
-            LambdaExpression lambda = Expression.Lambda(body, p);
-            Assert.Equal(typeof(Func<NWindProxy.Customer, string>), lambda.Type);
         }
 
         [Fact]
@@ -2958,29 +2927,6 @@ namespace System.Linq.Expressions.Tests
             Expression<Func<int>> lambda = Expression.Lambda<Func<int>>(ie);
             Func<int> d = lambda.Compile(useInterpreter);
             Assert.Equal(6, d());
-        }
-
-        [Theory(Skip = "870811")]
-        [ClassData(typeof(CompilationTypes))]
-        public static void InvokeComputedLambda(bool useInterpreter)
-        {
-            ParameterExpression x = Expression.Parameter(typeof(int), "x");
-            ParameterExpression y = Expression.Parameter(typeof(int), "y");
-            Expression call = Expression.Call(null, typeof(Compiler_Tests).GetMethod("ComputeLambda", BindingFlags.Static | BindingFlags.Public), new Expression[] { y });
-            InvocationExpression ie = Expression.Invoke(call, x);
-            Expression<Func<int, int, int>> lambda = Expression.Lambda<Func<int, int, int>>(ie, x, y);
-
-            Func<int, int, int> d = lambda.Compile(useInterpreter);
-            Assert.Equal(14, d(5, 9));
-            Assert.Equal(40, d(5, 8));
-        }
-
-        public static Expression<Func<int, int>> ComputeLambda(int y)
-        {
-            if ((y & 1) != 0)
-                return x => x + y;
-            else
-                return x => x * y;
         }
 
         [Theory]
