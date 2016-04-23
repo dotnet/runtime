@@ -39,7 +39,7 @@ void GCToOSInterface::Shutdown()
 // current platform. It is indended for logging purposes only.
 // Return:
 //  Numeric id of the current thread or 0 if the 
-uint32_t GCToOSInterface::GetCurrentThreadIdForLogging()
+uint64_t GCToOSInterface::GetCurrentThreadIdForLogging()
 {
     LIMITED_METHOD_CONTRACT;
     return ::GetCurrentThreadId();
