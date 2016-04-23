@@ -170,8 +170,8 @@ private:
 
 struct hostpolicy_init_t
 {
-    std::vector<std::string> cfg_keys;
-    std::vector<std::string> cfg_values;
+    std::vector<std::vector<char>> cfg_keys;
+    std::vector<std::vector<char>> cfg_values;
     pal::string_t deps_file;
     std::vector<pal::string_t> probe_paths;
     pal::string_t fx_dir;
@@ -197,8 +197,8 @@ struct hostpolicy_init_t
         }
         trace::verbose(_X("Reading from host interface version: [0x%04x:%d] to initialize policy version: [0x%04x:%d]"), input->version_hi, input->version_lo, HOST_INTERFACE_LAYOUT_VERSION_HI, HOST_INTERFACE_LAYOUT_VERSION_LO);
 
-        make_stdstr_arr(input->config_keys.len, input->config_keys.arr, &init->cfg_keys);
-        make_stdstr_arr(input->config_values.len, input->config_values.arr, &init->cfg_values);
+        make_clrstr_arr(input->config_keys.len, input->config_keys.arr, &init->cfg_keys);
+        make_clrstr_arr(input->config_values.len, input->config_values.arr, &init->cfg_values);
 
         init->fx_dir = input->fx_dir;
         init->fx_name = input->fx_name;
@@ -224,12 +224,12 @@ private:
         }
     }
 
-    static void make_stdstr_arr(int argc, const pal::char_t** argv, std::vector<std::string>* out)
+    static void make_clrstr_arr(int argc, const pal::char_t** argv, std::vector<std::vector<char>>* out)
     {
-        out->reserve(argc);
+        out->resize(argc);
         for (int i = 0; i < argc; ++i)
         {
-            out->push_back(pal::to_stdstring(argv[i]));
+            pal::to_clrstring(pal::string_t(argv[i]), &(*out)[i]);
         }
     }
 };
