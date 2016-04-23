@@ -284,58 +284,7 @@ namespace System.Net
         #endregion
 
         #region UrlEncode implementation
-
-        private static byte[] UrlEncode(byte[] bytes, int offset, int count, bool alwaysCreateNewReturnValue)
-        {
-            byte[] encoded = UrlEncode(bytes, offset, count);
-
-            return (alwaysCreateNewReturnValue && (encoded != null) && (encoded == bytes))
-                ? (byte[])encoded.Clone()
-                : encoded;
-        }
-
-        private static byte[] UrlEncode(byte[] bytes, int offset, int count)
-        {
-            if (!ValidateUrlEncodingParameters(bytes, offset, count))
-            {
-                return null;
-            }
-
-            int cSpaces = 0;
-            int cUnsafe = 0;
-
-            // count them first
-            for (int i = 0; i < count; i++)
-            {
-                char ch = (char)bytes[offset + i];
-
-                if (ch == ' ')
-                    cSpaces++;
-                else if (!IsUrlSafeChar(ch))
-                    cUnsafe++;
-            }
-
-            // nothing to expand?
-            if (cSpaces == 0 && cUnsafe == 0)
-            {
-                if (0 == offset && bytes.Length == count)
-                {
-                    return bytes;
-                }
-                else
-                {
-                    var subarray = new byte[count];
-                    Buffer.BlockCopy(bytes, offset, subarray, 0, count);
-                    return subarray;
-                }
-            }
-
-            // expand not 'safe' characters into %XX, spaces to +s
-            byte[] expandedBytes = new byte[count + cUnsafe * 2];
-            GetEncodedBytes(bytes, offset, count, expandedBytes);
-            return expandedBytes;
-        }
-
+        
         private static void GetEncodedBytes(byte[] originalBytes, int offset, int count, byte[] expandedBytes)
         {
             int pos = 0;
@@ -428,7 +377,44 @@ namespace System.Net
 
         public static byte[] UrlEncodeToBytes(byte[] value, int offset, int count)
         {
-            return UrlEncode(value, offset, count, true /* alwaysCreateNewReturnValue */);
+            if (!ValidateUrlEncodingParameters(value, offset, count))
+            {
+                return null;
+            }
+
+            int cSpaces = 0;
+            int cUnsafe = 0;
+
+            // count them first
+            for (int i = 0; i < count; i++)
+            {
+                char ch = (char)value[offset + i];
+
+                if (ch == ' ')
+                    cSpaces++;
+                else if (!IsUrlSafeChar(ch))
+                    cUnsafe++;
+            }
+
+            // nothing to expand?
+            if (cSpaces == 0 && cUnsafe == 0)
+            {
+                if (offset == 0 && value.Length == count)
+                {
+                    return (byte[])value.Clone();
+                }
+                else
+                {
+                    var subarray = new byte[count];
+                    Buffer.BlockCopy(value, offset, subarray, 0, count);
+                    return subarray;
+                }
+            }
+
+            // expand not 'safe' characters into %XX, spaces to +s
+            byte[] expandedBytes = new byte[count + cUnsafe * 2];
+            GetEncodedBytes(value, offset, count, expandedBytes);
+            return expandedBytes;
         }
 
 #endregion
@@ -757,10 +743,8 @@ namespace System.Net
                 if (_numBytes > 0)
                     FlushBytes();
 
-                if (_numChars > 0)
-                    return new String(_charBuffer, 0, _numChars);
-                else
-                    return String.Empty;
+                Debug.Assert(_numChars > 0);
+                return new string(_charBuffer, 0, _numChars);
             }
         }
 
