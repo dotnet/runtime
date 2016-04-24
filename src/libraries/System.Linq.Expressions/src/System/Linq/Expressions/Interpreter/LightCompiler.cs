@@ -701,6 +701,11 @@ namespace System.Linq.Expressions.Interpreter
                     throw Error.NotSupported();
                 }
 
+                if (forBinding && fi.IsStatic)
+                {
+                    _instructions.UnEmit(); // Undo having pushed the instance to the stack.
+                }
+
                 EmitThisForMethodCall(value);
 
                 int start = _instructions.Count;
