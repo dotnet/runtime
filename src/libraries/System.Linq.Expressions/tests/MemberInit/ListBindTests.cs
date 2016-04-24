@@ -171,25 +171,58 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<ArgumentException>("member", () => Expression.ListBind(member, Enumerable.Empty<ElementInit>()));
         }
 
-        [Fact]
-        [ActiveIssue(5963)]
-        public void StaticListProperty()
+        [Theory, InlineData(false)]
+        public void StaticListProperty(bool useInterpreter)
         {
             PropertyInfo property = typeof(ListWrapper<int>).GetProperty(nameof(ListWrapper<int>.StaticListProperty));
-            MemberInfo member = typeof(ListWrapper<int>).GetMember(nameof(ListWrapper<int>.StaticListProperty))[0];
-            Assert.Throws<ArgumentException>("member", () => Expression.ListBind(property, new ElementInit[0]));
-            Assert.Throws<ArgumentException>("member", () => Expression.ListBind(property, Enumerable.Empty<ElementInit>()));
-            Assert.Throws<ArgumentException>("member", () => Expression.ListBind(member, new ElementInit[0]));
-            Assert.Throws<ArgumentException>("member", () => Expression.ListBind(member, Enumerable.Empty<ElementInit>()));
+            var exp = Expression.Lambda<Func<ListWrapper<int>>>(
+                Expression.MemberInit(
+                    Expression.New(typeof(ListWrapper<int>)),
+                    Expression.ListBind(
+                        property,
+                        Expression.ElementInit(
+                            typeof(List<int>).GetMethod(nameof(List<int>.Add)),
+                            Expression.Constant(0)
+                            )
+                        )
+                    )
+                );
+
+            Assert.Throws<InvalidProgramException>(() => exp.Compile(useInterpreter));
         }
 
-        [Fact]
-        [ActiveIssue(5963)]
-        public void StaticListField()
+        [Fact, ActiveIssue(5693)]
+        public void StaticListPropertyInterpreted()
         {
-            MemberInfo member = typeof(ListWrapper<int>).GetMember(nameof(ListWrapper<int>.StaticListProperty))[0];
-            Assert.Throws<ArgumentException>("member", () => Expression.ListBind(member, new ElementInit[0]));
-            Assert.Throws<ArgumentException>("member", () => Expression.ListBind(member, Enumerable.Empty<ElementInit>()));
+            // Misbalances stack.
+            StaticListProperty(true);
+        }
+
+        [Theory, InlineData(false)]
+        public void StaticListField(bool useInterpreter)
+        {
+            FieldInfo field = typeof(ListWrapper<int>).GetField(nameof(ListWrapper<int>.StaticListField));
+            var exp = Expression.Lambda<Func<ListWrapper<int>>>(
+                Expression.MemberInit(
+                    Expression.New(typeof(ListWrapper<int>)),
+                    Expression.ListBind(
+                        field,
+                        Expression.ElementInit(
+                            typeof(List<int>).GetMethod(nameof(List<int>.Add)),
+                            Expression.Constant(0)
+                            )
+                        )
+                    )
+                );
+
+            Assert.Throws<InvalidProgramException>(() => exp.Compile(useInterpreter));
+        }
+
+        [Fact, ActiveIssue(5963)]
+        public void StaticListFieldInterpreted()
+        {
+            // Misbalances stack.
+            StaticListField(true);
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
