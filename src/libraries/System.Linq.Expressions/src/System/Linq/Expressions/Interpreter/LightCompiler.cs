@@ -2418,10 +2418,10 @@ namespace System.Linq.Expressions.Interpreter
         {
             var node = (MemberExpression)expr;
 
-            CompileMember(node.Expression, node.Member);
+            CompileMember(node.Expression, node.Member, false);
         }
 
-        private void CompileMember(Expression from, MemberInfo member)
+        private void CompileMember(Expression from, MemberInfo member, bool forBinding)
         {
             FieldInfo fi = member as FieldInfo;
             if (fi != null)
@@ -2457,6 +2457,11 @@ namespace System.Linq.Expressions.Interpreter
                 if (pi != null)
                 {
                     var method = pi.GetGetMethod(true);
+                    if (forBinding && method.IsStatic)
+                    {
+                        throw Error.InvalidProgram();
+                    }
+
                     if (from != null)
                     {
                         EmitThisForMethodCall(from);
@@ -2667,7 +2672,7 @@ namespace System.Linq.Expressions.Interpreter
                     case MemberBindingType.ListBinding:
                         var memberList = (MemberListBinding)binding;
                         _instructions.EmitDup();
-                        CompileMember(null, memberList.Member);
+                        CompileMember(null, memberList.Member, true);
                         CompileListInit(memberList.Initializers);
                         _instructions.EmitPop();
                         break;
@@ -2680,7 +2685,7 @@ namespace System.Linq.Expressions.Interpreter
                             throw Error.CannotAutoInitializeValueTypeMemberThroughProperty(memberMember.Bindings);
                         }
 
-                        CompileMember(null, memberMember.Member);
+                        CompileMember(null, memberMember.Member, true);
                         CompileMemberInit(memberMember.Bindings);
                         _instructions.EmitPop();
                         break;
