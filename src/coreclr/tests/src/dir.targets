@@ -111,10 +111,6 @@
           Condition="'$(GenerateRunScript)' != 'false' And ('$(_WillCLRTestProjectBuild)')"
           DependsOnTargets="GenerateExecutionScriptsInternal" />
 
-  <PropertyGroup>
-      <OutDir>$(BaseOutputPathWithConfig)$(BuildProjectRelativeDir)\</OutDir>
-  </PropertyGroup>
-
   <Target Name="CopyNativeProjectBinaries">
      <ItemGroup>
         <NativeProjectBinaries Include="$(NativeProjectOutputFolder)\**\*.*" />
