@@ -10017,8 +10017,6 @@ is_nesting_type (MonoClass *outer_klass, MonoClass *inner_klass)
 	return FALSE;
 }
 
-static gboolean debug_check;
-
 MonoClass *
 mono_class_get_generic_type_definition (MonoClass *klass)
 {
@@ -10161,9 +10159,6 @@ static gboolean
 can_access_type (MonoClass *access_klass, MonoClass *member_klass)
 {
 	int access_level;
-
-	if (access_klass == member_klass)
-		return TRUE;
 
 	if (access_klass->image->assembly && access_klass->image->assembly->corlib_internal)
 		return TRUE;
@@ -10316,9 +10311,6 @@ mono_method_can_access_method (MonoMethod *method, MonoMethod *called)
 	gboolean res = mono_method_can_access_method_full (method, called, NULL);
 	if (!res) {
 		printf ("FAILED TO VERIFY %s calling %s\n", mono_method_full_name (method, 1), mono_method_full_name (called, 1));
-		debug_check = TRUE;
-		mono_method_can_access_method_full (method, called, NULL);
-		debug_check = FALSE;
 	}
 
 	return res;
@@ -10338,12 +10330,10 @@ mono_method_can_access_method (MonoMethod *method, MonoMethod *called)
 gboolean
 mono_method_can_access_method_full (MonoMethod *method, MonoMethod *called, MonoClass *context_klass)
 {
-	if (debug_check) printf ("CHECKING %s -> %s (%p)\n", mono_method_full_name (method, 1), mono_method_full_name (called, 1), context_klass);
 	MonoClass *access_class = method->klass;
 	MonoClass *member_class = called->klass;
 	int can = can_access_member (access_class, member_class, context_klass, called->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK);
 	if (!can) {
-		if (debug_check) printf ("\tcan_access_member failed\n");
 		MonoClass *nested = access_class->nested_in;
 		while (nested) {
 			can = can_access_member (nested, member_class, context_klass, called->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK);
@@ -10351,18 +10341,13 @@ mono_method_can_access_method_full (MonoMethod *method, MonoMethod *called, Mono
 				break;
 			nested = nested->nested_in;
 		}
-		if (!can && debug_check) printf ("\tcan_access_member nest check failed\n");
 	}
 
 	if (!can)
 		return FALSE;
 
-	if (debug_check) printf ("\ttype checking %s(%p) -> %s(%p)\n", 
-		mono_type_get_full_name (access_class), access_class,
-		mono_type_get_full_name (member_class), member_class);
 	can = can_access_type (access_class, member_class);
 	if (!can) {
-		if (debug_check) printf ("\tcan_access_type check failed\n");
 		MonoClass *nested = access_class->nested_in;
 		while (nested) {
 			can = can_access_type (nested, member_class);
@@ -10370,7 +10355,6 @@ mono_method_can_access_method_full (MonoMethod *method, MonoMethod *called, Mono
 				break;
 			nested = nested->nested_in;
 		}
-		if (!can && debug_check) printf ("\tcan_access_type nest check failed\n");
 	}
 
 	if (!can)
@@ -10378,10 +10362,8 @@ mono_method_can_access_method_full (MonoMethod *method, MonoMethod *called, Mono
 
 	if (called->is_inflated) {
 		MonoMethodInflated * infl = (MonoMethodInflated*)called;
-		if (infl->context.method_inst && !can_access_instantiation (access_class, infl->context.method_inst)) {
-			if (debug_check) printf ("\tginst check failed\n");
+		if (infl->context.method_inst && !can_access_instantiation (access_class, infl->context.method_inst))
 			return FALSE;
-		}
 	}
 		
 	return TRUE;
