@@ -127,7 +127,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(4, func().InnerField.Value);
         }
 
-        [Theory, InlineData(false)]
+        [Theory, ClassData(typeof(CompilationTypes))]
         public void StaticInnerProperty(bool useInterpreter)
         {
             var exp = Expression.Lambda<Func<Outer>>(
@@ -140,13 +140,6 @@ namespace System.Linq.Expressions.Tests
                     )
                 );
             Assert.Throws<InvalidProgramException>(() => exp.Compile(useInterpreter));
-        }
-
-        [Fact, ActiveIssue(5963)]
-        public void StaticInnerPropertyInterpreted()
-        {
-            // Mis-balances stack
-            StaticInnerProperty(true);
         }
 
         [Theory, InlineData(false)]
@@ -203,7 +196,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(8, func().ReadonlyInnerField.Value);
         }
 
-        [Theory, InlineData(false)]
+        [Theory, ClassData(typeof(CompilationTypes))]
         public void StaticReadonlyInnerProperty(bool useInterpreter)
         {
             var exp = Expression.Lambda<Func<Outer>>(
@@ -216,12 +209,6 @@ namespace System.Linq.Expressions.Tests
                     )
                 );
             Assert.Throws<InvalidProgramException>(() => exp.Compile(useInterpreter));
-        }
-
-        [Fact, ActiveIssue(5963)]
-        public void StaticReadonlyInnerPropertyInterpreted()
-        {
-            StaticReadonlyInnerProperty(true);
         }
 
         [Theory, InlineData(false)]

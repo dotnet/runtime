@@ -171,7 +171,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<ArgumentException>("member", () => Expression.ListBind(member, Enumerable.Empty<ElementInit>()));
         }
 
-        [Theory, InlineData(false)]
+        [Theory, ClassData(typeof(CompilationTypes))]
         public void StaticListProperty(bool useInterpreter)
         {
             PropertyInfo property = typeof(ListWrapper<int>).GetProperty(nameof(ListWrapper<int>.StaticListProperty));
@@ -189,13 +189,6 @@ namespace System.Linq.Expressions.Tests
                 );
 
             Assert.Throws<InvalidProgramException>(() => exp.Compile(useInterpreter));
-        }
-
-        [Fact, ActiveIssue(5693)]
-        public void StaticListPropertyInterpreted()
-        {
-            // Misbalances stack.
-            StaticListProperty(true);
         }
 
         [Theory, InlineData(false)]
