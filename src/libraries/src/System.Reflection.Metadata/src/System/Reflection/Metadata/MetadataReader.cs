@@ -67,7 +67,9 @@ namespace System.Reflection.Metadata
         /// <exception cref="PlatformNotSupportedException">The current platform is big-endian.</exception>
         public unsafe MetadataReader(byte* metadata, int length, MetadataReaderOptions options, MetadataStringDecoder utf8Decoder)
         {
-            if (length <= 0)
+            // Do not throw here when length is 0. We'll throw BadImageFormatException later on, so that the caller doesn't need to 
+            // worry about the image (stream) being empty and can handle all image errors by catching BadImageFormatException.
+            if (length < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(length));
             }

@@ -60,6 +60,13 @@ namespace System.Reflection.PortableExecutable.Tests
             new PEReader(new TestStream(canRead: true, canSeek: true, canWrite: false));
         }
 
+        [Fact]
+        public void FromEmptyStream()
+        {
+            Assert.Throws<BadImageFormatException>(() => new PEReader(new MemoryStream(), PEStreamOptions.PrefetchMetadata));
+            Assert.Throws<BadImageFormatException>(() => new PEReader(new MemoryStream(), PEStreamOptions.PrefetchMetadata | PEStreamOptions.PrefetchEntireImage));
+        }
+
         [Fact(Skip = "https://github.com/dotnet/corefx/issues/7996")]
         [ActiveIssue(7996)]
         public void SubStream()
