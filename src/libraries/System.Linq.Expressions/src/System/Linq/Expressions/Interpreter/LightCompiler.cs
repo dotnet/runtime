@@ -661,15 +661,20 @@ namespace System.Linq.Expressions.Interpreter
                 EmitThisForMethodCall(expr);
             }
 
-            CompileMemberAssignment(asVoid, member.Member, node.Right);
+            CompileMemberAssignment(asVoid, member.Member, node.Right, false);
         }
 
-        private void CompileMemberAssignment(bool asVoid, MemberInfo refMember, Expression value)
+        private void CompileMemberAssignment(bool asVoid, MemberInfo refMember, Expression value, bool forBinding)
         {
             PropertyInfo pi = refMember as PropertyInfo;
             if (pi != null)
             {
                 var method = pi.GetSetMethod(true);
+                if (forBinding && method.IsStatic)
+                {
+                    throw Error.InvalidProgram();
+                }
+
                 EmitThisForMethodCall(value);
 
                 int start = _instructions.Count;
@@ -2650,7 +2655,8 @@ namespace System.Linq.Expressions.Interpreter
                         CompileMemberAssignment(
                             true,
                             ((MemberAssignment)binding).Member,
-                            ((MemberAssignment)binding).Expression
+                            ((MemberAssignment)binding).Expression,
+                            true
                         );
                         break;
                     case MemberBindingType.ListBinding:
