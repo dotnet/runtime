@@ -7732,8 +7732,10 @@ public :
 #endif // defined(DEBUG) || defined(LATE_DISASM)
 
 #ifdef DEBUG
-        unsigned        compMethodHashPrivate;
-        unsigned        compMethodHash();
+        // Method hash is logcally const, but computed
+        // on first demand.
+        mutable unsigned compMethodHashPrivate;
+        unsigned         compMethodHash() const;
 #endif
 
 #ifdef PSEUDORANDOM_NOP_INSERTION
