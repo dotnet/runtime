@@ -350,7 +350,7 @@ namespace System.IO {
             // If cancellation was requested, bail early with an already completed task.
             // Otherwise, return a task that represents the Begin/End methods.
             return cancellationToken.IsCancellationRequested
-                        ? Task.FromCancellation<int>(cancellationToken)
+                        ? Task.FromCanceled<int>(cancellationToken)
                         : BeginEndReadAsync(buffer, offset, count);
         }
 
@@ -653,7 +653,7 @@ namespace System.IO {
             // If cancellation was requested, bail early with an already completed task.
             // Otherwise, return a task that represents the Begin/End methods.
             return cancellationToken.IsCancellationRequested
-                        ? Task.FromCancellation(cancellationToken)
+                        ? Task.FromCanceled(cancellationToken)
                         : BeginEndWriteAsync(buffer, offset, count);
         }
 
@@ -854,7 +854,7 @@ namespace System.IO {
                 ValidateCopyToArguments(destination, bufferSize);
                 
                 return cancellationToken.IsCancellationRequested ?
-                    Task.FromCancellation(cancellationToken) :
+                    Task.FromCanceled(cancellationToken) :
                     Task.CompletedTask;
             }
 
@@ -871,7 +871,7 @@ namespace System.IO {
             public override Task FlushAsync(CancellationToken cancellationToken)
             {
                 return cancellationToken.IsCancellationRequested ?
-                    Task.FromCancellation(cancellationToken) :
+                    Task.FromCanceled(cancellationToken) :
                     Task.CompletedTask;
             }
 
@@ -937,7 +937,7 @@ namespace System.IO {
             public override Task WriteAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
                 return cancellationToken.IsCancellationRequested ?
-                    Task.FromCancellation(cancellationToken) :
+                    Task.FromCanceled(cancellationToken) :
                     Task.CompletedTask;
             }
 

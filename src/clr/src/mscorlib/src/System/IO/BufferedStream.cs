@@ -321,7 +321,7 @@ public sealed class BufferedStream : Stream {
     public override Task FlushAsync(CancellationToken cancellationToken) {
 
         if (cancellationToken.IsCancellationRequested)
-            return Task.FromCancellation<Int32>(cancellationToken);
+            return Task.FromCanceled<Int32>(cancellationToken);
 
         EnsureNotClosed();        
 
@@ -661,7 +661,7 @@ public sealed class BufferedStream : Stream {
 
         // Fast path check for cancellation already requested
         if (cancellationToken.IsCancellationRequested)
-            return Task.FromCancellation<Int32>(cancellationToken);
+            return Task.FromCanceled<Int32>(cancellationToken);
 
         EnsureNotClosed();
         EnsureCanRead();
@@ -1071,7 +1071,7 @@ public sealed class BufferedStream : Stream {
 
         // Fast path check for cancellation already requested
         if (cancellationToken.IsCancellationRequested)
-            return Task.FromCancellation<Int32>(cancellationToken); 
+            return Task.FromCanceled<Int32>(cancellationToken); 
 
         EnsureNotClosed();
         EnsureCanWrite();

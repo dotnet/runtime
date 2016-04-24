@@ -282,7 +282,7 @@ namespace System.IO {
         public override Task FlushAsync(CancellationToken cancellationToken) { 
         
             if (cancellationToken.IsCancellationRequested) 
-                return Task.FromCancellation(cancellationToken); 
+                return Task.FromCanceled(cancellationToken); 
 
             try { 
             
@@ -445,7 +445,7 @@ namespace System.IO {
             Contract.EndContractBlock();  // contract validation copied from Read(...) 
       
             if (cancellationToken.IsCancellationRequested)  
-                return Task.FromCancellation<Int32>(cancellationToken); 
+                return Task.FromCanceled<Int32>(cancellationToken); 
         
             try { 
             
@@ -640,7 +640,7 @@ namespace System.IO {
             Contract.EndContractBlock();  // contract validation copied from Write(..) 
                             
             if (cancellationToken.IsCancellationRequested)  
-                return Task.FromCancellation(cancellationToken); 
+                return Task.FromCanceled(cancellationToken); 
          
             try { 
                        
