@@ -142,7 +142,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<InvalidProgramException>(() => exp.Compile(useInterpreter));
         }
 
-        [Theory, InlineData(false)]
+        [Theory, ClassData(typeof(CompilationTypes))]
         public void StaticInnerField(bool useInterpreter)
         {
             var exp = Expression.Lambda<Func<Outer>>(
@@ -155,13 +155,6 @@ namespace System.Linq.Expressions.Tests
                     )
                 );
             Assert.Throws<InvalidProgramException>(() => exp.Compile(useInterpreter));
-        }
-
-        [Fact, ActiveIssue(5963)]
-        public void StaticInnerFieldInterpreted()
-        {
-            // Mis-balances stack
-            StaticInnerField(true);
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
@@ -211,7 +204,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<InvalidProgramException>(() => exp.Compile(useInterpreter));
         }
 
-        [Theory, InlineData(false)]
+        [Theory, ClassData(typeof(CompilationTypes))]
         public void StaticReadonlyInnerField(bool useInterpreter)
         {
             var exp = Expression.Lambda<Func<Outer>>(
@@ -224,12 +217,6 @@ namespace System.Linq.Expressions.Tests
                     )
                 );
             Assert.Throws<InvalidProgramException>(() => exp.Compile(useInterpreter));
-        }
-
-        [Fact, ActiveIssue(5963)]
-        public void StaticReadonlyInnerFieldInterpreted()
-        {
-            StaticReadonlyInnerField(true);
         }
 
         public void WriteOnlyInnerProperty()
