@@ -1825,7 +1825,7 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
     case GT_RSZ:
     case GT_ROL:
     case GT_ROR:
-        genCodeForShift(treeNode->gtGetOp1(), treeNode->gtGetOp2(), treeNode);
+        genCodeForShift(treeNode);
         // genCodeForShift() calls genProduceReg()
         break;
 
@@ -4247,241 +4247,131 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
     return ins;
 }
 
-/** Generates the code sequence for a GenTree node that
- * represents a bit shift or rotate operation (<<, >>, >>>, rol, ror).
- *
- * Arguments: operand:  the value to be shifted or rotated by shiftBy bits.
- *            shiftBy:  the number of bits to shift or rotate the operand.
- *            parent:   the actual bitshift node (that specifies the
- *                      type of bitshift to perform.
- *
- * Preconditions:    a) All GenTrees are register allocated.
- *                   b) Either shiftBy is a contained constant or
- *                      it's an expression sitting in RCX.
- */
-void CodeGen::genCodeForShift(GenTreePtr operand, GenTreePtr shiftBy,
-                              GenTreePtr parent)
+
+//------------------------------------------------------------------------
+// genCodeForShift: Generates the code sequence for a GenTree node that
+// represents a bit shift or rotate operation (<<, >>, >>>, rol, ror).
+//
+// Arguments:
+//    tree - the bit shift node (that specifies the type of bit shift to perform).
+//
+// Assumptions:
+//    a) All GenTrees are register allocated.
+//    b) The shift-by-amount in tree->gtOp.gtOp2 is either a contained constant or
+//       it's a register-allocated expression. If it is in a register that is
+//       not RCX, it will be moved to RCX (so RCX better not be in use!).
+//
+void CodeGen::genCodeForShift(GenTreePtr tree)
 {
-    var_types targetType = parent->TypeGet();
-    genTreeOps oper = parent->OperGet();
-    instruction ins = genGetInsForOper(oper, targetType);
-    GenTreePtr actualOperand = operand->gtSkipReloadOrCopy();
-    
-    bool isRMW = parent->gtOp.gtOp1->isContained();
-    assert(parent->gtRegNum != REG_NA || isRMW);
+    // Only the non-RMW case here.
+    assert(tree->OperIsShiftOrRotate());
+    assert(!tree->gtOp.gtOp1->isContained());
+    assert(tree->gtRegNum != REG_NA);
 
-    regNumber operandReg = REG_NA;
-    regNumber indexReg = REG_NA;
-    int offset  = 0;
-    ssize_t disp = 0;
-    emitAttr attr = EA_UNKNOWN;
-    bool isClsVarAddr = (operand->OperGet() == GT_CLS_VAR_ADDR);
-    bool isLclVarAddr = (operand->OperGet() == GT_LCL_VAR_ADDR);
-    bool isCnsIntOrIAndFitsWithinAddrBase = false;
+    genConsumeOperands(tree->AsOp());
 
-    if (!isRMW)
-    {
-        genConsumeOperands(parent->AsOp());
-        operandReg = operand->gtRegNum;
-    }
-    else
-    {
-        targetType = parent->gtOp.gtOp1->TypeGet();
-        attr = EA_ATTR(genTypeSize(targetType));
+    var_types targetType = tree->TypeGet();
+    instruction ins = genGetInsForOper(tree->OperGet(), targetType);
 
-        if (actualOperand->OperGet() == GT_LCL_VAR)
-        {
-            operandReg = operand->gtRegNum;
-        }
-        else if (actualOperand->OperGet() == GT_LEA)
-        {
-            operandReg = actualOperand->gtOp.gtOp1->gtRegNum;
-            GenTreeAddrMode* addrMode = actualOperand->AsAddrMode();
-            offset = addrMode->gtOffset;
-            if(addrMode->Index() != nullptr)
-            {
-                indexReg = addrMode->Index()->gtRegNum;
+    GenTreePtr operand = tree->gtGetOp1();
+    regNumber operandReg = operand->gtRegNum;
 
-                // GT_LEA with an indexReg is not supported for shift by immediate
-                assert(!shiftBy->isContainedIntOrIImmed());
-            }
-        }
-        else if (actualOperand->IsCnsIntOrI())
-        {
-            GenTreeIntConCommon* intCon = actualOperand->AsIntConCommon();
-            if (actualOperand->isContained())
-            {
-                // Contained absolute address should fit within addr base
-                assert(intCon->FitsInAddrBase(compiler));
-
-                // Don't expect to see GT_COPY or GT_RELOAD
-                assert(operand == actualOperand);
-
-                isCnsIntOrIAndFitsWithinAddrBase = true;
-                disp = intCon->IconValue(); 
-
-                if (intCon->AddrNeedsReloc(compiler))
-                {
-                    attr = EA_SET_FLG(attr, EA_DSP_RELOC_FLG);
-                }
-            }
-            else
-            {
-                operandReg = operand->gtRegNum;
-            }
-        }
-        else 
-        {
-            // The only other supported operands for RMW are GT_CLS_VAR_ADDR and GT_LCL_VAR_ADDR
-            assert(actualOperand->OperGet() == GT_CLS_VAR_ADDR || actualOperand->OperGet() == GT_LCL_VAR_ADDR);
-
-            // We don't expect to see GT_COPY or GT_RELOAD for GT_CLS_VAR_ADDR and GT_LCL_VAR_ADDR
-            // so 'actualOperand' should be the same as 'operand' 
-            assert(operand == actualOperand);
-        }        
-    }
-        
+    GenTreePtr shiftBy = tree->gtGetOp2();
     if (shiftBy->isContainedIntOrIImmed())
     {
+        // First, move the operand to the destination register and
+        // later on perform the shift in-place.
+        // (LSRA will try to avoid this situation through preferencing.)
+        if (tree->gtRegNum != operandReg)
+        {
+            inst_RV_RV(INS_mov, tree->gtRegNum, operandReg, targetType);
+        }
+
         int shiftByValue = (int)shiftBy->AsIntConCommon()->IconValue();
-
-        if (!isRMW)
-        {
-            // First, move the operand to the destination register and
-            // later on perform the shift in-place.
-            // (LSRA will try to avoid this situation through preferencing.)
-            if (parent->gtRegNum != operandReg)
-            {
-                inst_RV_RV(INS_mov, parent->gtRegNum, operandReg, targetType);
-            }
-
-            inst_RV_SH(ins, emitTypeSize(parent), parent->gtRegNum, shiftByValue);
-        }
-        else
-        {
-            if ((isClsVarAddr || isLclVarAddr) && shiftByValue == 1)
-            {   
-                switch (ins)
-                {
-                case INS_sar:
-                    ins = INS_sar_1;
-                    break;
-                case INS_shl:
-                    ins = INS_shl_1;
-                    break;
-                case INS_shr:
-                    ins = INS_shr_1;
-                    break;
-                case INS_rol:
-                    ins = INS_rol_1;
-                    break;
-                case INS_ror:
-                    ins = INS_ror_1;
-                    break;
-                default:
-                    // leave 'ins' unchanged
-                    break;
-                }
-
-                if (isClsVarAddr)
-                {
-                getEmitter()->emitIns_C(ins, attr, operand->gtClsVar.gtClsVarHnd, 0);
-            }
-            else
-            {
-                    getEmitter()->emitIns_S(ins, attr, operand->gtLclVarCommon.gtLclNum, 0);
-                }
-            }
-            else
-            {
-                switch (ins)
-                {
-                case INS_sar:
-                    ins = INS_sar_N;
-                    break;
-                case INS_shl:
-                    ins = INS_shl_N;
-                    break;
-                case INS_shr:
-                    ins = INS_shr_N;
-                    break;
-                case INS_rol:
-                    ins = INS_rol_N;
-                    break;
-                case INS_ror:
-                    ins = INS_ror_N;
-                    break;
-                default:
-                    // leave 'ins' unchanged
-                    break;
-                }
-                if (isClsVarAddr)
-                {
-                    getEmitter()->emitIns_C_I(ins, attr, operand->gtClsVar.gtClsVarHnd, 0, shiftByValue);
-                } 
-                else if (isLclVarAddr)
-                {
-                    getEmitter()->emitIns_S(ins, attr, operand->gtLclVarCommon.gtLclNum, 0);
-                }
-                else if (isCnsIntOrIAndFitsWithinAddrBase)
-                {
-                    getEmitter()->emitIns_I_AI(ins, attr, shiftByValue, disp);
-                }
-                else
-                {
-                    getEmitter()->emitIns_I_AR(ins, attr, shiftByValue, operandReg, offset);
-                }
-            }
-
-        }
+        inst_RV_SH(ins, emitTypeSize(tree), tree->gtRegNum, shiftByValue);
     }
     else
     {
-        // We must have the number of bits to shift
-        // stored in ECX, since we constrained this node to
-        // sit in ECX, in case this didn't happen, LSRA expects
-        // the code generator to move it since it's a single
+        // We must have the number of bits to shift stored in ECX, since we constrained this node to
+        // sit in ECX. In case this didn't happen, LSRA expects the code generator to move it since it's a single
         // register destination requirement.
         regNumber shiftReg = shiftBy->gtRegNum;
         if (shiftReg != REG_RCX)
         {
             // Issue the mov to RCX:
             inst_RV_RV(INS_mov, REG_RCX, shiftReg, shiftBy->TypeGet());
-            shiftReg = REG_RCX;
         }
 
         // The operand to be shifted must not be in ECX
         noway_assert(operandReg != REG_RCX);
 
-        if (isRMW)
+        if (tree->gtRegNum != operandReg)
         {
-            if (isClsVarAddr)
-            {
-                getEmitter()->emitIns_C_R(ins, attr, operand->gtClsVar.gtClsVarHnd, shiftReg, 0);
-            }
-            else if (isLclVarAddr)
-            {
-                getEmitter()->emitIns_S_R(ins, attr, shiftReg, operand->gtLclVarCommon.gtLclNum, 0);
-            }
-            else if (isCnsIntOrIAndFitsWithinAddrBase)
-            {
-                getEmitter()->emitIns_AI_R(ins, attr, shiftReg, disp);
-            }
-            else
-            {
-                getEmitter()->emitIns_AR_R(ins, attr, indexReg, operandReg, (int) offset);
-            }
+            inst_RV_RV(INS_mov, tree->gtRegNum, operandReg, targetType);
+        }
+        inst_RV_CL(ins, tree->gtRegNum, targetType);
+    }
+
+    genProduceReg(tree);
+}
+
+
+//------------------------------------------------------------------------
+// genCodeForShiftRMW: Generates the code sequence for a GT_STOREIND GenTree node that
+// represents a RMW bit shift or rotate operation (<<, >>, >>>, rol, ror), for example:
+//      GT_STOREIND( AddressTree, GT_SHL( Ind ( AddressTree ), Operand ) )
+//
+// Arguments:
+//    storeIndNode: the GT_STOREIND node.
+//
+void CodeGen::genCodeForShiftRMW(GenTreeStoreInd* storeInd)
+{
+    GenTree* data = storeInd->Data();
+    GenTree* addr = storeInd->Addr();
+
+    assert(data->OperIsShiftOrRotate());
+
+    // This function only handles the RMW case.
+    assert(data->gtOp.gtOp1->isContained());
+    assert(data->gtOp.gtOp1->isIndir());
+    assert(Lowering::IndirsAreEquivalent(data->gtOp.gtOp1, storeInd));
+    assert(data->gtRegNum == REG_NA);
+
+    var_types targetType = data->TypeGet();
+    genTreeOps oper = data->OperGet();
+    instruction ins = genGetInsForOper(oper, targetType);
+    emitAttr attr = EA_ATTR(genTypeSize(targetType));
+
+    GenTree* shiftBy = data->gtOp.gtOp2;
+    if (shiftBy->isContainedIntOrIImmed())
+    {
+        int shiftByValue = (int)shiftBy->AsIntConCommon()->IconValue();
+        ins = genMapShiftInsToShiftByConstantIns(ins, shiftByValue);
+        if (shiftByValue == 1)
+        {
+            // There is no source in this case, as the shift by count is embedded in the instruction opcode itself.
+            getEmitter()->emitInsRMW(ins, attr, storeInd);
         }
         else
         {
-            if (parent->gtRegNum != operandReg)
-            {
-                inst_RV_RV(INS_mov, parent->gtRegNum, operandReg, targetType);
-            }
-            inst_RV_CL(ins, parent->gtRegNum, targetType);
+            getEmitter()->emitInsRMW(ins, attr, storeInd, shiftBy);
         }
     }
-    genProduceReg(parent);
+    else
+    {
+        // We must have the number of bits to shift stored in ECX, since we constrained this node to
+        // sit in ECX. In case this didn't happen, LSRA expects the code generator to move it since it's a single
+        // register destination requirement.
+        regNumber shiftReg = shiftBy->gtRegNum;
+        if (shiftReg != REG_RCX)
+        {
+            // Issue the mov to RCX:
+            inst_RV_RV(INS_mov, REG_RCX, shiftReg, shiftBy->TypeGet());
+        }
+
+        // The shiftBy operand is implicit, so call the unary version of emitInsRMW.
+        getEmitter()->emitInsRMW(ins, attr, storeInd);
+    }
 }
 
 void CodeGen::genUnspillRegIfNeeded(GenTree *tree)
@@ -5199,16 +5089,16 @@ void CodeGen::genStoreInd(GenTreePtr node)
     GenTreeStoreInd* storeInd = node->AsStoreInd();
     GenTree* data = storeInd->Data();
     GenTree* addr = storeInd->Addr();
-    var_types targetType = node->TypeGet();
+    var_types targetType = storeInd->TypeGet();
 
     assert(!varTypeIsFloating(targetType) || (targetType == data->TypeGet()));
 
-    GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(node, data);
+    GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(storeInd, data);
     if (writeBarrierForm != GCInfo::WBF_NoBarrier)
     {
         // data and addr must be in registers.
         // Consume both registers so that any copies of interfering registers are taken care of.
-        genConsumeOperands(node->AsOp());
+        genConsumeOperands(storeInd->AsOp());
 
         if (genEmitOptimizedGCWriteBarrier(writeBarrierForm, addr, data))
             return;
@@ -5229,11 +5119,11 @@ void CodeGen::genStoreInd(GenTreePtr node)
             inst_RV_RV(INS_mov, REG_ARG_1, data->gtRegNum, data->TypeGet());
         }
 
-        genGCWriteBarrier(node, writeBarrierForm);
+        genGCWriteBarrier(storeInd, writeBarrierForm);
     }
     else
     {
-        bool reverseOps = ((node->gtFlags & GTF_REVERSE_OPS) != 0);
+        bool reverseOps = ((storeInd->gtFlags & GTF_REVERSE_OPS) != 0);
         bool dataIsUnary = false;
         bool isRMWMemoryOp = storeInd->IsRMWMemoryOp();
         GenTree* rmwSrc = nullptr;
@@ -5259,7 +5149,7 @@ void CodeGen::genStoreInd(GenTreePtr node)
                 if (storeInd->IsRMWDstOp1())
                 {
                     rmwDst = data->gtGetOp1();
-                    rmwSrc = data->gtGetOp2();                            
+                    rmwSrc = data->gtGetOp2();
                 }
                 else
                 {
@@ -5279,7 +5169,7 @@ void CodeGen::genStoreInd(GenTreePtr node)
 
             assert(rmwSrc != nullptr);
             assert(rmwDst != nullptr);
-            assert(Lowering::IndirsAreEquivalent(rmwDst, node));
+            assert(Lowering::IndirsAreEquivalent(rmwDst, storeInd));
 
             genConsumeRegs(rmwSrc);
         }
@@ -5298,29 +5188,28 @@ void CodeGen::genStoreInd(GenTreePtr node)
             if (dataIsUnary)
             {
                 // generate code for unary RMW memory ops like neg/not
-                getEmitter()->emitInsRMW(genGetInsForOper(data->OperGet(), data->TypeGet()), emitTypeSize(node), node);
+                getEmitter()->emitInsRMW(genGetInsForOper(data->OperGet(), data->TypeGet()), emitTypeSize(storeInd), storeInd);
             }
             else
             {
-                if (data->OperGet() == GT_LSH ||
-                    data->OperGet() == GT_RSH ||
-                    data->OperGet() == GT_RSZ ||
-                    data->OperGet() == GT_ROL ||
-                    data->OperGet() == GT_ROR)
+                if (data->OperIsShiftOrRotate())
                 {
-                    // generate code for shift RMW memory ops
-                    genCodeForShift(addr, rmwSrc, data);
+                    // Generate code for shift RMW memory ops.
+                    // The data address needs to be op1 (it must be [addr] = [addr] <shift> <amount>, not [addr] = <amount> <shift> [addr]).
+                    assert(storeInd->IsRMWDstOp1());
+                    assert(rmwSrc == data->gtGetOp2());
+                    genCodeForShiftRMW(storeInd);
                 }
                 else
                 {
                     // generate code for remaining binary RMW memory ops like add/sub/and/or/xor
-                    getEmitter()->emitInsRMW(genGetInsForOper(data->OperGet(), data->TypeGet()), emitTypeSize(node), node, rmwSrc);
+                    getEmitter()->emitInsRMW(genGetInsForOper(data->OperGet(), data->TypeGet()), emitTypeSize(storeInd), storeInd, rmwSrc);
                 }
             }
         }
         else
         {
-            getEmitter()->emitInsMov(ins_Store(data->TypeGet()), emitTypeSize(node), node);
+            getEmitter()->emitInsMov(ins_Store(data->TypeGet()), emitTypeSize(storeInd), storeInd);
         }
     }
 }
