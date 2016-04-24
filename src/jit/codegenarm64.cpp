@@ -2560,7 +2560,7 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
     case GT_RSH:
     case GT_RSZ:
     case GT_ROR:
-        genCodeForShift(treeNode->gtGetOp1(), treeNode->gtGetOp2(), treeNode);
+        genCodeForShift(treeNode);
         // genCodeForShift() calls genProduceReg()
         break;
 
@@ -4594,46 +4594,43 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
     return ins;
 }
 
-/** Generates the code sequence for a GenTree node that
- * represents a bit shift operation (<<, >>, >>>).
- *
- * Arguments: operand:  the value to be shifted by shiftBy bits.
- *            shiftBy:  the number of bits to shift the operand.
- *            parent:   the actual bitshift node (that specifies the
- *                      type of bitshift to perform.
- *
- * Preconditions:    a) All GenTrees are register allocated.
- *                   b) Either shiftBy is a contained constant or
- *                      it's an expression sitting in RCX.
- *                   c) The actual bit shift node is not stack allocated
- *                      nor contained (not yet supported).
- */
-void CodeGen::genCodeForShift(GenTreePtr operand,
-                              GenTreePtr shiftBy,
-                              GenTreePtr parent)
+//------------------------------------------------------------------------
+// genCodeForShift: Generates the code sequence for a GenTree node that
+// represents a bit shift or rotate operation (<<, >>, >>>, rol, ror).
+//
+// Arguments:
+//    tree - the bit shift node (that specifies the type of bit shift to perform).
+//
+// Assumptions:
+//    a) All GenTrees are register allocated.
+//
+void CodeGen::genCodeForShift(GenTreePtr tree)
 {
-    var_types targetType = parent->TypeGet();
-    genTreeOps oper = parent->OperGet();
+    var_types targetType = tree->TypeGet();
+    genTreeOps oper = tree->OperGet();
     instruction ins = genGetInsForOper(oper, targetType);
-    emitAttr size = emitTypeSize(parent);
+    emitAttr size = emitTypeSize(tree);
 
-    assert(parent->gtRegNum != REG_NA);
+    assert(tree->gtRegNum != REG_NA);
+
+    GenTreePtr operand = tree->gtGetOp1();
     genConsumeReg(operand);
     
+    GenTreePtr shiftBy = tree->gtGetOp2();
     if (!shiftBy->IsCnsIntOrI())
     {
         genConsumeReg(shiftBy);
-        getEmitter()->emitIns_R_R_R(ins, size, parent->gtRegNum, operand->gtRegNum, shiftBy->gtRegNum);
+        getEmitter()->emitIns_R_R_R(ins, size, tree->gtRegNum, operand->gtRegNum, shiftBy->gtRegNum);
     }
     else
     {
         unsigned immWidth   = emitter::getBitWidth(size);                  // immWidth will be set to 32 or 64
         ssize_t  shiftByImm = shiftBy->gtIntCon.gtIconVal & (immWidth-1);
         
-        getEmitter()->emitIns_R_R_I(ins, size, parent->gtRegNum, operand->gtRegNum, shiftByImm);
+        getEmitter()->emitIns_R_R_I(ins, size, tree->gtRegNum, operand->gtRegNum, shiftByImm);
     }
 
-    genProduceReg(parent);
+    genProduceReg(tree);
 }
 
 // TODO-Cleanup: move to CodeGenCommon.cpp

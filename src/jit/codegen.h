@@ -1143,6 +1143,10 @@ public :
     void    __cdecl     instDisp(instruction ins, bool noNL, const char *fmt, ...);
 #endif
 
+#ifdef _TARGET_XARCH_
+    instruction         genMapShiftInsToShiftByConstantIns(instruction ins, int shiftByValue);
+#endif // _TARGET_XARCH_
+
 };
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX

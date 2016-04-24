@@ -732,7 +732,7 @@ void Compiler::optPrintAssertion(AssertionDsc*  curAssertion, AssertionIndex ass
 
     if (assertionIndex > 0)
     {
-        printf("index=#%02u, mask=", assertionIndex);
+        printf(" index=#%02u, mask=", assertionIndex);
         
         // This is an hack to reuse a known empty set in order to display 
         // a single bit mask.
