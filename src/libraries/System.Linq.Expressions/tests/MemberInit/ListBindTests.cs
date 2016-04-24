@@ -191,7 +191,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<InvalidProgramException>(() => exp.Compile(useInterpreter));
         }
 
-        [Theory, InlineData(false)]
+        [Theory, ClassData(typeof(CompilationTypes))]
         public void StaticListField(bool useInterpreter)
         {
             FieldInfo field = typeof(ListWrapper<int>).GetField(nameof(ListWrapper<int>.StaticListField));
@@ -209,13 +209,6 @@ namespace System.Linq.Expressions.Tests
                 );
 
             Assert.Throws<InvalidProgramException>(() => exp.Compile(useInterpreter));
-        }
-
-        [Fact, ActiveIssue(5963)]
-        public void StaticListFieldInterpreted()
-        {
-            // Misbalances stack.
-            StaticListField(true);
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]

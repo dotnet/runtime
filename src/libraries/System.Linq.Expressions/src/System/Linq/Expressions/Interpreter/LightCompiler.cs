@@ -2428,10 +2428,16 @@ namespace System.Linq.Expressions.Interpreter
             {
                 if (fi.IsLiteral)
                 {
+                    Debug.Assert(!forBinding);
                     _instructions.EmitLoad(fi.GetValue(null), fi.FieldType);
                 }
                 else if (fi.IsStatic)
                 {
+                    if (forBinding)
+                    {
+                        throw Error.InvalidProgram();
+                    }
+
                     if (fi.IsInitOnly)
                     {
                         _instructions.EmitLoad(fi.GetValue(null), fi.FieldType);
@@ -2447,6 +2453,7 @@ namespace System.Linq.Expressions.Interpreter
                     {
                         EmitThisForMethodCall(from);
                     }
+
                     _instructions.EmitLoadField(fi);
                 }
             }
