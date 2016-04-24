@@ -971,19 +971,14 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: new process startup not synchronized. We may not notice if the newly created process exits immediately.", __func__);
 	}
 
-	thr_ret = _wapi_handle_lock_shared_handles ();
-	g_assert (thr_ret == 0);
-	
-	pid = fork ();
-	if (pid == -1) {
-		/* Error */
+	switch (pid = fork ()) {
+	case -1: /* Error */ {
 		SetLastError (ERROR_OUTOFMEMORY);
 		ret = FALSE;
 		fork_failed = TRUE;
-		goto cleanup;
-	} else if (pid == 0) {
-		/* Child */
-		
+		break;
+	}
+	case 0: /* Child */ {
 		if (startup_pipe [0] != -1) {
 			/* Wait until the parent has updated it's internal data */
 			ssize_t _i G_GNUC_UNUSED = read (startup_pipe [0], &dummy, 1);
@@ -1028,56 +1023,59 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 		
 		/* set error */
 		_exit (-1);
+
+		break;
 	}
-	/* parent */
-	
-	process_handle_data = lookup_process_handle (handle);
-	if (!process_handle_data) {
-		g_warning ("%s: error looking up process handle %p", __func__,
-			   handle);
-		_wapi_handle_unref (handle);
-		goto cleanup;
+	default: /* Parent */ {
+		thr_ret = _wapi_handle_lock_shared_handles ();
+		g_assert (thr_ret == 0);
+
+		process_handle_data = lookup_process_handle (handle);
+		if (!process_handle_data) {
+			g_warning ("%s: error looking up process handle %p", __func__, handle);
+			_wapi_handle_unref (handle);
+		} else {
+			process_handle_data->id = pid;
+
+			/* Add our mono_process into the linked list of mono_processes */
+			mono_process = (struct MonoProcess *) g_malloc0 (sizeof (struct MonoProcess));
+			mono_process->pid = pid;
+			mono_process->handle_count = 1;
+			if (mono_os_sem_init (&mono_process->exit_sem, 0) != 0) {
+				/* If we can't create the exit semaphore, we just don't add anything
+				 * to our list of mono processes. Waiting on the process will return 
+				 * immediately. */
+				g_warning ("%s: could not create exit semaphore for process.", strerror (errno));
+				g_free (mono_process);
+			} else {
+				/* Keep the process handle artificially alive until the process
+				 * exits so that the information in the handle isn't lost. */
+				_wapi_handle_ref (handle);
+				mono_process->handle = handle;
+
+				process_handle_data->mono_process = mono_process;
+
+				mono_os_mutex_lock (&mono_processes_mutex);
+				mono_process->next = mono_processes;
+				mono_processes = mono_process;
+				mono_os_mutex_unlock (&mono_processes_mutex);
+			}
+
+			if (process_info != NULL) {
+				process_info->hProcess = handle;
+				process_info->dwProcessId = pid;
+
+				/* FIXME: we might need to handle the thread info some day */
+				process_info->hThread = INVALID_HANDLE_VALUE;
+				process_info->dwThreadId = 0;
+			}
+		}
+
+		_wapi_handle_unlock_shared_handles ();
+
+		break;
 	}
-	
-	process_handle_data->id = pid;
-
-	/* Add our mono_process into the linked list of mono_processes */
-	mono_process = (struct MonoProcess *) g_malloc0 (sizeof (struct MonoProcess));
-	mono_process->pid = pid;
-	mono_process->handle_count = 1;
-	if (mono_os_sem_init (&mono_process->exit_sem, 0) != 0) {
-		/* If we can't create the exit semaphore, we just don't add anything
-		 * to our list of mono processes. Waiting on the process will return 
-		 * immediately. */
-		g_warning ("%s: could not create exit semaphore for process.", strerror (errno));
-		g_free (mono_process);
-	} else {
-		/* Keep the process handle artificially alive until the process
-		 * exits so that the information in the handle isn't lost. */
-		_wapi_handle_ref (handle);
-		mono_process->handle = handle;
-
-		process_handle_data->mono_process = mono_process;
-
-		mono_os_mutex_lock (&mono_processes_mutex);
-		mono_process->next = mono_processes;
-		mono_processes = mono_process;
-		mono_os_mutex_unlock (&mono_processes_mutex);
 	}
-	
-	if (process_info != NULL) {
-		process_info->hProcess = handle;
-		process_info->dwProcessId = pid;
-
-		/* FIXME: we might need to handle the thread info some
-		 * day
-		 */
-		process_info->hThread = INVALID_HANDLE_VALUE;
-		process_info->dwThreadId = 0;
-	}
-
-cleanup:
-	_wapi_handle_unlock_shared_handles ();
 
 	if (fork_failed)
 		_wapi_handle_unref (handle);
