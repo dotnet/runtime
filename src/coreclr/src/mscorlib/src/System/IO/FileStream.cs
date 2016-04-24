@@ -2444,7 +2444,7 @@ namespace System.IO {
                 return base.ReadAsync(buffer, offset, count, cancellationToken);
 
             if (cancellationToken.IsCancellationRequested)
-                return Task.FromCancellation<int>(cancellationToken);
+                return Task.FromCanceled<int>(cancellationToken);
 
             if (_handle.IsClosed)
                 __Error.FileNotOpen();
@@ -2496,7 +2496,7 @@ namespace System.IO {
                 return base.WriteAsync(buffer, offset, count, cancellationToken);
 
             if (cancellationToken.IsCancellationRequested)
-                return Task.FromCancellation(cancellationToken);
+                return Task.FromCanceled(cancellationToken);
 
             if (_handle.IsClosed)
                 __Error.FileNotOpen();
@@ -2659,7 +2659,7 @@ namespace System.IO {
                 return base.FlushAsync(cancellationToken);
 
             if (cancellationToken.IsCancellationRequested)
-                return Task.FromCancellation(cancellationToken);
+                return Task.FromCanceled(cancellationToken);
 
             if (_handle.IsClosed)
                 __Error.FileNotOpen();
