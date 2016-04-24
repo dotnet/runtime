@@ -934,7 +934,9 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                     TestHelper.VerifyRequestMethod(response, method);
                     string responseContent = await response.Content.ReadAsStringAsync();
-                    _output.WriteLine(responseContent);                    
+                    _output.WriteLine(responseContent);
+
+                    Assert.Contains($"\"Content-Length\": \"{request.Content.Headers.ContentLength.Value}\"", responseContent);
                     TestHelper.VerifyResponseBody(
                         responseContent,
                         response.Content.Headers.ContentMD5,
