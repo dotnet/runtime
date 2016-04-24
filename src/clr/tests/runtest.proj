@@ -5,7 +5,7 @@
   <Import Project="helixperftasks.targets" Condition="'$(Performance)'=='true'"/> 
   <PropertyGroup>
     <XunitTestBinBase Condition="'$(XunitTestBinBase)'==''" >$(BaseOutputPathWithConfig)</XunitTestBinBase>
-    <XunitWrapperGeneratedCSDirBase>$(SourceDir)\TestWrappers_$(Platform)_$(Configuration)\</XunitWrapperGeneratedCSDirBase>
+    <XunitWrapperGeneratedCSDirBase>$(XunitTestBinBase)\TestWrappers\</XunitWrapperGeneratedCSDirBase>
     <XunitWrapperOutputIntermediatedDirBase>$(XunitTestBinBase)\Tests\</XunitWrapperOutputIntermediatedDirBase>
     <MSBuildEnableAllPropertyFunctions>1</MSBuildEnableAllPropertyFunctions>
   </PropertyGroup>
@@ -68,7 +68,7 @@ $(_XunitEpilog)
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     
-  <Import Project="%24([MSBuild]::GetDirectoryNameOfFileAbove(%24(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <Import Project="$(SourceDir)dir.props" />
   <PropertyGroup>
     <Configuration Condition=" '%24(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '%24(Platform)' == '' ">AnyCPU</Platform>
@@ -118,8 +118,8 @@ $(_XunitEpilog)
     <ProjectJson>%24(TestWrappersPackagesConfigFileDirectory)project.json</ProjectJson>
     <ProjectLockJson>%24(TestWrappersPackagesConfigFileDirectory)project.lock.json</ProjectLockJson>
   </PropertyGroup>
-  <Import Project="%24([MSBuild]::GetDirectoryNameOfFileAbove(%24(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
-  <Import Project="%24([MSBuild]::GetDirectoryNameOfFileAbove(%24(MSBuildThisFileDirectory), helix.targets))\helix.targets" />
+  <Import Project="$(SourceDir)dir.targets" />
+  <Import Project="$(ProjectDir)helix.targets" />
   <PropertyGroup>
      <OutDir>$(XunitTestBinBase)\$(Category)\</OutDir>
   </PropertyGroup>
