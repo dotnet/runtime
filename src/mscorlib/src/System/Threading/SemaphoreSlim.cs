@@ -607,7 +607,7 @@ namespace System.Threading
 
             // Bail early for cancellation
             if (cancellationToken.IsCancellationRequested)
-                return Task.FromCancellation<bool>(cancellationToken);
+                return Task.FromCanceled<bool>(cancellationToken);
 
             lock (m_lockObj)
             {
