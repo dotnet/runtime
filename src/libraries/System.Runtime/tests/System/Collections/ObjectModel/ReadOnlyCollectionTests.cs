@@ -15,7 +15,7 @@ using Xunit;
 /// we expect are forwarded to the underlying list, and verify that the exceptions we expect
 /// are thrown.
 /// </summary>
-public class ReadOnlyCollection : CollectionTestBase
+public class ReadOnlyCollectionTests : CollectionTestBase
 {
     private static readonly ReadOnlyCollection<int> s_empty = new ReadOnlyCollection<int>(new int[0]);
 
