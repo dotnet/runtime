@@ -169,7 +169,7 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
     }
 
 
-    private int ConvertTimeValueToTestRunTime(string timeValue)
+    public static int ConvertTimeValueToTestRunTime(string timeValue)
     {
         int returnValue;
 
