@@ -191,7 +191,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<ArgumentException>("member", () => Expression.Bind(property, Expression.Constant("")));
         }
 
-        [Theory, InlineData(false)]
+        [Theory, ClassData(typeof(CompilationTypes))]
         public void StaticField(bool useInterpreter)
         {
             MemberInfo member = typeof(PropertyAndFields).GetMember(nameof(PropertyAndFields.StaticStringField))[0];
@@ -207,14 +207,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal("ABC", PropertyAndFields.StaticStringField);
         }
 
-        [Fact, ActiveIssue(5963)]
-        public void StaticFieldInterpreted()
-        {
-            // Mis-balances stack.
-            StaticField(true);
-        }
-
-        [Theory, InlineData(false)]
+        [Theory, ClassData(typeof(CompilationTypes))]
         public void StaticReadonlyField(bool useInterpreter)
         {
             MemberInfo member = typeof(PropertyAndFields).GetMember(nameof(PropertyAndFields.StaticReadonlyStringField))[0];
@@ -227,12 +220,6 @@ namespace System.Linq.Expressions.Tests
             var func = assignToReadonly.Compile(useInterpreter);
             func();
             Assert.Equal("ABC" + useInterpreter, PropertyAndFields.StaticReadonlyStringField);
-        }
-
-        [Fact, ActiveIssue(5963)]
-        public void StaticReadonlyFieldInterpreted()
-        {
-            StaticReadonlyField(true);
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
