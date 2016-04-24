@@ -59,6 +59,13 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Fact]
+        public void GetMetadataReader_EmptyStream()
+        {
+            var provider = MetadataReaderProvider.FromMetadataStream(new MemoryStream(), MetadataStreamOptions.PrefetchMetadata);
+            Assert.Throws<BadImageFormatException>(() => provider.GetMetadataReader());
+        }
+
+        [Fact]
         [ActiveIssue(7996)]
         public void FromMetadataStream_NonZeroStart()
         {
