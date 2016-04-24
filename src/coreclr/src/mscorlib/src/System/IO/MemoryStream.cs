@@ -185,7 +185,7 @@ namespace System.IO {
         public override Task FlushAsync(CancellationToken cancellationToken) {
 
             if (cancellationToken.IsCancellationRequested)
-                return Task.FromCancellation(cancellationToken);
+                return Task.FromCanceled(cancellationToken);
 
             try {
 
@@ -373,7 +373,7 @@ namespace System.IO {
 
             // If cancellation was requested, bail early
             if (cancellationToken.IsCancellationRequested) 
-                return Task.FromCancellation<int>(cancellationToken);
+                return Task.FromCanceled<int>(cancellationToken);
 
             try
             {
@@ -437,7 +437,7 @@ namespace System.IO {
 
             // If cancelled - return fast:
             if (cancellationToken.IsCancellationRequested)
-                return Task.FromCancellation(cancellationToken);
+                return Task.FromCanceled(cancellationToken);
            
             // Avoid copying data from this buffer into a temp buffer:
             //   (require that InternalEmulateRead does not throw,
@@ -596,7 +596,7 @@ namespace System.IO {
 
             // If cancellation is already requested, bail early
             if (cancellationToken.IsCancellationRequested) 
-                return Task.FromCancellation(cancellationToken);
+                return Task.FromCanceled(cancellationToken);
 
             try
             {
