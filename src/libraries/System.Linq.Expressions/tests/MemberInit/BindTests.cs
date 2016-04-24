@@ -145,7 +145,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal("Hello Property", result.StringProperty);
         }
 
-        [Theory, InlineData(false)]
+        [Theory, ClassData(typeof(CompilationTypes))]
         public void ConstantField(bool useInterpreter)
         {
             MemberInfo member = typeof(PropertyAndFields).GetMember(nameof(PropertyAndFields.ConstantString))[0];
@@ -157,13 +157,6 @@ namespace System.Linq.Expressions.Tests
                 );
 
             Assert.Throws<NotSupportedException>(() => attemptAssignToConstant.Compile(useInterpreter));
-        }
-
-        [Fact, ActiveIssue(5963)]
-        public void ConstantFieldInterpreted()
-        {
-            // Mis-balaces stack.
-            ConstantField(true);
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
