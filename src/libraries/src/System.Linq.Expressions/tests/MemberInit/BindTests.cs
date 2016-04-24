@@ -235,7 +235,7 @@ namespace System.Linq.Expressions.Tests
             StaticReadonlyField(true);
         }
 
-        [Theory, InlineData(false)]
+        [Theory, ClassData(typeof(CompilationTypes))]
         public void StaticProperty(bool useInterpreter)
         {
             MemberInfo member = typeof(PropertyAndFields).GetMember(nameof(PropertyAndFields.StaticStringProperty))[0];
@@ -246,13 +246,6 @@ namespace System.Linq.Expressions.Tests
                     )
                 );
             Assert.Throws<InvalidProgramException>(() => assignToStaticProperty.Compile(useInterpreter));
-        }
-
-        [Fact, ActiveIssue(5963)]
-        public void StaticPropertyInterpreted()
-        {
-            // Mis-balances stack.
-            StaticProperty(true);
         }
 
         [Fact]
