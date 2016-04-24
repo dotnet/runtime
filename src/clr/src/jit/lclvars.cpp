@@ -2968,11 +2968,7 @@ void                Compiler::lvaMarkLclRefs(GenTreePtr tree)
 #ifdef _TARGET_XARCH_
     /* Special case: integer shift node by a variable amount */
 
-    if  (tree->gtOper == GT_LSH ||
-         tree->gtOper == GT_RSH ||
-         tree->gtOper == GT_RSZ ||
-         tree->gtOper == GT_ROL ||
-         tree->gtOper == GT_ROR)
+    if  (tree->OperIsShiftOrRotate())
     {
         if  (tree->gtType == TYP_INT)
         {

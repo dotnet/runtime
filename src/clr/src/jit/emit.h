@@ -1511,7 +1511,9 @@ private:
     regNumber            emitInsBinary  (instruction ins, emitAttr attr, GenTree* dst, GenTree* src);
     regNumber            emitInsTernary (instruction ins, emitAttr attr, GenTree* dst, GenTree* src1, GenTree* src2);
     void                 emitInsMov(instruction ins, emitAttr attr, GenTree *node);
-    void                 emitHandleMemOp(GenTree *mem, instrDesc *id, bool isSrc);
+    insFormat            emitMapFmtForIns(insFormat fmt, instruction ins);
+    insFormat            emitMapFmtAtoM(insFormat fmt);
+    void                 emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt, instruction ins);
     void                 spillIntArgRegsToShadowSlots();
 #endif // !LEGACY_BACKEND
 
