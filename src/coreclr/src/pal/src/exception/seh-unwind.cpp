@@ -85,7 +85,7 @@ static void WinContextToUnwindContext(CONTEXT *winContext, unw_context_t *unwCon
 #undef ASSIGN_REG
 }
 #else
-static void UpdateUnwindContextWithWinContext(CONTEXT *winContext, unw_context_t *unwContext)
+static void WinContextToUnwindContext(CONTEXT *winContext, unw_context_t *unwContext)
 {
 #if defined(_ARM_)    
     // Assuming that unw_set_reg() on cursor will point the cursor to the
@@ -245,17 +245,15 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
         CONTEXTSetPC(context, CONTEXTGetPC(context) + 1);
     }
 
-#if UNWIND_CONTEXT_IS_UCONTEXT_T
-    WinContextToUnwindContext(context, &unwContext);
-#else
+#if !UNWIND_CONTEXT_IS_UCONTEXT_T
     st = unw_getcontext(&unwContext);
     if (st < 0)
     {
         return FALSE;
     }
-
-    UpdateUnwindContextWithWinContext(context, &unwContext);
 #endif
+
+    WinContextToUnwindContext(context, &unwContext);
 
     st = unw_init_local(&cursor, &unwContext);
     if (st < 0)
