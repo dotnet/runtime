@@ -233,7 +233,7 @@ for %%X in (powershell.exe) do (set __PSDir=%%~$PATH:X)
 if not defined __PSDir goto :NoPS
 
 :: Validate Powershell version
-set PS_VERSION_LOG=%~dp0ps-version.log
+set "PS_VERSION_LOG=%__LogsDir%\ps-version.log"
 powershell -NoProfile -ExecutionPolicy unrestricted -Command "$PSVersionTable.PSVersion.Major" > %PS_VERSION_LOG%
 set /P PS_VERSION=< %PS_VERSION_LOG%
 if %PS_VERSION% LEQ 2 (
