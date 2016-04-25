@@ -4541,35 +4541,6 @@ mono_thread_force_interruption_checkpoint_noraise (void)
 }
 
 /*
- * mono_thread_get_and_clear_pending_exception:
- *
- *   Return any pending exceptions for the current thread and clear it as a side effect.
- */
-MonoException*
-mono_thread_get_and_clear_pending_exception (void)
-{
-	MonoInternalThread *thread = mono_thread_internal_current ();
-	MonoThread *sys_thread = mono_thread_current ();
-
-	/* The thread may already be stopping */
-	if (thread == NULL)
-		return NULL;
-
-	if (thread->interruption_requested && !is_running_protected_wrapper ()) {
-		return mono_thread_execute_interruption ();
-	}
-	
-	if (sys_thread->pending_exception) {
-		MonoException *exc = sys_thread->pending_exception;
-
-		sys_thread->pending_exception = NULL;
-		return exc;
-	}
-
-	return NULL;
-}
-
-/*
  * mono_set_pending_exception:
  *
  *   Set the pending exception of the current thread to EXC.
