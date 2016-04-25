@@ -224,6 +224,14 @@ namespace NativeFormat
                 return offset;
             }
         }
+
+#ifndef DACCESS_COMPILE
+        const BYTE* GetBlob(uint offset)
+        {
+            EnsureOffsetInRange(offset, 0);
+            return _base + offset;
+        }
+#endif
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
@@ -286,6 +294,13 @@ namespace NativeFormat
 
             return pos + (uint)delta;
         }
+
+#ifndef DACCESS_COMPILE
+        const BYTE * GetBlob()
+        {
+            return _pReader->GetBlob(_offset);
+        }
+#endif
 
         void SkipInteger()
         {

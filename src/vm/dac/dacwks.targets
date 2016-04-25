@@ -80,6 +80,7 @@
         <CppCompile Include="$(ClrSrcDirectory)\vm\typeString.cpp" />
         <CppCompile Include="$(ClrSrcDirectory)\vm\util.cpp" />
         <CppCompile Include="$(ClrSrcDirectory)\vm\vars.cpp" />
+        <CppCompile Include="$(ClrSrcDirectory)\vm\versionresilienthashcode.cpp" />
         <CppCompile Include="$(ClrSrcDirectory)\vm\VirtualCallStub.cpp" />
         <CppCompile Include="$(ClrSrcDirectory)\vm\ThreadPoolRequest.cpp" />
         <CppCompile Include="$(ClrSrcDirectory)\vm\ThreadStatics.cpp" />

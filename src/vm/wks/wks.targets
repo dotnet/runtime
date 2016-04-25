@@ -226,6 +226,7 @@
     <CppCompile Include="$(VmSourcesDir)\validator.cpp" Condition="'$(FeatureCoreclr)' != 'true'"/>
     <CppCompile Include="$(VmSourcesDir)\vars.cpp" />
     <CppCompile Include="$(VmSourcesDir)\verifier.cpp" />
+    <CppCompile Include="$(VmSourcesDir)\versionresilienthashcode.cpp" />
     <CppCompile Include="$(VmSourcesDir)\VirtualCallStub.cpp" />
     <CppCompile Include="$(VmSourcesDir)\WeakReferenceNative.cpp" />
     <CppCompile Include="$(VmSourcesDir)\Win32Threadpool.cpp" />

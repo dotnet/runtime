@@ -90,6 +90,7 @@ set(VM_CROSSGEN_SOURCES
     ../typestring.cpp
     ../util.cpp
     ../vars.cpp
+    ../versionresilienthashcode.cpp
     ../zapsig.cpp
     ../dbggcinfodecoder.cpp
     ../gcinfodecoder.cpp
