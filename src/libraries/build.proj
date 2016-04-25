@@ -59,6 +59,7 @@
     <TraversalBuildDependsOn>
       ValidateAllProjectDependencies;
       BatchRestorePackages;
+      ValidateExactRestore;
       CreateOrUpdateCurrentVersionFile;
       $(TraversalBuildDependsOn);
     </TraversalBuildDependsOn>
@@ -114,6 +115,14 @@
                                        ProhibitFloatingDependencies="$(ProhibitFloatingDependencies)"
                                        ValidationPatterns="@(ValidationPattern)"
                                        UpdateInvalidDependencies="true" />
+  </Target>
+
+  <!-- Task from buildtools that uses lockfiles to validate that packages restored are exactly what were specified. -->
+  <UsingTask TaskName="ValidateExactRestore" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" />
+
+  <Target Name="ValidateExactRestore"
+          Condition="'$(AllowInexactRestore)'!='true'">
+    <ValidateExactRestore ProjectLockJsons="@(ProjectJsonFiles->'%(RootDir)%(Directory)%(Filename).lock.json')" />
   </Target>
 
   <!-- Tasks from buildtools for easy project.json dependency updates -->
