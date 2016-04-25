@@ -14,10 +14,10 @@ endif()
 
 if(CLR_CMAKE_PLATFORM_UNIX)
   add_compile_options(-fPIE)
+  add_definitions(-DNO_NGENPDB)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
 add_definitions(-DFX_VER_INTERNALNAME_STR=crossgen.exe)
-add_definitions(-DNO_NGENPDB)
 
 add_executable_clr(crossgen
   ${crossgen_SOURCES}
