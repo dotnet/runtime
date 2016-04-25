@@ -13,8 +13,9 @@
     <CLSCompliant>false</CLSCompliant>
     <PackageTargetFramework>netstandard1.4</PackageTargetFramework>
     <NuGetTargetMoniker>.NETStandard,Version=v1.4</NuGetTargetMoniker>
-    <PackageTargetRuntime Condition="'$(TargetsUnix)' == 'true'">unix</PackageTargetRuntime>
-    <!--PackageTargetRuntime Condition="'$(TargetsWindows)' == 'true'">win</PackageTargetRuntime-->
+    <!-- Clear PackageTargetRuntime on Windows to package the PlatformNotSupported assembly 
+         without a RID so that it applies in desktop packages.config projects as well -->
+    <PackageTargetRuntime Condition="'$(TargetsWindows)' == 'true'"></PackageTargetRuntime>
     <GeneratePlatformNotSupportedAssembly Condition="'$(TargetsWindows)' == 'true'">true</GeneratePlatformNotSupportedAssembly>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />

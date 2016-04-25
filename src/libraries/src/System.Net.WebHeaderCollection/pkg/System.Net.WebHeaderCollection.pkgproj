@@ -8,9 +8,7 @@
     <ProjectReference Include="..\ref\System.Net.WebHeaderCollection.csproj">
       <SupportedFramework>net46;netcore50;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.Net.WebHeaderCollection.csproj">
-      <OSGroup>Windows_NT</OSGroup>
-    </ProjectReference>
+    <ProjectReference Include="..\src\System.Net.WebHeaderCollection.builds" />
     <InboxOnTargetFramework Include="MonoAndroid10" />
     <InboxOnTargetFramework Include="MonoTouch10" />
     <InboxOnTargetFramework Include="net46" />
