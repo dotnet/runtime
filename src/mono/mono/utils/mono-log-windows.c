@@ -84,7 +84,7 @@ mono_log_open_syslog(const char *ident, void *userData)
  * 	@vargs - Variable argument list
  */
 void
-mono_log_write_syslog(const char *domain, GLogLevelFlags level, const char *format, va_list args)
+mono_log_write_syslog(const char *domain, GLogLevelFlags level, mono_bool hdr, const char *format, va_list args)
 {
 	time_t t;
 	struct tm tod;

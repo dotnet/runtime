@@ -21,7 +21,8 @@ static MonoPrintCallback print_callback, printerr_callback;
 static MonoLogCallback logCallback = {
 	.opener = NULL,
 	.writer = NULL,
-	.closer = NULL
+	.closer = NULL,
+	.header = FALSE
 };
 
 /**
@@ -39,6 +40,7 @@ mono_trace_init (void)
 		mono_trace_set_mask_string(g_getenv("MONO_LOG_MASK"));
 		mono_trace_set_level_string(g_getenv("MONO_LOG_LEVEL"));
 		mono_trace_set_logdest_string(g_getenv("MONO_LOG_DEST"));
+		mono_trace_set_logheader_string(g_getenv("MONO_LOG_HEADER"));
 	}
 }
 
@@ -84,7 +86,7 @@ mono_tracev_inner (GLogLevelFlags level, MonoTraceMask mask, const char *format,
 		logCallback.closer = mono_log_close_logfile;
 		logCallback.opener(NULL, NULL);
 	}
-	logCallback.writer(mono_log_domain, level, format, args);
+	logCallback.writer(mono_log_domain, level, logCallback.header, format, args);
 }
 
 /**
@@ -149,6 +151,28 @@ mono_trace_set_logdest_string (const char *dest)
 		logger.writer = mono_log_write_syslog;
 		logger.closer = mono_log_close_syslog;
 		mono_trace_set_log_handler(&logger, mono_log_domain, NULL);
+	}
+}
+
+/**
+ * mono_trace_set_logheader:
+ *
+ *	@head: Whether we want pid/date/time header on log messages
+ *
+ * Sets the current logging header option.
+ */
+void 
+mono_trace_set_logheader_string(const char *head)
+{
+	MonoLogCallback logger;
+
+	if(level_stack == NULL)
+		mono_trace_init();
+
+	if (head == NULL) {
+		logger.header = FALSE;
+	} else {
+		logger.header = TRUE;
 	}
 }
 
