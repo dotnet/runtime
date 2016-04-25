@@ -89,9 +89,6 @@
 #define WSARecv wapi_WSARecv 
 #define WSASend wapi_WSASend 
 #define GetSystemInfo wapi_GetSystemInfo
-#define QueryPerformanceCounter wapi_QueryPerformanceCounter
-#define QueryPerformanceFrequency wapi_QueryPerformanceFrequency
-#define GetTickCount wapi_GetTickCount 
 #define GetFileVersionInfoSize wapi_GetFileVersionInfoSize 
 #define GetFileVersionInfo wapi_GetFileVersionInfo 
 #define VerQueryValue wapi_VerQueryValue 
