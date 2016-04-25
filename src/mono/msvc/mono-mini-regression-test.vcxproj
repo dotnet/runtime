@@ -108,6 +108,8 @@
     <LocalDebuggerEnvironment>$(MONO_PATH_ENV)
 $(MONO_CFG_DIR_ENV)
 $(MONO_TOOLCHAIN_PATH_ENV)
+$(MONO_LOG_LEVEL_ENV)
+$(MONO_LOG_MASK_ENV)
 $(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
@@ -119,6 +121,8 @@ $(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
     <LocalDebuggerEnvironment>$(MONO_PATH_ENV)
 $(MONO_CFG_DIR_ENV)
 $(MONO_TOOLCHAIN_PATH_ENV)
+$(MONO_LOG_LEVEL_ENV)
+$(MONO_LOG_MASK_ENV)
 $(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -129,6 +133,8 @@ $(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
     <LocalDebuggerEnvironment>$(MONO_PATH_ENV)
 $(MONO_CFG_DIR_ENV)
 $(MONO_TOOLCHAIN_PATH_ENV)
+$(MONO_LOG_LEVEL_ENV)
+$(MONO_LOG_MASK_ENV)
 $(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -139,6 +145,8 @@ $(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
     <LocalDebuggerEnvironment>$(MONO_PATH_ENV)
 $(MONO_CFG_DIR_ENV)
 $(MONO_TOOLCHAIN_PATH_ENV)
+$(MONO_LOG_LEVEL_ENV)
+$(MONO_LOG_MASK_ENV)
 $(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">

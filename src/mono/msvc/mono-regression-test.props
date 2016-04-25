@@ -12,6 +12,8 @@
     <MONO_PATH_ENV>MONO_PATH=$(MONO_PATH)</MONO_PATH_ENV>
     <MONO_CFG_DIR_ENV>MONO_CFG_DIR=$(MONO_CFG_DIR)</MONO_CFG_DIR_ENV>
     <MONO_TOOLCHAIN_PATH_ENV>PATH=$(MONO_TOOLCHAIN_PATH)</MONO_TOOLCHAIN_PATH_ENV>
+    <MONO_LOG_LEVEL_ENV>MONO_LOG_LEVEL=debug</MONO_LOG_LEVEL_ENV>
+    <MONO_LOG_MASK_ENV>MONO_LOG_MASK=asm,aot</MONO_LOG_MASK_ENV>
   </PropertyGroup>
   <ItemGroup>
     <BuildMacro Include="MONO_PATH">
@@ -43,6 +45,12 @@
     </BuildMacro>
     <BuildMacro Include="MONO_TOOLCHAIN_PATH_ENV">
       <Value>$(MONO_TOOLCHAIN_PATH_ENV)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_LOG_LEVEL_ENV">
+      <Value>$(MONO_LOG_LEVEL_ENV)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_LOG_MASK_ENV">
+      <Value>$(MONO_LOG_MASK_ENV)</Value>
     </BuildMacro>
   </ItemGroup>
   <ItemDefinitionGroup />

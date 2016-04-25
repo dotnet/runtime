@@ -5,6 +5,7 @@
 /*.sdf
 /*.opensdf
 /*.opendb
+mono.VC.db
 /ipch/
 /Win32/
 /x64/
