@@ -6441,13 +6441,13 @@ void            CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilo
 
                 genEpilogRestoreRegPair(REG_FP, REG_LR, compiler->lvaOutgoingArgSpaceSize, remainingFrameSz, REG_IP0, nullptr);
             }
-        }
 
-        // Unlike frameType=1 or frameType=2 that restore SP at the end,
-        // frameType=3 already adjusted SP above to delete local frame.
-        // There is at most one alignment slot between SP and where we store the callee-saved registers.
-        calleeSaveSPOffset = calleeSaveSPDelta - calleeSaveSPDeltaUnaligned;
-        assert((calleeSaveSPOffset == 0) || (calleeSaveSPOffset == REGSIZE_BYTES));
+            // Unlike frameType=1 or frameType=2 that restore SP at the end,
+            // frameType=3 already adjusted SP above to delete local frame.
+            // There is at most one alignment slot between SP and where we store the callee-saved registers.
+            calleeSaveSPOffset = calleeSaveSPDelta - calleeSaveSPDeltaUnaligned;
+            assert((calleeSaveSPOffset == 0) || (calleeSaveSPOffset == REGSIZE_BYTES));
+        }
     }
     else
     {
