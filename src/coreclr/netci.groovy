@@ -1509,7 +1509,7 @@ combinedScenarios.each { scenario ->
                         
                         // The Long GC playlist contains all of the tests that are
                         // going to be run.
-                        playlistString = '--playlist ./tests/longRunningGcTests.txt'
+                        playlistString = '--playlist=./tests/longRunningGcTests.txt'
                     }
                     
 
