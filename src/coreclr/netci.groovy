@@ -18,7 +18,8 @@ def static getOSGroup(def os) {
         'Windows_NT':'Windows_NT',
         'FreeBSD':'FreeBSD',
         'CentOS7.1': 'Linux',
-        'OpenSUSE13.2': 'Linux']
+        'OpenSUSE13.2': 'Linux',
+        'LinuxARMEmulator': 'Linux']
     def osGroup = osGroupMap.get(os, null) 
     assert osGroup != null : "Could not find os group for ${os}"
     return osGroupMap[os]
@@ -30,7 +31,7 @@ class Constants {
     // The Windows_NT_BuildOnly OS is a way to speed up the Non-NT builds temporarily by avoiding
     // test execution in the build flow runs.  It generates the exact same build
     // as Windows_NT but without the tests.
-    def static osList = ['Ubuntu', 'Debian8.2', 'OSX', 'Windows_NT', 'Windows_NT_BuildOnly', 'FreeBSD', 'CentOS7.1', 'OpenSUSE13.2', 'Ubuntu15.10', 'RHEL7.2']
+    def static osList = ['Ubuntu', 'Debian8.2', 'OSX', 'Windows_NT', 'Windows_NT_BuildOnly', 'FreeBSD', 'CentOS7.1', 'OpenSUSE13.2', 'Ubuntu15.10', 'RHEL7.2', 'LinuxARMEmulator']
     def static crossList = ['Ubuntu', 'OSX', 'CentOS7.1', 'RHEL7.2', 'Debian8.2', 'OpenSUSE13.2']
     // This is a set of JIT stress modes combined with the set of variables that
     // need to be set to actually enable that stress mode.  The key of the map is the stress mode and
@@ -256,9 +257,8 @@ static void addEmailPublisher(def job, def recipient) {
 // Adds a trigger for the PR build if one is needed.  If isFlowJob is true, then this is the
 // flow job that rolls up the build and test for non-windows OS's.  // If the job is a windows build only job,
 // it's just used for internal builds
-
 // If you add a job with a trigger phrase, please add that phrase to coreclr/Documentation/project-docs/ci-trigger-phrases.md
-def static addTriggers(def job, def branch, def isPR, def architecture, def os, def configuration, def scenario, def isFlowJob, def isWindowsBuildOnlyJob) {
+def static addTriggers(def job, def branch, def isPR, def architecture, def os, def configuration, def scenario, def isFlowJob, def isWindowsBuildOnlyJob, def isLinuxEmulatorBuild) {
     if (isWindowsBuildOnlyJob) {
         return
     }
@@ -788,8 +788,13 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                 case 'Ubuntu':
                     switch(architecture) {
                         case "arm":
-                            // Removing the regex will cause this to run on each PR.
-                            Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build")
+                            if (!isLinuxEmulatorBuild) {
+                                // Removing the regex will cause this to run on each PR.
+                                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build")
+                            }
+                            else {
+                                Utilities.addGithubPRTriggerForBranch(job, branch, "Linux ARM Emulator Build", "(?i).*test\\W+Linux\\W+arm\\W+emulator.*")
+                            }
                             break
                         case "arm64":
                            Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build", "(?i).*test\\W+${os}\\W+${architecture}.*")
@@ -880,7 +885,20 @@ combinedScenarios.each { scenario ->
                         isBuildOnly = true
                         os = 'Windows_NT'
                     }
-                    
+
+                    // If the OS is LinuxARMEmulator and arch is arm, set the isLinuxEmulatorBuild
+                    // flag to true and reset the os to Ubuntu
+                    // The isLinuxEmulatorBuild flag will be used at a later time to execute the right
+                    // set of build commands
+                    // The tuples (LinuxARMEmulator, other architectures) are not handled and control returns
+                    def isLinuxEmulatorBuild = false
+                    if (os == 'LinuxARMEmulator' && architecture == 'arm') {
+                        isLinuxEmulatorBuild = true
+                        os = 'Ubuntu'
+                    } else if (os == 'LinuxARMEmulator') {
+                        return
+                    }
+
                     // Skip totally unimplemented (in CI) configurations.
                     switch (architecture) {
                         case 'arm64':
@@ -1032,7 +1050,7 @@ combinedScenarios.each { scenario ->
 
                     // Add all the standard options
                     Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
-                    addTriggers(newJob, branch, isPR, architecture, os, configuration, scenario, false, isBuildOnly)
+                    addTriggers(newJob, branch, isPR, architecture, os, configuration, scenario, false, isBuildOnly, isLinuxEmulatorBuild)
                 
                     def buildCommands = [];
                     def osGroup = getOSGroup(os)
@@ -1293,14 +1311,33 @@ combinedScenarios.each { scenario ->
                                     Utilities.addArchival(newJob, "bin/Product/**")
                                     break
                                 case 'arm':
-                                    // We don't run the cross build except on Ubuntu
+                                    // All builds for ARM architecture are run on Ubuntu currently
                                     assert os == 'Ubuntu'
-                                    buildCommands += """echo \"Using rootfs in /opt/arm-liux-genueabihf-root\"
-                                        ROOTFS_DIR=/opt/arm-linux-genueabihf-root ./build.sh skipmscorlib arm cross verbose ${lowerConfiguration}"""
+                                    if (!isLinuxEmulatorBuild) {
+                                        buildCommands += """echo \"Using rootfs in /opt/arm-liux-genueabihf-root\"
+                                            ROOTFS_DIR=/opt/arm-linux-genueabihf-root ./build.sh skipmscorlib arm cross verbose ${lowerConfiguration}"""
                                         
-                                    // Basic archiving of the build, no pal tests
-                                    Utilities.addArchival(newJob, "bin/Product/**")
-                                    break
+                                        // Basic archiving of the build, no pal tests
+                                        Utilities.addArchival(newJob, "bin/Product/**")
+                                        break
+                                    }
+                                    else {
+                                        // Remove old copy of coreclr and copy the latest version of coreclr
+                                        // This need to be done as it is not possible to clone the repository inside the chroot jail
+                                        buildCommands += "sudo rm -rf /opt/linux-arm-emulator-root/home/coreclr; sudo mkdir /opt/linux-arm-emulator-root/home/coreclr; sudo cp -R ./ /opt/linux-arm-emulator-root/home/coreclr"
+
+                                        // Chroot into the Linux ARM emulator environment and execute the build
+                                        buildCommands += """echo \"Chrooting into Linux ARM emulator environment\"
+                                                            sudo chroot /opt/linux-arm-emulator-root/ /bin/bash -x <<EOF
+                                                            source /dotnet/setenv/setenv_coreclr.sh
+                                                            cd home/coreclr
+                                                            ./build.sh arm clean verbose skipmscorlib
+EOF"""
+
+                                        // Basic archiving of the build, no pal tests
+                                        Utilities.addArchival(newJob, "/opt/linux-arm-emulator-root/home/coreclr/bin/Product/**")
+                                        break
+                                    }
                                 default:
                                     println("Unknown architecture: ${architecture}");
                                     assert false
@@ -1657,7 +1694,7 @@ build(params + [CORECLR_BUILD: coreclrBuildJob.build.number,
                     }
 
                     Utilities.standardJobSetup(newFlowJob, project, isPR, "*/${branch}")
-                    addTriggers(newFlowJob, branch, isPR, architecture, os, configuration, scenario, true, false)
+                    addTriggers(newFlowJob, branch, isPR, architecture, os, configuration, scenario, true, false, false)
                 } // configuration
             } // os
         } // architecture
