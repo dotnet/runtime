@@ -650,19 +650,6 @@ namespace System.Linq.Expressions.Tests
             Assert.NotNull(v);
         }
 
-        [Fact]
-        public static void ListInit()
-        {
-            NewExpression newExpr = Expression.New(typeof(List<int>));
-            ConstantExpression init1 = Expression.Constant(4, typeof(int));
-            Expression[] inits = new Expression[] { null, init1 };
-
-            Assert.Throws<ArgumentNullException>("argument", () => Expression.ListInit(newExpr, inits));
-
-            ElementInit[] einits = new ElementInit[] { };
-            Assert.Throws<ArgumentException>(() => Expression.ListInit(newExpr, einits));
-        }
-
         public void Add(ref int i)
         {
         }

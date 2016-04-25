@@ -656,13 +656,7 @@ namespace System.Linq.Expressions
         {
             return new ArgumentException(Strings.TypeMissingDefaultConstructor(p0));
         }
-        /// <summary>
-        /// ArgumentException with message like "List initializers must contain at least one initializer"
-        /// </summary>
-        internal static Exception ListInitializerWithZeroMembers()
-        {
-            return new ArgumentException(Strings.ListInitializerWithZeroMembers);
-        }
+
         /// <summary>
         /// ArgumentException with message like "Element initializer method must be named 'Add'"
         /// </summary>

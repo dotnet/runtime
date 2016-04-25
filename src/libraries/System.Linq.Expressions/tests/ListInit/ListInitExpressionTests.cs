@@ -58,21 +58,28 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<ArgumentNullException>("initializers", () => Expression.ListInit(validNew, null, default(IEnumerable<Expression>)));
         }
 
-        [Fact]
-        public void ZeroInitializers()
+        private static IEnumerable<object[]> ZeroInitializerInits()
         {
             var validNew = Expression.New(typeof(List<int>));
-            Assert.Throws<ArgumentException>(null, () => Expression.ListInit(validNew, new Expression[0]));
-            Assert.Throws<ArgumentException>(null, () => Expression.ListInit(validNew, Enumerable.Empty<Expression>()));
-            Assert.Throws<ArgumentException>(null, () => Expression.ListInit(validNew, new ElementInit[0]));
-            Assert.Throws<ArgumentException>(null, () => Expression.ListInit(validNew, Enumerable.Empty<ElementInit>()));
+            yield return new object[] {Expression.ListInit(validNew, new Expression[0])};
+            yield return new object[] {Expression.ListInit(validNew, Enumerable.Empty<Expression>())};
+            yield return new object[] {Expression.ListInit(validNew, new ElementInit[0])};
+            yield return new object[] {Expression.ListInit(validNew, Enumerable.Empty<ElementInit>())};
 
             var validMethod = typeof(List<int>).GetMethod("Add");
-            Assert.Throws<ArgumentException>(null, () => Expression.ListInit(validNew, validMethod, new Expression[0]));
-            Assert.Throws<ArgumentException>(null, () => Expression.ListInit(validNew, validMethod, Enumerable.Empty<Expression>()));
+            yield return new object[] {Expression.ListInit(validNew, validMethod)};
+            yield return new object[] {Expression.ListInit(validNew, validMethod, Enumerable.Empty<Expression>())};
 
-            Assert.Throws<ArgumentException>(null, () => Expression.ListInit(validNew, null, new Expression[0]));
-            Assert.Throws<ArgumentException>(null, () => Expression.ListInit(validNew, null, Enumerable.Empty<Expression>()));
+            yield return new object[] {Expression.ListInit(validNew, null, new Expression[0])};
+            yield return new object[] {Expression.ListInit(validNew, null, Enumerable.Empty<Expression>())};
+        }
+
+        [Theory, PerCompilationType(nameof(ZeroInitializerInits))]
+        public void ZeroInitializers(Expression init, bool useInterpreter)
+        {
+            var exp = Expression.Lambda<Func<List<int>>>(init);
+            var func = exp.Compile(useInterpreter);
+            Assert.Empty(func());
         }
 
         [Fact]
