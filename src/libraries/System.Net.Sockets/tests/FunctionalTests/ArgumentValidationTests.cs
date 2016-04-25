@@ -778,7 +778,7 @@ namespace System.Net.Sockets.Tests
                 // Connect once, to an invalid address, expecting failure
                 //
                 EndPoint ep = new IPEndPoint(IPAddress.Broadcast, 1234);
-                Assert.Throws<SocketException>(() => client.Connect(ep));
+                Assert.ThrowsAny<SocketException>(() => client.Connect(ep));
 
                 //
                 // Connect again, expecting PlatformNotSupportedException
