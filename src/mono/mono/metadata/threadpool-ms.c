@@ -140,10 +140,10 @@ typedef struct {
 	MonoCoopMutex worker_creation_lock;
 
 	gint32 heuristic_completions;
-	gint64 heuristic_sample_start;
-	gint64 heuristic_last_dequeue; // ms
-	gint64 heuristic_last_adjustment; // ms
-	gint64 heuristic_adjustment_interval; // ms
+	guint32 heuristic_sample_start;
+	guint32 heuristic_last_dequeue; // ms
+	guint32 heuristic_last_adjustment; // ms
+	guint32 heuristic_adjustment_interval; // ms
 	ThreadPoolHillClimbing heuristic_hill_climbing;
 	MonoCoopMutex heuristic_lock;
 
@@ -855,7 +855,7 @@ monitor_should_keep_running (void)
 static gboolean
 monitor_sufficient_delay_since_last_dequeue (void)
 {
-	gint64 threshold;
+	guint32 threshold;
 
 	g_assert (threadpool);
 
@@ -893,7 +893,7 @@ monitor_thread (void)
 		mono_gc_set_skip_thread (TRUE);
 
 		do {
-			gint64 ts;
+			guint32 ts;
 			gboolean alerted = FALSE;
 
 			if (mono_runtime_is_shutting_down ())
@@ -1052,7 +1052,7 @@ hill_climbing_get_wave_component (gdouble *samples, guint sample_count, gdouble 
 }
 
 static gint16
-hill_climbing_update (gint16 current_thread_count, guint32 sample_duration, gint32 completions, gint64 *adjustment_interval)
+hill_climbing_update (gint16 current_thread_count, guint32 sample_duration, gint32 completions, guint32 *adjustment_interval)
 {
 	ThreadPoolHillClimbing *hc;
 	ThreadPoolHeuristicStateTransition transition;
@@ -1292,8 +1292,8 @@ heuristic_adjust (void)
 
 	if (mono_coop_mutex_trylock (&threadpool->heuristic_lock) == 0) {
 		gint32 completions = InterlockedExchange (&threadpool->heuristic_completions, 0);
-		gint64 sample_end = mono_msec_ticks ();
-		gint64 sample_duration = sample_end - threadpool->heuristic_sample_start;
+		guint32 sample_end = mono_msec_ticks ();
+		guint32 sample_duration = sample_end - threadpool->heuristic_sample_start;
 
 		if (sample_duration >= threadpool->heuristic_adjustment_interval / 2) {
 			ThreadPoolCounter counter;
@@ -1418,7 +1418,7 @@ gboolean
 mono_threadpool_ms_remove_domain_jobs (MonoDomain *domain, int timeout)
 {
 	gboolean res = TRUE;
-	gint64 end;
+	guint32 start;
 	gpointer sem;
 
 	g_assert (domain);
@@ -1427,12 +1427,13 @@ mono_threadpool_ms_remove_domain_jobs (MonoDomain *domain, int timeout)
 	g_assert (mono_domain_is_unloading (domain));
 
 	if (timeout != -1)
-		end = mono_msec_ticks () + timeout;
+		start = mono_msec_ticks ();
 
 #ifndef DISABLE_SOCKETS
 	mono_threadpool_ms_io_remove_domain_jobs (domain);
 	if (timeout != -1) {
-		if (mono_msec_ticks () > end)
+		timeout -= mono_msec_ticks () - start;
+		if (timeout < 0)
 			return FALSE;
 	}
 #endif
@@ -1451,19 +1452,16 @@ mono_threadpool_ms_remove_domain_jobs (MonoDomain *domain, int timeout)
 	mono_memory_write_barrier ();
 
 	while (domain->threadpool_jobs) {
-		gint64 now;
-
+		MONO_PREPARE_BLOCKING;
+		WaitForSingleObject (sem, timeout);
+		MONO_FINISH_BLOCKING;
 		if (timeout != -1) {
-			now = mono_msec_ticks ();
-			if (now > end) {
+			timeout -= mono_msec_ticks () - start;
+			if (timeout <= 0) {
 				res = FALSE;
 				break;
 			}
 		}
-
-		MONO_PREPARE_BLOCKING;
-		WaitForSingleObject (sem, timeout != -1 ? end - now : timeout);
-		MONO_FINISH_BLOCKING;
 	}
 
 	domain->cleanup_semaphore = NULL;
