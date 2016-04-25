@@ -6,29 +6,32 @@ using System;
 using System.IO;
 using Xunit;
 
-public static class DirectoryNotFoundExceptionTests
+namespace System.IO.Tests
 {
-    [Fact]
-    public static void Ctor_Empty()
+    public static class DirectoryNotFoundExceptionTests
     {
-        var exception = new DirectoryNotFoundException();
-        ExceptionUtility.ValidateExceptionProperties(exception, hResult: HResults.COR_E_DIRECTORYNOTFOUND, validateMessage: false);
-    }
+        [Fact]
+        public static void Ctor_Empty()
+        {
+            var exception = new DirectoryNotFoundException();
+            ExceptionUtility.ValidateExceptionProperties(exception, hResult: HResults.COR_E_DIRECTORYNOTFOUND, validateMessage: false);
+        }
 
-    [Fact]
-    public static void Ctor_String()
-    {
-        string message = "That page was missing from the directory.";
-        var exception = new DirectoryNotFoundException(message);
-        ExceptionUtility.ValidateExceptionProperties(exception, hResult: HResults.COR_E_DIRECTORYNOTFOUND, message: message);
-    }
+        [Fact]
+        public static void Ctor_String()
+        {
+            string message = "That page was missing from the directory.";
+            var exception = new DirectoryNotFoundException(message);
+            ExceptionUtility.ValidateExceptionProperties(exception, hResult: HResults.COR_E_DIRECTORYNOTFOUND, message: message);
+        }
 
-    [Fact]
-    public static void Ctor_String_Exception()
-    {
-        string message = "That page was missing from the directory.";
-        var innerException = new Exception("Inner exception");
-        var exception = new DirectoryNotFoundException(message, innerException);
-        ExceptionUtility.ValidateExceptionProperties(exception, hResult: HResults.COR_E_DIRECTORYNOTFOUND, innerException: innerException, message: message);
+        [Fact]
+        public static void Ctor_String_Exception()
+        {
+            string message = "That page was missing from the directory.";
+            var innerException = new Exception("Inner exception");
+            var exception = new DirectoryNotFoundException(message, innerException);
+            ExceptionUtility.ValidateExceptionProperties(exception, hResult: HResults.COR_E_DIRECTORYNOTFOUND, innerException: innerException, message: message);
+        }
     }
 }
