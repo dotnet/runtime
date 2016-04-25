@@ -30,5 +30,9 @@ typedef struct
 #endif
 } WapiFileTime;
 
+extern gboolean QueryPerformanceCounter(WapiLargeInteger *count);
+extern gboolean QueryPerformanceFrequency(WapiLargeInteger *freq);
+extern guint32 GetTickCount (void);
+
 G_END_DECLS
 #endif /* _WAPI_TIME_H_ */

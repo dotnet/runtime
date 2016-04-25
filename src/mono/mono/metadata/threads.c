@@ -3790,7 +3790,7 @@ mono_threads_abort_appdomain_threads (MonoDomain *domain, int timeout)
 #endif
 
 	abort_appdomain_data user_data;
-	gint64 start_time;
+	guint32 start_time;
 	int orig_timeout = timeout;
 	int i;
 
