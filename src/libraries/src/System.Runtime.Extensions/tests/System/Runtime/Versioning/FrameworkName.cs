@@ -21,6 +21,10 @@ namespace System.Runtime.Versioning.Tests
         public static void ConstructFromString()
         {
             VerifyConstructor(s_testName, s_testNameString, TestIdentifier, s_testVersion, TestProfile);
+
+            string emptyProfileFrameworkName = $"{TestIdentifier},Version=v{s_testVersion}";
+            VerifyConstructor(new FrameworkName(emptyProfileFrameworkName), emptyProfileFrameworkName, TestIdentifier, s_testVersion, string.Empty);
+            VerifyConstructor(new FrameworkName(emptyProfileFrameworkName + ",Profile="), emptyProfileFrameworkName, TestIdentifier, s_testVersion, string.Empty);
         }
 
         [Fact]
