@@ -13,6 +13,7 @@
     <AssemblyName>System.Linq.Expressions.Tests</AssemblyName>
     <RootNamespace>System.Linq.Expressions.Tests</RootNamespace>
     <DefineConstants Condition=" '$(FeatureInterpret)' == 'true' ">$(DefineConstants);FEATURE_INTERPRET</DefineConstants>
+    <KeepAllProjectReferences>true</KeepAllProjectReferences>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
