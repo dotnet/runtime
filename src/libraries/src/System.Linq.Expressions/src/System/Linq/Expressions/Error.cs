@@ -530,7 +530,7 @@ namespace System.Linq.Expressions
             return new ArgumentException(Strings.IncorrectNumberOfArgumentsForMembers);
         }
         /// <summary>
-        /// ArgumentException with message like "Lambda type parameter must be derived from System.Delegate"
+        /// ArgumentException with message like "Lambda type parameter must be derived from System.MulticastDelegate"
         /// </summary>
         internal static Exception LambdaTypeMustBeDerivedFromSystemDelegate()
         {
