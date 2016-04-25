@@ -10309,6 +10309,8 @@
       <Member Name="FromException&lt;TResult&gt;(System.Exception)" />
       <Member Name="FromCanceled(System.Threading.CancellationToken)" />
       <Member Name="FromCanceled&lt;TResult&gt;(System.Threading.CancellationToken)" />
+      <Member Status="ApiFxInternal" Name="FromCancellation(System.Threading.CancellationToken)" />
+      <Member Status="ApiFxInternal" Name="FromCancellation&lt;TResult&gt;(System.Threading.CancellationToken)" />
       <Member Name="Run(System.Action)" />
       <Member Name="Run(System.Action,System.Threading.CancellationToken)" />
       <Member Name="Run&lt;TResult&gt;(System.Func&lt;TResult&gt;)" />
