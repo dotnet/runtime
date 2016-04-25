@@ -3,20 +3,21 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.Xunit.Performance;
-using System;
 
-public class Perf_Char
+namespace System.Tests
 {
-    [Benchmark]
-    public static char Char_ToLower()
+    public class Perf_Char
     {
-        char ret = default(char);
+        [Benchmark]
+        public static char Char_ToLower()
+        {
+            char ret = default(char);
 
-        foreach (var iteration in Benchmark.Iterations)
-            using (iteration.StartMeasurement())
-                ret = Char.ToLower('A');
+            foreach (var iteration in Benchmark.Iterations)
+                using (iteration.StartMeasurement())
+                    ret = Char.ToLower('A');
 
-        return ret;
+            return ret;
+        }
     }
 }
-

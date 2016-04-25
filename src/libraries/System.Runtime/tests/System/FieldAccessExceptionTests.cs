@@ -5,36 +5,39 @@
 using System;
 using Xunit;
 
-public static class FieldAccessExceptionTests
+namespace System.Tests
 {
-    private const int COR_E_FIELDACCESS = unchecked((int)0x80131507);
-
-    [Fact]
-    public static void Ctor_Empty()
+    public static class FieldAccessExceptionTests
     {
-        var exception = new FieldAccessException();
-        Assert.NotEmpty(exception.Message);
-        Assert.Equal(COR_E_FIELDACCESS, exception.HResult);
-    }
+        private const int COR_E_FIELDACCESS = unchecked((int)0x80131507);
 
-    [Fact]
-    public static void Ctor_String()
-    {
-        string message = "Created FieldAccessException";
-        var exception = new FieldAccessException(message);
-        Assert.Equal(message, exception.Message);
-        Assert.Equal(COR_E_FIELDACCESS, exception.HResult);
-    }
+        [Fact]
+        public static void Ctor_Empty()
+        {
+            var exception = new FieldAccessException();
+            Assert.NotEmpty(exception.Message);
+            Assert.Equal(COR_E_FIELDACCESS, exception.HResult);
+        }
 
-    [Fact]
-    public static void Ctor_String_Exception()
-    {
-        string message = "Created FieldAccessException";
-        var innerException = new Exception("Created inner exception");
-        var exception = new FieldAccessException(message, innerException);
-        Assert.Equal(message, exception.Message);
-        Assert.Equal(COR_E_FIELDACCESS, exception.HResult);
-        Assert.Same(innerException, exception.InnerException);
-        Assert.Equal(innerException.HResult, exception.InnerException.HResult);
+        [Fact]
+        public static void Ctor_String()
+        {
+            string message = "Created FieldAccessException";
+            var exception = new FieldAccessException(message);
+            Assert.Equal(message, exception.Message);
+            Assert.Equal(COR_E_FIELDACCESS, exception.HResult);
+        }
+
+        [Fact]
+        public static void Ctor_String_Exception()
+        {
+            string message = "Created FieldAccessException";
+            var innerException = new Exception("Created inner exception");
+            var exception = new FieldAccessException(message, innerException);
+            Assert.Equal(message, exception.Message);
+            Assert.Equal(COR_E_FIELDACCESS, exception.HResult);
+            Assert.Same(innerException, exception.InnerException);
+            Assert.Equal(innerException.HResult, exception.InnerException.HResult);
+        }
     }
 }

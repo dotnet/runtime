@@ -6,14 +6,17 @@ using System.IO;
 using System.Runtime.InteropServices;
 using Xunit;
 
-public static class PathTooLongExceptionInteropTests
+namespace System.IO.Tests
 {
-    [Fact]
-    public static void From_HR()
+    public static class PathTooLongExceptionInteropTests
     {
-        int hr = HResults.COR_E_PATHTOOLONG;
-        PathTooLongException exception = Marshal.GetExceptionForHR(hr) as PathTooLongException;
-        Assert.NotNull(exception);
-        ExceptionUtility.ValidateExceptionProperties(exception, hResult: hr, validateMessage: false);
+        [Fact]
+        public static void From_HR()
+        {
+            int hr = HResults.COR_E_PATHTOOLONG;
+            PathTooLongException exception = Marshal.GetExceptionForHR(hr) as PathTooLongException;
+            Assert.NotNull(exception);
+            ExceptionUtility.ValidateExceptionProperties(exception, hResult: hr, validateMessage: false);
+        }
     }
 }

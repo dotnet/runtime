@@ -4,19 +4,22 @@
 
 using Xunit;
 
-public static class ValueTypeTests
+namespace System.Tests
 {
-    [Fact]
-    public static void ToStringTest()
+    public static class ValueTypeTests
     {
-        object obj = new S();
-        Assert.Equal(obj.ToString(), obj.GetType().ToString());
-        Assert.Equal("ValueTypeTests+S", obj.ToString());
-    }
+        [Fact]
+        public static void ToStringTest()
+        {
+            object obj = new S();
+            Assert.Equal(obj.ToString(), obj.GetType().ToString());
+            Assert.Equal("System.Tests.ValueTypeTests+S", obj.ToString());
+        }
 
-    public struct S
-    {
-        public int x;
-        public int y;
+        public struct S
+        {
+            public int x;
+            public int y;
+        }
     }
 }
