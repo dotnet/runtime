@@ -1694,6 +1694,7 @@ build(params + [CORECLR_BUILD: coreclrBuildJob.build.number,
 """)
                     }
 
+                    setMachineAffinity(newFlowJob, os, architecture)
                     Utilities.standardJobSetup(newFlowJob, project, isPR, "*/${branch}")
                     addTriggers(newFlowJob, branch, isPR, architecture, os, configuration, scenario, true, false, false)
                 } // configuration
