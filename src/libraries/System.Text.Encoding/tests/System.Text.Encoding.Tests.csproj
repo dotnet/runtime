@@ -56,7 +56,6 @@
     <Compile Include="UTF32Encoding\UTF32EncodingGetMaxCharCount.cs" />
     <Compile Include="UTF32Encoding\UTF32EncodingTests.cs" />
     <Compile Include="UTF32Encoding\UTF32EncodingEncode.cs" />
-    <Compile Include="UTF7Encoding\UTF7EncodingEquals.cs" />
     <Compile Include="UTF7Encoding\UTF7EncodingEncode.cs" />
     <Compile Include="UTF7Encoding\UTF7EncodingDecode.cs" />
     <Compile Include="UTF7Encoding\UTF7EncodingGetDecoder.cs" />
@@ -64,6 +63,7 @@
     <Compile Include="UTF7Encoding\UTF7EncodingGetHashCode.cs" />
     <Compile Include="UTF7Encoding\UTF7EncodingGetMaxByteCount.cs" />
     <Compile Include="UTF7Encoding\UTF7EncodingGetMaxCharCount.cs" />
+    <Compile Include="UTF7Encoding\UTF7EncodingTests.cs" />
     <Compile Include="UTF8Encoding\UTF8EncodingEncode.cs" />
     <Compile Include="UTF8Encoding\UTF8EncodingDecode.cs" />
     <Compile Include="UTF8Encoding\UTF8EncodingGetDecoder.cs" />
