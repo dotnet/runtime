@@ -740,7 +740,7 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// A string like "Lambda type parameter must be derived from System.Delegate"
+        /// A string like "Lambda type parameter must be derived from System.MulticastDelegate"
         /// </summary>
         internal static string LambdaTypeMustBeDerivedFromSystemDelegate
         {
