@@ -175,16 +175,37 @@ public:
     }
 };
 
+class EntryPointWithBlobVertex : public EntryPointVertex
+{
+    BlobVertex * m_pBlob;
+
+public:
+    EntryPointWithBlobVertex(DWORD methodIndex, BlobVertex * pFixups, BlobVertex * pBlob)
+        : EntryPointVertex(methodIndex, pFixups), m_pBlob(pBlob)
+    {
+    }
+
+    virtual void Save(NativeWriter * pWriter)
+    {
+        m_pBlob->Save(pWriter);
+        EntryPointVertex::Save(pWriter);
+    }
+};
+
 void ZapImage::OutputEntrypointsTableForReadyToRun()
 {
     BeginRegion(CORINFO_REGION_COLD);
 
-    NativeWriter writer;
+    NativeWriter arrayWriter;
+    NativeWriter hashtableWriter;
 
-    NativeSection * pSection = writer.NewSection();
+    NativeSection * pArraySection = arrayWriter.NewSection();
+    NativeSection * pHashtableSection = hashtableWriter.NewSection();
 
-    VertexArray vertexArray(pSection);
-    pSection->Place(&vertexArray);
+    VertexArray vertexArray(pArraySection);
+    pArraySection->Place(&vertexArray);
+    VertexHashtable vertexHashtable;
+    pHashtableSection->Place(&vertexHashtable);
 
     bool fEmpty = true;
 
@@ -196,6 +217,8 @@ void ZapImage::OutputEntrypointsTableForReadyToRun()
         ZapMethodHeader * pMethod = m_MethodCompilationOrder[i];
 
         mdMethodDef token = GetJitInfo()->getMethodDefFromMethod(pMethod->GetHandle());
+        CORINFO_SIG_INFO sig;
+        GetJitInfo()->getMethodSig(pMethod->GetHandle(), &sig);
 
         int rid = RidFromToken(token);
         _ASSERTE(rid != 0);
@@ -221,7 +244,31 @@ void ZapImage::OutputEntrypointsTableForReadyToRun()
             }
         }
 
-        vertexArray.Set(rid - 1, new (GetHeap()) EntryPointVertex(pMethod->GetMethodIndex(), pFixupBlob));
+        if (sig.sigInst.classInstCount > 0 || sig.sigInst.methInstCount > 0)
+        {
+            CORINFO_MODULE_HANDLE module = GetJitInfo()->getClassModule(pMethod->GetClassHandle());
+            _ASSERTE(GetCompileInfo()->IsInCurrentVersionBubble(module));
+            SigBuilder sigBuilder;
+            CORINFO_RESOLVED_TOKEN resolvedToken = {};
+            resolvedToken.tokenScope = module;
+            resolvedToken.token = token;
+            resolvedToken.hClass = pMethod->GetClassHandle();
+            resolvedToken.hMethod = pMethod->GetHandle();
+            GetCompileInfo()->EncodeMethod(module, pMethod->GetHandle(), &sigBuilder, NULL, NULL, &resolvedToken);
+
+            DWORD cbBlob;
+            PVOID pBlob = sigBuilder.GetSignature(&cbBlob);
+            void * pMemory = new (GetHeap()) BYTE[sizeof(BlobVertex) + cbBlob];
+            BlobVertex * pSigBlob = new (pMemory) BlobVertex(cbBlob);
+            memcpy(pSigBlob->GetData(), pBlob, cbBlob);
+
+            int dwHash = GetCompileInfo()->GetVersionResilientMethodHashCode(pMethod->GetHandle());
+            vertexHashtable.Append(dwHash, pHashtableSection->Place(new (GetHeap()) EntryPointWithBlobVertex(pMethod->GetMethodIndex(), pFixupBlob, pSigBlob)));
+        }
+        else
+        {
+            vertexArray.Set(rid - 1, new (GetHeap()) EntryPointVertex(pMethod->GetMethodIndex(), pFixupBlob));
+        }
 
         fEmpty = false;
     }
@@ -231,13 +278,17 @@ void ZapImage::OutputEntrypointsTableForReadyToRun()
 
     vertexArray.ExpandLayout();
 
-    vector<byte>& blob = writer.Save();
+    vector<byte>& arrayBlob = arrayWriter.Save();
+    ZapNode * pArrayBlob = ZapBlob::NewBlob(this, &arrayBlob[0], arrayBlob.size());
+    m_pCodeMethodDescsSection->Place(pArrayBlob);
 
-    ZapNode * pBlob = ZapBlob::NewBlob(this, &blob[0], blob.size());
-    m_pCodeMethodDescsSection->Place(pBlob);
+    vector<byte>& hashtableBlob = hashtableWriter.Save();
+    ZapNode * pHashtableBlob = ZapBlob::NewBlob(this, &hashtableBlob[0], hashtableBlob.size());
+    m_pCodeMethodDescsSection->Place(pHashtableBlob);
 
     ZapReadyToRunHeader * pReadyToRunHeader = GetReadyToRunHeader();
-    pReadyToRunHeader->RegisterSection(READYTORUN_SECTION_METHODDEF_ENTRYPOINTS, pBlob);
+    pReadyToRunHeader->RegisterSection(READYTORUN_SECTION_METHODDEF_ENTRYPOINTS, pArrayBlob);
+    pReadyToRunHeader->RegisterSection(READYTORUN_SECTION_INSTANCE_METHOD_ENTRYPOINTS, pHashtableBlob);
     pReadyToRunHeader->RegisterSection(READYTORUN_SECTION_RUNTIME_FUNCTIONS, m_pRuntimeFunctionSection);
 
     if (m_pImportSectionsTable->GetSize() != 0)
@@ -354,18 +405,8 @@ void ZapImage::OutputTypesTableForReadyToRun(IMDInternalImport * pMDImport)
         mdToken mdTypeToken;
         while (pMDImport->EnumNext(&hEnum, &mdTypeToken))
         {
-            DWORD dwHash = 0;
             mdTypeDef mdCurrentToken = mdTypeToken;
-
-            do
-            {
-                if (FAILED(pMDImport->GetNameOfTypeDef(mdCurrentToken, &pszName, &pszNameSpace)))
-                    ThrowHR(COR_E_BADIMAGEFORMAT);
-
-                dwHash = ((dwHash << 5) + dwHash) ^ HashStringA(pszName);
-                dwHash = ((dwHash << 5) + dwHash) ^ HashStringA(pszNameSpace == NULL ? "" : pszNameSpace);
-
-            } while (SUCCEEDED(pMDImport->GetNestedClassProps(mdCurrentToken, &mdCurrentToken)));
+            DWORD dwHash = GetCompileInfo()->GetVersionResilientTypeHashCode(GetModuleHandle(), mdTypeToken);
 
             typesHashtable.Append(dwHash, pSection->Place(new UnsignedConstant(RidFromToken(mdTypeToken) << 1)));
         }
@@ -379,18 +420,7 @@ void ZapImage::OutputTypesTableForReadyToRun(IMDInternalImport * pMDImport)
         mdToken mdTypeToken;
         while (pMDImport->EnumNext(&hEnum, &mdTypeToken))
         {
-            DWORD dwHash = 0;
-            mdTypeDef mdCurrentToken = mdTypeToken;
-
-            do 
-            {
-                if (FAILED(pMDImport->GetExportedTypeProps(mdCurrentToken, &pszNameSpace, &pszName, &mdCurrentToken, NULL, NULL)))
-                    ThrowHR(COR_E_BADIMAGEFORMAT);
-
-                dwHash = ((dwHash << 5) + dwHash) ^ HashStringA(pszName);
-                dwHash = ((dwHash << 5) + dwHash) ^ HashStringA(pszNameSpace == NULL ? "" : pszNameSpace);
-
-            } while (TypeFromToken(mdCurrentToken) == mdtExportedType);
+            DWORD dwHash = GetCompileInfo()->GetVersionResilientTypeHashCode(GetModuleHandle(), mdTypeToken);
 
             typesHashtable.Append(dwHash, pSection->Place(new UnsignedConstant((RidFromToken(mdTypeToken) << 1) | 1)));
         }

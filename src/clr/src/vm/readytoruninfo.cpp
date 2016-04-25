@@ -13,6 +13,8 @@
 
 #include "dbginterface.h"
 #include "compile.h"
+#include "versionresilienthashcode.h"
+#include "typehashingalgorithms.h"
 
 using namespace NativeFormat;
 
@@ -99,83 +101,61 @@ BOOL ReadyToRunInfo::TryLookupTypeTokenFromName(NameHandle *pName, mdToken * pFo
     //
     // Compute the hashcode of the type (hashcode based on type name and namespace name)
     //
-    DWORD dwHashCode = 0;
+    int dwHashCode = 0;
+
+    if (pName->GetTypeToken() == mdtBaseType || pName->GetTypeModule() == NULL)
     {
-        if (pName->GetTypeToken() == mdtBaseType)
+        // Name-based lookups (ex: Type.GetType()). 
+
+        pszName = pName->GetName();
+        pszNameSpace = "";
+
+        if (pName->GetNameSpace() != NULL)
         {
-            // Name-based lookups (ex: Type.GetType()). 
-
-            pszName = pName->GetName();
-            pszNameSpace = "";
-
-            if (pName->GetNameSpace() != NULL)
-            {
-                pszNameSpace = pName->GetNameSpace();
-            }
-            else
-            {
-                LPCUTF8 p;
-                CQuickBytes szNamespace;
-
-                if ((p = ns::FindSep(pszName)) != NULL)
-                {
-                    SIZE_T d = p - pszName;
-
-                    FAULT_NOT_FATAL();
-                    pszNameSpace = szNamespace.SetStringNoThrow(pszName, d);
-
-                    if (pszNameSpace == NULL)
-                        return FALSE;
-
-                    pszName = (p + 1);
-                }
-            }
-
-            _ASSERT(pszNameSpace != NULL);
-            dwHashCode = ((dwHashCode << 5) + dwHashCode) ^ HashStringA(pszName);
-            dwHashCode = ((dwHashCode << 5) + dwHashCode) ^ HashStringA(pszNameSpace);
-
-            // Bucket is not 'null' for a nested type, and it will have information about the nested type's encloser
-            if (!pName->GetBucket().IsNull())
-            {
-                // Must be a token based bucket that we found earlier in the R2R types hashtable
-                _ASSERT(pName->GetBucket().GetEntryType() == HashedTypeEntry::IsHashedTokenEntry);
-
-                const HashedTypeEntry::TokenTypeEntry& tokenBasedEncloser = pName->GetBucket().GetTokenBasedEntryValue();
-
-                // Token must be a typedef token that we previously resolved (we shouldn't get here with an exported type token)
-                _ASSERT(TypeFromToken(tokenBasedEncloser.m_TypeToken) == mdtTypeDef);
-
-                mdToken mdCurrentTypeToken = tokenBasedEncloser.m_TypeToken;
-                do
-                {
-                    LPCUTF8 pszNameTemp;
-                    LPCUTF8 pszNameSpaceTemp;
-                    if (!GetTypeNameFromToken(tokenBasedEncloser.m_pModule->GetMDImport(), mdCurrentTypeToken, &pszNameTemp, &pszNameSpaceTemp))
-                        return FALSE;
-
-                    dwHashCode = ((dwHashCode << 5) + dwHashCode) ^ HashStringA(pszNameTemp);
-                    dwHashCode = ((dwHashCode << 5) + dwHashCode) ^ HashStringA(pszNameSpaceTemp == NULL ? "" : pszNameSpaceTemp);
-
-                } while (GetEnclosingToken(tokenBasedEncloser.m_pModule->GetMDImport(), mdCurrentTypeToken, &mdCurrentTypeToken));
-
-            }
+            pszNameSpace = pName->GetNameSpace();
         }
         else
         {
-            // Token based lookups (ex: tokens from IL code)
+            LPCUTF8 p;
+            CQuickBytes szNamespace;
 
-            mdToken mdCurrentTypeToken = pName->GetTypeToken();
-            do
+            if ((p = ns::FindSep(pszName)) != NULL)
             {
-                if (!GetTypeNameFromToken(pName->GetTypeModule()->GetMDImport(), mdCurrentTypeToken, &pszName, &pszNameSpace))
+                SIZE_T d = p - pszName;
+
+                FAULT_NOT_FATAL();
+                pszNameSpace = szNamespace.SetStringNoThrow(pszName, d);
+
+                if (pszNameSpace == NULL)
                     return FALSE;
 
-                dwHashCode = ((dwHashCode << 5) + dwHashCode) ^ HashStringA(pszName);
-                dwHashCode = ((dwHashCode << 5) + dwHashCode) ^ HashStringA(pszNameSpace == NULL ? "" : pszNameSpace);
-
-            } while (GetEnclosingToken(pName->GetTypeModule()->GetMDImport(), mdCurrentTypeToken, &mdCurrentTypeToken));
+                pszName = (p + 1);
+            }
         }
+
+        _ASSERT(pszNameSpace != NULL);
+        dwHashCode ^= ComputeNameHashCode(pszNameSpace, pszName);
+
+        // Bucket is not 'null' for a nested type, and it will have information about the nested type's encloser
+        if (!pName->GetBucket().IsNull())
+        {
+            // Must be a token based bucket that we found earlier in the R2R types hashtable
+            _ASSERT(pName->GetBucket().GetEntryType() == HashedTypeEntry::IsHashedTokenEntry);
+
+            const HashedTypeEntry::TokenTypeEntry& tokenBasedEncloser = pName->GetBucket().GetTokenBasedEntryValue();
+
+            // Token must be a typedef token that we previously resolved (we shouldn't get here with an exported type token)
+            _ASSERT(TypeFromToken(tokenBasedEncloser.m_TypeToken) == mdtTypeDef);
+
+            mdToken mdCurrentTypeToken = tokenBasedEncloser.m_TypeToken;
+            dwHashCode ^= GetVersionResilientTypeHashCode(tokenBasedEncloser.m_pModule->GetMDImport(), mdCurrentTypeToken);
+        }
+    }
+    else
+    {
+        // Token based lookups (ex: tokens from IL code)
+
+        dwHashCode = GetVersionResilientTypeHashCode(pName->GetTypeModule()->GetMDImport(), pName->GetTypeToken());
     }
 
 
@@ -191,7 +171,7 @@ BOOL ReadyToRunInfo::TryLookupTypeTokenFromName(NameHandle *pName, mdToken * pFo
             mdToken cl = ((ridAndFlag & 1) ? ((ridAndFlag >> 1) | mdtExportedType) : ((ridAndFlag >> 1) | mdtTypeDef));
             _ASSERT(RidFromToken(cl) != 0);
 
-            if (pName->GetTypeToken() == mdtBaseType)
+            if (pName->GetTypeToken() == mdtBaseType || pName->GetTypeModule() == NULL)
             {
                 // Compare type name and namespace name
                 LPCUTF8 pszFoundName;
@@ -456,6 +436,13 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYT
         m_methodDefEntryPoints = NativeArray(&m_nativeReader, pEntryPointsDir->VirtualAddress);
     }
 
+    IMAGE_DATA_DIRECTORY * pinstMethodsDir = FindSection(READYTORUN_SECTION_INSTANCE_METHOD_ENTRYPOINTS);
+    if (pinstMethodsDir != NULL)
+    {
+        NativeParser parser = NativeParser(&m_nativeReader, pinstMethodsDir->VirtualAddress);
+        m_instMethodEntryPoints = NativeHashtable(parser);
+    }
+
     IMAGE_DATA_DIRECTORY * pAvailableTypesDir = FindSection(READYTORUN_SECTION_AVAILABLE_TYPES);
     if (pAvailableTypesDir != NULL)
     {
@@ -469,13 +456,61 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYT
     }
 }
 
-PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, BOOL fFixups /*=TRUE*/)
+static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, Module * pModule)
 {
     STANDARD_VM_CONTRACT;
 
-    // READYTORUN: FUTURE: Support for generics
-    if (pMD->HasClassOrMethodInstantiation())
-        return NULL;
+    ZapSig::Context    zapSigContext(pModule, (void *)pModule, ZapSig::NormalTokens);
+    ZapSig::Context *  pZapSigContext = &zapSigContext;
+
+    DWORD methodFlags;
+    IfFailThrow(sig.GetData(&methodFlags));
+
+    if (methodFlags & ENCODE_METHOD_SIG_OwnerType)
+    {
+        PCCOR_SIGNATURE pSigType;
+        DWORD cbSigType;
+        sig.GetSignature(&pSigType, &cbSigType);
+        if (!ZapSig::CompareSignatureToTypeHandle(pSigType, pModule, TypeHandle(pMD->GetMethodTable()), pZapSigContext))
+            return false;
+
+        IfFailThrow(sig.SkipExactlyOne());
+    }
+
+    _ASSERTE((methodFlags & ENCODE_METHOD_SIG_SlotInsteadOfToken) == 0);
+    _ASSERTE((methodFlags & ENCODE_METHOD_SIG_MemberRefToken) == 0);
+
+    RID rid;
+    IfFailThrow(sig.GetData(&rid));
+    if (RidFromToken(pMD->GetMemberDef()) != rid)
+        return false;
+
+    if (methodFlags & ENCODE_METHOD_SIG_MethodInstantiation)
+    {
+        DWORD numGenericArgs;
+        IfFailThrow(sig.GetData(&numGenericArgs));
+        Instantiation inst = pMD->GetMethodInstantiation();
+        if (numGenericArgs != inst.GetNumArgs())
+            return false;
+
+        for (DWORD i = 0; i < numGenericArgs; i++)
+        {
+            PCCOR_SIGNATURE pSigArg;
+            DWORD cbSigArg;
+            sig.GetSignature(&pSigArg, &cbSigArg);
+            if (!ZapSig::CompareSignatureToTypeHandle(pSigArg, pModule, inst[i], pZapSigContext))
+                return false;
+
+            IfFailThrow(sig.SkipExactlyOne());
+        }
+    }
+
+    return true;
+}
+
+PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, BOOL fFixups /*=TRUE*/)
+{
+    STANDARD_VM_CONTRACT;
 
     mdToken token = pMD->GetMemberDef();
     int rid = RidFromToken(token);
@@ -483,8 +518,38 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, BOOL fFixups /*=TRUE*/)
         return NULL;
 
     uint offset;
-    if (!m_methodDefEntryPoints.TryGetAt(rid - 1, &offset))
-        return NULL;
+    if (pMD->HasClassOrMethodInstantiation())
+    {
+        if (m_instMethodEntryPoints.IsNull())
+            return NULL;
+
+        NativeHashtable::Enumerator lookup = m_instMethodEntryPoints.Lookup(GetVersionResilientMethodHashCode(pMD));
+        NativeParser entryParser;
+        offset = -1;
+        while (lookup.GetNext(entryParser))
+        {
+            PCCOR_SIGNATURE pBlob = (PCCOR_SIGNATURE)entryParser.GetBlob();
+            SigPointer sig(pBlob);
+            if (SigMatchesMethodDesc(pMD, sig, m_pModule))
+            {
+                // Get the updated SigPointer location, so we can calculate the size of the blob,
+                // in order to skip the blob and find the entry point data.
+                PCCOR_SIGNATURE pSigNew;
+                DWORD cbSigNew;
+                sig.GetSignature(&pSigNew, &cbSigNew);
+                offset = entryParser.GetOffset() + (uint)(pSigNew - pBlob);
+                break;
+            }
+        }
+
+        if (offset == -1)
+            return NULL;
+    }
+    else
+    {
+        if (!m_methodDefEntryPoints.TryGetAt(rid - 1, &offset))
+            return NULL;
+    }
 
     uint id;
     offset = m_nativeReader.DecodeUnsigned(offset, &id);
