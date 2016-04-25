@@ -1462,7 +1462,8 @@ test-console-output: console-output.exe
 PROCESS_STRESS_TESTS=	\
 		process-stress-1.exe	\
 		process-stress-2.exe	\
-		process-stress-3.exe
+		process-stress-3.exe	\
+		process-leak.exe
 
 test-process-stress: $(PROCESS_STRESS_TESTS) test-runner.exe
 	$(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 600 $(PROCESS_STRESS_TESTS)

@@ -1172,7 +1172,7 @@ static void pipe_close (gpointer handle, gpointer data)
 	struct _WapiHandle_file *pipe_handle = (struct _WapiHandle_file*)data;
 	int fd = pipe_handle->fd;
 
-	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: closing pipe handle %p", __func__, handle);
+	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: closing pipe handle %p fd %d", __func__, handle, fd);
 
 	/* No filename with pipe handles */
 
