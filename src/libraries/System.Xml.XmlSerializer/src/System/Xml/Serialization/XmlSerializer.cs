@@ -82,7 +82,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private static InternalHashtable s_xmlSerializerTable = new InternalHashtable();
+        private static readonly Dictionary<Type, Dictionary<XmlSerializerMappingKey, XmlSerializer>> s_xmlSerializerTable = new Dictionary<Type, Dictionary<XmlSerializerMappingKey, XmlSerializer>>();
 
         /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.XmlSerializer8"]/*' />
         ///<internalonly/>
@@ -575,25 +575,23 @@ namespace System.Xml.Serialization
         {
             XmlSerializer[] serializers = new XmlSerializer[mappings.Length];
 
-            InternalHashtable typedMappingTable = null;
+            Dictionary<XmlSerializerMappingKey, XmlSerializer> typedMappingTable = null;
             lock (s_xmlSerializerTable)
             {
-                typedMappingTable = s_xmlSerializerTable[type] as InternalHashtable;
-                if (typedMappingTable == null)
+                if (!s_xmlSerializerTable.TryGetValue(type, out typedMappingTable))
                 {
-                    typedMappingTable = new InternalHashtable();
+                    typedMappingTable = new Dictionary<XmlSerializerMappingKey, XmlSerializer>();
                     s_xmlSerializerTable[type] = typedMappingTable;
                 }
             }
 
             lock (typedMappingTable)
             {
-                InternalHashtable pendingKeys = new InternalHashtable();
+                var pendingKeys = new Dictionary<XmlSerializerMappingKey, int>();
                 for (int i = 0; i < mappings.Length; i++)
                 {
                     XmlSerializerMappingKey mappingKey = new XmlSerializerMappingKey(mappings[i]);
-                    serializers[i] = typedMappingTable[mappingKey] as XmlSerializer;
-                    if (serializers[i] == null)
+                    if (!typedMappingTable.TryGetValue(mappingKey, out serializers[i]))
                     {
                         pendingKeys.Add(mappingKey, i);
                     }
@@ -613,7 +611,7 @@ namespace System.Xml.Serialization
 
                     foreach (XmlSerializerMappingKey mappingKey in pendingKeys.Keys)
                     {
-                        index = (int)pendingKeys[mappingKey];
+                        index = pendingKeys[mappingKey];
                         serializers[index] = (XmlSerializer)contract.TypedSerializers[mappingKey.Mapping.Key];
                         serializers[index].SetTempAssembly(tempAssembly, mappingKey.Mapping);
 
@@ -703,8 +701,8 @@ namespace System.Xml.Serialization
         {
             if (ns != null && ns != string.Empty)
                 return null;
-            TypeDesc typeDesc = (TypeDesc)TypeScope.PrimtiveTypes[type];
-            if (typeDesc == null)
+            TypeDesc typeDesc;
+            if (!TypeScope.PrimtiveTypes.TryGetValue(type, out typeDesc))
                 return null;
             ElementAccessor element = new ElementAccessor();
             element.Name = typeDesc.DataType.Name;

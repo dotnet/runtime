@@ -5,6 +5,7 @@
 using System;
 using System.Reflection;
 using System.Collections;
+using System.Collections.Generic;
 using System.ComponentModel;
 
 
@@ -16,7 +17,7 @@ namespace System.Xml.Serialization
     /// </devdoc>
     public class XmlArrayItemAttributes : IList
     {
-        private ArrayList _list;
+        private List<object> _list;
 
         /// <include file='doc\XmlArrayItemAttributes.uex' path='docs/doc[@for="XmlArrayItemAttributes.this"]/*' />
         /// <devdoc>
@@ -81,19 +82,19 @@ namespace System.Xml.Serialization
         {
             List.CopyTo(array, index);
         }
-        private ArrayList InnerList
+        private List<object> InnerList
         {
             get
             {
                 if (_list == null)
-                    _list = new ArrayList();
+                    _list = new List<object>();
                 return _list;
             }
         }
 
         private IList List
         {
-            get { return (IList)InnerList; }
+            get { return InnerList; }
         }
 
         public int Count
@@ -116,17 +117,17 @@ namespace System.Xml.Serialization
 
         bool IList.IsReadOnly
         {
-            get { return InnerList.IsReadOnly; }
+            get { return false; }
         }
 
         bool IList.IsFixedSize
         {
-            get { return InnerList.IsFixedSize; }
+            get { return false; }
         }
 
         bool ICollection.IsSynchronized
         {
-            get { return InnerList.IsSynchronized; }
+            get { return false; }
         }
 
         Object ICollection.SyncRoot
