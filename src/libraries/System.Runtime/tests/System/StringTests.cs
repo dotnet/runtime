@@ -7,6 +7,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Tests
@@ -65,12 +67,12 @@ namespace System.Tests
             Assert.Throws<ArgumentOutOfRangeException>("startIndex", () =>
             {
                 fixed (char* value = valueArray) { new string(value, -1, 8); } // Start index < 0
-        });
+            });
 
             Assert.Throws<ArgumentOutOfRangeException>("length", () =>
             {
                 fixed (char* value = valueArray) { new string(value, 0, -1); } // Length < 0
-        });
+            });
 
             Assert.Throws<ArgumentOutOfRangeException>("ptr", () => new string((char*)null, 0, 1)); // null ptr with non-zero length
         }
@@ -168,56 +170,136 @@ namespace System.Tests
 
         public static IEnumerable<object[]> Concat_Strings_TestData()
         {
+            yield return new object[] { new string[0], "" };
+
             yield return new object[] { new string[] { "1" }, "1" };
             yield return new object[] { new string[] { null }, "" };
+            yield return new object[] { new string[] { "" }, "" };
 
             yield return new object[] { new string[] { "1", "2" }, "12" };
             yield return new object[] { new string[] { null, "1" }, "1" };
+            yield return new object[] { new string[] { "", "1" }, "1" };
             yield return new object[] { new string[] { "1", null }, "1" };
+            yield return new object[] { new string[] { "1", "" }, "1" };
             yield return new object[] { new string[] { null, null }, "" };
+            yield return new object[] { new string[] { "", "" }, "" };
 
             yield return new object[] { new string[] { "1", "2", "3" }, "123" };
             yield return new object[] { new string[] { null, "1", "2" }, "12" };
+            yield return new object[] { new string[] { "", "1", "2" }, "12" };
             yield return new object[] { new string[] { "1", null, "2" }, "12" };
+            yield return new object[] { new string[] { "1", "", "2" }, "12" };
             yield return new object[] { new string[] { "1", "2", null }, "12" };
+            yield return new object[] { new string[] { "1", "2", "" }, "12" };
+            yield return new object[] { new string[] { null, "2", null }, "2" };
+            yield return new object[] { new string[] { "", "2", "" }, "2" };
             yield return new object[] { new string[] { null, null, null }, "" };
+            yield return new object[] { new string[] { "", "", "" }, "" };
 
             yield return new object[] { new string[] { "1", "2", "3", "4" }, "1234" };
             yield return new object[] { new string[] { null, "1", "2", "3" }, "123" };
+            yield return new object[] { new string[] { "", "1", "2", "3" }, "123" };
             yield return new object[] { new string[] { "1", null, "2", "3" }, "123" };
+            yield return new object[] { new string[] { "1", "", "2", "3" }, "123" };
             yield return new object[] { new string[] { "1", "2", null, "3" }, "123" };
+            yield return new object[] { new string[] { "1", "2", "", "3" }, "123" };
             yield return new object[] { new string[] { "1", "2", "3", null }, "123" };
+            yield return new object[] { new string[] { "1", "2", "3", "" }, "123" };
             yield return new object[] { new string[] { "1", null, null, null }, "1" };
+            yield return new object[] { new string[] { "1", "", "", "" }, "1" };
             yield return new object[] { new string[] { null, "1", null, "2" }, "12" };
+            yield return new object[] { new string[] { "", "1", "", "2" }, "12" };
             yield return new object[] { new string[] { null, null, null, null }, "" };
+            yield return new object[] { new string[] { "", "", "", "" }, "" };
 
             yield return new object[] { new string[] { "1", "2", "3", "4", "5" }, "12345" };
             yield return new object[] { new string[] { null, "1", "2", "3", "4" }, "1234" };
+            yield return new object[] { new string[] { "", "1", "2", "3", "4" }, "1234" };
             yield return new object[] { new string[] { "1", null, "2", "3", "4" }, "1234" };
+            yield return new object[] { new string[] { "1", "", "2", "3", "4" }, "1234" };
             yield return new object[] { new string[] { "1", "2", null, "3", "4" }, "1234" };
+            yield return new object[] { new string[] { "1", "2", "", "3", "4" }, "1234" };
             yield return new object[] { new string[] { "1", "2", "3", null, "4" }, "1234" };
+            yield return new object[] { new string[] { "1", "2", "3", "", "4" }, "1234" };
             yield return new object[] { new string[] { "1", "2", "3", "4", null }, "1234" };
+            yield return new object[] { new string[] { "1", "2", "3", "4", "" }, "1234" };
+            yield return new object[] { new string[] { "1", null, "3", null, "5" }, "135" };
+            yield return new object[] { new string[] { "1", "", "3", "", "5" }, "135" };
             yield return new object[] { new string[] { null, null, null, null, null }, "" };
+            yield return new object[] { new string[] { "", "", "", "", "" }, "" };
+
+            yield return new object[] { new string[] { "abcd", "efgh", "ijkl", "mnop", "qrst", "uvwx", "yz" }, "abcdefghijklmnopqrstuvwxyz" };
         }
 
         [Theory]
         [MemberData(nameof(Concat_Strings_TestData))]
         public static void Concat_String(string[] values, string expected)
         {
+            Action<string> validate = result =>
+            {
+                Assert.Equal(expected, result);
+                // if (result.Length == 0) Assert.Same(string.Empty, result);
+            };
+
             if (values.Length == 2)
             {
-                Assert.Equal(expected, string.Concat(values[0], values[1]));
+                validate(string.Concat(values[0], values[1]));
             }
             else if (values.Length == 3)
             {
-                Assert.Equal(expected, string.Concat(values[0], values[1], values[2]));
+                validate(string.Concat(values[0], values[1], values[2]));
             }
             else if (values.Length == 4)
             {
-                Assert.Equal(expected, string.Concat(values[0], values[1], values[2], values[3]));
+                validate(string.Concat(values[0], values[1], values[2], values[3]));
             }
-            Assert.Equal(expected, string.Concat(values));
-            Assert.Equal(expected, string.Concat((IEnumerable<string>)values));
+
+            validate(string.Concat(values));
+            validate(string.Concat((IEnumerable<string>)values));
+        }
+
+        [Fact]
+        [OuterLoop] // mini-stress test that likely runs for several seconds
+        public static void Concat_String_ConcurrencySafe()
+        {
+            var inputs = new string[2] { "abc", "def" };
+            var cts = new CancellationTokenSource();
+            using (var b = new Barrier(2))
+            {
+                // String.Concat(string[]) has a slow path that handles the case where the
+                // input array is mutated concurrently.  Queue two tasks, one that repeatedly
+                // does concats and the other that mutates the array concurrently.  This isn't
+                // guaranteed to trigger the special case, but it typically does.
+                Task.WaitAll(
+                    Task.Run(() =>
+                    {
+                        b.SignalAndWait();
+                        while (!cts.IsCancellationRequested)
+                        {
+                            string result = string.Concat(inputs);
+                            Assert.True(result == "abcdef" || result == "abc" || result == "def" || result == "", $"result == {result}");
+                        }
+                    }),
+                    Task.Run(() =>
+                    {
+                        b.SignalAndWait();
+                        try
+                        {
+                            for (int iter = 0; iter < 100000000; iter++)
+                            {
+                                Volatile.Write(ref inputs[0], null);
+                                Volatile.Write(ref inputs[1], null);
+                                Volatile.Write(ref inputs[0], "abc");
+                                Volatile.Write(ref inputs[1], "def");
+                            }
+                        }
+
+                        finally
+                        {
+                            cts.Cancel();
+                        }
+                    }));
+            }
         }
 
         public static IEnumerable<object[]> Concat_Objects_TestData()
