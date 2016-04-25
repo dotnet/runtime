@@ -76,6 +76,94 @@ EXPORT(float) __stdcall nativeCall_PInvoke_Vector3Arg(int i, Vector3 v1, char* s
 //
 // PInvoke native call for Vector3 argument
 //
+EXPORT(float) __stdcall nativeCall_PInvoke_Vector3Arg_Unix(
+    Vector3 v3f32_xmm0, 
+    float   f32_xmm2,
+    float   f32_xmm3,
+    float   f32_xmm4,
+    float   f32_xmm5,
+    float   f32_xmm6,
+    float   f32_xmm7,
+    float   f32_mem0,
+    Vector3 v3f32_mem1,
+    float   f32_mem2,
+    float   f32_mem3)
+{
+    printf("nativeCall_PInvoke_Vector3Arg_Unix:\n");
+    printf("    v3f32_xmm0: %f %f %f\n", v3f32_xmm0.x, v3f32_xmm0.y, v3f32_xmm0.z);
+    printf("    f32_xmm2 - f32_xmm7: %f %f %f %f %f %f\n", f32_xmm2, f32_xmm3,
+        f32_xmm4, f32_xmm5, f32_xmm6, f32_xmm7);
+    printf("    f32_mem0: %f\n", f32_mem0);
+    printf("    v3f32_mem1: %f %f %f\n", v3f32_mem1.x, v3f32_mem1.y, v3f32_mem1.z);
+    printf("    f32_mem2-3: %f %f\n", f32_mem2, f32_mem3);
+    
+    // sum = 1 + 2 + 3
+    //  + 100 + 101 + 102 + 103 + 104 + 105 + 106 
+    //  + 10 + 20 + 30
+    //  + 107 + 108
+    //  = 1002
+    float sum = v3f32_xmm0.x + v3f32_xmm0.y + v3f32_xmm0.z
+        + f32_xmm2 + f32_xmm3 + f32_xmm4 + f32_xmm5 + f32_xmm6 + f32_xmm7 + f32_mem0 + 
+        + v3f32_mem1.x + v3f32_mem1.y + v3f32_mem1.z
+        + f32_mem2 + f32_mem3;
+        
+    printf("    sum = %f\n", sum);
+    
+    return sum;
+}   
+
+
+//
+// PInvoke native call for Vector3 argument
+//
+EXPORT(float) __stdcall nativeCall_PInvoke_Vector3Arg_Unix2(
+    Vector3 v3f32_xmm0, 
+    float   f32_xmm2,
+    float   f32_xmm3,
+    float   f32_xmm4,
+    float   f32_xmm5,
+    float   f32_xmm6,
+    float   f32_xmm7,
+    float   f32_mem0,
+    Vector3 v3f32_mem1,
+    float   f32_mem2,
+    float   f32_mem3,
+    Vector3 v3f32_mem4,
+    float   f32_mem5)
+{
+    printf("nativeCall_PInvoke_Vector3Arg_Unix2:\n");
+    printf("    v3f32_xmm0: %f %f %f\n", v3f32_xmm0.x, v3f32_xmm0.y, v3f32_xmm0.z);
+    printf("    f32_xmm2 - f32_xmm7: %f %f %f %f %f %f\n", 
+      f32_xmm2, f32_xmm3, f32_xmm4, f32_xmm5, f32_xmm6, f32_xmm7);
+    printf("    f32_mem0: %f\n", f32_mem0);
+    printf("    v3f32_mem1: %f %f %f\n", v3f32_mem1.x, v3f32_mem1.y, v3f32_mem1.z);
+    printf("    f32_mem2-3: %f %f\n", f32_mem2, f32_mem3);
+    printf("    v3f32_mem4: %f %f %f\n", v3f32_mem4.x, v3f32_mem4.y, v3f32_mem4.z);
+    printf("    f32_mem5: %f\n", f32_mem5);
+    
+    // sum = 1 + 2 + 3 + 
+    //  + 100 + 101 + 102 + 103 + 104 + 105 + 106 
+    //  + 4 + 5 + 6
+    //  + 107 + 108
+    //  + 7 + 8 + 9
+    //  + 109
+    //  = 6 + 15 + 24 + 1045 = 1090
+    float sum = v3f32_xmm0.x + v3f32_xmm0.y + v3f32_xmm0.z
+        + f32_xmm2 + f32_xmm3 + f32_xmm4 + f32_xmm5 + f32_xmm6 + f32_xmm7 + f32_mem0 + 
+        + v3f32_mem1.x + v3f32_mem1.y + v3f32_mem1.z
+        + f32_mem2 + f32_mem3
+        + v3f32_mem4.x + v3f32_mem4.y + v3f32_mem4.z
+        + f32_mem5;
+        
+    printf("    sum = %f\n", sum);
+    
+    return sum;
+}   
+
+
+//
+// PInvoke native call for Vector3 argument
+//
 
 EXPORT(Vector3) __stdcall nativeCall_PInvoke_Vector3Ret() 
 {
@@ -141,7 +229,7 @@ EXPORT(DT) __stdcall nativeCall_PInvoke_Vector3InStruct(DT data)
 EXPORT(void) __stdcall nativeCall_PInvoke_Vector3InComplexStruct(ComplexDT* arg) 
 {
     static const char* ret_str = "ret_string";
-    printf("nativeCall_PInvoke_Vector3InStruct\n");
+    printf("nativeCall_PInvoke_Vector3InComplexStruct\n");
     printf("    Arg ival: %d\n", arg->iv);
     printf("    Arg Vector3 v1: (%f %f %f)\n", arg->vecs.a.x, arg->vecs.a.y, arg->vecs.a.z);
     printf("    Arg Vector3 v2: (%f %f %f)\n", arg->vecs.b.x, arg->vecs.b.y, arg->vecs.b.z);
@@ -190,6 +278,80 @@ EXPORT(void) __stdcall nativeCall_RPInvoke_Vector3Arg(
     notify(i, v1, (char*)str, v2);
 } 
 
+
+
+//
+// RPInvoke native call for Vector3 argument
+//
+typedef void (__stdcall *CallBack_RPInvoke_Vector3Arg_Unix)(
+    Vector3 v3f32_xmm0, 
+    float   f32_xmm2,
+    float   f32_xmm3,
+    float   f32_xmm4,
+    float   f32_xmm5,
+    float   f32_xmm6,
+    float   f32_xmm7,
+    float   f32_mem0,
+    Vector3 v3f32_mem1,
+    float   f32_mem2,
+    float   f32_mem3);
+
+
+EXPORT(void) __stdcall nativeCall_RPInvoke_Vector3Arg_Unix(
+  CallBack_RPInvoke_Vector3Arg_Unix notify)
+{
+    Vector3 v1, v2;
+    v1.x = 1; v1.y = 2; v1.z = 3;
+    v2.x = 10; v2.y = 20; v2.z = 30;
+    float f0 = 100, f1 = 101, f2 = 102, f3 = 103, f4 = 104, f5 = 105, f6 = 106, f7 = 107, f8 = 108;
+    notify(
+        v1,  
+        f0, f1, f2, f3, f4, f5,
+        f6, // mapped onto stack
+        v2, 
+        f7, f8);
+} 
+
+
+
+//
+// RPInvoke native call for Vector3 argument
+//
+typedef void (__stdcall *CallBack_RPInvoke_Vector3Arg_Unix2)(
+    Vector3 v3f32_xmm0, 
+    float   f32_xmm2,
+    float   f32_xmm3,
+    float   f32_xmm4,
+    float   f32_xmm5,
+    float   f32_xmm6,
+    float   f32_xmm7,
+    float   f32_mem0,
+    Vector3 v3f32_mem1,
+    float   f32_mem2,
+    float   f32_mem3,
+    Vector3 v3f32_mem4,
+    float   f32_mem5);
+
+
+EXPORT(void) __stdcall nativeCall_RPInvoke_Vector3Arg_Unix2(
+  CallBack_RPInvoke_Vector3Arg_Unix2 notify)
+{
+    Vector3 v1, v2, v3;
+    v1.x = 1; v1.y = 2; v1.z = 3;
+    v2.x = 4; v2.y = 5; v2.z = 6;
+    v3.x = 7; v3.y = 8; v3.z = 9;
+    float f0 = 100, f1 = 101, f2 = 102, f3 = 103, f4 = 104, f5 = 105, f6 = 106, f7 = 107, f8 = 108, f9 = 109;
+    notify(
+        v1,  
+        f0, f1, f2, f3, f4, f5,
+        f6, // mapped onto stack
+        v2, 
+        f7, f8,
+        v3,
+        f9);
+} 
+
+
 //
 // RPInvoke native call for Vector3 array
 //
@@ -200,7 +362,7 @@ EXPORT(bool) __stdcall nativeCall_RPInvoke_Vector3Ret(
   CallBack_RPInvoke_Vector3Ret notify)
 {
     Vector3 ret = notify();
-    printf("nativeCall_RPInvoke_Vector3Ret: Return value (%f %f %f)\n",
+    printf("nativeCall_RPInvoke_Vector3Ret:\n    Return value (%f %f %f)\n",
         ret.x, ret.y, ret.z);
     fflush(stdout);
     if (ret.x == 1 && ret.y == 2 && ret.z == 3) {
