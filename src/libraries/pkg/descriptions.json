@@ -1337,6 +1337,13 @@
         ]
     },
     {
+        "Name": "System.Security.Cryptography.Pkcs",
+        "Description": "Provides support for PKCS and CMS algorithms.",
+        "CommonTypes": [
+            "System.Security.Cryptography.Pkcs.EnvelopedCms"
+        ]
+    },
+    {
         "Name": "System.Security.Cryptography.Primitives",
         "Description": "Provides common types for the cryptographic libraries.",
         "CommonTypes": [
