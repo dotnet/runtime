@@ -11365,7 +11365,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				} else
 #endif
 				{
-					MonoInst *store;
+					MonoInst *store, *wbarrier_ptr_ins = NULL;
 
 					MONO_EMIT_NULL_CHECK (cfg, sp [0]->dreg);
 
@@ -11379,6 +11379,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						EMIT_NEW_BIALU_IMM (cfg, ins, OP_PSUB_IMM, offset_ins->dreg, offset_ins->dreg, 1);
 						dreg = alloc_ireg_mp (cfg);
 						EMIT_NEW_BIALU (cfg, ins, OP_PADD, dreg, sp [0]->dreg, offset_ins->dreg);
+						wbarrier_ptr_ins = ins;
 						/* The decomposition will call mini_emit_stobj () which will emit a wbarrier if needed */
 						EMIT_NEW_STORE_MEMBASE_TYPE (cfg, store, field->type, dreg, 0, sp [1]->dreg);
 					} else {
@@ -11387,15 +11388,20 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					if (sp [0]->opcode != OP_LDADDR)
 						store->flags |= MONO_INST_FAULT;
 
-				if (cfg->gen_write_barriers && mini_type_to_stind (cfg, field->type) == CEE_STIND_REF && !(sp [1]->opcode == OP_PCONST && sp [1]->inst_c0 == 0)) {
-					/* insert call to write barrier */
-					MonoInst *ptr;
-					int dreg;
+					if (cfg->gen_write_barriers && mini_type_to_stind (cfg, field->type) == CEE_STIND_REF && !(sp [1]->opcode == OP_PCONST && sp [1]->inst_c0 == 0)) {
+						if (mini_is_gsharedvt_klass (klass)) {
+							g_assert (wbarrier_ptr_ins);
+							emit_write_barrier (cfg, wbarrier_ptr_ins, sp [1]);
+						} else {
+							/* insert call to write barrier */
+							MonoInst *ptr;
+							int dreg;
 
-					dreg = alloc_ireg_mp (cfg);
-					EMIT_NEW_BIALU_IMM (cfg, ptr, OP_PADD_IMM, dreg, sp [0]->dreg, foffset);
-					emit_write_barrier (cfg, ptr, sp [1]);
-				}
+							dreg = alloc_ireg_mp (cfg);
+							EMIT_NEW_BIALU_IMM (cfg, ptr, OP_PADD_IMM, dreg, sp [0]->dreg, foffset);
+							emit_write_barrier (cfg, ptr, sp [1]);
+						}
+					}
 
 					store->flags |= ins_flag;
 				}
