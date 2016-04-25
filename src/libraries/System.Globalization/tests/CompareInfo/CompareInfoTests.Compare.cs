@@ -219,6 +219,9 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "\u3060", "\u30C0", CompareOptions.IgnoreKanaType, 0 };
             yield return new object[] { s_invariantCompare, "\u3060", "\u30C0", CompareOptions.IgnoreCase, s_expectedHiraganaToKatakanaCompare };
             yield return new object[] { s_invariantCompare, "c", "C", CompareOptions.IgnoreKanaType, -1 };
+
+            // Spanish
+            yield return new object[] { new CultureInfo("es-ES").CompareInfo, "llegar", "lugar", CompareOptions.None, -1 };
         }
 
         [Theory]
@@ -318,7 +321,7 @@ namespace System.Globalization.Tests
         [ActiveIssue(5436, Xunit.PlatformID.AnyUnix)]
         public void Compare_Issue5463()
         {
-            // TODO: Remove this function, and combine into Compare_TestData once 5463 is fixed
+            // TODO: Remove this function, and combine into Compare_TestData once #5463 is fixed
             Compare(s_invariantCompare, "\u3042", "\u30A1", CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase, 1);
             Compare(s_invariantCompare, "'\u3000'", "''", CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase, 1);
             Compare(s_invariantCompare, "\u30C7\u30BF\u30D9\u30B9", "\uFF83\uFF9E\uFF80\uFF8D\uFF9E\uFF7D", CompareOptions.None, 1);
@@ -336,6 +339,8 @@ namespace System.Globalization.Tests
 
             Compare(new CultureInfo("de-DE").CompareInfo, "Ü", "UE", CompareOptions.None, -1);
             Compare(new CultureInfo("de-DE_phoneb").CompareInfo, "Ü", "UE", CompareOptions.None, 0);
+
+            Compare(new CultureInfo("es-ES_tradnl").CompareInfo, "llegar", "lugar", CompareOptions.None, 1);
         }
 
         [Fact]
