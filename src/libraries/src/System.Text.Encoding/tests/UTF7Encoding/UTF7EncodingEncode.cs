@@ -33,6 +33,14 @@ namespace System.Text.Tests
         {
             Encode(true, source, index, count, expected);
             Encode(false, source, index, count, expected);
+
+            // UTF7Encoding performs no error checking, so even encoding invalid chars with 
+            // a custom fallback should never throw
+            Encoding exceptionEncoding = Encoding.GetEncoding("utf-7", new EncoderExceptionFallback(), new DecoderReplacementFallback("\uFFFD"));
+            EncodingHelpers.Encode(exceptionEncoding, source, index, count, expected);
+
+            Encoding replacementEncoding = Encoding.GetEncoding("utf-7", new EncoderReplacementFallback(string.Empty), new DecoderReplacementFallback("\uFFFD"));
+            EncodingHelpers.Encode(replacementEncoding, source, index, count, expected);
         }
 
         public static IEnumerable<object[]> Encode_Advanced_TestData()
@@ -71,7 +79,7 @@ namespace System.Text.Tests
         [Fact]
         public void Encode_InvalidUnicode()
         {
-            // TODO: add into Encode_TestData once #7166 is fixed
+            // TODO: add into Encode_Basic_TestData once #7166 is fixed
             Encode("\uD800", 0, 1, new byte[] { 43, 50, 65, 65, 45 }); // Lone high surrogate
             Encode("\uDC00", 0, 1, new byte[] { 43, 51, 65, 65, 45 }); // Lone low surrogate
             Encode("\uD800\uDC00", 0, 1, new byte[] { 43, 50, 65, 65, 45 }); // Surrogate pair out of range
