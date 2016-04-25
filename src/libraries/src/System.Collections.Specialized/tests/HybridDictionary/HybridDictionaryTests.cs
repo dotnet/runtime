@@ -22,9 +22,6 @@ namespace System.Collections.Specialized.Tests
         protected override bool ICollection_NonGeneric_CopyTo_ArrayOfIncorrectReferenceType_ThrowsArgumentException => false;
         protected override bool ICollection_NonGeneric_CopyTo_ArrayOfIncorrectValueType_ThrowsArgumentException => false;
 
-        protected override bool ICollection_NonGeneric_CopyTo_NonZeroLowerBound_ZeroCountThrowsArgumentException => false;
-        protected override bool ICollection_NonGeneric_CopyTo_NonZeroLowerBound_SingleCountThrowsArgumentException => false;
-
         protected override object CreateTKey(int seed)
         {
             int stringLength = seed % 10 + 5;
