@@ -53,6 +53,7 @@
     <Compile Include="PortableExecutable\BadImageFormat.cs" />
     <Compile Include="PortableExecutable\DebugDirectoryTests.cs" />
     <Compile Include="PortableExecutable\PEBinaryReaderTests.cs" />
+    <Compile Include="PortableExecutable\PEHeaderTests.cs" />
     <Compile Include="PortableExecutable\PEReaderTests.cs" />
     <Compile Include="PortableExecutable\SectionHeaderTests.cs" />
     <Compile Include="PortableExecutable\StreamExtensionsTests.cs" />

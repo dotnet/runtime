@@ -11,6 +11,15 @@ using System.Threading;
 
 namespace System.Reflection.Metadata
 {
+    /// <summary>
+    /// Provides a <see cref="MetadataReader"/> metadata stored in an array of bytes, a memory block, or a stream.
+    /// </summary>
+    /// <remarks>
+    /// Supported formats:
+    /// - ECMA-335 CLI (Common Language Infrastructure) metadata (<see cref="FromMetadataImage(byte*, int)"/>)
+    /// - Edit and Continue metadata delta (<see cref="FromMetadataImage(byte*, int)"/>)
+    /// - Portable PDB metadata (<see cref="FromPortablePdbImage(byte*, int)"/>)
+    /// </remarks>
     public sealed class MetadataReaderProvider : IDisposable
     {
         // Either we have a provider and create metadata block lazily or
