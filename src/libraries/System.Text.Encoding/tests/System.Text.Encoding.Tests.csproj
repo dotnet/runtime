@@ -63,15 +63,13 @@
     <Compile Include="UTF7Encoding\UTF7EncodingGetHashCode.cs" />
     <Compile Include="UTF7Encoding\UTF7EncodingGetMaxByteCount.cs" />
     <Compile Include="UTF7Encoding\UTF7EncodingGetMaxCharCount.cs" />
-    <Compile Include="UTF8Encoding\UTF8EncodingProperties.cs" />
-    <Compile Include="UTF8Encoding\UTF8EncodingEquals.cs" />
     <Compile Include="UTF8Encoding\UTF8EncodingEncode.cs" />
     <Compile Include="UTF8Encoding\UTF8EncodingDecode.cs" />
     <Compile Include="UTF8Encoding\UTF8EncodingGetDecoder.cs" />
     <Compile Include="UTF8Encoding\UTF8EncodingGetEncoder.cs" />
     <Compile Include="UTF8Encoding\UTF8EncodingGetMaxByteCount.cs" />
     <Compile Include="UTF8Encoding\UTF8EncodingGetMaxCharCount.cs" />
-    <Compile Include="UTF8Encoding\UTF8EncodingGetPreamble.cs" />
+    <Compile Include="UTF8Encoding\UTF8EncodingTests.cs" />
     <Compile Include="$(CommonTestPath)\System\RandomDataGenerator.cs" />
     <!-- Performance Tests -->
     <Compile Include="Performance\Perf.Encoding.cs" />
