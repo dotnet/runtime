@@ -21,7 +21,7 @@ namespace System.Net.NameResolution.Tests
             Task.WaitAll(hostAddressesTask1, hostAddressesTask2);
 
             var list1 = hostAddressesTask1.Result;
-            var list2 = hostAddressesTask1.Result;
+            var list2 = hostAddressesTask2.Result;
 
             Assert.NotNull(list1);
             Assert.NotNull(list2);
