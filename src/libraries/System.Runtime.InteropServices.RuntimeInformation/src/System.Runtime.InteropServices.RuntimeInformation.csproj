@@ -13,9 +13,6 @@
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <ProjectGuid>{F9DF2357-81B4-4317-908E-512DA9395583}</ProjectGuid>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.1</PackageTargetFramework>
-    <PackageTargetRuntime Condition="'$(TargetsWindows)' == 'true'">win</PackageTargetRuntime>
-    <PackageTargetRuntime Condition="'$(TargetGroup)' == 'netcore50aot'">win-aot</PackageTargetRuntime>
-    <PackageTargetRuntime Condition="'$(TargetsUnix)' == 'true'">unix</PackageTargetRuntime>
     <DefineConstants Condition="'$(TargetGroup)'=='net45'">net45</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)'=='netcore50'">netcore50</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)'=='netcore50aot'">netcore50;netcore50aot</DefineConstants>

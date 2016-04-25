@@ -9,7 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.Net.Sockets.csproj" >
-      <OSGroup>Linux</OSGroup>
+      <OSGroup>Unix</OSGroup>
     </ProjectReference>
   </ItemGroup>
 

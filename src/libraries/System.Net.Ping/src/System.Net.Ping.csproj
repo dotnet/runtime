@@ -14,8 +14,6 @@
     <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net46'">None</ResourcesSourceOutputDirectory>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework>
     <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NugetTargetMoniker>
-    <PackageTargetRuntime Condition="'$(TargetsWindows)' == 'true'">win</PackageTargetRuntime>
-    <PackageTargetRuntime Condition="'$(TargetsUnix)' == 'true'">unix</PackageTargetRuntime>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
