@@ -21,6 +21,7 @@ internal static partial class Interop
         internal const string Eventing = "api-ms-win-eventing-provider-l1-1-0.dll";
         internal const string Handle = "api-ms-win-core-handle-l1-1-0.dll";
         internal const string Heap = "api-ms-win-core-heap-obsolete-l1-1-0.dll";
+        internal const string Heap_L1 = "api-ms-win-core-heap-l1-1-0.dll";
         internal const string IO = "api-ms-win-core-io-l1-1-0.dll";
         internal const string IpHlpApi = "iphlpapi.dll";
         internal const string Kernel32 = "kernel32.dll";
@@ -49,6 +50,7 @@ internal static partial class Interop
         internal const string RoBuffer = "api-ms-win-core-winrt-robuffer-l1-1-0.dll";
         internal const string SecurityBase = "api-ms-win-security-base-l1-1-0.dll";
         internal const string SecurityCpwl = "api-ms-win-security-cpwl-l1-1-0.dll";
+        internal const string SecurityCryptoApi = "api-ms-win-security-cryptoapi-l1-1-0.dll";
         internal const string SecurityLsa = "api-ms-win-security-lsalookup-l2-1-0.dll";
         internal const string SecurityLsaPolicy = "api-ms-win-security-lsapolicy-l1-1-0.dll";
         internal const string SecurityProvider = "api-ms-win-security-provider-l1-1-0.dll";
