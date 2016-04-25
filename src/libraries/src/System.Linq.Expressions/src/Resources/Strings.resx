@@ -405,9 +405,6 @@
   <data name="TypeMissingDefaultConstructor" xml:space="preserve">
     <value>Type '{0}' does not have a default constructor</value>
   </data>
-  <data name="ListInitializerWithZeroMembers" xml:space="preserve">
-    <value>List initializers must contain at least one initializer</value>
-  </data>
   <data name="ElementInitializerMethodNotAdd" xml:space="preserve">
     <value>Element initializer method must be named 'Add'</value>
   </data>

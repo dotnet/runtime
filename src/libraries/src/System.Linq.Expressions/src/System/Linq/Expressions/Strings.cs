@@ -888,17 +888,6 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// A string like "List initializers must contain at least one initializer"
-        /// </summary>
-        internal static string ListInitializerWithZeroMembers
-        {
-            get
-            {
-                return SR.ListInitializerWithZeroMembers;
-            }
-        }
-
-        /// <summary>
         /// A string like "Element initializer method must be named 'Add'"
         /// </summary>
         internal static string ElementInitializerMethodNotAdd

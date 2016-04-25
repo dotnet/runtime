@@ -142,7 +142,7 @@ namespace System.Linq.Expressions
             var initializerlist = initializers.ToReadOnly();
             if (initializerlist.Count == 0)
             {
-                throw Error.ListInitializerWithZeroMembers();
+                return new ListInitExpression(newExpression, EmptyReadOnlyCollection<ElementInit>.Instance);
             }
 
             MethodInfo addMethod = FindMethod(newExpression.Type, "Add", null, new Expression[] { initializerlist[0] }, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -178,10 +178,6 @@ namespace System.Linq.Expressions
             ContractUtils.RequiresNotNull(initializers, nameof(initializers));
 
             var initializerlist = initializers.ToReadOnly();
-            if (initializerlist.Count == 0)
-            {
-                throw Error.ListInitializerWithZeroMembers();
-            }
             ElementInit[] initList = new ElementInit[initializerlist.Count];
             for (int i = 0; i < initializerlist.Count; i++)
             {
@@ -223,10 +219,6 @@ namespace System.Linq.Expressions
             ContractUtils.RequiresNotNull(newExpression, nameof(newExpression));
             ContractUtils.RequiresNotNull(initializers, nameof(initializers));
             var initializerlist = initializers.ToReadOnly();
-            if (initializerlist.Count == 0)
-            {
-                throw Error.ListInitializerWithZeroMembers();
-            }
             ValidateListInitArgs(newExpression.Type, initializerlist);
             return new ListInitExpression(newExpression, initializerlist);
         }
