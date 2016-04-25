@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using Xunit;
 using Microsoft.Xunit.Performance;
 
-namespace System.Runtime.Tests
+namespace System.Tests
 {
     public class Perf_String
     {
