@@ -267,7 +267,7 @@ namespace System.Text.Tests
 
             // Make sure that GetMaxCharCount respects the MaxCharCount property of DecoderFallback
             // However, Utf7Encoding ignores this
-            if (!(encoding is UTF7Encoding))
+            if (!(encoding is UTF7Encoding) && !(encoding is UTF32Encoding))
             {
                 Encoding customizedMaxCharCountEncoding = Encoding.GetEncoding(encoding.CodePage, EncoderFallback.ReplacementFallback, new HighMaxCharCountDecoderFallback());
                 Assert.Throws<ArgumentOutOfRangeException>("byteCount", () => customizedMaxCharCountEncoding.GetMaxCharCount(2));
