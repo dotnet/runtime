@@ -7,79 +7,82 @@ using System.Runtime.CompilerServices;
 
 using Xunit;
 
-public class ConditionalWeakTableTests
+namespace System.Runtime.CompilerServices.Tests
 {
-    [Fact]
-    public static void Add()
+    public class ConditionalWeakTableTests
     {
-        ConditionalWeakTable<object, object> cwt = new ConditionalWeakTable<object, object>();
-        object key = new object();
-        object value = new object();
-        object obj = null;
+        [Fact]
+        public static void Add()
+        {
+            ConditionalWeakTable<object, object> cwt = new ConditionalWeakTable<object, object>();
+            object key = new object();
+            object value = new object();
+            object obj = null;
 
-        cwt.Add(key, value);
+            cwt.Add(key, value);
 
-        Assert.True(cwt.TryGetValue(key, out value));
-        Assert.Equal(value, cwt.GetOrCreateValue(key));
-        Assert.Equal(value, cwt.GetValue(key , k => new object()));
+            Assert.True(cwt.TryGetValue(key, out value));
+            Assert.Equal(value, cwt.GetOrCreateValue(key));
+            Assert.Equal(value, cwt.GetValue(key, k => new object()));
 
-        WeakReference<object> wrValue = new WeakReference<object>(value, false);
-        WeakReference<object> wrkey = new WeakReference<object>(key, false);
-        key = null;
-        value = null;
+            WeakReference<object> wrValue = new WeakReference<object>(value, false);
+            WeakReference<object> wrkey = new WeakReference<object>(key, false);
+            key = null;
+            value = null;
 
-        GC.Collect();
+            GC.Collect();
 
-        // key and value must be collected
-        Assert.False(wrValue.TryGetTarget(out obj));
-        Assert.False(wrkey.TryGetTarget(out obj));
-    }
+            // key and value must be collected
+            Assert.False(wrValue.TryGetTarget(out obj));
+            Assert.False(wrkey.TryGetTarget(out obj));
+        }
 
-    [Fact]
-    public static void GetOrCreateValue()
-    {
-        ConditionalWeakTable<object, object> cwt = new ConditionalWeakTable<object, object>();
-        object key = new object();
-        object obj = null;
+        [Fact]
+        public static void GetOrCreateValue()
+        {
+            ConditionalWeakTable<object, object> cwt = new ConditionalWeakTable<object, object>();
+            object key = new object();
+            object obj = null;
 
-        object value = cwt.GetOrCreateValue(key);
+            object value = cwt.GetOrCreateValue(key);
 
-        Assert.True(cwt.TryGetValue(key, out value));
-        Assert.Equal(value, cwt.GetValue(key, k => new object()));
+            Assert.True(cwt.TryGetValue(key, out value));
+            Assert.Equal(value, cwt.GetValue(key, k => new object()));
 
-        WeakReference<object> wrValue = new WeakReference<object>(value, false);
-        WeakReference<object> wrkey = new WeakReference<object>(key, false);
-        key = null;
-        value = null;
+            WeakReference<object> wrValue = new WeakReference<object>(value, false);
+            WeakReference<object> wrkey = new WeakReference<object>(key, false);
+            key = null;
+            value = null;
 
-        GC.Collect();
+            GC.Collect();
 
-        // key and value must be collected
-        Assert.False(wrValue.TryGetTarget(out obj));
-        Assert.False(wrkey.TryGetTarget(out obj));
-    }
+            // key and value must be collected
+            Assert.False(wrValue.TryGetTarget(out obj));
+            Assert.False(wrkey.TryGetTarget(out obj));
+        }
 
-    [Fact]
-    public static void GetValue()
-    {
-        ConditionalWeakTable<object, object> cwt = new ConditionalWeakTable<object, object>();
-        object key = new object();
-        object obj = null;
+        [Fact]
+        public static void GetValue()
+        {
+            ConditionalWeakTable<object, object> cwt = new ConditionalWeakTable<object, object>();
+            object key = new object();
+            object obj = null;
 
-        object value = cwt.GetValue(key, k => new object());
+            object value = cwt.GetValue(key, k => new object());
 
-        Assert.True(cwt.TryGetValue(key, out value));
-        Assert.Equal(value, cwt.GetOrCreateValue(key));
+            Assert.True(cwt.TryGetValue(key, out value));
+            Assert.Equal(value, cwt.GetOrCreateValue(key));
 
-        WeakReference<object> wrValue = new WeakReference<object>(value, false);
-        WeakReference<object> wrkey = new WeakReference<object>(key, false);
-        key = null;
-        value = null;
+            WeakReference<object> wrValue = new WeakReference<object>(value, false);
+            WeakReference<object> wrkey = new WeakReference<object>(key, false);
+            key = null;
+            value = null;
 
-        GC.Collect();
+            GC.Collect();
 
-        // key and value must be collected
-        Assert.False(wrValue.TryGetTarget(out obj));
-        Assert.False(wrkey.TryGetTarget(out obj));
+            // key and value must be collected
+            Assert.False(wrValue.TryGetTarget(out obj));
+            Assert.False(wrkey.TryGetTarget(out obj));
+        }
     }
 }

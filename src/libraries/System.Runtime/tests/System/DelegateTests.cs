@@ -4,11 +4,9 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using DelegateTestInternal;
-
 using Xunit;
 
-namespace DelegateTestInternal
+namespace System.Tests
 {
     public static class TestExtensionMethod
     {
@@ -17,302 +15,302 @@ namespace DelegateTestInternal
             return testparam.structField;
         }
     }
-}
 
-public static unsafe class DelegateTests
-{
-    public struct TestStruct
+    public static unsafe class DelegateTests
     {
-        public object o1;
-        public object o2;
-    }
-
-    public class TestClass
-    {
-        public TestStruct structField;
-    }
-
-    public delegate int SomeDelegate(int x);
-    private static int SquareNumber(int x)
-    {
-        return x * x;
-    }
-
-    private static void EmptyFunc()
-    {
-        return;
-    }
-
-    public delegate TestStruct StructReturningDelegate();
-
-    [Fact]
-    public static void ClosedStaticDelegate()
-    {
-        TestClass foo = new TestClass();
-        foo.structField.o1 = new object();
-        foo.structField.o2 = new object();
-        StructReturningDelegate testDelegate = foo.TestFunc;
-        TestStruct returnedStruct = testDelegate();
-        Assert.True(RuntimeHelpers.ReferenceEquals(foo.structField.o1, returnedStruct.o1));
-        Assert.True(RuntimeHelpers.ReferenceEquals(foo.structField.o2, returnedStruct.o2));
-    }
-
-    public class A { }
-    public class B : A { }
-    public delegate A DynamicInvokeDelegate(A nonRefParam1, B nonRefParam2, ref A refParam, out B outParam);
-
-    public static A DynamicInvokeTestFunction(A nonRefParam1, B nonRefParam2, ref A refParam, out B outParam)
-    {
-        outParam = (B)refParam;
-        refParam = nonRefParam2;
-        return nonRefParam1;
-    }
-
-    [Fact]
-    public static void DynamicInvoke()
-    {
-        A a1 = new A();
-        A a2 = new A();
-        B b1 = new B();
-        B b2 = new B();
-
-        DynamicInvokeDelegate testDelegate = DynamicInvokeTestFunction;
-
-        // Check that the delegate behaves as expected
-        A refParam = b2;
-        B outParam = null;
-        A returnValue = testDelegate(a1, b1, ref refParam, out outParam);
-        Assert.True(RuntimeHelpers.ReferenceEquals(returnValue, a1));
-        Assert.True(RuntimeHelpers.ReferenceEquals(refParam, b1));
-        Assert.True(RuntimeHelpers.ReferenceEquals(outParam, b2));
-
-        // Check dynamic invoke behavior
-        object[] parameters = new object[4];
-        parameters[0] = a1;
-        parameters[1] = b1;
-        parameters[2] = b2;
-        parameters[3] = null;
-
-        object retVal = testDelegate.DynamicInvoke(parameters);
-        Assert.True(RuntimeHelpers.ReferenceEquals(retVal, a1));
-        Assert.True(RuntimeHelpers.ReferenceEquals(parameters[2], b1));
-        Assert.True(RuntimeHelpers.ReferenceEquals(parameters[3], b2));
-
-        // Check invoke on a delegate that takes no parameters.
-        Action emptyDelegate = EmptyFunc;
-        emptyDelegate.DynamicInvoke(new object[] { });
-        emptyDelegate.DynamicInvoke(null);
-    }
-
-    [Fact]
-    public static void DynamicInvoke_CastingDefaultValues()
-    {
+        public struct TestStruct
         {
-            // Passing Type.Missing without providing default.
-            Delegate d = new DFoo1(Foo1);
-            Assert.Throws<ArgumentException>(() => d.DynamicInvoke(7, Type.Missing));
+            public object o1;
+            public object o2;
         }
 
+        public class TestClass
         {
-            // Passing Type.Missing with default.
-            Delegate d = new DFoo1WithDefault(Foo1);
-            d.DynamicInvoke(7, Type.Missing);
-        }
-    }
-
-    [Fact]
-    public static void DynamicInvoke_CastingByRef()
-    {
-        {
-            Delegate d = new DFoo2(Foo2);
-            object[] args = { 7 };
-            d.DynamicInvoke(args);
-            Assert.Equal(args[0], 8);
+            public TestStruct structField;
         }
 
+        public delegate int SomeDelegate(int x);
+        private static int SquareNumber(int x)
         {
-            Delegate d = new DFoo2(Foo2);
-            object[] args = { null };
-            d.DynamicInvoke(args);
-            Assert.Equal(args[0], 1);
+            return x * x;
         }
 
-        // for "byref ValueType" arguments, the incoming is allowed to be null. The target will receive default(ValueType).
+        private static void EmptyFunc()
         {
-            Delegate d = new DFoo3(Foo3);
-            object[] args = { null };
-            d.DynamicInvoke(args);
-            MyStruct s = (MyStruct)(args[0]);
-            Assert.Equal(s.X, 7);
-            Assert.Equal(s.Y, 8);
+            return;
         }
 
-        // For "byref ValueType" arguments, the type must match exactly.
+        public delegate TestStruct StructReturningDelegate();
+
+        [Fact]
+        public static void ClosedStaticDelegate()
         {
-            Delegate d = new DFoo2(Foo2);
-            object[] args = { (uint)7 };
-            Assert.Throws<ArgumentException>(() => d.DynamicInvoke(args));
+            TestClass foo = new TestClass();
+            foo.structField.o1 = new object();
+            foo.structField.o2 = new object();
+            StructReturningDelegate testDelegate = foo.TestFunc;
+            TestStruct returnedStruct = testDelegate();
+            Assert.True(RuntimeHelpers.ReferenceEquals(foo.structField.o1, returnedStruct.o1));
+            Assert.True(RuntimeHelpers.ReferenceEquals(foo.structField.o2, returnedStruct.o2));
         }
 
-        {
-            Delegate d = new DFoo2(Foo2);
-            object[] args = { E4.One };
-            Assert.Throws<ArgumentException>(() => d.DynamicInvoke(args));
-        }
-    }
+        public class A { }
+        public class B : A { }
+        public delegate A DynamicInvokeDelegate(A nonRefParam1, B nonRefParam2, ref A refParam, out B outParam);
 
-    [Fact]
-    public static void DynamicInvoke_CastingPrimitiveWiden()
-    {
+        public static A DynamicInvokeTestFunction(A nonRefParam1, B nonRefParam2, ref A refParam, out B outParam)
         {
-            // For primitives, value-preserving widenings allowed.
-            Delegate d = new DFoo1(Foo1);
-            object[] args = { 7, (short)7 };
-            d.DynamicInvoke(args);
+            outParam = (B)refParam;
+            refParam = nonRefParam2;
+            return nonRefParam1;
         }
 
+        [Fact]
+        public static void DynamicInvoke()
         {
-            // For primitives, conversion of enum to underlying integral prior to value-preserving widening allowed.
-            Delegate d = new DFoo1(Foo1);
-            object[] args = { 7, E4.Seven };
-            d.DynamicInvoke(args);
+            A a1 = new A();
+            A a2 = new A();
+            B b1 = new B();
+            B b2 = new B();
+
+            DynamicInvokeDelegate testDelegate = DynamicInvokeTestFunction;
+
+            // Check that the delegate behaves as expected
+            A refParam = b2;
+            B outParam = null;
+            A returnValue = testDelegate(a1, b1, ref refParam, out outParam);
+            Assert.True(RuntimeHelpers.ReferenceEquals(returnValue, a1));
+            Assert.True(RuntimeHelpers.ReferenceEquals(refParam, b1));
+            Assert.True(RuntimeHelpers.ReferenceEquals(outParam, b2));
+
+            // Check dynamic invoke behavior
+            object[] parameters = new object[4];
+            parameters[0] = a1;
+            parameters[1] = b1;
+            parameters[2] = b2;
+            parameters[3] = null;
+
+            object retVal = testDelegate.DynamicInvoke(parameters);
+            Assert.True(RuntimeHelpers.ReferenceEquals(retVal, a1));
+            Assert.True(RuntimeHelpers.ReferenceEquals(parameters[2], b1));
+            Assert.True(RuntimeHelpers.ReferenceEquals(parameters[3], b2));
+
+            // Check invoke on a delegate that takes no parameters.
+            Action emptyDelegate = EmptyFunc;
+            emptyDelegate.DynamicInvoke(new object[] { });
+            emptyDelegate.DynamicInvoke(null);
         }
 
+        [Fact]
+        public static void DynamicInvoke_CastingDefaultValues()
         {
-            // For primitives, conversion of enum to underlying integral prior to value-preserving widening allowed.
-            Delegate d = new DFoo1(Foo1);
-            object[] args = { 7, E2.Seven };
-            d.DynamicInvoke(args);
+            {
+                // Passing Type.Missing without providing default.
+                Delegate d = new DFoo1(Foo1);
+                Assert.Throws<ArgumentException>(() => d.DynamicInvoke(7, Type.Missing));
+            }
+
+            {
+                // Passing Type.Missing with default.
+                Delegate d = new DFoo1WithDefault(Foo1);
+                d.DynamicInvoke(7, Type.Missing);
+            }
         }
 
+        [Fact]
+        public static void DynamicInvoke_CastingByRef()
         {
-            // For primitives, conversion to enum after value-preserving widening allowed.
-            Delegate d = new DFoo4(Foo4);
-            object[] args = { E4.Seven, 7 };
-            d.DynamicInvoke(args);
+            {
+                Delegate d = new DFoo2(Foo2);
+                object[] args = { 7 };
+                d.DynamicInvoke(args);
+                Assert.Equal(args[0], 8);
+            }
+
+            {
+                Delegate d = new DFoo2(Foo2);
+                object[] args = { null };
+                d.DynamicInvoke(args);
+                Assert.Equal(args[0], 1);
+            }
+
+            // for "byref ValueType" arguments, the incoming is allowed to be null. The target will receive default(ValueType).
+            {
+                Delegate d = new DFoo3(Foo3);
+                object[] args = { null };
+                d.DynamicInvoke(args);
+                MyStruct s = (MyStruct)(args[0]);
+                Assert.Equal(s.X, 7);
+                Assert.Equal(s.Y, 8);
+            }
+
+            // For "byref ValueType" arguments, the type must match exactly.
+            {
+                Delegate d = new DFoo2(Foo2);
+                object[] args = { (uint)7 };
+                Assert.Throws<ArgumentException>(() => d.DynamicInvoke(args));
+            }
+
+            {
+                Delegate d = new DFoo2(Foo2);
+                object[] args = { E4.One };
+                Assert.Throws<ArgumentException>(() => d.DynamicInvoke(args));
+            }
         }
 
+        [Fact]
+        public static void DynamicInvoke_CastingPrimitiveWiden()
         {
-            // For primitives, conversion to enum after value-preserving widening allowed.
-            Delegate d = new DFoo4(Foo4);
-            object[] args = { E4.Seven, (short)7 };
-            d.DynamicInvoke(args);
+            {
+                // For primitives, value-preserving widenings allowed.
+                Delegate d = new DFoo1(Foo1);
+                object[] args = { 7, (short)7 };
+                d.DynamicInvoke(args);
+            }
+
+            {
+                // For primitives, conversion of enum to underlying integral prior to value-preserving widening allowed.
+                Delegate d = new DFoo1(Foo1);
+                object[] args = { 7, E4.Seven };
+                d.DynamicInvoke(args);
+            }
+
+            {
+                // For primitives, conversion of enum to underlying integral prior to value-preserving widening allowed.
+                Delegate d = new DFoo1(Foo1);
+                object[] args = { 7, E2.Seven };
+                d.DynamicInvoke(args);
+            }
+
+            {
+                // For primitives, conversion to enum after value-preserving widening allowed.
+                Delegate d = new DFoo4(Foo4);
+                object[] args = { E4.Seven, 7 };
+                d.DynamicInvoke(args);
+            }
+
+            {
+                // For primitives, conversion to enum after value-preserving widening allowed.
+                Delegate d = new DFoo4(Foo4);
+                object[] args = { E4.Seven, (short)7 };
+                d.DynamicInvoke(args);
+            }
+
+            {
+                // Size-preserving but non-value-preserving conversions NOT allowed.
+                Delegate d = new DFoo1(Foo1);
+                object[] args = { 7, (uint)7 };
+                Assert.Throws<ArgumentException>(() => d.DynamicInvoke(args));
+            }
+
+            {
+                // Size-preserving but non-value-preserving conversions NOT allowed.
+                Delegate d = new DFoo1(Foo1);
+                object[] args = { 7, U4.Seven };
+                Assert.Throws<ArgumentException>(() => d.DynamicInvoke(args));
+            }
         }
 
+        [Fact]
+        public static void DynamicInvoke_CastingMisc()
         {
-            // Size-preserving but non-value-preserving conversions NOT allowed.
-            Delegate d = new DFoo1(Foo1);
-            object[] args = { 7, (uint)7 };
-            Assert.Throws<ArgumentException>(() => d.DynamicInvoke(args));
+            {
+                // DynamicInvoke allows "null" for any value type (converts to default(valuetype)).
+                Delegate d = new DFoo5(Foo5);
+                object[] args = { null };
+                d.DynamicInvoke(args);
+            }
+
+            {
+                // DynamicInvoke allows conversion of T to Nullable<T>
+                Delegate d = new DFoo6(Foo6);
+                object[] args = { 7 };
+                d.DynamicInvoke(args);
+            }
+
+            {
+                // DynamicInvoke allows conversion of T to Nullable<T> but T must match exactly.
+                Delegate d = new DFoo6(Foo6);
+                object[] args = { (short)7 };
+                Assert.Throws<ArgumentException>(() => d.DynamicInvoke(args));
+            }
+
+            {
+                // DynamicInvoke allows conversion of T to Nullable<T> but T must match exactly.
+                Delegate d = new DFoo6(Foo6);
+                object[] args = { E4.Seven };
+                Assert.Throws<ArgumentException>(() => d.DynamicInvoke(args));
+            }
         }
 
+        private static void Foo1(int expected, int actual)
         {
-            // Size-preserving but non-value-preserving conversions NOT allowed.
-            Delegate d = new DFoo1(Foo1);
-            object[] args = { 7, U4.Seven };
-            Assert.Throws<ArgumentException>(() => d.DynamicInvoke(args));
-        }
-    }
-
-    [Fact]
-    public static void DynamicInvoke_CastingMisc()
-    {
-        {
-            // DynamicInvoke allows "null" for any value type (converts to default(valuetype)).
-            Delegate d = new DFoo5(Foo5);
-            object[] args = { null };
-            d.DynamicInvoke(args);
+            Assert.Equal(expected, actual);
         }
 
+        private delegate void DFoo1(int expected, int actual);
+        private delegate void DFoo1WithDefault(int expected, int actual = 7);
+
+        private static void Foo2(ref int i)
         {
-            // DynamicInvoke allows conversion of T to Nullable<T>
-            Delegate d = new DFoo6(Foo6);
-            object[] args = { 7 };
-            d.DynamicInvoke(args);
+            i++;
         }
 
+        private delegate void DFoo2(ref int i);
+
+        private struct MyStruct
         {
-            // DynamicInvoke allows conversion of T to Nullable<T> but T must match exactly.
-            Delegate d = new DFoo6(Foo6);
-            object[] args = { (short)7 };
-            Assert.Throws<ArgumentException>(() => d.DynamicInvoke(args));
+            public int X;
+            public int Y;
         }
 
+        private static void Foo3(ref MyStruct s)
         {
-            // DynamicInvoke allows conversion of T to Nullable<T> but T must match exactly.
-            Delegate d = new DFoo6(Foo6);
-            object[] args = { E4.Seven };
-            Assert.Throws<ArgumentException>(() => d.DynamicInvoke(args));
+            s.X += 7;
+            s.Y += 8;
         }
-    }
 
-    private static void Foo1(int expected, int actual)
-    {
-        Assert.Equal(expected, actual);
-    }
+        private delegate void DFoo3(ref MyStruct s);
 
-    private delegate void DFoo1(int expected, int actual);
-    private delegate void DFoo1WithDefault(int expected, int actual = 7);
+        private static void Foo4(E4 expected, E4 actual)
+        {
+            Assert.Equal(expected, actual);
+        }
 
-    private static void Foo2(ref int i)
-    {
-        i++;
-    }
+        private delegate void DFoo4(E4 expected, E4 actual);
 
-    private delegate void DFoo2(ref int i);
+        private static void Foo5(MyStruct s)
+        {
+            Assert.Equal(s.X, 0);
+            Assert.Equal(s.Y, 0);
+        }
 
-    private struct MyStruct
-    {
-        public int X;
-        public int Y;
-    }
+        private delegate void DFoo5(MyStruct s);
 
-    private static void Foo3(ref MyStruct s)
-    {
-        s.X += 7;
-        s.Y += 8;
-    }
+        private static void Foo6(int? n)
+        {
+            Assert.True(n.HasValue);
+            Assert.Equal(n.Value, 7);
+        }
 
-    private delegate void DFoo3(ref MyStruct s);
+        private delegate void DFoo6(int? s);
 
-    private static void Foo4(E4 expected, E4 actual)
-    {
-        Assert.Equal(expected, actual);
-    }
+        private enum E2 : short
+        {
+            One = 1,
+            Seven = 7,
+        }
 
-    private delegate void DFoo4(E4 expected, E4 actual);
+        private enum E4 : int
+        {
+            One = 1,
+            Seven = 7,
+        }
 
-    private static void Foo5(MyStruct s)
-    {
-        Assert.Equal(s.X, 0);
-        Assert.Equal(s.Y, 0);
-    }
-
-    private delegate void DFoo5(MyStruct s);
-
-    private static void Foo6(int? n)
-    {
-        Assert.True(n.HasValue);
-        Assert.Equal(n.Value, 7);
-    }
-
-    private delegate void DFoo6(int? s);
-
-    private enum E2 : short
-    {
-        One = 1,
-        Seven = 7,
-    }
-
-    private enum E4 : int
-    {
-        One = 1,
-        Seven = 7,
-    }
-
-    private enum U4 : uint
-    {
-        One = 1,
-        Seven = 7,
+        private enum U4 : uint
+        {
+            One = 1,
+            Seven = 7,
+        }
     }
 }
