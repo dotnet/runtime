@@ -792,7 +792,7 @@ namespace System.IO
 
             // Calling Flush in a non-writable stream is a no-op, not an error:
             if (!_canWrite)
-                return Helpers.CompletedTask;
+                return Task.CompletedTask;
 
 #if DEBUG
             AssertValidStream(wrtStr);
