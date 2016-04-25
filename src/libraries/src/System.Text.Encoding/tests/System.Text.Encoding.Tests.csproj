@@ -51,6 +51,11 @@
     <Compile Include="UnicodeEncoding\UnicodeEncodingGetMaxByteCount.cs" />
     <Compile Include="UnicodeEncoding\UnicodeEncodingGetMaxCharCount.cs" />
     <Compile Include="UnicodeEncoding\UnicodeEncodingTests.cs" />
+    <Compile Include="UTF32Encoding\UTF32EncodingDecode.cs" />
+    <Compile Include="UTF32Encoding\UTF32EncodingGetMaxByteCount.cs" />
+    <Compile Include="UTF32Encoding\UTF32EncodingGetMaxCharCount.cs" />
+    <Compile Include="UTF32Encoding\UTF32EncodingTests.cs" />
+    <Compile Include="UTF32Encoding\UTF32EncodingEncode.cs" />
     <Compile Include="UTF7Encoding\UTF7EncodingEquals.cs" />
     <Compile Include="UTF7Encoding\UTF7EncodingEncode.cs" />
     <Compile Include="UTF7Encoding\UTF7EncodingDecode.cs" />
