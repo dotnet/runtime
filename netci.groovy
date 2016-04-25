@@ -903,7 +903,7 @@ combinedScenarios.each { scenario ->
                     switch (architecture) {
                         case 'arm64':
                             // Windows only
-                            if (os != 'Windows_NT') {
+                            if (os != 'Windows_NT' || isBuildOnly) {
                                 return
                             }
                             break
