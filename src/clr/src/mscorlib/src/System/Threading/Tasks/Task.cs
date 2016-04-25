@@ -5584,7 +5584,6 @@ namespace System.Threading.Tasks
             return task;
         }
         
-#if !FEATURE_CORECLR 
         /// <summary>Creates a <see cref="Task"/> that's completed due to cancellation with the specified token.</summary>
         /// <param name="cancellationToken">The token with which to complete the task.</param>
         /// <returns>The canceled task.</returns>
@@ -5603,7 +5602,6 @@ namespace System.Threading.Tasks
         {
             return FromCanceled<TResult>(cancellationToken);
         }
-#endif
         
         #endregion
 
