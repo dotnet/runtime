@@ -2,18 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.ComponentModel;
 using System.Net.Sockets;
 
 namespace System.Net.Internals
 {
-    internal class InternalSocketException : SocketException
+    internal static partial class SocketExceptionFactory
     {
-        // TODO #2891: Add a public ctor to SocketException instead.
-        public InternalSocketException(SocketError errorCode, int platformError)
-            : base((int)errorCode)
+        public static SocketException CreateSocketException(SocketError errorCode, int platformError)
         {
+            return new SocketException((int)errorCode);
         }
     }
 }

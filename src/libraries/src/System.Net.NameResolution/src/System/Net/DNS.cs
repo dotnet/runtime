@@ -65,7 +65,7 @@ namespace System.Net
                 SocketError errorCode = NameResolutionPal.TryGetAddrInfo(hostName, out ipHostEntry, out nativeErrorCode);
                 if (errorCode != SocketError.Success)
                 {
-                    throw new InternalSocketException(errorCode, nativeErrorCode);
+                    throw SocketExceptionFactory.CreateSocketException(errorCode, nativeErrorCode);
                 }
             }
             else
@@ -112,8 +112,11 @@ namespace System.Net
 
                     if (NetEventSource.Log.IsEnabled())
                     {
-                        NetEventSource.Exception(NetEventSource.ComponentType.Socket, "DNS",
-                        "InternalGetHostByAddress", new InternalSocketException(errorCode, nativeErrorCode));
+                        NetEventSource.Exception(
+                            NetEventSource.ComponentType.Socket, 
+                            "DNS",
+                            "InternalGetHostByAddress", 
+                            SocketExceptionFactory.CreateSocketException(errorCode, nativeErrorCode));
                     }
 
                     // One of two things happened:
@@ -125,7 +128,7 @@ namespace System.Net
                     // Just return the resolved host name and no IPs.
                     return hostEntry;
                 }
-                throw new InternalSocketException(errorCode, nativeErrorCode);
+                throw SocketExceptionFactory.CreateSocketException(errorCode, nativeErrorCode);
             }
 
             //
