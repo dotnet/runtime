@@ -6,11 +6,12 @@ using System.IO;
 
 namespace System.Reflection.Metadata.Tests
 {
-    public class TestStream : Stream
+    public class TestStream : MemoryStream
     {
         private readonly bool _canRead, _canSeek, _canWrite;
 
-        public TestStream(bool canRead, bool canSeek, bool canWrite)
+        public TestStream(bool canRead, bool canSeek, bool canWrite, byte[] buffer = null)
+            : base(buffer ?? Array.Empty<byte>())
         {
             _canRead = canRead;
             _canSeek = canSeek;
@@ -20,51 +21,5 @@ namespace System.Reflection.Metadata.Tests
         public override bool CanRead => _canRead;
         public override bool CanSeek => _canSeek;
         public override bool CanWrite => _canWrite;
-
-        public override long Length
-        {
-            get
-            {
-                return 0;
-            }
-        }
-
-        public override long Position
-        {
-            get
-            {
-                return 0;
-            }
-
-            set
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        public override void Flush()
-        {
-            throw new NotImplementedException();
-        }
-
-        public override int Read(byte[] buffer, int offset, int count)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override long Seek(long offset, SeekOrigin origin)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override void SetLength(long value)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override void Write(byte[] buffer, int offset, int count)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

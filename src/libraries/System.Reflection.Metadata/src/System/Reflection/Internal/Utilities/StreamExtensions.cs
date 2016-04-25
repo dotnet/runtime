@@ -87,24 +87,22 @@ namespace System.Reflection.Internal
         {
             long maxSize = stream.Length - stream.Position;
 
+            if (size < 0 || size > maxSize)
+            {
+                throw new ArgumentOutOfRangeException(nameof(size));
+            }
+
             if (size != 0)
             {
-                if (size > maxSize)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(size));
-                }
-
                 return size;
             }
-            else
+            
+            if (maxSize > int.MaxValue)
             {
-                if (maxSize > int.MaxValue)
-                {
-                    throw new ArgumentException(SR.StreamTooLarge, streamParameterName);
-                }
-
-                return (int)maxSize;
+                throw new ArgumentException(SR.StreamTooLarge, streamParameterName);
             }
+
+            return (int)maxSize;
         }
     }
 }

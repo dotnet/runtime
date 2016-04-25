@@ -57,7 +57,13 @@ namespace System.Reflection.PortableExecutable.Tests
         {
             Assert.Throws<ArgumentException>(() => new PEReader(new TestStream(canRead: false, canSeek: false, canWrite: false)));
             Assert.Throws<ArgumentException>(() => new PEReader(new TestStream(canRead: true, canSeek: false, canWrite: false)));
-            new PEReader(new TestStream(canRead: true, canSeek: true, canWrite: false));
+
+            var s = new TestStream(canRead: true, canSeek: true, canWrite: false);
+
+            new PEReader(s);
+            new PEReader(s, PEStreamOptions.Default, 0);
+            Assert.Throws<ArgumentOutOfRangeException>(() => new PEReader(s, PEStreamOptions.Default, -1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new PEReader(s, PEStreamOptions.Default, 1));
         }
 
         [Fact]
