@@ -78,10 +78,7 @@ namespace System.Text.Tests
         public void Equals(ASCIIEncoding encoding, object value, bool expected)
         {
             Assert.Equal(expected, encoding.Equals(value));
-            if (value is ASCIIEncoding)
-            {
-                Assert.Equal(expected, encoding.GetHashCode().Equals(value.GetHashCode()));
-            }
+            Assert.Equal(expected, encoding.GetHashCode().Equals(value?.GetHashCode()));
         }
 
         [Theory]
