@@ -116,7 +116,7 @@ namespace System
                     return Task.FromException(RestrictedErrorInfoHelper.AttachRestrictedErrorInfo(source.ErrorCode));
 
                 case AsyncStatus.Canceled:
-                    return Task.FromCancellation(cancellationToken.IsCancellationRequested ? cancellationToken : new CancellationToken(true));
+                    return Task.FromCanceled(cancellationToken.IsCancellationRequested ? cancellationToken : new CancellationToken(true));
             }
 
             // Benign race: source may complete here. Things still work, just not taking the fast path.
@@ -192,7 +192,7 @@ namespace System
                     return Task.FromException<TResult>(RestrictedErrorInfoHelper.AttachRestrictedErrorInfo(source.ErrorCode));
 
                 case AsyncStatus.Canceled:
-                    return Task.FromCancellation<TResult>(cancellationToken.IsCancellationRequested ? cancellationToken : new CancellationToken(true));
+                    return Task.FromCanceled<TResult>(cancellationToken.IsCancellationRequested ? cancellationToken : new CancellationToken(true));
             }
 
             // Benign race: source may complete here. Things still work, just not taking the fast path.
@@ -295,7 +295,7 @@ namespace System
                     return Task.FromException(RestrictedErrorInfoHelper.AttachRestrictedErrorInfo(source.ErrorCode));
 
                 case AsyncStatus.Canceled:
-                    return Task.FromCancellation(cancellationToken.IsCancellationRequested ? cancellationToken : new CancellationToken(true));
+                    return Task.FromCanceled(cancellationToken.IsCancellationRequested ? cancellationToken : new CancellationToken(true));
             }
 
             // Benign race: source may complete here. Things still work, just not taking the fast path.
@@ -404,7 +404,7 @@ namespace System
                     return Task.FromException<TResult>(RestrictedErrorInfoHelper.AttachRestrictedErrorInfo(source.ErrorCode));
 
                 case AsyncStatus.Canceled:
-                    return Task.FromCancellation<TResult>(cancellationToken.IsCancellationRequested ? cancellationToken : new CancellationToken(true));
+                    return Task.FromCanceled<TResult>(cancellationToken.IsCancellationRequested ? cancellationToken : new CancellationToken(true));
             }
 
             // Benign race: source may complete here. Things still work, just not taking the fast path.
