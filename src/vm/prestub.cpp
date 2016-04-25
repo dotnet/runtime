@@ -1682,7 +1682,7 @@ PCODE TheVarargNDirectStub(BOOL hasRetBuffArg)
 {
     LIMITED_METHOD_CONTRACT;
 
-#if defined(_TARGET_ARM_) || defined(_TARGET_AMD64_)
+#if !defined(_TARGET_X86_)
     if (hasRetBuffArg)
     {
         return GetEEFuncEntryPoint(VarargPInvokeStub_RetBuffArg);
