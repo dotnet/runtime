@@ -16,7 +16,7 @@
   </PropertyGroup>
   <ItemGroup>
     <None Include="..\..\..\Common\tests\Data\TinyAssembly.dll">
-      <Link>Module\TinyAssembly.dll</Link>
+      <Link>TinyAssembly.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
