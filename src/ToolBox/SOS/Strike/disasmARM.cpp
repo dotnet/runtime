@@ -48,6 +48,8 @@ namespace ARMGCDump
 #error This file should be used to support SOS targeting ARM debuggees
 #endif
 
+#ifdef SOS_TARGET_ARM
+ARMMachine ARMMachine::s_ARMMachineInstance;
 
 // Decodes the target label of the immediate form of bl and blx instructions. The PC given is that of the
 // start of the instruction.
@@ -334,6 +336,8 @@ static void HandleValue(TADDR value)
     }
 }
 
+#endif // !FEATURE_PAL
+
 /**********************************************************************\
 * Routine Description:                                                 *
 *                                                                      *
@@ -351,6 +355,7 @@ void ARMMachine::Unassembly (
     BOOL bSuppressLines,
     BOOL bDisplayOffsets) const
 {
+#ifndef FEATURE_PAL
     ULONG_PTR PC = PCBegin;
     char line[1024];
     char *ptr;
@@ -524,11 +529,12 @@ void ARMMachine::Unassembly (
 
         ExtOut ("\n");
     }
+#endif // !FEATURE_PAL
 }
 
+#if 0 // @ARMTODO: Figure out how to extract this information under CoreARM
 static void ExpFuncStateInit (TADDR *PCRetAddr)
 {
-#if 0 // @ARMTODO: Figure out how to extract this information under CoreARM
     ULONG64 offset;
     if (FAILED(g_ExtSymbols->GetOffsetByName("ntdll!KiUserExceptionDispatcher", &offset))) {
         return;
@@ -541,10 +547,9 @@ static void ExpFuncStateInit (TADDR *PCRetAddr)
             PCRetAddr[i++] = (TADDR)offset;
         }
     }
-#endif // 0
 }
+#endif // 0
 
-#endif // !FEATURE_PAL
 
 // @ARMTODO: Figure out how to extract this information under CoreARM
 BOOL ARMMachine::GetExceptionContext (TADDR stack, TADDR PC, TADDR *cxrAddr, CROSS_PLATFORM_CONTEXT * cxr,
@@ -598,13 +603,13 @@ BOOL ARMMachine::GetExceptionContext (TADDR stack, TADDR PC, TADDR *cxrAddr, CRO
 #endif // 0
 }
 
-#ifndef FEATURE_PAL
 
 ///
 /// Dump ARM GCInfo table
 ///
 void ARMMachine::DumpGCInfo(BYTE* pTable, unsigned methodSize, printfFtn gcPrintf, bool encBytes, bool bPrintHeader) const
 {
+#ifndef FEATURE_PAL
     if (bPrintHeader)
     {
         ExtOut("Pointer table:\n");
@@ -614,6 +619,7 @@ void ARMMachine::DumpGCInfo(BYTE* pTable, unsigned methodSize, printfFtn gcPrint
     gcDump.gcPrintf = gcPrintf;
 
     gcDump.DumpGCTable(pTable, methodSize, 0);
+#endif // !FEATURE_PAL
 }
 
-#endif // !FEATURE_PAL
+#endif // SOS_TARGET_ARM

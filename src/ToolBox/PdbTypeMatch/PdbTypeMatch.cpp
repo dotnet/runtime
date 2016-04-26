@@ -458,6 +458,7 @@ bool LoadDataFromPdb(
       case IMAGE_FILE_MACHINE_I386 : g_dwMachineType = CV_CFL_80386; break;
       case IMAGE_FILE_MACHINE_IA64 : g_dwMachineType = CV_CFL_IA64; break;
       case IMAGE_FILE_MACHINE_AMD64 : g_dwMachineType = CV_CFL_AMD64; break;
+      case IMAGE_FILE_MACHINE_ARMNT : g_dwMachineType = CV_CFL_ARM7; break;
     }
   }
 
