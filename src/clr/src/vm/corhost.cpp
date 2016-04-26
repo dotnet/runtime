@@ -1302,6 +1302,8 @@ HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
 
     HRESULT hr = S_OK;
 
+    AppDomain *pCurDomain = SystemDomain::GetCurrentDomain();
+
     Thread *pThread = GetThread();
     if (pThread == NULL)
     {
@@ -1312,7 +1314,7 @@ HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
         }
     }
 
-    if(SystemDomain::GetCurrentDomain()->GetId().m_dwId != DefaultADID)
+    if(pCurDomain->GetId().m_dwId != DefaultADID)
     {
         return HOST_E_INVALIDOPERATION;
     }
@@ -1323,6 +1325,10 @@ HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
     _ASSERTE (!pThread->PreemptiveGCDisabled());
 
     Assembly *pAssembly = AssemblySpec::LoadAssembly(pwzAssemblyPath);
+
+#if defined(FEATURE_MULTICOREJIT)
+    pCurDomain->GetMulticoreJitManager().AutoStartProfile(pCurDomain);
+#endif // defined(FEATURE_MULTICOREJIT)
 
     {
         GCX_COOP();
@@ -8729,7 +8735,7 @@ HRESULT STDMETHODCALLTYPE DllGetActivationFactoryImpl(LPCWSTR wszAssemblyName,
     {
         BaseDomain::LockHolder lh(pDomain);
 #ifdef FEATURE_HOSTED_BINDER
-        if (!SystemDomain::System()->DefaultDomain()->HasLoadContextHostBinder())
+        if (!pDomain->HasLoadContextHostBinder())
 #endif
         {
             // don't allow redirects
