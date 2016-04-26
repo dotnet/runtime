@@ -15,10 +15,15 @@ namespace System.Text.Tests
         [InlineData(int.MaxValue, 1073741825)]
         public void GetMaxCharCount(int byteCount, int expected)
         {
-            Assert.Equal(expected, new UnicodeEncoding(true, true).GetMaxCharCount(byteCount));
-            Assert.Equal(expected, new UnicodeEncoding(true, false).GetMaxCharCount(byteCount));
-            Assert.Equal(expected, new UnicodeEncoding(false, true).GetMaxCharCount(byteCount));
-            Assert.Equal(expected, new UnicodeEncoding(false, false).GetMaxCharCount(byteCount));
+            Assert.Equal(expected, new UnicodeEncoding(false, true, false).GetMaxCharCount(byteCount));
+            Assert.Equal(expected, new UnicodeEncoding(false, false, false).GetMaxCharCount(byteCount));
+            Assert.Equal(expected, new UnicodeEncoding(true, true, false).GetMaxCharCount(byteCount));
+            Assert.Equal(expected, new UnicodeEncoding(true, false, false).GetMaxCharCount(byteCount));
+
+            Assert.Equal(expected, new UnicodeEncoding(false, true, true).GetMaxCharCount(byteCount));
+            Assert.Equal(expected, new UnicodeEncoding(false, false, true).GetMaxCharCount(byteCount));
+            Assert.Equal(expected, new UnicodeEncoding(true, true, true).GetMaxCharCount(byteCount));
+            Assert.Equal(expected, new UnicodeEncoding(true, false, true).GetMaxCharCount(byteCount));
         }
     }
 }
