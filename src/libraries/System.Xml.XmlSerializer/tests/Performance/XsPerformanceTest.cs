@@ -17,7 +17,12 @@ namespace System.Xml.XmlSerializer.Tests.Performance
     {
         public static IEnumerable<object[]> SerializeMemberData()
         {
-            return PerformanceTestCommon.PerformanceMemberData();
+            foreach (PerfTestConfig config in PerformanceTestCommon.PerformanceTestConfigurations())
+            {
+                // XmlSerializer doesn't support Dictionary type
+                if (config.PerfTestType == TestType.Dictionary) continue;
+                yield return config.ToObjectArray();
+            }
         }
 
         [Benchmark]
