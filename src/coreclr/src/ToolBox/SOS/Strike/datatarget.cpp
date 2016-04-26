@@ -81,7 +81,14 @@ HRESULT STDMETHODCALLTYPE
 DataTarget::GetPointerSize(
     /* [out] */ ULONG32 *size)
 {
+#if defined(SOS_TARGET_AMD64) || defined(SOS_TARGET_ARM64)
     *size = 8;
+#elif defined(SOS_TARGET_ARM)
+    *size = 4;
+#elif
+  #error Unsupported architecture
+#endif
+
     return S_OK;
 }
 

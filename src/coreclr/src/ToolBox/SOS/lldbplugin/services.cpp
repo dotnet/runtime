@@ -401,7 +401,11 @@ HRESULT
 LLDBServices::GetExecutingProcessorType(
     PULONG type)
 {
+#ifdef DBG_TARGET_AMD64
     *type = IMAGE_FILE_MACHINE_AMD64;
+#elif DBG_TARGET_ARM
+    *type = IMAGE_FILE_MACHINE_ARMNT;
+#endif
     return S_OK;
 }
 
