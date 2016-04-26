@@ -60,7 +60,10 @@
     <Compile Include="System\Data\Common\DbConnectionStringCommon.cs" />
     <Compile Include="System\Data\Common\DbEnumerator.cs" />
     <Compile Include="$(CommonPath)\System\Data\Common\FieldNameLookup.cs">
-        <Link>System\Data\Common\FieldNameLookup.cs</Link>
+      <Link>System\Data\Common\FieldNameLookup.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Data\Common\BasicFieldNameLookup.cs">
+      <Link>System\Data\Common\BasicFieldNameLookup.cs</Link>
     </Compile>
     <Compile Include="System\Data\Common\MultipartIdentifier.cs" />
     <Compile Include="System\Data\Common\NameValuePair.cs" />
@@ -151,12 +154,12 @@
     <Compile Include="System\Data\SqlTypes\SqlXml.cs" />
     <Compile Include="$(CommonPath)\System\NotImplemented.cs" />
     <Compile Include="$(CommonPath)\System\Data\Locale\Locale.cs">
-        <Link>System\Data\Locale\Locale.cs</Link>
+      <Link>System\Data\Locale\Locale.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(IsPartialFacadeAssembly)' != 'true' ">
     <Compile Include="$(CommonPath)\System\Data\Locale\LocaleMapper.Windows.cs">
-        <Link>System\Data\Locale\LocaleMapper.Windows.cs</Link>
+      <Link>System\Data\Locale\LocaleMapper.Windows.cs</Link>
     </Compile>
     <Compile Include="System\Data\ProviderBase\DbConnectionPoolIdentity.Windows.cs" />
     <Compile Include="Interop\SNINativeMethodWrapper.Windows.cs" />
@@ -164,7 +167,7 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' != 'true' And '$(IsPartialFacadeAssembly)' != 'true' ">
     <Compile Include="$(CommonPath)\System\Data\Locale\LocaleMapper.Unix.cs">
-        <Link>System\Data\Locale\LocaleMapper.Unix.cs</Link>
+      <Link>System\Data\Locale\LocaleMapper.Unix.cs</Link>
     </Compile>
     <Compile Include="System\Data\ProviderBase\DbConnectionPoolIdentity.Unix.cs" />
     <Compile Include="Interop\SNINativeMethodWrapper.Unix.cs" />
