@@ -56,7 +56,7 @@
     <UseRoslynCompilers Condition="'$(UseRoslynCompilers)'=='' and '$(OSEnvironment)'!='Windows_NT'">false</UseRoslynCompilers>
   </PropertyGroup>
 
-  <Import Project="$(ToolRuntimePath)BuildVersion.targets" />
+  <Import Project="$(ToolRuntimePath)BuildVersion.targets" Condition="Exists('$(ToolRuntimePath)BuildVersion.targets')" />
   
   <PropertyGroup>
     <!-- temporarily increase assembly version of corefx impl of desktop inbox contracts to allow folks 
@@ -70,10 +70,10 @@
   <PropertyGroup Condition="'$(UseRoslynCompilers)'!='false'">
     <UseSharedCompilation>true</UseSharedCompilation>
   </PropertyGroup>
-  <Import Project="$(ToolRuntimePath)/net45/roslyn/build/Microsoft.Net.Compilers.props" Condition="'$(UseRoslynCompilers)'!='false'" />
+  <Import Project="$(ToolRuntimePath)/net45/roslyn/build/Microsoft.Net.Compilers.props" Condition="'$(UseRoslynCompilers)'!='false' AND Exists('$(ToolRuntimePath)/net45/roslyn/build/Microsoft.Net.Compilers.props')" />
 
   <!-- Import Build tools common props file where repo-independent properties are found -->
-  <Import Project="$(ToolsDir)Build.Common.props" />
+  <Import Project="$(ToolsDir)Build.Common.props" Condition="Exists('$(ToolsDir)Build.Common.props')" />
 
   <!-- Enable the analyzers for this repo -->
   <PropertyGroup>
