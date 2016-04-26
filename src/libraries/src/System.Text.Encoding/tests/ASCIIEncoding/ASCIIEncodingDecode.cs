@@ -11,12 +11,13 @@ namespace System.Text.Tests
     {
         public static IEnumerable<object[]> Decode_TestData()
         {
+            // Empty string
             yield return new object[] { new byte[0], 0, 0 };
             yield return new object[] { new byte[10], 5, 0 };
             yield return new object[] { new byte[10], 5, 5 };
 
             // All ASCII chars
-            for (int i = 0; i <= byte.MaxValue; i++)
+            for (int i = 0; i <= 0x7F; i++)
             {
                 byte b = (byte)i;
                 yield return new object[] { new byte[] { b }, 0, 1 };
@@ -29,20 +30,47 @@ namespace System.Text.Tests
         [MemberData(nameof(Decode_TestData))]
         public void Decode(byte[] bytes, int index, int count)
         {
-            char[] expectedChars = new char[count];
+            string expected = GetString(bytes, index, count);
+            EncodingHelpers.Decode(new ASCIIEncoding(), bytes, index, count, expected);
+
+            // Decoding valid bytes should not throw with a DecoderExceptionFallback
+            Encoding exceptionEncoding = Encoding.GetEncoding("ascii", new EncoderReplacementFallback("?"), new DecoderExceptionFallback());
+            EncodingHelpers.Decode(exceptionEncoding, bytes, index, count, expected);
+        }
+
+        public static IEnumerable<object[]> Decode_InvalidBytes_TestData()
+        {
+            // Non ASCII bytes
+            for (int i = 0x80; i <= byte.MaxValue; i++)
+            {
+                byte b = (byte)i;
+                yield return new object[] { new byte[] { b }, 0, 1 };
+                yield return new object[] { new byte[] { 96, b, 97 }, 1, 1 };
+                yield return new object[] { new byte[] { 97, b, 97 }, 0, 3 };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Decode_InvalidBytes_TestData))]
+        public void Decode_InvalidBytes(byte[] bytes, int index, int count)
+        {
+            string expected = GetString(bytes, index, count);
+            EncodingHelpers.Decode(new ASCIIEncoding(), bytes, index, count, expected);
+
+            // Decoding invalid bytes should throw with a DecoderExceptionFallback
+            Encoding exceptionEncoding = Encoding.GetEncoding("ascii", new EncoderReplacementFallback("?"), new DecoderExceptionFallback());
+            NegativeEncodingTests.Decode_Invalid(exceptionEncoding, bytes, index, count);
+        }
+
+        public static string GetString(byte[] bytes, int index, int count)
+        {
+            char[] chars = new char[count];
             for (int i = 0; i < count; i++)
             {
                 byte b = bytes[i + index];
-                if (b <= 0x7F)
-                {
-                    expectedChars[i] = (char)b;
-                }
-                else
-                {
-                    expectedChars[i] = '?';
-                }
+                chars[i] = b <= 0x7F ? (char)b : '?';
             }
-            EncodingHelpers.Decode(new ASCIIEncoding(), bytes, index, count, new string(expectedChars));
+            return new string(chars);
         }
     }
 }

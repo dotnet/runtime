@@ -352,7 +352,7 @@ namespace System.Text.Tests
 
                 Assert.Throws<DecoderFallbackException>(() => encoding.GetCharCount(pBytesLocal + index, count));
 
-                Assert.Throws<DecoderFallbackException>(() => encoding.GetChars(pBytesLocal, count, pCharsLocal, chars.Length));
+                Assert.Throws<DecoderFallbackException>(() => encoding.GetChars(pBytesLocal + index, count, pCharsLocal, chars.Length));
                 Assert.Throws<DecoderFallbackException>(() => encoding.GetString(pBytesLocal + index, count));
             }
         }
