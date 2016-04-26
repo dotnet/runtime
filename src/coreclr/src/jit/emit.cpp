@@ -1166,7 +1166,6 @@ void                emitter::dispIns(instrDesc* id)
 #if     EMIT_TRACK_STACK_DEPTH
     assert((int)emitCurStackLvl >= 0);
 #endif
-
     size_t  sz = emitSizeOfInsDsc(id);
     assert(id->idDebugOnlyInfo()->idSize == sz); 
 #endif  // DEBUG

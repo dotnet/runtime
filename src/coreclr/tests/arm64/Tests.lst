@@ -11659,7 +11659,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i03\mcc_i03.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i03
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_FAIL
+Categories=Pri0;EXPECTED_PASS
 HostStyle=0
 [mcc_i04.cmd_1696]
 RelativePath=JIT\jit64\mcc\interop\mcc_i04\mcc_i04.cmd
@@ -11715,7 +11715,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i13\mcc_i13.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i13
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_FAIL;ISSUE_2989
+Categories=Pri0;EXPECTED_PASS
 HostStyle=0
 [mcc_i14.cmd_1704]
 RelativePath=JIT\jit64\mcc\interop\mcc_i14\mcc_i14.cmd
@@ -11771,7 +11771,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i33\mcc_i33.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i33
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_FAIL;ISSUE_2989
+Categories=Pri0;EXPECTED_PASS
 HostStyle=0
 [mcc_i34.cmd_1712]
 RelativePath=JIT\jit64\mcc\interop\mcc_i34\mcc_i34.cmd
@@ -11827,7 +11827,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i53\mcc_i53.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i53
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_FAIL;ISSUE_2989
+Categories=Pri0;EXPECTED_PASS
 HostStyle=0
 [mcc_i54.cmd_1720]
 RelativePath=JIT\jit64\mcc\interop\mcc_i54\mcc_i54.cmd
@@ -11883,7 +11883,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i63\mcc_i63.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i63
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_FAIL;ISSUE_2989
+Categories=Pri0;EXPECTED_PASS
 HostStyle=0
 [mcc_i64.cmd_1728]
 RelativePath=JIT\jit64\mcc\interop\mcc_i64\mcc_i64.cmd
@@ -11939,7 +11939,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i73\mcc_i73.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i73
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_FAIL;ISSUE_2989
+Categories=Pri0;EXPECTED_PASS
 HostStyle=0
 [mcc_i74.cmd_1736]
 RelativePath=JIT\jit64\mcc\interop\mcc_i74\mcc_i74.cmd
@@ -11995,7 +11995,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i83\mcc_i83.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i83
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_FAIL;ISSUE_2989
+Categories=Pri0;EXPECTED_PASS
 HostStyle=0
 [mcc_i84.cmd_1744]
 RelativePath=JIT\jit64\mcc\interop\mcc_i84\mcc_i84.cmd

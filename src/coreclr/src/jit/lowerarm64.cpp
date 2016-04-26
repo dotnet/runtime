@@ -722,17 +722,14 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
 
                 // If it is a fast tail call, it is already preferenced to use IP0.
                 // Therefore, no need set src candidates on call tgt again.
-                if (tree->gtCall.IsVarargs() && 
-                    callHasFloatRegArgs &&                 
+                if (tree->gtCall.IsVarargs() &&
+                    callHasFloatRegArgs &&
                     !tree->gtCall.IsFastTailCall() &&
                     (ctrlExpr != nullptr))
                 {
                     // Don't assign the call target to any of the argument registers because
                     // we will use them to also pass floating point arguments as required
                     // by Arm64 ABI.
-                    
-                    NYI_ARM64("Lower - IsVarargs");
-
                     ctrlExpr->gtLsraInfo.setSrcCandidates(l, l->allRegs(TYP_INT) & ~(RBM_ARG_REGS));
                 }
             }

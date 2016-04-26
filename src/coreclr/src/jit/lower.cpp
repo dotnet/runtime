@@ -2672,9 +2672,7 @@ void Lowering::InsertPInvokeMethodEpilog(BasicBlock *returnBB
     // Method doing Pinvoke calls has exactly one return block unless it has "jmp" or tail calls.
 #ifdef DEBUG
     bool endsWithTailCallOrJmp = false;
-#if FEATURE_FASTTAILCALL
     endsWithTailCallOrJmp = returnBB->endsWithTailCallOrJmp(comp);
-#endif // FEATURE_FASTTAILCALL
     assert(((returnBB == comp->genReturnBB) && (returnBB->bbJumpKind == BBJ_RETURN)) || endsWithTailCallOrJmp);
 #endif // DEBUG
 
