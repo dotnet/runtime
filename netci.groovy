@@ -358,7 +358,11 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                 }
                 break
             case 'longgc':
-                // long GC jobs are triggered by phrase only.
+                assert (os == 'Ubuntu' || os == 'Windows_NT' || os == 'OSX')
+                assert configuration == 'Release'
+                assert architecture == 'x64'
+                Utilities.addPeriodicTrigger(job, '@daily')
+                addEmailPublisher(job, 'dotnetgctests@microsoft.com')
                 break
             case 'ilrt':
                 assert !(os in bidailyCrossList)
@@ -510,7 +514,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                             }
                             break
                         case 'longgc':
-                            if (configuration == 'Release' || configuration == 'Checked') {
+                            if (configuration == 'Release') {
                                 Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Long-Running GC Build & Test", "(?i).*test\\W+${os}\\W+${configuration}\\W+${scenario}.*")
                             }
                             break
@@ -672,7 +676,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                             }
                             break
                         case 'longgc':
-                            if (configuration == 'Release' || configuration == 'Checked') {
+                            if (configuration == 'Release') {
                                 Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Long-Running GC Build & Test", "(?i).*test\\W+${os}\\W+${configuration}\\W+${scenario}.*")
                             }
                             break
@@ -863,7 +867,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                 }
             } else if (scenario == 'longgc') {
                 if (os == 'Windows_NT'){
-                    if (configuration == 'Release' || configuration == 'Checked'){
+                    if (configuration == 'Release'){
                         Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Long-Running GC Build & Test", "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}.*")  
                     }
                 }
@@ -1014,12 +1018,13 @@ combinedScenarios.each { scenario ->
                                 }
                                 break
                             case 'longgc':
-                                if (os != 'Windows_NT') {
+                                if (os != 'Windows_NT' && os != 'Ubuntu' && os != 'OSX') {
                                     return
                                 }
-                                
-                                // only x64 or x86 for now
                                 if (architecture != 'x64') {
+                                    return
+                                }
+                                if (configuration != 'Release') {
                                     return
                                 }
                                 break
@@ -1443,8 +1448,8 @@ combinedScenarios.each { scenario ->
                                 }
                                 break
                             case 'longgc':
-                                //Skip configs that aren't Checked or Release (so just Debug, for now)
-                                if (configuration != 'Checked' && configuration != 'Release') {
+                                // Long GC tests take a long time on non-Release builds
+                                if (configuration != 'Release') {
                                     return
                                 }
                                 break
