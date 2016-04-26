@@ -337,7 +337,7 @@
     <value>Incorrect number of arguments for the given members </value>
   </data>
   <data name="LambdaTypeMustBeDerivedFromSystemDelegate" xml:space="preserve">
-    <value>Lambda type parameter must be derived from System.Delegate</value>
+    <value>Lambda type parameter must be derived from System.MulticastDelegate</value>
   </data>
   <data name="MemberNotFieldOrProperty" xml:space="preserve">
     <value>Member '{0}' not field or property</value>
