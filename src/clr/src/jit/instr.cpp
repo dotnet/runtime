@@ -3519,86 +3519,40 @@ bool                CodeGen::isMoveIns(instruction ins)
 
 instruction         CodeGenInterface::ins_FloatLoad(var_types type)
 {    
-#ifdef LEGACY_BACKEND 
-    switch (type)
-    {
-    case TYP_FLOAT:
-        return INS_movss;
-    case TYP_DOUBLE:
-        return INS_movsdsse2;
-    default:
-        unreached();
-    }
-#else // !LEGACY_BACKEND
     // Do Not use this routine in RyuJIT backend. Instead use ins_Load()/ins_Store()
     unreached();
-#endif // !LEGACY_BACKEND
 }
 
 // everything is just an addressing mode variation on x64
 instruction         CodeGen::ins_FloatStore(var_types type)
 {
-#ifdef LEGACY_BACKEND
-    return ins_FloatLoad(type);
-#else // !LEGACY_BACKEND
     // Do Not use this routine in RyuJIT backend. Instead use ins_Store()
     unreached();
-#endif // !LEGACY_BACKEND
 }
 
 instruction         CodeGen::ins_FloatCopy(var_types type)
 {
-#ifdef LEGACY_BACKEND
-    return ins_FloatLoad(type);
-#else // !LEGACY_BACKEND
     // Do Not use this routine in RyuJIT backend. Instead use ins_Load().
     unreached();
-#endif // !LEGACY_BACKEND
 }
 
 instruction         CodeGen::ins_FloatCompare(var_types type)
 {
-    instruction ins = INS_invalid;
-
-    ins = (type == TYP_FLOAT) ? INS_ucomiss : INS_ucomisd;
-    return ins;
+    return (type == TYP_FLOAT) ? INS_ucomiss : INS_ucomisd;
 }
 
 instruction         CodeGen::ins_CopyIntToFloat(var_types  srcType, var_types dstType)
 {
-    instruction ins = INS_invalid; 
-
     // On SSE2/AVX - the same instruction is used for moving double/quad word to XMM/YMM register.
-    InstructionSet iset = compiler->getFloatingPointInstructionSet();
-    if (srcType == TYP_INT || srcType == TYP_UINT ||
-        srcType == TYP_LONG || srcType == TYP_ULONG)
-    {
-        return INS_mov_i2xmm;
-    }
-    else
-    {
-        assert("!UNREACHED");
-    }
-    
-    return ins;
+    assert((srcType == TYP_INT) || (srcType == TYP_UINT) || (srcType == TYP_LONG) || (srcType == TYP_ULONG));
+    return INS_mov_i2xmm;
 }
 
 instruction         CodeGen::ins_CopyFloatToInt(var_types  srcType, var_types dstType)
 {
-    instruction ins = INS_invalid; 
-
     // On SSE2/AVX - the same instruction is used for moving double/quad word of XMM/YMM to an integer register.
-    if (dstType == TYP_INT || dstType == TYP_LONG ||
-        dstType == TYP_UINT || dstType == TYP_ULONG)
-    {
-        return INS_mov_xmm2i;
-    }
-    else
-    {
-        assert("!UNREACHED");
-    }
-    
-    return ins;
+    assert((dstType == TYP_INT) || (dstType == TYP_UINT) || (dstType == TYP_LONG) || (dstType == TYP_ULONG));
+    return INS_mov_xmm2i;
 }
 
 instruction         CodeGen::ins_MathOp(genTreeOps oper, var_types type)
