@@ -65,15 +65,5 @@ namespace System.Collections.Specialized.Tests
                 Assert.Equal("value", hybridDictionary["key"]);
             }
         }
-
-        [Theory]
-        [InlineData(0)]
-        [InlineData(5)]
-        [InlineData(50)]
-        public void Remove_NullKey_ThrowsArgumentNullException(int count)
-        {
-            HybridDictionary hybridDictionary = Helpers.CreateHybridDictionary(count);
-            Assert.Throws<ArgumentNullException>("key", () => hybridDictionary.Remove(null));
-        }
     }
 }

@@ -15,21 +15,38 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
+    <!-- Common Collections tests -->
     <Compile Include="$(CommonTestPath)\System\Collections\CollectionAsserts.cs">
       <Link>Common\System\Collections\CollectionAsserts.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\ICollection.NonGeneric.Tests.cs">
+      <Link>Common\System\Collections\ICollection.NonGeneric.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\IDictionary.NonGeneric.Tests.cs">
+      <Link>Common\System\Collections\IDictionary.NonGeneric.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.NonGeneric.Tests.cs">
+      <Link>Common\System\Collections\IEnumerable.NonGeneric.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\TestBase.NonGeneric.cs">
+      <Link>Common\System\Collections\TestBase.NonGeneric.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\DebugView.Tests.cs">
+      <Link>Common\System\Collections\DebugView.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\TestingTypes.cs">
+      <Link>Common\System\Collections\TestingTypes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Diagnostics\DebuggerAttributes.cs">
+      <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
     </Compile>
     <Compile Include="BitVector32Tests.cs" />
     <Compile Include="Common\GenStrings.cs" />
     <Compile Include="HybridDictionary\AddObjObjTests.cs" />
-    <Compile Include="HybridDictionary\ClearTests.cs" />
-    <Compile Include="HybridDictionary\ContainsObjTests.cs" />
-    <Compile Include="HybridDictionary\CopyToArrayIntTests.cs" />
     <Compile Include="HybridDictionary\CtorTests.cs" />
-    <Compile Include="HybridDictionary\GetEnumeratorTests.cs" />
-    <Compile Include="HybridDictionary\GetItemObjTests.cs" />
     <Compile Include="HybridDictionary\GetKeysTests.cs" />
-    <Compile Include="HybridDictionary\GetSyncRootTests.cs" />
     <Compile Include="HybridDictionary\GetValuesTests.cs" />
+    <Compile Include="HybridDictionary\HybridDictionaryTests.cs" />
     <Compile Include="HybridDictionary\RemoveObjTests.cs" />
     <Compile Include="HybridDictionary\SetItemObjObjTests.cs" />
     <Compile Include="ListDictionaryTests.cs" />
