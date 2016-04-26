@@ -19,6 +19,73 @@ using CURLoption = Interop.Http.CURLoption;
 
 namespace System.Net.Http
 {
+    // Object model:
+    // -------------
+    // CurlHandler provides an HttpMessageHandler implementation that wraps libcurl.  The core processing for CurlHandler
+    // is handled via a CurlHandler.MultiAgent instance, where currently a CurlHandler instance stores and uses a single
+    // MultiAgent for the lifetime of the handler (with the MultiAgent lazily initialized on first use, so that it can
+    // be initialized with all of the configured options on the handler).  The MultiAgent is named as such because it wraps
+    // a libcurl multi handle that's responsible for handling all requests on the instance.  When a request arrives, it's
+    // queued to the MultiAgent, which ensures that a thread is running to continually loop and process all work associated
+    // with the multi handle until no more work is required; at that point, the thread is retired until more work arrives,
+    // at which point another thread will be spun up.  Any number of requests will have their handling multiplexed onto
+    // this one event loop thread.  Each request is represented by a CurlHandler.EasyRequest, so named because it wraps
+    // a libcurl easy handle, libcurl's representation of a request.  The EasyRequest stores all state associated with
+    // the request, including the CurlHandler.CurlResponseMessage and CurlHandler.CurlResponseStream that are handed
+    // back to the caller to provide access to the HTTP response information.
+    //
+    // Lifetime:
+    // ---------
+    // The MultiAgent is initialized on first use and is kept referenced by the CurlHandler for the remainder of the
+    // handler's lifetime.  Both are disposable, and disposing of the CurlHandler will dispose of the MultiAgent.
+    // However, libcurl is not thread safe in that two threads can't be using the same multi or easy handles concurrently,
+    // so any interaction with the multi handle must happen on the MultiAgent's thread.  For this reason, the
+    // SafeHandle storing the underlying multi handle has its ref count incremented when the MultiAgent worker is running
+    // and decremented when it stops running, enabling any disposal requests to be delayed until the worker has quiesced.
+    // To enable that to happen quickly when a dispose operation occurs, an "incoming request" (how all other threads
+    // communicate with the MultiAgent worker) is queued to the worker to request a shutdown; upon receiving that request,
+    // the worker will exit and allow the multi handle to be disposed of.
+    //
+    // An EasyRequest itself doesn't govern its own lifetime.  Since an easy handle is added to a multi handle for
+    // the multi handle to process, the easy handle must not be destroyed until after it's been removed from the multi handle.
+    // As such, once the SafeHandle for an easy handle is created, although its stored in the EasyRequest instance,
+    // it's also stored into a dictionary on the MultiAgent and has its ref count incremented to prevent it from being
+    // disposed of while it's in use by the multi handle.
+    //
+    // When a request is made to the CurlHandler, callbacks are registered with libcurl, including state that will
+    // be passed back into managed code and used to identify the associated EasyRequest.  This means that the native
+    // code needs to be able both to keep the EasyRequest alive and to refer to it using an IntPtr.  For this, we
+    // use a GCHandle to the EasyRequest.  However, the native code needs to be able to refer to the EasyRequest for the
+    // lifetime of the request, but we also need to avoid keeping the EasyRequest (and all state it references) alive artificially.
+    // For the beginning phase of the request, the native code may be the only thing referencing the managed objects, since
+    // when a caller invokes "Task<HttpResponseMessage> SendAsync(...)", there's nothing handed back to the caller that represents
+    // the request until at least the HTTP response headers are received and the returned Task is completed with the response
+    // message object.  However, after that point, if the caller drops the HttpResponseMessage, we also want to cancel and
+    // dispose of the associated state, which means something needs to be finalizable and not kept rooted while at the same
+    // time still allowing the native code to continue using its GCHandle and lookup the associated state as long as it's alive.
+    // Yet then when an async read is made on the response message, we want to postpone such finalization and ensure that the async
+    // read can be appropriately completed with control and reference ownership given back to the reader. As such, we do two things:
+    // we make the response stream finalizable, and we make the GCHandle be to a wrapper object for the EasyRequest rather than to 
+    // the EasyRequest itself.  That wrapper object maintains a weak reference to the EasyRequest as well as sometimes maintaining
+    // a strong reference.  When the request starts out, the GCHandle is created to the wrapper, which has a strong reference to
+    // the EasyRequest (which also back references to the wrapper so that the wrapper can be accessed via it).  The GCHandle is
+    // thus keeping the EasyRequest and all of the state it references alive, e.g. the CurlResponseStream, which itself has a reference
+    // back to the EasyRequest.  Once the request progresses to the point of receiving HTTP response headers and the HttpResponseMessage
+    // is handed back to the caller, the wrapper object drops its strong reference and maintains only a weak reference.  At this
+    // point, if the caller were to drop its HttpResponseMessage object, that would also drop the only strong reference to the
+    // CurlResponseStream; the CurlResponseStream would be available for collection and finalization, and its finalization would
+    // request cancellation of the easy request to the multi agent.  The multi agent would then in response remove the easy handle
+    // from the multi handle and decrement the ref count on the SafeHandle for the easy handle, allowing it to be finalized and
+    // the underlying easy handle released.  If instead of dropping the HttpResponseMessage the caller makes a read request on the
+    // response stream, the wrapper object is transitioned back to having a strong reference, so that even if the caller then drops
+    // the HttpResponseMessage, the read Task returned from the read operation will still be completed eventually, at which point
+    // the wrapper will transition back to being a weak reference.
+    //
+    // Even with that, of course, Dispose is still the recommended way of cleaning things up.  Disposing the CurlResponseMessage
+    // will Dispose the CurlResponseStream, which will Dispose of the SafeHandle for the easy handle and request that the MultiAgent
+    // cancel the operation.  Once canceled and removed, the SafeHandle will have its ref count decremented and the previous disposal
+    // will proceed to release the underlying handle.
+
     internal partial class CurlHandler : HttpMessageHandler
     {
         #region Constants
@@ -376,8 +443,6 @@ namespace System.Net.Http
                 throw new InvalidOperationException(SR.net_http_invalid_cookiecontainer);
             }
 
-            Guid loggingRequestId = s_diagnosticListener.LogHttpRequest(request);
-
             CheckDisposed();
             SetOperationStarted();
 
@@ -390,20 +455,18 @@ namespace System.Net.Http
             }
 
             EventSourceTrace("{0}", request);
+            Guid loggingRequestId = s_diagnosticListener.LogHttpRequest(request);
 
             // Create the easy request.  This associates the easy request with this handler and configures
             // it based on the settings configured for the handler.
             var easy = new EasyRequest(this, request, cancellationToken);
             try
             {
-                easy.InitializeCurl();
-                easy._requestContentStream?.Run();
                 _agent.Queue(new MultiAgent.IncomingRequest { Easy = easy, Type = MultiAgent.IncomingRequestType.New });
             }
             catch (Exception exc)
             {
-                easy.FailRequest(exc);
-                easy.Cleanup(); // no active processing remains, so we can cleanup
+                easy.FailRequestAndCleanup(exc);
             }
 
             s_diagnosticListener.LogHttpResponse(easy.Task, loggingRequestId);
