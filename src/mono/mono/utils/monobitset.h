@@ -2,13 +2,7 @@
 #define __MONO_BITSET_H__
 
 #include <glib.h>
-#include <mono/utils/mono-compiler.h>
-
-#ifdef SGEN_WITHOUT_MONO
-#define MONO_API
-#else
 #include <mono/utils/mono-publib.h>
-#endif
 
 #define MONO_BITSET_BITS_PER_CHUNK (8 * sizeof (gsize))
 

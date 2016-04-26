@@ -1,7 +1,7 @@
 #ifndef __METADATA_REFLECTION_H__
 #define __METADATA_REFLECTION_H__
 
-#include <mono/utils/mono-compiler.h>
+#include <mono/utils/mono-publib.h>
 #include <mono/metadata/object.h>
 
 MONO_BEGIN_DECLS
