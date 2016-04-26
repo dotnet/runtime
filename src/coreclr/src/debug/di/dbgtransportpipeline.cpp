@@ -111,6 +111,13 @@ public:
     // Terminate the debuggee process.
     virtual BOOL TerminateProcess(UINT32 exitCode);
 
+#ifdef FEATURE_PAL
+    virtual void CleanupTargetProcess()
+    {
+        m_pTransport->CleanupTargetProcess();
+    }
+#endif
+
 private:
     // Return TRUE if the transport is up and runnning
     BOOL IsTransportRunning()

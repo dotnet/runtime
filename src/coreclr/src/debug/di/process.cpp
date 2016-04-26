@@ -14415,13 +14415,12 @@ void ExitProcessWorkItem::Do()
         PUBLIC_CALLBACK_IN_THIS_SCOPE0_NO_LOCK(GetProcess());
         pCordb->m_managedCallback->ExitProcess(GetProcess());
     }
+
     // This CordbProcess object now has no reservations against a client calling ICorDebug::Terminate.
     // That call may race against the CordbProcess::Neuter below, but since we already neutered the children,
     // that neuter call will not do anything interesting that will conflict with Terminate.
     
-    
     LOG((LF_CORDB, LL_INFO1000,"W32ET::EP: returned from ExitProcess callback\n"));
-
 
     {
         RSLockHolder ch(GetProcess()->GetStopGoLock());
@@ -14575,6 +14574,10 @@ void CordbWin32EventThread::ExitProcess(bool fDetach)
     // and dispatch it inband w/the other callbacks.
     if (!fDetach)
     {
+#ifdef FEATURE_PAL
+        // Cleanup the transport pipe and semaphore files that might be left by the target (LS) process.
+        m_pNativePipeline->CleanupTargetProcess();
+#endif
         ExitProcessWorkItem * pItem = new (nothrow) ExitProcessWorkItem(m_pProcess);
         if (pItem != NULL)
         {
