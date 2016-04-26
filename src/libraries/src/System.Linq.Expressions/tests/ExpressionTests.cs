@@ -101,6 +101,17 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
+        private class ReducesFromStrangeNodeType : Expression
+        {
+            public override Type Type => typeof(int);
+
+            public override ExpressionType NodeType => (ExpressionType)(-1);
+
+            public override bool CanReduce => true;
+
+            public override Expression Reduce() => Constant(3);
+        }
+
         private class ObsoleteIncompleteExpressionOverride : Expression
         {
 #pragma warning disable 0618 // Testing obsolete behaviour.
@@ -116,6 +127,13 @@ namespace System.Linq.Expressions.Tests
             public override Type Type => typeof(void);
 
             public override ExpressionType NodeType => ExpressionType.Extension;
+        }
+
+        private class IrreduceibleWithTypeAndStrangeNodeType : Expression
+        {
+            public override Type Type => typeof(void);
+
+            public override ExpressionType NodeType => (ExpressionType)(-1);
         }
 
         public static IEnumerable<object[]> AllNodeTypesPlusSomeInvalid
@@ -403,6 +421,20 @@ namespace System.Linq.Expressions.Tests
         {
             var exp = Expression.Lambda<Action>(new IrreducibleWithTypeAndNodeType());
             Assert.Throws<ArgumentException>(() => exp.Compile(useInterpreter));
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void CompileIrreduciebleStrangeNodeTypeExtension(bool useInterpreter)
+        {
+            var exp = Expression.Lambda<Action>(new IrreduceibleWithTypeAndStrangeNodeType());
+            Assert.Throws<ArgumentException>(() => exp.Compile(useInterpreter));
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void CompileReducibleStrangeNodeTypeExtension(bool useInterpreter)
+        {
+            var exp = Expression.Lambda<Func<int>>(new ReducesFromStrangeNodeType());
+            Assert.Equal(3, exp.Compile(useInterpreter)());
         }
     }
 }
