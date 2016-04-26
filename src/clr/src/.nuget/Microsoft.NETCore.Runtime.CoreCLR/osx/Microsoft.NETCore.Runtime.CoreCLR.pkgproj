@@ -11,6 +11,7 @@
   </PropertyGroup>
   
   <ItemGroup>
+    <NativeSplittableBinary Include="$(BinDir)libclrjit.dylib"/>
     <NativeSplittableBinary Include="$(BinDir)libcoreclr.dylib"/>
     <NativeSplittableBinary Include="$(BinDir)libdbgshim.dylib"/>
     <NativeSplittableBinary Include="$(BinDir)libmscordaccore.dylib"/>
@@ -22,7 +23,6 @@
     <ArchitectureSpecificNativeFile Include="$(BinDir)mscorlib.ni.dll"/>
     <ArchitectureSpecificLibFile Include="$(BinDir)mscorlib.dll"/>
     <ArchitectureSpecificToolFile Include="$(BinDir)crossgen"/>
-
     <ArchitectureSpecificNativeFile Include="@(NativeSplittableBinary)"/>
 
     <File Include="@(ArchitectureSpecificNativeFile)">

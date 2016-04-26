@@ -1275,7 +1275,7 @@ public:
     static void ClearCaches( void );
     static BOOL IsCacheCleanupRequired();
 
-    static LPWSTR         GetJitName();
+    static LPCWSTR         GetJitName();
 
     static void           Unload(LoaderAllocator *pLoaderAllocator);
 

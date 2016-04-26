@@ -803,8 +803,9 @@ do { \
 #define IfFailGoLog(EXPR) IfFailGotoLog(EXPR, ErrExit)
 #endif
 
+#if defined(FEATURE_MERGE_JIT_AND_ENGINE)
 void            jitOnDllProcessAttach();
-
+#endif // defined(FEATURE_MERGE_JIT_AND_ENGINE)
 
 void EEStartupHelper(COINITIEE fFlags)
 {
@@ -854,15 +855,9 @@ void EEStartupHelper(COINITIEE fFlags)
 #endif // !FEATURE_CORECLR && !CROSSGEN_COMPILE
         }
 
-#ifdef CROSSGEN_COMPILE
-//ARM64TODO: Enable when jit is brought in
- #if defined(_TARGET_ARM64_)
-        //_ASSERTE(!"ARM64:NYI");    
-        
- #else
+#if defined(CROSSGEN_COMPILE) && defined(FEATURE_MERGE_JIT_AND_ENGINE)
         jitOnDllProcessAttach();
- #endif // defined(_TARGET_ARM64_)
-#endif
+#endif // defined(CROSSGEN_COMPILE) && defined(FEATURE_MERGE_JIT_AND_ENGINE)
 
 #ifndef CROSSGEN_COMPILE
         // Initialize Numa and CPU group information
