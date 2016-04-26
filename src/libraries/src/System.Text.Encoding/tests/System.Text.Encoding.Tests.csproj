@@ -60,7 +60,6 @@
     <Compile Include="UTF7Encoding\UTF7EncodingDecode.cs" />
     <Compile Include="UTF7Encoding\UTF7EncodingGetDecoder.cs" />
     <Compile Include="UTF7Encoding\UTF7EncodingGetEncoder.cs" />
-    <Compile Include="UTF7Encoding\UTF7EncodingGetHashCode.cs" />
     <Compile Include="UTF7Encoding\UTF7EncodingGetMaxByteCount.cs" />
     <Compile Include="UTF7Encoding\UTF7EncodingGetMaxCharCount.cs" />
     <Compile Include="UTF7Encoding\UTF7EncodingTests.cs" />
