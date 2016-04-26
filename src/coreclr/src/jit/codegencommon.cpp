@@ -3882,6 +3882,7 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
     if (verbose) 
         printf("*************** In genFnPrologCalleeRegArgs() for %s regs\n", regState->rsIsFloat ? "float" : "int");
 #endif
+
 #ifdef _TARGET_ARM64_
     if (compiler->info.compIsVarArgs)
     {
@@ -9492,7 +9493,43 @@ void                CodeGen::genFnEpilog(BasicBlock* block)
     {
         noway_assert(block->bbJumpKind == BBJ_RETURN);
         noway_assert(block->bbTreeList != nullptr);
-        NYI("jmp call");
+
+        // figure out what jump we have
+        GenTreePtr jmpStmt = block->lastTopLevelStmt();
+        noway_assert(jmpStmt && (jmpStmt->gtOper == GT_STMT));
+
+        noway_assert(jmpStmt->gtNext == nullptr);
+        GenTreePtr jmpNode = jmpStmt->gtStmt.gtStmtExpr;
+        noway_assert(jmpNode->gtOper == GT_JMP);
+
+        {
+            // Simply emit a jump to the methodHnd. This is similar to a call so we can use
+            // the same descriptor with some minor adjustments.
+            CORINFO_METHOD_HANDLE methHnd = (CORINFO_METHOD_HANDLE)jmpNode->gtVal.gtVal1;
+
+            CORINFO_CONST_LOOKUP addrInfo;
+            compiler->info.compCompHnd->getFunctionEntryPoint(methHnd, &addrInfo);
+            if (addrInfo.accessType != IAT_VALUE)
+            {
+                NYI_ARM64("Unsupported JMP indirection");
+            }
+
+            emitter::EmitCallType callType = emitter::EC_FUNC_TOKEN;
+
+            // Simply emit a jump to the methodHnd. This is similar to a call so we can use
+            // the same descriptor with some minor adjustments.
+            getEmitter()->emitIns_Call(callType,
+                methHnd,
+                INDEBUG_LDISASM_COMMA(nullptr)
+                addrInfo.addr,
+                0,                                                      // argSize
+                EA_UNKNOWN,                                             // retSize
+                gcInfo.gcVarPtrSetCur,
+                gcInfo.gcRegGCrefSetCur,
+                gcInfo.gcRegByrefSetCur,
+                BAD_IL_OFFSET, REG_NA, REG_NA, 0, 0, /* iloffset, ireg, xreg, xmul, disp */
+                true);                     /* isJump */
+        }
     }
     else
     {

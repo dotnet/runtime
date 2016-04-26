@@ -4675,8 +4675,6 @@ inline bool         BasicBlock::endsWithJmpMethod(Compiler *comp)
     return false;
 }
 
-#if FEATURE_FASTTAILCALL
-
 // Returns true if the basic block ends with either
 //  i) GT_JMP or
 // ii) tail call (implicit or explicit)
@@ -4783,8 +4781,6 @@ inline bool BasicBlock::endsWithTailCallConvertibleToLoop(Compiler* comp, GenTre
     bool tailCallsConvertibleToLoopOnly = true;
     return endsWithTailCall(comp, fastTailCallsOnly, tailCallsConvertibleToLoopOnly, tailCall);
 }
-
-#endif // FEATURE_FASTTAILCALL
 
 // Returns the last top level stmt of a given basic block.
 // Returns nullptr if the block is empty.
