@@ -153,7 +153,7 @@
   <data name="SetterMustBeVoid" xml:space="preserve">
     <value>Setter should have void type.</value>
   </data>
-  <data name="PropertyTyepMustMatchSetter" xml:space="preserve">
+  <data name="PropertyTypeMustMatchSetter" xml:space="preserve">
     <value>Property type must match the value type of setter</value>
   </data>
   <data name="BothAccessorsMustBeStatic" xml:space="preserve">
@@ -337,7 +337,7 @@
     <value>Incorrect number of arguments for the given members </value>
   </data>
   <data name="LambdaTypeMustBeDerivedFromSystemDelegate" xml:space="preserve">
-    <value>Lambda type parameter must be derived from System.Delegate</value>
+    <value>Lambda type parameter must be derived from System.MulticastDelegate</value>
   </data>
   <data name="MemberNotFieldOrProperty" xml:space="preserve">
     <value>Member '{0}' not field or property</value>
@@ -482,9 +482,6 @@
   </data>
   <data name="ArgumentCannotBeOfTypeVoid" xml:space="preserve">
     <value>Argument type cannot be System.Void.</value>
-  </data>
-  <data name="InvalidOperation" xml:space="preserve">
-    <value>Invalid operation: '{0}'</value>
   </data>
   <data name="OutOfRange" xml:space="preserve">
     <value>{0} must be greater than or equal to {1}</value>

@@ -12,7 +12,7 @@ namespace System.Xml.Serialization
     using System.ComponentModel;
     using System.Xml;
     using System.CodeDom.Compiler;
-    using IComparer = System.Collections.Generic.IComparer<object>;
+    using System.Collections.Generic;
 
     // These classes represent a mapping between classes and a particular XML format.
     // There are two class of mapping information: accessors (such as elements and
@@ -792,13 +792,10 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class MemberMappingComparer : IComparer
+    internal class MemberMappingComparer : IComparer<MemberMapping>
     {
-        public int Compare(object o1, object o2)
+        public int Compare(MemberMapping m1, MemberMapping m2)
         {
-            MemberMapping m1 = (MemberMapping)o1;
-            MemberMapping m2 = (MemberMapping)o2;
-
             bool m1Text = m1.IsText;
             if (m1Text)
             {

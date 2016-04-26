@@ -49,6 +49,10 @@ build for another OS by specifying `/p:FilterToOSGroup=[Windows_NT|Linux|OSX|Fre
 
 By default, building from the root or within a project will build the libraries in Debug mode. One can build in Debug or Release mode by specifying `/p:ConfigurationGroup=[Debug|Release]` after the `msbuild` command.
 
+### Building other Architectures
+
+One can build 32 or 64 bit binaries or for any architecture by specifying `/p:Platform=[x86|x64|AnyCPU]` after the `msbuild` command.
+
 ## Tests
 
 We use the OSS testing framework [xunit](http://xunit.github.io/).

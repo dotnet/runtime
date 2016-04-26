@@ -15,9 +15,6 @@ namespace System.Xml.Serialization
     using System.Xml.Schema;
     using System.Globalization;
     using System.Xml.Extensions;
-    // this[key] api throws KeyNotFoundException
-    using Hashtable = System.Collections.InternalHashtable;
-    using DictionaryEntry = System.Collections.Generic.KeyValuePair<object, object>;
     using XmlSchema = System.ServiceModel.Dispatcher.XmlSchemaConstants;
     using XmlSchemaFacet = System.Object;
     using XmlSchemaSimpleType = System.Xml.Schema.XmlSchemaType;
@@ -414,12 +411,12 @@ namespace System.Xml.Serialization
 
     internal class TypeScope
     {
-        private Hashtable _typeDescs = new Hashtable();
-        private Hashtable _arrayTypeDescs = new Hashtable();
-        private ArrayList _typeMappings = new ArrayList();
+        private readonly Dictionary<Type, TypeDesc> _typeDescs = new Dictionary<Type, TypeDesc>();
+        private readonly Dictionary<Type, TypeDesc> _arrayTypeDescs = new Dictionary<Type, TypeDesc>();
+        private readonly List<TypeMapping> _typeMappings = new List<TypeMapping>();
 
-        private static Hashtable s_primitiveTypes = new Hashtable();
-        private static Hashtable s_primitiveDataTypes = new Hashtable();
+        private static readonly Dictionary<Type, TypeDesc> s_primitiveTypes = new Dictionary<Type, TypeDesc>();
+        private static readonly Dictionary<XmlSchemaType, TypeDesc> s_primitiveDataTypes = new Dictionary<XmlSchemaType, TypeDesc>();
         private static NameTable s_primitiveNames = new NameTable();
 
         private static string[] s_unsupportedTypes = new string[] {
@@ -538,7 +535,7 @@ namespace System.Xml.Serialization
             XmlSchemaSimpleType dataType = new XmlSchemaSimpleType();
             dataType.Name = dataTypeName;
             TypeDesc typeDesc = new TypeDesc(type, true, dataType, formatterName, flags);
-            if (s_primitiveTypes[type] == null)
+            if (!s_primitiveTypes.ContainsKey(type))
                 s_primitiveTypes.Add(type, typeDesc);
             s_primitiveDataTypes.Add(dataType, typeDesc);
             s_primitiveNames.Add(dataTypeName, XmlSchema.Namespace, typeDesc);
@@ -549,7 +546,7 @@ namespace System.Xml.Serialization
             XmlSchemaSimpleType dataType = new XmlSchemaSimpleType();
             dataType.Name = dataTypeName;
             TypeDesc typeDesc = new TypeDesc(type, false, dataType, formatterName, flags);
-            if (s_primitiveTypes[type] == null)
+            if (!s_primitiveTypes.ContainsKey(type))
                 s_primitiveTypes.Add(type, typeDesc);
             s_primitiveDataTypes.Add(dataType, typeDesc);
             s_primitiveNames.Add(dataTypeName, ns, typeDesc);
@@ -592,11 +589,10 @@ namespace System.Xml.Serialization
             {
                 throw new InvalidOperationException(SR.Format(SR.XmlUnsupportedOpenGenericType, type.ToString()));
             }
-            TypeDesc typeDesc = (TypeDesc)s_primitiveTypes[type];
-            if (typeDesc == null)
+            TypeDesc typeDesc;
+            if (!s_primitiveTypes.TryGetValue(type, out typeDesc))
             {
-                typeDesc = (TypeDesc)_typeDescs[type];
-                if (typeDesc == null)
+                if (!_typeDescs.TryGetValue(type, out typeDesc))
                 {
                     typeDesc = ImportTypeDesc(type, source, directReference);
                 }
@@ -610,8 +606,8 @@ namespace System.Xml.Serialization
 
         internal TypeDesc GetArrayTypeDesc(Type type)
         {
-            TypeDesc typeDesc = (TypeDesc)_arrayTypeDescs[type];
-            if (typeDesc == null)
+            TypeDesc typeDesc;
+            if (!_arrayTypeDescs.TryGetValue(type, out typeDesc))
             {
                 typeDesc = GetTypeDesc(type);
                 if (!typeDesc.IsArrayLike)
@@ -894,12 +890,12 @@ namespace System.Xml.Serialization
         {
             if (mapping.BaseMapping == null)
                 return mapping.Members;
-            ArrayList list = new ArrayList();
+            var list = new List<MemberMapping>();
             GetAllMembers(mapping, list);
-            return (MemberMapping[])list.ToArray(typeof(MemberMapping));
+            return list.ToArray();
         }
 
-        internal static void GetAllMembers(StructMapping mapping, ArrayList list)
+        internal static void GetAllMembers(StructMapping mapping, List<MemberMapping> list)
         {
             if (mapping.BaseMapping != null)
             {
@@ -920,12 +916,12 @@ namespace System.Xml.Serialization
 
         internal static MemberMapping[] GetSettableMembers(StructMapping structMapping)
         {
-            ArrayList list = new ArrayList();
+            var list = new List<MemberMapping>();
             GetSettableMembers(structMapping, list);
-            return (MemberMapping[])list.ToArray(typeof(MemberMapping));
+            return list.ToArray();
         }
 
-        private static void GetSettableMembers(StructMapping mapping, ArrayList list)
+        private static void GetSettableMembers(StructMapping mapping, List<MemberMapping> list)
         {
             if (mapping.BaseMapping != null)
             {
@@ -1238,7 +1234,7 @@ namespace System.Xml.Serialization
         {
             get { return _typeMappings; }
         }
-        internal static Hashtable PrimtiveTypes { get { return s_primitiveTypes; } }
+        internal static Dictionary<Type, TypeDesc> PrimtiveTypes { get { return s_primitiveTypes; } }
     }
 
     internal class Soap

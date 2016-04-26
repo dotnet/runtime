@@ -136,13 +136,25 @@ namespace System.Net.NetworkInformation
         // Maps values from /sys/class/net/<interface>/operstate to OperationStatus values.
         private static OperationalStatus MapState(string state)
         {
-            // TODO (#7889): Figure out the possible values that Linux might return.
+            //
+            // http://users.sosdg.org/~qiyong/lxr/source/Documentation/networking/operstates.txt?a=um#L41
+            //
             switch (state)
             {
-                case "up":
-                    return OperationalStatus.Up;
+                case "unknown":
+                    return OperationalStatus.Unknown;
+                case "notpresent":
+                    return OperationalStatus.NotPresent;
                 case "down":
                     return OperationalStatus.Down;
+                case "lowerlayerdown":
+                    return OperationalStatus.LowerLayerDown;
+                case "testing":
+                    return OperationalStatus.Testing;
+                case "dormant":
+                    return OperationalStatus.Dormant;
+                case "up":
+                    return OperationalStatus.Up;
                 default:
                     return OperationalStatus.Unknown;
             }

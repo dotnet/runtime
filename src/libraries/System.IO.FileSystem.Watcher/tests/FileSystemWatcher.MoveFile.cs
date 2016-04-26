@@ -26,6 +26,7 @@ namespace System.IO.Tests
 
         [Theory]
         [OuterLoop]
+        [ActiveIssue(8024)]
         [InlineData(WatcherChangeTypes.Changed, false)]
         [InlineData(WatcherChangeTypes.Created, false)]
         [InlineData(WatcherChangeTypes.Deleted, false)]
@@ -75,6 +76,7 @@ namespace System.IO.Tests
 
         [Theory]
         [OuterLoop]
+        [ActiveIssue(8024)]
         [InlineData(WatcherChangeTypes.Changed, false)]
         [InlineData(WatcherChangeTypes.Created, true)]
         [InlineData(WatcherChangeTypes.Deleted, true)]

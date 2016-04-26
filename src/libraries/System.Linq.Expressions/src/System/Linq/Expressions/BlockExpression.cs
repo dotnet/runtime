@@ -899,10 +899,7 @@ namespace System.Linq.Expressions
                 {
                     var lastExpression = expressionList[expressionCount - 1];
 
-                    if (lastExpression == null)
-                    {
-                        throw Error.ArgumentNull(nameof(expressions));
-                    }
+                    ContractUtils.RequiresNotNull(lastExpression, nameof(expressions));
 
                     if (lastExpression.Type == type)
                     {

@@ -113,13 +113,13 @@ namespace System
             switch (source.Status)
             {
                 case AsyncStatus.Completed:
-                    return Helpers.CompletedTask;
+                    return Task.CompletedTask;
 
                 case AsyncStatus.Error:
-                    return Helpers.TaskFromException<VoidValueTypeParameter>(source.ErrorCode.AttachRestrictedErrorInfo());
+                    return Task.FromException(source.ErrorCode.AttachRestrictedErrorInfo());
 
                 case AsyncStatus.Canceled:
-                    return Helpers.TaskFromCancellation<VoidValueTypeParameter>(cancellationToken.IsCancellationRequested ? cancellationToken : new CancellationToken(true));
+                    return Task.FromCanceled(cancellationToken.IsCancellationRequested ? cancellationToken : new CancellationToken(true));
             }
 
             // Benign race: source may complete here. Things still work, just not taking the fast path.
@@ -198,10 +198,10 @@ namespace System
                     return Task.FromResult(source.GetResults());
 
                 case AsyncStatus.Error:
-                    return Helpers.TaskFromException<TResult>(source.ErrorCode.AttachRestrictedErrorInfo());
+                    return Task.FromException<TResult>(source.ErrorCode.AttachRestrictedErrorInfo());
 
                 case AsyncStatus.Canceled:
-                    return Helpers.TaskFromCancellation<TResult>(cancellationToken.IsCancellationRequested ? cancellationToken : new CancellationToken(true));
+                    return Task.FromCanceled<TResult>(cancellationToken.IsCancellationRequested ? cancellationToken : new CancellationToken(true));
             }
 
             // Benign race: source may complete here. Things still work, just not taking the fast path.
@@ -303,13 +303,13 @@ namespace System
             switch (source.Status)
             {
                 case AsyncStatus.Completed:
-                    return Helpers.CompletedTask;
+                    return Task.CompletedTask;
 
                 case AsyncStatus.Error:
-                    return Helpers.TaskFromException<VoidValueTypeParameter>(source.ErrorCode.AttachRestrictedErrorInfo());
+                    return Task.FromException(source.ErrorCode.AttachRestrictedErrorInfo());
 
                 case AsyncStatus.Canceled:
-                    return Helpers.TaskFromCancellation<VoidValueTypeParameter>(cancellationToken.IsCancellationRequested ? cancellationToken : new CancellationToken(true));
+                    return Task.FromCanceled(cancellationToken.IsCancellationRequested ? cancellationToken : new CancellationToken(true));
             }
 
             // Benign race: source may complete here. Things still work, just not taking the fast path.
@@ -420,10 +420,10 @@ namespace System
                     return Task.FromResult(source.GetResults());
 
                 case AsyncStatus.Error:
-                    return Helpers.TaskFromException<TResult>(source.ErrorCode.AttachRestrictedErrorInfo());
+                    return Task.FromException<TResult>(source.ErrorCode.AttachRestrictedErrorInfo());
 
                 case AsyncStatus.Canceled:
-                    return Helpers.TaskFromCancellation<TResult>(cancellationToken.IsCancellationRequested ? cancellationToken : new CancellationToken(true));
+                    return Task.FromCanceled<TResult>(cancellationToken.IsCancellationRequested ? cancellationToken : new CancellationToken(true));
             }
 
             // Benign race: source may complete here. Things still work, just not taking the fast path.

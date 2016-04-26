@@ -57,6 +57,11 @@
     <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskHelpers.cs">
       <Link>Common\System\Threading\Tasks\TaskHelpers.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Data\Common\BasicFieldNameLookup.cs">
+      <Link>System\Data\Common\BasicFieldNameLookup.cs</Link>
+    </Compile>
+    <Compile Include="System\Data\Common\DbEnumerator.cs" />
+    <Compile Include="System\Data\Common\DataRecordInternal.cs" />
     <Compile Include="System\Data\Common\DbDataRecord.cs" />
     <Compile Include="System\Data\DataRowVersion.cs" />
     <Compile Include="System\Data\DataTable.cs" />

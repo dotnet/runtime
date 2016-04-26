@@ -107,7 +107,8 @@ public static class XmlDictionaryWriterTest
             var t2 = Assert.ThrowsAsync<InvalidOperationException>(() => writer.WriteBase64Async(bytes, 0, byteSize));
 
             InvalidOperationException e = t2.Result;
-            Assert.StrictEqual(e.Message, "An asynchronous operation is already in progress.");
+            bool isAsyncIsRunningException = e.Message.Contains("XmlAsyncIsRunningException") || e.Message.Contains("in progress");
+            Assert.True(isAsyncIsRunningException, "The exception is not XmlAsyncIsRunningException.");
 
             // let the first task complete
             ms.blockAsync(false);

@@ -2,141 +2,140 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections;
 using System.Collections.Generic;
-
 using Xunit;
 
-public class CollectionTestBase
+namespace System.Collections.ObjectModel.Tests
 {
-    protected static readonly int[] s_intArray = new[] { -4, 5, -2, 3, 1, 2, -1, -3, 0, 4, -5, 3, 3 };
-    protected static readonly int[] s_excludedFromIntArray = new int[] { 100, -34, 42, int.MaxValue, int.MinValue };
-
-    [Flags]
-    protected enum IListApi
+    public class CollectionTestBase
     {
-        None = 0,
-        IndexerGet = 0x1,
-        IndexerSet = 0x2,
-        Count = 0x4,
-        IsReadOnly = 0x8,
-        Clear = 0x10,
-        Contains = 0x20,
-        CopyTo = 0x40,
-        GetEnumeratorGeneric = 0x80,
-        IndexOf = 0x100,
-        Insert = 0x200,
-        RemoveAt = 0x400,
-        GetEnumerator = 0x800,
-        End
-    }
+        protected static readonly int[] s_intArray = new[] { -4, 5, -2, 3, 1, 2, -1, -3, 0, 4, -5, 3, 3 };
+        protected static readonly int[] s_excludedFromIntArray = new int[] { 100, -34, 42, int.MaxValue, int.MinValue };
 
-    protected class CallTrackingIList<T> : IList<T>
-    {
-        private IListApi _expectedApiCalls;
-        private IListApi _calledMembers;
-
-        public CallTrackingIList(IListApi expectedApiCalls)
+        [Flags]
+        protected enum IListApi
         {
-            _expectedApiCalls = expectedApiCalls;
+            None = 0,
+            IndexerGet = 0x1,
+            IndexerSet = 0x2,
+            Count = 0x4,
+            IsReadOnly = 0x8,
+            Clear = 0x10,
+            Contains = 0x20,
+            CopyTo = 0x40,
+            GetEnumeratorGeneric = 0x80,
+            IndexOf = 0x100,
+            Insert = 0x200,
+            RemoveAt = 0x400,
+            GetEnumerator = 0x800,
+            End
         }
 
-        public void AssertAllMembersCalled()
+        protected class CallTrackingIList<T> : IList<T>
         {
-            if (_expectedApiCalls != _calledMembers)
+            private IListApi _expectedApiCalls;
+            private IListApi _calledMembers;
+
+            public CallTrackingIList(IListApi expectedApiCalls)
             {
-                for (IListApi i = (IListApi)1; i < IListApi.End; i = (IListApi)((int)i << 1))
+                _expectedApiCalls = expectedApiCalls;
+            }
+
+            public void AssertAllMembersCalled()
+            {
+                if (_expectedApiCalls != _calledMembers)
                 {
-                    Assert.Equal(_expectedApiCalls & i, _calledMembers & i);
+                    for (IListApi i = (IListApi)1; i < IListApi.End; i = (IListApi)((int)i << 1))
+                    {
+                        Assert.Equal(_expectedApiCalls & i, _calledMembers & i);
+                    }
                 }
             }
-        }
 
-        public T this[int index]
-        {
-            get
+            public T this[int index]
             {
-                _calledMembers |= IListApi.IndexerGet;
-                return default(T);
+                get
+                {
+                    _calledMembers |= IListApi.IndexerGet;
+                    return default(T);
+                }
+                set
+                {
+                    _calledMembers |= IListApi.IndexerSet;
+                }
             }
 
-            set
+            public int Count
             {
-                _calledMembers |= IListApi.IndexerSet;
+                get
+                {
+                    _calledMembers |= IListApi.Count;
+                    return 1;
+                }
             }
-        }
 
-        public int Count
-        {
-            get
+            public bool IsReadOnly
             {
-                _calledMembers |= IListApi.Count;
-                return 1;
+                get
+                {
+                    _calledMembers |= IListApi.IsReadOnly;
+                    return false;
+                }
             }
-        }
 
-        public bool IsReadOnly
-        {
-            get
+            public void Add(T item)
             {
-                _calledMembers |= IListApi.IsReadOnly;
+                throw new NotImplementedException();
+            }
+
+            public void Clear()
+            {
+                _calledMembers |= IListApi.Clear;
+            }
+
+            public bool Contains(T item)
+            {
+                _calledMembers |= IListApi.Contains;
                 return false;
             }
-        }
 
-        public void Add(T item)
-        {
-            throw new NotImplementedException();
-        }
+            public void CopyTo(T[] array, int arrayIndex)
+            {
+                _calledMembers |= IListApi.CopyTo;
+            }
 
-        public void Clear()
-        {
-            _calledMembers |= IListApi.Clear;
-        }
+            public IEnumerator<T> GetEnumerator()
+            {
+                _calledMembers |= IListApi.GetEnumeratorGeneric;
+                return null;
+            }
 
-        public bool Contains(T item)
-        {
-            _calledMembers |= IListApi.Contains;
-            return false;
-        }
+            public int IndexOf(T item)
+            {
+                _calledMembers |= IListApi.IndexOf;
+                return -1;
+            }
 
-        public void CopyTo(T[] array, int arrayIndex)
-        {
-            _calledMembers |= IListApi.CopyTo;
-        }
+            public void Insert(int index, T item)
+            {
+                _calledMembers |= IListApi.Insert;
+            }
 
-        public IEnumerator<T> GetEnumerator()
-        {
-            _calledMembers |= IListApi.GetEnumeratorGeneric;
-            return null;
-        }
+            public bool Remove(T item)
+            {
+                throw new NotImplementedException();
+            }
 
-        public int IndexOf(T item)
-        {
-            _calledMembers |= IListApi.IndexOf;
-            return -1;
-        }
+            public void RemoveAt(int index)
+            {
+                _calledMembers |= IListApi.RemoveAt;
+            }
 
-        public void Insert(int index, T item)
-        {
-            _calledMembers |= IListApi.Insert;
-        }
-
-        public bool Remove(T item)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void RemoveAt(int index)
-        {
-            _calledMembers |= IListApi.RemoveAt;
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            _calledMembers |= IListApi.GetEnumerator;
-            return null;
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                _calledMembers |= IListApi.GetEnumerator;
+                return null;
+            }
         }
     }
 }

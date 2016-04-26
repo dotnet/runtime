@@ -135,7 +135,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void ConnectV4IPAddressToV6Host_Fails()
         {
-            Assert.Throws<SocketException>(() =>
+            Assert.ThrowsAny<SocketException>(() =>
             {
                 DualModeConnect_IPAddressToHost_Helper(IPAddress.Loopback, IPAddress.IPv6Loopback, false);
             });
@@ -144,7 +144,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void ConnectV6IPAddressToV4Host_Fails()
         {
-            Assert.Throws<SocketException>(() =>
+            Assert.ThrowsAny<SocketException>(() =>
             {
                 DualModeConnect_IPAddressToHost_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback, false);
             });
@@ -183,7 +183,7 @@ namespace System.Net.Sockets.Tests
             Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
             socket.DualMode = false;
 
-            Assert.Throws<SocketException>(() =>
+            Assert.ThrowsAny<SocketException>(() =>
             {
                 socket.Connect(new IPEndPoint(IPAddress.Loopback, UnusedPort));
             });
@@ -216,7 +216,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void ConnectV4IPEndPointToV6Host_Fails()
         {
-            Assert.Throws<SocketException>(() =>
+            Assert.ThrowsAny<SocketException>(() =>
             {
                 DualModeConnect_IPEndPointToHost_Helper(IPAddress.Loopback, IPAddress.IPv6Loopback, false);
             });
@@ -225,7 +225,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void ConnectV6IPEndPointToV4Host_Fails()
         {
-            Assert.Throws<SocketException>(() =>
+            Assert.ThrowsAny<SocketException>(() =>
             {
                 DualModeConnect_IPEndPointToHost_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback, false);
             });
@@ -281,7 +281,7 @@ namespace System.Net.Sockets.Tests
         [PlatformSpecific(PlatformID.Windows)]
         public void DualModeConnect_IPAddressListToHost_Throws(IPAddress[] connectTo, IPAddress listenOn, bool dualModeServer)
         {
-            Assert.Throws<SocketException>(() => DualModeConnect_IPAddressListToHost_Success(connectTo, listenOn, dualModeServer));
+            Assert.ThrowsAny<SocketException>(() => DualModeConnect_IPAddressListToHost_Success(connectTo, listenOn, dualModeServer));
         }
 
         [Theory]
@@ -365,7 +365,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void BeginConnectV4IPAddressToV6Host_Fails()
         {
-            Assert.Throws<SocketException>(() =>
+            Assert.ThrowsAny<SocketException>(() =>
             {
                 DualModeBeginConnect_IPAddressToHost_Helper(IPAddress.Loopback, IPAddress.IPv6Loopback, false);
             });
@@ -374,7 +374,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void BeginConnectV6IPAddressToV4Host_Fails()
         {
-            Assert.Throws<SocketException>(() =>
+            Assert.ThrowsAny<SocketException>(() =>
             {
                 DualModeBeginConnect_IPAddressToHost_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback, false);
             });
@@ -435,7 +435,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void BeginConnectV4IPEndPointToV6Host_Fails()
         {
-            Assert.Throws<SocketException>(() =>
+            Assert.ThrowsAny<SocketException>(() =>
             {
                 DualModeBeginConnect_IPEndPointToHost_Helper(IPAddress.Loopback, IPAddress.IPv6Loopback, false);
             });
@@ -444,7 +444,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void BeginConnectV6IPEndPointToV4Host_Fails()
         {
-            Assert.Throws<SocketException>(() =>
+            Assert.ThrowsAny<SocketException>(() =>
             {
                 DualModeBeginConnect_IPEndPointToHost_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback, false);
             });

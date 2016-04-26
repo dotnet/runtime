@@ -18,25 +18,24 @@ namespace System.Xml.Serialization
     using System.Xml;
     using System.Xml.Schema;
     using System.Xml.Extensions;
-    using Hashtable = System.Collections.Generic.Dictionary<object, object>;
     using XmlSchema = System.ServiceModel.Dispatcher.XmlSchemaConstants;
 
     internal class XmlSerializationReaderILGen : XmlSerializationILGen
     {
-        private InternalHashtable _idNames = new InternalHashtable();
+        private readonly Dictionary<string, string> _idNames = new Dictionary<string, string>();
         // Mapping name->id_XXXNN field
         private Dictionary<string, FieldBuilder> _idNameFields = new Dictionary<string, FieldBuilder>();
-        private InternalHashtable _enums;
+        private Dictionary<string, EnumMapping> _enums;
         private int _nextIdNumber = 0;
         private int _nextWhileLoopIndex = 0;
 
-        internal InternalHashtable Enums
+        internal Dictionary<string, EnumMapping> Enums
         {
             get
             {
                 if (_enums == null)
                 {
-                    _enums = new InternalHashtable();
+                    _enums = new Dictionary<string, EnumMapping>();
                 }
                 return _enums;
             }
@@ -220,10 +219,9 @@ namespace System.Xml.Serialization
 
         internal override void GenerateMethod(TypeMapping mapping)
         {
-            if (GeneratedMethods.Contains(mapping))
+            if (!GeneratedMethods.Add(mapping))
                 return;
 
-            GeneratedMethods[mapping] = mapping;
             if (mapping is StructMapping)
             {
                 WriteStructMethod((StructMapping)mapping);
@@ -469,9 +467,9 @@ namespace System.Xml.Serialization
             Member anyElement = null;
             Member anyAttribute = null;
 
-            ArrayList membersList = new ArrayList();
-            ArrayList textOrArrayMembersList = new ArrayList();
-            ArrayList attributeMembersList = new ArrayList();
+            var membersList = new List<Member>();
+            var textOrArrayMembersList = new List<Member>();
+            var attributeMembersList = new List<Member>();
 
             for (int i = 0; i < mappings.Length; i++)
             {
@@ -536,8 +534,8 @@ namespace System.Xml.Serialization
                     membersList.Add(member);
                 }
             }
-            Member[] members = (Member[])membersList.ToArray(typeof(Member));
-            Member[] textOrArrayMembers = (Member[])textOrArrayMembersList.ToArray(typeof(Member));
+            Member[] members = membersList.ToArray();
+            Member[] textOrArrayMembers = textOrArrayMembersList.ToArray();
 
             if (members.Length > 0 && members[0].Mapping.IsReturnValue)
             {
@@ -555,7 +553,7 @@ namespace System.Xml.Serialization
 
             if (attributeMembersList.Count > 0)
             {
-                Member[] attributeMembers = (Member[])attributeMembersList.ToArray(typeof(Member));
+                Member[] attributeMembers = attributeMembersList.ToArray();
                 WriteMemberBegin(attributeMembers);
                 WriteAttributes(attributeMembers, anyAttribute, "UnknownNode", localP);
                 WriteMemberEnd(attributeMembers);
@@ -940,8 +938,8 @@ namespace System.Xml.Serialization
         private string MakeUnique(EnumMapping mapping, string name)
         {
             string uniqueName = name;
-            object m = Enums[uniqueName];
-            if (m != null)
+            EnumMapping m;
+            if (Enums.TryGetValue(uniqueName, out m))
             {
                 if (m == mapping)
                 {
@@ -972,19 +970,19 @@ namespace System.Xml.Serialization
 
             FieldBuilder fieldBuilder = this.typeBuilder.DefineField(
                 memberName,
-                typeof(Hashtable),
+                typeof(Dictionary<object, object>),
                 FieldAttributes.Private
                 );
 
             PropertyBuilder propertyBuilder = this.typeBuilder.DefineProperty(
                 propName,
                 PropertyAttributes.None,
-                typeof(Hashtable),
+                typeof(Dictionary<object, object>),
                 null, null, null, null, null);
 
             ilg = new CodeGenerator(this.typeBuilder);
             ilg.BeginMethod(
-                typeof(Hashtable),
+                typeof(Dictionary<object, object>),
                 "get_" + propName,
                 Array.Empty<Type>(),
                 Array.Empty<string>(),
@@ -995,16 +993,16 @@ namespace System.Xml.Serialization
             ilg.Load(null);
             ilg.If(Cmp.EqualTo);
 
-            ConstructorInfo Hashtable_ctor = typeof(Hashtable).GetConstructor(
+            ConstructorInfo Hashtable_ctor = typeof(Dictionary<object, object>).GetConstructor(
                 CodeGenerator.InstanceBindingFlags,
                 Array.Empty<Type>()
                 );
-            LocalBuilder hLoc = ilg.DeclareLocal(typeof(Hashtable), "h");
+            LocalBuilder hLoc = ilg.DeclareLocal(typeof(Dictionary<object, object>), "h");
             ilg.New(Hashtable_ctor);
             ilg.Stloc(hLoc);
 
             ConstantMapping[] constants = mapping.Constants;
-            MethodInfo Hashtable_Add = typeof(Hashtable).GetMethod(
+            MethodInfo Hashtable_Add = typeof(Dictionary<object, object>).GetMethod(
                 "Add",
                 CodeGenerator.InstanceBindingFlags,
                 new Type[] { typeof(Object), typeof(Object) }
@@ -1042,7 +1040,8 @@ namespace System.Xml.Serialization
             if (mapping.IsFlags)
                 WriteHashtable(mapping, mapping.TypeDesc.Name, out get_TableName);
 
-            string methodName = (string)MethodNames[mapping];
+            string methodName;
+            MethodNames.TryGetValue(mapping, out methodName);
             string fullTypeName = mapping.TypeDesc.CSharpName;
             List<Type> argTypes = new List<Type>();
             List<string> argNames = new List<string>();
@@ -1097,15 +1096,14 @@ namespace System.Xml.Serialization
                 ilg.Stloc(localTmp);
                 ilg.Ldloc(localTmp);
                 ilg.Brfalse(defaultLabel);
-                InternalHashtable cases = new InternalHashtable();
+                var cases = new HashSet<string>();
                 for (int i = 0; i < constants.Length; i++)
                 {
                     ConstantMapping c = constants[i];
 
                     CodeIdentifier.CheckValidIdentifier(c.Name);
-                    if (cases[c.XmlName] == null)
+                    if (cases.Add(c.XmlName))
                     {
-                        cases[c.XmlName] = c.XmlName;
                         Label caseLabel = ilg.DefineLabel();
                         ilg.Ldloc(localTmp);
                         ilg.Ldstr(GetCSharpString(c.XmlName));
@@ -1299,7 +1297,8 @@ namespace System.Xml.Serialization
 
         private void WriteNullableMethod(NullableMapping nullableMapping)
         {
-            string methodName = (string)MethodNames[nullableMapping];
+            string methodName;
+            MethodNames.TryGetValue(nullableMapping, out methodName);
             ilg = new CodeGenerator(this.typeBuilder);
             ilg.BeginMethod(
                 nullableMapping.TypeDesc.Type,
@@ -1348,7 +1347,8 @@ namespace System.Xml.Serialization
 
         private void WriteLiteralStructMethod(StructMapping structMapping)
         {
-            string methodName = (string)MethodNames[structMapping];
+            string methodName;
+            MethodNames.TryGetValue(structMapping, out methodName);
             string typeName = structMapping.TypeDesc.CSharpName;
             ilg = new CodeGenerator(this.typeBuilder);
             List<Type> argTypes = new List<Type>();
@@ -1554,9 +1554,9 @@ namespace System.Xml.Serialization
                 Member anyAttribute = null;
                 bool isSequence = structMapping.HasExplicitSequence();
 
-                ArrayList arraysToDeclareList = new ArrayList(mappings.Length);
-                ArrayList arraysToSetList = new ArrayList(mappings.Length);
-                ArrayList allMembersList = new ArrayList(mappings.Length);
+                var arraysToDeclareList = new List<Member>(mappings.Length);
+                var arraysToSetList = new List<Member>(mappings.Length);
+                var allMembersList = new List<Member>(mappings.Length);
 
                 for (int i = 0; i < mappings.Length; i++)
                 {
@@ -1622,9 +1622,9 @@ namespace System.Xml.Serialization
                 if (anyElement != null) arraysToSetList.Add(anyElement);
                 if (anyText != null && anyText != anyElement) arraysToSetList.Add(anyText);
 
-                Member[] arraysToDeclare = (Member[])arraysToDeclareList.ToArray(typeof(Member));
-                Member[] arraysToSet = (Member[])arraysToSetList.ToArray(typeof(Member));
-                Member[] allMembers = (Member[])allMembersList.ToArray(typeof(Member));
+                Member[] arraysToDeclare = arraysToDeclareList.ToArray();
+                Member[] arraysToSet = arraysToSetList.ToArray();
+                Member[] allMembers = allMembersList.ToArray();
 
                 WriteMemberBegin(arraysToDeclare);
                 WriteParamsRead(mappings.Length);
@@ -1819,8 +1819,8 @@ namespace System.Xml.Serialization
                 //return;
                 name = "";
             }
-            string idName = (string)_idNames[name];
-            if (idName == null)
+            string idName;
+            if (!_idNames.TryGetValue(name, out idName))
             {
                 idName = NextIdName(name);
                 _idNames.Add(name, idName);
@@ -1832,7 +1832,7 @@ namespace System.Xml.Serialization
         {
             int count = 0;
             Member xmlnsMember = null;
-            ArrayList attributes = new ArrayList();
+            var attributes = new List<AttributeAccessor>();
 
             // Condition do at the end, so C# looks the same
             MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
@@ -2029,7 +2029,7 @@ namespace System.Xml.Serialization
 
                     for (int i = 0; i < attributes.Count; i++)
                     {
-                        AttributeAccessor attribute = (AttributeAccessor)attributes[i];
+                        AttributeAccessor attribute = attributes[i];
                         if (i > 0)
                             qnames += ", ";
                         qnames += attribute.IsSpecialXmlNamespace ? XmlReservedNs.NsXml : (attribute.Form == XmlSchemaForm.Qualified ? attribute.Namespace : "") + ":" + attribute.Name;

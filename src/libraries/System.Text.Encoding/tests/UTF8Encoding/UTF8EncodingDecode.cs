@@ -27,10 +27,8 @@ namespace System.Text.Tests
             yield return new object[] { new byte[] { 195, 128, 110, 105, 109, 97, 204, 128, 108 }, 0, 9, "\u00C0nima\u0300l" };
             yield return new object[] { new byte[] { 84, 101, 115, 116, 240, 144, 181, 181, 84, 101, 115, 116 }, 0, 12, "Test\uD803\uDD75Test" };
             yield return new object[] { new byte[] { 0, 84, 101, 10, 115, 116, 0, 9, 0, 84, 15, 101, 115, 116, 0 }, 0, 15, "\0Te\nst\0\t\0T\u000Fest\0" };
-            yield return new object[] { new byte[] { 196, 84, 101, 115, 116, 196, 196, 196, 176, 176, 84, 101, 115, 116, 176 }, 0, 15, "\uFFFDTest\uFFFD\uFFFD\u0130\uFFFDTest\uFFFD" };
             yield return new object[] { new byte[] { 240, 144, 181, 181, 240, 144, 181, 181, 240, 144, 181, 181 }, 0, 12, "\uD803\uDD75\uD803\uDD75\uD803\uDD75" };
             yield return new object[] { new byte[] { 196, 176 }, 0, 2, "\u0130" };
-            yield return new object[] { new byte[] { 240, 240, 144, 181, 181, 240, 144, 181, 181, 240, 144, 240 }, 0, 12, "\uFFFD\uD803\uDD75\uD803\uDD75\uFFFD\uFFFD" };
 
             // Surrogate pairs
             yield return new object[] { new byte[] { 240, 144, 128, 128 }, 0, 4, "\uD800\uDC00" };
@@ -43,37 +41,58 @@ namespace System.Text.Tests
         [MemberData(nameof(Decode_TestData))]
         public void Decode(byte[] bytes, int index, int count, string expected)
         {
-            EncodingHelpers.Decode(new UTF8Encoding(), bytes, index, count, expected);
-            EncodingHelpers.Decode(new UTF8Encoding(true), bytes, index, count, expected);
+            EncodingHelpers.Decode(new UTF8Encoding(true, false), bytes, index, count, expected);
+            EncodingHelpers.Decode(new UTF8Encoding(false, false), bytes, index, count, expected);
+
+            EncodingHelpers.Decode(new UTF8Encoding(false, true), bytes, index, count, expected);
+            EncodingHelpers.Decode(new UTF8Encoding(true, true), bytes, index, count, expected);
+        }
+        
+        public static IEnumerable<object[]> Decode_InvalidBytes_TestData()
+        {
+            yield return new object[] { new byte[] { 196, 84, 101, 115, 116, 196, 196, 196, 176, 176, 84, 101, 115, 116, 176 }, 0, 15, "\uFFFDTest\uFFFD\uFFFD\u0130\uFFFDTest\uFFFD" };
+            yield return new object[] { new byte[] { 240, 240, 144, 181, 181, 240, 144, 181, 181, 240, 144, 240 }, 0, 12, "\uFFFD\uD803\uDD75\uD803\uDD75\uFFFD\uFFFD" };
+        }
+
+        [Theory]
+        [MemberData(nameof(Decode_InvalidBytes_TestData))]
+        public static void Decode_InvalidBytes(byte[] bytes, int index, int count, string expected)
+        {
+            EncodingHelpers.Decode(new UTF8Encoding(true, false), bytes, index, count, expected);
+            EncodingHelpers.Decode(new UTF8Encoding(false, false), bytes, index, count, expected);
+
+            NegativeEncodingTests.Decode_Invalid(new UTF8Encoding(false, true), bytes, index, count);
+            NegativeEncodingTests.Decode_Invalid(new UTF8Encoding(true, true), bytes, index, count);
         }
 
         [Fact]
-        public void Decode_InvalidUnicode()
+        public void Decode_InvalidBytes()
         {
-            // TODO: add into Decode_TestData once #7166 is fixed
+            // TODO: add into Decode_TestData or Decode_InvalidBytes_TestData once #7166 is fixed
+            // High BMP non-chars
             Decode(new byte[] { 239, 191, 189 }, 0, 3, "\uFFFD");
             Decode(new byte[] { 239, 191, 190 }, 0, 3, "\uFFFE");
             Decode(new byte[] { 239, 191, 191 }, 0, 3, "\uFFFF");
 
             // Invalid bytes
             byte[] validSurrogateBytes = new byte[] { 240, 144, 128, 128 };
-            Decode(validSurrogateBytes, 0, 3, "\uFFFD");
-            Decode(validSurrogateBytes, 1, 3, "\uFFFD\uFFFD\uFFFD");
-            Decode(validSurrogateBytes, 0, 2, "\uFFFD");
-            Decode(validSurrogateBytes, 1, 2, "\uFFFD\uFFFD");
-            Decode(validSurrogateBytes, 2, 2, "\uFFFD\uFFFD");
-            Decode(validSurrogateBytes, 2, 1, "\uFFFD");
+            Decode_InvalidBytes(validSurrogateBytes, 0, 3, "\uFFFD");
+            Decode_InvalidBytes(validSurrogateBytes, 1, 3, "\uFFFD\uFFFD\uFFFD");
+            Decode_InvalidBytes(validSurrogateBytes, 0, 2, "\uFFFD");
+            Decode_InvalidBytes(validSurrogateBytes, 1, 2, "\uFFFD\uFFFD");
+            Decode_InvalidBytes(validSurrogateBytes, 2, 2, "\uFFFD\uFFFD");
+            Decode_InvalidBytes(validSurrogateBytes, 2, 1, "\uFFFD");
 
             // These are examples of overlong sequences. This can cause security
             // vulnerabilities (e.g. MS00-078) so it is important we parse these as invalid.
-            Decode(new byte[] { 0xC0, 0xAF }, 0, 2, "\uFFFD\uFFFD");
-            Decode(new byte[] { 0xE0, 0x80, 0xBF }, 0, 3, "\uFFFD\uFFFD");
-            Decode(new byte[] { 0xF0, 0x80, 0x80, 0xBF }, 0, 4, "\uFFFD\uFFFD\uFFFD");
-            Decode(new byte[] { 0xF8, 0x80, 0x80, 0x80, 0xBF }, 0, 5, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD");
-            Decode(new byte[] { 0xFC, 0x80, 0x80, 0x80, 0x80, 0xBF }, 0, 6, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD");
+            Decode_InvalidBytes(new byte[] { 0xC0, 0xAF }, 0, 2, "\uFFFD\uFFFD");
+            Decode_InvalidBytes(new byte[] { 0xE0, 0x80, 0xBF }, 0, 3, "\uFFFD\uFFFD");
+            Decode_InvalidBytes(new byte[] { 0xF0, 0x80, 0x80, 0xBF }, 0, 4, "\uFFFD\uFFFD\uFFFD");
+            Decode_InvalidBytes(new byte[] { 0xF8, 0x80, 0x80, 0x80, 0xBF }, 0, 5, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD");
+            Decode_InvalidBytes(new byte[] { 0xFC, 0x80, 0x80, 0x80, 0x80, 0xBF }, 0, 6, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD");
 
-            Decode(new byte[] { 176 }, 0, 1, "\uFFFD");
-            Decode(new byte[] { 196 }, 0, 1, "\uFFFD");
+            Decode_InvalidBytes(new byte[] { 176 }, 0, 1, "\uFFFD");
+            Decode_InvalidBytes(new byte[] { 196 }, 0, 1, "\uFFFD");
         }
     }
 }

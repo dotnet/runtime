@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
@@ -39,7 +40,7 @@ namespace System.Net.Http
             // to catch the exception since the caller doesn't expect exceptions when calling SendAsync(): The 
             // expectation is that the returned task will get faulted on errors, but the async call to SendAsync() 
             // should complete.
-            TaskCompletionSource<HttpResponseMessage> tcs = new TaskCompletionSource<HttpResponseMessage>();
+            var tcs = new SendState(this, cancellationToken);
             try
             {
                 HttpRequestMessage newRequestMessage = ProcessRequest(request, cancellationToken);
@@ -47,40 +48,44 @@ namespace System.Net.Http
 
                 // We schedule a continuation task once the inner handler completes in order to trigger the response
                 // processing method. ProcessResponse() is only called if the task wasn't canceled before.
-                sendAsyncTask.ContinueWithStandard(task =>
+                sendAsyncTask.ContinueWithStandard(tcs, (task, state) =>
                 {
+                    var sendState = (SendState)state;
+                    MessageProcessingHandler self = sendState._handler;
+                    CancellationToken token = sendState._token;
+                    
                     if (task.IsFaulted)
                     {
-                        tcs.TrySetException(task.Exception.GetBaseException());
+                        sendState.TrySetException(task.Exception.GetBaseException());
                         return;
                     }
 
                     if (task.IsCanceled)
                     {
-                        tcs.TrySetCanceled();
+                        sendState.TrySetCanceled();
                         return;
                     }
 
                     if (task.Result == null)
                     {
-                        tcs.TrySetException(new InvalidOperationException(SR.net_http_handler_noresponse));
+                        sendState.TrySetException(new InvalidOperationException(SR.net_http_handler_noresponse));
                         return;
                     }
 
                     try
                     {
-                        HttpResponseMessage responseMessage = ProcessResponse(task.Result, cancellationToken);
-                        tcs.TrySetResult(responseMessage);
+                        HttpResponseMessage responseMessage = self.ProcessResponse(task.Result, token);
+                        sendState.TrySetResult(responseMessage);
                     }
                     catch (OperationCanceledException e)
                     {
                         // If ProcessResponse() throws an OperationCanceledException check whether it is related to
                         // the cancellation token we received from the user. If so, cancel the Task.
-                        HandleCanceledOperations(cancellationToken, tcs, e);
+                        HandleCanceledOperations(token, sendState, e);
                     }
                     catch (Exception e)
                     {
-                        tcs.TrySetException(e);
+                        sendState.TrySetException(e);
                     }
                     // We don't pass the cancellation token to the continuation task, since we want to get called even
                     // if the operation was canceled: We'll set the Task returned to the user to canceled. Passing the
@@ -114,6 +119,22 @@ namespace System.Net.Http
             else
             {
                 tcs.TrySetException(e);
+            }
+        }
+        
+        // Private class used to capture the SendAsync state in
+        // a closure, while simultaneously avoiding a tuple allocation.
+        private sealed class SendState : TaskCompletionSource<HttpResponseMessage>
+        {
+            internal readonly MessageProcessingHandler _handler;
+            internal readonly CancellationToken _token;
+            
+            public SendState(MessageProcessingHandler handler, CancellationToken token)
+            {
+                Debug.Assert(handler != null);
+                
+                _handler = handler;
+                _token = token;
             }
         }
     }

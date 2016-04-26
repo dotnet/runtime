@@ -9,63 +9,16 @@ namespace System.Text.Tests
 {
     public class EncodingTest
     {
-        private static byte[] s_UTF32LEBom = new byte[] { 0xFF, 0xFE, 0x0, 0x0 };
-        private static byte[] s_UTF32BEBom = new byte[] { 0x0, 0x0, 0xFE, 0xFF, };
-        private static byte[] s_UTF8Bom = new byte[] { 0xEF, 0xBB, 0xBF };
-        private static byte[] s_UTF16LEBom = new byte[] { 0xFF, 0xFE };
-        private static byte[] s_UTF8BEBom = new byte[] { 0xFE, 0xFF };
-
-        [Fact]
-        public static void TestGetEncoding()
-        {
-            Encoding encoding = Encoding.GetEncoding("UTF-32LE");
-            Assert.Equal<byte>(encoding.GetPreamble(), s_UTF32LEBom);
-
-            encoding = Encoding.UTF32;
-            Assert.Equal<byte>(encoding.GetPreamble(), s_UTF32LEBom);
-
-            encoding = Encoding.GetEncoding("UTF-32BE");
-            Assert.Equal<byte>(encoding.GetPreamble(), s_UTF32BEBom);
-
-            encoding = Encoding.UTF8;
-            Assert.Equal<byte>(encoding.GetPreamble(), s_UTF8Bom);
-
-            encoding = Encoding.GetEncoding("UTF-16BE");
-            Assert.Equal<byte>(encoding.GetPreamble(), s_UTF8BEBom);
-
-            encoding = Encoding.GetEncoding("UTF-16LE");
-            Assert.Equal<byte>(encoding.GetPreamble(), s_UTF16LEBom);
-
-            encoding = Encoding.Unicode;
-            Assert.Equal<byte>(encoding.GetPreamble(), s_UTF16LEBom);
-        }
-
         private static byte[] s_asciiBytes = new byte[] { (byte)'A', (byte)'B', (byte)'C', (byte)'D', (byte)'E', (byte)'F', (byte)'G', (byte)'H', };
         private static string s_asciiString = "ABCDEFGH";
 
         [Fact]
         public static void TestEncodingDecoding()
         {
-            Encoding encoding = Encoding.ASCII;
+            Encoding encoding = Encoding.GetEncoding("latin1");
             byte[] bytes = encoding.GetBytes(s_asciiString);
             Assert.Equal<byte>(bytes, s_asciiBytes);
             string s = encoding.GetString(bytes, 0, bytes.Length);
-            Assert.True(s.Equals(s_asciiString));
-            s = encoding.GetString(bytes);
-            Assert.True(s.Equals(s_asciiString));
-
-            encoding = Encoding.GetEncoding("us-ascii");
-            bytes = encoding.GetBytes(s_asciiString);
-            Assert.Equal<byte>(bytes, s_asciiBytes);
-            s = encoding.GetString(bytes, 0, bytes.Length);
-            Assert.True(s.Equals(s_asciiString));
-            s = encoding.GetString(bytes);
-            Assert.True(s.Equals(s_asciiString));
-
-            encoding = Encoding.GetEncoding("latin1");
-            bytes = encoding.GetBytes(s_asciiString);
-            Assert.Equal<byte>(bytes, s_asciiBytes);
-            s = encoding.GetString(bytes, 0, bytes.Length);
             Assert.True(s.Equals(s_asciiString));
             s = encoding.GetString(bytes);
             Assert.True(s.Equals(s_asciiString));

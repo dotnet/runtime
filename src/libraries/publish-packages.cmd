@@ -18,7 +18,7 @@ echo msbuild.exe %~dp0src\publish.proj !options! !allargs! >> %packagesLog%
 call msbuild.exe %~dp0src\publish.proj !options! !allargs!
 if NOT [%ERRORLEVEL%]==[0] (
   echo ERROR: An error occurred while publishing packages, see %packagesLog% for more details.
-  exit /b
+  exit /b 1
 )
 
 echo Done publishing packages.

@@ -6,8 +6,7 @@ namespace System.Xml.Serialization
 {
     using System.Collections;
     using System.Xml.Extensions;
-    // this[key] api throws KeyNotFoundException
-    using Hashtable = System.Collections.InternalHashtable;
+    using System.Collections.Generic;
 
     internal class NameKey
     {
@@ -38,7 +37,7 @@ namespace System.Xml.Serialization
     }
     internal class NameTable : INameScope
     {
-        private Hashtable _table = new Hashtable();
+        private readonly Dictionary<NameKey, object> _table = new Dictionary<NameKey, object>();
 
 
         internal void Add(string name, string ns, object value)
@@ -51,7 +50,8 @@ namespace System.Xml.Serialization
         {
             get
             {
-                return _table[new NameKey(name, ns)];
+                object obj;
+                return _table.TryGetValue(new NameKey(name, ns), out obj) ? obj : null;
             }
             set
             {
@@ -62,7 +62,9 @@ namespace System.Xml.Serialization
         {
             get
             {
-                return _table[new NameKey(name, ns)];
+                object obj;
+                _table.TryGetValue(new NameKey(name, ns), out obj);
+                return obj;
             }
             set
             {
@@ -78,7 +80,7 @@ namespace System.Xml.Serialization
         internal Array ToArray(Type type)
         {
             Array a = Array.CreateInstance(type, _table.Count);
-            _table.Values.CopyTo(a, 0);
+            ((ICollection)_table.Values).CopyTo(a, 0);
             return a;
         }
     }

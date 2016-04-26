@@ -180,43 +180,6 @@ namespace System.Linq.Expressions.Interpreter
         }
     }
 
-    /// <summary>
-    /// Wraps all arguments passed to a dynamic site with more arguments than can be accepted by a Func/Action delegate.
-    /// The binder generating a rule for such a site should unwrap the arguments first and then perform a binding to them.
-    /// </summary>
-    internal sealed class ArgumentArray
-    {
-        private readonly object[] _arguments;
-
-        // the index of the first item _arguments that represents an argument:
-        private readonly int _first;
-
-        // the number of items in _arguments that represent the arguments:
-        private readonly int _count;
-
-        internal ArgumentArray(object[] arguments, int first, int count)
-        {
-            _arguments = arguments;
-            _first = first;
-            _count = count;
-        }
-
-        public int Count
-        {
-            get { return _count; }
-        }
-
-        public object GetArgument(int index)
-        {
-            return _arguments[_first + index];
-        }
-
-        public static object GetArg(ArgumentArray array, int index)
-        {
-            return array._arguments[array._first + index];
-        }
-    }
-
     internal static class ExceptionHelpers
     {
 #if FEATURE_STACK_TRACES
@@ -485,42 +448,5 @@ namespace System.Linq.Expressions.Interpreter
         {
             Debug.Assert(var != null);
         }
-
-        [Conditional("DEBUG")]
-        public static void NotNull(object var1, object var2)
-        {
-            Debug.Assert(var1 != null && var2 != null);
-        }
-
-        [Conditional("DEBUG")]
-        public static void NotNull(object var1, object var2, object var3)
-        {
-            Debug.Assert(var1 != null && var2 != null && var3 != null);
-        }
-
-        [Conditional("DEBUG")]
-        public static void NotNullItems<T>(IEnumerable<T> items) where T : class
-        {
-            Debug.Assert(items != null);
-            foreach (object item in items)
-            {
-                Debug.Assert(item != null);
-            }
-        }
-
-        [Conditional("DEBUG")]
-        public static void NotEmpty(string str)
-        {
-            Debug.Assert(!String.IsNullOrEmpty(str));
-        }
-    }
-
-    [Flags]
-    internal enum ExpressionAccess
-    {
-        None = 0,
-        Read = 1,
-        Write = 2,
-        ReadWrite = Read | Write,
     }
 }

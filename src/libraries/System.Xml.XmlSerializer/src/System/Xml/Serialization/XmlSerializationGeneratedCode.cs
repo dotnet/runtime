@@ -12,7 +12,6 @@ namespace System.Xml.Serialization
     using System.Reflection;
     using System.Security;
     using System.Globalization;
-    using Hashtable = System.Collections.Generic.Dictionary<object, object>;
 
     /// <include file='doc\XmlSerializationGeneratedCode.uex' path='docs/doc[@for="XmlSerializationGeneratedCode"]/*' />
     ///<internalonly/>

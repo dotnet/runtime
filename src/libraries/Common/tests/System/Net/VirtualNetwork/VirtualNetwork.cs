@@ -10,7 +10,7 @@ namespace System.Net.Test.Common
 {
     public class VirtualNetwork
     {
-        private readonly int WaitForReadDataTimeoutMilliseconds = 10 * 1000;
+        private readonly int WaitForReadDataTimeoutMilliseconds = 30 * 1000;
         
         private readonly ConcurrentQueue<byte[]> _clientWriteQueue = new ConcurrentQueue<byte[]>();
         private readonly ConcurrentQueue<byte[]> _serverWriteQueue = new ConcurrentQueue<byte[]>();
@@ -34,9 +34,29 @@ namespace System.Net.Test.Common
                 packetQueue = _serverWriteQueue;
             }
 
-            semaphore.Wait(WaitForReadDataTimeoutMilliseconds);
+            if (!semaphore.Wait(WaitForReadDataTimeoutMilliseconds))
+            {
+                throw new TimeoutException("VirtualNetwork: Timeout reading the next frame.");
+            }
 
-            bool dequeueSucceeded = packetQueue.TryDequeue(out buffer);
+            bool dequeueSucceeded = false;
+            int remainingTries = 3;
+            int backOffDelayMilliseconds = 2;
+
+            do
+            {
+                dequeueSucceeded = packetQueue.TryDequeue(out buffer);
+                if (dequeueSucceeded)
+                {
+                    break;
+                }
+
+                remainingTries--;
+                backOffDelayMilliseconds *= backOffDelayMilliseconds;
+                Thread.Sleep(backOffDelayMilliseconds);
+            }
+            while (!dequeueSucceeded && (remainingTries > 0));
+
             Debug.Assert(dequeueSucceeded, "Packet queue: TryDequeue failed.");
         }
 

@@ -132,6 +132,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue(8023)]
         public void FileSystemWatcher_Deleted_FileDeletedInNestedDirectory()
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))
