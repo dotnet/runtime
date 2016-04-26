@@ -3154,6 +3154,7 @@ namespace System {
             return Concat(objArgs);
         }
 
+        [System.Security.SecuritySafeCritical]
         public static String Concat(params Object[] args) {
             if (args==null) {
                 throw new ArgumentNullException("args");
@@ -3329,6 +3330,7 @@ namespace System {
             return result;
         }
 
+        [System.Security.SecuritySafeCritical]
         public static String Concat(params String[] values) {
             if (values == null)
                 throw new ArgumentNullException("values");
