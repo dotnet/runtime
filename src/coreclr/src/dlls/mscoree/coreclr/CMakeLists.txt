@@ -65,6 +65,10 @@ if (CLR_CMAKE_PLATFORM_UNIX)
     set(LIB_UNWINDER unwinder_wks)
 endif (CLR_CMAKE_PLATFORM_UNIX)
 
+if(FEATURE_MERGE_JIT_AND_ENGINE)
+    set(CLRJIT_STATIC clrjit_static)
+endif(FEATURE_MERGE_JIT_AND_ENGINE)
+
 # IMPORTANT! Please do not rearrange the order of the libraries. The linker on Linux is
 # order dependent and changing the order can result in undefined symbols in the shared 
 # library.
@@ -82,7 +86,7 @@ set(CORECLR_LIBRARIES
     mdhotdata_full
     bcltype
     ceefgen
-    clrjit_static
+    ${CLRJIT_STATIC}
     comfloat_wks
     corguids
     gcinfo # Condition="'$(TargetCpu)'=='amd64' or '$(TargetCpu)' == 'arm' or '$(TargetCpu)' == 'arm64'"

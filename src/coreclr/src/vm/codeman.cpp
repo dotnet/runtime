@@ -1388,7 +1388,9 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT I
 
     HRESULT hr = E_FAIL;
 
-#ifdef FEATURE_MERGE_JIT_AND_ENGINE
+#ifdef FEATURE_CORECLR
+    // TODO_DJIT: Currently, we are looking up the JIT from the same location as CoreCLR. We need to get this to come from
+    //            the host so that we get it from the correct servicing location
     PathString CoreClrFolderHolder;
     extern HINSTANCE g_hThisInst;
     if (WszGetModuleFileName(g_hThisInst, CoreClrFolderHolder))
@@ -1557,7 +1559,7 @@ BOOL EEJitManager::LoadJIT()
     // Set as a courtesy to code:CorCompileGetRuntimeDll
     s_ngenCompilerDll = m_JITCompiler;
     
-#if defined(_TARGET_AMD64_) && !defined(CROSSGEN_COMPILE)
+#if defined(_TARGET_AMD64_) && !defined(CROSSGEN_COMPILE) && !defined(FEATURE_CORECLR)
     // If COMPlus_UseLegacyJit=1, then we fall back to compatjit.dll.
     //
     // This fallback mechanism was introduced for Visual Studio "14" Preview, when JIT64 (the legacy JIT) was replaced with
@@ -1638,7 +1640,7 @@ BOOL EEJitManager::LoadJIT()
             }
         }
     }
-#endif // defined(_TARGET_AMD64_) && !defined(CROSSGEN_COMPILE)
+#endif // defined(_TARGET_AMD64_) && !defined(CROSSGEN_COMPILE) && !defined(FEATURE_CORECLR)
 
 #endif // !FEATURE_MERGE_JIT_AND_ENGINE
 
@@ -4285,15 +4287,17 @@ BOOL ExecutionManager::IsCacheCleanupRequired( void )
 /*********************************************************************/
 // This static method returns the name of the jit dll
 //
-LPWSTR ExecutionManager::GetJitName()
+LPCWSTR ExecutionManager::GetJitName()
 {
     STANDARD_VM_CONTRACT;
 
-    LPWSTR  pwzJitName;
+    LPCWSTR  pwzJitName = NULL;
 
+#if !defined(FEATURE_CORECLR)
     // Try to obtain a name for the jit library from the env. variable
     IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitName, &pwzJitName));
-
+#endif // !FEATURE_CORECLR
+    
     if (NULL == pwzJitName)
     {
         pwzJitName = MAKEDLLNAME_W(W("clrjit"));
@@ -4301,7 +4305,7 @@ LPWSTR ExecutionManager::GetJitName()
 
     return pwzJitName;
 }
-#endif // FEATURE_MERGE_JIT_AND_ENGINE
+#endif // !FEATURE_MERGE_JIT_AND_ENGINE
 
 #endif // #ifndef DACCESS_COMPILE
 

@@ -12,9 +12,6 @@ add_definitions(-DFEATURE_LEAVE_RUNTIME_HOLDER=1)
 add_definitions(-DUNICODE)
 add_definitions(-D_UNICODE)
 
-# Add the Merge flag here is needed
-add_definitions(-DFEATURE_MERGE_JIT_AND_ENGINE)
-
 if(CMAKE_CONFIGURATION_TYPES) # multi-configuration generator?
   foreach (Config DEBUG CHECKED)  
      set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS $<$<CONFIG:${Config}>:WRITE_BARRIER_CHECK=1>)

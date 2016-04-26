@@ -11306,9 +11306,9 @@ void CEEJitInfo::getEHinfo(
 }
 #endif // CROSSGEN_COMPILE
 
-#ifdef CROSSGEN_COMPILE
+#if defined(CROSSGEN_COMPILE)
 EXTERN_C ICorJitCompiler* __stdcall getJit();
-#endif
+#endif // defined(CROSSGEN_COMPILE)
 
 #ifdef FEATURE_INTERPRETER
 static CorJitResult CompileMethodWithEtwWrapper(EEJitManager *jitMgr,
@@ -11364,16 +11364,16 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
 
     BEGIN_SO_TOLERANT_CODE(GetThread());
 
-#ifdef CROSSGEN_COMPILE
+#if defined(CROSSGEN_COMPILE) && !defined(FEATURE_CORECLR)
     ret = getJit()->compileMethod( comp,
                                    info,
                                    flags,
                                    nativeEntry,
                                    nativeSizeOfCode);
 
-#else // CROSSGEN_COMPILE
+#else // defined(CROSSGEN_COMPILE) && !defined(FEATURE_CORECLR)
 
-#ifdef ALLOW_SXS_JIT
+#if defined(ALLOW_SXS_JIT) && !defined(CROSSGEN_COMPILE)
     if (FAILED(ret) && jitMgr->m_alternateJit
 #ifdef FEATURE_STACK_SAMPLING
         && (!samplingEnabled || (flags2 & CORJIT_FLG2_SAMPLING_JIT_BACKGROUND))
@@ -11403,7 +11403,7 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
             ret = CORJIT_SKIPPED;
         }
     }
-#endif // ALLOW_SXS_JIT
+#endif // defined(ALLOW_SXS_JIT) && !defined(CROSSGEN_COMPILE)
 
 #ifdef FEATURE_INTERPRETER
     static ConfigDWORD s_InterpreterFallback;
@@ -11450,6 +11450,7 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
     }
 #endif // FEATURE_INTERPRETER
 
+#if !defined(CROSSGEN_COMPILE)
     // Cleanup any internal data structures allocated 
     // such as IL code after a successfull JIT compile
     // If the JIT fails we keep the IL around and will
@@ -11466,8 +11467,9 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
         comp->MethodCompileComplete(info->ftn);
 #endif // FEATURE_INTERPRETER
     }
-
-#endif // CROSSGEN_COMPILE
+#endif // !defined(CROSSGEN_COMPILE)
+    
+#endif // defined(CROSSGEN_COMPILE) && !defined(FEATURE_CORECLR)
 
     END_SO_TOLERANT_CODE;
 
