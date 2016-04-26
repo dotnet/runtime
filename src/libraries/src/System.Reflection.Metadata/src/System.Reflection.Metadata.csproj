@@ -64,6 +64,8 @@
     <Compile Include="System\Reflection\Metadata\ILOpCodeExtensions.cs" />
     <Compile Include="System\Reflection\Metadata\Internal\HeapSizeFlag.cs" />
     <Compile Include="System\Reflection\Metadata\Internal\MetadataWriterUtilities.cs" />
+    <Compile Include="System\Reflection\Metadata\MetadataStreamOptions.cs" />
+    <Compile Include="System\Reflection\Metadata\MetadataReaderProvider.cs" />
     <Compile Include="System\Reflection\PortableExecutable\ContentId.cs" />
     <Compile Include="System\Reflection\PortableExecutable\ManagedPEBuilder.cs" />
     <Compile Include="System\Reflection\PortableExecutable\ManagedTextSection.cs" />

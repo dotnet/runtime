@@ -4,6 +4,7 @@
 
 using System.Collections.Immutable;
 using System.IO;
+using System.Reflection.Internal;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
@@ -33,7 +34,7 @@ namespace System.Reflection.PortableExecutable
         /// <exception cref="ArgumentException">The stream doesn't support seek operations.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="peStream"/> is null.</exception>
         public PEHeaders(Stream peStream)
-           : this(peStream, null)
+           : this(peStream, 0)
         {
         }
 
@@ -48,11 +49,6 @@ namespace System.Reflection.PortableExecutable
         /// <exception cref="ArgumentNullException"><paramref name="peStream"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Size is negative or extends past the end of the stream.</exception>
         public PEHeaders(Stream peStream, int size)
-            : this(peStream, (int?)size)
-        {
-        }
-
-        private PEHeaders(Stream peStream, int? sizeOpt)
         {
             if (peStream == null)
             {
@@ -64,8 +60,8 @@ namespace System.Reflection.PortableExecutable
                 throw new ArgumentException(SR.StreamMustSupportReadAndSeek, nameof(peStream));
             }
 
-            int size = PEBinaryReader.GetAndValidateSize(peStream, sizeOpt);
-            var reader = new PEBinaryReader(peStream, size);
+            int actualSize = StreamExtensions.GetAndValidateSize(peStream, size, nameof(peStream));
+            var reader = new PEBinaryReader(peStream, actualSize);
 
             bool isCoffOnly;
             SkipDosHeader(ref reader, out isCoffOnly);
@@ -84,7 +80,7 @@ namespace System.Reflection.PortableExecutable
             if (!isCoffOnly)
             {
                 int offset;
-                if (TryCalculateCorHeaderOffset(size, out offset))
+                if (TryCalculateCorHeaderOffset(actualSize, out offset))
                 {
                     _corHeaderStartOffset = offset;
                     reader.Seek(offset);
@@ -92,7 +88,7 @@ namespace System.Reflection.PortableExecutable
                 }
             }
 
-            CalculateMetadataLocation(size, out _metadataStartOffset, out _metadataSize);
+            CalculateMetadataLocation(actualSize, out _metadataStartOffset, out _metadataSize);
         }
 
         /// <summary>
