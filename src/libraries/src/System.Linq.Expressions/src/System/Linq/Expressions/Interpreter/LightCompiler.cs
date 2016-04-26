@@ -2555,12 +2555,6 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        private void CompileExtensionExpression(Expression expr)
-        {
-            Compile(expr.ReduceAndCheck());
-        }
-
-
         private void CompileDebugInfoExpression(Expression expr)
         {
             var node = (DebugInfoExpression)expr;
@@ -3038,7 +3032,6 @@ namespace System.Linq.Expressions.Interpreter
                 case ExpressionType.DebugInfo: CompileDebugInfoExpression(expr); break;
                 case ExpressionType.Decrement: CompileUnaryExpression(expr); break;
                 case ExpressionType.Default: CompileDefaultExpression(expr); break;
-                case ExpressionType.Extension: CompileExtensionExpression(expr); break;
                 case ExpressionType.Goto: CompileGotoExpression(expr); break;
                 case ExpressionType.Increment: CompileUnaryExpression(expr); break;
                 case ExpressionType.Index: CompileIndexExpression(expr); break;
@@ -3053,32 +3046,10 @@ namespace System.Linq.Expressions.Interpreter
                 case ExpressionType.OnesComplement: CompileUnaryExpression(expr); break;
                 case ExpressionType.IsTrue: CompileUnaryExpression(expr); break;
                 case ExpressionType.IsFalse: CompileUnaryExpression(expr); break;
-                case ExpressionType.AddAssign:
-                case ExpressionType.AndAssign:
-                case ExpressionType.DivideAssign:
-                case ExpressionType.ExclusiveOrAssign:
-                case ExpressionType.LeftShiftAssign:
-                case ExpressionType.ModuloAssign:
-                case ExpressionType.MultiplyAssign:
-                case ExpressionType.OrAssign:
-                case ExpressionType.PowerAssign:
-                case ExpressionType.RightShiftAssign:
-                case ExpressionType.SubtractAssign:
-                case ExpressionType.AddAssignChecked:
-                case ExpressionType.MultiplyAssignChecked:
-                case ExpressionType.SubtractAssignChecked:
-                case ExpressionType.PreIncrementAssign:
-                case ExpressionType.PreDecrementAssign:
-                case ExpressionType.PostIncrementAssign:
-                case ExpressionType.PostDecrementAssign:
                 default:
-                    if (expr.CanReduce)
-                    {
-                        Compile(expr.Reduce());
-                        break;
-                    }
-                    throw new PlatformNotSupportedException(SR.Format(SR.UnsupportedExpressionType, expr.NodeType));
-            };
+                    Compile(expr.ReduceAndCheck());
+                    break;
+            }
             Debug.Assert(_instructions.CurrentStackDepth == startingStackDepth + (expr.Type == typeof(void) ? 0 : 1),
                 String.Format("{0} vs {1} for {2}", _instructions.CurrentStackDepth, startingStackDepth + (expr.Type == typeof(void) ? 0 : 1), expr.NodeType));
         }
