@@ -321,7 +321,7 @@ public class ValueTupleTests
 
         ValueTupleDriverA = new ValueTupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, ValueTuple<bool, object>, TimeSpan>((short)10000, (int)1000000, (long)10000000, "2008?7?2?", '0', (Single)0.0001, (Double)0.0000001, now, ValueTuple.Create(false, myObj), TimeSpan.Zero);
         // .NET Native bug 438149 - object.ToString in incorrect
-        ValueTupleDriverA.TestToString("(" + ((short)10000) + ", " + ((int)1000000) + ", " + ((long)10000000) + ", 2008?7?2?, 0, " + ((Single)0.0001) + ", " + ((Double)0.0000001) + ", (" + now + ", (False, System.Object), " + TimeSpan.Zero + "))");
+        ValueTupleDriverA.TestToString("(" + ((short)10000) + ", " + ((int)1000000) + ", " + ((long)10000000) + ", 2008?7?2?, 0, " + ((Single)0.0001) + ", " + ((Double)0.0000001) + ", " + now + ", (False, System.Object), " + TimeSpan.Zero + ")");
     }
 
     [Fact]
@@ -665,7 +665,7 @@ public class ValueTupleTests
         Assert.Equal(
             ((IStructuralEquatable)a).GetHashCode(TestEqualityComparer.Instance),
             ((IStructuralEquatable)b).GetHashCode(TestEqualityComparer.Instance));
-        Assert.Equal("(1, 2, (31, 32), 4, 5, 6, 7, ((8, 9)))", a.ToString());
+        Assert.Equal("(1, 2, (31, 32), 4, 5, 6, 7, (8, 9))", a.ToString());
         Assert.Equal("(31, 32)", a.Item3.ToString());
         Assert.Equal("((8, 9))", a.Rest.ToString());
     }
@@ -680,9 +680,17 @@ public class ValueTupleTests
         Assert.Equal(-1, ((IComparable)a).CompareTo(b));
         Assert.False(((IStructuralEquatable)a).Equals(b, TestEqualityComparer.Instance));
         Assert.Equal(5, ((IStructuralComparable)a).CompareTo(b, DummyTestComparer.Instance));
-        Assert.Equal("(0, 1, 2, 3, 4, 5, 6, ((7, 8, 9, 10, 11, 12, 13, ((14, 15)))))", a.ToString());
-        Assert.Equal("(1, 2, 3, 4, 5, 6, 7, ((8, 9, 10, 11, 12, 13, 14, ((15, 16)))))", b.ToString());
-        Assert.Equal("((7, 8, 9, 10, 11, 12, 13, ((14, 15))))", a.Rest.ToString());
+
+        Assert.Equal("(0, 1, 2, 3, 4, 5, 6, (7, 8, 9, 10, 11, 12, 13, (14, 15)))", a.ToString());
+        Assert.Equal("(1, 2, 3, 4, 5, 6, 7, (8, 9, 10, 11, 12, 13, 14, (15, 16)))", b.ToString());
+        Assert.Equal("((7, 8, 9, 10, 11, 12, 13, (14, 15)))", a.Rest.ToString());
+
+        var a2 = Tuple.Create(0, 1, 2, 3, 4, 5, 6, Tuple.Create(7, 8, 9, 10, 11, 12, 13, Tuple.Create(14, 15)));
+        var b2 = Tuple.Create(1, 2, 3, 4, 5, 6, 7, Tuple.Create(8, 9, 10, 11, 12, 13, 14, Tuple.Create(15, 16)));
+
+        Assert.Equal(a2.ToString(), a.ToString());
+        Assert.Equal(b2.ToString(), b.ToString());
+        Assert.Equal(a2.Rest.ToString(), a.Rest.ToString());
     }
 
     [Fact]
@@ -710,9 +718,12 @@ public class ValueTupleTests
     {
         var a = ValueTuple.Create();
         Assert.True(a.Equals(new ValueTuple()));
+        Assert.Equal(0, a.CompareTo(new ValueTuple()));
 
         Assert.Equal(1, ((IStructuralComparable)a).CompareTo(null, DummyTestComparer.Instance));
         Assert.Throws<ArgumentException>(() => ((IStructuralComparable)a).CompareTo("string", DummyTestComparer.Instance));
+
+        Assert.Equal("(1, 2, 3, 4, 5, 6, 7, )", CreateLong(1, 2, 3, 4, 5, 6, 7, new ValueTuple()).ToString());
     }
 
     [Fact]
@@ -730,6 +741,8 @@ public class ValueTupleTests
         Assert.Equal(1, sc.CompareTo(ValueTuple.Create(3), TestComparer.Instance));
 
         Assert.False(((IStructuralEquatable)sc).Equals(sc, DummyTestEqualityComparer.Instance));
+
+        Assert.Equal("(1, 2, 3, 4, 5, 6, 7, 1)", CreateLong(1, 2, 3, 4, 5, 6, 7, ValueTuple.Create(1)).ToString());
     }
 
     [Fact]
@@ -748,6 +761,8 @@ public class ValueTupleTests
         Assert.Equal(1, sc.CompareTo(ValueTuple.Create(1, 3), TestComparer.Instance));
 
         Assert.False(((IStructuralEquatable)sc).Equals(sc, DummyTestEqualityComparer.Instance));
+
+        Assert.Equal("(1, 2, 3, 4, 5, 6, 7, 1, 2)", CreateLong(1, 2, 3, 4, 5, 6, 7, ValueTuple.Create(1, 2)).ToString());
     }
 
     [Fact]
@@ -768,6 +783,8 @@ public class ValueTupleTests
         Assert.Equal(1, sc.CompareTo(ValueTuple.Create(1, 1, 3), TestComparer.Instance));
 
         Assert.False(((IStructuralEquatable)sc).Equals(sc, DummyTestEqualityComparer.Instance));
+
+        Assert.Equal("(1, 2, 3, 4, 5, 6, 7, 1, 2, 3)", CreateLong(1, 2, 3, 4, 5, 6, 7, ValueTuple.Create(1, 2, 3)).ToString());
     }
 
     [Fact]
@@ -791,6 +808,8 @@ public class ValueTupleTests
         Assert.Equal(1, sc.CompareTo(ValueTuple.Create(1, 1, 1, 3), TestComparer.Instance));
 
         Assert.False(((IStructuralEquatable)sc).Equals(sc, DummyTestEqualityComparer.Instance));
+
+        Assert.Equal("(1, 2, 3, 4, 5, 6, 7, 1, 2, 3, 4)", CreateLong(1, 2, 3, 4, 5, 6, 7, ValueTuple.Create(1, 2, 3, 4)).ToString());
     }
 
     [Fact]
@@ -816,6 +835,8 @@ public class ValueTupleTests
         Assert.Equal(1, sc.CompareTo(ValueTuple.Create(1, 1, 1, 1, 3), TestComparer.Instance));
 
         Assert.False(((IStructuralEquatable)sc).Equals(sc, DummyTestEqualityComparer.Instance));
+
+        Assert.Equal("(1, 2, 3, 4, 5, 6, 7, 1, 2, 3, 4, 5)", CreateLong(1, 2, 3, 4, 5, 6, 7, ValueTuple.Create(1, 2, 3, 4, 5)).ToString());
     }
 
     [Fact]
@@ -843,6 +864,8 @@ public class ValueTupleTests
         Assert.Equal(1, sc.CompareTo(ValueTuple.Create(1, 1, 1, 1, 1, 3), TestComparer.Instance));
 
         Assert.False(((IStructuralEquatable)sc).Equals(sc, DummyTestEqualityComparer.Instance));
+
+        Assert.Equal("(1, 2, 3, 4, 5, 6, 7, 1, 2, 3, 4, 5, 6)", CreateLong(1, 2, 3, 4, 5, 6, 7, ValueTuple.Create(1, 2, 3, 4, 5, 6)).ToString());
     }
 
     [Fact]
@@ -872,6 +895,8 @@ public class ValueTupleTests
         Assert.Equal(1, sc.CompareTo(ValueTuple.Create(1, 1, 1, 1, 1, 1, 3), TestComparer.Instance));
 
         Assert.False(((IStructuralEquatable)sc).Equals(sc, DummyTestEqualityComparer.Instance));
+
+        Assert.Equal("(1, 2, 3, 4, 5, 6, 7, 1, 2, 3, 4, 5, 6, 7)", CreateLong(1, 2, 3, 4, 5, 6, 7, ValueTuple.Create(1, 2, 3, 4, 5, 6, 7)).ToString());
     }
 
     public static ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest> CreateLong<T1, T2, T3, T4, T5, T6, T7, TRest>(T1 item1, T2 item2, T3 item3, T4 item4, T5 item5, T6 item6, T7 item7, TRest rest) where TRest : struct =>
@@ -880,6 +905,10 @@ public class ValueTupleTests
     [Fact]
     public static void EightTuples()
     {
+        var x = new Tuple<int, int, int, int, int, int, int, Tuple<string, string>>(1, 2, 3, 4, 5, 6, 7, new Tuple<string, string>("alice", "bob"));
+        var y = new ValueTuple<int, int, int, int, int, int, int, ValueTuple<string, string>>(1, 2, 3, 4, 5, 6, 7, new ValueTuple<string, string>("alice", "bob"));
+        Assert.Equal(x.ToString(), y.ToString());
+
         var t = CreateLong(1, 1, 1, 1, 1, 1, 1, ValueTuple.Create(1));
 
         IStructuralEquatable se = t;
@@ -931,13 +960,31 @@ public class ValueTupleTests
         Assert.Equal(269544, ((IStructuralEquatable)CreateLong(1, 2, 3, 4, 5, 6, 7, CreateLong(8, 9, 10, 11, 12, 13, 14, ValueTuple.Create()))).GetHashCode(TestEqualityComparer.Instance));
         Assert.Equal(269312, ((IStructuralEquatable)CreateLong(1, 2, 3, 4, 5, 6, 7, CreateLong(8, 9, 10, 11, 12, 13, 14, ValueTuple.Create(15)))).GetHashCode(TestEqualityComparer.Instance));
 
+        Assert.False(se.Equals(t, DummyTestEqualityComparer.Instance));
+
+        // Notice that 0-tuple prints as empty position
+        Assert.Equal("(1, 2, 3, 4, 5, 6, 7, 1, 2, 3, 4, 5, 6, 7, )", CreateLong(1, 2, 3, 4, 5, 6, 7, CreateLong(1, 2, 3, 4, 5, 6, 7, ValueTuple.Create())).ToString());
+
+        Assert.Equal("(1, 2, 3, 4, 5, 6, 7, 1, 2, 3, 4, 5, 6, 7, 1)", CreateLong(1, 2, 3, 4, 5, 6, 7, CreateLong(1, 2, 3, 4, 5, 6, 7, ValueTuple.Create(1))).ToString());
+    }
+
+    [Fact]
+    public static void EightTuplesWithBadRest()
+    {
         var d = default(ValueTuple<int, int, int, int, int, int, int, int>);
         d.Item1 = 1;
         d.Rest = 42;
         Assert.Equal(35937, d.GetHashCode());
         Assert.Equal(35937, ((IStructuralEquatable)d).GetHashCode());
+        Assert.Equal("(1, 0, 0, 0, 0, 0, 0, 42)", d.ToString());
 
-        Assert.False(se.Equals(t, DummyTestEqualityComparer.Instance));
+        Assert.Equal(35937, CreateLong(1, 2, 3, 4, 5, 6, 7, d).GetHashCode());
+
+        // GetHashCode only tries to hash the first 7 elements when rest is not ITupleInternal
+        Assert.Equal(ValueTuple.Create(1, 0, 0, 0, 0, 0, 0).GetHashCode(), d.GetHashCode());
+        Assert.Equal(((IStructuralEquatable)ValueTuple.Create(1, 0, 0, 0, 0, 0, 0)).GetHashCode(TestEqualityComparer.Instance), ((IStructuralEquatable)d).GetHashCode(TestEqualityComparer.Instance));
+
+        Assert.Equal("(1, 2, 3, 4, 5, 6, 7, 1, 0, 0, 0, 0, 0, 0, 42)", CreateLong(1, 2, 3, 4, 5, 6, 7, d).ToString());
     }
 
     private class TestClass : IComparable
