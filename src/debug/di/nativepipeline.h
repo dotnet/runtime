@@ -167,6 +167,14 @@ public:
     {
         return S_FALSE;
     } 
+
+#ifdef FEATURE_PAL
+    // Used by debugger side (RS) to cleanup the target (LS) named pipes 
+    // and semaphores when the debugger detects the debuggee process  exited.
+    virtual void CleanupTargetProcess()
+    {
+    }
+#endif
 };
 
 //

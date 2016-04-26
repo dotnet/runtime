@@ -17,15 +17,14 @@ static const char* PipeNameFormat = "/tmp/clr-debug-pipe-%d-%llu-%s";
 
 void TwoWayPipe::GetPipeName(char *name, DWORD id, const char *suffix)
 {
-    UINT64 disambiguationKey;
-    BOOL ret = GetProcessIdDisambiguationKey(id, &disambiguationKey);
+    BOOL ret = GetProcessIdDisambiguationKey(id, &m_disambiguationKey);
 
     // If GetProcessIdDisambiguationKey failed for some reason, it should set the value 
     // to 0. We expect that anyone else making the pipe name will also fail and thus will
     // also try to use 0 as the value.
-    _ASSERTE(ret == TRUE || disambiguationKey == 0);
+    _ASSERTE(ret == TRUE || m_disambiguationKey == 0);
 
-    int chars = _snprintf(name, MaxPipeNameLength, PipeNameFormat, id, disambiguationKey, suffix);
+    int chars = _snprintf(name, MaxPipeNameLength, PipeNameFormat, id, m_disambiguationKey, suffix);
     _ASSERTE(chars > 0 && chars < MaxPipeNameLength);
 }
 
@@ -200,4 +199,13 @@ bool TwoWayPipe::Disconnect()
 
     m_state = NotInitialized;
     return true;
+}
+
+// Used by debugger side (RS) to cleanup the target (LS) named pipes 
+// and semaphores when the debugger detects the debuggee process  exited.
+void TwoWayPipe::CleanupTargetProcess()
+{
+    unlink(m_inPipeName);
+    unlink(m_outPipeName);
+    PAL_CleanupTargetProcess(m_id, m_disambiguationKey);
 }
