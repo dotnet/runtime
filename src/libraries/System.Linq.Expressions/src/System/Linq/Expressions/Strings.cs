@@ -146,11 +146,11 @@ namespace System.Linq.Expressions
         /// <summary>
         /// A string like "Property type must match the value type of setter"
         /// </summary>
-        internal static string PropertyTyepMustMatchSetter
+        internal static string PropertyTypeMustMatchSetter
         {
             get
             {
-                return SR.PropertyTyepMustMatchSetter;
+                return SR.PropertyTypeMustMatchSetter;
             }
         }
 
@@ -1123,14 +1123,6 @@ namespace System.Linq.Expressions
             {
                 return SR.ArgumentCannotBeOfTypeVoid;
             }
-        }
-
-        /// <summary>
-        /// A string like "Invalid operation: '{0}'"
-        /// </summary>
-        internal static string InvalidOperation(object p0)
-        {
-            return SR.Format(SR.InvalidOperation, p0);
         }
 
         /// <summary>
