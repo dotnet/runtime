@@ -109,36 +109,6 @@ namespace System.Reflection.PortableExecutable
             return Encoding.UTF8.GetString(bytes, 0, nonPaddedLength);
         }
 
-        /// <summary>
-        /// Resolve image size as either the given user-specified size or distance from current position to end-of-stream.
-        /// Also performs the relevant argument validation and publicly visible caller has same argument names.
-        /// </summary>
-        /// <exception cref="ArgumentException">size is null and distance from current position to end-of-stream can't fit in Int32.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Size is negative or extends past the end-of-stream from current position.</exception>
-        public static int GetAndValidateSize(Stream peStream, int? size)
-        {
-            long maxSize = peStream.Length - peStream.Position;
-
-            if (size.HasValue)
-            {
-                if (unchecked(size.Value) > maxSize)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(size));
-                }
-
-                return size.Value;
-            }
-            else
-            {
-                if (maxSize > int.MaxValue)
-                {
-                    throw new ArgumentException(SR.StreamTooLarge, nameof(peStream));
-                }
-
-                return (int)maxSize;
-            }
-        }
-
         private void CheckBounds(uint count)
         {
             Debug.Assert(count <= sizeof(Int64));  // Error message assumes we're trying to read constant small number of bytes.
