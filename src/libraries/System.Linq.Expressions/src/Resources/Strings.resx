@@ -145,7 +145,10 @@
     <value>Bounds count cannot be less than 1</value>
   </data>
   <data name="TypeMustNotBeByRef" xml:space="preserve">
-    <value>type must not be ByRef</value>
+    <value>Type must not be ByRef</value>
+  </data>
+  <data name="TypeMustNotBePointer" xml:space="preserve">
+    <value>Type must not be a pointer type</value>
   </data>
   <data name="TypeDoesNotHaveConstructorForTheSignature" xml:space="preserve">
     <value>Type doesn't have constructor with a given signature</value>

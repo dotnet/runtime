@@ -111,7 +111,7 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// A string like "type must not be ByRef"
+        /// A string like "Type must not be ByRef"
         /// </summary>
         internal static string TypeMustNotBeByRef
         {
@@ -120,6 +120,11 @@ namespace System.Linq.Expressions
                 return SR.TypeMustNotBeByRef;
             }
         }
+
+        /// <summary>
+        /// A string like "Type must not be a pointer type"
+        /// </summary>
+        internal static string TypeMustNotBePointer => SR.TypeMustNotBePointer;
 
         /// <summary>
         /// A string like "Type doesn't have constructor with a given signature"
