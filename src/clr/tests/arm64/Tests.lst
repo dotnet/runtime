@@ -158,7 +158,7 @@ RelativePath=Interop\NativeCallable\NativeCallableTest\NativeCallableTest.cmd
 WorkingDir=Interop\NativeCallable\NativeCallableTest
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;RT;EXPECTED_FAIL;ISSUE_4422;REL_PASS;ASSERT_ONLY
+Categories=Pri0;RT;EXPECTED_PASS
 HostStyle=0
 [BoolTest.cmd_23]
 RelativePath=Interop\PrimitiveMarshalling\Bool\BoolTest\BoolTest.cmd
