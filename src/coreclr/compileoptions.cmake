@@ -96,19 +96,18 @@ if (WIN32)
   add_compile_options($<$<CONFIG:Debug>:/homeparams>) # Force parameters passed in registers to be written to the stack
   endif (CLR_CMAKE_PLATFORM_ARCH_AMD64)
 
-  if(NOT CLR_CMAKE_PLATFORM_ARCH_ARM64)
-    # enable control-flow-guard support for native components for non-Arm64 builds
-    add_compile_options(/guard:cf) 
+  # enable control-flow-guard support for native components for non-Arm64 builds
+  add_compile_options(/guard:cf) 
 
-    # Statically linked CRT (libcmt[d].lib, libvcruntime[d].lib and libucrt[d].lib) by default. This is done to avoid  
-    # linking in VCRUNTIME140.DLL for a simplified xcopy experience by reducing the dependency on VC REDIST.  
-    #  
-    # For Release builds, we shall dynamically link into uCRT [ucrtbase.dll] (which is pushed down as a Windows Update on downlevel OS) but  
-    # wont do the same for debug/checked builds since ucrtbased.dll is not redistributable and Debug/Checked builds are not  
-    # production-time scenarios.  
-    add_compile_options($<$<OR:$<CONFIG:Release>,$<CONFIG:Relwithdebinfo>>:/MT>)  
-    add_compile_options($<$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>:/MTd>)  
-  endif (NOT CLR_CMAKE_PLATFORM_ARCH_ARM64)
+  # Statically linked CRT (libcmt[d].lib, libvcruntime[d].lib and libucrt[d].lib) by default. This is done to avoid  
+  # linking in VCRUNTIME140.DLL for a simplified xcopy experience by reducing the dependency on VC REDIST.  
+  #  
+  # For Release builds, we shall dynamically link into uCRT [ucrtbase.dll] (which is pushed down as a Windows Update on downlevel OS) but  
+  # wont do the same for debug/checked builds since ucrtbased.dll is not redistributable and Debug/Checked builds are not  
+  # production-time scenarios.  
+  add_compile_options($<$<OR:$<CONFIG:Release>,$<CONFIG:Relwithdebinfo>>:/MT>)  
+  add_compile_options($<$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>:/MTd>)  
+
 endif (WIN32)
 
 if(CMAKE_ENABLE_CODE_COVERAGE)
