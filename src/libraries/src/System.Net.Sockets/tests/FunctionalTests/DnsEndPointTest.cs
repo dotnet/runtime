@@ -50,7 +50,6 @@ namespace System.Net.Sockets.Tests
         {
             using (Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
-                // TODO (#7853): Behavior difference from .Net Desktop. This will actually throw InternalSocketException.
                 SocketException ex = Assert.ThrowsAny<SocketException>(() =>
                 {
                     sock.Connect(new DnsEndPoint("notahostname.invalid.corp.microsoft.com", UnusedPort));
@@ -60,7 +59,6 @@ namespace System.Net.Sockets.Tests
                 Assert.True((errorCode == SocketError.HostNotFound) || (errorCode == SocketError.NoData),
                     "SocketErrorCode: {0}" + errorCode);
 
-                // TODO (#7853): Behavior difference from .Net Desktop. This will actually throw InternalSocketException.
                 ex = Assert.ThrowsAny<SocketException>(() =>
                 {
                     sock.Connect(new DnsEndPoint("localhost", UnusedPort));
@@ -120,7 +118,6 @@ namespace System.Net.Sockets.Tests
         {
             using (Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
-                // TODO (#7853): Behavior difference from .Net Desktop. This will actually throw InternalSocketException.
                 SocketException ex = Assert.ThrowsAny<SocketException>(() =>
                 {
                     IAsyncResult result = sock.BeginConnect(new DnsEndPoint("notahostname.invalid.corp.microsoft.com", UnusedPort), null, null);
@@ -131,7 +128,6 @@ namespace System.Net.Sockets.Tests
                 Assert.True((errorCode == SocketError.HostNotFound) || (errorCode == SocketError.NoData),
                     "SocketErrorCode: {0}" + errorCode);
 
-                // TODO (#7853): Behavior difference from .Net Desktop. This will actually throw InternalSocketException.
                 ex = Assert.ThrowsAny<SocketException>(() =>
                 {
                     IAsyncResult result = sock.BeginConnect(new DnsEndPoint("localhost", UnusedPort), null, null);

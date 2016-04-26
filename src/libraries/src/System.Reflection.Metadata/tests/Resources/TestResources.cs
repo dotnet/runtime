@@ -39,6 +39,12 @@ namespace System.Reflection.Metadata.Tests
         public static readonly byte[] Lib = ResourceHelper.GetResource("WinRT.Lib.winmd");
     }
 
+    internal static class PortablePdbs
+    {
+        public static readonly byte[] DocumentsDll = ResourceHelper.GetResource("PortablePdbs.Documents.dll");
+        public static readonly byte[] DocumentsPdb = ResourceHelper.GetResource("PortablePdbs.Documents.pdb");
+    }
+
     internal static class ResourceHelper
     {
         public static byte[] GetResource(string name)

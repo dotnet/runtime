@@ -11,11 +11,25 @@ namespace System.Text.Tests
     {
         public static IEnumerable<object[]> Encodings_TestData()
         {
-            yield return new object[] { new UnicodeEncoding() };
-            yield return new object[] { new UTF7Encoding() };
-            yield return new object[] { new UTF8Encoding(true) };
-            yield return new object[] { new UTF8Encoding(false) };
+            yield return new object[] { new UnicodeEncoding(false, false) };
+            yield return new object[] { new UnicodeEncoding(true, false) };
+            yield return new object[] { new UnicodeEncoding(true, true) };
+            yield return new object[] { new UnicodeEncoding(true, true) };
+            yield return new object[] { new UTF7Encoding(true) };
+            yield return new object[] { new UTF7Encoding(false) };
+            yield return new object[] { new UTF8Encoding(true, true) };
+            yield return new object[] { new UTF8Encoding(false, true) };
+            yield return new object[] { new UTF8Encoding(true, false) };
+            yield return new object[] { new UTF8Encoding(false, false) };
             yield return new object[] { new ASCIIEncoding() };
+            yield return new object[] { new UTF32Encoding(true, true, true) };
+            yield return new object[] { new UTF32Encoding(true, true, false) };
+            yield return new object[] { new UTF32Encoding(true, false, false) };
+            yield return new object[] { new UTF32Encoding(true, false, true) };
+            yield return new object[] { new UTF32Encoding(false, true, true) };
+            yield return new object[] { new UTF32Encoding(false, true, false) };
+            yield return new object[] { new UTF32Encoding(false, false, false) };
+            yield return new object[] { new UTF32Encoding(false, false, true) };
         }
         
         [Theory]
@@ -60,6 +74,10 @@ namespace System.Text.Tests
             Assert.Throws<ArgumentNullException>(expectedStringParamName, () => encoding.GetBytes((string)null, 0, 0, new byte[1], 0));
             Assert.Throws<ArgumentNullException>("chars", () => encoding.GetBytes((char[])null, 0, 0, new byte[1], 0));
 
+            // Bytes is null
+            Assert.Throws<ArgumentNullException>("bytes", () => encoding.GetBytes("abc", 0, 3, null, 0));
+            Assert.Throws<ArgumentNullException>("bytes", () => encoding.GetBytes(new char[3], 0, 3, null, 0));
+
             // Char index < 0
             Assert.Throws<ArgumentOutOfRangeException>("index", () => encoding.GetBytes(new char[1], -1, 0));
             Assert.Throws<ArgumentOutOfRangeException>("charIndex", () => encoding.GetBytes("a", -1, 0, new byte[1], 0));
@@ -92,8 +110,12 @@ namespace System.Text.Tests
             Assert.Throws<ArgumentOutOfRangeException>("byteIndex", () => encoding.GetBytes(new char[1], 0, 1, new byte[1], 2));
 
             // Bytes does not have enough capacity to accomodate result
+            Assert.Throws<ArgumentException>("bytes", () => encoding.GetBytes("a", 0, 1, new byte[0], 0));
             Assert.Throws<ArgumentException>("bytes", () => encoding.GetBytes("abc", 0, 3, new byte[1], 0));
+            Assert.Throws<ArgumentException>("bytes", () => encoding.GetBytes("\uD800\uDC00", 0, 2, new byte[1], 0));
+            Assert.Throws<ArgumentException>("bytes", () => encoding.GetBytes(new char[1], 0, 1, new byte[0], 0));
             Assert.Throws<ArgumentException>("bytes", () => encoding.GetBytes(new char[3], 0, 3, new byte[1], 0));
+            Assert.Throws<ArgumentException>("bytes", () => encoding.GetBytes("\uD800\uDC00".ToCharArray(), 0, 2, new byte[1], 0));
 
             char[] chars = new char[3];
             byte[] bytes = new byte[3];
@@ -187,7 +209,7 @@ namespace System.Text.Tests
             // Chars does not have enough capacity to accomodate result
             Assert.Throws<ArgumentException>("chars", () => encoding.GetChars(new byte[4], 0, 4, new char[1], 1));
 
-            byte[] bytes = new byte[4];
+            byte[] bytes = new byte[encoding.GetMaxByteCount(2)];
             char[] chars = new char[4];
             char[] smallChars = new char[1];
             fixed (byte* pBytes = bytes)
@@ -221,6 +243,14 @@ namespace System.Text.Tests
                 Assert.Throws<ArgumentOutOfRangeException>("charCount", () => encoding.GetMaxByteCount(int.MaxValue / 2));
             }
             Assert.Throws<ArgumentOutOfRangeException>("charCount", () => encoding.GetMaxByteCount(int.MaxValue));
+
+            // Make sure that GetMaxByteCount respects the MaxCharCount property of EncoderFallback
+            // However, Utf7Encoding ignores this
+            if (!(encoding is UTF7Encoding))
+            {
+                Encoding customizedMaxCharCountEncoding = Encoding.GetEncoding(encoding.CodePage, new HighMaxCharCountEncoderFallback(), DecoderFallback.ReplacementFallback);
+                Assert.Throws<ArgumentOutOfRangeException>("charCount", () => customizedMaxCharCountEncoding.GetMaxByteCount(2));
+            }
         }
 
         [Theory]
@@ -233,6 +263,14 @@ namespace System.Text.Tests
             if (encoding is UTF8Encoding)
             {
                 Assert.Throws<ArgumentOutOfRangeException>("byteCount", () => encoding.GetMaxCharCount(int.MaxValue));
+            }
+
+            // Make sure that GetMaxCharCount respects the MaxCharCount property of DecoderFallback
+            // However, Utf7Encoding ignores this
+            if (!(encoding is UTF7Encoding) && !(encoding is UTF32Encoding))
+            {
+                Encoding customizedMaxCharCountEncoding = Encoding.GetEncoding(encoding.CodePage, EncoderFallback.ReplacementFallback, new HighMaxCharCountDecoderFallback());
+                Assert.Throws<ArgumentOutOfRangeException>("byteCount", () => customizedMaxCharCountEncoding.GetMaxCharCount(2));
             }
         }
 
@@ -253,5 +291,82 @@ namespace System.Text.Tests
             Assert.Throws<ArgumentOutOfRangeException>("bytes", () => encoding.GetString(new byte[1], 1, 1));
             Assert.Throws<ArgumentOutOfRangeException>("bytes", () => encoding.GetString(new byte[1], 0, 2));
         }
+
+        public static unsafe void Encode_Invalid(Encoding encoding, string chars, int index, int count)
+        {
+            Assert.Equal(EncoderFallback.ExceptionFallback, encoding.EncoderFallback);
+
+            char[] charsArray = chars.ToCharArray();
+            byte[] bytes = new byte[encoding.GetMaxByteCount(count)];
+
+            if (index == 0 && count == chars.Length)
+            {
+                Assert.Throws<EncoderFallbackException>(() => encoding.GetByteCount(chars));
+                Assert.Throws<EncoderFallbackException>(() => encoding.GetByteCount(charsArray));
+
+                Assert.Throws<EncoderFallbackException>(() => encoding.GetBytes(chars));
+                Assert.Throws<EncoderFallbackException>(() => encoding.GetBytes(charsArray));
+            }
+            Assert.Throws<EncoderFallbackException>(() => encoding.GetBytes(charsArray, index, count));
+
+            Assert.Throws<EncoderFallbackException>(() => encoding.GetBytes(chars, index, count, bytes, 0));
+            Assert.Throws<EncoderFallbackException>(() => encoding.GetBytes(charsArray, index, count, bytes, 0));
+
+            fixed (char* pChars = chars)
+            fixed (byte* pBytes = bytes)
+            {
+                char* pCharsLocal = pChars;
+                byte* pBytesLocal = pBytes;
+
+                Assert.Throws<EncoderFallbackException>(() => encoding.GetByteCount(pCharsLocal + index, count));
+                Assert.Throws<EncoderFallbackException>(() => encoding.GetBytes(pCharsLocal + index, count, pBytesLocal, bytes.Length));
+            }
+        }
+
+        public static unsafe void Decode_Invalid(Encoding encoding, byte[] bytes, int index, int count)
+        {
+            Assert.Equal(DecoderFallback.ExceptionFallback, encoding.DecoderFallback);
+
+            char[] chars = new char[encoding.GetMaxCharCount(count)];
+
+            if (index == 0 && count == bytes.Length)
+            {
+                Assert.Throws<DecoderFallbackException>(() => encoding.GetCharCount(bytes));
+
+                Assert.Throws<DecoderFallbackException>(() => encoding.GetChars(bytes));
+                Assert.Throws<DecoderFallbackException>(() => encoding.GetString(bytes));
+            }
+
+            Assert.Throws<DecoderFallbackException>(() => encoding.GetCharCount(bytes, index, count));
+
+            Assert.Throws<DecoderFallbackException>(() => encoding.GetChars(bytes, index, count));
+            Assert.Throws<DecoderFallbackException>(() => encoding.GetString(bytes, index, count));
+
+            Assert.Throws<DecoderFallbackException>(() => encoding.GetChars(bytes, index, count, chars, 0));
+
+            fixed (byte* pBytes = bytes)
+            fixed (char* pChars = chars)
+            {
+                byte* pBytesLocal = pBytes;
+                char* pCharsLocal = pChars;
+
+                Assert.Throws<DecoderFallbackException>(() => encoding.GetCharCount(pBytesLocal + index, count));
+
+                Assert.Throws<DecoderFallbackException>(() => encoding.GetChars(pBytesLocal, count, pCharsLocal, chars.Length));
+                Assert.Throws<DecoderFallbackException>(() => encoding.GetString(pBytesLocal + index, count));
+            }
+        }
+    }
+
+    public class HighMaxCharCountEncoderFallback : EncoderFallback
+    {
+        public override int MaxCharCount => int.MaxValue;
+        public override EncoderFallbackBuffer CreateFallbackBuffer() => ReplacementFallback.CreateFallbackBuffer();
+    }
+
+    public class HighMaxCharCountDecoderFallback : DecoderFallback
+    {
+        public override int MaxCharCount => int.MaxValue;
+        public override DecoderFallbackBuffer CreateFallbackBuffer() => ReplacementFallback.CreateFallbackBuffer();
     }
 }

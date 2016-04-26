@@ -497,10 +497,18 @@ VOID ServiceInit(DWORD dwArgc, LPTSTR* lpszArgv)
 	{
 		// Check whether to stop the service.
 
-		WaitForSingleObject(ghServiceStopEvent, INFINITE);
+        // If the tests haven't finished within 90 seconds, just end the program anyways.
+		DWORD error = WaitForSingleObject(ghServiceStopEvent, 90000);
 
 		// We're stopping, delete the log file
-		DWORD error = DeleteLogFile();
+		DWORD logError = DeleteLogFile();
+
+        // If WaitForSingleObject fails, use that code.
+        // Otherwise use the result of DeleteLogFile.
+        if (error == ERROR_SUCCESS)
+        {
+            error = logError;
+        }
 
 		ServiceReportStatus(SERVICE_STOPPED, error, 0);
 		return;
@@ -626,7 +634,6 @@ DWORD DeleteLogFile()
 	if (!DeleteFile(gLogFilePath.c_str()))
 	{
 		DWORD error = GetLastError();
-		LogMessage(L"warning: Failed to delete log file '%s' (%d)\n", gLogFilePath.c_str(), error);
 		return error;
 	}
 

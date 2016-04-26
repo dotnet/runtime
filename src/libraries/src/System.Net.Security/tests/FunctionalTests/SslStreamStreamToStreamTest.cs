@@ -17,7 +17,6 @@ namespace System.Net.Security.Tests
     {
         private readonly byte[] _sampleMsg = Encoding.UTF8.GetBytes("Sample Test Message");
 
-        [ActiveIssue(4467)]
         [Fact]
         public void SslStream_StreamToStream_Authentication_Success()
         {

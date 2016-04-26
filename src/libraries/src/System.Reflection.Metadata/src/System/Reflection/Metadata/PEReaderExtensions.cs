@@ -4,6 +4,7 @@
 
 using System.ComponentModel;
 using System.Reflection.PortableExecutable;
+using System.Text;
 
 namespace System.Reflection.Metadata
 {
@@ -43,6 +44,8 @@ namespace System.Reflection.Metadata
         /// <remarks>
         /// The caller must keep the <see cref="PEReader"/> alive and undisposed throughout the lifetime of the metadata reader.
         /// </remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="peReader"/> is null</exception>
+        /// <exception cref="PlatformNotSupportedException">The current platform is big-endian.</exception>
         public static MetadataReader GetMetadataReader(this PEReader peReader)
         {
             return GetMetadataReader(peReader, MetadataReaderOptions.ApplyWindowsRuntimeProjections, null);
@@ -54,7 +57,8 @@ namespace System.Reflection.Metadata
         /// <remarks>
         /// The caller must keep the <see cref="PEReader"/> alive and undisposed throughout the lifetime of the metadata reader.
         /// </remarks>
-
+        /// <exception cref="ArgumentNullException"><paramref name="peReader"/> is null</exception>
+        /// <exception cref="PlatformNotSupportedException">The current platform is big-endian.</exception>
         public static MetadataReader GetMetadataReader(this PEReader peReader, MetadataReaderOptions options)
         {
             return GetMetadataReader(peReader, options, null);
@@ -66,8 +70,16 @@ namespace System.Reflection.Metadata
         /// <remarks>
         /// The caller must keep the <see cref="PEReader"/> alive and undisposed throughout the lifetime of the metadata reader.
         /// </remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="peReader"/> is null</exception>
+        /// <exception cref="ArgumentException">The encoding of <paramref name="utf8Decoder"/> is not <see cref="UTF8Encoding"/>.</exception>
+        /// <exception cref="PlatformNotSupportedException">The current platform is big-endian.</exception>
         public static unsafe MetadataReader GetMetadataReader(this PEReader peReader, MetadataReaderOptions options, MetadataStringDecoder utf8Decoder)
         {
+            if (peReader == null)
+            {
+                throw new ArgumentNullException(nameof(peReader));
+            }
+
             var metadata = peReader.GetMetadata();
             return new MetadataReader(metadata.Pointer, metadata.Length, options, utf8Decoder);
         }

@@ -21,7 +21,7 @@ namespace System.Reflection.Internal
 
         public unsafe override int ReadByte()
         {
-            if (_position == _length)
+            if (_position >= _length)
             {
                 return -1;
             }
@@ -41,37 +41,10 @@ namespace System.Reflection.Internal
         {
         }
 
-        public override bool CanRead
-        {
-            get
-            {
-                return true;
-            }
-        }
-
-        public override bool CanSeek
-        {
-            get
-            {
-                return true;
-            }
-        }
-
-        public override bool CanWrite
-        {
-            get
-            {
-                return false;
-            }
-        }
-
-        public override long Length
-        {
-            get
-            {
-                return _length;
-            }
-        }
+        public override bool CanRead => true;
+        public override bool CanSeek => true;
+        public override bool CanWrite => false;
+        public override long Length => _length;
 
         public override long Position
         {
@@ -114,7 +87,7 @@ namespace System.Reflection.Internal
                 throw new ArgumentOutOfRangeException(nameof(offset));
             }
 
-            if (target < 0 || target >= _length)
+            if (target < 0 || target > int.MaxValue)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset));
             }

@@ -24,10 +24,13 @@ namespace System.Net.Test.Common
             {
                 for (int i = 0; i < 100000; i++)
                 {
-                    int bufferSize = rnd.Next(1, 2048);
-
-                    byte[] writeFrame = new byte[bufferSize];
+                    int bufferSize;
+                    byte[] writeFrame;
+                    
+                    bufferSize = rnd.Next(1, 2048);
+                    writeFrame = new byte[bufferSize];
                     rnd.NextBytes(writeFrame);
+                    
                     uint writeChecksum = Fletcher32.Checksum(writeFrame, 0, writeFrame.Length);
                     client.Write(writeFrame, 0, writeFrame.Length);
 
@@ -99,6 +102,8 @@ namespace System.Net.Test.Common
             Assert.True(maxFrameSize > sizeof(int) + 1);
 
             var rnd = new Random();
+            var rndLock = new object();
+            
             var network = new VirtualNetwork();
             var checksumAndLengths = new ConcurrentDictionary<int, Tuple<uint, int>>();
 
@@ -107,12 +112,21 @@ namespace System.Net.Test.Common
             using (var client = new VirtualNetworkStream(network, isServer: false))
             using (var server = new VirtualNetworkStream(network, isServer: true))
             {
-                Parallel.For(0, 100000, async (int i) =>
+                Parallel.For(0, 100, (int i) =>
                 {
-                    int bufferSize = rnd.Next(sizeof(int) + 1, maxFrameSize);
+                    int bufferSize;
+                    int delayMilliseconds;
+                    byte[] writeFrame;
+                    
+                    lock (rndLock)
+                    {
+                        bufferSize = rnd.Next(sizeof(int) + 1, maxFrameSize);
+                        delayMilliseconds = rnd.Next(0, 10);
+                        
+                        writeFrame = new byte[bufferSize];
+                        rnd.NextBytes(writeFrame);
+                    }
 
-                    byte[] writeFrame = new byte[bufferSize];
-                    rnd.NextBytes(writeFrame);
 
                     // First 4 bytes represent the sequence number.
                     byte[] sequenceNo = BitConverter.GetBytes(i);
@@ -123,14 +137,12 @@ namespace System.Net.Test.Common
 
                     checksumAndLengths.AddOrUpdate(i, writeFrameInfo, (seq, checkSum) => { Debug.Fail("Attempt to update checksum."); return new Tuple<uint, int>(0, 0); });
 
-                    await client.WriteAsync(writeFrame, 0, writeFrame.Length);
-                    
-                    int delayMilliseconds = rnd.Next(0, 10);
-                    await Task.Delay(delayMilliseconds);
+                    client.WriteAsync(writeFrame, 0, writeFrame.Length).GetAwaiter().GetResult();
+                    Task.Delay(delayMilliseconds).GetAwaiter().GetResult();
 
                     // First read the index to know how much data to read from this frame.
                     var readFrame = new byte[maxFrameSize];
-                    int readLen = await server.ReadAsync(readFrame, 0, maxFrameSize);
+                    int readLen = server.ReadAsync(readFrame, 0, maxFrameSize).GetAwaiter().GetResult();
 
                     int idx = BitConverter.ToInt32(readFrame, 0);
                     Tuple<uint, int> expectedFrameInfo = checksumAndLengths[idx];

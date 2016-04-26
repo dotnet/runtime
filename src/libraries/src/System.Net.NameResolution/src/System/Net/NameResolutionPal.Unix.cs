@@ -121,7 +121,7 @@ namespace System.Net
             int err = Interop.Sys.GetHostByName(hostName, &entry);
             if (err != 0)
             {
-                throw new InternalSocketException(GetSocketErrorForErrno(err), err);
+                throw SocketExceptionFactory.CreateSocketException(GetSocketErrorForErrno(err), err);
             }
 
             return CreateIPHostEntry(entry);
@@ -135,7 +135,7 @@ namespace System.Net
             int err = Interop.Sys.GetHostByAddress(&address, &entry);
             if (err != 0)
             {
-                throw new InternalSocketException(GetSocketErrorForErrno(err), err);
+                throw SocketExceptionFactory.CreateSocketException(GetSocketErrorForErrno(err), err);
             }
 
             return CreateIPHostEntry(entry);

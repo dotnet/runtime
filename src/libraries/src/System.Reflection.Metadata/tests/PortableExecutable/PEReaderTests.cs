@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using System.Reflection.Internal.Tests;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.Metadata.Tests;
@@ -49,6 +50,56 @@ namespace System.Reflection.PortableExecutable.Tests
             Assert.True(valid.CanRead);
             peReader.Dispose();
             Assert.False(valid.CanRead);
+        }
+
+        [Fact]
+        public void Ctor_Streams()
+        {
+            Assert.Throws<ArgumentException>(() => new PEReader(new TestStream(canRead: false, canSeek: false, canWrite: false)));
+            Assert.Throws<ArgumentException>(() => new PEReader(new TestStream(canRead: true, canSeek: false, canWrite: false)));
+
+            var s = new TestStream(canRead: true, canSeek: true, canWrite: false);
+
+            new PEReader(s);
+            new PEReader(s, PEStreamOptions.Default, 0);
+            Assert.Throws<ArgumentOutOfRangeException>(() => new PEReader(s, PEStreamOptions.Default, -1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new PEReader(s, PEStreamOptions.Default, 1));
+        }
+
+        [Fact]
+        public void FromEmptyStream()
+        {
+            Assert.Throws<BadImageFormatException>(() => new PEReader(new MemoryStream(), PEStreamOptions.PrefetchMetadata));
+            Assert.Throws<BadImageFormatException>(() => new PEReader(new MemoryStream(), PEStreamOptions.PrefetchMetadata | PEStreamOptions.PrefetchEntireImage));
+        }
+
+        [Fact(Skip = "https://github.com/dotnet/corefx/issues/7996")]
+        [ActiveIssue(7996)]
+        public void SubStream()
+        {
+            var stream = new MemoryStream();
+            stream.WriteByte(0xff);
+            stream.Write(Misc.Members, 0, Misc.Members.Length);
+            stream.WriteByte(0xff);
+            stream.WriteByte(0xff);
+
+            stream.Position = 1;
+            var peReader1 = new PEReader(stream, PEStreamOptions.LeaveOpen, Misc.Members.Length);
+
+            Assert.Equal(Misc.Members.Length, peReader1.GetEntireImage().Length);
+            peReader1.GetMetadataReader();
+
+            stream.Position = 1;
+            var peReader2 = new PEReader(stream, PEStreamOptions.LeaveOpen | PEStreamOptions.PrefetchMetadata, Misc.Members.Length);
+
+            Assert.Equal(Misc.Members.Length, peReader2.GetEntireImage().Length);
+            peReader2.GetMetadataReader();
+            stream.Position = 1;
+
+            var peReader3 = new PEReader(stream, PEStreamOptions.LeaveOpen | PEStreamOptions.PrefetchEntireImage, Misc.Members.Length);
+
+            Assert.Equal(Misc.Members.Length, peReader3.GetEntireImage().Length);
+            peReader3.GetMetadataReader();
         }
 
         // TODO: Switch to small checked in native image.

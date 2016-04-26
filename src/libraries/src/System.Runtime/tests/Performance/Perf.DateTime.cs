@@ -4,7 +4,7 @@
 
 using Microsoft.Xunit.Performance;
 
-namespace System.Runtime.Tests
+namespace System.Tests
 {
     public class Perf_DateTime
     {

@@ -97,7 +97,6 @@ namespace System.Reflection.Metadata.Tests
 
         #endregion
 
-
         [Fact]
         public unsafe void EmptyMetadata()
         {
@@ -105,6 +104,7 @@ namespace System.Reflection.Metadata.Tests
 
             Assert.Throws<ArgumentNullException>(() => new MetadataReader(null, 10));
             Assert.Throws<ArgumentOutOfRangeException>(() => new MetadataReader(ptr, -10));
+            Assert.Throws<BadImageFormatException>(() => new MetadataReader(ptr, 0));
         }
 
         [Fact]

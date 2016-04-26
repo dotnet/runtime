@@ -33,7 +33,8 @@ namespace System.Text.Tests
         [MemberData(nameof(Decode_TestData))]
         public void Decode(byte[] bytes, int index, int count, string expected)
         {
-            EncodingHelpers.Decode(new UTF7Encoding(), bytes, index, count, expected);
+            EncodingHelpers.Decode(new UTF7Encoding(true), bytes, index, count, expected);
+            EncodingHelpers.Decode(new UTF7Encoding(false), bytes, index, count, expected);
         }
 
         [Fact]

@@ -84,7 +84,7 @@
   <PropertyGroup>
     <ValidatePackageVersions>true</ValidatePackageVersions>
     <ProhibitFloatingDependencies>true</ProhibitFloatingDependencies>
-    <CoreFxExpectedPrerelease>rc3-24022-00</CoreFxExpectedPrerelease>
+    <CoreFxExpectedPrerelease>rc3-24026-00</CoreFxExpectedPrerelease>
   </PropertyGroup>
 
   <ItemGroup>

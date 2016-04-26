@@ -92,8 +92,11 @@
     <Compile Include="$(CommonPath)\System\Net\Internals\IPAddressExtensions.cs">
       <Link>Common\System\Net\Internals\IPAddressExtensions.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Internals\SocketException.Windows.cs">
-      <Link>Common\System\Net\Internals\SocketException.Windows.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\Internals\SocketExceptionFactory.cs">
+      <Link>Common\System\Net\Internals\SocketExceptionFactory.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Internals\SocketExceptionFactory.Windows.cs">
+      <Link>Common\System\Net\Internals\SocketExceptionFactory.Windows.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\SocketProtocolSupportPal.Windows.cs">
       <Link>Common\System\Net\SocketProtocolSupportPal.Windows</Link>
@@ -174,8 +177,11 @@
     <Compile Include="$(CommonPath)\System\Net\SocketProtocolSupportPal.Unix.cs">
       <Link>Common\System\Net\SocketProtocolSupportPal.Unix</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Internals\SocketException.Unix.cs">
-      <Link>Common\System\Net\Internals\SocketException.Unix.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\Internals\SocketExceptionFactory.cs">
+      <Link>Common\System\Net\Internals\SocketExceptionFactory.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Internals\SocketExceptionFactory.Unix.cs">
+      <Link>Common\System\Net\Internals\SocketExceptionFactory.Unix.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Interop.CheckedAccess.cs">
       <Link>Common\System\Net\Internals\Interop.CheckedAccess.cs</Link>

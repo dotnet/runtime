@@ -342,7 +342,7 @@ namespace System.IO
     public override Task FlushAsync(CancellationToken cancellationToken) {
 
         if (cancellationToken.IsCancellationRequested)
-            return Task.FromCancellation<Int32>(cancellationToken);
+            return Task.FromCanceled<Int32>(cancellationToken);
 
         EnsureNotClosed();
 
@@ -687,7 +687,7 @@ namespace System.IO
 
         // Fast path check for cancellation already requested
         if (cancellationToken.IsCancellationRequested)
-            return Task.FromCancellation<Int32>(cancellationToken);
+            return Task.FromCanceled<Int32>(cancellationToken);
 
         EnsureNotClosed();
         EnsureCanRead();
@@ -1111,7 +1111,7 @@ namespace System.IO
 
             // Fast path check for cancellation already requested
             if (cancellationToken.IsCancellationRequested)
-                return Task.FromCancellation<Int32>(cancellationToken);
+                return Task.FromCanceled<Int32>(cancellationToken);
 
             EnsureNotClosed();
             EnsureCanWrite();
