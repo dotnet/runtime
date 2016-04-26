@@ -319,7 +319,7 @@ public:
     // may be delivered once the session is established.
 #ifdef RIGHT_SIDE_COMPILE
     HRESULT Init(DWORD pid, HANDLE hProcessExited);
-#else // RIGHT_SIDE_COMPILE
+#else
     HRESULT Init(DebuggerIPCControlBlock * pDCB, AppDomainEnumerationIPCBlock * pADB);
 #endif // RIGHT_SIDE_COMPILE
 
@@ -331,10 +331,16 @@ public:
     // Init() may be called again to start over from the beginning).
     void Shutdown();
 
+#ifdef RIGHT_SIDE_COMPILE
+    // Used by debugger side (RS) to cleanup the target (LS) named pipes 
+    // and semaphores when the debugger detects the debuggee process  exited.
+    void CleanupTargetProcess();
+#else
     // Cleans up the named pipe connection so no tmp files are left behind. Does only
     // the minimum and must be safe to call at any time. Called during PAL ExitProcess,
     // TerminateProcess and for unhandled native exceptions and asserts.
     void AbortConnection();
+#endif // RIGHT_SIDE_COMPILE
 
     LONG AddRef()
     {
