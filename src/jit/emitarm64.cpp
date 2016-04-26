@@ -80,11 +80,11 @@ size_t              emitter::emitSizeOfInsDsc(instrDesc *id)
     assert((unsigned)id->idInsFmt() < emitFmtCount);
 
     ID_OPS idOp         = (ID_OPS) emitFmtToOps[id->idInsFmt()];
-    bool   isCallIns    = (id->idIns() == INS_bl) || (id->idIns() == INS_blr);
-    bool   maybeCallIns = (id->idIns() == INS_b)  || (id->idIns() == INS_br);
-
-    // A call instruction (ID_OP_CALL) may use a "fat" call descriptor
-    // A local call to a label (i.e. call to a finally) cannot use a fat" call descriptor
+    bool   isCallIns    = (id->idIns() == INS_bl)
+        || (id->idIns() == INS_blr)
+        || (id->idIns() == INS_b_tail)
+        || (id->idIns() == INS_br_tail);
+    bool   maybeCallIns = (id->idIns() == INS_b) || (id->idIns() == INS_br);
 
     switch (idOp)
     {
@@ -6888,7 +6888,7 @@ void                emitter::emitIns_Call(EmitCallType  callType,
 
             if (isJump)
             {
-                ins = INS_br;      // INS_br  Reg
+                ins = INS_br_tail; // INS_br_tail  Reg
             }
             else
             {
@@ -6918,14 +6918,13 @@ void                emitter::emitIns_Call(EmitCallType  callType,
 
         if (isJump)
         {
-            ins = INS_b;      // INS_b imm28
-            fmt = IF_BI_0A;
+            ins = INS_b_tail; // INS_b_tail imm28
         }
         else
         {
             ins = INS_bl;     // INS_bl imm28
-            fmt = IF_BI_0C;
         }
+        fmt = IF_BI_0C;
 
         id->idIns(ins);
         id->idInsFmt(fmt); 
@@ -8246,7 +8245,6 @@ size_t              emitter::emitOutputInstr(insGroup  *ig,
     case IF_BI_0B:    // BI_0B   ......iiiiiiiiii iiiiiiiiiii.....               simm19:00
         assert(id->idGCref() == GCT_NONE);
         assert(id->idIsBound());
-
         dst = emitOutputLJ(ig, dst, id);
         sz = sizeof(instrDescJmp);
         break;
