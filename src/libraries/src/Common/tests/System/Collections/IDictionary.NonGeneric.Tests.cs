@@ -155,7 +155,7 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
-        public void ICollection_NonGeneric_IsFixedSize_Validity(int count)
+        public void IDictionary_NonGeneric_IsFixedSize_Validity(int count)
         {
             IDictionary collection = NonGenericIDictionaryFactory(count);
             Assert.False(collection.IsFixedSize);
@@ -167,7 +167,7 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
-        public void ICollection_NonGeneric_IsReadOnly_Validity(int count)
+        public void IDictionary_NonGeneric_IsReadOnly_Validity(int count)
         {
             IDictionary collection = NonGenericIDictionaryFactory(count);
             Assert.Equal(IsReadOnly, collection.IsReadOnly);
@@ -200,7 +200,7 @@ namespace System.Collections.Tests
         {
             IDictionary dictionary = NonGenericIDictionaryFactory(count);
             object missingKey = GetNewKey(dictionary);
-            Assert.Equal(null, dictionary[missingKey]);
+            Assert.Null(dictionary[missingKey]);
         }
 
         [Theory]
@@ -213,7 +213,7 @@ namespace System.Collections.Tests
                 object missingKey = null;
                 if (dictionary.Contains(missingKey))
                     dictionary.Remove(missingKey);
-                Assert.Equal(null, dictionary[missingKey]);
+                Assert.Null(dictionary[missingKey]);
             }
         }
 
@@ -499,22 +499,54 @@ namespace System.Collections.Tests
 
         #endregion
 
+        #region Remove
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void IDictionary_NonGeneric_Remove_NullKey(int count)
+        {
+            IDictionary dictionary = NonGenericIDictionaryFactory(count);
+            if (!NullAllowed)
+            {
+                Assert.Throws<ArgumentNullException>(() => dictionary.Remove(null));
+            }
+            else
+            {
+                object value = CreateTValue(3452);
+                dictionary.Add(null, value);
+                dictionary.Remove(null);
+                Assert.Null(dictionary[null]);
+            }
+        }
+
+        #endregion
+
         #region Clear
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
-        public void ICollection_NonGeneric_Clear(int count)
+        public void IDictionary_NonGeneric_Clear(int count)
         {
             IDictionary collection = NonGenericIDictionaryFactory(count);
             if (IsReadOnly)
             {
                 Assert.Throws<NotSupportedException>(() => collection.Clear());
                 Assert.Equal(count, collection.Count);
+                Assert.Equal(count, collection.Keys.Count);
+                Assert.Equal(count, collection.Values.Count);
             }
             else
             {
                 collection.Clear();
                 Assert.Equal(0, collection.Count);
+                Assert.Equal(0, collection.Keys.Count);
+                Assert.Equal(0, collection.Values.Count);
+
+                // Make sure we can clear an already cleared dictionary
+                collection.Clear();
+                Assert.Equal(0, collection.Count);
+                Assert.Equal(0, collection.Keys.Count);
+                Assert.Equal(0, collection.Values.Count);
             }
         }
 
