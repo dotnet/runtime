@@ -30,7 +30,6 @@ namespace System.Text.Tests
             Assert.Empty(encoding.GetPreamble());
 
             Assert.Equal(new EncoderReplacementFallback(string.Empty), encoding.EncoderFallback);
-            DecoderFallback decodeFallback = encoding.DecoderFallback;
             Assert.Equal(1, encoding.DecoderFallback.MaxCharCount);
             Assert.Equal(984, encoding.DecoderFallback.GetHashCode());
 
