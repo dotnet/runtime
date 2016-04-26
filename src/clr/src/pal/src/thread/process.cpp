@@ -1577,40 +1577,43 @@ public:
     {
         PAL_ERROR pe = NO_ERROR;
 
-        // Enumerate all the modules in the process and invoke the callback 
-        // for the coreclr module if found.
-        DWORD count;
-        ProcessModules *listHead = CreateProcessModules(m_processId, &count);
-        if (listHead == NULL)
+        if (!m_canceled)
         {
-            TRACE("CreateProcessModules failed for pid %d\n", m_processId);
-            pe = ERROR_INVALID_PARAMETER;
-            goto exit;
-        }
-
-        for (ProcessModules *entry = listHead; entry != NULL; entry = entry->Next)
-        {
-            if (IsCoreClrModule(entry->Name))
+            // Enumerate all the modules in the process and invoke the callback 
+            // for the coreclr module if found.
+            DWORD count;
+            ProcessModules *listHead = CreateProcessModules(m_processId, &count);
+            if (listHead == NULL)
             {
-                PAL_CPP_TRY
-                {
-                    TRACE("InvokeStartupCallback executing callback %p %s\n", entry->BaseAddress, entry->Name);
-                    m_callback(entry->Name, entry->BaseAddress, m_parameter);
-                }
-                PAL_CPP_CATCH_ALL
-                {
-                }
-                PAL_CPP_ENDTRY
-
-                // Currently only the first coreclr module in a process is supported
-                break;
+                TRACE("CreateProcessModules failed for pid %d\n", m_processId);
+                pe = ERROR_INVALID_PARAMETER;
+                goto exit;
             }
-        }
 
-    exit:
-        if (listHead != NULL)
-        {
-            DestroyProcessModules(listHead);
+            for (ProcessModules *entry = listHead; entry != NULL; entry = entry->Next)
+            {
+                if (IsCoreClrModule(entry->Name))
+                {
+                    PAL_CPP_TRY
+                    {
+                        TRACE("InvokeStartupCallback executing callback %p %s\n", entry->BaseAddress, entry->Name);
+                        m_callback(entry->Name, entry->BaseAddress, m_parameter);
+                    }
+                        PAL_CPP_CATCH_ALL
+                    {
+                    }
+                    PAL_CPP_ENDTRY
+
+                        // Currently only the first coreclr module in a process is supported
+                        break;
+                }
+            }
+
+        exit:
+            if (listHead != NULL)
+            {
+                DestroyProcessModules(listHead);
+            }
         }
 
         return pe;
@@ -1642,20 +1645,17 @@ public:
             // Wait until the coreclr runtime (debuggee) starts up
             if (sem_wait(m_startupSem) == 0)
             {
-                if (!m_canceled)
+                // The continue semaphore should exists now and is needed to wake up the runtimes below
+                continueSem = sem_open(continueSemName, O_RDWR);
+                if (continueSem != SEM_FAILED) 
                 {
-                    // The continue semaphore should exists now and is needed to wake up the runtimes below
-                    continueSem = sem_open(continueSemName, O_RDWR);
-                    if (continueSem != SEM_FAILED) 
-                    {
-                        TRACE("StartupHelperThread continue sem exists after wait - invoking callback\n");
-                        pe = InvokeStartupCallback();
-                    }
-                    else
-                    {
-                        TRACE("sem_open(continue) failed: errno is %d (%s)\n", errno, strerror(errno));
-                        pe = GetSemError();
-                    }
+                    TRACE("StartupHelperThread continue sem exists after wait - invoking callback\n");
+                    pe = InvokeStartupCallback();
+                }
+                else
+                {
+                    TRACE("sem_open(continue) failed: errno is %d (%s)\n", errno, strerror(errno));
+                    pe = GetSemError();
                 }
             }
             else 
@@ -1855,6 +1855,37 @@ exit:
         sem_close(startupSem);
     }
     return result;
+}
+
+/*++
+    PAL_CleanupTargetProcess
+
+    Cleanup the target process's name continue semaphore
+    on the debugger side when the debugger detects the
+    process termination.
+
+Parameters:
+    pid - process id
+    disambiguationKey - key to make process id unique
+
+Return value:
+    None
+--*/
+VOID
+PALAPI
+PAL_CleanupTargetProcess(
+    IN int pid,
+    IN UINT64 disambiguationKey)
+{
+    char continueSemName[NAME_MAX - 4];
+
+    sprintf_s(continueSemName,
+              sizeof(continueSemName),
+              RuntimeContinueSemaphoreName,
+              pid,
+              disambiguationKey);
+
+    sem_unlink(continueSemName);
 }
 
 /*++
