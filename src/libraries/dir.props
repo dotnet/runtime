@@ -274,10 +274,6 @@
 
   <!-- Setup properties per OSGroup -->
   <Choose>
-    <When Condition="'$(IsReferenceAssembly)' == 'true' OR'$(MSBuildProjectExtension)' == '.pkgproj'">
-      <PropertyGroup>
-      </PropertyGroup>
-    </When>
     <When Condition="'$(OSGroup)'=='AnyOS'">
       <PropertyGroup>
       </PropertyGroup>
