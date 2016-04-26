@@ -23,14 +23,19 @@ Generating the rootfs
 ---------------------
 The `cross\build-rootfs.sh` script can be used to download the files needed for cross compilation. It will generate an Ubuntu 14.04 rootfs as this is what CoreCLR targets.
 
-    Usage: build-rootfs.sh [BuildArch]
-    BuildArch can be: arm, arm64
+    Usage: build-rootfs.sh [BuildArch] [UbuntuCodeName]
+    BuildArch can be: arm, arm-softfp, arm64
+    UbuntuCodeName - optional, Code name for Ubuntu, can be: trusty(default), vivid, wily
 
 The `build-rootfs.sh` script must be run as root as it has to make some symlinks to the system, it will by default generate the rootfs in `cross\rootfs\<BuildArch>` however this can be changed by setting the `ROOTFS_DIR` environment variable.
 
 For example, to generate an arm rootfs:
 
     ben@ubuntu ~/git/coreclr/ $ sudo ./cross/build-rootfs.sh arm
+
+You can choose Ubuntu code name to match your target, give `vivid` for `15.04`, `wily` for `15.10`. Default is `trusty`, version `14.04`.
+
+    ben@ubuntu ~/git/coreclr/ $ sudo ./cross/build-rootfs.sh arm wily
 
 and if you wanted to generate the rootfs elsewhere:
 
