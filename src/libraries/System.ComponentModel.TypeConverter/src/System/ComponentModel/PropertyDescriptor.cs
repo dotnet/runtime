@@ -10,8 +10,13 @@ namespace System.ComponentModel
     /// <devdoc>
     ///    <para>Provides a description of a property.</para>
     /// </devdoc>
+#if NETSTANDARD10
+    public abstract class PropertyDescriptor
+#else
     public abstract class PropertyDescriptor : MemberDescriptor
+#endif
     {
+#if !NETSTANDARD10
         private TypeConverter _converter = null;
         private Hashtable _valueChangedHandlers;
         private object[] _editors;
@@ -527,5 +532,6 @@ namespace System.ComponentModel
                 return false;
             }
         }
+#endif // NETSTANDARD10
     }
 }

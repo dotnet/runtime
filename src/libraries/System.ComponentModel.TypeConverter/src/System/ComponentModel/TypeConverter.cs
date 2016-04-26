@@ -266,6 +266,7 @@ namespace System.ComponentModel
             return false;
         }
 
+#if !NETSTANDARD10
         /// <devdoc>
         ///    <para>Gets a collection of properties for the type of array specified by the value parameter.</para>
         /// </devdoc>
@@ -295,6 +296,7 @@ namespace System.ComponentModel
         {
             return null;
         }
+#endif // !NETSTANDARD10
 
         /// <devdoc>
         ///    <para>Gets a value indicating whether this object supports properties.</para>
@@ -409,6 +411,7 @@ namespace System.ComponentModel
             return isValid;
         }
 
+#if !NETSTANDARD10
         /// <devdoc>
         ///    <para>Sorts a collection of properties.</para>
         /// </devdoc>
@@ -516,6 +519,7 @@ namespace System.ComponentModel
                 return false;
             }
         }
+#endif // !NETSTANDARD10
 
         /// <devdoc>
         ///    <para>Represents a collection of values.</para>
