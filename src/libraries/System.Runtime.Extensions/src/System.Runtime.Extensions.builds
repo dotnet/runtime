@@ -29,7 +29,7 @@
       <TargetGroup>netstandard15aot</TargetGroup>
     </Project>
     <Project Include="System.Runtime.Extensions.csproj">
-      <OSGroup>Linux</OSGroup>
+      <OSGroup>Unix</OSGroup>
       <TargetGroup>netstandard15aot</TargetGroup>
     </Project>
   </ItemGroup>

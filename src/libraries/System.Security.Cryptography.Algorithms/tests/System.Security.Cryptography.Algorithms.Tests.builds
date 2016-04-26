@@ -3,13 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="System.Security.Cryptography.Algorithms.Tests.csproj">
-      <OSGroup>FreeBSD</OSGroup>
-    </Project>
-    <Project Include="System.Security.Cryptography.Algorithms.Tests.csproj">
-      <OSGroup>Linux</OSGroup>
-    </Project>
-    <Project Include="System.Security.Cryptography.Algorithms.Tests.csproj">
-      <OSGroup>OSX</OSGroup>
+      <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="System.Security.Cryptography.Algorithms.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>

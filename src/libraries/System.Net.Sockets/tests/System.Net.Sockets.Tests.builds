@@ -6,19 +6,13 @@
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="FunctionalTests\System.Net.Sockets.Tests.csproj">
-      <OSGroup>OSX</OSGroup>
-    </Project>
-    <Project Include="FunctionalTests\System.Net.Sockets.Tests.csproj">
-      <OSGroup>Linux</OSGroup>
-    </Project>
-    <Project Include="PerformanceTests\System.Net.Sockets.Async.Performance.Tests.csproj">
-      <OSGroup>Linux</OSGroup>
-    </Project>
-    <Project Include="PerformanceTests\System.Net.Sockets.Async.Performance.Tests.csproj">
-      <OSGroup>OSX</OSGroup>
+      <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="PerformanceTests\System.Net.Sockets.Async.Performance.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
+    </Project>
+    <Project Include="PerformanceTests\System.Net.Sockets.Async.Performance.Tests.csproj">
+      <OSGroup>Unix</OSGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
