@@ -1198,10 +1198,10 @@ combinedScenarios.each { scenario ->
 
                                     // Debug runs take too long to run. So build job only.
                                     if (lowerConfiguration == "debug") {
-                                       buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${architecture} /toolset_dir C:\\ats"
+                                       buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${architecture} /toolset_dir C:\\ats2"
                                     }
                                     else {
-                                       buildCommands += "set __TestIntermediateDir=int&&build.cmd skiptests ${lowerConfiguration} ${architecture} /toolset_dir C:\\ats"
+                                       buildCommands += "set __TestIntermediateDir=int&&build.cmd skiptests ${lowerConfiguration} ${architecture} /toolset_dir C:\\ats2"
                                        // Test build and run are launched together.
                                        buildCommands += "Z:\\arm64\\common\\scripts\\arm64PostLauncher.cmd %WORKSPACE% ${architecture} ${lowerConfiguration}"
                                        Utilities.addXUnitDotNETResults(newJob, 'bin/tests/testResults.xml')
