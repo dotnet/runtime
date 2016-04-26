@@ -131,7 +131,7 @@ pal::string_t fx_muxer_t::resolve_cli_version(const pal::string_t& global_json)
         }
         retval = ver_iter->second.as_string();
     }
-    catch (const web::json::json_exception& je)
+    catch (const std::exception& je)
     {
         pal::string_t jes = pal::to_palstring(je.what());
         trace::error(_X("A JSON parsing exception occurred in [%s]: %s"), global_json.c_str(), jes.c_str());
@@ -255,6 +255,16 @@ int muxer_usage()
     return StatusCode::InvalidArgFailure;
 }
 
+// Convert "path" to realpath (merging working dir if needed) and append to "realpaths" out param.
+void append_realpath(const pal::string_t& path, std::vector<pal::string_t>* realpaths)
+{
+    pal::string_t real = path;
+    if (pal::realpath(&real))
+    {
+        realpaths->push_back(real);
+    }
+}
+
 int fx_muxer_t::parse_args_and_execute(
     const pal::string_t& own_dir,
     const pal::string_t& own_dll,
@@ -341,7 +351,18 @@ int fx_muxer_t::read_config_and_execute(
 
     pal::string_t deps_file = get_last_known_arg(opts, opts_deps_file, _X(""));
     pal::string_t runtime_config = get_last_known_arg(opts, opts_runtime_config, _X(""));
-    std::vector<pal::string_t> probe_paths = opts.count(opts_probe_path) ? opts.find(opts_probe_path)->second : std::vector<pal::string_t>();
+    std::vector<pal::string_t> spec_probe_paths = opts.count(opts_probe_path) ? opts.find(opts_probe_path)->second : std::vector<pal::string_t>();
+
+    if (!deps_file.empty() && (!pal::realpath(&deps_file) || !pal::file_exists(deps_file)))
+    {
+        trace::error(_X("The specified deps.json [%s] does not exist"), deps_file.c_str());
+        return StatusCode::InvalidArgFailure;
+    }
+    if (!runtime_config.empty() && (!pal::realpath(&runtime_config) || !pal::file_exists(runtime_config)))
+    {
+        trace::error(_X("The specified runtimeconfig.json [%s] does not exist"), runtime_config.c_str());
+        return StatusCode::InvalidConfigFile;
+    }
 
     pal::string_t app_or_deps = deps_file.empty() ? app_candidate : deps_file;
     pal::string_t config_file, dev_config_file;
@@ -358,27 +379,28 @@ int fx_muxer_t::read_config_and_execute(
     }
 
     runtime_config_t config(config_file, dev_config_file);
-    for (const auto& path : config.get_probe_paths())
-    {
-        probe_paths.push_back(path);
-    }
-
     if (!config.is_valid())
     {
         trace::error(_X("Invalid runtimeconfig.json [%s] [%s]"), config.get_path().c_str(), config.get_dev_path().c_str());
         return StatusCode::InvalidConfigFile;
     }
-    if (!deps_file.empty() && !pal::file_exists(deps_file))
+
+    // Append specified probe paths first and then config file probe paths into realpaths.
+    std::vector<pal::string_t> probe_realpaths;
+    for (const auto& path : spec_probe_paths)
     {
-        trace::error(_X("Deps file [%s] specified but doesn't exist"), deps_file.c_str());
-        return StatusCode::InvalidArgFailure;
+        append_realpath(path, &probe_realpaths);
+    }
+    for (const auto& path : config.get_probe_paths())
+    {
+        append_realpath(path, &probe_realpaths);
     }
 
     if (config.get_portable())
     {
         trace::verbose(_X("Executing as a portable app as per config file [%s]"), config_file.c_str());
         pal::string_t fx_dir = (mode == host_mode_t::split_fx) ? own_dir : resolve_fx_dir(own_dir, &config);
-        corehost_init_t init(deps_file, probe_paths, fx_dir, mode, config);
+        corehost_init_t init(deps_file, probe_realpaths, fx_dir, mode, config);
 
         pal::string_t impl_dir;
 
@@ -407,12 +429,12 @@ int fx_muxer_t::read_config_and_execute(
             }
         }
         trace::verbose(_X("The host impl directory before probing deps is [%s]"), impl_dir.c_str());
-        if (!library_exists_in_dir(impl_dir, LIBHOSTPOLICY_NAME, nullptr) && !probe_paths.empty() && !deps_file.empty())
+        if (!library_exists_in_dir(impl_dir, LIBHOSTPOLICY_NAME, nullptr) && !probe_realpaths.empty() && !deps_file.empty())
         {
             bool found = false;
             pal::string_t candidate = impl_dir;
             deps_json_t deps_json(false, deps_file);
-            for (const auto& probe_path : probe_paths)
+            for (const auto& probe_path : probe_realpaths)
             {
                 trace::verbose(_X("Considering %s for hostpolicy library"), probe_path.c_str());
                 if (deps_json.is_valid() &&
@@ -425,12 +447,12 @@ int fx_muxer_t::read_config_and_execute(
             }
             if (!found)
             {
-                trace::error(_X("Policy library either not found in deps [%s] or not found in %d probe paths."), deps_file.c_str(), probe_paths.size());
+                trace::error(_X("Policy library either not found in deps [%s] or not found in %d probe paths."), deps_file.c_str(), probe_realpaths.size());
                 return StatusCode::CoreHostLibMissingFailure;
             }
             impl_dir = get_directory(candidate);
         }
-        corehost_init_t init(deps_file, probe_paths, _X(""), mode, config);
+        corehost_init_t init(deps_file, probe_realpaths, _X(""), mode, config);
         return execute_app(impl_dir, &init, new_argc, new_argv);
     }
 }
