@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+
 namespace System
 {
     /// <summary>Provides an object wrapper that can transition between strong and weak references to the object.</summary>
@@ -13,6 +15,7 @@ namespace System
         /// <param name="obj">The object to wrap.</param>
         public StrongToWeakReference(T obj) : base(obj)
         {
+            Debug.Assert(obj != null, "Expected non-null obj");
             _strongRef = obj;
         }
 
@@ -20,7 +23,11 @@ namespace System
         public void MakeWeak() => _strongRef = null;
 
         /// <summary>Restores the strong reference, assuming the object hasn't yet been collected.</summary>
-        public void MakeStrong() => _strongRef = WeakTarget;
+        public void MakeStrong()
+        {
+            _strongRef = WeakTarget;
+            Debug.Assert(_strongRef != null, $"Expected non-null {nameof(_strongRef)} after setting");
+        }
 
         /// <summary>Gets the wrapped object.</summary>
         public new T Target => _strongRef ?? WeakTarget;
