@@ -9,22 +9,6 @@ namespace System.Text.Tests
 {
     public class EncodingTest
     {
-        private static byte[] s_UTF32LEBom = new byte[] { 0xFF, 0xFE, 0x0, 0x0 };
-        private static byte[] s_UTF32BEBom = new byte[] { 0x0, 0x0, 0xFE, 0xFF, };
-
-        [Fact]
-        public static void TestGetEncoding()
-        {
-            Encoding encoding = Encoding.GetEncoding("UTF-32LE");
-            Assert.Equal<byte>(encoding.GetPreamble(), s_UTF32LEBom);
-
-            encoding = Encoding.UTF32;
-            Assert.Equal<byte>(encoding.GetPreamble(), s_UTF32LEBom);
-
-            encoding = Encoding.GetEncoding("UTF-32BE");
-            Assert.Equal<byte>(encoding.GetPreamble(), s_UTF32BEBom);
-        }
-
         private static byte[] s_asciiBytes = new byte[] { (byte)'A', (byte)'B', (byte)'C', (byte)'D', (byte)'E', (byte)'F', (byte)'G', (byte)'H', };
         private static string s_asciiString = "ABCDEFGH";
 

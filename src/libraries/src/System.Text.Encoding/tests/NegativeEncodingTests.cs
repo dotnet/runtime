@@ -15,10 +15,21 @@ namespace System.Text.Tests
             yield return new object[] { new UnicodeEncoding(true, false) };
             yield return new object[] { new UnicodeEncoding(true, true) };
             yield return new object[] { new UnicodeEncoding(true, true) };
-            yield return new object[] { new UTF7Encoding() };
-            yield return new object[] { new UTF8Encoding(true) };
-            yield return new object[] { new UTF8Encoding(false) };
+            yield return new object[] { new UTF7Encoding(true) };
+            yield return new object[] { new UTF7Encoding(false) };
+            yield return new object[] { new UTF8Encoding(true, true) };
+            yield return new object[] { new UTF8Encoding(false, true) };
+            yield return new object[] { new UTF8Encoding(true, false) };
+            yield return new object[] { new UTF8Encoding(false, false) };
             yield return new object[] { new ASCIIEncoding() };
+            yield return new object[] { new UTF32Encoding(true, true, true) };
+            yield return new object[] { new UTF32Encoding(true, true, false) };
+            yield return new object[] { new UTF32Encoding(true, false, false) };
+            yield return new object[] { new UTF32Encoding(true, false, true) };
+            yield return new object[] { new UTF32Encoding(false, true, true) };
+            yield return new object[] { new UTF32Encoding(false, true, false) };
+            yield return new object[] { new UTF32Encoding(false, false, false) };
+            yield return new object[] { new UTF32Encoding(false, false, true) };
         }
         
         [Theory]
@@ -198,7 +209,7 @@ namespace System.Text.Tests
             // Chars does not have enough capacity to accomodate result
             Assert.Throws<ArgumentException>("chars", () => encoding.GetChars(new byte[4], 0, 4, new char[1], 1));
 
-            byte[] bytes = new byte[4];
+            byte[] bytes = new byte[encoding.GetMaxByteCount(2)];
             char[] chars = new char[4];
             char[] smallChars = new char[1];
             fixed (byte* pBytes = bytes)
@@ -256,7 +267,7 @@ namespace System.Text.Tests
 
             // Make sure that GetMaxCharCount respects the MaxCharCount property of DecoderFallback
             // However, Utf7Encoding ignores this
-            if (!(encoding is UTF7Encoding))
+            if (!(encoding is UTF7Encoding) && !(encoding is UTF32Encoding))
             {
                 Encoding customizedMaxCharCountEncoding = Encoding.GetEncoding(encoding.CodePage, EncoderFallback.ReplacementFallback, new HighMaxCharCountDecoderFallback());
                 Assert.Throws<ArgumentOutOfRangeException>("byteCount", () => customizedMaxCharCountEncoding.GetMaxCharCount(2));
@@ -311,6 +322,7 @@ namespace System.Text.Tests
                 Assert.Throws<EncoderFallbackException>(() => encoding.GetBytes(pCharsLocal + index, count, pBytesLocal, bytes.Length));
             }
         }
+
         public static unsafe void Decode_Invalid(Encoding encoding, byte[] bytes, int index, int count)
         {
             Assert.Equal(DecoderFallback.ExceptionFallback, encoding.DecoderFallback);
