@@ -108,9 +108,9 @@ eTargetType GetFinalTarget(DWORD_PTR callee, DWORD_PTR* finalMDorIP);
 //-----------------------------------------------------------------------------------------
 
 #ifndef THUMB_CODE
-#define THUMB_CODE 1;
+#define THUMB_CODE 1
 #endif
-#define STACKWALK_CONTROLPC_ADJUST_OFFSET 2;
+#define STACKWALK_CONTROLPC_ADJUST_OFFSET 2
 
 #ifdef SOS_TARGET_X86
 
@@ -186,7 +186,7 @@ public:
     typedef ARM_CONTEXT TGT_CTXT;
     
     static IMachine* GetInstance()
-    { static ARMMachine s_ARMMachineInstance; return &s_ARMMachineInstance; }
+    { return &s_ARMMachineInstance; }
 
     ULONG GetPlatform()             const { return IMAGE_FILE_MACHINE_ARMNT; }
     ULONG GetContextSize()          const { return sizeof(ARM_CONTEXT); }
@@ -238,6 +238,7 @@ private:
     static LPCSTR     s_DSOHeading;
     static LPCSTR     s_GCRegs[14];
     static LPCSTR     s_SPName;
+    static ARMMachine s_ARMMachineInstance;
 }; // class ARMMachine
 
 #endif // SOS_TARGET_ARM
