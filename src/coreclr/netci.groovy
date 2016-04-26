@@ -1547,7 +1547,7 @@ combinedScenarios.each { scenario ->
                                 shell("rm -rf .clr; mkdir .clr; mv * .clr; mv .git .clr; mv .clr clr")
                                 
                                 // Unzip the tests first.  Exit with 0
-                                shell("unzip -q -o ./bin/tests/tests.zip -d ./clr/bin/tests/Windows_NT.${architecture}.${configuration} || exit 0")
+                                shell("unzip -q -o ./clr/bin/tests/tests.zip -d ./clr/bin/tests/Windows_NT.${architecture}.${configuration} || exit 0")
 
                                 shell("ls clr/bin")
                                 // Get corefx
@@ -1563,7 +1563,7 @@ combinedScenarios.each { scenario ->
                                 shell("""./fx/run-test.sh \\
                 --coreclr-bins \$(pwd)/clr/bin/Product/${osGroup}.${architecture}.${configuration} \\
                 --mscorlib-bins \$(pwd)/clr/bin/Product/${osGroup}.${architecture}.${configuration} \\
-                --corefx-tests \$(pwd)/fx/bin/tests/{osGroup}.AnyCPU.{configuration} \\
+                --corefx-tests \$(pwd)/fx/bin/tests/${osGroup}.AnyCPU.${configuration} \\
                 --corefx-native-bins \$(pwd)/fx/bin/${osGroup}.${architecture}.${configuration}""")
 
 
