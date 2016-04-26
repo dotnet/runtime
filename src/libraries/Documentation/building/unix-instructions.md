@@ -1,7 +1,7 @@
 Building CoreFX on FreeBSD, Linux and OS X
 ==========================================
 
-Building CoreFX is pretty straightforward. Clone the repo and run the build script.
+Building CoreFX is pretty straightforward. Clone the repo and run the build script.  For specific steps to build on Ubuntu, [navigate to the end of this document](#steps-to-build-on-ubuntu).
 
 ```bash
 git clone https://github.com/dotnet/corefx.git
@@ -59,3 +59,19 @@ If you see errors along the lines of `SendFailure (Error writing headers)` you m
 ```sh
 mozroots --import --sync
 ```
+
+## Steps to Build on Ubuntu
+
+*Note: verified on Ubuntu 14.04 LTS*
+
+1. Install git `sudo apt-get install git`
+2. Clone the corefx repo `git clone https://github.com/dotnet/corefx.git`
+3. Install curl-dev `sudo apt-get install libcurl4-openssl-dev`
+4. Install icu `sudo apt-get install libicu52`
+5. Install llvm `sudo apt-get install llvm`
+6. Install lldb `sudo apt-get install lldb-3.5`
+7. Install cmake `sudo apt-get install cmake`
+8. Install clang `sudo apt-get install clang-3.6`
+9. Install libunwind `sudo apt-get install libunwind8-dev`
+10. Create a symlink for clang bins `sudo ln -s /usr/bin/clang-3.6 /usr/bin/clang && sudo ln -s /usr/bin/clang++-3.6 /usr/bin/clang++`
+11. Run the build script `./build.sh`
