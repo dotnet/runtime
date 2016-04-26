@@ -98,9 +98,9 @@ namespace System.Linq.Expressions
         /// <summary>
         /// ArgumentException with message like "Property type must match the value type of setter"
         /// </summary>
-        internal static Exception PropertyTyepMustMatchSetter()
+        internal static Exception PropertyTypeMustMatchSetter()
         {
-            return new ArgumentException(Strings.PropertyTyepMustMatchSetter);
+            return new ArgumentException(Strings.PropertyTypeMustMatchSetter);
         }
         /// <summary>
         /// ArgumentException with message like "Both accessors must be static."
@@ -425,13 +425,6 @@ namespace System.Linq.Expressions
             return Dynamic.Utils.Error.ExpressionTypeDoesNotMatchMethodParameter(p0, p1, p2);
         }
         /// <summary>
-        /// ArgumentException with message like "Expression of type '{0}' cannot be used for parameter of type '{1}'"
-        /// </summary>
-        internal static Exception ExpressionTypeDoesNotMatchParameter(object p0, object p1)
-        {
-            return Dynamic.Utils.Error.ExpressionTypeDoesNotMatchParameter(p0, p1);
-        }
-        /// <summary>
         /// ArgumentException with message like "Expression of type '{0}' cannot be used for return type '{1}'"
         /// </summary>
         internal static Exception ExpressionTypeDoesNotMatchReturn(object p0, object p1)
@@ -486,13 +479,6 @@ namespace System.Linq.Expressions
         internal static Exception IncorrectNumberOfIndexes()
         {
             return new ArgumentException(Strings.IncorrectNumberOfIndexes);
-        }
-        /// <summary>
-        /// InvalidOperationException with message like "Incorrect number of arguments supplied for lambda invocation"
-        /// </summary>
-        internal static Exception IncorrectNumberOfLambdaArguments()
-        {
-            return Dynamic.Utils.Error.IncorrectNumberOfLambdaArguments();
         }
         /// <summary>
         /// ArgumentException with message like "Incorrect number of parameters supplied for lambda declaration"
@@ -839,13 +825,6 @@ namespace System.Linq.Expressions
             return new ArgumentException(Strings.ArgumentCannotBeOfTypeVoid);
         }
         /// <summary>
-        /// ArgumentException with message like "Invalid operation: '{0}'"
-        /// </summary>
-        internal static Exception InvalidOperation(object p0)
-        {
-            return new ArgumentException(Strings.InvalidOperation(p0));
-        }
-        /// <summary>
         /// ArgumentOutOfRangeException with message like "{0} must be greater than or equal to {1}"
         /// </summary>
         internal static Exception OutOfRange(object p0, object p1)
@@ -1069,14 +1048,6 @@ namespace System.Linq.Expressions
         internal static Exception PdbGeneratorNeedsExpressionCompiler()
         {
             return new NotSupportedException(Strings.PdbGeneratorNeedsExpressionCompiler);
-        }
-
-        /// <summary>
-        /// The exception that is thrown when a null reference (Nothing in Visual Basic) is passed to a method that does not accept it as a valid argument.
-        /// </summary>
-        internal static Exception ArgumentNull(string paramName)
-        {
-            return new ArgumentNullException(paramName);
         }
 
         /// <summary>
