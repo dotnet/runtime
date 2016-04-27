@@ -2512,7 +2512,6 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
                     GetSystemVClassificationTypeName(helperPtr->fieldClassifications[helperPtr->currentUniqueOffsetField])));
 
                 helperPtr->currentUniqueOffsetField++;
-                _ASSERTE(helperPtr->currentUniqueOffsetField < SYSTEMV_MAX_NUM_FIELDS_IN_REGISTER_PASSED_STRUCT);
 #ifdef _DEBUG
                 ++fieldNum;
 #endif // _DEBUG
@@ -2601,8 +2600,8 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
                GetSystemVClassificationTypeName(fieldClassificationType),
                GetSystemVClassificationTypeName(helperPtr->fieldClassifications[helperPtr->currentUniqueOffsetField])));
 
-        helperPtr->currentUniqueOffsetField++;
         _ASSERTE(helperPtr->currentUniqueOffsetField < SYSTEMV_MAX_NUM_FIELDS_IN_REGISTER_PASSED_STRUCT);
+        helperPtr->currentUniqueOffsetField++;
     } // end per-field for loop
 
     AssignClassifiedEightByteTypes(helperPtr, nestingLevel);
@@ -3009,10 +3008,9 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
             GetSystemVClassificationTypeName(fieldClassificationType),
             GetSystemVClassificationTypeName(helperPtr->fieldClassifications[helperPtr->currentUniqueOffsetField])));
 
+        _ASSERTE(helperPtr->currentUniqueOffsetField < SYSTEMV_MAX_NUM_FIELDS_IN_REGISTER_PASSED_STRUCT);
         helperPtr->currentUniqueOffsetField++;
         ((BYTE*&)pFieldMarshaler) += MAXFIELDMARSHALERSIZE;
-        _ASSERTE(helperPtr->currentUniqueOffsetField < SYSTEMV_MAX_NUM_FIELDS_IN_REGISTER_PASSED_STRUCT);
-
     } // end per-field for loop
 
     AssignClassifiedEightByteTypes(helperPtr, nestingLevel);
