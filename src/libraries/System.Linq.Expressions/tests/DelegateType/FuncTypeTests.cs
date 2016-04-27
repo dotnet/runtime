@@ -13,16 +13,12 @@ namespace System.Linq.Expressions.Tests
         public void NullTypeList()
         {
             Assert.Throws<ArgumentNullException>("typeArgs", () => Expression.GetFuncType(default(Type[])));
-            Type result;
-            Assert.Throws<ArgumentNullException>("typeArgs", () => Expression.TryGetFuncType(null, out result));
         }
 
         [Fact]
         public void NullInTypeList()
         {
             Assert.Throws<ArgumentNullException>("typeArgs", () => Expression.GetFuncType(typeof(int), null));
-            Type result;
-            Assert.Throws<ArgumentNullException>("typeArgs", () => Expression.TryGetFuncType(new[] { typeof(int), null }, out result));
         }
 
         [Theory, MemberData(nameof(ValidTypeArgs), true)]
@@ -78,9 +74,9 @@ namespace System.Linq.Expressions.Tests
         [MemberData(nameof(EmptyTypeArgs))]
         [MemberData(nameof(ExcessiveLengthTypeArgs))]
         [MemberData(nameof(ByRefTypeArgs))]
-        // 8119 [MemberData(nameof(PointerTypeArgs))]
-        // 8119 [MemberData(nameof(ManagedPointerTypeArgs))]
-        // 8119 [MemberData(nameof(VoidTypeArgs), true)]
+        [MemberData(nameof(PointerTypeArgs))]
+        [MemberData(nameof(ManagedPointerTypeArgs))]
+        [MemberData(nameof(VoidTypeArgs), true)]
         public void UnsuccessfulTryGetFuncType(Type[] typeArgs)
         {
             Type funcType;

@@ -13,16 +13,12 @@ namespace System.Linq.Expressions.Tests
         public void NullTypeList()
         {
             Assert.Throws<ArgumentNullException>("typeArgs", () => Expression.GetActionType(default(Type[])));
-            Type result;
-            Assert.Throws<ArgumentNullException>("typeArgs", () => Expression.TryGetActionType(null, out result));
         }
 
         [Fact]
         public void NullInTypeList()
         {
             Assert.Throws<ArgumentNullException>("typeArgs", () => Expression.GetActionType(typeof(int), null));
-            Type result;
-            Assert.Throws<ArgumentNullException>("typeArgs", () => Expression.TryGetActionType(new[] { typeof(int), null }, out result));
         }
 
         [Theory]
@@ -96,9 +92,9 @@ namespace System.Linq.Expressions.Tests
         [MemberData(nameof(ExcessiveLengthTypeArgs))]
         [MemberData(nameof(ExcessiveLengthOpenGenericTypeArgs))]
         [MemberData(nameof(ByRefTypeArgs))]
-        // 8119 [MemberData(nameof(PointerTypeArgs))]
-        // 8119 [MemberData(nameof(ManagedPointerTypeArgs))]
-        // 8119 [MemberData(nameof(VoidTypeArgs), true)]
+        [MemberData(nameof(PointerTypeArgs))]
+        [MemberData(nameof(ManagedPointerTypeArgs))]
+        [MemberData(nameof(VoidTypeArgs), true)]
         public void UnsuccessfulTryGetActionType(Type[] typeArgs)
         {
             Type funcType;
