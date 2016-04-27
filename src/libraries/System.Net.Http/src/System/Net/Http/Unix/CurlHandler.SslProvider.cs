@@ -180,25 +180,15 @@ namespace System.Net.Http
             private static bool TryGetEasyRequest(IntPtr curlPtr, out EasyRequest easy)
             {
                 Debug.Assert(curlPtr != IntPtr.Zero, "curlPtr is not null");
+
                 IntPtr gcHandlePtr;
                 CURLcode getInfoResult = Interop.Http.EasyGetInfoPointer(curlPtr, CURLINFO.CURLINFO_PRIVATE, out gcHandlePtr);
-                Debug.Assert(getInfoResult == CURLcode.CURLE_OK, "Failed to get info on a completing easy handle");
                 if (getInfoResult == CURLcode.CURLE_OK)
                 {
-                    try
-                    {
-                        GCHandle handle = GCHandle.FromIntPtr(gcHandlePtr);
-                        easy = (EasyRequest)handle.Target;
-                        Debug.Assert(easy != null, "Expected non-null EasyRequest in GCHandle");
-                        return easy != null;
-                    }
-                    catch (Exception e)
-                    {
-                        EventSourceTrace("Error getting state from GCHandle: {0}", e);
-                        Debug.Fail($"Exception in {nameof(TryGetEasyRequest)}", e.ToString());
-                    }
+                    return MultiAgent.TryGetEasyRequestFromGCHandle(gcHandlePtr, out easy);
                 }
 
+                Debug.Fail($"Failed to get info on a completing easy handle: {getInfoResult}");
                 easy = null;
                 return false;
             }
