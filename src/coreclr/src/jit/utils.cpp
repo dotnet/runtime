@@ -695,23 +695,34 @@ const   char *      refCntWtd2str(unsigned refCntWtd)
     return  temp;
 }
 
-#define MAX_RANGE 0xfffff
+#endif // DEBUG
 
-/**************************************************************************/
-bool ConfigMethodRange::contains(ICorJitInfo* info, CORINFO_METHOD_HANDLE method) 
+#if defined(DEBUG) || defined(INLINE_DATA)
+
+//------------------------------------------------------------------------
+// Contains: check if the range includes a particular method
+//
+// Arguments:
+//    info   -- jit interface pointer
+//    method -- method handle for the method of interest
+
+bool ConfigMethodRange::Contains(ICorJitInfo* info, CORINFO_METHOD_HANDLE method)
 {
     _ASSERT(m_inited == 1);
 
-    if (m_lastRange == 0)   // no range mean everything
-        return true;
-
-    unsigned hash = info->getMethodHash(method)%MAX_RANGE;
-    assert(hash < MAX_RANGE);
-    int i = 0;
-
-    for (i=0 ; i<m_lastRange ; i+=2) 
+    // No ranges specified means all methods included.
+    if (m_lastRange == 0)
     {
-        if (m_ranges[i]<=hash && hash<=m_ranges[i+1])
+        return true;
+    }
+
+    // Check the hash. Note we can't use the cached hash here since
+    // we may not be asking about the method currently being jitted.
+    const unsigned hash = info->getMethodHash(method);
+
+    for (unsigned i = 0; i < m_lastRange; i++)
+    {
+        if ((m_ranges[i].m_low <= hash) && (hash <= m_ranges[i].m_high))
         {
             return true;
         }        
@@ -720,53 +731,127 @@ bool ConfigMethodRange::contains(ICorJitInfo* info, CORINFO_METHOD_HANDLE method
     return false;
 }
 
-/**************************************************************************/
-void ConfigMethodRange::initRanges(const wchar_t* rangeStr)
+//------------------------------------------------------------------------
+// InitRanges: parse the range string and set up the range info
+//
+// Arguments:
+//    rangeStr -- string to parse (may be nullptr)
+//    capacity -- number ranges to allocate in the range array
+//
+// Notes:
+//    Does some internal error checking; clients can use Error()
+//    to determine if the range string couldn't be fully parsed
+//    because of bad characters or too many entries, or had values
+//    that were too large to represent.
+
+void ConfigMethodRange::InitRanges(const wchar_t* rangeStr, unsigned capacity)
 {
-    // make sure that the memory was zero initialized
+    // Make sure that the memory was zero initialized
     assert(m_inited == 0 || m_inited == 1);
+    assert(m_entries == 0);
+    assert(m_ranges == nullptr);
+    assert(m_lastRange == 0);
+
+    // Flag any crazy-looking requests
+    assert(capacity < 100000);
 
     if (rangeStr == nullptr)
     {
-        m_inited = true;
+        m_inited = 1;
         return;
     }
 
-    LPCWSTR p = const_cast<LPCWSTR>(rangeStr);
-    unsigned char lastRange = 0;
-    while (*p) {
-        while (*p == ' ')       //skip blanks
+    // Allocate some persistent memory
+    ICorJitHost* jitHost = JitHost::getJitHost();
+    m_ranges = (Range*)jitHost->allocateMemory(capacity * sizeof(Range));
+    m_entries = capacity;
+
+    const wchar_t* p = rangeStr;
+    unsigned lastRange = 0;
+    bool setHighPart = false;
+
+    while ((*p != 0) && (lastRange < m_entries))
+    {
+        while (*p == L' ')
+        {
             p++;
+        }
+
         int i = 0;
-        while ('0' <= *p && *p <= '9')
-        {
-            i = 10*i + ((*p++) - '0');
-        }
-        m_ranges[lastRange++] = i;
 
-        while (*p == ' ')
+        while (L'0' <= *p && *p <= L'9')
+        {
+            int j = 10 * i + ((*p++) - L'0');
+
+            // Check for overflow
+            if ((m_badChar != 0) && (j <= i))
+            {
+                m_badChar = (p - rangeStr) + 1;
+            }
+
+            i = j;
+        }
+
+        // Was this the high part of a low-high pair?
+        if (setHighPart)
+        {
+            // Yep, set it and move to the next range
+            m_ranges[lastRange].m_high = i;
+
+            // Sanity check that range is proper
+            if ((m_badChar != 0) &&
+                (m_ranges[lastRange].m_high < m_ranges[lastRange].m_low))
+            {
+                m_badChar = (p - rangeStr) + 1;
+            }
+
+            lastRange++;
+            setHighPart = false;
+            continue;
+        }
+
+        // Must have been looking for the low part of a range
+        m_ranges[lastRange].m_low = i;
+
+        while (*p == L' ')
+        {
             p++;
-
-        // Have we read only the first part of a (possible) pair?
-        if (lastRange & 1) 
-        {
-            // Is this entry of the form "beg-end" or simply "num"?
-            if (*p == '-')
-                p++; // Skip over the '-' to get to "end"
-            else
-                m_ranges[lastRange++] = i; // This is just "num".
         }
-    }
-    if (lastRange & 1) 
-        m_ranges[lastRange++] = MAX_RANGE;
-    assert(lastRange < 100);
-    m_lastRange = lastRange;
 
-    m_inited = true;
+        // Was that the low part of a low-high pair?
+        if (*p == L'-')
+        {
+            // Yep, skip the dash and set high part next time around.
+            p++;
+            setHighPart = true;
+            continue;
+        }
+
+        // Else we have a point range, so set high = low
+        m_ranges[lastRange].m_high = i;
+        lastRange++;
+    }
+
+    // If we didn't parse the full range string, note index of the the
+    // first bad char.
+    if ((m_badChar != 0) && (*p != 0))
+    {
+        m_badChar = (p - rangeStr) + 1;
+    }
+
+    // Finish off any remaining open range
+    if (setHighPart)
+    {
+        m_ranges[lastRange].m_high = UINT_MAX;
+        lastRange++;
+    }
+
+    assert(lastRange <= m_entries);
+    m_lastRange = lastRange;
+    m_inited = 1;
 }
 
-#endif // DEBUG
-
+#endif // defined(DEBUG) || defined(INLINE_DATA)
 
 #if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE
 

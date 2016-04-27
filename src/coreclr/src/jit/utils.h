@@ -82,40 +82,76 @@ public:
     }
 };
 
-#ifdef DEBUG
-/**************************************************************************/
+#if defined(DEBUG) || defined(INLINE_DATA)
 
-/* to be used as static variables - no constructors/destructors, assumes zero 
-   initialized memory */
+// ConfigMethodRange describes a set of methods, specified via their
+// hash codes. This can be used for binary search and/or specifying an
+// explicit method set.
+//
+// Note method hash codes are not necessarily unique. For instance
+// many IL stubs may have the same hash.
+//
+// If range string is null or just whitespace, range includes all
+// methods.
+//
+// Parses values as decimal numbers.
+//
+// Examples:
+//
+//  [string with just spaces] : all methods
+//                   12345678 : a single method
+//          12345678-23456789 : a range of methods
+// 99998888 12345678-23456789 : a range of methods plus a single method
 
 class ConfigMethodRange
 {
 
 public:
-    bool contains(class ICorJitInfo* info, CORINFO_METHOD_HANDLE method);
 
-    inline void ensureInit(const wchar_t* rangeStr)
+    // Default capacity
+    enum
     {
-        // make sure that the memory was zero initialized
+        DEFAULT_CAPACITY = 50
+    };
+
+    // Does the range include this method's hash?
+    bool Contains(class ICorJitInfo* info, CORINFO_METHOD_HANDLE method);
+
+    // Ensure the range string has been parsed.
+    void EnsureInit(const wchar_t* rangeStr, unsigned capacity = DEFAULT_CAPACITY)
+    {
+        // Make sure that the memory was zero initialized
         assert(m_inited == 0 || m_inited == 1);
 
         if (!m_inited)
         {
-            initRanges(rangeStr);
+            InitRanges(rangeStr, capacity);
             assert(m_inited == 1);
         }
     }
 
-private:
-    void initRanges(__in_z LPCWSTR rangeStr);
+    // Error checks
+    bool Error()          const { return m_badChar != 0; }
+    size_t BadCharIndex() const { return m_badChar - 1; }
 
 private:
-    unsigned char m_lastRange;                   // count of low-high pairs
-    unsigned char m_inited;
-    unsigned m_ranges[100];                      // ranges of functions to Jit (low, high pairs).  
+
+    struct Range
+    {
+        unsigned m_low;
+        unsigned m_high;
+    };
+
+    void InitRanges(const wchar_t* rangeStr, unsigned capacity);
+
+    unsigned  m_entries;    // number of entries in the range array
+    unsigned  m_lastRange;  // count of low-high pairs
+    unsigned  m_inited;     // 1 if range string has been parsed
+    size_t    m_badChar;    // index + 1 of any bad character in range string
+    Range*    m_ranges;     // ranges of functions to include
 };
 
-#endif // DEBUG
+#endif // defined(DEBUG) || defined(INLINE_DATA)
 
 class Compiler;
 
