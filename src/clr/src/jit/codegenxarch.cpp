@@ -7372,21 +7372,29 @@ CodeGen::genCkfinite(GenTreePtr treeNode)
     GenTreePtr op1 = treeNode->gtOp.gtOp1;
     var_types targetType = treeNode->TypeGet();
     int expMask = (targetType == TYP_FLOAT) ? 0x7F800000 : 0x7FF00000;     // Bit mask to extract exponent.
+    regNumber targetReg = treeNode->gtRegNum;
 
     // Extract exponent into a register.
     assert(treeNode->gtRsvdRegs != RBM_NONE);
     assert(genCountBits(treeNode->gtRsvdRegs) == 1);
     regNumber tmpReg = genRegNumFromMask(treeNode->gtRsvdRegs);  
-    
+
+    genConsumeReg(op1);
+
+#ifdef _TARGET_64BIT_
+
+    // Copy the floating-point value to an integer register. If we copied a float to a long, then
+    // right-shift the value so the high 32 bits of the floating-point value sit in the low 32
+    // bits of the integer register.
     instruction ins = ins_CopyFloatToInt(targetType, (targetType == TYP_FLOAT) ? TYP_INT : TYP_LONG);
-    inst_RV_RV(ins, genConsumeReg(op1), tmpReg, targetType);
+    inst_RV_RV(ins, op1->gtRegNum, tmpReg, targetType);
     if (targetType == TYP_DOUBLE)
     {
         // right shift by 32 bits to get to exponent.
         inst_RV_SH(INS_shr, EA_8BYTE, tmpReg, 32);
     }
 
-    // Mask of exponent with all 1's and check if the exponent is all 1's
+    // Mask exponent with all 1's and check if the exponent is all 1's
     inst_RV_IV(INS_and, tmpReg, expMask, EA_4BYTE);
     inst_RV_IV(INS_cmp, tmpReg, expMask, EA_4BYTE);
 
@@ -7394,10 +7402,84 @@ CodeGen::genCkfinite(GenTreePtr treeNode)
     genJumpToThrowHlpBlk(EJ_je, SCK_ARITH_EXCPN);
 
     // if it is a finite value copy it to targetReg
-    if (treeNode->gtRegNum != op1->gtRegNum)
+    if (targetReg != op1->gtRegNum)
     {
-        inst_RV_RV(ins_Copy(targetType), treeNode->gtRegNum, op1->gtRegNum, targetType);
+        inst_RV_RV(ins_Copy(targetType), targetReg, op1->gtRegNum, targetType);
     }
+
+#else // !_TARGET_64BIT_
+
+    // If the target type is TYP_DOUBLE, we want to extract the high 32 bits into the register.
+    // There is no easy way to do this. To not require an extra register, we'll use shuffles
+    // to move the high 32 bits into the low 32 bits, then then shuffle it back, since we
+    // need to produce the value into the target register.
+    //
+    // For TYP_DOUBLE, we'll generate (for targetReg != op1->gtRegNum):
+    //    movaps targetReg, op1->gtRegNum
+    //    shufps targetReg, targetReg, 0xB1	// WZYX => ZWXY
+    //    mov_xmm2i tmpReg, targetReg		// tmpReg <= Y
+    //    and tmpReg, <mask>
+    //    cmp tmpReg, <mask>
+    //    je <throw block>
+    //    movaps targetReg, op1->gtRegNum   // copy the value again, instead of un-shuffling it
+    //
+    // For TYP_DOUBLE with (targetReg == op1->gtRegNum):
+    //    shufps targetReg, targetReg, 0xB1	// WZYX => ZWXY
+    //    mov_xmm2i tmpReg, targetReg		// tmpReg <= Y
+    //    and tmpReg, <mask>
+    //    cmp tmpReg, <mask>
+    //    je <throw block>
+    //    shufps targetReg, targetReg, 0xB1	// ZWXY => WZYX
+    //
+    // For TYP_FLOAT, it's the same as _TARGET_64BIT_:
+    //    mov_xmm2i tmpReg, targetReg		// tmpReg <= low 32 bits
+    //    and tmpReg, <mask>
+    //    cmp tmpReg, <mask>
+    //    je <throw block>
+    //    movaps targetReg, op1->gtRegNum   // only if targetReg != op1->gtRegNum
+
+    regNumber copyToTmpSrcReg; // The register we'll copy to the integer temp.
+
+    if (targetType == TYP_DOUBLE)
+    {
+        if (targetReg != op1->gtRegNum)
+        {
+            inst_RV_RV(ins_Copy(targetType), targetReg, op1->gtRegNum, targetType);
+        }
+        inst_RV_RV_IV(INS_shufps, EA_16BYTE, targetReg, targetReg, 0xb1);
+        copyToTmpSrcReg = targetReg;
+    }
+    else
+    {
+        copyToTmpSrcReg = op1->gtRegNum;
+    }
+
+    // Copy only the low 32 bits. This will be the high order 32 bits of the floating-point
+    // value, no matter the floating-point type.
+    inst_RV_RV(ins_CopyFloatToInt(TYP_FLOAT, TYP_INT), copyToTmpSrcReg, tmpReg, TYP_FLOAT);
+
+    // Mask exponent with all 1's and check if the exponent is all 1's
+    inst_RV_IV(INS_and, tmpReg, expMask, EA_4BYTE);
+    inst_RV_IV(INS_cmp, tmpReg, expMask, EA_4BYTE);
+
+    // If exponent is all 1's, throw ArithmeticException
+    genJumpToThrowHlpBlk(EJ_je, SCK_ARITH_EXCPN);
+
+    if (targetReg != op1->gtRegNum)
+    {
+        // In both the TYP_FLOAT and TYP_DOUBLE case, the op1 register is untouched,
+        // so copy it to the targetReg. This is faster and smaller for TYP_DOUBLE
+        // than re-shuffling the targetReg.
+        inst_RV_RV(ins_Copy(targetType), targetReg, op1->gtRegNum, targetType);
+    }
+    else if (targetType == TYP_DOUBLE)
+    {
+        // We need to re-shuffle the targetReg to get the correct result.
+        inst_RV_RV_IV(INS_shufps, EA_16BYTE, targetReg, targetReg, 0xb1);
+    }
+
+#endif // !_TARGET_64BIT_
+
     genProduceReg(treeNode);
 }
 
