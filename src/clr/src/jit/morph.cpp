@@ -4309,41 +4309,14 @@ void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
         {
             foundStructArg = true;
 
-            // We don't create GT_LIST for any multireg TYP_STRUCT arguments 
-            if (fgEntryPtr->regNum == REG_STK)
-            {
-                continue;
-            }
-
-            arg = fgMorphMultiregStructArg(arg);
+            arg = fgMorphMultiregStructArg(arg, fgEntryPtr);
 
             // Did we replace 'argx' with a new tree?
             if (arg != argx)
             {
-                bool isLateArg = (args->gtOp.gtOp1->gtFlags & GTF_LATE_ARG) != 0;
-                fgArgTabEntryPtr fgEntryPtr = gtArgEntryByNode(call, args->gtOp.gtOp1);
-                assert(fgEntryPtr != nullptr);
-                GenTreePtr argx = fgEntryPtr->node;
-                GenTreePtr lateList = nullptr;
-                GenTreePtr lateNode = nullptr;
-                if (isLateArg)
-                {
-                    for (GenTreePtr list = call->gtCallLateArgs; list; list = list->MoveNext())
-                    {
-                        assert(list->IsList());
+                fgEntryPtr->node = arg;   // Record the new value for the arg in the fgEntryPtr->node
 
-                        GenTreePtr argNode = list->Current();
-                        if (argx == argNode)
-                        {
-                            lateList = list;
-                            lateNode = argNode;
-                            break;
-                        }
-                    }
-                    assert(lateList != nullptr && lateNode != nullptr);
-                }
-
-                fgEntryPtr->node = arg;
+                // link the new arg node into either the late arg list or the gtCallArgs list
                 if (isLateArg)
                 {
                     lateList->gtOp.gtOp1 = arg;
@@ -4385,7 +4358,7 @@ void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
 //    Currently the implementation only handles ARM64 and will NYI for other architectures.
 //    And for ARM64 we do not ye handle HFA arguments, so only 16-byte struct sizes are supported.
 //
-GenTreePtr    Compiler::fgMorphMultiregStructArg(GenTreePtr arg)
+GenTreePtr    Compiler::fgMorphMultiregStructArg(GenTreePtr arg, fgArgTabEntryPtr fgEntryPtr)
 {
     GenTreeArgList*  newArg = nullptr;
     assert(arg->TypeGet() == TYP_STRUCT);
@@ -4444,43 +4417,76 @@ GenTreePtr    Compiler::fgMorphMultiregStructArg(GenTreePtr arg)
                 var_types  loType = loVarDsc->lvType;
                 var_types  hiType = hiVarDsc->lvType;
 
-                GenTreePtr loLclVar = gtNewLclvNode(loVarNum, loType, loVarNum);
-                GenTreePtr hiLclVar = gtNewLclvNode(hiVarNum, hiType, hiVarNum);
+                if (varTypeIsFloating(loType) || varTypeIsFloating(hiType))
+                {
+                    // TODO-LSRA - It currently doesn't support the passing of floating point LCL_VARS in the integer registers
+                    // So for now we will use GT_LCLFLD's to pass this struct (it won't be enregistered)
+                    //
+                    JITDUMP("Multireg struct V%02u will be passed using GT_LCLFLD because it has float fields.\n", varNum);
+                    //
+                    // we call lvaSetVarDoNotEnregister and do the proper transformation below.
+                    //
+                }
+                else
+                {
+                    // We can use the struct promoted field as the two arguments
 
-                // Create a new tree for 'arg'
-                //    replace the existing LDOBJ(ADDR(LCLVAR)) 
-                //    with a LIST(LCLVAR-LO, LIST(LCLVAR-HI, nullptr))
-                //
-                newArg = gtNewListNode(loLclVar, gtNewArgList(hiLclVar));
+                    GenTreePtr loLclVar = gtNewLclvNode(loVarNum, loType, loVarNum);
+                    GenTreePtr hiLclVar = gtNewLclvNode(hiVarNum, hiType, hiVarNum);
+
+                    // Create a new tree for 'arg'
+                    //    replace the existing LDOBJ(ADDR(LCLVAR)) 
+                    //    with a LIST(LCLVAR-LO, LIST(LCLVAR-HI, nullptr))
+                    //
+                    newArg = gtNewListNode(loLclVar, gtNewArgList(hiLclVar));
+                }
             }
         }
+
+        // Check if we couldn't transform the LDOBJ(ADDR(LCLVAR)) into a struct promoted GT_LIST above
         if (newArg == nullptr)
         {
-            GenTreeLclVarCommon* varNode = argValue->AsLclVarCommon();
-            unsigned   varNum = varNode->gtLclNum;
-            assert(varNum < lvaCount);
-            LclVarDsc* varDsc = &lvaTable[varNum];
-
             //
-            //  We weren't able to pass this LclVar using it's struct promted fields
+            // We weren't able to pass this LclVar using it's struct promted fields
             //
-            // Instead we will create a list of GT_LCL_FLDs nodes to pass this struct
+            // So instead we will create a list of GT_LCL_FLDs nodes to pass this struct
             //
             lvaSetVarDoNotEnregister(varNum DEBUG_ARG(DNER_LocalField));
 
-            GenTreePtr loLclFld = gtNewLclFldNode(varNum, type0, 0);
-            GenTreePtr hiLclFld = gtNewLclFldNode(varNum, type1, TARGET_POINTER_SIZE);
-
-            // Create a new tree for 'arg'
-            //    replace the existing LDOBJ(ADDR(LCLVAR)) 
-            //    with a LIST(LCLFLD-LO, LIST(LCLFLD-HI, nullptr))
+            // If this is going in the register area, we transform it here into a GT_LIST of LCLFLD's
+            // If this is going in the outgoing arg area, it will be transformed later
             //
-            newArg = gtNewListNode(loLclFld, gtNewArgList(hiLclFld));
+            if (fgEntryPtr->regNum != REG_STK)
+            {
+                GenTreeLclVarCommon* varNode = argValue->AsLclVarCommon();
+                unsigned   varNum = varNode->gtLclNum;
+                assert(varNum < lvaCount);
+                LclVarDsc* varDsc = &lvaTable[varNum];
+
+                GenTreePtr loLclFld = gtNewLclFldNode(varNum, type0, 0);
+                GenTreePtr hiLclFld = gtNewLclFldNode(varNum, type1, TARGET_POINTER_SIZE);
+
+                // Create a new tree for 'arg'
+                //    replace the existing LDOBJ(ADDR(LCLVAR)) 
+                //    with a LIST(LCLFLD-LO, LIST(LCLFLD-HI, nullptr))
+                //
+                newArg = gtNewListNode(loLclFld, gtNewArgList(hiLclFld));
+            }
         }
     }
+    // Check if we already created a replacement newArg above
+    if (newArg == nullptr)
+    {
+        if (fgEntryPtr->regNum == REG_STK)
+        {
+            // We leave this stack passed argument alone
+            return arg;
+        }
+    }
+
     // Are we passing a GT_LCL_FLD which contain a 16-byte struct inside it?
     //
-    else if (argValue->OperGet() == GT_LCL_FLD)
+    if (argValue->OperGet() == GT_LCL_FLD)
     {
         GenTreeLclVarCommon* varNode = argValue->AsLclVarCommon();
         unsigned   varNum = varNode->gtLclNum;
@@ -4544,12 +4550,15 @@ GenTreePtr    Compiler::fgMorphMultiregStructArg(GenTreePtr arg)
         //
         newArg = gtNewListNode(loValue, gtNewArgList(hiValue));
     }
-    else
+
+    // If we reach here we should have set newArg to something 
+    if (newArg == nullptr)
     {
+#ifdef DEBUG
+        gtDispTree(argValue);
+#endif
         assert(!"Missing case in fgMorphMultiregStructArg");
     }
-
-    assert(newArg != nullptr);
 
 #ifdef DEBUG
     if (verbose)
@@ -15601,6 +15610,7 @@ void                Compiler::fgPromoteStructs()
 #if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
                 // TODO-PERF - Only do this when the LclVar is used in an argument context
                 // TODO-ARM64 - HFA support should also eliminate the need for this.
+                // TODO-LSRA - Currently doesn't support the passing of floating point LCL_VARS in the integer registers
                 //
                 // For now we currently don't promote structs with a single float field
                 // Promoting it can cause us to shuffle it back and forth between the int and 
@@ -15631,14 +15641,15 @@ void                Compiler::fgPromoteStructs()
                 if (varDsc->lvIsParam)
                 {
 #if FEATURE_MULTIREG_STRUCT_PROMOTE
-                    if  (varDsc->lvIsMultiRegArgOrRet)   // Is this argument variable holding a value passed in multiple registers?
+                   
+                    if (varDsc->lvIsMultiregStruct()        &&   // Is this a variable holding a value that is passed in multiple registers?
+                        (structPromotionInfo.fieldCnt != 2) &&   // An argument with two exactly two fields
+                        false)                                   // TODO-PERF - Disabled as this needs additional implementation:
+                                                                 //             it hits assert(lvFieldCnt==1) in lclvar.cpp line 4417
                     {
-                        if (structPromotionInfo.fieldCnt != 2)
-                        {
-                            JITDUMP("Not promoting multireg struct local V%02u, because lvIsParam is true and #fields = %d.\n",
-                                    lclNum, structPromotionInfo.fieldCnt);
-                            continue;
-                        }
+                        JITDUMP("Not promoting multireg struct local V%02u, because lvIsParam is true and #fields = %d.\n",
+                            lclNum, structPromotionInfo.fieldCnt);
+                        continue;
                     }
                     else
 #endif  // !FEATURE_MULTIREG_STRUCT_PROMOTE
@@ -15649,6 +15660,7 @@ void                Compiler::fgPromoteStructs()
                         continue;
                     }
                 }
+
                 // 
                 // If the lvRefCnt is zero and we have a struct promoted parameter we can end up with an extra store of the the 
                 // incoming register into the stack frame slot.
