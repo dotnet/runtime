@@ -2,19 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Reflection.Metadata;
-
-#if SRM
 namespace System.Reflection.Metadata.Decoding
-#else
-
-namespace Roslyn.Reflection.Metadata.Decoding
-#endif
 {
-#if SRM
-    public
-#endif
-    interface ISignatureTypeProvider<TType> : IPrimitiveTypeProvider<TType>, ITypeProvider<TType>, IConstructedTypeProvider<TType>
+    public interface ISignatureTypeProvider<TType> : IPrimitiveTypeProvider<TType>, ITypeProvider<TType>, IConstructedTypeProvider<TType>
     {
         /// <summary>
         /// Gets the a type symbol for the function pointer type of the given method signature.

@@ -4,18 +4,9 @@
 
 using System;
 using System.Diagnostics;
-
-#if SRM
 using System.Reflection.Internal;
-#else
-using Roslyn.Utilities;
-#endif
 
-#if SRM
 namespace System.Reflection
-#else
-namespace Roslyn.Reflection
-#endif
 {
     internal unsafe static class BlobUtilities
     {

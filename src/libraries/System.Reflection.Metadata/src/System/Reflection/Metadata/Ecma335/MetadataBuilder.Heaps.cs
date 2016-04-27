@@ -5,29 +5,12 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Text;
-using System.Reflection.Metadata;
-
-#if SRM
 using System.Reflection.Internal;
-using BitArithmeticUtilities = System.Reflection.Internal.BitArithmetic;
-#else
-using System;
-using System.Reflection.Metadata.Ecma335;
-using Microsoft.CodeAnalysis.Collections;
-using Roslyn.Utilities;
-#endif
+using System.Text;
 
-#if SRM
 namespace System.Reflection.Metadata.Ecma335
-#else
-namespace Roslyn.Reflection.Metadata.Ecma335
-#endif
 {
-#if SRM
-    public
-#endif
-    sealed partial class MetadataBuilder
+    public sealed partial class MetadataBuilder
     {
         // #US heap
         private const int UserStringHeapSizeLimit = 0x01000000;
@@ -399,7 +382,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
 
         private void WriteAlignedBlobHeap(BlobBuilder builder)
         {
-            int alignment = BitArithmeticUtilities.Align(_blobHeapSize, 4) - _blobHeapSize;
+            int alignment = BitArithmetic.Align(_blobHeapSize, 4) - _blobHeapSize;
 
             var writer = new BlobWriter(builder.ReserveBytes(_blobHeapSize + alignment));
 
@@ -425,7 +408,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
         {
             int length = source.Count;
             target.LinkSuffix(source);
-            target.WriteBytes(0, BitArithmeticUtilities.Align(length, 4) - length);
+            target.WriteBytes(0, BitArithmetic.Align(length, 4) - length);
         }
     }
 }

@@ -2,16 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#if SRM
 namespace System.Reflection.Metadata
-#else
-namespace Microsoft.CodeAnalysis.CodeGen
-#endif
 {
-#if SRM
-    public
-#endif
-    enum ILOpCode : ushort
+    public enum ILOpCode : ushort
     {
         Nop = 0x00,
         Break = 0x01,

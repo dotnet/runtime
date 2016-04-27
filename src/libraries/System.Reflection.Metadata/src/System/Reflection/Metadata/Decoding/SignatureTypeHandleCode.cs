@@ -2,19 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
-
-#if SRM
 namespace System.Reflection.Metadata.Decoding
-#else
-namespace Roslyn.Reflection.Metadata.Decoding
-#endif
 {
-#if SRM
-    public
-#endif
-    enum SignatureTypeHandleCode : byte
+    public enum SignatureTypeHandleCode : byte
     {
         /// <summary>
         /// It is not known in the current context if the type reference or definition is a class or value type.

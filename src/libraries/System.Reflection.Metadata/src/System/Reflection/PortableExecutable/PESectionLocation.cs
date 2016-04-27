@@ -2,16 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#if SRM
 namespace System.Reflection.PortableExecutable
-#else
-namespace Roslyn.Reflection.PortableExecutable
-#endif
 {
-#if SRM
-    public
-#endif
-    struct PESectionLocation
+    public struct PESectionLocation
     {
         public int RelativeVirtualAddress { get; }
         public int PointerToRawData { get; }

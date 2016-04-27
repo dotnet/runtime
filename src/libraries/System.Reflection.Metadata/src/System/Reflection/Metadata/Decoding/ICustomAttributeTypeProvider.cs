@@ -2,16 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#if SRM
 namespace System.Reflection.Metadata.Decoding
-#else
-namespace Roslyn.Reflection.Metadata.Decoding
-#endif
 {
-#if SRM
-    public
-#endif
-    interface ICustomAttributeTypeProvider<TType> : IPrimitiveTypeProvider<TType>, ISZArrayTypeProvider<TType>, ITypeProvider<TType>
+    public interface ICustomAttributeTypeProvider<TType> : IPrimitiveTypeProvider<TType>, ISZArrayTypeProvider<TType>, ITypeProvider<TType>
     {
         /// <summary>
         /// Gets the TType representation for <see cref="System.Type"/>.

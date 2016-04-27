@@ -7,11 +7,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
-#if SRM
 namespace System.Reflection.Metadata
-#else
-namespace Roslyn.Reflection.Metadata
-#endif
 {
     internal static class BlobWriterImpl
     {

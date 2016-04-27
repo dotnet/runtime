@@ -6,16 +6,9 @@ using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
 
-#if SRM
 namespace System.Reflection.Metadata
-#else
-namespace Roslyn.Reflection.Metadata
-#endif
 {
-#if SRM
-    public
-#endif
-    struct ContentId
+public struct ContentId
     {
         public const int Size = 20;
 

@@ -2,21 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Diagnostics;
-using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
-
-#if SRM
 namespace System.Reflection.Metadata.Ecma335.Blobs
-#else
-namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
-#endif
 {
-#if SRM
-    public
-#endif
-    struct ExceptionRegionEncoder
+    public struct ExceptionRegionEncoder
     {
         private readonly int _exceptionRegionCount;
         private readonly bool _isSmallFormat;

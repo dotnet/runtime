@@ -2,20 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#if !SRM
-using System;
-#endif
-
-#if SRM
 namespace System.Reflection.Metadata
-#else
-namespace Microsoft.CodeAnalysis.CodeGen
-#endif
 {
-#if SRM
-    public
-#endif
-    static partial class ILOpCodeExtensions
+    public static partial class ILOpCodeExtensions
     {
         /// <summary>
         /// Returns true of the specified op-code is a branch to a label.

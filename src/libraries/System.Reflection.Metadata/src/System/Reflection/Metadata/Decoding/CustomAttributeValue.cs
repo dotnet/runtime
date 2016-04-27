@@ -4,16 +4,9 @@
 
 using System.Collections.Immutable;
 
-#if SRM
 namespace System.Reflection.Metadata.Decoding
-#else
-namespace Roslyn.Reflection.Metadata.Decoding
-#endif
 {
-#if SRM
-    public
-#endif
-    struct CustomAttributeValue<TType>
+    public struct CustomAttributeValue<TType>
     {
         private readonly ImmutableArray<CustomAttributeTypedArgument<TType>> _fixedArguments;
         private readonly ImmutableArray<CustomAttributeNamedArgument<TType>> _namedArguments;

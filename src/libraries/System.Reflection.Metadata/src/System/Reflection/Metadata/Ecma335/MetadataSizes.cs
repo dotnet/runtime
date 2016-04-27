@@ -4,25 +4,11 @@
 
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Reflection.Metadata.Ecma335;
-
-#if SRM
 using System.Reflection.Internal;
-using BitArithmeticUtilities = System.Reflection.Internal.BitArithmetic;
-#else
-using Roslyn.Utilities;
-#endif
 
-#if SRM
 namespace System.Reflection.Metadata.Ecma335
-#else
-namespace Roslyn.Reflection.Metadata.Ecma335
-#endif
 {
-#if SRM
-    public
-#endif
-    sealed class MetadataSizes
+    public sealed class MetadataSizes
     {
         private const int StreamAlignment = 4;
 
@@ -286,7 +272,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
             size += GetTableSize(TableIndex.CustomDebugInformation, this.HasCustomDebugInformationSize + this.GuidIndexSize + this.BlobIndexSize);
 
             // +1 for terminating 0 byte
-            size = BitArithmeticUtilities.Align(size + 1, StreamAlignment);
+            size = BitArithmetic.Align(size + 1, StreamAlignment);
 
             this.MetadataTableStreamSize = size;
 
@@ -353,7 +339,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
             return
                 sizeof(int) + // offset
                 sizeof(int) + // size
-                BitArithmeticUtilities.Align(streamName.Length + 1, 4); // zero-terminated name, padding
+                BitArithmetic.Align(streamName.Length + 1, 4); // zero-terminated name, padding
         }
 
         /// <summary>
@@ -363,7 +349,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
 
         public int GetAlignedHeapSize(HeapIndex index)
         {
-            return BitArithmeticUtilities.Align(HeapSizes[(int)index], StreamAlignment);
+            return BitArithmetic.Align(HeapSizes[(int)index], StreamAlignment);
         }
 
         internal int CalculateTableStreamHeaderSize()
@@ -395,7 +381,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
                 PdbIdSize +                                                         // PDB ID
                 sizeof(int) +                                                       // EntryPoint
                 sizeof(long) +                                                      // ReferencedTypeSystemTables
-                BitArithmeticUtilities.CountBits(ExternalTablesMask) * sizeof(int); // External row counts
+                BitArithmetic.CountBits(ExternalTablesMask) * sizeof(int); // External row counts
 
             Debug.Assert(result % StreamAlignment == 0);
             return result;
