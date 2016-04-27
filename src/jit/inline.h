@@ -689,6 +689,9 @@ public:
     // time budget.
     bool BudgetCheck(unsigned ilSize);
 
+    // Check if this method is not allowing inlines.
+    static bool IsNoInline(ICorJitInfo* info, CORINFO_METHOD_HANDLE method);
+
 #if defined(DEBUG) || defined(INLINE_DATA)
 
     // Dump textual description of inlines done so far.

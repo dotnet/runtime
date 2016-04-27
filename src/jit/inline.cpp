@@ -1313,11 +1313,7 @@ void InlineStrategy::DumpXml(FILE* file, unsigned indent)
     mdMethodDef currentMethodToken =
         info.compCompHnd->getMethodDefFromMethod(info.compMethodHnd);
 
-#ifdef DEBUG
     unsigned hash = info.compMethodHash();
-#else
-    unsigned hash = 0;
-#endif
 
     // Convert time spent jitting into microseconds
     unsigned microsecondsSpentJitting = 0;
@@ -1378,3 +1374,52 @@ void InlineStrategy::FinalizeXml(FILE* file)
 }
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
+
+//------------------------------------------------------------------------
+// IsNoInline: allow strategy to disable inlining in a method
+//
+// Arguments:
+//    info -- compiler interface from the EE
+//    method -- handle for the root method
+//
+// Notes:
+//    Only will return true in debug or special release builds.
+//    Expects JitNoInlineRange to be set to the hashes of methods
+//    where inlining is disabled.
+
+bool InlineStrategy::IsNoInline(ICorJitInfo* info, CORINFO_METHOD_HANDLE method)
+{
+
+#if defined(DEBUG) || defined(INLINE_DATA)
+
+    static ConfigMethodRange range;
+    const wchar_t* noInlineRange = JitConfig.JitNoInlineRange();
+
+    if (noInlineRange == nullptr)
+    {
+        return false;
+    }
+
+    // If we have a config string we have at least one entry.  Count
+    // number of spaces in our config string to see if there are
+    // more. Number of ranges we need is 2x that value.
+    unsigned entryCount = 1;
+    for (const wchar_t* p = noInlineRange; *p != 0; p++)
+    {
+        if (*p == L' ')
+        {
+            entryCount++;
+        }
+    }
+
+    range.EnsureInit(noInlineRange, 2 * entryCount);
+    assert(!range.Error());
+    return range.Contains(info, method);
+
+#else
+
+    return false;
+
+#endif // defined(DEBUG) || defined(INLINE_DATA)
+
+}
