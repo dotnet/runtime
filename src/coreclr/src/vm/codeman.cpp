@@ -4291,7 +4291,7 @@ LPCWSTR ExecutionManager::GetJitName()
 {
     STANDARD_VM_CONTRACT;
 
-    LPCWSTR  pwzJitName = NULL;
+    LPWSTR  pwzJitName = NULL;
 
 #if !defined(FEATURE_CORECLR)
     // Try to obtain a name for the jit library from the env. variable
