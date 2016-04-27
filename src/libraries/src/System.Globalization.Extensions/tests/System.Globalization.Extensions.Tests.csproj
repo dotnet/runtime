@@ -13,10 +13,11 @@
     <ProjectGuid>{BC439554-4AB4-4C94-8E28-C00EDE4FD1C7}</ProjectGuid>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  
   <ItemGroup>
     <Compile Include="GetStringComparerTests.cs" />
     <Compile Include="IdnMapping\IdnMappingIdnaConformanceTests.cs" />
@@ -44,6 +45,14 @@
       <LogicalName>NormalizationDataWin7</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
+  
+  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
+    <TargetingPackReference Include="System" />
+    <TargetingPackReference Include="System.Core" />
+    <TargetingPackReference Include="System.Runtime" />
+    <TargetingPackReference Include="System.Threading.Tasks" />
+  </ItemGroup>
+  
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>

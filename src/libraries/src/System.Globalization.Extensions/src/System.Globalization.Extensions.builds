@@ -10,6 +10,7 @@
     </Project>
     <Project Include="System.Globalization.Extensions.csproj">
       <TargetGroup>net46</TargetGroup>
+      <OSGroup>Windows_NT</OSGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

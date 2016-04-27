@@ -13,15 +13,26 @@
     "System.Text.RegularExpressions": "4.1.0-rc3-24026-00",
     "System.Threading.Tasks": "4.0.11-rc3-24026-00",
     "xunit": "2.1.0",
-    "xunit.netcore.extensions": "1.0.0-prerelease-00312-04",
-    "test-runtime": {
-      "target": "project",
-      "exclude": "compile"
-    }
+    "xunit.netcore.extensions": "1.0.0-prerelease-00312-04"
   },
   "frameworks": {
     "dnxcore50": {
-      "imports": "portable-net45+win8"
+      "imports": "portable-net45+win8",
+      "dependencies": {
+        "test-runtime": {
+          "target": "project",
+          "exclude": "compile"
+        }
+      }
+    },
+    "net46": {
+      "dependencies": {
+        "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1",
+        "net46-test-runtime": {
+          "target": "project",
+          "exclude": "compile"
+        }
+      }
     }
   },
   "runtimes": {
