@@ -73,3 +73,9 @@ mozroots --import --sync
 7. Install libunwind `sudo apt-get install libunwind8`
 8. Create a symlink for clang bins `sudo ln -s /usr/bin/clang-3.6 /usr/bin/clang && sudo ln -s /usr/bin/clang++-3.6 /usr/bin/clang++`
 9. Navigate to the `corefx` directory and run the build script `./build.sh`
+
+### Aggregated Dependencies Installation and Configuration
+
+*Note: the below command does **not** include the `git clone` or the execution of the build script*
+
+`sudo apt-get install git libcurl4-openssl-dev libicu52 cmake clang-3.6 libunwind8 && sudo ln -s /usr/bin/clang-3.6 /usr/bin/clang && sudo ln -s /usr/bin/clang++-3.6 /usr/bin/clang++`
