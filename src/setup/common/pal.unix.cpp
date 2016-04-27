@@ -39,7 +39,7 @@ bool pal::touch_file(const pal::string_t& path)
     int fd = open(path.c_str(), (O_CREAT | O_EXCL), (S_IRUSR | S_IRGRP | S_IROTH));
     if (fd == -1)
     {
-        trace::warning(_X("Failed to open() file descriptor in %s(%s)"), __FUNCTION__, path.c_str());
+        trace::warning(_X("open(%s) failed in %s"), path.c_str(), _STRINGIFY(__FUNCTION__));
         return false;
     }
     (void) close(fd);

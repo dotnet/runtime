@@ -28,7 +28,7 @@ bool parse_arguments(
     // Get the full name of the application
     if (!pal::get_own_executable_path(&args.own_path) || !pal::realpath(&args.own_path))
     {
-        trace::error(_X("Failed to locate current executable"));
+        trace::error(_X("Failed to resolve full path of the current executable [%s]"), args.own_path.c_str());
         return false;
     }
 
@@ -45,7 +45,7 @@ bool parse_arguments(
         args.managed_application = pal::string_t(argv[1]);
         if (!pal::realpath(&args.managed_application))
         {
-            trace::error(_X("Failed to locate managed application: %s"), args.managed_application.c_str());
+            trace::error(_X("Failed to locate managed application [%s]"), args.managed_application.c_str());
             return false;
         }
         args.app_dir = get_directory(args.managed_application);
@@ -62,7 +62,7 @@ bool parse_arguments(
         args.managed_application = managed_app;
         if (!pal::realpath(&args.managed_application))
         {
-            trace::error(_X("Failed to locate managed application: %s"), args.managed_application.c_str());
+            trace::error(_X("Failed to locate managed application [%s]"), args.managed_application.c_str());
             return false;
         }
         args.app_dir = own_dir;
