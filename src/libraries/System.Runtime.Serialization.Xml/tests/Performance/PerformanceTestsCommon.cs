@@ -36,27 +36,56 @@ namespace System.Runtime.Serialization
         IPerfTestSerializer GetSerializer();
     }
 
+    public class PerfTestConfig
+    {
+        public readonly int NumberOfRuns;
+        public readonly TestType PerfTestType;
+        public readonly int TestSize;
+
+        public PerfTestConfig() { }
+
+        public PerfTestConfig(int numOfRuns, TestType testType, int testSize)
+        {
+            NumberOfRuns = numOfRuns;
+            PerfTestType = testType;
+            TestSize = testSize;
+        }
+
+        public object[] ToObjectArray()
+        {
+            return new object[] { NumberOfRuns, PerfTestType, TestSize };
+        }
+    }
+
     #endregion
 
     public class PerformanceTestCommon
     {
         #region Performance test configuration
 
+        public static IEnumerable<PerfTestConfig> PerformanceTestConfigurations()
+        {
+            yield return new PerfTestConfig(100, TestType.ByteArray, 1024);
+            yield return new PerfTestConfig(5, TestType.ByteArray, 1024 * 1024);
+            yield return new PerfTestConfig(10000, TestType.String, 128);
+            yield return new PerfTestConfig(10000, TestType.String, 1024);
+            yield return new PerfTestConfig(1000, TestType.ListOfInt, 128);
+            yield return new PerfTestConfig(1000, TestType.ListOfInt, 1024);
+            yield return new PerfTestConfig(1, TestType.ListOfInt, 1024 * 1024);
+            yield return new PerfTestConfig(1000, TestType.Dictionary, 128);
+            yield return new PerfTestConfig(100, TestType.Dictionary, 1024);
+            yield return new PerfTestConfig(10, TestType.SimpleType, 1);
+            yield return new PerfTestConfig(1, TestType.SimpleType, 15);
+            yield return new PerfTestConfig(10000, TestType.ISerializable, -1);
+            yield return new PerfTestConfig(10000, TestType.XmlElement, -1);
+        }
+
         public static IEnumerable<object[]> PerformanceMemberData()
         {
-            yield return new object[] { 100, TestType.ByteArray, 1024 };
-            yield return new object[] { 5, TestType.ByteArray, 1024 * 1024 };
-            yield return new object[] { 10000, TestType.String, 128 };
-            yield return new object[] { 10000, TestType.String, 1024 };
-            yield return new object[] { 1000, TestType.ListOfInt, 128 };
-            yield return new object[] { 1000, TestType.ListOfInt, 1024 };
-            yield return new object[] { 1, TestType.ListOfInt, 1024 * 1024 };
-            yield return new object[] { 1000, TestType.Dictionary, 128 };
-            yield return new object[] { 100, TestType.Dictionary, 1024 };
-            yield return new object[] { 10, TestType.SimpleType, 1 };
-            yield return new object[] { 1, TestType.SimpleType, 15 };
-            yield return new object[] { 10000, TestType.ISerializable, -1 };
-            yield return new object[] { 10000, TestType.XmlElement, -1 };
+            foreach (PerfTestConfig config in PerformanceTestConfigurations())
+            {
+                yield return config.ToObjectArray();
+            }
         }
 
         #endregion
