@@ -2,33 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
 
-#if SRM
 namespace System.Reflection.Metadata.Ecma335.Blobs
-#else
-namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
-#endif
 {
     [Flags]
-#if SRM
-    public
-#endif
-    enum MethodBodyAttributes
+    public enum MethodBodyAttributes
     {
         None = 0,
         InitLocals = 1,
         LargeExceptionRegions = 2,
     }
 
-#if SRM
-    public
-#endif
-    struct MethodBodiesEncoder
+    public struct MethodBodiesEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -72,10 +59,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
-    public
-#endif
-    struct MethodBodyEncoder
+public struct MethodBodyEncoder
     {
         public BlobBuilder Builder { get; }
 

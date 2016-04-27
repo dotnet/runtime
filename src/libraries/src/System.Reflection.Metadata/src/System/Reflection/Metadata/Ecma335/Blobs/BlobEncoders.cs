@@ -4,18 +4,10 @@
 
 #pragma warning disable RS0008 // Implement IEquatable<T> when overriding Object.Equals
 
-using System;
 using System.Collections.Immutable;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Reflection.Metadata;
 using System.Reflection.Metadata.Decoding;
 
-#if SRM
 namespace System.Reflection.Metadata.Ecma335.Blobs
-#else
-namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
-#endif
 {
     // TODO: arg validation
     // TODO: can we hide useless inherited methods?
@@ -29,10 +21,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
     //[EditorBrowsable(EditorBrowsableState.Never)]
     //public override string ToString() => base.ToString();
 
-#if SRM
-    public
-#endif
-    struct BlobEncoder
+    public struct BlobEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -125,10 +114,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
-    public
-#endif
-    struct MethodSignatureEncoder
+    public struct MethodSignatureEncoder
     {
         public BlobBuilder Builder { get; }
         private readonly bool _isVarArg;
@@ -148,10 +134,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
-    public
-#endif
-    struct LocalVariablesEncoder
+    public struct LocalVariablesEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -170,10 +153,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
-    public
-#endif
-    struct LocalVariableTypeEncoder
+    public struct LocalVariableTypeEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -208,10 +188,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
-    public
-#endif
-    struct ParameterTypeEncoder
+    public struct ParameterTypeEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -241,10 +218,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
-    public
-#endif
-    struct PermissionSetEncoder
+    public struct PermissionSetEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -266,10 +240,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
-    public
-#endif
-    struct GenericTypeArgumentsEncoder
+    public struct GenericTypeArgumentsEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -288,10 +259,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
-    public
-#endif
-    struct FixedArgumentsEncoder
+    public struct FixedArgumentsEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -310,10 +278,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
-    public
-#endif
-    struct LiteralEncoder
+    public struct LiteralEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -345,10 +310,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
-    public
-#endif
-    struct ScalarEncoder
+    public struct ScalarEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -386,10 +348,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
-    public
-#endif
-    struct LiteralsEncoder
+    public struct LiteralsEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -408,10 +367,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
-    public
-#endif
-    struct VectorEncoder
+    public struct VectorEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -427,10 +383,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
-    public
-#endif
-    struct NameEncoder
+    public struct NameEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -445,10 +398,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
-    public
-#endif
-    struct CustomAttributeNamedArgumentsEncoder
+    public struct CustomAttributeNamedArgumentsEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -469,10 +419,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
-    public
-#endif
-    struct NamedArgumentsEncoder
+    public struct NamedArgumentsEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -494,10 +441,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
-    public
-#endif
-    struct NamedArgumentTypeEncoder
+    public struct NamedArgumentTypeEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -522,10 +466,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
-    public
-#endif
-    struct CustomAttributeArrayTypeEncoder
+    public struct CustomAttributeArrayTypeEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -547,10 +488,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
-    public
-#endif
-    struct CustomAttributeElementTypeEncoder
+    public struct CustomAttributeElementTypeEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -615,20 +553,14 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
-    public
-#endif
-    enum FunctionPointerAttributes
+    public enum FunctionPointerAttributes
     {
         None = SignatureAttributes.None,
         HasThis = SignatureAttributes.Instance,
         HasExplicitThis = SignatureAttributes.Instance | SignatureAttributes.ExplicitThis
     }
 
-#if SRM
-    public
-#endif
-    struct SignatureTypeEncoder
+    public struct SignatureTypeEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -777,10 +709,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
-    public
-#endif
-    struct CustomModifiersEncoder
+    public struct CustomModifiersEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -809,10 +738,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
-    public
-#endif
-    struct ArrayShapeEncoder
+    public struct ArrayShapeEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -849,10 +775,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
-    public
-#endif
-    struct ReturnTypeEncoder
+    public struct ReturnTypeEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -887,10 +810,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
-    public
-#endif
-    struct ParametersEncoder
+    public struct ParametersEncoder
     {
         public BlobBuilder Builder { get; }
         private readonly bool _allowOptional;

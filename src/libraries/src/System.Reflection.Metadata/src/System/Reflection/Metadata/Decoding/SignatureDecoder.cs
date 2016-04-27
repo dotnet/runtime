@@ -2,26 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
-#if SRM
 namespace System.Reflection.Metadata.Decoding
-#else
-namespace Roslyn.Reflection.Metadata.Decoding
-#endif
 {
     /// <summary>
     /// Decodes signature blobs.
     /// See Metadata Specification section II.23.2: Blobs and signatures.
     /// </summary>
-#if SRM
-    public
-#endif
-    struct SignatureDecoder<TType>
+    public struct SignatureDecoder<TType>
     {
         private readonly ISignatureTypeProvider<TType> _provider;
         private readonly MetadataReader _metadataReaderOpt;
@@ -138,11 +129,7 @@ namespace Roslyn.Reflection.Metadata.Decoding
                     return DecodeTypeHandle(ref blobReader, (SignatureTypeHandleCode)typeCode, allowTypeSpecifications);
 
                 default:
-#if SRM
                     throw new BadImageFormatException(SR.Format(SR.UnexpectedSignatureTypeCode, typeCode));
-#else
-                    throw new BadImageFormatException();
-#endif
             }
         }
 
@@ -157,11 +144,7 @@ namespace Roslyn.Reflection.Metadata.Decoding
                 // This method is used for Local signatures and method specs, neither of which can have
                 // 0 elements. Parameter sequences can have 0 elements, but they are handled separately
                 // to deal with the sentinel/varargs case.
-#if SRM
                 throw new BadImageFormatException(SR.SignatureTypeSequenceMustHaveAtLeastOneElement);
-#else
-                throw new BadImageFormatException();
-#endif
             }
 
             var types = ImmutableArray.CreateBuilder<TType>(count);
@@ -343,13 +326,9 @@ namespace Roslyn.Reflection.Metadata.Decoding
                     case HandleKind.TypeSpecification:
                         if (!allowTypeSpecifications)
                         {
-#if SRM
                             // To prevent cycles, the token following (CLASS | VALUETYPE) must not be a type spec.
                             // https://github.com/dotnet/coreclr/blob/8ff2389204d7c41b17eff0e9536267aea8d6496f/src/md/compiler/mdvalidator.cpp#L6154-L6160
                             throw new BadImageFormatException(SR.NotTypeDefOrRefHandle);
-#else
-                            throw new BadImageFormatException();
-#endif
                         }
 
                         if (code != SignatureTypeHandleCode.Unresolved)
@@ -371,11 +350,7 @@ namespace Roslyn.Reflection.Metadata.Decoding
                 }
             }
 
-#if SRM
             throw new BadImageFormatException(SR.NotTypeDefOrRefOrSpecHandle);
-#else
-            throw new BadImageFormatException();
-#endif
         }
 
         private void ProjectClassOrValueType(TypeReferenceHandle handle, ref SignatureTypeHandleCode code)
@@ -390,7 +365,6 @@ namespace Roslyn.Reflection.Metadata.Decoding
                 return; 
             }
 
-#if SRM
             TypeReference typeRef = _metadataReaderOpt.GetTypeReference(handle);
             switch (typeRef.SignatureTreatment)
             {
@@ -401,19 +375,13 @@ namespace Roslyn.Reflection.Metadata.Decoding
                     code = SignatureTypeHandleCode.ValueType;
                     break;
             }
-#endif
         }
 
         private void CheckHeader(SignatureHeader header, SignatureKind expectedKind)
         {
             if (header.Kind != expectedKind)
             {
-#if SRM
                 throw new BadImageFormatException(SR.Format(SR.UnexpectedSignatureHeader, expectedKind, header.Kind, header.RawValue));
-#else
-                throw new BadImageFormatException();
-#endif
-
             }
         }
 
@@ -422,11 +390,7 @@ namespace Roslyn.Reflection.Metadata.Decoding
             SignatureKind kind = header.Kind;
             if (kind != SignatureKind.Method && kind != SignatureKind.Property)
             {
-#if SRM
                 throw new BadImageFormatException(SR.Format(SR.UnexpectedSignatureHeader2, SignatureKind.Property, SignatureKind.Method, header.Kind, header.RawValue));
-#else
-                throw new BadImageFormatException();
-#endif
             }
         }
     }

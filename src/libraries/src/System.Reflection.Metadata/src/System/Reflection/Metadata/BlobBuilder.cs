@@ -2,33 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection.Internal;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-#if SRM
-using System.Reflection.Internal;
-using BitArithmeticUtilities = System.Reflection.Internal.BitArithmetic;
-#else
-using Microsoft.CodeAnalysis.Collections;
-using Roslyn.Utilities;
-#endif
-
-#if SRM
 namespace System.Reflection.Metadata
-#else
-namespace Roslyn.Reflection.Metadata
-#endif
 {
     [DebuggerDisplay("{GetDebuggerDisplay(),nq}")]
-#if SRM
-    public
-#endif
-    unsafe partial class BlobBuilder
+    public unsafe partial class BlobBuilder
     {
         // The implementation is akin to StringBuilder. 
         // The differences:
@@ -779,7 +764,7 @@ namespace Roslyn.Reflection.Metadata
         public void Align(int alignment)
         {
             int position = Count;
-            WriteBytes(0, BitArithmeticUtilities.Align(position, alignment) - position);
+            WriteBytes(0, BitArithmetic.Align(position, alignment) - position);
         }
 
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>

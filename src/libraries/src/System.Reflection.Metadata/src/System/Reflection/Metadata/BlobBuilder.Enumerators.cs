@@ -7,11 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System;
 
-#if SRM
 namespace System.Reflection.Metadata
-#else
-namespace Roslyn.Reflection.Metadata
-#endif
 {
     partial class BlobBuilder
     {

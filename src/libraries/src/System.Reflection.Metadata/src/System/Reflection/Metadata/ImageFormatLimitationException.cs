@@ -5,16 +5,9 @@
 using System;
 using System.Reflection.Metadata.Ecma335;
 
-#if SRM
 namespace System.Reflection.Metadata
-#else
-namespace Roslyn.Reflection.Metadata
-#endif
 {
-#if SRM
-    public
-#endif
-    class ImageFormatLimitationException : Exception
+    public class ImageFormatLimitationException : Exception
     {
         public ImageFormatLimitationException()
             : base()
@@ -33,7 +26,6 @@ namespace Roslyn.Reflection.Metadata
 
         internal static void ThrowHeapSizeLimitExceeded(HeapIndex heapIndex)
         {
-            // TODO: localize
             throw new ImageFormatLimitationException(string.Format(SR.HeapSizeLimitExceeded, heapIndex));
         }
     }

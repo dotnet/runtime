@@ -2,22 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Reflection.Metadata;
-
-#if SRM
 namespace System.Reflection.Metadata
-#else
-
-namespace Roslyn.Reflection.Metadata
-#endif
 {
     /// <summary>
     /// Type codes used to encode types of primitive values in Custom Attribute value blob.
     /// </summary>
-#if SRM
-    public
-#endif
-    enum PrimitiveSerializationTypeCode : byte
+    public enum PrimitiveSerializationTypeCode : byte
     {
         Boolean = SignatureTypeCode.Boolean,
         Byte = SignatureTypeCode.Byte,

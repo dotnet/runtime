@@ -2,32 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection.Internal;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-#if SRM
-using System.Reflection.Internal;
-using BitArithmeticUtilities = System.Reflection.Internal.BitArithmetic;
-#else
-using Microsoft.CodeAnalysis.Collections;
-using Roslyn.Utilities;
-#endif
-
-#if SRM
 namespace System.Reflection.Metadata
-#else
-namespace Roslyn.Reflection.Metadata
-#endif
 {
     // TODO: argument checking
-#if SRM
-    public
-#endif
-    unsafe struct BlobWriter
+    public unsafe struct BlobWriter
     {
         // writable slice:
         private readonly byte[] _buffer;
@@ -261,7 +246,7 @@ namespace Roslyn.Reflection.Metadata
         public void Align(int alignment)
         {
             int offset = Offset;
-            WriteBytes(0, BitArithmeticUtilities.Align(offset, alignment) - offset);
+            WriteBytes(0, BitArithmetic.Align(offset, alignment) - offset);
         }
 
         public void WriteBoolean(bool value)

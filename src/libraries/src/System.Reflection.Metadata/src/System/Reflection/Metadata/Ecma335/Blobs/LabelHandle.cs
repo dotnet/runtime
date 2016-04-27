@@ -2,19 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
 
-#if SRM
 namespace System.Reflection.Metadata.Ecma335.Blobs
-#else
-namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
-#endif
 {
-#if SRM
-    public
-#endif
-    struct LabelHandle : IEquatable<LabelHandle>
+    public struct LabelHandle : IEquatable<LabelHandle>
     {
         // 1-based
         internal readonly int Id;

@@ -5,19 +5,7 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
 
-#if SRM
-using System.Reflection.Internal;
-#else
-using System;
-using System.Reflection;
-using System.Reflection.Metadata;
-#endif
-
-#if SRM
 namespace System.Reflection.Metadata.Ecma335
-#else
-namespace Roslyn.Reflection.Metadata.Ecma335
-#endif
 {
     internal static class MetadataWriterUtilities
     {

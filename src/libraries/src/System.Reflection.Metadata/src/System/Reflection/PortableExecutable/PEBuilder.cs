@@ -2,29 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Reflection.PortableExecutable;
-
-#if SRM
+using System.Reflection.Internal;
 using System.Reflection.Metadata;
-using BitArithmeticUtilities = System.Reflection.Internal.BitArithmetic;
-#else
-using Roslyn.Utilities;
-#endif
 
-#if SRM
 namespace System.Reflection.PortableExecutable
-#else
-namespace Roslyn.Reflection.PortableExecutable
-#endif
 {
-#if SRM
-    public
-#endif
-    sealed class PEBuilder
+    public sealed class PEBuilder
     {
         // COFF:
         public Machine Machine { get; }
@@ -190,8 +176,8 @@ namespace Roslyn.Reflection.PortableExecutable
             var result = ImmutableArray.CreateBuilder<SerializedSection>(_sections.Count);
             int sizeOfPeHeaders = ComputeSizeOfPeHeaders(_sections.Count, Is32Bit);
 
-            var nextRva = BitArithmeticUtilities.Align(sizeOfPeHeaders, SectionAlignment);
-            var nextPointer = BitArithmeticUtilities.Align(sizeOfPeHeaders, FileAlignment);
+            var nextRva = BitArithmetic.Align(sizeOfPeHeaders, SectionAlignment);
+            var nextPointer = BitArithmetic.Align(sizeOfPeHeaders, FileAlignment);
 
             foreach (var section in _sections)
             {
@@ -202,12 +188,12 @@ namespace Roslyn.Reflection.PortableExecutable
                     section.Name,
                     section.Characteristics,
                     relativeVirtualAddress: nextRva,
-                    sizeOfRawData: BitArithmeticUtilities.Align(builder.Count, FileAlignment),
+                    sizeOfRawData: BitArithmetic.Align(builder.Count, FileAlignment),
                     pointerToRawData: nextPointer);
 
                 result.Add(serialized);
 
-                nextRva = BitArithmeticUtilities.Align(serialized.RelativeVirtualAddress + serialized.VirtualSize, SectionAlignment);
+                nextRva = BitArithmetic.Align(serialized.RelativeVirtualAddress + serialized.VirtualSize, SectionAlignment);
                 nextPointer = serialized.PointerToRawData + serialized.SizeOfRawData;
             }
 
@@ -335,10 +321,10 @@ namespace Roslyn.Reflection.PortableExecutable
 
             // SizeOfImage:
             var lastSection = sections[sections.Length - 1];
-            builder.WriteUInt32((uint)BitArithmeticUtilities.Align(lastSection.RelativeVirtualAddress + lastSection.VirtualSize, SectionAlignment));
+            builder.WriteUInt32((uint)BitArithmetic.Align(lastSection.RelativeVirtualAddress + lastSection.VirtualSize, SectionAlignment));
 
             // SizeOfHeaders:
-            builder.WriteUInt32((uint)BitArithmeticUtilities.Align(ComputeSizeOfPeHeaders(sections.Length, Is32Bit), FileAlignment));
+            builder.WriteUInt32((uint)BitArithmetic.Align(ComputeSizeOfPeHeaders(sections.Length, Is32Bit), FileAlignment));
 
             // Checksum (TODO: not supported):
             builder.WriteUInt32(0);
