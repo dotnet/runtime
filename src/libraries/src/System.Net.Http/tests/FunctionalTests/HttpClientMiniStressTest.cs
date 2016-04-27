@@ -18,39 +18,53 @@ namespace System.Net.Http.Functional.Tests
         private static bool HttpStressEnabled => Environment.GetEnvironmentVariable("HTTP_STRESS") == "1";
 
         [ConditionalTheory(nameof(HttpStressEnabled))]
-        [MemberData(nameof(StressOptions))]
-        public void SingleClient_ManyRequests_Sync(int numRequests, int dop, HttpCompletionOption completionOption)
+        [MemberData(nameof(GetStressOptions))]
+        public void SingleClient_ManyGets_Sync(int numRequests, int dop, HttpCompletionOption completionOption)
         {
             string responseText = CreateResponse("abcdefghijklmnopqrstuvwxyz");
             using (var client = new HttpClient())
             {
                 Parallel.For(0, numRequests, new ParallelOptions { MaxDegreeOfParallelism = dop, TaskScheduler = new ThreadPerTaskScheduler() }, _ =>
                 {
-                    CreateServerAndMakeRequest(client, completionOption, responseText);
+                    CreateServerAndGet(client, completionOption, responseText);
                 });
             }
         }
 
         [ConditionalTheory(nameof(HttpStressEnabled))]
-        public async Task SingleClient_ManyRequests_Async(int numRequests, int dop, HttpCompletionOption completionOption)
+        public async Task SingleClient_ManyGets_Async(int numRequests, int dop, HttpCompletionOption completionOption)
         {
             string responseText = CreateResponse("abcdefghijklmnopqrstuvwxyz");
             using (var client = new HttpClient())
             {
-                await ForCountAsync(numRequests, dop, i => CreateServerAndMakeRequestAsync(client, completionOption, responseText));
+                await ForCountAsync(numRequests, dop, i => CreateServerAndGetAsync(client, completionOption, responseText));
             }
         }
 
         [ConditionalTheory(nameof(HttpStressEnabled))]
-        [MemberData(nameof(StressOptions))]
-        public void ManyClients_ManyRequests(int numRequests, int dop, HttpCompletionOption completionOption)
+        [MemberData(nameof(GetStressOptions))]
+        public void ManyClients_ManyGets(int numRequests, int dop, HttpCompletionOption completionOption)
         {
             string responseText = CreateResponse("abcdefghijklmnopqrstuvwxyz");
             Parallel.For(0, numRequests, new ParallelOptions { MaxDegreeOfParallelism = dop, TaskScheduler = new ThreadPerTaskScheduler() }, _ =>
             {
                 using (var client = new HttpClient())
                 {
-                    CreateServerAndMakeRequest(client, completionOption, responseText);
+                    CreateServerAndGet(client, completionOption, responseText);
+                }
+            });
+        }
+
+        [ConditionalTheory(nameof(HttpStressEnabled))]
+        [MemberData(nameof(PostStressOptions))]
+        public async Task ManyClients_ManyPosts_Async(int numRequests, int dop, int numBytes)
+        {
+            string responseText = CreateResponse("");
+            await ForCountAsync(numRequests, dop, async i =>
+            {
+                using (HttpClient client = new HttpClient())
+                {
+                    await CreateServerAndPostAsync(client, numBytes, responseText);
                 }
             });
         }
@@ -94,7 +108,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        public static IEnumerable<object[]> StressOptions()
+        public static IEnumerable<object[]> GetStressOptions()
         {
             foreach (int numRequests in new[] { 5000 }) // number of requests
                 foreach (int dop in new[] { 1, 32 }) // number of threads
@@ -102,7 +116,7 @@ namespace System.Net.Http.Functional.Tests
                         yield return new object[] { numRequests, dop, completionoption };
         }
 
-        private static void CreateServerAndMakeRequest(HttpClient client, HttpCompletionOption completionOption, string responseText)
+        private static void CreateServerAndGet(HttpClient client, HttpCompletionOption completionOption, string responseText)
         {
             using (var server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
@@ -118,6 +132,7 @@ namespace System.Net.Http.Functional.Tests
                 using (var writer = new StreamWriter(stream, Encoding.ASCII))
                 {
                     while (!string.IsNullOrEmpty(reader.ReadLine())) ;
+
                     writer.Write(responseText);
                     writer.Flush();
                     s.Shutdown(SocketShutdown.Send);
@@ -127,7 +142,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        private static async Task CreateServerAndMakeRequestAsync(HttpClient client, HttpCompletionOption completionOption, string responseText)
+        private static async Task CreateServerAndGetAsync(HttpClient client, HttpCompletionOption completionOption, string responseText)
         {
             using (var server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
@@ -143,12 +158,49 @@ namespace System.Net.Http.Functional.Tests
                 using (var writer = new StreamWriter(stream, Encoding.ASCII))
                 {
                     while (!string.IsNullOrEmpty(reader.ReadLine())) ;
+
                     await writer.WriteAsync(responseText).ConfigureAwait(false);
                     await writer.FlushAsync().ConfigureAwait(false);
                     s.Shutdown(SocketShutdown.Send);
                 }
 
                 (await getAsync.ConfigureAwait(false)).Dispose();
+            }
+        }
+
+        public static IEnumerable<object[]> PostStressOptions()
+        {
+            foreach (int numRequests in new[] { 5000 }) // number of requests
+                foreach (int dop in new[] { 1, 32 }) // number of threads
+                    foreach (int numBytes in new[] { 0, 100 }) // number of bytes to post
+                        yield return new object[] { numRequests, dop, numBytes };
+        }
+
+        private static async Task CreateServerAndPostAsync(HttpClient client, int numBytes, string responseText)
+        {
+            using (var server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                server.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                server.Listen(1);
+
+                var ep = (IPEndPoint)server.LocalEndPoint;
+                var content = new ByteArrayContent(new byte[numBytes]);
+                Task<HttpResponseMessage> postAsync = client.PostAsync($"http://{ep.Address}:{ep.Port}", content);
+
+                using (Socket s = await server.AcceptAsync().ConfigureAwait(false))
+                using (var stream = new NetworkStream(s, ownsSocket: false))
+                using (var reader = new StreamReader(stream, Encoding.ASCII))
+                using (var writer = new StreamWriter(stream, Encoding.ASCII))
+                {
+                    while (!string.IsNullOrEmpty(reader.ReadLine())) ;
+                    for (int i = 0; i < numBytes; i++) Assert.NotEqual(-1, reader.Read());
+
+                    await writer.WriteAsync(responseText).ConfigureAwait(false);
+                    await writer.FlushAsync().ConfigureAwait(false);
+                    s.Shutdown(SocketShutdown.Send);
+                }
+
+                (await postAsync.ConfigureAwait(false)).Dispose();
             }
         }
 

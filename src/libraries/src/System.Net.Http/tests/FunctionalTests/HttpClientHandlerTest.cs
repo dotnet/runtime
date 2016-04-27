@@ -558,31 +558,34 @@ namespace System.Net.Http.Functional.Tests
             var cookie2 = new KeyValuePair<string, string>(".AspNetCore.Session", "RAExEmXpoCbueP_QYM");
             var cookie3 = new KeyValuePair<string, string>("name", "value");
 
-            string url = string.Format(
-                "http://httpbin.org/cookies/set?{0}={1}&{2}={3}&{4}={5}",
-                cookie1.Key,
-                cookie1.Value,
-                cookie2.Key,
-                cookie2.Value,
-                cookie3.Key,
-                cookie3.Value);
-
-            var handler = new HttpClientHandler()
+            await CreateServerAsync(async (handler, client, server, url) =>
             {
-                AllowAutoRedirect = false
-            };
+                Task<HttpResponseMessage> getResponse = client.GetAsync(url);
 
-            using (var client = new HttpClient(handler))
-            using (HttpResponseMessage response = await client.GetAsync(url))
-            {
-                Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
-                CookieCollection cookies = handler.CookieContainer.GetCookies(new Uri(url));
+                await AcceptSocketAsync(server, async (s, stream, reader, writer) =>
+                {
+                    while (!string.IsNullOrEmpty(reader.ReadLine())) ;
+                    await writer.WriteAsync(
+                        $"HTTP/1.1 200 OK\r\n" +
+                        $"Set-Cookie: {cookie1.Key}={cookie1.Value}; Path=/\r\n" +
+                        $"Set-Cookie: {cookie2.Key}={cookie2.Value}; Path=/\r\n" +
+                        $"Set-Cookie: {cookie3.Key}={cookie3.Value}; Path=/\r\n" +
+                        "\r\n");
+                    await writer.FlushAsync();
+                    s.Shutdown(SocketShutdown.Send);
+                });
 
-                Assert.Equal(3, handler.CookieContainer.Count);
-                Assert.Equal(cookie1.Value, cookies[cookie1.Key].Value);
-                Assert.Equal(cookie2.Value, cookies[cookie2.Key].Value);
-                Assert.Equal(cookie3.Value, cookies[cookie3.Key].Value);
-            }
+                using (HttpResponseMessage response = await getResponse)
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    CookieCollection cookies = handler.CookieContainer.GetCookies(url);
+
+                    Assert.Equal(3, cookies.Count);
+                    Assert.Equal(cookie1.Value, cookies[cookie1.Key].Value);
+                    Assert.Equal(cookie2.Value, cookies[cookie2.Key].Value);
+                    Assert.Equal(cookie3.Value, cookies[cookie3.Key].Value);
+                }
+            });
         }
 
         [Fact]
@@ -628,47 +631,71 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue(4259, PlatformID.AnyUnix)]
-        [OuterLoop]
         [Fact]
         public async Task SendAsync_ReadFromSlowStreamingServer_PartialDataReturned()
         {
-            // TODO: This is a placeholder until GitHub Issue #2383 gets resolved.
-            const string SlowStreamingServer = "http://httpbin.org/drip?numbytes=8192&duration=15&delay=1&code=200";
-            
-            int bytesRead;
-            byte[] buffer = new byte[8192];
-            using (var client = new HttpClient())
+            await CreateServerAsync(async (handler, client, server, url) =>
             {
-                var request = new HttpRequestMessage(HttpMethod.Get, SlowStreamingServer);
-                using (HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead))
+                Task<HttpResponseMessage> getResponse = client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+
+                await AcceptSocketAsync(server, async (s, stream, reader, writer) =>
                 {
-                    Stream stream = await response.Content.ReadAsStreamAsync();
-                    bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
-                }
-                _output.WriteLine("Bytes read from stream: {0}", bytesRead);
-                Assert.True(bytesRead < buffer.Length, "bytesRead should be less than buffer.Length");
-            }            
+                    while (!string.IsNullOrEmpty(reader.ReadLine())) ;
+                    await writer.WriteAsync("HTTP/1.1 200 OK\r\nContent-Length: 16000\r\n\r\nless than 16000 bytes");
+                    await writer.FlushAsync();
+
+                    using (HttpResponseMessage response = await getResponse)
+                    {
+                        var buffer = new byte[8000];
+                        using (Stream clientStream = await response.Content.ReadAsStreamAsync())
+                        {
+                            int bytesRead = await clientStream.ReadAsync(buffer, 0, buffer.Length);
+                            _output.WriteLine($"Bytes read from stream: {bytesRead}");
+                            Assert.True(bytesRead < buffer.Length, "bytesRead should be less than buffer.Length");
+                        }
+                    }
+                });
+            });
         }
 
         [Fact]
         public async Task Dispose_DisposingHandlerCancelsActiveOperations()
         {
-            using (var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            await CreateServerAsync(async (handler, client, socket, url) =>
             {
-                socket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-                socket.Listen(1);
-                Task<Socket> accept = socket.AcceptAsync();
-
-                IPEndPoint local = (IPEndPoint)socket.LocalEndPoint;
-                var client = new HttpClient();
-                Task<string> download = client.GetStringAsync($"http://{local.Address}:{local.Port}");
-
-                using (Socket acceptedSocket = await accept)
+                Task<string> download = client.GetStringAsync(url);
+                using (Socket acceptedSocket = await socket.AcceptAsync())
                 {
                     client.Dispose();
                     await Assert.ThrowsAnyAsync<OperationCanceledException>(() => download);
                 }
+            });
+        }
+
+        private static async Task CreateServerAsync(Func<HttpClientHandler, HttpClient, Socket, Uri, Task> funcAsync)
+        {
+            using (var handler = new HttpClientHandler())
+            using (var client = new HttpClient(handler))
+            using (var server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                server.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                server.Listen(1);
+
+                var ep = (IPEndPoint)server.LocalEndPoint;
+                var url = new Uri($"http://{ep.Address}:{ep.Port}/");
+
+                await funcAsync(handler, client, server, url).ConfigureAwait(false);
+            }
+        }
+
+        private static async Task AcceptSocketAsync(Socket server, Func<Socket, NetworkStream, StreamReader, StreamWriter, Task> funcAsync)
+        {
+            using (Socket s = await server.AcceptAsync())
+            using (var stream = new NetworkStream(s, ownsSocket: false))
+            using (var reader = new StreamReader(stream, Encoding.ASCII))
+            using (var writer = new StreamWriter(stream, Encoding.ASCII))
+            {
+                await funcAsync(s, stream, reader, writer).ConfigureAwait(false);
             }
         }
 
