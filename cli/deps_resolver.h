@@ -50,8 +50,21 @@ public:
         setup_probe_config(init, args);
     }
 
-    bool valid() { return m_deps->is_valid() && (!m_portable || m_fx_deps->is_valid());  }
-
+    bool valid(pal::string_t* errors)
+    {
+        if (!m_deps->is_valid())
+        {
+            errors->assign(_X("An error occurred while parsing ") + m_deps_file);
+            return false;
+        }
+        if (m_portable && !m_fx_deps->is_valid())
+        {
+            errors->assign(_X("An error occurred while parsing ") + m_fx_deps_file);
+            return false;
+        }
+        errors->clear();
+        return true;
+    }
     void setup_probe_config(
         const hostpolicy_init_t& init,
         const arguments_t& args);

@@ -328,6 +328,8 @@ bool deps_resolver_t::probe_entry_in_configs(const deps_entry_t& entry, pal::str
 //
 pal::string_t deps_resolver_t::resolve_coreclr_dir()
 {
+    trace::verbose(_X("--- Resolving CoreCLR directory ---"));
+
     auto process_coreclr = [&]
         (bool is_portable, const pal::string_t& deps_dir, deps_json_t* deps) -> pal::string_t
     {
@@ -347,7 +349,7 @@ pal::string_t deps_resolver_t::resolve_coreclr_dir()
         }
         else
         {
-            trace::verbose(_X("Deps has no coreclr entry."));
+            trace::verbose(_X("Deps has no CoreCLR entry."));
         }
 
         // App/FX main dir or standalone app dir.
@@ -432,7 +434,7 @@ void deps_resolver_t::resolve_tpa_list(
         else
         {
             // FIXME: Consider this error as a fail fast?
-            trace::verbose(_X("Error: Could not resolve path to assembly: [%s, %s, %s]"), entry.library_name.c_str(), entry.library_version.c_str(), entry.relative_path.c_str());
+            trace::warning(_X("Could not resolve path to assembly: [%s, %s, %s]"), entry.library_name.c_str(), entry.library_version.c_str(), entry.relative_path.c_str());
         }
     };
     

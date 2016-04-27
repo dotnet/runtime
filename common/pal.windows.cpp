@@ -133,7 +133,7 @@ bool pal::load_library(const char_t* path, dll_t* dll)
     *dll = ::LoadLibraryExW(path, NULL, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
     if (*dll == nullptr)
     {
-        trace::error(_X("Failed to load the dll from %s, HRESULT: 0x%X"), path, HRESULT_FROM_WIN32(GetLastError()));
+        trace::error(_X("Failed to load the dll from [%s], HRESULT: 0x%X"), path, HRESULT_FROM_WIN32(GetLastError()));
         return false;
     }
 
@@ -141,7 +141,7 @@ bool pal::load_library(const char_t* path, dll_t* dll)
     HMODULE dummy_module;
     if (!::GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_PIN, path, &dummy_module))
     {
-        trace::error(_X("Failed to pin library: %s"));
+        trace::error(_X("Failed to pin library [%s] in [%s]"), path, _STRINGIFY(__FUNCTION__));
         return false;
     }
 
@@ -218,14 +218,14 @@ bool pal::getenv(const char_t* name, string_t* recv)
         auto err = GetLastError();
         if (err != ERROR_ENVVAR_NOT_FOUND)
         {
-            trace::error(_X("Failed to read environment variable '%s', HRESULT: 0x%X"), name, HRESULT_FROM_WIN32(GetLastError()));
+            trace::error(_X("Failed to read environment variable [%s], HRESULT: 0x%X"), name, HRESULT_FROM_WIN32(GetLastError()));
         }
         return false;
     }
     auto buf = new char_t[length];
     if (::GetEnvironmentVariableW(name, buf, length) == 0)
     {
-        trace::error(_X("Failed to read environment variable '%s', HRESULT: 0x%X"), name, HRESULT_FROM_WIN32(GetLastError()));
+        trace::error(_X("Failed to read environment variable [%s], HRESULT: 0x%X"), name, HRESULT_FROM_WIN32(GetLastError()));
         return false;
     }
 
@@ -295,7 +295,7 @@ bool pal::realpath(string_t* path)
     auto res = ::GetFullPathNameW(path->c_str(), MAX_PATH, buf, nullptr);
     if (res == 0 || res > MAX_PATH)
     {
-        trace::error(_X("Error resolving path: %s"), path->c_str());
+        trace::error(_X("Error resolving full path [%s]"), path->c_str());
         return false;
     }
     path->assign(buf);

@@ -20,16 +20,17 @@ int run(const arguments_t& args)
     // Load the deps resolver
     deps_resolver_t resolver(g_init, args);
 
-    if (!resolver.valid())
+    pal::string_t resolver_errors;
+    if (!resolver.valid(&resolver_errors))
     {
-        trace::error(_X("Invalid .deps file"));
+        trace::error(_X("Error initializing the dependency resolver: %s"), resolver_errors.c_str());
         return StatusCode::ResolverInitFailure;
     }
 
     pal::string_t clr_path = resolver.resolve_coreclr_dir();
     if (clr_path.empty() || !pal::realpath(&clr_path))
     {
-        trace::error(_X("Could not resolve coreclr path"));
+        trace::error(_X("Could not resolve CoreCLR path. For more details, enable tracing by setting COREHOST_TRACE environment variable to 1"));;
         return StatusCode::CoreClrResolveFailure;
     }
     else
@@ -112,7 +113,7 @@ int run(const arguments_t& args)
     // Bind CoreCLR
     if (!coreclr::bind(clr_path))
     {
-        trace::error(_X("Failed to bind to coreclr"));
+        trace::error(_X("Failed to bind to CoreCLR at [%s]"), clr_path.c_str());
         return StatusCode::CoreClrBindFailure;
     }
 
