@@ -30,6 +30,7 @@ namespace System.Text.Tests
             yield return new object[] { new UTF32Encoding(false, true, false) };
             yield return new object[] { new UTF32Encoding(false, false, false) };
             yield return new object[] { new UTF32Encoding(false, false, true) };
+            yield return new object[] { Encoding.GetEncoding("latin1") };
         }
         
         [Theory]
@@ -238,7 +239,7 @@ namespace System.Text.Tests
         public static void GetMaxByteCount_Invalid(Encoding encoding)
         {
             Assert.Throws<ArgumentOutOfRangeException>("charCount", () => encoding.GetMaxByteCount(-1));
-            if (!(encoding is ASCIIEncoding))
+            if (!encoding.IsSingleByte)
             {
                 Assert.Throws<ArgumentOutOfRangeException>("charCount", () => encoding.GetMaxByteCount(int.MaxValue / 2));
             }
