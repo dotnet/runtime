@@ -19,6 +19,8 @@ usage()
     echo "skipnative - do not build native components."
     echo "skipmscorlib - do not build mscorlib.dll."
     echo "skiptests - skip the tests in the 'tests' subdirectory."
+    echo "skiprestore - skip restoring nuget packages."
+    echo "skipnuget - skip building nuget packages."
     echo "disableoss - Disable Open Source Signing for mscorlib."
     echo "skipgenerateversion - disable version generation even if MSBuild is supported."
     echo "cmakeargs - user-settable additional arguments passed to CMake."
@@ -439,6 +441,8 @@ __MSBCleanBuildArgs=
 __UseNinja=0
 __ConfigureOnly=0
 __SkipConfigure=0
+__SkipRestore=""
+__SkipNuget=0
 __SkipCoreCLR=0
 __SkipMSCorLib=0
 __CleanBuild=0
@@ -574,6 +578,14 @@ while :; do
             __IncludeTests=
             ;;
 
+        skiprestore)
+            __SkipRestore="/p:RestoreDuringBuild=true"
+            ;;
+
+        skipnuget)
+            __SkipNuget=1
+            ;;
+
         disableoss)
             __SignTypeReal="/p:SignType=real"
             ;;
@@ -688,8 +700,9 @@ build_coreclr
 build_CoreLib
 
 # Generate nuget packages
-
-generate_NugetPackages
+if [ $__SkipNuget != 1 ]; then
+    generate_NugetPackages
+fi
 
 
 # Build complete
