@@ -215,14 +215,13 @@ case $OSName in
 
     Linux)
         __HostOS=Linux
-        __OSVersion=$(lsb_release -rs)
         source /etc/os-release
         if [ "$ID" == "centos" ]; then
             __TestNugetRuntimeId=centos.7-x64
         elif [ "$ID" == "rhel" ]; then
             __TestNugetRuntimeId=rhel.7-x64
         elif [ "$ID" == "ubuntu" ]; then
-            if [ "$__OSVersion" == "16.04" ]; then
+            if [ $VERSION_ID == "16.04" ]; then
                 __TestNugetRuntimeId=ubuntu.16.04-x64
             else
                 __TestNugetRuntimeId=ubuntu.14.04-x64
