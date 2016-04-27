@@ -292,11 +292,25 @@
             "#import": [ "ubuntu.14.04", "ubuntu-x64" ]
         },
 
-        "ubuntu.15.10": {
+        "ubuntu.14.10": {
             "#import": [ "ubuntu.14.04" ]
         },
+        "ubuntu.14.10-x64": {
+            "#import": [ "ubuntu.14.10", "ubuntu.14.04-x64" ]
+        },
+
+        "ubuntu.15.04": {
+            "#import": [ "ubuntu.14.10" ]
+        },
+        "ubuntu.15.04-x64": {
+            "#import": [ "ubuntu.15.04", "ubuntu.14.10-x64" ]
+        },
+
+        "ubuntu.15.10": {
+            "#import": [ "ubuntu.15.04" ]
+        },
         "ubuntu.15.10-x64": {
-            "#import": [ "ubuntu.15.10", "ubuntu.14.04-x64" ]
+            "#import": [ "ubuntu.15.10", "ubuntu.15.04-x64" ]
         },
 
         "ubuntu.16.04": {
