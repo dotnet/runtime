@@ -9,10 +9,7 @@ using System.Collections.Immutable;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection.Metadata;
-
-#if !SRM
-using PrimitiveTypeCode = Microsoft.Cci.PrimitiveTypeCode;
-#endif
+using System.Reflection.Metadata.Decoding;
 
 #if SRM
 namespace System.Reflection.Metadata.Ecma335.Blobs
@@ -486,7 +483,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
 
         public void AddArgument(bool isField, out NamedArgumentTypeEncoder typeEncoder, out NameEncoder name, out LiteralEncoder literal)
         {
-            Builder.WriteByte(isField ? (byte)0x53 : (byte)0x54);
+            Builder.WriteByte(isField ? (byte)CustomAttributeNamedArgumentKind.Field : (byte)CustomAttributeNamedArgumentKind.Property);
             typeEncoder = new NamedArgumentTypeEncoder(Builder);
             name = new NameEncoder(Builder);
             literal = new LiteralEncoder(Builder);
@@ -516,7 +513,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
 
         public void Object()
         {
-            Builder.WriteByte(0x51); // OBJECT
+            Builder.WriteByte((byte)SerializationTypeCode.TaggedObject);
         }
 
         public CustomAttributeArrayTypeEncoder SZArray()
@@ -539,13 +536,13 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
 
         public void ObjectArray()
         {
-            Builder.WriteByte((byte)SignatureTypeCode.SZArray);
-            Builder.WriteByte(0x51); // OBJECT
+            Builder.WriteByte((byte)SerializationTypeCode.SZArray);
+            Builder.WriteByte((byte)SerializationTypeCode.TaggedObject);
         }
 
         public CustomAttributeElementTypeEncoder ElementType()
         {
-            Builder.WriteByte((byte)SignatureTypeCode.SZArray);
+            Builder.WriteByte((byte)SerializationTypeCode.SZArray);
             return new CustomAttributeElementTypeEncoder(Builder);
         }
     }
@@ -562,61 +559,58 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
             Builder = builder;
         }
 
-        private void WriteTypeCode(SignatureTypeCode value)
+        private void WriteTypeCode(SerializationTypeCode value)
         {
             Builder.WriteByte((byte)value);
         }
 
-        public void Boolean() => WriteTypeCode(SignatureTypeCode.Boolean);
-        public void Char() => WriteTypeCode(SignatureTypeCode.Char);
-        public void Int8() => WriteTypeCode(SignatureTypeCode.SByte);
-        public void UInt8() => WriteTypeCode(SignatureTypeCode.Byte);
-        public void Int16() => WriteTypeCode(SignatureTypeCode.Int16);
-        public void UInt16() => WriteTypeCode(SignatureTypeCode.UInt16);
-        public void Int32() => WriteTypeCode(SignatureTypeCode.Int32);
-        public void UInt32() => WriteTypeCode(SignatureTypeCode.UInt32);
-        public void Int64() => WriteTypeCode(SignatureTypeCode.Int64);
-        public void UInt64() => WriteTypeCode(SignatureTypeCode.UInt64);
-        public void Float32() => WriteTypeCode(SignatureTypeCode.Single);
-        public void Float64() => WriteTypeCode(SignatureTypeCode.Double);
-        public void String() => WriteTypeCode(SignatureTypeCode.String);
-        public void IntPtr() => WriteTypeCode(SignatureTypeCode.IntPtr);
-        public void UIntPtr() => WriteTypeCode(SignatureTypeCode.UIntPtr);
+        public void Boolean() => WriteTypeCode(SerializationTypeCode.Boolean);
+        public void Char() => WriteTypeCode(SerializationTypeCode.Char);
+        public void SByte() => WriteTypeCode(SerializationTypeCode.SByte);
+        public void Byte() => WriteTypeCode(SerializationTypeCode.Byte);
+        public void Int16() => WriteTypeCode(SerializationTypeCode.Int16);
+        public void UInt16() => WriteTypeCode(SerializationTypeCode.UInt16);
+        public void Int32() => WriteTypeCode(SerializationTypeCode.Int32);
+        public void UInt32() => WriteTypeCode(SerializationTypeCode.UInt32);
+        public void Int64() => WriteTypeCode(SerializationTypeCode.Int64);
+        public void UInt64() => WriteTypeCode(SerializationTypeCode.UInt64);
+        public void Single() => WriteTypeCode(SerializationTypeCode.Single);
+        public void Double() => WriteTypeCode(SerializationTypeCode.Double);
+        public void String() => WriteTypeCode(SerializationTypeCode.String);
 
-#if !SRM
-        public void PrimitiveType(PrimitiveTypeCode type)
+        public void PrimitiveType(PrimitiveSerializationTypeCode type)
         {
             switch (type)
             {
-                case PrimitiveTypeCode.Boolean: Boolean(); return;
-                case PrimitiveTypeCode.Char: Char(); return;
-                case PrimitiveTypeCode.Int8: Int8(); return;
-                case PrimitiveTypeCode.UInt8: UInt8(); return;
-                case PrimitiveTypeCode.Int16: Int16(); return;
-                case PrimitiveTypeCode.UInt16: UInt16(); return;
-                case PrimitiveTypeCode.Int32: Int32(); return;
-                case PrimitiveTypeCode.UInt32: UInt32(); return;
-                case PrimitiveTypeCode.Int64: Int64(); return;
-                case PrimitiveTypeCode.UInt64: UInt64(); return;
-                case PrimitiveTypeCode.Float32: Float32(); return;
-                case PrimitiveTypeCode.Float64: Float64(); return;
-                case PrimitiveTypeCode.String: String(); return;
-                case PrimitiveTypeCode.IntPtr: IntPtr(); return;
-                case PrimitiveTypeCode.UIntPtr: UIntPtr(); return;
+                case PrimitiveSerializationTypeCode.Boolean:
+                case PrimitiveSerializationTypeCode.Byte:
+                case PrimitiveSerializationTypeCode.SByte:
+                case PrimitiveSerializationTypeCode.Char:
+                case PrimitiveSerializationTypeCode.Int16:
+                case PrimitiveSerializationTypeCode.UInt16:
+                case PrimitiveSerializationTypeCode.Int32:
+                case PrimitiveSerializationTypeCode.UInt32:
+                case PrimitiveSerializationTypeCode.Int64:
+                case PrimitiveSerializationTypeCode.UInt64:
+                case PrimitiveSerializationTypeCode.Single:
+                case PrimitiveSerializationTypeCode.Double:
+                case PrimitiveSerializationTypeCode.String:
+                    WriteTypeCode((SerializationTypeCode)type);
+                    return;
 
                 default:
-                    throw new InvalidOperationException();
+                    throw new ArgumentOutOfRangeException(nameof(type));
             }
         }
-#endif
+
         public void SystemType()
         {
-            Builder.WriteByte(0x50); // TYPE
+            WriteTypeCode(SerializationTypeCode.Type);
         }
 
         public void Enum(string enumTypeName)
         {
-            Builder.WriteByte(0x55); // ENUM
+            WriteTypeCode(SerializationTypeCode.Enum);
             Builder.WriteSerializedString(enumTypeName);
         }
     }
@@ -650,7 +644,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
 
         private void ClassOrValue(bool isValueType)
         {
-            Builder.WriteByte(isValueType ? (byte)0x11 : (byte)0x12); // CLASS|VALUETYPE
+            Builder.WriteByte(isValueType ? (byte)SignatureTypeHandleCode.ValueType : (byte)SignatureTypeHandleCode.Class);
         }
 
         public void Boolean() => WriteTypeCode(SignatureTypeCode.Boolean);
@@ -668,33 +662,38 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         public void String() => WriteTypeCode(SignatureTypeCode.String);
         public void IntPtr() => WriteTypeCode(SignatureTypeCode.IntPtr);
         public void UIntPtr() => WriteTypeCode(SignatureTypeCode.UIntPtr);
+        public void Object() => WriteTypeCode(SignatureTypeCode.Object);
 
-#if !SRM
-        public void PrimitiveType(PrimitiveTypeCode type)
+        internal static void WritePrimitiveType(BlobBuilder builder, PrimitiveTypeCode type)
         {
             switch (type)
             {
-                case PrimitiveTypeCode.Boolean: Boolean(); return;
-                case PrimitiveTypeCode.Char: Char(); return;
-                case PrimitiveTypeCode.Int8: Int8(); return;
-                case PrimitiveTypeCode.UInt8: UInt8(); return;
-                case PrimitiveTypeCode.Int16: Int16(); return;
-                case PrimitiveTypeCode.UInt16: UInt16(); return;
-                case PrimitiveTypeCode.Int32: Int32(); return;
-                case PrimitiveTypeCode.UInt32: UInt32(); return;
-                case PrimitiveTypeCode.Int64: Int64(); return;
-                case PrimitiveTypeCode.UInt64: UInt64(); return;
-                case PrimitiveTypeCode.Float32: Float32(); return;
-                case PrimitiveTypeCode.Float64: Float64(); return;
-                case PrimitiveTypeCode.String: String(); return;
-                case PrimitiveTypeCode.IntPtr: IntPtr(); return;
-                case PrimitiveTypeCode.UIntPtr: UIntPtr(); return;
+                case PrimitiveTypeCode.Boolean:
+                case PrimitiveTypeCode.Byte:
+                case PrimitiveTypeCode.SByte:
+                case PrimitiveTypeCode.Char:
+                case PrimitiveTypeCode.Int16:
+                case PrimitiveTypeCode.UInt16:
+                case PrimitiveTypeCode.Int32:
+                case PrimitiveTypeCode.UInt32:
+                case PrimitiveTypeCode.Int64:
+                case PrimitiveTypeCode.UInt64:
+                case PrimitiveTypeCode.Single:
+                case PrimitiveTypeCode.Double:
+                case PrimitiveTypeCode.IntPtr:
+                case PrimitiveTypeCode.UIntPtr:
+                case PrimitiveTypeCode.String:
+                case PrimitiveTypeCode.Object:
+                    builder.WriteByte((byte)type);
+                    return;
+
+                // TODO: should we allow these?
+                case PrimitiveTypeCode.TypedReference:
+                case PrimitiveTypeCode.Void:
                 default:
-                    throw new InvalidOperationException();
+                    throw new ArgumentOutOfRangeException(nameof(type));
             }
         }
-#endif
-        public void Object() => WriteTypeCode(SignatureTypeCode.Object);
 
         public void Array(out SignatureTypeEncoder elementType, out ArrayShapeEncoder arrayShape)
         {
