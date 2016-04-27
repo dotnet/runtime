@@ -68,10 +68,8 @@ mozroots --import --sync
 2. Clone the corefx repo `git clone https://github.com/dotnet/corefx.git`
 3. Install curl-dev `sudo apt-get install libcurl4-openssl-dev`
 4. Install icu `sudo apt-get install libicu52`
-5. Install llvm `sudo apt-get install llvm`
-6. Install lldb `sudo apt-get install lldb-3.5`
-7. Install cmake `sudo apt-get install cmake`
-8. Install clang `sudo apt-get install clang-3.6`
-9. Install libunwind `sudo apt-get install libunwind8-dev`
-10. Create a symlink for clang bins `sudo ln -s /usr/bin/clang-3.6 /usr/bin/clang && sudo ln -s /usr/bin/clang++-3.6 /usr/bin/clang++`
-11. Run the build script `./build.sh`
+5. Install cmake `sudo apt-get install cmake`
+6. Install clang `sudo apt-get install clang-3.6`
+7. Install libunwind `sudo apt-get install libunwind8`
+8. Create a symlink for clang bins `sudo ln -s /usr/bin/clang-3.6 /usr/bin/clang && sudo ln -s /usr/bin/clang++-3.6 /usr/bin/clang++`
+9. Navigate to the `corefx` directory and run the build script `./build.sh`
