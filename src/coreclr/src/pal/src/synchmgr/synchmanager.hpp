@@ -529,6 +529,7 @@ namespace CorUnix
             SynchWorkerCmdRemoteSignal,
             SynchWorkerCmdDelegatedObjectSignaling,
             SynchWorkerCmdShutdown,
+            SynchWorkerCmdTerminationRequest,
             SynchWorkerCmdLast
         };
 
@@ -621,7 +622,7 @@ namespace CorUnix
             // initialization code.
             return s_pObjSynchMgr; 
         }
-        
+
         //
         // Inline utility methods
         //
@@ -876,6 +877,8 @@ namespace CorUnix
             CPalThread *pthrTarget,
             PAPCFUNC pfnAPC,
             ULONG_PTR uptrData);
+
+        virtual PAL_ERROR SendTerminationRequestToWorkerThread();
 
         virtual bool AreAPCsPending(CPalThread * pthrTarget);
 
