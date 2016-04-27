@@ -97,6 +97,10 @@
     <Compile Include="Convert\ConvertCheckedTests.cs" />
     <Compile Include="Convert\ConvertTests.cs" />
     <Compile Include="Default\DefaultTests.cs" />
+    <Compile Include="DelegateType\ActionTypeTests.cs" />
+    <Compile Include="DelegateType\DelegateCreationTests.cs" />
+    <Compile Include="DelegateType\FuncTypeTests.cs" />
+    <Compile Include="DelegateType\GetDelegateTypeTests.cs" />
     <Compile Include="ExceptionHandling\ExceptionHandlingExpressions.cs" />
     <Compile Include="ExpressionTests.cs" />
     <Compile Include="Goto\Break.cs" />
