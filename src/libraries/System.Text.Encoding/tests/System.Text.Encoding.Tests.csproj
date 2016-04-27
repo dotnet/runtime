@@ -41,6 +41,11 @@
     <Compile Include="Encoding\EncodingConvertTests.cs" />
     <Compile Include="NegativeEncodingTests.cs" />
     <Compile Include="EncodingTestHelpers.cs" />
+    <Compile Include="Latin1Encoding\Latin1EncodingEncode.cs" />
+    <Compile Include="Latin1Encoding\Latin1EncodingDecode.cs" />
+    <Compile Include="Latin1Encoding\Latin1EncodingGetMaxByteCount.cs" />
+    <Compile Include="Latin1Encoding\Latin1EncodingGetMaxCharCount.cs" />
+    <Compile Include="Latin1Encoding\Latin1EncodingTests.cs" />
     <Compile Include="UnicodeEncoding\UnicodeEncodingEncode.cs" />
     <Compile Include="UnicodeEncoding\UnicodeEncodingDecode.cs" />
     <Compile Include="UnicodeEncoding\UnicodeEncodingGetDecoder.cs" />

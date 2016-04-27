@@ -9,21 +9,6 @@ namespace System.Text.Tests
 {
     public class EncodingGetEncodingTest
     {
-        private static byte[] s_asciiBytes = new byte[] { (byte)'A', (byte)'B', (byte)'C', (byte)'D', (byte)'E', (byte)'F', (byte)'G', (byte)'H', };
-        private static string s_asciiString = "ABCDEFGH";
-
-        [Fact]
-        public void GetEncoding_Latin1()
-        {
-            Encoding encoding = Encoding.GetEncoding("latin1");
-            byte[] bytes = encoding.GetBytes(s_asciiString);
-            Assert.Equal<byte>(bytes, s_asciiBytes);
-            string s = encoding.GetString(bytes, 0, bytes.Length);
-            Assert.True(s.Equals(s_asciiString));
-            s = encoding.GetString(bytes);
-            Assert.True(s.Equals(s_asciiString));
-        }
-
         [Fact]
         public void GetEncoding_String_Invalid()
         {
