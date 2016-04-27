@@ -485,37 +485,43 @@ void InlineContext::DumpXml(FILE* file, unsigned indent)
     const bool isRoot = m_Parent == nullptr;
     const bool hasChild = m_Child != nullptr;
     const char* inlineType = m_Success ? "Inline" : "FailedInline";
+    unsigned newIndent = indent;
 
-    if (isRoot)
-    {
-        fprintf(file, "%*s<Inlines%s>\n", indent, "", hasChild ? "" : "/");
-    }
-    else
+    if (!isRoot)
     {
         const char* inlineReason = InlGetObservationString(m_Observation);
+
         int offset = -1;
         if (m_Offset != BAD_IL_OFFSET)
         {
             offset = (int) jitGetILoffs(m_Offset);
         }
 
-        fprintf(file, "%*s<%s method=\"%08X\" offset=\"%d\" reason=\"%s\"%s>\n",
-                indent, "", inlineType, calleeToken, offset, inlineReason, hasChild ? "" : "/");
+        fprintf(file, "%*s<%s>\n", indent, "", inlineType);
+        fprintf(file, "%*s<Token>%u</Token>\n", indent + 2, "", calleeToken);
+        fprintf(file, "%*s<Offset>%u</Offset>\n", indent + 2, "", offset);
+        fprintf(file, "%*s<Reason>%s</Reason>\n", indent + 2, "", inlineReason);
+        newIndent = indent + 2;
     }
 
-    // Recurse to children, then close out
+    // Handle children
+
     if (hasChild)
     {
-        m_Child->DumpXml(file, indent + 2);
+        fprintf(file, "%*s<Inlines>\n", newIndent, "");
+        m_Child->DumpXml(file, newIndent + 2);
+        fprintf(file, "%*s</Inlines>\n", newIndent, "");
+    }
+    else
+    {
+        fprintf(file, "%*s<Inlines />\n", newIndent, "");
+    }
 
-        if (isRoot)
-        {
-            fprintf(file, "%*s</Inlines>\n", indent, "");
-        }
-        else
-        {
-            fprintf(file, "%*s</%s>\n", indent, "", inlineType);
-        }
+    // Close out
+
+    if (!isRoot)
+    {
+        fprintf(file, "%*s</%s>\n", indent, "", inlineType);
     }
 }
 
@@ -1251,6 +1257,10 @@ void InlineStrategy::DumpData()
     fprintf(stderr, "\n");
 }
 
+// Static to track emission of the xml data header
+
+bool InlineStrategy::s_DumpXmlHeader = false;
+
 //------------------------------------------------------------------------
 // DumpXML: dump xml-formatted version of the inline tree.
 //
@@ -1263,6 +1273,15 @@ void InlineStrategy::DumpXml(FILE* file, unsigned indent)
     if (JitConfig.JitInlineDumpXml() == 0)
     {
         return;
+    }
+
+    // Dump header
+    if (!s_DumpXmlHeader)
+    {
+        fprintf(file, "<?xml version=\"1.0\"?>\n");
+        fprintf(file, "<InlineForest>\n");
+        fprintf(file, "<Methods>\n");
+        s_DumpXmlHeader = true;
     }
 
     // Cache references to compiler substructures.
@@ -1297,7 +1316,9 @@ void InlineStrategy::DumpXml(FILE* file, unsigned indent)
         microsecondsSpentJitting = (unsigned) ((counts / countsPerSec) * 1000 * 1000);
     }
 
-    fprintf(file, "%*s<Method token=\"%08X\" hash=\"%08X\">\n", indent, "", currentMethodToken, hash);
+    fprintf(file, "%*s<Method>\n", indent, "");
+    fprintf(file, "%*s<Token>%u</Token>\n", indent + 2, "", currentMethodToken);
+    fprintf(file, "%*s<Hash>%u</Hash>\n", indent + 2, "", hash);
     fprintf(file, "%*s<InlineCount>%u</InlineCount>\n", indent + 2, "", m_InlineCount);
     fprintf(file, "%*s<HotSize>%u</HotSize>\n", indent + 2, "", info.compTotalHotCodeSize);
     fprintf(file, "%*s<ColdSize>%u</ColdSize>\n", indent + 2, "", info.compTotalColdCodeSize);
@@ -1321,6 +1342,20 @@ void InlineStrategy::DumpXml(FILE* file, unsigned indent)
     }
 
     fprintf(file, "%*s</Method>\n", indent, "");
+}
+
+void InlineStrategy::FinalizeXml(FILE* file)
+{
+    // If we dumped the header, dump a footer
+    if (s_DumpXmlHeader)
+    {
+        fprintf(file, "</Methods>\n");
+        fprintf(file, "</InlineForest>\n");
+        fflush(file);
+
+        // Workaroud compShutdown getting called twice.
+        s_DumpXmlHeader = false;
+    }
 }
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
