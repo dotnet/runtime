@@ -4753,26 +4753,7 @@ void CodeGen::genRegCopy(GenTree* treeNode)
 
     if (varTypeIsFloating(treeNode) != varTypeIsFloating(op1))
     {
-#if 0
-        instruction ins;
-        regNumber fpReg;
-        regNumber intReg;
-        if(varTypeIsFloating(treeNode))
-        {
-            ins = INS_mov_i2xmm;
-            fpReg = targetReg;
-            intReg = op1->gtRegNum;
-        }
-        else
-        {
-            ins = INS_mov_xmm2i;
-            intReg = targetReg;
-            fpReg = op1->gtRegNum;
-        }
-        inst_RV_RV(ins, fpReg, intReg, targetType);
-#else
-        NYI_ARM64("CodeGen - FP/Int RegCopy");
-#endif
+        inst_RV_RV(INS_fmov, targetReg, genConsumeReg(op1), targetType);
     }
     else
     {
