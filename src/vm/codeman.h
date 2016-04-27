@@ -1168,7 +1168,6 @@ public:
 #endif //ALLOW_SXS_JIT
 };
 
-
 //*****************************************************************************
 //
 // This class manages IJitManagers and ICorJitCompilers.  It has only static
