@@ -696,9 +696,9 @@ void Zapper::LoadAndInitializeJITForNgen(LPCWSTR pwzJitName, OUT HINSTANCE* phJi
     HRESULT hr = E_FAIL;
 
 #if defined(FEATURE_CORECLR) || defined(FEATURE_MERGE_JIT_AND_ENGINE)
-    // TODO_DJIT: Currently, we are looking up the JIT from the same location as CoreCLR. The path needs to be passed by the caller.
-    //
     // Note: FEATURE_MERGE_JIT_AND_ENGINE is defined for the Desktop crossgen compilation as well.
+    //
+    // For Crossgen, we always look up the JIT from the same location as CoreCLR. 
     PathString CoreClrFolder;
     extern HINSTANCE g_hThisInst;
     if (WszGetModuleFileName(g_hThisInst, CoreClrFolder))

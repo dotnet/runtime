@@ -1354,6 +1354,14 @@ struct JIT_LOAD_DATA
 // Here's the global data for JIT load and initialization state.
 JIT_LOAD_DATA g_JitLoadData;
 
+#if defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+
+// Global that holds the path to custom JIT location
+extern "C" LPCWSTR g_CLRJITPath = nullptr;
+
+#endif // defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+
+
 // LoadAndInitializeJIT: load the JIT dll into the process, and initialize it (call the UtilCode initialization function,
 // check the JIT-EE interface GUID, etc.)
 //
@@ -1389,25 +1397,38 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT I
     HRESULT hr = E_FAIL;
 
 #ifdef FEATURE_CORECLR
-    // TODO_DJIT: Currently, we are looking up the JIT from the same location as CoreCLR. We need to get this to come from
-    //            the host so that we get it from the correct servicing location
     PathString CoreClrFolderHolder;
     extern HINSTANCE g_hThisInst;
+
+#if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+    if (g_CLRJITPath != nullptr)
+    {
+        // If we have been asked to load a specific JIT binary, load it.
+        CoreClrFolderHolder.Set(g_CLRJITPath);
+    }
+    else 
+#endif // !defined(FEATURE_MERGE_JIT_AND_ENGINE)
     if (WszGetModuleFileName(g_hThisInst, CoreClrFolderHolder))
     {
+        // Load JIT from next to CoreCLR binary
         SString::Iterator iter = CoreClrFolderHolder.End();
         BOOL findSep = CoreClrFolderHolder.FindBack(iter, DIRECTORY_SEPARATOR_CHAR_W);
         if (findSep)
         {
             SString sJitName(pwzJitName);
             CoreClrFolderHolder.Replace(iter + 1, CoreClrFolderHolder.End() - (iter + 1), sJitName);
-            *phJit = CLRLoadLibrary(CoreClrFolderHolder.GetUnicode());
-            if (*phJit != NULL)
-            {
-                hr = S_OK;
-            }
         }
     }
+
+    if (!CoreClrFolderHolder.IsEmpty())
+    {
+        *phJit = CLRLoadLibrary(CoreClrFolderHolder.GetUnicode());
+        if (*phJit != NULL)
+        {
+            hr = S_OK;
+        }
+    }
+
 #else
     hr = g_pCLRRuntime->LoadLibrary(pwzJitName, phJit);
 #endif
@@ -4291,11 +4312,11 @@ LPCWSTR ExecutionManager::GetJitName()
 {
     STANDARD_VM_CONTRACT;
 
-    LPWSTR  pwzJitName = NULL;
+    LPCWSTR  pwzJitName = NULL;
 
 #if !defined(FEATURE_CORECLR)
     // Try to obtain a name for the jit library from the env. variable
-    IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitName, &pwzJitName));
+    IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitName, const_cast<LPWSTR *>(pwzJitName)));
 #endif // !FEATURE_CORECLR
     
     if (NULL == pwzJitName)
