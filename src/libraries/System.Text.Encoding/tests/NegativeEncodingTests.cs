@@ -31,7 +31,7 @@ namespace System.Text.Tests
             yield return new object[] { new UTF32Encoding(false, false, false) };
             yield return new object[] { new UTF32Encoding(false, false, true) };
         }
-        
+
         [Theory]
         [MemberData(nameof(Encodings_TestData))]
         public static unsafe void GetByteCount_Invalid(Encoding encoding)
@@ -60,7 +60,7 @@ namespace System.Text.Tests
                 Assert.Throws<ArgumentOutOfRangeException>("count", () => encoding.GetByteCount(pCharsLocal, -1));
             }
         }
-        
+
         [Theory]
         [MemberData(nameof(Encodings_TestData))]
         public static unsafe void GetBytes_Invalid(Encoding encoding)
@@ -411,6 +411,7 @@ namespace System.Text.Tests
             int byteCount = encoder.GetByteCount(new char[] { 'a' }, 0, 1, flush);
             Assert.Throws<ArgumentException>("bytes", () => encoder.GetBytes(new char[] { 'a' }, 0, 1, new byte[byteCount - 1], 0, flush));
         }
+
         [Theory]
         [MemberData(nameof(Encoders_TestData))]
         public static void Encoder_Convert_Invalid(Encoder encoder, bool flush)
@@ -471,6 +472,124 @@ namespace System.Text.Tests
             // Bytes does not have enough space
             int byteCount = encoder.GetByteCount(new char[] { 'a' }, 0, 1, flush);
             Assert.Throws<ArgumentException>("bytes", () => encoder.Convert(new char[] { 'a' }, 0, 1, new byte[byteCount - 1], 0, byteCount - 1, flush, out charsUsed, out bytesUsed, out completed));
+            verifyOutParams();
+        }
+
+        public static IEnumerable<object[]> Decoders_TestData()
+        {
+            foreach (object[] encodingTestData in Encodings_TestData())
+            {
+                Encoding encoding = (Encoding)encodingTestData[0];
+                yield return new object[] { encoding, encoding.GetDecoder(), true };
+                yield return new object[] { encoding, encoding.GetDecoder(), false };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Decoders_TestData))]
+        public static void Decoder_GetCharCount_Invalid(Encoding _, Decoder decoder, bool flush)
+        {
+            // Bytes is null
+            Assert.Throws<ArgumentNullException>("bytes", () => decoder.GetCharCount(null, 0, 0, flush));
+
+            // Index is invalid
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => decoder.GetCharCount(new byte[4], -1, 0, flush));
+            Assert.Throws<ArgumentOutOfRangeException>("bytes", () => decoder.GetCharCount(new byte[4], 5, 0, flush));
+
+            // Count is invalid
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => decoder.GetCharCount(new byte[4], 0, -1, flush));
+            Assert.Throws<ArgumentOutOfRangeException>("bytes", () => decoder.GetCharCount(new byte[4], 0, 5, flush));
+            Assert.Throws<ArgumentOutOfRangeException>("bytes", () => decoder.GetCharCount(new byte[4], 1, 4, flush));
+        }
+
+        [Theory]
+        [MemberData(nameof(Decoders_TestData))]
+        public static void Decoder_GetChars_Invalid(Encoding _, Decoder decoder, bool flush)
+        {
+            // Bytes is null
+            Assert.Throws<ArgumentNullException>("bytes", () => decoder.GetChars(null, 0, 0, new char[4], 0, flush));
+
+            // ByteIndex is invalid
+            Assert.Throws<ArgumentOutOfRangeException>("byteIndex", () => decoder.GetChars(new byte[4], -1, 0, new char[4], 0, flush));
+            Assert.Throws<ArgumentOutOfRangeException>("bytes", () => decoder.GetChars(new byte[4], 5, 0, new char[4], 0, flush));
+
+            // ByteCount is invalid
+            Assert.Throws<ArgumentOutOfRangeException>("byteCount", () => decoder.GetChars(new byte[4], 0, -1, new char[4], 0, flush));
+            Assert.Throws<ArgumentOutOfRangeException>("bytes", () => decoder.GetChars(new byte[4], 0, 5, new char[4], 0, flush));
+            Assert.Throws<ArgumentOutOfRangeException>("bytes", () => decoder.GetChars(new byte
+                [4], 1, 4, new char[4], 0, flush));
+
+            // Chars is null
+            Assert.Throws<ArgumentNullException>("chars", () => decoder.GetChars(new byte[1], 0, 1, null, 0, flush));
+
+            // CharIndex is invalid
+            Assert.Throws<ArgumentOutOfRangeException>("charIndex", () => decoder.GetChars(new byte[1], 0, 1, new char[4], -1, flush));
+            Assert.Throws<ArgumentOutOfRangeException>("charIndex", () => decoder.GetChars(new byte[1], 0, 1, new char[4], 5, flush));
+
+            // Chars does not have enough space
+            int charCount = decoder.GetCharCount(new byte[4], 0, 4, flush);
+            Assert.Throws<ArgumentException>("chars", () => decoder.GetChars(new byte[4], 0, 4, new char[charCount - 1], 0, flush));
+        }
+
+        [Theory]
+        [MemberData(nameof(Decoders_TestData))]
+        public static void Decoder_Convert_Invalid(Encoding encoding, Decoder decoder, bool flush)
+        {
+            int bytesUsed = 0;
+            int charsUsed = 0;
+            bool completed = false;
+
+            Action verifyOutParams = () =>
+            {
+                Assert.Equal(0, bytesUsed);
+                Assert.Equal(0, charsUsed);
+                Assert.False(completed);
+            };
+
+            // Bytes is null
+            Assert.Throws<ArgumentNullException>("bytes", () => decoder.Convert(null, 0, 0, new char[4], 0, 4, flush, out charsUsed, out bytesUsed, out completed));
+            verifyOutParams();
+
+            // ByteIndex is invalid
+            Assert.Throws<ArgumentOutOfRangeException>("byteIndex", () => decoder.Convert(new byte[4], -1, 0, new char[4], 0, 4, flush, out charsUsed, out bytesUsed, out completed));
+            verifyOutParams();
+
+            Assert.Throws<ArgumentOutOfRangeException>("bytes", () => decoder.Convert(new byte[4], 5, 0, new char[4], 0, 4, flush, out charsUsed, out bytesUsed, out completed));
+            verifyOutParams();
+
+            // ByteCount is invalid
+            Assert.Throws<ArgumentOutOfRangeException>("byteCount", () => decoder.Convert(new byte[4], 0, -1, new char[4], 0, 4, flush, out charsUsed, out bytesUsed, out completed));
+            verifyOutParams();
+
+            Assert.Throws<ArgumentOutOfRangeException>("bytes", () => decoder.Convert(new byte[4], 0, 5, new char[4], 0, 4, flush, out charsUsed, out bytesUsed, out completed));
+            verifyOutParams();
+
+            Assert.Throws<ArgumentOutOfRangeException>("bytes", () => decoder.Convert(new byte[4], 1, 4, new char[4], 0, 4, flush, out charsUsed, out bytesUsed, out completed));
+            verifyOutParams();
+
+            // Chars is null
+            Assert.Throws<ArgumentNullException>("chars", () => decoder.Convert(new byte[1], 0, 1, null, 0, 0, flush, out charsUsed, out bytesUsed, out completed));
+            verifyOutParams();
+
+            // CharIndex is invalid
+            Assert.Throws<ArgumentOutOfRangeException>("charIndex", () => decoder.Convert(new byte[1], 0, 0, new char[4], -1, 4, flush, out charsUsed, out bytesUsed, out completed));
+            verifyOutParams();
+
+            Assert.Throws<ArgumentOutOfRangeException>("chars", () => decoder.Convert(new byte[1], 0, 0, new char[4], 5, 0, flush, out charsUsed, out bytesUsed, out completed));
+            verifyOutParams();
+
+            // CharCount is invalid
+            Assert.Throws<ArgumentOutOfRangeException>("charCount", () => decoder.Convert(new byte[1], 0, 0, new char[4], 0, -1, flush, out charsUsed, out bytesUsed, out completed));
+            verifyOutParams();
+
+            Assert.Throws<ArgumentOutOfRangeException>("chars", () => decoder.Convert(new byte[1], 0, 0, new char[4], 0, 5, flush, out charsUsed, out bytesUsed, out completed));
+            verifyOutParams();
+
+            Assert.Throws<ArgumentOutOfRangeException>("chars", () => decoder.Convert(new byte[1], 0, 0, new char[4], 1, 4, flush, out charsUsed, out bytesUsed, out completed));
+            verifyOutParams();
+
+            // Chars does not have enough space
+            Assert.Throws<ArgumentException>("chars", () => decoder.Convert(new byte[4], 0, 4, new char[0], 0, 0, flush, out charsUsed, out bytesUsed, out completed));
             verifyOutParams();
         }
     }
