@@ -670,6 +670,12 @@ public:
         return m_MaxInlineSize;
     }
 
+    // Get depth of maximum allowable inline
+    unsigned GetMaxInlineDepth()
+    {
+        return m_MaxInlineDepth;
+    }
+
     // Number of successful inlines into the root.
     unsigned GetInlineCount()
     {
@@ -701,7 +707,8 @@ public:
     enum
     {
         ALWAYS_INLINE_SIZE = 16,
-        IMPLEMENTATION_MAX_INLINE_SIZE= _UI16_MAX
+        IMPLEMENTATION_MAX_INLINE_SIZE = _UI16_MAX,
+        IMPLEMENTATION_MAX_INLINE_DEPTH = 1000
     };
 
 private:
@@ -731,8 +738,8 @@ private:
     int EstimateSize(InlineContext* context);
 
 #if defined(DEBUG) || defined(INLINE_DATA)
-    static bool    s_DumpDataHeader;
-    static bool    s_DumpXmlHeader;
+    static bool    s_HasDumpedDataHeader;
+    static bool    s_HasDumpedXmlHeader;
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
     Compiler*      m_Compiler;
@@ -742,6 +749,7 @@ private:
     unsigned       m_InlineAttemptCount;
     unsigned       m_InlineCount;
     unsigned       m_MaxInlineSize;
+    unsigned       m_MaxInlineDepth;
     int            m_InitialTimeBudget;
     int            m_InitialTimeEstimate;
     int            m_CurrentTimeBudget;
