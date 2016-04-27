@@ -11,9 +11,14 @@
 //
 // LegalPolicy         - partial class providing common legality checks
 // LegacyPolicy        - policy that provides legacy inline behavior
+//
+// These experimental policies are available only in
+// DEBUG or release+INLINE_DATA builds of the jit.
+//
 // RandomPolicy        - randomized inlining
 // DiscretionaryPolicy - legacy variant with uniform size policy
 // ModelPolicy         - policy based on statistical modelling
+// FullPolicy          - inlines everything up to size and depth limits
 
 #ifndef _INLINE_POLICY_H_
 #define _INLINE_POLICY_H_
@@ -290,6 +295,26 @@ public:
 
     // Miscellaneous
     const char* GetName() const override { return "ModelPolicy"; }
+};
+
+// FullPolicy is an experimental policy that will always inline if
+// possible, subject to externally settable depth and size limits.
+//
+// It's useful for unconvering the full set of possible inlines for
+// methods.
+
+class FullPolicy : public DiscretionaryPolicy
+{
+public:
+
+    // Construct a ModelPolicy
+    FullPolicy(Compiler* compiler, bool isPrejitRoot);
+
+    // Policy determinations
+    void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo) override;
+
+    // Miscellaneous
+    const char* GetName() const override { return "FullPolicy"; }
 };
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)

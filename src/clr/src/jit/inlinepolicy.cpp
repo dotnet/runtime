@@ -43,6 +43,14 @@ InlinePolicy* InlinePolicy::GetPolicy(Compiler* compiler, bool isPrejitRoot)
 
 #if defined(DEBUG) || defined(INLINE_DATA)
 
+    // Optionally install the FullPolicy.
+    bool useFullPolicy = JitConfig.JitInlinePolicyFull() != 0;
+
+    if (useFullPolicy)
+    {
+        return new (compiler, CMK_Inlining) FullPolicy(compiler, isPrejitRoot);
+    }
+
     // Optionally install the ModelPolicy.
     bool useModelPolicy = JitConfig.JitInlinePolicyModel() != 0;
 
@@ -434,6 +442,18 @@ void LegacyPolicy::NoteInt(InlineObservation obs, int value)
             {
                 // Callee too big, not a candidate
                 SetNever(InlineObservation::CALLEE_TOO_MUCH_IL);
+            }
+
+            break;
+        }
+
+    case InlineObservation::CALLSITE_DEPTH:
+        {
+            unsigned depth = static_cast<unsigned>(value);
+
+            if (depth > m_RootCompiler->m_inlineStrategy->GetMaxInlineDepth())
+            {
+                SetFailure(InlineObservation::CALLSITE_IS_TOO_DEEP);
             }
 
             break;
@@ -1871,6 +1891,61 @@ void ModelPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
             }
         }
     }
+}
+
+//------------------------------------------------------------------------/
+// FullPolicy: construct a new FullPolicy
+//
+// Arguments:
+//    compiler -- compiler instance doing the inlining (root compiler)
+//    isPrejitRoot -- true if this compiler is prejitting the root method
+
+FullPolicy::FullPolicy(Compiler* compiler, bool isPrejitRoot)
+    : DiscretionaryPolicy(compiler, isPrejitRoot)
+{
+    // Empty
+}
+
+//------------------------------------------------------------------------
+// DetermineProfitability: determine if this inline is profitable
+//
+// Arguments:
+//    methodInfo -- method info for the callee
+
+void FullPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
+{
+    // Check depth
+
+    unsigned depthLimit = m_RootCompiler->m_inlineStrategy->GetMaxInlineDepth();
+
+    if (m_Depth > depthLimit) 
+    {
+        SetFailure(InlineObservation::CALLSITE_IS_TOO_DEEP);
+        return;
+    }
+
+    // Check size
+    
+    unsigned sizeLimit = m_RootCompiler->m_inlineStrategy->GetMaxInlineILSize();
+
+    if (m_CodeSize > sizeLimit)
+    {
+        SetFailure(InlineObservation::CALLEE_TOO_MUCH_IL);
+        return;
+    }
+
+    // Otherwise, we're good to go
+
+    if (m_IsPrejitRoot)
+    {
+        SetCandidate(InlineObservation::CALLEE_IS_PROFITABLE_INLINE);
+    }
+    else
+    {
+        SetCandidate(InlineObservation::CALLSITE_IS_PROFITABLE_INLINE);
+    }
+
+    return;
 }
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
