@@ -54,8 +54,8 @@ namespace System.Linq.Expressions.Tests
         [MemberData(nameof(ExcessiveLengthTypeArgs))]
         [MemberData(nameof(ExcessiveLengthOpenGenericTypeArgs))]
         [MemberData(nameof(ByRefTypeArgs))]
-        // 8121 [MemberData(nameof(PointerTypeArgs))]
-        // 8121 [MemberData(nameof(ManagedPointerTypeArgs))]
+        [MemberData(nameof(PointerTypeArgs))]
+        [MemberData(nameof(ManagedPointerTypeArgs))]
         public void CantBeFunc(Type[] typeArgs)
         {
             Type delType = Expression.GetDelegateType(typeArgs);
@@ -71,8 +71,8 @@ namespace System.Linq.Expressions.Tests
         [MemberData(nameof(ExcessiveLengthTypeArgs))]
         [MemberData(nameof(ExcessiveLengthOpenGenericTypeArgs))]
         [MemberData(nameof(ByRefTypeArgs))]
-        // 8121 [MemberData(nameof(PointerTypeArgs))]
-        // 8121 [MemberData(nameof(ManagedPointerTypeArgs))]
+        [MemberData(nameof(PointerTypeArgs))]
+        [MemberData(nameof(ManagedPointerTypeArgs))]
         public void CantBeAction(Type[] typeArgs)
         {
             Type delType = Expression.GetDelegateType(typeArgs.Append(typeof(void)).ToArray());
