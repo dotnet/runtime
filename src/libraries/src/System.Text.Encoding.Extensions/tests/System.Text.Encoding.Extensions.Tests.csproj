@@ -10,7 +10,7 @@
     <RootNamespace>System.Text.Encoding.Extensions.Tests</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-   <!-- Default configurations to help VS understand the configurations -->
+  <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
@@ -18,7 +18,6 @@
   <ItemGroup>
     <Compile Include="ASCII.cs" />
     <Compile Include="EncodingTestHelper.cs" />
-    <Compile Include="ISO-8859-1.cs" />
     <Compile Include="UTF16BE.cs" />
     <Compile Include="UTF16LE.cs" />
     <Compile Include="UTF32BE.cs" />
