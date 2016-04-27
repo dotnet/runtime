@@ -76,6 +76,6 @@ mozroots --import --sync
 
 ### Aggregated Dependencies Installation and Configuration
 
-*Note: the below command does **not** include the `git clone` or the execution of the build script*
+*Note: the below command does not include the `git clone` or the execution of the build script*
 
 `sudo apt-get install git libcurl4-openssl-dev libicu52 cmake clang-3.6 libunwind8 && sudo ln -s /usr/bin/clang-3.6 /usr/bin/clang && sudo ln -s /usr/bin/clang++-3.6 /usr/bin/clang++`
