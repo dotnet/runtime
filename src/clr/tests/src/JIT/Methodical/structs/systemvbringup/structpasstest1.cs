@@ -117,6 +117,26 @@ namespace structinreg
         public Test13 t13;
     }
 
+    struct Test15
+    {
+        public byte b0;
+        public byte b1;
+        public byte b2;
+        public byte b3;
+        public byte b4;
+        public byte b5;
+        public byte b6;
+        public byte b7;
+        public byte b8;
+        public byte b9;
+        public byte b10;
+        public byte b11;
+        public byte b12;
+        public byte b13;
+        public byte b14;
+        public byte b15;
+    }
+
     class Program1
     {
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
@@ -201,6 +221,17 @@ namespace structinreg
         {
             Console.WriteLine("t14 Res: {0}", t14.t13.foo1.iFoo);
             return t14.t13.foo1.iFoo;
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        static int test15(Test15 t15)
+        {
+            Console.WriteLine("t15 Res: {0}", t15.b0 + t15.b1 + t15.b2 + t15.b3 +
+                t15.b4 + t15.b5 + t15.b6 + t15.b7 + t15.b8 + t15.b9 + t15.b10 + 
+                t15.b11 + t15.b12 + t15.b13 + t15.b14 + t15.b15);
+            return (t15.b0 + t15.b1 + t15.b2 + t15.b3 +
+                t15.b4 + t15.b5 + t15.b6 + t15.b7 + t15.b8 + t15.b9 + t15.b10 +
+                t15.b11 + t15.b12 + t15.b13 + t15.b14 + t15.b15);
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
@@ -367,6 +398,30 @@ namespace structinreg
             if (t7Res != 130.00)
             {
                 throw new Exception("Failed test7 test!");
+            }
+
+            Test15 t15 = default(Test15);
+            t15.b0 = 1;
+            t15.b1 = 2;
+            t15.b2 = 3;
+            t15.b3 = 4;
+            t15.b4 = 5;
+            t15.b5 = 6;
+            t15.b6 = 7;
+            t15.b7 = 8;
+            t15.b8 = 9;
+            t15.b9 = 10;
+            t15.b10 = 11;
+            t15.b11 = 12;
+            t15.b12 = 13;
+            t15.b13 = 14;
+            t15.b14 = 15;
+            t15.b15 = 16;
+
+            int t15Res = test15(t15);
+            Console.WriteLine("test15 Result: {0}", t15Res);
+            if (t15Res != 136) {
+                throw new Exception("Failed test15 test!");
             }
 
             return 100;
