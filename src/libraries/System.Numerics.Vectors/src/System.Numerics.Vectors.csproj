@@ -9,15 +9,15 @@
     <DocumentationFile>$(OutputPath)System.Numerics.Vectors.xml</DocumentationFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net46'">true</IsPartialFacadeAssembly>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.0</NuGetTargetMoniker>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(PackageTargetFramework)' == ''">
-    <PackageDestination Include="lib/netstandard1.3">
-      <TargetFramework>netstandard1.3</TargetFramework>
+    <PackageDestination Include="lib/netstandard1.0">
+      <TargetFramework>netstandard1.0</TargetFramework>
     </PackageDestination>
-    <PackageDestination Include="lib/portable-net45+win8">
-      <TargetFramework>portable-net45+win8</TargetFramework>
+    <PackageDestination Include="lib/portable-net45+win8+wp8+wpa81">
+      <TargetFramework>portable-net45+win8+wp8+wpa81</TargetFramework>
     </PackageDestination>
   </ItemGroup>
 
