@@ -229,7 +229,7 @@ private:
         out->resize(argc);
         for (int i = 0; i < argc; ++i)
         {
-            pal::to_clrstring(pal::string_t(argv[i]), &(*out)[i]);
+            pal::pal_clrstring(pal::string_t(argv[i]), &(*out)[i]);
         }
     }
 };

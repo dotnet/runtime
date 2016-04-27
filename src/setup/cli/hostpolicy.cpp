@@ -68,13 +68,13 @@ int run(const arguments_t& args)
     };
 
     std::vector<char> tpa_paths_cstr, app_base_cstr, native_dirs_cstr, resources_dirs_cstr, fx_deps, deps;
-    pal::to_clrstring(probe_paths.tpa, &tpa_paths_cstr);
-    pal::to_clrstring(args.app_dir, &app_base_cstr);
-    pal::to_clrstring(probe_paths.native, &native_dirs_cstr);
-    pal::to_clrstring(probe_paths.resources, &resources_dirs_cstr);
+    pal::pal_clrstring(probe_paths.tpa, &tpa_paths_cstr);
+    pal::pal_clrstring(args.app_dir, &app_base_cstr);
+    pal::pal_clrstring(probe_paths.native, &native_dirs_cstr);
+    pal::pal_clrstring(probe_paths.resources, &resources_dirs_cstr);
 
-    pal::to_clrstring(resolver.get_fx_deps_file(), &fx_deps);
-    pal::to_clrstring(resolver.get_deps_file() + _X(";") + resolver.get_fx_deps_file(), &deps);
+    pal::pal_clrstring(resolver.get_fx_deps_file(), &fx_deps);
+    pal::pal_clrstring(resolver.get_deps_file() + _X(";") + resolver.get_fx_deps_file(), &deps);
 
     std::vector<const char*> property_values = {
         // TRUSTED_PLATFORM_ASSEMBLIES
@@ -129,7 +129,7 @@ int run(const arguments_t& args)
     }
 
     std::vector<char> own_path;
-    pal::to_clrstring(args.own_path, &own_path);
+    pal::pal_clrstring(args.own_path, &own_path);
 
     // Initialize CoreCLR
     coreclr::host_handle_t host_handle;
@@ -153,7 +153,7 @@ int run(const arguments_t& args)
     std::vector<const char*> argv(args.app_argc);
     for (int i = 0; i < args.app_argc; i++)
     {
-        pal::to_clrstring(args.app_argv[i], &argv_strs[i]);
+        pal::pal_clrstring(args.app_argv[i], &argv_strs[i]);
         argv[i] = argv_strs[i].data();
     }
 
@@ -172,7 +172,7 @@ int run(const arguments_t& args)
     }
 
     std::vector<char> managed_app;
-    pal::to_clrstring(args.managed_application, &managed_app);
+    pal::pal_clrstring(args.managed_application, &managed_app);
 
     // Leave breadcrumbs for servicing.
     breadcrumb_writer_t writer(&breadcrumbs);
@@ -225,10 +225,11 @@ SHARED_API int corehost_main(const int argc, const pal::char_t* argv[])
 {
     if (trace::is_enabled())
     {
-        trace::info(_X("--- Invoked policy [%s/%s/%s] main = {"),
+        trace::info(_X("--- Invoked policy [%s,%s,%s][%s] main = {"),
             _STRINGIFY(HOST_POLICY_PKG_NAME),
             _STRINGIFY(HOST_POLICY_PKG_VER),
-            _STRINGIFY(HOST_POLICY_PKG_REL_DIR));
+            _STRINGIFY(HOST_POLICY_PKG_REL_DIR),
+            get_arch());
 
         for (int i = 0; i < argc; ++i)
         {

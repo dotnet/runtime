@@ -10,8 +10,6 @@
 #include <codecvt>
 #include <ShlObj.h>
 
-static thread_local std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> t_converter;
-
 pal::string_t pal::to_lower(const pal::string_t& in)
 {
     pal::string_t ret = in;
@@ -253,39 +251,42 @@ bool pal::get_own_executable_path(string_t* recv)
     return true;
 }
 
-pal::string_t pal::to_palstring(const std::string& str)
+static bool wchar_convert_helper(DWORD code_page, const char* cstr, int len, pal::string_t* out)
 {
-    return t_converter.from_bytes(str);
+    out->clear();
+
+    // No need of explicit null termination, so pass in the actual length.
+    size_t size = ::MultiByteToWideChar(code_page, 0, cstr, len, nullptr, 0);
+    if (size == 0)
+    {
+        return false;
+    }
+    out->resize(size, '\0');
+    return ::MultiByteToWideChar(code_page, 0, cstr, len, &(*out)[0], out->size()) != 0;
 }
 
-void pal::to_palstring(const char* str, pal::string_t* out)
+bool pal::utf8_palstring(const std::string& str, pal::string_t* out)
 {
-    out->assign(t_converter.from_bytes(str));
+    return wchar_convert_helper(CP_UTF8, &str[0], str.size(), out);
 }
 
-void pal::to_clrstring(const pal::string_t& str, std::vector<char>* out)
+bool pal::pal_clrstring(const pal::string_t& str, std::vector<char>* out)
 {
+    out->clear();
+
     // Pass -1 as we want explicit null termination in the char buffer.
     size_t size = ::WideCharToMultiByte(CP_ACP, 0, str.c_str(), -1, nullptr, 0, nullptr, nullptr);
-    out->resize(size, '\0');
     if (size == 0)
     {
-        return;
+        return false;
     }
-    ::WideCharToMultiByte(CP_ACP, 0, str.c_str(), -1, out->data(), out->size(), nullptr, nullptr);
+    out->resize(size, '\0');
+    return ::WideCharToMultiByte(CP_ACP, 0, str.c_str(), -1, out->data(), out->size(), nullptr, nullptr) != 0;
 }
 
-void pal::clr_palstring(const char* out, pal::string_t* str)
+bool pal::clr_palstring(const char* cstr, pal::string_t* out)
 {
-    // No need of explicit null termination, so pass in the actual length.
-    int len = ::strlen(out);
-    size_t size = ::MultiByteToWideChar(CP_ACP, 0, out, len, nullptr, 0);
-    str->resize(size, '\0');
-    if (size == 0)
-    {
-        return;
-    }
-    ::MultiByteToWideChar(CP_ACP, 0, out, len, &(*str)[0], str->size());
+    return wchar_convert_helper(CP_ACP, cstr, ::strlen(cstr), out);
 }
 
 bool pal::realpath(string_t* path)
