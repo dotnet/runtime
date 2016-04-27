@@ -4,6 +4,9 @@
 
 namespace System.Reflection.Metadata
 {
+    /// <summary>
+    /// Type codes used to encode types of values in Custom Attribute value blob.
+    /// </summary>
     public enum SerializationTypeCode : byte
     {
         /// <summary>

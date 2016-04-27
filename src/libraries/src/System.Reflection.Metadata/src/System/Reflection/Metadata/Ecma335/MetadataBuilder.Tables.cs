@@ -424,7 +424,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
             {
                 Type = (byte)MetadataWriterUtilities.GetConstantTypeCode(value),
                 Parent = parentCodedIndex,
-                Value = GetConstantBlob(value)
+                Value = GetOrAddConstantBlob(value)
             });
 
             return MetadataTokens.ConstantHandle(_constantTable.Count);
@@ -900,7 +900,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
             int methodBodyStreamRva,
             int mappedFieldDataStreamRva)
         {
-            int startPosition = writer.Position;
+            int startPosition = writer.Count;
 
             this.SerializeTablesHeader(writer, metadataSizes);
 
@@ -1128,13 +1128,13 @@ namespace Roslyn.Reflection.Metadata.Ecma335
             writer.WriteByte(0);
             writer.Align(4);
 
-            int endPosition = writer.Position;
+            int endPosition = writer.Count;
             Debug.Assert(metadataSizes.MetadataTableStreamSize == endPosition - startPosition);
         }
 
         private void SerializeTablesHeader(BlobBuilder writer, MetadataSizes metadataSizes)
         {
-            int startPosition = writer.Position;
+            int startPosition = writer.Count;
 
             HeapSizeFlag heapSizes = 0;
             if (metadataSizes.StringIndexSize > 2)
@@ -1171,7 +1171,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
             writer.WriteUInt64(sortedTables);
             MetadataWriterUtilities.SerializeRowCounts(writer, metadataSizes.RowCounts);
 
-            int endPosition = writer.Position;
+            int endPosition = writer.Count;
             Debug.Assert(metadataSizes.CalculateTableStreamHeaderSize() == endPosition - startPosition);
         }
 

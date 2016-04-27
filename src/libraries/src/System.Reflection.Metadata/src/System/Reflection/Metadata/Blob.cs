@@ -5,9 +5,9 @@
 using System;
 
 #if SRM
-namespace System.Reflection
+namespace System.Reflection.Metadata
 #else
-namespace Roslyn.Reflection
+namespace Roslyn.Reflection.Metadata
 #endif
 {
 #if SRM

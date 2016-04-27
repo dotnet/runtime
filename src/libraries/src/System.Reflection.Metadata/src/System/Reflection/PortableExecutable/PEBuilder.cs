@@ -9,7 +9,7 @@ using System.Diagnostics;
 using System.Reflection.PortableExecutable;
 
 #if SRM
-using System.Reflection.Internal;
+using System.Reflection.Metadata;
 using BitArithmeticUtilities = System.Reflection.Internal.BitArithmetic;
 #else
 using Roslyn.Utilities;

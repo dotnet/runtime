@@ -46,7 +46,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
         /// </summary>
         protected override void SerializeStandalonePdbStream(BlobBuilder builder)
         {
-            int startPosition = builder.Position;
+            int startPosition = builder.Count;
 
             // the id will be filled in later
             _pdbIdBlob = builder.ReserveBytes(MetadataSizes.PdbIdSize);
@@ -56,7 +56,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
             builder.WriteUInt64(MetadataSizes.ExternalTablesMask);
             MetadataWriterUtilities.SerializeRowCounts(builder, MetadataSizes.ExternalRowCounts);
 
-            int endPosition = builder.Position;
+            int endPosition = builder.Count;
             Debug.Assert(MetadataSizes.CalculateStandalonePdbStreamSize() == endPosition - startPosition);
         }
 
@@ -150,7 +150,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
 
         private void SerializeMetadataHeader(BlobBuilder writer)
         {
-            int startOffset = writer.Position;
+            int startOffset = writer.Count;
 
             // signature
             writer.WriteUInt32(0x424A5342);
@@ -209,7 +209,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
                 SerializeStreamHeader(ref offsetFromStartOfMetadata, 0, "#JTD", writer);
             }
 
-            int endOffset = writer.Position;
+            int endOffset = writer.Count;
             Debug.Assert(endOffset - startOffset == _sizes.MetadataHeaderSize);
         }
 

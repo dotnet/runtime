@@ -7,6 +7,7 @@ using System.Diagnostics;
 
 #if SRM
 using System.Reflection.Internal;
+using System.Reflection.Metadata;
 using BitArithmeticUtilities = System.Reflection.Internal.BitArithmetic;
 #else
 using System.Reflection.PortableExecutable;
