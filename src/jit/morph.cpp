@@ -12094,7 +12094,7 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
                    the assignment should not proceed
                    We are safe with an assignment to a local variables
                  */
-                if (compCurBB->hasTryIndex())
+                if (ehBlockHasExnFlowDsc(compCurBB))
                     break;
                 if (!dstIsSafeLclVar)
                     break;
@@ -14202,7 +14202,7 @@ void                Compiler::fgMorphStmts(BasicBlock * block,
         if (fgFoldConditional(block))
             continue;
 
-        if  (block->hasTryIndex())
+        if  (ehBlockHasExnFlowDsc(block))
             continue;
 
 #if OPT_MULT_ADDSUB
