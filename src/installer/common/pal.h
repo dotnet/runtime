@@ -117,10 +117,9 @@ namespace pal
     inline size_t strlen(const char_t* str) { return ::wcslen(str); }
     inline void err_vprintf(const char_t* format, va_list vl) { ::vfwprintf(stderr, format, vl); ::fputws(_X("\r\n"), stderr); }
 
-    pal::string_t to_palstring(const std::string& str);
-    void to_palstring(const char* str, pal::string_t* out);
-    void to_clrstring(const pal::string_t& str, std::vector<char>* out);
-    void clr_palstring(const char* out, pal::string_t* str);
+    bool utf8_palstring(const std::string& str, pal::string_t* out);
+    bool pal_clrstring(const pal::string_t& str, std::vector<char>* out);
+    bool clr_palstring(const char* cstr, pal::string_t* out);
 #else
     #ifdef COREHOST_MAKE_DLL
         #define SHARED_API extern "C"
@@ -159,10 +158,9 @@ namespace pal
 
     inline size_t strlen(const char_t* str) { return ::strlen(str); }
     inline void err_vprintf(const char_t* format, va_list vl) { ::vfprintf(stderr, format, vl); ::fputc('\n', stderr); }
-    inline pal::string_t to_palstring(const std::string& str) { return str; }
-    inline void to_palstring(const char* str, pal::string_t* out) { out->assign(str); }
-    inline void to_clrstring(const pal::string_t& str, std::vector<char>* out) { out->assign(str.begin(), str.end()); out->push_back('\0'); }
-    inline void clr_palstring(const char* clr, pal::string_t* str) { str->assign(clr); }
+    inline bool utf8_palstring(const std::string& str, pal::string_t* out) { out->assign(str); return true; }
+    inline bool pal_clrstring(const pal::string_t& str, std::vector<char>* out) { out->assign(str.begin(), str.end()); out->push_back('\0'); return true; }
+    inline bool clr_palstring(const char* cstr, pal::string_t* out) { out->assign(cstr); return true; }
 #endif
 
     bool touch_file(const pal::string_t& path);

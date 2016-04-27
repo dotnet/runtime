@@ -133,7 +133,8 @@ pal::string_t fx_muxer_t::resolve_cli_version(const pal::string_t& global_json)
     }
     catch (const std::exception& je)
     {
-        pal::string_t jes = pal::to_palstring(je.what());
+        pal::string_t jes;
+        (void) pal::utf8_palstring(je.what(), &jes);
         trace::error(_X("A JSON parsing exception occurred in [%s]: %s"), global_json.c_str(), jes.c_str());
     }
     trace::verbose(_X("CLI version is [%s] in global json file [%s]"), retval.c_str(), global_json.c_str());

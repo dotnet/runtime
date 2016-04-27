@@ -383,7 +383,8 @@ bool deps_json_t::load(bool portable, const pal::string_t& deps_path, const rid_
     }
     catch (const std::exception& je)
     {
-        pal::string_t jes = pal::to_palstring(je.what());
+        pal::string_t jes;
+        (void) pal::utf8_palstring(je.what(), &jes);
         trace::error(_X("A JSON parsing exception occurred in [%s]: %s"), deps_path.c_str(), jes.c_str());
         return false;
     }
