@@ -693,6 +693,7 @@ public:
 
     // Dump xml-formatted description of inlines
     void DumpXml(FILE* file = stderr, unsigned indent = 0);
+    static void FinalizeXml(FILE* file = stderr);
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
@@ -731,6 +732,7 @@ private:
 
 #if defined(DEBUG) || defined(INLINE_DATA)
     static bool    s_DumpDataHeader;
+    static bool    s_DumpXmlHeader;
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
     Compiler*      m_Compiler;

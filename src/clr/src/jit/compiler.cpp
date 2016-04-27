@@ -682,6 +682,11 @@ void                Compiler::compShutdown()
 
     emitter::emitDone();
 
+#if defined(DEBUG) || defined(INLINE_DATA)
+    // Finish off any in-progress inline xml
+    InlineStrategy::FinalizeXml();
+#endif // defined(DEBUG) || defined(INLINE_DATA)
+
 #if defined(DEBUG) || MEASURE_NODE_SIZE || MEASURE_BLOCK_SIZE || DISPLAY_SIZES || CALL_ARG_STATS
     if  (genMethodCnt == 0)
     {
