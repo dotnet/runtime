@@ -28,6 +28,7 @@ namespace System.Text.Tests
 
             // Empty strings
             yield return new object[] { new byte[0], 0, 0, string.Empty };
+            yield return new object[] { new byte[10], 10, 0, string.Empty };
         }
 
         [Theory]

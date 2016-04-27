@@ -24,7 +24,10 @@ namespace System.Text.Tests
 
             yield return new object[] { "+", 0, 1, new byte[] { 43, 45 } };
 
+            // Empty string
             yield return new object[] { string.Empty, 0, 0, new byte[0] };
+            yield return new object[] { "abc", 3, 0, new byte[0] };
+            yield return new object[] { "abc", 0, 0, new byte[0] };
         }
 
         [Theory]

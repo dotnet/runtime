@@ -26,7 +26,11 @@ namespace System.Text.Tests
 
             yield return new object[] { new byte[] { (byte)'+' }, 0, 1, string.Empty };
             yield return new object[] { new byte[] { 43, 45 }, 0, 2, "+" };
+
+            // Empty string
             yield return new object[] { new byte[0], 0, 0, string.Empty };
+            yield return new object[] { new byte[10], 0, 0, string.Empty };
+            yield return new object[] { new byte[10], 10, 0, string.Empty };
         }
 
         [Theory]
