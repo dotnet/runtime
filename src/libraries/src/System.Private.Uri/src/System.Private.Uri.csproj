@@ -15,9 +15,6 @@
     <PackageTargetFramework Condition="'$(PackageTargetFramework)'==''">netstandard1.0</PackageTargetFramework>
     <SkipCommonResourcesIncludes Condition="'$(TargetGroup)'=='netcore50aot' Or '$(TargetGroup)'=='netstandard13aot'">true</SkipCommonResourcesIncludes>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.0</NuGetTargetMoniker>
-    <PackageTargetRuntime Condition="'$(OSGroup)' == 'Windows_NT'">win7</PackageTargetRuntime>
-    <PackageTargetRuntime Condition="'$(TargetGroup)' == 'netcore50aot'">win8-aot</PackageTargetRuntime>
-    <PackageTargetRuntime Condition="'$(OSGroup)' == 'Unix'">unix</PackageTargetRuntime>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'"/>
@@ -26,8 +23,10 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'"/>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netcore50aot_Debug|AnyCPU'"/>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netcore50aot_Release|AnyCPU'"/>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard13aot_Debug|AnyCPU'"/>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard13aot_Release|AnyCPU'"/>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netstandard13aot_Debug|AnyCPU'"/>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netstandard13aot_Release|AnyCPU'"/>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_netstandard13aot_Debug|AnyCPU'"/>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_netstandard13aot_Release|AnyCPU'"/>
   <ItemGroup>
     <Compile Include="$(CommonPath)\System\Diagnostics\Debug.cs" Condition="'$(TargetGroup)'!='netcore50aot' And '$(TargetGroup)'!='netstandard13aot'">
       <Link>Common\System\Diagnostics\Debug.cs</Link>

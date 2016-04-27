@@ -4,7 +4,7 @@
   <ItemGroup>
     <Project Include="System.Diagnostics.Debug.pkgproj" />
     <Project Include="unix\System.Diagnostics.Debug.pkgproj">
-      <OSGroup>Linux</OSGroup>
+      <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="win\System.Diagnostics.Debug.pkgproj">
       <OSGroup>Windows_NT</OSGroup>
