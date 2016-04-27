@@ -706,6 +706,7 @@ InlineStrategy::InlineStrategy(Compiler* compiler)
     , m_InlineAttemptCount(0)
     , m_InlineCount(0)
     , m_MaxInlineSize(DEFAULT_MAX_INLINE_SIZE)
+    , m_MaxInlineDepth(DEFAULT_MAX_INLINE_DEPTH)
     , m_InitialTimeBudget(0)
     , m_InitialTimeEstimate(0)
     , m_CurrentTimeBudget(0)
@@ -740,6 +741,18 @@ InlineStrategy::InlineStrategy(Compiler* compiler)
     // Verify: not too small, not too big.
     assert(m_MaxInlineSize >= ALWAYS_INLINE_SIZE);
     assert(m_MaxInlineSize <= IMPLEMENTATION_MAX_INLINE_SIZE);
+
+    // Possibly modify the max inline depth
+    //
+    // Default value of JitInlineDepth is the same as our default.
+    // So normally this next line does not change the size.
+    m_MaxInlineDepth = JitConfig.JitInlineDepth();
+
+    // But don't overdo it
+    if (m_MaxInlineDepth > IMPLEMENTATION_MAX_INLINE_DEPTH)
+    {
+        m_MaxInlineDepth = IMPLEMENTATION_MAX_INLINE_DEPTH;
+    }
 
 #endif // DEBUG
 
@@ -1165,7 +1178,7 @@ void InlineStrategy::Dump()
 
 // Static to track emission of the inline data header
 
-bool InlineStrategy::s_DumpDataHeader = false;
+bool InlineStrategy::s_HasDumpedDataHeader = false;
 
 //------------------------------------------------------------------------
 // DumpData: dump data about the last successful inline into this method
@@ -1209,7 +1222,7 @@ void InlineStrategy::DumpData()
         m_LastSuccessfulPolicy->NoteInt(InlineObservation::CALLEE_IL_CODE_SIZE, info.compMethodInfo->ILCodeSize);
     }
 
-    if (!s_DumpDataHeader)
+    if (!s_HasDumpedDataHeader)
     {
         if (limit == 0)
         {
@@ -1222,7 +1235,7 @@ void InlineStrategy::DumpData()
             fprintf(stderr, "\n");
         }
 
-        s_DumpDataHeader = true;
+        s_HasDumpedDataHeader = true;
     }
 
     // We'd really like the method identifier to be unique and
@@ -1259,10 +1272,10 @@ void InlineStrategy::DumpData()
 
 // Static to track emission of the xml data header
 
-bool InlineStrategy::s_DumpXmlHeader = false;
+bool InlineStrategy::s_HasDumpedXmlHeader = false;
 
 //------------------------------------------------------------------------
-// DumpXML: dump xml-formatted version of the inline tree.
+// DumpXml: dump xml-formatted version of the inline tree.
 //
 // Arguments
 //    file - file for data output
@@ -1276,12 +1289,12 @@ void InlineStrategy::DumpXml(FILE* file, unsigned indent)
     }
 
     // Dump header
-    if (!s_DumpXmlHeader)
+    if (!s_HasDumpedXmlHeader)
     {
         fprintf(file, "<?xml version=\"1.0\"?>\n");
         fprintf(file, "<InlineForest>\n");
         fprintf(file, "<Methods>\n");
-        s_DumpXmlHeader = true;
+        s_HasDumpedXmlHeader = true;
     }
 
     // Cache references to compiler substructures.
@@ -1344,17 +1357,23 @@ void InlineStrategy::DumpXml(FILE* file, unsigned indent)
     fprintf(file, "%*s</Method>\n", indent, "");
 }
 
+//------------------------------------------------------------------------
+// FinalizeXml: finalize the xml-formatted version of the inline tree.
+//
+// Arguments
+//    file - file for data output
+
 void InlineStrategy::FinalizeXml(FILE* file)
 {
     // If we dumped the header, dump a footer
-    if (s_DumpXmlHeader)
+    if (s_HasDumpedXmlHeader)
     {
         fprintf(file, "</Methods>\n");
         fprintf(file, "</InlineForest>\n");
         fflush(file);
 
         // Workaroud compShutdown getting called twice.
-        s_DumpXmlHeader = false;
+        s_HasDumpedXmlHeader = false;
     }
 }
 
