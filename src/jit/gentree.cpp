@@ -8717,6 +8717,8 @@ void                Compiler::gtDispTree(GenTreePtr             tree,
 //    call      - The call for which 'arg' is an argument
 //    arg       - The argument for which a message should be constructed
 //    argNum    - The ordinal number of the arg in the argument list
+//    listCount - When printing in Linear form this is the count for a multireg GT_LIST 
+//                or -1 if we are not printing in Linear form
 //    bufp      - A pointer to the buffer into which the message is written
 //    bufLength - The length of the buffer pointed to by bufp
 //
@@ -8730,14 +8732,14 @@ void                Compiler::gtDispTree(GenTreePtr             tree,
 void                Compiler::gtGetArgMsg(GenTreePtr        call,
                                           GenTreePtr        arg,
                                           unsigned          argNum,
+                                          int               listCount,
                                           char*             bufp,
                                           unsigned          bufLength)
 {
     if (call->gtCall.gtCallLateArgs != NULL)
     {
-        fgArgTabEntryPtr curArgTabEntry = gtArgEntryByNode(call, arg);
+        fgArgTabEntryPtr curArgTabEntry = gtArgEntryByArgNum(call, argNum);
         assert(curArgTabEntry);
-        assert(curArgTabEntry->argNum == argNum);
 
         if (arg->gtFlags & GTF_LATE_ARG)
         {
@@ -8746,7 +8748,19 @@ void                Compiler::gtGetArgMsg(GenTreePtr        call,
         else 
         {
 #if FEATURE_FIXED_OUT_ARGS
-            sprintf_s(bufp, bufLength, "arg%d in out+%02x%c", argNum, curArgTabEntry->slotNum * TARGET_POINTER_SIZE, 0);
+            if (listCount == -1)
+            {
+                sprintf_s(bufp, bufLength, "arg%d out+%02x%c", argNum, curArgTabEntry->slotNum * TARGET_POINTER_SIZE, 0);
+            }
+            else if (listCount == 1)
+            {
+                sprintf_s(bufp, bufLength, "arg%d hi +%02x%c", argNum, (curArgTabEntry->slotNum + 1) * TARGET_POINTER_SIZE, 0);
+            }
+            else
+            {
+                assert(listCount == 0);
+                sprintf_s(bufp, bufLength, "arg%d lo +%02x%c", argNum, (curArgTabEntry->slotNum + 0) * TARGET_POINTER_SIZE, 0);
+            }
 #else
             sprintf_s(bufp, bufLength, "arg%d on STK%c", argNum, 0);
 #endif
@@ -8869,7 +8883,7 @@ void                Compiler::gtDispArgList(GenTreePtr      tree,
         GenTree* arg = args->gtOp.gtOp1;
         if (!arg->IsNothingNode() && !arg->IsArgPlaceHolderNode())
         {
-            gtGetArgMsg(tree, arg, argnum, bufp, BufLength);
+            gtGetArgMsg(tree, arg, argnum, -1, bufp, BufLength);
             if (argListIsLastChild && (args->gtOp.gtOp2 == nullptr))
             {
                 arcType = IIArcBottom;
@@ -9105,13 +9119,14 @@ GenTreePtr          Compiler::gtDispLinearTree(GenTreeStmt* curStmt,
                                 indentStack->Push(indentInfo);
                                 if (child == tree->gtCall.gtCallArgs)
                                 {
-                                    gtGetArgMsg(tree, listNested, listElemNum, bufp, BufLength);
+                                    gtGetArgMsg(tree, listNested, listElemNum, listCount, bufp, BufLength);
                                 }
                                 else
                                 {
                                     assert(child == tree->gtCall.gtCallLateArgs);
-                                    gtGetLateArgMsg(tree, listNested, listElemNum, listCount++, bufp, BufLength);
+                                    gtGetLateArgMsg(tree, listNested, listElemNum, listCount, bufp, BufLength);
                                 }
+                                listCount++;
                                 nextLinearNode = gtDispLinearTree(curStmt, nextLinearNode, listElemNested, indentStack, bufp);
                                 indentStack->Pop();
                             }
@@ -9129,7 +9144,7 @@ GenTreePtr          Compiler::gtDispLinearTree(GenTreeStmt* curStmt,
 
                         if (child == tree->gtCall.gtCallArgs)
                         {
-                            gtGetArgMsg(tree, listElem, listElemNum, bufp, BufLength);
+                            gtGetArgMsg(tree, listElem, listElemNum, -1, bufp, BufLength);
                         }
                         else
                         {
