@@ -9,7 +9,7 @@
       "type": "platform",
       "version": "1.0.0-rc2-*"
     },
-    "System.Diagnostics.TraceSource": "4.0.0-rc2-24022",
+    "System.Diagnostics.TraceSource": "4.0.0-rc2-24027",
     "Microsoft.DotNet.Tools.Tests.Utilities": {
       "target": "project"
     },
