@@ -11,39 +11,26 @@ namespace System.Reflection.Metadata.Decoding
     /// </summary>
     public struct ArrayShape
     {
-        private readonly int _rank;
-        private readonly ImmutableArray<int> _sizes;
-        private readonly ImmutableArray<int> _lowerBounds;
-
-        public ArrayShape(int rank, ImmutableArray<int> sizes, ImmutableArray<int> lowerBounds)
-        {
-            _rank = rank;
-            _sizes = sizes;
-            _lowerBounds = lowerBounds;
-        }
-
         /// <summary>
         /// Gets the number of dimensions in the array.
         /// </summary>
-        public int Rank
-        {
-            get { return _rank; }
-        }
+        public int Rank { get; }
 
         /// <summary>
         /// Gets the sizes of each dimension. Length may be smaller than rank, in which case the trailing dimensions have unspecified sizes.
         /// </summary>
-        public ImmutableArray<int> Sizes
-        {
-            get { return _sizes; }
-        }
+        public ImmutableArray<int> Sizes { get; }
 
         /// <summary>
         /// Gets the lower-bounds of each dimension. Length may be smaller than rank, in which case the trailing dimensions have unspecified lower bounds.
         /// </summary>
-        public ImmutableArray<int> LowerBounds
+        public ImmutableArray<int> LowerBounds { get; }
+
+        public ArrayShape(int rank, ImmutableArray<int> sizes, ImmutableArray<int> lowerBounds)
         {
-            get { return _lowerBounds; }
+            Rank = rank;
+            Sizes = sizes;
+            LowerBounds = lowerBounds;
         }
     }
 }

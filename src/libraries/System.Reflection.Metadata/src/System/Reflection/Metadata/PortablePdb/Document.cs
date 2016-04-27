@@ -6,6 +6,12 @@ using System.Diagnostics;
 
 namespace System.Reflection.Metadata
 {
+    /// <summary>
+    /// Source document in debug metadata. 
+    /// </summary>
+    /// <remarks>
+    /// See also https://github.com/dotnet/corefx/blob/master/src/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#document-table-0x30.
+    /// </remarks>
     public struct Document
     {
         private readonly MetadataReader _reader;
@@ -22,44 +28,30 @@ namespace System.Reflection.Metadata
             _rowId = handle.RowId;
         }
 
-        private DocumentHandle Handle
-        {
-            get { return DocumentHandle.FromRowId(_rowId); }
-        }
+        private DocumentHandle Handle => DocumentHandle.FromRowId(_rowId);
 
         /// <summary>
         /// Returns Document Name Blob.
         /// </summary>
-        public DocumentNameBlobHandle Name
-        {
-            get
-            {
-                return _reader.DocumentTable.GetName(Handle);
-            }
-        }
+        public DocumentNameBlobHandle Name => _reader.DocumentTable.GetName(Handle);
 
-        public GuidHandle Language
-        {
-            get
-            {
-                return _reader.DocumentTable.GetLanguage(Handle);
-            }
-        }
+        /// <summary>
+        /// Source code language (C#, VB, F#, etc.)
+        /// </summary>
+        public GuidHandle Language => _reader.DocumentTable.GetLanguage(Handle);
 
-        public GuidHandle HashAlgorithm
-        {
-            get
-            {
-                return _reader.DocumentTable.GetHashAlgorithm(Handle);
-            }
-        }
+        /// <summary>
+        /// Hash algorithm used to calculate <see cref="Hash"/> (SHA1, SHA256, etc.)
+        /// </summary>
+        public GuidHandle HashAlgorithm => _reader.DocumentTable.GetHashAlgorithm(Handle);
 
-        public BlobHandle Hash
-        {
-            get
-            {
-                return _reader.DocumentTable.GetHash(Handle);
-            }
-        }
+        /// <summary>
+        /// Document content hash.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="HashAlgorithm"/> determines the algorithm used to produce this hash.
+        /// The source document is hashed in its binary form as stored in the file. 
+        /// </remarks>
+        public BlobHandle Hash => _reader.DocumentTable.GetHash(Handle);
     }
 }

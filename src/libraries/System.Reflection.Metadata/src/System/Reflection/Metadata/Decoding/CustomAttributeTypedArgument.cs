@@ -6,23 +6,13 @@ namespace System.Reflection.Metadata.Decoding
 {
     public struct CustomAttributeTypedArgument<TType>
     {
-        private readonly TType _type;
-        private readonly object _value;
+        public TType Type { get; }
+        public object Value { get; }
 
         public CustomAttributeTypedArgument(TType type, object value)
         {
-            _type = type;
-            _value = value;
-        }
-
-        public TType Type
-        {
-            get { return _type; }
-        }
-
-        public object Value
-        {
-            get { return _value; }
+            Type = type;
+            Value = value;
         }
     }
 }
