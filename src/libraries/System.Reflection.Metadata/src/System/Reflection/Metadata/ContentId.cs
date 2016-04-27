@@ -7,9 +7,9 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 
 #if SRM
-namespace System.Reflection.PortableExecutable
+namespace System.Reflection.Metadata
 #else
-namespace Roslyn.Reflection.PortableExecutable
+namespace Roslyn.Reflection.Metadata
 #endif
 {
 #if SRM

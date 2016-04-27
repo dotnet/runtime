@@ -357,4 +357,7 @@
   <data name="NotCodeViewEntry" xml:space="preserve">
     <value>The Debug directory was not of type CodeView.</value>
   </data>
+  <data name="HeapSizeLimitExceeded" xml:space="preserve">
+    <value>The limit on the size of {0} heap has been exceeded.</value>
+  </data>
 </root>

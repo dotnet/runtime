@@ -36,11 +36,12 @@
     <ErrorReport>prompt</ErrorReport>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System\Reflection\Blob.cs" />
-    <Compile Include="System\Reflection\BlobWriter.cs" />
-    <Compile Include="System\Reflection\BlobWriterImpl.cs" />
-    <Compile Include="System\Reflection\BlobBuilder.cs" />
-    <Compile Include="System\Reflection\BlobBuilder.Enumerators.cs" />
+    <Compile Include="System\Reflection\Metadata\PooledBlobBuilder.cs" />
+    <Compile Include="System\Reflection\Metadata\Blob.cs" />
+    <Compile Include="System\Reflection\Metadata\BlobWriter.cs" />
+    <Compile Include="System\Reflection\Metadata\BlobWriterImpl.cs" />
+    <Compile Include="System\Reflection\Metadata\BlobBuilder.cs" />
+    <Compile Include="System\Reflection\Metadata\BlobBuilder.Enumerators.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\ByteSequenceComparer.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\DecimalUtilities.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\EnumerableExtensions.cs" />
@@ -62,11 +63,13 @@
     <Compile Include="System\Reflection\Metadata\Ecma335\MetadataSizes.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\MetadataBuilder.Heaps.cs" />
     <Compile Include="System\Reflection\Metadata\ILOpCodeExtensions.cs" />
+    <Compile Include="System\Reflection\Metadata\ImageFormatLimitationException.cs" />
     <Compile Include="System\Reflection\Metadata\Internal\HeapSizeFlag.cs" />
     <Compile Include="System\Reflection\Metadata\Internal\MetadataWriterUtilities.cs" />
     <Compile Include="System\Reflection\Metadata\MetadataStreamOptions.cs" />
     <Compile Include="System\Reflection\Metadata\MetadataReaderProvider.cs" />
-    <Compile Include="System\Reflection\PortableExecutable\ContentId.cs" />
+    <Compile Include="System\Reflection\Metadata\ContentId.cs" />
+    <Compile Include="System\Reflection\Metadata\PrimitiveSerializationTypeCode.cs" />
     <Compile Include="System\Reflection\PortableExecutable\ManagedPEBuilder.cs" />
     <Compile Include="System\Reflection\PortableExecutable\ManagedTextSection.cs" />
     <Compile Include="System\Reflection\PortableExecutable\PEBuilder.cs" />
@@ -120,7 +123,7 @@
     <Compile Include="System\Reflection\Metadata\Decoding\SignatureDecoder.cs" />
     <Compile Include="System\Reflection\Metadata\Decoding\SignatureDecoderOptions.cs" />
     <Compile Include="System\Reflection\Metadata\Decoding\MethodSignature.cs" />
-    <Compile Include="System\Reflection\Metadata\Decoding\PrimitiveTypeCode.cs" />
+    <Compile Include="System\Reflection\Metadata\PrimitiveTypeCode.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\EditAndContinueLogEntry.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\EditAndContinueOperation.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\ExportedTypeExtensions.cs" />

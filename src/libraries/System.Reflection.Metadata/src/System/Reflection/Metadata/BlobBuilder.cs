@@ -19,9 +19,9 @@ using Roslyn.Utilities;
 #endif
 
 #if SRM
-namespace System.Reflection
+namespace System.Reflection.Metadata
 #else
-namespace Roslyn.Reflection
+namespace Roslyn.Reflection.Metadata
 #endif
 {
     [DebuggerDisplay("{GetDebuggerDisplay(),nq}")]
@@ -171,9 +171,6 @@ namespace Roslyn.Reflection
 
         public int Count => _previousLength + Length;
 
-        // TODO: remove
-        internal int Position => Count;
-
         private int FreeBytes => _buffer.Length - Length;
 
         // internal for testing
@@ -305,7 +302,7 @@ namespace Roslyn.Reflection
                         break;
                     }
 
-                    Buffer.BlockCopy(chunk._buffer, Math.Max(start - chunkStartPosition, 0), result, resultOffset, bytesToCopy);
+                    Array.Copy(chunk._buffer, Math.Max(start - chunkStartPosition, 0), result, resultOffset, bytesToCopy);
 
                     resultOffset += bytesToCopy;
                 }

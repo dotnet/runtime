@@ -5,10 +5,10 @@
 using System.Reflection.Metadata;
 
 #if SRM
-namespace System.Reflection.Metadata.Decoding
+namespace System.Reflection.Metadata
 #else
 
-namespace Roslyn.Reflection.Metadata.Decoding
+namespace Roslyn.Reflection.Metadata
 #endif
 {
     /// <summary>
@@ -23,14 +23,14 @@ namespace Roslyn.Reflection.Metadata.Decoding
         Byte = SignatureTypeCode.Byte,
         SByte = SignatureTypeCode.SByte,
         Char = SignatureTypeCode.Char,
+        Int16 = SignatureTypeCode.Int16,
+        UInt16 = SignatureTypeCode.UInt16,
+        Int32 = SignatureTypeCode.Int32,
+        UInt32 = SignatureTypeCode.UInt32,
+        Int64 = SignatureTypeCode.Int64,
+        UInt64 = SignatureTypeCode.UInt64,
         Single = SignatureTypeCode.Single,
         Double = SignatureTypeCode.Double,
-        Int16 = SignatureTypeCode.Int16,
-        Int32 = SignatureTypeCode.Int32,
-        Int64 = SignatureTypeCode.Int64,
-        UInt16 = SignatureTypeCode.UInt16,
-        UInt32 = SignatureTypeCode.UInt32,
-        UInt64 = SignatureTypeCode.UInt64,
         IntPtr = SignatureTypeCode.IntPtr,
         UIntPtr = SignatureTypeCode.UIntPtr,
         Object = SignatureTypeCode.Object,
