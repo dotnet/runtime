@@ -195,7 +195,7 @@ set "__PackagesBinDir=%__BinDir%\.nuget"
 set "__TestRootDir=%__RootBinDir%\tests"
 set "__TestBinDir=%__TestRootDir%\%__BuildOS%.%__BuildArch%.%__BuildType%"
 set "__TestIntermediatesDir=%__RootBinDir%\tests\obj\%__BuildOS%.%__BuildArch%.%__BuildType%"
-set "__CrossComponentBinDir=%__BinDir%
+set "__CrossComponentBinDir=%__BinDir%"
 if defined __CrossArch set __CrossComponentBinDir=%__CrossComponentBinDir%\%__CrossArch%
 
 :: Generate path to be set for CMAKE_INSTALL_PREFIX to contain forward slash
@@ -294,7 +294,7 @@ REM ============================================================================
 
 :: Generate _version.h
 if exist "%__RootBinDir%\obj\_version.h" del "%__RootBinDir%\obj\_version.h"
-%_msbuildexe% "%__ProjectFilesDir%\build.proj" /t:GenerateVersionHeader /p:NativeVersionHeaderFile="%__RootBinDir%\obj\_version.h" /p:GenerateVersionHeader=true %__OfficialBuildIdArg%
+%_msbuildexe% "%__ProjectFilesDir%\build.proj" /t:GenerateVersionHeader /v:minimal /p:NativeVersionHeaderFile="%__RootBinDir%\obj\_version.h" /p:GenerateVersionHeader=true %__OfficialBuildIdArg%
 if defined __MscorlibOnly goto PerformMScorlibBuild
 
 if defined __SkipNativeBuild (
