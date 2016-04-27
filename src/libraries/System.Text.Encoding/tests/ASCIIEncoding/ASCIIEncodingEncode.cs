@@ -11,6 +11,16 @@ namespace System.Text.Tests
     {
         public static IEnumerable<object[]> Encode_TestData()
         {
+            // All ASCII chars
+            for (int i = 0; i <= 0x7F; i++)
+            {
+                char b = (char)i;
+                yield return new object[] { b, 0, 1 };
+                yield return new object[] { "a" + b + "c", 1, 1 };
+                yield return new object[] { "a" + b + "c", 2, 1 };
+                yield return new object[] { "a" + b + "c", 0, 3 };
+            }
+
             string testString = "Hello World123#?!";
             yield return new object[] { testString, 0, testString.Length };
             yield return new object[] { testString, 4, 5 };
@@ -37,11 +47,21 @@ namespace System.Text.Tests
 
         public static IEnumerable<object[]> Encode_InvalidChars_TestData()
         {
+            // All non-ASCII Latin1 chars
+            for (int i = 0x80; i <= 0xFF; i++)
+            {
+                char b = (char)i;
+                yield return new object[] { b, 0, 1 };
+            }
+            
+            // Unicode chars
             yield return new object[] { "\u1234\u2345", 0, 2 };
             yield return new object[] { "a\u1234\u2345b", 0, 4 };
 
             yield return new object[] { "\uD800\uDC00", 0, 2 };
             yield return new object[] { "a\uD800\uDC00b", 0, 2 };
+
+            yield return new object[] { "\uD800\uDC00\u0061\u0CFF", 0, 4 };
         }
 
         [Theory]
@@ -68,6 +88,8 @@ namespace System.Text.Tests
             Encode_InvalidChars("\uD800\uD800", 0, 2); // High, high
             Encode_InvalidChars("\uDC00\uD800", 0, 2); // Low, high
             Encode_InvalidChars("\uDC00\uDC00", 0, 2); // Low, low
+
+            Encode_InvalidChars("\u0080\u00FF\u0B71\uFFFF\uD800\uDFFF", 0, 6);
 
             // High BMP non-chars
             Encode_InvalidChars("\uFFFD", 0, 1);

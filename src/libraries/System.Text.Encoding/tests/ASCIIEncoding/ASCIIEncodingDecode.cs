@@ -11,19 +11,20 @@ namespace System.Text.Tests
     {
         public static IEnumerable<object[]> Decode_TestData()
         {
-            // Empty string
-            yield return new object[] { new byte[0], 0, 0 };
-            yield return new object[] { new byte[10], 5, 0 };
-            yield return new object[] { new byte[10], 5, 5 };
-
             // All ASCII chars
             for (int i = 0; i <= 0x7F; i++)
             {
                 byte b = (byte)i;
                 yield return new object[] { new byte[] { b }, 0, 1 };
                 yield return new object[] { new byte[] { 96, b, 97 }, 1, 1 };
+                yield return new object[] { new byte[] { 96, b, 98 }, 2, 1 };
                 yield return new object[] { new byte[] { 97, b, 97 }, 0, 3 };
             }
+            
+            // Empty strings
+            yield return new object[] { new byte[0], 0, 0 };
+            yield return new object[] { new byte[10], 5, 0 };
+            yield return new object[] { new byte[10], 5, 5 };
         }
 
         [Theory]
@@ -40,7 +41,7 @@ namespace System.Text.Tests
 
         public static IEnumerable<object[]> Decode_InvalidBytes_TestData()
         {
-            // Non ASCII bytes
+            // All non-ASCII Latin1 bytes
             for (int i = 0x80; i <= byte.MaxValue; i++)
             {
                 byte b = (byte)i;
@@ -48,6 +49,8 @@ namespace System.Text.Tests
                 yield return new object[] { new byte[] { 96, b, 97 }, 1, 1 };
                 yield return new object[] { new byte[] { 97, b, 97 }, 0, 3 };
             }
+
+            yield return new object[] { new byte[] { 0xC1, 0x41, 0xF0, 0x42 }, 0, 4 };
         }
 
         [Theory]
