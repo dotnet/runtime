@@ -8,23 +8,13 @@ namespace System.Reflection.Metadata.Decoding
 {
     public struct CustomAttributeValue<TType>
     {
-        private readonly ImmutableArray<CustomAttributeTypedArgument<TType>> _fixedArguments;
-        private readonly ImmutableArray<CustomAttributeNamedArgument<TType>> _namedArguments;
+        public ImmutableArray<CustomAttributeTypedArgument<TType>> FixedArguments { get; }
+        public ImmutableArray<CustomAttributeNamedArgument<TType>> NamedArguments { get; }
 
         public CustomAttributeValue(ImmutableArray<CustomAttributeTypedArgument<TType>> fixedArguments, ImmutableArray<CustomAttributeNamedArgument<TType>> namedArguments)
         {
-            _fixedArguments = fixedArguments;
-            _namedArguments = namedArguments;
-        }
-
-        public ImmutableArray<CustomAttributeTypedArgument<TType>> FixedArguments
-        {
-            get { return _fixedArguments; }
-        }
-
-        public ImmutableArray<CustomAttributeNamedArgument<TType>> NamedArguments
-        {
-            get { return _namedArguments; }
+            FixedArguments = fixedArguments;
+            NamedArguments = namedArguments;
         }
     }
 }

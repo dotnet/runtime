@@ -6,6 +6,12 @@ using System.Diagnostics;
 
 namespace System.Reflection.Metadata
 {
+    /// <summary>
+    /// Scope of local variables and constants. Stored in debug metadata.
+    /// </summary>
+    /// <remarks>
+    /// See https://github.com/dotnet/corefx/blob/master/src/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#localscope-table-0x32.
+    /// </remarks>
     public struct LocalScope
     {
         private readonly MetadataReader _reader;
@@ -22,50 +28,13 @@ namespace System.Reflection.Metadata
             _rowId = handle.RowId;
         }
 
-        private LocalScopeHandle Handle
-        {
-            get { return LocalScopeHandle.FromRowId(_rowId); }
-        }
+        private LocalScopeHandle Handle => LocalScopeHandle.FromRowId(_rowId);
 
-        public MethodDefinitionHandle Method
-        {
-            get
-            {
-                return _reader.LocalScopeTable.GetMethod(_rowId);
-            }
-        }
-
-        public ImportScopeHandle ImportScope
-        {
-            get
-            {
-                return _reader.LocalScopeTable.GetImportScope(Handle);
-            }
-        }
-
-        public int StartOffset
-        {
-            get
-            {
-                return _reader.LocalScopeTable.GetStartOffset(_rowId);
-            }
-        }
-
-        public int Length
-        {
-            get
-            {
-                return _reader.LocalScopeTable.GetLength(_rowId);
-            }
-        }
-
-        public int EndOffset
-        {
-            get
-            {
-                return _reader.LocalScopeTable.GetEndOffset(_rowId);
-            }
-        }
+        public MethodDefinitionHandle Method => _reader.LocalScopeTable.GetMethod(_rowId);
+        public ImportScopeHandle ImportScope => _reader.LocalScopeTable.GetImportScope(Handle);
+        public int StartOffset => _reader.LocalScopeTable.GetStartOffset(_rowId);
+        public int Length => _reader.LocalScopeTable.GetLength(_rowId);
+        public int EndOffset => _reader.LocalScopeTable.GetEndOffset(_rowId);
 
         public LocalVariableHandleCollection GetLocalVariables()
         {

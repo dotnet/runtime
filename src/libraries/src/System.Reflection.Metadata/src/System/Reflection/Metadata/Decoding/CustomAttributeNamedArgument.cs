@@ -6,37 +6,17 @@ namespace System.Reflection.Metadata.Decoding
 {
     public struct CustomAttributeNamedArgument<TType>
     {
-        private readonly string _name;
-        private readonly CustomAttributeNamedArgumentKind _kind;
-        private readonly TType _type;
-        private readonly object _value;
+        public string Name { get; }
+        public CustomAttributeNamedArgumentKind Kind { get; }
+        public TType Type { get; }
+        public object Value { get; }
 
         public CustomAttributeNamedArgument(string name, CustomAttributeNamedArgumentKind kind, TType type, object value)
         {
-            _name = name;
-            _kind = kind;
-            _type = type;
-            _value = value;
-        }
-
-        public string Name
-        {
-            get { return _name; }
-        }
-
-        public CustomAttributeNamedArgumentKind Kind
-        {
-            get { return _kind; }
-        }
-
-        public TType Type
-        {
-            get { return _type; }
-        }
-
-        public object Value
-        {
-            get { return _value; }
+            Name = name;
+            Kind = kind;
+            Type = type;
+            Value = value;
         }
     }
 }

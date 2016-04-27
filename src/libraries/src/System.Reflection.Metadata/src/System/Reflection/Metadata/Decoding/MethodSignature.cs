@@ -13,61 +13,40 @@ namespace System.Reflection.Metadata.Decoding
     /// </summary>
     public struct MethodSignature<TType>
     {
-        private readonly SignatureHeader _header;
-        private readonly TType _returnType;
-        private readonly int _requiredParameterCount;
-        private readonly int _genericParameterCount;
-        private readonly ImmutableArray<TType> _parameterTypes;
-
-        public MethodSignature(SignatureHeader header, TType returnType, int requiredParameterCount, int genericParameterCount, ImmutableArray<TType> parameterTypes)
-        {
-            _header = header;
-            _returnType = returnType;
-            _genericParameterCount = genericParameterCount;
-            _requiredParameterCount = requiredParameterCount;
-            _parameterTypes = parameterTypes;
-        }
-
         /// <summary>
         /// Represents the information in the leading byte of the signature (kind, calling convention, flags).
         /// </summary>
-        public SignatureHeader Header
-        {
-            get { return _header; }
-        }
+        public SignatureHeader Header { get; }
 
         /// <summary>
         /// Gets the method's return type.
         /// </summary>
-        public TType ReturnType
-        {
-            get { return _returnType; }
-        }
+        public TType ReturnType { get; }
 
         /// <summary>
         /// Gets the number of parameters that are required. Will be equal to the length <see cref="ParameterTypes"/> of
         /// unless this signature represents the standalone call site of a vararg method, in which case the entries
         /// extra entries in <see cref="ParameterTypes"/> are the types used for the optional parameters.
         /// </summary>
-        public int RequiredParameterCount
-        {
-            get { return _requiredParameterCount; }
-        }
+        public int RequiredParameterCount { get; }
 
         /// <summary>
         /// Gets the number of generic type parameters of the method. Will be 0 for non-generic methods.
         /// </summary>
-        public int GenericParameterCount
-        {
-            get { return _genericParameterCount; }
-        }
+        public int GenericParameterCount { get; }
 
         /// <summary>
         /// Gets the method's parameter types.
         /// </summary>
-        public ImmutableArray<TType> ParameterTypes
+        public ImmutableArray<TType> ParameterTypes { get; }
+
+        public MethodSignature(SignatureHeader header, TType returnType, int requiredParameterCount, int genericParameterCount, ImmutableArray<TType> parameterTypes)
         {
-            get { return _parameterTypes; }
+            Header = header;
+            ReturnType = returnType;
+            GenericParameterCount = genericParameterCount;
+            RequiredParameterCount = requiredParameterCount;
+            ParameterTypes = parameterTypes;
         }
     }
 }

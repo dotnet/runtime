@@ -14,49 +14,49 @@ namespace System.Reflection.PortableExecutable
         /// <summary>
         /// Identifies the format of the image file.
         /// </summary>
-        public PEMagic Magic { get; private set; }
+        public PEMagic Magic { get; }
 
         /// <summary>
         /// The linker major version number.
         /// </summary>
-        public byte MajorLinkerVersion { get; private set; }
+        public byte MajorLinkerVersion { get; }
 
         /// <summary>
         /// The linker minor version number.
         /// </summary>
-        public byte MinorLinkerVersion { get; private set; }
+        public byte MinorLinkerVersion { get; }
 
         /// <summary>
         /// The size of the code (text) section, or the sum of all code sections if there are multiple sections.
         /// </summary>
-        public int SizeOfCode { get; private set; }
+        public int SizeOfCode { get; }
 
         /// <summary>
         /// The size of the initialized data section, or the sum of all such sections if there are multiple data sections.
         /// </summary>
-        public int SizeOfInitializedData { get; private set; }
+        public int SizeOfInitializedData { get; }
 
         /// <summary>
         /// The size of the uninitialized data section (BSS), or the sum of all such sections if there are multiple BSS sections.
         /// </summary>
-        public int SizeOfUninitializedData { get; private set; }
+        public int SizeOfUninitializedData { get; }
 
         /// <summary>
         /// The address of the entry point relative to the image base when the PE file is loaded into memory. 
         /// For program images, this is the starting address. For device drivers, this is the address of the initialization function.
         /// An entry point is optional for DLLs. When no entry point is present, this field must be zero.
         /// </summary>
-        public int AddressOfEntryPoint { get; private set; }
+        public int AddressOfEntryPoint { get; }
 
         /// <summary>
         /// The address that is relative to the image base of the beginning-of-code section when it is loaded into memory.
         /// </summary>
-        public int BaseOfCode { get; private set; }
+        public int BaseOfCode { get; }
 
         /// <summary>
         /// The address that is relative to the image base of the beginning-of-data section when it is loaded into memory.
         /// </summary>
-        public int BaseOfData { get; private set; }
+        public int BaseOfData { get; }
 
         #endregion
 
@@ -66,13 +66,13 @@ namespace System.Reflection.PortableExecutable
         /// The preferred address of the first byte of image when loaded into memory; 
         /// must be a multiple of 64K.
         /// </summary>
-        public ulong ImageBase { get; private set; }
+        public ulong ImageBase { get; }
 
         /// <summary>
         /// The alignment (in bytes) of sections when they are loaded into memory. It must be greater than or equal to <see cref="FileAlignment"/>. 
         /// The default is the page size for the architecture.
         /// </summary>
-        public int SectionAlignment { get; private set; }
+        public int SectionAlignment { get; }
 
         /// <summary>
         /// The alignment factor (in bytes) that is used to align the raw data of sections in the image file. 
@@ -80,114 +80,114 @@ namespace System.Reflection.PortableExecutable
         /// If the <see cref="SectionAlignment"/> is less than the architecture's page size, 
         /// then <see cref="FileAlignment"/> must match <see cref="SectionAlignment"/>.
         /// </summary>
-        public int FileAlignment { get; private set; }
+        public int FileAlignment { get; }
 
         /// <summary>
         /// The major version number of the required operating system.
         /// </summary>
-        public ushort MajorOperatingSystemVersion { get; private set; }
+        public ushort MajorOperatingSystemVersion { get; }
 
         /// <summary>
         /// The minor version number of the required operating system.
         /// </summary>
-        public ushort MinorOperatingSystemVersion { get; private set; }
+        public ushort MinorOperatingSystemVersion { get; }
 
         /// <summary>
         /// The major version number of the image.
         /// </summary>
-        public ushort MajorImageVersion { get; private set; }
+        public ushort MajorImageVersion { get; }
 
         /// <summary>
         /// The minor version number of the image.
         /// </summary>
-        public ushort MinorImageVersion { get; private set; }
+        public ushort MinorImageVersion { get; }
 
         /// <summary>
         /// The major version number of the subsystem.
         /// </summary>
-        public ushort MajorSubsystemVersion { get; private set; }
+        public ushort MajorSubsystemVersion { get; }
 
         /// <summary>
         /// The minor version number of the subsystem.
         /// </summary>
-        public ushort MinorSubsystemVersion { get; private set; }
+        public ushort MinorSubsystemVersion { get; }
 
         /// <summary>
         /// The size (in bytes) of the image, including all headers, as the image is loaded in memory. 
         /// It must be a multiple of <see cref="SectionAlignment"/>.
         /// </summary>
-        public int SizeOfImage { get; private set; }
+        public int SizeOfImage { get; }
 
         /// <summary>
         /// The combined size of an MS DOS stub, PE header, and section headers rounded up to a multiple of FileAlignment.
         /// </summary>
-        public int SizeOfHeaders { get; private set; }
+        public int SizeOfHeaders { get; }
 
         /// <summary>
         /// The image file checksum. 
         /// </summary>
-        public uint CheckSum { get; private set; }
+        public uint CheckSum { get; }
 
         /// <summary>
         /// The subsystem that is required to run this image. 
         /// </summary>
-        public Subsystem Subsystem { get; private set; }
+        public Subsystem Subsystem { get; }
 
-        public DllCharacteristics DllCharacteristics { get; private set; }
+        public DllCharacteristics DllCharacteristics { get; }
 
         /// <summary>
         /// The size of the stack to reserve. Only <see cref="SizeOfStackCommit"/> is committed; 
         /// the rest is made available one page at a time until the reserve size is reached.
         /// </summary>
-        public ulong SizeOfStackReserve { get; private set; }
+        public ulong SizeOfStackReserve { get; }
 
         /// <summary>
         /// The size of the stack to commit.
         /// </summary>
-        public ulong SizeOfStackCommit { get; private set; }
+        public ulong SizeOfStackCommit { get; }
 
         /// <summary>
         /// The size of the local heap space to reserve. Only <see cref="SizeOfHeapCommit"/> is committed; 
         /// the rest is made available one page at a time until the reserve size is reached.
         /// </summary>
-        public ulong SizeOfHeapReserve { get; private set; }
+        public ulong SizeOfHeapReserve { get; }
 
         /// <summary>
         /// The size of the local heap space to commit.
         /// </summary>
-        public ulong SizeOfHeapCommit { get; private set; }
+        public ulong SizeOfHeapCommit { get; }
 
         /// <summary>
         /// The number of data-directory entries in the remainder of the <see cref="PEHeader"/>. Each describes a location and size.
         /// </summary>
-        public int NumberOfRvaAndSizes { get; private set; }
+        public int NumberOfRvaAndSizes { get; }
 
         #endregion
 
         #region Directory Entries 
 
-        public DirectoryEntry ExportTableDirectory { get; private set; }
-        public DirectoryEntry ImportTableDirectory { get; private set; }
-        public DirectoryEntry ResourceTableDirectory { get; private set; }
-        public DirectoryEntry ExceptionTableDirectory { get; private set; }
+        public DirectoryEntry ExportTableDirectory { get; }
+        public DirectoryEntry ImportTableDirectory { get; }
+        public DirectoryEntry ResourceTableDirectory { get; }
+        public DirectoryEntry ExceptionTableDirectory { get; }
 
         /// <summary>
         /// The Certificate Table entry points to a table of attribute certificates. 
         /// These certificates are not loaded into memory as part of the image.
         ///  As such, the first field of this entry, which is normally an RVA, is a file pointer instead.
         /// </summary>
-        public DirectoryEntry CertificateTableDirectory { get; private set; }
+        public DirectoryEntry CertificateTableDirectory { get; }
 
-        public DirectoryEntry BaseRelocationTableDirectory { get; private set; }
-        public DirectoryEntry DebugTableDirectory { get; private set; }
-        public DirectoryEntry CopyrightTableDirectory { get; private set; }
-        public DirectoryEntry GlobalPointerTableDirectory { get; private set; }
-        public DirectoryEntry ThreadLocalStorageTableDirectory { get; private set; }
-        public DirectoryEntry LoadConfigTableDirectory { get; private set; }
-        public DirectoryEntry BoundImportTableDirectory { get; private set; }
-        public DirectoryEntry ImportAddressTableDirectory { get; private set; }
-        public DirectoryEntry DelayImportTableDirectory { get; private set; }
-        public DirectoryEntry CorHeaderTableDirectory { get; private set; }
+        public DirectoryEntry BaseRelocationTableDirectory { get; }
+        public DirectoryEntry DebugTableDirectory { get; }
+        public DirectoryEntry CopyrightTableDirectory { get; }
+        public DirectoryEntry GlobalPointerTableDirectory { get; }
+        public DirectoryEntry ThreadLocalStorageTableDirectory { get; }
+        public DirectoryEntry LoadConfigTableDirectory { get; }
+        public DirectoryEntry BoundImportTableDirectory { get; }
+        public DirectoryEntry ImportAddressTableDirectory { get; }
+        public DirectoryEntry DelayImportTableDirectory { get; }
+        public DirectoryEntry CorHeaderTableDirectory { get; }
 
         #endregion
 

@@ -9,8 +9,8 @@ namespace System.Reflection.Metadata
 {
     public sealed class DebugMetadataHeader
     {
-        public ImmutableArray<byte> Id { get; private set; }
-        public MethodDefinitionHandle EntryPoint { get; private set; }
+        public ImmutableArray<byte> Id { get; }
+        public MethodDefinitionHandle EntryPoint { get; }
 
         internal DebugMetadataHeader(ImmutableArray<byte> id, MethodDefinitionHandle entryPoint)
         {
