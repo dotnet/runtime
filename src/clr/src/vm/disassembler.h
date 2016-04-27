@@ -11,10 +11,10 @@
 #define USE_MSVC_DISASSEMBLER 0
 #ifdef HAVE_GCCOVER
     #if defined(FEATURE_CORECLR)
-        // COREDISTOOLS disassembler only supports amd64, so if this is
-        // CoreCLR but not amd64, we will fall out of this check and not
+        // COREDISTOOLS disassembler only supports amd64 and x86, so if this is
+        // CoreCLR but not amd64 and not x86, we will fall out of this check and not
         // set USE_DISASSEMBLER.
-        #if defined(_TARGET_AMD64_)
+        #if defined(_TARGET_AMD64_) || defined(_TARGET_X86_)
             #undef USE_COREDISTOOLS_DISASSEMBLER
             #define USE_COREDISTOOLS_DISASSEMBLER 1
         #endif
