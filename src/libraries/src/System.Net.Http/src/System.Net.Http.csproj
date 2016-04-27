@@ -31,7 +31,6 @@
       <TargetFramework>net46</TargetFramework>
     </PackageDestination>
   </ItemGroup>
-  
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
@@ -168,6 +167,9 @@
     <Compile Include="System\Net\Http\Unix\CurlHandler.CurlResponseMessage.cs" />
     <Compile Include="System\Net\Http\Unix\CurlResponseHeaderReader.cs" />
     <Compile Include="System\Net\Http\Unix\CurlTransportContext.cs" />
+    <Compile Include="$(CommonPath)\System\StrongToWeakReference.cs">
+      <Link>Common\Interop\Unix\StrongToWeakReference.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\SecurityProtocol.cs">
       <Link>Common\System\Net\SecurityProtocol.cs</Link>
     </Compile>
