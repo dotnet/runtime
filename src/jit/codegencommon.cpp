@@ -3882,6 +3882,14 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
     if (verbose) 
         printf("*************** In genFnPrologCalleeRegArgs() for %s regs\n", regState->rsIsFloat ? "float" : "int");
 #endif
+#ifdef _TARGET_ARM64_
+    if (compiler->info.compIsVarArgs)
+    {
+        // We've already saved all int registers at the top of stack in the prolog.
+        // No need further action.
+        return;
+    }
+#endif
 
     assert(compiler->compGeneratingProlog);
     noway_assert(regState->rsCalleeRegArgMaskLiveIn != 0);
