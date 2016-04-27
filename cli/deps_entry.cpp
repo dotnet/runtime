@@ -181,7 +181,10 @@ bool deps_entry_t::to_hash_matched_path(const pal::string_t& base, pal::string_t
     hash.assign(pal::istreambuf_iterator_t(fstream),
         pal::istreambuf_iterator_t());
     pal::string_t pal_hash;
-    pal::to_palstring(hash.c_str(), &pal_hash);
+    if (!pal::utf8_palstring(hash.c_str(), &pal_hash))
+    {
+        return false;
+    }
 
     // Check if contents match deps entry.
     pal::string_t entry_hash = library_hash.substr(pos + 1);
