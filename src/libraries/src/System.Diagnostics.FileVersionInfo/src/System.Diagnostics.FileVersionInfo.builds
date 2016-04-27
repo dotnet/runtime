@@ -9,6 +9,11 @@
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="System.Diagnostics.FileVersionInfo.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>netcore50</TargetGroup>
+    </Project>
+    <Project Include="System.Diagnostics.FileVersionInfo.csproj">
+      <OSGroup>Windows_NT</OSGroup>
       <TargetGroup>net46</TargetGroup>
     </Project>
   </ItemGroup>
