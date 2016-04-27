@@ -5,7 +5,7 @@
 using System.Collections.Immutable;
 using System.Reflection.Metadata;
 
-namespace System.Reflection.Metadata.Decoding
+namespace System.Reflection.Metadata
 {
     /// <summary>
     /// Represents a method (definition, reference, or standalone) or property signature.

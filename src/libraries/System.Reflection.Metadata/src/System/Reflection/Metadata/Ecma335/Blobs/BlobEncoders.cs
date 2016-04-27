@@ -5,7 +5,6 @@
 #pragma warning disable RS0008 // Implement IEquatable<T> when overriding Object.Equals
 
 using System.Collections.Immutable;
-using System.Reflection.Metadata.Decoding;
 
 namespace System.Reflection.Metadata.Ecma335.Blobs
 {
@@ -585,7 +584,7 @@ namespace System.Reflection.Metadata.Ecma335.Blobs
 
         private void ClassOrValue(bool isValueType)
         {
-            Builder.WriteByte(isValueType ? (byte)SignatureTypeHandleCode.ValueType : (byte)SignatureTypeHandleCode.Class);
+            Builder.WriteByte(isValueType ? (byte)SignatureTypeKind.ValueType : (byte)SignatureTypeKind.Class);
         }
 
         public void Boolean() => WriteTypeCode(SignatureTypeCode.Boolean);

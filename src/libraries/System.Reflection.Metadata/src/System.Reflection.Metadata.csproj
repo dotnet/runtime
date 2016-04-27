@@ -120,7 +120,7 @@
     <Compile Include="System\Reflection\Metadata\Decoding\SignatureTypeHandleCode.cs" />
     <Compile Include="System\Reflection\Metadata\Decoding\IPrimitiveTypeProvider.cs" />
     <Compile Include="System\Reflection\Metadata\Decoding\IConstructedTypeProvider.cs" />
-    <Compile Include="System\Reflection\Metadata\Decoding\SignatureDecoder.cs" />
+    <Compile Include="System\Reflection\Metadata\Ecma335\SignatureDecoder.cs" />
     <Compile Include="System\Reflection\Metadata\Decoding\SignatureDecoderOptions.cs" />
     <Compile Include="System\Reflection\Metadata\Decoding\MethodSignature.cs" />
     <Compile Include="System\Reflection\Metadata\PrimitiveTypeCode.cs" />
