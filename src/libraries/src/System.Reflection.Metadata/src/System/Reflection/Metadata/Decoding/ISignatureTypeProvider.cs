@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace System.Reflection.Metadata.Decoding
+namespace System.Reflection.Metadata
 {
     public interface ISignatureTypeProvider<TType> : IPrimitiveTypeProvider<TType>, ITypeProvider<TType>, IConstructedTypeProvider<TType>
     {
@@ -24,7 +24,7 @@ namespace System.Reflection.Metadata.Decoding
         /// <summary>
         /// Gets the type symbol for a type with a custom modifier applied.
         /// </summary>
-        /// <param name="reader">The metadata reader that was passed to the <see cref="SignatureDecoder{TType}"/>. It may be null.</param>
+        /// <param name="reader">The metadata reader that was passed to the <see cref="Ecma335.SignatureDecoder{TType}"/>. It may be null.</param>
         /// <param name="isRequired">True if the modifier is required, false if it's optional.</param>
         /// <param name="modifier">The modifier type applied. </param>
         /// <param name="unmodifiedType">The type symbol of the underlying type without modifiers applied.</param>

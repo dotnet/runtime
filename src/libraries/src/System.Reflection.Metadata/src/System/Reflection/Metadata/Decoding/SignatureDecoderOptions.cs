@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace System.Reflection.Metadata.Decoding
+namespace System.Reflection.Metadata
 {
     [Flags]
     public enum SignatureDecoderOptions
@@ -13,8 +13,8 @@ namespace System.Reflection.Metadata.Decoding
         None = 0x0,
 
         /// <summary>
-        /// Causes the decoder to pass <see cref="SignatureTypeHandleCode.Class"/> or <see cref="SignatureTypeHandleCode.ValueType"/>
-        /// to the <see cref="ITypeProvider{TType}"/> instead of <see cref="SignatureTypeHandleCode.Unresolved"/>.
+        /// Causes the decoder to pass <see cref="SignatureTypeKind.Class"/> or <see cref="SignatureTypeKind.ValueType"/>
+        /// to the <see cref="ITypeProvider{TType}"/> instead of <see cref="SignatureTypeKind.Unresolved"/>.
         /// </summary>
         /// <remarks>
         /// There is additional overhead for this case when dealing with .winmd files to handle projection.

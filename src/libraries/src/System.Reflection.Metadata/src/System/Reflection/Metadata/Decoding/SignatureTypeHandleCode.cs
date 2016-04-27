@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace System.Reflection.Metadata.Decoding
+using System.Reflection.Metadata.Ecma335;
+
+namespace System.Reflection.Metadata
 {
-    public enum SignatureTypeHandleCode : byte
+    public enum SignatureTypeKind : byte
     {
         /// <summary>
         /// It is not known in the current context if the type reference or definition is a class or value type.
@@ -15,11 +17,11 @@ namespace System.Reflection.Metadata.Decoding
         /// <summary>
         /// The type definition or reference refers to a class.
         /// </summary>
-        Class = 0x12, // TODO: CorElementType.ELEMENT_TYPE_CLASS,
+        Class = CorElementType.ELEMENT_TYPE_CLASS,
 
         /// <summary>
         /// The type definition or reference refers to a value type.
         /// </summary>
-        ValueType = 0x11, // TODO: CorElementType.ELEMENT_TYPE_VALUETYPE,
+        ValueType = CorElementType.ELEMENT_TYPE_VALUETYPE,
     }
 }

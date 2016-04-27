@@ -4,7 +4,7 @@
 
 using System.Collections.Immutable;
 
-namespace System.Reflection.Metadata.Decoding
+namespace System.Reflection.Metadata
 {
     public interface IConstructedTypeProvider<TType> : ISZArrayTypeProvider<TType>
     {

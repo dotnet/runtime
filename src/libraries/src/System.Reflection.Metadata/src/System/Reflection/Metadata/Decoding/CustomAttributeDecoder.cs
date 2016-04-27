@@ -4,7 +4,7 @@
 
 using System.Collections.Immutable;
 
-namespace System.Reflection.Metadata.Decoding
+namespace System.Reflection.Metadata
 {
     /// <summary>
     /// Decodes custom attribute blobs.
@@ -362,10 +362,10 @@ namespace System.Reflection.Metadata.Decoding
             switch (handle.Kind)
             {
                 case HandleKind.TypeDefinition:
-                    return _provider.GetTypeFromDefinition(_reader, (TypeDefinitionHandle)handle, SignatureTypeHandleCode.Unresolved);
+                    return _provider.GetTypeFromDefinition(_reader, (TypeDefinitionHandle)handle, SignatureTypeKind.Unresolved);
 
                 case HandleKind.TypeReference:
-                    return _provider.GetTypeFromReference(_reader, (TypeReferenceHandle)handle, SignatureTypeHandleCode.Unresolved);
+                    return _provider.GetTypeFromReference(_reader, (TypeReferenceHandle)handle, SignatureTypeKind.Unresolved);
 
                 default:
                     throw new BadImageFormatException(SR.NotTypeDefOrRefHandle);

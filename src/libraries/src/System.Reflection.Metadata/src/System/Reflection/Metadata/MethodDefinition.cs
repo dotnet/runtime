@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Reflection.Metadata.Decoding;
 using System.Reflection.Metadata.Ecma335;
 
 namespace System.Reflection.Metadata

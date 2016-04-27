@@ -76,7 +76,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
             }
         }
 
-        public virtual string GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, SignatureTypeHandleCode code = SignatureTypeHandleCode.Unresolved)
+        public virtual string GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, SignatureTypeKind code = SignatureTypeKind.Unresolved)
         {
             TypeDefinition definition = reader.GetTypeDefinition(handle);
 
@@ -87,13 +87,13 @@ namespace System.Reflection.Metadata.Decoding.Tests
             if (definition.Attributes.IsNested())
             {
                 TypeDefinitionHandle declaringTypeHandle = definition.GetDeclaringType();
-                return GetTypeFromDefinition(reader, declaringTypeHandle, SignatureTypeHandleCode.Unresolved) + "/" + name;
+                return GetTypeFromDefinition(reader, declaringTypeHandle, SignatureTypeKind.Unresolved) + "/" + name;
             }
 
             return name;
         }
 
-        public virtual string GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, SignatureTypeHandleCode code = SignatureTypeHandleCode.Unresolved)
+        public virtual string GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, SignatureTypeKind code = SignatureTypeKind.Unresolved)
         {
             TypeReference reference = reader.GetTypeReference(handle);
             Handle scope = reference.ResolutionScope;
@@ -124,7 +124,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
             }
         }
 
-        public virtual string GetTypeFromSpecification(MetadataReader reader, TypeSpecificationHandle handle, SignatureTypeHandleCode code = SignatureTypeHandleCode.Unresolved)
+        public virtual string GetTypeFromSpecification(MetadataReader reader, TypeSpecificationHandle handle, SignatureTypeKind code = SignatureTypeKind.Unresolved)
         {
             return reader.GetTypeSpecification(handle).DecodeSignature(this);
         }

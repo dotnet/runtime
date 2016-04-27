@@ -4,7 +4,6 @@
 
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Reflection.Metadata.Decoding;
 
 namespace System.Reflection.Metadata
 {
@@ -54,7 +53,7 @@ namespace System.Reflection.Metadata
 
         public ImmutableArray<TType> DecodeSignature<TType>(ISignatureTypeProvider<TType> provider, SignatureDecoderOptions options = SignatureDecoderOptions.None)
         {
-            var decoder = new SignatureDecoder<TType>(provider, _reader, options);
+            var decoder = new Ecma335.SignatureDecoder<TType>(provider, _reader, options);
             var blobReader = _reader.GetBlobReader(Signature);
             return decoder.DecodeMethodSpecificationSignature(ref blobReader);
         }
