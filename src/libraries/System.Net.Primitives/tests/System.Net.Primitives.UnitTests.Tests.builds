@@ -3,28 +3,19 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="FunctionalTests\System.Net.Primitives.Functional.Tests.csproj">
-      <OSGroup>Linux</OSGroup>
-    </Project>
-    <Project Include="FunctionalTests\System.Net.Primitives.Functional.Tests.csproj">
-      <OSGroup>OSX</OSGroup>
+      <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="FunctionalTests\System.Net.Primitives.Functional.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="PalTests\System.Net.Primitives.Pal.Tests.csproj">
-      <OSGroup>Linux</OSGroup>
-    </Project>
-    <Project Include="PalTests\System.Net.Primitives.Pal.Tests.csproj">
-      <OSGroup>OSX</OSGroup>
+      <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="PalTests\System.Net.Primitives.Pal.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="UnitTests\System.Net.Primitives.UnitTests.Tests.csproj">
-      <OSGroup>Linux</OSGroup>
-    </Project>
-    <Project Include="UnitTests\System.Net.Primitives.UnitTests.Tests.csproj">
-      <OSGroup>OSX</OSGroup>
+      <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="UnitTests\System.Net.Primitives.UnitTests.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>

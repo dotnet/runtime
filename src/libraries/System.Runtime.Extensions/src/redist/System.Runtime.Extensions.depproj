@@ -7,7 +7,6 @@
   <PropertyGroup>
     <AssemblyVersion>4.0.10.0</AssemblyVersion>
     <OutputType>Library</OutputType>
-    <PackageTargetRuntime Condition="'$(TargetGroup)' == 'netcore50'">win7</PackageTargetRuntime>
   </PropertyGroup>
   <ItemGroup>
     <None Include="project.json" />
