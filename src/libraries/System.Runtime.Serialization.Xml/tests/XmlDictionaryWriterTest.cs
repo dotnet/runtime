@@ -14,6 +14,7 @@ using Xunit;
 
 public static class XmlDictionaryWriterTest
 {
+#if FALSE
     [Fact]
     public static void XmlBaseWriter_WriteBase64Async()
     {
@@ -192,4 +193,5 @@ public static class XmlDictionaryWriterTest
             await base.WriteAsync(buffer, offset, count, cancellationToken);
         }
     }
+#endif
 }
