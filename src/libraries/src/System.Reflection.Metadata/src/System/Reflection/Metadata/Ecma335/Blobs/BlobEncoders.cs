@@ -132,6 +132,15 @@ namespace System.Reflection.Metadata.Ecma335.Blobs
             returnType = new ReturnTypeEncoder(Builder);
             parameters = new ParametersEncoder(Builder, allowVarArgs: _isVarArg);
         }
+
+        public void Parameters(int parameterCount, Action<ReturnTypeEncoder> returnType, Action<ParametersEncoder> parameters)
+        {
+            ReturnTypeEncoder returnTypeEncoder;
+            ParametersEncoder parametersEncoder;
+            Parameters(parameterCount, out returnTypeEncoder, out parametersEncoder);
+            returnType(returnTypeEncoder);
+            parameters(parametersEncoder);
+        }
     }
 
     public struct LocalVariablesEncoder

@@ -4,6 +4,7 @@
 
 using System.Collections.Immutable;
 using System.IO;
+using System.Reflection.Metadata.Tests;
 using Xunit;
 
 namespace System.Reflection.Internal.Tests
