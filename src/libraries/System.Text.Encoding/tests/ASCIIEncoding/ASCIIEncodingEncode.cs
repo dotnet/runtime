@@ -17,7 +17,10 @@ namespace System.Text.Tests
 
             yield return new object[] { "ABCDEFGH", 0, 8 };
 
+            // Empty strings
             yield return new object[] { string.Empty, 0, 0 };
+            yield return new object[] { "abc", 3, 0 };
+            yield return new object[] { "abc", 0, 0 };
         }
         
         [Theory]
