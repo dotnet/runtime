@@ -1,0 +1,90 @@
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System.Reflection;
+using Xunit;
+
+namespace System.Linq.Expressions.Tests
+{
+    public class FuncTypeTests : DelegateCreationTests
+    {
+        [Fact]
+        public void NullTypeList()
+        {
+            Assert.Throws<ArgumentNullException>("typeArgs", () => Expression.GetFuncType(default(Type[])));
+            Type result;
+            Assert.Throws<ArgumentNullException>("typeArgs", () => Expression.TryGetFuncType(null, out result));
+        }
+
+        [Fact]
+        public void NullInTypeList()
+        {
+            Assert.Throws<ArgumentNullException>("typeArgs", () => Expression.GetFuncType(typeof(int), null));
+            Type result;
+            Assert.Throws<ArgumentNullException>("typeArgs", () => Expression.TryGetFuncType(new[] { typeof(int), null }, out result));
+        }
+
+        [Theory, MemberData(nameof(ValidTypeArgs), true)]
+        public void SuccessfulGetFuncType(Type[] typeArgs)
+        {
+            Type funcType = Expression.GetFuncType(typeArgs);
+            Assert.StartsWith("System.Func`" + typeArgs.Length, funcType.FullName);
+            Assert.Equal(typeArgs, funcType.GetGenericArguments());
+        }
+
+        [Theory, MemberData(nameof(ValidTypeArgs), true)]
+        public void SuccessfulTryGetFuncType(Type[] typeArgs)
+        {
+            Type funcType;
+            Assert.True(Expression.TryGetFuncType(typeArgs, out funcType));
+            Assert.StartsWith("System.Func`" + typeArgs.Length, funcType.FullName);
+            Assert.Equal(typeArgs, funcType.GetGenericArguments());
+        }
+
+        // Open generic type args aren't useful directly with Expressions, but creating them is allowed.
+        [Theory, MemberData(nameof(OpenGenericTypeArgs), false)]
+        public void SuccessfulGetFuncTypeOpenGeneric(Type[] typeArgs)
+        {
+            Type funcType = Expression.GetFuncType(typeArgs);
+            Assert.Equal("Func`" + typeArgs.Length, funcType.Name);
+            Assert.Null(funcType.FullName);
+            Assert.Equal(typeArgs, funcType.GetGenericArguments());
+        }
+
+        [Theory, MemberData(nameof(OpenGenericTypeArgs), false)]
+        public void SuccessfulTryGetFuncTypeWithOpenGeneric(Type[] typeArgs)
+        {
+            Type funcType;
+            Assert.True(Expression.TryGetFuncType(typeArgs, out funcType));
+            Assert.Equal("Func`" + typeArgs.Length, funcType.Name);
+            Assert.Null(funcType.FullName);
+            Assert.Equal(typeArgs, funcType.GetGenericArguments());
+        }
+
+        [Theory]
+        [MemberData(nameof(EmptyTypeArgs))]
+        [MemberData(nameof(ExcessiveLengthTypeArgs))]
+        [MemberData(nameof(ByRefTypeArgs))]
+        [MemberData(nameof(PointerTypeArgs))]
+        [MemberData(nameof(ManagedPointerTypeArgs))]
+        [MemberData(nameof(VoidTypeArgs), true)]
+        public void UnsuccessfulGetFuncType(Type[] typeArgs)
+        {
+            Assert.Throws<ArgumentException>(() => Expression.GetFuncType(typeArgs));
+        }
+
+        [Theory]
+        [MemberData(nameof(EmptyTypeArgs))]
+        [MemberData(nameof(ExcessiveLengthTypeArgs))]
+        [MemberData(nameof(ByRefTypeArgs))]
+        // 8119 [MemberData(nameof(PointerTypeArgs))]
+        // 8119 [MemberData(nameof(ManagedPointerTypeArgs))]
+        // 8119 [MemberData(nameof(VoidTypeArgs), true)]
+        public void UnsuccessfulTryGetFuncType(Type[] typeArgs)
+        {
+            Type funcType;
+            Assert.False(Expression.TryGetFuncType(typeArgs, out funcType));
+        }
+    }
+}
