@@ -1543,5 +1543,20 @@ namespace System.Runtime.Serialization
             }
         }
 #endif
+
+        internal Type UnadaptedClassType
+        {
+            get
+            {
+                if (IsKeyValuePairAdapter)
+                {
+                    return Globals.TypeOfKeyValuePair.MakeGenericType(KeyValuePairGenericArguments);
+                }
+                else
+                {
+                    return UnderlyingType;
+                }
+            }
+        }
     }
 }

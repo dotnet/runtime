@@ -77,52 +77,68 @@ namespace System.Runtime.Serialization
             private int _typeIndex = 1;
             private int _childElementIndex = 0;
 
+            private bool _useReflection = true;
+
             internal XmlFormatClassWriterDelegate GenerateClassWriter(ClassDataContract classContract)
             {
-                _ilg = new CodeGenerator();
-                bool memberAccessFlag = classContract.RequiresMemberAccessForWrite(null);
-                try
+                if (_useReflection)
                 {
-                    _ilg.BeginMethod("Write" + classContract.StableName.Name + "ToXml", Globals.TypeOfXmlFormatClassWriterDelegate, memberAccessFlag);
+                    return new ReflectionXmlFormatWriter().ReflectionWriteClass;
                 }
-                catch (SecurityException securityException)
+                else
                 {
-                    if (memberAccessFlag)
+                    _ilg = new CodeGenerator();
+                    bool memberAccessFlag = classContract.RequiresMemberAccessForWrite(null);
+                    try
                     {
-                        classContract.RequiresMemberAccessForWrite(securityException);
+                        _ilg.BeginMethod("Write" + classContract.StableName.Name + "ToXml", Globals.TypeOfXmlFormatClassWriterDelegate, memberAccessFlag);
                     }
-                    else
+                    catch (SecurityException securityException)
                     {
-                        throw;
+                        if (memberAccessFlag)
+                        {
+                            classContract.RequiresMemberAccessForWrite(securityException);
+                        }
+                        else
+                        {
+                            throw;
+                        }
                     }
+                    InitArgs(classContract.UnderlyingType);
+                    WriteClass(classContract);
+                    return (XmlFormatClassWriterDelegate)_ilg.EndMethod();
                 }
-                InitArgs(classContract.UnderlyingType);
-                WriteClass(classContract);
-                return (XmlFormatClassWriterDelegate)_ilg.EndMethod();
             }
 
             internal XmlFormatCollectionWriterDelegate GenerateCollectionWriter(CollectionDataContract collectionContract)
             {
-                _ilg = new CodeGenerator();
-                bool memberAccessFlag = collectionContract.RequiresMemberAccessForWrite(null);
-                try
+                if (_useReflection)
                 {
-                    _ilg.BeginMethod("Write" + collectionContract.StableName.Name + "ToXml", Globals.TypeOfXmlFormatCollectionWriterDelegate, memberAccessFlag);
+                    return new ReflectionXmlFormatWriter().ReflectionWriteCollection;
                 }
-                catch (SecurityException securityException)
+                else
                 {
-                    if (memberAccessFlag)
+                    _ilg = new CodeGenerator();
+                    bool memberAccessFlag = collectionContract.RequiresMemberAccessForWrite(null);
+                    try
                     {
-                        collectionContract.RequiresMemberAccessForWrite(securityException);
+                        _ilg.BeginMethod("Write" + collectionContract.StableName.Name + "ToXml", Globals.TypeOfXmlFormatCollectionWriterDelegate, memberAccessFlag);
                     }
-                    else
+                    catch (SecurityException securityException)
                     {
-                        throw;
+                        if (memberAccessFlag)
+                        {
+                            collectionContract.RequiresMemberAccessForWrite(securityException);
+                        }
+                        else
+                        {
+                            throw;
+                        }
                     }
+                    InitArgs(collectionContract.UnderlyingType);
+                    WriteCollection(collectionContract);
+                    return (XmlFormatCollectionWriterDelegate)_ilg.EndMethod();
                 }
-                InitArgs(collectionContract.UnderlyingType);
-                WriteCollection(collectionContract);
-                return (XmlFormatCollectionWriterDelegate)_ilg.EndMethod();
             }
 
             private void InitArgs(Type objType)
