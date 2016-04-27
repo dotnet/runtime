@@ -285,7 +285,11 @@ int fx_muxer_t::parse_args_and_execute(
     std::unordered_map<pal::string_t, std::vector<pal::string_t>> opts;
     if (!parse_known_args(argc - argoff, &argv[argoff], known_opts, &opts, &num_parsed))
     {
-        trace::error(_X("Failed to parse supported arguments."));
+        trace::error(_X("Failed to parse supported options or their values:"));
+        for (const auto& arg : known_opts)
+        {
+            trace::error(_X("  %s"), arg.c_str());
+        }
         return InvalidArgFailure;
     }
 
@@ -296,7 +300,7 @@ int fx_muxer_t::parse_args_and_execute(
     int cur_i = argoff + num_parsed;
     if (mode != host_mode_t::standalone)
     {
-        trace::verbose(_X("App not in standalone mode, so expecting more arguments..."));
+        trace::verbose(_X("Detected a non-standalone application, expecting app.dll to execute."));
         if (cur_i >= argc)
         {
             return muxer_usage();
@@ -310,7 +314,7 @@ int fx_muxer_t::parse_args_and_execute(
         {
             if (!is_app_runnable)
             {
-                trace::error(_X("dotnet exec needs a dll to execute. Try dotnet [--help]"));
+                trace::error(_X("dotnet exec needs a .dll or .exe to execute. See usage."));
                 *is_an_app = false;
                 return InvalidArgFailure;
             }
@@ -448,7 +452,11 @@ int fx_muxer_t::read_config_and_execute(
             }
             if (!found)
             {
-                trace::error(_X("Policy library either not found in deps [%s] or not found in %d probe paths."), deps_file.c_str(), probe_realpaths.size());
+                trace::error(_X("Could not find required library %s in the dependencies manifest [%s] or in %d probing paths: "), LIBHOSTPOLICY_NAME, deps_file.c_str(), probe_realpaths.size());
+                for (const auto& path : probe_realpaths)
+                {
+                    trace::error(_X("  %s"), path.c_str());
+                }
                 return StatusCode::CoreHostLibMissingFailure;
             }
             impl_dir = get_directory(candidate);
@@ -466,7 +474,7 @@ int fx_muxer_t::execute(const int argc, const pal::char_t* argv[])
     // Get the full name of the application
     if (!pal::get_own_executable_path(&own_path) || !pal::realpath(&own_path))
     {
-        trace::error(_X("Failed to locate current executable"));
+        trace::error(_X("Failed to resolve full path of the current executable [%s]"), own_path.c_str());
         return StatusCode::LibHostCurExeFindFailure;
     }
     pal::string_t own_name = get_filename(own_path);

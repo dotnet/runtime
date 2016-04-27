@@ -93,7 +93,7 @@ void deps_json_t::reconcile_libraries_with_targets(
                     entry.asset_name == LIBCORECLR_FILENAME)
                 {
                     m_coreclr_index = m_deps_entries[i].size() - 1;
-                    trace::verbose(_X("Found coreclr from deps %d [%s, %s, %s]"),
+                    trace::verbose(_X("Found CoreCLR from deps %d [%s, %s, %s]"),
                         m_coreclr_index,
                         entry.library_name.c_str(),
                         entry.library_version.c_str(),
@@ -134,16 +134,18 @@ bool deps_json_t::perform_rid_fallback(rid_specific_assets_t* portable_assets, c
         {
             if (rid_fallback_graph.count(host_rid) == 0)
             {
-                trace::error(_X("Did not find fallback rids for package %s for the host rid %s"), package.first.c_str(), host_rid.c_str());
-                return false;
+                trace::warning(_X("The targeted framework does not support the runtime '%s'. Some native libraries from [%s] may fail to load on this platform."), host_rid.c_str(), package.first.c_str());
             }
-            const auto& fallback_rids = rid_fallback_graph.find(host_rid)->second;
-            auto iter = std::find_if(fallback_rids.begin(), fallback_rids.end(), [&package](const pal::string_t& rid) {
-                return package.second.rid_assets.count(rid);
-            });
-            if (iter != fallback_rids.end())
+            else
             {
-                matched_rid = *iter;
+                const auto& fallback_rids = rid_fallback_graph.find(host_rid)->second;
+                auto iter = std::find_if(fallback_rids.begin(), fallback_rids.end(), [&package](const pal::string_t& rid) {
+                    return package.second.rid_assets.count(rid);
+                });
+                if (iter != fallback_rids.end())
+                {
+                    matched_rid = *iter;
+                }
             }
         }
 
@@ -350,7 +352,7 @@ bool deps_json_t::load(bool portable, const pal::string_t& deps_path, const rid_
     // If file doesn't exist, then assume parsed.
     if (!pal::file_exists(deps_path))
     {
-        trace::verbose(_X("Deps file does not exist [%s]"), deps_path.c_str());
+        trace::verbose(_X("Could not locate the dependencies manifest file [%s]. Some libraries may fail to resolve."), deps_path.c_str());
         return true;
     }
 
@@ -358,7 +360,7 @@ bool deps_json_t::load(bool portable, const pal::string_t& deps_path, const rid_
     pal::ifstream_t file(deps_path);
     if (!file.good())
     {
-        trace::error(_X("Could not open file stream on deps file [%s]"), deps_path.c_str());
+        trace::error(_X("Could not open dependencies manifest file [%s]"), deps_path.c_str());
         return false;
     }
 

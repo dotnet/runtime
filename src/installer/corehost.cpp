@@ -63,7 +63,7 @@ int run(const int argc, const pal::char_t* argv[])
     pal::string_t own_path;
     if (!pal::get_own_executable_path(&own_path) || !pal::realpath(&own_path))
     {
-        trace::error(_X("Failed to locate current executable"));
+        trace::error(_X("Failed to resolve full path of the current executable [%s]"), own_path.c_str());
         return StatusCode::CoreHostCurExeFindFailure;
     }
 
