@@ -127,11 +127,7 @@ namespace System.Reflection.PortableExecutable.Tests
                 MethodSignature().
                 Parameters(1,
                     returnType => returnType.Void(),
-                    parameters =>
-                    {
-                        parameters.AddParameter().Type().String();
-                        parameters.EndParameters();
-                    });
+                    parameters => parameters.AddParameter().Type().String());
 
             var consoleWriteLineMemberRef = metadata.AddMemberReference(
                 systemConsoleTypeRefHandle,
@@ -142,7 +138,7 @@ namespace System.Reflection.PortableExecutable.Tests
 
             new BlobEncoder(parameterlessCtorSignature).
                 MethodSignature(isInstanceMethod: true).
-                Parameters(0, returnType => returnType.Void(), parameters => parameters.EndParameters());
+                Parameters(0, returnType => returnType.Void(), parameters => { });
 
             var parameterlessCtorBlobIndex = metadata.GetOrAddBlob(parameterlessCtorSignature);
 
@@ -155,7 +151,7 @@ namespace System.Reflection.PortableExecutable.Tests
 
             new BlobEncoder(mainSignature).
                 MethodSignature().
-                Parameters(0, returnType => returnType.Void(), parameters => parameters.EndParameters());
+                Parameters(0, returnType => returnType.Void(), parameters => { });
 
             var methodBodies = new MethodBodiesEncoder(ilBuilder);
 
@@ -408,7 +404,7 @@ namespace System.Reflection.PortableExecutable.Tests
                 MethodImplAttributes.IL,
                 metadata.GetOrAddString("Foo"),
                 metadata.GetOrAddBlob(BuildSignature(e =>
-                    e.MethodSignature(isInstanceMethod: true).Parameters(0, returnType => returnType.Void(), parameters => parameters.EndParameters()))),
+                    e.MethodSignature(isInstanceMethod: true).Parameters(0, returnType => returnType.Void(), parameters => { }))),
                 fooBodyOffset,
                 default(ParameterHandle));
 

@@ -30,9 +30,33 @@ namespace System.Reflection
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static void ArgumentNull(string parameterName)
+        {
+            throw new ArgumentNullException(parameterName);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
         internal static void ValueArgumentNull()
         {
             throw new ArgumentNullException("value");
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static void BuilderArgumentNull()
+        {
+            throw new ArgumentNullException("builder");
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static void ArgumentOutOfRange(string parameterName)
+        {
+            throw new ArgumentOutOfRangeException(parameterName);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static void BlobTooLarge(string parameterName)
+        {
+            throw new ArgumentOutOfRangeException(parameterName, SR.BlobTooLarge);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -45,6 +69,12 @@ namespace System.Reflection
         internal static void TableIndexOutOfRange()
         {
             throw new ArgumentOutOfRangeException("tableIndex");
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static void ValueArgumentOutOfRange()
+        {
+            throw new ArgumentOutOfRangeException("value");
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

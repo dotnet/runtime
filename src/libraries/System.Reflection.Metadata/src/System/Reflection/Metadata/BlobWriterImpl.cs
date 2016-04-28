@@ -32,12 +32,6 @@ namespace System.Reflection.Metadata
             return 4;
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void ThrowValueArgumentOutOfRange()
-        {
-            throw new ArgumentOutOfRangeException("value");
-        }
-
         internal static void WriteCompressedInteger(ref BlobWriter writer, int value)
         {
             unchecked
@@ -56,7 +50,7 @@ namespace System.Reflection.Metadata
                 }
                 else
                 {
-                    ThrowValueArgumentOutOfRange();
+                    Throw.ValueArgumentOutOfRange();
                 }
             }
         }
@@ -79,7 +73,7 @@ namespace System.Reflection.Metadata
                 }
                 else
                 {
-                    ThrowValueArgumentOutOfRange();
+                    Throw.ValueArgumentOutOfRange();
                 }
             }
         }
@@ -113,7 +107,7 @@ namespace System.Reflection.Metadata
                 }
                 else
                 {
-                    ThrowValueArgumentOutOfRange();
+                    Throw.ValueArgumentOutOfRange();
                 }
             }
         }
@@ -147,7 +141,7 @@ namespace System.Reflection.Metadata
                 }
                 else
                 {
-                    ThrowValueArgumentOutOfRange();
+                    Throw.ValueArgumentOutOfRange();
                 }
             }
         }

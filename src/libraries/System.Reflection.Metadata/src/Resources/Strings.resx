@@ -303,6 +303,9 @@
   <data name="ValueTooLarge" xml:space="preserve">
     <value>Value is too large.</value>
   </data>
+  <data name="BlobTooLarge" xml:space="preserve">
+    <value>Blob is to large.</value>
+  </data>
   <data name="InvalidTypeSize" xml:space="preserve">
     <value>Invalid type size.</value>
   </data>

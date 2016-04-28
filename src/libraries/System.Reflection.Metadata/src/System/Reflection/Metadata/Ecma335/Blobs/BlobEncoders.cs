@@ -5,20 +5,12 @@
 #pragma warning disable RS0008 // Implement IEquatable<T> when overriding Object.Equals
 
 using System.Collections.Immutable;
+using System.ComponentModel;
 
 namespace System.Reflection.Metadata.Ecma335.Blobs
 {
-    // TODO: arg validation
-    // TODO: can we hide useless inherited methods?
     // TODO: debug metadata blobs
-    // TODO: revisit ctors (public vs internal)?
-
-    //[EditorBrowsable(EditorBrowsableState.Never)]
-    //public override bool Equals(object obj) => base.Equals(obj);
-    //[EditorBrowsable(EditorBrowsableState.Never)]
-    //public override int GetHashCode() => base.GetHashCode();
-    //[EditorBrowsable(EditorBrowsableState.Never)]
-    //public override string ToString() => base.ToString();
+    // TODO: revisit ctors (public vs internal vs static factories)?
 
     public struct BlobEncoder
     {
@@ -26,6 +18,11 @@ namespace System.Reflection.Metadata.Ecma335.Blobs
 
         public BlobEncoder(BlobBuilder builder)
         {
+            if (builder == null)
+            {
+                Throw.BuilderArgumentNull();
+            }
+
             Builder = builder;
         }
 
@@ -37,7 +34,10 @@ namespace System.Reflection.Metadata.Ecma335.Blobs
 
         public GenericTypeArgumentsEncoder MethodSpecificationSignature(int genericArgumentCount)
         {
-            // TODO: arg validation
+            if (unchecked((uint)genericArgumentCount) > ushort.MaxValue) 
+            {
+                Throw.ArgumentOutOfRange(nameof(genericArgumentCount));
+            }
 
             Builder.WriteByte((byte)SignatureKind.MethodSpecification);
             Builder.WriteCompressedInteger(genericArgumentCount);
@@ -50,26 +50,29 @@ namespace System.Reflection.Metadata.Ecma335.Blobs
             int genericParameterCount = 0, 
             bool isInstanceMethod = false)
         {
-            // TODO: arg validation
+            if (unchecked((uint)genericParameterCount) > ushort.MaxValue)
+            {
+                Throw.ArgumentOutOfRange(nameof(genericParameterCount));
+            }
 
             var attributes = 
                 (genericParameterCount != 0 ? SignatureAttributes.Generic : 0) | 
                 (isInstanceMethod ? SignatureAttributes.Instance : 0);
 
-            Builder.WriteByte(SignatureHeader(SignatureKind.Method, convention, attributes).RawValue);
+            Builder.WriteByte(new SignatureHeader(SignatureKind.Method, convention, attributes).RawValue);
 
             if (genericParameterCount != 0)
             {
                 Builder.WriteCompressedInteger(genericParameterCount);
             }
 
-            return new MethodSignatureEncoder(Builder, isVarArg: convention == SignatureCallingConvention.VarArgs);
+            return new MethodSignatureEncoder(Builder, hasVarArgs: convention == SignatureCallingConvention.VarArgs);
         }
 
         public MethodSignatureEncoder PropertySignature(bool isInstanceProperty = false)
         {
-            Builder.WriteByte(SignatureHeader(SignatureKind.Property, SignatureCallingConvention.Default, (isInstanceProperty ? SignatureAttributes.Instance : 0)).RawValue);
-            return new MethodSignatureEncoder(Builder, isVarArg: false);
+            Builder.WriteByte(new SignatureHeader(SignatureKind.Property, SignatureCallingConvention.Default, (isInstanceProperty ? SignatureAttributes.Instance : 0)).RawValue);
+            return new MethodSignatureEncoder(Builder, hasVarArgs: false);
         }
 
         public void CustomAttributeSignature(out FixedArgumentsEncoder fixedArguments, out CustomAttributeNamedArgumentsEncoder namedArguments)
@@ -80,14 +83,31 @@ namespace System.Reflection.Metadata.Ecma335.Blobs
             namedArguments = new CustomAttributeNamedArgumentsEncoder(Builder);
         }
 
-        public LocalVariablesEncoder LocalVariableSignature(int count)
+        public void CustomAttributeSignature(Action<FixedArgumentsEncoder> fixedArguments, Action<CustomAttributeNamedArgumentsEncoder> namedArguments)
         {
+            if (fixedArguments == null) Throw.ArgumentNull(nameof(fixedArguments));
+            if (namedArguments == null) Throw.ArgumentNull(nameof(namedArguments));
+
+            FixedArgumentsEncoder fixedArgumentsEncoder;
+            CustomAttributeNamedArgumentsEncoder namedArgumentsEncoder;
+            CustomAttributeSignature(out fixedArgumentsEncoder, out namedArgumentsEncoder);
+            fixedArguments(fixedArgumentsEncoder);
+            namedArguments(namedArgumentsEncoder);
+        }
+
+        public LocalVariablesEncoder LocalVariableSignature(int variableCount)
+        {
+            if (unchecked((uint)variableCount) > BlobWriterImpl.MaxCompressedIntegerValue)
+            {
+                Throw.ArgumentOutOfRange(nameof(variableCount));
+            }
+
             Builder.WriteByte((byte)SignatureKind.LocalVariables);
-            Builder.WriteCompressedInteger(count);
+            Builder.WriteCompressedInteger(variableCount);
             return new LocalVariablesEncoder(Builder);
         }
 
-        // TODO: TypeSpec is limited to structured types (doesn't have primitive types, TypeDefRefSpec, custom modifiers)
+        // TODO: TypeSpec is limited to structured types (doesn't have primitive types)
         public SignatureTypeEncoder TypeSpecificationSignature()
         {
             return new SignatureTypeEncoder(Builder);
@@ -95,6 +115,11 @@ namespace System.Reflection.Metadata.Ecma335.Blobs
 
         public PermissionSetEncoder PermissionSetBlob(int attributeCount)
         {
+            if (unchecked((uint)attributeCount) > BlobWriterImpl.MaxCompressedIntegerValue)
+            {
+                Throw.ArgumentOutOfRange(nameof(attributeCount));
+            }
+
             Builder.WriteByte((byte)'.');
             Builder.WriteCompressedInteger(attributeCount);
             return new PermissionSetEncoder(Builder);
@@ -102,38 +127,45 @@ namespace System.Reflection.Metadata.Ecma335.Blobs
 
         public NamedArgumentsEncoder PermissionSetArguments(int argumentCount)
         {
+            if (unchecked((uint)argumentCount) > BlobWriterImpl.MaxCompressedIntegerValue)
+            {
+                Throw.ArgumentOutOfRange(nameof(argumentCount));
+            }
+
             Builder.WriteCompressedInteger(argumentCount);
             return new NamedArgumentsEncoder(Builder);
-        }
-
-        // TOOD: add ctor to SignatureHeader
-        internal static SignatureHeader SignatureHeader(SignatureKind kind, SignatureCallingConvention convention, SignatureAttributes attributes)
-        {
-            return new SignatureHeader((byte)((int)kind | (int)convention | (int)attributes));
         }
     }
 
     public struct MethodSignatureEncoder
     {
         public BlobBuilder Builder { get; }
-        private readonly bool _isVarArg;
+        public bool HasVarArgs { get; }
 
-        public MethodSignatureEncoder(BlobBuilder builder, bool isVarArg)
+        public MethodSignatureEncoder(BlobBuilder builder, bool hasVarArgs)
         {
             Builder = builder;
-            _isVarArg = isVarArg;
+            HasVarArgs = hasVarArgs;
         }
 
         public void Parameters(int parameterCount, out ReturnTypeEncoder returnType, out ParametersEncoder parameters)
         {
+            if (unchecked((uint)parameterCount) > BlobWriterImpl.MaxCompressedIntegerValue)
+            {
+                Throw.ArgumentOutOfRange(nameof(parameterCount));
+            }
+
             Builder.WriteCompressedInteger(parameterCount);
 
             returnType = new ReturnTypeEncoder(Builder);
-            parameters = new ParametersEncoder(Builder, allowVarArgs: _isVarArg);
+            parameters = new ParametersEncoder(Builder, hasVarArgs: HasVarArgs);
         }
 
         public void Parameters(int parameterCount, Action<ReturnTypeEncoder> returnType, Action<ParametersEncoder> parameters)
         {
+            if (returnType == null) Throw.ArgumentNull(nameof(returnType));
+            if (parameters == null) Throw.ArgumentNull(nameof(parameters));
+
             ReturnTypeEncoder returnTypeEncoder;
             ParametersEncoder parametersEncoder;
             Parameters(parameterCount, out returnTypeEncoder, out parametersEncoder);
@@ -154,10 +186,6 @@ namespace System.Reflection.Metadata.Ecma335.Blobs
         public LocalVariableTypeEncoder AddVariable()
         {
             return new LocalVariableTypeEncoder(Builder);
-        }
-        
-        public void EndVariables()
-        {
         }
     }
 
@@ -235,16 +263,50 @@ namespace System.Reflection.Metadata.Ecma335.Blobs
             Builder = builder;
         }
 
-        public PermissionSetEncoder AddPermission(string typeName, BlobBuilder arguments)
+        public PermissionSetEncoder AddPermission(string typeName, ImmutableArray<byte> encodedArguments)
         {
+            if (typeName == null)
+            {
+                Throw.ArgumentNull(nameof(typeName));
+            }
+
+            if (encodedArguments.IsDefault)
+            {
+                Throw.ArgumentNull(nameof(encodedArguments));
+            }
+
+            if (encodedArguments.Length > BlobWriterImpl.MaxCompressedIntegerValue)
+            {
+                Throw.BlobTooLarge(nameof(encodedArguments));
+            }
+
             Builder.WriteSerializedString(typeName);
-            Builder.WriteCompressedInteger(arguments.Count);
-            arguments.WriteContentTo(Builder);
+            Builder.WriteCompressedInteger(encodedArguments.Length);
+            Builder.WriteBytes(encodedArguments);
             return new PermissionSetEncoder(Builder);
         }
 
-        public void EndPermissions()
+        public PermissionSetEncoder AddPermission(string typeName, BlobBuilder encodedArguments)
         {
+            if (typeName == null)
+            {
+                Throw.ArgumentNull(nameof(typeName));
+            }
+
+            if (encodedArguments == null)
+            {
+                Throw.ArgumentNull(nameof(encodedArguments));
+            }
+
+            if (encodedArguments.Count > BlobWriterImpl.MaxCompressedIntegerValue)
+            {
+                Throw.BlobTooLarge(nameof(encodedArguments));
+            }
+
+            Builder.WriteSerializedString(typeName);
+            Builder.WriteCompressedInteger(encodedArguments.Count);
+            encodedArguments.WriteContentTo(Builder);
+            return new PermissionSetEncoder(Builder);
         }
     }
 
@@ -261,10 +323,6 @@ namespace System.Reflection.Metadata.Ecma335.Blobs
         {
             return new SignatureTypeEncoder(Builder);
         }
-
-        public void EndArguments()
-        {
-        }
     }
 
     public struct FixedArgumentsEncoder
@@ -279,10 +337,6 @@ namespace System.Reflection.Metadata.Ecma335.Blobs
         public LiteralEncoder AddArgument()
         {
             return new LiteralEncoder(Builder);
-        }
-
-        public void EndArguments()
-        {
         }
     }
 
@@ -306,6 +360,18 @@ namespace System.Reflection.Metadata.Ecma335.Blobs
             vector = new VectorEncoder(Builder);
         }
 
+        public void TaggedVector(Action<CustomAttributeArrayTypeEncoder> arrayType, Action<VectorEncoder> vector)
+        {
+            if (arrayType == null) Throw.ArgumentNull(nameof(arrayType));
+            if (vector == null) Throw.ArgumentNull(nameof(vector));
+
+            CustomAttributeArrayTypeEncoder arrayTypeEncoder;
+            VectorEncoder vectorEncoder;
+            TaggedVector(out arrayTypeEncoder, out vectorEncoder);
+            arrayType(arrayTypeEncoder);
+            vector(vectorEncoder);
+        }
+
         public ScalarEncoder Scalar()
         {
             return new ScalarEncoder(Builder);
@@ -315,6 +381,18 @@ namespace System.Reflection.Metadata.Ecma335.Blobs
         {
             type = new CustomAttributeElementTypeEncoder(Builder);
             scalar = new ScalarEncoder(Builder);
+        }
+
+        public void TaggedScalar(Action<CustomAttributeElementTypeEncoder> type, Action<ScalarEncoder> scalar)
+        {
+            if (type == null) Throw.ArgumentNull(nameof(type));
+            if (scalar == null) Throw.ArgumentNull(nameof(scalar));
+
+            CustomAttributeElementTypeEncoder typeEncoder;
+            ScalarEncoder scalarEncoder;
+            TaggedScalar(out typeEncoder, out scalarEncoder);
+            type(typeEncoder);
+            scalar(scalarEncoder);
         }
     }
 
@@ -369,10 +447,6 @@ namespace System.Reflection.Metadata.Ecma335.Blobs
         {
             return new LiteralEncoder(Builder);
         }
-
-        public void EndLiterals()
-        {
-        }
     }
 
     public struct VectorEncoder
@@ -419,7 +493,7 @@ namespace System.Reflection.Metadata.Ecma335.Blobs
         {
             if (unchecked((ushort)count) > ushort.MaxValue)
             {
-                throw new ArgumentOutOfRangeException(nameof(count));
+                Throw.ArgumentOutOfRange(nameof(count));
             }
             
             Builder.WriteUInt16((ushort)count);
@@ -436,16 +510,27 @@ namespace System.Reflection.Metadata.Ecma335.Blobs
             Builder = builder;
         }
 
-        public void AddArgument(bool isField, out NamedArgumentTypeEncoder typeEncoder, out NameEncoder name, out LiteralEncoder literal)
+        public void AddArgument(bool isField, out NamedArgumentTypeEncoder type, out NameEncoder name, out LiteralEncoder literal)
         {
             Builder.WriteByte(isField ? (byte)CustomAttributeNamedArgumentKind.Field : (byte)CustomAttributeNamedArgumentKind.Property);
-            typeEncoder = new NamedArgumentTypeEncoder(Builder);
+            type = new NamedArgumentTypeEncoder(Builder);
             name = new NameEncoder(Builder);
             literal = new LiteralEncoder(Builder);
         }
 
-        public void EndArguments()
+        public void AddArgument(bool isField, Action<NamedArgumentTypeEncoder> type, Action<NameEncoder> name, Action<LiteralEncoder> literal)
         {
+            if (type == null) Throw.ArgumentNull(nameof(type));
+            if (name == null) Throw.ArgumentNull(nameof(name));
+            if (literal == null) Throw.ArgumentNull(nameof(literal));
+
+            NamedArgumentTypeEncoder typeEncoder;
+            NameEncoder nameEncoder;
+            LiteralEncoder literalEncoder;
+            AddArgument(isField, out typeEncoder, out nameEncoder, out literalEncoder);
+            type(typeEncoder);
+            name(nameEncoder);
+            literal(literalEncoder);
         }
     }
 
@@ -545,7 +630,8 @@ namespace System.Reflection.Metadata.Ecma335.Blobs
                     return;
 
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(type));
+                    Throw.ArgumentOutOfRange(nameof(type));
+                    return;
             }
         }
 
@@ -631,7 +717,8 @@ namespace System.Reflection.Metadata.Ecma335.Blobs
                 case PrimitiveTypeCode.TypedReference:
                 case PrimitiveTypeCode.Void:
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(type));
+                    Throw.ArgumentOutOfRange(nameof(type));
+                    return;
             }
         }
 
@@ -640,6 +727,18 @@ namespace System.Reflection.Metadata.Ecma335.Blobs
             Builder.WriteByte((byte)SignatureTypeCode.Array);
             elementType = this;
             arrayShape = new ArrayShapeEncoder(Builder);
+        }
+
+        public void Array(Action<SignatureTypeEncoder> elementType, Action<ArrayShapeEncoder> arrayShape)
+        {
+            if (elementType == null) Throw.ArgumentNull(nameof(elementType));
+            if (arrayShape == null) Throw.ArgumentNull(nameof(arrayShape));
+
+            SignatureTypeEncoder elementTypeEncoder;
+            ArrayShapeEncoder arrayShapeEncoder;
+            Array(out elementTypeEncoder, out arrayShapeEncoder);
+            elementType(elementTypeEncoder);
+            arrayShape(arrayShapeEncoder);
         }
 
         public void TypeDefOrRefOrSpec(bool isValueType, EntityHandle typeRefDefSpec)
@@ -662,14 +761,14 @@ namespace System.Reflection.Metadata.Ecma335.Blobs
             }
 
             Builder.WriteByte((byte)SignatureTypeCode.FunctionPointer);
-            Builder.WriteByte(BlobEncoder.SignatureHeader(SignatureKind.Method, convention, (SignatureAttributes)attributes).RawValue);
+            Builder.WriteByte(new SignatureHeader(SignatureKind.Method, convention, (SignatureAttributes)attributes).RawValue);
 
             if (genericParameterCount != 0)
             {
                 Builder.WriteCompressedInteger(genericParameterCount);
             }
 
-            return new MethodSignatureEncoder(Builder, isVarArg: convention == SignatureCallingConvention.VarArgs);
+            return new MethodSignatureEncoder(Builder, hasVarArgs: convention == SignatureCallingConvention.VarArgs);
         }
 
         public GenericTypeArgumentsEncoder GenericInstantiation(bool isValueType, EntityHandle typeRefDefSpec, int genericArgumentCount)
@@ -739,10 +838,6 @@ namespace System.Reflection.Metadata.Ecma335.Blobs
 
             Builder.WriteCompressedInteger(CodedIndex.ToTypeDefOrRefOrSpec(typeDefRefSpec));
             return this;
-        }
-
-        public void EndModifiers()
-        {
         }
     }
 
@@ -821,12 +916,12 @@ namespace System.Reflection.Metadata.Ecma335.Blobs
     public struct ParametersEncoder
     {
         public BlobBuilder Builder { get; }
-        private readonly bool _allowOptional;
+        public bool HasVarArgs { get; }
 
-        public ParametersEncoder(BlobBuilder builder, bool allowVarArgs)
+        public ParametersEncoder(BlobBuilder builder, bool hasVarArgs)
         {
             Builder = builder;
-            _allowOptional = allowVarArgs;
+            HasVarArgs = hasVarArgs;
         }
 
         public ParameterTypeEncoder AddParameter()
@@ -836,17 +931,13 @@ namespace System.Reflection.Metadata.Ecma335.Blobs
 
         public ParametersEncoder StartVarArgs()
         {
-            if (!_allowOptional)
+            if (!HasVarArgs)
             {
                 throw new InvalidOperationException();
             }
 
             Builder.WriteByte((byte)SignatureTypeCode.Sentinel);
-            return new ParametersEncoder(Builder, allowVarArgs: false);
-        }
-
-        public void EndParameters()
-        {
+            return new ParametersEncoder(Builder, hasVarArgs: false);
         }
     }
 }
