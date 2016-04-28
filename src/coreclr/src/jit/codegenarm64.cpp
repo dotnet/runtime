@@ -6445,6 +6445,7 @@ CodeGen::genIntrinsic(GenTreePtr treeNode)
 //
 void CodeGen::genPutArgStk(GenTreePtr treeNode)
 {
+    assert(treeNode->OperGet() == GT_PUTARG_STK);
     var_types targetType = treeNode->TypeGet();
     emitter *emit = getEmitter();
 
@@ -6493,8 +6494,9 @@ void CodeGen::genPutArgStk(GenTreePtr treeNode)
     {
         varNum = compiler->lvaOutgoingArgSpaceVar;
     }
+    bool isStruct = (targetType == TYP_STRUCT) || (data->OperGet() == GT_LIST);
 
-    if (targetType != TYP_STRUCT)   // a normal non-Struct argument
+    if (!isStruct)   // a normal non-Struct argument
     {
         instruction storeIns  = ins_Store(targetType);  
         emitAttr    storeAttr = emitTypeSize(targetType);
@@ -6512,7 +6514,7 @@ void CodeGen::genPutArgStk(GenTreePtr treeNode)
             emit->emitIns_S_R(storeIns, storeAttr, data->gtRegNum, varNum, argOffset);
         }
     }
-    else  // We have a TYP_STRUCT argument (it also must be a 16-byte multi-reg struct)
+    else  // We have a TYP_STRUCT argument (it currently must be a 16-byte multi-reg struct)
     {
         // We will use two store instructions that each write a register sized value
 
@@ -6520,12 +6522,14 @@ void CodeGen::genPutArgStk(GenTreePtr treeNode)
         assert(curArgTabEntry->numSlots == 2);
         assert(data->isContained());    // We expect that this node was marked as contained in LowerArm64
 
-        // In lowerArm64 we reserved two internal integer registers for this 16-byte TYP_STRUCT
         regNumber loReg = REG_NA;
         regNumber hiReg = REG_NA;
-        genGetRegPairFromMask(treeNode->gtRsvdRegs, &loReg, &hiReg);
-        assert(loReg != REG_NA);
-        assert(hiReg != REG_NA);
+
+        if (data->OperGet() != GT_LIST)
+        {
+            // In lowerArm64 we reserved two internal integer registers for this 16-byte TYP_STRUCT
+            genGetRegPairFromMask(treeNode->gtRsvdRegs, &loReg, &hiReg);
+        }
 
         // We will need to record the GC type used by each of the load instructions
         //  so that we use the same type in each of the store instructions
@@ -6697,6 +6701,31 @@ void CodeGen::genPutArgStk(GenTreePtr treeNode)
                 }
             }
         }
+        else if (data->OperGet() == GT_LIST)
+        {
+            // Deal with multi register passed struct args.
+            GenTreeArgList* argListPtr = data->AsArgList();
+            unsigned iterationNum = 0;
+            for (; argListPtr != nullptr; argListPtr = argListPtr->Rest(), iterationNum++)
+            {
+                GenTreePtr nextArgNode = argListPtr->gtOp.gtOp1;
+                genConsumeReg(nextArgNode);
+
+                if (iterationNum == 0)
+                {
+                    // record loReg and type0 for the store to the out arg space
+                    loReg = nextArgNode->gtRegNum;
+                    type0 = nextArgNode->TypeGet();
+                }
+                else
+                {
+                    assert(iterationNum == 1);
+                    // record hiReg and type1 for the store to the out arg space
+                    hiReg = nextArgNode->gtRegNum;;
+                    type1 = nextArgNode->TypeGet();
+                }
+            }
+        }
 
         if ((data->OperGet() == GT_LCL_VAR) || (data->OperGet() == GT_LCL_VAR_ADDR))
         {
@@ -6718,6 +6747,10 @@ void CodeGen::genPutArgStk(GenTreePtr treeNode)
             emit->emitIns_R_S(ins_Load(type0), emitTypeSize(type0), loReg, varNum, 0);
             emit->emitIns_R_S(ins_Load(type1), emitTypeSize(type1), hiReg, varNum, TARGET_POINTER_SIZE);
         }
+
+        // We are required to set these two values above
+        assert(loReg != REG_NA);
+        assert(hiReg != REG_NA);
 
         // We are required to set these two values above, so that the stores have the same GC type as the loads
         assert(type0 != TYP_UNKNOWN);

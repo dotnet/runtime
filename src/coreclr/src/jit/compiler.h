@@ -2031,6 +2031,7 @@ public:
     void                    gtGetArgMsg     (GenTreePtr             call,
                                              GenTreePtr             arg,
                                              unsigned               argNum,
+                                             int                    listCount,
                                              char*                  bufp,
                                              unsigned               bufLength);
     void                    gtGetLateArgMsg (GenTreePtr             call,
@@ -8819,7 +8820,7 @@ public:
 #endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
     void          fgMorphMultiregStructArgs(GenTreeCall* call);
-    GenTreePtr    fgMorphMultiregStructArg (GenTreePtr   arg);
+    GenTreePtr    fgMorphMultiregStructArg (GenTreePtr   arg, fgArgTabEntryPtr fgEntryPtr);
 
 }; // end of class Compiler
 

@@ -626,7 +626,7 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
 
                                 // To avoid redundant moves, request that the argument child tree be 
                                 // computed in the register in which the argument is passed to the call.
-                                putArgChild ->gtLsraInfo.setSrcCandidates(l, targetMask);
+                                putArgChild->gtLsraInfo.setSrcCandidates(l, targetMask);
 
                                 // We consume one source for each item in this list
                                 info->srcCount++;
@@ -694,7 +694,7 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
                 {
                     GenTreePtr arg = args->gtOp.gtOp1;
 
-                    // Skip arguments that havew been moved to the Late Arg list
+                    // Skip arguments that have been moved to the Late Arg list
                     if (!(args->gtFlags & GTF_LATE_ARG))
                     {
                         if (arg->gtOper == GT_PUTARG_STK)
@@ -1040,33 +1040,46 @@ void Lowering::TreeNodeInfoInitPutArgStk(GenTree* argNode, fgArgTabEntryPtr info
     argNode->gtLsraInfo.srcCount = 1;
     argNode->gtLsraInfo.dstCount = 0;
 
-    // Do we have a TYP_STRUCT argument, if so it must be a 16-byte pass-by-value struct
-    if (putArgChild->TypeGet() == TYP_STRUCT)
+    // Do we have a TYP_STRUCT argument (or a GT_LIST), if so it must be a 16-byte pass-by-value struct
+    if ((putArgChild->TypeGet() == TYP_STRUCT) || (putArgChild->OperGet() == GT_LIST))
     {
         // We will use two store instructions that each write a register sized value
 
         // We must have a multi-reg struct 
         assert(info->numSlots >= 2);
 
-        // We can use a ldp/stp sequence so we need two internal registers
-        argNode->gtLsraInfo.internalIntCount = 2;
-
-        if (putArgChild->OperGet() == GT_OBJ)
+        if (putArgChild->OperGet() == GT_LIST)
         {
-            GenTreePtr objChild = putArgChild->gtOp.gtOp1;
-            if (objChild->OperGet() == GT_LCL_VAR_ADDR)
-            {
-                // We will generate all of the code for the GT_PUTARG_STK, the GT_OBJ and the GT_LCL_VAR_ADDR
-                // as one contained operation
-                //                            
-                MakeSrcContained(putArgChild, objChild);
-            }
+            // We consume all of the items in the GT_LIST
+            argNode->gtLsraInfo.srcCount = info->numSlots;
         }
+        else
+        {
+            // We could use a ldp/stp sequence so we need two internal registers
+            argNode->gtLsraInfo.internalIntCount = 2;
 
-        // We will generate all of the code for the GT_PUTARG_STK and it's child node 
-        // as one contained operation
-        //                            
-        MakeSrcContained(argNode, putArgChild);
+            if (putArgChild->OperGet() == GT_OBJ)
+            {
+                GenTreePtr objChild = putArgChild->gtOp.gtOp1;
+                if (objChild->OperGet() == GT_LCL_VAR_ADDR)
+                {
+                    // We will generate all of the code for the GT_PUTARG_STK, the GT_OBJ and the GT_LCL_VAR_ADDR
+                    // as one contained operation
+                    //                            
+                    MakeSrcContained(putArgChild, objChild);
+                }
+            }
+
+            // We will generate all of the code for the GT_PUTARG_STK and it's child node 
+            // as one contained operation
+            //                            
+            MakeSrcContained(argNode, putArgChild);
+        }
+    }
+    else
+    {
+        // We must not have a multi-reg struct 
+        assert(info->numSlots == 1);
     }
 }
 
