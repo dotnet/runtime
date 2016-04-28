@@ -6,7 +6,7 @@ using System.Collections.Immutable;
 using System.Reflection.Metadata.Tests;
 using Xunit;
 
-namespace System.Reflection.Metadata.Ecma335.Blobs.Tests
+namespace System.Reflection.Metadata.Ecma335.Tests
 {
     public class BlobEncodersTests
     {

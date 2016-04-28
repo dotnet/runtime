@@ -7,7 +7,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 
-namespace System.Reflection.Metadata.Ecma335.Blobs
+namespace System.Reflection.Metadata.Ecma335
 {
     public sealed class BranchBuilder
     {

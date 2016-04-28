@@ -4,7 +4,7 @@
 
 using System.Diagnostics;
 
-namespace System.Reflection.Metadata.Ecma335.Blobs
+namespace System.Reflection.Metadata.Ecma335
 {
     public struct LabelHandle : IEquatable<LabelHandle>
     {

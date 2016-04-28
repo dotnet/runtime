@@ -5,7 +5,7 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
 
-namespace System.Reflection.Metadata.Ecma335.Blobs
+namespace System.Reflection.Metadata.Ecma335
 {
     public struct MethodBodyEncoder
     {
