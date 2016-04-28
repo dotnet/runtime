@@ -41,7 +41,7 @@ namespace System.Text.Tests
         [MemberData(nameof(Decode_TestData))]
         public void Decode(byte[] littleEndianBytes, int index, int count, string expected)
         {
-            byte[] bigEndianBytes = GetBigEndianBytes(littleEndianBytes);
+            byte[] bigEndianBytes = GetBigEndianBytes(littleEndianBytes, index, count);
 
             EncodingHelpers.Decode(new UTF32Encoding(true, true, false), bigEndianBytes, index, count, expected);
             EncodingHelpers.Decode(new UTF32Encoding(true, false, false), bigEndianBytes, index, count, expected);
@@ -56,7 +56,7 @@ namespace System.Text.Tests
 
         public void Decode_InvalidBytes(byte[] littleEndianBytes, int index, int count, string expected)
         {
-            byte[] bigEndianBytes = GetBigEndianBytes(littleEndianBytes);
+            byte[] bigEndianBytes = GetBigEndianBytes(littleEndianBytes, index, count);
 
             EncodingHelpers.Decode(new UTF32Encoding(true, true, false), bigEndianBytes, index, count, expected);
             EncodingHelpers.Decode(new UTF32Encoding(true, false, false), bigEndianBytes, index, count, expected);
@@ -101,10 +101,10 @@ namespace System.Text.Tests
             Decode_InvalidBytes(new byte[] { 0x00, 0x00, 0x00, 0xFF }, 0, 4, "\uFFFD");
             Decode_InvalidBytes(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF }, 0, 4, "\uFFFD");
         }
-
-        public static byte[] GetBigEndianBytes(byte[] littleEndianBytes)
+        
+        public static byte[] GetBigEndianBytes(byte[] littleEndianBytes, int index, int count)
         {
-            byte[] bigEndianBytes = (byte[])littleEndianBytes.Clone();
+            byte[] bytes = new byte[littleEndianBytes.Length];
             for (int i = 0; i < littleEndianBytes.Length; i += 4)
             {
                 if (i + 3 >= littleEndianBytes.Length)
@@ -112,17 +112,17 @@ namespace System.Text.Tests
                     continue;
                 }
 
-                byte b1 = bigEndianBytes[i];
-                byte b2 = bigEndianBytes[i + 1];
-                byte b3 = bigEndianBytes[i + 2];
-                byte b4 = bigEndianBytes[i + 3];
+                byte b1 = littleEndianBytes[i];
+                byte b2 = littleEndianBytes[i + 1];
+                byte b3 = littleEndianBytes[i + 2];
+                byte b4 = littleEndianBytes[i + 3];
 
-                bigEndianBytes[i] = b4;
-                bigEndianBytes[i + 1] = b3;
-                bigEndianBytes[i + 2] = b2;
-                bigEndianBytes[i + 3] = b1;
+                bytes[i] = b4;
+                bytes[i + 1] = b3;
+                bytes[i + 2] = b2;
+                bytes[i + 3] = b1;
             }
-            return bigEndianBytes;
+            return bytes;
         }
     }
 }
