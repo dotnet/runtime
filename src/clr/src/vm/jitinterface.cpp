@@ -12476,9 +12476,7 @@ void Module::LoadHelperTable()
 
 #if defined(_TARGET_AMD64_)
                 *curEntry = X86_INSTR_JMP_REL32;
-                *(INT32 *)(curEntry + 1) = rel32UsingJumpStub((INT32 *)(curEntry + 1), pfnHelper, NULL, GetLoaderAllocator());
-#elif defined (_TARGET_ARM64_)
-                _ASSERTE(!"ARM64:NYI");      
+                *(INT32 *)(curEntry + 1) = rel32UsingJumpStub((INT32 *)(curEntry + 1), pfnHelper, NULL, GetLoaderAllocator());   
 #else // all other platforms
                 emitJump(curEntry, (LPVOID)pfnHelper);
                 _ASSERTE(HELPER_TABLE_ENTRY_LEN >= JUMP_ALLOCATE_SIZE);

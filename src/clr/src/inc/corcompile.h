@@ -933,10 +933,13 @@ struct CORCOMPILE_DEPENDENCY
 
 /*********************************************************************************/
 // Flags used to encode HelperTable
-
+#if defined(_TARGET_ARM64_)
+#define HELPER_TABLE_ENTRY_LEN      16
+#else
 #define HELPER_TABLE_ENTRY_LEN      8
-#define HELPER_TABLE_ALIGN          8
+#endif //defined(_TARGET_ARM64_)
 
+#define HELPER_TABLE_ALIGN          8
 #define CORCOMPILE_HELPER_PTR       0x80000000 // The entry is pointer to the helper (jump thunk otherwise)
 
 // The layout of this struct is required to be
