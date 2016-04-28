@@ -9523,7 +9523,7 @@ NO_MUL_64RSLT:
             if (((op2->gtOper == GT_CNS_INT) && (op2->gtIntConCommon.IconValue() == 1))
                 || ((op2->gtOper == GT_CNS_LNG) && (op2->gtIntConCommon.LngValue() == 1)))
             {
-                GenTreePtr zeroNode = new(this, GT_CNS_INT) GenTreeIntCon(typ, 0);
+                GenTreePtr zeroNode = gtNewZeroConNode(typ);
 #ifdef DEBUG
                 zeroNode->gtFlags |= GTF_MORPHED;
 #endif
