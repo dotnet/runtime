@@ -155,6 +155,7 @@
     <Compile Include="Lambda\LambdaMultiplyTests.cs" />
     <Compile Include="Lambda\LambdaSubtractNullableTests.cs" />
     <Compile Include="Lambda\LambdaSubtractTests.cs" />
+    <Compile Include="Lambda\LambdaTests.cs" />
     <Compile Include="Lambda\LambdaUnaryNotNullableTests.cs" />
     <Compile Include="Lambda\LambdaUnaryNotTests.cs" />
     <Compile Include="Lifted\LiftedAddCheckedNullableTests.cs" />
