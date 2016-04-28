@@ -217,6 +217,9 @@ isMSBuildOnNETCoreSupported()
                 __OSVersion=$(lsb_release -rs)
                 if [ "$__OSVersion" == "14.04" ]; then
                     __isMSBuildOnNETCoreSupported=1
+                elif [ "$(cat /etc/*-release | grep -cim1 14.04)" -eq 1 ]; then
+                    # Linux Mint based on Ubuntu 14.04
+                    __isMSBuildOnNETCoreSupported=1
                 fi
             elif [ "$__DistroName" == "rhel" ]; then
                 __isMSBuildOnNETCoreSupported=1
