@@ -375,9 +375,6 @@
   <data name="FaultBlockNotSupported" xml:space="preserve">
     <value>Fault blocks are not supported</value>
   </data>
-  <data name="NonReducibleExpressionExtensionsNotSupported" xml:space="preserve">
-    <value>Non-reducible expression extensions are not supported</value>
-  </data>
   <data name="ParameterExpressionNotValidAsDelegate" xml:space="preserve">
     <value>ParameterExpression of type '{0}' cannot be used for delegate parameter of type '{1}'</value>
   </data>
