@@ -4,8 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
-using Microsoft.Extensions.PlatformAbstractions;
+using Microsoft.DotNet.InternalAbstractions;
 using Microsoft.Extensions.EnvironmentAbstractions;
 
 namespace Microsoft.Extensions.DependencyModel.Resolution
@@ -25,7 +24,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
         }
 
         internal AppBaseCompilationAssemblyResolver(IFileSystem fileSystem)
-            : this(fileSystem, PlatformServices.Default.Application.ApplicationBasePath)
+            : this(fileSystem, ApplicationEnvironment.ApplicationBasePath)
         {
         }
 
