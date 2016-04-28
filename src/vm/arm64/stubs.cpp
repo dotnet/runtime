@@ -734,10 +734,8 @@ void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->pCurrentContextPointers->X26 = (PDWORD64)&m_ctx.X26;
     pRD->pCurrentContextPointers->X27 = (PDWORD64)&m_ctx.X27;
     pRD->pCurrentContextPointers->X28 = (PDWORD64)&m_ctx.X28;
-    pRD->pCurrentContextPointers->Fp = NULL;
-    pRD->pCurrentContextPointers->Lr = NULL;
-
-
+    pRD->pCurrentContextPointers->Fp = (PDWORD64)&m_ctx.Fp;
+    pRD->pCurrentContextPointers->Lr = (PDWORD64)&m_ctx.Lr;
 
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
