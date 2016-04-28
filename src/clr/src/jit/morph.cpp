@@ -15640,19 +15640,19 @@ void                Compiler::fgPromoteStructs()
 
                 if (varDsc->lvIsParam)
                 {
-#if FEATURE_MULTIREG_STRUCT_PROMOTE
-                   
-                    if (varDsc->lvIsMultiregStruct()        &&   // Is this a variable holding a value that is passed in multiple registers?
-                        (structPromotionInfo.fieldCnt != 2) &&   // An argument with two exactly two fields
-                        false)                                   // TODO-PERF - Disabled as this needs additional implementation:
-                                                                 //             it hits assert(lvFieldCnt==1) in lclvar.cpp line 4417
+#if FEATURE_MULTIREG_STRUCT_PROMOTE                   
+                    if (varDsc->lvIsMultiregStruct() &&         // Is this a variable holding a value that is passed in multiple registers?
+                        (structPromotionInfo.fieldCnt != 2))    // Does it have exactly two fields
                     {
-                        JITDUMP("Not promoting multireg struct local V%02u, because lvIsParam is true and #fields = %d.\n",
-                            lclNum, structPromotionInfo.fieldCnt);
+                        JITDUMP("Not promoting multireg struct local V%02u, because lvIsParam is true and #fields != 2\n",
+                                lclNum);
                         continue;
                     }
-                    else
 #endif  // !FEATURE_MULTIREG_STRUCT_PROMOTE
+
+                    // TODO-PERF - Implement struct promotion for incoming multireg structs
+                    //             Currently it hits assert(lvFieldCnt==1) in lclvar.cpp line 4417  
+
                     if (structPromotionInfo.fieldCnt != 1)
                     {
                         JITDUMP("Not promoting promotable struct local V%02u, because lvIsParam is true and #fields = %d.\n",
