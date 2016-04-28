@@ -100,7 +100,7 @@ namespace System.Net.Http.Functional.Tests
             LoopbackServer.TransferError transferError)
         {
             IPEndPoint serverEndPoint;
-            Task serverTask = LoopbackServer.StartServer(transferType, transferError, out serverEndPoint);
+            Task serverTask = LoopbackServer.StartTransferTypeAndErrorServer(transferType, transferError, out serverEndPoint);
 
             await Assert.ThrowsAsync<IOException>(() => ReadAsStreamHelper(serverEndPoint));
 
@@ -116,7 +116,7 @@ namespace System.Net.Http.Functional.Tests
             LoopbackServer.TransferError transferError)
         {
             IPEndPoint serverEndPoint;
-            Task serverTask = LoopbackServer.StartServer(transferType, transferError, out serverEndPoint);
+            Task serverTask = LoopbackServer.StartTransferTypeAndErrorServer(transferType, transferError, out serverEndPoint);
 
             await ReadAsStreamHelper(serverEndPoint);
 

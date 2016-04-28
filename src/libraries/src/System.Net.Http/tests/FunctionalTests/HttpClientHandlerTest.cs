@@ -558,15 +558,16 @@ namespace System.Net.Http.Functional.Tests
             var cookie2 = new KeyValuePair<string, string>(".AspNetCore.Session", "RAExEmXpoCbueP_QYM");
             var cookie3 = new KeyValuePair<string, string>("name", "value");
 
-            await CreateServerAsync(async (handler, client, server, url) =>
+            await LoopbackServer.CreateClientAndServerAsync(async (handler, client, server, url) =>
             {
                 Task<HttpResponseMessage> getResponse = client.GetAsync(url);
 
-                await AcceptSocketAsync(server, async (s, stream, reader, writer) =>
+                await LoopbackServer.AcceptSocketAsync(server, async (s, stream, reader, writer) =>
                 {
                     while (!string.IsNullOrEmpty(reader.ReadLine())) ;
                     await writer.WriteAsync(
                         $"HTTP/1.1 200 OK\r\n" +
+                        $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
                         $"Set-Cookie: {cookie1.Key}={cookie1.Value}; Path=/\r\n" +
                         $"Set-Cookie: {cookie2.Key}={cookie2.Value}; Path=/\r\n" +
                         $"Set-Cookie: {cookie3.Key}={cookie3.Value}; Path=/\r\n" +
@@ -634,14 +635,19 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task SendAsync_ReadFromSlowStreamingServer_PartialDataReturned()
         {
-            await CreateServerAsync(async (handler, client, server, url) =>
+            await LoopbackServer.CreateClientAndServerAsync(async (handler, client, server, url) =>
             {
                 Task<HttpResponseMessage> getResponse = client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
 
-                await AcceptSocketAsync(server, async (s, stream, reader, writer) =>
+                await LoopbackServer.AcceptSocketAsync(server, async (s, stream, reader, writer) =>
                 {
                     while (!string.IsNullOrEmpty(reader.ReadLine())) ;
-                    await writer.WriteAsync("HTTP/1.1 200 OK\r\nContent-Length: 16000\r\n\r\nless than 16000 bytes");
+                    await writer.WriteAsync(
+                        "HTTP/1.1 200 OK\r\n" +
+                        $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
+                        "Content-Length: 16000\r\n" +
+                        "\r\n" +
+                        "less than 16000 bytes");
                     await writer.FlushAsync();
 
                     using (HttpResponseMessage response = await getResponse)
@@ -661,7 +667,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task Dispose_DisposingHandlerCancelsActiveOperations()
         {
-            await CreateServerAsync(async (handler, client, socket, url) =>
+            await LoopbackServer.CreateClientAndServerAsync(async (handler, client, socket, url) =>
             {
                 Task<string> download = client.GetStringAsync(url);
                 using (Socket acceptedSocket = await socket.AcceptAsync())
@@ -670,33 +676,6 @@ namespace System.Net.Http.Functional.Tests
                     await Assert.ThrowsAnyAsync<OperationCanceledException>(() => download);
                 }
             });
-        }
-
-        private static async Task CreateServerAsync(Func<HttpClientHandler, HttpClient, Socket, Uri, Task> funcAsync)
-        {
-            using (var handler = new HttpClientHandler())
-            using (var client = new HttpClient(handler))
-            using (var server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            {
-                server.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-                server.Listen(1);
-
-                var ep = (IPEndPoint)server.LocalEndPoint;
-                var url = new Uri($"http://{ep.Address}:{ep.Port}/");
-
-                await funcAsync(handler, client, server, url).ConfigureAwait(false);
-            }
-        }
-
-        private static async Task AcceptSocketAsync(Socket server, Func<Socket, NetworkStream, StreamReader, StreamWriter, Task> funcAsync)
-        {
-            using (Socket s = await server.AcceptAsync())
-            using (var stream = new NetworkStream(s, ownsSocket: false))
-            using (var reader = new StreamReader(stream, Encoding.ASCII))
-            using (var writer = new StreamWriter(stream, Encoding.ASCII))
-            {
-                await funcAsync(s, stream, reader, writer).ConfigureAwait(false);
-            }
         }
 
         #region Post Methods Tests
