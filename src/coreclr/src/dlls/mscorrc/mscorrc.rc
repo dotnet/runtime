@@ -994,7 +994,12 @@ BEGIN
     IDS_EE_LOAD_BAD_MAIN_SIG                "Main method for type '%1' has invalid signature."
     IDS_EE_LOAD_CIRCULAR_DEPENDENCY         "A circular dependency was detected when loading file or assembly '%1'."
 
+#ifdef FEATURE_CORECLR
+    IDS_EE_FILE_NOT_FOUND                   "File or assembly name '%1' was not found."
+#else
     IDS_EE_FILE_NOT_FOUND                   "File or assembly name '%1', or one of its dependencies, was not found."
+#endif
+
     IDS_EE_TOO_MANY_OPEN_FILES              "The system cannot open file '%1'.  There may be too many open files."
     IDS_EE_SHARING_VIOLATION                "Cannot access file '%1' because it is being used by another process."
     IDS_EE_LOCK_VIOLATION                   "Cannot access file '%1' because another process has locked a portion of the file."
@@ -1367,8 +1372,12 @@ BEGIN
     IDS_EE_IJWLOAD_MULTIRUNTIME_DISALLOWED  "Mixed mode assembly cannot be loaded into version '%1' of the runtime because it is already loaded into version '%2'."
     IDS_EE_CANNOT_HAVE_ASSEMBLY_SPEC        "Unexpected assembly-qualifier in a typename."
     IDS_EE_NEEDS_ASSEMBLY_SPEC              "Typename needs an assembly qualifier."
-    IDS_EE_FILELOAD_ERROR_GENERIC           "Could not load file or assembly '%1' or one of its dependencies. %2"
 
+#ifdef FEATURE_CORECLR
+    IDS_EE_FILELOAD_ERROR_GENERIC           "Could not load file or assembly '%1'. %2"
+#else
+    IDS_EE_FILELOAD_ERROR_GENERIC           "Could not load file or assembly '%1' or one of its dependencies. %2"
+#endif
 
     IDS_EE_CRYPTO_UNKNOWN_OPERATION         "Unknown import key operation specified."
 
