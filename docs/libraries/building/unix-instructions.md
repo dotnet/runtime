@@ -37,13 +37,12 @@ cmakeargs          # user-settable additional arguments passed to CMake
 
 ### Prerequisites
 
-* bash
-* curl (devel)
-* icu
-* clang
-* llvm
-* lldb
-* cmake
+* git `sudo apt-get install git`
+* curl-dev `sudo apt-get install libcurl4-openssl-dev`
+* icu `sudo apt-get install libicu52`
+* cmake `sudo apt-get install cmake`
+* clang `sudo apt-get install clang-3.6`
+* libunwind `sudo apt-get install libunwind8`
 
 > Note: These instructions have been validated on:
 * Ubuntu 15.04, 14.04, and 12.04
@@ -64,18 +63,8 @@ mozroots --import --sync
 
 *Note: verified on Ubuntu 14.04 LTS*
 
-1. Install git `sudo apt-get install git`
+1. Install the prerequisites
+ * `sudo apt-get install git libcurl4-openssl-dev libicu52 cmake clang-3.6 libunwind8 && sudo ln -s /usr/bin/clang-3.6 /usr/bin/clang && sudo ln -s /usr/bin/clang++-3.6 /usr/bin/clang++`
 2. Clone the corefx repo `git clone https://github.com/dotnet/corefx.git`
-3. Install curl-dev `sudo apt-get install libcurl4-openssl-dev`
-4. Install icu `sudo apt-get install libicu52`
-5. Install cmake `sudo apt-get install cmake`
-6. Install clang `sudo apt-get install clang-3.6`
-7. Install libunwind `sudo apt-get install libunwind8`
-8. Create a symlink for clang bins `sudo ln -s /usr/bin/clang-3.6 /usr/bin/clang && sudo ln -s /usr/bin/clang++-3.6 /usr/bin/clang++`
-9. Navigate to the `corefx` directory and run the build script `./build.sh`
-
-### Aggregated Dependencies Installation and Configuration
-
-*Note: the below command does not include the `git clone` or the execution of the build script*
-
-`sudo apt-get install git libcurl4-openssl-dev libicu52 cmake clang-3.6 libunwind8 && sudo ln -s /usr/bin/clang-3.6 /usr/bin/clang && sudo ln -s /usr/bin/clang++-3.6 /usr/bin/clang++`
+3. Navigate to the `corefx` directory 
+4. Run the build script `./build.sh`
