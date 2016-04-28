@@ -2104,6 +2104,12 @@ void ZapInfo::getCallInfo(CORINFO_RESOLVED_TOKEN * pResolvedToken,
             m_zapper->Warning(W("ReadyToRun: Methods with security checks not supported\n"));
             ThrowHR(E_NOTIMPL);
         }
+
+        if (GetCompileInfo()->IsNativeCallableMethod(pResult->hMethod))
+        {
+            m_zapper->Warning(W("ReadyToRun: References to methods with NativeCallableAttribute not supported\n"));
+            ThrowHR(E_NOTIMPL);
+        }
     }
 #endif
 
