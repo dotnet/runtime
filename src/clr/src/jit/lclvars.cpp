@@ -3910,6 +3910,22 @@ void                Compiler::lvaAssignFrameOffsets(FrameLayoutState curState)
  */
 void Compiler::lvaFixVirtualFrameOffsets()
 {
+    LclVarDsc * varDsc;
+
+#if FEATURE_EH_FUNCLETS && defined(_TARGET_AMD64_)
+    if (ehNeedsPSPSym())
+    {
+        // We need to fix the offset of the PSPSym so there is no padding between it and the outgoing argument space.
+        // Without this code, lvaAlignFrame might have put the padding lower than the PSPSym, which would be between
+        // the PSPSym and the outgoing argument space.
+        assert(lvaPSPSym != BAD_VAR_NUM);
+        varDsc = &lvaTable[lvaPSPSym];
+        assert(varDsc->lvFramePointerBased);        // We always access it RBP-relative.
+        assert(!varDsc->lvMustInit);                // It is never "must init".
+        varDsc->lvStkOffs = codeGen->genCallerSPtoInitialSPdelta() + lvaLclSize(lvaOutgoingArgSpaceVar);
+    }
+#endif
+
     // The delta to be added to virtual offset to adjust it relative to frame pointer or SP
     int delta = 0;
 
@@ -3940,7 +3956,6 @@ void Compiler::lvaFixVirtualFrameOffsets()
 #endif //_TARGET_AMD64_
 
     unsigned lclNum;
-    LclVarDsc * varDsc;
     for (lclNum = 0, varDsc = lvaTable;
          lclNum < lvaCount;
          lclNum++  , varDsc++)
@@ -4014,17 +4029,6 @@ void Compiler::lvaFixVirtualFrameOffsets()
     }
 
     lvaCachedGenericContextArgOffs += delta;
-
-#if FEATURE_EH_FUNCLETS && defined(_TARGET_AMD64_)
-    if (ehNeedsPSPSym())
-    {
-        assert(lvaPSPSym != BAD_VAR_NUM);
-        varDsc = &lvaTable[lvaPSPSym];
-        varDsc->lvFramePointerBased = false;
-        varDsc->lvMustInit = false;
-        varDsc->lvStkOffs = lvaLclSize(lvaOutgoingArgSpaceVar); // put the PSPSym just above the outgoing arg space
-    }
-#endif
 
 #if FEATURE_FIXED_OUT_ARGS
 
@@ -5301,10 +5305,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     {
         // On AMD64, if we need a PSPSym, allocate it last, immediately above the outgoing argument
         // space. Any padding will be higher on the stack than this
-        // (including the padding added by lvaAlignFrame()). Here, we will give it an offset, but really we
-        // will set its value at the end of lvaFixVirtualFrameOffsets, as for lvaOutgoingArgSpace.
-        // There is a comment above that the P/Invoke vars "need to be assigned last". We are ignoring
-        // that here (TODO-AMD64-Bug?: is that ok? JIT64 does things this way).
+        // (including the padding added by lvaAlignFrame()).
         noway_assert(codeGen->isFramePointerUsed());  // We need an explicit frame pointer
         assert(lvaPSPSym != BAD_VAR_NUM);   // We should have created the PSPSym variable
         stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaPSPSym, TARGET_POINTER_SIZE, stkOffs);
