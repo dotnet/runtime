@@ -4,15 +4,12 @@
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
-using Microsoft.DotNet.Cli.Utils;
 using System.IO;
-using System.Runtime.Versioning;
+using Microsoft.DotNet.Cli.Utils;
 using Microsoft.DotNet.ProjectModel;
+using Microsoft.DotNet.ProjectModel.Graph;
 using Microsoft.Extensions.DependencyModel;
 using NuGet.Frameworks;
-using NuGet.Packaging;
-using NuGet.Versioning;
-using Microsoft.DotNet.ProjectModel.Graph;
 
 namespace RuntimeGraphGenerator
 {
