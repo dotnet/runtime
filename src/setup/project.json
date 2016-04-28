@@ -7,14 +7,23 @@
   },
   "compilationOptions": {
     "warningsAsErrors": true,
-    "keyFile": "../../tools/Key.snk"
-  },
-  "dependencies": {
-    "Microsoft.Extensions.PlatformAbstractions": "1.0.0-rc2-20581"
+    "keyFile": "../../tools/Key.snk",
+    "allowUnsafe": true
   },
   "frameworks": {
-    "net451": {},
-    "netstandard1.3": {}
+    "net451": { },
+    "netstandard1.3": {
+      "dependencies": {
+        "System.AppContext": "4.1.0-rc2-24027",
+        "System.Collections": "4.0.11-rc2-24027",
+        "System.IO": "4.1.0-rc2-24027",
+        "System.IO.FileSystem": "4.0.1-rc2-24027",
+        "System.Reflection.TypeExtensions": "4.1.0-rc2-24027",
+        "System.Runtime.Extensions": "4.1.0-rc2-24027",
+        "System.Runtime.InteropServices": "4.1.0-rc2-24027",
+        "System.Runtime.InteropServices.RuntimeInformation": "4.0.0-rc2-24027"
+      }
+    }
   },
-  "scripts": {}
+  "scripts": { }
 }
