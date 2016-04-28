@@ -37,6 +37,118 @@ namespace System.Net.Security
 
         }
 
+        private static bool GssInitSecurityContext(
+            ref SafeGssContextHandle context,
+            SafeGssCredHandle credential,
+            bool isNtlm,
+            SafeGssNameHandle targetName,
+            Interop.NetSecurityNative.GssFlags inFlags,
+            byte[] buffer,
+            out byte[] outputBuffer,
+            out uint outFlags,
+            out int isNtlmUsed)
+        {
+            outputBuffer = null;
+            outFlags = 0;
+
+            // EstablishSecurityContext is called multiple times in a session.
+            // In each call, we need to pass the context handle from the previous call.
+            // For the first call, the context handle will be null.
+            if (context == null)
+            {
+                context = new SafeGssContextHandle();
+            }
+
+            Interop.NetSecurityNative.GssBuffer token = default(Interop.NetSecurityNative.GssBuffer);
+            Interop.NetSecurityNative.Status status;
+
+            try
+            {
+                Interop.NetSecurityNative.Status minorStatus;
+                status = Interop.NetSecurityNative.InitSecContext(out minorStatus,
+                                                          credential,
+                                                          ref context,
+                                                          isNtlm,
+                                                          targetName,
+                                                          (uint)inFlags,
+                                                          buffer,
+                                                          (buffer == null) ? 0 : buffer.Length,
+                                                          ref token,
+                                                          out outFlags,
+                                                          out isNtlmUsed);
+
+                if ((status != Interop.NetSecurityNative.Status.GSS_S_COMPLETE) && (status != Interop.NetSecurityNative.Status.GSS_S_CONTINUE_NEEDED))
+                {
+                    throw new Interop.NetSecurityNative.GssApiException(status, minorStatus);
+                }
+
+                outputBuffer = token.ToByteArray();
+            }
+            finally
+            {
+                token.Dispose();
+            }
+
+            return status == Interop.NetSecurityNative.Status.GSS_S_COMPLETE;
+        }
+
+        static byte[] GssWrap(
+            SafeGssContextHandle context,
+            bool encrypt,
+            byte[] buffer,
+            int offset,
+            int count)
+        {
+            Debug.Assert((buffer != null) && (buffer.Length > 0), "Invalid input buffer passed to Encrypt");
+            Debug.Assert((offset >= 0) && (offset < buffer.Length), "Invalid input offset passed to Encrypt");
+            Debug.Assert((count >= 0) && (count <= (buffer.Length - offset)), "Invalid input count passed to Encrypt");
+
+            Interop.NetSecurityNative.GssBuffer encryptedBuffer = default(Interop.NetSecurityNative.GssBuffer);
+            try
+            {
+                Interop.NetSecurityNative.Status minorStatus;
+                Interop.NetSecurityNative.Status status = Interop.NetSecurityNative.WrapBuffer(out minorStatus, context, encrypt, buffer, offset, count, ref encryptedBuffer);
+                if (status != Interop.NetSecurityNative.Status.GSS_S_COMPLETE)
+                {
+                    throw new Interop.NetSecurityNative.GssApiException(status, minorStatus);
+                }
+
+                return encryptedBuffer.ToByteArray();
+            }
+            finally
+            {
+                encryptedBuffer.Dispose();
+            }
+        }
+
+        private static int GssUnwrap(
+            SafeGssContextHandle context,
+            byte[] buffer,
+            int offset,
+            int count)
+        {
+            Debug.Assert((buffer != null) && (buffer.Length > 0), "Invalid input buffer passed to Decrypt");
+            Debug.Assert((offset >= 0) && (offset <= buffer.Length), "Invalid input offset passed to Decrypt");
+            Debug.Assert((count >= 0) && (count <= (buffer.Length - offset)), "Invalid input count passed to Decrypt");
+
+            Interop.NetSecurityNative.GssBuffer decryptedBuffer = default(Interop.NetSecurityNative.GssBuffer);
+            try
+            {
+                Interop.NetSecurityNative.Status minorStatus;
+                Interop.NetSecurityNative.Status status = Interop.NetSecurityNative.UnwrapBuffer(out minorStatus, context, buffer, offset, count, ref decryptedBuffer);
+                if (status != Interop.NetSecurityNative.Status.GSS_S_COMPLETE)
+                {
+                    throw new Interop.NetSecurityNative.GssApiException(status, minorStatus);
+                }
+
+                return decryptedBuffer.Copy(buffer, offset);
+            }
+            finally
+            {
+                decryptedBuffer.Dispose();
+            }
+        }
+
         internal static string QueryContextAssociatedName(SafeDeleteContext securityContext)
         {
             throw new PlatformNotSupportedException(SR.net_nego_server_not_supported);
@@ -167,7 +279,7 @@ namespace System.Net.Security
             uint sequenceNumber)
         {
             SafeDeleteNegoContext gssContext = (SafeDeleteNegoContext) securityContext;
-            byte[] tempOutput = Interop.GssApi.Encrypt(gssContext.GssContext, isConfidential, buffer, offset, count);
+            byte[] tempOutput = GssWrap(gssContext.GssContext, isConfidential, buffer, offset, count);
 
             // Create space for prefixing with the length
             const int prefixLength = 4;
@@ -220,7 +332,7 @@ namespace System.Net.Security
             }
 
             newOffset = offset;
-            return Interop.GssApi.Decrypt(((SafeDeleteNegoContext)securityContext).GssContext, buffer, offset, count);
+            return GssUnwrap(((SafeDeleteNegoContext)securityContext).GssContext, buffer, offset, count);
         }
 
         private static SecurityStatusPal EstablishSecurityContext(
@@ -247,7 +359,7 @@ namespace System.Net.Security
                 uint outputFlags;
                 int isNtlmUsed;
                 SafeGssContextHandle contextHandle = negoContext.GssContext;
-                bool done = Interop.GssApi.EstablishSecurityContext(
+                bool done = GssInitSecurityContext(
                    ref contextHandle,
                    credential.GssCredential,
                    isNtlmOnly,
