@@ -4,7 +4,7 @@
 
 using System.Collections.Immutable;
 
-namespace System.Reflection.Metadata.Ecma335.Blobs
+namespace System.Reflection.Metadata.Ecma335
 {
     // TODO: debug metadata blobs
     // TODO: revisit ctors (public vs internal vs static factories)?

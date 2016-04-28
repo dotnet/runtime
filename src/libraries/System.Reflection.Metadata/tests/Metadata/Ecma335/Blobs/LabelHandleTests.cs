@@ -4,7 +4,7 @@
 
 using Xunit;
 
-namespace System.Reflection.Metadata.Ecma335.Blobs.Tests
+namespace System.Reflection.Metadata.Ecma335.Tests
 {
     public class LabelHandleTests
     {

@@ -6,7 +6,6 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
-using System.Reflection.Metadata.Ecma335.Blobs;
 using Xunit;
 
 namespace System.Reflection.PortableExecutable.Tests
