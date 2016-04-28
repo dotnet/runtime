@@ -11,20 +11,32 @@ namespace System.Text.Tests
     {
         public static IEnumerable<object[]> Encode_Basic_TestData()
         {
+            // ASCII
             yield return new object[] { "\t\n\rXYZabc123", 0, 12, new byte[] { 9, 10, 13, 88, 89, 90, 97, 98, 99, 49, 50, 51 } };
-
-            yield return new object[] { "\u03a0\u03a3", 0, 2, new byte[] { 43, 65, 54, 65, 68, 111, 119, 45 } };
+            yield return new object[] { "A\t\r\n /z", 0, 7, new byte[] { 0x41, 0x09, 0x0D, 0x0A, 0x20, 0x2F, 0x7A } };
+            yield return new object[] { "", 0, 1, new byte[] { 0x2B, 0x41, 0x41, 0x77, 0x2D } };
             
             string chars2 = "UTF7 Encoding Example";
             yield return new object[] { chars2, 1, 2, new byte[] { 84, 70 } };
+
+            // Unicode
+            yield return new object[] { "\u0E59\u05D1", 0, 2, new byte[] { 0x2B, 0x44, 0x6C, 0x6B, 0x46, 0x30, 0x51, 0x2D } };
+
+            yield return new object[] { "\u212B", 0, 1, new byte[] { 0x2B, 0x49, 0x53, 0x73, 0x2D } };
+            yield return new object[] { "\u03a0\u03a3", 0, 2, new byte[] { 43, 65, 54, 65, 68, 111, 119, 45 } };
 
             // Surrogate pairs
             yield return new object[] { "\uD800\uDC00", 0, 2, new byte[] { 43, 50, 65, 68, 99, 65, 65, 45 } };
             yield return new object[] { "a\uD800\uDC00b", 0, 4, new byte[] { 97, 43, 50, 65, 68, 99, 65, 65, 45, 98 } };
 
-            yield return new object[] { "+", 0, 1, new byte[] { 43, 45 } };
+            yield return new object[] { "\uD800\uDFFF", 0, 2, new byte[] { 0x2B, 0x32, 0x41, 0x44, 0x66, 0x2F, 0x77, 0x2D } };
 
-            // Empty string
+            // Plus and minus
+            yield return new object[] { "+", 0, 1, new byte[] { 43, 45 } };
+            yield return new object[] { "-", 0, 1, new byte[] { 0x2D } };
+            yield return new object[] { "+-", 0, 2, new byte[] { 0x2B, 0x2D, 0x2D } };
+
+            // Empty strings
             yield return new object[] { string.Empty, 0, 0, new byte[0] };
             yield return new object[] { "abc", 3, 0, new byte[0] };
             yield return new object[] { "abc", 0, 0, new byte[0] };
@@ -70,6 +82,11 @@ namespace System.Text.Tests
             
             yield return new object[] { false, "\u0023\u0025\u03a0\u03a3", 1, 2, new byte[] { 43, 65, 67, 85, 68, 111, 65, 45 } };
             yield return new object[] { true, "\u0023\u0025\u03a0\u03a3", 1, 2, new byte[] { 37, 43, 65, 54, 65, 45 } };
+
+            yield return new object[] { false, "!}", 0, 2, new byte[] { 0x2B, 0x41, 0x43, 0x45, 0x41, 0x66, 0x51, 0x2D } };
+            yield return new object[] { false, "!}", 1, 1, new byte[] { 0x2B, 0x41, 0x48, 0x30, 0x2D } };
+
+            yield return new object[] { false, "\u0041\u0021\u007D\u0009\u0E59\u05D1", 0, 6, new byte[] { 0x41, 0x2B, 0x41, 0x43, 0x45, 0x41, 0x66, 0x51, 0x2D, 0x09, 0x2B, 0x44, 0x6C, 0x6B, 0x46, 0x30, 0x51, 0x2D } };
         }
 
         [Theory]
@@ -85,6 +102,7 @@ namespace System.Text.Tests
             // TODO: add into Encode_Basic_TestData once #7166 is fixed
             Encode("\uD800", 0, 1, new byte[] { 43, 50, 65, 65, 45 }); // Lone high surrogate
             Encode("\uDC00", 0, 1, new byte[] { 43, 51, 65, 65, 45 }); // Lone low surrogate
+            Encode("\uDFFF", 0, 1, new byte[] { 0x2B, 0x33, 0x2F, 0x38, 0x2D }); // Lone low surrogate
             Encode("\uD800\uDC00", 0, 1, new byte[] { 43, 50, 65, 65, 45 }); // Surrogate pair out of range
             Encode("\uD800\uDC00", 1, 1, new byte[] { 43, 51, 65, 65, 45 }); // Surrogate pair out of range
 

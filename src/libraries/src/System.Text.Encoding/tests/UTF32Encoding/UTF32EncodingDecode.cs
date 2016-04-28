@@ -23,8 +23,14 @@ namespace System.Text.Tests
             yield return new object[] { new byte[] { 0, 0, 1, 0 }, 0, 4, "\uD800\uDC00" };
             yield return new object[] { new byte[] { 97, 0, 0, 0, 0, 0, 1, 0, 98, 0, 0, 0 }, 0, 12, "a\uD800\uDC00b"  };
 
+            yield return new object[] { new byte[] { 0x00, 0x00, 0x01, 0x00, 0xFF, 0xFF, 0x10, 0x00 }, 0, 8, "\uD800\uDC00\uDBFF\uDFFF" };
+
             // Mixture of ASCII and Unciode
             yield return new object[] { new byte[] { 70, 0, 0, 0, 111, 0, 0, 0, 111, 0, 0, 0, 66, 0, 0, 0, 65, 0, 0, 0, 0, 4, 0, 0, 82, 0, 0, 0 }, 0, 28, "FooBA\u0400R" };
+
+            // U+FDD0 - U+FDEF
+            yield return new object[] { new byte[] { 0xD0, 0xFD, 0x00, 0x00, 0xEF, 0xFD, 0x00, 0x00 }, 0, 8, "\uFDD0\uFDEF" };
+            yield return new object[] { new byte[] { 0xD0, 0xFD, 0x00, 0x00, 0xEF, 0xFD, 0x00, 0x00 }, 0, 8, "\uFDD0\uFDEF" };
 
             // Empty strings
             yield return new object[] { new byte[0], 0, 0, string.Empty };
@@ -48,7 +54,7 @@ namespace System.Text.Tests
             EncodingHelpers.Decode(new UTF32Encoding(false, false, true), littleEndianBytes, index, count, expected);
         }
 
-        public void Decode_InvalidChars(byte[] littleEndianBytes, int index, int count, string expected)
+        public void Decode_InvalidBytes(byte[] littleEndianBytes, int index, int count, string expected)
         {
             byte[] bigEndianBytes = GetBigEndianBytes(littleEndianBytes);
 
@@ -64,20 +70,36 @@ namespace System.Text.Tests
         }
 
         [Fact]
-        public void Decode_InvalidChars()
+        public void Decode_InvalidBytes()
         {
-            // TODO: add into Decode_TestData or Decode_InvalidChars_TestData once #7166 is fixed
-            // High BMP non-chars
+            // TODO: add into Decode_TestData or Decode_InvalidBytes_TestData once #7166 is fixed
+            // High BMP non-chars: U+FFFF, U+FFFE, U+FFFD
             Decode(new byte[] { 253, 255, 0, 0 }, 0, 4, "\uFFFD");
             Decode(new byte[] { 254, 255, 0, 0 }, 0, 4, "\uFFFE");
             Decode(new byte[] { 255, 255, 0, 0 }, 0, 4, "\uFFFF");
+            Decode(new byte[] { 0xFF, 0xFF, 0x00, 0x00, 0xFE, 0xFF, 0x00, 0x00, 0xFD, 0xFF, 0x00, 0x00 }, 0, 12, "\uFFFF\uFFFE\uFFFD");
 
             // Invalid bytes
-            Decode_InvalidChars(new byte[] { 123 }, 0, 1, "\uFFFD");
-            Decode_InvalidChars(new byte[] { 123, 123 }, 0, 2, "\uFFFD");
-            Decode_InvalidChars(new byte[] { 123, 123, 123 }, 0, 3, "\uFFFD");
-            Decode_InvalidChars(new byte[] { 123, 123, 123, 123 }, 1, 3, "\uFFFD");
-            Decode_InvalidChars(new byte[] { 97, 0, 0, 0, 0 }, 0, 5, "a\uFFFD");
+            Decode_InvalidBytes(new byte[] { 123 }, 0, 1, "\uFFFD");
+            Decode_InvalidBytes(new byte[] { 123, 123 }, 0, 2, "\uFFFD");
+            Decode_InvalidBytes(new byte[] { 123, 123, 123 }, 0, 3, "\uFFFD");
+            Decode_InvalidBytes(new byte[] { 123, 123, 123, 123 }, 1, 3, "\uFFFD");
+            Decode_InvalidBytes(new byte[] { 97, 0, 0, 0, 0 }, 0, 5, "a\uFFFD");
+
+            Decode_InvalidBytes(new byte[] { 0xFF, 0xDB, 0x00, 0x00, 0xFF, 0xDF, 0x00, 0x00 }, 0, 8, "\uFFFD\uFFFD");
+            Decode_InvalidBytes(new byte[] { 0xFF, 0xDB, 0x00, 0x00, 0xFF, 0xDF, 0x00, 0x00 }, 0, 4, "\uFFFD");
+            Decode_InvalidBytes(new byte[] { 0xFF, 0xDB, 0x00, 0x00, 0xFF, 0xDF, 0x00, 0x00 }, 4, 4, "\uFFFD");
+            Decode_InvalidBytes(new byte[] { 0x00, 0xD8, 0x00, 0x00, 0x00, 0xDC, 0x00, 0x00 }, 0, 8, "\uFFFD\uFFFD");
+            Decode_InvalidBytes(new byte[] { 0xFF, 0xDB, 0x00, 0x00, 0xFD, 0xFF, 0x00, 0x00 }, 0, 8, "\uFFFD\uFFFD");
+            Decode_InvalidBytes(new byte[] { 0x00, 0x80, 0x00, 0x00, 0xFF, 0xDF, 0x00, 0x00 }, 0, 8, "\u8000\uFFFD");
+
+            // Too high scalar values
+            Decode_InvalidBytes(new byte[] { 0xFF, 0xFF, 0x11, 0x00 }, 0, 4, "\uFFFD");
+            Decode_InvalidBytes(new byte[] { 0x00, 0x00, 0x11, 0x00 }, 0, 4, "\uFFFD");
+            Decode_InvalidBytes(new byte[] { 0x00, 0x00, 0x00, 0x01 }, 0, 4, "\uFFFD");
+            Decode_InvalidBytes(new byte[] { 0xFF, 0xFF, 0x10, 0x01 }, 0, 4, "\uFFFD");
+            Decode_InvalidBytes(new byte[] { 0x00, 0x00, 0x00, 0xFF }, 0, 4, "\uFFFD");
+            Decode_InvalidBytes(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF }, 0, 4, "\uFFFD");
         }
 
         public static byte[] GetBigEndianBytes(byte[] littleEndianBytes)

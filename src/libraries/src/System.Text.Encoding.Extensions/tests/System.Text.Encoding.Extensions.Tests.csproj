@@ -16,13 +16,9 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="ASCII.cs" />
     <Compile Include="EncodingTestHelper.cs" />
     <Compile Include="UTF16BE.cs" />
     <Compile Include="UTF16LE.cs" />
-    <Compile Include="UTF32BE.cs" />
-    <Compile Include="UTF32LE.cs" />
-    <Compile Include="UTF7.cs" />
     <Compile Include="UTF8.cs" />
     <Compile Include="Fallback.cs" />
   </ItemGroup>
