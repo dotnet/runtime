@@ -14,18 +14,18 @@ namespace System.Net
     {
         internal class WebRequestPrefixElement
         {
-            public string Prefix;
-            public IWebRequestCreate Creator;
+            public readonly string Prefix;
+            public readonly IWebRequestCreate Creator;
 
-            public WebRequestPrefixElement(string P, IWebRequestCreate C)
+            public WebRequestPrefixElement(string prefix, IWebRequestCreate creator)
             {
-                Prefix = P;
-                Creator = C;
+                Prefix = prefix;
+                Creator = creator;
             }
         }
 
         private static volatile List<WebRequestPrefixElement> s_prefixList;
-        private static object s_internalSyncObject = new object();
+        private static readonly object s_internalSyncObject = new object();
 
         // Create a WebRequest.
         //
