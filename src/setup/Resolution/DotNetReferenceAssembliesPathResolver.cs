@@ -1,10 +1,8 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.IO;
+using Microsoft.DotNet.InternalAbstractions;
 using Microsoft.Extensions.EnvironmentAbstractions;
-using Microsoft.Extensions.PlatformAbstractions;
 
 namespace Microsoft.Extensions.DependencyModel.Resolution
 {
@@ -12,7 +10,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
     {
         public static readonly string DotNetReferenceAssembliesPathEnv = "DOTNET_REFERENCE_ASSEMBLIES_PATH";
 
-        internal static string Resolve(IEnvironment envirnment, IFileSystem fileSystem, IRuntimeEnvironment runtimeEnvironment)
+        internal static string Resolve(IEnvironment envirnment, IFileSystem fileSystem)
         {
             var path = envirnment.GetEnvironmentVariable(DotNetReferenceAssembliesPathEnv);
             if (!string.IsNullOrEmpty(path))
@@ -20,17 +18,17 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
                 return path;
             }
 
-            return GetDefaultDotNetReferenceAssembliesPath(fileSystem, runtimeEnvironment);
+            return GetDefaultDotNetReferenceAssembliesPath(fileSystem);
         }
 
         public static string Resolve()
         {
-            return Resolve(EnvironmentWrapper.Default, FileSystemWrapper.Default, PlatformServices.Default.Runtime);
+            return Resolve(EnvironmentWrapper.Default, FileSystemWrapper.Default);
         }
 
-        private static string GetDefaultDotNetReferenceAssembliesPath(IFileSystem fileSystem, IRuntimeEnvironment runtimeEnvironment)
+        private static string GetDefaultDotNetReferenceAssembliesPath(IFileSystem fileSystem)
         {
-            var os = runtimeEnvironment.OperatingSystemPlatform;
+            var os = RuntimeEnvironment.OperatingSystemPlatform;
 
             if (os == Platform.Windows)
             {
