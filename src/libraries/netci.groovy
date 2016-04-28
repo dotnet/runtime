@@ -606,7 +606,7 @@ def supportedFullCyclePlatforms = ['Windows_NT', 'Ubuntu14.04', 'OSX']
                         def useServerGC = (configurationGroup == 'Release' && isPR) ? 'useServerGC' : ''
                         shell("HOME=\$WORKSPACE/tempHome ./build.sh ${useServerGC} ${configurationGroup.toLowerCase()} /p:ConfigurationGroup=${configurationGroup} /p:TestWithLocalLibraries=true /p:WithoutCategories=IgnoreForCI")
                         // Tar up the appropriate bits
-                        shell("tar -czf bin/build.tar.gz bin/${osGroup}.AnyCPU.${configurationGroup} bin/${osGroup}.x64.${configurationGroup} bin/ref bin/packages")
+                        shell("tar -czf bin/build.tar.gz bin/*.${configurationGroup} bin/ref bin/packages --exclude=*.Tests")
                     }
                 }
             }
