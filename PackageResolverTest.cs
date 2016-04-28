@@ -5,11 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using FluentAssertions;
+using Microsoft.DotNet.InternalAbstractions;
 using Microsoft.Extensions.DependencyModel.Resolution;
-using Microsoft.Extensions.PlatformAbstractions;
-using Moq;
 using Xunit;
-
 using F = Microsoft.Extensions.DependencyModel.Tests.TestLibraryFactory;
 
 namespace Microsoft.Extensions.DependencyModel.Tests
@@ -21,13 +19,11 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         [Fact]
         public void SholdUseEnvironmentVariableToGetDefaultLocation()
         {
-            var runtime = new Mock<IRuntimeEnvironment>();
-
             var environment = EnvironmentMockBuilder.Create()
                 .AddVariable("NUGET_PACKAGES", PackagesPath)
                 .Build();
 
-            var result = PackageCompilationAssemblyResolver.GetDefaultPackageDirectory(runtime.Object, environment);
+            var result = PackageCompilationAssemblyResolver.GetDefaultPackageDirectory(Platform.Unknown, environment);
             result.Should().Be(PackagesPath);
         }
 
@@ -35,28 +31,22 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         [Fact]
         public void SholdUseNugetUnderUserProfileOnWindows()
         {
-            var runtime = new Mock<IRuntimeEnvironment>();
-            runtime.SetupGet(r => r.OperatingSystemPlatform).Returns(Platform.Windows);
-
             var environment = EnvironmentMockBuilder.Create()
                 .AddVariable("USERPROFILE", "User Profile")
                 .Build();
 
-            var result = PackageCompilationAssemblyResolver.GetDefaultPackageDirectory(runtime.Object, environment);
+            var result = PackageCompilationAssemblyResolver.GetDefaultPackageDirectory(Platform.Windows, environment);
             result.Should().Be(Path.Combine("User Profile", ".nuget", "packages"));
         }
 
         [Fact]
         public void SholdUseNugetUnderHomeOnNonWindows()
         {
-            var runtime = new Mock<IRuntimeEnvironment>();
-            runtime.SetupGet(r => r.OperatingSystemPlatform).Returns(Platform.Linux);
-
             var environment = EnvironmentMockBuilder.Create()
                 .AddVariable("HOME", "User Home")
                 .Build();
 
-            var result = PackageCompilationAssemblyResolver.GetDefaultPackageDirectory(runtime.Object, environment);
+            var result = PackageCompilationAssemblyResolver.GetDefaultPackageDirectory(Platform.Linux, environment);
             result.Should().Be(Path.Combine("User Home", ".nuget", "packages"));
         }
 
