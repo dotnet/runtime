@@ -1342,19 +1342,11 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
             //     Size?                    Init Memory?         # temp regs
             //      0                            -                  0
             //      const and <=6 ptr words      -                  0
+            //      const and >6 ptr words       Yes                0
             //      const and <PageSize          No                 0
-            //      >6 ptr words                 Yes                hasPspSym ? 1 : 0
-            //      Non-const                    Yes                hasPspSym ? 1 : 0
+            //      const and >=PageSize         No                 2
+            //      Non-const                    Yes                0
             //      Non-const                    No                 2            
-            //
-            // PSPSym - If the method has PSPSym increment internalIntCount by 1.
-            //
-            bool hasPspSym;           
-#if FEATURE_EH_FUNCLETS
-            hasPspSym = (compiler->lvaPSPSym != BAD_VAR_NUM);
-#else
-            hasPspSym = false;
-#endif
 
             GenTreePtr size = tree->gtOp.gtOp1;
             if (size->IsCnsIntOrI())
@@ -1375,7 +1367,7 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
                     sizeVal = AlignUp(sizeVal, STACK_ALIGN);
                     size_t cntStackAlignedWidthItems = (sizeVal >> STACK_ALIGN_SHIFT);
 
-                    // For small allocations upto 6 pointer sized words (i.e. 48 bytes of localloc)
+                    // For small allocations up to 6 pointer sized words (i.e. 48 bytes of localloc)
                     // we will generate 'push 0'.
                     if (cntStackAlignedWidthItems <= 6)
                     {
@@ -1397,10 +1389,7 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
                     else
                     {
                         // >6 and need to zero initialize allocated stack space.
-                        // If the method has PSPSym, we need an internal register to hold regCnt
-                        // since targetReg allocated to GT_LCLHEAP node could be the same as one of
-                        // the the internal registers.
-                        info->internalIntCount = hasPspSym ? 1 : 0;
+                        info->internalIntCount = 0;
                     }
                 }
             }
@@ -1412,19 +1401,8 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
                 }
                 else
                 {
-                    // If the method has PSPSym, we need an internal register to hold regCnt
-                    // since targetReg allocated to GT_LCLHEAP node could be the same as one of
-                    // the the internal registers.
-                    info->internalIntCount = hasPspSym ? 1 : 0;
+                    info->internalIntCount = 0;
                 }
-            }
-
-            // If the method has PSPSym, we would need an addtional register to relocate it on stack.
-            if (hasPspSym)
-            {      
-                // Exclude const size 0
-                if (!size->IsCnsIntOrI() || (size->gtIntCon.gtIconVal > 0))
-                    info->internalIntCount++;
             }
         }
         break;

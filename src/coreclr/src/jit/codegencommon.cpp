@@ -10536,7 +10536,7 @@ void                CodeGen::genSetPSPSym(regNumber initReg,
     // has been established.
     //
     // We generate:
-    //     mov     [rsp+20h], rsp       // store the Initial-SP (our current rsp) in the PSPsym
+    //     mov     [rbp-20h], rsp       // store the Initial-SP (our current rsp) in the PSPsym
 
     getEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SPBASE, compiler->lvaPSPSym, 0);
 
