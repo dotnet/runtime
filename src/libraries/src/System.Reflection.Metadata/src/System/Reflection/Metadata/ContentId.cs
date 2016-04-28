@@ -8,7 +8,7 @@ using System.Diagnostics;
 
 namespace System.Reflection.Metadata
 {
-public struct ContentId
+    public struct ContentId
     {
         public const int Size = 20;
 

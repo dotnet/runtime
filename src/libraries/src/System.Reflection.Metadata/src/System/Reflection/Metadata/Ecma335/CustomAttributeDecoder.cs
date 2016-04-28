@@ -4,7 +4,7 @@
 
 using System.Collections.Immutable;
 
-namespace System.Reflection.Metadata
+namespace System.Reflection.Metadata.Ecma335
 {
     /// <summary>
     /// Decodes custom attribute blobs.
