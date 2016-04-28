@@ -273,82 +273,7 @@ namespace System.Text.Tests
             VerificationHelper(decoder, bytes, 0, 0, chars, 0, chars.Length, true, 0, 0, true, "010.2");
             decoder.Reset();
         }
-
-        // NegTest1: ArgumentNullException should be thrown when chars or bytes is a null reference
-        [Fact]
-        public void NegTest1()
-        {
-            Decoder decoder = Encoding.UTF8.GetDecoder();
-            byte[] b = new byte[c_SIZE_OF_ARRAY];
-            char[] c = new char[c_SIZE_OF_ARRAY];
-
-            VerificationHelper<ArgumentNullException>(decoder, null, 0, 0, c, 0, 0, true, typeof(ArgumentNullException), "101.1");
-            VerificationHelper<ArgumentNullException>(decoder, b, 0, 0, null, 0, 0, true, typeof(ArgumentNullException), "101.2");
-            VerificationHelper<ArgumentNullException>(decoder, null, 0, 0, c, 0, 0, false, typeof(ArgumentNullException), "101.3");
-            VerificationHelper<ArgumentNullException>(decoder, b, 0, 0, null, 0, 0, false, typeof(ArgumentNullException), "101.4");
-        }
-
-        // NegTest2: ArgumentOutOfRangeException should be thrown when charIndex, charCount, byteIndex, or byteCount is less than zero.
-        [Fact]
-        public void NegTest2()
-        {
-            Decoder decoder = Encoding.UTF8.GetDecoder();
-            byte[] b = new byte[c_SIZE_OF_ARRAY];
-            char[] c = new char[c_SIZE_OF_ARRAY];
-
-            VerificationHelper<ArgumentOutOfRangeException>(decoder, b, -1, 0, c, 0, 0, true, typeof(ArgumentOutOfRangeException), "102.1");
-            VerificationHelper<ArgumentOutOfRangeException>(decoder, b, 0, 0, c, -1, 0, true, typeof(ArgumentOutOfRangeException), "102.2");
-            VerificationHelper<ArgumentOutOfRangeException>(decoder, b, -1, 0, c, 0, 0, false, typeof(ArgumentOutOfRangeException), "102.3");
-            VerificationHelper<ArgumentOutOfRangeException>(decoder, b, 0, 0, c, -1, 0, false, typeof(ArgumentOutOfRangeException), "102.4");
-            VerificationHelper<ArgumentOutOfRangeException>(decoder, b, 0, -1, c, 0, 0, true, typeof(ArgumentOutOfRangeException), "102.5");
-            VerificationHelper<ArgumentOutOfRangeException>(decoder, b, 0, 0, c, 0, -1, true, typeof(ArgumentOutOfRangeException), "102.6");
-            VerificationHelper<ArgumentOutOfRangeException>(decoder, b, 0, -1, c, 0, 0, false, typeof(ArgumentOutOfRangeException), "102.7");
-            VerificationHelper<ArgumentOutOfRangeException>(decoder, b, 0, 0, c, 0, -1, false, typeof(ArgumentOutOfRangeException), "102.8");
-        }
-
-        // NegTest3: ArgumentException should be thrown when The output buffer is too small to contain any of the converted input
-        [Fact]
-        public void NegTest3()
-        {
-            Decoder decoder = Encoding.Unicode.GetDecoder();
-            byte[] bytes = new byte[c_SIZE_OF_ARRAY];
-            for (int i = 0; i < bytes.Length; ++i)
-            {
-                bytes[i] = _generator.GetByte(-55);
-            }
-            char[] chars = new char[0];
-
-            VerificationHelper<ArgumentException>(decoder, bytes, 0, c_SIZE_OF_ARRAY, chars, 0, 0, true, typeof(ArgumentException), "103.1");
-        }
-
-        // NegTest4: ArgumentOutOfRangeException should be thrown when The length of chars - charIndex is less than charCount.
-        [Fact]
-        public void NegTest4()
-        {
-            Decoder decoder = Encoding.UTF8.GetDecoder();
-            byte[] b = new byte[c_SIZE_OF_ARRAY];
-            char[] c = new char[c_SIZE_OF_ARRAY];
-
-            VerificationHelper<ArgumentOutOfRangeException>(decoder, b, 1, 1, c, 1, c.Length, true, typeof(ArgumentOutOfRangeException), "104.1");
-            VerificationHelper<ArgumentOutOfRangeException>(decoder, b, 0, 1, c, c.Length, 1, true, typeof(ArgumentOutOfRangeException), "104.2");
-            VerificationHelper<ArgumentOutOfRangeException>(decoder, b, 1, 1, c, 1, c.Length, false, typeof(ArgumentOutOfRangeException), "104.3");
-            VerificationHelper<ArgumentOutOfRangeException>(decoder, b, 0, 1, c, c.Length, 1, true, typeof(ArgumentOutOfRangeException), "104.4");
-        }
-
-        // NegTest5: ArgumentOutOfRangeException should be thrown when The length of bytes - byteIndex is less than byteCount
-        [Fact]
-        public void NegTest5()
-        {
-            Decoder decoder = Encoding.UTF8.GetDecoder();
-            byte[] b = new byte[c_SIZE_OF_ARRAY];
-            char[] c = new char[c_SIZE_OF_ARRAY];
-
-            VerificationHelper<ArgumentOutOfRangeException>(decoder, b, 1, b.Length, c, 1, 0, true, typeof(ArgumentOutOfRangeException), "105.1");
-            VerificationHelper<ArgumentOutOfRangeException>(decoder, b, b.Length, 1, c, 0, 1, true, typeof(ArgumentOutOfRangeException), "105.2");
-            VerificationHelper<ArgumentOutOfRangeException>(decoder, b, 1, b.Length, c, 1, 0, false, typeof(ArgumentOutOfRangeException), "105.3");
-            VerificationHelper<ArgumentOutOfRangeException>(decoder, b, b.Length, 1, c, 0, 1, true, typeof(ArgumentOutOfRangeException), "105.4");
-        }
-
+        
         private void VerificationHelper(Decoder decoder, byte[] bytes,
             int byteIndex,
             int byteCount,
@@ -396,31 +321,5 @@ namespace System.Text.Tests
                 Assert.Equal(desiredChars[i], chars[i]);
             }
         }
-
-        private void VerificationHelper<T>(Decoder decoder, byte[] bytes,
-            int byteIndex,
-            int byteCount,
-            char[] chars,
-            int charIndex,
-            int charCount,
-            bool flush,
-            Type expected,
-            string errorno) where T : Exception
-        {
-            string str = null;
-            int bytesUsed;
-            int charsUsed;
-            bool completed;
-
-            str = new string(chars);
-            Assert.Throws<T>(() =>
-            {
-                decoder.Convert(bytes, byteIndex, byteCount, chars, charIndex, charCount, flush, out bytesUsed,
-                 out charsUsed, out completed);
-            });
-        }
     }
 }
-
-
-
