@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Microsoft.Extensions.PlatformAbstractions;
+using Microsoft.DotNet.InternalAbstractions;
 using Microsoft.Extensions.EnvironmentAbstractions;
 
 namespace Microsoft.Extensions.DependencyModel.Resolution
@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
         private readonly string[] _fallbackSearchPaths;
 
         public ReferenceAssemblyPathResolver()
-            : this(FileSystemWrapper.Default, PlatformServices.Default.Runtime, EnvironmentWrapper.Default)
+            : this(FileSystemWrapper.Default, EnvironmentWrapper.Default)
         {
         }
 
@@ -25,10 +25,10 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
         {
         }
 
-        internal ReferenceAssemblyPathResolver(IFileSystem fileSystem, IRuntimeEnvironment runtimeEnvironment, IEnvironment environment)
+        internal ReferenceAssemblyPathResolver(IFileSystem fileSystem, IEnvironment environment)
             : this(fileSystem,
-                GetDefaultReferenceAssembliesPath(runtimeEnvironment, fileSystem, environment),
-                GetFallbackSearchPaths(fileSystem, runtimeEnvironment, environment))
+                GetDefaultReferenceAssembliesPath(fileSystem, RuntimeEnvironment.OperatingSystemPlatform, environment),
+                GetFallbackSearchPaths(fileSystem, RuntimeEnvironment.OperatingSystemPlatform, environment))
         {
         }
 
@@ -85,9 +85,9 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
             return false;
         }
 
-        internal static string[] GetFallbackSearchPaths(IFileSystem fileSystem, IRuntimeEnvironment runtimeEnvironment, IEnvironment environment)
+        internal static string[] GetFallbackSearchPaths(IFileSystem fileSystem, Platform platform, IEnvironment environment)
         {
-            if (runtimeEnvironment.OperatingSystemPlatform != Platform.Windows)
+            if (platform != Platform.Windows)
             {
                 return new string[0];
             }
@@ -101,16 +101,16 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
             return new[] { net20Dir };
         }
 
-        internal static string GetDefaultReferenceAssembliesPath(IRuntimeEnvironment runtimeEnvironment, IFileSystem fileSystem, IEnvironment environment)
+        internal static string GetDefaultReferenceAssembliesPath(IFileSystem fileSystem, Platform platform, IEnvironment environment)
         {
             // Allow setting the reference assemblies path via an environment variable
-            var referenceAssembliesPath = DotNetReferenceAssembliesPathResolver.Resolve(environment, fileSystem, runtimeEnvironment); 
+            var referenceAssembliesPath = DotNetReferenceAssembliesPathResolver.Resolve(environment, fileSystem); 
             if (!string.IsNullOrEmpty(referenceAssembliesPath))
             {
                 return referenceAssembliesPath;
             }
 
-            if (runtimeEnvironment.OperatingSystemPlatform != Platform.Windows)
+            if (platform != Platform.Windows)
             {
                 // There is no reference assemblies path outside of windows
                 // The environment variable can be used to specify one

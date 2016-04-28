@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Microsoft.Extensions.PlatformAbstractions;
+using Microsoft.DotNet.InternalAbstractions;
 using Microsoft.Extensions.EnvironmentAbstractions;
 
 namespace Microsoft.Extensions.DependencyModel.Resolution
@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
         private readonly string _nugetPackageDirectory;
 
         public PackageCompilationAssemblyResolver()
-            : this(EnvironmentWrapper.Default, PlatformServices.Default.Runtime, FileSystemWrapper.Default)
+            : this(EnvironmentWrapper.Default, FileSystemWrapper.Default)
         {
         }
 
@@ -25,9 +25,8 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
         }
 
         internal PackageCompilationAssemblyResolver(IEnvironment environment,
-            IRuntimeEnvironment runtimeEnvironment,
             IFileSystem fileSystem)
-            : this(fileSystem, GetDefaultPackageDirectory(runtimeEnvironment, environment))
+            : this(fileSystem, GetDefaultPackageDirectory(environment))
         {
         }
 
@@ -37,7 +36,10 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
             _nugetPackageDirectory = nugetPackageDirectory;
         }
 
-        internal static string GetDefaultPackageDirectory(IRuntimeEnvironment runtimeEnvironment, IEnvironment environment)
+        private static string GetDefaultPackageDirectory(IEnvironment environment) => 
+            GetDefaultPackageDirectory(RuntimeEnvironment.OperatingSystemPlatform, environment);
+
+        internal static string GetDefaultPackageDirectory(Platform osPlatform, IEnvironment environment)
         {
             var packageDirectory = environment.GetEnvironmentVariable("NUGET_PACKAGES");
 
@@ -47,7 +49,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
             }
 
             string basePath;
-            if (runtimeEnvironment.OperatingSystemPlatform == Platform.Windows)
+            if (osPlatform == Platform.Windows)
             {
                 basePath = environment.GetEnvironmentVariable("USERPROFILE");
             }
