@@ -162,55 +162,10 @@ namespace System.Text.Tests
         }
         #endregion
 
-        #region Negative Test Cases
-        // NegTest1: ArgumentNullException should be thrown when bytes is a null reference
-        [Fact]
-        public void NegTest1()
-        {
-            Decoder decoder = Encoding.UTF8.GetDecoder();
-            VerificationHelper<ArgumentNullException>(decoder, null, 0, 0, true, typeof(ArgumentNullException), "101.1");
-            VerificationHelper<ArgumentNullException>(decoder, null, 0, 0, false, typeof(ArgumentNullException), "101.2");
-        }
-
-        // NegTest2: ArgumentOutOfRangeException should be thrown when count is less than zero
-        [Fact]
-        public void NegTest2()
-        {
-            Decoder decoder = Encoding.UTF8.GetDecoder();
-            byte[] bytes = new byte[c_SIZE_OF_ARRAY];
-
-            VerificationHelper<ArgumentOutOfRangeException>(decoder, bytes, -1, 0, true, typeof(ArgumentOutOfRangeException), "102.1");
-            VerificationHelper<ArgumentOutOfRangeException>(decoder, bytes, -1, 0, false, typeof(ArgumentOutOfRangeException), "102.2");
-            VerificationHelper<ArgumentOutOfRangeException>(decoder, bytes, 0, -1, true, typeof(ArgumentOutOfRangeException), "102.3");
-            VerificationHelper<ArgumentOutOfRangeException>(decoder, bytes, 0, -1, false, typeof(ArgumentOutOfRangeException), "102.4");
-        }
-
-        // NegTest3: ArgumentOutOfRangeException should be thrown when index and count do not denote a valid range in bytes.
-        [Fact]
-        public void NegTest3()
-        {
-            Decoder decoder = Encoding.UTF8.GetDecoder();
-            byte[] bytes = new byte[c_SIZE_OF_ARRAY];
-
-            VerificationHelper<ArgumentOutOfRangeException>(decoder, bytes, 1, bytes.Length, true, typeof(ArgumentOutOfRangeException), "103.1");
-            VerificationHelper<ArgumentOutOfRangeException>(decoder, bytes, 1, bytes.Length, false, typeof(ArgumentOutOfRangeException), "103.2");
-            VerificationHelper<ArgumentOutOfRangeException>(decoder, bytes, bytes.Length, 1, false, typeof(ArgumentOutOfRangeException), "103.3");
-            VerificationHelper<ArgumentOutOfRangeException>(decoder, bytes, bytes.Length, 1, true, typeof(ArgumentOutOfRangeException), "103.4");
-        }
-        #endregion
-
         private void VerificationHelper(Decoder decoder, byte[] bytes, int index, int count, bool flush, int expected, string errorno)
         {
             int ret = decoder.GetCharCount(bytes, index, count, flush);
             Assert.Equal(expected, ret);
-        }
-
-        private void VerificationHelper<T>(Decoder decoder, byte[] bytes, int index, int count, bool flush, Type expected, string errorno) where T : Exception
-        {
-            Assert.Throws<T>(() =>
-            {
-                int ret = decoder.GetCharCount(bytes, index, count, flush);
-            });
         }
     }
 }
