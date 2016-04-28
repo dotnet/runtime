@@ -8794,14 +8794,15 @@ BYTE*       emitter::emitOutputCV(BYTE* dst, instrDesc* id, size_t code, CnsVal*
         addr = emitConsBlock + doff;
 
         int byteSize = EA_SIZE_IN_BYTES(size);
-#ifdef _TARGET_AMD64_
+
+#ifndef LEGACY_BACKEND
         // this instruction has a fixed size (4) src.  
         if (ins == INS_cvttss2si || ins == INS_cvtss2sd || ins == INS_vbroadcastss)
             byteSize = 4;
         // This has a fixed size (8) source.
         if (ins == INS_vbroadcastsd)
             byteSize = 8;
-#endif
+#endif // !LEGACY_BACKEND
 
         // Check that the offset is properly aligned (i.e. the ddd in [ddd])
         assert((emitChkAlign==false) || (ins == INS_lea) 
