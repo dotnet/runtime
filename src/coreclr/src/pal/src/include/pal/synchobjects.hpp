@@ -85,26 +85,15 @@ namespace CorUnix
 
     typedef struct _ThreadNativeWaitData 
     {
-#if !SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
         pthread_mutex_t     mutex;
-        pthread_cond_t      cond;  
+        pthread_cond_t      cond;
         int                 iPred;
-#else // SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
-        int                 iPipeRd;
-        int                 iPipeWr;
-#endif // SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
-
         DWORD               dwObjectIndex;
         ThreadWakeupReason  twrWakeupReason;
         bool                fInitialized;
 
-        _ThreadNativeWaitData() : 
-#if !SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
+        _ThreadNativeWaitData() :
             iPred(0), 
-#else // SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
-            iPipeRd(-1),
-            iPipeWr(-1),
-#endif // SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
             dwObjectIndex(0), 
             twrWakeupReason(WaitSucceeded), 
             fInitialized(false)
@@ -166,9 +155,9 @@ namespace CorUnix
             return &m_tnwdNativeData;
         }
 
-#if SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING && !SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
+#if SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING
         PAL_ERROR RunDeferredThreadConditionSignalings();
-#endif // SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING && !SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
+#endif // SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING
     
         // NOTE: the following methods provide non-synchronized access to 
         //       the list of owned objects for this thread. Any thread 
