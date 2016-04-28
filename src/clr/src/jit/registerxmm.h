@@ -8,6 +8,10 @@
 #error  Must define REGDEF macro before including this file
 #endif
 
+#ifndef LEGACY_BACKEND
+#error This file is only used for the LEGACY_BACKEND build.
+#endif
+
 #if defined(_TARGET_XARCH_)
 
 #define XMMMASK(x) (unsigned(1) << (x-1))

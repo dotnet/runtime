@@ -65,7 +65,11 @@ REGALIAS(EDI, RDI)
 
 #endif // !defined(_TARGET_X86_)
 
-#ifndef LEGACY_BACKEND
+#ifdef LEGACY_BACKEND
+
+REGDEF(STK,     8,   0x00, "STK"   )
+
+#else // !LEGACY_BACKEND
 
 #ifdef _TARGET_AMD64_
 #define XMMBASE 16
@@ -83,6 +87,10 @@ REGDEF(XMM4,    4+XMMBASE,  XMMMASK(4),   "mm4"  )
 REGDEF(XMM5,    5+XMMBASE,  XMMMASK(5),   "mm5"  )
 REGDEF(XMM6,    6+XMMBASE,  XMMMASK(6),   "mm6"  )
 REGDEF(XMM7,    7+XMMBASE,  XMMMASK(7),   "mm7"  )
+
+#ifdef _TARGET_X86_
+REGDEF(STK,     8+XMMBASE,  0x0000,       "STK"  )
+#else // !_TARGET_X86_
 REGDEF(XMM8,    8+XMMBASE,  XMMMASK(8),   "mm8"  )
 REGDEF(XMM9,    9+XMMBASE,  XMMMASK(9),   "mm9"  )
 REGDEF(XMM10,  10+XMMBASE,  XMMMASK(10),  "mm10" )
@@ -91,14 +99,10 @@ REGDEF(XMM12,  12+XMMBASE,  XMMMASK(12),  "mm12" )
 REGDEF(XMM13,  13+XMMBASE,  XMMMASK(13),  "mm13" )
 REGDEF(XMM14,  14+XMMBASE,  XMMMASK(14),  "mm14" )
 REGDEF(XMM15,  15+XMMBASE,  XMMMASK(15),  "mm15" )
-REGDEF(STK,    16+XMMBASE,  0x0000,       "STK"   )
+REGDEF(STK,    16+XMMBASE,  0x0000,       "STK"  )
+#endif // !_TARGET_X86_
 
-
-#else // LEGACY_BACKEND
-
-REGDEF(STK,     8,   0x00, "STK"   )
-
-#endif // LEGACY_BACKEND
+#endif // !LEGACY_BACKEND
 
 #elif defined(_TARGET_ARM_)
  #include "registerarm.h"
