@@ -4,7 +4,7 @@
       "dependencies": {
         "Microsoft.NETCore.Platforms": "1.0.1-rc3-24026-00",
         "System.Collections": "4.0.10",
-        "System.Diagnostics.Contracts": "4.0.0",
+        "System.Diagnostics.Debug": "4.0.0",
         "System.Diagnostics.Tracing": "4.0.0",
         "System.IO": "4.0.10",
         "System.IO.Compression": "4.1.0-rc3-24026-00",
