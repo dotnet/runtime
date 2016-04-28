@@ -77,9 +77,9 @@ namespace System.Reflection.Metadata
             }
         }
 
-        public TType DecodeSignature<TType>(ISignatureTypeProvider<TType> provider, SignatureDecoderOptions options = SignatureDecoderOptions.None)
+        public TType DecodeSignature<TType>(ISignatureTypeProvider<TType> provider)
         {
-            var decoder = new SignatureDecoder<TType>(provider, _reader, options);
+            var decoder = new SignatureDecoder<TType>(provider, _reader);
             var blob = _reader.GetBlobReader(Signature);
             return decoder.DecodeFieldSignature(ref blob);
         }

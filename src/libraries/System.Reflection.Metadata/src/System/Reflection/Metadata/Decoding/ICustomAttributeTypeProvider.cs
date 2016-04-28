@@ -7,12 +7,12 @@ namespace System.Reflection.Metadata
     public interface ICustomAttributeTypeProvider<TType> : IPrimitiveTypeProvider<TType>, ISZArrayTypeProvider<TType>, ITypeProvider<TType>
     {
         /// <summary>
-        /// Gets the TType representation for <see cref="System.Type"/>.
+        /// Gets the TType representation for <see cref="Type"/>.
         /// </summary>
         TType GetSystemType();
 
         /// <summary>
-        /// Returns true if the given type represents <see cref="System.Type"/>.
+        /// Returns true if the given type represents <see cref="Type"/>.
         /// </summary>
         bool IsSystemType(TType type);
 

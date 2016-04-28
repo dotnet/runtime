@@ -33,9 +33,9 @@ namespace System.Reflection.Metadata
             get { return _reader.TypeSpecTable.GetSignature(Handle); }
         }
 
-        public TType DecodeSignature<TType>(ISignatureTypeProvider<TType> provider, SignatureDecoderOptions options = SignatureDecoderOptions.None)
+        public TType DecodeSignature<TType>(ISignatureTypeProvider<TType> provider)
         {
-            var decoder = new SignatureDecoder<TType>(provider, _reader, options);
+            var decoder = new SignatureDecoder<TType>(provider, _reader);
             var blobReader = _reader.GetBlobReader(Signature);
             return decoder.DecodeType(ref blobReader);
         }

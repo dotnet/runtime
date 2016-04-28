@@ -362,10 +362,10 @@ namespace System.Reflection.Metadata
             switch (handle.Kind)
             {
                 case HandleKind.TypeDefinition:
-                    return _provider.GetTypeFromDefinition(_reader, (TypeDefinitionHandle)handle, SignatureTypeKind.Unresolved);
+                    return _provider.GetTypeFromDefinition(_reader, (TypeDefinitionHandle)handle, 0);
 
                 case HandleKind.TypeReference:
-                    return _provider.GetTypeFromReference(_reader, (TypeReferenceHandle)handle, SignatureTypeKind.Unresolved);
+                    return _provider.GetTypeFromReference(_reader, (TypeReferenceHandle)handle, 0);
 
                 default:
                     throw new BadImageFormatException(SR.NotTypeDefOrRefHandle);
