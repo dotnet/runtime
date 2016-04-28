@@ -5,11 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using FluentAssertions;
+using Microsoft.DotNet.InternalAbstractions;
 using Microsoft.Extensions.DependencyModel.Resolution;
-using Microsoft.Extensions.PlatformAbstractions;
-using Moq;
 using Xunit;
-
 using F = Microsoft.Extensions.DependencyModel.Tests.TestLibraryFactory;
 
 
@@ -34,53 +32,41 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         [Fact]
         public void UsesEnvironmentVariableForDefaultPath()
         {
-            var runtime = new Mock<IRuntimeEnvironment>();
-            runtime.SetupGet(r => r.OperatingSystemPlatform).Returns(Platform.Windows);
-
             var environment = EnvironmentMockBuilder.Create()
                 .AddVariable("DOTNET_REFERENCE_ASSEMBLIES_PATH", ReferencePath)
                 .Build();
 
-            var result = ReferenceAssemblyPathResolver.GetDefaultReferenceAssembliesPath(runtime.Object, FileSystemMockBuilder.Empty, environment);
+            var result = ReferenceAssemblyPathResolver.GetDefaultReferenceAssembliesPath(FileSystemMockBuilder.Empty, Platform.Windows, environment);
             result.Should().Be(ReferencePath);
         }
 
         [Fact]
         public void LooksOnlyOnEnvironmentVariableOnNonWindows()
         {
-            var runtime = new Mock<IRuntimeEnvironment>();
-            runtime.SetupGet(r => r.OperatingSystemPlatform).Returns(Platform.Linux);
-
-            var result = ReferenceAssemblyPathResolver.GetDefaultReferenceAssembliesPath(runtime.Object, FileSystemMockBuilder.Empty, EnvironmentMockBuilder.Empty);
+            var result = ReferenceAssemblyPathResolver.GetDefaultReferenceAssembliesPath(FileSystemMockBuilder.Empty, Platform.Linux, EnvironmentMockBuilder.Empty);
             result.Should().BeNull();
         }
 
         [Fact]
         public void ReturnsProgramFiles86AsDefaultLocationOnWin64()
         {
-            var runtime = new Mock<IRuntimeEnvironment>();
-            runtime.SetupGet(r => r.OperatingSystemPlatform).Returns(Platform.Windows);
-
             var environment = EnvironmentMockBuilder.Create()
                 .AddVariable("ProgramFiles(x86)", "Program Files (x86)")
                 .AddVariable("ProgramFiles", "Program Files")
                 .Build();
 
-            var result = ReferenceAssemblyPathResolver.GetDefaultReferenceAssembliesPath(runtime.Object, FileSystemMockBuilder.Empty, environment);
+            var result = ReferenceAssemblyPathResolver.GetDefaultReferenceAssembliesPath(FileSystemMockBuilder.Empty, Platform.Windows, environment);
             result.Should().Be(Path.Combine("Program Files (x86)", "Reference Assemblies", "Microsoft", "Framework"));
         }
 
         [Fact]
         public void ReturnsProgramFilesAsDefaultLocationOnWin32()
         {
-            var runtime = new Mock<IRuntimeEnvironment>();
-            runtime.SetupGet(r => r.OperatingSystemPlatform).Returns(Platform.Windows);
-
             var environment = EnvironmentMockBuilder.Create()
                 .AddVariable("ProgramFiles", "Program Files")
                 .Build();
 
-            var result = ReferenceAssemblyPathResolver.GetDefaultReferenceAssembliesPath(runtime.Object, FileSystemMockBuilder.Empty, environment);
+            var result = ReferenceAssemblyPathResolver.GetDefaultReferenceAssembliesPath(FileSystemMockBuilder.Empty, Platform.Windows, environment);
             result.Should().Be(Path.Combine("Program Files", "Reference Assemblies", "Microsoft", "Framework"));
         }
 
@@ -92,14 +78,11 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                 .AddFiles(net20Path, "some.dll")
                 .Build();
 
-            var runtime = new Mock<IRuntimeEnvironment>();
-            runtime.SetupGet(r => r.OperatingSystemPlatform).Returns(Platform.Windows);
-
             var environment = EnvironmentMockBuilder.Create()
                 .AddVariable("WINDIR", "Windows")
                 .Build();
 
-            var result = ReferenceAssemblyPathResolver.GetFallbackSearchPaths(fileSystem, runtime.Object, environment);
+            var result = ReferenceAssemblyPathResolver.GetFallbackSearchPaths(fileSystem, Platform.Windows, environment);
             result.Should().Contain(net20Path);
         }
 
