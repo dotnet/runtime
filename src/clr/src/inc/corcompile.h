@@ -727,7 +727,6 @@ enum CORCOMPILE_FIXUP_BLOB_KIND
     ENCODE_CHECK_FIELD_OFFSET,
 
     ENCODE_DELEGATE_CTOR,
-    ENCODE_METHOD_NATIVE_ENTRY,                     /* NativeCallable method token */
 
     ENCODE_MODULE_HANDLE      = 0x50,               /* Module token */
     ENCODE_STATIC_FIELD_ADDRESS,                    /* For accessing a static field */
@@ -741,6 +740,7 @@ enum CORCOMPILE_FIXUP_BLOB_KIND
     ENCODE_VARARGS_METHODREF,
     ENCODE_VARARGS_SIG,
     ENCODE_ACTIVE_DEPENDENCY,                       /* Conditional active dependency */
+    ENCODE_METHOD_NATIVE_ENTRY,                     /* NativeCallable method token */
 };
 
 enum EncodeMethodSigFlags
