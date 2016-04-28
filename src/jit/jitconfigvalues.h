@@ -57,6 +57,7 @@ CONFIG_INTEGER(JitHashHalt, W("JitHashHalt"), -1) // Same as JitHalt, but for a 
 CONFIG_INTEGER(JitInlineAdditionalMultiplier, W("JitInlineAdditionalMultiplier"), 0)
 CONFIG_INTEGER(JitInlinePrintStats, W("JitInlinePrintStats"), 0)
 CONFIG_INTEGER(JitInlineSize, W("JITInlineSize"), DEFAULT_MAX_INLINE_SIZE)
+CONFIG_INTEGER(JitInlineDepth, W("JITInlineDepth"), DEFAULT_MAX_INLINE_DEPTH)
 CONFIG_INTEGER(JitLargeBranches, W("JitLargeBranches"), 0) // Force using the largest conditional branch format
 CONFIG_INTEGER(JitMaxTempAssert, W("JITMaxTempAssert"), 1)
 CONFIG_INTEGER(JitMaxUncheckedOffset, W("JitMaxUncheckedOffset"), 8)
@@ -195,6 +196,7 @@ CONFIG_INTEGER(JitInlineDumpXml, W("JitInlineDumpXml"), 0)
 CONFIG_INTEGER(JitInlineLimit, W("JitInlineLimit"), -1)
 CONFIG_INTEGER(JitInlinePolicyDiscretionary, W("JitInlinePolicyDiscretionary"), 0)
 CONFIG_INTEGER(JitInlinePolicyModel, W("JitInlinePolicyModel"), 0)
+CONFIG_INTEGER(JitInlinePolicyFull, W("JitInlinePolicyFull"), 0)
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
 #undef CONFIG_INTEGER

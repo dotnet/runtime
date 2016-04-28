@@ -21329,7 +21329,7 @@ void Compiler::fgRemoveContainedEmbeddedStatements(GenTreePtr tree, GenTreeStmt*
 
 //------------------------------------------------------------------------
 // fgCheckForInlineDepthAndRecursion: compute depth of the candidate, and
-// check for recursion and excessive depth
+// check for recursion.
 //
 // Return Value:
 //    The depth of the inline candidate. The root method is a depth 0, top-level
@@ -21350,13 +21350,11 @@ unsigned     Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
 
     // There should be a context for all candidates.
     assert(inlineContext != nullptr);
-
-    const DWORD MAX_INLINING_RECURSION_DEPTH = 20;
-    DWORD depth = 0;
+    int depth = 0;
 
     for (; inlineContext != nullptr; inlineContext = inlineContext->GetParent())
     {
-        // Hard limit just to catch pathological cases
+
         depth++;
 
         if (inlineContext->GetCode() == candidateCode)
@@ -21367,9 +21365,8 @@ unsigned     Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
             break;
         }
 
-        if (depth > MAX_INLINING_RECURSION_DEPTH)
+        if (depth > InlineStrategy::IMPLEMENTATION_MAX_INLINE_DEPTH)
         {
-            inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_TOO_DEEP);
             break;
         }
     }
