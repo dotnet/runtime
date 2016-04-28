@@ -357,8 +357,6 @@ namespace System.Net
 
                             prefixList.Add(new WebRequestPrefixElement("http:", new HttpRequestCreator()));
                             prefixList.Add(new WebRequestPrefixElement("https:", new HttpRequestCreator()));
-                            prefixList.Add(new WebRequestPrefixElement("file:", new HttpRequestCreator()));
-                            prefixList.Add(new WebRequestPrefixElement("ftp:", new HttpRequestCreator()));
 
                             s_prefixList = prefixList;
                         }
