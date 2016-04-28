@@ -16,8 +16,8 @@
     <RHELNativePath Condition="'$(RHELNativePath)' == ''">$(BuildNativePath)</RHELNativePath>
     <DebianNativePath Condition="'$(DebianNativePath)' == ''">$(BuildNativePath)</DebianNativePath>
     <OSXNativePath Condition="'$(OSXNativePath)' == ''">$(BuildNativePath)</OSXNativePath>
-    <UbuntuNativePath Condition="'$(UbuntuNativePath)' == ''">$(BuildNativePath)</UbuntuNativePath>
-
+    <Ubuntu1404NativePath Condition="'$(Ubuntu1404NativePath)' == ''">$(BuildNativePath)</Ubuntu1404NativePath>
+    <Ubuntu1604NativePath Condition="'$(Ubuntu1604NativePath)' == ''">$(BuildNativePath)</Ubuntu1604NativePath>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
   </PropertyGroup>
 </Project>
