@@ -41,7 +41,7 @@ namespace System.Text.Tests
 
         public static IEnumerable<object[]> Decode_InvalidBytes_TestData()
         {
-            // All non-ASCII Latin1 bytes
+            // All Latin-1 Supplement bytes
             for (int i = 0x80; i <= byte.MaxValue; i++)
             {
                 byte b = (byte)i;
