@@ -4,7 +4,7 @@
   
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Threading.Overlapped.csproj">
-      <SupportedFramework>net46;netcore50;netstandardapp1.5</SupportedFramework>
+      <SupportedFramework>net46;netcore50;netcoreapp1.0</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Threading.Overlapped.builds" />
   </ItemGroup>

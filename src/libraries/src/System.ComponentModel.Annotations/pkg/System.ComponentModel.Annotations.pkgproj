@@ -9,7 +9,7 @@
       <SupportedFramework>net46</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\ref\System.ComponentModel.Annotations.csproj">
-      <SupportedFramework>net461;netcore50;netstandardapp1.5</SupportedFramework>
+      <SupportedFramework>net461;netcore50;netcoreapp1.0</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.ComponentModel.Annotations.builds" />
     <InboxOnTargetFramework Include="MonoAndroid10" />

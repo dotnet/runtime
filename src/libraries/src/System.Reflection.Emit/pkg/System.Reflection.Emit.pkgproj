@@ -6,7 +6,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Reflection.Emit.csproj">
-      <SupportedFramework>net45;netcore50;netstandardapp1.5</SupportedFramework>
+      <SupportedFramework>net45;netcore50;netcoreapp1.0</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Reflection.Emit.builds" />
     <InboxOnTargetFramework Include="MonoAndroid10" />
