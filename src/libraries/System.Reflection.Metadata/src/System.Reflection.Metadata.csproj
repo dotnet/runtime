@@ -37,6 +37,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Reflection\Internal\Utilities\ExceptionUtilities.cs" />
+    <Compile Include="System\Reflection\Metadata\Ecma335\Blobs\MethodBodiesEncoder.cs" />
+    <Compile Include="System\Reflection\Metadata\Ecma335\Blobs\MethodBodyAttributes.cs" />
     <Compile Include="System\Reflection\Metadata\PooledBlobBuilder.cs" />
     <Compile Include="System\Reflection\Metadata\Blob.cs" />
     <Compile Include="System\Reflection\Metadata\BlobWriter.cs" />
