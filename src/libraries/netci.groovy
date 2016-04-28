@@ -605,12 +605,13 @@ def supportedFullCyclePlatforms = ['Windows_NT', 'Ubuntu14.04', 'OSX']
                         // Use Server GC for Ubuntu/OSX Debug PR build & test
                         def useServerGC = (configurationGroup == 'Release' && isPR) ? 'useServerGC' : ''
                         shell("HOME=\$WORKSPACE/tempHome ./build.sh ${useServerGC} ${configurationGroup.toLowerCase()} /p:ConfigurationGroup=${configurationGroup} /p:TestWithLocalLibraries=true /p:WithoutCategories=IgnoreForCI")
-                        // Tar up the appropriate bits
-                        // It's unclear why, but on OSX the --exclude=*.Tests automatically gets quoted as '--exclude=*.Tests',
-                        // which doesn't stat because tar thinks its a directory.  For now, workaround this.
-                        def excludeArg = '--exclude=*.Tests'
+                        // Tar up the appropriate bits.  On OSX the tarring is a different syntax for exclusion.
+                        def excludeArg = ''
                         if (os == 'OSX') {
-                            excludeArg = ''
+                            excludeArg = '--exclude *.Tests'
+                        }
+                        else {
+                            excludeArg = '--exclude=*.Tests'
                         }
                         shell("tar -czf bin/build.tar.gz bin/*.${configurationGroup} bin/ref bin/packages ${excludeArg}")
                     }
