@@ -3,78 +3,172 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
-using System;
-using System.Collections;
-using System.Collections.Specialized;
 
 namespace System.Collections.Specialized.Tests
 {
     public class KeysCollectionTests
     {
-        private String _strErr = "Error!";
+        [Theory]
+        [InlineData(0)]
+        [InlineData(10)]
+        public void Keys_PreservesInstance(int count)
+        {
+            MyNameObjectCollection nameObjectCollection = Helpers.CreateNameObjectCollection(count);
+            Assert.Same(nameObjectCollection.Keys, nameObjectCollection.Keys);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(10)]
+        public void Keys_GetEnumerator(int count)
+        {
+            MyNameObjectCollection nameObjectCollection = Helpers.CreateNameObjectCollection(count);
+
+            NameObjectCollectionBase.KeysCollection keys = nameObjectCollection.Keys;
+            Assert.NotSame(keys.GetEnumerator(), keys.GetEnumerator());
+
+            IEnumerator enumerator = keys.GetEnumerator();
+            for (int i = 0; i < 2; i++)
+            {
+                int counter = 0;
+                while (enumerator.MoveNext())
+                {
+                    Assert.Equal(keys[counter], enumerator.Current);
+                    counter++;
+                }
+                Assert.Equal(count, keys.Count);
+                enumerator.Reset();
+            }
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(10)]
+        public void Keys_GetEnumerator_Invalid(int count)
+        {
+            MyNameObjectCollection nameObjectCollection = Helpers.CreateNameObjectCollection(count);
+            NameObjectCollectionBase.KeysCollection keys = nameObjectCollection.Keys;
+            IEnumerator enumerator = keys.GetEnumerator();
+
+            // Has not started enumerating
+            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
+
+            // Has finished enumerating
+            while (enumerator.MoveNext()) ;
+            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
+
+            // Has reset enumerating
+            enumerator.Reset();
+            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
+
+            // Modify collection
+            enumerator.MoveNext();
+            nameObjectCollection.Add("new-name", new Foo("new-value"));
+            Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
+            Assert.Throws<InvalidOperationException>(() => enumerator.Reset());
+            if (count > 0)
+            {
+                Assert.NotNull(enumerator.Current);
+            }
+
+            // Modified read only collection still throws
+            nameObjectCollection.IsReadOnly = true;
+            Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
+            Assert.Throws<InvalidOperationException>(() => enumerator.Reset());
+
+            // Clear collection
+            nameObjectCollection.IsReadOnly = false;
+            enumerator = keys.GetEnumerator();
+            enumerator.MoveNext();
+            nameObjectCollection.Clear();
+            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
+            Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
+            Assert.Throws<InvalidOperationException>(() => enumerator.Reset());
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(10)]
+        public void Keys_Properties(int count)
+        {
+            MyNameObjectCollection nameObjectCollection = Helpers.CreateNameObjectCollection(count);
+            ICollection keysCollection = nameObjectCollection.Keys;
+
+            Assert.Same(((ICollection)nameObjectCollection).SyncRoot, keysCollection.SyncRoot);
+            Assert.False(keysCollection.IsSynchronized);
+        }
+
+        [Theory]
+        [InlineData(0, 0)]
+        [InlineData(0, 5)]
+        [InlineData(10, 0)]
+        [InlineData(10, 5)]
+        public void Keys_CopyTo(int count, int index)
+        {
+            MyNameObjectCollection nameObjectCollection = Helpers.CreateNameObjectCollection(count);
+            Keys_CopyTo(nameObjectCollection, index);
+        }
 
         [Fact]
-        public void Test01()
+        public void Keys_CopyTo_NullKeys()
         {
-            MyNameObjectCollection noc = new MyNameObjectCollection();
-            NameObjectCollectionBase.KeysCollection keys;
+            MyNameObjectCollection nameObjectCollection = new MyNameObjectCollection();
+            nameObjectCollection.Add(null, new Foo("1"));
+            nameObjectCollection.Add(null, new Foo("2"));
+            nameObjectCollection.Add(null, null);
+            nameObjectCollection.Add(null, new Foo("3"));
 
-            // Set up initial collection
-            for (int i = 0; i < 20; i++)
+            Keys_CopyTo(nameObjectCollection, 0);
+        }
+
+        public void Keys_CopyTo(MyNameObjectCollection nameObjectCollection, int index)
+        {
+            ICollection keys = nameObjectCollection.Keys;
+            string[] keysArray = new string[index + keys.Count + index];
+            keys.CopyTo(keysArray, index);
+
+            for (int i = 0; i < index; i++)
             {
-                noc.Add("key_" + i.ToString(), new Foo());
+                Assert.Null(keysArray[i]);
+            }
+            for (int i = 0; i < keys.Count; i++)
+            {
+                Assert.Equal(nameObjectCollection.GetKey(i), keysArray[i + index]);
+            }
+            for (int i = index + keys.Count; i < keysArray.Length; i++)
+            {
+                Assert.Null(keysArray[i]);
             }
 
-            // Get the KeysCollection
-            _strErr = "Err_001, ";
-            keys = noc.Keys;
+            // Clearing the nameObjectCollection should not affect the keys copy
+            int previousCount = keysArray.Length;
+            nameObjectCollection.Clear();
+            Assert.Equal(previousCount, keysArray.Length);
+        }
 
-            // Check Count
-            if (keys.Count != noc.Count)
+        [Theory]
+        [InlineData(0)]
+        [InlineData(10)]
+        public void Keys_CopyTo_Invalid(int count)
+        {
+            MyNameObjectCollection nameObjectCollection = Helpers.CreateNameObjectCollection(count);
+            NameObjectCollectionBase.KeysCollection keys = nameObjectCollection.Keys;
+            ICollection keysCollection = keys;
+
+            Assert.Throws<ArgumentNullException>("array", () => keysCollection.CopyTo(null, 0));
+            Assert.Throws<ArgumentException>("array", () => keysCollection.CopyTo(new string[count, count], 0));
+
+            if (count > 0)
             {
-                Assert.False(true, string.Format(_strErr + "keys.Count is wrong.  expected {0}, got {1}", noc.Count, keys.Count));
+                Assert.Throws<ArgumentException>(null, () => keysCollection.CopyTo(new string[0], 0));
+                Assert.Throws<ArgumentException>(null, () => keysCollection.CopyTo(new string[count - 1], 0));
+
+                Assert.Throws<InvalidCastException>(() => keysCollection.CopyTo(new Foo[count], 0));
             }
 
-            // Compare - test Get, Item
-            for (int i = 0; i < noc.Count; i++)
-            {
-                if (keys.Get(i) != "key_" + i.ToString())
-                {
-                    Assert.False(true, string.Format(_strErr + "keys.Get({0}) is wrong.  expected {1}, got {2}", i, "key_" + i.ToString(), keys.Get(i)));
-                }
-                if (keys[i] != "key_" + i.ToString())
-                {
-                    Assert.False(true, string.Format(_strErr + "keys[{0}] is wrong.  expected {1}, got {2}", i, "key_" + i.ToString(), keys[i]));
-                }
-            }
-
-            // Get enumerator - it's the same enumerator as the original collection, so don't
-            // need to test it again here.
-            IEnumerator en = keys.GetEnumerator();
-
-            // Get SyncRoot - just a cursory test
-            if (((ICollection)keys).SyncRoot != ((ICollection)noc).SyncRoot)
-            {
-                Assert.False(true, _strErr + "keys.SyncRoot was not the same as noc.SyncRoot");
-            }
-
-            // Get IsSynchronized
-            if (((ICollection)keys).IsSynchronized)
-            {
-                Assert.False(true, _strErr + "keys.SyncRoot was not the same as noc.SyncRoot");
-            }
-
-            // Check empty collection
-            noc = new MyNameObjectCollection();
-            keys = noc.Keys;
-
-            // Check Count
-            if (keys.Count != 0)
-            {
-                Assert.False(true, string.Format(_strErr + "keys.Count is wrong.  expected {0}, got {1}", 0, keys.Count));
-            }
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => keysCollection.CopyTo(new string[count], -1));
+            Assert.Throws<ArgumentException>(null, () => keysCollection.CopyTo(new string[count], 1));
+            Assert.Throws<ArgumentException>(null, () => keysCollection.CopyTo(new string[count], count + 1));
         }
     }
 }
-
-

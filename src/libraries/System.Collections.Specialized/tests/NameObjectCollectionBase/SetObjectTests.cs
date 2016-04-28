@@ -14,12 +14,12 @@ namespace System.Collections.Specialized.Tests
             var noc = new MyNameObjectCollection();
             for (int i = 0; i < 10; i++)
             {
-                var foo1 = new Foo();
+                var foo1 = new Foo("Value_1");
                 noc.Add("Name_" + i, foo1);
 
-                var foo2 = new Foo();
+                var foo2 = new Foo("Value_2");
                 noc[i] = foo2;
-                Assert.Equal(foo2, noc[i]);
+                Assert.Same(foo2, noc[i]);
             }
         }
     }
