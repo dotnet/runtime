@@ -10,34 +10,34 @@ namespace System
     static partial class StringNormalizationExtensions
     {
         [SecurityCritical]
-        public static bool IsNormalized(this string value, NormalizationForm normalizationForm)
+        public static bool IsNormalized(this string strInput, NormalizationForm normalizationForm)
         {
-            ValidateArguments(value, normalizationForm);
+            ValidateArguments(strInput, normalizationForm);
 
-            int ret = Interop.GlobalizationNative.IsNormalized(normalizationForm, value, value.Length);
+            int ret = Interop.GlobalizationNative.IsNormalized(normalizationForm, strInput, strInput.Length);
 
             if (ret == -1)
             {
-                throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(value));
+                throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(strInput));
             }
 
             return ret == 1;
         }
 
         [SecurityCritical]
-        public static string Normalize(this string value, NormalizationForm normalizationForm)
+        public static string Normalize(this string strInput, NormalizationForm normalizationForm)
         {
-            ValidateArguments(value, normalizationForm);
+            ValidateArguments(strInput, normalizationForm);
 
-            char[] buf = new char[value.Length];
+            char[] buf = new char[strInput.Length];
 
             for (int attempts = 2; attempts > 0; attempts--)
             {
-                int realLen = Interop.GlobalizationNative.NormalizeString(normalizationForm, value, value.Length, buf, buf.Length);
+                int realLen = Interop.GlobalizationNative.NormalizeString(normalizationForm, strInput, strInput.Length, buf, buf.Length);
 
                 if (realLen == -1)
                 {
-                    throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(value));
+                    throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(strInput));
                 }
 
                 if (realLen <= buf.Length)
@@ -48,18 +48,18 @@ namespace System
                 buf = new char[realLen];
             }
 
-            throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(value));
+            throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(strInput));
         }
 
         // -----------------------------
         // ---- PAL layer ends here ----
         // -----------------------------
 
-        private static void ValidateArguments(string value, NormalizationForm normalizationForm)
+        private static void ValidateArguments(string strInput, NormalizationForm normalizationForm)
         {
-            if (value == null)
+            if (strInput == null)
             {
-                throw new ArgumentNullException(nameof(value));
+                throw new ArgumentNullException(nameof(strInput));
             }
 
             if (normalizationForm != NormalizationForm.FormC && normalizationForm != NormalizationForm.FormD &&
@@ -68,9 +68,9 @@ namespace System
                 throw new ArgumentException(SR.Argument_InvalidNormalizationForm, nameof(normalizationForm));
             }
 
-            if (HasInvalidUnicodeSequence(value))
+            if (HasInvalidUnicodeSequence(strInput))
             {
-                throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(value));
+                throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(strInput));
             }
         }
 
