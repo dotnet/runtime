@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.DotNet.ProjectModel.Compilation;
 using Microsoft.DotNet.ProjectModel.Graph;
-using NuGet.RuntimeModel;
-using System.IO;
 using Microsoft.Extensions.DependencyModel;
+using NuGet.RuntimeModel;
 
 namespace Microsoft.DotNet.ProjectModel
 {
