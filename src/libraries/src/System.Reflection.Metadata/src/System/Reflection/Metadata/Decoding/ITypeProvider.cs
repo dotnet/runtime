@@ -10,49 +10,45 @@ namespace System.Reflection.Metadata
         /// Gets the type symbol for a type definition.
         /// </summary>
         /// <param name="reader">
-        /// The metadata reader that was passed to the<see cref= "Ecma335.SignatureDecoder{TType}" />. It may be null.
+        /// The metadata reader that was passed to the signature decoder. It may be null.
         /// </param>
         /// <param name="handle">
         /// The type definition handle.
         /// </param>
-        /// <param name="code">
-        /// When <see cref="SignatureDecoderOptions.DifferentiateClassAndValueTypes"/> is used indicates whether
-        /// the type reference is to class or value type. Otherwise <see cref="SignatureTypeKind.Unresolved"/>
-        /// will be passed.
+        /// <param name="rawTypeKind">
+        /// The kind of the type as specified in the signature. To interpret this value use <see cref="Ecma335.MetadataReaderExtensions.ResolveSignatureTypeKind(MetadataReader, EntityHandle, byte)"/>
+        /// Note that when the signature comes from a WinMD file additional processing is needed to determine whether the target type is a value type or a reference type.
         /// </param>
-        TType GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, SignatureTypeKind code);
+        TType GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind);
 
         /// <summary>
         /// Gets the type symbol for a type reference.
         /// </summary>
         /// <param name="reader">
-        /// The metadata reader that was passed to the <see cref= "Ecma335.SignatureDecoder{TType}" />. It may be null.
+        /// The metadata reader that was passed to the signature decoder. It may be null.
         /// </param>
         /// <param name="handle">
         /// The type definition handle.
         /// </param>
-        /// <param name="code">
-        /// When <see cref="SignatureDecoderOptions.DifferentiateClassAndValueTypes"/> is used indicates whether
-        /// the type reference is to class or value type. Otherwise <see cref="SignatureTypeKind.Unresolved"/>
-        /// will be passed.
+        /// <param name="rawTypeKind">
+        /// The kind of the type as specified in the signature. To interpret this value use <see cref="Ecma335.MetadataReaderExtensions.ResolveSignatureTypeKind(MetadataReader, EntityHandle, byte)"/>
+        /// Note that when the signature comes from a WinMD file additional processing is needed to determine whether the target type is a value type or a reference type.
         /// </param>
-        TType GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, SignatureTypeKind code);
-
+        TType GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind);
 
         /// <summary>
         /// Gets the type symbol for a type specification.
         /// </summary>
         /// <param name="reader">
-        /// The metadata reader that was passed to the <see cref= "Ecma335.SignatureDecoder{TType}" />. It may be null.
+        /// The metadata reader that was passed to the signature decoder. It may be null.
         /// </param>
         /// <param name="handle">
         /// The type specification handle.
         /// </param>
-        /// <param name="code">
-        /// When <see cref="SignatureDecoderOptions.DifferentiateClassAndValueTypes"/> is used indicates whether
-        /// the type reference is to class or value type. Otherwise <see cref="SignatureTypeKind.Unresolved"/>
-        /// will be passed.
+        /// <param name="rawTypeKind">
+        /// The kind of the type as specified in the signature. To interpret this value use <see cref="Ecma335.MetadataReaderExtensions.ResolveSignatureTypeKind(MetadataReader, EntityHandle, byte)"/>
+        /// Note that when the signature comes from a WinMD file additional processing is needed to determine whether the target type is a value type or a reference type.
         /// </param>
-        TType GetTypeFromSpecification(MetadataReader reader, TypeSpecificationHandle handle, SignatureTypeKind code);
+        TType GetTypeFromSpecification(MetadataReader reader, TypeSpecificationHandle handle, byte rawTypeKind);
     }
 }

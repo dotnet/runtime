@@ -36,6 +36,7 @@
     <ErrorReport>prompt</ErrorReport>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="System\Reflection\Internal\Utilities\ExceptionUtilities.cs" />
     <Compile Include="System\Reflection\Metadata\PooledBlobBuilder.cs" />
     <Compile Include="System\Reflection\Metadata\Blob.cs" />
     <Compile Include="System\Reflection\Metadata\BlobWriter.cs" />
@@ -121,7 +122,6 @@
     <Compile Include="System\Reflection\Metadata\Decoding\IPrimitiveTypeProvider.cs" />
     <Compile Include="System\Reflection\Metadata\Decoding\IConstructedTypeProvider.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\SignatureDecoder.cs" />
-    <Compile Include="System\Reflection\Metadata\Decoding\SignatureDecoderOptions.cs" />
     <Compile Include="System\Reflection\Metadata\Decoding\MethodSignature.cs" />
     <Compile Include="System\Reflection\Metadata\PrimitiveTypeCode.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\EditAndContinueLogEntry.cs" />

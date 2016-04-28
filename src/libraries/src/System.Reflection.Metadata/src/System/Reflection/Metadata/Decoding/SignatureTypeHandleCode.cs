@@ -10,9 +10,8 @@ namespace System.Reflection.Metadata
     {
         /// <summary>
         /// It is not known in the current context if the type reference or definition is a class or value type.
-        /// This will be the case when <see cref="SignatureDecoderOptions.DifferentiateClassAndValueTypes"/> is not specified.
         /// </summary>
-        Unresolved = 0,
+        Unknown = 0,
 
         /// <summary>
         /// The type definition or reference refers to a class.

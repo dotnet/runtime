@@ -365,5 +365,68 @@ namespace System.Reflection.Metadata.Ecma335
                 yield return reader.EventMapTable.GetParentType(rid);
             }
         }
+
+        /// <summary>
+        /// Given a type handle and a raw type kind found in a signature blob determines whether the target type is a value type or a reference type.
+        /// </summary>
+        public static SignatureTypeKind ResolveSignatureTypeKind(this MetadataReader reader, EntityHandle typeHandle, byte rawTypeKind)
+        {
+            if (reader == null)
+            {
+                throw new ArgumentNullException(nameof(reader));
+            }
+
+            var typeKind = (SignatureTypeKind)rawTypeKind;
+
+            switch (typeKind)
+            {
+                case SignatureTypeKind.Unknown:
+                    return SignatureTypeKind.Unknown;
+
+                case SignatureTypeKind.Class:
+                case SignatureTypeKind.ValueType:
+                    break;
+
+                default:
+                    // If read from metadata by the decoder the value would have been checked already.
+                    // So it is the callers error to pass in an invalid value, not bad metadata.
+                    throw new ArgumentOutOfRangeException(nameof(rawTypeKind));
+            }
+
+            switch (typeHandle.Kind)
+            {
+                case HandleKind.TypeDefinition:
+                    // WinRT projections don't apply to TypeDefs
+                    return typeKind;
+
+                case HandleKind.TypeReference:
+                    var treatment = reader.GetTypeReference((TypeReferenceHandle)typeHandle).SignatureTreatment;
+                    switch (treatment)
+                    {
+                        case TypeRefSignatureTreatment.ProjectedToClass:
+                            return SignatureTypeKind.Class;
+
+                        case TypeRefSignatureTreatment.ProjectedToValueType:
+                            return SignatureTypeKind.ValueType;
+
+                        case TypeRefSignatureTreatment.None:
+                            return typeKind;
+
+                        default:
+                            throw ExceptionUtilities.UnexpectedValue(treatment);
+                    }
+
+                case HandleKind.TypeSpecification:
+                    // TODO: https://github.com/dotnet/corefx/issues/8139
+                    // We need more work here in differentiating case because instantiations can project class 
+                    // to value type as in IReference<T> -> Nullable<T>. Unblocking Roslyn work where the differentiation
+                    // feature is not used. Note that the use-case of custom-mods will not hit this because there is no
+                    // CLASS | VALUETYPE before the modifier token and so it always comes in unresolved.
+                    return SignatureTypeKind.Unknown;
+
+                default:
+                    throw new ArgumentOutOfRangeException(SR.InvalidHandle);
+            }
+        }
     }
 }
