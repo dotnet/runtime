@@ -360,39 +360,6 @@
         </ExcludeList>
     </ItemGroup>
     <ItemGroup Condition="'$(BuildArch)' == 'x86'">
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\IL_Conformance\Old\Conformance_Base\rem_r8\rem_r8.cmd" >
-             <Issue>3549</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\IL_Conformance\Old\Conformance_Base\mul_r8\mul_r8.cmd" >
-             <Issue>3549</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\IL_Conformance\Old\Conformance_Base\sub_r8\sub_r8.cmd" >
-             <Issue>3549</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\IL_Conformance\Old\Conformance_Base\ckfinite_r8\ckfinite_r8.cmd" >
-             <Issue>3549</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\IL_Conformance\Old\Conformance_Base\add_r8\add_r8.cmd" >
-             <Issue>3549</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\IL_Conformance\Old\Base\ckfinite\ckfinite.cmd" >
-             <Issue>3549</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b59948\b59948\b59948.cmd" >
-             <Issue>3549</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\IL_Conformance\Old\Conformance_Base\div_r8\div_r8.cmd" >
-             <Issue>3549</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\IL_Conformance\Old\Conformance_Base\ldc_ckfinite_r8\ldc_ckfinite_r8.cmd" >
-             <Issue>3549</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\IL_Conformance\Old\Conformance_Base\neg_r8\neg_r8.cmd" >
-             <Issue>3549</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\VS-ia64-JIT\M00\b108366\b108366\b108366.cmd" >
-             <Issue>3549</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\stringintern\_XModuletest1-xmod\_XModuletest1-xmod.cmd" >
              <Issue>3554</Issue>
         </ExcludeList>
@@ -3811,6 +3778,9 @@
              <Issue>4178</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\tryexcept_d\tryexcept_d.cmd" >
+             <Issue>4178</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\JitBlue\GitHub_4044\GitHub_4044\GitHub_4044.cmd" >
              <Issue>4178</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Performance\CodeQuality\Roslyn\CscBench\CscBench.cmd" >
