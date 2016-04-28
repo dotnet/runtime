@@ -606,7 +606,13 @@ def supportedFullCyclePlatforms = ['Windows_NT', 'Ubuntu14.04', 'OSX']
                         def useServerGC = (configurationGroup == 'Release' && isPR) ? 'useServerGC' : ''
                         shell("HOME=\$WORKSPACE/tempHome ./build.sh ${useServerGC} ${configurationGroup.toLowerCase()} /p:ConfigurationGroup=${configurationGroup} /p:TestWithLocalLibraries=true /p:WithoutCategories=IgnoreForCI")
                         // Tar up the appropriate bits
-                        shell("tar -czf bin/build.tar.gz bin/*.${configurationGroup} bin/ref bin/packages --exclude=*.Tests")
+                        // It's unclear why, but on OSX the --exclude=*.Tests automatically gets quoted as '--exclude=*.Tests',
+                        // which doesn't stat because tar thinks its a directory.  For now, workaround this.
+                        def excludeArg = '--exclude=*.Tests'
+                        if (os == 'OSX') {
+                            excludeArg = ''
+                        }
+                        shell("tar -czf bin/build.tar.gz bin/*.${configurationGroup} bin/ref bin/packages ${excludeArg}")
                     }
                 }
             }
