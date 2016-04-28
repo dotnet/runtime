@@ -32,11 +32,9 @@ namespace System.Text.Tests
             // Mixture of ASCII and Unicode
             yield return new object[] { new byte[] { 84, 0, 101, 0, 115, 0, 116, 0, 84, 0, 101, 0, 115, 0, 116, 0 }, 0, 16, "TestTest" };
             yield return new object[] { new byte[] { 84, 0, 101, 0, 115, 0, 116, 0, 83, 0, 116, 0, 114, 0, 105, 0, 110, 0, 103, 0 }, 0, 20, "TestString" };
-            yield return new object[] { new byte[] { 84, 0, 101, 0, 115, 0, 116, 0, 83, 0, 116, 0, 114, 0, 105, 0, 110, 0, 103, 0, 45 }, 0, 21, "TestString\uFFFD" };
-            yield return new object[] { new byte[] { 84, 0, 101, 0, 115, 0, 116, 0, 84, 0, 101, 0, 115, 0, 116, 0, 117, 221 }, 0, 18, "TestTest\uFFFD" };
-            yield return new object[] { new byte[] { 84, 0, 101, 0, 115, 0, 116, 0, 84, 0, 101, 0, 115, 0, 116, 0, 3, 216 }, 0, 17, "TestTest\uFFFD" };
 
             yield return new object[] { new byte[] { 70, 0, 111, 0, 111, 0, 66, 0, 65, 0, 0, 4, 82, 0 }, 0, 14, "FooBA\u0400R" };
+
             yield return new object[] { new byte[] { 192, 0, 110, 0, 105, 0, 109, 0, 97, 0, 0, 3, 108, 0 }, 0, 14, "\u00C0nima\u0300l" };
             yield return new object[] { new byte[] { 122, 0, 97, 0, 6, 3, 253, 1, 178, 3 }, 0, 10, "za\u0306\u01fd\u03b2" };
             yield return new object[] { new byte[] { 122, 0, 97, 0, 6, 3, 253, 1, 178, 3 }, 0, 8, "za\u0306\u01fd" };
@@ -44,7 +42,6 @@ namespace System.Text.Tests
             yield return new object[] { new byte[] { 84, 0, 101, 0, 115, 0, 116, 0, 3, 216, 117, 221, 84, 0, 101, 0, 115, 0, 116, 0 }, 0, 20, "Test\uD803\uDD75Test" };
             yield return new object[] { new byte[] { 0, 0, 84, 0, 101, 0, 10, 0, 115, 0, 116, 0, 0, 0, 9, 0, 0, 0, 84, 0, 15, 0, 101, 0, 115, 0, 116, 0, 0, 0 }, 0, 30, "\0Te\nst\0\t\0T\u000Fest\0" };
 
-            yield return new object[] { new byte[] { 3, 216, 84 }, 0, 3, "\uFFFD\uFFFD" };
             yield return new object[] { new byte[] { 3, 216, 117, 221, 3, 216, 117, 221, 3, 216, 117, 221 }, 0, 12, "\uD803\uDD75\uD803\uDD75\uD803\uDD75" };
             yield return new object[] { new byte[] { 3, 216, 117, 221, 3, 216, 117, 221 }, 0, 8, "\uD803\uDD75\uD803\uDD75" };
 
@@ -63,50 +60,55 @@ namespace System.Text.Tests
         [MemberData(nameof(Decode_TestData))]
         public void Decode(byte[] littleEndianBytes, int index, int count, string expected)
         {
-            Decode_LittleEndian(littleEndianBytes, index, count, expected);
+            byte[] bigEndianBytes = GetBigEndianBytes(littleEndianBytes, index, count);
 
-            byte[] bigEndianBytes = (byte[])littleEndianBytes.Clone();
-            for (int i = 0; i < bigEndianBytes.Length; i += 2)
-            {
-                if (i + 1 >= bigEndianBytes.Length)
-                {
-                    continue;
-                }
-                byte b1 = bigEndianBytes[i];
-                byte b2 = bigEndianBytes[i + 1];
+            EncodingHelpers.Decode(new UnicodeEncoding(false, true, false), littleEndianBytes, index, count, expected);
+            EncodingHelpers.Decode(new UnicodeEncoding(false, false, false), littleEndianBytes, index, count, expected);
+            EncodingHelpers.Decode(new UnicodeEncoding(true, false, false), bigEndianBytes, index, count, expected);
+            EncodingHelpers.Decode(new UnicodeEncoding(true, true, false), bigEndianBytes, index, count, expected);
 
-                bigEndianBytes[i] = b2;
-                bigEndianBytes[i + 1] = b1;
-            }
-            Decode_BigEndian(bigEndianBytes, index, count, expected);
+            // Decoding valid bytes should throw with a DecoderExceptionFallback
+            EncodingHelpers.Decode(new UnicodeEncoding(false, true, true), littleEndianBytes, index, count, expected);
+            EncodingHelpers.Decode(new UnicodeEncoding(false, false, true), littleEndianBytes, index, count, expected);
+            EncodingHelpers.Decode(new UnicodeEncoding(true, false, true), bigEndianBytes, index, count, expected);
+            EncodingHelpers.Decode(new UnicodeEncoding(true, true, true), bigEndianBytes, index, count, expected);
         }
 
-        public void Decode_LittleEndian(byte[] bytes, int index, int count, string expected)
+        public static IEnumerable<object[]> Decode_InvalidBytes_TestData()
         {
-            EncodingHelpers.Decode(new UnicodeEncoding(false, true), bytes, index, count, expected);
-            EncodingHelpers.Decode(new UnicodeEncoding(false, false), bytes, index, count, expected);
+            yield return new object[] { new byte[] { 70, 0, 111, 0, 111, 0, 66, 0, 65, 0, 0, 4, 82, 0, 70 }, 0, 15, "FooBA\u0400R\uFFFD" };
+
+            yield return new object[] { new byte[] { 84, 0, 101, 0, 115, 0, 116, 0, 83, 0, 116, 0, 114, 0, 105, 0, 110, 0, 103, 0, 45 }, 0, 21, "TestString\uFFFD" };
+            yield return new object[] { new byte[] { 84, 0, 101, 0, 115, 0, 116, 0, 84, 0, 101, 0, 115, 0, 116, 0, 117, 221 }, 0, 18, "TestTest\uFFFD" };
+            yield return new object[] { new byte[] { 84, 0, 101, 0, 115, 0, 116, 0, 84, 0, 101, 0, 115, 0, 116, 0, 3, 216 }, 0, 17, "TestTest\uFFFD" };
+
+            yield return new object[] { new byte[] { 0, 0, 84, 0, 101, 0, 10, 0, 115, 0, 116, 0, 0, 0, 9, 0, 0, 0, 84, 0, 15, 0, 101, 0, 115, 0, 116, 0, 0, 0, 0 }, 0, 31, "\0Te\nst\0\t\0T\u000Fest\0\uFFFD" };
+            
+            yield return new object[] { new byte[] { 3, 216, 84 }, 0, 3, "\uFFFD\uFFFD" };
         }
 
-        public static IEnumerable<object[]> Decode_BigEndian_TestData()
-        {
-            yield return new object[] { new byte[] { 216, 3, 48 }, 0, 3, "\uFFFD\uFFFD" };
-            yield return new object[] { new byte[] { 0, 0, 0, 84, 0, 101, 0, 10, 0, 115, 0, 116, 0, 0, 0, 9, 0, 0, 0, 84, 0, 15, 0, 101, 0, 115, 0, 116, 0, 0, 0 }, 0, 31, "\0Te\nst\0\t\0T\u000Fest\0\uFFFD" };
-
-            yield return new object[] { new byte[] { 0, 70, 0, 111, 0, 111, 0, 66, 0, 65, 4, 0, 0, 82, 70 }, 0, 15, "FooBA\u0400R\uFFFD" };
-        }
-        
         [Theory]
-        [MemberData(nameof(Decode_BigEndian_TestData))]
-        public void Decode_BigEndian(byte[] bytes, int index, int count, string expected)
+        [MemberData(nameof(Decode_InvalidBytes_TestData))]
+        public void Decode_InvalidBytes(byte[] littleEndianBytes, int index, int count, string expected)
         {
-            EncodingHelpers.Decode(new UnicodeEncoding(true, false), bytes, index, count, expected);
-            EncodingHelpers.Decode(new UnicodeEncoding(true, true), bytes, index, count, expected);
+            byte[] bigEndianBytes = GetBigEndianBytes(littleEndianBytes, index, count);
+
+            EncodingHelpers.Decode(new UnicodeEncoding(false, true, false), littleEndianBytes, index, count, expected);
+            EncodingHelpers.Decode(new UnicodeEncoding(false, false, false), littleEndianBytes, index, count, expected);
+            EncodingHelpers.Decode(new UnicodeEncoding(true, false, false), bigEndianBytes, index, count, expected);
+            EncodingHelpers.Decode(new UnicodeEncoding(true, true, false), bigEndianBytes, index, count, expected);
+
+            // Decoding invalid bytes should throw with a DecoderExceptionFallback
+            NegativeEncodingTests.Decode_Invalid(new UnicodeEncoding(false, true, true), littleEndianBytes, index, count);
+            NegativeEncodingTests.Decode_Invalid(new UnicodeEncoding(false, false, true), littleEndianBytes, index, count);
+            NegativeEncodingTests.Decode_Invalid(new UnicodeEncoding(true, false, true), bigEndianBytes, index, count);
+            NegativeEncodingTests.Decode_Invalid(new UnicodeEncoding(true, true, true), bigEndianBytes, index, count);
         }
 
         [Fact]
-        public void Decode_InvalidUnicode()
+        public void Decode_InvalidBytes()
         {
-            // TODO: add into Decode_TestData once #7166 is fixed
+            // TODO: add into Decode_TestData or Decode_InvalidBytes_TestData once #7166 is fixed
             // High BMP non-chars
             Decode(new byte[] { 253, 255 }, 0, 2, "\uFFFD");
             Decode(new byte[] { 254, 255 }, 0, 2, "\uFFFE");
@@ -114,15 +116,35 @@ namespace System.Text.Tests
 
             // Invalid bytes
             byte[] validSurrogateBytes = new byte[] { 0, 216, 0, 220 };
-            Decode_LittleEndian(validSurrogateBytes, 0, 3, "\uFFFD\uFFFD");
-            Decode_LittleEndian(validSurrogateBytes, 1, 3, "\u00D8\uFFFD");
-            Decode(validSurrogateBytes, 0, 2, "\uFFFD");
-            Decode_LittleEndian(validSurrogateBytes, 1, 2, "\u00D8");
-            Decode(validSurrogateBytes, 2, 2, "\uFFFD");
-            Decode(validSurrogateBytes, 2, 1, "\uFFFD");
+            Decode_InvalidBytes(validSurrogateBytes, 0, 3, "\uFFFD\uFFFD");
+            Decode_InvalidBytes(validSurrogateBytes, 1, 3, "\u00D8\uFFFD");
+            Decode_InvalidBytes(validSurrogateBytes, 0, 2, "\uFFFD");
+            Decode(validSurrogateBytes, 1, 2, "\u00D8");
+            Decode_InvalidBytes(validSurrogateBytes, 2, 2, "\uFFFD");
+            Decode_InvalidBytes(validSurrogateBytes, 2, 1, "\uFFFD");
 
-            Decode(new byte[] { 97 }, 0, 1, "\uFFFD");
-            Decode(new byte[] { 97, 0, 97 }, 0, 3, "a\uFFFD");
+            Decode_InvalidBytes(new byte[] { 97 }, 0, 1, "\uFFFD");
+            Decode_InvalidBytes(new byte[] { 97, 0, 97 }, 0, 3, "a\uFFFD");
+
+            Decode_InvalidBytes(new byte[] { 3, 216, 48 }, 0, 3, "\uFFFD\uFFFD");
+        }
+
+        public byte[] GetBigEndianBytes(byte[] littleEndianBytes, int index, int count)
+        {
+            byte[] bytes = new byte[littleEndianBytes.Length];
+            for (int i = index; i < index + count; i += 2)
+            {
+                if (i + 1 >= bytes.Length)
+                {
+                    continue;
+                }
+                byte b1 = littleEndianBytes[i];
+                byte b2 = littleEndianBytes[i + 1];
+
+                bytes[i] = b2;
+                bytes[i + 1] = b1;
+            }
+            return bytes;
         }
     }
 }
