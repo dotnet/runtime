@@ -4,12 +4,11 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyModel;
+using Microsoft.Extensions.EnvironmentAbstractions;
 using Microsoft.Extensions.DependencyModel.Resolution;
 using Xunit;
 using FluentAssertions;
+
 
 namespace Microsoft.Extensions.DependencyModel.Tests
 {
@@ -18,6 +17,11 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         private static string BasePath = Path.Combine("Base","Path");
         private static string BasePathRefs = Path.Combine(BasePath, "refs");
 
+        private static string SharedFxPath = Path.Combine("shared", "fx");
+        private static string SharedFxPathRefs = Path.Combine(SharedFxPath, "refs");
+
+        private static DependencyContextPaths DependencyContextPaths = new DependencyContextPaths(null, Path.Combine(SharedFxPath, "deps.json"));
+
         [Fact]
         public void ResolvesProjectType()
         {
@@ -25,7 +29,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                  .Create()
                  .AddFiles(BasePathRefs, TestLibraryFactory.DefaultAssembly)
                  .Build();
-            var resolver = new AppBaseCompilationAssemblyResolver(fileSystem, BasePath);
+            var resolver = CreateResolver(fileSystem);
             var library = TestLibraryFactory.Create(
                 TestLibraryFactory.ProjectType,
                 assemblies: TestLibraryFactory.EmptyAssemblies);
@@ -42,7 +46,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                  .Create()
                  .AddFiles(BasePathRefs, TestLibraryFactory.DefaultAssembly)
                  .Build();
-            var resolver = new AppBaseCompilationAssemblyResolver(fileSystem, BasePath);
+            var resolver = CreateResolver(fileSystem);
             var library = TestLibraryFactory.Create(
                TestLibraryFactory.PackageType,
                assemblies: TestLibraryFactory.EmptyAssemblies);
@@ -59,7 +63,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                  .Create()
                  .AddFiles(BasePathRefs, TestLibraryFactory.DefaultAssembly)
                  .Build();
-            var resolver = new AppBaseCompilationAssemblyResolver(fileSystem, BasePath);
+            var resolver = CreateResolver(fileSystem);
             var library = TestLibraryFactory.Create(
                TestLibraryFactory.ReferenceAssemblyType,
                assemblies: TestLibraryFactory.EmptyAssemblies);
@@ -79,7 +83,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             var library = TestLibraryFactory.Create(
                TestLibraryFactory.ReferenceAssemblyType,
                assemblies: TestLibraryFactory.TwoAssemblies);
-            var resolver = new AppBaseCompilationAssemblyResolver(fileSystem, BasePath);
+            var resolver = CreateResolver(fileSystem);
             var assemblies = new List<string>();
 
             var result = resolver.TryResolveAssemblyPaths(library, assemblies);
@@ -98,7 +102,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             var library = TestLibraryFactory.Create(
                TestLibraryFactory.ProjectType,
                assemblies: TestLibraryFactory.TwoAssemblies);
-            var resolver = new AppBaseCompilationAssemblyResolver(fileSystem, BasePath);
+            var resolver = CreateResolver(fileSystem);
             var assemblies = new List<string>();
 
             var result = resolver.TryResolveAssemblyPaths(library, assemblies);
@@ -120,7 +124,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             var library = TestLibraryFactory.Create(
                TestLibraryFactory.ReferenceAssemblyType,
                assemblies: TestLibraryFactory.TwoAssemblies);
-            var resolver = new AppBaseCompilationAssemblyResolver(fileSystem, BasePath);
+            var resolver = CreateResolver(fileSystem);
             var assemblies = new List<string>();
 
             var exception = Assert.Throws<InvalidOperationException>(() => resolver.TryResolveAssemblyPaths(library, assemblies));
@@ -141,7 +145,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             var library = TestLibraryFactory.Create(
                TestLibraryFactory.ReferenceAssemblyType,
                assemblies: TestLibraryFactory.TwoAssemblies);
-            var resolver = new AppBaseCompilationAssemblyResolver(fileSystem, BasePath);
+            var resolver = CreateResolver(fileSystem);
             var assemblies = new List<string>();
 
             var result = resolver.TryResolveAssemblyPaths(library, assemblies);
@@ -164,7 +168,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                TestLibraryFactory.ReferenceAssemblyType,
                assemblies: TestLibraryFactory.TwoAssemblies);
 
-            var resolver = new AppBaseCompilationAssemblyResolver(fileSystem, BasePath);
+            var resolver = CreateResolver(fileSystem);
             var assemblies = new List<string>();
 
             var result = resolver.TryResolveAssemblyPaths(library, assemblies);
@@ -187,7 +191,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                TestLibraryFactory.ReferenceAssemblyType,
                assemblies: TestLibraryFactory.TwoAssemblies);
 
-            var resolver = new AppBaseCompilationAssemblyResolver(fileSystem, BasePath);
+            var resolver = CreateResolver(fileSystem);
             var assemblies = new List<string>();
 
             var result = resolver.TryResolveAssemblyPaths(library, assemblies);
@@ -205,12 +209,14 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                 .Create()
                 .AddFiles(BasePath, TestLibraryFactory.DefaultAssembly)
                 .AddFiles(BasePathRefs, TestLibraryFactory.DefaultAssembly)
+                .AddFile(SharedFxPath, TestLibraryFactory.DefaultAssembly)
+                .AddFile(SharedFxPathRefs, TestLibraryFactory.DefaultAssembly)
                 .Build();
             var library = TestLibraryFactory.Create(
-               TestLibraryFactory.ReferenceAssemblyType
+               TestLibraryFactory.PackageType
                );
 
-            var resolver = new AppBaseCompilationAssemblyResolver(fileSystem, BasePath);
+            var resolver = CreateResolver(fileSystem);
             var assemblies = new List<string>();
 
             var result = resolver.TryResolveAssemblyPaths(library, assemblies);
@@ -220,6 +226,128 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             assemblies.Should().Contain(Path.Combine(BasePathRefs, TestLibraryFactory.DefaultAssembly));
         }
 
+        [Fact]
+        public void SearchesInSharedFxRefsPathForPublishedPortable()
+        {
+            var fileSystem = FileSystemMockBuilder
+                .Create()
+                .AddFiles(BasePathRefs, TestLibraryFactory.SecondAssembly)
+                .AddFiles(SharedFxPathRefs, TestLibraryFactory.DefaultAssembly)
+                .Build();
+            var library = TestLibraryFactory.Create(
+               TestLibraryFactory.PackageType
+               );
 
+            var resolver = CreateResolver(fileSystem);
+            var assemblies = new List<string>();
+            var result = resolver.TryResolveAssemblyPaths(library, assemblies);
+
+            Assert.True(result);
+            assemblies.Should().HaveCount(1);
+            assemblies.Should().Contain(Path.Combine(SharedFxPathRefs, TestLibraryFactory.DefaultAssembly));
+        }
+
+        [Fact]
+        public void SearchesInSharedFxPathForPublishedPortable()
+        {
+            var fileSystem = FileSystemMockBuilder
+                .Create()
+                .AddFiles(BasePathRefs, TestLibraryFactory.SecondAssembly)
+                .AddFiles(SharedFxPath, TestLibraryFactory.DefaultAssembly)
+                .Build();
+            var library = TestLibraryFactory.Create(
+               TestLibraryFactory.PackageType
+               );
+
+            var resolver = CreateResolver(fileSystem);
+            var assemblies = new List<string>();
+
+            var result = resolver.TryResolveAssemblyPaths(library, assemblies);
+
+            Assert.True(result);
+            assemblies.Should().HaveCount(1);
+            assemblies.Should().Contain(Path.Combine(SharedFxPath, TestLibraryFactory.DefaultAssembly));
+        }
+
+        [Fact]
+        public void PrefersSharedFxPathRefsPathPublishedPortable()
+        {
+            var fileSystem = FileSystemMockBuilder
+                .Create()
+                .AddFiles(BasePathRefs, TestLibraryFactory.SecondAssembly)
+                .AddFiles(SharedFxPath, TestLibraryFactory.DefaultAssembly)
+                .AddFiles(SharedFxPathRefs, TestLibraryFactory.DefaultAssembly)
+                .Build();
+            var library = TestLibraryFactory.Create(
+               TestLibraryFactory.PackageType
+               );
+
+            var resolver = CreateResolver(fileSystem);
+            var assemblies = new List<string>();
+
+            var result = resolver.TryResolveAssemblyPaths(library, assemblies);
+
+            Assert.True(result);
+            assemblies.Should().HaveCount(1);
+            assemblies.Should().Contain(Path.Combine(SharedFxPathRefs, TestLibraryFactory.DefaultAssembly));
+        }
+
+        [Fact]
+        public void SkipsSharedFxPathForNonPublishedPortable()
+        {
+            var fileSystem = FileSystemMockBuilder
+                .Create()
+                .AddFiles(SharedFxPath, TestLibraryFactory.DefaultAssembly)
+                .AddFiles(SharedFxPathRefs, TestLibraryFactory.DefaultAssembly)
+                .Build();
+            var library = TestLibraryFactory.Create(
+               TestLibraryFactory.PackageType
+               );
+
+            var resolver = CreateResolver(fileSystem);
+            var assemblies = new List<string>();
+
+            var result = resolver.TryResolveAssemblyPaths(library, assemblies);
+            Assert.False(result);
+        }
+
+        [Fact]
+        public void ShouldThrowForNonResolvedInPublishedApps()
+        {
+            var fileSystem = FileSystemMockBuilder
+                .Create()
+                .AddFiles(BasePathRefs, TestLibraryFactory.SecondAssembly)
+                .Build();
+            var library = TestLibraryFactory.Create(
+               TestLibraryFactory.PackageType
+               );
+
+            var resolver = CreateResolver(fileSystem);
+            var assemblies = new List<string>();
+
+            Assert.Throws<InvalidOperationException>(() => resolver.TryResolveAssemblyPaths(library, assemblies));
+        }
+
+        [Fact]
+        public void ShouldSkipForNonResolvedInNonPublishedApps()
+        {
+            var fileSystem = FileSystemMockBuilder
+                .Create()
+                .Build();
+            var library = TestLibraryFactory.Create(
+               TestLibraryFactory.PackageType
+               );
+
+            var resolver = CreateResolver(fileSystem);
+            var assemblies = new List<string>();
+
+            var result = resolver.TryResolveAssemblyPaths(library, assemblies);
+            Assert.False(result);
+        }
+
+        private static AppBaseCompilationAssemblyResolver CreateResolver(IFileSystem fileSystem)
+        {
+            return new AppBaseCompilationAssemblyResolver(fileSystem, BasePath, DependencyContextPaths);
+        }
     }
 }
