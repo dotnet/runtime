@@ -6,16 +6,16 @@ namespace System.Globalization
 {
     sealed partial class IdnMapping
     {
-        private string GetAsciiCore(string unicode)
+        private unsafe string GetAsciiCore(char* unicode, int count)
         {
             uint flags = Flags;
-            CheckInvalidIdnCharacters(unicode, flags, "unicode");
+            CheckInvalidIdnCharacters(unicode, count, flags, "unicode");
 
-            char[] buf = new char[unicode.Length];
+            char[] buf = new char[count];
 
             for (int attempts = 2; attempts > 0; attempts--)
             {
-                int realLen = Interop.GlobalizationNative.ToAscii(flags, unicode, unicode.Length, buf, buf.Length);
+                int realLen = Interop.GlobalizationNative.ToAscii(flags, unicode, count, buf, buf.Length);
 
                 if (realLen == 0)
                 {
@@ -33,16 +33,16 @@ namespace System.Globalization
             throw new ArgumentException(SR.Argument_IdnIllegalName, nameof(unicode));
         }
 
-        private string GetUnicodeCore(string ascii)
+        private unsafe string GetUnicodeCore(char* ascii, int count)
         {
             uint flags = Flags;
-            CheckInvalidIdnCharacters(ascii, flags, "ascii");
+            CheckInvalidIdnCharacters(ascii, count, flags, "ascii");
 
-            char[] buf = new char[ascii.Length];
+            char[] buf = new char[count];
 
             for (int attempts = 2; attempts > 0; attempts--)
             {
-                int realLen = Interop.GlobalizationNative.ToUnicode(flags, ascii, ascii.Length, buf, buf.Length);
+                int realLen = Interop.GlobalizationNative.ToUnicode(flags, ascii, count, buf, buf.Length);
 
                 if (realLen == 0)
                 {
@@ -82,11 +82,11 @@ namespace System.Globalization
         /// To match Windows behavior, we walk the string ourselves looking for these
         /// bad characters so we can continue to throw ArgumentException in these cases. 
         /// </summary>
-        private static void CheckInvalidIdnCharacters(string s, uint flags, string paramName)
+        private static unsafe void CheckInvalidIdnCharacters(char* s, int count, uint flags, string paramName)
         {
             if ((flags & Interop.GlobalizationNative.UseStd3AsciiRules) == 0)
             {
-                for (int i = 0; i < s.Length; i++)
+                for (int i = 0; i < count; i++)
                 {
                     char c = s[i];
 

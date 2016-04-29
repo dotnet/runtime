@@ -8,12 +8,12 @@ namespace System.Globalization
 {
     sealed partial class IdnMapping
     {
-        private string GetAsciiCore(string unicode)
+        private unsafe string GetAsciiCore(char* unicode, int count)
         {
             uint flags = Flags;
             
             // Determine the required length
-            int length = Interop.mincore.IdnToAscii(flags, unicode, unicode.Length, null, 0);
+            int length = Interop.mincore.IdnToAscii(flags, unicode, count, null, 0);
             if (length == 0)
             {
                 ThrowForZeroLength("unicode", SR.Argument_IdnIllegalName, SR.Argument_InvalidCharSequenceNoIndex);
@@ -21,7 +21,7 @@ namespace System.Globalization
 
             // Do the conversion
             char[] output = new char[length];
-            length = Interop.mincore.IdnToAscii(flags, unicode, unicode.Length, output, length);
+            length = Interop.mincore.IdnToAscii(flags, unicode, count, output, length);
             if (length == 0)
             {
                 ThrowForZeroLength("unicode", SR.Argument_IdnIllegalName, SR.Argument_InvalidCharSequenceNoIndex);
@@ -30,12 +30,12 @@ namespace System.Globalization
             return new string(output, 0, length);
         }
 
-        private string GetUnicodeCore(string ascii)
+        private unsafe string GetUnicodeCore(char* ascii, int count)
         {
             uint flags = Flags;
 
             // Determine the required length
-            int length = Interop.mincore.IdnToUnicode(flags, ascii, ascii.Length, null, 0);
+            int length = Interop.mincore.IdnToUnicode(flags, ascii, count, null, 0);
             if (length == 0)
             {
                 ThrowForZeroLength("ascii", SR.Argument_IdnIllegalName, SR.Argument_IdnBadPunycode);
@@ -44,7 +44,7 @@ namespace System.Globalization
             char[] output = new char[length];
 
             // Do the conversion
-            length = Interop.mincore.IdnToUnicode(flags, ascii, ascii.Length, output, length);
+            length = Interop.mincore.IdnToUnicode(flags, ascii, count, output, length);
             if (length == 0)
             {
                 ThrowForZeroLength("ascii", SR.Argument_IdnIllegalName, SR.Argument_IdnBadPunycode);
