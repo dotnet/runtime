@@ -64,13 +64,21 @@
             <param name="o">The object to cast.</param>
             <returns>The original object, casted to the given type.</returns>
         </member>
+        <member name="M:System.Runtime.CompilerServices.Unsafe.AsRef``1(System.Void*)">
+            <summary>
+            Reinterprets the given location as a reference to a value of type T.
+            </summary>
+            <typeparam name="T">The type of the interpreted location.</typeparam>
+            <param name="source">The location of the value to reference.</param>
+            <returns>A reference to a value of type T.</returns>
+        </member>
         <member name="M:System.Runtime.CompilerServices.Unsafe.CopyBlock(System.Void*,System.Void*,System.UInt32)">
             <summary>
             Copies bytes from the source address to the destination address.
             </summary>
             <param name="destination">The destination address to copy to.</param>
             <param name="source">The source address to copy from.</param>
-            <param name="numBytesToCopy">The number of bytes to copy.</param>
+            <param name="byteCount">The number of bytes to copy.</param>
         </member>
         <member name="M:System.Runtime.CompilerServices.Unsafe.InitBlock(System.Void*,System.Byte,System.UInt32)">
             <summary>
@@ -78,7 +86,7 @@
             </summary>
             <param name="startAddress">The address of the start of the memory block to initialize.</param>
             <param name="value">The value to initialize the block to.</param>
-            <param name="numBytesToCopy">The number of bytes to initialize.</param>
+            <param name="byteCount">The number of bytes to initialize.</param>
         </member>
     </members>
 </doc>
