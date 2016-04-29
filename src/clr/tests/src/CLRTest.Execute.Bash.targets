@@ -165,6 +165,14 @@ then
   exit 0
 fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>
+      <BashCLRTestGCSimulatorSkipCondition Condition="$(GCSimulatorRun) != 'true' And '$(IsGCSimulatorTest)' == 'true'"><![CDATA[
+echo "Skipping execution because GCSimulator tests are not enabled"
+exit 0
+      ]]></BashCLRTestGCSimulatorSkipCondition>
+      <BashCLRTestGCLongTestSkipCondition Condition="$(GCLongRunning) != 'true' And '$(IsLongRunningGCTest)' == 'true'"><![CDATA[
+echo "Skipping execution because long-running GC tests are not enabled"
+exit 0
+      ]]></BashCLRTestGCLongTestSkipCondition>
       <BashCLRTestExitCodePrep Condition="$(_CLRTestNeedsToRun)">
 <![CDATA[CLRTestExpectedExitCode=$(CLRTestExitCode)
 echo BEGIN EXECUTION]]>
@@ -314,6 +322,9 @@ $(BashEnvironmentVariables)
 $(BashCLRTestEnvironmentCompatibilityCheck)
 $(BashCLRTestArgPrep)
 $(BashCLRTestExitCodePrep)
+# Long-running GC test checks
+$(BashCLRTestGCSimulatorSkipCondition)
+$(BashCLRTestGCLongTestSkipCondition)
 # CrossGen Script (when /p:CrossGen=true)
 $(CrossgenBashScript)
 # IlasmRoundTrip Script
