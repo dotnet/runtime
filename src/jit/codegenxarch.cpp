@@ -1628,7 +1628,9 @@ CodeGen::genReturn(GenTreePtr treeNode)
 #ifdef _TARGET_X86_
             if (varTypeIsFloating(treeNode))
             {
-                if (genIsRegCandidateLocal(op1) && !compiler->lvaTable[op1->gtLclVarCommon.gtLclNum].lvRegister)
+                // Spill the return value register from an XMM register to the stack, then load it on the x87 stack.
+                // If it already has a home location, use that. Otherwise, we need a temp.
+                if (genIsRegCandidateLocal(op1) && compiler->lvaTable[op1->gtLclVarCommon.gtLclNum].lvOnFrame)
                 {
                     // Store local variable to its home location, if necessary.
                     if ((op1->gtFlags & GTF_REG_VAL) != 0)
