@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -11,82 +11,17 @@ using Xunit;
 
 namespace System.Linq.Tests
 {
-    public class QueryableTests
+    public class ConsistencyTests
     {
-        [Fact]
-        public void AsQueryable()
-        {
-            Assert.NotNull(((IEnumerable)(new int[] { })).AsQueryable());
-        }
-
-        [Fact]
-        public void AsQueryableT()
-        {
-            Assert.NotNull((new int[] { }).AsQueryable());
-        }
-
-        [Fact]
-        public void NullAsQueryableT()
-        {
-            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).AsQueryable());
-        }
-
-        [Fact]
-        public void NullAsQueryable()
-        {
-            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable)null).AsQueryable());
-        }
-
-        private class NonGenericEnumerableSoWeDontNeedADependencyOnTheAssemblyWithNonGeneric : IEnumerable
-        {
-            public IEnumerator GetEnumerator()
-            {
-                yield break;
-            }
-        }
-
-        [Fact]
-        public void NonGenericToQueryable()
-        {
-            Assert.Throws<ArgumentException>(() => new NonGenericEnumerableSoWeDontNeedADependencyOnTheAssemblyWithNonGeneric().AsQueryable());
-        }
-
-        [Fact]
-        public void ReturnsSelfIfPossible()
-        {
-            IEnumerable<int> query = Enumerable.Repeat(1, 2).AsQueryable();
-            Assert.Same(query, query.AsQueryable());
-        }
-
-        [Fact]
-        public void ReturnsSelfIfPossibleNonGeneric()
-        {
-            IEnumerable query = Enumerable.Repeat(1, 2).AsQueryable();
-            Assert.Same(query, query.AsQueryable());
-        }
-
-        [Fact]
-        public static void QueryableOfQueryable()
-        {
-            IQueryable<int> queryable1 = new [] { 1, 2, 3 }.AsQueryable();
-            IQueryable<int>[] queryableArray1 = { queryable1, queryable1 };
-            IQueryable<IQueryable<int>> queryable2 = queryableArray1.AsQueryable();
-            ParameterExpression expression1 = Expression.Parameter(typeof(IQueryable<int>), "i");
-            ParameterExpression[] expressionArray1 = { expression1 };
-            IQueryable<IQueryable<int>> queryable3 = queryable2.Select(Expression.Lambda<Func<IQueryable<int>, IQueryable<int>>>(expression1, expressionArray1));
-            int i = queryable3.Count();
-            Assert.Equal(2, i);
-        }
-
         [Fact]
         public static void MatchSequencePattern()
         {
-            // If a change to Queryable has required a change to the exception list in this test
-            // make the same change at src/System.Linq/tests/ConsistencyTests.cs
+            // If a change to Enumerable has required a change to the exception list in this test
+            // make the same change at src/System.Linq.Queryable/tests/Queryable.cs.
             MethodInfo enumerableNotInQueryable = GetMissingExtensionMethod(
                 typeof(Enumerable),
                 typeof(Queryable),
-                 new [] {
+                 new[] {
                      "ToLookup",
                      "ToDictionary",
                      "ToArray",
@@ -104,7 +39,7 @@ namespace System.Linq.Tests
             MethodInfo queryableNotInEnumerable = GetMissingExtensionMethod(
                 typeof(Queryable),
                 typeof(Enumerable),
-                 new [] {
+                 new[] {
                      "AsQueryable"
                  }
                 );
