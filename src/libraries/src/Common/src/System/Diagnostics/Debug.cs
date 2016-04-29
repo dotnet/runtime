@@ -223,7 +223,7 @@ namespace System.Diagnostics
 
         private sealed class DebugAssertException : Exception
         {
-            internal DebugAssertException(string message, string detailMessage, string stackTrace) : 
+            internal DebugAssertException(string message, string detailMessage, string stackTrace) :
                 base(message + Environment.NewLine + detailMessage + Environment.NewLine + stackTrace)
             {
             }
