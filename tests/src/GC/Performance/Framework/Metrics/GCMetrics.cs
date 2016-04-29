@@ -253,7 +253,7 @@ namespace GCPerfTestFramework.Metrics
 
         protected override double YieldMetric()
         {
-            return ProcessInfo.Generations[0].MeanPauseDurationMSec;
+            return ProcessInfo.Generations[1].MeanPauseDurationMSec;
         }
     }
     #endregion
