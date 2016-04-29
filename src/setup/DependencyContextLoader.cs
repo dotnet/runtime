@@ -11,8 +11,6 @@ namespace Microsoft.Extensions.DependencyModel
 {
     public class DependencyContextLoader
     {
-        private static Lazy<string[]> _depsFiles = new Lazy<string[]>(GetHostDepsList);
-
         private const string DepsJsonExtension = ".deps.json";
 
         private readonly string _entryPointDepsLocation;
@@ -21,8 +19,8 @@ namespace Microsoft.Extensions.DependencyModel
         private readonly IDependencyContextReader _jsonReader;
 
         public DependencyContextLoader() : this(
-            GetDefaultEntrypointDepsLocation(),
-            GetDefaultRuntimeDepsLocation(),
+            DependencyContextPaths.Current.Application,
+            DependencyContextPaths.Current.SharedRuntime,
             FileSystemWrapper.Default,
             new DependencyContextJsonReader())
         {
@@ -129,36 +127,5 @@ namespace Microsoft.Extensions.DependencyModel
 
             return null;
         }
-
-        private static string GetDefaultRuntimeDepsLocation()
-        {
-            var deps = _depsFiles.Value;
-            if (deps != null && deps.Length > 1)
-            {
-                return deps[1];
-            }
-            return null;
-        }
-
-        private static string GetDefaultEntrypointDepsLocation()
-        {
-            var deps = _depsFiles.Value;
-            if (deps != null && deps.Length > 0)
-            {
-                return deps[0];
-            }
-            return null;
-        }
-
-        private static string[] GetHostDepsList()
-        {
-            // TODO: We're going to replace this with AppContext.GetData
-            var appDomainType = typeof(object).GetTypeInfo().Assembly?.GetType("System.AppDomain");
-            var currentDomain = appDomainType?.GetProperty("CurrentDomain")?.GetValue(null);
-            var deps = appDomainType?.GetMethod("GetData")?.Invoke(currentDomain, new[] { "APP_CONTEXT_DEPS_FILES" });
-
-            return (deps as string)?.Split(new [] { ';' }, StringSplitOptions.RemoveEmptyEntries);
-        }
-
     }
 }
