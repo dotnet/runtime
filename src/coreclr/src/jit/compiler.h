@@ -7869,11 +7869,14 @@ public :
         // 2. As per the System V ABI, the address of RetBuf needs to be returned by  
         //    methods with hidden RetBufArg in RAX. In such case GT_RETURN is of TYP_BYREF,  
         //    returning the address of RetBuf.  
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+        //
+        // 3. Windows 64-bit native calling convention also requires the address of RetBuff
+        //    to be returned in RAX.
+#ifdef _TARGET_AMD64_
         return (info.compRetBuffArg != BAD_VAR_NUM);
-#else // FEATURE_UNIX_AMD64_STRUCT_PASSING  
+#else // !_TARGET_AMD64_  
         return (compIsProfilerHookNeeded()) && (info.compRetBuffArg != BAD_VAR_NUM);
-#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING  
+#endif // !_TARGET_AMD64_
     }
 
     // Returns true if the method returns a value in more than one return register
