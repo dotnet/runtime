@@ -297,7 +297,7 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\Interop\BestFitMapping\BestFitMapping\BestFitMapping.cmd" >
              <Issue>3571</Issue>
-	</ExcludeList>
+	    </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\DoublinkList\doublinknoleak\*">
              <Issue>3392</Issue>
         </ExcludeList>
@@ -310,40 +310,13 @@
         <ExcludeList Include="$(XunitTestBinBase)\GC\Coverage\271010\*">
              <Issue>3392</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\GC\Features\BackgroundGC\concurrentspin2\*">
-             <Issue>3392</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\GC\Features\BackgroundGC\foregroundgc\*">
-             <Issue>3392</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\GC\Features\LOHCompaction\lohcompact_stress\*">
-             <Issue>3392</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\GC\Features\LOHCompaction\lohcompactscenariorepro\*">
-             <Issue>3392</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\GC\Features\LOHCompaction\lohcompactapi2\*">
              <Issue>3392</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\GC\Features\LOHFragmentation\lohfragmentation\*">
              <Issue>3392</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\GC\Features\PartialCompaction\partialcompactiontest\*">
-             <Issue>3392</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\GC\Features\PartialCompaction\partialcompactionwloh\*">
-             <Issue>3392</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\GC\Features\PartialCompaction\eco1\*">
-             <Issue>3392</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\GC\Features\SustainedLowLatency\sustainedlowlatency_race_reverse\*">
-             <Issue>3392</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\GC\Features\SustainedLowLatency\scenario\*">
-             <Issue>3392</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\GC\Features\SustainedLowLatency\sustainedlowlatency_race\*">
              <Issue>3392</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\GC\Regressions\dev10bugs\536168\536168\*">

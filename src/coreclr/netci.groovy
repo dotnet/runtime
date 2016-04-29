@@ -68,7 +68,7 @@ class Constants {
                'gcstress0xc_minopts_heapverify1' : ['COMPlus_GCStress'  : '0xC', 'COMPlus_JITMinOpts'  : '1', 'COMPlus_HeapVerify'  : '1']
                ]
     // This is the basic set of scenarios
-    def static basicScenarios = ['default', 'pri1', 'ilrt', 'r2r', 'pri1r2r', 'gcstress15_pri1r2r', 'longgc', 'coverage']
+    def static basicScenarios = ['default', 'pri1', 'ilrt', 'r2r', 'pri1r2r', 'gcstress15_pri1r2r', 'longgc', 'coverage', 'gcsimulator']
     // This is the set of configurations
     def static configurationList = ['Debug', 'Checked', 'Release']
     // This is the set of architectures
@@ -114,6 +114,10 @@ def static isR2R(def scenario) {
 
 def static isCoverage(def scenario) {
     return (scenario == 'coverage')
+}
+
+def static isLongGc(def scenario) {
+    return (scenario == 'longgc' || scenario == 'gcsimulator')
 }
 
 def static setTestJobTimeOut(newJob, scenario) {
@@ -363,6 +367,9 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                 Utilities.addPeriodicTrigger(job, '@daily')
                 addEmailPublisher(job, 'dotnetgctests@microsoft.com')
                 break
+            case 'gcsimulator':
+                // GCSimulator is currently only triggered by PR
+                break
             case 'ilrt':
                 assert !(os in bidailyCrossList)
                 // ILASM/ILDASM roundtrip one gets a daily build, and only for release
@@ -510,6 +517,11 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                         case 'longgc':
                             if (configuration == 'Release') {
                                 Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Long-Running GC Build & Test", "(?i).*test\\W+${os}\\W+${configuration}\\W+${scenario}.*")
+                            }
+                            break
+                        case 'gcsimulator':
+                            if (configuration == 'Release') {
+                                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} GC Simulator", "(?i).*test\\W+${os}\\W+${configuration}\\W+${scenario}.*")
                             }
                             break
                         case 'minopts':
@@ -674,6 +686,11 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                                 Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Long-Running GC Build & Test", "(?i).*test\\W+${os}\\W+${configuration}\\W+${scenario}.*")
                             }
                             break
+                        case 'gcsimulator':
+                            if (configuration == 'Release') {
+                                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} GC Simulator", "(?i).*test\\W+${os}\\W+${configuration}\\W+${scenario}.*")
+                            }
+                            break
                         case 'minopts':
                             assert (os == 'Windows_NT') || (os in Constants.crossList)
                             Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build and Test (Jit - MinOpts)",
@@ -826,7 +843,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
             }
             break
         case 'x86':
-            assert (scenario == 'default' || scenario == 'r2r' || scenario == 'pri1r2r' || scenario == 'gcstress15_pri1r2r' || scenario == 'longgc')
+            assert (scenario == 'default' || scenario == 'r2r' || scenario == 'pri1r2r' || scenario == 'gcstress15_pri1r2r' || scenario == 'longgc' || scenario == 'gcsimulator')
             // For windows, x86 runs by default
             if (scenario == 'default') {
                 if (os == 'Windows_NT') {
@@ -859,10 +876,18 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                         Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} GCStress 15 R2R pri1 Build & Test", "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}.*")  
                     }
                 }
-            } else if (scenario == 'longgc') {
+            } 
+            else if (scenario == 'longgc') {
                 if (os == 'Windows_NT'){
                     if (configuration == 'Release'){
                         Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Long-Running GC Build & Test", "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}.*")  
+                    }
+                }
+            }
+            else if (scenario == 'gcsimulator') {
+                if (os == 'Windows_NT') {
+                    if (configuration == 'Release') {
+                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} GC Simulator", "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}.*")
                     }
                 }
             }
@@ -1012,6 +1037,7 @@ combinedScenarios.each { scenario ->
                                 }
                                 break
                             case 'longgc':
+                            case 'gcsimulator':
                                 if (os != 'Windows_NT' && os != 'Ubuntu' && os != 'OSX') {
                                     return
                                 }
@@ -1103,6 +1129,10 @@ combinedScenarios.each { scenario ->
                                         buildCommands += "build.cmd ${lowerConfiguration} ${architecture} skiptests"
                                         buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${architecture} longgctests"
                                     }
+                                    else if (scenario == 'gcsimulator') {
+                                        buildCommands += "build.cmd ${lowerConfiguration} ${architecture} skiptests"
+                                        buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${architecture} gcsimulator"
+                                    }
                                     else if (scenario == 'coverage') {
                                         buildCommands += "build.cmd ${lowerConfiguration} ${architecture} skiptests"
                                         buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${architecture} crossgen Priority 1"
@@ -1145,15 +1175,15 @@ combinedScenarios.each { scenario ->
                                             }                                            
                                         }
                                         else if (architecture == 'x64') {
-                                            if (scenario == 'longgc') {
-                                                buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${architecture} longgctests sequential Exclude0"
+                                            if (isLongGc(scenario)) {
+                                                buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${architecture} longgctests sequential"
                                             } else {
                                                 buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${architecture}"
                                             }
                                         }
                                         else if (architecture == 'x86') {
-                                            if (scenario == 'longgc') {
-                                                buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${architecture} longgctests sequential Exclude0"
+                                            if (isLongGc(scenario)) {
+                                                buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${architecture} longgctests sequential"
                                             } else {
                                                 buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${architecture} Exclude0 x86_legacy_backend_issues.targets"
                                             }
@@ -1441,6 +1471,7 @@ combinedScenarios.each { scenario ->
                                 }
                                 break
                             case 'longgc':
+                            case 'gcsimulator':
                                 // Long GC tests take a long time on non-Release builds
                                 if (configuration != 'Release') {
                                     return
@@ -1507,14 +1538,20 @@ combinedScenarios.each { scenario ->
                         crossgenStr = '--crossgen'
                     }
 
-                    if (scenario == 'longgc') {
+                    if (isLongGc(scenario)) {
                         // Long GC tests behave very poorly when they are not
                         // the only test running (many of them allocate until OOM).
                         sequentialString = '--sequential'
                         
                         // The Long GC playlist contains all of the tests that are
-                        // going to be run.
-                        playlistString = '--playlist=./tests/longRunningGcTests.txt'
+                        // going to be run. The GCSimulator playlist contains all of
+                        // the GC simulator tests.
+                        if (scenario == 'longgc') {
+                            playlistString = '--playlist=./tests/longRunningGcTests.txt'
+                        }
+                        else if (scenario == 'gcsimulator') {
+                            playlistString = '--playlist=./tests/gcSimulatorTests.txt'
+                        }
                     }
                     
 
