@@ -58,31 +58,31 @@
 .class public abstract auto ansi sealed beforefieldinit System.Runtime.CompilerServices.Unsafe
        extends [System.Runtime]System.Object
 {
-  .method public hidebysig static !!T  Read<T>(void* p) cil managed aggressiveinlining
+  .method public hidebysig static !!T  Read<T>(void* source) cil managed aggressiveinlining
   {
         .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
-        .maxstack  8
+        .maxstack 1
         ldarg.0
         ldobj !!T
         ret
   } // end of method Unsafe::Read
 
-  .method public hidebysig static void  Write<T>(void* p,
+  .method public hidebysig static void Write<T>(void* destination,
                                                  !!T 'value') cil managed aggressiveinlining
   {
         .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
-        .maxstack  8
+        .maxstack 2
         ldarg.0
         ldarg.1
         stobj !!T
         ret
   } // end of method Unsafe::Write
 
-  .method public hidebysig static void  Write<T>(void* p,
-                                                 !!T& 'value') cil managed aggressiveinlining
+  .method public hidebysig static void Write<T>(void* destination,
+                                                !!T& 'value') cil managed aggressiveinlining
   {
         .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
-        .maxstack  8
+        .maxstack 2
         ldarg.0
         ldarg.1
         ldobj !!T
@@ -90,27 +90,27 @@
         ret
   } // end of method Unsafe::Write
 
-  .method public hidebysig static void*  AsPointer<T>(!!T& 'value') cil managed aggressiveinlining
+  .method public hidebysig static void* AsPointer<T>(!!T& 'value') cil managed aggressiveinlining
   {
         .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
-        .maxstack  8
+        .maxstack 1
         ldarg.0
         conv.u
         ret
   } // end of method Unsafe::AsPointer
 
-  .method public hidebysig static int32  SizeOf<T>() cil managed aggressiveinlining
+  .method public hidebysig static int32 SizeOf<T>() cil managed aggressiveinlining
   {
         .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
-        .maxstack  8
+        .maxstack 1
         sizeof !!T
         ret
   } // end of method Unsafe::SizeOf
 
-  .method public hidebysig static void CopyBlock(void* destination, void* source, uint32 numBytesToCopy) cil managed aggressiveinlining
+  .method public hidebysig static void CopyBlock(void* destination, void* source, uint32 byteCount) cil managed aggressiveinlining
   {
         .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
-        .maxstack 8
+        .maxstack 3
         ldarg.0
         ldarg.1
         ldarg.2
@@ -118,10 +118,10 @@
         ret
   } // end of method Unsafe::CopyBlock
 
-  .method public hidebysig static void InitBlock(void* p, uint8 'value', uint32 numBytesToCopy) cil managed aggressiveinlining
+  .method public hidebysig static void InitBlock(void* startAddress, uint8 'value', uint32 byteCount) cil managed aggressiveinlining
   {
         .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
-        .maxstack 8
+        .maxstack 3
         ldarg.0
         ldarg.1
         ldarg.2
@@ -132,10 +132,18 @@
   .method public hidebysig static !!T As<class T>(object o) cil managed aggressiveinlining
   {
         .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
-        .maxstack 8
+        .maxstack 1
         ldarg.0
         ret
   } // end of method Unsafe::As
+
+  .method public hidebysig static !!T& AsRef<T>(void* source) cil managed aggressiveinlining
+  {
+        .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
+        .maxstack 1
+        ldarg.0
+        ret
+  } // end of method Unsafe::AsRef
 
 } // end of class System.Runtime.CompilerServices.Unsafe
 
@@ -148,10 +156,9 @@
   .method public hidebysig specialname rtspecialname 
           instance void  .ctor() cil managed
   {
-        // Code size       7 (0x7)
-        .maxstack  8
+        .maxstack 1
         ldarg.0
-        call       instance void [System.Runtime]System.Attribute::.ctor()
+        call instance void [System.Runtime]System.Attribute::.ctor()
         ret
   } // end of method NonVersionableAttribute::.ctor
 

@@ -14,7 +14,7 @@
             Reads a value of type T from the given location.
             </summary>
             <typeparam name="T">The type to read.</typeparam>
-            <param name="p">The location to read from.</param>
+            <param name="source">The location to read from.</param>
             <returns>An object of type T read from the given location.</returns>
         </member>
         <member name="M:System.Runtime.CompilerServices.Unsafe.Write``1(System.Void*,``0)">
@@ -22,7 +22,7 @@
             Writes a value of type T to the given location.
             </summary>
             <typeparam name="T">The type of value to write.</typeparam>
-            <param name="p">The location to write to.</param>
+            <param name="destination">The location to write to.</param>
             <param name="value">The value to write.</param>
         </member>
         <member name="M:System.Runtime.CompilerServices.Unsafe.Write``1(System.Void*,``0@)">
@@ -30,7 +30,7 @@
             Writes a value of type T to the given location.
             </summary>
             <typeparam name="T">The type of value to write.</typeparam>
-            <param name="p">The location to write to.</param>
+            <param name="destination">The location to write to.</param>
             <param name="value">The value to write.</param>
         </member>
         <member name="M:System.Runtime.CompilerServices.Unsafe.AsPointer``1(``0@)">
@@ -68,7 +68,7 @@
             <summary>
             Initializes a block of memory at the given location with a given initial value.
             </summary>
-            <param name="p">The address of the start of the memory block to initialize.</param>
+            <param name="startAddress">The address of the start of the memory block to initialize.</param>
             <param name="value">The value to initialize the block to.</param>
             <param name="numBytesToCopy">The number of bytes to initialize.</param>
         </member>
