@@ -221,7 +221,11 @@ case $OSName in
         elif [ "$ID" == "rhel" ]; then
             __TestNugetRuntimeId=rhel.7-x64
         elif [ "$ID" == "ubuntu" ]; then
-            __TestNugetRuntimeId=ubuntu.14.04-x64
+            if [ $VERSION_ID == "16.04" ]; then
+                __TestNugetRuntimeId=ubuntu.16.04-x64
+            else
+                __TestNugetRuntimeId=ubuntu.14.04-x64
+            fi
         elif [ "$ID" == "debian" ]; then
             __TestNugetRuntimeId=debian.8-x64
         else

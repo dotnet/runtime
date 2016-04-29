@@ -11,8 +11,12 @@
       <OSGroup>debian.8</OSGroup>
       <Platform>amd64</Platform>
     </Project>
-    <Project Include="ubuntu\runtime.native.System.pkgproj">
+    <Project Include="ubuntu\14.04\runtime.native.System.pkgproj">
       <OSGroup>ubuntu.14.04</OSGroup>
+      <Platform>amd64</Platform>
+    </Project>
+    <Project Include="ubuntu\16.04\runtime.native.System.pkgproj">
+      <OSGroup>ubuntu.16.04</OSGroup>
       <Platform>amd64</Platform>
     </Project>
     <Project Include="osx\runtime.native.System.pkgproj">

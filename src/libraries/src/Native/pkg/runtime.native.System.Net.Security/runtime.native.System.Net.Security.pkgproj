@@ -22,7 +22,10 @@
     <ProjectReference Include="osx\runtime.native.System.Net.Security.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
-    <ProjectReference Include="ubuntu\runtime.native.System.Net.Security.pkgproj">
+    <ProjectReference Include="ubuntu\14.04\runtime.native.System.Net.Security.pkgproj">
+      <Platform>amd64</Platform>
+    </ProjectReference>
+    <ProjectReference Include="ubuntu\16.04\runtime.native.System.Net.Security.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
   </ItemGroup>
