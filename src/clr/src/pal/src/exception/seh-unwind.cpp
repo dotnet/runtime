@@ -229,7 +229,7 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
     unw_context_t unwContext;
     unw_cursor_t cursor;
 
-#if defined(__APPLE__) || defined(__FreeBSD__) || defined(_ARM64_) || defined(_ARM_)
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(_ARM64_) || defined(_ARM_)
     DWORD64 curPc;
 #endif
 
@@ -266,8 +266,8 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
     WinContextToUnwindCursor(context, &cursor);
 #endif
 
-#if defined(__APPLE__) || defined(__FreeBSD__) || defined(_ARM64_) || defined(_ARM_)
-    // OSX and FreeBSD appear to do two different things when unwinding
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)  || defined(_ARM64_) || defined(_ARM_)
+    // FreeBSD, NetBSD and OSX appear to do two different things when unwinding
     // 1: If it reaches where it cannot unwind anymore, say a 
     // managed frame.  It wil return 0, but also update the $pc
     // 2: If it unwinds all the way to _start it will return
@@ -299,7 +299,7 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
     // Update the passed in windows context to reflect the unwind
     //
     UnwindContextToWinContext(&cursor, context);
-#if defined(__APPLE__) || defined(__FreeBSD__) || defined(_ARM64_) || defined(_ARM_)
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)  || defined(_ARM64_) || defined(_ARM_)
     if (st == 0 && CONTEXTGetPC(context) == curPc)
     {
         CONTEXTSetPC(context, 0);
