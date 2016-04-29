@@ -60,16 +60,14 @@ extern "C" void NetSecurityNative_ReleaseGssBuffer(void* buffer, uint64_t length
 /*
 Shims the gss_display_status method for minor status (status_type = GSS_C_MECH_CODE).
 */
-extern "C" uint32_t NetSecurityNative_DisplayMinorStatus(uint32_t* minorStatus,
-                                                         uint32_t statusValue,
-                                                         struct PAL_GssBuffer* outBuffer);
+extern "C" uint32_t
+NetSecurityNative_DisplayMinorStatus(uint32_t* minorStatus, uint32_t statusValue, struct PAL_GssBuffer* outBuffer);
 
 /*
 Shims the gss_display_status method for major status (status_type = GSS_C_GSS_CODE).
 */
-extern "C" uint32_t NetSecurityNative_DisplayMajorStatus(uint32_t* minorStatus,
-                                                         uint32_t statusValue,
-                                                         struct PAL_GssBuffer* outBuffer);
+extern "C" uint32_t
+NetSecurityNative_DisplayMajorStatus(uint32_t* minorStatus, uint32_t statusValue, struct PAL_GssBuffer* outBuffer);
 
 /*
 Shims the gss_import_name method with nametype = GSS_C_NT_USER_NAME.
@@ -155,5 +153,9 @@ extern "C" uint32_t NetSecurityNative_Unwrap(uint32_t* minorStatus,
 /*
 Shims the gss_acquire_cred_with_password method with GSS_C_INITIATE.
 */
-extern "C" uint32_t NetSecurityNative_InitiateCredWithPassword(
-    uint32_t* minorStatus, int32_t isNtlm, GssName* desiredName, char* password, uint32_t passwdLen, GssCredId** outputCredHandle);
+extern "C" uint32_t NetSecurityNative_InitiateCredWithPassword(uint32_t* minorStatus,
+                                                               int32_t isNtlm,
+                                                               GssName* desiredName,
+                                                               char* password,
+                                                               uint32_t passwdLen,
+                                                               GssCredId** outputCredHandle);
