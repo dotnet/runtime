@@ -11,45 +11,49 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
 {
     public class AppBaseCompilationAssemblyResolver : ICompilationAssemblyResolver
     {
+        private static string RefsDirectoryName = "refs";
         private readonly IFileSystem _fileSystem;
         private readonly string _basePath;
+        private readonly DependencyContextPaths _dependencyContextPaths;
 
         public AppBaseCompilationAssemblyResolver()
             : this(FileSystemWrapper.Default)
         {
         }
 
-        public AppBaseCompilationAssemblyResolver(string basePath) : this(FileSystemWrapper.Default, basePath)
+        public AppBaseCompilationAssemblyResolver(string basePath)
+            : this(FileSystemWrapper.Default, basePath, DependencyContextPaths.Current)
         {
         }
 
         internal AppBaseCompilationAssemblyResolver(IFileSystem fileSystem)
-            : this(fileSystem, ApplicationEnvironment.ApplicationBasePath)
+            : this(fileSystem, ApplicationEnvironment.ApplicationBasePath, DependencyContextPaths.Current)
         {
         }
 
-        internal AppBaseCompilationAssemblyResolver(IFileSystem fileSystem, string basePath)
+        internal AppBaseCompilationAssemblyResolver(IFileSystem fileSystem, string basePath, DependencyContextPaths dependencyContextPaths)
         {
             _fileSystem = fileSystem;
             _basePath = basePath;
+            _dependencyContextPaths = dependencyContextPaths;
         }
 
         public bool TryResolveAssemblyPaths(CompilationLibrary library, List<string> assemblies)
         {
             var isProject = string.Equals(library.Type, "project", StringComparison.OrdinalIgnoreCase);
-
+            var isPackage = string.Equals(library.Type, "package", StringComparison.OrdinalIgnoreCase);
             if (!isProject &&
-                !string.Equals(library.Type, "package", StringComparison.OrdinalIgnoreCase) &&
+                !isPackage &&
                 !string.Equals(library.Type, "referenceassembly", StringComparison.OrdinalIgnoreCase))
             {
                 return false;
             }
 
-            var refsPath = Path.Combine(_basePath, "refs");
-            var hasRefs = _fileSystem.Directory.Exists(refsPath);
+            var refsPath = Path.Combine(_basePath, RefsDirectoryName);
+            var isPublished = _fileSystem.Directory.Exists(refsPath);
 
-            // Resolving packages and reference assebmlies requires refs folder to exist
-            if (!isProject && !hasRefs)
+            // Resolving reference assebmlies requires refs folder to exist
+            if (!isProject && !isPackage && !isPublished)
             {
                 return false;
             }
@@ -59,9 +63,22 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
                 _basePath
             };
 
-            if (hasRefs)
+            if (isPublished)
             {
                 directories.Insert(0, refsPath);
+            }
+
+            // Only packages can come from shared runtime
+            var sharedPath = _dependencyContextPaths.SharedRuntime;
+            if (isPublished && isPackage && !string.IsNullOrEmpty(sharedPath))
+            {
+                var sharedDirectory = Path.GetDirectoryName(sharedPath);
+                var sharedRefs = Path.Combine(sharedDirectory, RefsDirectoryName);
+                if (_fileSystem.Directory.Exists(sharedRefs))
+                {
+                    directories.Add(sharedRefs);
+                }
+                directories.Add(sharedDirectory);
             }
 
             foreach (var assembly in library.Assemblies)
@@ -81,9 +98,15 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
 
                 if (!resolved)
                 {
+                    // throw in case when we are published app and nothing found
+                    // because we cannot rely on nuget package cache in this case
+                    if (isPublished)
+                    {
                     throw new InvalidOperationException(
                         $"Can not find assembly file {assemblyFile} at '{string.Join(",", directories)}'");
                 }
+                    return false;
+            }
             }
 
             return true;
