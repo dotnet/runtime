@@ -262,8 +262,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             if (_branchBuilderOpt == null)
             {
-                // TODO: localize
-                throw new InvalidOperationException(nameof(InstructionEncoder) + " created without a branch builder");
+                Throw.BranchBuilderNotAvailable();
             }
 
             return _branchBuilderOpt;

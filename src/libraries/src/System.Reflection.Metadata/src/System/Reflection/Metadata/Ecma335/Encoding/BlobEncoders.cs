@@ -930,7 +930,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             if (!HasVarArgs)
             {
-                throw new InvalidOperationException();
+                Throw.SignatureNotVarArg();
             }
 
             Builder.WriteByte((byte)SignatureTypeCode.Sentinel);

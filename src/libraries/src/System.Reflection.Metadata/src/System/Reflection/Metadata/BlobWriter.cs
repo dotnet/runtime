@@ -6,7 +6,6 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection.Internal;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System.Reflection.Metadata
@@ -71,7 +70,7 @@ namespace System.Reflection.Metadata
             {
                 if (value < 0 || _start > _end - value)
                 {
-                    ValueArgumentOutOfRange();
+                    Throw.ValueArgumentOutOfRange();
                 }
 
                 _position = _start + value;
@@ -116,7 +115,7 @@ namespace System.Reflection.Metadata
             int position = _position;
             if (position > _end - value)
             {
-                ThrowOutOfBounds();
+                Throw.OutOfBounds();
             }
 
             _position = position + value;
@@ -128,7 +127,7 @@ namespace System.Reflection.Metadata
         {
             if (byteCount < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(byteCount));
+                Throw.ArgumentOutOfRange(nameof(byteCount));
             }
 
             int start = Advance(byteCount);
@@ -148,12 +147,12 @@ namespace System.Reflection.Metadata
         {
             if (buffer == null)
             {
-                throw new ArgumentNullException(nameof(buffer));
+                Throw.ArgumentNull(nameof(buffer));
             }
 
             if (byteCount < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(byteCount));
+                Throw.ArgumentOutOfRange(nameof(byteCount));
             }
 
             WriteBytesUnchecked(buffer, byteCount);
@@ -170,7 +169,7 @@ namespace System.Reflection.Metadata
         {
             if (source == null)
             {
-                throw new ArgumentNullException(nameof(source));
+                Throw.ArgumentNull(nameof(source));
             }
 
             source.WriteContentTo(ref this);
@@ -182,12 +181,12 @@ namespace System.Reflection.Metadata
         {
             if (source == null)
             {
-                throw new ArgumentNullException(nameof(source));
+                Throw.ArgumentNull(nameof(source));
             }
 
             if (byteCount < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(byteCount));
+                Throw.ArgumentOutOfRange(nameof(byteCount));
             }
 
             int start = Advance(byteCount);
@@ -221,7 +220,7 @@ namespace System.Reflection.Metadata
         {
             if (buffer == null)
             {
-                throw new ArgumentNullException(nameof(buffer));
+                Throw.ArgumentNull(nameof(buffer));
             }
 
             BlobUtilities.ValidateRange(buffer.Length, start, byteCount);
@@ -372,7 +371,7 @@ namespace System.Reflection.Metadata
         {
             if (value == null)
             {
-                throw new ArgumentNullException(nameof(value));
+                Throw.ArgumentNull(nameof(value));
             }
 
             if (value.Length == 0)
@@ -394,7 +393,7 @@ namespace System.Reflection.Metadata
         {
             if (value == null)
             {
-                throw new ArgumentNullException(nameof(value));
+                Throw.ArgumentNull(nameof(value));
             }
 
             fixed (char* ptr = value)
@@ -427,7 +426,7 @@ namespace System.Reflection.Metadata
         {
             if (value == null)
             {
-                throw new ArgumentNullException(nameof(value));
+                Throw.ArgumentNull(nameof(value));
             }
 
             WriteUTF8(value, 0, value.Length, allowUnpairedSurrogates, prependSize: false);
@@ -499,20 +498,6 @@ namespace System.Reflection.Metadata
         public void Clear()
         {
             _position = _start;
-        }
-        
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static void ThrowOutOfBounds()
-        {
-            // TODO: error message
-            throw new InvalidOperationException();
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static void ValueArgumentOutOfRange()
-        {
-            throw new ArgumentOutOfRangeException("value");
         }
     }
 }

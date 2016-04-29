@@ -44,7 +44,7 @@ namespace System.Reflection.Metadata.Ecma335
             // -1 for the 0 we always write at the beginning of the heap:
             if (userStringHeapStartOffset >= UserStringHeapSizeLimit - 1)
             {
-                ImageFormatLimitationException.ThrowHeapSizeLimitExceeded(HeapIndex.UserString);
+                throw ImageFormatLimitationException.HeapSizeLimitExceeded(HeapIndex.UserString);
             }
 
             // Add zero-th entry to all heaps, even in EnC delta.
@@ -220,7 +220,7 @@ namespace System.Reflection.Metadata.Ecma335
                 // as the index is within the limits (see https://github.com/dotnet/roslyn/issues/9852)
                 if (index >= UserStringHeapSizeLimit)
                 {
-                    ImageFormatLimitationException.ThrowHeapSizeLimitExceeded(HeapIndex.UserString);
+                    throw ImageFormatLimitationException.HeapSizeLimitExceeded(HeapIndex.UserString);
                 }
 
                 _userStrings.Add(str, index);

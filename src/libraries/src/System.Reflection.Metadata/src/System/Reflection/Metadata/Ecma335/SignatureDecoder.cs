@@ -29,7 +29,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             if (provider == null)
             {
-                throw new ArgumentNullException(nameof(provider));
+                Throw.ArgumentNull(nameof(provider));
             }
 
             _metadataReaderOpt = metadataReader;

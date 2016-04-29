@@ -215,8 +215,7 @@ namespace System.Reflection.Metadata
             }
             else
             {
-                // TODO: message
-                throw new ArgumentException();
+                throw new ArgumentException(SR.Format(SR.InvalidConstantValueOfType, type));
             }
         }
 
@@ -289,8 +288,7 @@ namespace System.Reflection.Metadata
             }
             else
             {
-                // TODO: message
-                throw new ArgumentException();
+                throw new ArgumentException(SR.Format(SR.InvalidConstantValueOfType, type));
             }
         }
     }

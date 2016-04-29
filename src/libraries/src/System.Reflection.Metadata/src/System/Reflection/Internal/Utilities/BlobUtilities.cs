@@ -263,12 +263,12 @@ namespace System.Reflection
         {
             if (start < 0 || start > bufferLength)
             {
-                throw new ArgumentOutOfRangeException(nameof(start));
+                Throw.ArgumentOutOfRange(nameof(start));
             }
 
             if (byteCount < 0 || byteCount > bufferLength - start)
             {
-                throw new ArgumentOutOfRangeException(nameof(byteCount));
+                Throw.ArgumentOutOfRange(nameof(byteCount));
             }
         }
     }

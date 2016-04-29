@@ -126,6 +126,12 @@
   <data name="InvalidHandle" xml:space="preserve">
     <value>Invalid handle.</value>
   </data>
+  <data name="UnexpectedHandleKind" xml:space="preserve">
+    <value>Unexpected handle kind: {0}.</value>
+  </data>
+  <data name="UnexpectedOpCode" xml:space="preserve">
+    <value>Unexpected op-code: {0}.</value>
+  </data>
   <data name="InvalidLocalSignatureToken" xml:space="preserve">
     <value>Invalid local signature token: 0x{0:X8}</value>
   </data>
@@ -197,6 +203,9 @@
   </data>
   <data name="OutOfBoundsRead" xml:space="preserve">
     <value>Read out of bounds.</value>
+  </data>
+  <data name="OutOfBoundsWrite" xml:space="preserve">
+    <value>Write out of bounds.</value>
   </data>
   <data name="MetadataHeaderTooSmall" xml:space="preserve">
     <value>Metadata header too small.</value>
@@ -297,6 +306,9 @@
   <data name="InvalidConstantValue" xml:space="preserve">
     <value>Invalid constant value.</value>
   </data>
+  <data name="InvalidConstantValueOfType" xml:space="preserve">
+    <value>Value of type '{0}' is not a constant.</value>
+  </data>
   <data name="InvalidImportDefinitionKind" xml:space="preserve">
     <value>Invalid import definition kind: {0}.</value>
   </data>
@@ -365,5 +377,32 @@
   </data>
   <data name="BuilderMustAligned" xml:space="preserve">
     <value>Builder must be aligned to 4 byte boundary.</value>
+  </data>
+  <data name="BuilderAlreadyLinked" xml:space="preserve">
+    <value>The operation is not valid on this builder as it has been linked with another one.</value>
+  </data>
+  <data name="ReturnedBuilderSizeTooSmall" xml:space="preserve">
+    <value>The size of the builder returned by {0}.{1} is smaller than requested.</value>
+  </data>
+  <data name="SignatureNotVarArg" xml:space="preserve">
+    <value>Can't add vararg parameters to non-vararg signature.</value>
+  </data>
+  <data name="LabelDoesntBelongToBuilder" xml:space="preserve">
+    <value>Specified label doesn't belong to the current builder.</value>
+  </data>
+  <data name="BranchBuilderNotAvailable" xml:space="preserve">
+    <value>Can't emit a branch, the current encoder not created with a branch builder.</value>
+  </data>
+  <data name="BaseReaderMustBeFullMetadataReader" xml:space="preserve">
+    <value>Base reader must be a full metadata reader.</value>
+  </data>
+  <data name="ExpectedListOfSize" xml:space="preserve">
+    <value>Expected list of size {0}.</value>
+  </data>
+  <data name="ExpectedNonEmptyList" xml:space="preserve">
+    <value>Expected non-empty list.</value>
+  </data>
+  <data name="ReadersMustBeDeltaReaders" xml:space="preserve">
+    <value>Specified readers must be minimal delta metadata readers.</value>
   </data>
 </root>
