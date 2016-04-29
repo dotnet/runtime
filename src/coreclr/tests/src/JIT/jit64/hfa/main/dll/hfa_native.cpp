@@ -319,60 +319,60 @@ HFADLL_API FLOATTYPE  sum3_HFA19(float v1, __int64 v2, HFA19 hfa) {
 }
 
 
-HFADLL_API FLOATTYPE  sum5_HFA01(__int64 v1, double v2, short v3, char v4, HFA01 hfa) {
+HFADLL_API FLOATTYPE  sum5_HFA01(__int64 v1, double v2, short v3, signed char v4, HFA01 hfa) {
 	return static_cast<FLOATTYPE>(v1) + static_cast<FLOATTYPE>(v2) + static_cast<FLOATTYPE>(v3) + static_cast<FLOATTYPE>(v4) + EXPRESSION_SUM_HFA01(hfa);
 }
 
-HFADLL_API FLOATTYPE  sum5_HFA02(__int64 v1, double v2, short v3, char v4, HFA02 hfa) {
+HFADLL_API FLOATTYPE  sum5_HFA02(__int64 v1, double v2, short v3, signed char v4, HFA02 hfa) {
 	return static_cast<FLOATTYPE>(v1) + static_cast<FLOATTYPE>(v2) + static_cast<FLOATTYPE>(v3) + static_cast<FLOATTYPE>(v4) + EXPRESSION_SUM_HFA02(hfa);
 }
 
-HFADLL_API FLOATTYPE  sum5_HFA03(__int64 v1, double v2, short v3, char v4, HFA03 hfa) {
+HFADLL_API FLOATTYPE  sum5_HFA03(__int64 v1, double v2, short v3, signed char v4, HFA03 hfa) {
 	return static_cast<FLOATTYPE>(v1) + static_cast<FLOATTYPE>(v2) + static_cast<FLOATTYPE>(v3) + static_cast<FLOATTYPE>(v4) + EXPRESSION_SUM_HFA03(hfa);
 }
 
-HFADLL_API FLOATTYPE  sum5_HFA05(__int64 v1, double v2, short v3, char v4, HFA05 hfa) {
+HFADLL_API FLOATTYPE  sum5_HFA05(__int64 v1, double v2, short v3, signed char v4, HFA05 hfa) {
 	return static_cast<FLOATTYPE>(v1) + static_cast<FLOATTYPE>(v2) + static_cast<FLOATTYPE>(v3) + static_cast<FLOATTYPE>(v4) + EXPRESSION_SUM_HFA05(hfa);
 }
 
-HFADLL_API FLOATTYPE  sum5_HFA08(__int64 v1, double v2, short v3, char v4, HFA08 hfa) {
+HFADLL_API FLOATTYPE  sum5_HFA08(__int64 v1, double v2, short v3, signed char v4, HFA08 hfa) {
 	return static_cast<FLOATTYPE>(v1) + static_cast<FLOATTYPE>(v2) + static_cast<FLOATTYPE>(v3) + static_cast<FLOATTYPE>(v4) + EXPRESSION_SUM_HFA08(hfa);
 }
 
-HFADLL_API FLOATTYPE  sum5_HFA11(__int64 v1, double v2, short v3, char v4, HFA11 hfa) {
+HFADLL_API FLOATTYPE  sum5_HFA11(__int64 v1, double v2, short v3, signed char v4, HFA11 hfa) {
 	return static_cast<FLOATTYPE>(v1) + static_cast<FLOATTYPE>(v2) + static_cast<FLOATTYPE>(v3) + static_cast<FLOATTYPE>(v4) + EXPRESSION_SUM_HFA11(hfa);
 }
 
-HFADLL_API FLOATTYPE  sum5_HFA19(__int64 v1, double v2, short v3, char v4, HFA19 hfa) {
+HFADLL_API FLOATTYPE  sum5_HFA19(__int64 v1, double v2, short v3, signed char v4, HFA19 hfa) {
 	return static_cast<FLOATTYPE>(v1) + static_cast<FLOATTYPE>(v2) + static_cast<FLOATTYPE>(v3) + static_cast<FLOATTYPE>(v4) + EXPRESSION_SUM_HFA19(hfa);
 }
 
 
-HFADLL_API FLOATTYPE  sum8_HFA01(float v1, double v2, __int64 v3, char v4, double v5, HFA01 hfa) {
+HFADLL_API FLOATTYPE  sum8_HFA01(float v1, double v2, __int64 v3, signed char v4, double v5, HFA01 hfa) {
 	return static_cast<FLOATTYPE>(v1) + static_cast<FLOATTYPE>(v2) + static_cast<FLOATTYPE>(v3) + static_cast<FLOATTYPE>(v4) + static_cast<FLOATTYPE>(v5) + EXPRESSION_SUM_HFA01(hfa);
 }
 
-HFADLL_API FLOATTYPE  sum8_HFA02(float v1, double v2, __int64 v3, char v4, double v5, HFA02 hfa) {
+HFADLL_API FLOATTYPE  sum8_HFA02(float v1, double v2, __int64 v3, signed char v4, double v5, HFA02 hfa) {
 	return static_cast<FLOATTYPE>(v1) + static_cast<FLOATTYPE>(v2) + static_cast<FLOATTYPE>(v3) + static_cast<FLOATTYPE>(v4) + static_cast<FLOATTYPE>(v5) + EXPRESSION_SUM_HFA02(hfa);
 }
 
-HFADLL_API FLOATTYPE  sum8_HFA03(float v1, double v2, __int64 v3, char v4, double v5, HFA03 hfa) {
+HFADLL_API FLOATTYPE  sum8_HFA03(float v1, double v2, __int64 v3, signed char v4, double v5, HFA03 hfa) {
 	return static_cast<FLOATTYPE>(v1) + static_cast<FLOATTYPE>(v2) + static_cast<FLOATTYPE>(v3) + static_cast<FLOATTYPE>(v4) + static_cast<FLOATTYPE>(v5) + EXPRESSION_SUM_HFA03(hfa);
 }
 
-HFADLL_API FLOATTYPE  sum8_HFA05(float v1, double v2, __int64 v3, char v4, double v5, HFA05 hfa) {
+HFADLL_API FLOATTYPE  sum8_HFA05(float v1, double v2, __int64 v3, signed char v4, double v5, HFA05 hfa) {
 	return static_cast<FLOATTYPE>(v1) + static_cast<FLOATTYPE>(v2) + static_cast<FLOATTYPE>(v3) + static_cast<FLOATTYPE>(v4) + static_cast<FLOATTYPE>(v5) + EXPRESSION_SUM_HFA05(hfa);
 }
 
-HFADLL_API FLOATTYPE  sum8_HFA08(float v1, double v2, __int64 v3, char v4, double v5, HFA08 hfa) {
+HFADLL_API FLOATTYPE  sum8_HFA08(float v1, double v2, __int64 v3, signed char v4, double v5, HFA08 hfa) {
 	return static_cast<FLOATTYPE>(v1) + static_cast<FLOATTYPE>(v2) + static_cast<FLOATTYPE>(v3) + static_cast<FLOATTYPE>(v4) + static_cast<FLOATTYPE>(v5) + EXPRESSION_SUM_HFA08(hfa);
 }
 
-HFADLL_API FLOATTYPE  sum8_HFA11(float v1, double v2, __int64 v3, char v4, double v5, HFA11 hfa) {
+HFADLL_API FLOATTYPE  sum8_HFA11(float v1, double v2, __int64 v3, signed char v4, double v5, HFA11 hfa) {
 	return static_cast<FLOATTYPE>(v1) + static_cast<FLOATTYPE>(v2) + static_cast<FLOATTYPE>(v3) + static_cast<FLOATTYPE>(v4) + static_cast<FLOATTYPE>(v5) + EXPRESSION_SUM_HFA11(hfa);
 }
 
-HFADLL_API FLOATTYPE  sum8_HFA19(float v1, double v2, __int64 v3, char v4, double v5, HFA19 hfa) {
+HFADLL_API FLOATTYPE  sum8_HFA19(float v1, double v2, __int64 v3, signed char v4, double v5, HFA19 hfa) {
 	return static_cast<FLOATTYPE>(v1) + static_cast<FLOATTYPE>(v2) + static_cast<FLOATTYPE>(v3) + static_cast<FLOATTYPE>(v4) + static_cast<FLOATTYPE>(v5) + EXPRESSION_SUM_HFA19(hfa);
 }
 
