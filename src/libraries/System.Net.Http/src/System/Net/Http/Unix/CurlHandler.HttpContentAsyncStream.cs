@@ -108,12 +108,14 @@ namespace System.Net.Http
                     }
 
                     // If we've already completed, return 0 bytes or fail with the same error that the CopyToAsync failed with.
-                    if (_copyTask.IsCompleted)
+                    if (_copyTask.IsCompleted && (_buffer == null || _count == 0))
                     {
                         return _copyTask.Status == TaskStatus.RanToCompletion ?
                             s_zeroTask :
                             PropagateError<int>(_copyTask);
                     }
+
+                    Debug.Assert(!_waiterIsReader, "Must not have two readers concurrently");
 
                     // If there's no writer waiting for us, register our buffer/offset/count and return.
                     if (_buffer == null)
@@ -136,8 +138,11 @@ namespace System.Net.Http
                         TaskCompletionSource<int> tcs = _asyncOp;
                         Update(false, null, 0, 0, null);
                         _cancellationRegistration.Dispose();
-                        bool writerCompleted = tcs.TrySetResult(default(int)); // value doesn't matter, as the Task is a writer
-                        Debug.Assert(writerCompleted, "No one else should have completed the writer");
+                        if (tcs != null) // could be null if the writer was synchronous
+                        {
+                            bool writerCompleted = tcs.TrySetResult(default(int)); // value doesn't matter, as the Task is a writer
+                            Debug.Assert(writerCompleted, "No one else should have completed the writer");
+                        }
                     }
                     else
                     {
@@ -152,17 +157,121 @@ namespace System.Net.Http
                 }
             }
 
+            /// <summary>
+            /// Copies the data from the buffer to the pending write buffer.  If there's currently
+            /// a buffer, this appends to it, and if there isn't, it replaces it.
+            /// </summary>
+            private void AppendSynchronousWriteBuffer(byte[] buffer, int offset, int count)
+            {
+                if (_buffer == null)
+                {
+                    // There isn't currently a buffer, so copy the data into a new one
+                    byte[] tmp = new byte[count];
+                    Buffer.BlockCopy(buffer, offset, tmp, 0, count);
+                    Update(false, tmp, 0, count, null);
+                }
+                else
+                {
+                    // There is currently a buffer.
+                    long newCount = _count + (long)count;
+                    if (_buffer.Length >= newCount) 
+                    {
+                        // Enough space remains in the buffer to copy into it.
+                        if (_offset != 0 && _count != 0)
+                        {
+                            Buffer.BlockCopy(_buffer, _offset, _buffer, 0, _count); // shift the existing data down to the beginning
+                        }
+                        Buffer.BlockCopy(buffer, offset, _buffer, _count, count); // append the new data
+                        Update(false, _buffer, 0, (int)newCount, null);
+                    }
+                    else
+                    {
+                        // Not enough space remains in the buffer... we need a new one.
+                        byte[] tmp = new byte[Math.Max(_buffer.Length * 2L, newCount)]; // grow to at least 2x the current size
+                        if (_count != 0)
+                        {
+                            Buffer.BlockCopy(_buffer, _offset, tmp, 0, _count);
+                        }
+                        Buffer.BlockCopy(buffer, offset, tmp, _count, count);
+                        Update(false, tmp, 0, (int)newCount, null);
+                    }
+                }
+            }
+
+            /// <summary>Validate arguments to Write and WriteAsync.</summary>
+            private void ValidateWriteArgs(byte[] buffer, int offset, int count)
+            {
+                if (buffer == null) throw new ArgumentNullException(nameof(buffer));
+                if (offset < 0) throw new ArgumentOutOfRangeException(nameof(offset));
+                if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
+                if (buffer.Length - offset < count) throw new ArgumentOutOfRangeException(nameof(buffer));
+            }
+
             public override void Write(byte[] buffer, int offset, int count)
             {
-                // WriteAsync should be how writes are performed on this stream as
-                // part of HttpContent.CopyToAsync.  However, we implement Write just
-                // in case someone does need to do a synchronous write or has existing
-                // code that does so.
-                WriteAsync(buffer, offset, count, CancellationToken.None).GetAwaiter().GetResult();
+                ValidateWriteArgs(buffer, offset, count);
+
+                // This stream is used by HttpContent.CopyToAsync, and we expect the writes to all be asynchronous via WriteAsync.
+                // However, it's possible for an override of CopyToAsync to use Write, and if it does, and if we just delegated
+                // from here to WriteAsync(...).GetAwaiter().GetResult(), we would likely deadlock, as the CopyToAsync call is
+                // invoked from the single thread responsible for processing libcurl interactions, including supplying the reader
+                // that would unblock the writer.  To handle this, we have two options: schedule the CopyToAsync to be invoked
+                // asynchronously just in case it does a synchronous write, or implement the write to buffer the data.  The former
+                // adds cost to the expected / common case, but it can also lead to concurrency problems and spurious disposals,
+                // as if the request is faulted/canceled between the time that a task to invoke CopyToAsync is scheduled and the
+                // time that it actually executes, we could be invoking CopyToAsync on a disposed HttpContent; worse, we could
+                // end up invoking CopyToAsync while it's being disposed, which could lead to arbitrary state corruption.  In
+                // comparison, buffering has the downside of taking up more and arbitrary amounts of memory to store all of the
+                // inputs.  But, we expect synchronous Writes to be rare, and code shouldn't be doing it anyway, so we opt
+                // for buffering in order to ensure correctness and to optimize for the expected case.
+
+                // If no data was provided, we're done.
+                if (count == 0)
+                {
+                    return;
+                }
+
+                lock (_syncObj)
+                {
+                    // If we've been disposed, throw an exception so as to end the CopyToAsync operation.
+                    if (_disposed)
+                    {
+                        throw new ObjectDisposedException(GetType().FullName);
+                    }
+
+                    if (!_waiterIsReader)
+                    {
+                        // There's no waiting reader.  Store everything for later.
+                        EventSourceTrace("No waiting reader. Copying.");
+                        Debug.Assert(_asyncOp == null, "No one else should be waiting");
+                        AppendSynchronousWriteBuffer(buffer, offset, count);
+                        return;
+                    }
+
+                    // There's a waiting reader.  We'll give them our data and store for later anything they can't use.
+                    Debug.Assert(_count > 0, "Expected reader to need at least 1 byte");
+                    Debug.Assert(_asyncOp != null, "Reader should have created a task to complete");
+
+                    // Complete the waiting reader with however much we can give them
+                    int bytesToCopy = Math.Min(count, _count);
+                    Buffer.BlockCopy(buffer, offset, _buffer, _offset, bytesToCopy);
+                    _cancellationRegistration.Dispose();
+                    bool completed = _asyncOp.TrySetResult(bytesToCopy);
+                    Debug.Assert(completed, "No one else should have completed the reader");
+
+                    Update(false, null, 0, 0, null); // set buffer to null so that if we append we don't add to reader's buffer
+                    if (bytesToCopy < count)
+                    {
+                        // If we have more bytes from this write, copy for use by a reader later.
+                        AppendSynchronousWriteBuffer(buffer, offset + bytesToCopy, count - bytesToCopy);
+                    }
+                }
             }
 
             public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
+                ValidateWriteArgs(buffer, offset, count);
+
                 // If no data was provided, we're done.
                 if (count == 0)
                 {
@@ -183,19 +292,35 @@ namespace System.Net.Http
                         throw new ObjectDisposedException(GetType().FullName);
                     }
 
-                    if (_buffer == null)
+                    // If there's no waiting reader, store everything for later and return.
+                    if (!_waiterIsReader)
                     {
-                        // There's no waiting reader.  Store everything for later.
-                        EventSourceTrace("No waiting reader. Queueing");
                         Debug.Assert(_asyncOp == null, "No one else should be waiting");
-                        Update(false, buffer, offset, count, NewTcs());
-                        RegisterCancellation(cancellationToken);
-                        return _asyncOp.Task;
+                        if (_buffer == null)
+                        {
+                            // The common-case: there's no waiting reader, and writes are being done
+                            // asynchronously, so there's no buffer currently stored.  Store our
+                            // buffer and register as the waiting reader.
+                            EventSourceTrace("No waiting reader. Queueing");
+                            Update(false, buffer, offset, count, NewTcs());
+                            RegisterCancellation(cancellationToken);
+                            return _asyncOp.Task;
+                        }
+                        else
+                        {
+                            // The existing buffer is non-null.  This can only mean that a previous
+                            // synchronous Write call was made.  Our only good option at this point
+                            // is to treat this as a synchronous Write and copy our data in.
+                            EventSourceTrace("No waiting reader. Copying");
+                            Debug.Assert(_offset != 0 || _count != 0, $"Expected existing write, got _offset={_offset}, _count={_count}");
+                            AppendSynchronousWriteBuffer(buffer, offset, count);
+                            return Task.CompletedTask;
+                        }
                     }
 
                     // There's a waiting reader.  We'll give them our data and store
                     // for later anything they can't use.
-                    Debug.Assert(_waiterIsReader, "Concurrent WriteAsync calls are not permitted");
+                    Debug.Assert(_buffer != null, "Expected non-null buffer from waiting reader");
                     Debug.Assert(_count > 0, "Expected reader to need at least 1 byte");
                     Debug.Assert(_asyncOp != null, "Reader should have created a task to complete");
 
@@ -305,15 +430,8 @@ namespace System.Net.Http
                 Debug.Assert(!Monitor.IsEntered(_syncObj), "Should not be invoked while holding the lock");
                 Debug.Assert(_copyTask == null, "Should only be invoked after construction or a reset");
 
-                // Start the copy and store the task to represent it. In the rare case that the synchronous 
-                // call to CopyToAsync may block writing to this stream synchronously (e.g. if the 
-                // SerializeToStreamAsync called by CopyToAsync did a synchronous Write on this stream) we 
-                // need to ensure that doesn't cause a deadlock. So, we invoke CopyToAsync asynchronously. 
-                // This purposefully uses Task.Run this way rather than StartNew with object state because 
-                // the latter would need to use a separate call to Unwrap, which is more expensive than the 
-                // single extra delegate allocation (no closure allocation) we'll get here along with 
-                // Task.Run's very efficient unwrapping implementation.
-                _copyTask = Task.Run(() => _content.CopyToAsync(this, _transportContext));
+                // Start the copy and store the task to represent it.
+                _copyTask = _content.CopyToAsync(this, _transportContext);
 
                 // Fix up the instance when it's done
                 _copyTask.ContinueWith((t, s) => ((HttpContentAsyncStream)s).EndCopyToAsync(t), this,
