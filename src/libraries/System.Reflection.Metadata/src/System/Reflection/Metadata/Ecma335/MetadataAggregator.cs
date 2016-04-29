@@ -61,7 +61,7 @@ namespace System.Reflection.Metadata.Ecma335
 
                 if (baseReader.GetTableRowCount(TableIndex.EncMap) != 0)
                 {
-                    throw new ArgumentException("Base reader must be a full metadata reader.", nameof(baseReader));
+                    throw new ArgumentException(SR.BaseReaderMustBeFullMetadataReader, nameof(baseReader));
                 }
 
                 CalculateBaseCounts(baseReader, out baseTableRowCounts, out baseHeapSizes);
@@ -71,7 +71,7 @@ namespace System.Reflection.Metadata.Ecma335
             {
                 if (baseTableRowCounts.Count != MetadataTokens.TableCount)
                 {
-                    throw new ArgumentException("Must have " + MetadataTokens.TableCount + " elements", nameof(baseTableRowCounts));
+                    throw new ArgumentException(SR.Format(SR.ExpectedListOfSize, MetadataTokens.TableCount), nameof(baseTableRowCounts));
                 }
 
                 if (baseHeapSizes == null)
@@ -81,20 +81,20 @@ namespace System.Reflection.Metadata.Ecma335
 
                 if (baseHeapSizes.Count != MetadataTokens.HeapCount)
                 {
-                    throw new ArgumentException("Must have " + MetadataTokens.HeapCount + " elements", nameof(baseTableRowCounts));
+                    throw new ArgumentException(SR.Format(SR.ExpectedListOfSize, MetadataTokens.HeapCount), nameof(baseTableRowCounts));
                 }
             }
 
             if (deltaReaders == null || deltaReaders.Count == 0)
             {
-                throw new ArgumentException("Must not be empty.", nameof(deltaReaders));
+                throw new ArgumentException(SR.ExpectedNonEmptyList, nameof(deltaReaders));
             }
 
             for (int i = 0; i < deltaReaders.Count; i++)
             {
                 if (deltaReaders[i].GetTableRowCount(TableIndex.EncMap) == 0 || !deltaReaders[i].IsMinimalDelta)
                 {
-                    throw new ArgumentException("All delta readers must be minimal delta metadata readers.", nameof(deltaReaders));
+                    throw new ArgumentException(SR.ReadersMustBeDeltaReaders, nameof(deltaReaders));
                 }
             }
 

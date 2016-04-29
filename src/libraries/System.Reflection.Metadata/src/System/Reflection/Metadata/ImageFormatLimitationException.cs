@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Reflection.Metadata.Ecma335;
 
 namespace System.Reflection.Metadata
@@ -24,9 +23,9 @@ namespace System.Reflection.Metadata
         {
         }
 
-        internal static void ThrowHeapSizeLimitExceeded(HeapIndex heapIndex)
+        internal static ImageFormatLimitationException HeapSizeLimitExceeded(HeapIndex heapIndex)
         {
-            throw new ImageFormatLimitationException(string.Format(SR.HeapSizeLimitExceeded, heapIndex));
+            return new ImageFormatLimitationException(SR.Format(SR.HeapSizeLimitExceeded, heapIndex));
         }
     }
 }

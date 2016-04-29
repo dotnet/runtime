@@ -90,7 +90,7 @@ namespace System.Reflection.Metadata
                     return 4;
             }
 
-            throw new ArgumentException("Expected branch opcode.", nameof(opCode));
+            throw new ArgumentException(SR.Format(SR.UnexpectedOpCode, opCode), nameof(opCode));
         }
 
         /// <summary>
@@ -162,7 +162,7 @@ namespace System.Reflection.Metadata
                     return ILOpCode.Leave_s;
             }
 
-            throw new ArgumentException("Expected branch opcode.", nameof(opCode));
+            throw new ArgumentException(SR.Format(SR.UnexpectedOpCode, opCode), nameof(opCode));
         }
 
         /// <summary>
@@ -234,7 +234,7 @@ namespace System.Reflection.Metadata
                     return ILOpCode.Leave;
             }
 
-            throw new ArgumentException("Expected branch opcode.", nameof(opCode));
+            throw new ArgumentException(SR.Format(SR.UnexpectedOpCode, opCode), nameof(opCode));
         }
     }
 }

@@ -55,13 +55,13 @@ namespace System.Reflection.Metadata
         {
             if (size < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(size));
+                Throw.ArgumentOutOfRange(nameof(size));
             }
 
             // the writer assumes little-endian architecture:
             if (!BitConverter.IsLittleEndian)
             {
-                throw new PlatformNotSupportedException();
+                Throw.LitteEndianArchitectureRequired();
             }
 
             _nextOrPrevious = this;
@@ -82,7 +82,7 @@ namespace System.Reflection.Metadata
         {
             if (!IsHead)
             {
-                ThrowHeadRequired();
+                Throw.InvalidOperationBuilderAlreadyLinked();
             }
 
             // Swap buffer with the first chunk.
@@ -147,13 +147,6 @@ namespace System.Reflection.Metadata
 #endif
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void ThrowHeadRequired()
-        {
-            // TODO: message
-            throw new InvalidOperationException();
-        }
-
         public int Count => _previousLength + Length;
 
         private int FreeBytes => _buffer.Length - Length;
@@ -166,7 +159,7 @@ namespace System.Reflection.Metadata
         {
             if (!IsHead)
             {
-                ThrowHeadRequired();
+                Throw.InvalidOperationBuilderAlreadyLinked();
             }
 
             return new Chunks(this);
@@ -180,7 +173,7 @@ namespace System.Reflection.Metadata
         {
             if (!IsHead)
             {
-                ThrowHeadRequired();
+                Throw.InvalidOperationBuilderAlreadyLinked();
             }
 
             return new Blobs(this);
@@ -194,7 +187,7 @@ namespace System.Reflection.Metadata
         {
             if (!IsHead)
             {
-                ThrowHeadRequired();
+                Throw.InvalidOperationBuilderAlreadyLinked();
             }
 
             if (ReferenceEquals(this, other))
@@ -209,7 +202,7 @@ namespace System.Reflection.Metadata
 
             if (!other.IsHead)
             {
-                ThrowHeadRequired();
+                Throw.InvalidOperationBuilderAlreadyLinked();
             }
 
             if (Count != other.Count)
@@ -319,7 +312,7 @@ namespace System.Reflection.Metadata
         {
             if (destination == null)
             {
-                throw new ArgumentNullException(nameof(destination));
+                Throw.ArgumentNull(nameof(destination));
             }
 
             foreach (var chunk in GetChunks())
@@ -334,7 +327,7 @@ namespace System.Reflection.Metadata
         {
             if (destination.IsDefault)
             {
-                throw new ArgumentNullException(nameof(destination));
+                Throw.ArgumentNull(nameof(destination));
             }
 
             foreach (var chunk in GetChunks())
@@ -349,7 +342,7 @@ namespace System.Reflection.Metadata
         {
             if (destination == null)
             {
-                throw new ArgumentNullException(nameof(destination));
+                Throw.ArgumentNull(nameof(destination));
             }
 
             foreach (var chunk in GetChunks())
@@ -364,14 +357,14 @@ namespace System.Reflection.Metadata
         {
             if (prefix == null)
             {
-                throw new ArgumentNullException(nameof(prefix));
+                Throw.ArgumentNull(nameof(prefix));
             }
 
             // TODO: consider copying data from right to left while there is space
 
             if (!prefix.IsHead || !IsHead)
             {
-                ThrowHeadRequired();
+                Throw.InvalidOperationBuilderAlreadyLinked();
             }
 
             // avoid chaining empty chunks:
@@ -431,7 +424,7 @@ namespace System.Reflection.Metadata
 
             if (!IsHead || !suffix.IsHead)
             {
-                ThrowHeadRequired();
+                Throw.InvalidOperationBuilderAlreadyLinked();
             }
 
             // avoid chaining empty chunks:
@@ -498,14 +491,14 @@ namespace System.Reflection.Metadata
             // or if a builder prepended to another one is not discarded.
             if (!IsHead)
             {
-                ThrowHeadRequired();
+                Throw.InvalidOperationBuilderAlreadyLinked();
             }
 
             var newChunk = AllocateChunk(Math.Max(newLength, MinChunkSize));
             if (newChunk.BufferSize < newLength)
             {
-                // TODO: message
-                throw new InvalidOperationException();
+                // The overridden allocator didn't provide large enough buffer:
+                throw new InvalidOperationException(SR.Format(SR.ReturnedBuilderSizeTooSmall, GetType(), nameof(AllocateChunk)));
             }
 
             var newBuffer = newChunk._buffer;
@@ -555,7 +548,7 @@ namespace System.Reflection.Metadata
         {
             if (byteCount < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(byteCount));
+                Throw.ArgumentOutOfRange(nameof(byteCount));
             }
 
             int start = ReserveBytesImpl(byteCount);
@@ -596,7 +589,7 @@ namespace System.Reflection.Metadata
 
             if (!IsHead)
             {
-                ThrowHeadRequired();
+                Throw.InvalidOperationBuilderAlreadyLinked();
             }
 
             int bytesToCurrent = Math.Min(FreeBytes, byteCount);
@@ -621,17 +614,17 @@ namespace System.Reflection.Metadata
         {
             if (buffer == null)
             {
-                throw new ArgumentNullException(nameof(buffer));
+                Throw.ArgumentNull(nameof(buffer));
             }
 
             if (byteCount < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(byteCount));
+                Throw.ArgumentOutOfRange(nameof(byteCount));
             }
 
             if (!IsHead)
             {
-                ThrowHeadRequired();
+                Throw.InvalidOperationBuilderAlreadyLinked();
             }
 
             WriteBytesUnchecked(buffer, byteCount);
@@ -732,14 +725,14 @@ namespace System.Reflection.Metadata
         {
             if (buffer == null)
             {
-                throw new ArgumentNullException(nameof(buffer));
+                Throw.ArgumentNull(nameof(buffer));
             }
 
             BlobUtilities.ValidateRange(buffer.Length, start, byteCount);
 
             if (!IsHead)
             {
-                ThrowHeadRequired();
+                Throw.InvalidOperationBuilderAlreadyLinked();
             }
 
             // an empty array has no element pointer:
@@ -909,12 +902,12 @@ namespace System.Reflection.Metadata
         {
             if (value == null)
             {
-                throw new ArgumentNullException(nameof(value));
+                Throw.ArgumentNull(nameof(value));
             }
 
             if (!IsHead)
             {
-                ThrowHeadRequired();
+                Throw.InvalidOperationBuilderAlreadyLinked();
             }
 
             if (value.Length == 0)
@@ -937,12 +930,12 @@ namespace System.Reflection.Metadata
         {
             if (value == null)
             {
-                throw new ArgumentNullException(nameof(value));
+                Throw.ArgumentNull(nameof(value));
             }
 
             if (!IsHead)
             {
-                ThrowHeadRequired();
+                Throw.InvalidOperationBuilderAlreadyLinked();
             }
 
             fixed (char* ptr = value)
@@ -977,7 +970,7 @@ namespace System.Reflection.Metadata
         {
             if (value == null)
             {
-                throw new ArgumentNullException(nameof(value));
+                Throw.ArgumentNull(nameof(value));
             }
 
             WriteUTF8(value, 0, value.Length, allowUnpairedSurrogates, prependSize: false);
@@ -987,7 +980,7 @@ namespace System.Reflection.Metadata
         {
             if (!IsHead)
             {
-                ThrowHeadRequired();
+                Throw.InvalidOperationBuilderAlreadyLinked();
             }
 
             fixed (char* strPtr = str)

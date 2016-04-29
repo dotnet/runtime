@@ -83,13 +83,12 @@ namespace System.Reflection.Metadata.Ecma335
         {
             if (label.IsNil)
             {
-                throw new ArgumentNullException(nameof(label));
+                Throw.ArgumentNull(nameof(label));
             }
 
             if (label.Id > _labels.Count)
             {
-                // TODO: localize
-                throw new ArgumentException("Label not defined", nameof(label));
+                Throw.LabelDoesntBelongToBuilder(nameof(label));
             }
         }
 

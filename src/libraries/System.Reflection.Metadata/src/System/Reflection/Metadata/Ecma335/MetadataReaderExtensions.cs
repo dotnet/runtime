@@ -22,7 +22,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             if (reader == null)
             {
-                throw new ArgumentNullException(nameof(reader));
+                Throw.ArgumentNull(nameof(reader));
             }
 
             if ((int)tableIndex >= TableIndexExtensions.Count)
@@ -117,7 +117,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             if (reader == null)
             {
-                throw new ArgumentNullException(nameof(reader));
+                Throw.ArgumentNull(nameof(reader));
             }
 
             return (int)(reader.GetTableMetadataBlock(tableIndex).Pointer - reader.Block.Pointer);
@@ -199,7 +199,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             if (reader == null)
             {
-                throw new ArgumentNullException(nameof(reader));
+                Throw.ArgumentNull(nameof(reader));
             }
 
             return reader.GetMetadataBlock(heapIndex).Length;
@@ -214,7 +214,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             if (reader == null)
             {
-                throw new ArgumentNullException(nameof(reader));
+                Throw.ArgumentNull(nameof(reader));
             }
 
             return (int)(reader.GetMetadataBlock(heapIndex).Pointer - reader.Block.Pointer);
@@ -256,7 +256,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             if (reader == null)
             {
-                throw new ArgumentNullException(nameof(reader));
+                Throw.ArgumentNull(nameof(reader));
             }
 
             return reader.UserStringStream.GetNextHandle(handle);
@@ -270,7 +270,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             if (reader == null)
             {
-                throw new ArgumentNullException(nameof(reader));
+                Throw.ArgumentNull(nameof(reader));
             }
 
             return reader.BlobStream.GetNextHandle(handle);
@@ -284,7 +284,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             if (reader == null)
             {
-                throw new ArgumentNullException(nameof(reader));
+                Throw.ArgumentNull(nameof(reader));
             }
 
             return reader.StringStream.GetNextHandle(handle);
@@ -425,7 +425,7 @@ namespace System.Reflection.Metadata.Ecma335
                     return SignatureTypeKind.Unknown;
 
                 default:
-                    throw new ArgumentOutOfRangeException(SR.InvalidHandle);
+                    throw new ArgumentOutOfRangeException(nameof(typeHandle), SR.UnexpectedHandleKind);
             }
         }
     }

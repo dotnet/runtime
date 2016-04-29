@@ -87,8 +87,7 @@ namespace System.Reflection.Metadata.Ecma335
                 return SignatureTypeCode.Single;
             }
 
-            // TODO: localize
-            throw new ArgumentException("Invalid constant type", nameof(value));
+            throw new ArgumentException(SR.Format(SR.InvalidConstantValueOfType, value.GetType()), nameof(value));
         }
 
         internal static void SerializeRowCounts(BlobBuilder writer, ImmutableArray<int> rowCounts)

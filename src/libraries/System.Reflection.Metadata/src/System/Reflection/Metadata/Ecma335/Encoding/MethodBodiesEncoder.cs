@@ -35,12 +35,12 @@ namespace System.Reflection.Metadata.Ecma335
         {
             if (unchecked((ushort)maxStack) > ushort.MaxValue)
             {
-                throw new ArgumentOutOfRangeException(nameof(maxStack));
+                Throw.ArgumentOutOfRange(nameof(maxStack));
             }
 
             if (exceptionRegionCount < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(exceptionRegionCount));
+                Throw.ArgumentOutOfRange(nameof(exceptionRegionCount));
             }
 
             return new MethodBodyEncoder(Builder, (ushort)maxStack, exceptionRegionCount, localVariablesSignature, attributes);
