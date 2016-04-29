@@ -132,6 +132,11 @@ static void ConvertConfigPropertiesToUnicode(
     *propertyValuesWRef = propertyValuesW;
 }
 
+#if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+// Reference to the global holding the path to the JIT
+extern "C" LPCWSTR g_CLRJITPath;
+#endif // !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+
 //
 // Initialize the CoreCLR. Creates and starts CoreCLR host and creates an app domain
 //
@@ -188,6 +193,11 @@ int coreclr_initialize(
 
     // This will take ownership of propertyKeysWTemp and propertyValuesWTemp
     Configuration::InitializeConfigurationKnobs(propertyCount, propertyKeysW, propertyValuesW);
+
+#if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+    // Fetch the path to JIT binary, if specified
+    g_CLRJITPath = Configuration::GetKnobStringValue(W("JIT_PATH"));
+#endif // !defined(FEATURE_MERGE_JIT_AND_ENGINE)
 
     STARTUP_FLAGS startupFlags;
     InitializeStartupFlags(&startupFlags);

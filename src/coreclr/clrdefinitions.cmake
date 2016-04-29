@@ -132,7 +132,9 @@ add_definitions(-DFEATURE_MAIN_CLR_MODULE_USES_CORE_NAME)
 add_definitions(-DFEATURE_MERGE_CULTURE_SUPPORT_AND_ENGINE)
 
 # TODO_DJIT: Remove this "set" to commence loading JIT dynamically.
-set(FEATURE_MERGE_JIT_AND_ENGINE 1)
+if(NOT WIN32)
+  set(FEATURE_MERGE_JIT_AND_ENGINE 1)
+endif(NOT WIN32)
 if(FEATURE_MERGE_JIT_AND_ENGINE)
   # Disable the following for UNIX altjit on Windows
   add_definitions(-DFEATURE_MERGE_JIT_AND_ENGINE)
