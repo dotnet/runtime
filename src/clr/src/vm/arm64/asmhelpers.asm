@@ -16,6 +16,7 @@
     IMPORT PreStubWorker
     IMPORT NDirectImportWorker
     IMPORT VSD_ResolveWorker
+    IMPORT StubDispatchFixupWorker
     IMPORT JIT_InternalThrow
     IMPORT ComPreStubWorker
     IMPORT COMToCLRWorker
@@ -1175,7 +1176,6 @@ Fail
 
         NESTED_END
 
-		
 #ifdef FEATURE_READYTORUN
 
     NESTED_ENTRY DelayLoad_MethodCall
@@ -1221,5 +1221,28 @@ Fail
     DynamicHelper DynamicHelperFrameFlags_ObjectArg | DynamicHelperFrameFlags_ObjectArg2, _ObjObj
 #endif // FEATURE_READYTORUN		
         
+#ifdef FEATURE_PREJIT
+;; ------------------------------------------------------------------
+;; void StubDispatchFixupStub(args in regs x0-x7 & stack, x11:IndirectionCellAndFlags, x12:DispatchToken)
+;;
+;; The stub dispatch thunk which transfers control to StubDispatchFixupWorker.
+        NESTED_ENTRY StubDispatchFixupStub
+
+        PROLOG_WITH_TRANSITION_BLOCK
+
+        add x0, sp, #__PWTB_TransitionBlock ; pTransitionBlock
+        and x1, x11, #-4 ; Indirection cell
+        mov x2, #0 ; sectionIndex
+        mov x3, #0 ; pModule
+        bl StubDispatchFixupWorker
+        mov x9, x0
+
+        EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
+
+        EPILOG_BRANCH_REG  x9
+
+        NESTED_END
+#endif
+
 ; Must be at very end of file
     END
