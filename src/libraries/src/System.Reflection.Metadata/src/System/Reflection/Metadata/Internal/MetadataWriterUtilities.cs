@@ -5,19 +5,7 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
 
-#if SRM
-using System.Reflection.Internal;
-#else
-using System;
-using System.Reflection;
-using System.Reflection.Metadata;
-#endif
-
-#if SRM
 namespace System.Reflection.Metadata.Ecma335
-#else
-namespace Roslyn.Reflection.Metadata.Ecma335
-#endif
 {
     internal static class MetadataWriterUtilities
     {
@@ -99,8 +87,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
                 return SignatureTypeCode.Single;
             }
 
-            // TODO: localize
-            throw new ArgumentException("Invalid constant type", nameof(value));
+            throw new ArgumentException(SR.Format(SR.InvalidConstantValueOfType, value.GetType()), nameof(value));
         }
 
         internal static void SerializeRowCounts(BlobBuilder writer, ImmutableArray<int> rowCounts)

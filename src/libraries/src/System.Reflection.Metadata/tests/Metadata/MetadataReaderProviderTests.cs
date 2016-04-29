@@ -53,9 +53,9 @@ namespace System.Reflection.Metadata.Tests
         [Fact]
         public void FromMetadataStream2()
         {
-            Assert.Throws<ArgumentException>(() => MetadataReaderProvider.FromMetadataStream(new TestStream(canRead: false, canSeek: false, canWrite: false)));
-            Assert.Throws<ArgumentException>(() => MetadataReaderProvider.FromMetadataStream(new TestStream(canRead: true, canSeek: false, canWrite: false)));
-            MetadataReaderProvider.FromMetadataStream(new TestStream(canRead: true, canSeek: true, canWrite: false));
+            Assert.Throws<ArgumentException>(() => MetadataReaderProvider.FromMetadataStream(new CustomAccessMemoryStream(canRead: false, canSeek: false, canWrite: false)));
+            Assert.Throws<ArgumentException>(() => MetadataReaderProvider.FromMetadataStream(new CustomAccessMemoryStream(canRead: true, canSeek: false, canWrite: false)));
+            MetadataReaderProvider.FromMetadataStream(new CustomAccessMemoryStream(canRead: true, canSeek: true, canWrite: false));
         }
 
         [Fact]

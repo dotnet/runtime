@@ -6,6 +6,12 @@ using System.Diagnostics;
 
 namespace System.Reflection.Metadata
 {
+    /// <summary>
+    /// Lexical scope within which a group of imports are available. Stored in debug metadata.
+    /// </summary>
+    /// <remarks>
+    /// See https://github.com/dotnet/corefx/blob/master/src/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#importscope-table-0x35
+    /// </remarks>
     public struct ImportScope
     {
         private readonly MetadataReader _reader;
@@ -22,26 +28,10 @@ namespace System.Reflection.Metadata
             _rowId = handle.RowId;
         }
 
-        private ImportScopeHandle Handle
-        {
-            get { return ImportScopeHandle.FromRowId(_rowId); }
-        }
+        private ImportScopeHandle Handle => ImportScopeHandle.FromRowId(_rowId);
 
-        public ImportScopeHandle Parent
-        {
-            get
-            {
-                return _reader.ImportScopeTable.GetParent(Handle);
-            }
-        }
-
-        public BlobHandle ImportsBlob
-        {
-            get
-            {
-                return _reader.ImportScopeTable.GetImports(Handle);
-            }
-        }
+        public ImportScopeHandle Parent => _reader.ImportScopeTable.GetParent(Handle);
+        public BlobHandle ImportsBlob => _reader.ImportScopeTable.GetImports(Handle);
 
         public ImportDefinitionCollection GetImports()
         {
