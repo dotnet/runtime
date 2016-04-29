@@ -724,7 +724,7 @@ namespace System
         {
             /// <summary>Gets the lazily-initialized terminal information for the terminal.</summary>
             public static TerminalFormatStrings Instance { get { return s_instance.Value; } }
-            private static Lazy<TerminalFormatStrings> s_instance = new Lazy<TerminalFormatStrings>(() => new TerminalFormatStrings(TermInfo.Database.ReadActiveDatabase()));
+            private readonly static Lazy<TerminalFormatStrings> s_instance = new Lazy<TerminalFormatStrings>(() => new TerminalFormatStrings(TermInfo.Database.ReadActiveDatabase()));
 
             /// <summary>The format string to use to change the foreground color.</summary>
             public readonly string Foreground;
@@ -765,13 +765,13 @@ namespace System
             /// The dictionary of keystring to ConsoleKeyInfo.
             /// Only some members of the ConsoleKeyInfo are used; in particular, the actual char is ignored.
             /// </summary>
-            public Dictionary<StringOrCharArray, ConsoleKeyInfo> KeyFormatToConsoleKey;
+            public readonly Dictionary<StringOrCharArray, ConsoleKeyInfo> KeyFormatToConsoleKey = new Dictionary<StringOrCharArray, ConsoleKeyInfo>();
             /// <summary> Max key length </summary>
-            public int MaxKeyFormatLength;
+            public readonly int MaxKeyFormatLength;
             /// <summary> Min key length </summary>
-            public int MinKeyFormatLength;
+            public readonly int MinKeyFormatLength;
             /// <summary>The ANSI string used to enter "application" / "keypad transmit" mode.</summary>
-            public string KeypadXmit;
+            public readonly string KeypadXmit;
 
             public TerminalFormatStrings(TermInfo.Database db)
             {
@@ -803,7 +803,6 @@ namespace System
                     maxColors >= 8 ? 8 :
                     0;
 
-                KeyFormatToConsoleKey = new Dictionary<StringOrCharArray, ConsoleKeyInfo>();
                 AddKey(db, TermInfo.WellKnownStrings.KeyF1, ConsoleKey.F1);
                 AddKey(db, TermInfo.WellKnownStrings.KeyF2, ConsoleKey.F2);
                 AddKey(db, TermInfo.WellKnownStrings.KeyF3, ConsoleKey.F3);
