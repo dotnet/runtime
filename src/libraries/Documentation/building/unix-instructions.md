@@ -37,12 +37,12 @@ cmakeargs          # user-settable additional arguments passed to CMake
 
 ### Prerequisites
 
-* git `sudo apt-get install git`
-* curl-dev `sudo apt-get install libcurl4-openssl-dev`
-* icu `sudo apt-get install libicu52`
-* cmake `sudo apt-get install cmake`
-* clang `sudo apt-get install clang-3.5`
-* libunwind `sudo apt-get install libunwind8`
+* git
+* curl-dev (libcurl4-openssl-dev)
+* icu (libicu52)
+* cmake
+* clang (clang-3.5)
+* libunwind (libunwind8)
 
 > Note: These instructions have been validated on:
 * Ubuntu 15.04, 14.04, and 12.04
