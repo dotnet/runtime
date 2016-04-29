@@ -99,6 +99,36 @@ namespace System.Runtime.CompilerServices
             Assert.Equal(20, Unsafe.Read<int>(Unsafe.Read<IntPtr>(valueAddressPtr).ToPointer()));
         }
 
+        [Fact]
+        public static unsafe void CopyToRef()
+        {
+            int value = 10;
+            int destination = -1;
+            Unsafe.Copy(ref destination, Unsafe.AsPointer(ref value));
+            Assert.Equal(10, destination);
+            Assert.Equal(10, value);
+
+            int destination2 = -1;
+            Unsafe.Copy(ref destination2, &value);
+            Assert.Equal(10, destination2);
+            Assert.Equal(10, value);
+        }
+
+        [Fact]
+        public static unsafe void CopyToVoidPtr()
+        {
+            int value = 10;
+            int destination = -1;
+            Unsafe.Copy(Unsafe.AsPointer(ref destination), ref value);
+            Assert.Equal(10, destination);
+            Assert.Equal(10, value);
+
+            int destination2 = -1;
+            Unsafe.Copy(&destination2, ref value);
+            Assert.Equal(10, destination2);
+            Assert.Equal(10, value);
+        }
+
         [Theory]
         [MemberData(nameof(SizeOfData))]
         public static unsafe void SizeOf<T>(int expected, T valueUnused)

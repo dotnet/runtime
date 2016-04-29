@@ -78,8 +78,8 @@
         ret
   } // end of method Unsafe::Write
 
-  .method public hidebysig static void Write<T>(void* destination,
-                                                !!T& 'value') cil managed aggressiveinlining
+  .method public hidebysig static void Copy<T>(void* destination,
+                                                !!T& source) cil managed aggressiveinlining
   {
         .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
         .maxstack 2
@@ -88,7 +88,19 @@
         ldobj !!T
         stobj !!T
         ret
-  } // end of method Unsafe::Write
+  } // end of method Unsafe::Copy
+
+  .method public hidebysig static void Copy<T>(!!T& destination,
+                                                void* source) cil managed aggressiveinlining
+  {
+        .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
+        .maxstack 2
+        ldarg.0
+        ldarg.1
+        ldobj !!T
+        stobj !!T
+        ret
+  } // end of method Unsafe::Copy
 
   .method public hidebysig static void* AsPointer<T>(!!T& 'value') cil managed aggressiveinlining
   {
