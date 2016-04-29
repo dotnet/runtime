@@ -101,14 +101,15 @@ namespace System.Text.Tests
             Decode_InvalidBytes(new byte[] { 0x00, 0x00, 0x00, 0xFF }, 0, 4, "\uFFFD");
             Decode_InvalidBytes(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF }, 0, 4, "\uFFFD");
         }
-        
+
         public static byte[] GetBigEndianBytes(byte[] littleEndianBytes, int index, int count)
         {
             byte[] bytes = new byte[littleEndianBytes.Length];
-            for (int i = 0; i < littleEndianBytes.Length; i += 4)
+            for (int i = index; i < index + count; i++)
             {
-                if (i + 3 >= littleEndianBytes.Length)
+                if (i + 3 >= index + count)
                 {
+                    bytes[i] = littleEndianBytes[i];
                     continue;
                 }
 
@@ -121,6 +122,8 @@ namespace System.Text.Tests
                 bytes[i + 1] = b3;
                 bytes[i + 2] = b2;
                 bytes[i + 3] = b1;
+
+                i += 3;
             }
             return bytes;
         }
