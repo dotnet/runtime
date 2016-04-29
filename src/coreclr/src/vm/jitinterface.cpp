@@ -10762,6 +10762,32 @@ void CEEJitInfo::recordRelocation(void * location,
             PutArm64Rel28((UINT32*) fixupLocation, (INT32)delta);
         }
         break;
+
+    case IMAGE_REL_ARM64_PAGEBASE_REL21:
+        {
+            _ASSERTE(slot == 0);
+            _ASSERTE(addlDelta == 0);
+
+            // Write the 21 bits pc-relative page address into location.
+            INT64 targetPage = (INT64)target & 0xFFFFFFFFFFFFF000LL;
+            INT64 lcoationPage = (INT64)location & 0xFFFFFFFFFFFFF000LL;
+            INT64 relPage = (INT64)(targetPage - lcoationPage);
+            INT32 imm21 = (INT32)(relPage >> 12) & 0x1FFFFF;
+            PutArm64Rel21((UINT32 *)location, imm21);
+        }
+        break;
+
+    case IMAGE_REL_ARM64_PAGEOFFSET_12A:
+        {
+            _ASSERTE(slot == 0);
+            _ASSERTE(addlDelta == 0);
+
+            // Write the 12 bits page offset into location.
+            INT32 imm12 = (INT32)target & 0xFFFLL;
+            PutArm64Rel12((UINT32 *)location, imm12);
+        }
+        break;
+
 #endif // _TARGET_ARM64_
 
     default:
