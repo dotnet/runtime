@@ -37,6 +37,26 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="Certificates.cs" />
+    <Compile Include="CertLoader.cs" />
+    <Compile Include="CertLoader.Settings.cs" />
+    <Compile Include="CmsRecipientCollectionTests.cs" />
+    <Compile Include="CryptographicAttributeObjectCollectionTests.cs" />
+    <Compile Include="EnvelopedCms\CertificateTests.cs" />
+    <Compile Include="EnvelopedCms\ContentEncryptionAlgorithmTests.cs" />
+    <Compile Include="EnvelopedCms\DecryptTests.cs" />
+    <Compile Include="EnvelopedCms\EdgeCasesTests.cs" />
+    <Compile Include="EnvelopedCms\GeneralTests.cs" />
+    <Compile Include="EnvelopedCms\KeyAgreeRecipientInfoTests.cs" />
+    <Compile Include="EnvelopedCms\KeyTransRecipientInfoTests.cs" />
+    <Compile Include="EnvelopedCms\StateTests.cs" />
+    <Compile Include="EnvelopedCms\UnprotectedAttributeTests.cs" />
+    <Compile Include="Oids.cs" />
+    <Compile Include="Pkcs9AttributeTests.cs" />
+    <Compile Include="RecipientInfoCollectionTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

@@ -1,0 +1,251 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+// ------------------------------------------------------------------------------
+// Changes to this file must follow the http://aka.ms/api-review process.
+// ------------------------------------------------------------------------------
+
+namespace System.Security.Cryptography
+{
+    public sealed partial class CryptographicAttributeObject
+    {
+        public CryptographicAttributeObject(System.Security.Cryptography.Oid oid) { }
+        public CryptographicAttributeObject(System.Security.Cryptography.Oid oid, System.Security.Cryptography.AsnEncodedDataCollection values) { }
+        public System.Security.Cryptography.Oid Oid { get { return default(System.Security.Cryptography.Oid); } }
+        public System.Security.Cryptography.AsnEncodedDataCollection Values { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { return default(System.Security.Cryptography.AsnEncodedDataCollection); } }
+    }
+    public sealed partial class CryptographicAttributeObjectCollection : System.Collections.ICollection, System.Collections.IEnumerable
+    {
+        public CryptographicAttributeObjectCollection() { }
+        public CryptographicAttributeObjectCollection(System.Security.Cryptography.CryptographicAttributeObject attribute) { }
+        public int Count { get { return default(int); } }
+        public System.Security.Cryptography.CryptographicAttributeObject this[int index] { get { return default(System.Security.Cryptography.CryptographicAttributeObject); } }
+        bool System.Collections.ICollection.IsSynchronized { get { return default(bool); } }
+        object System.Collections.ICollection.SyncRoot { get { return default(object); } }
+        public int Add(System.Security.Cryptography.AsnEncodedData asnEncodedData) { return default(int); }
+        public int Add(System.Security.Cryptography.CryptographicAttributeObject attribute) { return default(int); }
+        public void CopyTo(System.Security.Cryptography.CryptographicAttributeObject[] array, int index) { }
+        public System.Security.Cryptography.CryptographicAttributeObjectEnumerator GetEnumerator() { return default(System.Security.Cryptography.CryptographicAttributeObjectEnumerator); }
+        public void Remove(System.Security.Cryptography.CryptographicAttributeObject attribute) { }
+        void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { return default(System.Collections.IEnumerator); }
+    }
+    public sealed partial class CryptographicAttributeObjectEnumerator : System.Collections.IEnumerator
+    {
+        internal CryptographicAttributeObjectEnumerator() { }
+        public System.Security.Cryptography.CryptographicAttributeObject Current { get { return default(System.Security.Cryptography.CryptographicAttributeObject); } }
+        object System.Collections.IEnumerator.Current { get { return default(object); } }
+        public bool MoveNext() { return default(bool); }
+        public void Reset() { }
+    }
+}
+namespace System.Security.Cryptography.Pkcs
+{
+    public sealed partial class AlgorithmIdentifier
+    {
+        public AlgorithmIdentifier() { }
+        public AlgorithmIdentifier(System.Security.Cryptography.Oid oid) { }
+        public AlgorithmIdentifier(System.Security.Cryptography.Oid oid, int keyLength) { }
+        public int KeyLength { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { return default(int); } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public System.Security.Cryptography.Oid Oid { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { return default(System.Security.Cryptography.Oid); } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+    }
+    public sealed partial class CmsRecipient
+    {
+        public CmsRecipient(System.Security.Cryptography.Pkcs.SubjectIdentifierType recipientIdentifierType, System.Security.Cryptography.X509Certificates.X509Certificate2 certificate) { }
+        public CmsRecipient(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate) { }
+        public System.Security.Cryptography.X509Certificates.X509Certificate2 Certificate { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { return default(System.Security.Cryptography.X509Certificates.X509Certificate2); } }
+        public System.Security.Cryptography.Pkcs.SubjectIdentifierType RecipientIdentifierType { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { return default(System.Security.Cryptography.Pkcs.SubjectIdentifierType); } }
+    }
+    public sealed partial class CmsRecipientCollection : System.Collections.ICollection, System.Collections.IEnumerable
+    {
+        public CmsRecipientCollection() { }
+        public CmsRecipientCollection(System.Security.Cryptography.Pkcs.CmsRecipient recipient) { }
+        public CmsRecipientCollection(System.Security.Cryptography.Pkcs.SubjectIdentifierType recipientIdentifierType, System.Security.Cryptography.X509Certificates.X509Certificate2Collection certificates) { }
+        public int Count { get { return default(int); } }
+        public System.Security.Cryptography.Pkcs.CmsRecipient this[int index] { get { return default(System.Security.Cryptography.Pkcs.CmsRecipient); } }
+        bool System.Collections.ICollection.IsSynchronized { get { return default(bool); } }
+        object System.Collections.ICollection.SyncRoot { get { return default(object); } }
+        public int Add(System.Security.Cryptography.Pkcs.CmsRecipient recipient) { return default(int); }
+        public void CopyTo(System.Array array, int index) { }
+        public void CopyTo(System.Security.Cryptography.Pkcs.CmsRecipient[] array, int index) { }
+        public System.Security.Cryptography.Pkcs.CmsRecipientEnumerator GetEnumerator() { return default(System.Security.Cryptography.Pkcs.CmsRecipientEnumerator); }
+        public void Remove(System.Security.Cryptography.Pkcs.CmsRecipient recipient) { }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { return default(System.Collections.IEnumerator); }
+    }
+    public sealed partial class CmsRecipientEnumerator : System.Collections.IEnumerator
+    {
+        internal CmsRecipientEnumerator() { }
+        public System.Security.Cryptography.Pkcs.CmsRecipient Current { get { return default(System.Security.Cryptography.Pkcs.CmsRecipient); } }
+        object System.Collections.IEnumerator.Current { get { return default(object); } }
+        public bool MoveNext() { return default(bool); }
+        public void Reset() { }
+    }
+    public sealed partial class ContentInfo
+    {
+        public ContentInfo(byte[] content) { }
+        public ContentInfo(System.Security.Cryptography.Oid contentType, byte[] content) { }
+        public byte[] Content { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { return default(byte[]); } }
+        public System.Security.Cryptography.Oid ContentType { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { return default(System.Security.Cryptography.Oid); } }
+        public static System.Security.Cryptography.Oid GetContentType(byte[] encodedMessage) { return default(System.Security.Cryptography.Oid); }
+    }
+    public sealed partial class EnvelopedCms
+    {
+        public EnvelopedCms() { }
+        public EnvelopedCms(System.Security.Cryptography.Pkcs.ContentInfo contentInfo) { }
+        public EnvelopedCms(System.Security.Cryptography.Pkcs.ContentInfo contentInfo, System.Security.Cryptography.Pkcs.AlgorithmIdentifier encryptionAlgorithm) { }
+        public System.Security.Cryptography.X509Certificates.X509Certificate2Collection Certificates { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { return default(System.Security.Cryptography.X509Certificates.X509Certificate2Collection); } }
+        public System.Security.Cryptography.Pkcs.AlgorithmIdentifier ContentEncryptionAlgorithm { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { return default(System.Security.Cryptography.Pkcs.AlgorithmIdentifier); } }
+        public System.Security.Cryptography.Pkcs.ContentInfo ContentInfo { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { return default(System.Security.Cryptography.Pkcs.ContentInfo); } }
+        public System.Security.Cryptography.Pkcs.RecipientInfoCollection RecipientInfos { get { return default(System.Security.Cryptography.Pkcs.RecipientInfoCollection); } }
+        public System.Security.Cryptography.CryptographicAttributeObjectCollection UnprotectedAttributes { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { return default(System.Security.Cryptography.CryptographicAttributeObjectCollection); } }
+        public int Version { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { return default(int); } }
+        public void Decode(byte[] encodedMessage) { }
+        public void Decrypt() { }
+        public void Decrypt(System.Security.Cryptography.Pkcs.RecipientInfo recipientInfo) { }
+        public void Decrypt(System.Security.Cryptography.Pkcs.RecipientInfo recipientInfo, System.Security.Cryptography.X509Certificates.X509Certificate2Collection extraStore) { }
+        public void Decrypt(System.Security.Cryptography.X509Certificates.X509Certificate2Collection extraStore) { }
+        public byte[] Encode() { return default(byte[]); }
+        public void Encrypt(System.Security.Cryptography.Pkcs.CmsRecipient recipient) { }
+        public void Encrypt(System.Security.Cryptography.Pkcs.CmsRecipientCollection recipients) { }
+    }
+    public sealed partial class KeyAgreeRecipientInfo : System.Security.Cryptography.Pkcs.RecipientInfo
+    {
+        internal KeyAgreeRecipientInfo() { }
+        public System.DateTime Date { get { return default(System.DateTime); } }
+        public override byte[] EncryptedKey { get { return default(byte[]); } }
+        public override System.Security.Cryptography.Pkcs.AlgorithmIdentifier KeyEncryptionAlgorithm { get { return default(System.Security.Cryptography.Pkcs.AlgorithmIdentifier); } }
+        public System.Security.Cryptography.Pkcs.SubjectIdentifierOrKey OriginatorIdentifierOrKey { get { return default(System.Security.Cryptography.Pkcs.SubjectIdentifierOrKey); } }
+        public System.Security.Cryptography.CryptographicAttributeObject OtherKeyAttribute { get { return default(System.Security.Cryptography.CryptographicAttributeObject); } }
+        public override System.Security.Cryptography.Pkcs.SubjectIdentifier RecipientIdentifier { get { return default(System.Security.Cryptography.Pkcs.SubjectIdentifier); } }
+        public override int Version { get { return default(int); } }
+    }
+    public sealed partial class KeyTransRecipientInfo : System.Security.Cryptography.Pkcs.RecipientInfo
+    {
+        internal KeyTransRecipientInfo() { }
+        public override byte[] EncryptedKey { get { return default(byte[]); } }
+        public override System.Security.Cryptography.Pkcs.AlgorithmIdentifier KeyEncryptionAlgorithm { get { return default(System.Security.Cryptography.Pkcs.AlgorithmIdentifier); } }
+        public override System.Security.Cryptography.Pkcs.SubjectIdentifier RecipientIdentifier { get { return default(System.Security.Cryptography.Pkcs.SubjectIdentifier); } }
+        public override int Version { get { return default(int); } }
+    }
+    public partial class Pkcs9AttributeObject : System.Security.Cryptography.AsnEncodedData
+    {
+        public Pkcs9AttributeObject() { }
+        public Pkcs9AttributeObject(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
+        public Pkcs9AttributeObject(System.Security.Cryptography.Oid oid, byte[] encodedData) { }
+        public Pkcs9AttributeObject(string oid, byte[] encodedData) { }
+        public new System.Security.Cryptography.Oid Oid { get { return default(System.Security.Cryptography.Oid); } }
+        public override void CopyFrom(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
+    }
+    public sealed partial class Pkcs9ContentType : System.Security.Cryptography.Pkcs.Pkcs9AttributeObject
+    {
+        public Pkcs9ContentType() { }
+        public System.Security.Cryptography.Oid ContentType { get { return default(System.Security.Cryptography.Oid); } }
+        public override void CopyFrom(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
+    }
+    public sealed partial class Pkcs9DocumentDescription : System.Security.Cryptography.Pkcs.Pkcs9AttributeObject
+    {
+        public Pkcs9DocumentDescription() { }
+        public Pkcs9DocumentDescription(byte[] encodedDocumentDescription) { }
+        public Pkcs9DocumentDescription(string documentDescription) { }
+        public string DocumentDescription { get { return default(string); } }
+        public override void CopyFrom(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
+    }
+    public sealed partial class Pkcs9DocumentName : System.Security.Cryptography.Pkcs.Pkcs9AttributeObject
+    {
+        public Pkcs9DocumentName() { }
+        public Pkcs9DocumentName(byte[] encodedDocumentName) { }
+        public Pkcs9DocumentName(string documentName) { }
+        public string DocumentName { get { return default(string); } }
+        public override void CopyFrom(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
+    }
+    public sealed partial class Pkcs9MessageDigest : System.Security.Cryptography.Pkcs.Pkcs9AttributeObject
+    {
+        public Pkcs9MessageDigest() { }
+        public byte[] MessageDigest { get { return default(byte[]); } }
+        public override void CopyFrom(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
+    }
+    public sealed partial class Pkcs9SigningTime : System.Security.Cryptography.Pkcs.Pkcs9AttributeObject
+    {
+        public Pkcs9SigningTime() { }
+        public Pkcs9SigningTime(byte[] encodedSigningTime) { }
+        public Pkcs9SigningTime(System.DateTime signingTime) { }
+        public System.DateTime SigningTime { get { return default(System.DateTime); } }
+        public override void CopyFrom(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
+    }
+    public sealed partial class PublicKeyInfo
+    {
+        internal PublicKeyInfo() { }
+        public System.Security.Cryptography.Pkcs.AlgorithmIdentifier Algorithm { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { return default(System.Security.Cryptography.Pkcs.AlgorithmIdentifier); } }
+        public byte[] KeyValue { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { return default(byte[]); } }
+    }
+    public abstract partial class RecipientInfo
+    {
+        internal RecipientInfo() { }
+        public abstract byte[] EncryptedKey { get; }
+        public abstract System.Security.Cryptography.Pkcs.AlgorithmIdentifier KeyEncryptionAlgorithm { get; }
+        public abstract System.Security.Cryptography.Pkcs.SubjectIdentifier RecipientIdentifier { get; }
+        public System.Security.Cryptography.Pkcs.RecipientInfoType Type { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { return default(System.Security.Cryptography.Pkcs.RecipientInfoType); } }
+        public abstract int Version { get; }
+    }
+    public sealed partial class RecipientInfoCollection : System.Collections.ICollection, System.Collections.IEnumerable
+    {
+        internal RecipientInfoCollection() { }
+        public int Count { get { return default(int); } }
+        public System.Security.Cryptography.Pkcs.RecipientInfo this[int index] { get { return default(System.Security.Cryptography.Pkcs.RecipientInfo); } }
+        bool System.Collections.ICollection.IsSynchronized { get { return default(bool); } }
+        object System.Collections.ICollection.SyncRoot { get { return default(object); } }
+        public void CopyTo(System.Array array, int index) { }
+        public void CopyTo(System.Security.Cryptography.Pkcs.RecipientInfo[] array, int index) { }
+        public System.Security.Cryptography.Pkcs.RecipientInfoEnumerator GetEnumerator() { return default(System.Security.Cryptography.Pkcs.RecipientInfoEnumerator); }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { return default(System.Collections.IEnumerator); }
+    }
+    public sealed partial class RecipientInfoEnumerator : System.Collections.IEnumerator
+    {
+        internal RecipientInfoEnumerator() { }
+        public System.Security.Cryptography.Pkcs.RecipientInfo Current { get { return default(System.Security.Cryptography.Pkcs.RecipientInfo); } }
+        object System.Collections.IEnumerator.Current { get { return default(object); } }
+        public bool MoveNext() { return default(bool); }
+        public void Reset() { }
+    }
+    public enum RecipientInfoType
+    {
+        KeyAgreement = 2,
+        KeyTransport = 1,
+        Unknown = 0,
+    }
+    public sealed partial class SubjectIdentifier
+    {
+        internal SubjectIdentifier() { }
+        public System.Security.Cryptography.Pkcs.SubjectIdentifierType Type { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { return default(System.Security.Cryptography.Pkcs.SubjectIdentifierType); } }
+        public object Value { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { return default(object); } }
+    }
+    public sealed partial class SubjectIdentifierOrKey
+    {
+        internal SubjectIdentifierOrKey() { }
+        public System.Security.Cryptography.Pkcs.SubjectIdentifierOrKeyType Type { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { return default(System.Security.Cryptography.Pkcs.SubjectIdentifierOrKeyType); } }
+        public object Value { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { return default(object); } }
+    }
+    public enum SubjectIdentifierOrKeyType
+    {
+        IssuerAndSerialNumber = 1,
+        PublicKeyInfo = 3,
+        SubjectKeyIdentifier = 2,
+        Unknown = 0,
+    }
+    public enum SubjectIdentifierType
+    {
+        IssuerAndSerialNumber = 1,
+        NoSignature = 3,
+        SubjectKeyIdentifier = 2,
+        Unknown = 0,
+    }
+}
+namespace System.Security.Cryptography.Xml
+{
+    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    public partial struct X509IssuerSerial
+    {
+        public string IssuerName { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { return default(string); } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public string SerialNumber { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { return default(string); } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+    }
+}
