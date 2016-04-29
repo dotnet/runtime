@@ -156,6 +156,9 @@ namespace System.Tests
                 NegativeSign = "|"
             };
 
+            NumberFormatInfo emptyPositiveFormat = new NumberFormatInfo() { PositiveSign = "" };
+            NumberFormatInfo emptyNegativeFormat = new NumberFormatInfo() { NegativeSign = "" };
+
             // None
             yield return new object[] { "0", NumberStyles.None, null, 0 };
             yield return new object[] { "123", NumberStyles.None, null, 123 };
@@ -179,6 +182,20 @@ namespace System.Tests
             yield return new object[] { "$   1000", NumberStyles.Currency, currencyFormat, 1000 };
             yield return new object[] { "1000", NumberStyles.Currency, currencyFormat, 1000 };
             yield return new object[] { "$(1000)", NumberStyles.Currency, currencyFormat, -1000};
+            yield return new object[] { "($1000)", NumberStyles.Currency, currencyFormat, -1000 };
+            yield return new object[] { "$-1000", NumberStyles.Currency, currencyFormat, -1000 };
+            yield return new object[] { "-$1000", NumberStyles.Currency, currencyFormat, -1000 };
+
+            NumberFormatInfo emptyCurrencyFormat = new NumberFormatInfo() { CurrencySymbol = "" };
+            yield return new object[] { "100", NumberStyles.Currency, emptyCurrencyFormat, 100 };
+
+            // If CurrencySymbol and Negative are the same, NegativeSign is preferred
+            NumberFormatInfo sameCurrencyNegativeSignFormat = new NumberFormatInfo()
+            {
+                NegativeSign = "|",
+                CurrencySymbol = "|"
+            };
+            yield return new object[] { "|1000", NumberStyles.AllowCurrencySymbol | NumberStyles.AllowLeadingSign, sameCurrencyNegativeSignFormat, -1000 };
 
             // Any
             yield return new object[] { "123", NumberStyles.Any, null, 123 };
@@ -193,6 +210,10 @@ namespace System.Tests
             // If PositiveSign and NegativeSign are the same, PositiveSign is preferred
             yield return new object[] { "|123", NumberStyles.AllowLeadingSign, samePositiveNegativeFormat, 123 };
 
+            // Empty PositiveSign or NegativeSign
+            yield return new object[] { "100", NumberStyles.AllowLeadingSign, emptyPositiveFormat, 100 };
+            yield return new object[] { "100", NumberStyles.AllowLeadingSign, emptyNegativeFormat, 100 };
+
             // AllowTrailingSign
             yield return new object[] { "123", NumberStyles.AllowTrailingSign, null, 123 };
             yield return new object[] { "123+", NumberStyles.AllowTrailingSign, null, 123 };
@@ -200,6 +221,10 @@ namespace System.Tests
 
             // If PositiveSign and NegativeSign are the same, PositiveSign is preferred
             yield return new object[] { "123|", NumberStyles.AllowTrailingSign, samePositiveNegativeFormat, 123 };
+
+            // Empty PositiveSign or NegativeSign
+            yield return new object[] { "100", NumberStyles.AllowTrailingSign, emptyPositiveFormat, 100 };
+            yield return new object[] { "100", NumberStyles.AllowTrailingSign, emptyNegativeFormat, 100 };
 
             // AllowLeadingWhite and AllowTrailingWhite
             yield return new object[] { "123  ", NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, null, 123 };
@@ -211,6 +236,9 @@ namespace System.Tests
             yield return new object[] { "1000", NumberStyles.AllowThousands, thousandsFormat, 1000 };
             yield return new object[] { "1|0|0|0", NumberStyles.AllowThousands, thousandsFormat, 1000 };
             yield return new object[] { "1|||", NumberStyles.AllowThousands, thousandsFormat, 1 };
+
+            NumberFormatInfo integerNumberSeparatorFormat = new NumberFormatInfo() { NumberGroupSeparator = "1" };
+            yield return new object[] { "1111", NumberStyles.AllowThousands, integerNumberSeparatorFormat, 1111 };
 
             // AllowExponent
             yield return new object[] { "1E2", NumberStyles.AllowExponent, null, 100 };
@@ -230,6 +258,13 @@ namespace System.Tests
             // AllowDecimalPoint
             NumberFormatInfo decimalFormat = new NumberFormatInfo() { NumberDecimalSeparator = "|" };
             yield return new object[] { "67|", NumberStyles.AllowDecimalPoint, decimalFormat, 67 };
+
+            // NumberFormatInfo has a custom property with length > 1
+            NumberFormatInfo integerCurrencyFormat = new NumberFormatInfo() { CurrencySymbol = "123" };
+            yield return new object[] { "123123", NumberStyles.AllowCurrencySymbol, integerCurrencyFormat, 123 };
+
+            NumberFormatInfo integerPositiveSignFormat = new NumberFormatInfo() { PositiveSign = "123" };
+            yield return new object[] { "123123", NumberStyles.AllowLeadingSign, integerPositiveSignFormat, 123 };
         }
 
         [Theory]
@@ -270,7 +305,7 @@ namespace System.Tests
         }
 
         public static IEnumerable<object[]> Parse_Invalid_TestData()
-        {            
+        {
             // Garbage strings
             yield return new object[] { null, NumberStyles.Integer, null, typeof(ArgumentNullException) };
             yield return new object[] { null, NumberStyles.Any, null, typeof(ArgumentNullException) };
@@ -288,7 +323,7 @@ namespace System.Tests
             yield return new object[] { 1000.ToString("C0"), NumberStyles.Integer, null, typeof(FormatException) };
             yield return new object[] { 1000.ToString("N0"), NumberStyles.Integer, null, typeof(FormatException) };
             yield return new object[] { 678.90.ToString("F2"), NumberStyles.Integer, null, typeof(FormatException) };
-            
+
             // HexNumber
             yield return new object[] { "0xabc", NumberStyles.HexNumber, null, typeof(FormatException) };
             yield return new object[] { "&habc", NumberStyles.HexNumber, null, typeof(FormatException) };
@@ -317,11 +352,23 @@ namespace System.Tests
             yield return new object[] { "123 -", NumberStyles.AllowTrailingSign, null, typeof(FormatException) };
             yield return new object[] { "123 +", NumberStyles.AllowTrailingSign, null, typeof(FormatException) };
 
+            // Parentheses has priority over CurrencySymbol and PositiveSign
+            NumberFormatInfo currencyNegativeParenthesesFormat = new NumberFormatInfo()
+            {
+                CurrencySymbol = "(",
+                PositiveSign = "))"
+            };
+            yield return new object[] { "(100))", NumberStyles.AllowParentheses | NumberStyles.AllowCurrencySymbol | NumberStyles.AllowTrailingSign, currencyNegativeParenthesesFormat, typeof(FormatException) };
+
             // AllowTrailingSign and AllowLeadingSign
             yield return new object[] { "+123+", NumberStyles.AllowLeadingSign | NumberStyles.AllowTrailingSign, null, typeof(FormatException) };
             yield return new object[] { "+123-", NumberStyles.AllowLeadingSign | NumberStyles.AllowTrailingSign, null, typeof(FormatException) };
             yield return new object[] { "-123+", NumberStyles.AllowLeadingSign | NumberStyles.AllowTrailingSign, null, typeof(FormatException) };
             yield return new object[] { "-123-", NumberStyles.AllowLeadingSign | NumberStyles.AllowTrailingSign, null, typeof(FormatException) };
+
+            // AllowLeadingSign and AllowParentheses
+            yield return new object[] { "-(1000)", NumberStyles.AllowLeadingSign | NumberStyles.AllowParentheses, null, typeof(FormatException) };
+            yield return new object[] { "(-1000)", NumberStyles.AllowLeadingSign | NumberStyles.AllowParentheses, null, typeof(FormatException) };
 
             // AllowLeadingWhite
             yield return new object[] { "1   ", NumberStyles.AllowLeadingWhite, null, typeof(FormatException) };
@@ -344,6 +391,24 @@ namespace System.Tests
             // AllowDecimalPoint
             NumberFormatInfo decimalFormat = new NumberFormatInfo() { NumberDecimalSeparator = "." };
             yield return new object[] { "67.90", NumberStyles.AllowDecimalPoint, null, typeof(OverflowException) };
+
+            // Parsing integers doesn't allow NaN, PositiveInfinity or NegativeInfinity
+            NumberFormatInfo doubleFormat = new NumberFormatInfo()
+            {
+                NaNSymbol = "NaN",
+                PositiveInfinitySymbol = "Infinity",
+                NegativeInfinitySymbol = "-Infinity"
+            };
+            yield return new object[] { "NaN", NumberStyles.Any, doubleFormat, typeof(FormatException) };
+            yield return new object[] { "Infinity", NumberStyles.Any, doubleFormat, typeof(FormatException) };
+            yield return new object[] { "-Infinity", NumberStyles.Any, doubleFormat, typeof(FormatException) };
+
+            // NumberFormatInfo has a custom property with length > 1
+            NumberFormatInfo integerCurrencyFormat = new NumberFormatInfo() { CurrencySymbol = "123" };
+            yield return new object[] { "123", NumberStyles.AllowCurrencySymbol, integerCurrencyFormat, typeof(FormatException) };
+
+            NumberFormatInfo integerPositiveSignFormat = new NumberFormatInfo() { PositiveSign = "123" };
+            yield return new object[] { "123", NumberStyles.AllowLeadingSign, integerPositiveSignFormat, typeof(FormatException) };
 
             // Not in range of Int32
             yield return new object[] { "2147483648", NumberStyles.Any, null, typeof(OverflowException) };
