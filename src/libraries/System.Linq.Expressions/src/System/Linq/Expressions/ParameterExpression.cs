@@ -216,6 +216,11 @@ namespace System.Linq.Expressions
                 throw Error.ArgumentCannotBeOfTypeVoid();
             }
 
+            if (type.IsPointer)
+            {
+                throw Error.TypeMustNotBePointer();
+            }
+
             bool byref = type.IsByRef;
             if (byref)
             {
@@ -236,6 +241,12 @@ namespace System.Linq.Expressions
             ContractUtils.RequiresNotNull(type, nameof(type));
             if (type == typeof(void)) throw Error.ArgumentCannotBeOfTypeVoid();
             if (type.IsByRef) throw Error.TypeMustNotBeByRef();
+
+            if (type.IsPointer)
+            {
+                throw Error.TypeMustNotBePointer();
+            }
+
             return ParameterExpression.Make(type, name, false);
         }
     }
