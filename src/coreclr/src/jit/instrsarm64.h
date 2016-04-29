@@ -91,7 +91,7 @@ INST5(ldr,     "ldr",    0,LD, IF_EN5A,   0xB9400000,  0xB9400000,  0xB8400000, 
                                    //  ldr     Rt,[Xn+pimm12]       LS_2B  1X11100101iiiiii iiiiiinnnnnttttt   B940 0000   imm(0-4095<<{2,3})
                                    //  ldr     Rt,[Xn+simm9]        LS_2C  1X111000010iiiii iiiiPPnnnnnttttt   B840 0000   [Xn imm(-256..+255) pre/post/no inc]
                                    //  ldr     Rt,[Xn,(Rm,ext,shl)] LS_3A  1X111000011mmmmm oooS10nnnnnttttt   B860 0800   [Xn, ext(Rm) LSL {0,2,3}]
-                                   //  ldr     Vt/Rt,[PC+simm19<<2] LS_1A  XX011000iiiiiiii iiiiiiiiiiittttt   1800 0000   [PC +- imm(1MB)]
+                                   //  ldr     Vt/Rt,[PC+simm19<<2] LS_1A  XX011V00iiiiiiii iiiiiiiiiiittttt   1800 0000   [PC +- imm(1MB)]
   
 INST5(ldrsw,   "ldrsw",  0,LD, IF_EN5A,   0xB9800000,  0xB9800000,  0xB8800000,  0xB8A00800,  0x98000000)
                                    //  ldrsw   Rt,[Xn]              LS_2A  1011100110000000 000000nnnnnttttt   B980 0000   

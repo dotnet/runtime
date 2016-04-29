@@ -985,6 +985,14 @@ RtlVirtualUnwind(
 #define IMAGE_REL_ARM64_BRANCH26        0x0003  // 26 bit offset << 2 & sign ext. for B & BL
 #endif
 
+#ifndef IMAGE_REL_ARM64_PAGEBASE_REL21
+#define IMAGE_REL_ARM64_PAGEBASE_REL21  0x0004  // ADRP 21 bit PC-relative page address
+#endif
+
+#ifndef IMAGE_REL_ARM64_PAGEOFFSET_12A
+#define IMAGE_REL_ARM64_PAGEOFFSET_12A  0x0006  // ADD 12 bit page offset
+#endif
+
 #endif
 
 #endif  // CLRNT_H_
