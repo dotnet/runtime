@@ -12,7 +12,6 @@ def projectFolder = Utilities.getFolderName(project) + '/' + Utilities.getFolder
 def static getOSGroup(def os) {
     def osGroupMap = ['Ubuntu':'Linux',
         'RHEL7.2': 'Linux',
-        'Ubuntu15.10': 'Linux',
         'Ubuntu16.04': 'Linux',
         'Debian8.2':'Linux',
         'OSX':'OSX',
@@ -32,7 +31,7 @@ class Constants {
     // The Windows_NT_BuildOnly OS is a way to speed up the Non-NT builds temporarily by avoiding
     // test execution in the build flow runs.  It generates the exact same build
     // as Windows_NT but without the tests.
-    def static osList = ['Ubuntu', 'Debian8.2', 'OSX', 'Windows_NT', 'Windows_NT_BuildOnly', 'FreeBSD', 'CentOS7.1', 'OpenSUSE13.2', 'Ubuntu15.10', 'RHEL7.2', 'LinuxARMEmulator', 'Ubuntu16.04']
+    def static osList = ['Ubuntu', 'Debian8.2', 'OSX', 'Windows_NT', 'Windows_NT_BuildOnly', 'FreeBSD', 'CentOS7.1', 'OpenSUSE13.2', 'RHEL7.2', 'LinuxARMEmulator', 'Ubuntu16.04']
     def static crossList = ['Ubuntu', 'OSX', 'CentOS7.1', 'RHEL7.2', 'Debian8.2', 'OpenSUSE13.2']
     // This is a set of JIT stress modes combined with the set of variables that
     // need to be set to actually enable that stress mode.  The key of the map is the stress mode and
@@ -467,12 +466,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     assert !isFlowJob
                     assert scenario == 'default'
                     Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build", '(?i).*test\\W+Ubuntu16\\.04.*')
-                    break
-                case 'Ubuntu15.10':
-                    assert !isFlowJob
-                    assert scenario == 'default'
-                    Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build", '(?i).*test\\W+Ubuntu15\\.10.*')
-                    break
+                    break                
                 case 'Ubuntu':
                 case 'OSX':
                     // Triggers on the non-flow jobs aren't necessary here
@@ -1228,7 +1222,6 @@ combinedScenarios.each { scenario ->
                             }
                             break
                         case 'Ubuntu':
-                        case 'Ubuntu15.10':
                         case 'Ubuntu16.04':
                         case 'Debian8.2':
                         case 'OSX':
