@@ -587,6 +587,7 @@ public:
     // ICorModuleInfo
 
     void resolveToken(CORINFO_RESOLVED_TOKEN * pResolvedToken);
+    bool tryResolveToken(CORINFO_RESOLVED_TOKEN * pResolvedToken);
 
     void findSig(CORINFO_MODULE_HANDLE module, unsigned sigTOK,
                  CORINFO_CONTEXT_HANDLE context,

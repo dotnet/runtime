@@ -3455,6 +3455,12 @@ void ZapInfo::resolveToken(CORINFO_RESOLVED_TOKEN * pResolvedToken)
 }
 
 //-----------------------------------------------------------------------------
+bool ZapInfo::tryResolveToken(CORINFO_RESOLVED_TOKEN * pResolvedToken)
+{
+    return m_pEEJitInfo->tryResolveToken(pResolvedToken);
+}
+
+//-----------------------------------------------------------------------------
 void ZapInfo::findSig(CORINFO_MODULE_HANDLE tokenScope,
                       unsigned sigTOK,
                       CORINFO_CONTEXT_HANDLE tokenContext,
