@@ -121,7 +121,7 @@ IF_DEF(BI_1B,       IS_NONE,               JMP)      // BI_1B   B.......bbbbbiii
 IF_DEF(BR_1A,       IS_NONE,               CALL)     // BR_1A   ................ ......nnnnn.....         Rn                ret
 IF_DEF(BR_1B,       IS_NONE,               CALL)     // BR_1B   ................ ......nnnnn.....         Rn                br blr
 
-IF_DEF(LS_1A,       IS_NONE,               JMP)      // LS_1A   .X......iiiiiiii iiiiiiiiiiittttt      Rt    PC imm(1MB)
+IF_DEF(LS_1A,       IS_NONE,               JMP)      // LS_1A   XX...V..iiiiiiii iiiiiiiiiiittttt      Rt    PC imm(1MB)
 IF_DEF(LS_2A,       IS_NONE,               NONE)     // LS_2A   .X.......X...... ......nnnnnttttt      Rt Rn
 IF_DEF(LS_2B,       IS_NONE,               NONE)     // LS_2B   .X.......Xiiiiii iiiiiinnnnnttttt      Rt Rn    imm(0-4095)
 IF_DEF(LS_2C,       IS_NONE,               NONE)     // LS_2C   .X.......X.iiiii iiiiP.nnnnnttttt      Rt Rn    imm(-256..+255) pre/post inc

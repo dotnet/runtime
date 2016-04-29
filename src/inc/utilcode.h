@@ -4526,9 +4526,29 @@ void PutThumb2BlRel24(UINT16 * p, INT32 imm24);
 INT32 GetArm64Rel28(UINT32 * pCode);
 
 //*****************************************************************************
+//  Extract the PC-Relative page address from an adrp instruction
+//*****************************************************************************
+INT32 GetArm64Rel21(UINT32 * pCode);
+
+//*****************************************************************************
+//  Extract the page offset from an add instruction
+//*****************************************************************************
+INT32 GetArm64Rel12(UINT32 * pCode);
+
+//*****************************************************************************
 //  Deposit the PC-Relative offset 'imm28' into a b or bl instruction 
 //*****************************************************************************
 void PutArm64Rel28(UINT32 * pCode, INT32 imm28);
+
+//*****************************************************************************
+//  Deposit the PC-Relative page address 'imm21' into an adrp instruction
+//*****************************************************************************
+void PutArm64Rel21(UINT32 * pCode, INT32 imm21);
+
+//*****************************************************************************
+//  Deposit the page offset 'imm12' into an add instruction
+//*****************************************************************************
+void PutArm64Rel12(UINT32 * pCode, INT32 imm12);
 
 //*****************************************************************************
 // Returns whether the offset fits into bl instruction
@@ -4544,6 +4564,22 @@ inline bool FitsInThumb2BlRel24(INT32 imm24)
 inline bool FitsInRel28(INT32 val32)
 {
     return (val32 >= -0x08000000) && (val32 < 0x08000000);
+}
+
+//*****************************************************************************
+// Returns whether the offset fits into an Arm64 adrp instruction
+//*****************************************************************************
+inline bool FitsInRel21(INT32 val32)
+{
+    return (val32 >= 0) && (val32 <= 0x001FFFFF);
+}
+
+//*****************************************************************************
+// Returns whether the offset fits into an Arm64 add instruction
+//*****************************************************************************
+inline bool FitsInRel12(INT32 val32)
+{
+    return (val32 >= 0) && (val32 <= 0x00000FFF);
 }
 
 //*****************************************************************************

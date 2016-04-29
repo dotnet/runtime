@@ -1046,13 +1046,6 @@ extern "C" void GenericComPlusCallStub(void)
 }
 #endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_PREJIT
-extern "C" void StubDispatchFixupStub()
-{
-    _ASSERTE(!"ARM64:NYI");
-}
-#endif
-
 //ARM64TODO: check if this should be amd64 and win64
 #ifdef _WIN64
 extern "C" void PInvokeStubForHostInner(DWORD dwStackSize, LPVOID pStackFrame, LPVOID pTarget)
