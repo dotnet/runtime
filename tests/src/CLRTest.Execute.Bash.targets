@@ -161,7 +161,7 @@ fi
 $(BashCLRTestEnvironmentCompatibilityCheck)
 if [ \( ! -z "$COMPlus_JitStress" \) -o \( ! -z "$COMPlus_JitStressRegs" \) -o \( ! -z "$COMPlus_JITMinOpts" \) ]
 then
-  echo SKIPPING EXECUTION BECAUSE ONE OR MORE OF (COMPlus_JitStress, COMPlus_JitStressRegs, COMPlus_JITMinOpts) IS SET
+  echo "SKIPPING EXECUTION BECAUSE ONE OR MORE OF (COMPlus_JitStress, COMPlus_JitStressRegs, COMPlus_JITMinOpts) IS SET"
   exit 0
 fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>
