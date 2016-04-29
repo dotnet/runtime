@@ -15,12 +15,12 @@ namespace System.Reflection.Metadata.Decoding.Tests
             return MetadataTokens.GetToken(handle).ToString("X");
         }
 
-        public override string GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, SignatureTypeHandleCode code)
+        public override string GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
         {
             return GetTypeFromHandle(reader, handle);
         }
 
-        public override string GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, SignatureTypeHandleCode code)
+        public override string GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind)
         {
             return GetTypeFromHandle(reader, handle);
         }

@@ -2,26 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
-using System.Reflection.PortableExecutable;
 
-#if SRM
 namespace System.Reflection.PortableExecutable
-#else
-namespace Roslyn.Reflection.PortableExecutable
-#endif
 {
-#if !SRM
-    using Roslyn.Reflection.Metadata.Ecma335;
-#endif
-
-#if SRM
-    public
-#endif
-    static class ManagedPEBuilder
+    public static class ManagedPEBuilder
     {
         public static void AddManagedSections(
             this PEBuilder peBuilder,

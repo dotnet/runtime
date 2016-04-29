@@ -2,22 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
-
-#if SRM
 using System.Reflection.Internal;
-using BitArithmeticUtilities = System.Reflection.Internal.BitArithmetic;
-#else
-using System.Reflection.PortableExecutable;
-using Roslyn.Utilities;
-#endif
+using System.Reflection.Metadata;
 
-#if SRM
 namespace System.Reflection.PortableExecutable
-#else
-namespace Roslyn.Reflection.PortableExecutable
-#endif
 {
     /// <summary>
     /// Managed .text PE section.
@@ -36,10 +25,7 @@ namespace Roslyn.Reflection.PortableExecutable
     /// - Runtime Startup Stub
     /// - Mapped Field Data
     /// </remarks>
-#if SRM
-    public
-#endif
-    sealed class ManagedTextSection
+    public sealed class ManagedTextSection
     {
         public Characteristics ImageCharacteristics { get; }
         public Machine Machine { get; }
@@ -142,7 +128,7 @@ namespace Roslyn.Reflection.PortableExecutable
             if (RequiresStartupStub)
             {
                 result += SizeOfImportTable + SizeOfNameTable;
-                result = BitArithmeticUtilities.Align(result, Is32Bit ? 4 : 8); //optional padding to make startup stub's target address align on word or double word boundary
+                result = BitArithmetic.Align(result, Is32Bit ? 4 : 8); //optional padding to make startup stub's target address align on word or double word boundary
                 result += SizeOfRuntimeStartupStub;
             }
 
@@ -186,7 +172,7 @@ namespace Roslyn.Reflection.PortableExecutable
 
         private int ComputeOffsetToMetadata()
         {
-            return OffsetToILStream + BitArithmeticUtilities.Align(ILStreamSize, 4);
+            return OffsetToILStream + BitArithmetic.Align(ILStreamSize, 4);
         }
 
         /// <summary>

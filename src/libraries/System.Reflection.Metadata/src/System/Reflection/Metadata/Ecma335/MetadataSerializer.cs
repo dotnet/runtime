@@ -2,29 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
 
-#if SRM
-using System.Reflection.PortableExecutable;
-#else
-using Roslyn.Reflection.PortableExecutable;
-#endif
-
-#if SRM
 namespace System.Reflection.Metadata.Ecma335
-#else
-namespace Roslyn.Reflection.Metadata.Ecma335
-#endif
 {
-#if SRM
-    public
-#endif
-    sealed class StandaloneDebugMetadataSerializer : MetadataSerializer
+    public sealed class StandaloneDebugMetadataSerializer : MetadataSerializer
     {
         private const string DebugMetadataVersionString = "PDB v1.0";
 
@@ -46,7 +30,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
         /// </summary>
         protected override void SerializeStandalonePdbStream(BlobBuilder builder)
         {
-            int startPosition = builder.Position;
+            int startPosition = builder.Count;
 
             // the id will be filled in later
             _pdbIdBlob = builder.ReserveBytes(MetadataSizes.PdbIdSize);
@@ -56,7 +40,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
             builder.WriteUInt64(MetadataSizes.ExternalTablesMask);
             MetadataWriterUtilities.SerializeRowCounts(builder, MetadataSizes.ExternalRowCounts);
 
-            int endPosition = builder.Position;
+            int endPosition = builder.Count;
             Debug.Assert(MetadataSizes.CalculateStandalonePdbStreamSize() == endPosition - startPosition);
         }
 
@@ -74,10 +58,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
         }
     }
 
-#if SRM
-    public
-#endif
-    sealed class TypeSystemMetadataSerializer : MetadataSerializer
+    public sealed class TypeSystemMetadataSerializer : MetadataSerializer
     {
         private static readonly ImmutableArray<int> EmptyRowCounts = ImmutableArray.CreateRange(Enumerable.Repeat(0, MetadataTokens.TableCount));
 
@@ -101,10 +82,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
         }
     }
 
-#if SRM
-    public
-#endif
-    abstract class MetadataSerializer
+    public abstract class MetadataSerializer
     {
         protected readonly MetadataBuilder _tables;
         private readonly MetadataSizes _sizes;
@@ -150,7 +128,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
 
         private void SerializeMetadataHeader(BlobBuilder writer)
         {
-            int startOffset = writer.Position;
+            int startOffset = writer.Count;
 
             // signature
             writer.WriteUInt32(0x424A5342);
@@ -209,7 +187,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
                 SerializeStreamHeader(ref offsetFromStartOfMetadata, 0, "#JTD", writer);
             }
 
-            int endOffset = writer.Position;
+            int endOffset = writer.Count;
             Debug.Assert(endOffset - startOffset == _sizes.MetadataHeaderSize);
         }
 

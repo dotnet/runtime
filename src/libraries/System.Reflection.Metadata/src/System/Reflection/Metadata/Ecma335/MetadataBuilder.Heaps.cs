@@ -5,31 +5,15 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Text;
-using System.Reflection.Metadata;
-
-#if SRM
 using System.Reflection.Internal;
-using BitArithmeticUtilities = System.Reflection.Internal.BitArithmetic;
-#else
-using System;
-using System.Reflection.Metadata.Ecma335;
-using Microsoft.CodeAnalysis.Collections;
-using Roslyn.Utilities;
-#endif
+using System.Text;
 
-#if SRM
 namespace System.Reflection.Metadata.Ecma335
-#else
-namespace Roslyn.Reflection.Metadata.Ecma335
-#endif
 {
-#if SRM
-    public
-#endif
-    sealed partial class MetadataBuilder
+    public sealed partial class MetadataBuilder
     {
         // #US heap
+        private const int UserStringHeapSizeLimit = 0x01000000;
         private readonly Dictionary<string, int> _userStrings = new Dictionary<string, int>();
         private readonly BlobBuilder _userStringWriter = new BlobBuilder(1024);
         private readonly int _userStringHeapStartOffset;
@@ -57,6 +41,12 @@ namespace Roslyn.Reflection.Metadata.Ecma335
             int blobHeapStartOffset = 0,
             int guidHeapStartOffset = 0)
         {
+            // -1 for the 0 we always write at the beginning of the heap:
+            if (userStringHeapStartOffset >= UserStringHeapSizeLimit - 1)
+            {
+                throw ImageFormatLimitationException.HeapSizeLimitExceeded(HeapIndex.UserString);
+            }
+
             // Add zero-th entry to all heaps, even in EnC delta.
             // We don't want generation-relative handles to ever be IsNil.
             // In both full and delta metadata all nil heap handles should have zero value.
@@ -78,13 +68,13 @@ namespace Roslyn.Reflection.Metadata.Ecma335
             _guidWriter.WriteBytes(0, guidHeapStartOffset);
         }
 
-        public BlobHandle GetBlob(BlobBuilder builder)
+        public BlobHandle GetOrAddBlob(BlobBuilder builder)
         {
             // TODO: avoid making a copy if the blob exists in the index
-            return GetBlob(builder.ToImmutableArray());
+            return GetOrAddBlob(builder.ToImmutableArray());
         }
 
-        public BlobHandle GetBlob(ImmutableArray<byte> blob)
+        public BlobHandle GetOrAddBlob(ImmutableArray<byte> blob)
         {
             BlobHandle index;
             if (!_blobs.TryGetValue(blob, out index))
@@ -96,24 +86,26 @@ namespace Roslyn.Reflection.Metadata.Ecma335
 
                 _blobHeapSize += BlobWriterImpl.GetCompressedIntegerSize(blob.Length) + blob.Length;
             }
-            
+
             return index;
         }
 
-        public BlobHandle GetConstantBlob(object value)
+        public BlobHandle GetOrAddConstantBlob(object value)
         {
             string str = value as string;
             if (str != null)
             {
-                return this.GetBlob(str);
+                return GetOrAddBlob(str);
             }
 
-            var writer = new BlobBuilder();
-            writer.WriteConstant(value);
-            return this.GetBlob(writer);
+            var builder = PooledBlobBuilder.GetInstance();
+            builder.WriteConstant(value);
+            var result = GetOrAddBlob(builder);
+            builder.Free();
+            return result;
         }
 
-        public BlobHandle GetBlob(string str)
+        public BlobHandle GetOrAddBlob(string str)
         {
             byte[] byteArray = new byte[str.Length * 2];
             int i = 0;
@@ -123,15 +115,15 @@ namespace Roslyn.Reflection.Metadata.Ecma335
                 byteArray[i++] = (byte)(ch >> 8);
             }
 
-            return this.GetBlob(ImmutableArray.Create(byteArray));
+            return GetOrAddBlob(ImmutableArray.Create(byteArray));
         }
 
-        public BlobHandle GetBlobUtf8(string str)
+        public BlobHandle GetOrAddBlobUtf8(string str)
         {
-            return GetBlob(ImmutableArray.Create(Encoding.UTF8.GetBytes(str)));
+            return GetOrAddBlob(ImmutableArray.Create(Encoding.UTF8.GetBytes(str)));
         }
 
-        public GuidHandle GetGuid(Guid guid)
+        public GuidHandle GetOrAddGuid(Guid guid)
         {
             if (guid == Guid.Empty)
             {
@@ -174,7 +166,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
             return MetadataTokens.GuidHandle((_guidWriter.Count >> 4) + 1);
         }
 
-        public StringHandle GetString(string str)
+        public StringHandle GetOrAddString(string str)
         {
             StringHandle index;
             if (str.Length == 0)
@@ -201,7 +193,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
             int offset = MetadataTokens.GetHeapOffset(handle);
             return (offset == 0) ? 0 : _blobHeapStartOffset + offset;
         }
-
+        
         public int GetHeapOffset(GuidHandle handle)
         {
             return MetadataTokens.GetHeapOffset(handle);
@@ -212,17 +204,27 @@ namespace Roslyn.Reflection.Metadata.Ecma335
             return MetadataTokens.GetHeapOffset(handle);
         }
 
-        public UserStringHandle GetUserString(string str)
+        /// <exception cref="ImageFormatLimitationException">The remaining space on the heap is too small to fit the string.</exception>
+        public UserStringHandle GetOrAddUserString(string str)
         {
             int index;
             if (!_userStrings.TryGetValue(str, out index))
             {
                 Debug.Assert(!_streamsAreComplete);
 
-                index = _userStringWriter.Position + _userStringHeapStartOffset;
-                _userStrings.Add(str, index);
-                _userStringWriter.WriteCompressedInteger(str.Length * 2 + 1);
+                int startPosition = _userStringWriter.Count;
+                int encodedLength = str.Length * 2 + 1;
+                index = startPosition + _userStringHeapStartOffset;
 
+                // Native metadata emitter allows strings to exceed the heap size limit as long 
+                // as the index is within the limits (see https://github.com/dotnet/roslyn/issues/9852)
+                if (index >= UserStringHeapSizeLimit)
+                {
+                    throw ImageFormatLimitationException.HeapSizeLimitExceeded(HeapIndex.UserString);
+                }
+
+                _userStrings.Add(str, index);
+                _userStringWriter.WriteCompressedInteger(encodedLength);
                 _userStringWriter.WriteUTF16(str);
 
                 // Write out a trailing byte indicating if the string is really quite simple
@@ -323,7 +325,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
             string prev = string.Empty;
             foreach (KeyValuePair<string, StringHandle> entry in sorted)
             {
-                int position = _stringHeapStartOffset + _stringWriter.Position;
+                int position = _stringHeapStartOffset + _stringWriter.Count;
                 
                 // It is important to use ordinal comparison otherwise we'll use the current culture!
                 if (prev.EndsWith(entry.Key, StringComparison.Ordinal) && !BlobUtilities.IsLowSurrogateChar(entry.Key[0]))
@@ -380,7 +382,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
 
         private void WriteAlignedBlobHeap(BlobBuilder builder)
         {
-            int alignment = BitArithmeticUtilities.Align(_blobHeapSize, 4) - _blobHeapSize;
+            int alignment = BitArithmetic.Align(_blobHeapSize, 4) - _blobHeapSize;
 
             var writer = new BlobWriter(builder.ReserveBytes(_blobHeapSize + alignment));
 
@@ -406,7 +408,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
         {
             int length = source.Count;
             target.LinkSuffix(source);
-            target.WriteBytes(0, BitArithmeticUtilities.Align(length, 4) - length);
+            target.WriteBytes(0, BitArithmetic.Align(length, 4) - length);
         }
     }
 }

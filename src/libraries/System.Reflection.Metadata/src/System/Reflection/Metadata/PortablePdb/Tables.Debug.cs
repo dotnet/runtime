@@ -204,7 +204,7 @@ namespace System.Reflection.Metadata.Ecma335
 
             if (unchecked((int)result) != result)
             {
-                MemoryBlock.ThrowValueOverflow();
+                Throw.ValueOverflow();
             }
 
             return (int)result;

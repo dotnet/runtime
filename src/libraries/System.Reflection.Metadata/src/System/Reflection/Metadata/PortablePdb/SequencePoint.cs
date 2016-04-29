@@ -12,47 +12,40 @@ namespace System.Reflection.Metadata
     {
         public const int HiddenLine = 0xfeefee;
 
-        private DocumentHandle _document;
-        private int _offset;
-        private int _startLine;
-        private int _endLine;
-        private ushort _startColumn;
-        private ushort _endColumn;
-
-        public DocumentHandle Document { get { return _document; } }
-        public int Offset { get { return _offset; } }
-        public int StartLine { get { return _startLine; } }
-        public int EndLine { get { return _endLine; } }
-        public int StartColumn { get { return _startColumn; } }
-        public int EndColumn { get { return _endColumn; } }
+        public DocumentHandle Document { get; }
+        public int Offset { get; }
+        public int StartLine { get; }
+        public int EndLine { get; }
+        public int StartColumn { get; }
+        public int EndColumn { get; }
 
         internal SequencePoint(DocumentHandle document, int offset)
         {
-            _document = document;
-            _offset = offset;
-            _startLine = HiddenLine;
-            _startColumn = 0;
-            _endLine = HiddenLine;
-            _endColumn = 0;
+            Document = document;
+            Offset = offset;
+            StartLine = HiddenLine;
+            StartColumn = 0;
+            EndLine = HiddenLine;
+            EndColumn = 0;
         }
 
         internal SequencePoint(DocumentHandle document, int offset, int startLine, ushort startColumn, int endLine, ushort endColumn)
         {
-            _document = document;
-            _offset = offset;
-            _startLine = startLine;
-            _startColumn = startColumn;
-            _endLine = endLine;
-            _endColumn = endColumn;
+            Document = document;
+            Offset = offset;
+            StartLine = startLine;
+            StartColumn = startColumn;
+            EndLine = endLine;
+            EndColumn = endColumn;
         }
 
         public override int GetHashCode()
         {
-            return Hash.Combine(_document.RowId,
-                   Hash.Combine(_offset,
-                   Hash.Combine(_startLine,
-                   Hash.Combine(_startColumn,
-                   Hash.Combine(_endLine, _endColumn)))));
+            return Hash.Combine(Document.RowId,
+                   Hash.Combine(Offset,
+                   Hash.Combine(StartLine,
+                   Hash.Combine(StartColumn,
+                   Hash.Combine(EndLine, EndColumn)))));
         }
 
         public override bool Equals(object obj)
@@ -62,25 +55,19 @@ namespace System.Reflection.Metadata
 
         public bool Equals(SequencePoint other)
         {
-            return _document == other._document
-                && _offset == other._offset
-                && _startLine == other._startLine
-                && _startColumn == other._startColumn
-                && _endLine == other._endLine
-                && _endColumn == other._endColumn;
+            return Document == other.Document
+                && Offset == other.Offset
+                && StartLine == other.StartLine
+                && StartColumn == other.StartColumn
+                && EndLine == other.EndLine
+                && EndColumn == other.EndColumn;
         }
 
-        public bool IsHidden
-        {
-            get
-            {
-                return _startLine == 0xfeefee;
-            }
-        }
+        public bool IsHidden => StartLine == 0xfeefee;
 
         private string GetDebuggerDisplay()
         {
-            return IsHidden ? "<hidden>" : string.Format("{0}: ({1}, {2}) - ({3}, {4})", _offset, _startLine, _startColumn, _endLine, _endColumn);
+            return IsHidden ? "<hidden>" : $"{Offset}: ({StartLine}, {StartColumn}) - ({EndLine}, {EndColumn})";
         }
     }
 }
