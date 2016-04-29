@@ -14,10 +14,6 @@
       "target": "project",
       "version": "1.0.0-*"
     },
-    "Microsoft.Extensions.HashCodeCombiner.Sources": {
-      "type": "build",
-      "version": "1.0.0-rc2-20459"
-    },
     "Newtonsoft.Json": "7.0.1"
   },
   "frameworks": {
