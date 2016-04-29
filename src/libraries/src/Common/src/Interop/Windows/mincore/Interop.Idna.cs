@@ -14,9 +14,9 @@ internal partial class Interop
         //
 
         [DllImport("api-ms-win-core-localization-l1-2-0.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern int IdnToAscii(
+        internal static unsafe extern int IdnToAscii(
                                         uint dwFlags,
-                                        string lpUnicodeCharStr,
+                                        char* lpUnicodeCharStr,
                                         int cchUnicodeChar,
                                         [System.Runtime.InteropServices.OutAttribute()]
 
@@ -24,9 +24,9 @@ internal partial class Interop
                                         int cchASCIIChar);
 
         [DllImport("api-ms-win-core-localization-l1-2-0.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern int IdnToUnicode(
+        internal static unsafe extern int IdnToUnicode(
                                         uint dwFlags,
-                                        string lpASCIICharStr,
+                                        char* lpASCIICharStr,
                                         int cchASCIIChar,
                                         [System.Runtime.InteropServices.OutAttribute()]
 
