@@ -27,13 +27,10 @@ namespace System.IO.MemoryMappedFiles
             SafeFileHandle fileHandle = fileStream != null ? fileStream.SafeFileHandle : null;
             Interop.mincore.SECURITY_ATTRIBUTES secAttrs = GetSecAttrs(inheritability);
 
-            // split the long into two ints
-            int capacityLow = unchecked((int)(capacity & 0x00000000FFFFFFFFL));
-            int capacityHigh = unchecked((int)(capacity >> 32));
 
             SafeMemoryMappedFileHandle handle = fileHandle != null ?
-                Interop.mincore.CreateFileMapping(fileHandle, ref secAttrs, GetPageAccess(access) | (int)options, capacityHigh, capacityLow, mapName) :
-                Interop.mincore.CreateFileMapping(INVALID_HANDLE_VALUE, ref secAttrs, GetPageAccess(access) | (int)options, capacityHigh, capacityLow, mapName);
+                Interop.CreateFileMapping(fileHandle, ref secAttrs, GetPageAccess(access) | (int)options, capacity, mapName) :
+                Interop.CreateFileMapping(INVALID_HANDLE_VALUE, ref secAttrs, GetPageAccess(access) | (int)options, capacity, mapName);
 
             int errorCode = Marshal.GetLastWin32Error();
             if (!handle.IsInvalid)
@@ -98,10 +95,6 @@ namespace System.IO.MemoryMappedFiles
             SafeMemoryMappedFileHandle handle = null;
             Interop.mincore.SECURITY_ATTRIBUTES secAttrs = GetSecAttrs(inheritability);
 
-            // split the long into two ints
-            int capacityLow = unchecked((int)(capacity & 0x00000000FFFFFFFFL));
-            int capacityHigh = unchecked((int)(capacity >> 32));
-
             int waitRetries = 14;   //((2^13)-1)*10ms == approximately 1.4mins
             int waitSleep = 0;
 
@@ -109,8 +102,8 @@ namespace System.IO.MemoryMappedFiles
             while (waitRetries > 0)
             {
                 // try to create
-                handle = Interop.mincore.CreateFileMapping(INVALID_HANDLE_VALUE, ref secAttrs,
-                    GetPageAccess(access) | (int)options, capacityHigh, capacityLow, mapName);
+                handle = Interop.CreateFileMapping(INVALID_HANDLE_VALUE, ref secAttrs,
+                    GetPageAccess(access) | (int)options, capacity, mapName);
 
                 if (!handle.IsInvalid)
                 {
@@ -127,7 +120,7 @@ namespace System.IO.MemoryMappedFiles
                 }
 
                 // try to open
-                handle = Interop.mincore.OpenFileMapping(GetFileMapAccess(access), (inheritability &
+                handle = Interop.OpenFileMapping(GetFileMapAccess(access), (inheritability &
                     HandleInheritability.Inheritable) != 0, mapName);
 
                 // valid handle
@@ -228,7 +221,7 @@ namespace System.IO.MemoryMappedFiles
         private static SafeMemoryMappedFileHandle OpenCore(
             string mapName, HandleInheritability inheritability, int desiredAccessRights, bool createOrOpen)
         {
-            SafeMemoryMappedFileHandle handle = Interop.mincore.OpenFileMapping(
+            SafeMemoryMappedFileHandle handle = Interop.OpenFileMapping(
                 desiredAccessRights, (inheritability & HandleInheritability.Inheritable) != 0, mapName);
             int lastError = Marshal.GetLastWin32Error();
 
