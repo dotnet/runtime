@@ -25,13 +25,21 @@
             <param name="destination">The location to write to.</param>
             <param name="value">The value to write.</param>
         </member>
-        <member name="M:System.Runtime.CompilerServices.Unsafe.Write``1(System.Void*,``0@)">
+        <member name="M:System.Runtime.CompilerServices.Unsafe.Copy``1(System.Void*,``0@)">
             <summary>
-            Writes a value of type T to the given location.
+            Copies a value of type T to the given location.
             </summary>
-            <typeparam name="T">The type of value to write.</typeparam>
-            <param name="destination">The location to write to.</param>
-            <param name="value">The value to write.</param>
+            <typeparam name="T">The type of value to copy.</typeparam>
+            <param name="destination">The location to copy to.</param>
+            <param name="source">A reference to the value to copy.</param>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.Unsafe.Copy``1(``0@,System.Void*)">
+            <summary>
+            Copies a value of type T to the given location.
+            </summary>
+            <typeparam name="T">The type of value to copy.</typeparam>
+            <param name="destination">The location to copy to.</param>
+            <param name="source">A pointer to the value to copy.</param>
         </member>
         <member name="M:System.Runtime.CompilerServices.Unsafe.AsPointer``1(``0@)">
             <summary>
