@@ -3,9 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+
 using Xunit;
 
-namespace System.Tests
+namespace System.PrivateUri.Tests
 {
     public class UriBuilderTests
     {
@@ -36,14 +37,14 @@ namespace System.Tests
             uriBuilder.Query = "?";
             Assert.Equal("?", uriBuilder.Query);
         }
-        
+
         [Fact]
         public void Ctor_Empty()
         {
             var uriBuilder = new UriBuilder();
             VerifyUriBuilder(uriBuilder, scheme: "http", userName: "", password: "", host: "localhost", port: -1, path: "/", query: "", fragment: "");
         }
-        
+
         [Theory]
         [InlineData("http://host/", true, "http", "", "", "host", 80, "/", "", "")]
         [InlineData("http://username@host/", true, "http", "username", "", "host", 80, "/", "", "")]
@@ -59,7 +60,7 @@ namespace System.Tests
         {
             var uriBuilder = new UriBuilder(uriString);
             VerifyUriBuilder(uriBuilder, scheme, username, password, host, port, path, query, fragment);
-            
+
             if (createUri)
             {
                 uriBuilder = new UriBuilder(new Uri(uriString, UriKind.RelativeOrAbsolute));
@@ -113,7 +114,7 @@ namespace System.Tests
         [InlineData("http", "", 120, "http", "")]
         [InlineData("", "host", 140, "", "host")]
         [InlineData("", "", 160, "", "")]
-        [InlineData("http", null, 180,"http", "")]
+        [InlineData("http", null, 180, "http", "")]
         [InlineData(null, "", -1, "", "")]
         [InlineData(null, null, 65535, "", "")]
         public void Ctor_String_String_Int(string scheme, string host, int port, string expectedScheme, string expectedHost)
@@ -126,7 +127,7 @@ namespace System.Tests
         [InlineData("http", "host", 0, "/path", "http", "host", "/path")]
         [InlineData("HTTP", "host", 20, "/path1/path2", "http", "host", "/path1/path2")]
         [InlineData("http", "[::1]", 40, "/", "http", "[::1]", "/")]
-        [InlineData("https", "::1]", 60, "/path1/",  "https", "[::1]]", "/path1/")]
+        [InlineData("https", "::1]", 60, "/path1/", "https", "[::1]]", "/path1/")]
         [InlineData("http", "::1", 80, null, "http", "[::1]", "/")]
         [InlineData("http1:http2", "host", 100, "path1", "http1", "host", "path1")]
         [InlineData("http", "", 120, "path1/path2", "http", "", "path1/path2")]

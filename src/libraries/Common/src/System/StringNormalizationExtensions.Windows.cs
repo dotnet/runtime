@@ -85,7 +85,7 @@ namespace System
             // Someplace to stick our buffer
             char[] cBuffer = null;
 
-            for (; ;)
+            for (;;)
             {
                 // (re)allocation buffer and normalize string
                 cBuffer = new char[iLength];
