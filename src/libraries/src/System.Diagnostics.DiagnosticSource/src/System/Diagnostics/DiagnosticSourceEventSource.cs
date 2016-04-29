@@ -33,18 +33,18 @@ namespace System.Diagnostics
     ///   
     ///   * It is a newline separated list of FILTER_AND_PAYLOAD_SPEC
     ///   * a FILTER_AND_PAYLOAD_SPEC can be 
-    ///       * EVENT_NAME : TRANSFORM_SPEC
+    ///       * EVENT_NAME : TRANSFORM_SPECS
     ///       * EMPTY - turns on all sources with implicit payload elements. 
     ///   * an EVENTNAME can be  
     ///       * DIAGNOSTIC_SOURCE_NAME / DIAGNOSTC_EVENT_NAME @ EVENT_SOURCE_EVENTNAME  - give the name as well as the EventSource event to log it under.  
     ///       * DIAGNOSTIC_SOURCE_NAME / DIAGNOSTC_EVENT_NAME   
     ///       * DIAGNOSTIC_SOURCE_NAME    - which wildcards every event in the Diagnostic source or 
     ///       * EMPTY                     - which turns on all sources
-    ///   * a TRANSFORM_SPEC can be 
-    ///       * - TRANSFORM_SPEC - the '-' indicates that implicit payload elements should be suppressed 
+    ///   * TRANSFORM_SPEC is a semicolon separated list of TRANSFORM_SPEC, which can be 
+    ///       * - TRANSFORM_SPEC               - the '-' indicates that implicit payload elements should be suppressed 
     ///       * VARIABLE_NAME = PROPERTY_SPEC  - indicates that a payload element 'VARIABLE_NAME' is created from PROPERTY_SPEC
     ///       * PROPERTY_SPEC                  - This is a shortcut where VARIABLE_NAME is the LAST property name
-    ///   * a PROPERTY_SPEC ca be
+    ///   * a PROPERTY_SPEC is basically a list of names separated by '.'  
     ///       * PROPERTY_NAME                  - fetches a property from the DiagnosticSource payload object
     ///       * PROPERTY_NAME . PROPERTY NAME  - fetches a sub-property of the object. 
     /// 
