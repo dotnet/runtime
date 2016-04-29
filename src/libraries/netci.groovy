@@ -24,7 +24,7 @@ def osGroupMap = ['Ubuntu14.04':'Linux',
 // Map of os -> nuget runtime
 def targetNugetRuntimeMap = ['OSX' : 'osx.10.10-x64',
                              'Ubuntu14.04' : 'ubuntu.14.04-x64',
-                             'Ubuntu16.04' : 'ubuntu.16.04-x64',
+                             'Ubuntu16.04' : 'ubuntu.14.04-x64',
                              'Debian8.2' : 'ubuntu.14.04-x64',
                              'CentOS7.1' : 'centos.7-x64',
                              'OpenSUSE13.2' : 'ubuntu.14.04-x64',
