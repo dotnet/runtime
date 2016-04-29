@@ -954,31 +954,27 @@ namespace System.Net.Http.Functional.Tests
         #endregion
 
         #region Version tests
-        // The HTTP RFC 7230 states that servers are NOT required to respond back with the same
-        // minor version if they support a higher minor version. In fact, the RFC states that
-        // servers SHOULD send back the highest minor version they support. So, testing the
-        // response version to see if the client sent a particular request version only works
-        // for some servers. In particular the 'Http2Servers' used in these tests always seem
-        // to echo the minor version of the request.
-        [Theory, MemberData(nameof(Http2Servers))]
-        public async Task SendAsync_RequestVersion10_ServerReceivesVersion10Request(Uri server)
+        [Fact]
+        public async Task SendAsync_RequestVersion10_ServerReceivesVersion10Request()
         {
-            Version responseVersion = await SendRequestAndGetResponseVersionAsync(new Version(1, 0), server);
-            Assert.Equal(new Version(1, 0), responseVersion);
+            Version receivedRequestVersion = await SendRequestAndGetRequestVersionAsync(new Version(1, 0));
+            Assert.Equal(new Version(1, 0), receivedRequestVersion);
         }
 
-        [Theory, MemberData(nameof(Http2Servers))]
-        public async Task SendAsync_RequestVersion11_ServerReceivesVersion11Request(Uri server)
+        [Fact]
+        public async Task SendAsync_RequestVersion11_ServerReceivesVersion11Request()
         {
-            Version responseVersion = await SendRequestAndGetResponseVersionAsync(new Version(1, 1), server);
-            Assert.Equal(new Version(1, 1), responseVersion);
+            Version receivedRequestVersion = await SendRequestAndGetRequestVersionAsync(new Version(1, 1));
+            Assert.Equal(new Version(1, 1), receivedRequestVersion);
         }
 
-        [Theory, MemberData(nameof(Http2Servers))]
-        public async Task SendAsync_RequestVersionNotSpecified_ServerReceivesVersion11Request(Uri server)
+        [Fact]
+        public async Task SendAsync_RequestVersionNotSpecified_ServerReceivesVersion11Request()
         {
-            Version responseVersion = await SendRequestAndGetResponseVersionAsync(null, server);
-            Assert.Equal(new Version(1, 1), responseVersion);
+            // The default value for HttpRequestMessage.Version is Version(1,1).
+            // So, we need to set something different (0,0), to test the "unknown" version.
+            Version receivedRequestVersion = await SendRequestAndGetRequestVersionAsync(new Version(0,0));
+            Assert.Equal(new Version(1, 1), receivedRequestVersion);
         }
 
         [Theory, MemberData(nameof(Http2Servers))]
@@ -986,33 +982,65 @@ namespace System.Net.Http.Functional.Tests
         {
             // We don't currently have a good way to test whether HTTP/2 is supported without
             // using the same mechanism we're trying to test, so for now we allow both 2.0 and 1.1 responses.
-            Version responseVersion = await SendRequestAndGetResponseVersionAsync(new Version(2, 0), server);
-            Assert.True(
-                responseVersion == new Version(2, 0) || 
-                responseVersion == new Version(1, 1),
-                "Response version " + responseVersion);
-        }
-
-        private async Task<Version> SendRequestAndGetResponseVersionAsync(Version requestVersion, Uri server)
-        {
             var request = new HttpRequestMessage(HttpMethod.Get, server);
-            if (requestVersion != null)
-            {
-                request.Version = requestVersion;
-            }
-            else
-            {
-                // The default value for HttpRequestMessage.Version is Version(1,1).
-                // So, we need to set something different to test the "unknown" version.
-                request.Version = new Version(0,0);
-            }
+            request.Version = new Version(2, 0);
 
             using (var client = new HttpClient())
             using (HttpResponseMessage response = await client.SendAsync(request))
             {
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                return response.Version;
+                Assert.True(
+                    response.Version == new Version(2, 0) || 
+                    response.Version == new Version(1, 1),
+                    "Response version " + response.Version);
             }
+        }
+
+        private async Task<Version> SendRequestAndGetRequestVersionAsync(Version requestVersion)
+        {
+            Version receivedRequestVersion = null;
+
+            await LoopbackServer.CreateClientAndServerAsync(async (handler, client, server, url) =>
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get, url);
+                request.Version = requestVersion;
+
+                Task<HttpResponseMessage> getResponse = client.SendAsync(request);
+
+                await LoopbackServer.AcceptSocketAsync(server, async (s, stream, reader, writer) =>
+                {
+                    string statusLine = reader.ReadLine();
+                    while (!string.IsNullOrEmpty(reader.ReadLine())) ;
+
+                    if (statusLine.Contains("/1.0"))
+                    {
+                        receivedRequestVersion = new Version(1,0);
+                    }
+                    else if (statusLine.Contains("/1.1"))
+                    {
+                        receivedRequestVersion = new Version(1,1);
+                    }
+                    else
+                    {
+                        Assert.True(false, "Invalid HTTP request version");
+                    }
+
+                    await writer.WriteAsync(
+                        $"HTTP/1.1 200 OK\r\n" +
+                        $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
+                        "Content-Length: 0\r\n" +
+                        "\r\n");
+                    await writer.FlushAsync();
+                    s.Shutdown(SocketShutdown.Send);
+                });
+
+                using (HttpResponseMessage response = await getResponse)
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                }
+            });
+            
+            return receivedRequestVersion;
         }
         #endregion
 
