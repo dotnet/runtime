@@ -412,7 +412,7 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   #define REG_PREV(reg)           ((regNumber)((unsigned)(reg) - 1))
 
   #define REG_FP_FIRST             REG_XMM0
-  #define REG_FP_LAST              REG_XMM15
+  #define REG_FP_LAST              REG_XMM7
   #define FIRST_FP_ARGREG          REG_XMM0
   #define LAST_FP_ARGREG           REG_XMM3
   #define REG_FLTARG_0             REG_XMM0

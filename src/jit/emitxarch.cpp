@@ -101,6 +101,7 @@ bool emitter::IsThreeOperandBinaryAVXInstruction(instruction ins)
 
             );
 }
+
 // Returns true if the AVX instruction is a move operator that requires 3 operands.
 // When we emit an instruction with only two operands, we will duplicate the source
 // register in the vvvv field.  This is because these merge sources into the dest.
@@ -116,7 +117,7 @@ bool emitter::IsThreeOperandMoveAVXInstruction(instruction ins)
             ins == INS_movss
             );
 }
-#endif
+#endif // FEATURE_AVX_SUPPORT
 
 // Returns true if the AVX instruction is a 4-byte opcode.
 // Note that this should be true for any of the instructions in instrsXArch.h
@@ -321,35 +322,39 @@ bool IsExtendedReg(regNumber reg, emitAttr attr)
 #endif
 }
 
-// Amd64: Since XMM registers overlap with YMM registers, this routine
+// Since XMM registers overlap with YMM registers, this routine
 // can also used to know whether a YMM register in case of AVX instructions.
 //
-// X86: we have XMM0-XMM7 available but this routine cannot be used to 
+// Legacy X86: we have XMM0-XMM7 available but this routine cannot be used to 
 // determine whether a reg is XMM because they share the same reg numbers
 // with integer registers.  Hence always return false.
 bool IsXMMReg(regNumber reg)
 {
+#ifndef LEGACY_BACKEND
 #ifdef _TARGET_AMD64_
     return (reg >= REG_XMM0) && (reg <= REG_XMM15);
-#else
+#else // !_TARGET_AMD64_
+    return (reg >= REG_XMM0) && (reg <= REG_XMM7);
+#endif // !_TARGET_AMD64_
+#else // LEGACY_BACKEND
     return false;
-#endif
+#endif // LEGACY_BACKEND
 }
 
 // Returns bits to be encoded in instruction for the given register.
 regNumber RegEncoding(regNumber reg)
 {
-#ifdef _TARGET_AMD64_
-    // Amd64: XMM registers do not share the same reg numbers as integer registers.
+#ifndef LEGACY_BACKEND
+    // XMM registers do not share the same reg numbers as integer registers.
     // But register encoding of integer and XMM registers is the same.
     // Therefore, subtract XMMBASE from regNumber to get the register encoding 
     // in case of XMM registers.
     return (regNumber)((IsXMMReg(reg) ? reg-XMMBASE : reg) & 0x7);
-#else
-    // X86: XMM registers share the same reg numbers as integer registers and
+#else // LEGACY_BACKEND
+    // Legacy X86: XMM registers share the same reg numbers as integer registers and
     // hence nothing to do to get reg encoding.
     return (regNumber) (reg & 0x7);
-#endif
+#endif // LEGACY_BACKEND
 }
 
 // Utility routines that abstract the logic of adding REX.W, REX.R, REX.X, REX.B and REX prefixes
@@ -447,7 +452,7 @@ bool isPrefix(BYTE b)
 // Outputs VEX prefix (in case of AVX instructions) and REX.R/X/W/B otherwise.
 unsigned emitter::emitOutputRexOrVexPrefixIfNeeded(instruction ins, BYTE* dst, size_t & code)
 {
-#ifdef _TARGET_AMD64_
+#ifdef _TARGET_AMD64_ // TODO-x86: This needs to be enabled for AVX support on x86.
     if (hasVexPrefix(code))
     {
         // Only AVX instructions should have a VEX prefix
@@ -598,7 +603,7 @@ unsigned emitter::emitOutputRexOrVexPrefixIfNeeded(instruction ins, BYTE* dst, s
 
         return emitOutputByte(dst, prefix);
     }
-#endif //_TARGET_AMD64_
+#endif // _TARGET_AMD64_
 
     return 0;
 }
@@ -667,7 +672,7 @@ unsigned  emitter::emitGetVexPrefixSize(instruction ins, emitAttr attr)
 //=opcodeSize + vexPrefixAdjustedSize
 unsigned emitter::emitGetVexPrefixAdjustedSize(instruction ins, emitAttr attr, size_t code)
 {
-#ifdef _TARGET_AMD64_
+#ifdef FEATURE_AVX_SUPPORT
     if (IsAVXInstruction(ins))
     {
         unsigned vexPrefixAdjustedSize = emitGetVexPrefixSize(ins, attr);
@@ -703,7 +708,8 @@ unsigned emitter::emitGetVexPrefixAdjustedSize(instruction ins, emitAttr attr, s
             
         return vexPrefixAdjustedSize;
     }
-#endif
+#endif // FEATURE_AVX_SUPPORT
+
     return 0;
 }
 
@@ -891,7 +897,7 @@ emitter::insFormat   emitter::emitInsModeFormat(instruction ins, insFormat base,
 // This is a helper we need due to Vs Whidbey #254016 in order to distinguish
 // if we can not possibly be updating an integer register. This is not the best
 // solution, but the other ones (see bug) are going to be much more complicated.
-// The issue here is that on x86, the XMM registers us the same register numbers
+// The issue here is that on legacy x86, the XMM registers use the same register numbers
 // as the general purpose registers, so we need to distinguish them.
 // We really only need this for x86 where this issue exists.
 bool emitter::emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc* id)
@@ -902,11 +908,11 @@ bool emitter::emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc* id)
     if (!IsSSEOrAVXInstruction(ins)
         || ins == INS_mov_xmm2i 
         || ins == INS_cvttsd2si
-#ifdef _TARGET_AMD64_
+#ifndef LEGACY_BACKEND
         || ins == INS_cvttss2si 
         || ins == INS_cvtsd2si 
         || ins == INS_cvtss2si
-#endif // _TARGET_AMD64_
+#endif // !LEGACY_BACKEND
         )
     {
         return false;
@@ -1189,10 +1195,7 @@ unsigned            emitter::insEncodeReg345(instruction ins, regNumber reg, emi
 #endif // _TARGET_AMD64_
 
     reg = RegEncoding(reg);
-#ifdef _TARGET_AMD64_
-    assert(reg < REG_R8);
-#endif // !_TARGET_AMD64_
-
+    assert(reg < 8);
     return(reg<< 3);
 
 #else // LEGACY_BACKEND
@@ -2375,7 +2378,7 @@ void                emitter::emitIns(instruction ins)
             ins == INS_stosb   ||
             ins == INS_stosd   ||
             ins == INS_stosp 
-#ifdef _TARGET_AMD64_
+#ifndef LEGACY_BACKEND
             || ins == INS_vzeroupper 
 #endif
             );
@@ -2397,7 +2400,7 @@ void                emitter::emitIns(instruction ins)
     else
         sz = 1;
 
-#ifdef _TARGET_AMD64_
+#ifndef LEGACY_BACKEND
     // Account for 2-byte VEX prefix in case of vzeroupper
     if (ins == INS_vzeroupper)
     {
@@ -5933,10 +5936,9 @@ const char*         emitter::emitRegName(regNumber reg, emitAttr attr, bool varN
     {
     case EA_32BYTE:
         return emitYMMregName(reg);
-        break;
+
     case EA_16BYTE:
         return emitXMMregName(reg);
-        break;
 
     case EA_8BYTE:
         break;
@@ -6018,6 +6020,14 @@ APPEND_SUFFIX:
 
     switch (EA_SIZE(attr))
     {
+#ifndef LEGACY_BACKEND
+    case EA_32BYTE:
+        return emitYMMregName(reg);
+
+    case EA_16BYTE:
+        return emitXMMregName(reg);
+#endif // LEGACY_BACKEND
+
     case EA_4BYTE:
         break;
 
@@ -9639,10 +9649,11 @@ BYTE*               emitter::emitOutputRI(BYTE* dst, instrDesc* id)
 
     noway_assert(emitVerifyEncodable(ins, size, reg));
 
-#ifdef _TARGET_AMD64_
+#ifndef LEGACY_BACKEND
     if (IsSSEOrAVXInstruction(ins))
-    // Handle SSE2 instructions of the form "opcode reg, immed8"
     {
+        // Handle SSE2 instructions of the form "opcode reg, immed8"
+
         assert(id->idGCref() == GCT_NONE);
         assert(valInByte);
         assert(ins == INS_psrldq || ins == INS_pslldq);
@@ -9683,7 +9694,7 @@ BYTE*               emitter::emitOutputRI(BYTE* dst, instrDesc* id)
 
         return dst;
     }
-#endif //_TARGET_AMD64_
+#endif // !LEGACY_BACKEND
 
     // The 'mov' opcode is special
     if  (ins == INS_mov)
