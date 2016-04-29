@@ -385,6 +385,12 @@ Exit:
             AddRef();
             *ppv = this;
         }
+		else if (IsEqualIID(riid, __uuidof(ICLRPrivResource)))
+		{
+			AddRef();
+			// upcasting is safe
+			*ppv = static_cast<ICLRPrivResource *>(this);
+		}
         else if (IsEqualIID(riid, __uuidof(ICLRPrivResourceAssembly)))
         {
             AddRef();
