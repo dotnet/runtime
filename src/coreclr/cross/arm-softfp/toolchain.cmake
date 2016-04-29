@@ -4,14 +4,24 @@ set(CMAKE_SYSTEM_NAME Linux)
 set(CMAKE_SYSTEM_VERSION 1)
 set(CMAKE_SYSTEM_PROCESSOR armv7l)
 
+## Specify the toolchain
+set(TOOLCHAIN "arm-linux-gnueabi")
+set(TOOLCHAIN_PREFIX ${TOOLCHAIN}-)
+#set(CMAKE_C_COMPILER ${TOOLCHAIN_PREFIX}gcc)
+#set(CMAKE_CXX_COMPILER ${TOOLCHAIN_PREFIX}g++)
+#set(CMAKE_ASM_COMPILER ${TOOLCHAIN_PREFIX}as)
+#set(CMAKE_AR ${TOOLCHAIN_PREFIX}ar)
+#set(CMAKE_OBJCOPY ${TOOLCHAIN_PREFIX}objcopy)
+#set(CMAKE_OBJDUMP ${TOOLCHAIN_PREFIX}objdump)
+
 add_compile_options(-target armv7-linux-gnueabi)
 add_compile_options(-mthumb)
 add_compile_options(-mfpu=vfpv3)
 add_compile_options(--sysroot=${CROSS_ROOTFS})
 
-set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -target arm-linux-gnueabi")
-set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -B${CROSS_ROOTFS}/usr/lib/arm-linux-gnueabi")
-set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -L${CROSS_ROOTFS}/lib/arm-linux-gnueabi -L${CROSS_ROOTFS}/usr/lib/arm-linux-gnueabi")
+set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -target ${TOOLCHAIN}")
+set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -B${CROSS_ROOTFS}/usr/lib/${TOOLCHAIN}")
+set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -L${CROSS_ROOTFS}/lib/${TOOLCHAIN} -L${CROSS_ROOTFS}/usr/lib/${TOOLCHAIN}")
 set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} --sysroot=${CROSS_ROOTFS}")
 
 set(CMAKE_EXE_LINKER_FLAGS    "${CMAKE_EXE_LINKER_FLAGS}    ${CROSS_LINK_FLAGS}" CACHE STRING "" FORCE)
