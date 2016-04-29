@@ -147,6 +147,8 @@ bool hostpolicy_exists_in_svc(pal::string_t* resolved_dir)
 SHARED_API int hostfxr_main(const int argc, const pal::char_t* argv[])
 {
     trace::setup();
+    
+    trace::info(_X("--- Invoked hostfxr [commit hash: %s] main"), _STRINGIFY(REPO_COMMIT_HASH));
 
     fx_muxer_t muxer;
     return muxer.execute(argc, argv);
