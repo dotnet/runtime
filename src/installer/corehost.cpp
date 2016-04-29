@@ -96,7 +96,7 @@ int main(const int argc, const pal::char_t* argv[])
 
     if (trace::is_enabled())
     {
-        trace::info(_X("--- Invoked host main = {"));
+        trace::info(_X("--- Invoked dotnet [commit hash: %s] main = {"), _STRINGIFY(REPO_COMMIT_HASH));
         for (int i = 0; i < argc; ++i)
         {
             trace::info(_X("%s"), argv[i]);
