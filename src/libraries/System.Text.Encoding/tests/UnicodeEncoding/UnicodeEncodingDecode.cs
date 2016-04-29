@@ -132,17 +132,20 @@ namespace System.Text.Tests
         public byte[] GetBigEndianBytes(byte[] littleEndianBytes, int index, int count)
         {
             byte[] bytes = new byte[littleEndianBytes.Length];
-            for (int i = index; i < index + count; i += 2)
+            for (int i = index; i < index + count; i++)
             {
-                if (i + 1 >= bytes.Length)
-                {
-                    continue;
-                }
                 byte b1 = littleEndianBytes[i];
+                if (i + 1 >= index + count)
+                {
+                    bytes[i] = littleEndianBytes[i];
+                    break;
+                }
                 byte b2 = littleEndianBytes[i + 1];
 
                 bytes[i] = b2;
                 bytes[i + 1] = b1;
+
+                i++;
             }
             return bytes;
         }
