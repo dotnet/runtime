@@ -142,7 +142,7 @@ static HRESULT GetAssemblyName(
 
 #if defined(FEATURE_CORECLR) || defined(CROSSGEN_COMPILE)
 
-STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembliesPaths, LPCWSTR pwzTrustedPlatformAssemblies, LPCWSTR pwzPlatformResourceRoots, LPCWSTR pwzAppPaths, LPCWSTR pwzOutputFilename=NULL, LPCWSTR pwzPlatformWinmdPaths=NULL, ICorSvcLogger *pLogger = NULL)
+STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembliesPaths, LPCWSTR pwzTrustedPlatformAssemblies, LPCWSTR pwzPlatformResourceRoots, LPCWSTR pwzAppPaths, LPCWSTR pwzOutputFilename=NULL, LPCWSTR pwzPlatformWinmdPaths=NULL, ICorSvcLogger *pLogger = NULL, LPCWSTR pwszCLRJITPath = nullptr)
 {    
     HRESULT hr = S_OK;
 
@@ -208,6 +208,11 @@ STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembl
 
         if (pwzPlatformWinmdPaths != nullptr)
             zap->SetPlatformWinmdPaths(pwzPlatformWinmdPaths);
+
+#if defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+        if (pwszCLRJITPath != nullptr)
+            zap->SetCLRJITPath(pwszCLRJITPath);
+#endif // defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
 
         zap->SetForceFullTrust(!!(dwFlags & NGENWORKER_FLAGS_FULLTRUSTDOMAIN));
 
@@ -698,24 +703,38 @@ void Zapper::LoadAndInitializeJITForNgen(LPCWSTR pwzJitName, OUT HINSTANCE* phJi
 #if defined(FEATURE_CORECLR) || defined(FEATURE_MERGE_JIT_AND_ENGINE)
     // Note: FEATURE_MERGE_JIT_AND_ENGINE is defined for the Desktop crossgen compilation as well.
     //
-    // For Crossgen, we always look up the JIT from the same location as CoreCLR. 
     PathString CoreClrFolder;
     extern HINSTANCE g_hThisInst;
+
+#if defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+    if (m_CLRJITPath.GetCount() > 0)
+    {
+        // If we have been asked to load a specific JIT binary, load it.
+        CoreClrFolder.Set(m_CLRJITPath);
+        hr = S_OK;
+    }
+    else 
+#endif // defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
     if (WszGetModuleFileName(g_hThisInst, CoreClrFolder))
     {
-        if (SUCCEEDED(CopySystemDirectory(CoreClrFolder, CoreClrFolder)))
+        hr = CopySystemDirectory(CoreClrFolder, CoreClrFolder);
+        if (SUCCEEDED(hr))
         {
             CoreClrFolder.Append(pwzJitName);
 
-            *phJit = ::WszLoadLibrary(CoreClrFolder);
-            if (*phJit == NULL)
-            {
-                hr = HRESULT_FROM_GetLastError();
-            }
-            else
-            {
-                hr = S_OK;
-            }
+        }
+    }
+
+    if (SUCCEEDED(hr))
+    {
+        *phJit = ::WszLoadLibrary(CoreClrFolder);
+        if (*phJit == NULL)
+        {
+            hr = HRESULT_FROM_GetLastError();
+        }
+        else
+        {
+            hr = S_OK;
         }
     }
 #else
@@ -4012,6 +4031,13 @@ void Zapper::PrintErrorMessage(CorZapLogLevel level, HRESULT hr)
     GetHRMsg(hr, message);
     Print(level, W("%s"), message.GetUnicode());
 }
+
+#if defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+void Zapper::SetCLRJITPath(LPCWSTR pwszCLRJITPath)
+{
+    m_CLRJITPath.Set(pwszCLRJITPath);
+}
+#endif // defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
 
 #if defined(FEATURE_CORECLR) || defined(CROSSGEN_COMPILE)
 
