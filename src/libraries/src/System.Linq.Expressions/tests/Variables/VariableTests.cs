@@ -100,5 +100,12 @@ namespace System.Linq.Expressions.Tests
             Assert.Same(variable, variable.Reduce());
             Assert.Throws<ArgumentException>(() => variable.ReduceAndCheck());
         }
+
+        [Fact]
+        public void CannotBePointerType()
+        {
+            Assert.Throws<ArgumentException>("type", () => Expression.Variable(typeof(int*)));
+            Assert.Throws<ArgumentException>("type", () => Expression.Variable(typeof(int*), "pointer"));
+        }
     }
 }
