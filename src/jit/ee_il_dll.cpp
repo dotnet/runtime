@@ -18,6 +18,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 #include "emit.h"
+#include "corexcep.h"
 
 
 /*****************************************************************************/
@@ -1126,6 +1127,114 @@ void Compiler::eeGetSystemVAmd64PassStructInRegisterDescriptor(/*IN*/  CORINFO_C
 }
 
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+
+#if COR_JIT_EE_VERSION <= 460
+
+// Validate the token to determine whether to turn the bad image format exception into
+// verification failure (for backward compatibility)
+static bool isValidTokenForTryResolveToken(ICorJitInfo* corInfo, CORINFO_RESOLVED_TOKEN* resolvedToken)
+{
+    if (!corInfo->isValidToken(resolvedToken->tokenScope, resolvedToken->token))
+        return false;
+
+    CorInfoTokenKind tokenType = resolvedToken->tokenType;
+    switch (TypeFromToken(resolvedToken->token))
+    {
+    case mdtModuleRef:
+    case mdtTypeDef:
+    case mdtTypeRef:
+    case mdtTypeSpec:
+        if ((tokenType & CORINFO_TOKENKIND_Class) == 0)
+            return false;
+        break;
+
+    case mdtMethodDef:
+    case mdtMethodSpec:
+        if ((tokenType & CORINFO_TOKENKIND_Method) == 0)
+            return false;
+        break;
+
+    case mdtFieldDef:
+        if ((tokenType & CORINFO_TOKENKIND_Field) == 0)
+            return false;
+        break;
+
+    case mdtMemberRef:
+        if ((tokenType & (CORINFO_TOKENKIND_Method | CORINFO_TOKENKIND_Field)) == 0)
+            return false;
+        break;
+
+    default:
+        return false;
+    }
+
+    return true;
+}
+
+// This type encapsulates the information necessary for `TryResolveTokenFilter` and
+// `eeTryResolveToken` below.
+struct TryResolveTokenFilterParam
+{
+    ICorJitInfo* m_corInfo;
+    CORINFO_RESOLVED_TOKEN* m_resolvedToken;
+    EXCEPTION_POINTERS m_exceptionPointers;
+    bool m_success;
+};
+
+LONG TryResolveTokenFilter(struct _EXCEPTION_POINTERS* exceptionPointers, void* theParam)
+{
+    assert(exceptionPointers->ExceptionRecord->ExceptionCode != SEH_VERIFICATION_EXCEPTION);
+
+    // Backward compatibility: Convert bad image format exceptions thrown by the EE while resolving token to verification exceptions 
+    // if we are verifying. Verification exceptions will cause the JIT of the basic block to fail, but the JITing of the whole method 
+    // is still going to succeed. This is done for backward compatibility only. Ideally, we would always treat bad tokens in the IL 
+    // stream as fatal errors.
+    if (exceptionPointers->ExceptionRecord->ExceptionCode == EXCEPTION_COMPLUS)
+    {
+        auto* param = reinterpret_cast<TryResolveTokenFilterParam*>(theParam);
+        if (!isValidTokenForTryResolveToken(param->m_corInfo, param->m_resolvedToken))
+        {
+            param->m_exceptionPointers = *exceptionPointers;
+            return param->m_corInfo->FilterException(exceptionPointers);
+        }
+    }
+
+    return EXCEPTION_CONTINUE_SEARCH;
+}
+
+bool Compiler::eeTryResolveToken(CORINFO_RESOLVED_TOKEN* resolvedToken)
+{
+    TryResolveTokenFilterParam param;
+    param.m_corInfo = info.compCompHnd;
+    param.m_resolvedToken = resolvedToken;
+    param.m_success = true;
+
+    PAL_TRY(TryResolveTokenFilterParam*, pParam, &param)
+    {
+        pParam->m_corInfo->resolveToken(pParam->m_resolvedToken);
+    }
+    PAL_EXCEPT_FILTER(TryResolveTokenFilter)
+    {
+        if (param.m_exceptionPointers.ExceptionRecord->ExceptionCode == EXCEPTION_COMPLUS)
+        {
+            param.m_corInfo->HandleException(&param.m_exceptionPointers);
+        }
+
+        param.m_success = false;
+    }
+    PAL_ENDTRY
+
+    return param.m_success;
+}
+
+#else // CORJIT_EE_VER <= 460
+    
+bool Compiler::eeTryResolveToken(CORINFO_RESOLVED_TOKEN* resolvedToken)
+{
+    return info.compCompHnd->tryResolveToken(resolvedToken);
+}
+
+#endif // CORJIT_EE_VER > 460
 
 /*****************************************************************************
  *
