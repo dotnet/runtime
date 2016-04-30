@@ -4,7 +4,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ref\System.ServiceProcess.ServiceController.csproj">
-      <SupportedFramework>net461;netstandardapp1.5</SupportedFramework>
+      <SupportedFramework>net461;netcoreapp1.0</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.ServiceProcess.ServiceController.builds" />
 
