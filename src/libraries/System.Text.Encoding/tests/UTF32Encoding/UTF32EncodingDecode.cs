@@ -105,26 +105,24 @@ namespace System.Text.Tests
         public static byte[] GetBigEndianBytes(byte[] littleEndianBytes, int index, int count)
         {
             byte[] bytes = new byte[littleEndianBytes.Length];
-            for (int i = index; i < index + count; i++)
+
+            int i;
+            for (i = index; i + 3 < index + count; i += 4)
             {
-                if (i + 3 >= index + count)
-                {
-                    bytes[i] = littleEndianBytes[i];
-                    continue;
-                }
-
-                byte b1 = littleEndianBytes[i];
-                byte b2 = littleEndianBytes[i + 1];
-                byte b3 = littleEndianBytes[i + 2];
-                byte b4 = littleEndianBytes[i + 3];
-
-                bytes[i] = b4;
-                bytes[i + 1] = b3;
-                bytes[i + 2] = b2;
-                bytes[i + 3] = b1;
-
-                i += 3;
+                bytes[i] = littleEndianBytes[i + 3];
+                bytes[i + 1] = littleEndianBytes[i + 2];
+                bytes[i + 2] = littleEndianBytes[i + 1];
+                bytes[i + 3] = littleEndianBytes[i];
             }
+
+            // Invalid byte arrays may not have a multiple of 4 length
+            // Since they are invalid in both big and little endian orderings,
+            // we don't need to convert the ordering.
+            for (; i < index + count; i++)
+            {
+                bytes[i] = littleEndianBytes[i];
+            }
+
             return bytes;
         }
     }

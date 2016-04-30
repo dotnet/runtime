@@ -129,24 +129,25 @@ namespace System.Text.Tests
             Decode_InvalidBytes(new byte[] { 3, 216, 48 }, 0, 3, "\uFFFD\uFFFD");
         }
 
-        public byte[] GetBigEndianBytes(byte[] littleEndianBytes, int index, int count)
+        public static byte[] GetBigEndianBytes(byte[] littleEndianBytes, int index, int count)
         {
             byte[] bytes = new byte[littleEndianBytes.Length];
-            for (int i = index; i < index + count; i++)
+
+            int i;
+            for (i = index; i + 1 < index + count; i += 2)
             {
-                byte b1 = littleEndianBytes[i];
-                if (i + 1 >= index + count)
-                {
-                    bytes[i] = littleEndianBytes[i];
-                    break;
-                }
-                byte b2 = littleEndianBytes[i + 1];
-
-                bytes[i] = b2;
-                bytes[i + 1] = b1;
-
-                i++;
+                bytes[i] = littleEndianBytes[i + 1];
+                bytes[i + 1] = littleEndianBytes[i];
             }
+
+            // Invalid byte arrays may not have a multiple of 2 length
+            // Since they are invalid in both big and little endian orderings,
+            // we don't need to convert the ordering.
+            for (; i < index + count; i++)
+            {
+                bytes[i] = littleEndianBytes[i];
+            }
+
             return bytes;
         }
     }
