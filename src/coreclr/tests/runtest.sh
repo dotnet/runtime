@@ -351,7 +351,7 @@ function create_core_overlay {
 
     while IFS=';' read -ra coreFxBinDirectories; do
         for currDir in "${coreFxBinDirectories[@]}"; do
-            (cd $currDir && find . -iname '*.dll' \! -iwholename '*test*' \! -iwholename '*/ToolRuntime/*' \! -iwholename '*/RemoteExecutorConsoleApp/*' \! -iwholename '*/net*' \! -iwholename '*aot*' -exec cp -f '{}' "$coreOverlayDir/" \;)
+            (cd $currDir && find . -iname '*.dll' \! -iwholename '*test*' \! -iwholename '*/ToolRuntime/*' \! -iwholename '*/RemoteExecutorConsoleApp/*' \! -iwholename '*/net*' \! -iwholename '*aot*' -exec cp -n '{}' "$coreOverlayDir/" \;)
         done
     done <<< $coreFxBinDir
 
