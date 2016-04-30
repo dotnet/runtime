@@ -467,17 +467,31 @@ void Lowering::DecomposeNode(GenTreePtr* pTree, Compiler::fgWalkData* data)
         }
         break;
     case GT_MUL:
+        NYI("Arithmetic binary operators on TYP_LONG - GT_MUL");
+        break;
     case GT_DIV:
+        NYI("Arithmetic binary operators on TYP_LONG - GT_DIV");
+        break;
     case GT_MOD:
+        NYI("Arithmetic binary operators on TYP_LONG - GT_MOD");
+        break;
     case GT_UDIV:
+        NYI("Arithmetic binary operators on TYP_LONG - GT_UDIV");
+        break;
     case GT_UMOD:
+        NYI("Arithmetic binary operators on TYP_LONG - GT_UMOD");
+        break;
     case GT_LSH:
     case GT_RSH:
     case GT_RSZ:
+        NYI("Arithmetic binary operators on TYP_LONG - SHIFT");
+        break;
     case GT_ROL:
     case GT_ROR:
+        NYI("Arithmetic binary operators on TYP_LONG - ROTATE");
+        break;
     case GT_MULHI:
-        NYI("Arithmetic binary operators on TYP_LONG");
+        NYI("Arithmetic binary operators on TYP_LONG - MULHI");
         break;
     case GT_LOCKADD:
     case GT_XADD:
