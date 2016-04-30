@@ -20,7 +20,7 @@ internal partial class Interop
                                         int cchUnicodeChar,
                                         [System.Runtime.InteropServices.OutAttribute()]
 
-                                        char[] lpASCIICharStr,
+                                        char* lpASCIICharStr,
                                         int cchASCIIChar);
 
         [DllImport("api-ms-win-core-localization-l1-2-0.dll", CharSet = CharSet.Unicode, SetLastError = true)]
@@ -30,7 +30,7 @@ internal partial class Interop
                                         int cchASCIIChar,
                                         [System.Runtime.InteropServices.OutAttribute()]
 
-                                        char[] lpUnicodeCharStr,
+                                        char* lpUnicodeCharStr,
                                         int cchUnicodeChar);
 
         internal const int IDN_ALLOW_UNASSIGNED = 0x1;
