@@ -11,23 +11,40 @@ namespace System.Globalization
             uint flags = Flags;
             CheckInvalidIdnCharacters(unicode, count, flags, "unicode");
 
-            char[] buf = new char[count];
-
-            for (int attempts = 2; attempts > 0; attempts--)
+            const int StackAllocThreshold = 512;
+            if (count < StackAllocThreshold)
             {
-                int realLen = Interop.GlobalizationNative.ToAscii(flags, unicode, count, buf, buf.Length);
-
-                if (realLen == 0)
+                char* output = stackalloc char[count];
+                return GetAsciiCore(flags, unicode, count, output, count, reattempt: true);
+            }
+            else
+            {
+                char[] output = new char[count];
+                fixed (char* pOutput = output)
                 {
-                    break;
+                    return GetAsciiCore(flags, unicode, count, pOutput, count, reattempt: true);
                 }
+            }
+        }
 
-                if (realLen <= buf.Length)
+        private unsafe string GetAsciiCore(uint flags, char* unicode, int count, char* output, int outputLength, bool reattempt)
+        {
+            int realLen = Interop.GlobalizationNative.ToAscii(flags, unicode, count, output, outputLength);
+
+            if (realLen != 0)
+            {
+                if (realLen <= outputLength)
                 {
-                    return new string(buf, 0, realLen);
+                    return new string(output, 0, realLen);
                 }
-
-                buf = new char[realLen];
+                else if (reattempt)
+                {
+                    char[] newOutput = new char[realLen];
+                    fixed (char* pNewOutput = newOutput)
+                    {
+                        return GetAsciiCore(flags, unicode, count, pNewOutput, realLen, reattempt: false);
+                    }
+                }
             }
 
             throw new ArgumentException(SR.Argument_IdnIllegalName, nameof(unicode));
@@ -38,23 +55,40 @@ namespace System.Globalization
             uint flags = Flags;
             CheckInvalidIdnCharacters(ascii, count, flags, "ascii");
 
-            char[] buf = new char[count];
-
-            for (int attempts = 2; attempts > 0; attempts--)
+            const int StackAllocThreshold = 512;
+            if (count < StackAllocThreshold)
             {
-                int realLen = Interop.GlobalizationNative.ToUnicode(flags, ascii, count, buf, buf.Length);
-
-                if (realLen == 0)
+                char* output = stackalloc char[count];
+                return GetUnicodeCore(flags, ascii, count, output, count, reattempt: true);
+            }
+            else
+            {
+                char[] output = new char[count];
+                fixed (char* pOutput = output)
                 {
-                    break;
+                    return GetUnicodeCore(flags, ascii, count, pOutput, count, reattempt: true);
                 }
+            }
+        }
 
-                if (realLen <= buf.Length)
+        private unsafe string GetUnicodeCore(uint flags, char* ascii, int count, char* output, int outputLength, bool reattempt)
+        {
+            int realLen = Interop.GlobalizationNative.ToUnicode(flags, ascii, count, output, outputLength);
+
+            if (realLen != 0)
+            {
+                if (realLen <= outputLength)
                 {
-                    return new string(buf, 0, realLen);
+                    return new string(output, 0, realLen);
                 }
-
-                buf = new char[realLen];
+                else if (reattempt)
+                {
+                    char[] newOutput = new char[realLen];
+                    fixed (char* pNewOutput = newOutput)
+                    {
+                        return GetUnicodeCore(flags, ascii, count, pNewOutput, realLen, reattempt: false);
+                    }
+                }
             }
 
             throw new ArgumentException(SR.Argument_IdnIllegalName, nameof(ascii));

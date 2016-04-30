@@ -20,14 +20,22 @@ namespace System.Globalization
             }
 
             // Do the conversion
-            char[] output = new char[length];
-            length = Interop.mincore.IdnToAscii(flags, unicode, count, output, length);
-            if (length == 0)
+            const int StackAllocThreshold = 512; // arbitrary limit to switch from stack to heap allocation
+            if (length < StackAllocThreshold)
             {
-                ThrowForZeroLength("unicode", SR.Argument_IdnIllegalName, SR.Argument_InvalidCharSequenceNoIndex);
+                char* output = stackalloc char[length];
+                Interop.mincore.IdnToAscii(flags, unicode, count, output, length);
+                return new string(output, 0, length);
             }
-
-            return new string(output, 0, length);
+            else
+            {
+                char[] output = new char[length];
+                fixed (char* pOutput = output)
+                {
+                    Interop.mincore.IdnToAscii(flags, unicode, count, pOutput, length);
+                    return new string(pOutput, 0, length);
+                }
+            }
         }
 
         private unsafe string GetUnicodeCore(char* ascii, int count)
@@ -41,16 +49,23 @@ namespace System.Globalization
                 ThrowForZeroLength("ascii", SR.Argument_IdnIllegalName, SR.Argument_IdnBadPunycode);
             }
 
-            char[] output = new char[length];
-
             // Do the conversion
-            length = Interop.mincore.IdnToUnicode(flags, ascii, count, output, length);
-            if (length == 0)
+            const int StackAllocThreshold = 512; // arbitrary limit to switch from stack to heap allocation
+            if (length < StackAllocThreshold)
             {
-                ThrowForZeroLength("ascii", SR.Argument_IdnIllegalName, SR.Argument_IdnBadPunycode);
+                char* output = stackalloc char[length];
+                Interop.mincore.IdnToUnicode(flags, ascii, count, output, length);
+                return new string(output, 0, length);
             }
-
-            return new string(output, 0, length);
+            else
+            {
+                char[] output = new char[length];
+                fixed (char* pOutput = output)
+                {
+                    Interop.mincore.IdnToUnicode(flags, ascii, count, pOutput, length);
+                    return new string(pOutput, 0, length);
+                }
+            }
         }
 
         // -----------------------------
