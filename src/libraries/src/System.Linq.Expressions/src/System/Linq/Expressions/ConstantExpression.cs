@@ -122,6 +122,17 @@ namespace System.Linq.Expressions
         public static ConstantExpression Constant(object value, Type type)
         {
             ContractUtils.RequiresNotNull(type, nameof(type));
+            TypeUtils.ValidateType(type);
+            if (type.IsByRef)
+            {
+                throw Error.TypeMustNotBeByRef();
+            }
+
+            if (type.IsPointer)
+            {
+                throw Error.TypeMustNotBePointer();
+            }
+
             if (value == null ? type.GetTypeInfo().IsValueType && !TypeUtils.IsNullableType(type) : !type.IsAssignableFrom(value.GetType()))
             {
                 throw Error.ArgumentTypesMustMatch();
