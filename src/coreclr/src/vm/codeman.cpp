@@ -4316,7 +4316,7 @@ LPCWSTR ExecutionManager::GetJitName()
 
 #if !defined(FEATURE_CORECLR)
     // Try to obtain a name for the jit library from the env. variable
-    IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitName, const_cast<LPWSTR *>(pwzJitName)));
+    IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitName, const_cast<LPWSTR *>(&pwzJitName)));
 #endif // !FEATURE_CORECLR
     
     if (NULL == pwzJitName)
