@@ -331,9 +331,6 @@ function create_core_overlay {
     if [ -z "$coreFxBinDir" ]; then
         exit_with_error "$errorSource" "One of --coreOverlayDir or --coreFxBinDir must be specified." "$printUsage"
     fi
-    if [ ! -d "$coreFxBinDir" ]; then
-        exit_with_error "$errorSource" "Directory specified by --coreFxBinDir does not exist: $coreFxBinDir"
-    fi
     if [ -z "$coreFxNativeBinDir" ]; then
         exit_with_error "$errorSource" "One of --coreOverlayDir or --coreFxBinDir must be specified." "$printUsage"
     fi
@@ -351,6 +348,10 @@ function create_core_overlay {
 
     while IFS=';' read -ra coreFxBinDirectories; do
         for currDir in "${coreFxBinDirectories[@]}"; do
+            if [ ! -d "$currDir" ]; then
+                exit_with_error "$errorSource" "Directory specified in --coreFxBinDir does not exist: $currDir"
+            fi
+
             (cd $currDir && find . -iname '*.dll' \! -iwholename '*test*' \! -iwholename '*/ToolRuntime/*' \! -iwholename '*/RemoteExecutorConsoleApp/*' \! -iwholename '*/net*' \! -iwholename '*aot*' -exec cp -n '{}' "$coreOverlayDir/" \;)
         done
     done <<< $coreFxBinDir
