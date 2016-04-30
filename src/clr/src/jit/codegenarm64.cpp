@@ -2157,12 +2157,11 @@ void                CodeGen::instGen_Set_Reg_To_Imm(emitAttr    size,
     {
         size = EA_SIZE(size);  // Strip any Reloc flags from size if we aren't doing relocs
     }
-    
+
     if (EA_IS_RELOC(size))
     {
-        // Emit a data section constant for a relocatable integer constant.
-        CORINFO_FIELD_HANDLE hnd = getEmitter()->emitLiteralConst(imm);
-        getEmitter()->emitIns_R_C(INS_ldr, size, reg, hnd, 0);    
+        // This emits a pair of adrp/add (two instructions) with fix-ups.
+        getEmitter()->emitIns_R_AI(INS_adrp, size, reg, imm);
     }
     else if (imm == 0)
     {
@@ -2252,7 +2251,7 @@ void                CodeGen::genSetRegToConst(regNumber targetReg, var_types tar
                 // We must load the FP constant from the constant pool
                 // Emit a data section constant for the float or double constant.
                 CORINFO_FIELD_HANDLE hnd = emit->emitFltOrDblConst(dblConst);
-                emit->emitIns_R_C(INS_ldr, size, targetReg, hnd, 0);        
+                emit->emitIns_R_C(INS_ldr, size, targetReg, hnd, 0);
             }
         }
         break;
