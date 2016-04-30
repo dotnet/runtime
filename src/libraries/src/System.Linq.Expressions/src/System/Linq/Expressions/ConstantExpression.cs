@@ -21,18 +21,6 @@ namespace System.Linq.Expressions
             _value = value;
         }
 
-        internal static ConstantExpression Make(object value, Type type)
-        {
-            if (value == null ? type == typeof(object) : value.GetType() == type)
-            {
-                return new ConstantExpression(value);
-            }
-            else
-            {
-                return new TypedConstantExpression(value, type);
-            }
-        }
-
         /// <summary>
         /// Gets the static type of the expression that this <see cref="Expression" /> represents.
         /// </summary>
@@ -105,7 +93,7 @@ namespace System.Linq.Expressions
         /// </returns>
         public static ConstantExpression Constant(object value)
         {
-            return ConstantExpression.Make(value, value == null ? typeof(object) : value.GetType());
+            return new ConstantExpression(value);
         }
 
         /// <summary>
@@ -133,12 +121,33 @@ namespace System.Linq.Expressions
                 throw Error.TypeMustNotBePointer();
             }
 
-            if (value == null ? type.GetTypeInfo().IsValueType && !TypeUtils.IsNullableType(type) : !type.IsAssignableFrom(value.GetType()))
+            if (value == null)
             {
-                throw Error.ArgumentTypesMustMatch();
+                if (type == typeof(object))
+                {
+                    return new ConstantExpression(null);
+                }
+
+                if (!type.GetTypeInfo().IsValueType || type.IsNullableType())
+                {
+                    return new TypedConstantExpression(null, type);
+                }
+            }
+            else
+            {
+                Type valueType = value.GetType();
+                if (type == valueType)
+                {
+                    return new ConstantExpression(value);
+                }
+
+                if (type.IsAssignableFrom(valueType))
+                {
+                    return new TypedConstantExpression(value, type);
+                }
             }
 
-            return ConstantExpression.Make(value, type);
+            throw Error.ArgumentTypesMustMatch();
         }
     }
 }
