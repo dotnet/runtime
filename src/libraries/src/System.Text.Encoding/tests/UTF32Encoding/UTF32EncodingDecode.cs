@@ -41,7 +41,7 @@ namespace System.Text.Tests
         [MemberData(nameof(Decode_TestData))]
         public void Decode(byte[] littleEndianBytes, int index, int count, string expected)
         {
-            byte[] bigEndianBytes = GetBigEndianBytes(littleEndianBytes);
+            byte[] bigEndianBytes = GetBigEndianBytes(littleEndianBytes, index, count);
 
             EncodingHelpers.Decode(new UTF32Encoding(true, true, false), bigEndianBytes, index, count, expected);
             EncodingHelpers.Decode(new UTF32Encoding(true, false, false), bigEndianBytes, index, count, expected);
@@ -56,7 +56,7 @@ namespace System.Text.Tests
 
         public void Decode_InvalidBytes(byte[] littleEndianBytes, int index, int count, string expected)
         {
-            byte[] bigEndianBytes = GetBigEndianBytes(littleEndianBytes);
+            byte[] bigEndianBytes = GetBigEndianBytes(littleEndianBytes, index, count);
 
             EncodingHelpers.Decode(new UTF32Encoding(true, true, false), bigEndianBytes, index, count, expected);
             EncodingHelpers.Decode(new UTF32Encoding(true, false, false), bigEndianBytes, index, count, expected);
@@ -102,27 +102,28 @@ namespace System.Text.Tests
             Decode_InvalidBytes(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF }, 0, 4, "\uFFFD");
         }
 
-        public static byte[] GetBigEndianBytes(byte[] littleEndianBytes)
+        public static byte[] GetBigEndianBytes(byte[] littleEndianBytes, int index, int count)
         {
-            byte[] bigEndianBytes = (byte[])littleEndianBytes.Clone();
-            for (int i = 0; i < littleEndianBytes.Length; i += 4)
+            byte[] bytes = new byte[littleEndianBytes.Length];
+
+            int i;
+            for (i = index; i + 3 < index + count; i += 4)
             {
-                if (i + 3 >= littleEndianBytes.Length)
-                {
-                    continue;
-                }
-
-                byte b1 = bigEndianBytes[i];
-                byte b2 = bigEndianBytes[i + 1];
-                byte b3 = bigEndianBytes[i + 2];
-                byte b4 = bigEndianBytes[i + 3];
-
-                bigEndianBytes[i] = b4;
-                bigEndianBytes[i + 1] = b3;
-                bigEndianBytes[i + 2] = b2;
-                bigEndianBytes[i + 3] = b1;
+                bytes[i] = littleEndianBytes[i + 3];
+                bytes[i + 1] = littleEndianBytes[i + 2];
+                bytes[i + 2] = littleEndianBytes[i + 1];
+                bytes[i + 3] = littleEndianBytes[i];
             }
-            return bigEndianBytes;
+
+            // Invalid byte arrays may not have a multiple of 4 length
+            // Since they are invalid in both big and little endian orderings,
+            // we don't need to convert the ordering.
+            for (; i < index + count; i++)
+            {
+                bytes[i] = littleEndianBytes[i];
+            }
+
+            return bytes;
         }
     }
 }
