@@ -62,19 +62,22 @@ namespace System.Runtime.Versioning
             {
                 if (_fullName == null)
                 {
-                    StringBuilder sb = new StringBuilder();
-                    sb.Append(Identifier);
-                    sb.Append(c_componentSeparator);
-                    sb.Append(c_versionKey).Append(c_keyValueSeparator);
-                    sb.Append(c_versionValuePrefix);
-                    sb.Append(Version);
-                    if (!String.IsNullOrEmpty(Profile))
+                    if (string.IsNullOrEmpty(Profile))
                     {
-                        sb.Append(c_componentSeparator);
-                        sb.Append(c_profileKey).Append(c_keyValueSeparator);
-                        sb.Append(Profile);
+                        _fullName =
+                            Identifier +
+                            c_componentSeparator + c_versionKey + c_keyValueSeparator + c_versionValuePrefix +
+                            Version.ToString();
                     }
-                    _fullName = sb.ToString();
+                    else
+                    {
+                        _fullName =
+                            Identifier +
+                            c_componentSeparator + c_versionKey + c_keyValueSeparator + c_versionValuePrefix +
+                            Version.ToString() +
+                            c_componentSeparator + c_profileKey + c_keyValueSeparator +
+                            Profile;
+                    }
                 }
                 Debug.Assert(_fullName != null);
                 return _fullName;
