@@ -180,8 +180,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [OuterLoop] // could take several seconds under load
-        [Fact]
+        [ConditionalFact(nameof(HttpStressEnabled))]
         public async Task UnreadResponseMessage_Collectible()
         {
             await LoopbackServer.CreateClientAndServerAsync(async (handler, client, server, url) =>
