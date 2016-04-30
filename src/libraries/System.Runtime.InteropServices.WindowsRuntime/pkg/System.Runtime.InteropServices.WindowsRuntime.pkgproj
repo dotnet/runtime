@@ -6,7 +6,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Runtime.InteropServices.WindowsRuntime.csproj">
-      <SupportedFramework>net45;netstandardapp1.5;netcore45;wp8;wpa81</SupportedFramework>
+      <SupportedFramework>net45;netcoreapp1.0;netcore45;wp8;wpa81</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Runtime.InteropServices.WindowsRuntime.builds" />
     <InboxOnTargetFramework Include="net45" />

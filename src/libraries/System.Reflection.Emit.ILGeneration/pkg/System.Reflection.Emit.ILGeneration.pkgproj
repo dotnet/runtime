@@ -6,7 +6,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Reflection.Emit.ILGeneration.csproj">
-      <SupportedFramework>net45;netstandardapp1.5;wp8</SupportedFramework>
+      <SupportedFramework>net45;netcoreapp1.0;wp8</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Reflection.Emit.ILGeneration.builds" />
     <InboxOnTargetFramework Include="net45" />

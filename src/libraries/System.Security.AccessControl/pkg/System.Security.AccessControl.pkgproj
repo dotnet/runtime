@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Security.AccessControl.csproj">
-      <SupportedFramework>net46;netstandardapp1.5</SupportedFramework>
+      <SupportedFramework>net46;netcoreapp1.0</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Security.AccessControl.builds" />
 
