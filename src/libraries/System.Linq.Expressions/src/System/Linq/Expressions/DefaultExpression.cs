@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Dynamic.Utils;
 
 namespace System.Linq.Expressions
 {
@@ -72,6 +73,18 @@ namespace System.Linq.Expressions
         /// </returns>
         public static DefaultExpression Default(Type type)
         {
+            ContractUtils.RequiresNotNull(type, nameof(type));
+            TypeUtils.ValidateType(type);
+            if (type.IsByRef)
+            {
+                throw Error.TypeMustNotBeByRef();
+            }
+
+            if (type.IsPointer)
+            {
+                throw Error.TypeMustNotBePointer();
+            }
+
             return new DefaultExpression(type);
         }
     }
