@@ -1663,7 +1663,7 @@ combinedScenarios.each { scenario ->
                 --testNativeBinDir=\"\${WORKSPACE}/bin/obj/${osGroup}.${architecture}.${configuration}/tests\" \\
                 --coreClrBinDir=\"\${WORKSPACE}/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
                 --mscorlibDir=\"\${WORKSPACE}/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
-                --coreFxBinDir=\"\${WORKSPACE}/bin/${osGroup}.AnyCPU.Release;${WORKSPACE}/bin/Unix.AnyCPU.Release;${WORKSPACE}/bin/AnyOS.AnyCPU.Release\" \\
+                --coreFxBinDir=\"\${WORKSPACE}/bin/${osGroup}.AnyCPU.Release;\${WORKSPACE}/bin/Unix.AnyCPU.Release;\${WORKSPACE}/bin/AnyOS.AnyCPU.Release\" \\
                 --coreFxNativeBinDir=\"\${WORKSPACE}/bin/${osGroup}.${architecture}.Release\" \\
                 ${testEnvOpt} ${serverGCString} ${crossgenStr} ${sequentialString} ${playlistString}""")
                             }
