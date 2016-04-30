@@ -2469,6 +2469,8 @@ void ZapInfo::recordRelocation(void *location, void *target,
 
 #if defined(_TARGET_ARM64_)
     case IMAGE_REL_ARM64_BRANCH26:
+    case IMAGE_REL_ARM64_PAGEBASE_REL21:
+    case IMAGE_REL_ARM64_PAGEOFFSET_12A:
         break;
 #endif
 
@@ -2582,6 +2584,17 @@ void ZapInfo::recordRelocation(void *location, void *target,
         if (!FitsInRel28(targetOffset))
             ThrowHR(COR_E_OVERFLOW);
         PutArm64Rel28((UINT32 *)location, targetOffset);
+        break;
+    case IMAGE_REL_ARM64_PAGEBASE_REL21:
+        if (!FitsInRel21(targetOffset))
+            ThrowHR(COR_E_OVERFLOW);
+        PutArm64Rel21((UINT32 *)location, targetOffset);
+        break;
+
+    case IMAGE_REL_ARM64_PAGEOFFSET_12A:
+        if (!FitsInRel12(targetOffset))
+            ThrowHR(COR_E_OVERFLOW);
+        PutArm64Rel12((UINT32 *)location, targetOffset);
         break;
 #endif
 
