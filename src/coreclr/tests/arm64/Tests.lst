@@ -13248,7 +13248,7 @@ RelativePath=JIT\jit64\regress\vsw\539509\test1\test1.cmd
 WorkingDir=JIT\jit64\regress\vsw\539509\test1
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_FAIL;ISSUE_4411
+Categories=Pri0;JIT;EXPECTED_PASS
 HostStyle=0
 [test1.cmd_1926]
 RelativePath=JIT\jit64\regress\vsw\541067\test1\test1.cmd
@@ -23405,7 +23405,7 @@ RelativePath=JIT\Methodical\explicit\rotate\_dbgrotarg_double\_dbgrotarg_double.
 WorkingDir=JIT\Methodical\explicit\rotate\_dbgrotarg_double
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_FAIL;ISSUE_3970
+Categories=Pri0;JIT;EXPECTED_PASS
 HostStyle=0
 [_dbgrotarg_float.cmd_3404]
 RelativePath=JIT\Methodical\explicit\rotate\_dbgrotarg_float\_dbgrotarg_float.cmd
@@ -23573,7 +23573,7 @@ RelativePath=JIT\Methodical\explicit\rotate\_relrotarg_double\_relrotarg_double.
 WorkingDir=JIT\Methodical\explicit\rotate\_relrotarg_double
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_FAIL;ISSUE_3970
+Categories=Pri0;JIT;EXPECTED_PASS
 HostStyle=0
 [_relrotarg_float.cmd_3428]
 RelativePath=JIT\Methodical\explicit\rotate\_relrotarg_float\_relrotarg_float.cmd
@@ -39246,7 +39246,7 @@ RelativePath=JIT\Regression\VS-ia64-JIT\V2.0-RTM\b539509\b539509\b539509.cmd
 WorkingDir=JIT\Regression\VS-ia64-JIT\V2.0-RTM\b539509\b539509
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_FAIL;ISSUE_4411
+Categories=Pri0;JIT;EXPECTED_PASS
 HostStyle=0
 [DoWhileBndChk.cmd_5714]
 RelativePath=JIT\RyuJIT\DoWhileBndChk\DoWhileBndChk.cmd
