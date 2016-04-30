@@ -1965,12 +1965,6 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         
         FastInterlockExchange((LONG*)&g_fForbidEnterEE, TRUE);
 
-#if defined(DEBUGGING_SUPPORTED) && defined(FEATURE_PAL)
-        // Terminate the debugging services in the first phase for PAL based platforms
-        // because EEDllMain's DLL_PROCESS_DETACH is NOT going to be called.
-        TerminateDebugger();
-#endif // DEBUGGING_SUPPORTED && FEATURE_PAL
-
         if (g_fProcessDetach)
         {
             ThreadStore::TrapReturningThreads(TRUE);
