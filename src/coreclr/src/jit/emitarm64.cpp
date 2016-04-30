@@ -814,7 +814,7 @@ bool           emitter::emitInsMayWriteToGCReg(instrDesc *id)
 
     // These are the load/store formats with "target" registers:
 
-    case IF_LS_1A:       // LS_1A   .X......iiiiiiii iiiiiiiiiiittttt      Rt    PC imm(1MB)
+    case IF_LS_1A:       // LS_1A   XX...V..iiiiiiii iiiiiiiiiiittttt      Rt    PC imm(1MB)
     case IF_LS_2A:       // LS_2A   .X.......X...... ......nnnnnttttt      Rt Rn
     case IF_LS_2B:       // LS_2B   .X.......Xiiiiii iiiiiinnnnnttttt      Rt Rn    imm(0-4095)
     case IF_LS_2C:       // LS_2C   .X.......X.iiiii iiiiP.nnnnnttttt      Rt Rn    imm(-256..+255) pre/post inc
@@ -6314,6 +6314,9 @@ void                emitter::emitIns_S_I (instruction ins,
 /*****************************************************************************
  *
  *  Add an instruction with a register + static member operands.
+ *  Constant is stored into JIT data which is adjacent to code.
+ *  No relocation is needed. PC-relative offset will be encoded directly into instruction.
+ *
  */
 void                emitter::emitIns_R_C (instruction  ins,
                                           emitAttr     attr,
@@ -6321,11 +6324,6 @@ void                emitter::emitIns_R_C (instruction  ins,
                                           CORINFO_FIELD_HANDLE fldHnd,
                                           int          offs)
 {
-#if RELOC_SUPPORT
-    // Static always need relocs
-    if (!jitStaticFldIsGlobAddr(fldHnd))
-        attr = EA_SET_FLG(attr, EA_DSP_RELOC_FLG);
-#endif
     assert(offs >= 0);
     assert(instrDesc::fitsInSmallCns(offs));
 
@@ -6350,7 +6348,6 @@ void                emitter::emitIns_R_C (instruction  ins,
         }
         fmt = IF_LS_1A;
         break;
-
     default:
         break;
     }
@@ -6369,7 +6366,6 @@ void                emitter::emitIns_R_C (instruction  ins,
 
     dispIns(id);
     appendToCurIG(id);
-
 }
 
 
@@ -6413,12 +6409,61 @@ void                emitter::emitIns_R_AR  (instruction ins,
     NYI("emitIns_R_AR");
 }
 
-void                emitter::emitIns_R_AI  (instruction ins,
-                                            emitAttr    attr,
-                                            regNumber   ireg,
-                                            ssize_t     disp)
+// This computes address from the immediate which is relocatable.
+void                emitter::emitIns_R_AI(instruction ins,
+                                          emitAttr    attr,
+                                          regNumber   ireg,
+                                          ssize_t     addr)
 {
-    NYI("emitIns_R_AI");
+    assert(EA_IS_RELOC(attr));
+    emitAttr   size = EA_SIZE(attr);
+    insFormat  fmt = IF_DI_1E;
+    bool       needAdd = false;
+    instrDescJmp* id = emitNewInstrJmp();
+
+    switch (ins)
+    {
+    case INS_adrp:
+        // This computes page address.
+        // page offset is needed using add.
+        needAdd = true;
+        break;
+    case INS_adr:
+        break;
+    default:
+        unreached();
+    }
+
+    id->idIns(ins);
+    id->idInsFmt(fmt);
+    id->idInsOpt(INS_OPTS_NONE);
+    id->idOpSize(size);
+    id->idAddr()->iiaAddr = (BYTE*)addr;
+    id->idReg1(ireg);
+    id->idSetIsDspReloc();
+
+    dispIns(id);
+    appendToCurIG(id);
+
+    if (needAdd)
+    {
+        // add reg, reg, imm
+        ins = INS_add;
+        fmt = IF_DI_2A;
+        instrDesc* id = emitAllocInstr(attr);
+        assert(id->idIsReloc());
+
+        id->idIns(ins);
+        id->idInsFmt(fmt);
+        id->idInsOpt(INS_OPTS_NONE);
+        id->idOpSize(size);
+        id->idAddr()->iiaAddr = (BYTE*)addr;
+        id->idReg1(ireg);
+        id->idReg2(ireg);
+
+        dispIns(id);
+        appendToCurIG(id);
+    }
 }
 
 void                emitter::emitIns_AR_R  (instruction ins,
@@ -7849,6 +7894,12 @@ BYTE*               emitter::emitOutputLJ(insGroup  *ig, BYTE *dst, instrDesc *i
         dstAddr = emitDataOffsetToPtr(dataOffs);
         dstOffs = (unsigned) ((ssize_t) (dstAddr - srcAddr) + srcOffs);
         assert((dstOffs & 3) == 0);
+
+        // Failing the following assertion means the corresponding JIT data is not within +/-1MB range
+        // from the current code reference. This could happen for a large method or extremely large
+        // amount of JIT data for the method, or access it from cold method.
+        // Ideally, we should detect such case earlier to expand the code sequence using a fix-up
+        // similar to emitIns_R_AI.
         assert(isValidSimm19(dstOffs));
     }
     else
@@ -7991,19 +8042,27 @@ BYTE*               emitter::emitOutputLJ(insGroup  *ig, BYTE *dst, instrDesc *i
     }
     else if (loadLabel)
     {
-        if (fmt == IF_LS_1A)       // LS_1A   XX......iiiiiiii iiiiiiiiiiittttt      Rt simm21
+        if (fmt == IF_LS_1A)       // LS_1A   XX...V..iiiiiiii iiiiiiiiiiittttt      Rt simm21
         {
             // INS_ldr or INS_ldrsw (PC-Relative)
 
             // Is the target a vector register?
             if (isVectorRegister(id->idReg1()))
-            { 
-                code &= 0x3FFFFFFF;                                  // clear the size bits
-                code |= insEncodeDatasizeVLS(code, id->idOpSize());  // XX
+            {
+                code |= insEncodeDatasizeVLS(code, id->idOpSize());  // XX V
                 code |= insEncodeReg_Vt(id->idReg1());               // ttttt
             }
             else
             {
+                assert(isGeneralRegister(id->idReg1()));
+                // insEncodeDatasizeLS is not quite right for this case.
+                // So just specialize it.
+                if ((ins == INS_ldr) && (id->idOpSize() == EA_8BYTE))
+                {
+                    // set the operation size in bit 30
+                    code |= 0x40000000;
+                }
+
                 code |= insEncodeReg_Rt(id->idReg1());               // ttttt
             }
 
@@ -8235,7 +8294,7 @@ size_t              emitter::emitOutputInstr(insGroup  *ig,
         dst += emitOutputCall(ig, dst, id, code);
         break;
 
-    case IF_LS_1A:    // LS_1A   XX......iiiiiiii iiiiiiiiiiittttt      Rt    PC imm(1MB)
+    case IF_LS_1A:    // LS_1A   XX...V..iiiiiiii iiiiiiiiiiittttt      Rt    PC imm(1MB)
         assert(insOptsNone(id->idInsOpt()));
         assert(id->idIsBound());
 
@@ -8428,9 +8487,19 @@ size_t              emitter::emitOutputInstr(insGroup  *ig,
 
     case IF_DI_1E:    // DI_1E   .ii.....iiiiiiii iiiiiiiiiiiddddd      Rd       simm21
         assert(insOptsNone(id->idInsOpt()));
-        assert(id->idIsBound());
-
-        dst = emitOutputLJ(ig, dst, id);
+        if (id->idIsReloc())
+        {
+            code = emitInsCode(ins, fmt);
+            code |= insEncodeReg_Rd(id->idReg1());        // ddddd
+            dst += emitOutput_Instr(dst, code);
+            emitRecordRelocation(odst, id->idAddr()->iiaAddr, IMAGE_REL_ARM64_PAGEBASE_REL21);
+        }
+        else
+        {
+            // Local jmp/load case which does not need a relocation.
+            assert(id->idIsBound());
+            dst = emitOutputLJ(ig, dst, id);
+        }
         sz = sizeof(instrDescJmp);
         break;
 
@@ -8461,6 +8530,13 @@ size_t              emitter::emitOutputInstr(insGroup  *ig,
         code |= insEncodeReg_Rd(id->idReg1());               // ddddd
         code |= insEncodeReg_Rn(id->idReg2());               // nnnnn
         dst  += emitOutput_Instr(dst, code);
+
+        if (id->idIsReloc())
+        {
+            assert(sz == sizeof(instrDesc));
+            assert(id->idAddr()->iiaAddr != nullptr);
+            emitRecordRelocation(odst, id->idAddr()->iiaAddr, IMAGE_REL_ARM64_PAGEOFFSET_12A);
+        }
         break;
 
     case IF_DI_2B:    // DI_2B   X.........Xnnnnn ssssssnnnnnddddd      Rd Rn    imm(0-63)
@@ -9920,7 +9996,7 @@ void                emitter::emitDispIns(instrDesc *  id,
         emitDispReg(id->idReg3(), size, false);
         break;
 
-    case IF_LS_1A:    // LS_1A   XX......iiiiiiii iiiiiiiiiiittttt      Rt    PC imm(1MB)
+    case IF_LS_1A:    // LS_1A   XX...V..iiiiiiii iiiiiiiiiiittttt      Rt    PC imm(1MB)
         assert(insOptsNone(id->idInsOpt()));
         emitDispReg(id->idReg1(), size, true);
         imm = emitGetInsSC(id);

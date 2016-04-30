@@ -4497,12 +4497,32 @@ unsigned            emitter::emitEndCodeGen(Compiler *comp,
     }
 #endif
 
+#ifdef _TARGET_ARM64_
+    // For arm64, we want to allocate JIT data always adjacent to code similar to what native compiler does.
+    // This way allows us to use a single `ldr` to access such data like float constant/jmp table.
+    if (emitTotalColdCodeSize > 0)
+    {
+        // JIT data might be far away from the cold code.
+        NYI_ARM64("Need to handle fix-up to data from cold code.");
+    }
+
+    emitCmpHandle->allocMem(emitTotalHotCodeSize + emitConsDsc.dsdOffs, emitTotalColdCodeSize,
+        0,
+        xcptnsCount,
+        allocMemFlag,
+        (void**)&codeBlock, (void**)&coldCodeBlock,
+        (void**)&consBlock);
+
+    consBlock = codeBlock + emitTotalHotCodeSize;
+
+#else
     emitCmpHandle->allocMem( emitTotalHotCodeSize, emitTotalColdCodeSize,
                              emitConsDsc.dsdOffs,
                              xcptnsCount,
                              allocMemFlag,
                              (void**)&codeBlock, (void**)&coldCodeBlock, 
                              (void**)&consBlock);
+#endif
 
 
 //  if  (emitConsDsc.dsdOffs) printf("Cons=%08X\n", consBlock);
