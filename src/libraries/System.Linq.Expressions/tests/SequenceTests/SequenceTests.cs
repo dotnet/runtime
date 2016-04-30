@@ -2443,21 +2443,6 @@ namespace System.Linq.Expressions.Tests
 
         [Theory]
         [ClassData(typeof(CompilationTypes))]
-        public static void DefaultEnumRef(bool useInterpreter)
-        {
-            var x = Expression.Variable(typeof(MyEnum), "x");
-
-            var expression = Expression.Lambda<Action>(
-                            Expression.Block(
-                            new[] { x },
-                            Expression.Assign(x, Expression.Default(typeof(MyEnum))),
-                            Expression.Call(null, typeof(EnumOutLambdaClass).GetMethod("BarRef"), x)));
-
-            expression.Compile(useInterpreter)();
-        }
-
-        [Theory]
-        [ClassData(typeof(CompilationTypes))]
         public static void BinaryOperators(bool useInterpreter)
         {
             // AndAlso
