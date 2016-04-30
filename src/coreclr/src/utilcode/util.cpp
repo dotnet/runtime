@@ -2684,6 +2684,41 @@ INT32 GetArm64Rel28(UINT32 * pCode)
 }
 
 //*****************************************************************************
+//  Extract the PC-Relative offset from an adrp instruction
+//*****************************************************************************
+INT32 GetArm64Rel21(UINT32 * pCode)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    UINT32 addInstr = *pCode;
+
+    // 23-5 bits for the high part. Shift it by 5.
+    INT32 immhi = (((INT32)(addInstr & 0xFFFFE0))) >> 5;
+    // 30,29 bits for the lower part. Shift it by 29.
+    INT32 immlo = ((INT32)(addInstr & 0x60000000)) >> 29;
+
+    // Merge them
+    INT32 imm21 = (immhi << 2) | immlo;
+
+    return imm21;
+}
+
+//*****************************************************************************
+//  Extract the PC-Relative offset from an add instruction
+//*****************************************************************************
+INT32 GetArm64Rel12(UINT32 * pCode)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    UINT32 addInstr = *pCode;
+
+    // 21-10 contains value. Mask 12 bits and shift by 10 bits.
+    INT32 imm12 = (INT32)(addInstr & 0x003FFC00) >> 10;
+
+    return imm12;
+}
+
+//*****************************************************************************
 //  Deposit the PC-Relative offset 'imm28' into a b or bl instruction 
 //*****************************************************************************
 void PutArm64Rel28(UINT32 * pCode, INT32 imm28)
@@ -2704,6 +2739,52 @@ void PutArm64Rel28(UINT32 * pCode, INT32 imm28)
     *pCode = branchInstr;          // write the assembled instruction
 
     _ASSERTE(GetArm64Rel28(pCode) == imm28);
+}
+
+//*****************************************************************************
+//  Deposit the PC-Relative offset 'imm21' into an adrp instruction
+//*****************************************************************************
+void PutArm64Rel21(UINT32 * pCode, INT32 imm21)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // Verify that we got a valid offset
+    _ASSERTE(FitsInRel21(imm21));
+
+    UINT32 adrpInstr = *pCode;
+    // Check adrp opcode 1ii1 0000 ...
+    _ASSERTE((adrpInstr & 0x9F000000) == 0x90000000);
+
+    adrpInstr &= 0x9F00001F;               // keep bits 31, 28-24, 4-0.
+    INT32 immlo = imm21 & 0x03;            // Extract low 2 bits which will occupy 30-29 bits.
+    INT32 immhi = (imm21 & 0x1FFFFC) >> 2; // Extract high 19 bits which will occupy 23-5 bits.
+    adrpInstr |= ((immlo << 29) | (immhi << 5));
+
+    *pCode = adrpInstr;                    // write the assembled instruction
+
+    _ASSERTE(GetArm64Rel21(pCode) == imm21);
+}
+
+//*****************************************************************************
+//  Deposit the PC-Relative offset 'imm12' into an add instruction
+//*****************************************************************************
+void PutArm64Rel12(UINT32 * pCode, INT32 imm12)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // Verify that we got a valid offset
+    _ASSERTE(FitsInRel12(imm12));
+
+    UINT32 addInstr = *pCode;
+    // Check add opcode 1001 0001 00...
+    _ASSERTE((addInstr & 0xFFC00000) == 0x91000000);
+
+    addInstr &= 0xFFC003FF;     // keep bits 31-22, 9-0
+    addInstr |= (imm12 << 10);  // Occupy 21-10.
+
+    *pCode = addInstr;          // write the assembled instruction
+
+    _ASSERTE(GetArm64Rel12(pCode) == imm12);
 }
 
 //---------------------------------------------------------------------

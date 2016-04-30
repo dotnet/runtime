@@ -1131,6 +1131,7 @@ protected:
         bool            idIsDspReloc() const   { assert(!idIsTiny()); return _idDspReloc != 0;    }
         void            idSetIsDspReloc(bool val = true)
                                                { assert(!idIsTiny()); _idDspReloc = val;          }
+        bool            idIsReloc()            { return idIsDspReloc() || idIsCnsReloc();         }
         
 #endif
 
