@@ -838,6 +838,13 @@ namespace System.Tests
             Assert.Throws<ArgumentException>(null, () => Array.CreateInstance(typeof(int), new int[] { 1 }, new int[] { 1, 2 })); // Lengths and lower bounds have different lengths
         }
 
+        [ActiveIssue("https://github.com/dotnet/coreclr/issues/2835", PlatformID.AnyUnix)]
+        [Fact]
+        public static void CreateInstance_Type_IntArray_IntArray_Invalid_UpperBoundTooLarge()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(null, () => Array.CreateInstance(typeof(int), new int[] { int.MaxValue }, new int[] { 2 })); // upper bound would exceed int.MaxValue
+        }
+
         [Fact]
         public static void Empty()
         {
