@@ -9,7 +9,7 @@ namespace System.Globalization
         private unsafe string GetAsciiCore(char* unicode, int count)
         {
             uint flags = Flags;
-            CheckInvalidIdnCharacters(unicode, count, flags, "unicode");
+            CheckInvalidIdnCharacters(unicode, count, flags, nameof(unicode));
 
             const int StackAllocThreshold = 512;
             if (count < StackAllocThreshold)
@@ -31,19 +31,20 @@ namespace System.Globalization
         {
             int realLen = Interop.GlobalizationNative.ToAscii(flags, unicode, count, output, outputLength);
 
-            if (realLen != 0)
+            if (realLen == 0)
             {
-                if (realLen <= outputLength)
+                throw new ArgumentException(SR.Argument_IdnIllegalName, nameof(unicode));
+            }
+            else if (realLen <= outputLength)
+            {
+                return new string(output, 0, realLen);
+            }
+            else if (reattempt)
+            {
+                char[] newOutput = new char[realLen];
+                fixed (char* pNewOutput = newOutput)
                 {
-                    return new string(output, 0, realLen);
-                }
-                else if (reattempt)
-                {
-                    char[] newOutput = new char[realLen];
-                    fixed (char* pNewOutput = newOutput)
-                    {
-                        return GetAsciiCore(flags, unicode, count, pNewOutput, realLen, reattempt: false);
-                    }
+                    return GetAsciiCore(flags, unicode, count, pNewOutput, realLen, reattempt: false);
                 }
             }
 
@@ -53,7 +54,7 @@ namespace System.Globalization
         private unsafe string GetUnicodeCore(char* ascii, int count)
         {
             uint flags = Flags;
-            CheckInvalidIdnCharacters(ascii, count, flags, "ascii");
+            CheckInvalidIdnCharacters(ascii, count, flags, nameof(ascii));
 
             const int StackAllocThreshold = 512;
             if (count < StackAllocThreshold)
@@ -75,19 +76,20 @@ namespace System.Globalization
         {
             int realLen = Interop.GlobalizationNative.ToUnicode(flags, ascii, count, output, outputLength);
 
-            if (realLen != 0)
+            if (realLen == 0)
             {
-                if (realLen <= outputLength)
+                throw new ArgumentException(SR.Argument_IdnIllegalName, nameof(ascii));
+            }
+            else if (realLen <= outputLength)
+            {
+                return new string(output, 0, realLen);
+            }
+            else if (reattempt)
+            {
+                char[] newOutput = new char[realLen];
+                fixed (char* pNewOutput = newOutput)
                 {
-                    return new string(output, 0, realLen);
-                }
-                else if (reattempt)
-                {
-                    char[] newOutput = new char[realLen];
-                    fixed (char* pNewOutput = newOutput)
-                    {
-                        return GetUnicodeCore(flags, ascii, count, pNewOutput, realLen, reattempt: false);
-                    }
+                    return GetUnicodeCore(flags, ascii, count, pNewOutput, realLen, reattempt: false);
                 }
             }
 
