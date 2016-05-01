@@ -25,19 +25,19 @@ namespace System.Globalization
             if (length < StackAllocThreshold)
             {
                 char* output = stackalloc char[length];
-                return GetAsciiCore(flags, unicode, count, output, length);
+                return GetAsciiCore(unicode, count, flags, output, length);
             }
             else
             {
                 char[] output = new char[length];
                 fixed (char* pOutput = output)
                 {
-                    return GetAsciiCore(flags, unicode, count, pOutput, length);
+                    return GetAsciiCore(unicode, count, flags, pOutput, length);
                 }
             }
         }
 
-        private unsafe string GetAsciiCore(uint flags, char* unicode, int count, char* output, int outputLength)
+        private unsafe string GetAsciiCore(char* unicode, int count, uint flags, char* output, int outputLength)
         {
             int length = Interop.mincore.IdnToAscii(flags, unicode, count, output, outputLength);
             if (length == 0)
@@ -64,19 +64,19 @@ namespace System.Globalization
             if (length < StackAllocThreshold)
             {
                 char* output = stackalloc char[length];
-                return GetUnicodeCore(flags, ascii, count, output, length);
+                return GetUnicodeCore(ascii, count, flags, output, length);
             }
             else
             {
                 char[] output = new char[length];
                 fixed (char* pOutput = output)
                 {
-                    return GetUnicodeCore(flags, ascii, count, pOutput, length);
+                    return GetUnicodeCore(ascii, count, flags, pOutput, length);
                 }
             }
         }
 
-        private unsafe string GetUnicodeCore(uint flags, char* ascii, int count, char* output, int outputLength)
+        private unsafe string GetUnicodeCore(char* ascii, int count, uint flags, char* output, int outputLength)
         {
             int length = Interop.mincore.IdnToUnicode(flags, ascii, count, output, outputLength);
             if (length == 0)
