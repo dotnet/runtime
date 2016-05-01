@@ -15,21 +15,21 @@ namespace System.Globalization
             if (count < StackAllocThreshold)
             {
                 char* output = stackalloc char[count];
-                return GetAsciiCore(flags, unicode, count, output, count, reattempt: true);
+                return GetAsciiCore(unicode, count, flags, output, count, reattempt: true);
             }
             else
             {
                 char[] output = new char[count];
                 fixed (char* pOutput = output)
                 {
-                    return GetAsciiCore(flags, unicode, count, pOutput, count, reattempt: true);
+                    return GetAsciiCore(unicode, count, flags, pOutput, count, reattempt: true);
                 }
             }
         }
 
-        private unsafe string GetAsciiCore(uint flags, char* unicode, int count, char* output, int outputLength, bool reattempt)
+        private unsafe string GetAsciiCore(char* unicode, int count, uint flags, char* output, int outputLength, bool reattempt)
         {
-            int realLen = Interop.GlobalizationNative.ToAscii(flags, unicode, count, output, outputLength);
+            int realLen = Interop.GlobalizationNative.ToAscii(unicode, count, flags, output, outputLength);
 
             if (realLen == 0)
             {
@@ -44,7 +44,7 @@ namespace System.Globalization
                 char[] newOutput = new char[realLen];
                 fixed (char* pNewOutput = newOutput)
                 {
-                    return GetAsciiCore(flags, unicode, count, pNewOutput, realLen, reattempt: false);
+                    return GetAsciiCore(unicode, count, flags, pNewOutput, realLen, reattempt: false);
                 }
             }
 
@@ -60,21 +60,21 @@ namespace System.Globalization
             if (count < StackAllocThreshold)
             {
                 char* output = stackalloc char[count];
-                return GetUnicodeCore(flags, ascii, count, output, count, reattempt: true);
+                return GetUnicodeCore(ascii, count, flags, output, count, reattempt: true);
             }
             else
             {
                 char[] output = new char[count];
                 fixed (char* pOutput = output)
                 {
-                    return GetUnicodeCore(flags, ascii, count, pOutput, count, reattempt: true);
+                    return GetUnicodeCore(ascii, count, flags, pOutput, count, reattempt: true);
                 }
             }
         }
 
-        private unsafe string GetUnicodeCore(uint flags, char* ascii, int count, char* output, int outputLength, bool reattempt)
+        private unsafe string GetUnicodeCore(char* ascii, int count, uint flags, char* output, int outputLength, bool reattempt)
         {
-            int realLen = Interop.GlobalizationNative.ToUnicode(flags, ascii, count, output, outputLength);
+            int realLen = Interop.GlobalizationNative.ToUnicode(fascii, count, flags, output, outputLength);
 
             if (realLen == 0)
             {
@@ -89,7 +89,7 @@ namespace System.Globalization
                 char[] newOutput = new char[realLen];
                 fixed (char* pNewOutput = newOutput)
                 {
-                    return GetUnicodeCore(flags, ascii, count, pNewOutput, realLen, reattempt: false);
+                    return GetUnicodeCore(ascii, count, flags, pNewOutput, realLen, reattempt: false);
                 }
             }
 
