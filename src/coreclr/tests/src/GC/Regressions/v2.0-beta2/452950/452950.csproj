@@ -24,6 +24,9 @@
       <Visible>False</Visible>
     </CodeAnalysisDependentAssemblyPaths>
   </ItemGroup>
+  <PropertyGroup>
+    <GCStressIncompatible>true</GCStressIncompatible>
+  </PropertyGroup>
   <ItemGroup>
     <!-- Add Compile Object Here -->
     <Compile Include="452950.cs" />
