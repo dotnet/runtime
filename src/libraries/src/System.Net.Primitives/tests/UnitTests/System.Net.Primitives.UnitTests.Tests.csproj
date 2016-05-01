@@ -24,6 +24,7 @@
     <DefineConstants>$(DefineConstants);SYSTEM_NET_PRIMITIVES_DLL</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="CookieCollectionTest.cs" />
     <Compile Include="CookieContainerTest.cs" />
     <Compile Include="CookieInternalTest.cs" />
     <Compile Include="Fakes\GlobalLog.cs" />
