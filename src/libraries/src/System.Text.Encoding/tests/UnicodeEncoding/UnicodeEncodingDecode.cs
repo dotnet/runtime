@@ -19,6 +19,10 @@ namespace System.Text.Tests
                 yield return new object[] { new byte[] { 97, 0, (byte)c, 0, 98, 0 }, 2, 2, c.ToString() };
             }
 
+            // Long ASCII strings
+            yield return new object[] { new byte[] { 0x61, 0x00, 0x62, 0x00, 0x63, 0x00 }, 0, 6, "\u0061\u0062\u0063" };
+            yield return new object[] { new byte[] { 0x61, 0x00, 0x62, 0x00, 0x63, 0x00 }, 4, 2, "\u0063" };
+
             // Unicode
             byte[] unicodeBytes = new byte[] { 97, 0, 52, 18, 98, 0 };
             yield return new object[] { unicodeBytes, 0, 6, "a\u1234b" };
@@ -113,20 +117,35 @@ namespace System.Text.Tests
             Decode(new byte[] { 253, 255 }, 0, 2, "\uFFFD");
             Decode(new byte[] { 254, 255 }, 0, 2, "\uFFFE");
             Decode(new byte[] { 255, 255 }, 0, 2, "\uFFFF");
+            Decode(new byte[] { 0xFF, 0xFF, 0xFE, 0xFF }, 0, 4, "\uFFFF\uFFFE");
+
+            // U+FDD0 - U+FDEF
+            Decode(new byte[] { 0xD0, 0xFD, 0xEF, 0xFD }, 0, 4, "\uFDD0\uFDEF");
 
             // Invalid bytes
-            byte[] validSurrogateBytes = new byte[] { 0, 216, 0, 220 };
-            Decode_InvalidBytes(validSurrogateBytes, 0, 3, "\uFFFD\uFFFD");
-            Decode_InvalidBytes(validSurrogateBytes, 1, 3, "\u00D8\uFFFD");
-            Decode_InvalidBytes(validSurrogateBytes, 0, 2, "\uFFFD");
-            Decode(validSurrogateBytes, 1, 2, "\u00D8");
-            Decode_InvalidBytes(validSurrogateBytes, 2, 2, "\uFFFD");
-            Decode_InvalidBytes(validSurrogateBytes, 2, 1, "\uFFFD");
+            byte[] validSurrogateBytes1 = new byte[] { 0, 216, 0, 220 };
+            Decode_InvalidBytes(validSurrogateBytes1, 0, 3, "\uFFFD\uFFFD");
+            Decode_InvalidBytes(validSurrogateBytes1, 1, 3, "\u00D8\uFFFD");
+            Decode_InvalidBytes(validSurrogateBytes1, 0, 2, "\uFFFD");
+            Decode(validSurrogateBytes1, 1, 2, "\u00D8");
+            Decode_InvalidBytes(validSurrogateBytes1, 2, 2, "\uFFFD");
+            Decode_InvalidBytes(validSurrogateBytes1, 2, 1, "\uFFFD");
 
+            Decode_InvalidBytes(new byte[] { 0xFF, 0xDB, 0x00, 0xDC }, 0, 2, "\uFFFD");
+            Decode_InvalidBytes(new byte[] { 0xFF, 0xDB, 0x00, 0xDC }, 0, 3, "\uFFFD\uFFFD");
+            Decode_InvalidBytes(new byte[] { 0xFF, 0xDB, 0xFF, 0xDF }, 1, 3, "\uFFDB\uFFFD");
+            Decode_InvalidBytes(new byte[] { 0x00, 0xD8, 0xFF, 0xDF }, 2, 2, "\uFFFD");
+
+            Decode_InvalidBytes(new byte[] { 0xFF, 0xDF }, 0, 2, "\uFFFD");
+
+            // Odd number of bytes
             Decode_InvalidBytes(new byte[] { 97 }, 0, 1, "\uFFFD");
             Decode_InvalidBytes(new byte[] { 97, 0, 97 }, 0, 3, "a\uFFFD");
 
             Decode_InvalidBytes(new byte[] { 3, 216, 48 }, 0, 3, "\uFFFD\uFFFD");
+
+            Decode_InvalidBytes(new byte[] { 0x61, 0x00, 0x00 }, 0, 3, "\u0061\uFFFD");
+            Decode_InvalidBytes(new byte[] { 0x61 }, 0, 1, "\uFFFD");
         }
 
         public static byte[] GetBigEndianBytes(byte[] littleEndianBytes, int index, int count)
