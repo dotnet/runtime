@@ -500,7 +500,7 @@ namespace System.Threading.Tasks
             Contract.Assert(!IsCompleted, "The promise must not yet be completed.");
 
             // If we have a parent, we need to notify it of the completion.  Take the slow path to handle that.
-            if (m_parent != null)
+            if (m_contingentProperties?.m_parent != null)
             {
                 bool success = TrySetResult(result);
 
@@ -593,7 +593,7 @@ namespace System.Threading.Tasks
             //
             // The lazy initialization may not be strictly necessary, but I'd like to keep it here
             // anyway.  Some downstream logic may depend upon an inflated m_contingentProperties.
-            EnsureContingentPropertiesInitialized(needsProtection: true);
+            EnsureContingentPropertiesInitialized();
             if (AtomicStateUpdate(TASK_STATE_COMPLETION_RESERVED,
                 TASK_STATE_COMPLETION_RESERVED | TASK_STATE_RAN_TO_COMPLETION | TASK_STATE_FAULTED | TASK_STATE_CANCELED))
             {
