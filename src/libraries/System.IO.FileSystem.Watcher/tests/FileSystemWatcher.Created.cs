@@ -126,7 +126,7 @@ namespace System.IO.Tests
                     watcher.EnableRaisingEvents = true;
 
                     // change a file
-                    File.WriteAllText(testFile.Path, "change");
+                    File.AppendAllText(testFile.Path, "change");
 
                     // renaming a directory
                     //
