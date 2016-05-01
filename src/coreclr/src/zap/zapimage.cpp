@@ -2099,9 +2099,11 @@ ZapImage::CompileStatus ZapImage::TryCompileMethodDef(mdMethodDef md, unsigned m
 ZapImage::CompileStatus ZapImage::TryCompileInstantiatedMethod(CORINFO_METHOD_HANDLE handle, 
                                                                unsigned methodProfilingDataFlags)
 {
-    // READYTORUN: FUTURE: Generics
     if (IsReadyToRunCompilation())
-        return COMPILE_EXCLUDED;
+    {
+        if (!GetCompileInfo()->IsInCurrentVersionBubble(m_zapper->m_pEEJitInfo->getMethodModule(handle)))
+            return COMPILE_EXCLUDED;
+    }
 
     if (!ShouldCompileInstantiatedMethod(handle))
         return COMPILE_EXCLUDED;
