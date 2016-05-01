@@ -116,7 +116,7 @@ namespace System.Net
             // Otherwise it will remain string.Empty.
         }
 
-        public CookieContainer(int capacity) : this()
+        internal CookieContainer(int capacity) : this()
         {
             if (capacity <= 0)
             {
@@ -125,7 +125,7 @@ namespace System.Net
             _maxCookies = capacity;
         }
 
-        public CookieContainer(int capacity, int perDomainCapacity, int maxCookieSize) : this(capacity)
+        internal CookieContainer(int capacity, int perDomainCapacity, int maxCookieSize) : this(capacity)
         {
             if (perDomainCapacity != Int32.MaxValue && (perDomainCapacity <= 0 || perDomainCapacity > capacity))
             {
@@ -213,7 +213,7 @@ namespace System.Net
         }
 
         // This method will construct a faked URI: the Domain property is required for param.
-        public void Add(Cookie cookie)
+        internal void Add(Cookie cookie)
         {
             if (cookie == null)
             {
@@ -524,7 +524,7 @@ namespace System.Net
             }
         }
 
-        public void Add(CookieCollection cookies)
+        internal void Add(CookieCollection cookies)
         {
             if (cookies == null)
             {
