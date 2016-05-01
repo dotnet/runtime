@@ -164,11 +164,9 @@ namespace System.Threading.Tasks
         internal object m_stateObject; // A state object that can be optionally supplied, passed to action.
         internal TaskScheduler m_taskScheduler; // The task scheduler this task runs under. 
 
-        internal readonly Task m_parent; // A task's parent, or null if parent-less.
-
         internal volatile int m_stateFlags;
 
-        private Task ParentForDebugger => m_parent; // Private property used by a debugger to access this Task's parent
+        private Task ParentForDebugger => m_contingentProperties?.m_parent; // Private property used by a debugger to access this Task's parent
         private int StateFlagsForDebugger => m_stateFlags; // Private property used by a debugger to access this Task's state flags
 
         // State constants for m_stateFlags;
@@ -275,6 +273,8 @@ namespace System.Threading.Tasks
             // A list of child tasks that threw an exception (TCEs don't count),
             // but haven't yet been waited on by the parent, lazily initialized.
             internal volatile List<Task> m_exceptionalChildren;
+            // A task's parent, or null if parent-less.
+            internal Task m_parent; 
 
             /// <summary>
             /// Sets the internal completion event.
@@ -358,10 +358,9 @@ namespace System.Threading.Tasks
                 throw new ArgumentOutOfRangeException("creationOptions");
             }
 
-            // m_parent is readonly, and so must be set in the constructor.
             // Only set a parent if AttachedToParent is specified.
             if ((creationOptions & TaskCreationOptions.AttachedToParent) != 0)
-                m_parent = Task.InternalCurrent;
+                EnsureContingentPropertiesInitialized(needsProtection: false).m_parent = Task.InternalCurrent;
 
             TaskConstructorCore(null, state, default(CancellationToken), creationOptions, InternalTaskOptions.PromiseTask, null);
         }
@@ -569,7 +568,7 @@ namespace System.Threading.Tasks
                 ((internalOptions & InternalTaskOptions.SelfReplicating) != 0)
                 )
             {
-                m_parent = parent;
+                EnsureContingentPropertiesInitialized(needsProtection: false).m_parent = parent;
             }
 
             TaskConstructorCore(action, state, cancellationToken, creationOptions, internalOptions, scheduler);
@@ -642,12 +641,13 @@ namespace System.Threading.Tasks
             // We can safely call the creator task's AddNewChild() method to register it, 
             // because at this point we are already on its thread of execution.
 
-            if (m_parent != null
+            Task parent = m_contingentProperties?.m_parent;
+            if (parent != null
                 && ((creationOptions & TaskCreationOptions.AttachedToParent) != 0)
-                && ((m_parent.CreationOptions & TaskCreationOptions.DenyChildAttach) == 0)
+                && ((parent.CreationOptions & TaskCreationOptions.DenyChildAttach) == 0)
                 )
             {
-                m_parent.AddNewChild();
+                parent.AddNewChild();
             }
 
             // if we have a non-null cancellationToken, allocate the contingent properties to save it
@@ -718,11 +718,12 @@ namespace System.Threading.Tasks
             {
                 // If we have an exception related to our CancellationToken, then we need to subtract ourselves
                 // from our parent before throwing it.
-                if ((m_parent != null) &&
+                Task parent = m_contingentProperties?.m_parent;
+                if ((parent != null) &&
                     ((Options & TaskCreationOptions.AttachedToParent) != 0)
-                     && ((m_parent.Options & TaskCreationOptions.DenyChildAttach) == 0))
+                     && ((parent.Options & TaskCreationOptions.DenyChildAttach) == 0))
                 {
-                    m_parent.DisregardChild();
+                    parent.DisregardChild();
                 }
                 throw;
             }
@@ -975,7 +976,7 @@ namespace System.Threading.Tasks
                 m_stateFlags |= Task.TASK_STATE_TASKSCHEDULED_WAS_FIRED;
 
                 Task currentTask = Task.InternalCurrent;
-                Task parentTask = this.m_parent;
+                Task parentTask = m_contingentProperties?.m_parent;
                 etwLog.TaskScheduled(ts.Id, currentTask == null ? 0 : currentTask.Id,
                                      this.Id, parentTask == null ? 0 : parentTask.Id, (int)this.Options,
                                      System.Threading.Thread.GetDomainID());
@@ -2162,10 +2163,11 @@ namespace System.Threading.Tasks
         /// </summary>
         internal void UpdateExceptionObservedStatus()
         {
-            if ((m_parent != null)
+            Task parent = m_contingentProperties?.m_parent;
+            if ((parent != null)
                 && ((Options & TaskCreationOptions.AttachedToParent) != 0)
-                && ((m_parent.CreationOptions & TaskCreationOptions.DenyChildAttach) == 0)
-                && Task.InternalCurrent == m_parent)
+                && ((parent.CreationOptions & TaskCreationOptions.DenyChildAttach) == 0)
+                && Task.InternalCurrent == parent)
             {
                 m_stateFlags |= TASK_STATE_EXCEPTIONOBSERVEDBYPARENT;
             }
@@ -2346,11 +2348,12 @@ namespace System.Threading.Tasks
             m_action = null;
 
             // Notify parent if this was an attached task
-            if (m_parent != null
-                 && ((m_parent.CreationOptions & TaskCreationOptions.DenyChildAttach) == 0)
+            Task parent = m_contingentProperties?.m_parent;
+            if (parent != null
+                 && ((parent.CreationOptions & TaskCreationOptions.DenyChildAttach) == 0)
                  && (((TaskCreationOptions)(m_stateFlags & OptionsMask)) & TaskCreationOptions.AttachedToParent) != 0)
             {
-                m_parent.ProcessChildCompletion(this);
+                parent.ProcessChildCompletion(this);
             }
 
             // Activate continuations (if any).
@@ -2365,7 +2368,7 @@ namespace System.Threading.Tasks
             Contract.Requires(childTask != null);
             Contract.Requires(childTask.IsCompleted, "ProcessChildCompletion was called for an uncompleted task");
 
-            Contract.Assert(childTask.m_parent == this, "ProcessChildCompletion should only be called for a child of this task");
+            Contract.Assert(childTask.m_contingentProperties?.m_parent == this, "ProcessChildCompletion should only be called for a child of this task");
 
             var props = m_contingentProperties;
 
