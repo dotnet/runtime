@@ -10,14 +10,6 @@ namespace System.Reflection.Metadata.Ecma335.Tests
 {
     public class MethodBodyEncoderTests
     {
-        private static unsafe MethodBodyBlock ReadMethodBody(byte[] body)
-        {
-            fixed (byte* bodyPtr = &body[0])
-            {
-                return MethodBodyBlock.Create(new BlobReader(bodyPtr, body.Length));
-            }
-        }
-
         private static void WriteFakeILWithBranches(BlobBuilder builder, BranchBuilder branchBuilder, int size)
         {
             Assert.Equal(0, builder.Count);
@@ -40,7 +32,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         }
 
         [Fact]
-        public void TinyBody()
+        public unsafe void TinyBody()
         {
             var bodyBuilder = new BlobBuilder();
             var codeBuilder = new BlobBuilder();
@@ -91,28 +83,32 @@ namespace System.Reflection.Metadata.Ecma335.Tests
                 0x01, 0x01, 0x01, 0x01, 0x01, 0x2B, 0xFE
             }, bodyBytes);
 
-            var body = ReadMethodBody(bodyBytes);
-            Assert.Equal(0, body.ExceptionRegions.Length);
-            Assert.Equal(default(StandaloneSignatureHandle), body.LocalSignature);
-            Assert.Equal(8, body.MaxStack);
-            Assert.Equal(bodyBytes.Length, body.Size);
-
-            var ilBytes = body.GetILBytes();
-            AssertEx.Equal(new byte[]
+            fixed (byte* bodyPtr = &bodyBytes[0])
             {
-                0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
-                0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
-                0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
-                0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
-                0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
-                0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
-                0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
-                0x01, 0x01, 0x01, 0x01, 0x01, 0x2B, 0xFE
-            }, ilBytes);
+                var body = MethodBodyBlock.Create(new BlobReader(bodyPtr, bodyBytes.Length));
+
+                Assert.Equal(0, body.ExceptionRegions.Length);
+                Assert.Equal(default(StandaloneSignatureHandle), body.LocalSignature);
+                Assert.Equal(8, body.MaxStack);
+                Assert.Equal(bodyBytes.Length, body.Size);
+
+                var ilBytes = body.GetILBytes();
+                AssertEx.Equal(new byte[]
+                {
+                    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+                    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+                    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+                    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+                    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+                    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+                    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+                    0x01, 0x01, 0x01, 0x01, 0x01, 0x2B, 0xFE
+                }, ilBytes);
+            }
         }
 
         [Fact]
-        public void FatBody()
+        public unsafe void FatBody()
         {
             var bodyBuilder = new BlobBuilder();
             var codeBuilder = new BlobBuilder();
@@ -163,24 +159,28 @@ namespace System.Reflection.Metadata.Ecma335.Tests
                 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x2B, 0xFE
             }, bodyBytes);
 
-            var body = ReadMethodBody(bodyBytes);
-            Assert.Equal(0, body.ExceptionRegions.Length);
-            Assert.Equal(default(StandaloneSignatureHandle), body.LocalSignature);
-            Assert.Equal(2, body.MaxStack);
-            Assert.Equal(bodyBytes.Length, body.Size);
-
-            var ilBytes = body.GetILBytes();
-            AssertEx.Equal(new byte[]
+            fixed (byte* bodyPtr = &bodyBytes[0])
             {
-                0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
-                0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
-                0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
-                0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
-                0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
-                0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
-                0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
-                0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x2B, 0xFE
-            }, ilBytes);
+                var body = MethodBodyBlock.Create(new BlobReader(bodyPtr, bodyBytes.Length));
+
+                Assert.Equal(0, body.ExceptionRegions.Length);
+                Assert.Equal(default(StandaloneSignatureHandle), body.LocalSignature);
+                Assert.Equal(2, body.MaxStack);
+                Assert.Equal(bodyBytes.Length, body.Size);
+
+                var ilBytes = body.GetILBytes();
+                AssertEx.Equal(new byte[]
+                {
+                    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+                    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+                    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+                    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+                    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+                    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+                    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+                    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x2B, 0xFE
+                }, ilBytes);
+            }
         }
 
         [Fact]
