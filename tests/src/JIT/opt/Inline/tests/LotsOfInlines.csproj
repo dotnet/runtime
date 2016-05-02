@@ -32,6 +32,7 @@
     <NoStandardLib>True</NoStandardLib>
     <Noconfig>True</Noconfig>
     <DefineConstants>$(DefineConstants);CORECLR</DefineConstants>
+    <JitOptimizationSensitive>true</JitOptimizationSensitive>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="LotsOfInlines.cs" />
