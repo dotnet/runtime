@@ -71,7 +71,7 @@ helper function
 LPSTR ToString(int i)
 {
     CHAR *pBuffer = (CHAR *)::CoTaskMemAlloc(10 * sizeof(CHAR)); // 10 is enough for our case, WCHAR for BSTR
-	snprintf(pBuffer, 10 * sizeof(CHAR), "%d", i);
+	snprintf(pBuffer, 10, "%d", i);
     return pBuffer;
 }
 
@@ -81,7 +81,7 @@ TestStruct* InitTestStruct()
 {
     TestStruct *expected = (TestStruct *)CoTaskMemAlloc( sizeof(TestStruct) * ARRAY_SIZE );
 
-    for ( size_t i = 0; i < ARRAY_SIZE; i++)
+    for ( int i = 0; i < ARRAY_SIZE; i++)
     {
         expected[i].x = i;
         expected[i].d = i;
@@ -103,7 +103,7 @@ BOOL Equals(T *pActual, int cActual, T *pExpected, int cExpected)
         return FALSE;
     }
 
-    for ( size_t i = 0; i < ((size_t) cExpected); ++i )
+    for ( int i = 0; i < cExpected; ++i )
     {
         if ( !IsObjectEquals(pActual[i], pExpected[i]) )
         {
@@ -124,8 +124,8 @@ template<typename T> bool IsObjectEquals(T o1, T o2)
 template<>
 bool IsObjectEquals(LPSTR o1, LPSTR o2)
 {
-    int cLen1 = strlen(o1);
-    int cLen2 = strlen(o2);
+    size_t cLen1 = strlen(o1);
+    size_t cLen2 = strlen(o2);
 
     if (cLen1 != cLen2 )
     {
@@ -267,7 +267,7 @@ extern "C" DLL_EXPORT BOOL TakeLPSTRArraySeqStructByVal( S_LPSTRArray s, int siz
     CHECK_PARAM_NOT_EMPTY( s.arr );
 
     LPSTR expected[ARRAY_SIZE];
-    for ( size_t i = 0; i < ARRAY_SIZE; ++i )
+    for ( int i = 0; i < ARRAY_SIZE; ++i )
         expected[i] = ToString(i);
 
     return Equals( s.arr, size, expected, ARRAY_SIZE );
@@ -278,7 +278,7 @@ extern "C" DLL_EXPORT BOOL TakeLPCSTRArraySeqStructByVal( S_LPCSTRArray s, int s
     CHECK_PARAM_NOT_EMPTY( s.arr );
 
     LPSTR expected[ARRAY_SIZE];
-    for ( size_t i = 0; i < ARRAY_SIZE; ++i )
+    for ( int i = 0; i < ARRAY_SIZE; ++i )
         expected[i] = ToString(i);
 
     return Equals( s.arr, size, (LPCSTR *)expected, ARRAY_SIZE );
@@ -578,9 +578,9 @@ extern "C" DLL_EXPORT S_CHARArray* S_CHARArray_Ret()
 }
 
 extern "C" DLL_EXPORT S_LPSTRArray* S_LPSTRArray_Ret()
-{
+{        
     S_LPSTRArray *expected = (S_LPSTRArray *)::CoTaskMemAlloc( sizeof(S_LPSTRArray) );
-    for ( size_t i = 0; i < ARRAY_SIZE; ++i )
+    for ( int i = 0; i < ARRAY_SIZE; ++i )
         expected->arr[i] = ToString(i);
 
     return expected;
@@ -590,7 +590,7 @@ extern "C" DLL_EXPORT S_LPSTRArray* S_LPSTRArray_Ret()
 extern "C" DLL_EXPORT S_StructArray* S_StructArray_Ret()
 {
     S_StructArray *expected = (S_StructArray *)::CoTaskMemAlloc( sizeof(S_StructArray) );
-    for ( size_t i = 0; i < ARRAY_SIZE; ++i )
+    for ( int i = 0; i < ARRAY_SIZE; ++i )
     {
         expected->arr[i].x = i;
         expected->arr[i].d = i;
