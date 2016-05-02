@@ -29,7 +29,7 @@ namespace System.Globalization
 
         private unsafe string GetAsciiCore(char* unicode, int count, uint flags, char* output, int outputLength, bool reattempt)
         {
-            int realLen = Interop.GlobalizationNative.ToAscii(unicode, count, flags, output, outputLength);
+            int realLen = Interop.GlobalizationNative.ToAscii(flags, unicode, count, output, outputLength);
 
             if (realLen == 0)
             {
@@ -74,7 +74,7 @@ namespace System.Globalization
 
         private unsafe string GetUnicodeCore(char* ascii, int count, uint flags, char* output, int outputLength, bool reattempt)
         {
-            int realLen = Interop.GlobalizationNative.ToUnicode(fascii, count, flags, output, outputLength);
+            int realLen = Interop.GlobalizationNative.ToUnicode(flags, ascii, count, output, outputLength);
 
             if (realLen == 0)
             {
