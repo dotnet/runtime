@@ -191,9 +191,10 @@ typedef struct {
 #if defined(USE_POSIX_BACKEND)
 	MonoSemType finish_resume_semaphore;
 	gboolean syscall_break_signal;
-	gboolean suspend_can_continue;
 	int signal;
 #endif
+
+	gboolean suspend_can_continue;
 
 	/* This memory pool is used by coop GC to save stack data roots between GC unsafe regions */
 	GByteArray *stackdata;
@@ -601,7 +602,6 @@ MonoRequestAsyncSuspendResult mono_threads_transition_request_async_suspension (
 MonoSelfSupendResult mono_threads_transition_state_poll (THREAD_INFO_TYPE *info);
 MonoResumeResult mono_threads_transition_request_resume (THREAD_INFO_TYPE* info);
 gboolean mono_threads_transition_finish_async_suspend (THREAD_INFO_TYPE* info);
-void mono_threads_transition_async_suspend_compensation (THREAD_INFO_TYPE* info);
 MonoDoBlockingResult mono_threads_transition_do_blocking (THREAD_INFO_TYPE* info);
 MonoDoneBlockingResult mono_threads_transition_done_blocking (THREAD_INFO_TYPE* info);
 MonoAbortBlockingResult mono_threads_transition_abort_blocking (THREAD_INFO_TYPE* info);
@@ -623,9 +623,6 @@ const char* mono_thread_state_name (int state);
 gboolean mono_thread_info_in_critical_location (THREAD_INFO_TYPE *info);
 gboolean mono_thread_info_begin_suspend (THREAD_INFO_TYPE *info);
 gboolean mono_thread_info_begin_resume (THREAD_INFO_TYPE *info);
-
-gboolean
-mono_thread_info_check_suspend_result (THREAD_INFO_TYPE *info);
 
 void mono_threads_add_to_pending_operation_set (THREAD_INFO_TYPE* info); //XXX rename to something to reflect the fact that this is used for both suspend and resume
 gboolean mono_threads_wait_pending_operations (void);

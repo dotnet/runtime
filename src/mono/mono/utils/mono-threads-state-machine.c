@@ -456,52 +456,6 @@ STATE_BLOCKING: Async suspend only begins if a transition to async suspend reque
 }
 
 /*
-This the compensatory transition for failed async suspend.
-
-Async suspend can land on a thread as it began cleaning up and is no longer
-functional. This happens as cleanup is a racy process from the async suspend
-perspective. The thread could have cleaned up its domain or jit_tls, for example.
-
-It can only transition the state as left by a sucessfull finish async suspend transition.
-
-*/
-void
-mono_threads_transition_async_suspend_compensation (MonoThreadInfo* info)
-{
-	int raw_state, cur_state, suspend_count;
-
-retry_state_change:
-	UNWRAP_THREAD_STATE (raw_state, cur_state, suspend_count, info);
-	switch (cur_state) {
-
-	case STATE_ASYNC_SUSPENDED:
-		/*
-		Must be one since if a self suspend is in progress the thread should still be async suspendable.
-		If count > 1 and no self suspend is in progress then it means one of the following two.
-		- the thread was previously suspended, which means we should never reach end suspend in the first place.
-		- another suspend happened concurrently, which means the global suspend lock didn't happen.
-		*/
-		if (G_UNLIKELY(suspend_count != 1))
-			g_error ("[%p] suspend_count = %d, but must be 1", mono_thread_info_get_tid (info), suspend_count);
-		if (InterlockedCompareExchange (&info->thread_state, build_thread_state (STATE_RUNNING, suspend_count - 1), raw_state) != raw_state)
-			goto retry_state_change;
-		trace_state_change ("COMPENSATE_FINISH_ASYNC_SUSPEND", info, raw_state, STATE_RUNNING, -1);
-		break;
-/*
-STATE_RUNNING
-STATE_SELF_SUSPENDED
-STATE_ASYNC_SUSPEND_REQUESTED
-STATE_BLOCKING
-STATE_BLOCKING_AND_SUSPENDED
-STATE_SELF_SUSPEND_REQUESTED: All those are invalid end states of a sucessfull finish async suspend
-*/
-	default:
-		mono_fatal_with_history ("Cannot transition thread %p from %s with COMPENSATE_FINISH_ASYNC_SUSPEND", mono_thread_info_get_tid (info), state_name (cur_state));
-
-	}
-}
-
-/*
 This transitions the thread into a cooperative state where it's assumed to be suspended but can continue.
 
 Native runtime code might want to put itself into a state where the thread is considered suspended but can keep running.

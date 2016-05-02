@@ -31,7 +31,6 @@ mono_threads_core_begin_async_suspend (MonoThreadInfo *info, gboolean interrupt_
 	DWORD id = mono_thread_info_get_tid (info);
 	HANDLE handle;
 	DWORD result;
-	gboolean res;
 
 	handle = OpenThread (THREAD_ALL_ACCESS, FALSE, id);
 	g_assert (handle);
@@ -53,27 +52,24 @@ mono_threads_core_begin_async_suspend (MonoThreadInfo *info, gboolean interrupt_
 		//XXX interrupt_kernel doesn't make sense in this case as the target is not in a syscall
 		return TRUE;
 	}
-	res = mono_threads_get_runtime_callbacks ()->thread_state_init_from_handle (&info->thread_saved_state [ASYNC_SUSPEND_STATE_INDEX], info);
+	info->suspend_can_continue = mono_threads_get_runtime_callbacks ()->thread_state_init_from_handle (&info->thread_saved_state [ASYNC_SUSPEND_STATE_INDEX], info);
 	THREADS_SUSPEND_DEBUG ("thread state %p -> %d\n", (void*)id, res);
-	if (res) {
+	if (info->suspend_can_continue) {
 		//FIXME do we need to QueueUserAPC on this case?
 		if (interrupt_kernel)
 			QueueUserAPC ((PAPCFUNC)interrupt_apc, handle, (ULONG_PTR)NULL);
 	} else {
-		mono_threads_transition_async_suspend_compensation (info);
-		result = ResumeThread (handle);
-		g_assert (result == 1);
 		THREADS_SUSPEND_DEBUG ("FAILSAFE RESUME/2 %p -> %d\n", (void*)info->native_handle, 0);
 	}
 
 	CloseHandle (handle);
-	return res;
+	return info->suspend_can_continue;
 }
 
 gboolean
 mono_threads_core_check_suspend_result (MonoThreadInfo *info)
 {
-	return TRUE;
+	return info->suspend_can_continue;
 }
 
 gboolean

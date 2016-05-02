@@ -175,22 +175,23 @@ suspend_signal_handler (int _dummy, siginfo_t *info, void *context)
 		goto done;
 	}
 
-	ret = mono_threads_get_runtime_callbacks ()->thread_state_init_from_sigctx (&current->thread_saved_state [ASYNC_SUSPEND_STATE_INDEX], context);
+	/*
+	 * If the thread is starting, then thread_state_init_from_sigctx returns FALSE,
+	 * as the thread might have been attached without the domain or lmf having been
+	 * initialized yet.
+	 *
+	 * One way to fix that is to keep the thread suspended (wait for the restart
+	 * signal), and make sgen aware that even if a thread might be suspended, there
+	 * would be cases where you cannot scan its stack/registers. That would in fact
+	 * consist in removing the async suspend compensation, and treat the case directly
+	 * in sgen. That's also how it was done in the sgen specific suspend code.
+	 */
 
-	/* thread_state_init_from_sigctx return FALSE if the current thread is detaching and suspend can't continue. */
-	current->suspend_can_continue = ret;
+	/* thread_state_init_from_sigctx return FALSE if the current thread is starting or detaching and suspend can't continue. */
+	current->suspend_can_continue = mono_threads_get_runtime_callbacks ()->thread_state_init_from_sigctx (&current->thread_saved_state [ASYNC_SUSPEND_STATE_INDEX], context);
 
-	/* This thread is doomed, all we can do is give up and let the suspender recover. */
-	if (!ret) {
+	if (!current->suspend_can_continue)
 		THREADS_SUSPEND_DEBUG ("\tThread is starting or detaching, failed to capture state %p\n", mono_thread_info_get_tid (current));
-
-		mono_threads_transition_async_suspend_compensation (current);
-
-		/* We're done suspending */
-		mono_threads_notify_initiator_of_suspend (current);
-
-		goto done;
-	}
 
 	/*
 	Block the restart signal.
