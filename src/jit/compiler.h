@@ -59,6 +59,10 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "simd.h"
 
+// This is only used locally in the JIT to indicate that 
+// a verification block should be inserted 
+#define SEH_VERIFICATION_EXCEPTION 0xe0564552   // VER
+
 /*****************************************************************************
  *                  Forward declarations
  */
@@ -6450,6 +6454,8 @@ public :
                                                                                 /*OUT*/ SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr);
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
+    bool eeTryResolveToken(CORINFO_RESOLVED_TOKEN* resolvedToken);
+
     // Utility functions
 
 #if defined(DEBUG)
@@ -8372,10 +8378,6 @@ public:
     // An uninited this ptr can be used to access fields, but cannot
     // be used to call a member function.
     BOOL            verTrackObjCtorInitState;
-
-    // Argument of ICorJitInfo::resolveToken. It is used to determine the handling
-    // of ICorJitInfo::resolveToken failure during verification.
-    CORINFO_RESOLVED_TOKEN * verResolveTokenInProgress;
 
     void            verInitBBEntryState(BasicBlock* block,
                                         EntryState* currentState);
