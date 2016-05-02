@@ -31,7 +31,7 @@
     <FeatureMainClrModuleUsesCoreName>true</FeatureMainClrModuleUsesCoreName>
     <FeatureMergeCultureSupportAndEngine>true</FeatureMergeCultureSupportAndEngine>
     <FeatureMergeJitAndEngine>true</FeatureMergeJitAndEngine>
-    <FeatureMulticoreJIT Condition="'$(TargetArch)'!='arm'">true</FeatureMulticoreJIT>
+    <FeatureMulticoreJIT>true</FeatureMulticoreJIT>
     <FeatureNormIdnaOnly>true</FeatureNormIdnaOnly>
     <FeaturePrejit>true</FeaturePrejit>
     <FeatureStandaloneSn>true</FeatureStandaloneSn>
