@@ -350,7 +350,13 @@ namespace System.Threading.Tasks
 
             // Only set a parent if AttachedToParent is specified.
             if ((creationOptions & TaskCreationOptions.AttachedToParent) != 0)
-                EnsureContingentPropertiesInitializedUnsafe().m_parent = Task.InternalCurrent;
+            {
+                Task parent = Task.InternalCurrent;
+                if (parent != null)
+                {
+                    EnsureContingentPropertiesInitializedUnsafe().m_parent = parent;
+                }
+            }
 
             TaskConstructorCore(null, state, default(CancellationToken), creationOptions, InternalTaskOptions.PromiseTask, null);
         }
@@ -552,11 +558,10 @@ namespace System.Threading.Tasks
             }
             Contract.EndContractBlock();
 
-            // This is readonly, and so must be set in the constructor
             // Keep a link to your parent if: (A) You are attached, or (B) you are self-replicating.
-            if (((creationOptions & TaskCreationOptions.AttachedToParent) != 0) ||
-                ((internalOptions & InternalTaskOptions.SelfReplicating) != 0)
-                )
+            if (parent != null &&
+                ((creationOptions & TaskCreationOptions.AttachedToParent) != 0 ||
+                 (internalOptions & InternalTaskOptions.SelfReplicating) != 0))
             {
                 EnsureContingentPropertiesInitializedUnsafe().m_parent = parent;
             }
