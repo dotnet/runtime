@@ -4,8 +4,8 @@
     "emitEntryPoint": true
   },
   "dependencies": {
-    "NuGet.RuntimeModel": "3.5.0-beta-1233",
-    "NuGet.Versioning": "3.5.0-beta-1233",
+    "NuGet.RuntimeModel": "3.5.0-rc-1233",
+    "NuGet.Versioning": "3.5.0-rc-1233",
     "System.CommandLine": "0.1.0-e160119-1",
     "System.Runtime.Serialization.Json": "4.0.2-rc2-24027",
     "Microsoft.DotNet.ProjectModel": "1.0.0-*",
