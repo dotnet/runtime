@@ -31,6 +31,13 @@ namespace System.Net.Sockets
             socketTime.Microseconds = (int)(microseconds % microcnv);
         }
 
+        public static void Initialize()
+        {
+            // Ensure that WSAStartup has been called once per process.  
+            // The System.Net.NameResolution contract is responsible for the initialization.
+            Dns.GetHostName();
+        }
+
         public static SocketError GetLastSocketError()
         {
             return (SocketError)Marshal.GetLastWin32Error();
