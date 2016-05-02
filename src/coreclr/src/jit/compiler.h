@@ -7738,12 +7738,12 @@ public :
         const char*     compFullName;
 #endif // defined(DEBUG) || defined(LATE_DISASM)
 
-#ifdef DEBUG
+#if defined(DEBUG) || defined(INLINE_DATA)
         // Method hash is logcally const, but computed
         // on first demand.
         mutable unsigned compMethodHashPrivate;
         unsigned         compMethodHash() const;
-#endif
+#endif // defined(DEBUG) || defined(INLINE_DATA)
 
 #ifdef PSEUDORANDOM_NOP_INSERTION
         // things for pseudorandom nop insertion
