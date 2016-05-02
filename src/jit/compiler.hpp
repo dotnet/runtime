@@ -1525,9 +1525,16 @@ bool                GenTree::IsVarAddr() const
 inline
 bool                GenTree::gtOverflow() const
 {
+#if !defined(_TARGET_64BIT_) && !defined(LEGACY_BACKEND)
+    assert(gtOper == GT_MUL      || gtOper == GT_CAST     ||
+           gtOper == GT_ADD      || gtOper == GT_SUB      ||
+           gtOper == GT_ASG_ADD  || gtOper == GT_ASG_SUB  ||
+           gtOper == GT_ADD_HI   || gtOper == GT_SUB_HI);
+#else
     assert(gtOper == GT_MUL      || gtOper == GT_CAST     ||
            gtOper == GT_ADD      || gtOper == GT_SUB      ||
            gtOper == GT_ASG_ADD  || gtOper == GT_ASG_SUB);
+#endif
 
     if (gtFlags & GTF_OVERFLOW)
     {
@@ -1546,6 +1553,9 @@ bool                GenTree::gtOverflowEx() const
 {
     if   ( gtOper == GT_MUL      || gtOper == GT_CAST     ||
            gtOper == GT_ADD      || gtOper == GT_SUB      ||
+#if !defined(_TARGET_64BIT_) && !defined(LEGACY_BACKEND)
+           gtOper == GT_ADD_HI   || gtOper == GT_SUB_HI   ||
+#endif
            gtOper == GT_ASG_ADD  || gtOper == GT_ASG_SUB)
     {
         return gtOverflow();
