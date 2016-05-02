@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace System.Globalization
@@ -16,17 +17,34 @@ namespace System.Globalization
             int length = Interop.mincore.IdnToAscii(flags, unicode, count, null, 0);
             if (length == 0)
             {
-                ThrowForZeroLength("unicode", SR.Argument_IdnIllegalName, SR.Argument_InvalidCharSequenceNoIndex);
+                ThrowForZeroLength(nameof(unicode), SR.Argument_IdnIllegalName, SR.Argument_InvalidCharSequenceNoIndex);
             }
 
             // Do the conversion
-            char[] output = new char[length];
-            length = Interop.mincore.IdnToAscii(flags, unicode, count, output, length);
+            const int StackAllocThreshold = 512; // arbitrary limit to switch from stack to heap allocation
+            if (length < StackAllocThreshold)
+            {
+                char* output = stackalloc char[length];
+                return GetAsciiCore(unicode, count, flags, output, length);
+            }
+            else
+            {
+                char[] output = new char[length];
+                fixed (char* pOutput = output)
+                {
+                    return GetAsciiCore(unicode, count, flags, pOutput, length);
+                }
+            }
+        }
+
+        private unsafe string GetAsciiCore(char* unicode, int count, uint flags, char* output, int outputLength)
+        {
+            int length = Interop.mincore.IdnToAscii(flags, unicode, count, output, outputLength);
             if (length == 0)
             {
-                ThrowForZeroLength("unicode", SR.Argument_IdnIllegalName, SR.Argument_InvalidCharSequenceNoIndex);
+                ThrowForZeroLength(nameof(unicode), SR.Argument_IdnIllegalName, SR.Argument_InvalidCharSequenceNoIndex);
             }
-
+            Debug.Assert(length == outputLength);
             return new string(output, 0, length);
         }
 
@@ -38,18 +56,34 @@ namespace System.Globalization
             int length = Interop.mincore.IdnToUnicode(flags, ascii, count, null, 0);
             if (length == 0)
             {
-                ThrowForZeroLength("ascii", SR.Argument_IdnIllegalName, SR.Argument_IdnBadPunycode);
+                ThrowForZeroLength(nameof(ascii), SR.Argument_IdnIllegalName, SR.Argument_IdnBadPunycode);
             }
-
-            char[] output = new char[length];
 
             // Do the conversion
-            length = Interop.mincore.IdnToUnicode(flags, ascii, count, output, length);
+            const int StackAllocThreshold = 512; // arbitrary limit to switch from stack to heap allocation
+            if (length < StackAllocThreshold)
+            {
+                char* output = stackalloc char[length];
+                return GetUnicodeCore(ascii, count, flags, output, length);
+            }
+            else
+            {
+                char[] output = new char[length];
+                fixed (char* pOutput = output)
+                {
+                    return GetUnicodeCore(ascii, count, flags, pOutput, length);
+                }
+            }
+        }
+
+        private unsafe string GetUnicodeCore(char* ascii, int count, uint flags, char* output, int outputLength)
+        {
+            int length = Interop.mincore.IdnToUnicode(flags, ascii, count, output, outputLength);
             if (length == 0)
             {
-                ThrowForZeroLength("ascii", SR.Argument_IdnIllegalName, SR.Argument_IdnBadPunycode);
+                ThrowForZeroLength(nameof(ascii), SR.Argument_IdnIllegalName, SR.Argument_IdnBadPunycode);
             }
-
+            Debug.Assert(length == outputLength);
             return new string(output, 0, length);
         }
 
