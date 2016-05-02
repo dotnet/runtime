@@ -3,166 +3,75 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
-using System;
-using System.Collections;
-using System.Collections.Specialized;
 
 namespace System.Collections.Specialized.Tests
 {
     public class GetEnumeratorNameObjectCollectionBaseTests
     {
-        private String _strErr = "Error!";
-
-        [Fact]
-        public void Test01()
+        [Theory]
+        [InlineData(0)]
+        [InlineData(10)]
+        public void GetEnumerator(int count)
         {
-            MyNameObjectCollection noc = new MyNameObjectCollection();
-            IEnumerator en = null;
-            bool res;
+            MyNameObjectCollection nameObjectCollection = Helpers.CreateNameObjectCollection(count);
+            Assert.NotSame(nameObjectCollection.GetEnumerator(), nameObjectCollection.GetEnumerator());
 
-
-            // [] Enumerator for empty collection
-            // Get enumerator
-            en = noc.GetEnumerator();
-
-            // MoveNext should return false
-            res = en.MoveNext();
-            if (res)
+            IEnumerator enumerator = nameObjectCollection.GetEnumerator();
+            for (int i = 0; i < 2; i++)
             {
-                Assert.False(true, _strErr + "MoveNext returned true");
-            }
-
-            //  Attempt to get Current should result in exception
-            Assert.Throws<InvalidOperationException>(() => { String curr = (String)en.Current; });
-
-            // [] Enumerator for non-empty collection
-            // Add items
-            for (int i = 0; i < 10; i++)
-            {
-                noc.Add("key_" + i.ToString(), new Foo());
-            }
-
-            // Get enumerator
-            en = noc.GetEnumerator();
-
-            //  Attempt to get Current should result in exception
-            Assert.Throws<InvalidOperationException>(() => { String curr = (String)en.Current; });
-
-            // Iterate over collection
-            for (int i = 0; i < noc.Count; i++)
-            {
-                // MoveNext should return true
-                res = en.MoveNext();
-                if (!res)
+                int counter = 0;
+                while (enumerator.MoveNext())
                 {
-                    Assert.False(true, string.Format(_strErr + "#{0}, MoveNext returned false", i));
+                    Assert.Equal(nameObjectCollection.GetKey(counter), enumerator.Current);
+                    counter++;
                 }
-
-                // Check current
-                String curr = (String)en.Current;
-                if (noc[curr] == null)
-                {
-                    Assert.False(true, string.Format(_strErr + "#{0}, Current={1}, key not found in collection", i, curr));
-                }
-
-                // Check current again
-                String current1 = (String)en.Current;
-                if (current1 != curr)
-                {
-                    Assert.False(true, string.Format(_strErr + "#{0}, Value of Current changed!  Was {1}, now {2}", i, curr, current1));
-                }
+                Assert.Equal(count, nameObjectCollection.Count);
+                enumerator.Reset();
             }
+        }
 
-            // next MoveNext should bring us outside of the collection, return false
-            res = en.MoveNext();
-            if (res)
-            {
-                Assert.False(true, _strErr + "MoveNext returned true");
-            }
+        [Theory]
+        [InlineData(0)]
+        [InlineData(10)]
+        public void GetEnumerator_Invalid(int count)
+        {
+            MyNameObjectCollection nameObjectCollection = Helpers.CreateNameObjectCollection(count);
+            IEnumerator enumerator = nameObjectCollection.GetEnumerator();
 
-            // Attempt to get Current should result in exception
-            Assert.Throws<InvalidOperationException>(() => { String curr = (String)en.Current; });
+            // Has not started enumerating
+            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
 
-            // Reset
-            en.Reset();
+            // Has finished enumerating
+            while (enumerator.MoveNext()) ;
+            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
 
-            // Attempt to get Current should result in exception
-            Assert.Throws<InvalidOperationException>(() => { String curr = (String)en.Current; });
-
-            // Modify collection and then try MoveNext, Current, Reset
-            // new collection
-            noc = new MyNameObjectCollection();
-            noc.Add("key1", new Foo());
-            noc.Add("key2", new Foo());
-            noc.Add("key3", new Foo());
-            en = noc.GetEnumerator();
-
-            // MoveNext
-            if (!en.MoveNext())
-            {
-                Assert.False(true, _strErr + "MoveNext returned false");
-            }
-
-            // Current
-            String current = (String)en.Current;
+            // Has reset enumerating
+            enumerator.Reset();
+            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
 
             // Modify collection
-            noc.RemoveAt(0);
-            if (noc.Count != 2)
+            enumerator.MoveNext();
+            nameObjectCollection.Add("new-name", new Foo("new-value"));
+            Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
+            Assert.Throws<InvalidOperationException>(() => enumerator.Reset());
+            if (count > 0)
             {
-                Assert.False(true, string.Format(_strErr + "Collection Count wrong.  Expected {0}, got {1}", 2, noc.Count));
+                Assert.NotNull(enumerator.Current);
             }
 
-            //  Current should not throw, but no guarantee is made on the return value
-            string curr1 = (String)en.Current;
+            // Modified read only collection still throws
+            nameObjectCollection.IsReadOnly = true;
+            Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
+            Assert.Throws<InvalidOperationException>(() => enumerator.Reset());
 
-            //  MoveNext should throw exception
-            Assert.Throws<InvalidOperationException>(() => { en.MoveNext(); });
-
-            //  Reset should throw exception
-            Assert.Throws<InvalidOperationException>(() => { en.Reset(); });
-
-            //  Current should not throw, but no guarantee is made on the return value
-            curr1 = (String)en.Current;
-
-            //  MoveNext should still throw exception if collection is ReadOnly
-            noc.IsReadOnly = true;
-            Assert.Throws<InvalidOperationException>(() => { en.MoveNext(); });
-
-            // Clear collection and then try MoveNext, Current, Reset
-            // new collection
-            noc = new MyNameObjectCollection();
-            noc.Add("key1", new Foo());
-            noc.Add("key2", new Foo());
-            noc.Add("key3", new Foo());
-            en = noc.GetEnumerator();
-
-            // MoveNext
-            if (!en.MoveNext())
-            {
-                Assert.False(true, _strErr + "MoveNext returned false");
-            }
-
-            // Current
-            current = (String)en.Current;
-
-            // Modify collection
-            noc.Clear();
-            if (noc.Count != 0)
-            {
-                Assert.False(true, string.Format(_strErr + "Collection Count wrong.  Expected {0}, got {1}", 2, noc.Count));
-            }
-
-            //  Current throws.  Should it throw here?!
-            Assert.Throws<InvalidOperationException>(() => { String curr = (String)en.Current; });
-
-            //  MoveNext should throw exception
-            Assert.Throws<InvalidOperationException>(() => { en.MoveNext(); });
-
-            //  Reset should throw exception
-            Assert.Throws<InvalidOperationException>(() => { en.Reset(); });
+            // Clear collection
+            nameObjectCollection.IsReadOnly = false;
+            enumerator = nameObjectCollection.GetEnumerator();
+            enumerator.MoveNext();
+            nameObjectCollection.Clear();
+            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
+            Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
+            Assert.Throws<InvalidOperationException>(() => enumerator.Reset());
         }
     }
 }
-
-
