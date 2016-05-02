@@ -1835,7 +1835,7 @@ void NDirectStubLinker::SetCallingConvention(CorPinvokeMap unmngCallConv, BOOL f
     LIMITED_METHOD_CONTRACT;
     ULONG uNativeCallingConv = 0;
 
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM_)
+#if !defined(_TARGET_X86_)
     if (fIsVarArg)
     {
         // The JIT has to use a different calling convention for unmanaged vararg targets on 64-bit and ARM:
@@ -1843,7 +1843,7 @@ void NDirectStubLinker::SetCallingConvention(CorPinvokeMap unmngCallConv, BOOL f
         uNativeCallingConv = CORINFO_CALLCONV_NATIVEVARARG;
     }
     else
-#endif // _TARGET_AMD64_ || _TARGET_ARM_
+#endif // !_TARGET_X86_
     {
         switch (unmngCallConv)
         {
