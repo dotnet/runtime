@@ -136,7 +136,11 @@ add_definitions(-DFEATURE_MERGE_CULTURE_SUPPORT_AND_ENGINE)
 # TODO_DJIT: Remove this "set" to commence loading JIT dynamically.
 if(NOT WIN32)
   set(FEATURE_MERGE_JIT_AND_ENGINE 1)
+elseif (CLR_CMAKE_TARGET_ARCH_ARM64)
+  # TODO_DJIT: Remove this as part of enabling cross-compiling standalone JIT binary.
+  set(FEATURE_MERGE_JIT_AND_ENGINE 1)
 endif(NOT WIN32)
+
 if(FEATURE_MERGE_JIT_AND_ENGINE)
   # Disable the following for UNIX altjit on Windows
   add_definitions(-DFEATURE_MERGE_JIT_AND_ENGINE)

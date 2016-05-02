@@ -34,7 +34,7 @@ enum ReturnValues
 #define NumItems(s) (sizeof(s) / sizeof(s[0]))
 
 STDAPI CreatePDBWorker(LPCWSTR pwzAssemblyPath, LPCWSTR pwzPlatformAssembliesPaths, LPCWSTR pwzTrustedPlatformAssemblies, LPCWSTR pwzPlatformResourceRoots, LPCWSTR pwzAppPaths, LPCWSTR pwzAppNiPaths, LPCWSTR pwzPdbPath, BOOL fGeneratePDBLinesInfo, LPCWSTR pwzManagedPdbSearchPath, LPCWSTR pwzPlatformWinmdPaths);
-STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembliesPaths, LPCWSTR pwzTrustedPlatformAssemblies, LPCWSTR pwzPlatformResourceRoots, LPCWSTR pwzAppPaths, LPCWSTR pwzOutputFilename=NULL, LPCWSTR pwzPlatformWinmdPaths=NULL, ICorSvcLogger *pLogger = NULL);
+STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembliesPaths, LPCWSTR pwzTrustedPlatformAssemblies, LPCWSTR pwzPlatformResourceRoots, LPCWSTR pwzAppPaths, LPCWSTR pwzOutputFilename=NULL, LPCWSTR pwzPlatformWinmdPaths=NULL, ICorSvcLogger *pLogger = NULL, LPCWSTR pwszCLRJITPath = nullptr);
 void SetSvcLogger(ICorSvcLogger *pCorSvcLogger);
 #ifdef FEATURE_CORECLR
 void SetMscorlibPath(LPCWSTR wzSystemDirectory);
@@ -155,6 +155,10 @@ void PrintUsageHelper()
        W("    /Tuning              - Generate an instrumented image to collect\n")
        W("                           scenario traces, which can be used with ibcmerge.exe\n")
 #endif
+#if defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+       W("    /JITPath\n")
+       W("                         - Specifies the absolute file path to JIT compiler to be used.\n")
+#endif // defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
 #ifdef FEATURE_READYTORUN_COMPILER
        W("    /ReadyToRun          - Generate images resilient to the runtime and\n")
        W("                           dependency versions\n")
@@ -450,6 +454,10 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
     LPCWSTR pwzOutputFilename = NULL;
     LPCWSTR pwzPublicKeys = nullptr;
 
+#if defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+    LPCWSTR pwszCLRJITPath = nullptr;
+#endif // defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+
     HRESULT hr;
 
 #ifndef PLATFORM_UNIX
@@ -526,6 +534,16 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
             // We dont explicitly set the flag here again so that if "/PartialTrust" is specified, then it will successfully override the default
             // fulltrust behaviour.
         }
+#if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+        else if (MatchParameter(*argv, W("JITPath")) && (argc > 1))
+        {
+            pwszCLRJITPath = argv[1];
+            
+            // skip JIT Path
+            argv++;
+            argc--;
+        }
+#endif // !defined(FEATURE_MERGE_JIT_AND_ENGINE)
 #endif
 #ifdef FEATURE_WINMD_RESILIENT
         else if (MatchParameter(*argv, W("WinMDResilient")))
@@ -925,6 +943,11 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
          pwzAppPaths,
          pwzOutputFilename,
          pwzPlatformWinmdPaths
+#if defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)      
+        ,
+        NULL, // ICorSvcLogger
+        pwszCLRJITPath   
+#endif // defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
          );
     }
     
