@@ -5,9 +5,10 @@ set synclog=sync.log
 echo Running Sync.cmd %* > %synclog%
 
 set options=/nologo /v:minimal /clp:Summary /flp:v=detailed;Append;LogFile=%synclog%
+
+set "__args= %*"
+set processedArgs=
 set unprocessedBuildArgs=
-set allargs=%*
-set thisArgs=
 
 set src=false
 set packages=false
@@ -27,30 +28,34 @@ if /I [%1]==[/?] goto Usage
 
 if /I [%1] == [/p] (
     set packages=true
-    set thisArgs=!thisArgs!%1
+    set processedArgs=!processedArgs! %1
     goto Next
 )
 
 if /I [%1] == [/s] (
     set src=true
-    set thisArgs=!thisArgs!%1
+    set processedArgs=!processedArgs! %1
     goto Next
 )
 
 if /I [%1] == [/t] (
     set tests=true
     set packages=true
-    set thisArgs=!thisArgs!%1
+    set processedArgs=!processedArgs! %1
     goto Next
 )
 
 if /I [%1] == [/ab] (
     set azureBlobs=true
-    set thisArgs=!thisArgs!%1
+    set processedArgs=!processedArgs! %1
     goto Next
 )
 
-set unprocessedBuildArgs=!unprocessedBuildArgs! %1
+if [!processedArgs!]==[] (
+  call set unprocessedBuildArgs=!__args!
+) else (
+  call set unprocessedBuildArgs=%%__args:*!processedArgs!=%%
+)
 
 :Next
 shift /1
