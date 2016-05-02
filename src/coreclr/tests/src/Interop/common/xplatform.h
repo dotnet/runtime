@@ -5,6 +5,11 @@
 #ifndef __XPLAT_H__
 #define __XPLAT_H__
 
+#ifdef _MSC_VER
+// Our tests don't care about secure CRT
+#define _CRT_SECURE_NO_WARNINGS 1
+#endif
+
 // common headers
 #include <stdio.h>
 #include <memory.h>
@@ -48,8 +53,10 @@
 
 #endif //_WIN32
 
+#ifndef WINAPI
+#define WINAPI __stdcall
+#endif
 
-#define WINAPI   _cdecl
 #ifndef __stdcall
 #if __i386__
 #define __stdcall __attribute__((stdcall))
