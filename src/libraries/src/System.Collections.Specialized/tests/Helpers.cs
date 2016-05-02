@@ -6,6 +6,18 @@ namespace System.Collections.Specialized.Tests
 {
     public static class Helpers
     {
+        public static MyNameObjectCollection CreateNameObjectCollection(int count)
+        {
+            MyNameObjectCollection nameObjectCollection = new MyNameObjectCollection();
+
+            for (int i = 0; i < count; i++)
+            {
+                nameObjectCollection.Add("Name_" + i, new Foo("Value_" + i));
+            }
+
+            return nameObjectCollection;
+        }
+
         public static StringDictionary CreateStringDictionary(int count)
         {
             StringDictionary stringDictionary = new StringDictionary();

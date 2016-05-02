@@ -3,61 +3,21 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
-using System;
-using System.Collections;
-using System.Collections.Specialized;
 
 namespace System.Collections.Specialized.Tests
 {
     public class GetSyncRootNameObjectCollectionBaseTests
     {
-        private String _strErr = "Error!";
-
         [Fact]
-        public void Test01()
+        public void SyncRoot()
         {
-            // [] Get SyncRoot, same instance returns same object
-            MyNameObjectCollection noc1 = new MyNameObjectCollection();
-            MyNameObjectCollection noc2;
-            noc1.Add("key1", new Foo());
-            noc1.Add("key2", new Foo());
+            ICollection nameObjectCollection1 = new MyNameObjectCollection();
+            ICollection nameObjectCollection2 = new MyNameObjectCollection();
 
-            if (((ICollection)noc1).SyncRoot == null)
-            {
-                Assert.False(true, _strErr + "SyncRoot object is null");
-            }
+            Assert.False(nameObjectCollection1.IsSynchronized);
 
-            noc2 = noc1;
-            if (((ICollection)noc1).SyncRoot != ((ICollection)noc2).SyncRoot)
-            {
-                Assert.False(true, _strErr + "Different SyncRoot objects for same collection");
-            }
-
-            // [] Different instances return different SyncRoot objects
-            noc1 = new MyNameObjectCollection();
-            noc2 = new MyNameObjectCollection();
-
-            if (((ICollection)noc1).SyncRoot == ((ICollection)noc2).SyncRoot)
-            {
-                Assert.False(true, _strErr + "SyncRoot for 2 different collections is the same");
-            }
-
-            // [] IsSynchronized returns false
-            noc1 = new MyNameObjectCollection();
-
-            if (((ICollection)noc1).IsSynchronized != false)
-            {
-                Assert.False(true, _strErr + "IsSynchronized should be false!");
-            }
-
-            // [] SyncRoot is of type Object
-            noc1 = new MyNameObjectCollection();
-            if (((ICollection)noc1).SyncRoot.GetType() != typeof(Object))
-            {
-                Assert.False(true, _strErr + "SyncRoot is not of type Object");
-            }
+            Assert.Same(nameObjectCollection1.SyncRoot, nameObjectCollection1.SyncRoot);
+            Assert.NotEqual(nameObjectCollection1.SyncRoot, nameObjectCollection2.SyncRoot);
         }
     }
 }
-
-
