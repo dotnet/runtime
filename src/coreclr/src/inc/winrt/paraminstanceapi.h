@@ -78,7 +78,7 @@ namespace Ro { namespace detail {
     // Debugging aide.  Set breakpoint on _FailedHR 
     //  to see HRESULT propagation.
     // 
-    #ifdef DBG
+    #ifdef DEBUG
     inline HRESULT __declspec(noinline) _FailedHR(HRESULT hr) { static HRESULT _hr = hr; return hr; }
     #else
     inline HRESULT _FailedHR(HRESULT hr) { return hr; }
