@@ -20,10 +20,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "corexcep.h"
 
-// This is only used locally in the JIT to indicate that 
-// a verification block should be inserted 
-#define SEH_VERIFICATION_EXCEPTION 0xe0564552   // VER
-
 #define Verify(cond, msg)                                   \
     do {                                                    \
         if (!(cond)) {                                      \
@@ -267,9 +263,14 @@ void Compiler::impResolveToken(const BYTE* addr, CORINFO_RESOLVED_TOKEN * pResol
     pResolvedToken->token = getU4LittleEndian(addr);
     pResolvedToken->tokenType = kind;
 
-    verResolveTokenInProgress = pResolvedToken;
-    info.compCompHnd->resolveToken(pResolvedToken);
-    verResolveTokenInProgress = NULL;
+    if (!tiVerificationNeeded)
+    {
+        info.compCompHnd->resolveToken(pResolvedToken);
+    }
+    else
+    {
+        Verify(eeTryResolveToken(pResolvedToken), "Token resolution failed");
+    }
 }
 
 /*****************************************************************************
@@ -14005,80 +14006,11 @@ void            Compiler::impReimportMarkSuccessors(BasicBlock * block)
  *  from it).
  */
 
-struct FilterVerificationExceptionsParam
-{
-    Compiler *pThis;
-    BasicBlock *block;
-    EXCEPTION_POINTERS exceptionPointers;
-};
-
-//
-// Validate the token to determine whether to turn the bad image format exception into
-// verification failure (for backward compatibility)
-//
-static bool verIsValidToken(COMP_HANDLE compCompHnd, CORINFO_RESOLVED_TOKEN * pResolvedToken)
-{
-    if (!compCompHnd->isValidToken(pResolvedToken->tokenScope, pResolvedToken->token))
-        return FALSE;
-
-    CorInfoTokenKind tokenType = pResolvedToken->tokenType;
-
-    switch (TypeFromToken(pResolvedToken->token))
-    {
-    case mdtModuleRef:
-    case mdtTypeDef:
-    case mdtTypeRef:
-    case mdtTypeSpec:
-        if ((tokenType & CORINFO_TOKENKIND_Class) == 0)
-            return FALSE;
-        break;
-
-    case mdtMethodDef:
-    case mdtMethodSpec:
-        if ((tokenType & CORINFO_TOKENKIND_Method) == 0)
-            return FALSE;
-        break;
-
-    case mdtFieldDef:
-        if ((tokenType & CORINFO_TOKENKIND_Field) == 0)
-            return FALSE;
-        break;
-
-    case mdtMemberRef:
-        if ((tokenType & (CORINFO_TOKENKIND_Method | CORINFO_TOKENKIND_Field)) == 0)
-            return FALSE;
-        break;
-
-    default:
-        return FALSE;
-    }
-
-    return TRUE;
-}
-
 LONG FilterVerificationExceptions(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam)
 {
-    FilterVerificationExceptionsParam *pFVEParam =
-        (FilterVerificationExceptionsParam *)lpvParam;
-    pFVEParam->exceptionPointers = *pExceptionPointers;
-
     if (pExceptionPointers->ExceptionRecord->ExceptionCode == SEH_VERIFICATION_EXCEPTION)
-        return EXCEPTION_EXECUTE_HANDLER;
-
-    // Backward compability: Convert bad image format exceptions thrown by the EE while resolving token to verification exceptions 
-    // if we are verifying. Verification exceptions will cause the JIT of the basic block to fail, but the JITing of the whole method 
-    // is still going to succeed. This is done for backward compatibility only. Ideally, we would always treat bad tokens in the IL 
-    // stream as fatal errors.
-    if (pExceptionPointers->ExceptionRecord->ExceptionCode == EXCEPTION_COMPLUS)
     {
-        Compiler * pThis = pFVEParam->pThis;
-        if (pThis->tiVerificationNeeded && pThis->verResolveTokenInProgress)
-        {
-            if (!verIsValidToken(pThis->info.compCompHnd, pThis->verResolveTokenInProgress))
-            {
-                return pThis->info.compCompHnd->FilterException(pExceptionPointers);
-            }
-        }
+        return EXCEPTION_EXECUTE_HANDLER;
     }
 
     return EXCEPTION_CONTINUE_SEARCH;
@@ -14262,12 +14194,15 @@ void          Compiler::impImportBlock(BasicBlock *block)
 
     /* Now walk the code and import the IL into GenTrees */   
 
+    struct FilterVerificationExceptionsParam
+    {
+        Compiler *pThis;
+        BasicBlock *block;
+    };
     FilterVerificationExceptionsParam param;
 
     param.pThis = this;
     param.block = block;
-
-    verResolveTokenInProgress = NULL;
 
     PAL_TRY(FilterVerificationExceptionsParam *, pParam, &param)
     {
@@ -14314,9 +14249,6 @@ void          Compiler::impImportBlock(BasicBlock *block)
     }
     PAL_EXCEPT_FILTER(FilterVerificationExceptions) 
     {
-        if (param.exceptionPointers.ExceptionRecord->ExceptionCode == EXCEPTION_COMPLUS)
-            param.pThis->info.compCompHnd->HandleException(&param.exceptionPointers);
-
         verHandleVerificationFailure(block DEBUGARG(false));
     }
     PAL_ENDTRY
