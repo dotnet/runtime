@@ -4002,8 +4002,16 @@ void* forceFrameJIT;       // used to force to frame &useful for fastchecked deb
 bool Compiler::skipMethod()
 {
     static ConfigMethodRange fJitRange;
-    fJitRange.ensureInit(JitConfig.JitRange());
-    if (!fJitRange.contains(info.compCompHnd, info.compMethodHnd))
+    fJitRange.EnsureInit(JitConfig.JitRange());
+    assert(!fJitRange.Error());
+
+    // Normally JitConfig.JitRange() is null, we don't want to skip
+    // jitting any methods.
+    //
+    // So, the logic below relies on the fact that a null range string
+    // passed to ConfigMethodRange represents the set of all methods.
+
+    if (!fJitRange.Contains(info.compCompHnd, info.compMethodHnd))
         return true;
 
     if (JitConfig.JitExclude().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
@@ -4080,8 +4088,11 @@ int           Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
     this->dumpIRBlockHeaders = compIsForInlining() ? impInlineInfo->InlinerCompiler->dumpIRBlockHeaders : NULL;
     this->dumpIRExit         = compIsForInlining() ? impInlineInfo->InlinerCompiler->dumpIRExit : NULL;
 
-    info.compMethodHashPrivate = 0;
 #endif
+
+#if defined(DEBUG) || defined(INLINE_DATA)
+    info.compMethodHashPrivate = 0;
+#endif // defined(DEBUG) || defined(INLINE_DATA)
 
 #if FUNC_INFO_LOGGING
     LPCWSTR tmpJitFuncInfoFilename = JitConfig.JitFuncInfoFile();
@@ -4165,16 +4176,14 @@ int           Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
         return CORJIT_SKIPPED;
     }
 
+    // Opt-in to jit stress based on method hash ranges.
+    //
+    // Note the default (with JitStressRange not set) is that all
+    // methods will be subject to stress.
     static ConfigMethodRange fJitStressRange;
-    fJitStressRange.ensureInit(JitConfig.JitStressRange());
-    if (fJitStressRange.contains(info.compCompHnd, info.compMethodHnd))
-    {
-        bRangeAllowStress = true;
-    }
-    else
-    {
-        bRangeAllowStress = false;
-    }
+    fJitStressRange.EnsureInit(JitConfig.JitStressRange());
+    assert(!fJitStressRange.Error());
+    bRangeAllowStress = fJitStressRange.Contains(info.compCompHnd, info.compMethodHnd);
 
 #endif // DEBUG
 
@@ -4296,7 +4305,7 @@ DoneCleanUp:
     return  param.result;
 }
 
-#ifdef DEBUG
+#if defined(DEBUG) || defined(INLINE_DATA)
 unsigned        Compiler::Info::compMethodHash() const
 {
     if (compMethodHashPrivate == 0)
@@ -4305,7 +4314,7 @@ unsigned        Compiler::Info::compMethodHash() const
     }
     return compMethodHashPrivate;
 }
-#endif
+#endif // defined(DEBUG) || defined(INLINE_DATA)
 
 void Compiler::compCompileFinish()
 {

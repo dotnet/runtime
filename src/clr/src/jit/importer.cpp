@@ -16553,10 +16553,17 @@ void          Compiler::impMarkInlineCandidate(GenTreePtr callNode, CORINFO_CONT
     GenTreeCall* call = callNode->AsCall();
     InlineResult inlineResult(this, call, "impMarkInlineCandidate");
     
-    /* Don't inline if not optimized code */
-    if  (opts.compDbgCode)
+    // Don't inline if not optimizing root method
+    if (opts.compDbgCode)
     {
         inlineResult.NoteFatal(InlineObservation::CALLER_DEBUG_CODEGEN);
+        return;
+    }
+
+    // Don't inline if inlining into root method is disabled.
+    if (InlineStrategy::IsNoInline(info.compCompHnd, info.compMethodHnd))
+    {
+        inlineResult.NoteFatal(InlineObservation::CALLER_IS_JIT_NOINLINE);
         return;
     }
 
