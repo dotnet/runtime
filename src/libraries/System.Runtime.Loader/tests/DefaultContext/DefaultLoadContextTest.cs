@@ -48,6 +48,7 @@ namespace System.Runtime.Loader.Tests
             File.Copy(targetRenamedPath, targetPath); 
         }
 
+        [ActiveIssue(7805, PlatformID.Linux)]
         [Fact]
         public static void LoadInDefaultContext()
         {
