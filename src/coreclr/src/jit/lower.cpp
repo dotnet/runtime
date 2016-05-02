@@ -469,6 +469,18 @@ void Lowering::DecomposeNode(GenTreePtr* pTree, Compiler::fgWalkData* data)
             hiOp2->gtNext      = hiResult;
             hiResult->gtPrev   = hiOp2;
 
+            if (oper == GT_ADD || oper == GT_SUB)
+            {
+                if (loResult->gtOverflow())
+                {
+                    hiResult->gtFlags |= GTF_OVERFLOW;
+                    loResult->gtFlags &= ~GTF_OVERFLOW;
+                }
+                if (loResult->gtFlags & GTF_UNSIGNED)
+                {
+                    hiResult->gtFlags |= GTF_UNSIGNED;
+                }
+            }
             // Below, we'll put the loResult and hiResult trees together, using the more
             // general fgInsertTreeInListAfter() method.
         }
