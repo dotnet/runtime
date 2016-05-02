@@ -17,6 +17,7 @@ namespace System.Text.Tests
                 char c = (char)i;
                 yield return new object[] { "a" + c + "b", 0, 3, new byte[] { 97, 0, (byte)c, 0, 98, 0 } };
                 yield return new object[] { "a" + c + "b", 1, 1, new byte[] { (byte)c, 0 } };
+                yield return new object[] { "a" + c + "b", 2, 1, new byte[] { 98, 0 } };
             }
 
             // Unicode
@@ -26,6 +27,8 @@ namespace System.Text.Tests
             // Surrogate pairs
             yield return new object[] { "\uD800\uDC00", 0, 2, new byte[] { 0, 216, 0, 220 } };
             yield return new object[] { "a\uD800\uDC00b", 0, 4, new byte[] { 97, 0, 0, 216, 0, 220, 98, 0 } };
+            
+            yield return new object[] { "\uD800\uDC00\uFFFD\uFEB7", 0, 4, new byte[] { 0x00, 0xD8, 0x00, 0xDC, 0xFD, 0xFF, 0xB7, 0xFE } };
 
             // Mixture of ASCII and Unicode
             yield return new object[] { "FooBA\u0400R", 0, 7, new byte[] { 70, 0, 111, 0, 111, 0, 66, 0, 65, 0, 0, 4, 82, 0 } };
@@ -38,7 +41,7 @@ namespace System.Text.Tests
             yield return new object[] { "za\u0306\u01FD\u03B2\uD8FF\uDCFF", 0, 7, new byte[] { 122, 0, 97, 0, 6, 3, 253, 1, 178, 3, 255, 216, 255, 220 } };
             yield return new object[] { "za\u0306\u01FD\u03B2\uD8FF\uDCFF", 4, 3, new byte[] { 178, 3, 255, 216, 255, 220 } };
 
-            // Empty bytes
+            // Empty strings
             yield return new object[] { string.Empty, 0, 0, new byte[0] };
             yield return new object[] { "a\u1234b", 3, 0, new byte[0] };
             yield return new object[] { "a\u1234b", 0, 0, new byte[0] };
@@ -83,8 +86,12 @@ namespace System.Text.Tests
             byte[] unicodeReplacementBytes1 = new byte[] { 253, 255 };
             Encode_InvalidChars("\uD800", 0, 1, unicodeReplacementBytes1); // Lone high surrogate
             Encode_InvalidChars("\uDC00", 0, 1, unicodeReplacementBytes1); // Lone low surrogate
-            Encode_InvalidChars("\uD800\uDC00", 0, 1, unicodeReplacementBytes1); // Surrogate pair out of range
-            Encode_InvalidChars("\uD800\uDC00", 1, 1, unicodeReplacementBytes1); // Surrogate pair out of range
+
+            // Surrogate pair out of range
+            Encode_InvalidChars("\uD800\uDC00", 0, 1, unicodeReplacementBytes1);
+            Encode_InvalidChars("\uD800\uDC00", 1, 1, unicodeReplacementBytes1);
+            Encode_InvalidChars("\uDBFF\uDFFF", 0, 1, unicodeReplacementBytes1);
+            Encode_InvalidChars("\uDBFF\uDFFF", 1, 1, unicodeReplacementBytes1);
 
             byte[] unicodeReplacementBytes2 = new byte[] { 253, 255, 253, 255 };
             Encode_InvalidChars("\uD800\uD800", 0, 2, unicodeReplacementBytes2); // High, high
@@ -103,6 +110,7 @@ namespace System.Text.Tests
             Encode("\uFFFD", 0, 1, unicodeReplacementBytes1);
             Encode("\uFFFE", 0, 1, new byte[] { 254, 255 });
             Encode("\uFFFF", 0, 1, new byte[] { 255, 255 });
+            Encode("\uFFFF\uFFFE", 0, 2, new byte[] { 0xFF, 0xFF, 0xFE, 0xFF });
         }
 
         [Fact]
