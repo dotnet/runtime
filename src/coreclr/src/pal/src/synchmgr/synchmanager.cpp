@@ -70,19 +70,19 @@ namespace CorUnix
     {
         TRACE("Verifying WaitingThreadsListNode @ %p\n", this);
         _ASSERT_MSG(HeadSignature == dwDebugHeadSignature,
-                    "WaitingThreadsListNode header signature corruption [p=%p]", 
+                    "WaitingThreadsListNode header signature corruption [p=%p]",
                     this);
         _ASSERT_MSG(TailSignature == dwDebugTailSignature,
-                    "WaitingThreadsListNode trailer signature corruption [p=%p]", 
+                    "WaitingThreadsListNode trailer signature corruption [p=%p]",
                     this);
     }
     void _WaitingThreadsListNode::ValidateEmptyObject()
     {
         _ASSERT_MSG(HeadSignature != dwDebugHeadSignature,
-                    "WaitingThreadsListNode header previously signed [p=%p]", 
+                    "WaitingThreadsListNode header previously signed [p=%p]",
                     this);
         _ASSERT_MSG(TailSignature != dwDebugTailSignature,
-                    "WaitingThreadsListNode trailer previously signed [p=%p]", 
+                    "WaitingThreadsListNode trailer previously signed [p=%p]",
                     this);
     }
     void _WaitingThreadsListNode::InvalidateObject()
@@ -106,7 +106,7 @@ namespace CorUnix
     Creates the Synchronization Manager. It must be called once per process.
     --*/
     IPalSynchronizationManager * CPalSynchMgrController::CreatePalSynchronizationManager()
-    { 
+    {
         return CPalSynchronizationManager::CreatePalSynchronizationManager();
     };
 
@@ -126,7 +126,7 @@ namespace CorUnix
     Method:
       CPalSynchMgrController::PrepareForShutdown
 
-    This method performs the part of Synchronization Manager's shutdown that 
+    This method performs the part of Synchronization Manager's shutdown that
     needs to be carried out when core PAL subsystems are still active
     --*/
     PAL_ERROR CPalSynchMgrController::PrepareForShutdown()
@@ -141,7 +141,7 @@ namespace CorUnix
     //////////////////////////////////
 
     IPalSynchronizationManager * g_pSynchronizationManager = NULL;
-    
+
     CPalSynchronizationManager * CPalSynchronizationManager::s_pObjSynchMgr = NULL;
     Volatile<LONG> CPalSynchronizationManager::s_lInitStatus = SynchMgrStatusIdle;
     CRITICAL_SECTION CPalSynchronizationManager::s_csSynchProcessLock;
@@ -168,13 +168,13 @@ namespace CorUnix
 #if HAVE_KQUEUE && !HAVE_BROKEN_FIFO_KEVENT
         m_iKQueue = -1;
         // Initialize data to 0 and flags to EV_EOF
-        EV_SET(&m_keProcessPipeEvent, 0, 0, EV_EOF, 0, 0, 0);        
-#endif // HAVE_KQUEUE            
+        EV_SET(&m_keProcessPipeEvent, 0, 0, EV_EOF, 0, 0, 0);
+#endif // HAVE_KQUEUE
     }
 
     CPalSynchronizationManager::~CPalSynchronizationManager()
     {
-    }        
+    }
 
     /*++
     Method:
@@ -182,8 +182,8 @@ namespace CorUnix
 
     Called by a thread to go to sleep for a wait or a sleep
 
-    NOTE: This method must must be called without holding any 
-          synchronization lock (as well as other locks) 
+    NOTE: This method must must be called without holding any
+          synchronization lock (as well as other locks)
     --*/
     PAL_ERROR CPalSynchronizationManager::BlockThread(
         CPalThread *pthrCurrent,
@@ -207,30 +207,30 @@ namespace CorUnix
         _ASSERT_MSG(NULL != pdwWaitState,
                     "Got NULL pdwWaitState from m_shridWaitAwakened=%p\n",
                     (VOID *)pthrCurrent->synchronizationInfo.m_shridWaitAwakened);
-        
+
         if (fIsSleep)
         {
             // If fIsSleep is true we are being called by Sleep/SleepEx
-            // and we need to switch the wait state to TWS_WAITING or 
+            // and we need to switch the wait state to TWS_WAITING or
             // TWS_ALERTABLE (according to fAlertable)
 
-            if (fAlertable) 
+            if (fAlertable)
             {
-                // If we are in alertable mode we need to grab the lock to 
-                // make sure that no APC is queued right before the 
-                // InterlockedCompareExchange. 
+                // If we are in alertable mode we need to grab the lock to
+                // make sure that no APC is queued right before the
+                // InterlockedCompareExchange.
                 // If there are APCs queued at this time, no native wakeup
                 // will be posted, so we need to skip the native wait
-                
+
                 // Lock
                 AcquireLocalSynchLock(pthrCurrent);
                 AcquireSharedSynchLock(pthrCurrent);
 
                 if (AreAPCsPending(pthrCurrent))
                 {
-                    // APCs have been queued when the thread wait status was 
+                    // APCs have been queued when the thread wait status was
                     // still TWS_ACTIVE, therefore the queueing thread will not
-                    // post any native wakeup: we need to skip the actual 
+                    // post any native wakeup: we need to skip the actual
                     // native wait
                     fRaceAlerted = true;
                 }
@@ -238,45 +238,43 @@ namespace CorUnix
 
             if (!fRaceAlerted)
             {
-                // Setting the thread in wait state 
+                // Setting the thread in wait state
                 dwWaitState = (DWORD)(fAlertable ? TWS_ALERTABLE : TWS_WAITING);
 
-                TRACE("Switching my wait state [%p] from TWS_ACTIVE to %u "
-                      "[current *pdwWaitState=%u]\n", 
+                TRACE("Switching my wait state [%p] from TWS_ACTIVE to %u [current *pdwWaitState=%u]\n",
                       pdwWaitState, dwWaitState, *pdwWaitState);
 
-                dwWaitState = InterlockedCompareExchange((LONG *)pdwWaitState, 
-                                                         dwWaitState, 
+                dwWaitState = InterlockedCompareExchange((LONG *)pdwWaitState,
+                                                         dwWaitState,
                                                          TWS_ACTIVE);
-                
-                if((DWORD)TWS_ACTIVE != dwWaitState)
+
+                if ((DWORD)TWS_ACTIVE != dwWaitState)
                 {
-                    if (fAlertable) 
+                    if (fAlertable)
                     {
                         // Unlock
                         ReleaseSharedSynchLock(pthrCurrent);
                         ReleaseLocalSynchLock(pthrCurrent);
                     }
-                    if((DWORD)TWS_EARLYDEATH == dwWaitState)
+
+                    if ((DWORD)TWS_EARLYDEATH == dwWaitState)
                     {
-                        // Process is terminating, this thread will soon be 
-                        // suspended (by SuspendOtherThreads).
-                        WARN("Thread is about to get suspended by "
-                             "TerminateProcess\n");
+                        // Process is terminating, this thread will soon be suspended (by SuspendOtherThreads).
+                        WARN("Thread is about to get suspended by TerminateProcess\n");
 
                         fEarlyDeath = true;
                         palErr = WAIT_FAILED;
                     }
                     else
                     {
-                        ASSERT("Unexpected thread wait state %u\n", 
-                               dwWaitState);
+                        ASSERT("Unexpected thread wait state %u\n", dwWaitState);
                         palErr = ERROR_INTERNAL_ERROR;
                     }
+
                     goto BT_exit;
                 }
             }
-            
+
             if (fAlertable)
             {
                 // Unlock
@@ -284,7 +282,7 @@ namespace CorUnix
                 ReleaseLocalSynchLock(pthrCurrent);
             }
         }
-        
+
         if (fRaceAlerted)
         {
             twrWakeupReason = Alerted;
@@ -309,7 +307,7 @@ namespace CorUnix
             TRACE("ThreadNativeWait returned {WakeupReason=%u "
                   "dwSigObjIdx=%u}\n", twrWakeupReason, dwSigObjIdx);
         }
-                
+
         if (WaitTimeout == twrWakeupReason)
         {
             // timeout reached. set wait state back to 'active'
@@ -318,14 +316,14 @@ namespace CorUnix
             TRACE("Current thread awakened for timeout: switching wait "
                   "state [%p] from %u to TWS_ACTIVE [current *pdwWaitState=%u]\n",
                    pdwWaitState, dwWaitState, *pdwWaitState);
-            
+
             DWORD dwOldWaitState = InterlockedCompareExchange(
                                         (LONG *)pdwWaitState,
                                         TWS_ACTIVE, (LONG)dwWaitState);
-            
+
             switch (dwOldWaitState)
             {
-                case TWS_ACTIVE:                        
+                case TWS_ACTIVE:
                     // We were already ACTIVE; someone decided to wake up this
                     // thread sometime between the moment the native wait
                     // timed out and here. Since the signaling side succeeded
@@ -336,8 +334,8 @@ namespace CorUnix
                     // That will also cause this method to report a signal
                     // rather than a timeout.
                     // In the remote signaling scenario, this second wait
-                    // also makes sure that the shared id passed over the 
-                    // process pipe is valid for the entire duration of time 
+                    // also makes sure that the shared id passed over the
+                    // process pipe is valid for the entire duration of time
                     // in which the worker thread deals with it
                     TRACE("Current thread already ACTIVE: a signaling raced "
                           "with the timeout: re-waiting natively to clear the "
@@ -351,22 +349,23 @@ namespace CorUnix
 
                     if (NO_ERROR != palErr)
                     {
-                        ERROR("ThreadNativeWait() failed [palErr=%d]\n", 
+                        ERROR("ThreadNativeWait() failed [palErr=%d]\n",
                               palErr);
                         twrWakeupReason = WaitFailed;
                     }
+
                     if (WaitTimeout == twrWakeupReason)
                     {
                         ERROR("Second native wait timed out\n");
                     }
+
                     break;
                 case TWS_EARLYDEATH:
                     // Thread is about to be suspended by TerminateProcess.
-                    // Anyway, if the wait timed out, we still want to 
-                    // (try to) unregister the wait (especially if it 
+                    // Anyway, if the wait timed out, we still want to
+                    // (try to) unregister the wait (especially if it
                     // involves shared objects)
-                    WARN("Thread is about to be suspended by "
-                         "TerminateProcess\n");
+                    WARN("Thread is about to be suspended by TerminateProcess\n");
                     fEarlyDeath = true;
                     palErr = WAIT_FAILED;
                     break;
@@ -374,8 +373,7 @@ namespace CorUnix
                 case TWS_ALERTABLE:
                 default:
                     _ASSERT_MSG(dwOldWaitState == dwWaitState,
-                                "Unexpected wait status: actual=%u, "
-                                "expected=%u\n",
+                                "Unexpected wait status: actual=%u, expected=%u\n",
                                dwOldWaitState, dwWaitState);
                     break;
             }
@@ -388,22 +386,20 @@ namespace CorUnix
                 // Awakened for timeout: we need to unregister the wait
                 ThreadWaitInfo * ptwiWaitInfo;
 
-                TRACE("Current thread awakened for timeout: "
-                            "unregistering the wait\n");
-                
+                TRACE("Current thread awakened for timeout: unregistering the wait\n");
+
                 // Local lock
                 AcquireLocalSynchLock(pthrCurrent);
 
                 ptwiWaitInfo = GetThreadWaitInfo(pthrCurrent);
 
                 // Unregister the wait
-                // Note: UnRegisterWait will take care of grabbing the shared
-                //       synch lock, if needed.
+                // Note: UnRegisterWait will take care of grabbing the shared synch lock, if needed.
                 UnRegisterWait(pthrCurrent, ptwiWaitInfo, false);
 
                 // Unlock
                 ReleaseLocalSynchLock(pthrCurrent);
-                
+
                 break;
             }
             case WaitSucceeded:
@@ -412,16 +408,16 @@ namespace CorUnix
                 break;
             default:
                 // 'Alerted' and 'WaitFailed' go through this case
-                break;                
+                break;
         }
 
         // Set the returned wakeup reason
         *ptwrWakeupReason = twrWakeupReason;
-                
+
         TRACE("Current thread is now active [WakeupReason=%u SigObjIdx=%u]\n",
               twrWakeupReason, dwSigObjIdx);
 
-        _ASSERT_MSG(TWS_ACTIVE == VolatileLoad(pdwWaitState) || 
+        _ASSERT_MSG(TWS_ACTIVE == VolatileLoad(pdwWaitState) ||
                     TWS_EARLYDEATH == VolatileLoad(pdwWaitState),
                     "Unexpected thread wait state %u\n", VolatileLoad(pdwWaitState));
 
@@ -430,10 +426,9 @@ namespace CorUnix
         {
             ThreadPrepareForShutdown();
         }
-        return palErr;        
-    }
 
-#if !SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
+        return palErr;
+    }
 
     PAL_ERROR CPalSynchronizationManager::ThreadNativeWait(
         ThreadNativeWaitData * ptnwdNativeWaitData,
@@ -443,11 +438,11 @@ namespace CorUnix
     {
         PAL_ERROR palErr = NO_ERROR;
         int iRet, iWaitRet = 0;
-        struct timespec tsAbsTmo;      
+        struct timespec tsAbsTmo;
 
         TRACE("ThreadNativeWait(ptnwdNativeWaitData=%p, dwTimeout=%u, ...)\n",
               ptnwdNativeWaitData, dwTimeout);
-        
+
         if (dwTimeout != INFINITE)
         {
             // Calculate absolute timeout
@@ -456,7 +451,7 @@ namespace CorUnix
             {
                 ERROR("Failed to convert timeout to absolute timeout\n");
                 goto TNW_exit;
-            }            
+            }
         }
 
         // Lock the mutex
@@ -468,9 +463,9 @@ namespace CorUnix
             *ptwrWakeupReason = WaitFailed;
             goto TNW_exit;
         }
-        
-        while (FALSE == ptnwdNativeWaitData->iPred) 
-        {            
+
+        while (FALSE == ptnwdNativeWaitData->iPred)
+        {
             if (INFINITE == dwTimeout)
             {
                 iWaitRet = pthread_cond_wait(&ptnwdNativeWaitData->cond,
@@ -478,8 +473,8 @@ namespace CorUnix
             }
             else
             {
-                iWaitRet = pthread_cond_timedwait(&ptnwdNativeWaitData->cond, 
-                                                  &ptnwdNativeWaitData->mutex, 
+                iWaitRet = pthread_cond_timedwait(&ptnwdNativeWaitData->cond,
+                                                  &ptnwdNativeWaitData->mutex,
                                                   &tsAbsTmo);
             }
 
@@ -491,31 +486,31 @@ namespace CorUnix
             }
             else if (0 != iWaitRet)
             {
-                ERROR("pthread_cond_%swait returned %d [errno=%d (%s)]\n", 
-                       (INFINITE == dwTimeout) ? "" : "timed", 
+                ERROR("pthread_cond_%swait returned %d [errno=%d (%s)]\n",
+                       (INFINITE == dwTimeout) ? "" : "timed",
                        iWaitRet, errno, strerror(errno));
                 palErr = ERROR_INTERNAL_ERROR;
                 break;
-            }            
-        } 
+            }
+        }
 
         // Reset the predicate
         if (0 == iWaitRet)
         {
             // We don't want to reset the predicate if pthread_cond_timedwait
-            // timed out racing with a pthread_cond_signal. When 
+            // timed out racing with a pthread_cond_signal. When
             // pthread_cond_timedwait times out, it needs to grab the mutex
-            // before returning. At timeout time, it may happen that the 
+            // before returning. At timeout time, it may happen that the
             // signaling thread just grabbed the mutex, but it hasn't called
             // pthread_cond_signal yet. In this scenario pthread_cond_timedwait
             // will have to wait for the signaling side to release the mutex.
-            // As result it will return with error timeout, but the predicate 
-            // will be set. Since pthread_cond_timedwait timed out, the 
+            // As a result it will return with error timeout, but the predicate
+            // will be set. Since pthread_cond_timedwait timed out, the
             // predicate value is intended for the next signal. In case of a
             // object signaling racing with a wait timeout this predicate value
             // will be picked up by the 'second native wait' (see comments in
             // BlockThread).
-            
+
             ptnwdNativeWaitData->iPred = FALSE;
         }
 
@@ -528,8 +523,7 @@ namespace CorUnix
             goto TNW_exit;
         }
 
-        _ASSERT_MSG(ETIMEDOUT != iRet || INFINITE != dwTimeout,
-                    "Got timeout return code with INFINITE timeout\n");
+        _ASSERT_MSG(ETIMEDOUT != iRet || INFINITE != dwTimeout, "Got timeout return code with INFINITE timeout\n");
 
         if (0 == iWaitRet)
         {
@@ -542,125 +536,16 @@ namespace CorUnix
         }
 
     TNW_exit:
-        
-        TRACE("ThreadNativeWait: returning %u [WakeupReason=%u]\n", 
-              palErr, *ptwrWakeupReason);
-        
+        TRACE("ThreadNativeWait: returning %u [WakeupReason=%u]\n", palErr, *ptwrWakeupReason);
         return palErr;
     }
-
-#else // SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
-
-    PAL_ERROR CPalSynchronizationManager::ThreadNativeWait(
-        ThreadNativeWaitData * ptnwdNativeWaitData,
-        DWORD dwTimeout,
-        ThreadWakeupReason * ptwrWakeupReason,
-        DWORD * pdwSignaledObject)
-    {
-        PAL_ERROR palErr = NO_ERROR;
-        DWORD dwTmo = dwTimeout;
-        DWORD dwOldTime = GetTickCount();
-        int iRet;
-        int iPollTmo;
-        int iWaitRet = 0;  
-        struct pollfd pllfd;
-        bool fAgain;
-
-        TRACE("ThreadNativeWait(ptnwdNativeWaitData=%p, dwTimeout=%u, ...)\n",
-              ptnwdNativeWaitData, dwTimeout);
-        
-        do
-        {
-            fAgain = false;
-            
-            pllfd.fd = ptnwdNativeWaitData->iPipeRd;
-            pllfd.events = POLLIN;
-            pllfd.revents = 0;
-            iPollTmo = (INFINITE == dwTmo) ? INFTIM : (int)min(INT_MAX,dwTmo);            
-
-            iRet = poll(&pllfd, 1, iPollTmo);
-
-            if (1 == iRet &&
-                ((POLLERR | POLLHUP | POLLNVAL) & pllfd.revents))
-            {
-                ERROR("Unexpected revents=%x while polling pipe %d\n", 
-                      pllfd.revents, ptnwdNativeWaitData->iPipeRd);
-                palErr = ERROR_INTERNAL_ERROR;
-                break;
-            }
-
-            switch(iRet)
-            {
-                case -1:
-                    // poll failed
-                    if(EINTR != errno)
-                    {
-                        // Error
-                        ERROR("Unexpected errno=%d (%s) while polling pipe %d\n", 
-                              errno, strerror(errno), ptnwdNativeWaitData->iPipeRd);
-                        palErr = ERROR_INTERNAL_ERROR;
-                        break;
-                    }
-                    // fall through
-                case 0:
-                    // Timeout
-                    if (INFINITE != dwTmo)
-                    {
-                        UpdateTimeout(&dwOldTime, &dwTmo);
-                        TRACE("Timeout updated: %u\n", dwTmo);
-                    }
-
-                    if (0 != dwTmo)
-                    {
-                        fAgain = true;
-                    }
-                    else
-                    {
-                        _ASSERTE(INFINITE != dwTimeout);
-                        *ptwrWakeupReason = WaitTimeout;                        
-                    }
-                    break;
-                case 1:
-                {
-                    // Signaled
-                    char c;
-                    int iRt;
-                    iRt = read(ptnwdNativeWaitData->iPipeRd, &c, sizeof(c));
-
-                    _ASSERTE(sizeof(c) == iRt);
-                    _ASSERTE(c == (char)ptnwdNativeWaitData->twrWakeupReason);
-                    
-                    *ptwrWakeupReason  = ptnwdNativeWaitData->twrWakeupReason;
-                    *pdwSignaledObject = ptnwdNativeWaitData->dwObjectIndex;
-                    break;
-                }
-                default:
-                    // Error
-                    ERROR("Unexpected return code %d while polling pipe %d\n", 
-                          iRet, ptnwdNativeWaitData->iPipeRd);
-
-                    palErr = ERROR_INTERNAL_ERROR;
-                    break;
-            }
-                    
-        } while (fAgain);
-
-    TNW_exit:
-        
-        TRACE("ThreadNativeWait: returning %u [WakeupReason=%u]\n", 
-              palErr, *ptwrWakeupReason);
-        
-        return palErr;
-    }
-
-#endif // SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
 
     /*++
     Method:
       CPalSynchronizationManager::AbandonObjectsOwnedByThread
 
     This method is called by a thread at thread-exit time to abandon
-    any currently owned waitable object (mutexes). If pthrTarget is 
+    any currently owned waitable object (mutexes). If pthrTarget is
     different from pthrCurrent, AbandonObjectsOwnedByThread assumes
     to be called whether by TerminateThread or at shutdown time. See
     comments below for more details
@@ -672,8 +557,7 @@ namespace CorUnix
         PAL_ERROR palErr = NO_ERROR;
         OwnedObjectsListNode * poolnItem;
         bool fSharedSynchLock = false;
-        CThreadSynchronizationInfo * pSynchInfo = 
-                    &pthrTarget->synchronizationInfo;
+        CThreadSynchronizationInfo * pSynchInfo = &pthrTarget->synchronizationInfo;
         CPalSynchronizationManager * pSynchManager = GetInstance();
 
         // Local lock
@@ -689,10 +573,9 @@ namespace CorUnix
 
             VALIDATEOBJECT(psdSynchData);
 
-            TRACE("Abandoning object with SynchData at %p\n",
-                  psdSynchData);
-            
-            if (!fSharedSynchLock && 
+            TRACE("Abandoning object with SynchData at %p\n", psdSynchData);
+
+            if (!fSharedSynchLock &&
                 (SharedObject == psdSynchData->GetObjectDomain()))
             {
                 AcquireSharedSynchLock(pthrCurrent);
@@ -705,7 +588,7 @@ namespace CorUnix
             // Set abandoned status; in case there is a thread to be released:
             //  - if the thread is local, ReleaseFirstWaiter will reset the
             //    abandoned status
-            //  - if the thread is remote, the remote worker thread will use 
+            //  - if the thread is remote, the remote worker thread will use
             //    the value and reset it
             psdSynchData->SetAbandoned(true);
 
@@ -716,8 +599,7 @@ namespace CorUnix
             psdSynchData->Release(pthrCurrent);
 
             // Return node to the cache
-            pSynchManager->m_cacheOwnedObjectsListNodes.Add(pthrCurrent, 
-                                                            poolnItem);
+            pSynchManager->m_cacheOwnedObjectsListNodes.Add(pthrCurrent, poolnItem);
         }
 
         if (pthrTarget != pthrCurrent)
@@ -726,45 +608,39 @@ namespace CorUnix
             // at shutdown time, right before the target thread is suspended,
             // or anyway the target thread is being terminated.
             // In this case we switch its wait state to TWS_EARLYDEATH so that,
-            // if the thread is currently waiting/sleeping and it wakes up 
-            // before shutdown code manage to suspend it, it will be rerouted 
+            // if the thread is currently waiting/sleeping and it wakes up
+            // before shutdown code manage to suspend it, it will be rerouted
             // to ThreadPrepareForShutdown (that will be done without holding
             // any internal lock, in a way to accomodate shutdown time thread
-            // suspension). 
-            // At this time we also unregister the wait, so no dummy nodes are 
+            // suspension).
+            // At this time we also unregister the wait, so no dummy nodes are
             // left around on waiting objects.
             // The TWS_EARLYDEATH wait-state will also prevent the thread from
-            // successfully registering for a possible new wait in the same 
+            // successfully registering for a possible new wait in the same
             // time window.
             LONG lTWState;
             DWORD * pdwWaitState;
-            
-            pdwWaitState = SharedIDToTypePointer(DWORD,
-                pthrTarget->synchronizationInfo.m_shridWaitAwakened);
 
-            lTWState = InterlockedExchange((LONG *)pdwWaitState, 
-                                           TWS_EARLYDEATH);
+            pdwWaitState = SharedIDToTypePointer(DWORD, pthrTarget->synchronizationInfo.m_shridWaitAwakened);
+            lTWState = InterlockedExchange((LONG *)pdwWaitState, TWS_EARLYDEATH);
 
-            if ( (((LONG)TWS_WAITING == lTWState) || 
-                  ((LONG)TWS_ALERTABLE == lTWState)) &&
-                 (0 < pSynchInfo->m_twiWaitInfo.lObjCount) )
+            if (( ((LONG)TWS_WAITING == lTWState) || ((LONG)TWS_ALERTABLE == lTWState) ) &&
+                (0 < pSynchInfo->m_twiWaitInfo.lObjCount))
             {
                 // Unregister the wait
-                // Note: UnRegisterWait will take care of grabbing the shared
-                //       synch lock, if needed.
-                UnRegisterWait(pthrCurrent, 
-                               &pSynchInfo->m_twiWaitInfo, 
-                               fSharedSynchLock);
+                // Note: UnRegisterWait will take care of grabbing the shared synch lock, if needed.
+                UnRegisterWait(pthrCurrent, &pSynchInfo->m_twiWaitInfo, fSharedSynchLock);
             }
         }
+
         // Unlock
         if (fSharedSynchLock)
         {
             ReleaseSharedSynchLock(pthrCurrent);
             fSharedSynchLock = false;
         }
-        ReleaseLocalSynchLock(pthrCurrent);
 
+        ReleaseLocalSynchLock(pthrCurrent);
         DiscardAllPendingAPCs(pthrCurrent, pthrTarget);
 
         return palErr;
@@ -789,7 +665,7 @@ namespace CorUnix
                                              (void **)rgControllers,
                                              CSynchControllerBase::WaitController);
     }
-    
+
     /*++
     Method:
       CPalSynchronizationManager::GetSynchStateControllersForObjects
@@ -809,12 +685,12 @@ namespace CorUnix
                                              (void **)rgControllers,
                                              CSynchControllerBase::StateController);
     }
-    
+
     /*++
     Method:
       CPalSynchronizationManager::GetSynchControllersForObjects
 
-    Internal common implementation for GetSynchWaitControllersForObjects and 
+    Internal common implementation for GetSynchWaitControllersForObjects and
     GetSynchStateControllersForObjects
     --*/
     PAL_ERROR CPalSynchronizationManager::GetSynchControllersForObjects(
@@ -824,17 +700,18 @@ namespace CorUnix
         void ** ppvControllers,
         CSynchControllerBase::ControllerType ctCtrlrType)
     {
-        PAL_ERROR palErr = NO_ERROR;        
+        PAL_ERROR palErr = NO_ERROR;
         unsigned int uIdx, uCount = 0, uSharedObjectCount = 0;
         WaitDomain wdWaitDomain = LocalWait;
-        CObjectType * potObjectType = NULL; 
+        CObjectType * potObjectType = NULL;
         unsigned int uErrCleanupIdxFirstNotInitializedCtrlr = 0;
         unsigned int uErrCleanupIdxLastCtrlr = 0;
         bool fLocalSynchLock = false;
-        union 
-        { 
+
+        union
+        {
             CSynchWaitController * pWaitCtrlrs[MAXIMUM_WAIT_OBJECTS];
-            CSynchStateController * pStateCtrlrs[MAXIMUM_WAIT_OBJECTS];  
+            CSynchStateController * pStateCtrlrs[MAXIMUM_WAIT_OBJECTS];
         } Ctrlrs;
 
         if ((dwObjectCount <= 0) || (dwObjectCount > MAXIMUM_WAIT_OBJECTS))
@@ -842,34 +719,34 @@ namespace CorUnix
             palErr = ERROR_INVALID_PARAMETER;
             goto GSCFO_exit;
         }
-                
+
         if (CSynchControllerBase::WaitController == ctCtrlrType)
         {
             uCount = (unsigned int)m_cacheWaitCtrlrs.Get(pthrCurrent,
-                                                         dwObjectCount, 
+                                                         dwObjectCount,
                                                          Ctrlrs.pWaitCtrlrs);
         }
         else
         {
-            uCount = (unsigned int)m_cacheStateCtrlrs.Get(pthrCurrent, 
+            uCount = (unsigned int)m_cacheStateCtrlrs.Get(pthrCurrent,
                                                           dwObjectCount,
                                                           Ctrlrs.pStateCtrlrs);
         }
+
         if (uCount < dwObjectCount)
         {
-            // We got less controllers (uCount) than we asked for (dwObjectCount), 
+            // We got less controllers (uCount) than we asked for (dwObjectCount),
             // probably because of low memory.
             // None of these controllers is initialized, so they must be all
             // returned directly to the cache
             uErrCleanupIdxLastCtrlr = uCount;
-            
+
             palErr = ERROR_NOT_ENOUGH_MEMORY;
             goto GSCFO_error_cleanup;
-        }          
+        }
 
         //
-        // We need to acquire the local synch lock before evaluating object
-        // domains
+        // We need to acquire the local synch lock before evaluating object domains
         //
         AcquireLocalSynchLock(pthrCurrent);
         fLocalSynchLock = true;
@@ -878,21 +755,23 @@ namespace CorUnix
         {
             if (SharedObject == rgObjects[uIdx]->GetObjectDomain())
             {
-                ++uSharedObjectCount; 
+                ++uSharedObjectCount;
             }
+
             if (uSharedObjectCount > 0 && uSharedObjectCount <= uIdx)
-            {            
+            {
                 wdWaitDomain = MixedWait;
                 break;
             }
         }
+
         if (dwObjectCount == uSharedObjectCount)
         {
             wdWaitDomain = SharedWait;
-        } 
-        
+        }
+
         for (uIdx=0;uIdx<dwObjectCount;uIdx++)
-        {   
+        {
             void * pvSData;
             CSynchData * psdSynchData;
             ObjectDomain odObjectDomain = rgObjects[uIdx]->GetObjectDomain();
@@ -904,13 +783,12 @@ namespace CorUnix
             }
 
             psdSynchData = (SharedObject == odObjectDomain) ? SharedIDToTypePointer(
-                CSynchData, reinterpret_cast<SharedID>(pvSData)) : 
+                CSynchData, reinterpret_cast<SharedID>(pvSData)) :
                 static_cast<CSynchData *>(pvSData);
 
             VALIDATEOBJECT(psdSynchData);
 
             potObjectType = rgObjects[uIdx]->GetObjectType();
-            
 
             if (CSynchControllerBase::WaitController == ctCtrlrType)
             {
@@ -942,14 +820,15 @@ namespace CorUnix
                     ReadLock,
                     &pDataLock,
                     (void **)&pProcLocData);
+
                 if (NO_ERROR != palErr)
                 {
-                    // In case of failure here, bail out of the loop, but 
-                    // keep track (by incrementing the counter 'uIdx') of the 
+                    // In case of failure here, bail out of the loop, but
+                    // keep track (by incrementing the counter 'uIdx') of the
                     // fact that this controller has already being initialized
                     // and therefore need to be Release'd rather than just
                     // returned to the cache
-                    uIdx++;                    
+                    uIdx++;
                     break;
                 }
 
@@ -960,12 +839,12 @@ namespace CorUnix
         if (NO_ERROR != palErr)
         {
             // An error occurred while initializing the (uIdx+1)-th controller,
-            // i.e. the one at index uIdx; therefore the first uIdx controllers 
-            // must be Release'd, while the remaining uCount-uIdx must be returned 
+            // i.e. the one at index uIdx; therefore the first uIdx controllers
+            // must be Release'd, while the remaining uCount-uIdx must be returned
             // directly to the cache.
             uErrCleanupIdxFirstNotInitializedCtrlr = uIdx;
             uErrCleanupIdxLastCtrlr = dwObjectCount;
-            
+
             goto GSCFO_error_cleanup;
         }
 
@@ -975,14 +854,13 @@ namespace CorUnix
             for (uIdx=0;uIdx<dwObjectCount;uIdx++)
             {
                 // The multiple cast is NEEDED, though currently it does not
-                // change the value ot the pointer. Anyway, if in the future 
-                // a virtual method should be added to the base class 
-                // CSynchControllerBase, both derived classes would have two 
+                // change the value ot the pointer. Anyway, if in the future
+                // a virtual method should be added to the base class
+                // CSynchControllerBase, both derived classes would have two
                 // virtual tables, therefore a static cast from, for instance,
-                // a CSynchWaitController* to a ISynchWaitController* would 
-                // return the given pointer incremented by the size of a 
+                // a CSynchWaitController* to a ISynchWaitController* would
+                // return the given pointer incremented by the size of a
                 // generic pointer on the specific platform
-
                 ppvControllers[uIdx] = reinterpret_cast<void *>(
                     static_cast<ISynchWaitController *>(Ctrlrs.pWaitCtrlrs[uIdx]));
             }
@@ -992,13 +870,12 @@ namespace CorUnix
             for (uIdx=0;uIdx<dwObjectCount;uIdx++)
             {
                 // See comment above
-
                 ppvControllers[uIdx] = reinterpret_cast<void *>(
                     static_cast<ISynchStateController *>(Ctrlrs.pStateCtrlrs[uIdx]));
             }
         }
-        
-        // Succeeded: skip error cleanup        
+
+        // Succeeded: skip error cleanup
         goto GSCFO_exit;
 
     GSCFO_error_cleanup:
@@ -1009,6 +886,7 @@ namespace CorUnix
             {
                 Ctrlrs.pWaitCtrlrs[uIdx]->Release();
             }
+
             // Return to the cache not yet initialized wait controllers
             for (uIdx=uErrCleanupIdxFirstNotInitializedCtrlr; uIdx<uErrCleanupIdxLastCtrlr; uIdx++)
             {
@@ -1022,21 +900,21 @@ namespace CorUnix
             {
                 Ctrlrs.pStateCtrlrs[uIdx]->Release();
             }
+
             // Return to the cache not yet initialized state controllers
             for (uIdx=uErrCleanupIdxFirstNotInitializedCtrlr; uIdx<uErrCleanupIdxLastCtrlr; uIdx++)
             {
                 m_cacheStateCtrlrs.Add(pthrCurrent, Ctrlrs.pStateCtrlrs[uIdx]);
             }
         }
-               
+
     GSCFO_exit:
-    
         if (fLocalSynchLock)
         {
             ReleaseLocalSynchLock(pthrCurrent);
         }
-        return palErr;        
-    }                                
+        return palErr;
+    }
 
     /*++
     Method:
@@ -1048,14 +926,14 @@ namespace CorUnix
         CObjectType *potObjectType,
         ObjectDomain odObjectDomain,
         VOID **ppvSynchData)
-    {    
+    {
         PAL_ERROR palErr = NO_ERROR;
         CSynchData * psdSynchData = NULL;
         CPalThread * pthrCurrent = InternalGetCurrentThread();
 
         if (SharedObject == odObjectDomain)
         {
-            SharedID shridSynchData = m_cacheSHRSynchData.Get(pthrCurrent); 
+            SharedID shridSynchData = m_cacheSHRSynchData.Get(pthrCurrent);
             if (NULLSharedID == shridSynchData)
             {
                 ERROR("Unable to allocate shared memory\n");
@@ -1079,7 +957,7 @@ namespace CorUnix
         }
         else
         {
-            psdSynchData = m_cacheSynchData.Get(pthrCurrent); 
+            psdSynchData = m_cacheSynchData.Get(pthrCurrent);
             if (NULL == psdSynchData)
             {
                 ERROR("Unable to allocate memory\n");
@@ -1092,7 +970,7 @@ namespace CorUnix
 
             // Set shared this pointer to NULL
             psdSynchData->SetSharedThis(NULLSharedID);
-            
+
             *ppvSynchData = static_cast<void *>(psdSynchData);
         }
 
@@ -1107,11 +985,10 @@ namespace CorUnix
     Method:
       CPalSynchronizationManager::FreeObjectSynchData
 
-    Called to return a no longer used SynchData to the Synchronization
-    Manager. The SynchData may actually survive this call, since it
-    is a ref-counted object and at FreeObjectSynchData time it may still
-    be used from withing the Synchronization Manager itself (e.g. the 
-    Worker Thread)
+    Called to return a no longer used SynchData to the Synchronization Manager.
+    The SynchData may actually survive this call, since it is a ref-counted
+    object and at FreeObjectSynchData time it may still be used from within
+    the Synchronization Manager itself (e.g. the worker thread).
     --*/
     void CPalSynchronizationManager::FreeObjectSynchData(
         CObjectType *potObjectType,
@@ -1139,7 +1016,7 @@ namespace CorUnix
 
         psdSynchData->Release(pthrCurrent);
     }
-    
+
     /*++
     Method:
       CPalSynchronizationManager::CreateSynchStateController
@@ -1153,23 +1030,21 @@ namespace CorUnix
         ObjectDomain odObjectDomain,
         ISynchStateController **ppStateController)
     {
-        PAL_ERROR palErr = NO_ERROR;        
+        PAL_ERROR palErr = NO_ERROR;
         CSynchStateController * pCtrlr =  NULL;
         WaitDomain wdWaitDomain = (SharedObject == odObjectDomain) ? SharedWait : LocalWait;
         CSynchData * psdSynchData;
 
-        psdSynchData = (SharedObject == odObjectDomain) ? SharedIDToTypePointer(
-            CSynchData, reinterpret_cast<SharedID>(pvSynchData)) : 
-            static_cast<CSynchData *>(pvSynchData);
+        psdSynchData = (SharedObject == odObjectDomain) ? SharedIDToTypePointer(CSynchData, reinterpret_cast<SharedID>(pvSynchData))
+                                                        : static_cast<CSynchData *>(pvSynchData);
 
         VALIDATEOBJECT(psdSynchData);
 
         pCtrlr = m_cacheStateCtrlrs.Get(pthrCurrent);
         if (NULL == pCtrlr)
         {
-            palErr = ERROR_NOT_ENOUGH_MEMORY;
-            goto CSSC_exit;
-        }                  
+            return ERROR_NOT_ENOUGH_MEMORY;
+        }
 
         pCtrlr->Init(pthrCurrent,
                      CSynchControllerBase::StateController,
@@ -1180,15 +1055,15 @@ namespace CorUnix
 
         // Succeeded
         *ppStateController = (ISynchStateController *)pCtrlr;
-        
-    CSSC_exit:
-        if ((NO_ERROR != palErr) && (NULL != pCtrlr))
+
+        if (NO_ERROR != palErr)
         {
             m_cacheStateCtrlrs.Add(pthrCurrent, pCtrlr);
         }
-        return palErr;     
+
+        return palErr;
     }
-    
+
     /*++
     Method:
       CPalSynchronizationManager::CreateSynchWaitController
@@ -1202,24 +1077,22 @@ namespace CorUnix
         ObjectDomain odObjectDomain,
         ISynchWaitController **ppWaitController)
     {
-        PAL_ERROR palErr = NO_ERROR;        
         CSynchWaitController * pCtrlr =  NULL;
         WaitDomain wdWaitDomain = (SharedObject == odObjectDomain) ? SharedWait : LocalWait;
         CSynchData * psdSynchData;
 
         psdSynchData = (SharedObject == odObjectDomain) ? SharedIDToTypePointer(
-            CSynchData, reinterpret_cast<SharedID>(pvSynchData)) : 
+            CSynchData, reinterpret_cast<SharedID>(pvSynchData)) :
             static_cast<CSynchData *>(pvSynchData);
 
         VALIDATEOBJECT(psdSynchData);
-            
+
         pCtrlr = m_cacheWaitCtrlrs.Get(pthrCurrent);
         if (NULL == pCtrlr)
         {
-            palErr = ERROR_NOT_ENOUGH_MEMORY;
-            goto CSWC_exit;
-        }                  
-       
+            return ERROR_NOT_ENOUGH_MEMORY;
+        }
+
         pCtrlr->Init(pthrCurrent,
                      CSynchControllerBase::WaitController,
                      odObjectDomain,
@@ -1229,13 +1102,8 @@ namespace CorUnix
 
         // Succeeded
         *ppWaitController = (ISynchWaitController *)pCtrlr;
-       
-    CSWC_exit:
-        if ((NO_ERROR != palErr) && (NULL != pCtrlr))
-        {
-            m_cacheWaitCtrlrs.Add(pthrCurrent, pCtrlr);
-        }
-        return palErr;
+
+        return NO_ERROR;
     }
 
     /*++
@@ -1254,17 +1122,17 @@ namespace CorUnix
         DWORD dwWaitState;
         DWORD * pdwWaitState;
         ThreadWaitInfo * pTargetTWInfo = GetThreadWaitInfo(pthrTarget);
-        bool fLocalSynchLock = false; 
-        bool fSharedSynchLock = false; 
+        bool fLocalSynchLock = false;
+        bool fSharedSynchLock = false;
         bool fThreadLock = false;
 
         ptainNode = m_cacheThreadApcInfoNodes.Get(pthrCurrent);
         if (NULL == ptainNode)
-        {                           
+        {
             ERROR("No memory for new APCs linked list entry\n");
             palErr = ERROR_NOT_ENOUGH_MEMORY;
             goto QUAPC_exit;
-        }                
+        }
 
         ptainNode->pfnAPC = pfnAPC;
         ptainNode->pAPCData = uptrData;
@@ -1272,17 +1140,17 @@ namespace CorUnix
 
         AcquireLocalSynchLock(pthrCurrent);
         fLocalSynchLock = true;
-        
+
         if (LocalWait != pTargetTWInfo->wdWaitDomain)
         {
             AcquireSharedSynchLock(pthrCurrent);
             fSharedSynchLock = true;
         }
-        
+
         pthrTarget->Lock(pthrCurrent);
         fThreadLock = true;
 
-        if(TS_DONE == pthrTarget->synchronizationInfo.GetThreadState())
+        if (TS_DONE == pthrTarget->synchronizationInfo.GetThreadState())
         {
             ERROR("Thread %#x has terminated; can't queue an APC on it\n",
                   pthrTarget->GetThreadId());
@@ -1291,7 +1159,7 @@ namespace CorUnix
         }
         pdwWaitState = SharedIDToTypePointer(DWORD,
             pthrTarget->synchronizationInfo.m_shridWaitAwakened);
-        if(TWS_EARLYDEATH == VolatileLoad(pdwWaitState))
+        if (TWS_EARLYDEATH == VolatileLoad(pdwWaitState))
         {
             ERROR("Thread %#x is about to be suspended for process shutdwon, "
                   "can't queue an APC on it\n", pthrTarget->GetThreadId());
@@ -1301,8 +1169,7 @@ namespace CorUnix
 
         if (NULL == pthrTarget->apcInfo.m_ptainTail)
         {
-            _ASSERT_MSG(NULL == pthrTarget->apcInfo.m_ptainHead,
-                        "Corrupted APC list\n"); 
+            _ASSERT_MSG(NULL == pthrTarget->apcInfo.m_ptainHead, "Corrupted APC list\n");
 
             pthrTarget->apcInfo.m_ptainHead = ptainNode;
             pthrTarget->apcInfo.m_ptainTail = ptainNode;
@@ -1315,11 +1182,10 @@ namespace CorUnix
 
         // Set ptainNode to NULL so it won't be readded to the cache
         ptainNode = NULL;
-        
-        TRACE("APC %p with parameter %p added to APC queue\n", 
-             pfnAPC, uptrData);
 
-        dwWaitState = InterlockedCompareExchange((LONG *)pdwWaitState,  
+        TRACE("APC %p with parameter %p added to APC queue\n", pfnAPC, uptrData);
+
+        dwWaitState = InterlockedCompareExchange((LONG *)pdwWaitState,
                                                  (LONG)TWS_ACTIVE,
                                                  (LONG)TWS_ALERTABLE);
 
@@ -1327,7 +1193,7 @@ namespace CorUnix
         pthrTarget->Unlock(pthrCurrent);
         fThreadLock = false;
 
-        if(TWS_ALERTABLE == dwWaitState)
+        if (TWS_ALERTABLE == dwWaitState)
         {
             // Unregister the wait
             UnRegisterWait(pthrCurrent, pTargetTWInfo, fSharedSynchLock);
@@ -1336,34 +1202,37 @@ namespace CorUnix
             palErr = WakeUpLocalThread(
                 pthrCurrent,
                 pthrTarget,
-                Alerted, 
+                Alerted,
                 0);
 
             if (NO_ERROR != palErr)
             {
-                ERROR("Failed to wakeup local thread %#x for dispatching "
-                      "APCs [err=%u]\n", pthrTarget->GetThreadId(),
-                      palErr);
+                ERROR("Failed to wakeup local thread %#x for dispatching APCs [err=%u]\n",
+                    pthrTarget->GetThreadId(), palErr);
             }
-        }    
+        }
 
     QUAPC_exit:
         if (fThreadLock)
         {
-            pthrTarget->Unlock(pthrCurrent); 
+            pthrTarget->Unlock(pthrCurrent);
         }
+
         if (fSharedSynchLock)
         {
             ReleaseSharedSynchLock(pthrCurrent);
         }
+
         if (fLocalSynchLock)
         {
             ReleaseLocalSynchLock(pthrCurrent);
-        }            
+        }
+
         if (ptainNode)
         {
             m_cacheThreadApcInfoNodes.Add(pthrCurrent, ptainNode);
         }
+
         return palErr;
     }
 
@@ -1373,13 +1242,12 @@ namespace CorUnix
 
     Send a request to the worker thread to initiate process termination.
     --*/
-
     PAL_ERROR CPalSynchronizationManager::SendTerminationRequestToWorkerThread()
     {
         PAL_ERROR palErr = GetInstance()->WakeUpLocalWorkerThread(SynchWorkerCmdTerminationRequest);
         if (palErr != NO_ERROR)
         {
-            ERROR("Failed to wake up worker thread [errno=%d {%s%}]\n", 
+            ERROR("Failed to wake up worker thread [errno=%d {%s%}]\n",
                   errno, strerror(errno));
             palErr = ERROR_INTERNAL_ERROR;
         }
@@ -1391,7 +1259,7 @@ namespace CorUnix
     Method:
       CPalSynchronizationManager::AreAPCsPending
 
-    Returns 'true' if there are APCs currently pending for the target 
+    Returns 'true' if there are APCs currently pending for the target
     thread (normally the current one)
     --*/
     bool CPalSynchronizationManager::AreAPCsPending(
@@ -1413,7 +1281,7 @@ namespace CorUnix
         ThreadApcInfoNode * ptainNode, * ptainLocalHead;
         int iAPCsCalled = 0;
 
-        while (TRUE) 
+        while (TRUE)
         {
             // Lock
             pthrCurrent->Lock(pthrCurrent);
@@ -1423,6 +1291,7 @@ namespace CorUnix
                 pthrCurrent->apcInfo.m_ptainHead = NULL;
                 pthrCurrent->apcInfo.m_ptainTail = NULL;
             }
+
             // Unlock
             pthrCurrent->Unlock(pthrCurrent);
 
@@ -1437,8 +1306,8 @@ namespace CorUnix
                 ptainLocalHead = ptainNode->pNext;
 
 #if _ENABLE_DEBUG_MESSAGES_
-                // reset ENTRY nesting level back to zero while 
-                // inside the callback ... 
+                // reset ENTRY nesting level back to zero while
+                // inside the callback ...
                 int iOldLevel = DBG_change_entrylevel(0);
 #endif /* _ENABLE_DEBUG_MESSAGES_ */
 
@@ -1481,6 +1350,7 @@ namespace CorUnix
             pthrTarget->apcInfo.m_ptainHead = NULL;
             pthrTarget->apcInfo.m_ptainTail = NULL;
         }
+
         // Unlock
         pthrTarget->Unlock(pthrCurrent);
 
@@ -1501,20 +1371,16 @@ namespace CorUnix
     Private method, it is called only by CPalSynchMgrController.
     --*/
     IPalSynchronizationManager * CPalSynchronizationManager::CreatePalSynchronizationManager()
-    { 
-        IPalSynchronizationManager * pRet = NULL;
-        if (s_pObjSynchMgr == NULL)
-        {
-            Initialize();
-            pRet = static_cast<IPalSynchronizationManager *>(s_pObjSynchMgr);
-        }
-        else
+    {
+        if (s_pObjSynchMgr != NULL)
         {
             ASSERT("Multiple PAL Synchronization manager initializations\n");
+            return NULL;
         }
 
-        return pRet;
-    };
+        Initialize();
+        return static_cast<IPalSynchronizationManager *>(s_pObjSynchMgr);
+    }
 
     /*++
     Method:
@@ -1527,12 +1393,13 @@ namespace CorUnix
         PAL_ERROR palErr = NO_ERROR;
         LONG lInit;
         CPalSynchronizationManager * pSynchManager = NULL;
-            
-        lInit = InterlockedCompareExchange(&s_lInitStatus, 
-                                           (LONG)SynchMgrStatusInitializing, 
+
+        lInit = InterlockedCompareExchange(&s_lInitStatus,
+                                           (LONG)SynchMgrStatusInitializing,
                                            (LONG)SynchMgrStatusIdle);
+
         if ((LONG)SynchMgrStatusIdle != lInit)
-        {      
+        {
             ASSERT("Synchronization Manager already being initialized");
             palErr = ERROR_INTERNAL_ERROR;
             goto I_exit;
@@ -1540,7 +1407,7 @@ namespace CorUnix
 
         InternalInitializeCriticalSection(&s_csSynchProcessLock);
         InternalInitializeCriticalSection(&s_csMonitoredProcessesLock);
-        
+
         pSynchManager = InternalNew<CPalSynchronizationManager>();
         if (NULL == pSynchManager)
         {
@@ -1562,7 +1429,7 @@ namespace CorUnix
         g_pSynchronizationManager =
             static_cast<IPalSynchronizationManager *>(pSynchManager);
         s_lInitStatus = (LONG)SynchMgrStatusRunning;
-        
+
     I_exit:
         if (NO_ERROR != palErr)
         {
@@ -1571,6 +1438,7 @@ namespace CorUnix
             {
                 pSynchManager->ShutdownProcessPipe();
             }
+
             s_pObjSynchMgr = NULL;
             g_pSynchronizationManager = NULL;
             InternalDelete(pSynchManager);
@@ -1591,15 +1459,14 @@ namespace CorUnix
     {
         PAL_ERROR palErr = NO_ERROR;
         CPalSynchronizationManager * pSynchManager = GetInstance();
-        HANDLE hWorkerThread = NULL;
 
         if ((NULL == pSynchManager) || ((LONG)SynchMgrStatusRunning != s_lInitStatus))
         {
             ERROR("Trying to to create worker thread in invalid state\n");
-            palErr = ERROR_INTERNAL_ERROR;
-            goto SW_exit;
+            return ERROR_INTERNAL_ERROR;
         }
-        
+
+        HANDLE hWorkerThread = NULL;
         palErr = InternalCreateThread(pthrCurrent,
                                       NULL,
                                       0,
@@ -1610,28 +1477,28 @@ namespace CorUnix
                                       &pSynchManager->m_dwWorkerThreadTid,
                                       &hWorkerThread);
 
-        if (NO_ERROR != palErr)
+        if (NO_ERROR == palErr)
+        {
+            palErr = InternalGetThreadDataFromHandle(pthrCurrent,
+                                                     hWorkerThread,
+                                                     0,
+                                                     &pSynchManager->m_pthrWorker,
+                                                     &pSynchManager->m_pipoThread);
+            if (NO_ERROR != palErr)
+            {
+                ERROR("Unable to get worker thread data\n");
+            }
+        }
+        else
         {
             ERROR("Unable to create worker thread\n");
-            goto SW_exit;
         }
-        
-        palErr = InternalGetThreadDataFromHandle(pthrCurrent,
-                                                 hWorkerThread,
-                                                 0,
-                                                 &pSynchManager->m_pthrWorker,
-                                                 &pSynchManager->m_pipoThread);
-        if (NO_ERROR != palErr)
-        {
-            ERROR("Unable to get worker thread data\n");
-            goto SW_exit;
-        }       
-                
-    SW_exit:
+
         if (NULL != hWorkerThread)
         {
             CloseHandle(hWorkerThread);
         }
+
         return palErr;
     }
 
@@ -1644,33 +1511,24 @@ namespace CorUnix
     Private method, it is called only by CPalSynchMgrController.
     --*/
     PAL_ERROR CPalSynchronizationManager::PrepareForShutdown()
-    {        
+    {
         PAL_ERROR palErr = NO_ERROR;
         CPalSynchronizationManager * pSynchManager = GetInstance();
         CPalThread * pthrCurrent = InternalGetCurrentThread();
         int iRet;
         ThreadNativeWaitData * ptnwdWorkerThreadNativeData;
-#if !SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
         struct timespec tsAbsTmo = { 0, 0 };
-#else // SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
-        DWORD dwOldTime = GetTickCount();
-        DWORD dwTmo;
-        int iPollTmo;
-        int iEagains= 0;
-        bool fAgain;
-        struct pollfd pllfd;
-#endif // SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
 
-        LONG lInit = InterlockedCompareExchange(&s_lInitStatus, 
+        LONG lInit = InterlockedCompareExchange(&s_lInitStatus,
             (LONG)SynchMgrStatusShuttingDown, (LONG)SynchMgrStatusRunning);
 
         if ((LONG)SynchMgrStatusRunning != lInit)
         {
             ASSERT("Unexpected initialization status found "
-                   "in PrepareForShutdown [expected=%d current=%d]\n", 
+                   "in PrepareForShutdown [expected=%d current=%d]\n",
                    SynchMgrStatusRunning, lInit);
             // We intentionally not set s_lInitStatus to SynchMgrStatusError
-            // cause this could interfere with a previous thread already 
+            // cause this could interfere with a previous thread already
             // executing shutdown
             palErr = ERROR_INTERNAL_ERROR;
             goto PFS_exit;
@@ -1696,10 +1554,9 @@ namespace CorUnix
             goto PFS_exit;
         }
 
-        ptnwdWorkerThreadNativeData = 
+        ptnwdWorkerThreadNativeData =
             &pSynchManager->m_pthrWorker->synchronizationInfo.m_tnwdNativeData;
 
-#if !SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
         palErr = GetAbsoluteTimeout(WorkerThreadTerminationTimeout, &tsAbsTmo);
         if (NO_ERROR != palErr)
         {
@@ -1722,7 +1579,7 @@ namespace CorUnix
             goto PFS_exit;
         }
 
-        while (FALSE == ptnwdWorkerThreadNativeData->iPred) 
+        while (FALSE == ptnwdWorkerThreadNativeData->iPred)
         {
             iRet = pthread_cond_timedwait(&ptnwdWorkerThreadNativeData->cond,
                                           &ptnwdWorkerThreadNativeData->mutex,
@@ -1755,74 +1612,14 @@ namespace CorUnix
             goto PFS_exit;
         }
 
-#else // SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
-
-        dwTmo = min(WorkerThreadTerminationTimeout, INT_MAX);
-
-        do
-        {            
-            fAgain = false;
-
-            pllfd.fd = ptnwdWorkerThreadNativeData->iPipeRd;
-            pllfd.events = POLLIN;
-            pllfd.revents = 0;
-            iPollTmo = dwTmo;        
-
-            iRet = poll(&pllfd, 1, iPollTmo);
-
-            switch(iRet)
-            {
-                case 0:
-                    // Timeout
-                    WARN("Timed out waiting for worker thread to exit "
-                         "(tmo=%u ms)\n", WorkerThreadTerminationTimeout);
-                    break;
-                case 1:
-                    // Signal
-                    break;
-                case -1:
-                    if(EINTR == errno)
-                    {
-                        if (MaxWorkerConsecutiveEintrs >= ++iEagains)
-                        {
-                            fAgain = true;
-                            UpdateTimeout(&dwOldTime, &dwTmo);
-                        }
-                        else
-                        {
-                            ERROR("Too many (%d) consecutive EAGAINs while polling "
-                                  "pipe %d, waiting for worker thread to exit\n", 
-                                  iEagains, ptnwdWorkerThreadNativeData->iPipeRd);
-                            palErr = ERROR_INTERNAL_ERROR;
-                        }
-                    }
-                    else
-                    {
-                        ERROR("Unexpected errno=%d (%s) while polling pipe %d\n", 
-                              errno, strerror(errno), 
-                              ptnwdWorkerThreadNativeData->iPipeRd);
-                        palErr = ERROR_INTERNAL_ERROR;
-                    }
-                    break;
-                default:
-                    // Error
-                    ERROR("Unexpected return code %d while polling pipe %d\n", 
-                          iRet, ptnwdWorkerThreadNativeData->iPipeRd);
-                    palErr = ERROR_INTERNAL_ERROR;
-                    break;
-            }
-        } while (fAgain);
-        
-#endif // SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
-
     PFS_exit:
-        if (NO_ERROR == palErr) 
+        if (NO_ERROR == palErr)
         {
             if (NULL != pSynchManager->m_pipoThread)
             {
                 pSynchManager->m_pipoThread->ReleaseReference(pthrCurrent);
 
-                // After this release both m_pipoThread and m_pthrWorker 
+                // After this release both m_pipoThread and m_pthrWorker
                 // are no longer valid
                 pSynchManager->m_pipoThread = NULL;
                 pSynchManager->m_pthrWorker = NULL;
@@ -1863,7 +1660,7 @@ namespace CorUnix
         ThreadWakeupReason twrWakeUpReason;
         SharedID shridMarshaledData;
         DWORD dwData;
-        CPalSynchronizationManager * pSynchManager = 
+        CPalSynchronizationManager * pSynchManager =
             reinterpret_cast<CPalSynchronizationManager*>(pArg);
         CPalThread * pthrWorker = InternalGetCurrentThread();
 
@@ -1871,7 +1668,7 @@ namespace CorUnix
         {
             LONG lProcessCount;
 
-            palErr = pSynchManager->ReadCmdFromProcessPipe(iPollTimeout, 
+            palErr = pSynchManager->ReadCmdFromProcessPipe(iPollTimeout,
                                                            &swcCmd,
                                                            &shridMarshaledData,
                                                            &dwData);
@@ -1918,11 +1715,11 @@ namespace CorUnix
 
                         // Whether WorkerThreadShuttingDownTimeout has elapsed
                         // or the last process with a descriptor opened for
-                        // write on our process pipe, has just closed it, 
-                        // causing an EOF on the read fd (that can happen only 
-                        // at shutdown time since during normal run time we 
+                        // write on our process pipe, has just closed it,
+                        // causing an EOF on the read fd (that can happen only
+                        // at shutdown time since during normal run time we
                         // hold a fd opened for write within this process).
-                        // In both the case it is time to go for the worker 
+                        // In both the case it is time to go for the worker
                         // thread.
                         fWorkerIsDone = true;
                     }
@@ -1952,7 +1749,7 @@ namespace CorUnix
                     AcquireSharedSynchLock(pthrWorker);
                     fSharedSynchLock = true;
 
-                    pWLNode = SharedIDToTypePointer(WaitingThreadsListNode, 
+                    pWLNode = SharedIDToTypePointer(WaitingThreadsListNode,
                                                     shridMarshaledData);
 
                     _ASSERT_MSG(NULL != pWLNode, "Received bad Shared ID %p\n",
@@ -1968,22 +1765,22 @@ namespace CorUnix
 
 
                     // Get the object index
-                    dwObjIndex = pWLNode->dwObjIndex;                    
+                    dwObjIndex = pWLNode->dwObjIndex;
 
-                    // Get the WaitInfo                    
+                    // Get the WaitInfo
                     ptwiWaitInfo = pWLNode->ptwiWaitInfo;
 
                     // Initialize the WakeUpReason to WaitSucceeded
-                    twrWakeUpReason = WaitSucceeded;                              
-                                        
-                    CSynchData * psdSynchData = 
-                        SharedIDToTypePointer(CSynchData, 
+                    twrWakeUpReason = WaitSucceeded;
+
+                    CSynchData * psdSynchData =
+                        SharedIDToTypePointer(CSynchData,
                                               pWLNode->ptrOwnerObjSynchData.shrid);
-                    
+
                     TRACE("Synch Worker: received REMOTE SIGNAL cmd "
                         "[WInfo=%p {Type=%u Domain=%u ObjCount=%d TgtThread=%x} "
                         "SynchData={shriId=%p p=%p} {SigCount=%d IsAbandoned=%d}\n",
-                        ptwiWaitInfo, ptwiWaitInfo->wtWaitType, ptwiWaitInfo->wdWaitDomain, 
+                        ptwiWaitInfo, ptwiWaitInfo->wtWaitType, ptwiWaitInfo->wdWaitDomain,
                         ptwiWaitInfo->lObjCount, ptwiWaitInfo->pthrOwner->GetThreadId(),
                         (VOID *)pWLNode->ptrOwnerObjSynchData.shrid, psdSynchData,
                         psdSynchData->GetSignalCount(), psdSynchData->IsAbandoned());
@@ -1998,7 +1795,7 @@ namespace CorUnix
                         {
                             twrWakeUpReason = MutexAbondoned;
                         }
-                        
+
                         // Acquire ownership
                         palErr = psdSynchData->AssignOwnershipToThread(
                                     pthrWorker,
@@ -2013,16 +1810,16 @@ namespace CorUnix
                     }
 
                     // Unregister the wait
-                    pSynchManager->UnRegisterWait(pthrWorker, 
-                                                  ptwiWaitInfo, 
+                    pSynchManager->UnRegisterWait(pthrWorker,
+                                                  ptwiWaitInfo,
                                                   fSharedSynchLock);
 
                     // pWLNode is no longer valid after UnRegisterWait
                     pWLNode = NULL;
 
                     TRACE("Synch Worker: Waking up local thread %x "
-                          "{WakeUpReason=%u ObjIndex=%u}\n", 
-                          ptwiWaitInfo->pthrOwner->GetThreadId(), 
+                          "{WakeUpReason=%u ObjIndex=%u}\n",
+                          ptwiWaitInfo->pthrOwner->GetThreadId(),
                           twrWakeUpReason, dwObjIndex);
 
                     // Wake up the target thread
@@ -2053,31 +1850,31 @@ namespace CorUnix
                     TRACE("Synch Worker: received "
                           "SynchWorkerCmdDelegatedObjectSignaling\n");
 
-                    psdSynchData = SharedIDToTypePointer(CSynchData, 
-                                                       shridMarshaledData);                    
+                    psdSynchData = SharedIDToTypePointer(CSynchData,
+                                                       shridMarshaledData);
 
                     _ASSERT_MSG(NULL != psdSynchData, "Received bad Shared ID %p\n",
                                 shridMarshaledData);
-                    _ASSERT_MSG(0 < dwData && (DWORD)INT_MAX > dwData, 
+                    _ASSERT_MSG(0 < dwData && (DWORD)INT_MAX > dwData,
                                 "Received remote signaling with invalid signal "
-                                "count\n");                    
-                    
+                                "count\n");
+
                     // Lock
                     AcquireLocalSynchLock(pthrWorker);
-                    AcquireSharedSynchLock(pthrWorker);  
-                    
+                    AcquireSharedSynchLock(pthrWorker);
+
                     TRACE("Synch Worker: received DELEGATED OBJECT SIGNALING "
                         "cmd [SynchData={shriId=%p p=%p} SigCount=%u] [Current obj SigCount=%d "
-                        "IsAbandoned=%d]\n", (VOID *)shridMarshaledData, 
-                        psdSynchData, dwData, psdSynchData->GetSignalCount(), 
+                        "IsAbandoned=%d]\n", (VOID *)shridMarshaledData,
+                        psdSynchData, dwData, psdSynchData->GetSignalCount(),
                         psdSynchData->IsAbandoned());
 
-                    psdSynchData->Signal(pthrWorker, 
-                                       psdSynchData->GetSignalCount() + dwData, 
+                    psdSynchData->Signal(pthrWorker,
+                                       psdSynchData->GetSignalCount() + dwData,
                                        true);
 
                     // Current SynchData has been AddRef'd by remote process in
-                    // order to be marshaled to the current one, therefore at 
+                    // order to be marshaled to the current one, therefore at
                     // this point we need to release it
                     psdSynchData->Release(pthrWorker);
 
@@ -2090,23 +1887,23 @@ namespace CorUnix
                 case SynchWorkerCmdShutdown:
                     TRACE("Synch Worker: received SynchWorkerCmdShutdown\n");
 
-                    // Shutdown the process pipe: this will cause the process 
-                    // pipe to be unlinked and its write-only file descriptor 
+                    // Shutdown the process pipe: this will cause the process
+                    // pipe to be unlinked and its write-only file descriptor
                     // to be closed, so that when the last fd opened for write
-                    // on the fifo (from another process) will be closed, we 
-                    // will receive an EOF on the read end (i.e. poll in 
-                    // ReadBytesFromProcessPipe will return 1 with no data to 
-                    // be read). That will allow the worker thread to process 
-                    // possible commands already successfully written to the 
+                    // on the fifo (from another process) will be closed, we
+                    // will receive an EOF on the read end (i.e. poll in
+                    // ReadBytesFromProcessPipe will return 1 with no data to
+                    // be read). That will allow the worker thread to process
+                    // possible commands already successfully written to the
                     // pipe by some other process, before shutting down.
                     pSynchManager->ShutdownProcessPipe();
 
                     // Shutting down: this will cause the worker thread to
                     // fetch residual cmds from the process pipe until an
-                    // EOF is converted to a SynchWorkerCmdNop or the 
+                    // EOF is converted to a SynchWorkerCmdNop or the
                     // WorkerThreadShuttingDownTimeout has elapsed without
                     // receiving any cmd.
-                    fShuttingDown = true;                    
+                    fShuttingDown = true;
 
                     // Set the timeout to WorkerThreadShuttingDownTimeout
                     iPollTimeout = WorkerThreadShuttingDownTimeout;
@@ -2119,12 +1916,11 @@ namespace CorUnix
         }
 
         int iRet;
-        ThreadNativeWaitData * ptnwdWorkerThreadNativeData = 
+        ThreadNativeWaitData * ptnwdWorkerThreadNativeData =
             &pthrWorker->synchronizationInfo.m_tnwdNativeData;
 
-#if !SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
         // Using the worker thread's predicate/condition/mutex
-        // (that normally are never used) to signal the shutting 
+        // (that normally are never used) to signal the shutting
         // down thread that the worker thread is done
         iRet = pthread_mutex_lock(&ptnwdWorkerThreadNativeData->mutex);
         _ASSERT_MSG(0 == iRet, "Cannot lock mutex [err=%d]\n", iRet);
@@ -2134,34 +1930,12 @@ namespace CorUnix
         iRet = pthread_cond_signal(&ptnwdWorkerThreadNativeData->cond);
         if (0 != iRet)
         {
-            ERROR ("pthread_cond_signal returned %d [errno=%d (%s)]\n", 
+            ERROR ("pthread_cond_signal returned %d [errno=%d (%s)]\n",
                    iRet, errno, strerror(errno));
-        }            
+        }
 
-        iRet = pthread_mutex_unlock(&ptnwdWorkerThreadNativeData->mutex);        
+        iRet = pthread_mutex_unlock(&ptnwdWorkerThreadNativeData->mutex);
         _ASSERT_MSG(0 == iRet, "Cannot lock mutex [err=%d]\n", iRet);
-
-#else // SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
-
-        // Using the worker thread's blocking pipe 
-        // (that normally is never used) to signal the shutting 
-        // down thread that the worker thread is done
-        int iEagains = 0;
-        char cCode = (char)SynchWorkerCmdNop;
-
-        do
-        {
-            iRet = write(ptnwdWorkerThreadNativeData->iPipeWr, 
-                         (void *)&cCode, 
-                         sizeof(cCode));
-        } while (-1 == iRet && 
-                 EAGAIN == errno && 
-                 MaxConsecutiveEagains >= ++iEagains && 
-                 0 == sched_yield());
-
-        _ASSERTE(sizeof(cCode) == iRet);
-
-#endif // SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
 
         // Sleep forever
         ThreadPrepareForShutdown();
@@ -2173,17 +1947,16 @@ namespace CorUnix
     Method:
       CPalSynchronizationManager::ReadCmdFromProcessPipe
 
-    Reads a worker thread cmd from the process pipe. If there is no data 
-    to be read on the pipe, it blocks until there is data available or the 
+    Reads a worker thread cmd from the process pipe. If there is no data
+    to be read on the pipe, it blocks until there is data available or the
     timeout expires.
     --*/
     PAL_ERROR CPalSynchronizationManager::ReadCmdFromProcessPipe(
-        int iPollTimeout, 
+        int iPollTimeout,
         SynchWorkerCmd * pswcWorkerCmd,
         SharedID * pshridMarshaledData,
         DWORD * pdwData)
     {
-        PAL_ERROR palErr = NO_ERROR;
         int iRet;
         BYTE byVal;
         SynchWorkerCmd swcWorkerCmd = SynchWorkerCmdNop;
@@ -2198,8 +1971,8 @@ namespace CorUnix
         {
             ERROR("Failed polling the process pipe [ret=%d errno=%d (%s)]\n",
                   iRet, errno, strerror(errno));
-            palErr = ERROR_INTERNAL_ERROR;
-            goto RCFPP_exit;
+
+            return ERROR_INTERNAL_ERROR;
         }
 
         if (iRet != 0)
@@ -2214,13 +1987,13 @@ namespace CorUnix
             {
                 ERROR("Got unknown worker command code %d from the process "
                        "pipe!\n", swcWorkerCmd);
-                palErr = ERROR_INTERNAL_ERROR;
-                goto RCFPP_exit;
+
+                return ERROR_INTERNAL_ERROR;
             }
 
-            _ASSERT_MSG(SynchWorkerCmdNop == swcWorkerCmd || 
-                        SynchWorkerCmdRemoteSignal == swcWorkerCmd || 
-                        SynchWorkerCmdDelegatedObjectSignaling == swcWorkerCmd || 
+            _ASSERT_MSG(SynchWorkerCmdNop == swcWorkerCmd ||
+                        SynchWorkerCmdRemoteSignal == swcWorkerCmd ||
+                        SynchWorkerCmdDelegatedObjectSignaling == swcWorkerCmd ||
                         SynchWorkerCmdShutdown == swcWorkerCmd ||
                         SynchWorkerCmdTerminationRequest == swcWorkerCmd,
                         "Unknown worker command code %u\n", swcWorkerCmd);
@@ -2228,29 +2001,29 @@ namespace CorUnix
             TRACE("Got cmd %u from process pipe\n", swcWorkerCmd);
         }
 
-        if (SynchWorkerCmdRemoteSignal == swcWorkerCmd || 
+        if (SynchWorkerCmdRemoteSignal == swcWorkerCmd ||
             SynchWorkerCmdDelegatedObjectSignaling == swcWorkerCmd)
         {
             SharedID shridMarshaledId = NULLSharedID;
-            
+
             TRACE("Received %s cmd\n",
                   (swcWorkerCmd == SynchWorkerCmdRemoteSignal) ?
                   "REMOTE SIGNAL" : "DELEGATED OBJECT SIGNALING" );
-            
-            iRet = ReadBytesFromProcessPipe(WorkerCmdCompletionTimeout, 
-                                            (BYTE *)&shridMarshaledId, 
+
+            iRet = ReadBytesFromProcessPipe(WorkerCmdCompletionTimeout,
+                                            (BYTE *)&shridMarshaledId,
                                             sizeof(shridMarshaledId));
             if (sizeof(shridMarshaledId) != iRet)
             {
                 ERROR("Unable to read marshaled Shared ID from the "
                       "process pipe [pipe=%d ret=%d errno=%d (%s)]\n",
                       m_iProcessPipeRead, iRet, errno, strerror(errno));
-                palErr = ERROR_INTERNAL_ERROR;
-                goto RCFPP_exit;
+
+                return ERROR_INTERNAL_ERROR;
             }
 
             TRACE("Received marshaled shrid=%p\n", (VOID *)shridMarshaledId);
-                
+
             *pshridMarshaledData = shridMarshaledId;
         }
 
@@ -2258,37 +2031,33 @@ namespace CorUnix
         {
             DWORD dwData;
 
-            iRet = ReadBytesFromProcessPipe(WorkerCmdCompletionTimeout, 
-                                            (BYTE *)&dwData, 
+            iRet = ReadBytesFromProcessPipe(WorkerCmdCompletionTimeout,
+                                            (BYTE *)&dwData,
                                             sizeof(dwData));
             if (sizeof(dwData) != iRet)
             {
                 ERROR("Unable to read signal count from the "
                       "process pipe [pipe=%d ret=%d errno=%d (%s)]\n",
                       m_iProcessPipeRead, iRet, errno, strerror(errno));
-                palErr = ERROR_INTERNAL_ERROR;
-                goto RCFPP_exit;
+
+                return ERROR_INTERNAL_ERROR;
             }
 
-            TRACE("Received signal count %u\n", dwData);            
+            TRACE("Received signal count %u\n", dwData);
 
             *pdwData = dwData;
         }
 
-    RCFPP_exit:
-        if (NO_ERROR == palErr)
-        {
-            *pswcWorkerCmd = swcWorkerCmd;
-        }
-        return palErr;
+        *pswcWorkerCmd = swcWorkerCmd;
+        return NO_ERROR;
     }
 
     /*++
     Method:
       CPalSynchronizationManager::ReadBytesFromProcessPipe
 
-    Reads the specified amount ob bytes from the process pipe. If there is 
-    no data to be read on the pipe, it blocks until there is data available 
+    Reads the specified number of bytes from the process pipe. If there is
+    no data to be read on the pipe, it blocks until there is data available
     or the timeout expires.
     --*/
     int CPalSynchronizationManager::ReadBytesFromProcessPipe(
@@ -2311,7 +2080,7 @@ namespace CorUnix
 
         _ASSERTE(0 <= iBytes);
 
-        do 
+        do
         {
             while (TRUE)
             {
@@ -2331,7 +2100,7 @@ namespace CorUnix
                 }
                 else
                 {
-                    tv.tv_usec = (iTimeout % tccSecondsToMillieSeconds) * 
+                    tv.tv_usec = (iTimeout % tccSecondsToMillieSeconds) *
                         tccMillieSecondsToMicroSeconds;
                     tv.tv_sec = iTimeout / tccSecondsToMillieSeconds;
                     ptv = &tv;
@@ -2345,15 +2114,15 @@ namespace CorUnix
 #else // HAVE_BROKEN_FIFO_KEVENT
 
                 // Note: FreeBSD needs to use kqueue/kevent support here, since on this
-                // platform the EOF notification on FIFOs is not surfaced through poll, 
+                // platform the EOF notification on FIFOs is not surfaced through poll,
                 // and process pipe shutdown relies on this feature.
-                // If a thread is polling a FIFO or a pipe for POLLIN, when the last 
-                // write descriptor for that pipe is closed, poll() is supposed to 
+                // If a thread is polling a FIFO or a pipe for POLLIN, when the last
+                // write descriptor for that pipe is closed, poll() is supposed to
                 // return with a POLLIN event but no data to be read on the FIFO/pipe,
                 // which means EOF.
-                // On FreeBSD such feature works for pipes but it doesn't for FIFOs. 
+                // On FreeBSD such feature works for pipes but it doesn't for FIFOs.
                 // Using kevent the EOF is instead surfaced correctly.
-                
+
                 if (iBytes > m_keProcessPipeEvent.data)
                 {
                     if (INFTIM == iTimeout)
@@ -2362,7 +2131,7 @@ namespace CorUnix
                     }
                     else
                     {
-                        ts.tv_nsec = (iTimeout % tccSecondsToMillieSeconds) * 
+                        ts.tv_nsec = (iTimeout % tccSecondsToMillieSeconds) *
                             tccMillieSecondsToNanoSeconds;
                         ts.tv_sec = iTimeout / tccSecondsToMillieSeconds;
                         pts = &ts;
@@ -2371,7 +2140,7 @@ namespace CorUnix
                     if (0 != (EV_EOF & m_keProcessPipeEvent.flags))
                     {
                         TRACE("Refreshing kevent settings\n");
-                        EV_SET(&keChanges, m_iProcessPipeRead, EVFILT_READ, 
+                        EV_SET(&keChanges, m_iProcessPipeRead, EVFILT_READ,
                                EV_ADD | EV_CLEAR, 0, 0, 0);
                         iNChanges = 1;
                     }
@@ -2380,12 +2149,12 @@ namespace CorUnix
                         iNChanges = 0;
                     }
 
-                    iRet = kevent(m_iKQueue, &keChanges, iNChanges, 
+                    iRet = kevent(m_iKQueue, &keChanges, iNChanges,
                                   &m_keProcessPipeEvent, 1, pts);
 
                     if (0 < iRet)
                     {
-                        _ASSERTE(1 == iRet);                       
+                        _ASSERTE(1 == iRet);
                         _ASSERTE(EVFILT_READ == m_keProcessPipeEvent.filter);
 
                         if (EV_ERROR & m_keProcessPipeEvent.flags)
@@ -2394,7 +2163,7 @@ namespace CorUnix
                             iRet = -1;
                             iErrno = m_keProcessPipeEvent.data;
                             m_keProcessPipeEvent.data = 0;
-                        }                        
+                        }
                     }
                     else if (0 > iRet)
                     {
@@ -2402,16 +2171,15 @@ namespace CorUnix
                     }
 
                     TRACE("Woken up from kevent() with ret=%d flags=%#x data=%d "
-                          "[iTimeout=%d]\n", iRet, m_keProcessPipeEvent.flags, 
+                          "[iTimeout=%d]\n", iRet, m_keProcessPipeEvent.flags,
                           m_keProcessPipeEvent.data, iTimeout);
                 }
-                else 
+                else
                 {
-                    // There is enough data already available in the buffer,
-                    // just use that.
+                    // There is enough data already available in the buffer, just use that.
                     iRet = 1;
                 }
-                
+
 #endif // HAVE_BROKEN_FIFO_KEVENT
 #else // HAVE_KQUEUE
 
@@ -2419,9 +2187,9 @@ namespace CorUnix
                 Poll.events = POLLIN;
                 Poll.revents = 0;
 
-                iRet = poll(&Poll, 1, iTimeout);            
+                iRet = poll(&Poll, 1, iTimeout);
 
-                TRACE("Woken up from poll() with ret=%d [iTimeout=%d]\n", 
+                TRACE("Woken up from poll() with ret=%d [iTimeout=%d]\n",
                        iRet, iTimeout);
 
                 if (1 == iRet &&
@@ -2456,15 +2224,15 @@ namespace CorUnix
                     if (1 < iRet)
                     {
                         // Unexpected iRet > 1
-                        ASSERT("Unexpected return code %d from blocking poll/kevent call\n", 
+                        ASSERT("Unexpected return code %d from blocking poll/kevent call\n",
                                 iRet);
                         goto RBFPP_exit;
                     }
-                        
+
                     if (EINTR != iErrno)
                     {
                         // Unexpected error
-                        ASSERT("Unexpected error from blocking poll/kevent call: %d (%s)\n", 
+                        ASSERT("Unexpected error from blocking poll/kevent call: %d (%s)\n",
                                iErrno, strerror(iErrno));
                         goto RBFPP_exit;
                     }
@@ -2475,7 +2243,7 @@ namespace CorUnix
                     if (iConsecutiveEintrs >= MaxWorkerConsecutiveEintrs)
                     {
                         if (iTimeout != INFTIM)
-                        {                    
+                        {
                             WARN("Receiving too many EINTRs; converting one of them "
                                  "to a timeout");
                             iRet = 0;
@@ -2495,7 +2263,7 @@ namespace CorUnix
                 // Time out
                 break;
             }
-            else    
+            else
             {
 #if HAVE_KQUEUE && !HAVE_BROKEN_FIFO_KEVENT
                 if (0 != (EV_EOF & m_keProcessPipeEvent.flags) && 0 == m_keProcessPipeEvent.data)
@@ -2510,12 +2278,12 @@ namespace CorUnix
 
                 if (0 == iRet)
                 {
-                    // Poll returned 1 and read returned zero: this is an EOF, 
+                    // Poll returned 1 and read returned zero: this is an EOF,
                     // i.e. no other process has the pipe still open for write
-                    TRACE("Received an EOF on process pipe via poll\n");                   
+                    TRACE("Received an EOF on process pipe via poll\n");
                     goto RBFPP_exit;
-                }                    
-                else if (0 > iRet)            
+                }
+                else if (0 > iRet)
                 {
                     ERROR("Unable to read %d bytes from the the process pipe "
                           "[pipe=%d ret=%d errno=%d (%s)]\n", iBytes - iBytesRead,
@@ -2533,14 +2301,12 @@ namespace CorUnix
                 m_keProcessPipeEvent.data -= iRet;
                 _ASSERTE(0 <= m_keProcessPipeEvent.data);
 #endif // HAVE_KQUEUE
-            }    
+            }
         } while(iBytesRead < iBytes);
 
     RBFPP_exit:
         return (iRet < 0) ? iRet : iBytesRead;
     }
-
-#if !SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
 
     /*++
     Method:
@@ -2555,7 +2321,7 @@ namespace CorUnix
         DWORD dwObjectIndex)
     {
         PAL_ERROR palErr = NO_ERROR;
-        ThreadNativeWaitData * ptnwdNativeWaitData = 
+        ThreadNativeWaitData * ptnwdNativeWaitData =
             pthrTarget->synchronizationInfo.GetNativeData();
 
         TRACE("Waking up a local thread [WakeUpReason=%u ObjectIndex=%u "
@@ -2569,8 +2335,8 @@ namespace CorUnix
 #if SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING
         if (0 < GetLocalSynchLockCount(pthrCurrent))
         {
-            // Defer the actual thread signaling to right after 
-            // releasing the synch lock(s), so that signaling 
+            // Defer the actual thread signaling to right after
+            // releasing the synch lock(s), so that signaling
             // can happen from a thread-suspension safe area
             palErr = DeferThreadConditionSignaling(pthrCurrent, pthrTarget);
         }
@@ -2578,7 +2344,7 @@ namespace CorUnix
         {
             // Signal the target thread's condition
             palErr = SignalThreadCondition(ptnwdNativeWaitData);
-        }        
+        }
 #else // SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING
         // Signal the target thread's condition
         palErr = SignalThreadCondition(ptnwdNativeWaitData);
@@ -2604,28 +2370,28 @@ namespace CorUnix
         LONG lCount = pthrCurrent->synchronizationInfo.m_lPendingSignalingCount;
 
         _ASSERTE(pthrTarget != pthrCurrent);
-        
+
         if (CThreadSynchronizationInfo::PendingSignalingsArraySize > lCount)
         {
-            // If there is available room, add the target thread object to 
+            // If there is available room, add the target thread object to
             // the array of pending thread signalings.
             pthrCurrent->synchronizationInfo.m_rgpthrPendingSignalings[lCount] = pthrTarget;
         }
         else
         {
-            // If the array is full, add the target thread object at the end 
+            // If the array is full, add the target thread object at the end
             // of the overflow list
-            DeferredSignalingListNode * pdsln = 
+            DeferredSignalingListNode * pdsln =
                 InternalNew<DeferredSignalingListNode>();
 
             if (pdsln)
             {
                 pdsln->pthrTarget = pthrTarget;
 
-                // Add the note to the end of the list. 
+                // Add the note to the end of the list.
                 // Note: no need to synchronize the access to this list since
                 // it is meant to be accessed only by the owner thread.
-                InsertTailList(&pthrCurrent->synchronizationInfo.m_lePendingSignalingsOverflowList, 
+                InsertTailList(&pthrCurrent->synchronizationInfo.m_lePendingSignalingsOverflowList,
                                &pdsln->Link);
             }
             else
@@ -2639,16 +2405,17 @@ namespace CorUnix
             // Increment the count of pending signalings
             pthrCurrent->synchronizationInfo.m_lPendingSignalingCount += 1;
 
-            // Add a reference to the target CPalThread object; this is 
-            // needed since deferring signaling after releasing the synch 
-            // locks implies accessing the target thread object without 
-            // holding the local synch lock. In rare circumstances, the 
-            // target thread may have already exited while deferred signaling 
-            // takes place, therefore invalidating the thread object. The 
-            // reference added here ensures that the thread object is still 
+            // Add a reference to the target CPalThread object; this is
+            // needed since deferring signaling after releasing the synch
+            // locks implies accessing the target thread object without
+            // holding the local synch lock. In rare circumstances, the
+            // target thread may have already exited while deferred signaling
+            // takes place, therefore invalidating the thread object. The
+            // reference added here ensures that the thread object is still
             // good, even if the target thread has exited.
             pthrTarget->AddThreadReference();
         }
+
         return palErr;
     }
 #endif // SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING
@@ -2664,14 +2431,13 @@ namespace CorUnix
     {
         PAL_ERROR palErr = NO_ERROR;
         int iRet;
-        
+
         // Lock the mutex
         iRet = pthread_mutex_lock(&ptnwdNativeWaitData->mutex);
         if (0 != iRet)
         {
             ERROR("Cannot lock mutex [err=%d]\n", iRet);
-            palErr = ERROR_INTERNAL_ERROR;
-            goto WUT_exit;
+            return ERROR_INTERNAL_ERROR;
         }
 
         // Set the predicate
@@ -2682,109 +2448,22 @@ namespace CorUnix
         if (0 != iRet)
         {
             ERROR("Failed to signal condition: pthread_cond_signal "
-                  "returned %d [errno=%d (%s)]\n", iRet, errno, 
+                  "returned %d [errno=%d (%s)]\n", iRet, errno,
                   strerror(errno));
             palErr = ERROR_INTERNAL_ERROR;
             // Continue in order to unlock the mutex anyway
-        }            
+        }
 
         // Unlock the mutex
-        iRet = pthread_mutex_unlock(&ptnwdNativeWaitData->mutex);            
+        iRet = pthread_mutex_unlock(&ptnwdNativeWaitData->mutex);
         if (0 != iRet)
         {
             ERROR("Cannot unlock mutex [err=%d]\n", iRet);
-            palErr = ERROR_INTERNAL_ERROR;
-            goto WUT_exit;
+            return ERROR_INTERNAL_ERROR;
         }
 
-    WUT_exit:
         return palErr;
     }
-
-#else // SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
-
-    /*++
-    Method:
-      CPalSynchronizationManager::WakeUpLocalThread
-
-    Wakes up a local thead currently sleeping for a wait or a sleep
-    --*/
-    PAL_ERROR CPalSynchronizationManager::WakeUpLocalThread(
-        CPalThread * pthrCurrent,
-        CPalThread * pthrTarget,
-        ThreadWakeupReason twrWakeupReason,
-        DWORD dwObjectIndex)
-    {
-        PAL_ERROR palErr = NO_ERROR;
-        int iRet = 0;
-        int iEagains = 0;
-        bool fAgain;
-        char cCode = (char)twrWakeupReason;
-        ThreadNativeWaitData * ptnwdNativeWaitData = 
-            pthrTarget->synchronizationInfo.GetNativeData();
-
-        TRACE("Waking up a local thread [WakeUpReason=%u ObjectIndex=%u "
-              "ptnwdNativeWaitData=%p]\n", twrWakeupReason, dwObjectIndex,
-              ptnwdNativeWaitData);
-
-        // Set wakeup reason and signaled object index
-        ptnwdNativeWaitData->twrWakeupReason = twrWakeupReason;
-        ptnwdNativeWaitData->dwObjectIndex   = dwObjectIndex;
-
-        _ASSERTE(-1 != ptnwdNativeWaitData->iPipeWr);
-
-        do 
-        {
-            fAgain = false;
-            
-            iRet = write(ptnwdNativeWaitData->iPipeWr, 
-                         (void *)&cCode, 
-                         sizeof(cCode));
-            switch (iRet)
-            {
-                case (int)sizeof(cCode):
-                    // write succeeded
-                    break;
-                case -1:
-                    // error
-                    switch (errno)
-                    {
-                        case EINTR:
-                        case EAGAIN:
-                            if (MaxConsecutiveEagains >= ++iEagains)
-                            {
-                                fAgain = true;
-                                sched_yield();
-                            }
-                            else
-                            {
-                                ERROR("Too many consecutive EAGAINs/EINTRs (%d) while writing "
-                                      "to pipe %d\n", iEagains, ptnwdNativeWaitData->iPipeWr);
-                                palErr = ERROR_INTERNAL_ERROR;
-                            }
-                            break;
-                        case EBADF:
-                        case EFAULT:
-                        case EINVAL:
-                        case EPIPE:
-                            palErr = ERROR_INVALID_DATA;
-                            break;
-                        default:
-                            palErr = ERROR_INTERNAL_ERROR;
-                            break;
-                    }
-                    break;
-                default:
-                    // unexpected error condition
-                    palErr = ERROR_INTERNAL_ERROR;   
-                    break;
-            }       
-        } while (fAgain);
-        
-    WUT_exit:
-        return palErr;
-    }
-#endif // SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
 
     /*++
     Method:
@@ -2799,50 +2478,39 @@ namespace CorUnix
         SharedID shridWLNode)
     {
         const int MsgSize = sizeof(BYTE) + sizeof(SharedID);
-        int i;
         PAL_ERROR palErr = NO_ERROR;
         BYTE rgSendBuf[MsgSize];
         BYTE * pbySrc, * pbyDst = rgSendBuf;
-        WaitingThreadsListNode * pWLNode = 
-            SharedIDToTypePointer(WaitingThreadsListNode, shridWLNode);
-        
-        _ASSERT_MSG(gPID != pWLNode->dwProcessId,
-                    "WakeUpRemoteThread called on local thread\n");
-        _ASSERT_MSG(NULLSharedID != shridWLNode, "NULL shared identifier\n");
-        _ASSERT_MSG(NULL != pWLNode, 
-                    "Bad shared wait list node identifier (%p)\n", 
-                    (VOID*)shridWLNode);
-        _ASSERT_MSG(MsgSize <= PIPE_BUF, 
-                    "Message too long [MsgSize=%d PIPE_BUF=%d]\n",
-                    MsgSize, (int)PIPE_BUF);
+        WaitingThreadsListNode * pWLNode = SharedIDToTypePointer(WaitingThreadsListNode, shridWLNode);
 
-        TRACE("Waking up remote thread {pid=%x, tid=%x} by sending "
-              "cmd=%u and shridWLNode=%p over process pipe\n",
-              pWLNode->dwProcessId, pWLNode->dwThreadId, 
-              SynchWorkerCmdRemoteSignal, (VOID *)shridWLNode);
+        _ASSERT_MSG(gPID != pWLNode->dwProcessId, "WakeUpRemoteThread called on local thread\n");
+        _ASSERT_MSG(NULLSharedID != shridWLNode, "NULL shared identifier\n");
+        _ASSERT_MSG(NULL != pWLNode, "Bad shared wait list node identifier (%p)\n", (VOID*)shridWLNode);
+        _ASSERT_MSG(MsgSize <= PIPE_BUF, "Message too long [MsgSize=%d PIPE_BUF=%d]\n", MsgSize, (int)PIPE_BUF);
+
+        TRACE("Waking up remote thread {pid=%x, tid=%x} by sending cmd=%u and shridWLNode=%p over process pipe\n",
+              pWLNode->dwProcessId, pWLNode->dwThreadId, SynchWorkerCmdRemoteSignal, (VOID *)shridWLNode);
 
         // Prepare the message
         // Cmd
         *pbyDst++ = (BYTE)(SynchWorkerCmdRemoteSignal & 0xFF);
+
         // WaitingThreadsListNode (not aligned, copy byte by byte)
         pbySrc = (BYTE *)&shridWLNode;
-        for (i=0; i<(int)sizeof(SharedID); i++)
+        for (int i = 0; i < (int)sizeof(SharedID); i++)
         {
             *pbyDst++ = *pbySrc++;
         }
+
         _ASSERT_MSG(pbyDst <= rgSendBuf + MsgSize + 1, "Buffer overrun");
 
         // Send the message
-        palErr = SendMsgToRemoteWorker(pWLNode->dwProcessId, rgSendBuf, 
-                                       MsgSize);
+        palErr = SendMsgToRemoteWorker(pWLNode->dwProcessId, rgSendBuf, MsgSize);
         if (NO_ERROR != palErr)
         {
-            ERROR("Failed sending message to remote worker in process %u\n",
-                  pWLNode->dwProcessId);
-            goto WUT_exit;
+            ERROR("Failed sending message to remote worker in process %u\n", pWLNode->dwProcessId);
         }
-        
-    WUT_exit:
+
         return palErr;
     }
 
@@ -2850,12 +2518,12 @@ namespace CorUnix
     Method:
       CPalSynchronizationManager::DelegateSignalingToRemoteProcess
 
-    This method transfers an object signaling operation to a remote process, 
-    where it will be performed by the worker thread. Such delegation takes 
-    place when the currently processed thread (among those waiting on the 
-    signald object) lives in a different process as the signaling thread, 
-    and it is performing a wait all. In this case generally is not possible 
-    to find out whether or not the wait all is satisfied, therefore the 
+    This method transfers an object signaling operation to a remote process,
+    where it will be performed by the worker thread. Such delegation takes
+    place when the currently processed thread (among those waiting on the
+    signald object) lives in a different process as the signaling thread,
+    and it is performing a wait all. In this case generally is not possible
+    to find out whether or not the wait all is satisfied, therefore the
     signaling operation must be continued in the target process.
     --*/
     PAL_ERROR CPalSynchronizationManager::DelegateSignalingToRemoteProcess(
@@ -2869,23 +2537,16 @@ namespace CorUnix
         BYTE rgSendBuf[MsgSize];
         BYTE * pbySrc, * pbyDst = rgSendBuf;
         DWORD dwSigCount;
-        CSynchData * psdSynchData = 
+        CSynchData * psdSynchData =
             SharedIDToTypePointer(CSynchData, shridSynchData);
-        
-        _ASSERT_MSG(gPID != dwTargetProcessId,
-                    " called on local thread\n");
-        _ASSERT_MSG(NULLSharedID != shridSynchData, "NULL shared identifier\n");
-        _ASSERT_MSG(NULL != psdSynchData, 
-                    "Bad shared SynchData identifier (%p)\n", 
-                    (VOID*)shridSynchData);
-        _ASSERT_MSG(MsgSize <= PIPE_BUF, 
-                    "Message too long [MsgSize=%d PIPE_BUF=%d]\n",
-                    MsgSize, (int)PIPE_BUF);
 
-        TRACE("Transfering wait all signaling to remote process pid=%x "
-              "by sending cmd=%u and shridSynchData=%p over process pipe\n",
-              dwTargetProcessId, SynchWorkerCmdDelegatedObjectSignaling, 
-              (VOID *)shridSynchData);
+        _ASSERT_MSG(gPID != dwTargetProcessId, " called on local thread\n");
+        _ASSERT_MSG(NULLSharedID != shridSynchData, "NULL shared identifier\n");
+        _ASSERT_MSG(NULL != psdSynchData, "Bad shared SynchData identifier (%p)\n", (VOID*)shridSynchData);
+        _ASSERT_MSG(MsgSize <= PIPE_BUF, "Message too long [MsgSize=%d PIPE_BUF=%d]\n", MsgSize, (int)PIPE_BUF);
+
+        TRACE("Transfering wait all signaling to remote process pid=%x by sending cmd=%u and shridSynchData=%p over process pipe\n",
+              dwTargetProcessId, SynchWorkerCmdDelegatedObjectSignaling, (VOID *)shridSynchData);
 
         dwSigCount = psdSynchData->GetSignalCount();
 
@@ -2895,7 +2556,7 @@ namespace CorUnix
         //
         // Prepare the message
         //
-        
+
         // Cmd
         *pbyDst++ = (BYTE)(SynchWorkerCmdDelegatedObjectSignaling & 0xFF);
 
@@ -2916,18 +2577,15 @@ namespace CorUnix
         _ASSERT_MSG(pbyDst <= rgSendBuf + MsgSize + 1, "Buffer overrun");
 
         // Send the message
-        palErr = SendMsgToRemoteWorker(dwTargetProcessId, rgSendBuf, 
-                                       MsgSize);
+        palErr = SendMsgToRemoteWorker(dwTargetProcessId, rgSendBuf, MsgSize);
         if (NO_ERROR != palErr)
         {
-            TRACE("Failed sending message to remote worker in process %u\n",
-                  dwTargetProcessId);
+            TRACE("Failed sending message to remote worker in process %u\n", dwTargetProcessId);
+
             // Undo refcounting
             psdSynchData->Release(pthrCurrent);
-            goto WUT_exit;
         }
-        
-    WUT_exit:
+
         return palErr;
     }
 
@@ -2935,7 +2593,7 @@ namespace CorUnix
     Method:
       CPalSynchronizationManager::SendMsgToRemoteWorker
 
-    Sends a message (command + data) to a remote process' worker thread.
+    Sends a message (command + data) to a remote process's worker thread.
     --*/
     PAL_ERROR CPalSynchronizationManager::SendMsgToRemoteWorker(
         DWORD dwProcessId,
@@ -2950,10 +2608,8 @@ namespace CorUnix
         BYTE * pPos = pMsg;
         bool fRet;
         CPalThread *pthrCurrent = InternalGetCurrentThread();
-        
-        _ASSERT_MSG(gPID != dwProcessId,
-                    "SendMsgToRemoteWorker called with local process as "
-                    "target process\n");
+
+        _ASSERT_MSG(gPID != dwProcessId, "SendMsgToRemoteWorker called with local process as target process\n");
 
         fRet = GetProcessPipeName(strPipeFilename, MAX_PATH, dwProcessId);
 
@@ -2963,7 +2619,7 @@ namespace CorUnix
         if (-1 == iProcessPipe)
         {
             ERROR("Unable to open a process pipe to wake up a remote thread "
-                  "[pid=%u errno=%d (%s) PipeFilename=%s]\n", dwProcessId, 
+                  "[pid=%u errno=%d (%s) PipeFilename=%s]\n", dwProcessId,
                   errno, strerror(errno), strPipeFilename);
             palErr = ERROR_INTERNAL_ERROR;
             goto SMTRW_exit;
@@ -2974,28 +2630,28 @@ namespace CorUnix
         while (0 < iBytesToWrite)
         {
             iRetryCount = 0;
-            do 
+            do
             {
                 sszRet = write(iProcessPipe, pPos, iBytesToWrite);
-            } while (-1 == sszRet && 
-                     EAGAIN == errno && 
+            } while (-1 == sszRet &&
+                     EAGAIN == errno &&
                      ++iRetryCount < MaxConsecutiveEagains &&
                      0 == sched_yield());
-                     
+
             if (0 >= sszRet)
             {
                 ERROR("Error writing message to process pipe %d [target_pid=%u "
                       "bytes_to_write=%d bytes_written=%d ret=%d errno=%d (%s) "
-                      "PipeFilename=%s]\n", iProcessPipe, dwProcessId, iMsgSize, 
-                      iMsgSize - iBytesToWrite, (int)sszRet, errno, strerror(errno), 
-                      strPipeFilename);                
+                      "PipeFilename=%s]\n", iProcessPipe, dwProcessId, iMsgSize,
+                      iMsgSize - iBytesToWrite, (int)sszRet, errno, strerror(errno),
+                      strPipeFilename);
                 palErr = ERROR_INTERNAL_ERROR;
                 break;
             }
             iBytesToWrite -= (int)sszRet;
             pPos += sszRet;
 
-            _ASSERT_MSG(0 == iBytesToWrite, 
+            _ASSERT_MSG(0 == iBytesToWrite,
                         "Interleaved messages while writing to process pipe %d\n",
                         iProcessPipe);
         }
@@ -3010,7 +2666,7 @@ namespace CorUnix
         return ERROR_INTERNAL_ERROR;
 #endif // !CORECLR
     }
-    
+
     /*++
     Method:
       CPalSynchronizationManager::WakeUpLocalWorkerThread
@@ -3022,9 +2678,6 @@ namespace CorUnix
         SynchWorkerCmd swcWorkerCmd)
     {
         PAL_ERROR palErr = NO_ERROR;
-        ssize_t sszWritten;
-        BYTE byCmd;
-        int iRetryCount;
 
         _ASSERT_MSG((swcWorkerCmd & 0xFF) == swcWorkerCmd,
                     "Value too big for swcWorkerCmd\n");
@@ -3035,35 +2688,34 @@ namespace CorUnix
                     "WakeUpLocalWorkerThread supports only SynchWorkerCmdNop, SynchWorkerCmdShutdown, and SynchWorkerCmdTerminationRequest."
                     "[received cmd=%d]\n", swcWorkerCmd);
 
-        byCmd = (BYTE)(swcWorkerCmd & 0xFF);
+        BYTE byCmd = (BYTE)(swcWorkerCmd & 0xFF);
 
-        TRACE("Waking up Synch Worker Thread for %u [byCmd=%u]\n", 
+        TRACE("Waking up Synch Worker Thread for %u [byCmd=%u]\n",
                     swcWorkerCmd, (unsigned int)byCmd);
 
-        // As long as we use pipes and we keep the message size 
+        // As long as we use pipes and we keep the message size
         // within PIPE_BUF, there's no need to lock here, since the
         // write is guaranteed not to be interleaved with/into other
         // writes of PIPE_BUF bytes or less.
         _ASSERT_MSG(sizeof(BYTE) <= PIPE_BUF, "Message too long\n");
-        
-        iRetryCount = 0;
+
+        int iRetryCount = 0;
+        ssize_t sszWritten;
         do
         {
             sszWritten = write(m_iProcessPipeWrite, &byCmd, sizeof(BYTE));
-        } while (-1 == sszWritten && 
-                 EAGAIN == errno && 
+        } while (-1 == sszWritten &&
+                 EAGAIN == errno &&
                  ++iRetryCount < MaxConsecutiveEagains &&
                  0 == sched_yield());
-        
+
         if (sszWritten != sizeof(BYTE))
         {
             ERROR("Unable to write to the process pipe to wake up the "
                    "worker thread [errno=%d (%s)]\n", errno, strerror(errno));
             palErr = ERROR_INTERNAL_ERROR;
-            goto WUWT_exit;
         }
 
-    WUWT_exit:
         return palErr;
     }
 
@@ -3087,7 +2739,7 @@ namespace CorUnix
     a thread other than the current one (most of the times the deregistration
     is performed by the signaling thread)
 
-    Note: this method must be called while holding the local process 
+    Note: this method must be called while holding the local process
           synchronization lock.
     --*/
     void CPalSynchronizationManager::UnRegisterWait(
@@ -3103,7 +2755,7 @@ namespace CorUnix
         {
             AcquireSharedSynchLock(pthrCurrent);
             fSharedSynchLock = true;
-        }   
+        }
 
         TRACE("Unregistering wait for thread=%u [ObjCount=%d WaitType=%u WaitDomain=%u]\n",
               ptwiWaitInfo->pthrOwner->GetThreadId(),
@@ -3120,15 +2772,15 @@ namespace CorUnix
             {
                 // Shared object
                 WaitingThreadsListNode * pwtlnItemNext, * pwtlnItemPrev;
-                
-                psdSynchData = SharedIDToTypePointer(CSynchData, 
+
+                psdSynchData = SharedIDToTypePointer(CSynchData,
                     pwtlnItem->ptrOwnerObjSynchData.shrid);
 
                 VALIDATEOBJECT(psdSynchData);
 
-                pwtlnItemNext = SharedIDToTypePointer(WaitingThreadsListNode, 
+                pwtlnItemNext = SharedIDToTypePointer(WaitingThreadsListNode,
                     pwtlnItem->ptrNext.shrid);
-                pwtlnItemPrev = SharedIDToTypePointer(WaitingThreadsListNode, 
+                pwtlnItemPrev = SharedIDToTypePointer(WaitingThreadsListNode,
                     pwtlnItem->ptrPrev.shrid);
                 if (pwtlnItemPrev)
                 {
@@ -3139,6 +2791,7 @@ namespace CorUnix
                 {
                     psdSynchData->SetWTLHeadShrPtr(pwtlnItem->ptrNext.shrid);
                 }
+
                 if (pwtlnItemNext)
                 {
                     VALIDATEOBJECT(pwtlnItemNext);
@@ -3152,7 +2805,7 @@ namespace CorUnix
                 m_cacheSHRWTListNodes.Add(pthrCurrent, pwtlnItem->shridSHRThis);
             }
             else
-            {    
+            {
                 // Local object
                 psdSynchData = pwtlnItem->ptrOwnerObjSynchData.ptr;
 
@@ -3167,6 +2820,7 @@ namespace CorUnix
                 {
                     psdSynchData->SetWTLHeadPtr(pwtlnItem->ptrNext.ptr);
                 }
+
                 if (pwtlnItem->ptrNext.ptr)
                 {
                     VALIDATEOBJECT(pwtlnItem);
@@ -3177,7 +2831,7 @@ namespace CorUnix
                     psdSynchData->SetWTLTailPtr(pwtlnItem->ptrPrev.ptr);
                 }
 
-                m_cacheWTListNodes.Add(pthrCurrent, pwtlnItem);                
+                m_cacheWTListNodes.Add(pthrCurrent, pwtlnItem);
             }
 
             // Release the node's refcount on the synch data, and decerement
@@ -3186,7 +2840,7 @@ namespace CorUnix
             psdSynchData->Release(pthrCurrent);
         }
 
-        // Reset wait data in ThreadWaitInfo structure: it is enough 
+        // Reset wait data in ThreadWaitInfo structure: it is enough
         // to reset lObjCount, lSharedObjCount and wdWaitDomain.
         ptwiWaitInfo->lObjCount       = 0;
         ptwiWaitInfo->lSharedObjCount = 0;
@@ -3197,20 +2851,21 @@ namespace CorUnix
         {
             ReleaseSharedSynchLock(pthrCurrent);
         }
+
         return;
     }
-    
+
     /*++
     Method:
       CPalSynchronizationManager::UnsignalRestOfLocalAwakeningWaitAll
 
-    Unsignals all the objects involved in a wait all, except the target 
+    Unsignals all the objects involved in a wait all, except the target
     one (i.e. psdTgtObjectSynchData)
 
-    Note: this method must be called while holding the synchronization locks 
-          appropriate to all the objects involved in the wait-all. If any 
-          of the objects is shared, the caller must own both local and 
-          shared synch locks; if no shared object is involved in the wait, 
+    Note: this method must be called while holding the synchronization locks
+          appropriate to all the objects involved in the wait-all. If any
+          of the objects is shared, the caller must own both local and
+          shared synch locks; if no shared object is involved in the wait,
           only the local synch lock is needed.
     --*/
     void CPalSynchronizationManager::UnsignalRestOfLocalAwakeningWaitAll(
@@ -3219,11 +2874,8 @@ namespace CorUnix
         WaitingThreadsListNode * pwtlnNode,
         CSynchData * psdTgtObjectSynchData)
     {
-        int iObjCount = 0;
-        int i;
         PAL_ERROR palErr = NO_ERROR;
         CSynchData * psdSynchDataItem = NULL;
-        ThreadWaitInfo * ptwiWaitInfo = NULL;
 
 #ifdef _DEBUG
         bool bOriginatingNodeFound = false;
@@ -3233,17 +2885,15 @@ namespace CorUnix
         VALIDATEOBJECT(pwtlnNode);
 
         _ASSERT_MSG(0 != (WTLN_FLAG_WAIT_ALL & pwtlnNode->dwFlags),
-                    "UnsignalRestOfLocalAwakeningWaitAll() called on a normal "
-                    "(non wait all) wait");
-            
+            "UnsignalRestOfLocalAwakeningWaitAll() called on a normal (non wait all) wait");
+
         _ASSERT_MSG(gPID == pwtlnNode->dwProcessId,
-                    "UnsignalRestOfLocalAwakeningWaitAll() called on a wait all "
-                    "with remote awakening");
+            "UnsignalRestOfLocalAwakeningWaitAll() called on a wait all with remote awakening");
 
-        ptwiWaitInfo = pwtlnNode->ptwiWaitInfo;
+        ThreadWaitInfo *ptwiWaitInfo = pwtlnNode->ptwiWaitInfo;
 
-        iObjCount = ptwiWaitInfo->lObjCount;
-        for (i=0; i < iObjCount; i++)
+        int iObjCount = ptwiWaitInfo->lObjCount;
+        for (int i = 0; i < iObjCount; i++)
         {
             WaitingThreadsListNode * pwtlnItem = ptwiWaitInfo->rgpWTLNodes[i];
 
@@ -3251,8 +2901,7 @@ namespace CorUnix
 
             if (0 != (WTLN_FLAG_OWNER_OBJECT_IS_SHARED & pwtlnItem->dwFlags))
             {
-                psdSynchDataItem = SharedIDToTypePointer(CSynchData, 
-                    pwtlnItem->ptrOwnerObjSynchData.shrid);
+                psdSynchDataItem = SharedIDToTypePointer(CSynchData, pwtlnItem->ptrOwnerObjSynchData.shrid);
             }
             else
             {
@@ -3264,26 +2913,20 @@ namespace CorUnix
             // Skip originating node
             if (psdTgtObjectSynchData == psdSynchDataItem)
             {
-#ifdef _DEBUG                
+#ifdef _DEBUG
                 bOriginatingNodeFound = true;
 #endif
                 continue;
             }
 
-            palErr = psdSynchDataItem->ReleaseWaiterWithoutBlocking(
-                pthrCurrent, 
-                pthrTarget);
-
+            palErr = psdSynchDataItem->ReleaseWaiterWithoutBlocking(pthrCurrent, pthrTarget);
             if (NO_ERROR != palErr)
             {
-                ERROR("ReleaseWaiterWithoutBlocking failed on SynchData @ %p "
-                      "[palErr = %u]\n", psdSynchDataItem, palErr);
+                ERROR("ReleaseWaiterWithoutBlocking failed on SynchData @ %p [palErr = %u]\n", psdSynchDataItem, palErr);
             }
         }
 
-        _ASSERT_MSG(bOriginatingNodeFound,
-                    "Couldn't find originating node while unsignaling "
-                    "rest of the wait all\n");
+        _ASSERT_MSG(bOriginatingNodeFound, "Couldn't find originating node while unsignaling rest of the wait all\n");
     }
 
     /*++
@@ -3293,54 +2936,47 @@ namespace CorUnix
     Marks all the thread waiting list nodes involved in the the current wait-all
     for "delegated object signaling in progress", so that this wait cannot be
     involved in another delegated object signaling that may happen while the
-    current object singaling is being tranfered to the target process (while 
-    transfering it, synchronization locks are released in this process and later 
-    grabbed again in the target process; in this time window another thread 
+    current object singaling is being tranfered to the target process (while
+    transfering it, synchronization locks are released in this process and later
+    grabbed again in the target process; in this time window another thread
     could signal another object part of the same wait-all. In this case no
     signal delegation must take place.
 
-    Note: this method must be called while holding the synchronization locks 
-          appropriate to the target object described by pwtlnNode (i.e. the 
-          local process synch lock if the target object is local, both local 
+    Note: this method must be called while holding the synchronization locks
+          appropriate to the target object described by pwtlnNode (i.e. the
+          local process synch lock if the target object is local, both local
           and shared one if the object is shared).
     --*/
     void CPalSynchronizationManager::MarkWaitForDelegatedObjectSignalingInProgress(
         CPalThread * pthrCurrent,
         WaitingThreadsListNode * pwtlnNode)
     {
-        int i, iTgtCount;
-        ThreadWaitInfo * ptwiWaitInfo = NULL;
         bool fSharedSynchLock = false;
-        bool fTargetObjectIsShared = 
-            (0 != (WTLN_FLAG_OWNER_OBJECT_IS_SHARED & pwtlnNode->dwFlags));
+        bool fTargetObjectIsShared = (0 != (WTLN_FLAG_OWNER_OBJECT_IS_SHARED & pwtlnNode->dwFlags));
 
         VALIDATEOBJECT(pwtlnNode);
 
         _ASSERT_MSG(gPID == pwtlnNode->dwProcessId,
-                    "MarkWaitForDelegatedObjectSignalingInProgress() called "
-                    "from the wrong process");
+            "MarkWaitForDelegatedObjectSignalingInProgress() called from the wrong process");
 
-        ptwiWaitInfo = pwtlnNode->ptwiWaitInfo;
+        ThreadWaitInfo *ptwiWaitInfo = pwtlnNode->ptwiWaitInfo;
 
-        if (!fSharedSynchLock && !fTargetObjectIsShared && 
+        if (!fSharedSynchLock && !fTargetObjectIsShared &&
             LocalWait != ptwiWaitInfo->wdWaitDomain)
         {
             AcquireSharedSynchLock(pthrCurrent);
             fSharedSynchLock = true;
-        }   
+        }
 
         _ASSERT_MSG(MultipleObjectsWaitAll == ptwiWaitInfo->wtWaitType,
-                    "MarkWaitForDelegatedObjectSignalingInProgress() called "
-                    "on a normal (non wait-all) wait");
+            "MarkWaitForDelegatedObjectSignalingInProgress() called on a normal (non wait-all) wait");
 
-        // Unmark all node other than the target one
-        iTgtCount = ptwiWaitInfo->lObjCount;
-        for (i=0; i < iTgtCount; i++)
+        // Unmark all nodes other than the target one
+        int iTgtCount = ptwiWaitInfo->lObjCount;
+        for (int i = 0; i < iTgtCount; i++)
         {
             VALIDATEOBJECT(ptwiWaitInfo->rgpWTLNodes[i]);
-            
-            ptwiWaitInfo->rgpWTLNodes[i]->dwFlags &= 
-                ~WTLN_FLAG_DELEGATED_OBJECT_SIGNALING_IN_PROGRESS;
+            ptwiWaitInfo->rgpWTLNodes[i]->dwFlags &= ~WTLN_FLAG_DELEGATED_OBJECT_SIGNALING_IN_PROGRESS;
         }
 
         // Mark the target node
@@ -3351,6 +2987,7 @@ namespace CorUnix
         {
             ReleaseSharedSynchLock(pthrCurrent);
         }
+
         return;
     }
 
@@ -3358,12 +2995,12 @@ namespace CorUnix
     Method:
       CPalSynchronizationManager::UnmarkTWListForDelegatedObjectSignalingInProgress
 
-    Resets the "delegated object signaling in progress" flags in all the 
+    Resets the "delegated object signaling in progress" flags in all the
     nodes of the thread waitin list for the target waitable objects (represented
     by its SynchData)
 
-    Note: this method must be called while holding the appropriate 
-          synchronization locks (the local process synch lock if the target 
+    Note: this method must be called while holding the appropriate
+          synchronization locks (the local process synch lock if the target
           object is local, both local and shared one if the object is shared).
     --*/
     void CPalSynchronizationManager::UnmarkTWListForDelegatedObjectSignalingInProgress(
@@ -3374,20 +3011,16 @@ namespace CorUnix
 
         VALIDATEOBJECT(pTgtObjectSynchData);
 
-        pwtlnNode =  fSharedObject ?
-            SharedIDToTypePointer(WaitingThreadsListNode, 
-                pTgtObjectSynchData->GetWTLHeadShmPtr()) :
-                pTgtObjectSynchData->GetWTLHeadPtr();
+        pwtlnNode =  fSharedObject ? SharedIDToTypePointer(WaitingThreadsListNode, pTgtObjectSynchData->GetWTLHeadShmPtr()) 
+                                   : pTgtObjectSynchData->GetWTLHeadPtr();
+
         while (pwtlnNode)
         {
             VALIDATEOBJECT(pwtlnNode);
-            
-            pwtlnNode->dwFlags &= ~WTLN_FLAG_DELEGATED_OBJECT_SIGNALING_IN_PROGRESS;
 
-            pwtlnNode = fSharedObject ? 
-                SharedIDToTypePointer(WaitingThreadsListNode, 
-                    pwtlnNode->ptrNext.shrid) : 
-                    pwtlnNode->ptrNext.ptr;
+            pwtlnNode->dwFlags &= ~WTLN_FLAG_DELEGATED_OBJECT_SIGNALING_IN_PROGRESS;
+            pwtlnNode = fSharedObject ? SharedIDToTypePointer(WaitingThreadsListNode, pwtlnNode->ptrNext.shrid) 
+                                      : pwtlnNode->ptrNext.ptr;
         }
     }
 
@@ -3395,9 +3028,9 @@ namespace CorUnix
     Method:
       CPalSynchronizationManager::RegisterProcessForMonitoring
 
-    Registers the process object represented by the passed psdSynchData and 
+    Registers the process object represented by the passed psdSynchData and
     pProcLocalData. The worker thread will monitor the actual process and,
-    upon process termination, it will set the exit code in pProcLocalData, 
+    upon process termination, it will set the exit code in pProcLocalData,
     and it will signal the process object, by signaling its psdSynchData.
     --*/
     PAL_ERROR CPalSynchronizationManager::RegisterProcessForMonitoring(
@@ -3413,8 +3046,8 @@ namespace CorUnix
 
         VALIDATEOBJECT(psdSynchData);
 
-        InternalEnterCriticalSection(pthrCurrent, 
-                                     &s_csMonitoredProcessesLock);
+        InternalEnterCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
+
         fMonitoredProcessesLock = true;
 
         pmpln = m_pmplnMonitoredProcesses;
@@ -3422,8 +3055,7 @@ namespace CorUnix
         {
             if (psdSynchData == pmpln->psdSynchData)
             {
-                _ASSERT_MSG(pmpln->dwPid == pProcLocalData->dwProcessId,
-                            "Invalid node in Monitored Processes List\n");
+                _ASSERT_MSG(pmpln->dwPid == pProcLocalData->dwProcessId, "Invalid node in Monitored Processes List\n");
                 break;
             }
 
@@ -3440,7 +3072,7 @@ namespace CorUnix
             if (NULL == pmpln)
             {
                 ERROR("No memory to allocate MonitoredProcessesListNode structure\n");
-                palErr = ERROR_NOT_ENOUGH_MEMORY; 
+                palErr = ERROR_NOT_ENOUGH_MEMORY;
                 goto RPFM_exit;
             }
 
@@ -3454,16 +3086,16 @@ namespace CorUnix
             // Acquire SynchData and AddRef it
             pmpln->psdSynchData = psdSynchData;
             psdSynchData->AddRef();
-            
+
             pmpln->pNext = m_pmplnMonitoredProcesses;
             m_pmplnMonitoredProcesses = pmpln;
             m_lMonitoredProcessesCount++;
 
             fWakeUpWorker = true;
         }
+
         // Unlock
-        InternalLeaveCriticalSection(pthrCurrent, 
-                                     &s_csMonitoredProcessesLock);
+        InternalLeaveCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
         fMonitoredProcessesLock = false;
 
         if (fWakeUpWorker)
@@ -3474,18 +3106,19 @@ namespace CorUnix
             if (NO_ERROR != palErr)
             {
                 ERROR("Failed waking up worker thread for process "
-                      "monitoring registration [errno=%d {%s%}]\n", 
+                      "monitoring registration [errno=%d {%s%}]\n",
                       errno, strerror(errno));
                 palErr = ERROR_INTERNAL_ERROR;
-            } 
+            }
         }
-        
+
     RPFM_exit:
         if (fMonitoredProcessesLock)
         {
-            InternalLeaveCriticalSection(pthrCurrent, 
+            InternalLeaveCriticalSection(pthrCurrent,
                                          &s_csMonitoredProcessesLock);
         }
+
         return palErr;
     }
 
@@ -3494,30 +3127,28 @@ namespace CorUnix
       CPalSynchronizationManager::UnRegisterProcessForMonitoring
 
     Unregisters a process object currently monitored by the worker thread
-    (typically called if the wait timed out before the process exited, or 
-    if the wait was a normal (i.e. non wait-all) wait that involved othter 
+    (typically called if the wait timed out before the process exited, or
+    if the wait was a normal (i.e. non wait-all) wait that involved othter
     objects, and another object has been signaled).
     --*/
     PAL_ERROR CPalSynchronizationManager::UnRegisterProcessForMonitoring(
         CPalThread * pthrCurrent,
-        CSynchData *psdSynchData, 
+        CSynchData *psdSynchData,
         DWORD dwPid)
     {
         PAL_ERROR palErr = NO_ERROR;
         MonitoredProcessesListNode * pmpln, * pmplnPrev = NULL;
 
         VALIDATEOBJECT(psdSynchData);
-            
-        InternalEnterCriticalSection(pthrCurrent, 
-                                     &s_csMonitoredProcessesLock);
+
+        InternalEnterCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
 
         pmpln = m_pmplnMonitoredProcesses;
         while (pmpln)
         {
             if (psdSynchData == pmpln->psdSynchData)
             {
-                _ASSERT_MSG(dwPid == pmpln->dwPid,
-                            "Invalid node in Monitored Processes List\n");
+                _ASSERT_MSG(dwPid == pmpln->dwPid, "Invalid node in Monitored Processes List\n");
                 break;
             }
 
@@ -3540,7 +3171,7 @@ namespace CorUnix
 
                 m_lMonitoredProcessesCount--;
                 pmpln->pProcessObject->ReleaseReference(pthrCurrent);
-                pmpln->psdSynchData->Release(pthrCurrent);                
+                pmpln->psdSynchData->Release(pthrCurrent);
                 InternalDelete(pmpln);
             }
         }
@@ -3549,8 +3180,7 @@ namespace CorUnix
             palErr = ERROR_NOT_FOUND;
         }
 
-        InternalLeaveCriticalSection(pthrCurrent, 
-                                     &s_csMonitoredProcessesLock);
+        InternalLeaveCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
         return palErr;
     }
 
@@ -3558,7 +3188,7 @@ namespace CorUnix
     Method:
       CPalSynchronizationManager::ThreadPrepareForShutdown
 
-    Used to hijack thread execution from known spots within the 
+    Used to hijack thread execution from known spots within the
     Synchronization Manager in case a PAL shutdown is initiated
     or the thread is being terminated by another thread.
     --*/
@@ -3571,9 +3201,10 @@ namespace CorUnix
             poll(NULL, 0, INFTIM);
             sched_yield();
         }
+
         ASSERT("This code should never be executed\n");
     }
-    
+
     /*++
     Method:
       CPalSynchronizationManager::DoMonitorProcesses
@@ -3591,10 +3222,10 @@ namespace CorUnix
         bool fSharedSynchLock = false;
         bool fMonitoredProcessesLock = false;
 
-        // Note: we first need to grab the monitored processes lock to walk 
-        //       the list of monitored processes, and then, if there is any 
+        // Note: we first need to grab the monitored processes lock to walk
+        //       the list of monitored processes, and then, if there is any
         //       which exited, to grab the synchronization lock(s) to signal
-        //       the process object. Anyway we cannot grab the synchronization 
+        //       the process object. Anyway we cannot grab the synchronization
         //       lock(s) while holding the monitored processes lock; that
         //       would cause deadlock, since RegisterProcessForMonitoring and
         //       UnRegisterProcessForMonitoring call stacks grab the locks
@@ -3602,30 +3233,29 @@ namespace CorUnix
         //       therefore all the times) would cause unacceptable contention
         //       (process monitoring is done in polling mode).
         //       Therefore we need to remove list nodes for processes that
-        //       exited copying them to the exited array, while holding only 
-        //       the monitored processes lock, and then to signal them from that 
-        //       array holding synch lock(s) and monitored processes lock, 
-        //       acquired in this order. Holding again the monitored processes 
+        //       exited copying them to the exited array, while holding only
+        //       the monitored processes lock, and then to signal them from that
+        //       array holding synch lock(s) and monitored processes lock,
+        //       acquired in this order. Holding again the monitored processes
         //       lock is needed in order to support object promotion.
 
         // Grab the monitored processes lock
-        InternalEnterCriticalSection(pthrCurrent, 
-                                     &s_csMonitoredProcessesLock);
+        InternalEnterCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
         fMonitoredProcessesLock = true;
 
         lInitialNodeCount = m_lMonitoredProcessesCount;
-        
+
         pNode = m_pmplnMonitoredProcesses;
         while (pNode)
         {
             pNext = pNode->pNext;
-            
+
             if (HasProcessExited(pNode->dwPid,
                                  &pNode->dwExitCode,
                                  &pNode->fIsActualExitCode))
             {
                 TRACE("Process %u exited with return code %u\n",
-                      pNode->dwPid, 
+                      pNode->dwPid,
                       pNode->fIsActualExitCode ? "actual" : "guessed",
                       pNode->dwExitCode);
 
@@ -3637,6 +3267,7 @@ namespace CorUnix
                 {
                     m_pmplnMonitoredProcesses = pNext;
                 }
+
                 m_lMonitoredProcessesCount--;
 
                 // Insert in the list of nodes for exited processes
@@ -3648,14 +3279,13 @@ namespace CorUnix
             {
                 pPrev = pNode;
             }
-            
+
             // Go to the next
             pNode = pNext;
         }
 
         // Release the monitored processes lock
-        InternalLeaveCriticalSection(pthrCurrent, 
-                                     &s_csMonitoredProcessesLock);
+        InternalLeaveCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
         fMonitoredProcessesLock = false;
 
         if (lRemovingCount > 0)
@@ -3665,15 +3295,14 @@ namespace CorUnix
             fLocalSynchLock = true;
 
             // Acquire the monitored processes lock
-            InternalEnterCriticalSection(pthrCurrent, 
-                                         &s_csMonitoredProcessesLock);
+            InternalEnterCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
             fMonitoredProcessesLock = true;
 
             if (!fSharedSynchLock)
             {
                 bool fSharedSynchLockIsNeeded = false;
-                
-                // See if the shared lock is needed 
+
+                // See if the shared lock is needed
                 pNode = m_pmplnExitedNodes;
                 while (pNode)
                 {
@@ -3689,8 +3318,8 @@ namespace CorUnix
                 if (fSharedSynchLockIsNeeded)
                 {
                     // Release the monitored processes lock
-                    InternalLeaveCriticalSection(pthrCurrent, 
-                                                 &s_csMonitoredProcessesLock);                
+                    InternalLeaveCriticalSection(pthrCurrent,
+                                                 &s_csMonitoredProcessesLock);
                     fMonitoredProcessesLock = false;
 
                     // Acquire the shared synch lock
@@ -3698,7 +3327,7 @@ namespace CorUnix
                     fSharedSynchLock = true;
 
                     // Acquire again the monitored processes lock
-                    InternalEnterCriticalSection(pthrCurrent, 
+                    InternalEnterCriticalSection(pthrCurrent,
                                                  &s_csMonitoredProcessesLock);
                     fMonitoredProcessesLock = true;
                 }
@@ -3709,7 +3338,7 @@ namespace CorUnix
 
             // Invalidate the list
             m_pmplnExitedNodes = NULL;
-            
+
             while (pNode)
             {
                 pNext = pNode->pNext;
@@ -3720,7 +3349,7 @@ namespace CorUnix
                 // Store the exit code in the process local data
                 if (pNode->fIsActualExitCode)
                 {
-                    pNode->pProcLocalData->dwExitCode = pNode->dwExitCode; 
+                    pNode->pProcLocalData->dwExitCode = pNode->dwExitCode;
                 }
 
                 // Set process status to PS_DONE
@@ -3729,17 +3358,17 @@ namespace CorUnix
                 // Set signal count
                 pNode->psdSynchData->SetSignalCount(1);
 
-                // Releasing all local waiters 
+                // Releasing all local waiters
                 //
                 // We just called directly in CSynchData::SetSignalCount(), so
                 // we need to take care of waking up waiting threads according
                 // to the Process object semantics (i.e. every thread must be
                 // awakend). Anyway if a process object is shared among two or
-                // more processes and threads from different processes are 
+                // more processes and threads from different processes are
                 // waiting on it, the object will be registered for monitoring
-                // in each of the processes. As result its signal count will 
+                // in each of the processes. As result its signal count will
                 // be set to one more times (which is not a problem, given the
-                // process object semantics) and each worker thread will wake 
+                // process object semantics) and each worker thread will wake
                 // up waiting threads. Therefore we need to make sure that each
                 // worker wakes up only threads in its own process: we do that
                 // by calling ReleaseAllLocalWaiters
@@ -3761,29 +3390,27 @@ namespace CorUnix
 
         if (fMonitoredProcessesLock)
         {
-            // Release the monitored processes lock
-            InternalLeaveCriticalSection(pthrCurrent, 
-                                     &s_csMonitoredProcessesLock);
+            InternalLeaveCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
         }
+
         if (fSharedSynchLock)
         {
-            // Release the shared synch lock
             ReleaseSharedSynchLock(pthrCurrent);
         }
+
         if (fLocalSynchLock)
         {
-            // Release the local synch lock
             ReleaseLocalSynchLock(pthrCurrent);
         }
 
         return (lInitialNodeCount - lRemovingCount);
     }
-  
+
     /*++
     Method:
       CPalSynchronizationManager::DiscardMonitoredProcesses
 
-    This method is called at shutdown time to discard all the registration 
+    This method is called at shutdown time to discard all the registration
     for the processes currently monitored by the worker thread.
     This method must be called at shutdown time, otherwise some shared memory
     may be leaked at process shutdown.
@@ -3794,9 +3421,8 @@ namespace CorUnix
         MonitoredProcessesListNode * pNode;
 
         // Grab the monitored processes lock
-        InternalEnterCriticalSection(pthrCurrent, 
-                                     &s_csMonitoredProcessesLock);
-        
+        InternalEnterCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
+
         while (m_pmplnMonitoredProcesses)
         {
             pNode = m_pmplnMonitoredProcesses;
@@ -3807,10 +3433,9 @@ namespace CorUnix
         }
 
         // Release the monitored processes lock
-        InternalLeaveCriticalSection(pthrCurrent, 
-                                     &s_csMonitoredProcessesLock);
+        InternalLeaveCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
     }
-    
+
     /*++
     Method:
       CPalSynchronizationManager::CreateProcessPipe
@@ -3828,8 +3453,8 @@ namespace CorUnix
         int iPipeRd = -1, iPipeWr = -1;
         char szPipeFilename[MAX_PATH];
 
-        /* Create the blocking pipe */        
-        if(!GetProcessPipeName(szPipeFilename, MAX_PATH, gPID))
+        /* Create the blocking pipe */
+        if (!GetProcessPipeName(szPipeFilename, MAX_PATH, gPID))
         {
             ERROR("couldn't get process pipe's name\n");
             szPipeFilename[0] = 0;
@@ -3838,13 +3463,13 @@ namespace CorUnix
         }
 
         /* create the pipe, with full access to the owner only */
-        if ( mkfifo(szPipeFilename, S_IRWXU ) == -1 )
+        if (mkfifo(szPipeFilename, S_IRWXU) == -1)
         {
-            if ( errno == EEXIST )
+            if (errno == EEXIST)
             {
                 /* Some how no one deleted the pipe, perhaps it was left behind
                 from a crash?? Delete the pipe and try again. */
-                if ( -1 == unlink( szPipeFilename ) )
+                if (-1 == unlink(szPipeFilename))
                 {
                     ERROR( "Unable to delete the process pipe that was left behind.\n" );
                     fRet = false;
@@ -3852,7 +3477,7 @@ namespace CorUnix
                 }
                 else
                 {
-                    if ( mkfifo(szPipeFilename, S_IRWXU ) == -1 )
+                    if (mkfifo(szPipeFilename, S_IRWXU) == -1)
                     {
                         ERROR( "Still unable to create the process pipe...giving up!\n" );
                         fRet = false;
@@ -3900,7 +3525,7 @@ namespace CorUnix
             ERROR("Failed to create kqueue associated to process pipe\n");
             fRet = false;
             goto CPP_exit;
-        }       
+        }
 #endif // HAVE_KQUEUE
 
     CPP_exit:
@@ -3909,7 +3534,7 @@ namespace CorUnix
             // Succeeded
 #ifndef CORECLR
             m_iProcessPipeRead = iPipeRd;
-            m_iProcessPipeWrite = iPipeWr;      
+            m_iProcessPipeWrite = iPipeWr;
 #else // !CORECLR
             m_iProcessPipeRead = rgiPipe[0];
             m_iProcessPipeWrite = rgiPipe[1];
@@ -3974,7 +3599,7 @@ namespace CorUnix
         {
             if (unlink(szPipeFilename) == -1)
             {
-                ERROR("Unable to unlink the pipe file name errno=%d (%s)\n", 
+                ERROR("Unable to unlink the pipe file name errno=%d (%s)\n",
                       errno, strerror(errno));
                 palErr = ERROR_INTERNAL_ERROR;
                 // go on anyway
@@ -3993,8 +3618,8 @@ namespace CorUnix
             // Closing the write end of the process pipe. When the last process
             // that still has a open write-fd on this pipe will close it, the
             // worker thread will receive an EOF; the worker thread will wait
-            // for this EOF before shutting down, so to ensure to process any 
-            // possible data already written to the pipe by other processes 
+            // for this EOF before shutting down, so to ensure to process any
+            // possible data already written to the pipe by other processes
             // when the shutdown has been initiated in the current process.
             // Note: no need here to worry about platforms where close(pipe)
             // blocks on outstanding syscalls, since we are the only one using
@@ -4005,9 +3630,10 @@ namespace CorUnix
                 ERROR("Unable to close the write end of process pipe\n");
                 palErr = ERROR_INTERNAL_ERROR;
             }
+
             m_iProcessPipeWrite = -1;
         }
-        
+
         return palErr;
     }
 
@@ -4035,7 +3661,7 @@ namespace CorUnix
             pDest[0] = '\0';
             return false;
         }
-        needed_size = snprintf(pDest, iDestSize, "%s/%s-%u", config_dir, 
+        needed_size = snprintf(pDest, iDestSize, "%s/%s-%u", config_dir,
                                PROCESS_PIPE_NAME_PREFIX, dwPid);
         pDest[iDestSize-1] = 0;
         if(needed_size >= iDestSize)
@@ -4094,7 +3720,7 @@ namespace CorUnix
         _ASSERTE(NULL != pthrCurrent);
         _ASSERTE(NULL != pvLocalSynchData);
         _ASSERTE(NULL != ppvSharedSynchData);
-        _ASSERTE(ProcessLocalObject == psdLocal->GetObjectDomain());     
+        _ASSERTE(ProcessLocalObject == psdLocal->GetObjectDomain());
 
 #if _DEBUG
 
@@ -4107,14 +3733,14 @@ namespace CorUnix
         // Allocate shared memory CSynchData and map to local memory
         //
 
-        shridSynchData = m_cacheSHRSynchData.Get(pthrCurrent); 
+        shridSynchData = m_cacheSHRSynchData.Get(pthrCurrent);
         if (NULLSharedID == shridSynchData)
         {
             ERROR("Unable to allocate shared memory\n");
             palError = ERROR_NOT_ENOUGH_MEMORY;
             goto POSD_exit;
         }
-        
+
         psdShared = SharedIDToTypePointer(CSynchData, shridSynchData);
         _ASSERTE(NULL != psdShared);
 
@@ -4134,7 +3760,7 @@ namespace CorUnix
                 palError = ERROR_OUTOFMEMORY;
                 goto POSD_exit;
             }
-            
+
             i = m_cacheSHRWTListNodes.Get(
                     pthrCurrent,
                     ulcWaitingThreads,
@@ -4147,7 +3773,7 @@ namespace CorUnix
                 {
                     m_cacheSHRWTListNodes.Add(pthrCurrent, rgshridWTLNodes[i]);
                 }
-                
+
                 palError = ERROR_OUTOFMEMORY;
                 goto POSD_exit;
             }
@@ -4208,7 +3834,7 @@ namespace CorUnix
 
                 pwtlnNew->shridSHRThis = rgshridWTLNodes[i];
                 pwtlnNew->ptrOwnerObjSynchData.shrid = shridSynchData;
-                
+
                 pwtlnNew->dwThreadId = pwtlnOld->dwThreadId;
                 pwtlnNew->dwProcessId = pwtlnOld->dwProcessId;
                 pwtlnNew->dwObjIndex = pwtlnOld->dwObjIndex;
@@ -4218,10 +3844,10 @@ namespace CorUnix
 
                 psdShared->SharedWaiterEnqueue(rgshridWTLNodes[i]);
                 psdShared->AddRef();
-                
+
                 _ASSERTE(pwtlnOld = pwtlnOld->ptwiWaitInfo->rgpWTLNodes[pwtlnOld->dwObjIndex]);
                 pwtlnNew->ptwiWaitInfo->rgpWTLNodes[pwtlnNew->dwObjIndex] = pwtlnNew;
-                
+
                 pwtlnNew->ptwiWaitInfo->lSharedObjCount += 1;
                 if (pwtlnNew->ptwiWaitInfo->lSharedObjCount
                     == pwtlnNew->ptwiWaitInfo->lObjCount)
@@ -4232,7 +3858,7 @@ namespace CorUnix
                 {
                     _ASSERTE(pwtlnNew->ptwiWaitInfo->lSharedObjCount
                         < pwtlnNew->ptwiWaitInfo->lObjCount);
-                    
+
                     pwtlnNew->ptwiWaitInfo->wdWaitDomain = MixedWait;
                 }
             }
@@ -4260,7 +3886,7 @@ namespace CorUnix
                 //
                 // Copy over other ownership info.
                 //
-                
+
                 psdShared->SetOwner(psdLocal->GetOwnerThread());
                 psdShared->SetOwnershipCount(psdLocal->GetOwnershipCount());
                 _ASSERTE(!psdShared->IsAbandoned());
@@ -4282,7 +3908,7 @@ namespace CorUnix
         if (otiProcess == pot->GetId())
         {
             MonitoredProcessesListNode *pmpn;
-            
+
             pmpn = m_pmplnMonitoredProcesses;
             while (NULL != pmpn)
             {
@@ -4306,7 +3932,7 @@ namespace CorUnix
 
                 pmpn = pmpn->pNext;
             }
-            
+
             InternalLeaveCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
         }
 
@@ -4315,7 +3941,7 @@ namespace CorUnix
         //
         // Free the local memory items to caches
         //
-        
+
         if (0 < ulcWaitingThreads)
         {
             WaitingThreadsListNode *pwtln;
@@ -4341,7 +3967,7 @@ namespace CorUnix
         }
 
         return palError;
-    }           
+    }
 
 
     /////////////////////////////
@@ -4355,13 +3981,8 @@ namespace CorUnix
         if (fInitialized)
         {
             fInitialized = false;
-#if !SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
             pthread_cond_destroy(&cond);
             pthread_mutex_destroy(&mutex);
-#else // SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
-            close(iPipeRd);
-            close(iPipeWr);
-#endif // SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
         }
     }
 
@@ -4371,11 +3992,11 @@ namespace CorUnix
     //  CThreadSynchronizationInfo  //
     //                              //
     //////////////////////////////////
-    
+
     CThreadSynchronizationInfo::CThreadSynchronizationInfo() :
             m_tsThreadState(TS_IDLE),
             m_shridWaitAwakened(NULLSharedID),
-            m_lLocalSynchLockCount(0), 
+            m_lLocalSynchLockCount(0),
             m_lSharedSynchLockCount(0)
     {
         InitializeListHead(&m_leOwnedObjsList);
@@ -4387,7 +4008,7 @@ namespace CorUnix
     }
 
     CThreadSynchronizationInfo::~CThreadSynchronizationInfo()
-    { 
+    {
         if (NULLSharedID != m_shridWaitAwakened)
         {
             RawSharedObjectFree(m_shridWaitAwakened);
@@ -4396,37 +4017,34 @@ namespace CorUnix
 
     void CThreadSynchronizationInfo::AcquireNativeWaitLock()
     {
-#if !SYNCHMGR_PIPE_BASED_THREAD_BLOCKING && !SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING
+#if !SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING
         int iRet;
         iRet = pthread_mutex_lock(&m_tnwdNativeData.mutex);
-        _ASSERT_MSG(0 == iRet, "pthread_mutex_lock failed with error=%d\n", 
-                    iRet);
-#endif // !SYNCHMGR_PIPE_BASED_THREAD_BLOCKING && !SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING
+        _ASSERT_MSG(0 == iRet, "pthread_mutex_lock failed with error=%d\n", iRet);
+#endif // !SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING
     }
 
     void CThreadSynchronizationInfo::ReleaseNativeWaitLock()
     {
-#if !SYNCHMGR_PIPE_BASED_THREAD_BLOCKING && !SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING
+#if !SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING
         int iRet;
         iRet = pthread_mutex_unlock(&m_tnwdNativeData.mutex);
-        _ASSERT_MSG(0 == iRet, "pthread_mutex_unlock failed with error=%d\n", 
-                    iRet);
-#endif // !SYNCHMGR_PIPE_BASED_THREAD_BLOCKING && !SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING
+        _ASSERT_MSG(0 == iRet, "pthread_mutex_unlock failed with error=%d\n", iRet);
+#endif // !SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING
     }
 
     bool CThreadSynchronizationInfo::TryAcquireNativeWaitLock()
-    {       
+    {
         bool fRet = true;
-#if !SYNCHMGR_PIPE_BASED_THREAD_BLOCKING && !SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING
+#if !SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING
         int iRet;
         iRet = pthread_mutex_trylock(&m_tnwdNativeData.mutex);
         _ASSERT_MSG(0 == iRet || EBUSY == iRet,
                     "pthread_mutex_trylock failed with error=%d\n", iRet);
         fRet = (0 == iRet);
-#endif // !SYNCHMGR_PIPE_BASED_THREAD_BLOCKING && !SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING
+#endif // !SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING
         return fRet;
-    }        
-
+    }
 
     /*++
     Method:
@@ -4440,41 +4058,32 @@ namespace CorUnix
         PAL_ERROR palErr = NO_ERROR;
         DWORD * pdwWaitState = NULL;
         int iRet;
-#if !SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
         const int MaxUnavailableResourceRetries = 10;
         int iEagains;
-#else // SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
-        int iPipes[2] = { -1, -1};
-#endif // SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
-
         m_shridWaitAwakened = RawSharedObjectAlloc(sizeof(DWORD),
                                                    DefaultSharedPool);
         if (NULLSharedID == m_shridWaitAwakened)
         {
             ERROR("Fail allocating thread wait status shared object\n");
-            palErr = ERROR_NOT_ENOUGH_MEMORY; 
+            palErr = ERROR_NOT_ENOUGH_MEMORY;
             goto IPrC_exit;
         }
-        
+
         pdwWaitState = SharedIDToTypePointer(DWORD,
             m_shridWaitAwakened);
 
         _ASSERT_MSG(NULL != pdwWaitState,
-                    "Unable to map shared wait state: bad shrared id"
-                    "[shrid=%p]\n", (VOID*)m_shridWaitAwakened);
+            "Unable to map shared wait state: bad shared ID [shrid=%p]\n", (VOID*)m_shridWaitAwakened);
 
         VolatileStore<DWORD>(pdwWaitState, TWS_ACTIVE);
         m_tsThreadState = TS_STARTING;
-                
-#if !SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
 
         iEagains = 0;
     Mutex_retry:
         iRet = pthread_mutex_init(&m_tnwdNativeData.mutex, NULL);
         if (0 != iRet)
         {
-            ERROR("Failed creating thread synchronization mutex "
-                  "[error=%d (%s)]\n", iRet, strerror(iRet));
+            ERROR("Failed creating thread synchronization mutex [error=%d (%s)]\n", iRet, strerror(iRet));
             if (EAGAIN == iRet && MaxUnavailableResourceRetries >= ++iEagains)
             {
                 poll(NULL, 0, min(100,10*iEagains));
@@ -4488,9 +4097,10 @@ namespace CorUnix
             {
                 palErr = ERROR_INTERNAL_ERROR;
             }
+
             goto IPrC_exit;
         }
-        
+
         iEagains = 0;
     Cond_retry:
         iRet = pthread_cond_init(&m_tnwdNativeData.cond, NULL);
@@ -4514,46 +4124,6 @@ namespace CorUnix
             pthread_mutex_destroy(&m_tnwdNativeData.mutex);
             goto IPrC_exit;
         }
-
-#else // SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
-
-        iRet = pipe(iPipes);
-        if (0 != iRet)
-        {
-            ERROR("Failed to create pipes to support native wait [errno=%d (%s)]\n",
-                  errno, strerror(errno));
-            switch(errno)
-            {
-                case EMFILE:
-                case ENFILE:                        
-                    palErr = ERROR_NO_SYSTEM_RESOURCES;
-                    break;
-                case EFAULT:
-                    palErr = ERROR_INVALID_DATA;
-                    break;
-                default:
-                    palErr = ERROR_INTERNAL_ERROR;
-                    break;
-            }
-
-            goto IPrC_exit;
-        }
-
-        if (0 != fcntl(iPipes[0], F_SETFL, O_NONBLOCK) || 
-            0 != fcntl(iPipes[1], F_SETFL, O_NONBLOCK))
-        {
-            ERROR("Failed to set thread-blocking pipes to non-blocking mode "
-                  "[errno=%d (%s)]\n", errno, strerror(errno));
-            close(iPipes[0]);
-            close(iPipes[1]);
-            palErr = ERROR_INTERNAL_ERROR;
-            goto IPrC_exit;
-        }
-
-        m_tnwdNativeData.iPipeRd = iPipes[0];
-        m_tnwdNativeData.iPipeWr = iPipes[1];
-
-#endif // SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
 
         m_tnwdNativeData.fInitialized = true;
 
@@ -4619,7 +4189,7 @@ namespace CorUnix
     Removes the first object from the list of currently owned objects.
     --*/
     POwnedObjectsListNode CThreadSynchronizationInfo::RemoveFirstObjectFromOwnedList()
-    {        
+    {
         OwnedObjectsListNode * poolnItem;
 
         if (IsListEmpty(&m_leOwnedObjsList))
@@ -4629,15 +4199,13 @@ namespace CorUnix
         else
         {
             PLIST_ENTRY pLink = RemoveHeadList(&m_leOwnedObjsList);
-            poolnItem = CONTAINING_RECORD(pLink,
-                                          OwnedObjectsListNode,
-                                          Link);
+            poolnItem = CONTAINING_RECORD(pLink, OwnedObjectsListNode, Link);
         }
-        
+
         return poolnItem;
     }
 
-#if SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING && !SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
+#if SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING
 
     /*++
     Method:
@@ -4653,8 +4221,7 @@ namespace CorUnix
 
         if (0 < m_lPendingSignalingCount)
         {
-            LONG lArrayPendingSignalingCount = 
-                min(PendingSignalingsArraySize, m_lPendingSignalingCount);
+            LONG lArrayPendingSignalingCount = min(PendingSignalingsArraySize, m_lPendingSignalingCount);
             LONG lIdx = 0;
             PAL_ERROR palTempErr;
 
@@ -4678,7 +4245,7 @@ namespace CorUnix
             {
                 PLIST_ENTRY pLink;
                 DeferredSignalingListNode * pdsln;
-                
+
                 while (!IsListEmpty(&m_lePendingSignalingsOverflowList))
                 {
                     // Remove a node from the head of the queue
@@ -4716,7 +4283,7 @@ namespace CorUnix
         return palErr;
     }
 
-#endif // SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING && !SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
+#endif // SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING
 
     /*++
     Method:
@@ -4725,7 +4292,7 @@ namespace CorUnix
     Tests whether or not a process has exited
     --*/
     bool CPalSynchronizationManager::HasProcessExited(
-        DWORD dwPid, 
+        DWORD dwPid,
         DWORD * pdwExitCode,
         bool * pfIsActualExitCode)
     {
@@ -4739,7 +4306,7 @@ namespace CorUnix
         {
             /* try to get state of process, using non-blocking call */
             pidWaitRetval = waitpid(dwPid, &iStatus, WNOHANG);
-            
+
             if ((DWORD)pidWaitRetval == dwPid)
             {
                 /* success; get the exit code */
@@ -4766,7 +4333,7 @@ namespace CorUnix
             }
             else
             {
-                // A legitimate cause of failure is EINTR; if this happens we 
+                // A legitimate cause of failure is EINTR; if this happens we
                 // have to try again. A second legitimate cause is ECHILD, which
                 // happens if we're trying to retrieve the status of a currently-
                 // running process that isn't a child of this process.
@@ -4780,7 +4347,7 @@ namespace CorUnix
                     TRACE("waitpid() failed with ECHILD; calling kill instead\n");
                     if (kill(dwPid, 0) != 0)
                     {
-                        if(ESRCH == errno)
+                        if (ESRCH == errno)
                         {
                             WARN("kill() failed with ESRCH, i.e. target "
                                  "process exited and it wasn't a child, "
@@ -4802,7 +4369,7 @@ namespace CorUnix
                 }
                 else
                 {
-                    // Ignoring unexpected waitpid errno and assuming that 
+                    // Ignoring unexpected waitpid errno and assuming that
                     // the process is still running
                     ERROR("waitpid(pid=%u) failed with errno=%d (%s)\n",
                           dwPid, errno, strerror(errno));
@@ -4812,15 +4379,15 @@ namespace CorUnix
             // Break out of the loop in all cases except EINTR.
             break;
         }
-        
+
         return fRet;
     }
-    
+
     /*++
     Method:
       CPalSynchronizationManager::InterlockedAwaken
 
-    Tries to change the target wait status to 'active' in an interlocked fashion 
+    Tries to change the target wait status to 'active' in an interlocked fashion
     --*/
     bool CPalSynchronizationManager::InterlockedAwaken(
         DWORD *pWaitState,
@@ -4828,26 +4395,25 @@ namespace CorUnix
     {
         DWORD dwPrevState;
 
-        dwPrevState = InterlockedCompareExchange((LONG *)pWaitState,
-                                                 TWS_ACTIVE, TWS_ALERTABLE);
-        if(TWS_ALERTABLE != dwPrevState)
+        dwPrevState = InterlockedCompareExchange((LONG *)pWaitState, TWS_ACTIVE, TWS_ALERTABLE);
+        if (TWS_ALERTABLE != dwPrevState)
         {
-            if(fAlertOnly)
+            if (fAlertOnly)
             {
                 return false;
             }
 
-            dwPrevState = InterlockedCompareExchange((LONG *)pWaitState,
-                                                     TWS_ACTIVE, TWS_WAITING);
-            if(TWS_WAITING == dwPrevState)
+            dwPrevState = InterlockedCompareExchange((LONG *)pWaitState, TWS_ACTIVE, TWS_WAITING);
+            if (TWS_WAITING == dwPrevState)
             {
                 return true;
-            }               
+            }
         }
         else
         {
             return true;
-        }   
+        }
+
         return false;
     }
 
@@ -4855,31 +4421,29 @@ namespace CorUnix
     Method:
       CPalSynchronizationManager::GetAbsoluteTimeout
 
-    Converts a relative timeout to an absolute one, reelatively to the 
-    current time.
+    Converts a relative timeout to an absolute one.
     --*/
-    PAL_ERROR CPalSynchronizationManager::GetAbsoluteTimeout(DWORD dwTimeout, 
-                                                 struct timespec * ptsAbsTmo)
+    PAL_ERROR CPalSynchronizationManager::GetAbsoluteTimeout(DWORD dwTimeout, struct timespec * ptsAbsTmo)
     {
         PAL_ERROR palErr = NO_ERROR;
         int iRet;
 
 #if HAVE_WORKING_CLOCK_GETTIME
         // Not every platform implements a (working) clock_gettime
-        iRet = clock_gettime(CLOCK_REALTIME, ptsAbsTmo); 
-#elif HAVE_WORKING_GETTIMEOFDAY 
+        iRet = clock_gettime(CLOCK_REALTIME, ptsAbsTmo);
+#elif HAVE_WORKING_GETTIMEOFDAY
         // Not every platform implements a (working) gettimeofday
         struct timeval tv;
         iRet = gettimeofday(&tv, NULL);
         if (0 == iRet)
         {
             ptsAbsTmo->tv_sec  = tv.tv_sec;
-            ptsAbsTmo->tv_nsec = tv.tv_usec * tccMicroSecondsToNanoSeconds; 
+            ptsAbsTmo->tv_nsec = tv.tv_usec * tccMicroSecondsToNanoSeconds;
         }
 #else
         #error "Don't know how to get hi-res current time on this platform"
 #endif // HAVE_WORKING_CLOCK_GETTIME, HAVE_WORKING_GETTIMEOFDAY
-    
+
         if (0 == iRet)
         {
             ptsAbsTmo->tv_sec  += dwTimeout / tccSecondsToMillieSeconds;
@@ -4897,34 +4461,4 @@ namespace CorUnix
 
         return palErr;
     }
-
-#if SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
-    void CPalSynchronizationManager::UpdateTimeout(DWORD * pdwOldTime, DWORD * pdwTimeout)
-    {
-        DWORD dwNewTime;
-        DWORD dwDeltaTime;
-        dwNewTime = GetTickCount();
-        
-        // check for wrap around
-        if(dwNewTime < *pdwOldTime)
-        {
-            dwDeltaTime = dwNewTime + (UINT_MAX - *pdwOldTime) + 1;
-        }
-        else
-        {
-            dwDeltaTime = dwNewTime - *pdwOldTime;
-        }
-        *pdwOldTime = dwNewTime;
-        if(*pdwTimeout > dwDeltaTime)
-        {
-            *pdwTimeout -= dwDeltaTime;
-        }
-        else
-        {
-            *pdwTimeout = 0;
-        }
-    }
-#endif // SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
-
 }
-
