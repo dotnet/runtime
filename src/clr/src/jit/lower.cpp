@@ -1499,6 +1499,25 @@ void Lowering::LowerArg(GenTreeCall* call, GenTreePtr* ppArg)
         else
 #endif // !defined(_TARGET_64BIT_)
         {
+
+#ifdef _TARGET_ARM64_
+            // For vararg call, reg args should be all integer.
+            // Insert a copy to move float value to integer register.
+            if (call->IsVarargs() && varTypeIsFloating(type))
+            {
+                var_types intType = (type == TYP_DOUBLE) ? TYP_LONG : TYP_INT;
+                GenTreePtr intArg = comp->gtNewOperNode(GT_COPY, intType, arg);
+
+                intArg->CopyCosts(arg);
+                info->node = intArg;
+                SpliceInUnary(call, ppArg, intArg);
+
+                // Update arg/type with new ones.
+                arg = intArg;
+                type = intType;
+            }
+#endif
+
             putArg = NewPutArg(call, arg, info, type);
 
             // In the case of register passable struct (in one or two registers)
