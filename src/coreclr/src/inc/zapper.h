@@ -124,6 +124,9 @@ class Zapper
     SString                 m_platformWinmdPaths;
 #endif // FEATURE_CORECLR || CROSSGEN_COMPILE
 
+#if defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+    SString                 m_CLRJITPath;
+#endif // defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
     bool                    m_fForceFullTrust;
 
     SString                 m_outputFilename;
@@ -444,6 +447,10 @@ class Zapper
     void SetPlatformWinmdPaths(LPCWSTR pwzPlatformWinmdPaths);
     void SetForceFullTrust(bool val);
 #endif // FEATURE_CORECLR || CROSSGEN_COMPILE
+
+#if defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+    void SetCLRJITPath(LPCWSTR pwszCLRJITPath);
+#endif // defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
 
     void SetOutputFilename(LPCWSTR pwszOutputFilename);
     SString GetOutputFileName();
