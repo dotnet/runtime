@@ -493,10 +493,10 @@ static void
 find_pinning_ref_from_thread (char *obj, size_t size)
 {
 #ifndef SGEN_WITHOUT_MONO
-	int j;
 	char *endobj = obj + size;
 
 	FOREACH_THREAD (info) {
+		mword *ctxstart, *ctxcurrent, *ctxend;
 		char **start = (char**)info->client_info.stack_start;
 		if (info->client_info.skip || info->client_info.gc_disabled)
 			continue;
@@ -506,15 +506,11 @@ find_pinning_ref_from_thread (char *obj, size_t size)
 			start++;
 		}
 
-		for (j = 0; j < ARCH_NUM_REGS; ++j) {
-#ifdef USE_MONO_CTX
-			mword w = ((mword*)&info->client_info.ctx) [j];
-#else
-			mword w = (mword)&info->client_info.regs [j];
-#endif
+		for (ctxstart = ctxcurrent = (mword*) &info->client_info.ctx, ctxend = (mword*) (&info->client_info.ctx + 1); ctxcurrent < ctxend; ctxcurrent ++) {
+			mword w = *ctxcurrent;
 
 			if (w >= (mword)obj && w < (mword)obj + size)
-				SGEN_LOG (0, "Object %p referenced in saved reg %d of thread %p (id %p)", obj, j, info, (gpointer)mono_thread_info_get_tid (info));
+				SGEN_LOG (0, "Object %p referenced in saved reg %d of thread %p (id %p)", obj, (int) (ctxcurrent - ctxstart), info, (gpointer)mono_thread_info_get_tid (info));
 		}
 	} FOREACH_THREAD_END
 #endif

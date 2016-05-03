@@ -43,34 +43,20 @@ align_pointer (void *ptr)
 	return (void*)p;
 }
 
-#ifdef USE_MONO_CTX
 static MonoContext cur_thread_ctx;
-#else
-static mword cur_thread_regs [ARCH_NUM_REGS];
-#endif
 
 static void
 update_current_thread_stack (void *start)
 {
 	int stack_guard = 0;
-#if !defined(USE_MONO_CTX)
-	void *reg_ptr = cur_thread_regs;
-#endif
 	SgenThreadInfo *info = mono_thread_info_current ();
 	
 	info->client_info.stack_start = align_pointer (&stack_guard);
 	g_assert (info->client_info.stack_start >= info->client_info.stack_start_limit && info->client_info.stack_start < info->client_info.stack_end);
-#ifdef USE_MONO_CTX
 	MONO_CONTEXT_GET_CURRENT (cur_thread_ctx);
 	memcpy (&info->client_info.ctx, &cur_thread_ctx, sizeof (MonoContext));
 	if (mono_gc_get_gc_callbacks ()->thread_suspend_func)
 		mono_gc_get_gc_callbacks ()->thread_suspend_func (info->client_info.runtime_data, NULL, &info->client_info.ctx);
-#else
-	ARCH_STORE_REGS (reg_ptr);
-	memcpy (&info->client_info.regs, reg_ptr, sizeof (info->client_info.regs));
-	if (mono_gc_get_gc_callbacks ()->thread_suspend_func)
-		mono_gc_get_gc_callbacks ()->thread_suspend_func (info->client_info.runtime_data, NULL, NULL);
-#endif
 }
 
 static gboolean
@@ -251,11 +237,7 @@ sgen_client_restart_world (int generation, GGTimingInfo *timing)
 
 	FOREACH_THREAD (info) {
 		info->client_info.stack_start = NULL;
-#ifdef USE_MONO_CTX
 		memset (&info->client_info.ctx, 0, sizeof (MonoContext));
-#else
-		memset (&info->client_info.regs, 0, sizeof (info->client_info.regs));
-#endif
 	} FOREACH_THREAD_END
 
 	TV_GETTIME (start_handshake);
@@ -363,11 +345,7 @@ update_sgen_info (SgenThreadInfo *info)
 		g_error ("BAD STACK");
 
 	info->client_info.stack_start = stack_start;
-#ifdef USE_MONO_CTX
 	info->client_info.ctx = mono_thread_info_get_suspend_state (info)->ctx;
-#else
-	g_assert_not_reached ();
-#endif
 }
 
 static void
