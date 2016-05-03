@@ -22,6 +22,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
     public static partial class EdgeCasesTests
     {
         [Fact]
+        [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void ZeroLengthContent_RoundTrip()
         {
             ContentInfo contentInfo = new ContentInfo(Array.Empty<byte>());
@@ -43,6 +44,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void ZeroLengthContent_FixedValue()
         {
             byte[] encodedMessage =
@@ -56,6 +58,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void Rc4AndCngWrappersDontMixTest()
         {
             //
@@ -275,6 +278,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void EnvelopedCmsDecryptWithoutMatchingCert()
         {
             // You don't have the private key? No message for you.
@@ -302,6 +306,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void EnvelopedCmsDecryptWithoutMatchingCertSki()
         {
             // You don't have the private key? No message for you.
