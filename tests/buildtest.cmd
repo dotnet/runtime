@@ -32,6 +32,7 @@ set __ILAsmRoundtrip=
 set __BuildSequential=
 set __TestPriority=
 set __LongGCTests=
+set __GCSimulatorTests=
 set __msbuildCleanBuildArgs=
 set __msbuildExtraArgs=
 set __verbosity=normal
@@ -67,6 +68,7 @@ if /i "%1" == "sequential"          (set __BuildSequential=1&shift&goto Arg_Loop
 if /i "%1" == "priority"            (set __TestPriority=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "gcstresslevel"       (set __GCStressLevel=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "longgctests"         (set __LongGCTests=1&shift&goto Arg_Loop)
+if /i "%1" == "gcsimulator"         (set __GCSimulatorTests=1&shift&goto Arg_Loop)
 
 if /i "%1" == "verbose"             (set __verbosity=detailed&shift&goto Arg_Loop)
 
@@ -282,6 +284,11 @@ if defined __LongGCTests (
     set __msbuildManagedBuildArgs=%__msbuildManagedBuildArgs% /p:GCLongRunning=true
 )
 
+if defined __GCSimulatorTests (
+    echo Building GCSimulator tests
+    set __msbuildManagedBuildArgs=%__msbuildManagedBuildArgs% /p:GCSimulatorRun=true
+)
+
 set __BuildLogRootName=Tests_Managed
 call :msbuild "%__ProjectFilesDir%\build.proj" %__msbuildManagedBuildArgs%
 if errorlevel 1 exit /b 1
@@ -367,6 +374,8 @@ echo priority ^<N^> : specify a set of test that will be built and run, with pri
 echo gcstresslevel ^<N^> : specify the GCStress level the tests should run under.
 echo sequential: force a non-parallel build ^(default is to build in parallel
 echo     using all processors^).
+echo longgctests: Build tests so that runtests.cmd will do a long-running GC test.
+echo gcsimulator: Build tests so that runtests.cmd will do a GCSimulator test run.
 echo IlasmRoundTrip: enables ilasm round trip build and run of the tests before executing them.
 echo verbose: enables detailed file logging for the msbuild tasks into the msbuild log file.
 exit /b 1
