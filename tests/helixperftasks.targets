@@ -19,6 +19,10 @@
       <TestRuntimeProjectLockJson>$(SourceDir)Common\test_runtime\project.lock.json</TestRuntimeProjectLockJson>
     </PropertyGroup>
 
+    <ItemGroup>
+     <DnuSourceList Include="$(CORE_ROOT)\.nuget\pkg" />
+    </ItemGroup>
+
     <!-- Restore the runtime dependencies -->
     <Exec Command="$(DnuRestoreCommand) &quot;$(TestRuntimeDependenciesJson)&quot;"
            StandardOutputImportance="Low"

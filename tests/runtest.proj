@@ -372,8 +372,11 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
   },
   "frameworks": {
     "dnxcore50": {}
+  },
+  "runtimes": {
+    "$(TestNugetRuntimeId)":{}
   }
-}        
+}
 
         ]]>
       </TestRuntimeJsonContents>
