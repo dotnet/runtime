@@ -18,6 +18,18 @@ namespace System.Collections.Specialized.Tests
             return nameObjectCollection;
         }
 
+        public static NameValueCollection CreateNameValueCollection(int count, int start = 0)
+        {
+            NameValueCollection nameValueCollection = new NameValueCollection();
+
+            for (int i = start; i < start + count; i++)
+            {
+                nameValueCollection.Add("Name_" + i, "Value_" + i);
+            }
+
+            return nameValueCollection;
+        }
+
         public static StringDictionary CreateStringDictionary(int count)
         {
             StringDictionary stringDictionary = new StringDictionary();
