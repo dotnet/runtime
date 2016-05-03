@@ -743,6 +743,11 @@ public class ValueTupleTests
         Assert.False(((IStructuralEquatable)sc).Equals(sc, DummyTestEqualityComparer.Instance));
 
         Assert.Equal("(1, 2, 3, 4, 5, 6, 7, 1)", CreateLong(1, 2, 3, 4, 5, 6, 7, ValueTuple.Create(1)).ToString());
+
+        var vtWithNull = new ValueTuple<string>(null);
+        var tupleWithNull = new Tuple<string>(null);
+        Assert.Equal("()", vtWithNull.ToString());
+        Assert.Equal(tupleWithNull.ToString(), vtWithNull.ToString());
     }
 
     [Fact]
@@ -763,6 +768,11 @@ public class ValueTupleTests
         Assert.False(((IStructuralEquatable)sc).Equals(sc, DummyTestEqualityComparer.Instance));
 
         Assert.Equal("(1, 2, 3, 4, 5, 6, 7, 1, 2)", CreateLong(1, 2, 3, 4, 5, 6, 7, ValueTuple.Create(1, 2)).ToString());
+
+        var vtWithNull = new ValueTuple<string, string>(null, null);
+        var tupleWithNull = new Tuple<string, string>(null, null);
+        Assert.Equal("(, )", vtWithNull.ToString());
+        Assert.Equal(tupleWithNull.ToString(), vtWithNull.ToString());
     }
 
     [Fact]
@@ -785,6 +795,11 @@ public class ValueTupleTests
         Assert.False(((IStructuralEquatable)sc).Equals(sc, DummyTestEqualityComparer.Instance));
 
         Assert.Equal("(1, 2, 3, 4, 5, 6, 7, 1, 2, 3)", CreateLong(1, 2, 3, 4, 5, 6, 7, ValueTuple.Create(1, 2, 3)).ToString());
+
+        var vtWithNull = new ValueTuple<string, string, string>(null, null, null);
+        var tupleWithNull = new Tuple<string, string, string>(null, null, null);
+        Assert.Equal("(, , )", vtWithNull.ToString());
+        Assert.Equal(tupleWithNull.ToString(), vtWithNull.ToString());
     }
 
     [Fact]
@@ -810,6 +825,11 @@ public class ValueTupleTests
         Assert.False(((IStructuralEquatable)sc).Equals(sc, DummyTestEqualityComparer.Instance));
 
         Assert.Equal("(1, 2, 3, 4, 5, 6, 7, 1, 2, 3, 4)", CreateLong(1, 2, 3, 4, 5, 6, 7, ValueTuple.Create(1, 2, 3, 4)).ToString());
+
+        var vtWithNull = new ValueTuple<string, string, string, string>(null, null, null, null);
+        var tupleWithNull = new Tuple<string, string, string, string>(null, null, null, null);
+        Assert.Equal("(, , , )", vtWithNull.ToString());
+        Assert.Equal(tupleWithNull.ToString(), vtWithNull.ToString());
     }
 
     [Fact]
@@ -837,6 +857,11 @@ public class ValueTupleTests
         Assert.False(((IStructuralEquatable)sc).Equals(sc, DummyTestEqualityComparer.Instance));
 
         Assert.Equal("(1, 2, 3, 4, 5, 6, 7, 1, 2, 3, 4, 5)", CreateLong(1, 2, 3, 4, 5, 6, 7, ValueTuple.Create(1, 2, 3, 4, 5)).ToString());
+
+        var vtWithNull = new ValueTuple<string, string, string, string, string>(null, null, null, null, null);
+        var tupleWithNull = new Tuple<string, string, string, string, string>(null, null, null, null, null);
+        Assert.Equal("(, , , , )", vtWithNull.ToString());
+        Assert.Equal(tupleWithNull.ToString(), vtWithNull.ToString());
     }
 
     [Fact]
@@ -866,6 +891,11 @@ public class ValueTupleTests
         Assert.False(((IStructuralEquatable)sc).Equals(sc, DummyTestEqualityComparer.Instance));
 
         Assert.Equal("(1, 2, 3, 4, 5, 6, 7, 1, 2, 3, 4, 5, 6)", CreateLong(1, 2, 3, 4, 5, 6, 7, ValueTuple.Create(1, 2, 3, 4, 5, 6)).ToString());
+
+        var vtWithNull = new ValueTuple<string, string, string, string, string, string>(null, null, null, null, null, null);
+        var tupleWithNull = new Tuple<string, string, string, string, string, string>(null, null, null, null, null, null);
+        Assert.Equal("(, , , , , )", vtWithNull.ToString());
+        Assert.Equal(tupleWithNull.ToString(), vtWithNull.ToString());
     }
 
     [Fact]
@@ -897,10 +927,18 @@ public class ValueTupleTests
         Assert.False(((IStructuralEquatable)sc).Equals(sc, DummyTestEqualityComparer.Instance));
 
         Assert.Equal("(1, 2, 3, 4, 5, 6, 7, 1, 2, 3, 4, 5, 6, 7)", CreateLong(1, 2, 3, 4, 5, 6, 7, ValueTuple.Create(1, 2, 3, 4, 5, 6, 7)).ToString());
+
+        var vtWithNull = new ValueTuple<string, string, string, string, string, string, string>(null, null, null, null, null, null, null);
+        var tupleWithNull = new Tuple<string, string, string, string, string, string, string>(null, null, null, null, null, null, null);
+        Assert.Equal("(, , , , , , )", vtWithNull.ToString());
+        Assert.Equal(tupleWithNull.ToString(), vtWithNull.ToString());
     }
 
     public static ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest> CreateLong<T1, T2, T3, T4, T5, T6, T7, TRest>(T1 item1, T2 item2, T3 item3, T4 item4, T5 item5, T6 item6, T7 item7, TRest rest) where TRest : struct =>
         new ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest>(item1, item2, item3, item4, item5, item6, item7, rest);
+
+    public static Tuple<T1, T2, T3, T4, T5, T6, T7, TRest> CreateLongRef<T1, T2, T3, T4, T5, T6, T7, TRest>(T1 item1, T2 item2, T3 item3, T4 item4, T5 item5, T6 item6, T7 item7, TRest rest) =>
+        new Tuple<T1, T2, T3, T4, T5, T6, T7, TRest>(item1, item2, item3, item4, item5, item6, item7, rest);
 
     [Fact]
     public static void EightTuples()
@@ -966,6 +1004,71 @@ public class ValueTupleTests
         Assert.Equal("(1, 2, 3, 4, 5, 6, 7, 1, 2, 3, 4, 5, 6, 7, )", CreateLong(1, 2, 3, 4, 5, 6, 7, CreateLong(1, 2, 3, 4, 5, 6, 7, ValueTuple.Create())).ToString());
 
         Assert.Equal("(1, 2, 3, 4, 5, 6, 7, 1, 2, 3, 4, 5, 6, 7, 1)", CreateLong(1, 2, 3, 4, 5, 6, 7, CreateLong(1, 2, 3, 4, 5, 6, 7, ValueTuple.Create(1))).ToString());
+
+        var vtWithNull = new ValueTuple<string, string, string, string, string, string, string, ValueTuple<string>>(null, null, null, null, null, null, null, new ValueTuple<string>(null));
+        var tupleWithNull = new Tuple<string, string, string, string, string, string, string, Tuple<string>>(null, null, null, null, null, null, null, new Tuple<string>(null));
+        Assert.Equal("(, , , , , , , )", vtWithNull.ToString());
+        Assert.Equal(tupleWithNull.ToString(), vtWithNull.ToString());
+    }
+
+    [Fact]
+    public static void LongTuplesWithNull()
+    {
+        {
+            var vtWithNull = CreateLong(1, 2, 3, 4, 5, 6, 7, new ValueTuple<string>(null));
+            var tupleWithNull = CreateLongRef(1, 2, 3, 4, 5, 6, 7, new Tuple<string>(null));
+            Assert.Equal("(1, 2, 3, 4, 5, 6, 7, )", vtWithNull.ToString());
+            Assert.Equal(tupleWithNull.ToString(), vtWithNull.ToString());
+        }
+
+        {
+            var vtWithNull = CreateLong(1, 2, 3, 4, 5, 6, 7, new ValueTuple<string>(null));
+            var tupleWithNull = CreateLongRef(1, 2, 3, 4, 5, 6, 7, new Tuple<string>(null));
+            Assert.Equal("(1, 2, 3, 4, 5, 6, 7, )", vtWithNull.ToString());
+            Assert.Equal(tupleWithNull.ToString(), vtWithNull.ToString());
+        }
+
+        {
+            var vtWithNull = CreateLong(1, 2, 3, 4, 5, 6, 7, new ValueTuple<string, string>(null, null));
+            var tupleWithNull = CreateLongRef(1, 2, 3, 4, 5, 6, 7, new Tuple<string, string>(null, null));
+            Assert.Equal("(1, 2, 3, 4, 5, 6, 7, , )", vtWithNull.ToString());
+            Assert.Equal(tupleWithNull.ToString(), vtWithNull.ToString());
+        }
+
+        {
+            var vtWithNull = CreateLong(1, 2, 3, 4, 5, 6, 7, new ValueTuple<string, string, string>(null, null, null));
+            var tupleWithNull = CreateLongRef(1, 2, 3, 4, 5, 6, 7, new Tuple<string, string, string>(null, null, null));
+            Assert.Equal("(1, 2, 3, 4, 5, 6, 7, , , )", vtWithNull.ToString());
+            Assert.Equal(tupleWithNull.ToString(), vtWithNull.ToString());
+        }
+
+        {
+            var vtWithNull = CreateLong(1, 2, 3, 4, 5, 6, 7, new ValueTuple<string, string, string, string>(null, null, null, null));
+            var tupleWithNull = CreateLongRef(1, 2, 3, 4, 5, 6, 7, new Tuple<string, string, string, string>(null, null, null, null));
+            Assert.Equal("(1, 2, 3, 4, 5, 6, 7, , , , )", vtWithNull.ToString());
+            Assert.Equal(tupleWithNull.ToString(), vtWithNull.ToString());
+        }
+
+        {
+            var vtWithNull = CreateLong(1, 2, 3, 4, 5, 6, 7, new ValueTuple<string, string, string, string, string>(null, null, null, null, null));
+            var tupleWithNull = CreateLongRef(1, 2, 3, 4, 5, 6, 7, new Tuple<string, string, string, string, string>(null, null, null, null, null));
+            Assert.Equal("(1, 2, 3, 4, 5, 6, 7, , , , , )", vtWithNull.ToString());
+            Assert.Equal(tupleWithNull.ToString(), vtWithNull.ToString());
+        }
+
+        {
+            var vtWithNull = CreateLong(1, 2, 3, 4, 5, 6, 7, new ValueTuple<string, string, string, string, string, string>(null, null, null, null, null, null));
+            var tupleWithNull = CreateLongRef(1, 2, 3, 4, 5, 6, 7, new Tuple<string, string, string, string, string, string>(null, null, null, null, null, null));
+            Assert.Equal("(1, 2, 3, 4, 5, 6, 7, , , , , , )", vtWithNull.ToString());
+            Assert.Equal(tupleWithNull.ToString(), vtWithNull.ToString());
+        }
+
+        {
+            var vtWithNull = CreateLong(1, 2, 3, 4, 5, 6, 7, new ValueTuple<string, string, string, string, string, string, string>(null, null, null, null, null, null, null));
+            var tupleWithNull = CreateLongRef(1, 2, 3, 4, 5, 6, 7, new Tuple<string, string, string, string, string, string, string>(null, null, null, null, null, null, null));
+            Assert.Equal("(1, 2, 3, 4, 5, 6, 7, , , , , , , )", vtWithNull.ToString());
+            Assert.Equal(tupleWithNull.ToString(), vtWithNull.ToString());
+        }
     }
 
     [Fact]
