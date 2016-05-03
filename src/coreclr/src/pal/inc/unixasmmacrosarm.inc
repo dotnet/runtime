@@ -152,9 +152,8 @@ C_FUNC(\Name\()_End):
         .endif
 
         PUSH_CALLEE_SAVED_REGISTERS
-        .setfp r7, sp, #(3 * 4)
+        PROLOG_STACK_SAVE_OFFSET r7, #12
         // let r7 point the saved r7 in the stack (clang FP style)
-        add r7, sp, #(3 * 4)
 
         alloc_stack     __PWTB_StackAlloc
 
@@ -208,12 +207,21 @@ C_FUNC(\Name\()_End):
         mov \Register, sp
 .endm
 
+.macro PROLOG_STACK_SAVE_OFFSET Register, Offset
+        .setfp \Register, sp, \Offset
+        add \Register, sp, \Offset
+.endm
+
 .macro EPILOG_STACK_FREE Size
         add sp, sp, \Size
 .endm
 
 .macro EPILOG_STACK_RESTORE Register
         mov sp, \Register
+.endm
+
+.macro EPILOG_STACK_RESTORE_OFFSET Register, Offset
+        sub sp, \Register, \Offset
 .endm
 
 .macro EPILOG_BRANCH Target
