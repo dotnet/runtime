@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.Collections.Specialized.Tests
 {
-    public class NameValueCollectionGetItemIntTests
+    public class NameValueCollectionGetItemTests
     {
         [Theory]
         [InlineData(0)]

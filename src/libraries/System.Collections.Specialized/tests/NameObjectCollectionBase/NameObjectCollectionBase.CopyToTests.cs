@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.Collections.Specialized.Tests
 {
-    public class CopyToTests
+    public class NameObjectCollectionBaseCopyToTests
     {
         [Theory]
         [InlineData(0, 0)]

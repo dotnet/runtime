@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.Collections.Specialized.Tests
 {
-    public class GetSyncRootNameObjectCollectionBaseTests
+    public class NameObjectCollectionBaseSyncRootTests
     {
         [Fact]
         public void SyncRoot()

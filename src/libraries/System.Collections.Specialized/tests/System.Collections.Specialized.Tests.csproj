@@ -48,7 +48,7 @@
     <Compile Include="HybridDictionary\HybridDictionaryTests.cs" />
     <Compile Include="ListDictionaryTests.cs" />
     <Compile Include="NameObjectCollectionBase\MyNameObjectCollection.cs" />
-    <Compile Include="NameObjectCollectionBase\NameObjectCollectionBase..GetEnumeratorTests.cs" />
+    <Compile Include="NameObjectCollectionBase\NameObjectCollectionBase.GetEnumeratorTests.cs" />
     <Compile Include="NameObjectCollectionBase\NameObjectCollectionBase.CopyToTests.cs" />
     <Compile Include="NameObjectCollectionBase\NameObjectCollectionBase.GetAllValuesTests.cs" />
     <Compile Include="NameObjectCollectionBase\NameObjectCollectionBase.KeysTests.cs" />
@@ -61,12 +61,12 @@
     <Compile Include="NameValueCollection\NameValueCollection.ClearTests.cs" />
     <Compile Include="NameValueCollection\NameValueCollection.CopyToTests.cs" />
     <Compile Include="NameValueCollection\NameValueCollection.CtorTests.cs" />
-    <Compile Include="NameValueCollection\NameValueCollection.GetItemIntTests.cs" />
-    <Compile Include="NameValueCollection\NameValueCollection.GetItemStringTests.cs" />
+    <Compile Include="NameValueCollection\NameValueCollection.GetItemTests.cs" />
+    <Compile Include="NameValueCollection\NameValueCollection.GetStringTests.cs" />
     <Compile Include="NameValueCollection\NameValueCollection.GetKeyTests.cs" />
-    <Compile Include="NameValueCollection\NameValueCollection.GetTests.cs" />
+    <Compile Include="NameValueCollection\NameValueCollection.GetIntTests.cs" />
     <Compile Include="NameValueCollection\NameValueCollection.GetValuesStringTests.cs" />
-    <Compile Include="NameValueCollection\NameValueCollection.GetValuesTests.cs" />
+    <Compile Include="NameValueCollection\NameValueCollection.GetValuesIntTests.cs" />
     <Compile Include="NameValueCollection\NameValueCollection.ReadOnlyTests.cs" />
     <Compile Include="NameValueCollection\NameValueCollection.RemoveTests.cs" />
     <Compile Include="NameValueCollection\NameValueCollection.SetItemTests.cs" />
