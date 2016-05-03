@@ -157,6 +157,18 @@ IF "%COMPlus_JitStress%"=="" IF "%COMPlus_JitStressRegs%"=="" IF "%COMPlus_JITMi
 echo Skipping execution because this is not a long-running GC test
 Exit /b 0
       ]]></BatchCLRTestGCLongTestSkipCondition>
+      <BatchCLRTestGCLongTestSkipCondition Condition="$(GCLongRunning) != 'true' And '$(IsLongRunningGCTest)' == 'true'"><![CDATA[
+echo Skipping execution because long-running GC tests are not enabled
+Exit /b 0
+      ]]></BatchCLRTestGCLongTestSkipCondition>
+      <BatchCLRTestGCSimulatorSkipCondition Condition="$(GCSimulatorRun) == 'true' And '$(IsGCSimulatorTest)' != 'true'"><![CDATA[
+echo Skipping execution because this is not a GCSimulator test
+Exit /b 0
+      ]]></BatchCLRTestGCSimulatorSkipCondition>
+      <BatchCLRTestGCSimulatorSkipCondition Condition="$(GCSimulatorRun) != 'true' And '$(IsGCSimulatorTest)' == 'true'"><![CDATA[
+echo Skipping execution because GCSimulator tests are not enabled
+Exit /b 0
+      ]]></BatchCLRTestGCSimulatorSkipCondition>
       <BatchCLRTestExitCodePrep Condition="$(_CLRTestNeedsToRun)">
         <![CDATA[
 set CLRTestExpectedExitCode=$(CLRTestExitCode)
@@ -352,6 +364,9 @@ $(IlasmRoundTripBatchScript)
 
 REM Long GC Tests Script (when /p:GCLongRunning=true)
 $(BatchCLRTestGCLongTestSkipCondition)
+
+REM GCSimulator Tests Script (when /p:GCSimulatorRun=true)
+$(BatchCLRTestGCSimulatorSkipCondition)
 
 REM Precommands
 $(CLRTestBatchPreCommands)
