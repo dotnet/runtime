@@ -1097,6 +1097,8 @@ public:
 
     DWORD getJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes);
 
+    bool runWithErrorTrap(void (*function)(void*), void* param);
+
 private:
     // Shrinking these buffers drastically reduces the amount of stack space
     // required for each instance of the interpreter, and thereby reduces SOs.
