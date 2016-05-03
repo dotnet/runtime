@@ -443,12 +443,6 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\IL_Conformance\Old\Conformance_Base\sub_ovf_i8\sub_ovf_i8.cmd">
              <Issue>4596</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\rtchecks\overflow\overflow01_add\overflow01_add.cmd">
-             <Issue></Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\rtchecks\overflow\overflow02_add\overflow02_add.cmd">
-             <Issue></Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\AsgOp\i8\i8_cs_d\i8_cs_d.cmd">
              <Issue>4659</Issue>
         </ExcludeList>
@@ -460,81 +454,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\AsgOp\i8\i8_cs_ro\i8_cs_ro.cmd">
              <Issue>4659</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\fp\exgen\10w5d_cs_d\10w5d_cs_d.cmd">
-             <Issue>4660</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\fp\exgen\10w5d_cs_do\10w5d_cs_do.cmd">
-             <Issue>4660</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\fp\exgen\10w5d_cs_r\10w5d_cs_r.cmd">
-             <Issue>4660</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\fp\exgen\10w5d_cs_ro\10w5d_cs_ro.cmd">
-             <Issue>4660</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\FPtrunc\convx_il_d\convx_il_d.cmd">
-             <Issue>4661</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\FPtrunc\convx_il_r\convx_il_r.cmd">
-             <Issue>4661</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\int64\signed\_dbgs_ldc_div\_dbgs_ldc_div.cmd">
-             <Issue>4663</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\int64\signed\_dbgs_ldc_mul\_dbgs_ldc_mul.cmd">
-             <Issue>4663</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\int64\signed\_dbgs_ldc_mulovf\_dbgs_ldc_mulovf.cmd">
-             <Issue>4663</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\int64\signed\_il_dbgs_ldc_div\_il_dbgs_ldc_div.cmd">
-             <Issue>4663</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\int64\signed\_il_dbgs_ldc_mul\_il_dbgs_ldc_mul.cmd">
-             <Issue>4663</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\int64\signed\_il_dbgs_ldc_mulovf\_il_dbgs_ldc_mulovf.cmd">
-             <Issue>4663</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\int64\signed\_rels_ldc_div\_rels_ldc_div.cmd">
-             <Issue>4663</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\int64\signed\_rels_ldc_mul\_rels_ldc_mul.cmd">
-             <Issue>4663</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\int64\signed\_rels_ldc_mulovf\_rels_ldc_mulovf.cmd">
-             <Issue>4663</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\int64\unsigned\_dbgldc_mul\_dbgldc_mul.cmd">
-             <Issue>4663</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\int64\unsigned\_dbgldc_mulovf\_dbgldc_mulovf.cmd">
-             <Issue>4663</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\int64\unsigned\_il_dbgldc_mul\_il_dbgldc_mul.cmd">
-             <Issue>4663</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\int64\unsigned\_il_dbgldc_mulovf\_il_dbgldc_mulovf.cmd">
-             <Issue>4663</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\int64\unsigned\_relldc_mul\_relldc_mul.cmd">
-             <Issue>4663</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\int64\unsigned\_relldc_mulovf\_relldc_mulovf.cmd">
-             <Issue>4663</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\MDArray\DataTypes\long_cs_d\long_cs_d.cmd">
-             <Issue>4664</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\MDArray\DataTypes\long_cs_do\long_cs_do.cmd">
-             <Issue>4664</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\MDArray\DataTypes\long_cs_r\long_cs_r.cmd">
-             <Issue>4664</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\MDArray\DataTypes\long_cs_ro\long_cs_ro.cmd">
-             <Issue>4664</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\stringintern\_Simpletest1\_Simpletest1.cmd">
              <Issue>3554</Issue>
@@ -548,26 +467,11 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\stringintern\test1-xassem\test1-xassem.cmd">
              <Issue>3554</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Performance\CodeQuality\BenchmarksGame\pidigits\pi-digits\pi-digits.cmd">
-             <Issue>4665</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Performance\CodeQuality\Linq\Linq\Linq.cmd">
              <Issue>4666</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Performance\CodeQuality\Serialization\Serialize\Serialize.cmd">
              <Issue>3597</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b12053\b12053\b12053.cmd">
-             <Issue>4667</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\Dev11\dev10_94677\loopvt\loopvt.cmd">
-             <Issue>3569</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\SIMD\Haar-likeFeaturesGeneric_r\Haar-likeFeaturesGeneric_r.cmd">
-             <Issue>4668</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\SIMD\VectorAbs_r\VectorAbs_r.cmd">
-             <Issue>4669</Issue>
         </ExcludeList>
     </ItemGroup>
 </Project>
