@@ -199,9 +199,23 @@ namespace System.Net.Http
 
             private void SetUrl()
             {
-                EventSourceTrace("Url: {0}", _requestMessage.RequestUri);
-                SetCurlOption(CURLoption.CURLOPT_URL, _requestMessage.RequestUri.AbsoluteUri);
+                string url = GetAbsoluteUri(_requestMessage.RequestUri);
+                EventSourceTrace<string>("Url: {0}", url);
+                SetCurlOption(CURLoption.CURLOPT_URL, url);
                 SetCurlOption(CURLoption.CURLOPT_PROTOCOLS, (long)(CurlProtocols.CURLPROTO_HTTP | CurlProtocols.CURLPROTO_HTTPS));
+            }
+
+            private static string GetAbsoluteUri(Uri uri)
+            {
+                // uri.AbsoluteUri/ToString() do not include IPv6 scope IDs, but when provided they
+                // should be used or else libcurl may be unable to correctly connect.  SerializationInfoString
+                // ensures these details are included.  However, SerializationInfoString does not properly
+                // handle international hosts.  So as a workaround we check whether the host is a link-local IP address,
+                // and based on that either return the SerializationInfoString or the AbsoluteUri.
+                IPAddress ip;
+                return IPAddress.TryParse(uri.DnsSafeHost, out ip) && ip.IsIPv6LinkLocal ?
+                    uri.GetComponents(UriComponents.SerializationInfoString, UriFormat.UriEscaped) :
+                    uri.AbsoluteUri;
             }
 
             private void SetMultithreading()
@@ -420,10 +434,11 @@ namespace System.Net.Http
 
                 // Configure libcurl with the gathered proxy information
 
+                string proxyUrl = GetAbsoluteUri(proxyUri);
+                EventSourceTrace<string>("Proxy: {0}", proxyUrl);
                 SetCurlOption(CURLoption.CURLOPT_PROXYTYPE, (long)CURLProxyType.CURLPROXY_HTTP);
-                SetCurlOption(CURLoption.CURLOPT_PROXY, proxyUri.AbsoluteUri);
+                SetCurlOption(CURLoption.CURLOPT_PROXY, proxyUrl);
                 SetCurlOption(CURLoption.CURLOPT_PROXYPORT, proxyUri.Port);
-                EventSourceTrace("Proxy: {0}", proxyUri);
 
                 KeyValuePair<NetworkCredential, CURLAUTH> credentialScheme = GetCredentials(
                     proxyUri, _handler.Proxy.Credentials, s_orderedAuthTypes);
