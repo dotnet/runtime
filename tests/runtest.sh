@@ -429,25 +429,17 @@ declare -a playlistTests
 
 function load_unsupported_tests {
     # Load the list of tests that are not supported on this platform. These tests are disabled (skipped) permanently.
-    # 'readarray' is not used here, as it includes the trailing linefeed in lines placed in the array.
-    while IFS='' read -r line || [ -n "$line" ]; do
-        unsupportedTests[${#unsupportedTests[@]}]=$line
-    done <"$(dirname "$0")/testsUnsupportedOutsideWindows.txt"
+    readarray -t unsupportedTests <"$(dirname "$0")/testsUnsupportedOutsideWindows.txt"
 }
 
 function load_failing_tests {
     # Load the list of tests that fail on this platform. These tests are disabled (skipped) temporarily, pending investigation.
-    # 'readarray' is not used here, as it includes the trailing linefeed in lines placed in the array.
-    while IFS='' read -r line || [ -n "$line" ]; do
-        failingTests[${#failingTests[@]}]=$line
-    done <"$(dirname "$0")/testsFailingOutsideWindows.txt"
+    readarray -t failingTests <"$(dirname "$0")/testsFailingOutsideWindows.txt"
 }
 
 function load_playlist_tests {
     # Load the list of tests that are enabled as a part of this test playlist.
-    while IFS='' read -r line || [ -n "$line" ]; do
-        playlistTests[${#playlistTests[@]}]=$line
-    done <"${playlistFile}"
+    readarray -t playlistTests <"${playlistFile}"
 }
 
 function is_unsupported_test {
@@ -647,7 +639,7 @@ function set_test_directories {
         exit_with_error "$errorSource" "Test directories file not found at $listFileName"
     fi
 
-    readarray testDirectories < "$listFileName"
+    readarray -t testDirectories < "$listFileName"
 }
 
 function run_tests_in_directory {
