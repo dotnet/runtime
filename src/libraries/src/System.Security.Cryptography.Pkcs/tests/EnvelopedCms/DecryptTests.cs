@@ -22,6 +22,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
     public static partial class DecryptTests
     {
         [Fact]
+        [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void Decrypt_IssuerAndSerial()
         {
             byte[] content = { 5, 112, 233, 43 };
@@ -30,6 +31,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void Decrypt_Ski()
         {
             byte[] content = { 6, 3, 128, 33, 44 };
@@ -38,6 +40,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void Decrypt_Capi()
         {
             byte[] content = { 5, 77, 32, 33, 2, 34 };
@@ -46,6 +49,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void Decrypt_256()
         {
             byte[] content = { 5, 77, 32, 33, 2, 34 };
@@ -54,6 +58,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void Decrypt_384()
         {
             byte[] content = { 5, 77, 32, 33, 2, 34 };
@@ -62,6 +67,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void Decrypt_512()
         {
             byte[] content = { 5, 77, 32, 33, 2, 34 };
@@ -70,6 +76,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void Decrypt_SignedWithinEnveloped()
         {
             byte[] content =
@@ -96,6 +103,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void Decrypt_EnvelopedWithinEnveloped()
         {
             byte[] content =
@@ -112,6 +120,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void DecryptMultipleRecipients()
         {
             // Force Decrypt() to try multiple recipients. Ensure that a failure to find a matching cert in one doesn't cause it to quit early.
