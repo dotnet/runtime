@@ -18,7 +18,7 @@ namespace Test.Cryptography
         //
         //    TestMode = CertLoadMode.Disable
         //
-        //        Disable all tests that rely on private keys. Unfortunately, this has to be the default for checked in tests to avoid cluttering
+        //        Disable all tests that rely on private keys. Unfortunately, this has to be the default for inner-loop tests to avoid cluttering
         //        people's machines with leaked keys on disk every time they build.
         //
         //
@@ -41,7 +41,7 @@ namespace Test.Cryptography
         //
         // These fields are nominally private and readonly but intentionally not declared as such so that an ad-hoc test host can change them for convenience.
         //
-        public static CertLoadMode TestMode = CertLoadMode.Disable;
+        public static CertLoadMode TestMode = CertLoadMode.LoadFromPfx;
         public static string StoreName = "DotNetCoreFxTestCerts";  // Do not use "MY" here as that can break many test assumptions.
     }
 }
