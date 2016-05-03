@@ -24,10 +24,7 @@
 #define REDZONE_SIZE	0
 
 #define ARCH_NUM_REGS 0
-#define ARCH_STORE_REGS(ptr)
-#define ARCH_SIGCTX_SP(ctx) NULL
-#define ARCH_SIGCTX_IP(ctx) NULL
-#define ARCH_COPY_SIGCTX_REGS(a,ctx)
+#define USE_MONO_CTX
 
 #elif defined(TARGET_X86)
 

@@ -10,6 +10,8 @@
 #ifndef __MONO_MONO_CONTEXT_H__
 #define __MONO_MONO_CONTEXT_H__
 
+#include <glib.h>
+
 #include "mono-compiler.h"
 #include "mono-sigcontext.h"
 #include "mono-machine.h"
@@ -26,7 +28,21 @@
  * MONO_CONTEXT_GET_CURRENT captures the current context as close as possible. One reg might be clobbered
  *  to hold the address of the target MonoContext. It will be a caller save one, so should not be a problem.
  */
-#if (defined(__i386__) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_X86))
+#if defined(MONO_CROSS_COMPILE)
+
+typedef struct {} MonoContext;
+
+#define MONO_CONTEXT_SET_IP(ctx,ip) g_assert_not_reached ()
+#define MONO_CONTEXT_SET_BP(ctx,bp) g_assert_not_reached ()
+#define MONO_CONTEXT_SET_SP(ctx,sp) g_assert_not_reached ()
+
+#define MONO_CONTEXT_GET_IP(ctx) NULL
+#define MONO_CONTEXT_GET_BP(ctx) NULL
+#define MONO_CONTEXT_GET_SP(ctx) NULL
+
+#define MONO_CONTEXT_GET_CURRENT(ctx) do {} while (0)
+
+#elif defined(__i386__) || defined(TARGET_X86)
 
 /*HACK, move this to an eventual mono-signal.c*/
 #if defined( __linux__) || defined(__sun) || defined(__APPLE__) || defined(__NetBSD__) || \
@@ -146,7 +162,7 @@ typedef struct {
 
 #define MONO_ARCH_HAS_MONO_CONTEXT 1
 
-#elif (defined(__x86_64__) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_AMD64)) /* defined(__i386__) */
+#elif defined(__x86_64__) || defined(TARGET_AMD64) /* defined(__i386__) */
 
 #include <mono/arch/amd64/amd64-codegen.h>
 
@@ -230,7 +246,7 @@ extern void mono_context_get_current (void *);
 
 #define MONO_ARCH_HAS_MONO_CONTEXT 1
 
-#elif (defined(__arm__) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_ARM)) /* defined(__x86_64__) */
+#elif defined(__arm__) || defined(TARGET_ARM) /* defined(__x86_64__) */
 
 #include <mono/arch/arm/arm-codegen.h>
 
@@ -284,7 +300,7 @@ typedef struct {
 
 #define MONO_ARCH_HAS_MONO_CONTEXT 1
 
-#elif (defined(__aarch64__) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_ARM64))
+#elif defined(__aarch64__) || defined(TARGET_ARM64)
 
 #include <mono/arch/arm64/arm64-codegen.h>
 
@@ -695,7 +711,7 @@ mono_ia64_context_get_fp (MonoContext *ctx)
 	return fp;
 }
 
-#elif ((defined(__mips__) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_MIPS))) && SIZEOF_REGISTER == 4 /* defined(__ia64__) */
+#elif (defined(__mips__) || defined(TARGET_MIPS)) && SIZEOF_REGISTER == 4 /* defined(__ia64__) */
 
 #include <mono/arch/mips/mips-codegen.h>
 
