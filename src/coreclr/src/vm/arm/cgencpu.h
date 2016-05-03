@@ -1196,7 +1196,7 @@ struct FixupPrecode {
 typedef DPTR(FixupPrecode) PTR_FixupPrecode;
 
 
-// Precode to stuffle this and retbuf for closed delegates over static methods with return buffer
+// Precode to shuffle this and retbuf for closed delegates over static methods with return buffer
 struct ThisPtrRetBufPrecode {
 
     static const int Type = 0x84;

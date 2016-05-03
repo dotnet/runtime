@@ -614,18 +614,12 @@ struct FixupPrecode {
 typedef DPTR(FixupPrecode) PTR_FixupPrecode;
 
 
-// Precode to stuffle this and retbuf for closed delegates over static methods with return buffer
+// Precode to shuffle this and retbuf for closed delegates over static methods with return buffer
 struct ThisPtrRetBufPrecode {
 
-    static const int Type = 0x84;
+    static const int Type = 0x10;
 
-    // mov r12, r0
-    // mov r0, r1
-    // mov r1, r12
-    // ldr pc, [pc, #0]     ; =m_pTarget
-    // dcd pTarget
-    // dcd pMethodDesc
-    WORD    m_rgCode[6];
+    UINT32  m_rgCode[6];
     TADDR   m_pTarget;
     TADDR   m_pMethodDesc;
 
@@ -633,20 +627,29 @@ struct ThisPtrRetBufPrecode {
 
     TADDR GetMethodDesc()
     {
-        _ASSERTE(!"ARM64:NYI");
-        return NULL;
+        LIMITED_METHOD_DAC_CONTRACT;
+
+        return m_pMethodDesc;
     }
 
     PCODE GetTarget()
     { 
-        _ASSERTE(!"ARM64:NYI");
-        return NULL;
+        LIMITED_METHOD_DAC_CONTRACT;
+        return m_pTarget;
     }
 
     BOOL SetTargetInterlocked(TADDR target, TADDR expected)
     {
-        _ASSERTE(!"ARM64:NYI");
-        return NULL;
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+        }
+        CONTRACTL_END;
+
+        EnsureWritableExecutablePages(&m_pTarget);
+        return (TADDR)InterlockedCompareExchange64(
+            (LONGLONG*)&m_pTarget, (TADDR)target, (TADDR)expected) == expected;
     }
 };
 typedef DPTR(ThisPtrRetBufPrecode) PTR_ThisPtrRetBufPrecode;
