@@ -53,28 +53,7 @@
 #define REDZONE_SIZE	224
 
 #define ARCH_NUM_REGS 32
-#ifdef __APPLE__
-#define ARCH_STORE_REGS(ptr)	\
-	__asm__ __volatile__(	\
-		"stmw r0, 0(%0)\n"	\
-		:			\
-		: "b" (ptr)		\
-	)
-#else
-#define ARCH_STORE_REGS(ptr)	\
-	__asm__ __volatile__(	\
-		"stmw 0, 0(%0)\n"	\
-		:			\
-		: "b" (ptr)		\
-	)
-#endif
-#define ARCH_SIGCTX_SP(ctx)	(UCONTEXT_REG_Rn((ctx), 1))
-#define ARCH_SIGCTX_IP(ctx)	(UCONTEXT_REG_NIP((ctx)))
-#define ARCH_COPY_SIGCTX_REGS(a,ctx) do {	\
-	int __i;	\
-	for (__i = 0; __i < 32; ++__i)	\
-		((a)[__i]) = (gpointer) UCONTEXT_REG_Rn((ctx), __i);	\
-	} while (0)
+#define USE_MONO_CTX
 
 /* MS_BLOCK_SIZE must be a multiple of the system pagesize, which for some
    architectures is 64k.  */
