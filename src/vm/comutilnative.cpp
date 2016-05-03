@@ -1424,28 +1424,40 @@ FCIMPL5(VOID, Buffer::BlockCopy, ArrayBase *src, int srcOffset, ArrayBase *dst, 
 
     MethodTable * pByteArrayMT = g_pByteArrayMT;
     _ASSERTE(pByteArrayMT != NULL);
-    if (src->GetMethodTable() == pByteArrayMT &&  dst->GetMethodTable() == pByteArrayMT)
+    
+    // Optimization: If src is a byte array, we can
+    // simply set srcLen to GetNumComponents, without having
+    // to call GetComponentSize or verifying GetArrayElementType
+    if (src->GetMethodTable() == pByteArrayMT)
     {
         srcLen = src->GetNumComponents();
-        dstLen = dst->GetNumComponents();
     }
     else
     {
-        // Size of the Arrays in bytes
         srcLen = src->GetNumComponents() * src->GetComponentSize();
-        dstLen = srcLen;
 
         // We only want to allow arrays of primitives, no Objects.
         const CorElementType srcET = src->GetArrayElementType();
         if (!CorTypeInfo::IsPrimitiveType_NoThrow(srcET))
             FCThrowArgumentVoid(W("src"), W("Arg_MustBePrimArray"));
-
-        if (src != dst) {
-            const CorElementType dstET = dst->GetArrayElementType();
-            if (!CorTypeInfo::IsPrimitiveType_NoThrow(dstET))
-                FCThrowArgumentVoid(W("dest"), W("Arg_MustBePrimArray"));
-            dstLen = dst->GetNumComponents() * dst->GetComponentSize();
-        }
+    }
+    
+    // Optimization: If copying to/from the same array, then
+    // we know that dstLen and srcLen must be the same.
+    if (src == dst)
+    {
+        dstLen = srcLen;
+    }
+    else if (dst->GetMethodTable() == pByteArrayMT)
+    {
+        dstLen = dst->GetNumComponents();
+    }
+    else
+    {
+        const CorElementType dstET = dst->GetArrayElementType();
+        if (!CorTypeInfo::IsPrimitiveType_NoThrow(dstET))
+            FCThrowArgumentVoid(W("dest"), W("Arg_MustBePrimArray"));
+        dstLen = dst->GetNumComponents() * dst->GetComponentSize();
     }
 
     if (srcOffset < 0 || dstOffset < 0 || count < 0) {
