@@ -7,6 +7,10 @@ if (CLR_CMAKE_PLATFORM_UNIX)
   #-fms-compatibility      Enable full Microsoft Visual C++ compatibility
   #-fms-extensions         Accept some non-standard constructs supported by the Microsoft compiler
 
+  # Make signed arithmetic overflow of addition, subtraction, and multiplication wrap around
+  # using twos-complement representation (this is normally undefined according to the C++ spec).
+  add_compile_options(-fwrapv)
+
   if(CLR_CMAKE_PLATFORM_DARWIN)
     # We cannot enable "stack-protector-strong" on OS X due to a bug in clang compiler (current version 7.0.2)
     add_compile_options(-fstack-protector)
