@@ -45,38 +45,6 @@ int load_host_library(
         : StatusCode::CoreHostEntryPointFailure;
 }
 
-void handle_missing_framework_error(const corehost_init_t* init)
-{
-    pal::string_t name = init->fx_name();
-    pal::string_t version = init->fx_version();
-    pal::string_t fx_ver_dirs = get_directory(init->fx_dir());
-
-    trace::error(_X("The targeted framework { \"%s\": \"%s\" } was not found."), name.c_str(), version.c_str());
-    trace::error(_X("  - Check application dependencies and target a framework version installed at:"));
-    trace::error(_X("      %s"), fx_ver_dirs.c_str());
-
-    bool header = true;
-    std::vector<pal::string_t> versions;
-    pal::readdir(fx_ver_dirs, &versions);
-    for (const auto& ver : versions)
-    {
-        fx_ver_t parsed(-1, -1, -1);
-        if (fx_ver_t::parse(ver, &parsed, false))
-        {
-            if (header)
-            {
-                trace::error(_X("  - The following versions are installed:"));
-                header = false;
-            }
-            trace::error(_X("      %s"), ver.c_str());
-        }
-    }
-    if (header)
-    {
-        trace::error(_X("  - Or install the framework version that is being targeted."));
-    }
-}
-
 int execute_app(
     const pal::string_t& impl_dll_dir,
     corehost_init_t* init,
@@ -92,15 +60,7 @@ int execute_app(
 
     if (code != StatusCode::Success)
     {
-        if (init->fx_dir() == impl_dll_dir)
-        {
-            handle_missing_framework_error(init);
-        }
-        else
-        {
-            trace::error(_X("Expected to load required %s from [%s]"), LIBHOSTPOLICY_NAME, impl_dll_dir.c_str());
-            trace::error(_X("  - This may be because of an invalid .NET Core FX configuration in the directory."));
-        }
+        trace::error(_X("An error occurred while loading required library %s from [%s]"), LIBHOSTPOLICY_NAME, impl_dll_dir.c_str());
         return code;
     }
 
@@ -114,34 +74,6 @@ int execute_app(
     pal::unload_library(corehost);
 
     return code;
-}
-
-bool hostpolicy_exists_in_svc(pal::string_t* resolved_dir)
-{
-    pal::string_t svc_dir;
-    pal::get_default_servicing_directory(&svc_dir);
-    append_path(&svc_dir, _X("pkgs"));
-
-    pal::string_t version = _STRINGIFY(HOST_POLICY_PKG_VER);
-    pal::string_t rel_dir = _STRINGIFY(HOST_POLICY_PKG_REL_DIR);
-    if (DIR_SEPARATOR != '/')
-    {
-        replace_char(&rel_dir, '/', DIR_SEPARATOR);
-    }
-
-    pal::string_t path = svc_dir;
-    append_path(&path, _STRINGIFY(HOST_POLICY_PKG_NAME));
-    append_path(&path, version.c_str());
-    append_path(&path, rel_dir.c_str());
-
-    if (library_exists_in_dir(path, LIBHOSTPOLICY_NAME, nullptr))
-    {
-        resolved_dir->assign(path);
-        trace::verbose(_X("[%s] exists in servicing [%s]"), LIBHOSTPOLICY_NAME, path.c_str());
-        return true;
-    }
-    trace::verbose(_X("[%s] doesn't exist in servicing [%s]"), LIBHOSTPOLICY_NAME, path.c_str());
-    return false;
 }
 
 SHARED_API int hostfxr_main(const int argc, const pal::char_t* argv[])

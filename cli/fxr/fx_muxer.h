@@ -24,7 +24,15 @@ private:
         const std::unordered_map<pal::string_t, std::vector<pal::string_t>>& opts,
         int new_argc, const pal::char_t** new_argv, host_mode_t mode);
     static int parse_args_and_execute(const pal::string_t& own_dir, const pal::string_t& own_dll, int argoff, int argc, const pal::char_t* argv[], bool exec_mode, host_mode_t mode, bool* can_execute);
-    static pal::string_t resolve_fx_dir(const pal::string_t& muxer_path, runtime_config_t* runtime);
+    static bool resolve_hostpolicy_dir(host_mode_t mode,
+        const pal::string_t& own_dir,
+        const pal::string_t& fx_dir,
+        const pal::string_t& app_or_deps_dir,
+        const pal::string_t& specified_deps,
+        const std::vector<pal::string_t>& probe_realpaths,
+        const runtime_config_t& config,
+        pal::string_t* impl_dir);
+    static pal::string_t resolve_fx_dir(host_mode_t mode, const pal::string_t& own_dir, const runtime_config_t& config);
     static pal::string_t resolve_cli_version(const pal::string_t& global);
     static bool resolve_sdk_dotnet_path(const pal::string_t& own_dir, pal::string_t* cli_sdk);
 };
