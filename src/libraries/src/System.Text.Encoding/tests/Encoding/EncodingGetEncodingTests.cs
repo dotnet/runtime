@@ -25,6 +25,7 @@ namespace System.Text.Tests
 
             // Codepage doesn't exist
             Assert.Throws<ArgumentException>("codepage", () => Encoding.GetEncoding(42));
+            Assert.Throws<NotSupportedException>(() => Encoding.GetEncoding(54321));
         }
 
         public class CodePageMapping
