@@ -14,12 +14,317 @@
 #include "error_codes.h"
 #include "deps_format.h"
 
-pal::string_t fx_muxer_t::resolve_fx_dir(const pal::string_t& muxer_dir, runtime_config_t* runtime)
+
+/**
+ * When the framework is not found, display detailed error message
+ *   about available frameworks and installation of new framework.
+ */
+void handle_missing_framework_error(const pal::string_t& fx_name, const pal::string_t& fx_version, const pal::string_t& fx_dir)
 {
-    trace::verbose(_X("--- Resolving FX directory from muxer dir [%s]"), muxer_dir.c_str());
-    const auto fx_name = runtime->get_fx_name();
-    const auto fx_ver = runtime->get_fx_version();
-    const auto patch_roll_fwd = runtime->get_patch_roll_fwd();
+    pal::string_t fx_ver_dirs = get_directory(fx_dir);
+
+    // Display the error message about missing FX.
+    trace::error(_X("The targeted framework { '%s': '%s' } was not found."), fx_name.c_str(), fx_version.c_str());
+    trace::error(_X("  - Check application dependencies and target a framework version installed at:"));
+    trace::error(_X("      %s"), fx_ver_dirs.c_str());
+
+    // Gather the list of versions installed at the shared FX location.
+    bool is_print_header = true;
+    std::vector<pal::string_t> versions;
+    pal::readdir(fx_ver_dirs, &versions);
+    for (const auto& ver : versions)
+    {
+        // Make sure we filter out any non-version folders at shared FX location.
+        fx_ver_t parsed(-1, -1, -1);
+        if (fx_ver_t::parse(ver, &parsed, false))
+        {
+            // Print banner only once before printing the versions
+            if (is_print_header)
+            {
+                trace::error(_X("  - The following versions are installed:"));
+                is_print_header = false;
+            }
+            trace::error(_X("      %s"), ver.c_str());
+        }
+    }
+    trace::error(_X("  - Alternatively, install the framework version '%s'."), fx_version.c_str());
+}
+
+/**
+ * Resolve the hostpolicy version from deps.
+ *  - Scan the deps file's libraries section and find the hostpolicy version in the file.
+ */
+pal::string_t resolve_hostpolicy_version_from_deps(const pal::string_t& deps_json)
+{
+    trace::verbose(_X("--- Resolving %s version from deps json [%s]"), LIBHOSTPOLICY_NAME, deps_json.c_str());
+
+    pal::string_t retval;
+    if (!pal::file_exists(deps_json))
+    {
+        trace::verbose(_X("Dependency manifest [%s] does not exist"), deps_json.c_str());
+        return retval;
+    }
+
+    pal::ifstream_t file(deps_json);
+    if (!file.good())
+    {
+        trace::verbose(_X("Dependency manifest [%s] could not be opened"), deps_json.c_str());
+        return retval;
+    }
+
+    if (skip_utf8_bom(&file))
+    {
+        trace::verbose(_X("UTF-8 BOM skipped while reading [%s]"), deps_json.c_str());
+    }
+
+    try
+    {
+        const auto root = json_value::parse(file);
+        const auto& json = root.as_object();
+        const auto& libraries = json.at(_X("libraries")).as_object();
+
+        // Walk through the libraries section and check any library that starts with:
+        // "runtime.win7-x64.Microsoft.NETCore.DotNetHostPolicy/" followed by version.
+        pal::string_t prefix = _STRINGIFY(HOST_POLICY_PKG_NAME) + pal::string_t(_X("/"));
+        for (const auto& library : libraries)
+        {
+            if (starts_with(library.first, prefix, false))
+            {
+                // Extract the version information that occurs after '/'
+                retval = library.first.substr(prefix.size());
+                break;
+            }
+        }
+    }
+    catch (const std::exception& je)
+    {
+        pal::string_t jes;
+        (void)pal::utf8_palstring(je.what(), &jes);
+        trace::error(_X("A JSON parsing exception occurred in [%s]: %s"), deps_json.c_str(), jes.c_str());
+    }
+    trace::verbose(_X("Resolved version %s from dependency manifest file [%s]"), retval.c_str(), deps_json.c_str());
+    return retval;
+}
+
+/**
+ * Given a directory and a version, find if the package relative
+ *     dir under the given directory contains hostpolicy.dll
+ */
+bool to_hostpolicy_package_dir(const pal::string_t& dir, const pal::string_t& version, pal::string_t* candidate)
+{
+    assert(!version.empty());
+
+    candidate->clear();
+
+    // Ensure the relative dir contains platform directory separators.
+    pal::string_t rel_dir = _STRINGIFY(HOST_POLICY_PKG_REL_DIR);
+    if (DIR_SEPARATOR != '/')
+    {
+        replace_char(&rel_dir, '/', DIR_SEPARATOR);
+    }
+
+    // Construct the path to directory containing hostpolicy.
+    pal::string_t path = dir;
+    append_path(&path, _STRINGIFY(HOST_POLICY_PKG_NAME)); // package name
+    append_path(&path, version.c_str());                  // package version
+    append_path(&path, rel_dir.c_str());                  // relative dir containing hostpolicy library
+
+    // Check if "path" contains the required library.
+    if (!library_exists_in_dir(path, LIBHOSTPOLICY_NAME, nullptr))
+    {
+        trace::verbose(_X("Did not find %s in directory %s"), LIBHOSTPOLICY_NAME, path.c_str());
+        return false;
+    }
+
+    // "path" contains the directory containing hostpolicy library.
+    *candidate = path;
+
+    trace::verbose(_X("Found %s in directory %s"), LIBHOSTPOLICY_NAME, path.c_str());
+    return true;
+}
+
+/**
+ * Given a nuget version, detect if a serviced hostpolicy is available at
+ *   platform servicing location.
+ */
+bool hostpolicy_exists_in_svc(const pal::string_t& version, pal::string_t* resolved_dir)
+{
+    if (version.empty())
+    {
+        return false;
+    }
+
+    pal::string_t svc_dir;
+    pal::get_default_servicing_directory(&svc_dir);
+    append_path(&svc_dir, _X("pkgs"));
+    return to_hostpolicy_package_dir(svc_dir, version, resolved_dir);
+}
+
+/**
+ * Given path to app binary, say app.dll or app.exe, retrieve the app.deps.json.
+ */
+pal::string_t get_deps_from_app_binary(const pal::string_t& app)
+{
+    assert(app.find(DIR_SEPARATOR) != pal::string_t::npos);
+    assert(ends_with(app, _X(".dll"), false) || ends_with(app, _X(".exe"), false));
+
+    // First append directory.
+    pal::string_t deps_file;
+    deps_file.assign(get_directory(app));
+    deps_file.push_back(DIR_SEPARATOR);
+
+    // Then the app name and the file extension
+    pal::string_t app_name = get_filename(app);
+    deps_file.append(app_name, 0, app_name.find_last_of(_X(".")));
+    deps_file.append(_X(".deps.json"));
+    return deps_file;
+}
+
+/**
+ * Given a version and probing paths, find if package layout
+ *    directory containing hostpolicy exists.
+ */
+bool resolve_hostpolicy_dir_from_probe_paths(const pal::string_t& version, const std::vector<pal::string_t>& probe_realpaths, pal::string_t* candidate)
+{
+    if (probe_realpaths.empty() || version.empty())
+    {
+        return false;
+    }
+
+    // Check if the package relative directory containing hostpolicy exists.
+    for (const auto& probe_path : probe_realpaths)
+    {
+        trace::verbose(_X("Considering %s to probe for %s"), probe_path.c_str(), LIBHOSTPOLICY_NAME);
+        if (to_hostpolicy_package_dir(probe_path, version, candidate))
+        {
+            return true;
+        }
+    }
+
+    // Print detailed message about the file not found in the probe paths.
+    trace::error(_X("Could not find required library %s in %d probing paths:"),
+        LIBHOSTPOLICY_NAME, probe_realpaths.size());
+    for (const auto& path : probe_realpaths)
+    {
+        trace::error(_X("  %s"), path.c_str());
+    }
+    return false;
+}
+
+/**
+ * Given FX location, app binary and specified --depsfile, return deps that contains hostpolicy.dll
+ */
+pal::string_t get_deps_file(
+    const pal::string_t& fx_dir,
+    const pal::string_t& app_candidate,
+    const pal::string_t& specified_deps_file,
+    const runtime_config_t& config)
+{
+    if (config.get_portable())
+    {
+        // Portable app's hostpolicy is resolved from FX deps
+        return fx_dir + DIR_SEPARATOR + config.get_fx_name() + _X(".deps.json");
+    }
+    else
+    {
+        // Standalone app's hostpolicy is from specified deps or from app deps.
+        return !specified_deps_file.empty() ? specified_deps_file : get_deps_from_app_binary(app_candidate);
+    }
+}
+
+/**
+ * Given own location, FX location, app binary and specified --depsfile and probe paths
+ *     return location that is expected to contain hostpolicy
+ */
+bool fx_muxer_t::resolve_hostpolicy_dir(host_mode_t mode,
+    const pal::string_t& own_dir,
+    const pal::string_t& fx_dir,
+    const pal::string_t& app_candidate,
+    const pal::string_t& specified_deps_file,
+    const std::vector<pal::string_t>& probe_realpaths,
+    const runtime_config_t& config,
+    pal::string_t* impl_dir)
+{
+    // Obtain deps file for the given configuration.
+    pal::string_t resolved_deps = get_deps_file(fx_dir, app_candidate, specified_deps_file, config);
+
+    // Resolve hostpolicy version out of the deps file.
+    pal::string_t version = resolve_hostpolicy_version_from_deps(resolved_deps);
+    if (trace::is_enabled() && version.empty() && pal::file_exists(resolved_deps))
+    {
+        trace::warning(_X("Dependency manifest %s does not contain an entry for %s"), resolved_deps.c_str(), _STRINGIFY(HOST_POLICY_PKG_NAME));
+    }
+
+    // Check if the given version of the hostpolicy exists in servicing.
+    if (hostpolicy_exists_in_svc(version, impl_dir))
+    {
+        return true;
+    }
+
+    // Get the expected directory that would contain hostpolicy.
+    pal::string_t expected;
+    if (config.get_portable())
+    {
+        if (!pal::directory_exists(fx_dir))
+        {
+            handle_missing_framework_error(config.get_fx_name(), config.get_fx_version(), fx_dir);
+            return false;
+        }
+        
+        expected = fx_dir;
+    }
+    else
+    {
+        // Standalone apps can be activated by muxer or by standalone host or "corehost"
+        // 1. When activated with dotnet.exe or corehost.exe, check for hostpolicy in the deps dir or
+        //    app dir.
+        // 2. When activated with app.exe, the standalone host, check own directory.
+        assert(mode == host_mode_t::muxer || mode == host_mode_t::standalone || mode == host_mode_t::split_fx);
+        expected = (mode == host_mode_t::standalone)
+            ? own_dir
+            : get_directory(specified_deps_file.empty() ? app_candidate : specified_deps_file);
+    }
+
+    // Check if hostpolicy exists in "expected" directory.
+    trace::verbose(_X("The expected %s directory is [%s]"), LIBHOSTPOLICY_NAME, expected.c_str());
+    if (library_exists_in_dir(expected, LIBHOSTPOLICY_NAME, nullptr))
+    {
+        impl_dir->assign(expected);
+        return true;
+    }
+
+    trace::verbose(_X("The %s was not found in [%s]"), LIBHOSTPOLICY_NAME, expected.c_str());
+
+    // Start probing for hostpolicy in the specified probe paths.
+    pal::string_t candidate;
+    if (resolve_hostpolicy_dir_from_probe_paths(version, probe_realpaths, &candidate))
+    {
+        impl_dir->assign(candidate);
+        return true;
+    }
+
+    // If it still couldn't be found, flag an error for the "expected" location.
+    trace::error(_X("Expect required library %s to be present in [%s]"), LIBHOSTPOLICY_NAME, expected.c_str());
+    trace::error(_X("  - This may be because of an invalid .NET Core FX configuration in the directory."));
+    return false;
+}
+
+pal::string_t fx_muxer_t::resolve_fx_dir(host_mode_t mode, const pal::string_t& own_dir, const runtime_config_t& config)
+{
+    // No FX resolution for standalone apps.
+    assert(mode != host_mode_t::standalone);
+
+    // If invoking using FX dotnet.exe, use own directory.
+    if (mode == host_mode_t::split_fx)
+    {
+        return own_dir;
+    }
+    assert(mode == host_mode_t::muxer);
+
+    trace::verbose(_X("--- Resolving FX directory from muxer dir [%s]"), own_dir.c_str());
+    const auto fx_name = config.get_fx_name();
+    const auto fx_ver = config.get_fx_version();
+    const auto patch_roll_fwd = config.get_patch_roll_fwd();
 
     fx_ver_t specified(-1, -1, -1);
     if (!fx_ver_t::parse(fx_ver, &specified, false))
@@ -28,7 +333,7 @@ pal::string_t fx_muxer_t::resolve_fx_dir(const pal::string_t& muxer_dir, runtime
         return pal::string_t();
     }
 
-    auto fx_dir = muxer_dir;
+    auto fx_dir = own_dir;
     append_path(&fx_dir, _X("shared"));
     append_path(&fx_dir, fx_name.c_str());
 
@@ -369,7 +674,6 @@ int fx_muxer_t::read_config_and_execute(
         return StatusCode::InvalidConfigFile;
     }
 
-    pal::string_t app_or_deps = deps_file.empty() ? app_candidate : deps_file;
     pal::string_t config_file, dev_config_file;
 
     if (runtime_config.empty())
@@ -401,69 +705,20 @@ int fx_muxer_t::read_config_and_execute(
         append_realpath(path, &probe_realpaths);
     }
 
-    if (config.get_portable())
+    bool is_portable = config.get_portable();
+    pal::string_t fx_dir = is_portable ? resolve_fx_dir(mode, own_dir, config) : _X("");
+
+    trace::verbose(_X("Executing as a %s app as per config file [%s]"),
+        (is_portable ? _X("portable") : _X("standalone")), config_file.c_str());
+
+    pal::string_t impl_dir;
+    if (!resolve_hostpolicy_dir(mode, own_dir, fx_dir, app_candidate, deps_file, probe_realpaths, config, &impl_dir))
     {
-        trace::verbose(_X("Executing as a portable app as per config file [%s]"), config_file.c_str());
-        pal::string_t fx_dir = (mode == host_mode_t::split_fx) ? own_dir : resolve_fx_dir(own_dir, &config);
-        corehost_init_t init(deps_file, probe_realpaths, fx_dir, mode, config);
-
-        pal::string_t impl_dir;
-
-        // First lookup hostpolicy.dll in servicing with the version of hostpolicy.dll that was compiled lock step with hostfxr.
-        if (!hostpolicy_exists_in_svc(&impl_dir))
-        {
-            impl_dir = fx_dir;
-        }
-        return execute_app(impl_dir, &init, new_argc, new_argv);
+        return CoreHostLibMissingFailure;
     }
-    else
-    {
-        pal::string_t impl_dir;
-        trace::verbose(_X("Executing as a standalone app as per config file [%s]"), config_file.c_str());
 
-        // First lookup hostpolicy.dll in servicing with the version of hostpolicy.dll that was compiled lock step with hostfxr.
-        if (!hostpolicy_exists_in_svc(&impl_dir))
-        {
-            if (mode == host_mode_t::standalone || mode == host_mode_t::split_fx)
-            {
-                impl_dir = own_dir;
-            }
-            else if (mode == host_mode_t::muxer)
-            {
-                impl_dir = get_directory(app_or_deps);
-            }
-        }
-        trace::verbose(_X("The host impl directory before probing deps is [%s]"), impl_dir.c_str());
-        if (!library_exists_in_dir(impl_dir, LIBHOSTPOLICY_NAME, nullptr) && !probe_realpaths.empty() && !deps_file.empty())
-        {
-            bool found = false;
-            pal::string_t candidate = impl_dir;
-            deps_json_t deps_json(false, deps_file);
-            for (const auto& probe_path : probe_realpaths)
-            {
-                trace::verbose(_X("Considering %s for hostpolicy library"), probe_path.c_str());
-                if (deps_json.is_valid() &&
-                    deps_json.has_hostpolicy_entry() &&
-                    deps_json.get_hostpolicy_entry().to_full_path(probe_path, &candidate))
-                {
-                    found = true; // candidate contains the right path.
-                    break;
-                }
-            }
-            if (!found)
-            {
-                trace::error(_X("Could not find required library %s in the dependencies manifest [%s] or in %d probing paths: "), LIBHOSTPOLICY_NAME, deps_file.c_str(), probe_realpaths.size());
-                for (const auto& path : probe_realpaths)
-                {
-                    trace::error(_X("  %s"), path.c_str());
-                }
-                return StatusCode::CoreHostLibMissingFailure;
-            }
-            impl_dir = get_directory(candidate);
-        }
-        corehost_init_t init(deps_file, probe_realpaths, _X(""), mode, config);
-        return execute_app(impl_dir, &init, new_argc, new_argv);
-    }
+    corehost_init_t init(deps_file, probe_realpaths, fx_dir, mode, config);
+    return execute_app(impl_dir, &init, new_argc, new_argv);
 }
 
 /* static */
@@ -520,14 +775,14 @@ int fx_muxer_t::execute(const int argc, const pal::char_t* argv[])
     pal::string_t sdk_dotnet;
     if (!resolve_sdk_dotnet_path(own_dir, &sdk_dotnet))
     {
-        trace::error(_X("Could not resolve SDK directory from [%s]"), own_dir.c_str());
+        trace::error(_X("Did not find a suitable dotnet SDK at '%s'. Install dotnet SDK from https://github.com/dotnet/cli"), own_dir.c_str());
         return StatusCode::LibHostSdkFindFailure;
     }
     append_path(&sdk_dotnet, _X("dotnet.dll"));
 
     if (!pal::file_exists(sdk_dotnet))
     {
-        trace::error(_X("Could not find dotnet.dll at [%s]"), sdk_dotnet.c_str());
+        trace::error(_X("Found dotnet SDK, but did not find dotnet.dll at [%s]"), sdk_dotnet.c_str());
         return StatusCode::LibHostSdkFindFailure;
     }
 
