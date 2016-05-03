@@ -31,9 +31,5 @@
         "System.Threading.Tasks": "4.0.10"
       }
     }
-  },
-  "runtimes": {
-    "ubuntu.14.04-x64": {},
-    "osx.10.10-x64": {}
   }
 }
