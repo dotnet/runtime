@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.Collections.Specialized.Tests
 {
-    public class KeysCollectionTests
+    public class NameObjectCollectionBaseKeysTests
     {
         [Theory]
         [InlineData(0)]

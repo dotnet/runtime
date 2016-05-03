@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.Collections.Specialized.Tests
 {
-    public class IsReadOnlyTests
+    public class NameObjectCollectionBaseReadOnlyTests
     {
         [Fact]
         public void IsReadOnly_Set()

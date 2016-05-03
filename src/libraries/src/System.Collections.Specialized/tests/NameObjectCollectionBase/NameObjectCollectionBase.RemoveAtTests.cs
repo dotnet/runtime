@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.Collections.Specialized.Tests
 {
-    public class RemoveAtTests
+    public class NameObjectCollectionBaseRemoveAtTests
     {
         [Fact]
         public void RemoveAt()
