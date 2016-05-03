@@ -193,11 +193,6 @@ namespace System.Linq.Expressions.Interpreter
                     throw Error.ExpressionNotSupportedForType("Sub", type);
             }
         }
-
-        public override string ToString()
-        {
-            return "Sub()";
-        }
     }
 
     internal abstract class SubOvfInstruction : Instruction
@@ -383,11 +378,6 @@ namespace System.Linq.Expressions.Interpreter
                 default:
                     throw Error.ExpressionNotSupportedForType("SubOvf", type);
             }
-        }
-
-        public override string ToString()
-        {
-            return "SubOvf()";
         }
     }
 }
