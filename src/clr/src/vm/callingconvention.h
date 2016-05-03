@@ -954,8 +954,8 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
     m_fArgInRegisters = true;
 
     int cFPRegs = 0;
+    int cGenRegs = 0;
     int cbArg = StackElemSize(argSize);
-    int cGenRegs = cbArg / 8; // GP reg size
 
     switch (argType)
     {
@@ -1027,6 +1027,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
     }
 
     default:
+        cGenRegs = cbArg / 8; // GP reg size
         break;
     }
 
