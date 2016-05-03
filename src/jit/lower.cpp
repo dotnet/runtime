@@ -342,9 +342,16 @@ void Lowering::DecomposeNode(GenTreePtr* pTree, Compiler::fgWalkData* data)
             switch (tree->AsCast()->CastFromType())
             {
             case TYP_INT:
-                loResult = tree->gtGetOp1();
-                hiResult = new (comp, GT_CNS_INT) GenTreeIntCon(TYP_INT, 0);
-                comp->fgSnipNode(curStmt, tree);
+                if (tree->gtFlags & GTF_UNSIGNED)
+                {
+                    loResult = tree->gtGetOp1();
+                    hiResult = new (comp, GT_CNS_INT) GenTreeIntCon(TYP_INT, 0);
+                    comp->fgSnipNode(curStmt, tree);
+                }
+                else
+                {
+                    NYI("Lowering of signed cast TYP_INT->TYP_LONG");
+                }
                 break;
             default:
                 NYI("Unimplemented type for Lowering of cast to TYP_LONG");
