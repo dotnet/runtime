@@ -37,8 +37,13 @@
     <Compile Include="Encoder\EncoderCtor.cs" />
     <Compile Include="Encoder\EncoderGetByteCount2.cs" />
     <Compile Include="Encoder\EncoderGetBytes2.cs" />
+    <Compile Include="Encoding\EncodingCtorTests.cs" />
     <Compile Include="Encoding\EncodingGetEncodingTests.cs" />
     <Compile Include="Encoding\EncodingConvertTests.cs" />
+    <Compile Include="Fallback\DecoderReplacementFallbackTests.cs" />
+    <Compile Include="Fallback\EncoderReplacementFallbackTests.cs" />
+    <Compile Include="Fallback\EncoderExceptionFallbackTests.cs" />
+    <Compile Include="Fallback\DecoderExceptionFallbackTests.cs" />
     <Compile Include="NegativeEncodingTests.cs" />
     <Compile Include="EncodingTestHelpers.cs" />
     <Compile Include="Latin1Encoding\Latin1EncodingEncode.cs" />
