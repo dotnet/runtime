@@ -551,6 +551,7 @@ typedef struct {
 #elif defined(__sparc__) || defined(sparc) /* defined(__mono_ppc__) */
 
 typedef struct MonoContext {
+	mgreg_t regs [15];
 	guint8 *ip;
 	gpointer *sp;
 	gpointer *fp;
@@ -563,6 +564,54 @@ typedef struct MonoContext {
 #define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->ip))
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->fp))
 #define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->sp))
+
+#ifdef __sparcv9
+#define MONO_CONTEXT_GET_CURRENT(ctx)	\
+	__asm__ __volatile__(	\
+		"st %%g1,[%0]\n"	\
+		"st %%g2,[%0+0x08]\n"	\
+		"st %%g3,[%0+0x10]\n"	\
+		"st %%g4,[%0+0x18]\n"	\
+		"st %%g5,[%0+0x20]\n"	\
+		"st %%g6,[%0+0x28]\n"	\
+		"st %%g7,[%0+0x30]\n"	\
+		"st %%o0,[%0+0x38]\n"	\
+		"st %%o1,[%0+0x40]\n"	\
+		"st %%o2,[%0+0x48]\n"	\
+		"st %%o3,[%0+0x50]\n"	\
+		"st %%o4,[%0+0x58]\n"	\
+		"st %%o5,[%0+0x60]\n"	\
+		"st %%o6,[%0+0x68]\n"	\
+		"st %%o7,[%0+0x70]\n"	\
+		: 			\
+		: "r" (&(ctx))		\
+		: "memory"			\
+	)
+#else
+#define MONO_CONTEXT_GET_CURRENT(ctx)	\
+	__asm__ __volatile__(	\
+		"st %%g1,[%0]\n"	\
+		"st %%g2,[%0+0x04]\n"	\
+		"st %%g3,[%0+0x08]\n"	\
+		"st %%g4,[%0+0x0c]\n"	\
+		"st %%g5,[%0+0x10]\n"	\
+		"st %%g6,[%0+0x14]\n"	\
+		"st %%g7,[%0+0x18]\n"	\
+		"st %%o0,[%0+0x1c]\n"	\
+		"st %%o1,[%0+0x20]\n"	\
+		"st %%o2,[%0+0x24]\n"	\
+		"st %%o3,[%0+0x28]\n"	\
+		"st %%o4,[%0+0x2c]\n"	\
+		"st %%o5,[%0+0x30]\n"	\
+		"st %%o6,[%0+0x34]\n"	\
+		"st %%o7,[%0+0x38]\n"	\
+		: 			\
+		: "r" (&(ctx))		\
+		: "memory"			\
+	)
+#endif
+
+#define MONO_ARCH_HAS_MONO_CONTEXT 1
 
 #elif defined(__ia64__) /*defined(__sparc__) || defined(sparc) */
 
