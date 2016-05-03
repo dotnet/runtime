@@ -231,11 +231,11 @@ TODO: Talk about initializing strutures before use
 #if COR_JIT_EE_VERSION > 460
 
 // Update this one
-SELECTANY const GUID JITEEVersionIdentifier = { /* 8c8e61ca-2b88-4bc5-b03f-d390acdc7fc3 */
-    0x8c8e61ca,
-    0x2b88,
-    0x4bc5,
-    { 0xb0, 0x3f, 0xd3, 0x90, 0xac, 0xdc, 0x7f, 0xc3 }
+SELECTANY const GUID JITEEVersionIdentifier = { /* 57813506-0058-41df-8b1b-e0b68c3a9da3 */
+    0x57813506,
+    0x58,
+    0x41df,
+    { 0x8b, 0x1b, 0xe0, 0xb6, 0x8c, 0x3a, 0x9d, 0xa3 }
 };
 
 #else
@@ -2722,6 +2722,17 @@ public:
     //Throws an exception defined by the given throw helper.
     virtual void ThrowExceptionForHelper(
             const CORINFO_HELPER_DESC * throwHelper) = 0;
+
+#if COR_JIT_EE_VERSION > 460
+    // Runs the given function under an error trap. This allows the JIT to make calls
+    // to interface functions that may throw exceptions without needing to be aware of
+    // the EH ABI, exception types, etc. Returns true if the given function completed
+    // successfully and false otherwise.
+    virtual bool runWithErrorTrap(
+        void (*function)(void*), // The function to run
+        void* parameter          // The context parameter that will be passed to the function and the handler
+        ) = 0;
+#endif
 
 /*****************************************************************************
  * ICorStaticInfo contains EE interface methods which return values that are

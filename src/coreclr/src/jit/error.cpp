@@ -197,15 +197,6 @@ void notYetImplemented(const char * msg, const char * filename, unsigned line)
 #endif // #if !defined(_TARGET_X86_) || !defined(LEGACY_BACKEND)
 
 /*****************************************************************************/
-LONG __EEfilter(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam)
-{
-   ErrorTrapParam *pErrorTrapParam = (ErrorTrapParam *)lpvParam;
-   ICorJitInfo * m_jitInfo = pErrorTrapParam->jitInfo;
-   pErrorTrapParam->exceptionPointers = *pExceptionPointers;
-   return m_jitInfo->FilterException(pExceptionPointers);
-}
-
-/*****************************************************************************/
 LONG __JITfilter(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam)
 {
    DWORD exceptCode = pExceptionPointers->ExceptionRecord->ExceptionCode;

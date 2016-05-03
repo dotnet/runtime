@@ -15605,7 +15605,7 @@ void  Compiler::impCheckCanInline(GenTreePtr                call,
     param.result = inlineResult;
     param.ppInlineCandidateInfo = ppInlineCandidateInfo;
 
-    setErrorTrap(info.compCompHnd, Param *, pParam, &param)
+    bool success = eeRunWithErrorTrap<Param>([](Param* pParam)
     {
         DWORD  dwRestrictions = 0;
         CorInfoInitClassResult initClassResult;
@@ -15741,12 +15741,11 @@ void  Compiler::impCheckCanInline(GenTreePtr                call,
   
 _exit:
         ;
-    }
-    impErrorTrap()
+    }, &param);
+    if (!success)
     {
         param.result->NoteFatal(InlineObservation::CALLSITE_COMPILATION_ERROR);
     }
-    endErrorTrap();
 }
       
 void Compiler::impInlineRecordArgInfo(InlineInfo *  pInlineInfo,

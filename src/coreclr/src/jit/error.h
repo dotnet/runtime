@@ -21,8 +21,7 @@ struct ErrorTrapParam
     ErrorTrapParam() { jitInfo = NULL; }
 };
 
-extern  LONG            __EEfilter(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam);
-        // Only catch JIT internal errors (will not catch EE generated Errors)
+// Only catch JIT internal errors (will not catch EE generated Errors)
 extern  LONG            __JITfilter(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam);
 
 #define                 setErrorTrap(compHnd, ParamType, paramDef, paramRef) \
@@ -37,19 +36,12 @@ extern  LONG            __JITfilter(PEXCEPTION_POINTERS pExceptionPointers, LPVO
     {                                                                       \
         ParamType paramDef = __JITpParam->param;
 
-        // Catch only JitGeneratedErrors
+// Only catch JIT internal errors (will not catch EE generated Errors)
 #define                 impJitErrorTrap()                                   \
     }                                                                       \
     PAL_EXCEPT_FILTER(__JITfilter)                                          \
     {                                                                       \
         int __errc = __JITparam.errc; (void) __errc;
-
-        // Catch all errors (including recoverable ones from the EE)
-#define                 impErrorTrap()                                      \
-    }                                                                       \
-    PAL_EXCEPT_FILTER(__EEfilter)                                           \
-    {                                                                       \
-        __JITparam.jitInfo->HandleException(&__JITparam.exceptionPointers);
 
 #define                 endErrorTrap()                                      \
     }                                                                       \

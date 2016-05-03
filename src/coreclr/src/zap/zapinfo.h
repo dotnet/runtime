@@ -317,6 +317,8 @@ public:
 
     DWORD getJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes);
 
+    bool runWithErrorTrap(void (*function)(void*), void* param);
+
     // ICorDynamicInfo
 
     DWORD getThreadTLSIndex(void **ppIndirection);
