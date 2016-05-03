@@ -195,11 +195,6 @@ namespace System.Linq.Expressions.Interpreter
                     throw Error.ExpressionNotSupportedForType("Add", type);
             }
         }
-
-        public override string ToString()
-        {
-            return "Add()";
-        }
     }
 
     internal abstract class AddOvfInstruction : Instruction
@@ -387,11 +382,6 @@ namespace System.Linq.Expressions.Interpreter
                 default:
                     throw Error.ExpressionNotSupportedForType("AddOvf", type);
             }
-        }
-
-        public override string ToString()
-        {
-            return "AddOvf()";
         }
     }
 }

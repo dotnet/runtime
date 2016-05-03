@@ -193,11 +193,6 @@ namespace System.Linq.Expressions.Interpreter
                     throw Error.ExpressionNotSupportedForType("Mul", type);
             }
         }
-
-        public override string ToString()
-        {
-            return "Mul()";
-        }
     }
 
     internal abstract class MulOvfInstruction : Instruction
@@ -383,11 +378,6 @@ namespace System.Linq.Expressions.Interpreter
                 default:
                     throw Error.ExpressionNotSupportedForType("MulOvf", type);
             }
-        }
-
-        public override string ToString()
-        {
-            return "MulOvf()";
         }
     }
 }
