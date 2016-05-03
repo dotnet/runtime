@@ -177,7 +177,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public static Instruction Create(Type type)
         {
-            Debug.Assert(!type.GetTypeInfo().IsEnum);
+            Debug.Assert(TypeUtils.IsArithmetic(type));
             switch (System.Dynamic.Utils.TypeExtensions.GetTypeCode(TypeUtils.GetNonNullableType(type)))
             {
                 case TypeCode.Int16: return s_int16 ?? (s_int16 = new SubInt16());
@@ -188,9 +188,8 @@ namespace System.Linq.Expressions.Interpreter
                 case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new SubUInt64());
                 case TypeCode.Single: return s_single ?? (s_single = new SubSingle());
                 case TypeCode.Double: return s_double ?? (s_double = new SubDouble());
-
                 default:
-                    throw Error.ExpressionNotSupportedForType("Sub", type);
+                    throw ContractUtils.Unreachable;
             }
         }
 
@@ -330,7 +329,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public static Instruction Create(Type type)
         {
-            Debug.Assert(!type.GetTypeInfo().IsEnum);
+            Debug.Assert(TypeUtils.IsArithmetic(type));
             switch (System.Dynamic.Utils.TypeExtensions.GetTypeCode(TypeUtils.GetNonNullableType(type)))
             {
                 case TypeCode.Int16: return s_int16 ?? (s_int16 = new SubOvfInt16());
@@ -339,12 +338,8 @@ namespace System.Linq.Expressions.Interpreter
                 case TypeCode.UInt16: return s_UInt16 ?? (s_UInt16 = new SubOvfUInt16());
                 case TypeCode.UInt32: return s_UInt32 ?? (s_UInt32 = new SubOvfUInt32());
                 case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new SubOvfUInt64());
-                case TypeCode.Single:
-                case TypeCode.Double:
-                    return SubInstruction.Create(type);
-
                 default:
-                    throw Error.ExpressionNotSupportedForType("SubOvf", type);
+                    return SubInstruction.Create(type);
             }
         }
 

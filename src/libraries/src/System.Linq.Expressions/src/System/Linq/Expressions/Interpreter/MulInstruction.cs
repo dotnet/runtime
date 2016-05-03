@@ -177,7 +177,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public static Instruction Create(Type type)
         {
-            Debug.Assert(!type.GetTypeInfo().IsEnum);
+            Debug.Assert(TypeUtils.IsArithmetic(type));
             switch (System.Dynamic.Utils.TypeExtensions.GetTypeCode(TypeUtils.GetNonNullableType(type)))
             {
                 case TypeCode.Int16: return s_int16 ?? (s_int16 = new MulInt16());
@@ -190,7 +190,7 @@ namespace System.Linq.Expressions.Interpreter
                 case TypeCode.Double: return s_double ?? (s_double = new MulDouble());
 
                 default:
-                    throw Error.ExpressionNotSupportedForType("Mul", type);
+                    throw ContractUtils.Unreachable;
             }
         }
 
@@ -330,7 +330,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public static Instruction Create(Type type)
         {
-            Debug.Assert(!type.GetTypeInfo().IsEnum);
+            Debug.Assert(TypeUtils.IsArithmetic(type));
             switch (System.Dynamic.Utils.TypeExtensions.GetTypeCode(TypeUtils.GetNonNullableType(type)))
             {
                 case TypeCode.Int16: return s_int16 ?? (s_int16 = new MulOvfInt16());
@@ -339,12 +339,8 @@ namespace System.Linq.Expressions.Interpreter
                 case TypeCode.UInt16: return s_UInt16 ?? (s_UInt16 = new MulOvfUInt16());
                 case TypeCode.UInt32: return s_UInt32 ?? (s_UInt32 = new MulOvfUInt32());
                 case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new MulOvfUInt64());
-                case TypeCode.Single:
-                case TypeCode.Double:
-                    return MulInstruction.Create(type);
-
                 default:
-                    throw Error.ExpressionNotSupportedForType("MulOvf", type);
+                    return MulInstruction.Create(type);
             }
         }
 
