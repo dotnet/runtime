@@ -57,7 +57,7 @@
 #define WINAPI __stdcall
 #endif
 
-#ifndef __stdcall
+#ifndef _MSC_VER
 #if __i386__
 #define __stdcall __attribute__((stdcall))
 #define _cdecl __attribute__((cdecl))
