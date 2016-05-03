@@ -322,9 +322,6 @@ function create_core_overlay {
     if [ ! -d "$coreClrBinDir" ]; then
         exit_with_error "$errorSource" "Directory specified by --coreClrBinDir does not exist: $coreClrBinDir"
     fi
-    if [ -z "$mscorlibDir" ]; then
-        mscorlibDir=$coreClrBinDir
-    fi
     if [ ! -f "$mscorlibDir/mscorlib.dll" ]; then
         exit_with_error "$errorSource" "mscorlib.dll was not found in: $mscorlibDir"
     fi
@@ -822,6 +819,9 @@ fi
 
 # Copy native interop test libraries over to the mscorlib path in
 # order for interop tests to run on linux.
+if [ -z "$mscorlibDir" ]; then
+	mscorlibDir=$coreClrBinDir
+fi
 if [ -d $mscorlibDir/bin ]; then
     cp $mscorlibDir/bin/* $mscorlibDir   
 fi
