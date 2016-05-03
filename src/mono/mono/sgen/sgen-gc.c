@@ -3245,9 +3245,9 @@ sgen_restart_world (int generation, GGTimingInfo *timing)
 		count_cards (&major_total, &major_marked, &los_total, &los_marked);
 	binary_protocol_world_restarting (generation, sgen_timestamp (), major_total, major_marked, los_total, los_marked);
 
-	sgen_client_restart_world (generation, timing);
-
 	world_is_stopped = FALSE;
+
+	sgen_client_restart_world (generation, timing);
 
 	binary_protocol_world_restarted (generation, sgen_timestamp ());
 
