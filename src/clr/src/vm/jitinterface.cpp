@@ -817,14 +817,14 @@ BOOL CEEInfo::isValidToken (
 {
     CONTRACTL {
         SO_TOLERANT;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
     } CONTRACTL_END;
 
     BOOL result = FALSE;
 
-    JIT_TO_EE_TRANSITION();
+    JIT_TO_EE_TRANSITION_LEAF();
 
     if (IsDynamicScope(module))
     {
@@ -837,7 +837,7 @@ BOOL CEEInfo::isValidToken (
         result = ((Module *)module)->GetMDImport()->IsValidToken(metaTOK);
     }
 
-    EE_TO_JIT_TRANSITION();
+    EE_TO_JIT_TRANSITION_LEAF();
 
     return result;
 }
@@ -1302,7 +1302,12 @@ struct TryResolveTokenFilterParam
 
 bool isValidTokenForTryResolveToken(CEEInfo* info, CORINFO_RESOLVED_TOKEN* resolvedToken)
 {
-    LIMITED_METHOD_CONTRACT;
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SO_TOLERANT;
+        MODE_ANY;
+    } CONTRACTL_END;
 
     if (!info->isValidToken(resolvedToken->tokenScope, resolvedToken->token))
     {
