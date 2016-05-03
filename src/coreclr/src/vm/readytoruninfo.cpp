@@ -95,8 +95,8 @@ BOOL ReadyToRunInfo::TryLookupTypeTokenFromName(NameHandle *pName, mdToken * pFo
     if (m_availableTypesHashtable.IsNull())
         return FALSE;
 
-    LPCUTF8 pszName;
-    LPCUTF8 pszNameSpace;
+    LPCUTF8 pszName = NULL;
+    LPCUTF8 pszNameSpace = NULL;
 
     //
     // Compute the hashcode of the type (hashcode based on type name and namespace name)
