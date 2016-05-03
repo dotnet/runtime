@@ -429,17 +429,29 @@ declare -a playlistTests
 
 function load_unsupported_tests {
     # Load the list of tests that are not supported on this platform. These tests are disabled (skipped) permanently.
-    readarray -t unsupportedTests <"$(dirname "$0")/testsUnsupportedOutsideWindows.txt"
+    # bash in Mac OS X doesn't support 'readarray', so sing alternate way instead.
+    # readarray -t unsupportedTests <"$(dirname "$0")/testsUnsupportedOutsideWindows.txt"
+    while IFS='' read -r line || [ -n "$line" ]; do
+        unsupportedTests[${#unsupportedTests[@]}]=$line
+    done <"$(dirname "$0")/testsUnsupportedOutsideWindows.txt"
 }
 
 function load_failing_tests {
     # Load the list of tests that fail on this platform. These tests are disabled (skipped) temporarily, pending investigation.
-    readarray -t failingTests <"$(dirname "$0")/testsFailingOutsideWindows.txt"
+    # bash in Mac OS X doesn't support 'readarray', so sing alternate way instead.
+    # readarray -t failingTests <"$(dirname "$0")/testsFailingOutsideWindows.txt"
+    while IFS='' read -r line || [ -n "$line" ]; do
+        failingTests[${#failingTests[@]}]=$line
+    done <"$(dirname "$0")/testsFailingOutsideWindows.txt"
 }
 
 function load_playlist_tests {
     # Load the list of tests that are enabled as a part of this test playlist.
-    readarray -t playlistTests <"${playlistFile}"
+    # bash in Mac OS X doesn't support 'readarray', so sing alternate way instead.
+    # readarray -t playlistTests <"${playlistFile}"
+    while IFS='' read -r line || [ -n "$line" ]; do
+        playlistTests[${#playlistTests[@]}]=$line
+    done <"${playlistFile}"
 }
 
 function is_unsupported_test {
@@ -639,7 +651,11 @@ function set_test_directories {
         exit_with_error "$errorSource" "Test directories file not found at $listFileName"
     fi
 
-    readarray -t testDirectories < "$listFileName"
+    # bash in Mac OS X doesn't support 'readarray', so sing alternate way instead.
+    # readarray -t testDirectories < "$listFileName"
+    while IFS='' read -r line || [ -n "$line" ]; do
+        testDirectories[${#testDirectories[@]}]=$line
+    done < "$listFileName"
 }
 
 function run_tests_in_directory {
