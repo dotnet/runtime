@@ -4,7 +4,7 @@
 
 #include <xplatform.h> 
 
-typedef int (*CALLBACKADDPROC)(int n);
+typedef int (WINAPI *CALLBACKADDPROC)(int n);
 
 extern "C" DLL_EXPORT int WINAPI CallManagedAdd(CALLBACKADDPROC pCallbackAddProc, int n)
 {
