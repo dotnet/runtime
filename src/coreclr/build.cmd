@@ -449,7 +449,7 @@ echo %__MsgPrefix%Generating native image of mscorlib for %__BuildOS%.%__BuildAr
 set "__CrossGenMScorlibLog=%__LogsDir%\CrossgenMScorlib_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
 set "__CrossgenExe=%__CrossComponentBinDir%\crossgen.exe"
 "%__CrossgenExe%" /Platform_Assemblies_Paths "%__BinDir%" /out "%__BinDir%\mscorlib.ni.dll" "%__BinDir%\mscorlib.dll" > "%__CrossGenMScorlibLog%" 2>&1
-if errorlevel 1 (
+if NOT errorlevel 0 (
     echo %__MsgPrefix%Error: CrossGen mscorlib build failed. Refer to the build log file for details:
     echo     %__CrossGenMScorlibLog%
     exit /b 1
