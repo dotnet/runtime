@@ -6456,6 +6456,14 @@ public :
 
     bool eeTryResolveToken(CORINFO_RESOLVED_TOKEN* resolvedToken);
 
+    template<typename ParamType>
+    bool eeRunWithErrorTrap(void (*function)(ParamType*), ParamType* param)
+    {
+        return eeRunWithErrorTrapImp(reinterpret_cast<void (*)(void*)>(function), reinterpret_cast<void*>(param));
+    }
+
+    bool eeRunWithErrorTrapImp(void (*function)(void*), void* param);
+
     // Utility functions
 
 #if defined(DEBUG)

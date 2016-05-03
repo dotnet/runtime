@@ -21922,7 +21922,7 @@ void       Compiler::fgInvokeInlineeCompiler(GenTreeCall*  call,
     param.fncHandle = fncHandle;
     param.inlineCandidateInfo = inlineCandidateInfo;
     param.inlineInfo = &inlineInfo;
-    setErrorTrap(info.compCompHnd, Param*, pParam, &param)
+    bool success = eeRunWithErrorTrap<Param>([](Param* pParam)
     {
         // Init the local var info of the inlinee
         pParam->pThis->impInlineInitVars(pParam->inlineInfo);
@@ -21988,8 +21988,8 @@ void       Compiler::fgInvokeInlineeCompiler(GenTreeCall*  call,
                 }
             }
         }
-    }
-    impErrorTrap()
+    }, &param);
+    if (!success)
     {
 #ifdef DEBUG
         if (verbose)
@@ -22006,7 +22006,6 @@ void       Compiler::fgInvokeInlineeCompiler(GenTreeCall*  call,
             inlineResult->NoteFatal(InlineObservation::CALLSITE_COMPILATION_ERROR);
         }
     }
-    endErrorTrap();
 
     if (inlineResult->IsFailure())
     {
