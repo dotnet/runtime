@@ -867,6 +867,11 @@ IEEMemoryManager* ZapInfo::getMemoryManager()
 {
     return GetEEMemoryManager();
 }
+    
+bool ZapInfo::runWithErrorTrap(void (*function)(void*), void* param)
+{
+    return m_pEEJitInfo->runWithErrorTrap(function, param);
+}
 
 HRESULT ZapInfo::allocBBProfileBuffer (
     ULONG                         cBlock,
