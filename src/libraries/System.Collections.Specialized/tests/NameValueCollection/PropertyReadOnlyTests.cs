@@ -6,10 +6,10 @@ using Xunit;
 
 namespace System.Collections.Specialized.Tests
 {
-    public class PropertyReadOnlyNameValueCollectionTests
+    public class NameValueCollectionReadOnlyTests
     {
         [Fact]
-        public void ReadOnlyCollection_AttemptingToModifyCollection_Throws()
+        public void ReadOnlyCollection_AttemptingToModifyCollection_ThrowsNotSupportedException()
         {
             var nameValueCollection = new ReadOnlyNameValueCollection();
 
