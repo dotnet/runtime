@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.Collections.Specialized.Tests
 {
-    public class SetObjectNameObjectCollectionBaseTests
+    public class NameObjectCollectionBaseSetItemTests
     {
         [Fact]
         public void Set_ObjectAtIndex_ModifiesCollection()
