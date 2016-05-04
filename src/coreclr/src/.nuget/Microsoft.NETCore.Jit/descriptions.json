@@ -1,0 +1,12 @@
+[
+    {
+        "Name": "RuntimePackage",
+        "Description": "Internal implementation package not meant for direct consumption.  Please do not reference directly.",
+        "CommonTypes": [ ]
+    },
+    {
+        "Name": "Microsoft.NETCore.Jit",
+        "Description": "The .NET JIT compiler.",
+        "CommonTypes": [ ]
+    }
+]
