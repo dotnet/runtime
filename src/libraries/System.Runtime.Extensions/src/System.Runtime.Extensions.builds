@@ -3,13 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="System.Runtime.Extensions.csproj">
-      <OSGroup>FreeBSD</OSGroup>
-    </Project>
-    <Project Include="System.Runtime.Extensions.csproj">
-      <OSGroup>Linux</OSGroup>
-    </Project>
-    <Project Include="System.Runtime.Extensions.csproj">
-      <OSGroup>OSX</OSGroup>
+      <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="System.Runtime.Extensions.csproj">
       <OSGroup>Windows_NT</OSGroup>
@@ -35,7 +29,7 @@
       <TargetGroup>netstandard15aot</TargetGroup>
     </Project>
     <Project Include="System.Runtime.Extensions.csproj">
-      <OSGroup>Linux</OSGroup>
+      <OSGroup>Unix</OSGroup>
       <TargetGroup>netstandard15aot</TargetGroup>
     </Project>
   </ItemGroup>

@@ -15,7 +15,11 @@ namespace System.Text.Tests
         [InlineData(int.MaxValue / 3 - 1)]
         public void GetMaxByteCount(int charCount)
         {
-            Assert.Equal((charCount + 1) * 3, new UTF8Encoding().GetMaxByteCount(charCount));
+            int expected = (charCount + 1) * 3;
+            Assert.Equal(expected, new UTF8Encoding(true, true).GetMaxByteCount(charCount));
+            Assert.Equal(expected, new UTF8Encoding(true, false).GetMaxByteCount(charCount));
+            Assert.Equal(expected, new UTF8Encoding(false, true).GetMaxByteCount(charCount));
+            Assert.Equal(expected, new UTF8Encoding(false, false).GetMaxByteCount(charCount));
         }
     }
 }

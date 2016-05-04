@@ -11,17 +11,17 @@ namespace System.Reflection.PortableExecutable
         /// <summary>
         /// GUID (Globally Unique Identifier) of the associated PDB.
         /// </summary>
-        public Guid Guid { get; private set; }
+        public Guid Guid { get; }
 
         /// <summary>
         /// Iteration of the PDB. The first iteration is 1. The iteration is incremented each time the PDB content is augmented.
         /// </summary>
-        public int Age { get; private set; }
+        public int Age { get; }
 
         /// <summary>
         /// Path to the .pdb file containing debug information for the PE/COFF file.
         /// </summary>
-        public string Path { get; private set; }
+        public string Path { get; }
 
         internal CodeViewDebugDirectoryData(Guid guid, int age, string path)
         {

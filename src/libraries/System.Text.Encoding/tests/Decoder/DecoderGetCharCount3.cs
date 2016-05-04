@@ -154,52 +154,11 @@ namespace System.Text.Tests
         }
         #endregion
 
-        #region Negative Test Cases
-        // NegTest1: ArgumentNullException should be thrown when bytes is a null reference
-        [Fact]
-        public void NegTest1()
-        {
-            Decoder decoder = Encoding.UTF8.GetDecoder();
-
-            VerificationHelper<ArgumentNullException>(decoder, null, 0, 0, typeof(ArgumentNullException), "101.1");
-        }
-
-        // NegTest2: ArgumentOutOfRangeException should be thrown when count is less than zero
-        [Fact]
-        public void NegTest2()
-        {
-            Decoder decoder = Encoding.UTF8.GetDecoder();
-            byte[] bytes = new byte[c_SIZE_OF_ARRAY];
-
-            VerificationHelper<ArgumentOutOfRangeException>(decoder, bytes, -1, 0, typeof(ArgumentOutOfRangeException), "102.1");
-            VerificationHelper<ArgumentOutOfRangeException>(decoder, bytes, 0, -1, typeof(ArgumentOutOfRangeException), "102.2");
-        }
-
-        // NegTest3: ArgumentOutOfRangeException should be thrown when index and count do not denote a valid range in bytes.
-        [Fact]
-        public void NegTest3()
-        {
-            Decoder decoder = Encoding.UTF8.GetDecoder();
-            byte[] bytes = new byte[c_SIZE_OF_ARRAY];
-
-            VerificationHelper<ArgumentOutOfRangeException>(decoder, bytes, 1, bytes.Length, typeof(ArgumentOutOfRangeException), "103.1");
-            VerificationHelper<ArgumentOutOfRangeException>(decoder, bytes, bytes.Length, 1, typeof(ArgumentOutOfRangeException), "103.2");
-        }
-        #endregion
-
+        
         private void VerificationHelper(Decoder decoder, byte[] bytes, int index, int count, int expected, string errorno)
         {
             int ret = decoder.GetCharCount(bytes, index, count);
             Assert.Equal(expected, ret);
-        }
-
-        private void VerificationHelper<T>(Decoder decoder, byte[] bytes, int index, int count, Type expected, string errorno)
-        where T : Exception
-        {
-            Assert.Throws<T>(() =>
-            {
-                int ret = decoder.GetCharCount(bytes, index, count);
-            });
         }
     }
 }

@@ -9,7 +9,7 @@ namespace System.Text.Tests
 {
     public class UnicodeEncodingEncode
     {
-        public static IEnumerable<object[]> GetBytes_TestData()
+        public static IEnumerable<object[]> Encode_TestData()
         {
             // All ASCII chars
             for (int i = 0; i <= byte.MaxValue; i++)
@@ -17,6 +17,7 @@ namespace System.Text.Tests
                 char c = (char)i;
                 yield return new object[] { "a" + c + "b", 0, 3, new byte[] { 97, 0, (byte)c, 0, 98, 0 } };
                 yield return new object[] { "a" + c + "b", 1, 1, new byte[] { (byte)c, 0 } };
+                yield return new object[] { "a" + c + "b", 2, 1, new byte[] { 98, 0 } };
             }
 
             // Unicode
@@ -26,6 +27,8 @@ namespace System.Text.Tests
             // Surrogate pairs
             yield return new object[] { "\uD800\uDC00", 0, 2, new byte[] { 0, 216, 0, 220 } };
             yield return new object[] { "a\uD800\uDC00b", 0, 4, new byte[] { 97, 0, 0, 216, 0, 220, 98, 0 } };
+            
+            yield return new object[] { "\uD800\uDC00\uFFFD\uFEB7", 0, 4, new byte[] { 0x00, 0xD8, 0x00, 0xDC, 0xFD, 0xFF, 0xB7, 0xFE } };
 
             // Mixture of ASCII and Unicode
             yield return new object[] { "FooBA\u0400R", 0, 7, new byte[] { 70, 0, 111, 0, 111, 0, 66, 0, 65, 0, 0, 4, 82, 0 } };
@@ -38,60 +41,76 @@ namespace System.Text.Tests
             yield return new object[] { "za\u0306\u01FD\u03B2\uD8FF\uDCFF", 0, 7, new byte[] { 122, 0, 97, 0, 6, 3, 253, 1, 178, 3, 255, 216, 255, 220 } };
             yield return new object[] { "za\u0306\u01FD\u03B2\uD8FF\uDCFF", 4, 3, new byte[] { 178, 3, 255, 216, 255, 220 } };
 
-            // Empty bytes
+            // Empty strings
             yield return new object[] { string.Empty, 0, 0, new byte[0] };
             yield return new object[] { "a\u1234b", 3, 0, new byte[0] };
             yield return new object[] { "a\u1234b", 0, 0, new byte[0] };
         }
 
         [Theory]
-        [MemberData(nameof(GetBytes_TestData))]
+        [MemberData(nameof(Encode_TestData))]
         public void Encode(string source, int index, int count, byte[] expectedLittleEndian)
         {
-            EncodingHelpers.Encode(new UnicodeEncoding(false, true), source, index, count, expectedLittleEndian);
-            EncodingHelpers.Encode(new UnicodeEncoding(false, false), source, index, count, expectedLittleEndian);
+            byte[] expectedBigEndian = GetBigEndianBytes(expectedLittleEndian);
 
-            byte[] expectedBigEndian = (byte[])expectedLittleEndian.Clone();
-            for (int i = 0; i < expectedBigEndian.Length; i += 2)
-            {
-                byte b1 = expectedBigEndian[i];
-                byte b2 = expectedBigEndian[i + 1];
+            EncodingHelpers.Encode(new UnicodeEncoding(false, true, false), source, index, count, expectedLittleEndian);
+            EncodingHelpers.Encode(new UnicodeEncoding(false, false, false), source, index, count, expectedLittleEndian);
+            EncodingHelpers.Encode(new UnicodeEncoding(true, true, false), source, index, count, expectedBigEndian);
+            EncodingHelpers.Encode(new UnicodeEncoding(true, false, false), source, index, count, expectedBigEndian);
 
-                expectedBigEndian[i] = b2;
-                expectedBigEndian[i + 1] = b1;
-            }
+            EncodingHelpers.Encode(new UnicodeEncoding(false, true, true), source, index, count, expectedLittleEndian);
+            EncodingHelpers.Encode(new UnicodeEncoding(false, false, true), source, index, count, expectedLittleEndian);
+            EncodingHelpers.Encode(new UnicodeEncoding(true, true, true), source, index, count, expectedBigEndian);
+            EncodingHelpers.Encode(new UnicodeEncoding(true, false, true), source, index, count, expectedBigEndian);
+        }
+        
+        public void Encode_InvalidChars(string source, int index, int count, byte[] expectedLittleEndian)
+        {
+            byte[] expectedBigEndian = GetBigEndianBytes(expectedLittleEndian);
 
-            EncodingHelpers.Encode(new UnicodeEncoding(true, true), source, index, count, expectedBigEndian);
-            EncodingHelpers.Encode(new UnicodeEncoding(true, false), source, index, count, expectedBigEndian);
+            EncodingHelpers.Encode(new UnicodeEncoding(false, true, false), source, index, count, expectedLittleEndian);
+            EncodingHelpers.Encode(new UnicodeEncoding(false, false, false), source, index, count, expectedLittleEndian);
+            EncodingHelpers.Encode(new UnicodeEncoding(true, true, false), source, index, count, expectedBigEndian);
+            EncodingHelpers.Encode(new UnicodeEncoding(true, false, false), source, index, count, expectedBigEndian);
+
+            NegativeEncodingTests.Encode_Invalid(new UnicodeEncoding(false, true, true), source, index, count);
+            NegativeEncodingTests.Encode_Invalid(new UnicodeEncoding(false, false, true), source, index, count);
+            NegativeEncodingTests.Encode_Invalid(new UnicodeEncoding(true, true, true), source, index, count);
+            NegativeEncodingTests.Encode_Invalid(new UnicodeEncoding(true, false, true), source, index, count);
         }
 
         [Fact]
-        public void Encode_InvalidUnicode()
+        public void Encode_InvalidChars()
         {
-            // TODO: add into Encode_TestData once #7166 is fixed
+            // TODO: add into Encode_TestData or Encode_InvalidChars_TestData once #7166 is fixed
             byte[] unicodeReplacementBytes1 = new byte[] { 253, 255 };
-            Encode("\uD800", 0, 1, unicodeReplacementBytes1); // Lone high surrogate
-            Encode("\uDC00", 0, 1, unicodeReplacementBytes1); // Lone low surrogate
-            Encode("\uD800\uDC00", 0, 1, unicodeReplacementBytes1); // Surrogate pair out of range
-            Encode("\uD800\uDC00", 1, 1, unicodeReplacementBytes1); // Surrogate pair out of range
+            Encode_InvalidChars("\uD800", 0, 1, unicodeReplacementBytes1); // Lone high surrogate
+            Encode_InvalidChars("\uDC00", 0, 1, unicodeReplacementBytes1); // Lone low surrogate
+
+            // Surrogate pair out of range
+            Encode_InvalidChars("\uD800\uDC00", 0, 1, unicodeReplacementBytes1);
+            Encode_InvalidChars("\uD800\uDC00", 1, 1, unicodeReplacementBytes1);
+            Encode_InvalidChars("\uDBFF\uDFFF", 0, 1, unicodeReplacementBytes1);
+            Encode_InvalidChars("\uDBFF\uDFFF", 1, 1, unicodeReplacementBytes1);
 
             byte[] unicodeReplacementBytes2 = new byte[] { 253, 255, 253, 255 };
-            Encode("\uD800\uD800", 0, 2, unicodeReplacementBytes2); // High, high
-            Encode("\uDC00\uD800", 0, 2, unicodeReplacementBytes2); // Low, high
-            Encode("\uDC00\uDC00", 0, 2, unicodeReplacementBytes2); // Low, low
+            Encode_InvalidChars("\uD800\uD800", 0, 2, unicodeReplacementBytes2); // High, high
+            Encode_InvalidChars("\uDC00\uD800", 0, 2, unicodeReplacementBytes2); // Low, high
+            Encode_InvalidChars("\uDC00\uDC00", 0, 2, unicodeReplacementBytes2); // Low, low
 
             // Mixture of ASCII, valid Unicode and invalid Unicode
-            Encode("Test\uD803Test", 0, 9, new byte[] { 84, 0, 101, 0, 115, 0, 116, 0, 253, 255, 84, 0, 101, 0, 115, 0, 116, 0 });
-            Encode("Test\uDD75Test", 0, 9, new byte[] { 84, 0, 101, 0, 115, 0, 116, 0, 253, 255, 84, 0, 101, 0, 115, 0, 116, 0 });
-            Encode("TestTest\uDD75", 0, 9, new byte[] { 84, 0, 101, 0, 115, 0, 116, 0, 84, 0, 101, 0, 115, 0, 116, 0, 253, 255 });
-            Encode("TestTest\uD803", 0, 9, new byte[] { 84, 0, 101, 0, 115, 0, 116, 0, 84, 0, 101, 0, 115, 0, 116, 0, 253, 255 });
-            Encode("\uDD75", 0, 1, new byte[] { 253, 255 });
-            Encode("\uDD75\uDD75\uD803\uDD75\uDD75\uDD75\uDD75\uD803\uD803\uD803\uDD75\uDD75\uDD75\uDD75", 0, 14, new byte[] { 253, 255, 253, 255, 3, 216, 117, 221, 253, 255, 253, 255, 253, 255, 253, 255, 253, 255, 3, 216, 117, 221, 253, 255, 253, 255, 253, 255 });
+            Encode_InvalidChars("Test\uD803Test", 0, 9, new byte[] { 84, 0, 101, 0, 115, 0, 116, 0, 253, 255, 84, 0, 101, 0, 115, 0, 116, 0 });
+            Encode_InvalidChars("Test\uDD75Test", 0, 9, new byte[] { 84, 0, 101, 0, 115, 0, 116, 0, 253, 255, 84, 0, 101, 0, 115, 0, 116, 0 });
+            Encode_InvalidChars("TestTest\uDD75", 0, 9, new byte[] { 84, 0, 101, 0, 115, 0, 116, 0, 84, 0, 101, 0, 115, 0, 116, 0, 253, 255 });
+            Encode_InvalidChars("TestTest\uD803", 0, 9, new byte[] { 84, 0, 101, 0, 115, 0, 116, 0, 84, 0, 101, 0, 115, 0, 116, 0, 253, 255 });
+            Encode_InvalidChars("\uDD75", 0, 1, new byte[] { 253, 255 });
+            Encode_InvalidChars("\uDD75\uDD75\uD803\uDD75\uDD75\uDD75\uDD75\uD803\uD803\uD803\uDD75\uDD75\uDD75\uDD75", 0, 14, new byte[] { 253, 255, 253, 255, 3, 216, 117, 221, 253, 255, 253, 255, 253, 255, 253, 255, 253, 255, 3, 216, 117, 221, 253, 255, 253, 255, 253, 255 });
 
             // High BMP non-chars
             Encode("\uFFFD", 0, 1, unicodeReplacementBytes1);
             Encode("\uFFFE", 0, 1, new byte[] { 254, 255 });
             Encode("\uFFFF", 0, 1, new byte[] { 255, 255 });
+            Encode("\uFFFF\uFFFE", 0, 2, new byte[] { 0xFF, 0xFF, 0xFE, 0xFF });
         }
 
         [Fact]
@@ -103,6 +122,20 @@ namespace System.Text.Tests
                 char* pCharsLocal = pChars;
                 Assert.Throws<ArgumentOutOfRangeException>("count", () => encoding.GetByteCount(pCharsLocal, int.MaxValue / 2 + 1));
             }
+        }
+
+        public static byte[] GetBigEndianBytes(byte[] littleEndianBytes)
+        {
+            byte[] bigEndianBytes = (byte[])littleEndianBytes.Clone();
+            for (int i = 0; i < bigEndianBytes.Length; i += 2)
+            {
+                byte b1 = bigEndianBytes[i];
+                byte b2 = bigEndianBytes[i + 1];
+
+                bigEndianBytes[i] = b2;
+                bigEndianBytes[i + 1] = b1;
+            }
+            return bigEndianBytes;
         }
     }
 }

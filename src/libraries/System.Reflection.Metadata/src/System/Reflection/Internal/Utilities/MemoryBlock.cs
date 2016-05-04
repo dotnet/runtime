@@ -39,7 +39,7 @@ namespace System.Reflection.Internal
             // the reader performs little-endian specific operations
             if (!BitConverter.IsLittleEndian)
             {
-                throw new PlatformNotSupportedException(SR.LitteEndianArchitectureRequired);
+                Throw.LitteEndianArchitectureRequired();
             }
 
             return new MemoryBlock(buffer, length);
@@ -52,12 +52,6 @@ namespace System.Reflection.Internal
             {
                 Throw.OutOfBounds();
             }
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static void ThrowValueOverflow()
-        {
-            throw new BadImageFormatException(SR.ValueTooLarge);
         }
 
         internal byte[] ToArray()
@@ -130,7 +124,7 @@ namespace System.Reflection.Internal
             uint result = PeekUInt32(offset);
             if (unchecked((int)result != result))
             {
-                ThrowValueOverflow();
+                Throw.ValueOverflow();
             }
 
             return (int)result;

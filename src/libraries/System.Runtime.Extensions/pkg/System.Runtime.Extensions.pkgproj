@@ -9,7 +9,7 @@
       <SupportedFramework>net46;netcore50</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\ref\System.Runtime.Extensions.csproj">
-      <SupportedFramework>netstandardapp1.5;net462</SupportedFramework>
+      <SupportedFramework>netcoreapp1.0;net462</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Runtime.Extensions.csproj">
       <TargetGroup>net462</TargetGroup>

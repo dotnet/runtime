@@ -9,6 +9,7 @@
       <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="System.Security.Cryptography.ProtectedData.csproj">
+      <OSGroup>Windows_NT</OSGroup>
       <TargetGroup>net46</TargetGroup>
     </Project>
   </ItemGroup>

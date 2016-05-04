@@ -2,10 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net
@@ -14,18 +13,18 @@ namespace System.Net
     {
         internal class WebRequestPrefixElement
         {
-            public string Prefix;
-            public IWebRequestCreate Creator;
+            public readonly string Prefix;
+            public readonly IWebRequestCreate Creator;
 
-            public WebRequestPrefixElement(string P, IWebRequestCreate C)
+            public WebRequestPrefixElement(string prefix, IWebRequestCreate creator)
             {
-                Prefix = P;
-                Creator = C;
+                Prefix = prefix;
+                Creator = creator;
             }
         }
 
         private static volatile List<WebRequestPrefixElement> s_prefixList;
-        private static object s_internalSyncObject = new object();
+        private static readonly object s_internalSyncObject = new object();
 
         // Create a WebRequest.
         //
@@ -353,12 +352,15 @@ namespace System.Net
                     {
                         if (s_prefixList == null)
                         {
-                            List<WebRequestPrefixElement> prefixList = new List<WebRequestPrefixElement>();
+                            var httpRequestCreator = new HttpRequestCreator();
 
-                            prefixList.Add(new WebRequestPrefixElement("http:", new HttpRequestCreator()));
-                            prefixList.Add(new WebRequestPrefixElement("https:", new HttpRequestCreator()));
-                            prefixList.Add(new WebRequestPrefixElement("file:", new HttpRequestCreator()));
-                            prefixList.Add(new WebRequestPrefixElement("ftp:", new HttpRequestCreator()));
+                            const int Count = 2;
+                            var prefixList = new List<WebRequestPrefixElement>(Count)
+                            {
+                                new WebRequestPrefixElement("http:", httpRequestCreator),
+                                new WebRequestPrefixElement("https:", httpRequestCreator)
+                            };
+                            Debug.Assert(prefixList.Count == Count);
 
                             s_prefixList = prefixList;
                         }

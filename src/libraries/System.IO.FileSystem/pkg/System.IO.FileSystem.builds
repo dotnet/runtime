@@ -7,7 +7,7 @@
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="unix\System.IO.FileSystem.pkgproj">
-      <OSGroup>Linux</OSGroup>
+      <OSGroup>Unix</OSGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

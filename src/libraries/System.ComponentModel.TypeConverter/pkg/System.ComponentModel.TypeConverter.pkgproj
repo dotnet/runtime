@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\4.0\System.ComponentModel.TypeConverter.depproj">
-      <SupportedFramework>net45;netcore45;wp8;wpa81</SupportedFramework>
+      <SupportedFramework>net45;netcore45;netcoreapp1.0;wp8;wpa81</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\ref\System.ComponentModel.TypeConverter.csproj">
       <SupportedFramework>net462;netstandardapp1.5</SupportedFramework>

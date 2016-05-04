@@ -118,46 +118,11 @@ namespace System.Text.Tests
             VerificationHelper(encoder, chars, chars.Length - 1, 1, false, 2, "005.4");
         }
         #endregion
-
-        #region Negative Test Cases
-        // NegTest1: ArgumentNullException should be thrown when chars is a null reference
-        [Fact]
-        public void NegTest1()
-        {
-            VerificationHelper<ArgumentNullException>(Encoding.UTF8.GetEncoder(), null, 0, 0, true, typeof(ArgumentNullException), "101.1");
-        }
-
-        // NegTest2: ArgumentOutOfRangeException should be thrown when index or count is less than zero.
-        [Fact]
-        public void NegTest2()
-        {
-            VerificationHelper<ArgumentOutOfRangeException>(Encoding.UTF8.GetEncoder(), new char[1], 0, -1, true, typeof(ArgumentOutOfRangeException), "102.1");
-            VerificationHelper<ArgumentOutOfRangeException>(Encoding.UTF8.GetEncoder(), new char[1], -1, 0, true, typeof(ArgumentOutOfRangeException), "102.2");
-        }
-
-        // NegTest3: ArgumentOutOfRangeException should be thrown when index and count do not denote a valid range in char
-        [Fact]
-        public void NegTest3()
-        {
-            VerificationHelper<ArgumentOutOfRangeException>(Encoding.UTF8.GetEncoder(), new char[1], 0, 2, true, typeof(ArgumentOutOfRangeException), "103.1");
-            VerificationHelper<ArgumentOutOfRangeException>(Encoding.UTF8.GetEncoder(), new char[1], 1, 1, true, typeof(ArgumentOutOfRangeException), "103.2");
-        }
-        #endregion
-
+        
         private void VerificationHelper(Encoder encoder, char[] chars, int index, int count, bool flush, int expected, string errorno)
         {
             int ret = encoder.GetByteCount(chars, index, count, flush);
             Assert.Equal(expected, ret);
-        }
-
-        private void VerificationHelper<T>(Encoder encoder, char[] chars, int index, int count, bool flush, Type expected, string errorno) where T : Exception
-        {
-            string str = new string(chars);
-
-            Assert.Throws<T>(() =>
-            {
-                int ret = encoder.GetByteCount(chars, index, count, flush);
-            });
         }
 
         private bool IsHighSurrogate(char c)

@@ -15,23 +15,17 @@ namespace System.Net.Http
     {
         private sealed class CurlResponseMessage : HttpResponseMessage
         {
-            private readonly CurlResponseStream _responseStream;
-            internal readonly EasyRequest _easy;
             internal uint _headerBytesReceived;
 
             internal CurlResponseMessage(EasyRequest easy)
             {
                 Debug.Assert(easy != null, "Expected non-null EasyRequest");
-                _easy = easy;
-                _responseStream = new CurlResponseStream(easy);
                 RequestMessage = easy._requestMessage;
-                Content = new StreamContent(_responseStream);
+                ResponseStream = new CurlResponseStream(easy);
+                Content = new StreamContent(ResponseStream);
             }
 
-            internal CurlResponseStream ResponseStream
-            {
-                get { return _responseStream; }
-            }
+            internal CurlResponseStream ResponseStream { get; }
         }
 
         /// <summary>
@@ -100,9 +94,9 @@ namespace System.Net.Http
                 _easy = easy;
             }
 
-            public override bool CanRead { get { return !_disposed; } }
-            public override bool CanWrite { get { return false; } }
-            public override bool CanSeek { get { return false; } }
+            public override bool CanRead => !_disposed;
+            public override bool CanWrite => false;
+            public override bool CanSeek => false;
 
             public override long Length
             {
@@ -341,6 +335,7 @@ namespace System.Net.Http
                     }
 
                     _easy._associatedMultiAgent.RequestUnpause(_easy);
+                    _easy._selfStrongToWeakReference.MakeStrong(); // convert from a weak to a strong ref to keep the easy alive during the read
                     return _pendingReadRequest.Task;
                 }
             }
@@ -401,19 +396,36 @@ namespace System.Net.Http
                 }
             }
 
-            /// <summary>Clears a pending read request, making sure any cancellation registration is unregistered.</summary>
+            /// <summary>
+            /// Clears a pending read request, making sure any cancellation registration is unregistered and
+            /// ensuring that the EasyRequest has dropped its strong reference to itself, which should only
+            /// exist while an active async operation is going.
+            /// </summary>
             private void ClearPendingReadRequest()
             {
                 Debug.Assert(Monitor.IsEntered(_lockObject), "Lock object must be held to manipulate _pendingReadRequest");
                 Debug.Assert(_pendingReadRequest != null, "Should only be clearing the pending read request if there is one");
+                Debug.Assert(_pendingReadRequest.Task.IsCompleted, "The pending request should have been completed");
 
                 (_pendingReadRequest as CancelableReadState)?._registration.Dispose();
                 _pendingReadRequest = null;
+
+                // The async operation has completed.  We no longer want to be holding a strong reference.
+                _easy._selfStrongToWeakReference.MakeWeak();
+            }
+
+            ~CurlResponseStream()
+            {
+                Dispose(disposing: false);
             }
 
             protected override void Dispose(bool disposing)
             {
-                if (disposing && !_disposed)
+                // disposing is ignored.  We need to SignalComplete whether this is due to Dispose
+                // or due to finalization, so that we don't leave Tasks uncompleted, don't leave
+                // connections paused, etc.
+
+                if (!_disposed)
                 {
                     _disposed = true;
                     SignalComplete(forceCancel: true);
@@ -421,7 +433,7 @@ namespace System.Net.Http
 
                 base.Dispose(disposing);
             }
-
+            
             private void CheckDisposed()
             {
                 if (_disposed)

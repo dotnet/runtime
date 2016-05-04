@@ -11,7 +11,10 @@ namespace System.Text.Tests
         [Theory]
         [InlineData(0)]
         [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(4)]
         [InlineData(10)]
+        [InlineData(268435455)]
         [InlineData(int.MaxValue / 4 - 1)]
         public void GetMaxByteCount(int charCount)
         {

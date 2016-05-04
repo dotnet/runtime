@@ -3,10 +3,9 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Runtime.InteropServices.RuntimeInformation.csproj">
-      <SupportedFramework>net45;netcore45;netstandardapp1.5</SupportedFramework>
+      <SupportedFramework>net45;netcore50;netcoreapp1.0</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="win/System.Runtime.InteropServices.RuntimeInformation.pkgproj" />
-    <ProjectReference Include="unix/System.Runtime.InteropServices.RuntimeInformation.pkgproj" />
+    <ProjectReference Include="..\src\System.Runtime.InteropServices.RuntimeInformation.builds" />
   </ItemGroup>
   <ItemGroup>
     <InboxOnTargetFramework Include="MonoAndroid10" />

@@ -453,6 +453,18 @@ else ()
         HAVE_GSS_SPNEGO_MECHANISM)
 endif ()
 
+if (HAVE_GSSFW_HEADERS)
+    check_symbol_exists(
+        GSS_KRB5_CRED_NO_CI_FLAGS_X
+        "GSS/GSS.h"
+        HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X)
+else ()
+    check_symbol_exists(
+        GSS_KRB5_CRED_NO_CI_FLAGS_X
+        "gssapi/gssapi_krb5.h"
+        HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X)
+endif ()
+
 set (CMAKE_REQUIRED_LIBRARIES)
 
 configure_file(

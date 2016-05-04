@@ -127,6 +127,7 @@
     <Compile Include="Constant\ConstantTests.cs" />
     <Compile Include="Convert\ConvertCheckedTests.cs" />
     <Compile Include="Convert\ConvertTests.cs" />
+    <Compile Include="Default\DefaultTests.cs" />
     <Compile Include="ExceptionHandling\ExceptionHandlingExpressions.cs" />
     <Compile Include="ExpressionTests.cs" />
     <Compile Include="Goto\Break.cs" />
@@ -155,6 +156,7 @@
     <Compile Include="Lambda\LambdaMultiplyTests.cs" />
     <Compile Include="Lambda\LambdaSubtractNullableTests.cs" />
     <Compile Include="Lambda\LambdaSubtractTests.cs" />
+    <Compile Include="Lambda\LambdaTests.cs" />
     <Compile Include="Lambda\LambdaUnaryNotNullableTests.cs" />
     <Compile Include="Lambda\LambdaUnaryNotTests.cs" />
     <Compile Include="Lifted\LiftedAddCheckedNullableTests.cs" />
@@ -183,6 +185,7 @@
     <Compile Include="Lifted\NonLiftedComparisonNotEqualNullableTests.cs" />
     <Compile Include="ListInit\ElementInitTests.cs" />
     <Compile Include="ListInit\ListInitExpressionTests.cs" />
+    <Compile Include="Loop\LoopTests.cs" />
     <Compile Include="MemberInit\BindTests.cs" />
     <Compile Include="MemberInit\ListBindTests.cs" />
     <Compile Include="MemberInit\MemberBindTests.cs" />
@@ -236,6 +239,7 @@
     <Compile Include="Variables\RuntimeVariablesTests.cs" />
     <Compile Include="Variables\VariableTests.cs" />
     <Compile Include="Visitor\ExpressionVisitorTests.cs" />
+    <Compile Include="Visitor\VisitorTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Linq.Expressions.csproj">

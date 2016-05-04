@@ -15,7 +15,9 @@ namespace System.Text.Tests
         [InlineData(int.MaxValue)]
         public void GetMaxCharCount(int byteCount)
         {
-            Assert.Equal(Math.Max(byteCount, 1), new UTF7Encoding().GetMaxCharCount(byteCount));
+            int expected = Math.Max(byteCount, 1);
+            Assert.Equal(expected, new UTF7Encoding(true).GetMaxCharCount(byteCount));
+            Assert.Equal(expected, new UTF7Encoding(false).GetMaxCharCount(byteCount));
         }
     }
 }

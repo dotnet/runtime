@@ -11,8 +11,10 @@
     <OutputType>Library</OutputType>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="CookieTest.cs" />
     <Compile Include="CookieCollectionTest.cs" />
@@ -33,7 +35,6 @@
     <ProjectReference Include="..\..\src\System.Net.Primitives.csproj">
       <Project>{8772BC91-7B55-49B9-94FA-4B1BE5BEAB55}</Project>
       <Name>System.Net.Primitives</Name>
-      <KeepProjectReference>true</KeepProjectReference>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

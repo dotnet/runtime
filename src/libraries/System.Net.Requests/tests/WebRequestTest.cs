@@ -55,5 +55,26 @@ namespace System.Net.Tests
                 proxy.Credentials = oldCreds;
             }
         }
+
+        [Theory]
+        [InlineData("http")]
+        [InlineData("https")]
+        public void Create_ValidWebRequestUriScheme_Success(string scheme)
+        {
+            var uri = new Uri($"{scheme}://example.com/folder/resource.txt");
+            WebRequest request = WebRequest.Create(uri);
+        }
+
+        [Theory]
+        [InlineData("ws")]
+        [InlineData("wss")]
+        [InlineData("file")]
+        [InlineData("ftp")]
+        [InlineData("custom")]
+        public void Create_InvalidWebRequestUriScheme_Throws(string scheme)
+        {
+            var uri = new Uri($"{scheme}://example.com/folder/resource.txt");
+            Assert.Throws<NotSupportedException>(() => WebRequest.Create(uri));
+        }        
     }
 }

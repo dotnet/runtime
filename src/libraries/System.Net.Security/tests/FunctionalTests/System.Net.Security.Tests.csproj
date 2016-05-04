@@ -132,6 +132,8 @@
     <ProjectReference Include="..\..\src\System.Net.Security.csproj">
       <Project>{89F37791-6254-4D60-AB96-ACD3CCA0E771}</Project>
       <Name>System.Net.Security</Name>
+      <!-- tests build as linux/osx but product binary is unix -->
+      <OSGroup Condition="'$(TargetsUnix)' == 'true'">Unix</OSGroup>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

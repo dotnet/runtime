@@ -7,14 +7,13 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Numerics.Vectors.csproj">
-      <SupportedFramework>net45;netcore45;netstandardapp1.5</SupportedFramework>
+      <SupportedFramework>net45;netcore45;wp8;wpa81;netcoreapp1.0</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Numerics.Vectors.builds" />
   </ItemGroup>
   <ItemGroup>
     <InboxOnTargetFramework Include="MonoAndroid10" />
     <InboxOnTargetFramework Include="MonoTouch10" />
-    <InboxOnTargetFramework Include="net46" />
     <InboxOnTargetFramework Include="xamarinios10" />
     <InboxOnTargetFramework Include="xamarinmac20" />
     <InboxOnTargetFramework Include="xamarintvos10" />

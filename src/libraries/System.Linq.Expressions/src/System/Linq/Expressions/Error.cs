@@ -75,12 +75,21 @@ namespace System.Linq.Expressions
             return new ArgumentException(Strings.BoundsCannotBeLessThanOne);
         }
         /// <summary>
-        /// ArgumentException with message like "type must not be ByRef"
+        /// ArgumentException with message like "Type must not be ByRef"
         /// </summary>
         internal static Exception TypeMustNotBeByRef()
         {
             return new ArgumentException(Strings.TypeMustNotBeByRef);
         }
+
+        /// <summary>
+        /// ArgumentException with message like "Type must not be a pointer type"
+        /// </summary>
+        internal static Exception TypeMustNotBePointer()
+        {
+            return new ArgumentException(Strings.TypeMustNotBePointer, "type");
+        }
+
         /// <summary>
         /// ArgumentException with message like "Type doesn't have constructor with a given signature"
         /// </summary>
@@ -642,13 +651,7 @@ namespace System.Linq.Expressions
         {
             return new ArgumentException(Strings.TypeMissingDefaultConstructor(p0));
         }
-        /// <summary>
-        /// ArgumentException with message like "List initializers must contain at least one initializer"
-        /// </summary>
-        internal static Exception ListInitializerWithZeroMembers()
-        {
-            return new ArgumentException(Strings.ListInitializerWithZeroMembers);
-        }
+
         /// <summary>
         /// ArgumentException with message like "Element initializer method must be named 'Add'"
         /// </summary>

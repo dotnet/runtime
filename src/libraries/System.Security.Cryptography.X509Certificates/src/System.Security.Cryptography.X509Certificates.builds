@@ -13,9 +13,11 @@
       <TargetGroup>netcore50</TargetGroup>
     </Project>
     <Project Include="System.Security.Cryptography.X509Certificates.csproj">
+      <OSGroup>Windows_NT</OSGroup>
       <TargetGroup>net46</TargetGroup>
     </Project>
     <Project Include="System.Security.Cryptography.X509Certificates.csproj">
+      <OSGroup>Windows_NT</OSGroup>
       <TargetGroup>net461</TargetGroup>
     </Project>
   </ItemGroup>
