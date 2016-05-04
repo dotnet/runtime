@@ -415,7 +415,7 @@ namespace System.Collections.Immutable
         /// than any of the elements in array, a negative number which is the bitwise
         /// complement of (the index of the last element plus 1).
         /// </returns>
-        /// <exception cref="System.InvalidOperationException">
+        /// <exception cref="InvalidOperationException">
         /// <paramref name="value"/> does not implement the <see cref="IComparable{T}"/> generic interface, and
         /// the search encounters an element that does not implement the <see cref="IComparable{T}"/>
         /// generic interface.
@@ -446,7 +446,7 @@ namespace System.Collections.Immutable
         /// than any of the elements in array, a negative number which is the bitwise
         /// complement of (the index of the last element plus 1).
         /// </returns>
-        /// <exception cref="System.InvalidOperationException">
+        /// <exception cref="InvalidOperationException">
         /// <paramref name="comparer"/> is null, <paramref name="value"/> does not implement the <see cref="IComparable{T}"/> generic interface, and
         /// the search encounters an element that does not implement the <see cref="IComparable{T}"/>
         /// generic interface.
@@ -475,7 +475,7 @@ namespace System.Collections.Immutable
         /// than any of the elements in <paramref name="array"/>, a negative number which is the bitwise
         /// complement of (the index of the last element plus 1).
         /// </returns>
-        /// <exception cref="System.InvalidOperationException">
+        /// <exception cref="InvalidOperationException">
         /// <paramref name="value"/> does not implement the <see cref="IComparable{T}"/> generic interface, and
         /// the search encounters an element that does not implement the <see cref="IComparable{T}"/>
         /// generic interface.
@@ -515,7 +515,7 @@ namespace System.Collections.Immutable
         /// than any of the elements in <paramref name="array"/>, a negative number which is the bitwise
         /// complement of (the index of the last element plus 1).
         /// </returns>
-        /// <exception cref="System.InvalidOperationException">
+        /// <exception cref="InvalidOperationException">
         /// <paramref name="comparer"/> is null, <paramref name="value"/> does not implement the <see cref="IComparable{T}"/> generic
         /// interface, and the search encounters an element that does not implement the
         /// <see cref="IComparable{T}"/> generic interface.
