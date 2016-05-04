@@ -2,23 +2,27 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
 using System;
+using System.Runtime.CompilerServices;
 
 public class VInline
 {
     private int _fi1;
     private int _fi2;
+
     public VInline(int ival)
     {
         _fi1 = ival;
         _fi2 = 0;
     }
-    [System.Runtime.CompilerServices.MethodImplAttribute(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private void GetI1(ref int i)
     {
         i = _fi1;
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int Accumulate(int a)
     {
         int i = 0;
