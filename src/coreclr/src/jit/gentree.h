@@ -1153,6 +1153,29 @@ public:
                 || OperIsShiftOrRotate(op);
     }
 
+#if !defined(LEGACY_BACKEND) && !defined(_TARGET_64BIT_)
+    static
+    bool            OperIsHigh(genTreeOps gtOper)
+    {
+        switch (gtOper)
+        {
+        case GT_ADD_HI:
+        case GT_SUB_HI:
+        case GT_MUL_HI:
+        case GT_DIV_HI:
+        case GT_MOD_HI:
+            return true;
+        default:
+            return false;
+        }
+    }
+
+    bool            OperIsHigh() const
+    {
+        return OperIsHigh(OperGet());
+    }
+#endif // !defined(LEGACY_BACKEND) && !defined(_TARGET_64BIT_)
+
     static
     int             OperIsUnary(genTreeOps gtOper)
     {
