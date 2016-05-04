@@ -39,6 +39,25 @@ void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 {
     TreeNodeInfo* info = &(storeLoc->gtLsraInfo);
 
+    // Is this the case of var = call where call is returning
+    // a value in multiple return registers?
+    GenTree* op1 = storeLoc->gtGetOp1();
+    if (op1->IsMultiRegCall())
+    {
+        // backend expects to see this case only for store lclvar.
+        assert(storeLoc->OperGet() == GT_STORE_LCL_VAR);
+
+        // srcCount = number of registers in which the value is returned by call
+        GenTreeCall* call = op1->AsCall();
+        ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
+        info->srcCount = retTypeDesc->GetReturnRegCount();
+
+        // Call node srcCandidates = Bitwise-OR(allregs(GetReturnRegType(i))) for all i=0..RetRegCount-1
+        regMaskTP srcCandidates = m_lsra->allMultiRegCallNodeRegs(call);
+        op1->gtLsraInfo.setSrcCandidates(m_lsra, srcCandidates);
+        return;
+    }
+
 #ifdef FEATURE_SIMD    
     if (storeLoc->TypeGet() == TYP_SIMD12)
     {
@@ -55,7 +74,6 @@ void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
     // If the source is a containable immediate, make it contained, unless it is
     // an int-size or larger store of zero to memory, because we can generate smaller code
     // by zeroing a register and then storing it.
-    GenTree* op1 = storeLoc->gtOp1;
     if (IsContainableImmed(storeLoc, op1) && (!op1->IsZero() || varTypeIsSmall(storeLoc)))
     {
         MakeSrcContained(storeLoc, op1);
@@ -296,50 +314,56 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
             else
 #endif // !defined(_TARGET_64BIT_)
             {
+                GenTree* op1 = tree->gtGetOp1();
+                regMaskTP useCandidates = RBM_NONE;
+
+                info->srcCount = (tree->TypeGet() == TYP_VOID) ? 0 : 1;
+                info->dstCount = 0;
+
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
                 if (varTypeIsStruct(tree))
-                {
-                    noway_assert((tree->gtOp.gtOp1->OperGet() == GT_LCL_VAR) ||
-                                 (tree->gtOp.gtOp1->OperGet() == GT_CALL));
-
-                    if (tree->gtOp.gtOp1->OperGet() == GT_LCL_VAR)
+                {                    
+                    // op1 has to be either an lclvar or a multi-reg returning call
+                    if (op1->OperGet() == GT_LCL_VAR)
                     {
-                        GenTreeLclVarCommon* lclVarPtr = tree->gtOp.gtOp1->AsLclVarCommon();
+                        GenTreeLclVarCommon* lclVarPtr = op1->AsLclVarCommon();
                         LclVarDsc* varDsc = &(compiler->lvaTable[lclVarPtr->gtLclNum]);
                         assert(varDsc->lvIsMultiRegArgOrRet);
                         varDsc->lvDoNotEnregister = true;
 
                         // If this is a two eightbyte return, make the var
-                        // contained by the return expression. The code gen will put
+                        // contained by the return expression. Codegen will put
                         // the values in the right registers for return.
-                        info->srcCount = (tree->TypeGet() == TYP_VOID) ? 0 : 1;
-                        info->dstCount = 0;
-                        MakeSrcContained(tree, tree->gtOp.gtOp1);
-                        break;
+                        MakeSrcContained(tree, op1);
                     }
+                    else
+                    {
+                        noway_assert(op1->IsMultiRegCall());
 
-                    // If the return gtOp1 is GT_CALL, just fallthrough. The return registers should already be set properly by the GT_CALL.
+                        ReturnTypeDesc* retTypeDesc = op1->AsCall()->GetReturnTypeDesc();
+                        info->srcCount = retTypeDesc->GetReturnRegCount();
+                        useCandidates = retTypeDesc->GetABIReturnRegs();
+                    }
                 }
+                else
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
-                // TODO-AMD64-Unix: When the GT_CALL for multi-register return structs is changed to use 2 destinations,
-                // change the code below to use 2 src for such op1s (this is the case of op1 being a GT_CALL).
-                info->srcCount = (tree->TypeGet() == TYP_VOID) ? 0 : 1;
-                info->dstCount = 0;
-
-                regMaskTP useCandidates;
-                switch (tree->TypeGet())
                 {
-                case TYP_VOID:   useCandidates = RBM_NONE; break;
-                case TYP_FLOAT:  useCandidates = RBM_FLOATRET; break;
-                case TYP_DOUBLE: useCandidates = RBM_DOUBLERET; break;
+                    // Non-struct type return - determine useCandidates                   
+                    switch (tree->TypeGet())
+                    {
+                    case TYP_VOID:   useCandidates = RBM_NONE; break;
+                    case TYP_FLOAT:  useCandidates = RBM_FLOATRET; break;
+                    case TYP_DOUBLE: useCandidates = RBM_DOUBLERET; break;
 #if defined(_TARGET_64BIT_)
-                case TYP_LONG:   useCandidates = RBM_LNGRET; break;
+                    case TYP_LONG:   useCandidates = RBM_LNGRET; break;
 #endif // defined(_TARGET_64BIT_)
-                default:         useCandidates = RBM_INTRET; break;
+                    default:         useCandidates = RBM_INTRET; break;
+                    }
                 }
+
                 if (useCandidates != RBM_NONE)
                 {
-                    tree->gtOp.gtOp1->gtLsraInfo.setSrcCandidates(l, useCandidates);
+                    op1->gtLsraInfo.setSrcCandidates(l, useCandidates);
                 }
             }
             break;
@@ -835,10 +859,30 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
 
         case GT_CALL:
         {
-            info->srcCount = 0;
-            info->dstCount =  (tree->TypeGet() != TYP_VOID) ? 1 : 0;
+            bool hasMultiRegRetVal = false;
+            ReturnTypeDesc* retTypeDesc = nullptr;
 
-            GenTree *ctrlExpr = tree->gtCall.gtControlExpr;
+            info->srcCount = 0;
+            if (tree->TypeGet() != TYP_VOID)
+            {
+                hasMultiRegRetVal = tree->AsCall()->HasMultiRegRetVal();
+                if (hasMultiRegRetVal)
+                {
+                    // dst count = number of registers in which the value is returned by call
+                    retTypeDesc = tree->AsCall()->GetReturnTypeDesc();
+                    info->dstCount = retTypeDesc->GetReturnRegCount();
+                }
+                else
+                {
+                    info->dstCount = 1;
+                }
+            }
+            else
+            {
+                info->dstCount = 0;
+            }
+            
+            GenTree* ctrlExpr = tree->gtCall.gtControlExpr;
             if (tree->gtCall.gtCallType == CT_INDIRECT)
             {
                 // either gtControlExpr != null or gtCallAddr != null.
@@ -884,8 +928,12 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
             }
 
             // Set destination candidates for return value of the call.
-            if (varTypeIsFloating(registerType)
-                FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY( || varTypeIsSIMD(registerType)))
+            if (hasMultiRegRetVal)
+            {
+                assert(retTypeDesc != nullptr);
+                info->setDstCandidates(l, retTypeDesc->GetABIReturnRegs());
+            }
+            else if (varTypeIsFloating(registerType))
             {
 #ifdef _TARGET_X86_
                 // The return value will be on the X87 stack, and we will need to move it.
@@ -1689,10 +1737,11 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
         }
 #endif //_TARGET_X86_
 
-        tree = next;
-
         // We need to be sure that we've set info->srcCount and info->dstCount appropriately
-        assert(info->dstCount < 2);
+        assert((info->dstCount < 2) ||
+               (tree->IsMultiRegCall() && info->dstCount == MAX_RET_REG_COUNT));
+
+        tree = next;
     }
 }
 
