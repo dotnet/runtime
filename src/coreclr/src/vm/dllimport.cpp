@@ -6563,7 +6563,6 @@ private:
     DWORD   m_priorityOfLastError;
 };  // class LoadLibErrorTracker
 
-
 //  Local helper function for the LoadLibraryModule function below
 static HMODULE LocalLoadLibraryHelper( LPCWSTR name, DWORD flags, LoadLibErrorTracker *pErrorTracker )
 {
@@ -6572,14 +6571,14 @@ static HMODULE LocalLoadLibraryHelper( LPCWSTR name, DWORD flags, LoadLibErrorTr
     HMODULE hmod = NULL;
 
 #ifndef FEATURE_PAL
-    
+
     if ((flags & 0xFFFFFF00) != 0
 #ifndef FEATURE_CORESYSTEM
         && NDirect::SecureLoadLibrarySupported()
 #endif // !FEATURE_CORESYSTEM
         )
     {
-        hmod = CLRLoadLibraryEx( name, NULL, flags & 0xFFFFFF00);
+        hmod = CLRLoadLibraryEx(name, NULL, flags & 0xFFFFFF00);
         if(hmod != NULL)
         {
             return hmod;
@@ -6594,11 +6593,11 @@ static HMODULE LocalLoadLibraryHelper( LPCWSTR name, DWORD flags, LoadLibErrorTr
     }
 
     hmod = CLRLoadLibraryEx(name, NULL, flags & 0xFF);
-
+    
 #else // !FEATURE_PAL
     hmod = CLRLoadLibrary(name);
 #endif // !FEATURE_PAL
-
+        
     if (hmod == NULL)
     {
         pErrorTracker->TrackErrorCode(GetLastError());
@@ -7047,7 +7046,6 @@ HINSTANCE NDirect::LoadLibraryModule(NDirectMethodDesc * pMD, LoadLibErrorTracke
     bool libNameIsRelativePath = Path::IsRelative(wszLibName);
     if (hmod == NULL)
     {
-#ifndef FEATURE_CORECLR
         // First checks if the method has DefaultDllImportSearchPathsAttribute. If method has the attribute
         // then dllImportSearchPathFlag is set to its value.
         // Otherwise checks if the assembly has the attribute. 
@@ -7072,11 +7070,12 @@ HINSTANCE NDirect::LoadLibraryModule(NDirectMethodDesc * pMD, LoadLibErrorTracke
             }
         }
 
+#ifndef FEATURE_CORECLR
         if (!attributeIsFound)
         {
             CheckUnificationList(pMD, &dllImportSearchPathFlag, &searchAssemblyDirectory);
         }
-#endif // !FEATURE_CORECLR
+#endif
 
         if (!libNameIsRelativePath)
         {
