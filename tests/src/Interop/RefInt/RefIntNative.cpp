@@ -35,7 +35,7 @@ extern "C"  BOOL DLL_EXPORT __stdcall MarshalRefInt_Stdcall(int * pint)
 }
 
 typedef BOOL (_cdecl *Cdeclcaller)(int* pint);
-extern "C"  BOOL DLL_EXPORT __stdcall DoCallBack_MarshalRefInt_Cdecl(Cdeclcaller caller)
+extern "C"  BOOL DLL_EXPORT _cdecl DoCallBack_MarshalRefInt_Cdecl(Cdeclcaller caller)
 {
 	//Check the Input
 	int itemp = iNative;
@@ -71,7 +71,7 @@ extern "C"  BOOL DLL_EXPORT __stdcall DoCallBack_MarshalRefInt_Stdcall(Stdcallca
 }
 
 typedef BOOL (_cdecl * DelegatePInvokeCdecl)(int * pint);
-extern "C" DLL_EXPORT DelegatePInvokeCdecl MarshalRefInt_DelegatePInvoke_Cdecl()
+extern "C" DLL_EXPORT DelegatePInvokeCdecl _cdecl MarshalRefInt_DelegatePInvoke_Cdecl()
 {
 	return MarshalRefInt_Cdcel;
 }

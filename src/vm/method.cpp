@@ -5400,12 +5400,7 @@ BOOL MethodDesc::HasNativeCallableAttribute()
         NULL);
     if (hr == S_OK)
     {
-        // enable only for amd64/arm64 now, other platforms are not tested.
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
         return TRUE;
-#else
-        _ASSERTE(!"HasNativeCallableAttribute is not yet implemented.");
-#endif // _TARGET_AMD64_ || _TARGET_ARM64_
     }
 #endif //FEATURE_CORECLR
 

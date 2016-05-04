@@ -8,14 +8,14 @@
 //Cdecl		 -1		 678
 
 
-int WINAPI CdeTest()
+int _cdecl CdeTest()
 {
 	return -1;
 }
 
-typedef int (WINAPI *pFunc)();
-typedef int (WINAPI *Cdeclcaller)(pFunc);
-extern "C" DLL_EXPORT BOOL WINAPI DoCallBack_Cdecl(Cdeclcaller caller)
+typedef int (_cdecl *pFunc)();
+typedef int (_cdecl *Cdeclcaller)(pFunc);
+extern "C" DLL_EXPORT BOOL _cdecl DoCallBack_Cdecl(Cdeclcaller caller)
 {
 	printf("DoCallBack_Cdecl\n");
 	
