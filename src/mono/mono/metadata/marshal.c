@@ -79,7 +79,9 @@ static MonoNativeTlsKey load_type_info_tls_id;
 
 static gboolean use_aot_wrappers;
 
-static MonoFtnPtrEHCallback ftnptr_eh_callback;
+static void ftnptr_eh_callback_default (guint32 gchandle);
+
+static MonoFtnPtrEHCallback ftnptr_eh_callback = ftnptr_eh_callback_default;
 
 static void
 delegate_hash_table_add (MonoDelegate *d);
@@ -193,9 +195,6 @@ mono_array_to_lparray (MonoArray *array);
 
 void
 mono_free_lparray (MonoArray *array, gpointer* nativeArray);
-
-static gint32
-mono_marshal_has_ftnptr_eh_callback (void);
 
 static void
 mono_marshal_ftnptr_eh_callback (guint32 gchandle);
@@ -313,7 +312,6 @@ mono_marshal_init (void)
 		register_icall (mono_gchandle_get_target, "mono_gchandle_get_target", "object int32", TRUE);
 		register_icall (mono_gchandle_new, "mono_gchandle_new", "uint32 object bool", TRUE);
 		register_icall (mono_marshal_isinst_with_cache, "mono_marshal_isinst_with_cache", "object object ptr ptr", FALSE);
-		register_icall (mono_marshal_has_ftnptr_eh_callback, "mono_marshal_has_ftnptr_eh_callback", "int32", TRUE);
 		register_icall (mono_marshal_ftnptr_eh_callback, "mono_marshal_ftnptr_eh_callback", "void uint32", TRUE);
 		register_icall (mono_threads_prepare_blocking_unbalanced, "mono_threads_prepare_blocking_unbalanced", "ptr ptr", TRUE);
 		register_icall (mono_threads_finish_blocking_unbalanced, "mono_threads_finish_blocking_unbalanced", "void ptr ptr", TRUE);
@@ -7937,7 +7935,7 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 	MonoMethodSignature *sig, *csig;
 	MonoExceptionClause *clauses, *clause_finally, *clause_catch;
 	int i, *tmp_locals, ex_local, e_local;
-	int leave_try_pos, leave_catch_pos, ex_m1_pos, rethrow_pos;
+	int leave_try_pos, leave_catch_pos, ex_m1_pos;
 	gboolean closed = FALSE;
 
 	sig = m->sig;
@@ -7980,8 +7978,6 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 	 *
 	 *   ret = method (...);
 	 * } catch (Exception e) {
-	 *   if (!mono_marshal_has_ftnptr_eh_callback ())
-	 *     throw e;
 	 *   ex = mono_gchandle_new (e, false);
 	 * } finally {
 	 *   mono_jit_detach ();
@@ -8173,17 +8169,6 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 	clause_catch->handler_offset = mono_mb_get_label (mb);
 
 	mono_mb_emit_stloc (mb, e_local);
-
-	/* if (!mono_marshal_has_ftnptr_eh_callback ()) { */
-	mono_mb_emit_icall (mb, mono_marshal_has_ftnptr_eh_callback);
-	rethrow_pos = mono_mb_emit_branch (mb, CEE_BRTRUE);
-
-	/* throw e; */
-	mono_mb_emit_ldloc (mb, e_local);
-	mono_mb_emit_byte (mb, CEE_THROW);
-
-	/* } [endif] */
-	mono_mb_patch_branch (mb, rethrow_pos);
 
 	/* ex = mono_gchandle_new (e, false); */
 	mono_mb_emit_ldloc (mb, e_local);
@@ -11831,17 +11816,28 @@ mono_marshal_free_dynamic_wrappers (MonoMethod *method)
 		mono_marshal_unlock ();
 }
 
-static gint32
-mono_marshal_has_ftnptr_eh_callback (void)
-{
-	return ftnptr_eh_callback != NULL;
-}
-
 static void
 mono_marshal_ftnptr_eh_callback (guint32 gchandle)
 {
 	g_assert (ftnptr_eh_callback);
 	ftnptr_eh_callback (gchandle);
+}
+
+static void
+ftnptr_eh_callback_default (guint32 gchandle)
+{
+	MonoException *exc;
+	gpointer stackdata;
+
+	g_assert (gchandle >= 0);
+
+	mono_threads_reset_blocking_start_unbalanced (&stackdata);
+
+	exc = (MonoException*) mono_gchandle_get_target (gchandle);
+
+	mono_gchandle_free (gchandle);
+
+	mono_raise_exception (exc);
 }
 
 /*
