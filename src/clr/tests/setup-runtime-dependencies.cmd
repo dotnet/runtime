@@ -105,6 +105,10 @@ if not exist "%__LibPath%" (
 REM Copy library to output directory
 echo Copy library: %__LibPath% to %__OutputDir%
 copy /y "%__LibPath%" "%__OutputDir%"
+if errorlevel 1 (
+    echo Failed to copy %__LibPath% to %__OutputDir%
+    goto Fail
+)
 
 REM Delete temporary files
 if exist "%__TmpDir%" (
