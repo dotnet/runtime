@@ -526,10 +526,7 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
                     {
                         // Fast tail call - make sure that call target is always computed in IP0
                         // so that epilog sequence can generate "br xip0" to achieve fast tail call.
-                        
-                        NYI_ARM64("Lower - Fast tail call");
-
-                        ctrlExpr->gtLsraInfo.setSrcCandidates(l, genRegMask(REG_IP0));  // ip0?
+                        ctrlExpr->gtLsraInfo.setSrcCandidates(l, genRegMask(REG_IP0));
                     }
                 }
 
