@@ -138,6 +138,24 @@
   <data name="Cryptography_HashAlgorithmNameNullOrEmpty" xml:space="preserve">
     <value>The hash algorithm name cannot be null or empty.</value>
   </data>
+  <data name="Cryptography_InvalidCurve" xml:space="preserve">
+    <value>The specified curve '{0}' is not valid for this platform.</value>
+  </data>
+  <data name="Cryptography_InvalidCurveOid" xml:space="preserve">
+    <value>The specified Oid is not valid. The Oid.FriendlyName or Oid.Value property must be set.</value>
+  </data>
+  <data name="Cryptography_InvalidCurveKeyParameters" xml:space="preserve">
+    <value>The specified key parameters are not valid. Q.X and Q.Y are required fields. Q.X, Q.Y must be the same length. If D is specified it must be the same length as Q.X and Q.Y for named curves or the same length as Order for explicit curves.</value>
+  </data>
+  <data name="Cryptography_InvalidECCharacteristic2Curve" xml:space="preserve">
+    <value>The specified Characteristic2 curve parameters are not valid. Polynomial, A, B, G.X, G.Y, and Order are required. A, B, G.X, G.Y must be the same length, and the same length as Q.X, Q.Y and D if those are specified. Seed, Cofactor and Hash are optional. Other parameters are not allowed.</value>
+  </data>
+  <data name="Cryptography_InvalidECPrimeCurve" xml:space="preserve">
+    <value>The specified prime curve parameters are not valid. Prime, A, B, G.X, G.Y and Order are required and must be the same length, and the same length as Q.X, Q.Y and D if those are specified. Seed, Cofactor and Hash are optional. Other parameters are not allowed.</value>
+  </data>
+  <data name="Cryptography_InvalidECNamedCurve" xml:space="preserve">
+    <value>The specified named curve parameters are not valid. Only the Oid parameter must be set.</value>
+  </data>
   <data name="Cryptography_InvalidKeySize" xml:space="preserve">
     <value>Specified key is not a valid size for this algorithm.</value>
   </data>
@@ -206,5 +224,8 @@
   </data>
   <data name="Cryptography_UnsupportedPaddingMode" xml:space="preserve">
     <value>The specified PaddingMode is not supported.</value>
+  </data>
+  <data name="NotSupported_SubclassOverride" xml:space="preserve">
+    <value>Method not supported. Derived class must override.</value>
   </data>
 </root>
