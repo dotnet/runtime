@@ -18,6 +18,11 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="mono.vcxproj">
+      <Project>{a0eddcd9-940f-432c-a28f-7ef322437d79}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{3E0D229E-C39F-4EDA-9A6A-A33ECEA0322D}</ProjectGuid>
     <RootNamespace>monoregressiontest</RootNamespace>
@@ -189,11 +194,6 @@ $(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ProjectReference Include="build-all.vcxproj">
-      <Project>{5362490b-8516-44ee-9987-014c015a080a}</Project>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

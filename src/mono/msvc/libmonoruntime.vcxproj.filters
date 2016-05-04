@@ -82,9 +82,6 @@
     <ClCompile Include="..\mono\metadata\method-builder.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\mono\mini\mini-cross-helpers.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\mono\metadata\mono-basic-block.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -222,6 +219,9 @@
     </ClCompile>
     <ClCompile Include="..\mono\metadata\sgen-mono.c">
       <Filter>Source Files\sgen</Filter>
+    </ClCompile>
+    <ClCompile Include="..\mono\metadata\metadata-cross-helpers.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

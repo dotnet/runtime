@@ -82,8 +82,18 @@
     <ClCompile Include="..\mono\metadata\sgen-bridge.c" />
     <ClCompile Include="..\mono\metadata\sgen-new-bridge.c" />
     <ClCompile Include="..\mono\metadata\sgen-old-bridge.c" />
-    <ClCompile Include="..\mono\metadata\sgen-os-mach.c" />
-    <ClCompile Include="..\mono\metadata\sgen-os-posix.c" />
+    <ClCompile Include="..\mono\metadata\sgen-os-mach.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\mono\metadata\sgen-os-posix.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\mono\metadata\sgen-os-win32.c" />
     <ClCompile Include="..\mono\metadata\sgen-tarjan-bridge.c" />
     <ClCompile Include="..\mono\metadata\sgen-toggleref.c" />

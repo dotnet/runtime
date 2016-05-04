@@ -189,8 +189,8 @@ $(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ProjectReference Include="build-all.vcxproj">
-      <Project>{5362490b-8516-44ee-9987-014c015a080a}</Project>
+    <ProjectReference Include="mono.vcxproj">
+      <Project>{a0eddcd9-940f-432c-a28f-7ef322437d79}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
