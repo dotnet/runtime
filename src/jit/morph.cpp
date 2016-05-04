@@ -6217,30 +6217,31 @@ bool                Compiler::fgCanFastTailCall(GenTreeCall* callee)
             // Get the size of the struct and see if it is register passable.
             if (argx->OperGet() == GT_OBJ)
             {
-#ifdef _TARGET_AMD64_
+#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
 
                 unsigned typeSize = 0;
                 hasMultiByteArgs = !VarTypeIsMultiByteAndCanEnreg(argx->TypeGet(), argx->gtObj.gtClass, &typeSize, false);
 
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-                // On System V the args could be a 2 eightbyte struct that is passed in two registers.
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING) || defined(_TARGET_ARM64_)
+                // On System V/arm64 the args could be a 2 eightbyte struct that is passed in two registers.
                 // Account for the second eightbyte in the nCalleeArgs.
-                // TODO-CQ-Amd64-Unix:  Structs of size between 9 to 16 bytes are conservatively estimated
-                //                      as two args, since they need two registers. Whereas nCallerArgs is
-                //                      counting such an arg as one.This would mean we will not be optimizing 
-                //                      certain calls  though technically possible.
+                // https://github.com/dotnet/coreclr/issues/2666
+                // TODO-CQ-Amd64-Unix/arm64:  Structs of size between 9 to 16 bytes are conservatively estimated
+                //                            as two args, since they need two registers whereas nCallerArgs is
+                //                            counting such an arg as one. This would mean we will not be optimizing
+                //                            certain calls though technically possible.
 
                 if (typeSize > TARGET_POINTER_SIZE)
                 {
                     unsigned extraArgRegsToAdd = (typeSize / TARGET_POINTER_SIZE);
                     nCalleeArgs += extraArgRegsToAdd;
                 }
-#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING || _TARGET_ARM64_
 
 #else
                 assert(!"Target platform ABI rules regarding passing struct type args in registers");
                 unreached();
-#endif //_TARGET_AMD64_
+#endif //_TARGET_AMD64_ || _TARGET_ARM64_
 
             }
             else
@@ -6962,6 +6963,14 @@ GenTreePtr          Compiler::fgMorphCall(GenTreeCall* call)
                     // in Stublinkerx86.cpp.
                     szFailReason = "Method with non-standard args passed in callee trash register cannot be tail called via helper";
                 }
+#ifdef _TARGET_ARM64_
+                else
+                {
+                    // NYI - TAILCALL_RECURSIVE/TAILCALL_HELPER.
+                    // So, bail out if we can't make fast tail call.
+                    szFailReason = "Non-qualified fast tail call";
+                }
+#endif
 #endif //LEGACY_BACKEND
             }
         }
