@@ -103,7 +103,7 @@ namespace System.Net
         public Cookie(string name, string value)
         {
             Name = name;
-            _value = value;
+            Value = value;
         }
 
         public Cookie(string name, string value, string path)
