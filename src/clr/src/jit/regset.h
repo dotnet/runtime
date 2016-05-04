@@ -75,17 +75,17 @@ private:
     // The same descriptor is also used for 'multi-use' register tracking, BTW.
     struct  SpillDsc
     {
-        SpillDsc   *        spillNext;    // next spilled value of same reg
+        SpillDsc*           spillNext;    // next spilled value of same reg
 
         union
         {
             GenTreePtr      spillTree;    // the value that was spilled
 #ifdef LEGACY_BACKEND
-            LclVarDsc *     spillVarDsc;  // variable if it's an enregistered variable
+            LclVarDsc*      spillVarDsc;  // variable if it's an enregistered variable
 #endif // LEGACY_BACKEND
         };
 
-        TempDsc    *        spillTemp;    // the temp holding the spilled value
+        TempDsc*            spillTemp;    // the temp holding the spilled value
 
 #ifdef LEGACY_BACKEND
         GenTreePtr          spillAddr;    // owning complex address mode or nullptr
@@ -98,8 +98,8 @@ private:
         };
 #endif // LEGACY_BACKEND
 
-        static SpillDsc   * alloc   (Compiler * pComp, RegSet *regSet, var_types type);
-        static void         freeDsc (RegSet *regSet, SpillDsc *spillDsc);
+        static SpillDsc*    alloc   (Compiler* pComp, RegSet* regSet, var_types type);
+        static void         freeDsc (RegSet *regSet, SpillDsc* spillDsc);
     };
 
 #ifdef LEGACY_BACKEND
@@ -351,7 +351,8 @@ private:
     void                rsSpillEnd      ();
 
     void                rsSpillTree     (regNumber      reg,
-                                         GenTreePtr     tree);
+                                         GenTreePtr     tree,
+                                         unsigned       regIdx = 0);
 
 #if defined(_TARGET_X86_) && !FEATURE_STACK_FP_X87
     void                rsSpillFPStack(GenTreePtr tree);
@@ -385,7 +386,9 @@ private:
                                         regMaskTP      needReg);
 #endif // LEGACY_BACKEND
 
-    TempDsc *           rsUnspillInPlace(GenTreePtr     tree);
+    TempDsc*            rsUnspillInPlace(GenTreePtr     tree,
+                                         regNumber      oldReg,
+                                         unsigned       regIdx = 0);
 
 #ifdef LEGACY_BACKEND
     void                rsUnspillReg    (GenTreePtr     tree,

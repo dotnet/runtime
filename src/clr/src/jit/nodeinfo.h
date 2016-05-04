@@ -38,7 +38,7 @@ public:
         int dstCount;
     void setDstCount(int count)
     {
-        assert(count == 0 || count == 1);
+        assert(count <= MAX_RET_REG_COUNT);
         _dstCount = (char) count;
     }
     int getDstCount() { return _dstCount; }

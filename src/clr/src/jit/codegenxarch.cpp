@@ -185,16 +185,18 @@ void                CodeGen::genEmitGSCookieCheck(bool pushReg)
         // Handle multi-reg return type values
         if (compiler->compMethodReturnsMultiRegRetType())
         {
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
             ReturnTypeDesc retTypeDesc;
             retTypeDesc.Initialize(compiler, compiler->info.compMethodInfo->args.retTypeClass);
+            unsigned regCount = retTypeDesc.GetReturnRegCount();
 
-            assert(retTypeDesc.GetReturnRegCount() == CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_RETURN_IN_REGISTERS);
+            // Only x86 and x64 Unix ABI allows multi-reg return and
+            // number of result regs should be equal to MAX_RET_REG_COUNT.
+            assert(regCount == MAX_RET_REG_COUNT);
 
-            // Set the GC-ness of the struct return registers.
-            gcInfo.gcMarkRegPtrVal(REG_INTRET, retTypeDesc.GetReturnRegType(0));
-            gcInfo.gcMarkRegPtrVal(REG_INTRET_1, retTypeDesc.GetReturnRegType(1));
-#endif 
+            for (unsigned i = 0; i < regCount; ++i)
+            {
+                gcInfo.gcMarkRegPtrVal(retTypeDesc.GetABIReturnReg(i), retTypeDesc.GetReturnRegType(i));
+            }
         }
         else if (compiler->compMethodReturnsRetBufAddr())
         {
@@ -1515,6 +1517,8 @@ CodeGen::isStructReturn(GenTreePtr treeNode)
 // Return Value:
 //    None
 //
+// Assumption:
+//    op1 of GT_RETURN node is either GT_LCL_VAR or multi-reg GT_CALL
 void
 CodeGen::genStructReturn(GenTreePtr treeNode)
 {
@@ -1523,9 +1527,6 @@ CodeGen::genStructReturn(GenTreePtr treeNode)
     var_types targetType = treeNode->TypeGet();
 
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-    noway_assert((op1->OperGet() == GT_LCL_VAR) ||
-                 (op1->OperGet() == GT_CALL));
-
     if (op1->OperGet() == GT_LCL_VAR)
     {
         assert(op1->isContained());
@@ -1536,31 +1537,94 @@ CodeGen::genStructReturn(GenTreePtr treeNode)
 
         ReturnTypeDesc retTypeDesc;
         retTypeDesc.Initialize(compiler, varDsc->lvVerTypeInfo.GetClassHandle());
-        assert(retTypeDesc.GetReturnRegCount() == CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_RETURN_IN_REGISTERS);
+        unsigned regCount = retTypeDesc.GetReturnRegCount();
+        assert(regCount == MAX_RET_REG_COUNT);
 
-        var_types type0 = retTypeDesc.GetReturnRegType(0);
-        var_types type1 = retTypeDesc.GetReturnRegType(1);
-
-        regNumber reg0 = retTypeDesc.GetABIReturnReg(0);
-        regNumber reg1 = retTypeDesc.GetABIReturnReg(1);
-        assert(reg0 != REG_NA && reg1 != REG_NA);
-
-        // Move the values into the return registers     
-        getEmitter()->emitIns_R_S(ins_Load(type0), emitTypeSize(type0), reg0, lclVar->gtLclNum, 0);
-        getEmitter()->emitIns_R_S(ins_Load(type1), emitTypeSize(type1), reg1, lclVar->gtLclNum, 8);
+        // Move the value into ABI return registers     
+        int offset = 0;
+        for (unsigned i = 0; i < regCount; ++i)
+        {
+            var_types type = retTypeDesc.GetReturnRegType(i);
+            regNumber reg = retTypeDesc.GetABIReturnReg(i);
+            getEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), reg, lclVar->gtLclNum, offset);
+            offset += genTypeSize(type);
+        }
     }
     else
     {
-        // Assumption: multi-reg return value of a GT_CALL node is never spilled.
-        // TODO-BUG: support for multi-reg call nodes.
+        assert(op1->IsMultiRegCall());
+        genConsumeRegs(op1);
 
-        assert(op1->OperGet() == GT_CALL);
-        assert((op1->gtFlags & GTF_SPILLED) == 0);
+        GenTreeCall* call = op1->AsCall();
+        ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
+        unsigned regCount = retTypeDesc->GetReturnRegCount();
+        assert(regCount == MAX_RET_REG_COUNT);
+
+        // Handle circular dependency between call allocated regs and ABI return regs.
+        //
+        // It is possible under LSRA stress that originally allocated regs of call node,
+        // say rax and rdx, are spilled and reloaded to rdx and rax respectively.  But
+        // GT_RETURN needs to  move values as follows: rdx->rax, rax->rdx. Similar kind
+        // kind of circular dependency could arise between xmm0 and xmm1 return regs.
+        // Codegen is expected to handle such circular dependency.
+        //
+        var_types regType0 = retTypeDesc->GetReturnRegType(0);
+        regNumber returnReg0 = retTypeDesc->GetABIReturnReg(0);
+        regNumber allocatedReg0 = call->GetRegNumByIdx(0);
+
+        var_types regType1 = retTypeDesc->GetReturnRegType(1);
+        regNumber returnReg1 = retTypeDesc->GetABIReturnReg(1);
+        regNumber allocatedReg1 = call->GetRegNumByIdx(1);
+        
+        if (allocatedReg0 == returnReg1 &&
+            allocatedReg1 == returnReg0)
+        {
+            // Circular dependency - swap allocatedReg0 and allocatedReg1
+            if (varTypeIsFloating(regType0))
+            {
+                assert(varTypeIsFloating(regType1));
+
+                // The fastest way to swap two XMM regs is using PXOR
+                inst_RV_RV(INS_pxor, allocatedReg0, allocatedReg1, TYP_DOUBLE);
+                inst_RV_RV(INS_pxor, allocatedReg1, allocatedReg0, TYP_DOUBLE);
+                inst_RV_RV(INS_pxor, allocatedReg0, allocatedReg1, TYP_DOUBLE);
+            }
+            else
+            {
+                assert(varTypeIsIntegral(regType0));
+                assert(varTypeIsIntegral(regType1));
+                inst_RV_RV(INS_xchg, allocatedReg1, allocatedReg0, TYP_I_IMPL);
+            }
+        }
+        else if (allocatedReg1 == returnReg0)
+        {
+            // Change the order of moves to correctly handle dependency.
+            if (allocatedReg1 != returnReg1)
+            {
+                inst_RV_RV(ins_Copy(regType1), returnReg1, allocatedReg1, regType1);
+            }
+
+            if (allocatedReg0 != returnReg0)
+            {
+                inst_RV_RV(ins_Copy(regType0), returnReg0, allocatedReg0, regType0);
+            }
+        }
+        else
+        {
+            // No circular dependency case.
+            if (allocatedReg0 != returnReg0)
+            {
+                inst_RV_RV(ins_Copy(regType0), returnReg0, allocatedReg0, regType0);
+            }
+
+            if (allocatedReg1 != returnReg1)
+            {
+                inst_RV_RV(ins_Copy(regType1), returnReg1, allocatedReg1, regType1);
+            }
+        }
     }
-
-
 #else
-    assert("!unreached");
+    unreached();
 #endif   
 }
 
@@ -1655,7 +1719,7 @@ CodeGen::genReturn(GenTreePtr treeNode)
                     op1->gtFlags |= GTF_SPILLED;
                     op1->gtFlags &= ~GTF_SPILL;
 
-                    TempDsc* t = regSet.rsUnspillInPlace(op1);
+                    TempDsc* t = regSet.rsUnspillInPlace(op1, op1->gtRegNum);
                     inst_FS_ST(INS_fld, emitActualTypeSize(op1->gtType), t, 0);
                     op1->gtFlags &= ~GTF_SPILLED;
                     compiler->tmpRlsTemp(t);
@@ -1965,9 +2029,11 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
 
     case GT_STORE_LCL_VAR:
         {  
+            GenTreePtr op1 = treeNode->gtGetOp1();
+
             // var = call, where call returns a multi-reg return value
             // case is handled separately.
-            if (treeNode->IsMultiRegCallStoreToLocal())
+            if (op1->gtSkipReloadOrCopy()->IsMultiRegCall())
             {
                 genMultiRegCallStoreToLocal(treeNode);
             }
@@ -1989,8 +2055,7 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
                     break;
                 }
 #endif // !defined(_TARGET_64BIT_)
-
-                GenTreePtr op1 = treeNode->gtGetOp1();
+                
                 genConsumeRegs(op1);
 
                 if (treeNode->gtRegNum == REG_NA)
@@ -2640,12 +2705,12 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
 //    None
 //
 // Assumption:
-//    The child of store is a GT_CALL node.
+//    The child of store is a multi-reg call node.
 //
 void
 CodeGen::genMultiRegCallStoreToLocal(GenTreePtr treeNode)
 {
-    assert(treeNode->IsMultiRegCallStoreToLocal());
+    assert(treeNode->OperGet() == GT_STORE_LCL_VAR);    
 
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
     // Structs of size >=9 and <=16 are returned in two return registers on x64 Unix.
@@ -2654,38 +2719,44 @@ CodeGen::genMultiRegCallStoreToLocal(GenTreePtr treeNode)
     // Assumption: struct local var needs to be in memory
     noway_assert(!treeNode->InReg());
 
+    // Assumption: current x64 Unix implementation requires that a multi-reg struct
+    // var in 'var = call' is flagged as lvIsMultiRegArgOrRet to prevent it from
+    // being struct promoted.  
+    unsigned lclNum = treeNode->AsLclVarCommon()->gtLclNum;
+    LclVarDsc* varDsc = &(compiler->lvaTable[lclNum]);
+    noway_assert(varDsc->lvIsMultiRegArgOrRet);
+    
     GenTree* op1 = treeNode->gtGetOp1();
-    GenTreeCall* actualOp1 = op1->gtSkipReloadOrCopy()->AsCall();
-    assert(actualOp1->HasMultiRegRetVal());
+    GenTree* actualOp1 = op1->gtSkipReloadOrCopy();
+    GenTreeCall* call = actualOp1->AsCall();
+    assert(call->HasMultiRegRetVal());
 
     genConsumeRegs(op1);
 
-    ReturnTypeDesc* retTypeDesc = actualOp1->GetReturnTypeDesc();
-    assert(retTypeDesc->GetReturnRegCount() == CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_RETURN_IN_REGISTERS); 
+    ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
+    assert(retTypeDesc->GetReturnRegCount() == MAX_RET_REG_COUNT);
+    unsigned regCount = retTypeDesc->GetReturnRegCount();
 
-    var_types type0 = retTypeDesc->GetReturnRegType(0);
-    var_types type1 = retTypeDesc->GetReturnRegType(1);
+    int offset = 0;
+    for (unsigned i = 0; i < regCount; ++i)
+    {
+        var_types type = retTypeDesc->GetReturnRegType(i);
+        regNumber reg = call->GetRegNumByIdx(i);
+        if (op1->IsCopyOrReload())
+        {
+            // GT_COPY/GT_RELOAD will have valid reg for those positions
+            // that need to be copied or reloaded.
+            regNumber reloadReg = op1->AsCopyOrReload()->GetRegNumByIdx(i);
+            if (reloadReg != REG_NA)
+            {
+                reg = reloadReg;
+            }
+        }
 
-    regNumber reg0 = retTypeDesc->GetABIReturnReg(0);
-    regNumber reg1 = retTypeDesc->GetABIReturnReg(1);
-
-    assert(reg0 != REG_NA && reg1 != REG_NA);
-
-    // Assumption: multi-reg return value of a GT_CALL node never gets spilled.
-    // TODO-BUG: support for multi-reg GT_CALL nodes.
-
-    unsigned lclNum = treeNode->AsLclVarCommon()->gtLclNum;
-    LclVarDsc* varDsc = &(compiler->lvaTable[lclNum]);
-
-    // Assumption: current x64 Unix implementation requires that a multi-reg struct
-    // var in 'var = call' is flagged as lvIsMultiRegArgOrRet to prevent it from
-    // being struct poromoted.  
-    //
-
-    noway_assert(varDsc->lvIsMultiRegArgOrRet);
-
-    getEmitter()->emitIns_S_R(ins_Store(type0), emitTypeSize(type0), reg0, lclNum, 0);
-    getEmitter()->emitIns_S_R(ins_Store(type1), emitTypeSize(type1), reg1, lclNum, 8);
+        assert(reg != REG_NA);
+        getEmitter()->emitIns_S_R(ins_Store(type), emitTypeSize(type), reg, lclNum, offset);
+        offset += genTypeSize(type);
+    }
 #else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
     assert(!"Unreached");
 #endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
@@ -4360,13 +4431,14 @@ void CodeGen::genCodeForShiftRMW(GenTreeStoreInd* storeInd)
 void CodeGen::genUnspillRegIfNeeded(GenTree *tree)
 {
     regNumber dstReg = tree->gtRegNum;
-
     GenTree* unspillTree = tree;
+
     if (tree->gtOper == GT_RELOAD)
     {
         unspillTree = tree->gtOp.gtOp1;
     }
-    if (unspillTree->gtFlags & GTF_SPILLED)
+
+    if ((unspillTree->gtFlags & GTF_SPILLED) != 0)
     {
         if (genIsRegCandidateLocal(unspillTree))
         {
@@ -4444,22 +4516,72 @@ void CodeGen::genUnspillRegIfNeeded(GenTree *tree)
 
                 regSet.AddMaskVars(genGetRegMask(varDsc));
             }
+
+            gcInfo.gcMarkRegPtrVal(dstReg, unspillTree->TypeGet());
         }
-        else
+        else if (unspillTree->IsMultiRegCall())
         {
-            TempDsc* t = regSet.rsUnspillInPlace(unspillTree);
-            getEmitter()->emitIns_R_S(ins_Load(unspillTree->gtType),
-                            emitActualTypeSize(unspillTree->gtType),
-                            dstReg,
-                            t->tdTempNum(),
-                            0);
-            compiler->tmpRlsTemp(t);
+            GenTreeCall* call = unspillTree->AsCall();
+            ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
+            unsigned regCount = retTypeDesc->GetReturnRegCount();
+            GenTreeCopyOrReload* reloadTree = nullptr;
+            if (tree->OperGet() == GT_RELOAD)
+            {
+                reloadTree = tree->AsCopyOrReload();
+            }
+
+            // In case of multi-reg call node, GTF_SPILLED flag on it indicates that
+            // one or more of its result regs are spilled.  Call node needs to be 
+            // queried to know which specific result regs to be unspilled.
+            for (unsigned i = 0; i < regCount; ++i)
+            {
+                unsigned flags = call->GetRegSpillFlagByIdx(i);
+                if ((flags & GTF_SPILLED) != 0)
+                {
+                    var_types dstType = retTypeDesc->GetReturnRegType(i);
+                    regNumber unspillTreeReg = call->GetRegNumByIdx(i);
+
+                    if (reloadTree != nullptr)
+                    {                        
+                        dstReg = reloadTree->GetRegNumByIdx(i);
+                        if (dstReg == REG_NA)
+                        {
+                            dstReg = unspillTreeReg;
+                        }
+                    }
+                    else
+                    {
+                        dstReg = unspillTreeReg;
+                    }
+
+                    TempDsc* t = regSet.rsUnspillInPlace(call, unspillTreeReg, i);
+                    getEmitter()->emitIns_R_S(ins_Load(dstType),
+                                              emitActualTypeSize(dstType),
+                                              dstReg,
+                                              t->tdTempNum(),
+                                              0);
+                    compiler->tmpRlsTemp(t);
+                    gcInfo.gcMarkRegPtrVal(dstReg, dstType);                   
+                }
+            }
 
             unspillTree->gtFlags &= ~GTF_SPILLED;
             unspillTree->SetInReg();
         }
+        else
+        {
+            TempDsc* t = regSet.rsUnspillInPlace(unspillTree, unspillTree->gtRegNum);
+            getEmitter()->emitIns_R_S(ins_Load(unspillTree->gtType),
+                                      emitActualTypeSize(unspillTree->TypeGet()),
+                                      dstReg,
+                                      t->tdTempNum(),
+                                      0);
+            compiler->tmpRlsTemp(t);
 
-        gcInfo.gcMarkRegPtrVal(dstReg, unspillTree->TypeGet());
+            unspillTree->gtFlags &= ~GTF_SPILLED;
+            unspillTree->SetInReg();
+            gcInfo.gcMarkRegPtrVal(dstReg, unspillTree->TypeGet());
+        }        
     }
 }
 
@@ -4482,78 +4604,107 @@ void CodeGen::genConsumeRegAndCopy(GenTree *tree, regNumber needReg)
 void CodeGen::genRegCopy(GenTree* treeNode)
 {
     assert(treeNode->OperGet() == GT_COPY);
-    var_types targetType = treeNode->TypeGet();
-    regNumber targetReg = treeNode->gtRegNum;
-    assert(targetReg != REG_NA);
+    GenTree* op1 = treeNode->gtOp.gtOp1;  
 
-    GenTree* op1 = treeNode->gtOp.gtOp1;
-
-    // Check whether this node and the node from which we're copying the value have the same
-    // register type.
-    // This can happen if (currently iff) we have a SIMD vector type that fits in an integer
-    // register, in which case it is passed as an argument, or returned from a call,
-    // in an integer register and must be copied if it's in an xmm register.
-
-    bool srcFltReg = (varTypeIsFloating(op1)      || varTypeIsSIMD(op1));
-    bool tgtFltReg = (varTypeIsFloating(treeNode) || varTypeIsSIMD(treeNode));
-    if (srcFltReg != tgtFltReg)
+    if (op1->IsMultiRegCall())
     {
-        instruction ins;
-        regNumber fpReg;
-        regNumber intReg;
-        if (tgtFltReg)
+        genConsumeReg(op1);
+
+        GenTreeCopyOrReload* copyTree = treeNode->AsCopyOrReload();
+        GenTreeCall* call = op1->AsCall();
+        ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
+        unsigned regCount = retTypeDesc->GetReturnRegCount();
+
+        for (unsigned i = 0; i < regCount; ++i)
         {
-            ins = ins_CopyIntToFloat(op1->TypeGet(), treeNode->TypeGet());
-            fpReg = targetReg;
-            intReg = op1->gtRegNum;
-        }
-        else
-        {
-            ins = ins_CopyFloatToInt(op1->TypeGet(), treeNode->TypeGet());
-            intReg = targetReg;
-            fpReg = op1->gtRegNum;
-        }
-        inst_RV_RV(ins, fpReg, intReg, targetType);
-    }
-    else
-    {
-        inst_RV_RV(ins_Copy(targetType), targetReg, genConsumeReg(op1), targetType);
-    }
-
-    if (op1->IsLocal())
-    {
-        // The lclVar will never be a def.
-        // If it is a last use, the lclVar will be killed by genConsumeReg(), as usual, and genProduceReg will
-        // appropriately set the gcInfo for the copied value.
-        // If not, there are two cases we need to handle:
-        // - If this is a TEMPORARY copy (indicated by the GTF_VAR_DEATH flag) the variable
-        //   will remain live in its original register.
-        //   genProduceReg() will appropriately set the gcInfo for the copied value,
-        //   and genConsumeReg will reset it.
-        // - Otherwise, we need to update register info for the lclVar.
-
-        GenTreeLclVarCommon* lcl = op1->AsLclVarCommon();
-        assert((lcl->gtFlags & GTF_VAR_DEF) == 0);
-
-        if ((lcl->gtFlags & GTF_VAR_DEATH) == 0 && (treeNode->gtFlags & GTF_VAR_DEATH) == 0)
-        {
-            LclVarDsc* varDsc = &compiler->lvaTable[lcl->gtLclNum];
-
-            // If we didn't just spill it (in genConsumeReg, above), then update the register info
-            if (varDsc->lvRegNum != REG_STK)
+            var_types type = retTypeDesc->GetReturnRegType(i);
+            regNumber fromReg = call->GetRegNumByIdx(i);
+            regNumber toReg = copyTree->GetRegNumByIdx(i);
+            
+            // A Multi-reg GT_COPY node will have valid reg only for those
+            // positions that corresponding result reg of call node needs
+            // to be copied.
+            if (toReg != REG_NA)
             {
-                // The old location is dying
-                genUpdateRegLife(varDsc, /*isBorn*/ false, /*isDying*/ true DEBUGARG(op1));
-
-                gcInfo.gcMarkRegSetNpt(genRegMask(op1->gtRegNum));
-
-                genUpdateVarReg(varDsc, treeNode);
-
-                // The new location is going live
-                genUpdateRegLife(varDsc, /*isBorn*/ true, /*isDying*/ false DEBUGARG(treeNode));
+                assert(toReg != fromReg);
+                inst_RV_RV(ins_Copy(type), toReg, fromReg, type);
             }
         }
     }
+    else
+    {
+        var_types targetType = treeNode->TypeGet();
+        regNumber targetReg = treeNode->gtRegNum;
+        assert(targetReg != REG_NA);
+
+        // Check whether this node and the node from which we're copying the value have
+        // different register types. This can happen if (currently iff) we have a SIMD
+        // vector type that fits in an integer register, in which case it is passed as
+        // an argument, or returned from a call, in an integer register and must be
+        // copied if it's in an xmm register.
+
+        bool srcFltReg = (varTypeIsFloating(op1) || varTypeIsSIMD(op1));
+        bool tgtFltReg = (varTypeIsFloating(treeNode) || varTypeIsSIMD(treeNode));
+        if (srcFltReg != tgtFltReg)
+        {
+            instruction ins;
+            regNumber fpReg;
+            regNumber intReg;
+            if (tgtFltReg)
+            {
+                ins = ins_CopyIntToFloat(op1->TypeGet(), treeNode->TypeGet());
+                fpReg = targetReg;
+                intReg = op1->gtRegNum;
+            }
+            else
+            {
+                ins = ins_CopyFloatToInt(op1->TypeGet(), treeNode->TypeGet());
+                intReg = targetReg;
+                fpReg = op1->gtRegNum;
+            }
+            inst_RV_RV(ins, fpReg, intReg, targetType);
+        }
+        else
+        {
+            inst_RV_RV(ins_Copy(targetType), targetReg, genConsumeReg(op1), targetType);
+        }
+
+        if (op1->IsLocal())
+        {
+            // The lclVar will never be a def.
+            // If it is a last use, the lclVar will be killed by genConsumeReg(), as usual, and genProduceReg will
+            // appropriately set the gcInfo for the copied value.
+            // If not, there are two cases we need to handle:
+            // - If this is a TEMPORARY copy (indicated by the GTF_VAR_DEATH flag) the variable
+            //   will remain live in its original register.
+            //   genProduceReg() will appropriately set the gcInfo for the copied value,
+            //   and genConsumeReg will reset it.
+            // - Otherwise, we need to update register info for the lclVar.
+
+            GenTreeLclVarCommon* lcl = op1->AsLclVarCommon();
+            assert((lcl->gtFlags & GTF_VAR_DEF) == 0);
+
+            if ((lcl->gtFlags & GTF_VAR_DEATH) == 0 && (treeNode->gtFlags & GTF_VAR_DEATH) == 0)
+            {
+                LclVarDsc* varDsc = &compiler->lvaTable[lcl->gtLclNum];
+
+                // If we didn't just spill it (in genConsumeReg, above), then update the register info
+                if (varDsc->lvRegNum != REG_STK)
+                {
+                    // The old location is dying
+                    genUpdateRegLife(varDsc, /*isBorn*/ false, /*isDying*/ true DEBUGARG(op1));
+
+                    gcInfo.gcMarkRegSetNpt(genRegMask(op1->gtRegNum));
+
+                    genUpdateVarReg(varDsc, treeNode);
+
+                    // The new location is going live
+                    genUpdateRegLife(varDsc, /*isBorn*/ true, /*isDying*/ false DEBUGARG(treeNode));
+                }
+            }
+        }
+    }
+
     genProduceReg(treeNode);
 }
 
@@ -4590,13 +4741,24 @@ void CodeGen::genCheckConsumeNode(GenTree* treeNode)
 }
 #endif // DEBUG
 
-// Do liveness update for a subnode that is being consumed by codegen.
-regNumber CodeGen::genConsumeReg(GenTree *tree)
+//--------------------------------------------------------------------
+// genConsumeReg: Do liveness update for a subnode that is being
+// consumed by codegen.
+//
+// Arguments:
+//    tree - GenTree node
+//
+// Return Value:
+//    Returns the reg number of tree.
+//    In case of multi-reg call node returns the first reg number
+//    of the multi-reg return.
+regNumber CodeGen::genConsumeReg(GenTree* tree)
 {
     if (tree->OperGet() == GT_COPY)
     {
         genRegCopy(tree);
     }
+
     // Handle the case where we have a lclVar that needs to be copied before use (i.e. because it
     // interferes with one of the other sources (or the target, if it's a "delayed use" register)). 
     // TODO-Cleanup: This is a special copyReg case in LSRA - consider eliminating these and
@@ -4609,7 +4771,7 @@ regNumber CodeGen::genConsumeReg(GenTree *tree)
     // because if it's on the stack it will always get reloaded into tree->gtRegNum).
     if (genIsRegCandidateLocal(tree))
     {
-        GenTreeLclVarCommon *lcl = tree->AsLclVarCommon();
+        GenTreeLclVarCommon* lcl = tree->AsLclVarCommon();
         LclVarDsc* varDsc = &compiler->lvaTable[lcl->GetLclNum()];
         if (varDsc->lvRegNum != REG_STK && varDsc->lvRegNum != tree->gtRegNum)
         {
@@ -4622,7 +4784,7 @@ regNumber CodeGen::genConsumeReg(GenTree *tree)
     // genUpdateLife() will also spill local var if marked as GTF_SPILL by calling CodeGen::genSpillVar
     genUpdateLife(tree);
 
-    assert(tree->gtRegNum != REG_NA);
+    assert(tree->gtHasReg());
 
     // there are three cases where consuming a reg means clearing the bit in the live mask
     // 1. it was not produced by a local
@@ -4647,7 +4809,7 @@ regNumber CodeGen::genConsumeReg(GenTree *tree)
     }
     else
     {
-        gcInfo.gcMarkRegSetNpt(genRegMask(tree->gtRegNum));
+        gcInfo.gcMarkRegSetNpt(tree->gtGetRegMask());
     }
 
     genCheckConsumeNode(tree);
@@ -4911,11 +5073,27 @@ void CodeGen::genConsumeBlockOp(GenTreeBlkOp* blkNode, regNumber dstReg, regNumb
     }
 }
 
-// do liveness update for register produced by the current node in codegen
-void CodeGen::genProduceReg(GenTree *tree)
+//-------------------------------------------------------------------------
+// genProduceReg: do liveness update for register produced by the current
+// node in codegen.
+//
+// Arguments:
+//     tree   -  Gentree node
+//
+// Return Value:
+//     None.
+void CodeGen::genProduceReg(GenTree* tree)
 {
     if (tree->gtFlags & GTF_SPILL)
     {
+        // Code for GT_COPY node gets generated as part of consuming regs by its parent.
+        // A GT_COPY node in turn produces reg result and it should never be marked to
+        // spill.
+        //
+        // Similarly GT_RELOAD node gets generated as part of consuming regs by its
+        // parent and should never be marked for spilling.
+        noway_assert(!tree->IsCopyOrReload());
+
         if (genIsRegCandidateLocal(tree))
         {
             // Store local variable to its home location.
@@ -4927,11 +5105,38 @@ void CodeGen::genProduceReg(GenTree *tree)
         }
         else
         {
-            tree->SetInReg();
-            regSet.rsSpillTree(tree->gtRegNum, tree);
+            // In case of multi-reg call node, spill flag on call node
+            // indicates that one or more of its allocated regs need to
+            // be spilled.  Call node needs to be further queried to 
+            // know which of its result regs needs to be spilled.
+            if (tree->IsMultiRegCall())
+            {
+                GenTreeCall* call = tree->AsCall();
+                ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
+                unsigned regCount = retTypeDesc->GetReturnRegCount();
+
+                for (unsigned i = 0; i < regCount; ++i)
+                {
+                    unsigned flags = call->GetRegSpillFlagByIdx(i);
+                    if ((flags & GTF_SPILL) != 0)
+                    {
+                        regNumber reg = call->GetRegNumByIdx(i);
+                        call->SetInReg();
+                        regSet.rsSpillTree(reg, call, i);
+                        gcInfo.gcMarkRegSetNpt(genRegMask(reg));                      
+                    }
+                }
+            }
+            else
+            {
+                tree->SetInReg();
+                regSet.rsSpillTree(tree->gtRegNum, tree);
+                gcInfo.gcMarkRegSetNpt(genRegMask(tree->gtRegNum));
+            }
+
             tree->gtFlags |= GTF_SPILLED;
             tree->gtFlags &= ~GTF_SPILL;
-            gcInfo.gcMarkRegSetNpt(genRegMask(tree->gtRegNum));
+
             return;
         }
     }
@@ -4950,8 +5155,51 @@ void CodeGen::genProduceReg(GenTree *tree)
         //    the register as live, with a GC pointer, if the variable is dead.
         if (!genIsRegCandidateLocal(tree) ||
             ((tree->gtFlags & GTF_VAR_DEATH) == 0))
-        {
-            gcInfo.gcMarkRegPtrVal(tree->gtRegNum, tree->TypeGet());
+        {            
+            // Multi-reg call node will produce more than one register result.
+            // Mark all the regs produced by call node.
+            if (tree->IsMultiRegCall())
+            {
+                GenTreeCall* call = tree->AsCall();
+                ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
+                unsigned regCount = retTypeDesc->GetReturnRegCount();
+
+                for (unsigned i = 0; i < regCount; ++i)
+                {
+                    regNumber reg = call->GetRegNumByIdx(i);
+                    var_types type = retTypeDesc->GetReturnRegType(i);
+                    gcInfo.gcMarkRegPtrVal(reg, type);
+                }
+            }
+            else if (tree->IsCopyOrReloadOfMultiRegCall())
+            {
+                // we should never see reload of multi-reg call here
+                // because GT_RELOAD gets generated in reg consuming path.
+                noway_assert(tree->OperGet() == GT_COPY);
+
+                // A multi-reg GT_COPY node produces those regs to which
+                // copy has taken place.
+                GenTreeCopyOrReload* copy = tree->AsCopyOrReload();
+                GenTreeCall* call = copy->gtGetOp1()->AsCall();
+                ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
+                unsigned regCount = retTypeDesc->GetReturnRegCount();
+
+                for (unsigned i = 0; i < regCount; ++i)
+                {
+                    var_types type = retTypeDesc->GetReturnRegType(i);
+                    regNumber fromReg = call->GetRegNumByIdx(i);
+                    regNumber toReg = copy->GetRegNumByIdx(i);
+
+                    if (toReg != REG_NA)
+                    {
+                        gcInfo.gcMarkRegPtrVal(toReg, type);
+                    }
+                }
+            }
+            else
+            {
+                gcInfo.gcMarkRegPtrVal(tree->gtRegNum, tree->TypeGet());
+            }
         }
     }
     tree->SetInReg();
@@ -5482,20 +5730,19 @@ void CodeGen::genCallInstruction(GenTreePtr node)
     }
 
     // Determine return value size(s).
+    ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
     emitAttr retSize = EA_PTRSIZE;
-
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
     emitAttr secondRetSize = EA_UNKNOWN;
-    if (varTypeIsStruct(call->gtType))
+
+    if (call->HasMultiRegRetVal())
     {
-        assert(call->HasMultiRegRetVal());
-        ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
         retSize = emitTypeSize(retTypeDesc->GetReturnRegType(0));
         secondRetSize = emitTypeSize(retTypeDesc->GetReturnRegType(1));
     }
     else
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING  
     {
+        assert(!varTypeIsStruct(call));
+
         if (call->gtType == TYP_REF ||
             call->gtType == TYP_ARRAY)
         {
@@ -5693,25 +5940,43 @@ void CodeGen::genCallInstruction(GenTreePtr node)
 #endif // _TARGET_X86_
         {
             regNumber returnReg;
-            // TODO-Cleanup: For UNIX AMD64, we should not be allocating a return register for struct
-            // returns that are on stack.
-            // For the SIMD case, however, we do want a "return register", as the consumer of the call
-            // will want the value in a register. In future we should flexibly allocate this return
-            // register, but that should be done with a general cleanup of the allocation of return
-            // registers for structs.
-            if (varTypeIsFloating(returnType)
-                FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY( || varTypeIsSIMD(returnType)))
+
+            if (call->HasMultiRegRetVal())
             {
-                returnReg = REG_FLOATRET;
+                assert(retTypeDesc != nullptr);
+                unsigned regCount = retTypeDesc->GetReturnRegCount();
+
+                // If regs allocated to call node are different from ABI return
+                // regs in which the call has returned its result, move the result
+                // to regs allocated to call node.
+                for (unsigned i = 0; i < regCount; ++i)
+                {
+                    var_types regType = retTypeDesc->GetReturnRegType(i);
+                    returnReg = retTypeDesc->GetABIReturnReg(i);
+                    regNumber allocatedReg = call->GetRegNumByIdx(i);
+                    if (returnReg != allocatedReg)
+                    {
+                        inst_RV_RV(ins_Copy(regType), allocatedReg, returnReg, regType);
+                    }
+                }
             }
             else
-            {
-                returnReg = REG_INTRET;
+            {                
+                if (varTypeIsFloating(returnType))
+                {
+                    returnReg = REG_FLOATRET;
+                }
+                else
+                {
+                    returnReg = REG_INTRET;
+                }
+
+                if (call->gtRegNum != returnReg)
+                {
+                    inst_RV_RV(ins_Copy(returnType), call->gtRegNum, returnReg, returnType);
+                }                
             }
-            if (call->gtRegNum != returnReg)
-            {
-                inst_RV_RV(ins_Copy(returnType), call->gtRegNum, returnReg, returnType);
-            }
+
             genProduceReg(call);
         }
     }

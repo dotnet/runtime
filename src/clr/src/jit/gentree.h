@@ -551,52 +551,13 @@ public:
 #endif
 
     // Copy the _gtRegNum/_gtRegPair/gtRegTag fields
-    void CopyReg(GenTreePtr from)
-    {
-        // To do the copy, use _gtRegPair, which must be bigger than _gtRegNum. Note that the values
-        // might be undefined (so gtRegTag == GT_REGTAG_NONE).
-        _gtRegPair = from->_gtRegPair;
-        C_ASSERT(sizeof(_gtRegPair) >= sizeof(_gtRegNum));
-        INDEBUG(gtRegTag = from->gtRegTag;)
-    }
+    void CopyReg(GenTreePtr from);
 
     void gtClearReg(Compiler* compiler);
 
-    bool gtHasReg() const
-    {
-        // Has the node been assigned a register by LSRA?
-        //
-        // In order for this to work properly, gtClearReg (above) must be called prior to setting
-        // the register value.
-#if CPU_LONG_USES_REGPAIR
-        if (isRegPairType(TypeGet()))
-        {
-            assert(_gtRegNum != REG_NA);
-            INDEBUG(assert(gtRegTag == GT_REGTAG_REGPAIR));
-            return gtRegPair != REG_PAIR_NONE;
-        }
-        else
-#endif
-        {
-            assert(_gtRegNum != REG_PAIR_NONE);
-            INDEBUG(assert(gtRegTag == GT_REGTAG_REG));
-            return gtRegNum != REG_NA;
-        }
-    }
+    bool gtHasReg() const;
 
-    regMaskTP gtGetRegMask() const
-    {
-#if CPU_LONG_USES_REGPAIR
-        if (isRegPairType(TypeGet()))
-        {
-            return genRegPairMask(gtRegPair);
-        }
-        else
-#endif
-        {
-            return genRegMask(gtRegNum);
-        }
-    }
+    regMaskTP gtGetRegMask() const;
 
     unsigned            gtFlags;        // see GTF_xxxx below
     
@@ -1386,7 +1347,14 @@ public:
     // Return the child of this node if it is a GT_RELOAD or GT_COPY; otherwise simply return the node itself
     inline GenTree*   gtSkipReloadOrCopy();
 
-    inline bool     IsMultiRegCallStoreToLocal();
+    // Returns true if it is a call node returning its value in more than one register
+    inline bool     IsMultiRegCall() const;
+
+    // Returns true if it is a GT_COPY or GT_RELOAD node
+    inline bool     IsCopyOrReload() const;
+
+    // Returns true if it is a GT_COPY or GT_RELOAD of a multi-reg call node
+    inline bool     IsCopyOrReloadOfMultiRegCall() const;
 
     bool            OperMayThrow();
 
@@ -2384,8 +2352,8 @@ enum class InlineObservation;
 // registers. For such calls this struct provides the following info 
 // on their return type
 //    - type of value returned in each return register
-//    - return register numbers in which the value is returned
-//    - a spill mask for lsra/codegen purpose
+//    - ABI return register numbers in which the value is returned
+//    - count of return registers in which the value is returned
 //
 // TODO-ARM: Update this to meet the needs of Arm64 and Arm32
 // TODO-X86: Update this to meet the needs of x86
@@ -2428,7 +2396,7 @@ public:
     // Return Value:
     //   Count of return registers.
     //   Returns 0 if the return type is not returned in registers.
-    unsigned GetReturnRegCount()
+    unsigned GetReturnRegCount() const
     {
         assert(m_inited);
 
@@ -2449,6 +2417,21 @@ public:
         }
 
         return regCount;
+    }
+
+    //-----------------------------------------------------------------------
+    // IsMultiRegRetType: check whether the type is returned in multiple 
+    // return registers.
+    //
+    // Arguments: 
+    //    None
+    //
+    // Return Value:
+    //    Returns true if the type is returned in multiple return registers.
+    //    False otherwise.
+    bool IsMultiRegRetType() const
+    {
+        return GetReturnRegCount() > 1;
     }
 
     //--------------------------------------------------------------------------
@@ -2504,12 +2487,23 @@ struct GenTreeCall final : public GenTree
 
     regMaskTP         gtCallRegUsedMask;      // mask of registers used to pass parameters
 
-    // For now Return Type Descriptor is enabled only for x64 unix.
+    // State required to support multi-reg returning call nodes.
+    // For now it is enabled only for x64 unix.
+    //
     // TODO-ARM: enable this for HFA returns on Arm64 and Arm32
     // TODO-X86: enable this for long returns on x86
     // TODO-AllArch: enable for all call nodes to unify single-reg and multi-reg returns.
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
     ReturnTypeDesc    gtReturnTypeDesc;
+
+    // gtRegNum would always be the first return reg.
+    // The following array holds the other reg numbers of multi-reg return.
+    regNumber         gtOtherRegs[MAX_RET_REG_COUNT - 1];
+
+    // GTF_SPILL or GTF_SPILLED flag on a multi-reg call node indicates that one or
+    // more of its result regs are in that state.  The spill flag of each of the
+    // return register is stored in the below array.
+    unsigned          gtSpillFlags[MAX_RET_REG_COUNT];
 #endif 
 
     //-----------------------------------------------------------------------
@@ -2537,6 +2531,185 @@ struct GenTreeCall final : public GenTree
 #endif
     }
 
+    //---------------------------------------------------------------------------
+    // GetRegNumByIdx: get ith return register allocated to this call node.
+    //
+    // Arguments:
+    //     idx   -   index of the return register
+    //
+    // Return Value:
+    //     Return regNumber of ith return register of call node.
+    //     Returns REG_NA if there is no valid return register for the given index.
+    //
+    // TODO-ARM: Implement this routine for Arm64 and Arm32
+    // TODO-X86: Implement this routine for x86
+    regNumber  GetRegNumByIdx(unsigned idx) const
+    {
+        assert(idx < MAX_RET_REG_COUNT);
+
+        if (idx == 0)
+        {
+            return gtRegNum;
+        }
+
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+        return gtOtherRegs[idx-1];
+#else
+        return REG_NA;
+#endif
+    }
+
+    //----------------------------------------------------------------------
+    // SetRegNumByIdx: set ith return register of this call node
+    //
+    // Arguments:
+    //    reg    -   reg number
+    //    idx    -   index of the return register
+    //
+    // Return Value:
+    //    None
+    //
+    // TODO-ARM: Implement this routine for Arm64 and Arm32
+    // TODO-X86: Implement this routine for x86
+    void  SetRegNumByIdx(regNumber reg, unsigned idx)
+    {
+        assert(idx < MAX_RET_REG_COUNT);
+
+        if (idx == 0)
+        {
+            gtRegNum = reg;
+        }
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+        else
+        {
+            gtOtherRegs[idx - 1] = reg;
+            assert(gtOtherRegs[idx - 1] == reg);
+        }
+#else
+        unreached();
+#endif
+    }
+
+    //----------------------------------------------------------------------------
+    // ClearOtherRegs: clear multi-reg state to indicate no regs are allocated
+    //
+    // Arguments:
+    //    None
+    //
+    // Return Value:
+    //    None
+    //
+    void  ClearOtherRegs()
+    {
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+        for (unsigned i = 0; i < MAX_RET_REG_COUNT - 1; ++i)
+        {
+            gtOtherRegs[i] = REG_NA;
+        }
+#endif
+    }
+
+    //----------------------------------------------------------------------------
+    // CopyOtherRegs: copy multi-reg state from the given call node to this node
+    //
+    // Arguments:
+    //    fromCall  -  GenTreeCall node from which to copy multi-reg state
+    //
+    // Return Value:
+    //    None
+    //
+    void CopyOtherRegs(GenTreeCall* fromCall)
+    {
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+        for (unsigned i = 0; i < MAX_RET_REG_COUNT - 1; ++i)
+        {
+            this->gtOtherRegs[i] = fromCall->gtOtherRegs[i];
+        }
+#endif
+    }
+
+    // Get reg mask of all the valid registers of gtOtherRegs array
+    regMaskTP  GetOtherRegMask() const;
+
+    //----------------------------------------------------------------------
+    // GetRegSpillFlagByIdx: get spill flag associated with the return register 
+    // specified by its index.
+    //
+    // Arguments:
+    //    idx  -  Position or index of the return register
+    //
+    // Return Value:
+    //    Returns GTF_* flags associated with.
+    unsigned GetRegSpillFlagByIdx(unsigned idx) const
+    {
+        assert(idx < MAX_RET_REG_COUNT);
+
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+        return gtSpillFlags[idx];
+#else
+        assert(!"unreached");
+        return 0;
+#endif
+    }
+
+    //----------------------------------------------------------------------
+    // SetRegSpillFlagByIdx: set spill flags for the return register 
+    // specified by its index.
+    //
+    // Arguments:
+    //    flags  -  GTF_* flags
+    //    idx    -  Position or index of the return register
+    //
+    // Return Value:
+    //    None
+    void SetRegSpillFlagByIdx(unsigned flags, unsigned idx)
+    {
+        assert(idx < MAX_RET_REG_COUNT);
+
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+        gtSpillFlags[idx] = flags;
+#else
+        unreached();
+#endif
+    }
+
+    //-------------------------------------------------------------------
+    // clearOtherRegFlags: clear GTF_* flags associated with gtOtherRegs
+    //
+    // Arguments:
+    //     None
+    //
+    // Return Value:
+    //     None
+    void ClearOtherRegFlags()
+    {
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+        for (unsigned i = 0; i < MAX_RET_REG_COUNT; ++i)
+        {
+            gtSpillFlags[i] = 0;
+        }
+#endif
+    }
+
+    //-------------------------------------------------------------------------
+    // CopyOtherRegFlags: copy GTF_* flags associated with gtOtherRegs from
+    // the given call node.
+    //
+    // Arguments:
+    //    fromCall  -  GenTreeCall node from which to copy
+    //
+    // Return Value:
+    //    None
+    //
+    void CopyOtherRegFlags(GenTreeCall* fromCall)
+    {
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+        for (unsigned i = 0; i < MAX_RET_REG_COUNT; ++i)
+        {
+            this->gtSpillFlags[i] = fromCall->gtSpillFlags[i];
+        }
+#endif
+    }
 
 #define     GTF_CALL_M_EXPLICIT_TAILCALL       0x0001  // GT_CALL -- the call is "tail" prefixed and importer has performed tail call checks
 #define     GTF_CALL_M_TAILCALL                0x0002  // GT_CALL -- the call is a tailcall
@@ -2632,7 +2805,6 @@ struct GenTreeCall final : public GenTree
         return false;
 #endif
     }
-
 
     // Returns true if VM has flagged this method as CORINFO_FLG_PINVOKE.
     bool IsPInvoke()                { return (gtCallMoreFlags & GTF_CALL_M_PINVOKE) != 0; }
@@ -3747,6 +3919,138 @@ struct GenTreePutArgStk: public GenTreeUnOp
 #endif
 };
 
+// Represents GT_COPY or GT_RELOAD node
+struct GenTreeCopyOrReload : public GenTreeUnOp
+{
+    // State required to support copy/reload of a multi-reg call node.
+    // First register is is always given by gtRegNum.
+    // Currently enabled for x64 unix.
+    //
+    // TODO-ARM: Enable this when multi-reg call node support is added.
+    // TODO-X86: Enable this when multi-reg call node support is added.
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+    regNumber gtOtherRegs[MAX_RET_REG_COUNT - 1];
+#endif
+
+    //----------------------------------------------------------
+    // ClearOtherRegs: set gtOtherRegs to REG_NA.
+    //
+    // Arguments:
+    //    None
+    //
+    // Return Value:
+    //    None
+    //
+    // TODO-ARM: Implement this routine for Arm64 and Arm32
+    // TODO-X86: Implement this routine for x86
+    void ClearOtherRegs()
+    {
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+        for (unsigned i = 0; i < MAX_RET_REG_COUNT - 1; ++i)
+        {
+            gtOtherRegs[i] = REG_NA;
+        }
+#endif
+    }
+
+    //-----------------------------------------------------------
+    // GetRegNumByIdx: Get regNumber of ith position.
+    //
+    // Arguments:
+    //    idx   -   register position.
+    //
+    // Return Value:
+    //    Returns regNumber assigned to ith position.
+    //
+    // TODO-ARM: Implement this routine for Arm64 and Arm32
+    // TODO-X86: Implement this routine for x86
+    regNumber GetRegNumByIdx(unsigned idx) const
+    {
+        assert(idx < MAX_RET_REG_COUNT);
+
+        if (idx == 0)
+        {
+            return gtRegNum;
+        }
+
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+        return gtOtherRegs[idx - 1];
+#else
+        return REG_NA;
+#endif
+    }
+
+    //-----------------------------------------------------------
+    // SetRegNumByIdx: Set the regNumber for ith position.
+    //
+    // Arguments:
+    //    reg   -   reg number 
+    //    idx   -   register position.
+    //
+    // Return Value:
+    //    None.
+    //
+    // TODO-ARM: Implement this routine for Arm64 and Arm32
+    // TODO-X86: Implement this routine for x86
+    void SetRegNumByIdx(regNumber reg, unsigned idx)
+    {
+        assert(idx < MAX_RET_REG_COUNT);
+
+        if (idx == 0)
+        {
+            gtRegNum = reg;
+        }
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+        else
+        {
+            gtOtherRegs[idx - 1] = reg;
+            assert(gtOtherRegs[idx - 1] == reg);
+        }
+#else
+        else
+        {
+            unreached();
+        }
+#endif
+    }
+
+    //----------------------------------------------------------------------------
+    // CopyOtherRegs: copy multi-reg state from the given copy/reload node to this
+    // node.
+    //
+    // Arguments:
+    //    from  -  GenTree node from which to copy multi-reg state
+    //
+    // Return Value:
+    //    None
+    //
+    // TODO-ARM: Implement this routine for Arm64 and Arm32
+    // TODO-X86: Implement this routine for x86
+    void CopyOtherRegs(GenTreeCopyOrReload* from)
+    {
+        assert(OperGet() == from->OperGet());
+
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+        for (unsigned i = 0; i < MAX_RET_REG_COUNT - 1; ++i)
+        {
+            gtOtherRegs[i] = from->gtOtherRegs[i];
+        }
+#endif
+    }
+
+    GenTreeCopyOrReload(genTreeOps oper,
+        var_types type,
+        GenTree* op1) : GenTreeUnOp(oper, type, op1)
+    {
+        gtRegNum = REG_NA;
+        ClearOtherRegs();
+    }
+
+#if DEBUGGABLE_GENTREE
+    GenTreeCopyOrReload() : GenTreeUnOp() {}
+#endif
+};
+
 // Deferred inline functions of GenTree -- these need the subtypes above to
 // be defined already.
 
@@ -3962,25 +4266,57 @@ inline GenTree*         GenTree::gtSkipReloadOrCopy()
     return this;
 }
 
-//----------------------------------------------------------------------------------------
-// IsMultiRegCallStoreToLocal: Whether store op is storing multi-reg return value of call
-// to a local.
+//-----------------------------------------------------------------------------------
+// IsMultiRegCall: whether a call node returning its value in more than one register
 //
 // Arguments:
-//    None
+//     None
 //
 // Return Value:
-//    Returns true if store op is storing a multi-reg return value of a call into a local.
-//    False otherwise.
-// 
-inline bool GenTree::IsMultiRegCallStoreToLocal()
+//     Returns true if this GenTree is a multi register returning call 
+inline bool  GenTree::IsMultiRegCall() const
 {
-    assert(OperGet() == GT_STORE_LCL_VAR);
+    if (this->IsCall())
+    {
+        // We cannot use AsCall() as it is not declared const
+        const GenTreeCall* call = reinterpret_cast<const GenTreeCall *>(this);
+        return call->HasMultiRegRetVal();
+    }
 
-    GenTreePtr op1 = gtGetOp1();
-    GenTreePtr actualOperand = op1->gtSkipReloadOrCopy();
+    return false;
+}
 
-    return (actualOperand->OperGet() == GT_CALL) && actualOperand->AsCall()->HasMultiRegRetVal();
+//-------------------------------------------------------------------------
+// IsCopyOrReload: whether this is a GT_COPY or GT_RELOAD node.
+//
+// Arguments:
+//     None
+//
+// Return Value:
+//     Returns true if this GenTree is a copy or reload node.
+inline bool GenTree::IsCopyOrReload() const
+{
+    return (gtOper == GT_COPY || gtOper == GT_RELOAD);
+}
+
+//-----------------------------------------------------------------------------------
+// IsCopyOrReloadOfMultiRegCall: whether this is a GT_COPY or GT_RELOAD of a multi-reg
+// call node.
+//
+// Arguments:
+//     None
+//
+// Return Value:
+//     Returns true if this GenTree is a copy or reload of multi-reg call node.
+inline bool GenTree::IsCopyOrReloadOfMultiRegCall() const
+{
+    if (IsCopyOrReload())
+    {
+        GenTree* t = const_cast<GenTree*>(this);
+        return t->gtGetOp1()->IsMultiRegCall();
+    }
+
+    return false;
 }
 
 inline bool GenTree::IsCnsIntOrI() const
