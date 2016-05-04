@@ -315,16 +315,11 @@ mono_marshal_init (void)
 		register_icall (mono_marshal_isinst_with_cache, "mono_marshal_isinst_with_cache", "object object ptr ptr", FALSE);
 		register_icall (mono_marshal_has_ftnptr_eh_callback, "mono_marshal_has_ftnptr_eh_callback", "int32", TRUE);
 		register_icall (mono_marshal_ftnptr_eh_callback, "mono_marshal_ftnptr_eh_callback", "void uint32", TRUE);
+		register_icall (mono_threads_prepare_blocking, "mono_threads_prepare_blocking", "ptr ptr", TRUE);
+		register_icall (mono_threads_finish_blocking, "mono_threads_finish_blocking", "void ptr ptr", TRUE);
 
 		mono_cominterop_init ();
 		mono_remoting_init ();
-
-		if (mono_threads_is_coop_enabled ()) {
-			register_icall (mono_threads_prepare_blocking, "mono_threads_prepare_blocking", "ptr ptr", TRUE);
-			register_icall (mono_threads_finish_blocking, "mono_threads_finish_blocking", "void ptr ptr", TRUE);
-			register_icall (mono_threads_reset_blocking_start, "mono_threads_reset_blocking_start","ptr ptr", TRUE);
-			register_icall (mono_threads_reset_blocking_end, "mono_threads_reset_blocking_end","void ptr ptr", TRUE);
-		}
 	}
 }
 
@@ -7278,12 +7273,10 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 	EmitMarshalContext m;
 	MonoMethodSignature *csig;
 	MonoClass *klass;
-	MonoExceptionClause *clause;
 	int i, argnum, *tmp_locals;
 	int type, param_shift = 0;
 	static MonoMethodSignature *get_last_error_sig = NULL;
-	int coop_gc_stack_dummy, coop_gc_var, coop_unblocked_var;
-	int leave_pos;
+	int coop_gc_stack_dummy, coop_gc_var;
 
 	memset (&m, 0, sizeof (m));
 	m.mb = mb;
@@ -7326,11 +7319,19 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 		coop_gc_stack_dummy = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 		/* local 5, the local to be used when calling the suspend funcs */
 		coop_gc_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-		coop_unblocked_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-
-		clause = (MonoExceptionClause *)mono_image_alloc0 (image, sizeof (MonoExceptionClause));
-		clause->flags = MONO_EXCEPTION_CLAUSE_FINALLY;
 	}
+
+	/*
+	 * cookie = mono_threads_prepare_blocking (ref dummy);
+	 *
+	 * ret = method (...);
+	 *
+	 * mono_threads_finish_blocking (cookie, ref dummy);
+	 *
+	 * <interrupt check>
+	 *
+	 * return ret;
+	 */
 
 	if (MONO_TYPE_ISSTRUCT (sig->ret))
 		m.vtaddr_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
@@ -7363,8 +7364,6 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 			mono_mb_emit_byte (mb, CEE_POP); // Result not needed yet
 		}
 
-		clause->try_offset = mono_mb_get_label (mb);
-
 		mono_mb_emit_ldloc_addr (mb, coop_gc_stack_dummy);
 		mono_mb_emit_icall (mb, mono_threads_prepare_blocking);
 		mono_mb_emit_stloc (mb, coop_gc_var);
@@ -7391,8 +7390,7 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 #else
 		g_assert_not_reached ();
 #endif
-	}
-	else {
+	} else {
 		if (aot) {
 			/* Reuse the ICALL_ADDR opcode for pinvokes too */
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
@@ -7419,8 +7417,6 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 		mono_mb_emit_ldloc (mb, coop_gc_var);
 		mono_mb_emit_ldloc_addr (mb, coop_gc_stack_dummy);
 		mono_mb_emit_icall (mb, mono_threads_finish_blocking);
-		mono_mb_emit_icon (mb, 1);
-		mono_mb_emit_stloc (mb, coop_unblocked_var);
 	}
 
 	/* Set LastError if needed */
@@ -7497,31 +7493,6 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 		mono_mb_emit_stloc (mb, 3);
 	}
 
-	if (mono_threads_is_coop_enabled ()) {
-		int pos;
-
-		leave_pos = mono_mb_emit_branch (mb, CEE_LEAVE);
-
-		clause->try_len = mono_mb_get_label (mb) - clause->try_offset;
-		clause->handler_offset = mono_mb_get_label (mb);
-
-		mono_mb_emit_ldloc (mb, coop_unblocked_var);
-		mono_mb_emit_icon (mb, 1);
-		pos = mono_mb_emit_branch (mb, CEE_BEQ);
-
-		mono_mb_emit_ldloc (mb, coop_gc_var);
-		mono_mb_emit_ldloc_addr (mb, coop_gc_stack_dummy);
-		mono_mb_emit_icall (mb, mono_threads_finish_blocking);
-
-		mono_mb_patch_branch (mb, pos);
-
-		mono_mb_emit_byte (mb, CEE_ENDFINALLY);
-
-		clause->handler_len = mono_mb_get_pos (mb) - clause->handler_offset;
-
-		mono_mb_patch_branch (mb, leave_pos);
-	}
-
 	/* 
 	 * Need to call this after converting the result since MONO_VTADDR needs 
 	 * to be adjacent to the call instruction.
@@ -7559,10 +7530,6 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 		mono_mb_emit_ldloc (mb, 3);
 
 	mono_mb_emit_byte (mb, CEE_RET);
-
-	if (mono_threads_is_coop_enabled ()) {
-		mono_mb_set_clauses (mb, 1, clause);
-	}
 }
 #endif /* DISABLE_JIT */
 
