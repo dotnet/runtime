@@ -76,7 +76,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
             }
         }
 
-        public virtual string GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, SignatureTypeHandleCode code = SignatureTypeHandleCode.Unresolved)
+        public virtual string GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind = 0)
         {
             TypeDefinition definition = reader.GetTypeDefinition(handle);
 
@@ -87,13 +87,13 @@ namespace System.Reflection.Metadata.Decoding.Tests
             if (definition.Attributes.IsNested())
             {
                 TypeDefinitionHandle declaringTypeHandle = definition.GetDeclaringType();
-                return GetTypeFromDefinition(reader, declaringTypeHandle, SignatureTypeHandleCode.Unresolved) + "/" + name;
+                return GetTypeFromDefinition(reader, declaringTypeHandle, 0) + "/" + name;
             }
 
             return name;
         }
 
-        public virtual string GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, SignatureTypeHandleCode code = SignatureTypeHandleCode.Unresolved)
+        public virtual string GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind = 0)
         {
             TypeReference reference = reader.GetTypeReference(handle);
             Handle scope = reference.ResolutionScope;
@@ -113,7 +113,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
                     return "[" + reader.GetString(assemblyReference.Name) + "]" + name;
 
                 case HandleKind.TypeReference:
-                    return GetTypeFromReference(reader, (TypeReferenceHandle)scope, code) + "/" + name;
+                    return GetTypeFromReference(reader, (TypeReferenceHandle)scope) + "/" + name;
 
                 default:
                     // rare cases:  ModuleDefinition means search within defs of current module (used by WinMDs for projections)
@@ -124,7 +124,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
             }
         }
 
-        public virtual string GetTypeFromSpecification(MetadataReader reader, TypeSpecificationHandle handle, SignatureTypeHandleCode code = SignatureTypeHandleCode.Unresolved)
+        public virtual string GetTypeFromSpecification(MetadataReader reader, TypeSpecificationHandle handle, byte rawTypeKind = 0)
         {
             return reader.GetTypeSpecification(handle).DecodeSignature(this);
         }

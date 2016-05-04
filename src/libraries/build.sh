@@ -55,30 +55,6 @@ check_native_prereqs()
 
 prepare_managed_build()
 {
-    # Pull NuGet.exe down if we don't have it already
-    if [ ! -e "$__nugetpath" ]; then
-        which curl wget > /dev/null 2> /dev/null
-        if [ $? -ne 0 -a $? -ne 1 ]; then
-            echo "cURL or wget is required to build corefx. Please see https://github.com/dotnet/corefx/blob/master/Documentation/building/unix-instructions.md for more details."
-            exit 1
-        fi
-        echo "Restoring NuGet.exe..."
-
-        # curl has HTTPS CA trust-issues less often than wget, so lets try that first.
-        which curl > /dev/null 2> /dev/null
-        if [ $? -ne 0 ]; then
-           mkdir -p $__packageroot
-           wget -q -O $__nugetpath https://api.nuget.org/downloads/nuget.exe
-        else
-           curl -sSL --create-dirs -o $__nugetpath https://api.nuget.org/downloads/nuget.exe
-        fi
-
-        if [ $? -ne 0 ]; then
-            echo "Failed to restore NuGet.exe."
-            exit 1
-        fi
-    fi
-
     # Run Init-Tools to restore BuildTools and ToolRuntime
     $__scriptpath/init-tools.sh
 }
@@ -183,8 +159,6 @@ __scriptpath=$(cd "$(dirname "$0")"; pwd -P)
 __nativeroot=$__scriptpath/src/Native
 __packageroot=$__scriptpath/packages
 __sourceroot=$__scriptpath/src
-__nugetpath=$__packageroot/NuGet.exe
-__nugetconfig=$__sourceroot/NuGet.Config
 __rootbinpath="$__scriptpath/bin"
 __msbuildpackageid="Microsoft.Build.Mono.Debug"
 __generateversionsource=false
@@ -247,7 +221,11 @@ case $OSName in
         elif [ "$ID" == "rhel" ]; then
             __TestNugetRuntimeId=rhel.7-x64
         elif [ "$ID" == "ubuntu" ]; then
-            __TestNugetRuntimeId=ubuntu.14.04-x64
+            if [ $VERSION_ID == "16.04" ]; then
+                __TestNugetRuntimeId=ubuntu.16.04-x64
+            else
+                __TestNugetRuntimeId=ubuntu.14.04-x64
+            fi
         elif [ "$ID" == "debian" ]; then
             __TestNugetRuntimeId=debian.8-x64
         else

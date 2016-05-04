@@ -128,82 +128,11 @@ namespace System.Text.Tests
         }
         #endregion
 
-        #region Negative Test Cases
-        // NegTest1: ArgumentNullException should be thrown when chars is a null reference or bytes is a null reference
-        [Fact]
-        public void NegTest1()
-        {
-            Encoder encoder = Encoding.UTF8.GetEncoder();
-
-            VerificationHelper<ArgumentNullException>(encoder, null, 0, 0, new byte[1], 0, true, typeof(ArgumentNullException), "101.1");
-            VerificationHelper<ArgumentNullException>(encoder, new char[1], 0, 0, null, 0, true, typeof(ArgumentNullException), "101.2");
-            VerificationHelper<ArgumentNullException>(encoder, null, 0, 0, new byte[1], 0, false, typeof(ArgumentNullException), "101.3");
-            VerificationHelper<ArgumentNullException>(encoder, new char[1], 0, 0, null, 0, false, typeof(ArgumentNullException), "101.4");
-        }
-
-        // NegTest2: ArgumentOutOfRangeException should be thrown when charIndex or charCount or byteIndex is less than zero.
-        [Fact]
-        public void NegTest2()
-        {
-            Encoder encoder = Encoding.UTF8.GetEncoder();
-
-            VerificationHelper<ArgumentOutOfRangeException>(encoder, new char[1], 0, -1, new byte[1], 0, true, typeof(ArgumentOutOfRangeException), "102.1");
-            VerificationHelper<ArgumentOutOfRangeException>(encoder, new char[1], 0, 0, new byte[1], -1, true, typeof(ArgumentOutOfRangeException), "102.2");
-            VerificationHelper<ArgumentOutOfRangeException>(encoder, new char[1], -1, 0, new byte[1], -1, true, typeof(ArgumentOutOfRangeException), "102.3");
-        }
-
-        // NegTest3: ArgumentException should be thrown when byteCount is less than the resulting number of bytes
-        [Fact]
-        public void NegTest3()
-        {
-            Encoder encoder = Encoding.Unicode.GetEncoder();
-            char[] chars = new char[c_SIZE_OF_ARRAY];
-            for (int i = 0; i < chars.Length; ++i)
-            {
-                chars[i] = _generator.GetChar(-55);
-            }
-            byte[] bytes1 = new byte[1];
-
-            VerificationHelper<ArgumentException>(encoder, chars, 0, chars.Length, bytes1, 1, true, typeof(ArgumentException), "103.1");
-            VerificationHelper<ArgumentException>(encoder, chars, 0, chars.Length, bytes1, 1, false, typeof(ArgumentException), "103.2");
-        }
-
-        // NegTest4: ArgumentOutOfRangeException should be thrown when charIndex and charCount do not denote a valid range in chars
-        [Fact]
-        public void NegTest4()
-        {
-            Encoder encoder = Encoding.UTF8.GetEncoder();
-
-            VerificationHelper<ArgumentOutOfRangeException>(encoder, new char[1], 1, 1, new byte[1], 0, true, typeof(ArgumentOutOfRangeException), "104.1");
-            VerificationHelper<ArgumentOutOfRangeException>(encoder, new char[1], 0, 2, new byte[1], 0, true, typeof(ArgumentOutOfRangeException), "104.2");
-        }
-
-        // NegTest5: ArgumentOutOfRangeException should be thrown when byteIndex is not a valid index in bytes
-        [Fact]
-        public void NegTest5()
-        {
-            Encoder encoder = Encoding.UTF8.GetEncoder();
-
-            VerificationHelper<ArgumentOutOfRangeException>(encoder, new char[1], 0, 1, new byte[1], 2, true, typeof(ArgumentOutOfRangeException), "105.1");
-        }
-        #endregion
-
         private void VerificationHelper(Encoder encoder, char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex,
             bool flush, int expectedRetVal, string errorno)
         {
             int actualRetVal = encoder.GetBytes(chars, charIndex, charCount, bytes, byteIndex, flush);
             Assert.Equal(expectedRetVal, actualRetVal);
-        }
-
-        private void VerificationHelper<T>(Encoder encoder, char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex,
-            bool flush, Type expected, string errorno) where T : Exception
-        {
-            string str = new string(chars);
-
-            Assert.Throws<T>(() =>
-            {
-                int actualRetVal = encoder.GetBytes(chars, charIndex, charCount, bytes, byteIndex, flush);
-            });
         }
 
         private bool IsHighSurrogate(char c)

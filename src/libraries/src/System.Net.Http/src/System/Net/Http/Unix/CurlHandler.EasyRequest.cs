@@ -29,6 +29,7 @@ namespace System.Net.Http
 {
     internal partial class CurlHandler : HttpMessageHandler
     {
+        /// <summary>Provides all of the state associated with a single request/response, referred to as an "easy" request in libcurl parlance.</summary>
         private sealed class EasyRequest : TaskCompletionSource<HttpResponseMessage>
         {
             internal readonly CurlHandler _handler;
@@ -44,6 +45,7 @@ namespace System.Net.Http
             internal SendTransferState _sendTransferState;
             internal bool _isRedirect = false;
             internal Uri _targetUri;
+            internal StrongToWeakReference<EasyRequest> _selfStrongToWeakReference;
 
             private SafeCallbackHandle _callbackHandle;
 
@@ -124,10 +126,25 @@ namespace System.Net.Http
                 }
 
                 // Now ensure it's published.
-                bool result = TrySetResult(_responseMessage);
-                Debug.Assert(result || Task.Status == TaskStatus.RanToCompletion,
+                bool completedTask = TrySetResult(_responseMessage);
+                Debug.Assert(completedTask || Task.Status == TaskStatus.RanToCompletion,
                     "If the task was already completed, it should have been completed successfully; " +
                     "we shouldn't be completing as successful after already completing as failed.");
+
+                // If we successfully transitioned it to be completed, we also handed off lifetime ownership
+                // of the response to the owner of the task.  Transition our reference on the EasyRequest
+                // to be weak instead of strong, so that we don't forcibly keep it alive.
+                if (completedTask)
+                {
+                    Debug.Assert(_selfStrongToWeakReference != null, "Expected non-null wrapper");
+                    _selfStrongToWeakReference.MakeWeak();
+                }
+            }
+
+            public void FailRequestAndCleanup(Exception error)
+            {
+                FailRequest(error);
+                Cleanup();
             }
 
             public void FailRequest(Exception error)

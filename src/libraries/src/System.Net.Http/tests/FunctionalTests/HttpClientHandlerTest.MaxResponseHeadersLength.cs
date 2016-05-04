@@ -65,20 +65,14 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n", 39, true)]
         public async Task ThresholdExceeded_ThrowsException(string responseHeaders, int maxResponseHeadersLength, bool shouldSucceed)
         {
-            using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            await LoopbackServer.CreateClientAndServerAsync(async (handler, client, server, url) =>
             {
-                s.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-                s.Listen(1);
-                var ep = (IPEndPoint)s.LocalEndPoint;
+                handler.MaxResponseHeadersLength = maxResponseHeadersLength;
+                Task<HttpResponseMessage> getAsync = client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
 
-                using (var handler = new HttpClientHandler() { MaxResponseHeadersLength = maxResponseHeadersLength })
-                using (var client = new HttpClient(handler))
+                await LoopbackServer.AcceptSocketAsync(server, async (s, serverStream, reader, writer) =>
                 {
-                    Task<HttpResponseMessage> getAsync = client.GetAsync($"http://{ep.Address}:{ep.Port}", HttpCompletionOption.ResponseHeadersRead);
-
-                    using (Socket server = s.Accept())
-                    using (Stream serverStream = new NetworkStream(server, ownsSocket: false))
-                    using (StreamReader reader = new StreamReader(serverStream, Encoding.ASCII))
+                    using (s) using (serverStream) using (reader) using (writer)
                     {
                         string line;
                         while ((line = reader.ReadLine()) != null && !string.IsNullOrEmpty(line)) ;
@@ -95,8 +89,9 @@ namespace System.Net.Http.Functional.Tests
                     {
                         await Assert.ThrowsAsync<HttpRequestException>(() => getAsync);
                     }
-                }
-            }
+                });
+            });
+
         }
 
     }

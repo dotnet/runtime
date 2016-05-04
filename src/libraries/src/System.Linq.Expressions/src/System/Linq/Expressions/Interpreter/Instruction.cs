@@ -11,11 +11,6 @@ using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions.Interpreter
 {
-    internal interface IInstructionProvider
-    {
-        void AddInstructions(LightCompiler compiler);
-    }
-
     internal abstract partial class Instruction
     {
         public const int UnknownInstrIndex = int.MaxValue;

@@ -4,18 +4,9 @@
 
 using System;
 using System.Diagnostics;
-
-#if SRM
 using System.Reflection.Internal;
-#else
-using Roslyn.Utilities;
-#endif
 
-#if SRM
 namespace System.Reflection
-#else
-namespace Roslyn.Reflection
-#endif
 {
     internal unsafe static class BlobUtilities
     {
@@ -272,12 +263,12 @@ namespace Roslyn.Reflection
         {
             if (start < 0 || start > bufferLength)
             {
-                throw new ArgumentOutOfRangeException(nameof(start));
+                Throw.ArgumentOutOfRange(nameof(start));
             }
 
             if (byteCount < 0 || byteCount > bufferLength - start)
             {
-                throw new ArgumentOutOfRangeException(nameof(byteCount));
+                Throw.ArgumentOutOfRange(nameof(byteCount));
             }
         }
     }

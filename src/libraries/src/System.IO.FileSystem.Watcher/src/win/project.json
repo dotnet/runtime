@@ -2,7 +2,7 @@
   "frameworks": {
     "netstandard1.3": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1-rc3-24026-00",
+        "Microsoft.NETCore.Platforms": "1.0.1-rc3-24102-00",
         "Microsoft.Win32.Primitives": "4.0.0",
         "System.Diagnostics.Debug": "4.0.10",
         "System.Diagnostics.Tools": "4.0.0",
@@ -16,15 +16,11 @@
         "System.Threading": "4.0.10",
         "System.Threading.Overlapped": "4.0.0",
         "System.Threading.Tasks": "4.0.10",
-        "System.Threading.Thread": "4.0.0-rc3-24026-00"
+        "System.Threading.Thread": "4.0.0-rc3-24102-00"
       },
       "imports": [
         "dotnet5.4"
       ]
     }
-  },
-  "runtimes": {
-    "win7-x86": {},
-    "win7-x64": {}
   }
 }

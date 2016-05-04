@@ -239,6 +239,15 @@ namespace System.Net.Primitives.Functional.Tests
             c.Value = null;
             Assert.Equal(string.Empty, c.Value);
         }
+        
+        // NOTE: This test is expected to fail on the full desktop.
+        // The behavior this tests was only recently added in #8206.
+        [Fact]
+        public static void Value_PassNullToCtor_GetReturnsEmptyString()
+        {
+            var cookie = new Cookie("SomeName", null);
+            Assert.Equal(string.Empty, cookie.Value);
+        }
 
         [Fact]
         public static void Version_GetSet_Success()

@@ -119,7 +119,7 @@ namespace System.Net
         public Cookie(string name, string value)
         {
             Name = name;
-            m_value = value;
+            Value = value;
         }
 
         /// <devdoc>

@@ -302,7 +302,7 @@
       <Version>4.0.1</Version>
     </BaseLinePackage>
     <BaseLinePackage Include="System.Security.Cryptography.Algorithms">
-      <Version>4.1.0</Version>
+      <Version>4.2.0</Version>
     </BaseLinePackage>
     <BaseLinePackage Include="System.Security.Cryptography.Cng">
       <Version>4.1.0</Version>

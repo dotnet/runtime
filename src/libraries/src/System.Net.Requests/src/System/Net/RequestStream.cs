@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -111,12 +112,7 @@ namespace System.Net
             ArraySegment<byte> bytes;
 
             bool success = _buffer.TryGetBuffer(out bytes);
-
-            if (!success)
-            {
-                // TODO (#7890): Need to figure out how to log this and throw a good exception.
-                throw new Exception();
-            }
+            Debug.Assert(success); // Buffer should always be visible since default MemoryStream constructor was used.
 
             return bytes;
         }

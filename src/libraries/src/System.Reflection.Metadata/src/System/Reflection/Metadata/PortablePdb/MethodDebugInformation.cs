@@ -6,6 +6,12 @@ using System.Diagnostics;
 
 namespace System.Reflection.Metadata
 {
+    /// <summary>
+    /// Debug information associated with a method definition. Stored in debug metadata.
+    /// </summary>
+    /// <remarks>
+    /// See https://github.com/dotnet/corefx/blob/master/src/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#methoddebuginformation-table-0x31.
+    /// </remarks>
     public struct MethodDebugInformation
     {
         private readonly MetadataReader _reader;
@@ -22,34 +28,19 @@ namespace System.Reflection.Metadata
             _rowId = handle.RowId;
         }
 
-        private MethodDebugInformationHandle Handle
-        {
-            get { return MethodDebugInformationHandle.FromRowId(_rowId); }
-        }
+        private MethodDebugInformationHandle Handle => MethodDebugInformationHandle.FromRowId(_rowId);
 
         /// <summary>
         /// Returns a blob encoding sequence points.
         /// Use <see cref="GetSequencePoints()"/> to decode.
         /// </summary>
-        public BlobHandle SequencePointsBlob
-        {
-            get
-            {
-                return _reader.MethodDebugInformationTable.GetSequencePoints(Handle);
-            }
-        }
+        public BlobHandle SequencePointsBlob => _reader.MethodDebugInformationTable.GetSequencePoints(Handle);
 
         /// <summary>
         /// The document containing the first sequence point of the method, 
         /// or nil if the method doesn't have sequence points.
         /// </summary>
-        public DocumentHandle Document
-        {
-            get
-            {
-                return _reader.MethodDebugInformationTable.GetDocument(Handle);
-            }
-        }
+        public DocumentHandle Document => _reader.MethodDebugInformationTable.GetDocument(Handle);
 
         /// <summary>
         /// Returns local signature handle.

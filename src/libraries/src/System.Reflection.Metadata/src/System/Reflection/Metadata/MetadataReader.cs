@@ -91,7 +91,7 @@ namespace System.Reflection.Metadata
 
             if (!BitConverter.IsLittleEndian)
             {
-                throw new PlatformNotSupportedException(SR.LitteEndianArchitectureRequired);
+                Throw.LitteEndianArchitectureRequired();
             }
 
             this.Block = new MemoryBlock(metadata, length);

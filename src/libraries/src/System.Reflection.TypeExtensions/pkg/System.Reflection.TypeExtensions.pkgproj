@@ -6,7 +6,7 @@
       <SupportedFramework>net46;netcore50</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\ref\System.Reflection.TypeExtensions.csproj">
-      <SupportedFramework>net462;netstandardapp1.5</SupportedFramework>
+      <SupportedFramework>net462;netcoreapp1.0</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Reflection.TypeExtensions.builds" />
   </ItemGroup>

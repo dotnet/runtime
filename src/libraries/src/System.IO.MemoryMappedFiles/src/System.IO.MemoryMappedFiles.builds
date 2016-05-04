@@ -9,6 +9,10 @@
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="System.IO.MemoryMappedFiles.csproj">
+      <TargetGroup>netcore50</TargetGroup>
+      <OSGroup>Windows_NT</OSGroup>
+    </Project>
+    <Project Include="System.IO.MemoryMappedFiles.csproj">
       <TargetGroup>net46</TargetGroup>
     </Project>
   </ItemGroup>

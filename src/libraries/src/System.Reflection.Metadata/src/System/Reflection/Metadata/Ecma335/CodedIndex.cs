@@ -2,20 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
-
-#if SRM
 namespace System.Reflection.Metadata.Ecma335
-#else
-namespace Roslyn.Reflection.Metadata.Ecma335
-#endif
 {
-#if SRM
-    public
-#endif
-    static class CodedIndex
+    public static class CodedIndex
     {
         private static int ToCodedIndex(this int rowId, HasCustomAttribute tag) => (rowId << (int)HasCustomAttribute.__bits) | (int)tag;
         private static int ToCodedIndex(this int rowId, HasConstant tag) => (rowId << (int)HasConstant.__bits) | (int)tag;
@@ -75,6 +64,11 @@ namespace Roslyn.Reflection.Metadata.Ecma335
             __bits = 5
         }
 
+        private static Exception UnexpectedHandleKind(HandleKind kind)
+        {
+            return new ArgumentException(SR.Format(SR.UnexpectedHandleKind, kind));
+        }
+
         private static HasCustomAttribute ToHasCustomAttributeTag(HandleKind kind)
         {
             switch (kind)
@@ -103,7 +97,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
                 case HandleKind.MethodSpecification: return HasCustomAttribute.MethodSpec;
 
                 default:
-                    throw new ArgumentException($"Unexpected kind of handle: {kind}");
+                    throw UnexpectedHandleKind(kind);
             }
         }
 
@@ -126,7 +120,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
                 case HandleKind.PropertyDefinition: return HasConstant.Property;
 
                 default:
-                    throw new ArgumentException($"Unexpected kind of handle: {kind}");
+                    throw UnexpectedHandleKind(kind);
             }
         }
 
@@ -146,7 +140,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
                 case HandleKind.MemberReference: return CustomAttributeType.MemberRef;
 
                 default:
-                    throw new ArgumentException($"Unexpected kind of handle: {kind}");
+                    throw UnexpectedHandleKind(kind);
             }
         }
 
@@ -169,7 +163,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
                 case HandleKind.AssemblyDefinition: return HasDeclSecurity.Assembly;
 
                 default:
-                    throw new ArgumentException($"Unexpected kind of handle: {kind}");
+                    throw UnexpectedHandleKind(kind);
             }
         }
 
@@ -190,7 +184,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
                 case HandleKind.Parameter: return HasFieldMarshal.Param;
 
                 default:
-                    throw new ArgumentException($"Unexpected kind of handle: {kind}");
+                    throw UnexpectedHandleKind(kind);
             }
         }
 
@@ -210,7 +204,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
                 case HandleKind.PropertyDefinition: return HasSemantics.Property;
 
                 default:
-                    throw new ArgumentException($"Unexpected kind of handle: {kind}");
+                    throw UnexpectedHandleKind(kind);
             }
         }
 
@@ -232,7 +226,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
                 case HandleKind.ExportedType: return Implementation.ExportedType;
 
                 default:
-                    throw new ArgumentException($"Unexpected kind of handle: {kind}");
+                    throw UnexpectedHandleKind(kind);
             }
         }
 
@@ -252,7 +246,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
                 case HandleKind.MethodDefinition: return MemberForwarded.MethodDef;
 
                 default:
-                    throw new ArgumentException($"Unexpected kind of handle: {kind}");
+                    throw UnexpectedHandleKind(kind);
             }
         }
 
@@ -278,7 +272,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
                 case HandleKind.TypeSpecification: return MemberRefParent.TypeSpec;
 
                 default:
-                    throw new ArgumentException($"Unexpected kind of handle: {kind}");
+                    throw UnexpectedHandleKind(kind);
             }
         }
 
@@ -298,7 +292,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
                 case HandleKind.MemberReference: return MethodDefOrRef.MemberRef;
 
                 default:
-                    throw new ArgumentException($"Unexpected kind of handle: {kind}");
+                    throw UnexpectedHandleKind(kind);
             }
         }
 
@@ -322,7 +316,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
                 case HandleKind.TypeReference: return ResolutionScope.TypeRef;
 
                 default:
-                    throw new ArgumentException($"Unexpected kind of handle: {kind}");
+                    throw UnexpectedHandleKind(kind);
             }
         }
 
@@ -344,7 +338,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
                 case HandleKind.TypeSpecification: return TypeDefOrRefOrSpec.TypeSpec;
 
                 default:
-                    throw new ArgumentException($"Unexpected kind of handle: {kind}");
+                    throw UnexpectedHandleKind(kind);
             }
         }
 
@@ -364,7 +358,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
                 case HandleKind.MethodDefinition: return TypeOrMethodDef.MethodDef;
 
                 default:
-                    throw new ArgumentException($"Unexpected kind of handle: {kind}");
+                    throw UnexpectedHandleKind(kind);
             }
         }
 
@@ -429,12 +423,12 @@ namespace Roslyn.Reflection.Metadata.Ecma335
                 case HandleKind.MethodSpecification: return HasCustomDebugInformation.MethodSpec;
                 case HandleKind.Document: return HasCustomDebugInformation.Document;
                 case HandleKind.LocalScope: return HasCustomDebugInformation.LocalScope;
-                case (HandleKind)0x33: return HasCustomDebugInformation.LocalVariable; // TODO
+                case HandleKind.LocalVariable: return HasCustomDebugInformation.LocalVariable;
                 case HandleKind.LocalConstant: return HasCustomDebugInformation.LocalConstant;
                 case HandleKind.ImportScope: return HasCustomDebugInformation.ImportScope;
-                    
+
                 default:
-                    throw new ArgumentException($"Unexpected kind of handle: {kind}");
+                    throw UnexpectedHandleKind(kind);
             }
         }
     }

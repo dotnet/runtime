@@ -109,33 +109,6 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Fact]
-        public static void IndexSubscript_Get_Success()
-        {
-            CookieCollection cc = CreateCookieCollection1();
-
-            Assert.Equal(cc[0], c1);
-            Assert.Equal(cc[1], c2);
-            Assert.Equal(cc[2], c3);
-            Assert.Equal(cc[3], c4);
-            Assert.Equal(cc[4], c5);
-
-            Assert.Equal(cc["name1"], c1);
-            Assert.Equal(cc["name2"], c2);
-            Assert.Equal(cc["name3"], c4);
-        }
-
-        [Fact]
-        public static void IndexSubscript_Get_Invalid()
-        {
-            CookieCollection cc = CreateCookieCollection1();
-
-            Assert.Throws<ArgumentOutOfRangeException>(() => cc[-1]); // Index < 0
-            Assert.Throws<ArgumentOutOfRangeException>(() => cc[cc.Count]); // Index >= Count
-
-            Assert.Null(cc["no such name"]);
-        }
-
-        [Fact]
         public static void IsSynchronized_Get_Success()
         {
             ICollection cc = new CookieCollection();

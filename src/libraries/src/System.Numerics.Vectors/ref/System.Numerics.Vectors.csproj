@@ -4,19 +4,9 @@
   <PropertyGroup>
     <AssemblyVersion>4.1.1.0</AssemblyVersion>
     <OutputType>Library</OutputType>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.1</NuGetTargetMoniker>
-    <!-- remove when fixing https://github.com/dotnet/corefx/issues/5900 -->
-    <SkipValidatePackageTargetFramework>true</SkipValidatePackageTargetFramework>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.0</NuGetTargetMoniker>
+    <PackageTargetFramework>netstandard1.0</PackageTargetFramework>
   </PropertyGroup>
-
-  <ItemGroup Condition="'$(PackageTargetFramework)' == ''">
-    <PackageDestination Include="ref/netstandard1.1">
-      <TargetFramework>netstandard1.1</TargetFramework>
-    </PackageDestination>
-    <PackageDestination Include="ref/portable-net45+win8">
-      <TargetFramework>portable-net45+win8</TargetFramework>
-    </PackageDestination>
-  </ItemGroup>
 
   <ItemGroup>
     <Compile Include="System.Numerics.Vectors.cs" />

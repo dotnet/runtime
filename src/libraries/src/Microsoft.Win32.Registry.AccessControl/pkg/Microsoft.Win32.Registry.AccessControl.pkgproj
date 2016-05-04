@@ -4,7 +4,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ref\Microsoft.Win32.Registry.AccessControl.csproj">
-      <SupportedFramework>net46;netstandardapp1.5</SupportedFramework>
+      <SupportedFramework>net46;netcoreapp1.0</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\Microsoft.Win32.Registry.AccessControl.builds" />
 

@@ -17,7 +17,7 @@
       <TargetGroup>netstandard13aot</TargetGroup>
     </Project>
     <Project Include="System.Private.Uri.csproj">
-      <OSGroup>Linux</OSGroup>
+      <OSGroup>Unix</OSGroup>
       <TargetGroup>netstandard13aot</TargetGroup>
     </Project>
   </ItemGroup>

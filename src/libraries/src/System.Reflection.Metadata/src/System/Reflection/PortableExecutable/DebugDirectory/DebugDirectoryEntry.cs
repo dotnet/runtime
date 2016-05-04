@@ -17,37 +17,37 @@ namespace System.Reflection.PortableExecutable
         /// The algorithm used to calculate this value is an implementation 
         /// detail of the tool that produced the file.
         /// </remarks>
-        public uint Stamp { get; private set; }
+        public uint Stamp { get; }
 
         /// <summary>
         /// The major version number of the debug data format.
         /// </summary>
-        public ushort MajorVersion { get; private set; }
+        public ushort MajorVersion { get; }
 
         /// <summary>
         /// The minor version number of the debug data format.
         /// </summary>
-        public ushort MinorVersion { get; private set; }
+        public ushort MinorVersion { get; }
 
         /// <summary>
         /// The format of debugging information. 
         /// </summary>
-        public DebugDirectoryEntryType Type { get; private set; }
+        public DebugDirectoryEntryType Type { get; }
 
         /// <summary>
         /// The size of the debug data (not including the debug directory itself).
         /// </summary>
-        public int DataSize { get; private set; }
+        public int DataSize { get; }
 
         /// <summary>
         /// The address of the debug data when loaded, relative to the image base.
         /// </summary>
-        public int DataRelativeVirtualAddress { get; private set; }
+        public int DataRelativeVirtualAddress { get; }
 
         /// <summary>
         /// The file pointer to the debug data.
         /// </summary>
-        public int DataPointer { get; private set; }
+        public int DataPointer { get; }
 
         public DebugDirectoryEntry(
             uint stamp,

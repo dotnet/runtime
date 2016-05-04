@@ -35,22 +35,11 @@ namespace System.IO.MemoryMappedFiles
 
             // if request is >= than total virtual, then MapViewOfFile will fail with meaningless error message 
             // "the parameter is incorrect"; this provides better error message in advance
-            Interop.mincore.MEMORYSTATUSEX memStatus;
-            memStatus.dwLength = (uint)sizeof(Interop.mincore.MEMORYSTATUSEX);
-            Interop.mincore.GlobalMemoryStatusEx(out memStatus);
-            ulong totalVirtual = memStatus.ullTotalVirtual;
-            if (nativeSize >= totalVirtual)
-            {
-                throw new IOException(SR.IO_NotEnoughMemory);
-            }
-
-            // split the long into two ints
-            int offsetLow = unchecked((int)(newOffset & 0x00000000FFFFFFFFL));
-            int offsetHigh = unchecked((int)(newOffset >> 32));
+            Interop.CheckForAvailableVirtualMemory(nativeSize);
 
             // create the view
-            SafeMemoryMappedViewHandle viewHandle = Interop.mincore.MapViewOfFile(memMappedFileHandle,
-                    (int)MemoryMappedFile.GetFileMapAccess(access), offsetHigh, offsetLow, new UIntPtr(nativeSize));
+            SafeMemoryMappedViewHandle viewHandle = Interop.MapViewOfFile(memMappedFileHandle,
+                    (int)MemoryMappedFile.GetFileMapAccess(access), newOffset, new UIntPtr(nativeSize));
             if (viewHandle.IsInvalid)
             {
                 viewHandle.Dispose();
@@ -74,7 +63,7 @@ namespace System.IO.MemoryMappedFiles
             // VirtualQueryEx: http://msdn.microsoft.com/en-us/library/windows/desktop/aa366907(v=vs.85).aspx
             if (((viewInfo.State & Interop.mincore.MemOptions.MEM_RESERVE) != 0) || ((ulong)viewSize < (ulong)nativeSize))
             {
-                IntPtr tempHandle = Interop.mincore.VirtualAlloc(
+                IntPtr tempHandle = Interop.VirtualAlloc(
                     viewHandle, (UIntPtr)(nativeSize != MemoryMappedFile.DefaultSize ? nativeSize : viewSize), 
                     Interop.mincore.MemOptions.MEM_COMMIT, MemoryMappedFile.GetPageAccess(access));
                 int lastError = Marshal.GetLastWin32Error();

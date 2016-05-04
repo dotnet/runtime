@@ -12,10 +12,14 @@ namespace System.Text.Tests
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(8)]
+        [InlineData(10)]
+        [InlineData(715827881)]
         [InlineData((int.MaxValue - 2) / 3)]
         public void GetMaxByteCount(int charCount)
         {
-            Assert.Equal(charCount * 3 + 2, new UTF7Encoding().GetMaxByteCount(charCount));
+            int expected = charCount * 3 + 2;
+            Assert.Equal(expected, new UTF7Encoding(true).GetMaxByteCount(charCount));
+            Assert.Equal(expected, new UTF7Encoding(false).GetMaxByteCount(charCount));
         }
     }
 }

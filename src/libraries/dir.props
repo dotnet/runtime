@@ -26,12 +26,8 @@
     <IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>
   </PropertyGroup>
   
-  <!--
-    Switching to the .NET Core version of the BuildTools tasks seems to break numerous scenarios, such as VS intellisense and resource designer
-    as well as runnning the build on mono. Until we can get these sorted out we will continue using the .NET 4.5 version of the tasks.
-  -->
   <PropertyGroup>
-    <BuildToolsTargets45>true</BuildToolsTargets45>
+    <BuildToolsTargets45 Condition="'$(OsEnvironment)'=='Windows_NT'">true</BuildToolsTargets45>
   </PropertyGroup>
 
   <!-- Common repo directories -->
@@ -53,10 +49,11 @@
     <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools/</ToolsDir>
     <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolRuntimePath)dotnetcli/</DotnetCliPath>
     <BuildToolsTaskDir Condition="'$(BuildToolsTargets45)' == 'true'">$(ToolsDir)net45/</BuildToolsTaskDir>
+    <BuildToolsTaskDir Condition="'$(BuildToolsTaskDir)'==''">$(ToolsDir)</BuildToolsTaskDir>
     <UseRoslynCompilers Condition="'$(UseRoslynCompilers)'=='' and '$(OSEnvironment)'!='Windows_NT'">false</UseRoslynCompilers>
   </PropertyGroup>
 
-  <Import Project="$(ToolRuntimePath)BuildVersion.targets" />
+  <Import Project="$(ToolRuntimePath)BuildVersion.targets" Condition="Exists('$(ToolRuntimePath)BuildVersion.targets')" />
   
   <PropertyGroup>
     <!-- temporarily increase assembly version of corefx impl of desktop inbox contracts to allow folks 
@@ -70,10 +67,10 @@
   <PropertyGroup Condition="'$(UseRoslynCompilers)'!='false'">
     <UseSharedCompilation>true</UseSharedCompilation>
   </PropertyGroup>
-  <Import Project="$(ToolRuntimePath)/net45/roslyn/build/Microsoft.Net.Compilers.props" Condition="'$(UseRoslynCompilers)'!='false'" />
+  <Import Project="$(ToolRuntimePath)/net45/roslyn/build/Microsoft.Net.Compilers.props" Condition="'$(UseRoslynCompilers)'!='false' AND Exists('$(ToolRuntimePath)/net45/roslyn/build/Microsoft.Net.Compilers.props')" />
 
   <!-- Import Build tools common props file where repo-independent properties are found -->
-  <Import Project="$(ToolsDir)Build.Common.props" />
+  <Import Project="$(ToolsDir)Build.Common.props" Condition="Exists('$(ToolsDir)Build.Common.props')" />
 
   <!-- Enable the analyzers for this repo -->
   <PropertyGroup>
@@ -84,7 +81,7 @@
   <PropertyGroup>
     <ValidatePackageVersions>true</ValidatePackageVersions>
     <ProhibitFloatingDependencies>true</ProhibitFloatingDependencies>
-    <CoreFxExpectedPrerelease>rc3-24026-00</CoreFxExpectedPrerelease>
+    <CoreFxExpectedPrerelease>rc3-24102-00</CoreFxExpectedPrerelease>
   </PropertyGroup>
 
   <ItemGroup>
@@ -146,7 +143,6 @@
     <DnuRestoreCommand>$(DnuRestoreCommand) --packages "$(PackagesDir.TrimEnd('/\'.ToCharArray()))" $(DnuRestoreSource)</DnuRestoreCommand>
     <DnuRestoreCommand Condition="'$(LockDependencies)' == 'true'">$(DnuRestoreCommand) --lock</DnuRestoreCommand>
     <DnuRestoreCommand Condition="'$(NuGetConfigPath)'!=''">$(DnuRestoreCommand) --configfile $(NuGetConfigPath)</DnuRestoreCommand>
-    <DnuRestoreCommand Condition="'$(InferRuntimes)'!='false'">$(DnuRestoreCommand) --infer-runtimes</DnuRestoreCommand>
   </PropertyGroup>
 
   <!-- Create a collection of all project.json files for dependency updates. -->
@@ -241,6 +237,7 @@
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('netstandard15aot'))">netstandard15aot</TargetGroup>
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('netcore50'))">netcore50</TargetGroup>
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('dnxcore50'))">dnxcore50</TargetGroup>
+    <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('net463'))">net463</TargetGroup>
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('net462'))">net462</TargetGroup>
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('net461'))">net461</TargetGroup>
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('net46'))">net46</TargetGroup>
@@ -282,12 +279,14 @@
       <PropertyGroup>
         <TargetsWindows>true</TargetsWindows>
         <TestNugetRuntimeId>win7-x64</TestNugetRuntimeId>
+        <PackageTargetRuntime>win</PackageTargetRuntime>
       </PropertyGroup>
     </When>
     <When Condition="'$(OSGroup)'=='Unix'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
         <TestNugetRuntimeId>ubuntu.14.04-x64</TestNugetRuntimeId>
+        <PackageTargetRuntime>unix</PackageTargetRuntime>
       </PropertyGroup>
     </When>
     <When Condition="'$(OSGroup)'=='Linux'">
@@ -295,6 +294,7 @@
         <TargetsUnix>true</TargetsUnix>
         <TargetsLinux>true</TargetsLinux>
         <TestNugetRuntimeId>ubuntu.14.04-x64</TestNugetRuntimeId>
+        <PackageTargetRuntime>linux</PackageTargetRuntime>
       </PropertyGroup>
     </When>
     <When Condition="'$(OSGroup)'=='OSX'">
@@ -302,6 +302,7 @@
         <TargetsUnix>true</TargetsUnix>
         <TargetsOSX>true</TargetsOSX>
         <TestNugetRuntimeId>osx.10.10-x64</TestNugetRuntimeId>
+        <PackageTargetRuntime>osx</PackageTargetRuntime>
       </PropertyGroup>
     </When>
     <When Condition="'$(OSGroup)'=='FreeBSD'">
@@ -405,6 +406,13 @@
         <PackageTargetFramework>dnxcore50</PackageTargetFramework>
         <TargetingPackNugetPackageId>Microsoft.TargetingPack.Private.CoreCLR</TargetingPackNugetPackageId>
         <NuGetTargetMoniker>DNXCore,Version=v5.0</NuGetTargetMoniker>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetGroup)'=='net463'">
+      <PropertyGroup>
+        <PackageTargetFramework>net463</PackageTargetFramework>
+        <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6.3</TargetingPackNugetPackageId>
+        <NuGetTargetMoniker>.NETFramework,Version=v4.6.3</NuGetTargetMoniker>
       </PropertyGroup>
     </When>
     <When Condition="'$(TargetGroup)'=='net462'">

@@ -9,7 +9,7 @@
   
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.IO.FileSystem.csproj">
-      <OSGroup>Linux</OSGroup>
+      <OSGroup>Unix</OSGroup>
     </ProjectReference>
   </ItemGroup>
 

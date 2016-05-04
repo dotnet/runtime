@@ -68,7 +68,7 @@ namespace System.Linq.Expressions.Interpreter
             {
                 if (j.ContainsTarget(_node))
                 {
-                    Error.LabelTargetAlreadyDefined(_node.Name);
+                    throw Error.LabelTargetAlreadyDefined(_node.Name);
                 }
             }
 

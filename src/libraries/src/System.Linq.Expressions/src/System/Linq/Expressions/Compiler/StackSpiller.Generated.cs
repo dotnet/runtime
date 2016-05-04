@@ -239,7 +239,14 @@ namespace System.Linq.Expressions.Compiler
                     return new Result(RewriteAction.None, node);
 
                 default:
-                    throw ContractUtils.Unreachable;
+                    result = RewriteExpression(node.ReduceAndCheck(), stack);
+                    if (result.Action == RewriteAction.None)
+                    {
+                        // it's at least Copy because we reduced the node
+                        result = new Result(result.Action | RewriteAction.Copy, result.Node);
+                    }
+
+                    break;
             }
 
             VerifyRewrite(result, node);

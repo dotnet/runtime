@@ -20,20 +20,8 @@ namespace System.IO
     {
         public static readonly TextWriter Null = new NullTextWriter();
 
-        // This should be initialized to Environment.NewLine, but
-        // to avoid loading Environment unnecessarily so I've duplicated
-        // the value here.
-#if !PLATFORM_UNIX
-        private const string InitialNewLine = "\r\n";
-
-        protected char[] CoreNewLine = new char[] { '\r', '\n' };
-        private string CoreNewLineStr = "\r\n";
-#else
-        private const string InitialNewLine = "\n";
-
-        protected char[] CoreNewLine = new char[] { '\n' };
-        private string CoreNewLineStr = "\n";
-#endif // !PLATFORM_UNIX
+        protected char[] CoreNewLine = Environment.NewLine.ToCharArray();
+        private string CoreNewLineStr = Environment.NewLine;
 
         // Can be null - if so, ask for the Thread's CurrentCulture every time.
         private IFormatProvider _internalFormatProvider;
@@ -102,7 +90,7 @@ namespace System.IO
             {
                 if (value == null)
                 {
-                    value = InitialNewLine;
+                    value = Environment.NewLine;
                 }
 
                 CoreNewLineStr = value;
@@ -289,8 +277,7 @@ namespace System.IO
 
 
         // Writes a line terminator to the text stream. The default line terminator
-        // is a carriage return followed by a line feed ("\r\n"), but this value
-        // can be changed by setting the NewLine property.
+        // is Environment.NewLine, but this value can be changed by setting the NewLine property.
         //
         public virtual void WriteLine()
         {

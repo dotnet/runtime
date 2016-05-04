@@ -9,6 +9,55 @@ namespace System.Globalization.Tests
 {
     public class IdnMappingGetUnicodeTests
     {
+        public static IEnumerable<object[]> GetUnicode_TestData()
+        {
+            yield return new object[] { "xn--yda", 0, 7, "\u0101" };
+            yield return new object[] { "axn--ydab", 1, 7, "\u0101" };
+            
+            yield return new object[] { "xn--aa-cla", 0, 10, "\u0101\u0061a" };
+            yield return new object[] { "xn--ab-dla", 0, 10, "\u0061\u0101\u0062" };
+            yield return new object[] { "xn--ab-ela", 0, 10, "\u0061\u0062\u0101"  };
+
+            yield return new object[] { "xn--097ccd", 0, 10, "\uD800\uDF00\uD800\uDF01\uD800\uDF02" }; // Surrogate pairs
+            yield return new object[] { "xn--ab-ic6nfag", 0, 14, "\uD800\uDF00\u0061\uD800\uDF01b\uD800\uDF02" }; // Surrogate pairs separated by ASCII
+            yield return new object[] { "xn--yda263v6b6kfag", 0, 18, "\uD800\uDF00\u0101\uD800\uDF01\u305D\uD800\uDF02" }; // Surrogate pairs separated by non-ASCII
+            yield return new object[] { "xn--a-nha4529qfag", 0, 17, "\uD800\uDF00\u0101\uD800\uDF01\u0061\uD800\uDF02" }; // Surrogate pairs separated by ASCII and non-ASCII
+            yield return new object[] { "\u0061\u0062\u0063", 0, 3, "\u0061\u0062\u0063" }; // ASCII only code points
+            yield return new object[] { "xn--d9juau41awczczp", 0, 19, "\u305D\u306E\u30B9\u30D4\u30FC\u30C9\u3067" }; // Non-ASCII only code points
+            yield return new object[] { "xn--de-jg4avhby1noc0d", 0, 21, "\u30D1\u30D5\u30A3\u30FC\u0064\u0065\u30EB\u30F3\u30D0" }; // ASCII and non-ASCII code points
+            yield return new object[] { "abc.xn--d9juau41awczczp.xn--de-jg4avhby1noc0d", 0, 45, "\u0061\u0062\u0063.\u305D\u306E\u30B9\u30D4\u30FC\u30C9\u3067.\u30D1\u30D5\u30A3\u30FC\u0064\u0065\u30EB\u30F3\u30D0" }; // Fully qualified domain name
+
+            // Embedded domain name conversion (NLS + only)(Priority 1)
+            // Per the spec [7], "The index and count parameters (when provided) allow the 
+            // conversion to be done on a larger string where the domain name is embedded 
+            // (such as a URI or IRI). The output string is only the converted FQDN or 
+            // label, not the whole input string (if the input string contains more 
+            // character than the substring to convert)."
+            // Fully Qualified Domain Name (Label1.Label2.Label3)
+            yield return new object[] { "abc.xn--d9juau41awczczp.xn--de-jg4avhby1noc0d", 0, 45, "\u0061\u0062\u0063.\u305D\u306E\u30B9\u30D4\u30FC\u30C9\u3067.\u30D1\u30D5\u30A3\u30FC\u0064\u0065\u30EB\u30F3\u30D0" };
+            yield return new object[] { "abc.xn--d9juau41awczczp", 0, 23, "\u0061\u0062\u0063.\u305D\u306E\u30B9\u30D4\u30FC\u30C9\u3067" };
+            yield return new object[] { "abc.xn--d9juau41awczczp.", 0, 24, "\u0061\u0062\u0063.\u305D\u306E\u30B9\u30D4\u30FC\u30C9\u3067." };
+            yield return new object[] { "xn--d9juau41awczczp.xn--de-jg4avhby1noc0d", 0, 41, "\u305D\u306E\u30B9\u30D4\u30FC\u30C9\u3067.\u30D1\u30D5\u30A3\u30FC\u0064\u0065\u30EB\u30F3\u30D0" };
+            yield return new object[] { "xn--d9juau41awczczp", 0, 19, "\u305D\u306E\u30B9\u30D4\u30FC\u30C9\u3067" };
+            yield return new object[] { "xn--d9juau41awczczp.", 0, 20, "\u305D\u306E\u30B9\u30D4\u30FC\u30C9\u3067." };
+            yield return new object[] { "xn--de-jg4avhby1noc0d", 0, 21, "\u30D1\u30D5\u30A3\u30FC\u0064\u0065\u30EB\u30F3\u30D0" };
+        }
+
+        [Theory]
+        [MemberData(nameof(GetUnicode_TestData))]
+        public void GetUnicode(string ascii, int index, int count, string expected)
+        {
+            if (index + count == ascii.Length)
+            {
+                if (index == 0)
+                {
+                    Assert.Equal(expected, new IdnMapping().GetUnicode(ascii));
+                }
+                Assert.Equal(expected, new IdnMapping().GetUnicode(ascii, index));
+            }
+            Assert.Equal(expected, new IdnMapping().GetUnicode(ascii, index, count));
+        }
+
         public static IEnumerable<object[]> GetUnicode_Invalid_TestData()
         {
             // Ascii is null

@@ -558,31 +558,35 @@ namespace System.Net.Http.Functional.Tests
             var cookie2 = new KeyValuePair<string, string>(".AspNetCore.Session", "RAExEmXpoCbueP_QYM");
             var cookie3 = new KeyValuePair<string, string>("name", "value");
 
-            string url = string.Format(
-                "http://httpbin.org/cookies/set?{0}={1}&{2}={3}&{4}={5}",
-                cookie1.Key,
-                cookie1.Value,
-                cookie2.Key,
-                cookie2.Value,
-                cookie3.Key,
-                cookie3.Value);
-
-            var handler = new HttpClientHandler()
+            await LoopbackServer.CreateClientAndServerAsync(async (handler, client, server, url) =>
             {
-                AllowAutoRedirect = false
-            };
+                Task<HttpResponseMessage> getResponse = client.GetAsync(url);
 
-            using (var client = new HttpClient(handler))
-            using (HttpResponseMessage response = await client.GetAsync(url))
-            {
-                Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
-                CookieCollection cookies = handler.CookieContainer.GetCookies(new Uri(url));
+                await LoopbackServer.AcceptSocketAsync(server, async (s, stream, reader, writer) =>
+                {
+                    while (!string.IsNullOrEmpty(reader.ReadLine())) ;
+                    await writer.WriteAsync(
+                        $"HTTP/1.1 200 OK\r\n" +
+                        $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
+                        $"Set-Cookie: {cookie1.Key}={cookie1.Value}; Path=/\r\n" +
+                        $"Set-Cookie: {cookie2.Key}={cookie2.Value}; Path=/\r\n" +
+                        $"Set-Cookie: {cookie3.Key}={cookie3.Value}; Path=/\r\n" +
+                        "\r\n");
+                    await writer.FlushAsync();
+                    s.Shutdown(SocketShutdown.Send);
+                });
 
-                Assert.Equal(3, handler.CookieContainer.Count);
-                Assert.Equal(cookie1.Value, cookies[cookie1.Key].Value);
-                Assert.Equal(cookie2.Value, cookies[cookie2.Key].Value);
-                Assert.Equal(cookie3.Value, cookies[cookie3.Key].Value);
-            }
+                using (HttpResponseMessage response = await getResponse)
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    CookieCollection cookies = handler.CookieContainer.GetCookies(url);
+
+                    Assert.Equal(3, cookies.Count);
+                    Assert.Equal(cookie1.Value, cookies[cookie1.Key].Value);
+                    Assert.Equal(cookie2.Value, cookies[cookie2.Key].Value);
+                    Assert.Equal(cookie3.Value, cookies[cookie3.Key].Value);
+                }
+            });
         }
 
         [Fact]
@@ -628,48 +632,50 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue(4259, PlatformID.AnyUnix)]
-        [OuterLoop]
         [Fact]
         public async Task SendAsync_ReadFromSlowStreamingServer_PartialDataReturned()
         {
-            // TODO: This is a placeholder until GitHub Issue #2383 gets resolved.
-            const string SlowStreamingServer = "http://httpbin.org/drip?numbytes=8192&duration=15&delay=1&code=200";
-            
-            int bytesRead;
-            byte[] buffer = new byte[8192];
-            using (var client = new HttpClient())
+            await LoopbackServer.CreateClientAndServerAsync(async (handler, client, server, url) =>
             {
-                var request = new HttpRequestMessage(HttpMethod.Get, SlowStreamingServer);
-                using (HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead))
+                Task<HttpResponseMessage> getResponse = client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+
+                await LoopbackServer.AcceptSocketAsync(server, async (s, stream, reader, writer) =>
                 {
-                    Stream stream = await response.Content.ReadAsStreamAsync();
-                    bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
-                }
-                _output.WriteLine("Bytes read from stream: {0}", bytesRead);
-                Assert.True(bytesRead < buffer.Length, "bytesRead should be less than buffer.Length");
-            }            
+                    while (!string.IsNullOrEmpty(reader.ReadLine())) ;
+                    await writer.WriteAsync(
+                        "HTTP/1.1 200 OK\r\n" +
+                        $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
+                        "Content-Length: 16000\r\n" +
+                        "\r\n" +
+                        "less than 16000 bytes");
+                    await writer.FlushAsync();
+
+                    using (HttpResponseMessage response = await getResponse)
+                    {
+                        var buffer = new byte[8000];
+                        using (Stream clientStream = await response.Content.ReadAsStreamAsync())
+                        {
+                            int bytesRead = await clientStream.ReadAsync(buffer, 0, buffer.Length);
+                            _output.WriteLine($"Bytes read from stream: {bytesRead}");
+                            Assert.True(bytesRead < buffer.Length, "bytesRead should be less than buffer.Length");
+                        }
+                    }
+                });
+            });
         }
 
         [Fact]
         public async Task Dispose_DisposingHandlerCancelsActiveOperations()
         {
-            using (var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            await LoopbackServer.CreateClientAndServerAsync(async (handler, client, socket, url) =>
             {
-                socket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-                socket.Listen(1);
-                Task<Socket> accept = socket.AcceptAsync();
-
-                IPEndPoint local = (IPEndPoint)socket.LocalEndPoint;
-                var client = new HttpClient();
-                Task<string> download = client.GetStringAsync($"http://{local.Address}:{local.Port}");
-
-                using (Socket acceptedSocket = await accept)
+                Task<string> download = client.GetStringAsync(url);
+                using (Socket acceptedSocket = await socket.AcceptAsync())
                 {
                     client.Dispose();
                     await Assert.ThrowsAnyAsync<OperationCanceledException>(() => download);
                 }
-            }
+            });
         }
 
         #region Post Methods Tests
@@ -948,31 +954,27 @@ namespace System.Net.Http.Functional.Tests
         #endregion
 
         #region Version tests
-        // The HTTP RFC 7230 states that servers are NOT required to respond back with the same
-        // minor version if they support a higher minor version. In fact, the RFC states that
-        // servers SHOULD send back the highest minor version they support. So, testing the
-        // response version to see if the client sent a particular request version only works
-        // for some servers. In particular the 'Http2Servers' used in these tests always seem
-        // to echo the minor version of the request.
-        [Theory, MemberData(nameof(Http2Servers))]
-        public async Task SendAsync_RequestVersion10_ServerReceivesVersion10Request(Uri server)
+        [Fact]
+        public async Task SendAsync_RequestVersion10_ServerReceivesVersion10Request()
         {
-            Version responseVersion = await SendRequestAndGetResponseVersionAsync(new Version(1, 0), server);
-            Assert.Equal(new Version(1, 0), responseVersion);
+            Version receivedRequestVersion = await SendRequestAndGetRequestVersionAsync(new Version(1, 0));
+            Assert.Equal(new Version(1, 0), receivedRequestVersion);
         }
 
-        [Theory, MemberData(nameof(Http2Servers))]
-        public async Task SendAsync_RequestVersion11_ServerReceivesVersion11Request(Uri server)
+        [Fact]
+        public async Task SendAsync_RequestVersion11_ServerReceivesVersion11Request()
         {
-            Version responseVersion = await SendRequestAndGetResponseVersionAsync(new Version(1, 1), server);
-            Assert.Equal(new Version(1, 1), responseVersion);
+            Version receivedRequestVersion = await SendRequestAndGetRequestVersionAsync(new Version(1, 1));
+            Assert.Equal(new Version(1, 1), receivedRequestVersion);
         }
 
-        [Theory, MemberData(nameof(Http2Servers))]
-        public async Task SendAsync_RequestVersionNotSpecified_ServerReceivesVersion11Request(Uri server)
+        [Fact]
+        public async Task SendAsync_RequestVersionNotSpecified_ServerReceivesVersion11Request()
         {
-            Version responseVersion = await SendRequestAndGetResponseVersionAsync(null, server);
-            Assert.Equal(new Version(1, 1), responseVersion);
+            // The default value for HttpRequestMessage.Version is Version(1,1).
+            // So, we need to set something different (0,0), to test the "unknown" version.
+            Version receivedRequestVersion = await SendRequestAndGetRequestVersionAsync(new Version(0,0));
+            Assert.Equal(new Version(1, 1), receivedRequestVersion);
         }
 
         [Theory, MemberData(nameof(Http2Servers))]
@@ -980,33 +982,65 @@ namespace System.Net.Http.Functional.Tests
         {
             // We don't currently have a good way to test whether HTTP/2 is supported without
             // using the same mechanism we're trying to test, so for now we allow both 2.0 and 1.1 responses.
-            Version responseVersion = await SendRequestAndGetResponseVersionAsync(new Version(2, 0), server);
-            Assert.True(
-                responseVersion == new Version(2, 0) || 
-                responseVersion == new Version(1, 1),
-                "Response version " + responseVersion);
-        }
-
-        private async Task<Version> SendRequestAndGetResponseVersionAsync(Version requestVersion, Uri server)
-        {
             var request = new HttpRequestMessage(HttpMethod.Get, server);
-            if (requestVersion != null)
-            {
-                request.Version = requestVersion;
-            }
-            else
-            {
-                // The default value for HttpRequestMessage.Version is Version(1,1).
-                // So, we need to set something different to test the "unknown" version.
-                request.Version = new Version(0,0);
-            }
+            request.Version = new Version(2, 0);
 
             using (var client = new HttpClient())
             using (HttpResponseMessage response = await client.SendAsync(request))
             {
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                return response.Version;
+                Assert.True(
+                    response.Version == new Version(2, 0) || 
+                    response.Version == new Version(1, 1),
+                    "Response version " + response.Version);
             }
+        }
+
+        private async Task<Version> SendRequestAndGetRequestVersionAsync(Version requestVersion)
+        {
+            Version receivedRequestVersion = null;
+
+            await LoopbackServer.CreateClientAndServerAsync(async (handler, client, server, url) =>
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get, url);
+                request.Version = requestVersion;
+
+                Task<HttpResponseMessage> getResponse = client.SendAsync(request);
+
+                await LoopbackServer.AcceptSocketAsync(server, async (s, stream, reader, writer) =>
+                {
+                    string statusLine = reader.ReadLine();
+                    while (!string.IsNullOrEmpty(reader.ReadLine())) ;
+
+                    if (statusLine.Contains("/1.0"))
+                    {
+                        receivedRequestVersion = new Version(1,0);
+                    }
+                    else if (statusLine.Contains("/1.1"))
+                    {
+                        receivedRequestVersion = new Version(1,1);
+                    }
+                    else
+                    {
+                        Assert.True(false, "Invalid HTTP request version");
+                    }
+
+                    await writer.WriteAsync(
+                        $"HTTP/1.1 200 OK\r\n" +
+                        $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
+                        "Content-Length: 0\r\n" +
+                        "\r\n");
+                    await writer.FlushAsync();
+                    s.Shutdown(SocketShutdown.Send);
+                });
+
+                using (HttpResponseMessage response = await getResponse)
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                }
+            });
+            
+            return receivedRequestVersion;
         }
         #endregion
 

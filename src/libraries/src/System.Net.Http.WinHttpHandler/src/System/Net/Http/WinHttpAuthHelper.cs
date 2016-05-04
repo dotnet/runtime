@@ -15,13 +15,14 @@ namespace System.Net.Http
         //
         // Fast lookup table to convert WINHTTP_AUTH constants to strings.
         // WINHTTP_AUTH_SCHEME_BASIC = 0x00000001;
+        // WINHTTP_AUTH_SCHEME_NTLM = 0x00000002;
         // WINHTTP_AUTH_SCHEME_DIGEST = 0x00000008;
         // WINHTTP_AUTH_SCHEME_NEGOTIATE = 0x00000010;
         private static readonly string[] s_authSchemeStringMapping =
         {
             null,
             "Basic",
-            null,
+            "NTLM",
             null,
             null,
             null,
@@ -41,6 +42,7 @@ namespace System.Net.Http
         private static readonly uint[] s_authSchemePriorityOrder =
         {
             Interop.WinHttp.WINHTTP_AUTH_SCHEME_NEGOTIATE,
+            Interop.WinHttp.WINHTTP_AUTH_SCHEME_NTLM,
             Interop.WinHttp.WINHTTP_AUTH_SCHEME_DIGEST,
             Interop.WinHttp.WINHTTP_AUTH_SCHEME_BASIC
         };

@@ -5070,11 +5070,7 @@ namespace System.Net.Sockets
                 {
                     if (!s_initialized)
                     {
-                        // TODO (#7849): this call is not required for *NIX and should be avoided during PAL design.
-
-                        // Ensure that WSAStartup has been called once per process.  
-                        // The System.Net.NameResolution contract is responsible with the initialization.
-                        Dns.GetHostName();
+                        SocketPal.Initialize();
 
                         // Cache some settings locally.
                         s_perfCountersEnabled = SocketPerfCounter.Instance.Enabled;
