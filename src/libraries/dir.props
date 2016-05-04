@@ -403,9 +403,7 @@
     </When>
     <When Condition="'$(TargetGroup)'=='dnxcore50'">
       <PropertyGroup>
-        <PackageTargetFramework>dnxcore50</PackageTargetFramework>
-        <TargetingPackNugetPackageId>Microsoft.TargetingPack.Private.CoreCLR</TargetingPackNugetPackageId>
-        <NuGetTargetMoniker>DNXCore,Version=v5.0</NuGetTargetMoniker>
+        <ConfigurationErrorMsg>$(ConfigurationErrorMsg);DNXCore50 has been deprecated.  Please use NETStandard1.X or NETCoreApp1.0 instead.</ConfigurationErrorMsg>
       </PropertyGroup>
     </When>
     <When Condition="'$(TargetGroup)'=='net463'">
