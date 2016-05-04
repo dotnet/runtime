@@ -401,21 +401,6 @@
     <!-- The following x86 failures only occur with RyuJIT/x86 -->
 
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(BuildArch)' == 'x86'">
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\IL_Conformance\Old\Base\sub_ovf\sub_ovf.cmd">
-             <Issue>4596</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\IL_Conformance\Old\Conformance_Base\add_ovf_i8\add_ovf_i8.cmd">
-             <Issue>4596</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\IL_Conformance\Old\Conformance_Base\ldc_add_ovf_i8\ldc_add_ovf_i8.cmd">
-             <Issue>4596</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\IL_Conformance\Old\Conformance_Base\ldc_sub_ovf_i8\ldc_sub_ovf_i8.cmd">
-             <Issue>4596</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\IL_Conformance\Old\Conformance_Base\sub_ovf_i8\sub_ovf_i8.cmd">
-             <Issue>4596</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\AsgOp\i8\i8_cs_d\i8_cs_d.cmd">
              <Issue>4659</Issue>
         </ExcludeList>
