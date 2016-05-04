@@ -1821,7 +1821,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree *tree)
         }
         else
         {
-            TempDsc* t = regSet.rsUnspillInPlace(unspillTree);
+            TempDsc* t = regSet.rsUnspillInPlace(unspillTree, unspillTree->gtRegNum);
             compiler->tmpRlsTemp(t);
             getEmitter()->emitIns_R_S(ins_Load(unspillTree->gtType),
                             emitActualTypeSize(unspillTree->gtType),

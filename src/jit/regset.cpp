@@ -1415,19 +1415,47 @@ void                RegSet::rsSpillRegIfUsed(regNumber reg)
 #endif // LEGACY_BACKEND
 
 
-/*****************************************************************************
- *
- *  Spill the tree held in 'reg'
- */
+//------------------------------------------------------------
+// rsSpillTree: Spill the tree held in 'reg'.
+//
+// Arguments:
+//   reg     -   Register of tree node that is to be spilled
+//   tree    -   GenTree node that is being spilled
+//   regIdx  -   Register index identifying the specific result 
+//               register of a multi-reg call node. For single-reg
+//               producing tree nodes its value is zero.
+//
+// Return Value:
+//   None.
+//
+// Assumption:
+//    RyuJIT backend specific: in case of multi-reg call nodes, GTF_SPILL
+//    flag associated with the reg that is being spilled is cleared.  The
+//    caller of this method is expected to clear GTF_SPILL flag on call
+//    node after all of its registers marked for spilling are spilled.
+//
+void                RegSet::rsSpillTree(regNumber reg, 
+                                        GenTreePtr tree,
+                                        unsigned regIdx /* =0 */)
+{    
+    assert(tree != nullptr);
+        
+    GenTreeCall* call = nullptr;
+    var_types    treeType;
 
-void                RegSet::rsSpillTree(regNumber reg, GenTreePtr tree)
-{
-    SpillDsc   *    spill;
-    TempDsc    *    temp;
+#ifndef LEGACY_BACKEND
+    if (tree->IsMultiRegCall())
+    {
+        call = tree->AsCall();
+        ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
+        treeType = retTypeDesc->GetReturnRegType(regIdx);
+    }
+    else
+#endif
+    {
+        treeType = tree->TypeGet();
+    }
 
-    assert(tree);
-
-    var_types       treeType = tree->TypeGet();
     var_types       tempType = Compiler::tmpNormalizeType(treeType);
     regMaskTP       mask;
     bool            floatSpill = false;
@@ -1445,8 +1473,8 @@ void                RegSet::rsSpillTree(regNumber reg, GenTreePtr tree)
     rsNeededSpillReg = true;
 
 #ifdef LEGACY_BACKEND
-    /* The register we're spilling must be used but not locked
-       or an enregistered variable. */
+    // The register we're spilling must be used but not locked
+    // or an enregistered variable. 
 
     assert((mask & rsMaskUsed) == mask);
     assert((mask & rsMaskLock) == 0);
@@ -1455,17 +1483,31 @@ void                RegSet::rsSpillTree(regNumber reg, GenTreePtr tree)
 
 #ifndef LEGACY_BACKEND
     // We should only be spilling nodes marked for spill,
-    // vars should be handled elsewhere,
-    // and we shouldn't spill nodes twice so we reset GTF_SPILL
+    // vars should be handled elsewhere, and to prevent
+    // spilling twice clear GTF_SPILL flag on tree node.
+    //
+    // In case of multi-reg call nodes only the spill flag
+    // associated with the reg is cleared. Spill flag on
+    // call node should be cleared by the caller of this method.
     assert(tree->gtOper != GT_REG_VAR);
-    assert(!varTypeIsMultiReg(tree));
-    assert(tree->gtFlags & GTF_SPILL);
-    tree->gtFlags &= ~GTF_SPILL;
+    assert((tree->gtFlags & GTF_SPILL) != 0);
+
+    unsigned regFlags = 0;
+    if (call != nullptr)
+    {
+        regFlags = call->GetRegSpillFlagByIdx(regIdx);
+        assert((regFlags & GTF_SPILL) != 0);
+        regFlags &= ~GTF_SPILL;
+    }
+    else
+    {
+        assert(!varTypeIsMultiReg(tree));
+        tree->gtFlags &= ~GTF_SPILL;
+    }  
 #endif // !LEGACY_BACKEND
 
 #if CPU_LONG_USES_REGPAIR
-    /* Are we spilling a part of a register pair? */
-
+    // Are we spilling a part of a register pair? 
     if  (treeType == TYP_LONG)
     {
         tempType = TYP_I_IMPL;
@@ -1479,20 +1521,18 @@ void                RegSet::rsSpillTree(regNumber reg, GenTreePtr tree)
     }
 #else
     assert(tree->InReg());
-    assert(tree->gtRegNum == reg);
+    assert(tree->gtRegNum == reg || (call != nullptr && call->GetRegNumByIdx(regIdx) == reg));
 #endif // CPU_LONG_USES_REGPAIR
 
-    /* Are any registers free for spillage? */
+    // Are any registers free for spillage?
+    SpillDsc* spill = SpillDsc::alloc(m_rsCompiler, this, tempType);
 
-    spill = SpillDsc::alloc(m_rsCompiler, this, tempType);
-
-    /* Grab a temp to store the spilled value */
-
-    spill->spillTemp = temp = m_rsCompiler->tmpGetTemp(tempType);
+    // Grab a temp to store the spilled value
+    TempDsc* temp = m_rsCompiler->tmpGetTemp(tempType);
+    spill->spillTemp = temp;
     tempType = temp->tdTempType();
 
-    /* Remember what it is we have spilled */
-
+    // Remember what it is we have spilled
     spill->spillTree = tree;
 #ifdef LEGACY_BACKEND
     spill->spillAddr = rsUsedAddr[reg];
@@ -1512,15 +1552,13 @@ void                RegSet::rsSpillTree(regNumber reg, GenTreePtr tree)
 #endif
 
 #ifdef LEGACY_BACKEND
-    /* Is the register part of a complex address mode? */
-
+    // Is the register part of a complex address mode?
     rsAddrSpillOper(rsUsedAddr[reg]);
 #endif // LEGACY_BACKEND
 
-    /* 'lastDsc' is 'spill' for simple cases, and will point to the last
-       multi-use descriptor if 'reg' is being multi-used */
-
-    SpillDsc *  lastDsc = spill;
+    // 'lastDsc' is 'spill' for simple cases, and will point to the last
+    // multi-use descriptor if 'reg' is being multi-used
+    SpillDsc*  lastDsc = spill;
 
 #ifdef LEGACY_BACKEND
     if  ((rsMaskMult & mask) == 0)
@@ -1529,31 +1567,27 @@ void                RegSet::rsSpillTree(regNumber reg, GenTreePtr tree)
     }
     else
     {
-        /* The register is being multi-used and will have entries in
-           rsMultiDesc[reg]. Spill all of them (ie. move them to
-           rsSpillDesc[reg]).
-           When we unspill the reg, they will all be moved back to
-           rsMultiDesc[].
-         */
+        // The register is being multi-used and will have entries in
+        // rsMultiDesc[reg]. Spill all of them (ie. move them to
+        // rsSpillDesc[reg]).
+        // When we unspill the reg, they will all be moved back to
+        // rsMultiDesc[].
 
         spill->spillMoreMultis = true;
 
-        SpillDsc * nextDsc = rsMultiDesc[reg];
+        SpillDsc* nextDsc = rsMultiDesc[reg];
 
         do
         {
-            assert(nextDsc);
+            assert(nextDsc != nullptr);
 
-            /* Is this multi-use part of a complex address mode? */
-
+            // Is this multi-use part of a complex address mode?
             rsAddrSpillOper(nextDsc->spillAddr);
 
-            /* Mark the tree node as having been spilled */
-
+            // Mark the tree node as having been spilled 
             rsMarkSpill(nextDsc->spillTree, reg);
 
-            /* lastDsc points to the last of the multi-spill descrs for 'reg' */
-
+            // lastDsc points to the last of the multi-spill descrs for 'reg'
             nextDsc->spillTemp = temp;
 
 #ifdef  DEBUG
@@ -1575,15 +1609,13 @@ void                RegSet::rsSpillTree(regNumber reg, GenTreePtr tree)
 
         rsMultiDesc[reg] = nextDsc;
 
-        /* 'reg' is no longer considered to be multi-used. We will set this
-           mask again when this value gets unspilled */
-
+        // 'reg' is no longer considered to be multi-used. We will set this
+        // mask again when this value gets unspilled 
         rsMaskMult &= ~mask;
     }
 #endif // LEGACY_BACKEND
 
-    /* Insert the spill descriptor(s) in the list */
-
+    // Insert the spill descriptor(s) in the list
     lastDsc->spillNext = rsSpillDesc[reg];
                          rsSpillDesc[reg] = spill;
 
@@ -1591,20 +1623,26 @@ void                RegSet::rsSpillTree(regNumber reg, GenTreePtr tree)
     if  (m_rsCompiler->verbose)     printf("\n");
 #endif
 
-     /* Generate the code to spill the register */
+    // Generate the code to spill the register
     var_types  storeType = floatSpill ? treeType : tempType;
 
     m_rsCompiler->codeGen->spillReg(storeType, temp, reg);
 
-    /* Mark the tree node as having been spilled */
-
+    // Mark the tree node as having been spilled
     rsMarkSpill(tree, reg);
 
 #ifdef LEGACY_BACKEND
-    /* The register is now free */
-
+    // The register is now free
     rsMarkRegFree(mask);
-#endif // LEGACY_BACKEND
+#else
+    // In case of multi-reg call node also mark the specific
+    // result reg as spilled.
+    if (call != nullptr)
+    {
+        regFlags |= GTF_SPILLED;
+        call->SetRegSpillFlagByIdx(regFlags, regIdx);
+    }
+#endif //!LEGACY_BACKEND
 }
 
 #if defined(_TARGET_X86_) && !FEATURE_STACK_FP_X87
@@ -2208,30 +2246,51 @@ regNumber           RegSet::rsUnspillOneReg(GenTreePtr    tree,
 }
 #endif // LEGACY_BACKEND
 
-/*****************************************************************************
- *  The given tree operand has been spilled; just mark it as unspilled so
- *  that we can use it as "normal" local.
- *  It is the responsibility of the caller to free the spill temp.
- */
-
-TempDsc *     RegSet::rsUnspillInPlace(GenTreePtr    tree)
+//---------------------------------------------------------------------
+//  rsUnspillInPlace: The given tree operand has been spilled; just mark
+//  it as unspilled so that we can use it as "normal" local.
+//
+//  Arguments:
+//     tree    -  GenTree that needs to be marked as unspilled.
+//     oldReg  -  reg of tree that was spilled.
+//
+//  Return Value:
+//     None.
+//
+//  Assumptions:
+//  1. It is the responsibility of the caller to free the spill temp.
+//  2. RyuJIT backend specific: In case of multi-reg call node 
+//     GTF_SPILLED flag associated with reg is cleared.  It is the
+//     responsibility of caller to clear GTF_SPILLED flag on call node
+//     itself after ensuring there are no outstanding regs in GTF_SPILLED
+//     state.
+//
+TempDsc*     RegSet::rsUnspillInPlace(GenTreePtr tree, 
+                                      regNumber  oldReg,
+                                      unsigned   regIdx /* =0 */)
 {
-    /* Get the tree's SpillDsc */
-
     assert(!isRegPairType(tree->gtType));
-    regNumber   oldReg = tree->gtRegNum;
 
+    // Get the tree's SpillDsc  
     SpillDsc* prevDsc;
     SpillDsc* spillDsc = rsGetSpillInfo(tree, oldReg, &prevDsc);
     PREFIX_ASSUME(spillDsc != nullptr);
 
-    /* Get the temp */
-
+    // Get the temp
     TempDsc* temp = rsGetSpillTempWord(oldReg, spillDsc, prevDsc);
 
-    /* The value is now unspilled */
-
-    tree->gtFlags &= ~GTF_SPILLED;
+    // The value is now unspilled
+    if (tree->IsMultiRegCall())
+    {
+        GenTreeCall* call = tree->AsCall();
+        unsigned flags = call->GetRegSpillFlagByIdx(regIdx);
+        flags &= ~GTF_SPILLED;
+        call->SetRegSpillFlagByIdx(flags, regIdx);
+    }
+    else
+    {
+        tree->gtFlags &= ~GTF_SPILLED;
+    }
 
 #ifdef  DEBUG
     if  (m_rsCompiler->verbose) 
