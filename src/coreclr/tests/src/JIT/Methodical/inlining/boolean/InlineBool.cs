@@ -11,7 +11,9 @@ namespace InlineBool
 {
     public class Program
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool False00() { return false; }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool False01() { return !true; }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool False02() { return Id00(False00()); }
@@ -22,7 +24,9 @@ namespace InlineBool
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool False05() { return Not00(Not00(False00())); }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool True00() { return true; }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool True01() { return !false; }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool True02() { return Id00(True00()); }
@@ -33,7 +37,22 @@ namespace InlineBool
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool True05() { return Not00(Not00(True00())); }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool Not00(bool x) { return !x; }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool Not01(bool x) { return x == false; }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool Not02(bool x) { return Not00(Id00(x)); }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool Not03(bool x) { return Id00(Not00(x)); }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool Not04(bool x) { return Id00(!x); }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool Not05(bool x) { return !Id00(x); }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool Id00(bool x) { return x; }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool Id01(bool x) { return x == true; }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool Id02(bool x) { return Not00(Not00(x)); }
@@ -41,6 +60,7 @@ namespace InlineBool
         static bool Id03(bool x) { return Id00(Id00(x)); }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool Id04(bool x) { return Id00(x); }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool Id05(bool x) { return !Id00(!x); }
         static bool Id06(bool x) { return x ? true : false; }
         static bool Id07(bool x) { return !x ? false : true; }
@@ -137,229 +157,220 @@ namespace InlineBool
         static bool Id98(bool x) { return Id04(x != true) ? false : true; }
         static bool Id99(bool x) { return Id04(x != false) ? true : false; }
 
-        static bool Not00(bool x) { return !x; }
-        static bool Not01(bool x) { return x == false; }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool Not02(bool x) { return Not00(Id00(x)); }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool Not03(bool x) { return Id00(Not00(x)); }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool Not04(bool x) { return Id00(!x); }
-        static bool Not05(bool x) { return !Id00(x); }
-
+        [MethodImpl(MethodImplOptions.NoOptimization)]
         public static int Main(string[] args)
         {
             bool result = true;
 
-            result &= ((Func<bool, bool>)Id00).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id00).Invoke(false);
-            result &= ((Func<bool, bool>)Id01).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id01).Invoke(false);
-            result &= ((Func<bool, bool>)Id02).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id02).Invoke(false);
-            result &= ((Func<bool, bool>)Id03).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id03).Invoke(false);
-            result &= ((Func<bool, bool>)Id04).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id04).Invoke(false);
-            result &= ((Func<bool, bool>)Id05).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id05).Invoke(false);
-            result &= ((Func<bool, bool>)Id06).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id06).Invoke(false);
-            result &= ((Func<bool, bool>)Id07).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id07).Invoke(false);
-            result &= ((Func<bool, bool>)Id08).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id08).Invoke(false);
-            result &= ((Func<bool, bool>)Id09).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id09).Invoke(false);
+            result &= Id00(true);
+            result &= ! Id00(false);
+            result &= Id01(true);
+            result &= ! Id01(false);
+            result &= Id02(true);
+            result &= ! Id02(false);
+            result &= Id03(true);
+            result &= ! Id03(false);
+            result &= Id04(true);
+            result &= ! Id04(false);
+            result &= Id05(true);
+            result &= ! Id05(false);
+            result &= Id06(true);
+            result &= ! Id06(false);
+            result &= Id07(true);
+            result &= ! Id07(false);
+            result &= Id08(true);
+            result &= ! Id08(false);
+            result &= Id09(true);
+            result &= ! Id09(false);
 
-            result &= ((Func<bool, bool>)Id10).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id10).Invoke(false);
-            result &= ((Func<bool, bool>)Id11).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id11).Invoke(false);
-            result &= ((Func<bool, bool>)Id12).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id12).Invoke(false);
-            result &= ((Func<bool, bool>)Id13).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id13).Invoke(false);
-            result &= ((Func<bool, bool>)Id14).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id14).Invoke(false);
-            result &= ((Func<bool, bool>)Id15).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id15).Invoke(false);
-            result &= ((Func<bool, bool>)Id16).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id16).Invoke(false);
-            result &= ((Func<bool, bool>)Id17).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id17).Invoke(false);
-            result &= ((Func<bool, bool>)Id18).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id18).Invoke(false);
-            result &= ((Func<bool, bool>)Id19).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id19).Invoke(false);
+            result &= Id10(true);
+            result &= ! Id10(false);
+            result &= Id11(true);
+            result &= ! Id11(false);
+            result &= Id12(true);
+            result &= ! Id12(false);
+            result &= Id13(true);
+            result &= ! Id13(false);
+            result &= Id14(true);
+            result &= ! Id14(false);
+            result &= Id15(true);
+            result &= ! Id15(false);
+            result &= Id16(true);
+            result &= ! Id16(false);
+            result &= Id17(true);
+            result &= ! Id17(false);
+            result &= Id18(true);
+            result &= ! Id18(false);
+            result &= Id19(true);
+            result &= ! Id19(false);
 
-            result &= ((Func<bool, bool>)Id20).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id20).Invoke(false);
-            result &= ((Func<bool, bool>)Id21).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id21).Invoke(false);
-            result &= ((Func<bool, bool>)Id22).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id22).Invoke(false);
-            result &= ((Func<bool, bool>)Id23).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id23).Invoke(false);
-            result &= ((Func<bool, bool>)Id24).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id24).Invoke(false);
-            result &= ((Func<bool, bool>)Id25).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id25).Invoke(false);
-            result &= ((Func<bool, bool>)Id26).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id26).Invoke(false);
-            result &= ((Func<bool, bool>)Id27).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id27).Invoke(false);
-            result &= ((Func<bool, bool>)Id28).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id28).Invoke(false);
-            result &= ((Func<bool, bool>)Id29).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id29).Invoke(false);
+            result &= Id20(true);
+            result &= ! Id20(false);
+            result &= Id21(true);
+            result &= ! Id21(false);
+            result &= Id22(true);
+            result &= ! Id22(false);
+            result &= Id23(true);
+            result &= ! Id23(false);
+            result &= Id24(true);
+            result &= ! Id24(false);
+            result &= Id25(true);
+            result &= ! Id25(false);
+            result &= Id26(true);
+            result &= ! Id26(false);
+            result &= Id27(true);
+            result &= ! Id27(false);
+            result &= Id28(true);
+            result &= ! Id28(false);
+            result &= Id29(true);
+            result &= ! Id29(false);
 
-            result &= ((Func<bool, bool>)Id30).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id30).Invoke(false);
-            result &= ((Func<bool, bool>)Id31).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id31).Invoke(false);
-            result &= ((Func<bool, bool>)Id32).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id32).Invoke(false);
-            result &= ((Func<bool, bool>)Id33).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id33).Invoke(false);
-            result &= ((Func<bool, bool>)Id34).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id34).Invoke(false);
-            result &= ((Func<bool, bool>)Id35).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id35).Invoke(false);
-            result &= ((Func<bool, bool>)Id36).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id36).Invoke(false);
-            result &= ((Func<bool, bool>)Id37).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id37).Invoke(false);
-            result &= ((Func<bool, bool>)Id38).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id38).Invoke(false);
-            result &= ((Func<bool, bool>)Id39).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id39).Invoke(false);
+            result &= Id30(true);
+            result &= ! Id30(false);
+            result &= Id31(true);
+            result &= ! Id31(false);
+            result &= Id32(true);
+            result &= ! Id32(false);
+            result &= Id33(true);
+            result &= ! Id33(false);
+            result &= Id34(true);
+            result &= ! Id34(false);
+            result &= Id35(true);
+            result &= ! Id35(false);
+            result &= Id36(true);
+            result &= ! Id36(false);
+            result &= Id37(true);
+            result &= ! Id37(false);
+            result &= Id38(true);
+            result &= ! Id38(false);
+            result &= Id39(true);
+            result &= ! Id39(false);
 
-            result &= ((Func<bool, bool>)Id40).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id40).Invoke(false);
-            result &= ((Func<bool, bool>)Id41).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id41).Invoke(false);
-            result &= ((Func<bool, bool>)Id42).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id42).Invoke(false);
-            result &= ((Func<bool, bool>)Id43).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id43).Invoke(false);
-            result &= ((Func<bool, bool>)Id44).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id44).Invoke(false);
-            result &= ((Func<bool, bool>)Id45).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id45).Invoke(false);
-            result &= ((Func<bool, bool>)Id46).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id46).Invoke(false);
-            result &= ((Func<bool, bool>)Id47).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id47).Invoke(false);
-            result &= ((Func<bool, bool>)Id48).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id48).Invoke(false);
-            result &= ((Func<bool, bool>)Id49).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id49).Invoke(false);
+            result &= Id40(true);
+            result &= ! Id40(false);
+            result &= Id41(true);
+            result &= ! Id41(false);
+            result &= Id42(true);
+            result &= ! Id42(false);
+            result &= Id43(true);
+            result &= ! Id43(false);
+            result &= Id44(true);
+            result &= ! Id44(false);
+            result &= Id45(true);
+            result &= ! Id45(false);
+            result &= Id46(true);
+            result &= ! Id46(false);
+            result &= Id47(true);
+            result &= ! Id47(false);
+            result &= Id48(true);
+            result &= ! Id48(false);
+            result &= Id49(true);
+            result &= ! Id49(false);
 
-            result &= ((Func<bool, bool>)Id50).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id50).Invoke(false);
-            result &= ((Func<bool, bool>)Id51).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id51).Invoke(false);
-            result &= ((Func<bool, bool>)Id52).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id52).Invoke(false);
-            result &= ((Func<bool, bool>)Id53).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id53).Invoke(false);
-            result &= ((Func<bool, bool>)Id54).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id54).Invoke(false);
-            result &= ((Func<bool, bool>)Id55).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id55).Invoke(false);
-            result &= ((Func<bool, bool>)Id56).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id56).Invoke(false);
-            result &= ((Func<bool, bool>)Id57).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id57).Invoke(false);
-            result &= ((Func<bool, bool>)Id58).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id58).Invoke(false);
-            result &= ((Func<bool, bool>)Id59).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id59).Invoke(false);
+            result &= Id50(true);
+            result &= ! Id50(false);
+            result &= Id51(true);
+            result &= ! Id51(false);
+            result &= Id52(true);
+            result &= ! Id52(false);
+            result &= Id53(true);
+            result &= ! Id53(false);
+            result &= Id54(true);
+            result &= ! Id54(false);
+            result &= Id55(true);
+            result &= ! Id55(false);
+            result &= Id56(true);
+            result &= ! Id56(false);
+            result &= Id57(true);
+            result &= ! Id57(false);
+            result &= Id58(true);
+            result &= ! Id58(false);
+            result &= Id59(true);
+            result &= ! Id59(false);
 
-            result &= ((Func<bool, bool>)Id60).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id60).Invoke(false);
-            result &= ((Func<bool, bool>)Id61).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id61).Invoke(false);
-            result &= ((Func<bool, bool>)Id62).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id62).Invoke(false);
-            result &= ((Func<bool, bool>)Id63).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id63).Invoke(false);
-            result &= ((Func<bool, bool>)Id64).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id64).Invoke(false);
-            result &= ((Func<bool, bool>)Id65).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id65).Invoke(false);
-            result &= ((Func<bool, bool>)Id66).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id66).Invoke(false);
-            result &= ((Func<bool, bool>)Id67).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id67).Invoke(false);
-            result &= ((Func<bool, bool>)Id68).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id68).Invoke(false);
-            result &= ((Func<bool, bool>)Id69).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id69).Invoke(false);
+            result &= Id60(true);
+            result &= ! Id60(false);
+            result &= Id61(true);
+            result &= ! Id61(false);
+            result &= Id62(true);
+            result &= ! Id62(false);
+            result &= Id63(true);
+            result &= ! Id63(false);
+            result &= Id64(true);
+            result &= ! Id64(false);
+            result &= Id65(true);
+            result &= ! Id65(false);
+            result &= Id66(true);
+            result &= ! Id66(false);
+            result &= Id67(true);
+            result &= ! Id67(false);
+            result &= Id68(true);
+            result &= ! Id68(false);
+            result &= Id69(true);
+            result &= ! Id69(false);
 
-            result &= ((Func<bool, bool>)Id70).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id70).Invoke(false);
-            result &= ((Func<bool, bool>)Id71).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id71).Invoke(false);
-            result &= ((Func<bool, bool>)Id72).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id72).Invoke(false);
-            result &= ((Func<bool, bool>)Id73).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id73).Invoke(false);
-            result &= ((Func<bool, bool>)Id74).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id74).Invoke(false);
-            result &= ((Func<bool, bool>)Id75).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id75).Invoke(false);
-            result &= ((Func<bool, bool>)Id76).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id76).Invoke(false);
-            result &= ((Func<bool, bool>)Id77).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id77).Invoke(false);
-            result &= ((Func<bool, bool>)Id78).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id78).Invoke(false);
-            result &= ((Func<bool, bool>)Id79).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id79).Invoke(false);
+            result &= Id70(true);
+            result &= ! Id70(false);
+            result &= Id71(true);
+            result &= ! Id71(false);
+            result &= Id72(true);
+            result &= ! Id72(false);
+            result &= Id73(true);
+            result &= ! Id73(false);
+            result &= Id74(true);
+            result &= ! Id74(false);
+            result &= Id75(true);
+            result &= ! Id75(false);
+            result &= Id76(true);
+            result &= ! Id76(false);
+            result &= Id77(true);
+            result &= ! Id77(false);
+            result &= Id78(true);
+            result &= ! Id78(false);
+            result &= Id79(true);
+            result &= ! Id79(false);
 
-            result &= ((Func<bool, bool>)Id80).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id80).Invoke(false);
-            result &= ((Func<bool, bool>)Id81).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id81).Invoke(false);
-            result &= ((Func<bool, bool>)Id82).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id82).Invoke(false);
-            result &= ((Func<bool, bool>)Id83).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id83).Invoke(false);
-            result &= ((Func<bool, bool>)Id84).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id84).Invoke(false);
-            result &= ((Func<bool, bool>)Id85).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id85).Invoke(false);
-            result &= ((Func<bool, bool>)Id86).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id86).Invoke(false);
-            result &= ((Func<bool, bool>)Id87).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id87).Invoke(false);
-            result &= ((Func<bool, bool>)Id88).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id88).Invoke(false);
-            result &= ((Func<bool, bool>)Id89).Invoke(true);
-            result &= ! ((Func<bool, bool>)Id89).Invoke(false);
+            result &= Id80(true);
+            result &= ! Id80(false);
+            result &= Id81(true);
+            result &= ! Id81(false);
+            result &= Id82(true);
+            result &= ! Id82(false);
+            result &= Id83(true);
+            result &= ! Id83(false);
+            result &= Id84(true);
+            result &= ! Id84(false);
+            result &= Id85(true);
+            result &= ! Id85(false);
+            result &= Id86(true);
+            result &= ! Id86(false);
+            result &= Id87(true);
+            result &= ! Id87(false);
+            result &= Id88(true);
+            result &= ! Id88(false);
+            result &= Id89(true);
+            result &= ! Id89(false);
 
-            result &= ((Func<bool, bool>)Id90).Invoke(true);
-            result &= !((Func<bool, bool>)Id90).Invoke(false);
-            result &= ((Func<bool, bool>)Id91).Invoke(true);
-            result &= !((Func<bool, bool>)Id91).Invoke(false);
-            result &= ((Func<bool, bool>)Id92).Invoke(true);
-            result &= !((Func<bool, bool>)Id92).Invoke(false);
-            result &= ((Func<bool, bool>)Id93).Invoke(true);
-            result &= !((Func<bool, bool>)Id93).Invoke(false);
-            result &= ((Func<bool, bool>)Id94).Invoke(true);
-            result &= !((Func<bool, bool>)Id94).Invoke(false);
-            result &= ((Func<bool, bool>)Id95).Invoke(true);
-            result &= !((Func<bool, bool>)Id95).Invoke(false);
-            result &= ((Func<bool, bool>)Id96).Invoke(true);
-            result &= !((Func<bool, bool>)Id96).Invoke(false);
-            result &= ((Func<bool, bool>)Id97).Invoke(true);
-            result &= !((Func<bool, bool>)Id97).Invoke(false);
-            result &= ((Func<bool, bool>)Id98).Invoke(true);
-            result &= !((Func<bool, bool>)Id98).Invoke(false);
-            result &= ((Func<bool, bool>)Id99).Invoke(true);
-            result &= !((Func<bool, bool>)Id99).Invoke(false);
+            result &= Id90(true);
+            result &= ! Id90(false);
+            result &= Id91(true);
+            result &= ! Id91(false);
+            result &= Id92(true);
+            result &= ! Id92(false);
+            result &= Id93(true);
+            result &= ! Id93(false);
+            result &= Id94(true);
+            result &= ! Id94(false);
+            result &= Id95(true);
+            result &= ! Id95(false);
+            result &= Id96(true);
+            result &= ! Id96(false);
+            result &= Id97(true);
+            result &= ! Id97(false);
+            result &= Id98(true);
+            result &= ! Id98(false);
+            result &= Id99(true);
+            result &= ! Id99(false);
 
             return result ? 100 : -1;
         }
