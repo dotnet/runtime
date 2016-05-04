@@ -1082,7 +1082,7 @@ namespace System.Linq.Expressions
 
             ReadOnlyCollection<Expression> argList = arguments.ToReadOnly();
 
-            ValidateMethodInfo(method);
+            ValidateMethodInfo(method, nameof(method));
             ValidateStaticOrInstanceMethod(instance, method);
             ValidateArgumentTypes(method, ExpressionType.Call, ref argList);
 
@@ -1098,7 +1098,7 @@ namespace System.Linq.Expressions
 
         private static ParameterInfo[] ValidateMethodAndGetParameters(Expression instance, MethodInfo method)
         {
-            ValidateMethodInfo(method);
+            ValidateMethodInfo(method, nameof(method));
             ValidateStaticOrInstanceMethod(instance, method);
 
             return GetParametersForValidation(method, ExpressionType.Call);
@@ -1273,7 +1273,7 @@ namespace System.Linq.Expressions
             Type arrayType = array.Type;
             if (!arrayType.IsArray)
             {
-                throw Error.ArgumentMustBeArray();
+                throw Error.ArgumentMustBeArray(nameof(array));
             }
 
             ReadOnlyCollection<Expression> indexList = indexes.ToReadOnly();
@@ -1287,7 +1287,7 @@ namespace System.Linq.Expressions
                 RequiresCanRead(e, nameof(indexes));
                 if (e.Type != typeof(int))
                 {
-                    throw Error.ArgumentMustBeArrayIndexType();
+                    throw Error.ArgumentMustBeArrayIndexType(nameof(indexList));
                 }
             }
 

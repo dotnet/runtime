@@ -78,8 +78,8 @@ namespace System.Linq.Expressions
         {
             ContractUtils.RequiresNotNull(propertyAccessor, nameof(propertyAccessor));
             ContractUtils.RequiresNotNull(expression, nameof(expression));
-            ValidateMethodInfo(propertyAccessor);
-            return Bind(GetProperty(propertyAccessor), expression);
+            ValidateMethodInfo(propertyAccessor, nameof(propertyAccessor));
+            return Bind(GetProperty(propertyAccessor, nameof(propertyAccessor)), expression);
         }
 
 
@@ -91,11 +91,11 @@ namespace System.Linq.Expressions
                 PropertyInfo pi = member as PropertyInfo;
                 if (pi == null)
                 {
-                    throw Error.ArgumentMustBeFieldInfoOrPropertyInfo();
+                    throw Error.ArgumentMustBeFieldInfoOrPropertyInfo(nameof(member));
                 }
                 if (!pi.CanWrite)
                 {
-                    throw Error.PropertyDoesNotHaveSetter(pi);
+                    throw Error.PropertyDoesNotHaveSetter(pi, nameof(member));
                 }
                 memberType = pi.PropertyType;
             }

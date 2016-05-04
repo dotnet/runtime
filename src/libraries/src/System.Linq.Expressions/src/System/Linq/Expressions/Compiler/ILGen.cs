@@ -361,7 +361,7 @@ namespace System.Linq.Expressions.Compiler
 
             if (ci.DeclaringType.GetTypeInfo().ContainsGenericParameters)
             {
-                throw Error.IllegalNewGenericParams(ci.DeclaringType);
+                throw Error.IllegalNewGenericParams(ci.DeclaringType, nameof(ci));
             }
 
             il.Emit(OpCodes.Newobj, ci);

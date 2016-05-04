@@ -148,7 +148,7 @@ namespace System.Linq.Expressions
             ContractUtils.RequiresNotNull(initializers, nameof(initializers));
             if (type == typeof(void))
             {
-                throw Error.ArgumentCannotBeOfTypeVoid();
+                throw Error.ArgumentCannotBeOfTypeVoid(nameof(type));
             }
 
             TypeUtils.ValidateType(type);
@@ -228,7 +228,7 @@ namespace System.Linq.Expressions
 
             if (type == typeof(void))
             {
-                throw Error.ArgumentCannotBeOfTypeVoid();
+                throw Error.ArgumentCannotBeOfTypeVoid(nameof(type));
             }
 
             TypeUtils.ValidateType(type);
@@ -245,7 +245,7 @@ namespace System.Linq.Expressions
             ReadOnlyCollection<Expression> boundsList = bounds.ToReadOnly();
 
             int dimensions = boundsList.Count;
-            if (dimensions <= 0) throw Error.BoundsCannotBeLessThanOne();
+            if (dimensions <= 0) throw Error.BoundsCannotBeLessThanOne(nameof(bounds));
 
             for (int i = 0; i < dimensions; i++)
             {
@@ -253,7 +253,7 @@ namespace System.Linq.Expressions
                 RequiresCanRead(expr, nameof(bounds));
                 if (!TypeUtils.IsInteger(expr.Type))
                 {
-                    throw Error.ArgumentMustBeInteger();
+                    throw Error.ArgumentMustBeInteger($"bounds[{i}]");
                 }
             }
 

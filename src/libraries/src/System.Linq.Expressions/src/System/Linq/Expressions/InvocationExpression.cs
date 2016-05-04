@@ -809,7 +809,7 @@ namespace System.Linq.Expressions
                 Type exprType = TypeUtils.FindGenericType(typeof(Expression<>), expression.Type);
                 if (exprType == null)
                 {
-                    throw Error.ExpressionTypeNotInvocable(expression.Type);
+                    throw Error.ExpressionTypeNotInvocable(expression.Type, nameof(expression));
                 }
                 delegateType = exprType.GetGenericArguments()[0];
             }

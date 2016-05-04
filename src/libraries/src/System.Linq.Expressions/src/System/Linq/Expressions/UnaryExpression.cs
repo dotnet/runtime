@@ -420,7 +420,7 @@ namespace System.Linq.Expressions
         private static UnaryExpression GetMethodBasedUnaryOperator(ExpressionType unaryType, Expression operand, MethodInfo method)
         {
             System.Diagnostics.Debug.Assert(method != null);
-            ValidateOperator(method);
+            ValidateOperator(method, nameof(method));
             ParameterInfo[] pms = method.GetParametersCached();
             if (pms.Length != 1)
                 throw Error.IncorrectNumberOfMethodCallArguments(method);
@@ -466,7 +466,7 @@ namespace System.Linq.Expressions
         private static UnaryExpression GetMethodBasedCoercionOperator(ExpressionType unaryType, Expression operand, Type convertToType, MethodInfo method)
         {
             System.Diagnostics.Debug.Assert(method != null);
-            ValidateOperator(method);
+            ValidateOperator(method, nameof(method));
             ParameterInfo[] pms = method.GetParametersCached();
             if (pms.Length != 1)
             {
@@ -731,11 +731,11 @@ namespace System.Linq.Expressions
         {
             RequiresCanRead(expression, nameof(expression));
             ContractUtils.RequiresNotNull(type, nameof(type));
-            TypeUtils.ValidateType(type);
+            TypeUtils.ValidateType(type, nameof(type));
 
             if (type.GetTypeInfo().IsValueType && !TypeUtils.IsNullableType(type))
             {
-                throw Error.IncorrectTypeForTypeAs(type);
+                throw Error.IncorrectTypeForTypeAs(type, nameof(type));
             }
             return new UnaryExpression(ExpressionType.TypeAs, expression, type, null);
         }
@@ -752,10 +752,10 @@ namespace System.Linq.Expressions
             ContractUtils.RequiresNotNull(type, nameof(type));
             if (!expression.Type.GetTypeInfo().IsInterface && expression.Type != typeof(object))
             {
-                throw Error.InvalidUnboxType();
+                throw Error.InvalidUnboxType(nameof(expression));
             }
-            if (!type.GetTypeInfo().IsValueType) throw Error.InvalidUnboxType();
-            TypeUtils.ValidateType(type);
+            if (!type.GetTypeInfo().IsValueType) throw Error.InvalidUnboxType(nameof(type));
+            TypeUtils.ValidateType(type, nameof(type));
             return new UnaryExpression(ExpressionType.Unbox, expression, type, null);
         }
 
@@ -786,7 +786,7 @@ namespace System.Linq.Expressions
         {
             RequiresCanRead(expression, nameof(expression));
             ContractUtils.RequiresNotNull(type, nameof(type));
-            TypeUtils.ValidateType(type);
+            TypeUtils.ValidateType(type, nameof(type));
 
             if (method == null)
             {
@@ -827,7 +827,7 @@ namespace System.Linq.Expressions
         {
             RequiresCanRead(expression, nameof(expression));
             ContractUtils.RequiresNotNull(type, nameof(type));
-            TypeUtils.ValidateType(type);
+            TypeUtils.ValidateType(type, nameof(type));
 
             if (method == null)
             {
@@ -856,11 +856,11 @@ namespace System.Linq.Expressions
             ContractUtils.RequiresNotNull(array, nameof(array));
             if (!array.Type.IsArray || !typeof(Array).IsAssignableFrom(array.Type))
             {
-                throw Error.ArgumentMustBeArray();
+                throw Error.ArgumentMustBeArray(nameof(array));
             }
             if (!array.Type.IsVector())
             {
-                throw Error.ArgumentMustBeSingleDimensionalArrayType();
+                throw Error.ArgumentMustBeSingleDimensionalArrayType(nameof(array));
             }
             return new UnaryExpression(ExpressionType.ArrayLength, array, typeof(int), null);
         }
@@ -874,7 +874,7 @@ namespace System.Linq.Expressions
         {
             RequiresCanRead(expression, nameof(expression));
             bool validQuote = expression is LambdaExpression;
-            if (!validQuote) throw Error.QuotedExpressionMustBeLambda();
+            if (!validQuote) throw Error.QuotedExpressionMustBeLambda(nameof(expression));
             return new UnaryExpression(ExpressionType.Quote, expression, expression.GetType(), null);
         }
 
@@ -916,12 +916,12 @@ namespace System.Linq.Expressions
         public static UnaryExpression Throw(Expression value, Type type)
         {
             ContractUtils.RequiresNotNull(type, nameof(type));
-            TypeUtils.ValidateType(type);
+            TypeUtils.ValidateType(type, nameof(type));
 
             if (value != null)
             {
                 RequiresCanRead(value, nameof(value));
-                if (value.Type.GetTypeInfo().IsValueType) throw Error.ArgumentMustNotHaveValueType();
+                if (value.Type.GetTypeInfo().IsValueType) throw Error.ArgumentMustNotHaveValueType(nameof(value));
             }
             return new UnaryExpression(ExpressionType.Throw, value, type, null);
         }

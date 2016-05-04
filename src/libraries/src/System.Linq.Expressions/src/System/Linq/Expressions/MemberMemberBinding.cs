@@ -112,7 +112,7 @@ namespace System.Linq.Expressions
         public static MemberMemberBinding MemberBind(MethodInfo propertyAccessor, IEnumerable<MemberBinding> bindings)
         {
             ContractUtils.RequiresNotNull(propertyAccessor, nameof(propertyAccessor));
-            return MemberBind(GetProperty(propertyAccessor), bindings);
+            return MemberBind(GetProperty(propertyAccessor, nameof(propertyAccessor)), bindings);
         }
 
         private static void ValidateGettableFieldOrPropertyMember(MemberInfo member, out Type memberType)
@@ -123,11 +123,11 @@ namespace System.Linq.Expressions
                 PropertyInfo pi = member as PropertyInfo;
                 if (pi == null)
                 {
-                    throw Error.ArgumentMustBeFieldInfoOrPropertyInfo();
+                    throw Error.ArgumentMustBeFieldInfoOrPropertyInfo(nameof(member));
                 }
                 if (!pi.CanRead)
                 {
-                    throw Error.PropertyDoesNotHaveGetter(pi);
+                    throw Error.PropertyDoesNotHaveGetter(pi, nameof(member));
                 }
                 memberType = pi.PropertyType;
             }

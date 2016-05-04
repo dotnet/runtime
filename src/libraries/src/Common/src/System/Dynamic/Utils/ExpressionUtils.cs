@@ -149,7 +149,7 @@ namespace System.Dynamic.Utils
             {
                 pType = pType.GetElementType();
             }
-            TypeUtils.ValidateType(pType);
+            TypeUtils.ValidateType(pType, nameof(pi));
             if (!TypeUtils.AreReferenceAssignable(pType, arguments.Type))
             {
                 if (!TryQuote(pType, ref arguments))

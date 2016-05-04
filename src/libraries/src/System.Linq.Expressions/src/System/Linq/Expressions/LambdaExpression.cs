@@ -490,7 +490,7 @@ namespace System.Linq.Expressions
                     typeArgs[i] = param.IsByRef ? param.Type.MakeByRefType() : param.Type;
                     if (!set.Add(param))
                     {
-                        throw Error.DuplicateVariable(param);
+                        throw Error.DuplicateVariable(param, $"parameters[{i}]");
                     }
                 }
             }
@@ -585,7 +585,7 @@ namespace System.Linq.Expressions
                     }
                     if (!set.Add(pex))
                     {
-                        throw Error.DuplicateVariable(pex);
+                        throw Error.DuplicateVariable(pex, $"parameters[{i}]");
                     }
                 }
             }
@@ -631,12 +631,12 @@ namespace System.Linq.Expressions
         /// <returns>The type of a System.Func delegate that has the specified type arguments.</returns>
         public static Type GetFuncType(params Type[] typeArgs)
         {
-            if (!ValidateTryGetFuncActionArgs(typeArgs)) throw Error.TypeMustNotBeByRef();
+            if (!ValidateTryGetFuncActionArgs(typeArgs)) throw Error.TypeMustNotBeByRef(nameof(typeArgs));
 
             Type result = Compiler.DelegateHelpers.GetFuncType(typeArgs);
             if (result == null)
             {
-                throw Error.IncorrectNumberOfTypeArgsForFunc();
+                throw Error.IncorrectNumberOfTypeArgsForFunc(nameof(typeArgs));
             }
             return result;
         }
@@ -665,12 +665,12 @@ namespace System.Linq.Expressions
         /// <returns>The type of a System.Action delegate that has the specified type arguments.</returns>
         public static Type GetActionType(params Type[] typeArgs)
         {
-            if (!ValidateTryGetFuncActionArgs(typeArgs)) throw Error.TypeMustNotBeByRef();
+            if (!ValidateTryGetFuncActionArgs(typeArgs)) throw Error.TypeMustNotBeByRef(nameof(typeArgs));
 
             Type result = Compiler.DelegateHelpers.GetActionType(typeArgs);
             if (result == null)
             {
-                throw Error.IncorrectNumberOfTypeArgsForAction();
+                throw Error.IncorrectNumberOfTypeArgsForAction(nameof(typeArgs));
             }
             return result;
         }
