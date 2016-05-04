@@ -394,6 +394,13 @@ namespace System.Data.Common
         public abstract int GetValues(object[] values);
         public abstract bool IsDBNull(int i);
     }
+    public partial class DbEnumerator : System.Collections.IEnumerator
+    {
+        public DbEnumerator(System.Data.Common.DbDataReader reader, bool closeReader) { }
+        public object Current { get; }
+        public bool MoveNext() { return default(bool); }
+        public void Reset() { }
+    }
     public abstract partial class DbException : System.Exception
     {
         protected DbException() { }
