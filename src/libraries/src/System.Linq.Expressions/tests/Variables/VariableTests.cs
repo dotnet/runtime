@@ -40,8 +40,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void VariableCannotBeTypeVoid()
         {
-            Assert.Throws<ArgumentException>(() => Expression.Variable(typeof(void)));
-            Assert.Throws<ArgumentException>(() => Expression.Variable(typeof(void), "var"));
+            Assert.Throws<ArgumentException>("type", () => Expression.Variable(typeof(void)));
+            Assert.Throws<ArgumentException>("type", () => Expression.Variable(typeof(void), "var"));
         }
 
         [Fact]
@@ -55,8 +55,8 @@ namespace System.Linq.Expressions.Tests
         [MemberData(nameof(ByRefTypeData))]
         public void VariableCannotBeByRef(Type type)
         {
-            Assert.Throws<ArgumentException>(() => Expression.Variable(type));
-            Assert.Throws<ArgumentException>(() => Expression.Variable(type, "var"));
+            Assert.Throws<ArgumentException>("type", () => Expression.Variable(type));
+            Assert.Throws<ArgumentException>("type", () => Expression.Variable(type, "var"));
         }
 
         [Theory]
@@ -98,7 +98,7 @@ namespace System.Linq.Expressions.Tests
             ParameterExpression variable = Expression.Variable(typeof(int));
             Assert.False(variable.CanReduce);
             Assert.Same(variable, variable.Reduce());
-            Assert.Throws<ArgumentException>(() => variable.ReduceAndCheck());
+            Assert.Throws<ArgumentException>(null, () => variable.ReduceAndCheck());
         }
 
         [Fact]

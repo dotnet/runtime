@@ -48,7 +48,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void NonVoidContinue()
         {
-            Assert.Throws<ArgumentException>(null, () => Expression.Loop(Expression.Empty(), null, Expression.Label(typeof(int))));
+            Assert.Throws<ArgumentException>("continue", () => Expression.Loop(Expression.Empty(), null, Expression.Label(typeof(int))));
         }
 
         [Fact]

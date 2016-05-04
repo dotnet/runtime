@@ -59,10 +59,10 @@ namespace System.Linq.Expressions.Tests
         {
             MemberInfo toString = typeof(object).GetMember(nameof(ToString))[0];
             MethodInfo toStringMeth = typeof(object).GetMethod(nameof(ToString));
-            Assert.Throws<ArgumentException>(() => Expression.MemberBind(toString));
-            Assert.Throws<ArgumentException>(() => Expression.MemberBind(toString, Enumerable.Empty<MemberBinding>()));
-            Assert.Throws<ArgumentException>(() => Expression.MemberBind(toStringMeth));
-            Assert.Throws<ArgumentException>(() => Expression.MemberBind(toStringMeth, Enumerable.Empty<MemberBinding>()));
+            Assert.Throws<ArgumentException>("member", () => Expression.MemberBind(toString));
+            Assert.Throws<ArgumentException>("member", () => Expression.MemberBind(toString, Enumerable.Empty<MemberBinding>()));
+            Assert.Throws<ArgumentException>("propertyAccessor", () => Expression.MemberBind(toStringMeth));
+            Assert.Throws<ArgumentException>("propertyAccessor", () => Expression.MemberBind(toStringMeth, Enumerable.Empty<MemberBinding>()));
         }
 
         [Fact]

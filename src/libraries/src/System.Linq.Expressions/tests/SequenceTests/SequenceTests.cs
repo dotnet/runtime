@@ -34,7 +34,7 @@ namespace System.Linq.Expressions.Tests
             MethodInfo mi1 = typeof(Expression_Tests).GetMethod("Add");
             ConstantExpression ce1 = Expression.Constant(4, typeof(int));
 
-            Assert.Throws<ArgumentException>(() => Expression.ElementInit(mi1, new Expression[] { ce1 }));
+            Assert.Throws<ArgumentException>("addMethod", () => Expression.ElementInit(mi1, new Expression[] { ce1 }));
         }
 
         public class Atom
@@ -160,7 +160,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void ConstantNullWithValueTypeIsInvalid()
         {
-            Assert.Throws<ArgumentException>(() => Expression.Constant(null, typeof(int)));
+            Assert.Throws<ArgumentException>(null, () => Expression.Constant(null, typeof(int)));
         }
 
         [Fact]
@@ -437,7 +437,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void TestGetFuncTypeWithTooManyArgsFails()
         {
-            Assert.Throws<ArgumentException>(() => Expression.GetFuncType(new Type[] { typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int) }));
+            Assert.Throws<ArgumentException>("typeArgs", () => Expression.GetFuncType(new Type[] { typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int) }));
         }
 
         [Fact]
@@ -718,7 +718,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(f2().Value.Name, "lhs");
 
             var constant = Expression.Constant(1.0, typeof(double));
-            Assert.Throws<ArgumentException>(() => Expression.Lambda<Func<double?>>(constant, null));
+            Assert.Throws<ArgumentException>(null, () => Expression.Lambda<Func<double?>>(constant, null));
         }
 
         public static int GetBound()
@@ -1792,7 +1792,7 @@ namespace System.Linq.Expressions.Tests
         public static void InvokeNonTypedLambdaFails()
         {
             Expression call = Expression.Call(null, typeof(Compiler_Tests).GetMethod("ComputeDynamicLambda", BindingFlags.Static | BindingFlags.Public), new Expression[] { });
-            Assert.Throws<ArgumentException>(() => Expression.Invoke(call, null));
+            Assert.Throws<ArgumentException>("expression", () => Expression.Invoke(call, null));
         }
 
         public static LambdaExpression ComputeDynamicLambda()
@@ -1804,7 +1804,7 @@ namespace System.Linq.Expressions.Tests
         public static void InvokeNonTypedDelegateFails()
         {
             Expression call = Expression.Call(null, typeof(Compiler_Tests).GetMethod("ComputeDynamicDelegate", BindingFlags.Static | BindingFlags.Public), new Expression[] { });
-            Assert.Throws<ArgumentException>(() => Expression.Invoke(call, null));
+            Assert.Throws<ArgumentException>("expression", () => Expression.Invoke(call, null));
         }
 
         public static Delegate ComputeDynamicDelegate()

@@ -118,8 +118,8 @@ namespace System.Linq.Expressions.Tests
         {
             ConstantExpression constant = Expression.Constant(0);
             IEnumerable<Expression> expressions = PadBlock(blockSize - 1, Expression.Constant(0));
-            Assert.Throws<ArgumentException>(() => Expression.Block(typeof(string), SingleParameter, expressions));
-            Assert.Throws<ArgumentException>(() => Expression.Block(typeof(string), SingleParameter, expressions.ToArray()));
+            Assert.Throws<ArgumentException>(null, () => Expression.Block(typeof(string), SingleParameter, expressions));
+            Assert.Throws<ArgumentException>(null, () => Expression.Block(typeof(string), SingleParameter, expressions.ToArray()));
         }
 
         [Theory]
@@ -150,8 +150,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void EmptyBlockWithParametersAndNonVoidTypeNotAllowed()
         {
-            Assert.Throws<ArgumentException>(() => Expression.Block(typeof(int), SingleParameter));
-            Assert.Throws<ArgumentException>(() => Expression.Block(typeof(int), SingleParameter, Enumerable.Empty<Expression>()));
+            Assert.Throws<ArgumentException>(null, () => Expression.Block(typeof(int), SingleParameter));
+            Assert.Throws<ArgumentException>(null, () => Expression.Block(typeof(int), SingleParameter, Enumerable.Empty<Expression>()));
         }
 
         [Theory]
@@ -289,10 +289,10 @@ namespace System.Linq.Expressions.Tests
             IEnumerable<Expression> expressions = PadBlock(blockSize - 1, Expression.Constant(0));
             IEnumerable<ParameterExpression> vars = Enumerable.Repeat(default(ParameterExpression), 1);
 
-            Assert.Throws<ArgumentNullException>(() => Expression.Block(vars, expressions));
-            Assert.Throws<ArgumentNullException>(() => Expression.Block(vars, expressions.ToArray()));
-            Assert.Throws<ArgumentNullException>(() => Expression.Block(typeof(object), vars, expressions));
-            Assert.Throws<ArgumentNullException>(() => Expression.Block(typeof(object), vars, expressions.ToArray()));
+            Assert.Throws<ArgumentNullException>("variables[0]", () => Expression.Block(vars, expressions));
+            Assert.Throws<ArgumentNullException>("variables[0]", () => Expression.Block(vars, expressions.ToArray()));
+            Assert.Throws<ArgumentNullException>("variables[0]", () => Expression.Block(typeof(object), vars, expressions));
+            Assert.Throws<ArgumentNullException>("variables[0]", () => Expression.Block(typeof(object), vars, expressions.ToArray()));
         }
 
         [Theory]
@@ -302,10 +302,10 @@ namespace System.Linq.Expressions.Tests
             IEnumerable<Expression> expressions = PadBlock(blockSize - 1, Expression.Constant(0));
             IEnumerable<ParameterExpression> vars = Enumerable.Repeat(Expression.Parameter(typeof(int).MakeByRefType()), 1);
 
-            Assert.Throws<ArgumentException>(() => Expression.Block(vars, expressions));
-            Assert.Throws<ArgumentException>(() => Expression.Block(vars, expressions.ToArray()));
-            Assert.Throws<ArgumentException>(() => Expression.Block(typeof(object), vars, expressions));
-            Assert.Throws<ArgumentException>(() => Expression.Block(typeof(object), vars, expressions.ToArray()));
+            Assert.Throws<ArgumentException>("variables[0]", () => Expression.Block(vars, expressions));
+            Assert.Throws<ArgumentException>("variables[0]", () => Expression.Block(vars, expressions.ToArray()));
+            Assert.Throws<ArgumentException>("variables[0]", () => Expression.Block(typeof(object), vars, expressions));
+            Assert.Throws<ArgumentException>("variables[0]", () => Expression.Block(typeof(object), vars, expressions.ToArray()));
         }
 
         [Theory]
@@ -316,10 +316,10 @@ namespace System.Linq.Expressions.Tests
             ParameterExpression variable = Expression.Variable(typeof(int));
             IEnumerable<ParameterExpression> vars = Enumerable.Repeat(variable, 2);
 
-            Assert.Throws<ArgumentException>(() => Expression.Block(vars, expressions));
-            Assert.Throws<ArgumentException>(() => Expression.Block(vars, expressions.ToArray()));
-            Assert.Throws<ArgumentException>(() => Expression.Block(typeof(object), vars, expressions));
-            Assert.Throws<ArgumentException>(() => Expression.Block(typeof(object), vars, expressions.ToArray()));
+            Assert.Throws<ArgumentException>("variables[1]", () => Expression.Block(vars, expressions));
+            Assert.Throws<ArgumentException>("variables[1]", () => Expression.Block(vars, expressions.ToArray()));
+            Assert.Throws<ArgumentException>("variables[1]", () => Expression.Block(typeof(object), vars, expressions));
+            Assert.Throws<ArgumentException>("variables[1]", () => Expression.Block(typeof(object), vars, expressions.ToArray()));
         }
     }
 }

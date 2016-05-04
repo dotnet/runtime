@@ -223,7 +223,7 @@ namespace System.Linq.Expressions.Tests
             UnaryExpression throwExp = Expression.Throw(Expression.Constant(new TestException()));
             Assert.False(throwExp.CanReduce);
             Assert.Same(throwExp, throwExp.Reduce());
-            Assert.Throws<ArgumentException>(() => throwExp.ReduceAndCheck());
+            Assert.Throws<ArgumentException>(null, () => throwExp.ReduceAndCheck());
         }
 
         [Fact]
@@ -232,13 +232,13 @@ namespace System.Linq.Expressions.Tests
             TryExpression tryExp = Expression.TryFault(Expression.Empty(), Expression.Empty());
             Assert.False(tryExp.CanReduce);
             Assert.Same(tryExp, tryExp.Reduce());
-            Assert.Throws<ArgumentException>(() => tryExp.ReduceAndCheck());
+            Assert.Throws<ArgumentException>(null, () => tryExp.ReduceAndCheck());
         }
 
         [Fact]
         public void CannotThrowValueType()
         {
-            Assert.Throws<ArgumentException>(() => Expression.Throw(Expression.Constant(1)));
+            Assert.Throws<ArgumentException>("value", () => Expression.Throw(Expression.Constant(1)));
         }
 
         [Fact]
@@ -255,19 +255,19 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void MustHaveCatchFinallyOrFault()
         {
-            Assert.Throws<ArgumentException>(() => Expression.MakeTry(typeof(int), Expression.Constant(1), null, null, null));
+            Assert.Throws<ArgumentException>(null, () => Expression.MakeTry(typeof(int), Expression.Constant(1), null, null, null));
         }
 
         [Fact]
         public void FaultMustNotBeWithCatch()
         {
-            Assert.Throws<ArgumentException>(() => Expression.MakeTry(typeof(int), Expression.Constant(1), null, Expression.Constant(2), new[] { Expression.Catch(typeof(object), Expression.Constant(3)) }));
+            Assert.Throws<ArgumentException>("fault", () => Expression.MakeTry(typeof(int), Expression.Constant(1), null, Expression.Constant(2), new[] { Expression.Catch(typeof(object), Expression.Constant(3)) }));
         }
 
         [Fact]
         public void FaultMustNotBeWithFinally()
         {
-            Assert.Throws<ArgumentException>(() => Expression.MakeTry(typeof(int), Expression.Constant(1), Expression.Constant(2), Expression.Constant(3), null));
+            Assert.Throws<ArgumentException>("fault", () => Expression.MakeTry(typeof(int), Expression.Constant(1), Expression.Constant(2), Expression.Constant(3), null));
         }
 
         [Fact]
@@ -597,8 +597,8 @@ namespace System.Linq.Expressions.Tests
         public void ByRefExceptionType()
         {
             ParameterExpression variable = Expression.Parameter(typeof(Exception).MakeByRefType());
-            Assert.Throws<ArgumentException>(() => Expression.Catch(variable, Expression.Empty()));
-            Assert.Throws<ArgumentException>(() => Expression.Catch(variable, Expression.Empty(), Expression.Constant(true)));
+            Assert.Throws<ArgumentException>("variable", () => Expression.Catch(variable, Expression.Empty()));
+            Assert.Throws<ArgumentException>("variable", () => Expression.Catch(variable, Expression.Empty(), Expression.Constant(true)));
         }
 
         [Fact]
@@ -645,8 +645,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void FilterMustBeBoolean()
         {
-            Assert.Throws<ArgumentException>(() => Expression.Catch(typeof(Exception), Expression.Empty(), Expression.Constant(42)));
-            Assert.Throws<ArgumentException>(() => Expression.Catch(Expression.Parameter(typeof(Exception)), Expression.Empty(), Expression.Constant(42)));
+            Assert.Throws<ArgumentException>("filter", () => Expression.Catch(typeof(Exception), Expression.Empty(), Expression.Constant(42)));
+            Assert.Throws<ArgumentException>("filter", () => Expression.Catch(Expression.Parameter(typeof(Exception)), Expression.Empty(), Expression.Constant(42)));
         }
 
         [Theory]
@@ -977,19 +977,19 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void NonAssignableTryAndCatchTypes()
         {
-            Assert.Throws<ArgumentException>(() => Expression.TryCatch(Expression.Constant(new Uri("http://example.net/")), Expression.Catch(typeof(Exception), Expression.Constant("hello"))));
+            Assert.Throws<ArgumentException>(null, () => Expression.TryCatch(Expression.Constant(new Uri("http://example.net/")), Expression.Catch(typeof(Exception), Expression.Constant("hello"))));
         }
 
         [Fact]
         public void BodyTypeNotAssignableToTryType()
         {
-            Assert.Throws<ArgumentException>(() => Expression.MakeTry(typeof(int), Expression.Constant("hello"), Expression.Empty(), null, null));
+            Assert.Throws<ArgumentException>(null, () => Expression.MakeTry(typeof(int), Expression.Constant("hello"), Expression.Empty(), null, null));
         }
 
         [Fact]
         public void CatchTypeNotAssignableToTryType()
         {
-            Assert.Throws<ArgumentException>(() => Expression.MakeTry(typeof(int), Expression.Constant(2), null, null, new[] { Expression.Catch(typeof(InvalidCastException), Expression.Constant("")) }));
+            Assert.Throws<ArgumentException>(null, () => Expression.MakeTry(typeof(int), Expression.Constant(2), null, null, new[] { Expression.Catch(typeof(InvalidCastException), Expression.Constant("")) }));
         }
 
         [Theory]

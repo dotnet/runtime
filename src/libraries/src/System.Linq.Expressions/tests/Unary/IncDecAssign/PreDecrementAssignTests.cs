@@ -179,7 +179,7 @@ namespace System.Linq.Expressions.Tests
         {
             Expression variable = Expression.Variable(typeof(string));
             MethodInfo method = typeof(object).GetTypeInfo().GetDeclaredMethod("ReferenceEquals");
-            Assert.Throws<ArgumentException>(() => Expression.PreDecrementAssign(variable, method));
+            Assert.Throws<ArgumentException>(null, () => Expression.PreDecrementAssign(variable, method));
         }
 
         [Fact]
@@ -187,7 +187,7 @@ namespace System.Linq.Expressions.Tests
         {
             Expression variable = Expression.Variable(typeof(int));
             MethodInfo method = typeof(IncDecAssignTests).GetTypeInfo().GetDeclaredMethod("GetString");
-            Assert.Throws<ArgumentException>(() => Expression.PreDecrementAssign(variable, method));
+            Assert.Throws<ArgumentException>(null, () => Expression.PreDecrementAssign(variable, method));
         }
 
         [Theory]
