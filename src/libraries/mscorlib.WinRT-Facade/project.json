@@ -3,7 +3,6 @@
     "System.Runtime": "4.0.20",
   },
   "frameworks": {
-    "dnxcore50": { },
-    "netcore50": { },
+    "netcore50": { }
   }
 }
