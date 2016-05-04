@@ -43,8 +43,11 @@ typedef const WCHAR *LPCWSTR, *PCWSTR;
 #define FALSE 0
 #endif
 
-#define WINAPI   _cdecl
-#ifndef __stdcall
+#ifndef WINAPI
+#define WINAPI  __stdcall
+#endif
+
+#ifndef _MSC_VER
 #if __i386__
 #define __stdcall __attribute__((stdcall))
 #define _cdecl __attribute__((cdecl))

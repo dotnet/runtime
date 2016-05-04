@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 
 partial class FunctionPtr
 {
-    [DllImport("FunctionPointerNative")]
+    [DllImport("FunctionPointerNative", CallingConvention=CallingConvention.Cdecl)]
     public static extern bool CheckFcnPtr(IntPtr fcnptr);
 
     public delegate bool DelegateWithLong(long l); //Singlecast delegate

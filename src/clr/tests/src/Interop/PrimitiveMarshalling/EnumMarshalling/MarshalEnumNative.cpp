@@ -5,7 +5,7 @@
 
 typedef void *voidPtr;
 
-extern "C" DLL_EXPORT long WINAPI CdeclEnum(int r,BOOL *result) 
+extern "C" DLL_EXPORT long _cdecl CdeclEnum(int r,BOOL *result) 
 {
 	if(r != 3)
 	{
@@ -17,7 +17,7 @@ extern "C" DLL_EXPORT long WINAPI CdeclEnum(int r,BOOL *result)
 }
 
 
-extern "C" DLL_EXPORT voidPtr WINAPI GetFptr(int i)
+extern "C" DLL_EXPORT voidPtr _cdecl GetFptr(int i)
 {
 	return (voidPtr) &CdeclEnum;
 }
