@@ -133,6 +133,27 @@
     <ClCompile Include="..\mono\mini\xdebug.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\mono\mini\cfgdump.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\mono\mini\mini-amd64-gsharedvt.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\mono\mini\mini-cross-helpers.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\mono\mini\mini-exceptions-native-unwinder.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\mono\mini\mini-x86-gsharedvt.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\mono\mini\tramp-amd64-gsharedvt.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\mono\mini\tramp-x86-gsharedvt.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\mono\mini\abcremoval.h">
@@ -205,6 +226,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\mono\mini\version.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mono\mini\cfgdump.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mono\mini\mini-amd64-gsharedvt.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
