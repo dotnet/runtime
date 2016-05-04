@@ -4133,10 +4133,8 @@ void NativeImageDumper::DumpModule( PTR_Module module )
     //file
     //assembly
 
-#if !defined(FEATURE_CORECLR)
     DisplayWriteFieldInt( m_DefaultDllImportSearchPathsAttributeValue,
                           module->m_DefaultDllImportSearchPathsAttributeValue, Module, MODULE );
-#endif // !FEATURE_CORECLR
 
 
     DisplayEndStructure(MODULE); //Module

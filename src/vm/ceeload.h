@@ -1599,9 +1599,7 @@ private:
     // IL stub cache with fabricated MethodTable parented by this module.
     ILStubCache                *m_pILStubCache;
 
-#ifndef FEATURE_CORECLR
     ULONG m_DefaultDllImportSearchPathsAttributeValue;
-#endif
 
      LPCUTF8 m_pszCultureName;
      ULONG m_CultureNameLength;
@@ -3353,7 +3351,6 @@ public:
     //-----------------------------------------------------------------------------------------
     BOOL                    IsRuntimeWrapExceptions();
 
-#ifndef FEATURE_CORECLR
     BOOL                    HasDefaultDllImportSearchPathsAttribute();
 
     BOOL IsDefaultDllImportSearchPathsAttributeCached()
@@ -3373,7 +3370,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         return (m_DefaultDllImportSearchPathsAttributeValue & 0x2) != 0;
     }
-#endif // !FEATURE_CORECLR
 
     //-----------------------------------------------------------------------------------------
     // True iff metadata version string is 1.* or 2.*.
