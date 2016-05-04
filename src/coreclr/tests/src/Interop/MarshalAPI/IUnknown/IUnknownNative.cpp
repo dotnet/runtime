@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <xplatform.h>
 
-extern "C" DLL_EXPORT BOOL __stdcall Marshal_IUnknown(/*[in]*/IUnknown *o)
+extern "C" DLL_EXPORT BOOL _cdecl Marshal_IUnknown(/*[in]*/IUnknown *o)
 {
 	//Call AddRef and Release on the passed IUnknown
 	//test if the ref counts get updated as expected
