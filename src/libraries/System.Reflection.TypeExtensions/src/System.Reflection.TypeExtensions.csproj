@@ -5,9 +5,9 @@
     <AssemblyName>System.Reflection.TypeExtensions</AssemblyName>
     <AssemblyVersion>4.1.0.0</AssemblyVersion>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' != 'netcore50aot'">true</IsPartialFacadeAssembly>
-    <NuGetTargetFrameworkMoniker>DNXCore,Version=v5.0</NuGetTargetFrameworkMoniker>
     <ProjectGuid>{1E689C1B-690C-4799-BDE9-6E7990585894}</ProjectGuid>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.5</PackageTargetFramework>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.5</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
