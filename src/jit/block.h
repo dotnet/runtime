@@ -925,14 +925,12 @@ typedef unsigned weight_t;             // Type used to hold block and edge weigh
 
     bool endsWithJmpMethod(Compiler *comp);
 
-#if FEATURE_FASTTAILCALL
     bool endsWithTailCall(Compiler* comp, bool fastTailCallsOnly, bool tailCallsConvertibleToLoopOnly, GenTree** tailCall);
 
     bool endsWithTailCallOrJmp(Compiler *comp, 
                                bool fastTailCallsOnly = false);
 
     bool endsWithTailCallConvertibleToLoop(Compiler *comp, GenTree** tailCall);
-#endif // FEATURE_FASTTAILCALL
 
 #if JIT_FEATURE_SSA_SKIP_DEFS
     // Returns the first statement in the statement list of "this" that is

@@ -5361,7 +5361,6 @@ void CodeGen::genJmpMethod(GenTreePtr jmp)
         return;
     }
 
-#if 0
     // Make sure register arguments are in their initial registers
     // and stack arguments are put back as well.
     unsigned        varNum;
@@ -5399,7 +5398,7 @@ void CodeGen::genJmpMethod(GenTreePtr jmp)
         }
         else if (varDsc->lvRegNum == REG_STK)
         {
-            // Skip args which are currently living in stack.            
+            // Skip args which are currently living in stack.
             continue;
         }
 
@@ -5407,9 +5406,11 @@ void CodeGen::genJmpMethod(GenTreePtr jmp)
         // a stack argument currently living in a register.  In either case the following
         // assert should hold.
         assert(varDsc->lvRegNum != REG_STK);
+        assert(varDsc->TypeGet() != TYP_STRUCT);
+        var_types storeType = genActualType(varDsc->TypeGet());
+        emitAttr storeSize = emitActualTypeSize(storeType);
 
-        var_types  loadType = varDsc->lvaArgType();
-        getEmitter()->emitIns_S_R(ins_Store(loadType), emitTypeSize(loadType), varDsc->lvRegNum, varNum, 0);
+        getEmitter()->emitIns_S_R(ins_Store(storeType), storeSize, varDsc->lvRegNum, varNum, 0);
 
         // Update lvRegNum life and GC info to indicate lvRegNum is dead and varDsc stack slot is going live.
         // Note that we cannot modify varDsc->lvRegNum here because another basic block may not be expecting it.
@@ -5417,7 +5418,7 @@ void CodeGen::genJmpMethod(GenTreePtr jmp)
         regMaskTP tempMask = genRegMask(varDsc->lvRegNum);
         regSet.RemoveMaskVars(tempMask);
         gcInfo.gcMarkRegSetNpt(tempMask);
-        if (varDsc->lvTracked)
+        if (compiler->lvaIsGCTracked(varDsc))
         {
             VarSetOps::AddElemD(compiler, gcInfo.gcVarPtrSetCur, varNum);
         }
@@ -5453,14 +5454,24 @@ void CodeGen::genJmpMethod(GenTreePtr jmp)
 
         // Is register argument already in the right register?
         // If not load it from its stack location.
-        var_types  loadType  = varDsc->lvaArgType();
-        regNumber  argReg    = varDsc->lvArgReg;    // incoming arg register
+        regNumber argReg = varDsc->lvArgReg;    // incoming arg register
+        regNumber argRegNext = REG_NA;
 
         if (varDsc->lvRegNum != argReg)
         {
-            assert(genIsValidReg(argReg)); 
-
-            getEmitter()->emitIns_R_S(ins_Load(loadType), emitTypeSize(loadType), argReg, varNum, 0);
+            var_types loadType = TYP_UNDEF;
+            if (varTypeIsStruct(varDsc))
+            {
+                // Must be <= 16 bytes or else it wouldn't be passed in registers
+                noway_assert(EA_SIZE_IN_BYTES(varDsc->lvSize()) <= MAX_PASS_MULTIREG_BYTES);
+                loadType = compiler->getJitGCType(varDsc->lvGcLayout[0]);
+            }
+            else
+            {
+                loadType = compiler->mangleVarArgsType(genActualType(varDsc->TypeGet()));
+            }
+            emitAttr loadSize = emitActualTypeSize(loadType);
+            getEmitter()->emitIns_R_S(ins_Load(loadType), loadSize, argReg, varNum, 0);
 
             // Update argReg life and GC Info to indicate varDsc stack slot is dead and argReg is going live.
             // Note that we cannot modify varDsc->lvRegNum here because another basic block may not be expecting it.
@@ -5468,29 +5479,39 @@ void CodeGen::genJmpMethod(GenTreePtr jmp)
             // and after which reg life and gc info will be recomputed for the new block in genCodeForBBList().
             regSet.AddMaskVars(genRegMask(argReg));
             gcInfo.gcMarkRegPtrVal(argReg, loadType);
-            if (varDsc->lvTracked)
+
+            if (varDsc->lvIsMultiregStruct())
             {
-                VarSetOps::RemoveElemD(compiler, gcInfo.gcVarPtrSetCur, varNum);            
+                // Restore the next register.
+                argRegNext = genMapRegArgNumToRegNum(genMapRegNumToRegArgNum(argReg, loadType) + 1, loadType);
+                loadType = compiler->getJitGCType(varDsc->lvGcLayout[1]);
+                loadSize = emitActualTypeSize(loadType);
+                getEmitter()->emitIns_R_S(ins_Load(loadType), loadSize, argRegNext, varNum, TARGET_POINTER_SIZE);
+
+                regSet.AddMaskVars(genRegMask(argRegNext));
+                gcInfo.gcMarkRegPtrVal(argRegNext, loadType);
+            }
+
+            if (compiler->lvaIsGCTracked(varDsc))
+            {
+                VarSetOps::RemoveElemD(compiler, gcInfo.gcVarPtrSetCur, varNum);
             }
         }
 
-        // In case of a jmp call to a vararg method also pass the float/double arg in the corresponding int arg register.        
+        // In case of a jmp call to a vararg method ensure only integer registers are passed.
         if (compiler->info.compIsVarArgs)
         {
-            regNumber intArgReg;
-            if (varTypeIsFloating(loadType))
+            assert((genRegMask(argReg) & RBM_ARG_REGS) != RBM_NONE);
+
+            fixedIntArgMask |= genRegMask(argReg);
+
+            if (varDsc->lvIsMultiregStruct())
             {
-                intArgReg = compiler->getCallArgIntRegister(argReg);
-                inst_RV_RV(INS_mov_xmm2i, argReg, intArgReg, loadType);
-            }
-            else
-            {
-                intArgReg = argReg;
+                assert(argRegNext != REG_NA);
+                fixedIntArgMask |= genRegMask(argRegNext);
             }
 
-            fixedIntArgMask |= genRegMask(intArgReg);
-
-            if (intArgReg == REG_ARG_0)
+            if (argReg == REG_ARG_0)
             {
                 assert(firstArgVarNum == BAD_VAR_NUM);
                 firstArgVarNum = varNum;
@@ -5498,11 +5519,11 @@ void CodeGen::genJmpMethod(GenTreePtr jmp)
         }
     }
 
-    // Jmp call to a vararg method - if the method has fewer than 4 fixed arguments,
-    // load the remaining arg registers (both int and float) from the corresponding
+    // Jmp call to a vararg method - if the method has fewer than 8 fixed arguments,
+    // load the remaining integer arg registers from the corresponding
     // shadow stack slots.  This is for the reason that we don't know the number and type
     // of non-fixed params passed by the caller, therefore we have to assume the worst case
-    // of caller passing float/double args both in int and float arg regs.
+    // of caller passing all 8 integer arg regs.
     //
     // The caller could have passed gc-ref/byref type var args.  Since these are var args
     // the callee no way of knowing their gc-ness.  Therefore, mark the region that loads
@@ -5512,7 +5533,7 @@ void CodeGen::genJmpMethod(GenTreePtr jmp)
         assert(compiler->info.compIsVarArgs);
         assert(firstArgVarNum != BAD_VAR_NUM);
 
-        regMaskTP remainingIntArgMask = RBM_ARG_REGS & ~fixedIntArgMask;        
+        regMaskTP remainingIntArgMask = RBM_ARG_REGS & ~fixedIntArgMask;
         if (remainingIntArgMask != RBM_NONE)
         {
             getEmitter()->emitDisableGC();
@@ -5524,21 +5545,14 @@ void CodeGen::genJmpMethod(GenTreePtr jmp)
                 if ((remainingIntArgMask & argRegMask) != 0)
                 {
                     remainingIntArgMask &= ~argRegMask;
-                    getEmitter()->emitIns_R_S(INS_mov, EA_8BYTE, argReg, firstArgVarNum, argOffset);
-
-                    // also load it in corresponding float arg reg
-                    regNumber floatReg = compiler->getCallArgFloatRegister(argReg);
-                    inst_RV_RV(INS_mov_i2xmm, floatReg, argReg);
+                    getEmitter()->emitIns_R_S(INS_ldr, EA_8BYTE, argReg, firstArgVarNum, argOffset);
                 }
 
                 argOffset += REGSIZE_BYTES;
-            } 
+            }
             getEmitter()->emitEnableGC();
         }
     }
-#else // !0
-    NYI("genJmpMethod");
-#endif // !0
 }
 
 // produce code for a GT_LEA subnode
