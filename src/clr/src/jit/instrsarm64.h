@@ -590,7 +590,10 @@ INST1(adrp,    "adrp",   0, 0, IF_DI_1E,  0x90000000)
 
 INST1(b,       "b",      0, 0, IF_BI_0A,  0x14000000)
                                    //  b       simm26               BI_0A  000101iiiiiiiiii iiiiiiiiiiiiiiii   1400 0000   simm26:00
-   
+
+INST1(b_tail,  "b",      0, 0, IF_BI_0C,  0x14000000)
+                                   //  b       simm26               BI_0A  000101iiiiiiiiii iiiiiiiiiiiiiiii   1400 0000   simm26:00, same as b representing a tail call of bl.
+
 INST1(bl_local,"bl",     0, 0, IF_BI_0A,  0x94000000)
                                    //  bl      simm26               BI_0A  100101iiiiiiiiii iiiiiiiiiiiiiiii   9400 0000   simm26:00, same as bl, but with a BasicBlock target.
    
@@ -599,6 +602,9 @@ INST1(bl,      "bl",     0, 0, IF_BI_0C,  0x94000000)
 
 INST1(br,      "br",     0, 0, IF_BR_1B,  0xD61F0000)
                                    //  br      Rn                   BR_1B  1101011000011111 000000nnnnn00000   D61F 0000
+
+INST1(br_tail, "br",     0, 0, IF_BR_1B,  0xD61F0000)
+                                   //  br      Rn                   BR_1B  1101011000011111 000000nnnnn00000   D61F 0000, same as br representing a tail call of blr.
 
 INST1(blr,     "blr",    0, 0, IF_BR_1B,  0xD63F0000)
                                    //  blr     Rn                   BR_1B  1101011000111111 000000nnnnn00000   D63F 0000

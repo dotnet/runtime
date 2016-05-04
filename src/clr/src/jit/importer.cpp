@@ -9358,7 +9358,7 @@ RET:
                 break;
 
         case CEE_JMP:
-            
+
             assert(!compIsForInlining());
 
             if (tiVerificationNeeded)
@@ -9392,7 +9392,7 @@ RET:
                 BADCODE("Incompatible target for CEE_JMPs");
             }
 
-#if defined(_TARGET_XARCH_) || defined(_TARGET_ARM_)
+#if defined(_TARGET_XARCH_) || defined(_TARGET_ARMARCH_)
 
             op1 = new (this, GT_JMP) GenTreeVal(GT_JMP, TYP_VOID, (size_t) resolvedToken.hMethod);
 
@@ -9409,7 +9409,7 @@ RET:
                         
             goto APPEND;
 
-#else // !_TARGET_X86_ && !_TARGET_ARM_
+#else // !_TARGET_XARCH_ && !_TARGET_ARMARCH_
 
             // Import this just like a series of LDARGs + tail. + call + ret
 
@@ -9446,7 +9446,7 @@ RET:
             // And finish with the ret
             goto RET;
 
-#endif // _TARGET_XXX
+#endif // _TARGET_XARCH_ || _TARGET_ARMARCH_
 
         case CEE_LDELEMA :
             assertImp(sz == sizeof(unsigned));
