@@ -11,6 +11,16 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Net.Http.Functional.Tests</AssemblyName>
   </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' and '$(ProjectJson)' == '' ">
+    <ProjectJson>win/project.json</ProjectJson>
+    <ProjectLockJson>win/project.lock.json</ProjectLockJson>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(TargetsUnix)' == 'true' and '$(ProjectJson)' == '' ">
+    <ProjectJson>unix/project.json</ProjectJson>
+    <ProjectLockJson>unix/project.lock.json</ProjectLockJson>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
@@ -60,6 +70,9 @@
     <Compile Include="TestHelper.cs" />
     <Compile Include="XunitTestAssemblyAttributes.cs" />
   </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
+    <Compile Include="DefaultCredentialsTest.cs" />
+  </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="HttpClientHandlerTest.DefaultProxyCredentials.cs" />
     <Compile Include="HttpClientHandlerTest.MaxConnectionsPerServer.cs" />
@@ -77,9 +90,6 @@
       <Name>RemoteExecutorConsoleApp</Name>
       <OSGroup>$(InputOSGroup)</OSGroup>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
