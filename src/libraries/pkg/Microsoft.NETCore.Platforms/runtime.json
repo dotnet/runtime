@@ -162,7 +162,7 @@
             "#import": [ "unix" ]
         },
         "linux-x64": {
-            "#import": [ "unix", "unix-x64" ]
+            "#import": [ "linux", "unix-x64" ]
         },
 
         "rhel": {
