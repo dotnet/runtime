@@ -1,6 +1,6 @@
 {
   "description": "Abstractions for reading `.deps` files.",
-  "version": "1.0.0-*",
+  "version": "1.0.0-rc2-*",
   "repository": {
     "type": "git",
     "url": "git://github.com/dotnet/cli"
@@ -12,7 +12,7 @@
   "dependencies": {
     "Microsoft.DotNet.InternalAbstractions": {
       "target": "project",
-      "version": "1.0.0-*"
+      "version": "1.0.0-rc2-*"
     },
     "Newtonsoft.Json": "7.0.1"
   },
