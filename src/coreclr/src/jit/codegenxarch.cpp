@@ -1464,7 +1464,12 @@ void CodeGen::genCodeForBinary(GenTree* treeNode)
 
     if (treeNode->gtOverflowEx())
     {
+#if !defined(_TARGET_64BIT_)
+        assert(oper == GT_ADD || oper == GT_SUB ||
+               oper == GT_ADD_HI || oper == GT_SUB_HI);
+#else
         assert(oper == GT_ADD || oper == GT_SUB);
+#endif
         genCheckOverflow(treeNode);
     }
     genProduceReg(treeNode);
