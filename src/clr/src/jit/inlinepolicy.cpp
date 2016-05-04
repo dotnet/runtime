@@ -43,6 +43,14 @@ InlinePolicy* InlinePolicy::GetPolicy(Compiler* compiler, bool isPrejitRoot)
 
 #if defined(DEBUG) || defined(INLINE_DATA)
 
+    // Optionally install the SizePolicy.
+    bool useSizePolicy = JitConfig.JitInlinePolicySize() != 0;
+
+    if (useSizePolicy)
+    {
+        return new (compiler, CMK_Inlining) SizePolicy(compiler, isPrejitRoot);
+    }
+
     // Optionally install the FullPolicy.
     bool useFullPolicy = JitConfig.JitInlinePolicyFull() != 0;
 
@@ -1943,6 +1951,75 @@ void FullPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     else
     {
         SetCandidate(InlineObservation::CALLSITE_IS_PROFITABLE_INLINE);
+    }
+
+    return;
+}
+
+//------------------------------------------------------------------------/
+// SizePolicy: construct a new SizePolicy
+//
+// Arguments:
+//    compiler -- compiler instance doing the inlining (root compiler)
+//    isPrejitRoot -- true if this compiler is prejitting the root method
+
+SizePolicy::SizePolicy(Compiler* compiler, bool isPrejitRoot)
+    : DiscretionaryPolicy(compiler, isPrejitRoot)
+{
+    // Empty
+}
+
+//------------------------------------------------------------------------
+// DetermineProfitability: determine if this inline is profitable
+//
+// Arguments:
+//    methodInfo -- method info for the callee
+
+void SizePolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
+{
+    // Do some homework
+    MethodInfoObservations(methodInfo);
+    EstimateCodeSize();
+
+    // Does this inline increase the estimated size beyond
+    // the original size estimate?
+    const InlineStrategy* strategy = m_RootCompiler->m_inlineStrategy;
+    const int initialSize = strategy->GetInitialSizeEstimate();
+    const int currentSize = strategy->GetCurrentSizeEstimate();
+    const int newSize     = currentSize + m_ModelCodeSizeEstimate;
+
+    if (newSize <= initialSize)
+    {
+        // Estimated size impact is acceptable, so inline here.
+        JITLOG_THIS(m_RootCompiler,
+                    (LL_INFO100000,
+                     "Inline profitable, root size estimate %d is less than initial size %d\n",
+                     newSize / SIZE_SCALE, initialSize / SIZE_SCALE));
+
+        if (m_IsPrejitRoot)
+        {
+            SetCandidate(InlineObservation::CALLEE_IS_SIZE_DECREASING_INLINE);
+        }
+        else
+        {
+            SetCandidate(InlineObservation::CALLSITE_IS_SIZE_DECREASING_INLINE);
+        }
+    }
+    else
+    {
+        // Estimated size increase is too large, so no inline here.
+        //
+        // Note that we ought to reconsider this inline if we make
+        // room in the budget by inlining a bunch of size decreasing
+        // inlines after this one. But for now, we won't do this.
+        if (m_IsPrejitRoot)
+        {
+            SetNever(InlineObservation::CALLEE_NOT_PROFITABLE_INLINE);
+        }
+        else
+        {
+            SetFailure(InlineObservation::CALLSITE_NOT_PROFITABLE_INLINE);
+        }
     }
 
     return;
