@@ -129,14 +129,14 @@ namespace System.Linq.Expressions.Tests
         public void CannotUnboxToNonInterfaceExceptObject()
         {
             Expression value = Expression.Constant(0);
-            Assert.Throws<ArgumentException>(() => Expression.Unbox(value, typeof(int)));
+            Assert.Throws<ArgumentException>("expression", () => Expression.Unbox(value, typeof(int)));
         }
 
         [Fact]
         public void CannotUnboxReferenceType()
         {
             Expression value = Expression.Constant("", typeof(IComparable<string>));
-            Assert.Throws<ArgumentException>(() => Expression.Unbox(value, typeof(string)));
+            Assert.Throws<ArgumentException>("type", () => Expression.Unbox(value, typeof(string)));
         }
 
         private static class Unreadable
@@ -182,7 +182,7 @@ namespace System.Linq.Expressions.Tests
             Expression unbox = Expression.Unbox(Expression.Constant(0, typeof(object)), typeof(int));
             Assert.False(unbox.CanReduce);
             Assert.Same(unbox, unbox.Reduce());
-            Assert.Throws<ArgumentException>(() => unbox.ReduceAndCheck());
+            Assert.Throws<ArgumentException>(null, () => unbox.ReduceAndCheck());
         }
     }
 }

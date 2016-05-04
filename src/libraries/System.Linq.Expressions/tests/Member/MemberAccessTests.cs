@@ -323,13 +323,13 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void AccessIndexedPropertyWithoutIndex()
         {
-            Assert.Throws<ArgumentException>(() => Expression.Property(Expression.Default(typeof(List<int>)), typeof(List<int>).GetProperty("Item")));
+            Assert.Throws<ArgumentException>(null, () => Expression.Property(Expression.Default(typeof(List<int>)), typeof(List<int>).GetProperty("Item")));
         }
 
         [Fact]
         public static void AccessIndexedPropertyWithoutIndexWriteOnly()
         {
-            Assert.Throws<ArgumentException>(() => Expression.Property(Expression.Default(typeof(UnreadableIndexableClass)), typeof(UnreadableIndexableClass).GetProperty("Item")));
+            Assert.Throws<ArgumentException>(null, () => Expression.Property(Expression.Default(typeof(UnreadableIndexableClass)), typeof(UnreadableIndexableClass).GetProperty("Item")));
         }
     }
 }

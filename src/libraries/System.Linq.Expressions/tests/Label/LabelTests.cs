@@ -41,13 +41,13 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void NullDefaultValueNotAllowedWithTypedTarget()
         {
-            Assert.Throws<ArgumentException>(() => Expression.Label(Expression.Label(typeof(int)), null));
+            Assert.Throws<ArgumentException>("target", () => Expression.Label(Expression.Label(typeof(int)), null));
         }
 
         [Fact]
         public void DefaultMustMatchLabelType()
         {
-            Assert.Throws<ArgumentException>(() => Expression.Label(Expression.Label(typeof(int)), Expression.Constant("hello")));
+            Assert.Throws<ArgumentException>(null, () => Expression.Label(Expression.Label(typeof(int)), Expression.Constant("hello")));
         }
 
         [Fact]
@@ -59,7 +59,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void AssignableOnlyReferenceAssignableNotImplicitConversion()
         {
-            Assert.Throws<ArgumentException>(() => Expression.Label(Expression.Label(typeof(long)), Expression.Constant(0)));
+            Assert.Throws<ArgumentException>(null, () => Expression.Label(Expression.Label(typeof(long)), Expression.Constant(0)));
         }
 
         [Fact]

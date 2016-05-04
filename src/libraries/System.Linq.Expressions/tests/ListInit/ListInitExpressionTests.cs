@@ -111,7 +111,7 @@ namespace System.Linq.Expressions.Tests
         {
             // () => new NonEnumerableAddable { 1, 2, 4, 16, 42 } isn't allowed because list initialization
             // is allowed only with enumerable types.
-            Assert.Throws<ArgumentException>(null, () => Expression.ListInit(Expression.New(typeof(NonEnumerableAddable)), Expression.Constant(1)));
+            Assert.Throws<ArgumentException>("newExpression", () => Expression.ListInit(Expression.New(typeof(NonEnumerableAddable)), Expression.Constant(1)));
         }
 
         [Fact]
@@ -119,10 +119,10 @@ namespace System.Linq.Expressions.Tests
         {
             var newExp = Expression.New(typeof(EnumerableStaticAdd));
             var adder = typeof(EnumerableStaticAdd).GetMethod(nameof(EnumerableStaticAdd.Add));
-            Assert.Throws<ArgumentException>(() => Expression.ListInit(newExp, Expression.Constant("")));
-            Assert.Throws<ArgumentException>(() => Expression.ListInit(newExp, adder, Expression.Constant("")));
-            Assert.Throws<ArgumentException>(() => Expression.ElementInit(adder, Expression.Constant("")));
-            Assert.Throws<ArgumentException>(() => Expression.ElementInit(adder, Enumerable.Repeat(Expression.Constant(""), 1)));
+            Assert.Throws<ArgumentException>("addMethod", () => Expression.ListInit(newExp, Expression.Constant("")));
+            Assert.Throws<ArgumentException>("addMethod", () => Expression.ListInit(newExp, adder, Expression.Constant("")));
+            Assert.Throws<ArgumentException>("addMethod", () => Expression.ElementInit(adder, Expression.Constant("")));
+            Assert.Throws<ArgumentException>("addMethod", () => Expression.ElementInit(adder, Enumerable.Repeat(Expression.Constant(""), 1)));
         }
 
         [Fact]

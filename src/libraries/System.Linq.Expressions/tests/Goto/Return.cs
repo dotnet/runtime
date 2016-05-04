@@ -57,7 +57,7 @@ namespace System.Linq.Expressions.Tests
         public void NonVoidTargetReturnHasNoValue(Type type)
         {
             LabelTarget target = Expression.Label(type);
-            Assert.Throws<ArgumentException>(() => Expression.Return(target));
+            Assert.Throws<ArgumentException>("target", () => Expression.Return(target));
         }
 
         [Theory]
@@ -65,7 +65,7 @@ namespace System.Linq.Expressions.Tests
         public void NonVoidTargetReturnHasNoValueTypeExplicit(Type type)
         {
             LabelTarget target = Expression.Label(type);
-            Assert.Throws<ArgumentException>(() => Expression.Return(target, type));
+            Assert.Throws<ArgumentException>("target", () => Expression.Return(target, type));
         }
 
         [Theory]
@@ -98,16 +98,16 @@ namespace System.Linq.Expressions.Tests
         [MemberData(nameof(TypesData))]
         public void NullValueOnNonVoidReturn(Type type)
         {
-            Assert.Throws<ArgumentException>(() => Expression.Return(Expression.Label(type)));
-            Assert.Throws<ArgumentException>(() => Expression.Return(Expression.Label(type), default(Expression)));
-            Assert.Throws<ArgumentException>(() => Expression.Return(Expression.Label(type), null, type));
+            Assert.Throws<ArgumentException>("target", () => Expression.Return(Expression.Label(type)));
+            Assert.Throws<ArgumentException>("target", () => Expression.Return(Expression.Label(type), default(Expression)));
+            Assert.Throws<ArgumentException>("target", () => Expression.Return(Expression.Label(type), null, type));
         }
 
         [Theory]
         [MemberData(nameof(ConstantValueData))]
         public void ExplicitNullTypeWithValue(object value)
         {
-            Assert.Throws<ArgumentException>(() => Expression.Return(Expression.Label(value.GetType()), default(Type)));
+            Assert.Throws<ArgumentException>("target", () => Expression.Return(Expression.Label(value.GetType()), default(Type)));
         }
 
         [Fact]
@@ -136,7 +136,7 @@ namespace System.Linq.Expressions.Tests
         [MemberData(nameof(NonObjectAssignableConstantValueData))]
         public void CannotAssignValueTypesToObject(object value)
         {
-            Assert.Throws<ArgumentException>(() => Expression.Return(Expression.Label(typeof(object)), Expression.Constant(value)));
+            Assert.Throws<ArgumentException>(null, () => Expression.Return(Expression.Label(typeof(object)), Expression.Constant(value)));
         }
 
         [Theory]

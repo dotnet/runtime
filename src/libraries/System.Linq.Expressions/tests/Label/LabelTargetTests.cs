@@ -70,8 +70,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void GenericType()
         {
-            Assert.Throws<ArgumentException>(() => Expression.Label(typeof(List<>)));
-            Assert.Throws<ArgumentException>(() => Expression.Label(typeof(List<>), null));
+            Assert.Throws<ArgumentException>("type", () => Expression.Label(typeof(List<>)));
+            Assert.Throws<ArgumentException>("type", () => Expression.Label(typeof(List<>), null));
         }
 
         [Fact]
@@ -79,8 +79,8 @@ namespace System.Linq.Expressions.Tests
         {
             Type listType = typeof(List<>);
             Type listListListType = listType.MakeGenericType(listType.MakeGenericType(listType));
-            Assert.Throws<ArgumentException>(() => Expression.Label(listListListType));
-            Assert.Throws<ArgumentException>(() => Expression.Label(listListListType, null));
+            Assert.Throws<ArgumentException>("type", () => Expression.Label(listListListType));
+            Assert.Throws<ArgumentException>("type", () => Expression.Label(listListListType, null));
         }
 
         [Fact]

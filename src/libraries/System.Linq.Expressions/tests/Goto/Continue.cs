@@ -15,7 +15,7 @@ namespace System.Linq.Expressions.Tests
         public void NonVoidTargetContinueHasNoValue(Type type)
         {
             LabelTarget target = Expression.Label(type);
-            Assert.Throws<ArgumentException>(() => Expression.Continue(target));
+            Assert.Throws<ArgumentException>("target", () => Expression.Continue(target));
         }
 
         [Theory]
@@ -23,7 +23,7 @@ namespace System.Linq.Expressions.Tests
         public void NonVoidTargetContinueHasNoValueTypeExplicit(Type type)
         {
             LabelTarget target = Expression.Label(type);
-            Assert.Throws<ArgumentException>(() => Expression.Continue(target, type));
+            Assert.Throws<ArgumentException>("target", () => Expression.Continue(target, type));
         }
 
         [Theory]
@@ -56,14 +56,14 @@ namespace System.Linq.Expressions.Tests
         [MemberData(nameof(TypesData))]
         public void NullValueOnNonVoidContinue(Type type)
         {
-            Assert.Throws<ArgumentException>(() => Expression.Continue(Expression.Label(type)));
+            Assert.Throws<ArgumentException>("target", () => Expression.Continue(Expression.Label(type)));
         }
 
         [Theory]
         [MemberData(nameof(ConstantValueData))]
         public void ExplicitNullTypeWithValue(object value)
         {
-            Assert.Throws<ArgumentException>(() => Expression.Continue(Expression.Label(value.GetType()), default(Type)));
+            Assert.Throws<ArgumentException>("target", () => Expression.Continue(Expression.Label(value.GetType()), default(Type)));
         }
     }
 }

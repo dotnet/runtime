@@ -138,7 +138,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void NullVariableInList()
         {
-            Assert.Throws<ArgumentNullException>(() => Expression.RuntimeVariables(Expression.Variable(typeof(int)), null));
+            Assert.Throws<ArgumentNullException>("variables[1]", () => Expression.RuntimeVariables(Expression.Variable(typeof(int)), null));
         }
 
         [Theory]
@@ -157,7 +157,7 @@ namespace System.Linq.Expressions.Tests
             RuntimeVariablesExpression vars = Expression.RuntimeVariables(Expression.Variable(typeof(int)));
             Assert.False(vars.CanReduce);
             Assert.Same(vars, vars.Reduce());
-            Assert.Throws<ArgumentException>(() => vars.ReduceAndCheck());
+            Assert.Throws<ArgumentException>(null, () => vars.ReduceAndCheck());
         }
 
         [Fact]
