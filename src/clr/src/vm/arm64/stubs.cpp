@@ -1606,6 +1606,8 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
     // field and save it in x9. Tailcall to the target method after re-arranging the arguments
     // ldr x9, [x0, #offsetof(DelegateObject, _methodPtrAux)]
     EmitLoadStoreRegImm(eLOAD, IntReg(9), IntReg(0), DelegateObject::GetOffsetOfMethodPtrAux());
+    //add x11, x0, DelegateObject::GetOffsetOfMethodPtrAux() - load the indirection cell into x11 used by ResolveWorkerAsmStub
+    EmitAddImm(IntReg(11), IntReg(0), DelegateObject::GetOffsetOfMethodPtrAux());
 
     for (ShuffleEntry* pEntry = pShuffleEntryArray; pEntry->srcofs != ShuffleEntry::SENTINEL; pEntry++)
     {
