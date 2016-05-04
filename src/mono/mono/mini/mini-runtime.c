@@ -954,7 +954,7 @@ mono_jit_thread_attach (MonoDomain *domain, gpointer *dummy)
 			*dummy = NULL;
 			/* mono_thread_attach put the thread in RUNNING mode from STARTING, but we need to
 			 * return the right cookie. */
-			return mono_threads_cookie_for_reset_blocking_start (mono_thread_info_current (), 1);
+			return mono_threads_cookie_for_reset_blocking_start (mono_thread_info_current ());
 		} else {
 			*dummy = orig;
 			/* thread state (BLOCKING|RUNNING) -> RUNNING */

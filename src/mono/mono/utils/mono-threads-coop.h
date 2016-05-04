@@ -41,16 +41,16 @@ void
 mono_threads_state_poll (void);
 
 gpointer
-mono_threads_prepare_blocking (gpointer stackdata);
+mono_threads_prepare_blocking (gpointer *stackdata);
 
 void
-mono_threads_finish_blocking (gpointer cookie, gpointer stackdata);
+mono_threads_finish_blocking (gpointer cookie, gpointer *stackdata);
 
 gpointer
-mono_threads_reset_blocking_start (gpointer stackdata);
+mono_threads_reset_blocking_start (gpointer *stackdata);
 
 void
-mono_threads_reset_blocking_end (gpointer cookie, gpointer stackdata);
+mono_threads_reset_blocking_end (gpointer cookie, gpointer *stackdata);
 
 static inline void
 mono_threads_safepoint (void)
@@ -77,6 +77,23 @@ mono_threads_safepoint (void)
 #define MONO_FINISH_RESET_BLOCKING \
 		mono_threads_reset_blocking_end (__reset_cookie, &__dummy);	\
 	} while (0)
+
+/*
+ * The following are used for wrappers and trampolines as their
+ * calls might be unbalanced, due to exception unwinding.
+ */
+
+gpointer
+mono_threads_prepare_blocking_unbalanced (gpointer *stackdata);
+
+void
+mono_threads_finish_blocking_unbalanced (gpointer cookie, gpointer *stackdata);
+
+gpointer
+mono_threads_reset_blocking_start_unbalanced (gpointer *stackdata);
+
+void
+mono_threads_reset_blocking_end_unbalanced (gpointer cookie, gpointer *stackdata);
 
 G_END_DECLS
 
