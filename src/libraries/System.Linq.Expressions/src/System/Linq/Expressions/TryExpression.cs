@@ -184,7 +184,7 @@ namespace System.Linq.Expressions
             {
                 if (@finally != null || @catch.Count > 0)
                 {
-                    throw Error.FaultCannotHaveCatchOrFinally();
+                    throw Error.FaultCannotHaveCatchOrFinally(nameof(fault));
                 }
                 RequiresCanRead(fault, nameof(fault));
             }

@@ -292,17 +292,6 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// A string like "MethodBuilder does not have a valid TypeBuilder"
-        /// </summary>
-        internal static string MethodBuilderDoesNotHaveTypeBuilder
-        {
-            get
-            {
-                return SR.MethodBuilderDoesNotHaveTypeBuilder;
-            }
-        }
-
-        /// <summary>
         /// A string like "Label type must be System.Void if an expression is not supplied"
         /// </summary>
         internal static string LabelMustBeVoidOrHaveExpression
@@ -1256,29 +1245,6 @@ namespace System.Linq.Expressions
         {
             return SR.Format(SR.UnknownLiftType, p0);
         }
-
-        /// <summary>
-        /// A string like "Invalid output directory."
-        /// </summary>
-        internal static string InvalidOutputDir
-        {
-            get
-            {
-                return SR.InvalidOutputDir;
-            }
-        }
-
-        /// <summary>
-        /// A string like "Invalid assembly name or file extension."
-        /// </summary>
-        internal static string InvalidAsmNameOrExtension
-        {
-            get
-            {
-                return SR.InvalidAsmNameOrExtension;
-            }
-        }
-
 
         /// <summary>
         /// A string like "Cannot create instance of {0} because it contains generic parameters"

@@ -166,7 +166,7 @@ namespace System.Linq.Expressions
 
             if (test.Type != typeof(bool))
             {
-                throw Error.ArgumentMustBeBoolean();
+                throw Error.ArgumentMustBeBoolean(nameof(test));
             }
             if (!TypeUtils.AreEquivalent(ifTrue.Type, ifFalse.Type))
             {
@@ -199,7 +199,7 @@ namespace System.Linq.Expressions
 
             if (test.Type != typeof(bool))
             {
-                throw Error.ArgumentMustBeBoolean();
+                throw Error.ArgumentMustBeBoolean(nameof(test));
             }
 
             if (type != typeof(void))

@@ -200,7 +200,7 @@ namespace System.Linq.Expressions
         public static SwitchExpression Switch(Type type, Expression switchValue, Expression defaultBody, MethodInfo comparison, IEnumerable<SwitchCase> cases)
         {
             RequiresCanRead(switchValue, nameof(switchValue));
-            if (switchValue.Type == typeof(void)) throw Error.ArgumentCannotBeOfTypeVoid();
+            if (switchValue.Type == typeof(void)) throw Error.ArgumentCannotBeOfTypeVoid(nameof(switchValue));
 
             var caseList = cases.ToReadOnly();
             ContractUtils.RequiresNotNullItems(caseList, nameof(cases));
@@ -265,7 +265,7 @@ namespace System.Linq.Expressions
                 // if we have a non-boolean user-defined equals, we don't want it.
                 if (comparison.ReturnType != typeof(bool))
                 {
-                    throw Error.EqualityMustReturnBoolean(comparison);
+                    throw Error.EqualityMustReturnBoolean(comparison, nameof(comparison));
                 }
             }
             else if (caseList.Count != 0)
@@ -298,7 +298,7 @@ namespace System.Linq.Expressions
 
             if (defaultBody == null)
             {
-                if (resultType != typeof(void)) throw Error.DefaultBodyMustBeSupplied();
+                if (resultType != typeof(void)) throw Error.DefaultBodyMustBeSupplied(nameof(defaultBody));
             }
             else
             {

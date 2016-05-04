@@ -160,13 +160,13 @@ namespace System.Linq.Expressions
             ContractUtils.Requires(variable == null || TypeUtils.AreEquivalent(variable.Type, type), nameof(variable));
             if (variable != null && variable.IsByRef)
             {
-                throw Error.VariableMustNotBeByRef(variable, variable.Type);
+                throw Error.VariableMustNotBeByRef(variable, variable.Type, nameof(variable));
             }
             RequiresCanRead(body, nameof(body));
             if (filter != null)
             {
                 RequiresCanRead(filter, nameof(filter));
-                if (filter.Type != typeof(bool)) throw Error.ArgumentMustBeBoolean();
+                if (filter.Type != typeof(bool)) throw Error.ArgumentMustBeBoolean(nameof(filter));
             }
 
             return new CatchBlock(type, variable, body, filter);

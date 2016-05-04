@@ -195,9 +195,6 @@
   <data name="DefaultBodyMustBeSupplied" xml:space="preserve">
     <value>Default body must be supplied if case bodies are not System.Void.</value>
   </data>
-  <data name="MethodBuilderDoesNotHaveTypeBuilder" xml:space="preserve">
-    <value>MethodBuilder does not have a valid TypeBuilder</value>
-  </data>
   <data name="LabelMustBeVoidOrHaveExpression" xml:space="preserve">
     <value>Label type must be System.Void if an expression is not supplied</value>
   </data>
@@ -521,12 +518,6 @@
   </data>
   <data name="UnknownLiftType" xml:space="preserve">
     <value>unknown lift type: '{0}'.</value>
-  </data>
-  <data name="InvalidOutputDir" xml:space="preserve">
-    <value>Invalid output directory.</value>
-  </data>
-  <data name="InvalidAsmNameOrExtension" xml:space="preserve">
-    <value>Invalid assembly name or file extension.</value>
   </data>
   <data name="IllegalNewGenericParams" xml:space="preserve">
     <value>Cannot create instance of {0} because it contains generic parameters</value>

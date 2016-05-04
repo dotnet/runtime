@@ -1103,7 +1103,7 @@ namespace System.Linq.Expressions.Compiler
             if (fi != null) return fi.FieldType;
             PropertyInfo pi = member as PropertyInfo;
             if (pi != null) return pi.PropertyType;
-            throw Error.MemberNotFieldOrProperty(member);
+            throw Error.MemberNotFieldOrProperty(member, nameof(member));
         }
 
         #endregion

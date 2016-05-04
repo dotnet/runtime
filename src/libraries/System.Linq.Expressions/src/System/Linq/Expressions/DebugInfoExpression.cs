@@ -254,19 +254,19 @@ namespace System.Linq.Expressions
         {
             if (startLine < 1)
             {
-                throw Error.OutOfRange("startLine", 1);
+                throw Error.OutOfRange(nameof(startLine), 1);
             }
             if (startColumn < 1)
             {
-                throw Error.OutOfRange("startColumn", 1);
+                throw Error.OutOfRange(nameof(startColumn), 1);
             }
             if (endLine < 1)
             {
-                throw Error.OutOfRange("endLine", 1);
+                throw Error.OutOfRange(nameof(endLine), 1);
             }
             if (endColumn < 1)
             {
-                throw Error.OutOfRange("endColumn", 1);
+                throw Error.OutOfRange(nameof(endColumn), 1);
             }
             if (startLine > endLine)
             {
