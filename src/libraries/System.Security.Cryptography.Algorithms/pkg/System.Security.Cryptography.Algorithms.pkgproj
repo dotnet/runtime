@@ -9,8 +9,7 @@
       <SupportedFramework>net461;netcore50</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\ref\System.Security.Cryptography.Algorithms.csproj">
-      <!-- also supports net463 but that's not available yet for validation --> 
-      <SupportedFramework>netcoreapp1.0</SupportedFramework>
+      <SupportedFramework>net463;netcoreapp1.0</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Security.Cryptography.Algorithms.builds" />
     <InboxOnTargetFramework Include="MonoAndroid10" />
