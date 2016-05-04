@@ -299,9 +299,6 @@
 /* No GC support. */
 /* #undef HAVE_NULL_GC */
 
-/* Have oprofile support */
-/* #undef HAVE_OPROFILE */
-
 /* Define to 1 if you have the `poll' function. */
 /* #undef HAVE_POLL */
 

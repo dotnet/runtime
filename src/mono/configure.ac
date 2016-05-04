@@ -3558,20 +3558,6 @@ AC_ARG_WITH(bitcode,         [  --with-bitcode=yes,no           If bitcode is en
 AC_ARG_WITH(xammac,          [  --with-xammac=yes,no            If you want to build the Xamarin.Mac assemblies (defaults to no)],    [], [with_xammac=no])
 AC_ARG_WITH(mobile_static,   [  --with-mobile_static=yes,no     If you want to build the mobile_static assemblies (defaults to no)],  [], [with_mobile_static=no])
 
-OPROFILE=no
-AC_ARG_WITH(oprofile,[  --with-oprofile=no,<oprofile install dir>   Enable oprofile support (defaults to no)],[
-	if test x$with_oprofile != xno; then
-	    oprofile_include=$with_oprofile/include
-	    if test ! -f $oprofile_include/opagent.h; then
-	   	  AC_MSG_ERROR([oprofile include file not found at $oprofile_include/opagent.h])
-		fi
-	    OPROFILE=yes
-		OPROFILE_CFLAGS="-I$oprofile_include"
-	    OPROFILE_LIBS="-L$with_oprofile/lib/oprofile -lopagent"
-	    AC_DEFINE(HAVE_OPROFILE,1,[Have oprofile support])
-	fi
-])
-
 MALLOC_MEMPOOLS=no
 AC_ARG_WITH(malloc_mempools,[  --with-malloc-mempools=yes,no  Use malloc for each single mempool allocation (only for runtime debugging, defaults to no)],[
 	if test x$with_malloc_mempools = xyes; then
@@ -3680,10 +3666,6 @@ AC_SUBST(docs_dir)
 
 ## Maybe should also disable if mcsdir is invalid.  Let's punt the issue for now.
 AM_CONDITIONAL(BUILD_MCS, [test x$cross_compiling = xno && test x$enable_mcs_build != xno])
-
-AM_CONDITIONAL(HAVE_OPROFILE, test x$OPROFILE = xyes)
-AC_SUBST(OPROFILE_CFLAGS)
-AC_SUBST(OPROFILE_LIBS)
 
 libmono_ldflags="$libmono_ldflags $LIBS"
 
@@ -4106,7 +4088,6 @@ echo "
 	TLS:           $with_tls
 	SIGALTSTACK:   $with_sigaltstack
 	Engine:        $jit_status
-	oprofile:      $OPROFILE
 	BigArrays:     $enable_big_arrays
 	DTrace:        $enable_dtrace
 	LLVM Back End: $enable_llvm (dynamically loaded: $enable_loadedllvm)
