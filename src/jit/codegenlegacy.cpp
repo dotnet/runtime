@@ -7170,7 +7170,7 @@ DONE_LEA_ADD:
         {
             /* Get the temp we spilled into. */
 
-            TempDsc * temp = regSet.rsUnspillInPlace(op1);
+            TempDsc * temp = regSet.rsUnspillInPlace(op1, op1->gtRegNum);
 
             /* For 8bit operations, we need to make sure that op2 is
                in a byte-addressable registers */

@@ -42,11 +42,22 @@ regMaskTP calleeSaveRegs(RegisterType rt)
 struct LocationInfo
 {
     LsraLocation  loc;
-    Interval    * interval;
-    GenTree     * treeNode;
+    
+    // Reg Index in case of multi-reg result producing call node.
+    // Indicates the position of the register that this location refers to.
+    // The max bits needed is based on max value of MAX_RET_REG_COUNT value
+    // across all targets and that happens 4 on on Arm.  Hence index value
+    // would be 0..MAX_RET_REG_COUNT-1. 
+    unsigned      multiRegIdx : 2;
 
-    LocationInfo(LsraLocation l, Interval *i, GenTree *t)
-    : loc(l), interval(i), treeNode(t) {}
+    Interval*     interval;
+    GenTree*      treeNode;
+
+    LocationInfo(LsraLocation l, Interval* i, GenTree* t, unsigned regIdx = 0)
+    : loc(l), multiRegIdx(regIdx), interval(i), treeNode(t)
+    {
+        assert(multiRegIdx == regIdx);
+    }
 
     // default constructor for data structures
     LocationInfo() {}
@@ -377,7 +388,7 @@ public:
     // Insert a copy in the case where a tree node value must be moved to a different
     // register at the point of use, or it is reloaded to a different register
     // than the one it was spilled from
-    void            insertCopyOrReload(GenTreePtr tree, RefPosition* refPosition);
+    void            insertCopyOrReload(GenTreePtr tree, unsigned multiRegIdx, RefPosition* refPosition);
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     // Insert code to save and restore the upper half of a vector that lives
@@ -658,6 +669,8 @@ private:
                                               LsraLocation currentLoc);
 
     regMaskTP       allRegs(RegisterType rt);
+    regMaskTP       allRegs(GenTree* tree);
+    regMaskTP       allMultiRegCallNodeRegs(GenTreeCall* tree);
     regMaskTP       allSIMDRegs();
     regMaskTP       internalFloatRegCandidates();
 
@@ -722,12 +735,17 @@ private:
 
     RefPosition *   newRefPositionRaw(LsraLocation nodeLocation, GenTree* treeNode, RefType refType);
 
-    RefPosition *   newRefPosition(Interval * theInterval, LsraLocation theLocation,
-                                   RefType theRefType, GenTree * theTreeNode,
-                                   regMaskTP mask);
+    RefPosition*    newRefPosition(Interval* theInterval, 
+                                   LsraLocation theLocation,
+                                   RefType theRefType, 
+                                   GenTree* theTreeNode,
+                                   regMaskTP mask,
+                                   unsigned multiRegIdx = 0);
 
-    RefPosition *   newRefPosition(regNumber reg, LsraLocation theLocation,
-                                   RefType theRefType, GenTree * theTreeNode,
+    RefPosition*    newRefPosition(regNumber reg, 
+                                   LsraLocation theLocation,
+                                   RefType theRefType, 
+                                   GenTree* theTreeNode,
                                    regMaskTP mask);
 
     void applyCalleeSaveHeuristics(RefPosition* rp);
@@ -1274,6 +1292,7 @@ public:
         , nodeLocation(nodeLocation)
         , registerAssignment(RBM_NONE)
         , refType(refType)
+        , multiRegIdx(0)
         , lastUse(false)
         , reload(false)
         , spillAfter(false)
@@ -1333,6 +1352,21 @@ public:
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
                );
     }
+
+    // Used by RefTypeDef/Use positions of a multi-reg call node.
+    // Indicates the position of the register that this ref position refers to.
+    // The max bits needed is based on max value of MAX_RET_REG_COUNT value
+    // across all targets and that happens 4 on on Arm.  Hence index value
+    // would be 0..MAX_RET_REG_COUNT-1. 
+    unsigned        multiRegIdx  : 2;
+
+    void            setMultiRegIdx(unsigned idx)
+    {
+        multiRegIdx = idx;
+        assert(multiRegIdx == idx);
+    }
+
+    unsigned        getMultiRegIdx() { return multiRegIdx;  }
 
     // Last Use - this may be true for multiple RefPositions in the same Interval
     bool            lastUse      : 1;
