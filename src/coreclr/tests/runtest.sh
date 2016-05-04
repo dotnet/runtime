@@ -866,36 +866,8 @@ else
     load_failing_tests
 fi
 
-
-
 scriptPath=$(dirname $0)
-
-# Check if environment variables are provided
-if [ ! -z "$testEnv" ]; then
-    # Check if this is GC stress testing
-    GCStressLevel=`(source $testEnv; echo $COMPlus_GCStress)`
-    # Set __TestEnv that will be executed just before running tests
-    absTestEnvPath=`readlink -f ${testEnv}`
-    export __TestEnv='source '${absTestEnvPath}
-fi
-
-# Still support setting COMPlus_GCStress before runtest.sh but recommend
-# using --test-env option. 
-if [ -z "$GCStressLevel" ]; then
-    if [ -n "$COMPlus_GCStress" ]; then
-        GCStressLevel=`echo $COMPlus_GCStress`
-    fi
-fi
-
-# Download runtime dependent libraries
-if [ ! -z "$GCStressLevel" ]; then
-    ${scriptPath}/setup-runtime-dependencies.sh --outputDir=$coreOverlayDir
-    if [ $? -ne 0 ] 
-    then
-        echo 'Failed to download coredistools library'
-        exit $EXIT_CODE_EXCEPTION
-    fi
-fi
+${scriptPath}/setup-runtime-dependencies.sh --outputDir=$coreOverlayDir
 
 cd "$testRootDir"
 if [ -z "$testDirectories" ]
