@@ -7109,7 +7109,7 @@ GenTreePtr          Compiler::impFixupStructReturnType(GenTreePtr op, CORINFO_CL
     assert(varTypeIsStruct(info.compRetType));
     assert(info.compRetBuffArg == BAD_VAR_NUM);
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(_TARGET_XARCH_)
 
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
     // No VarArgs for CoreCLR on x64 Unix
@@ -13822,7 +13822,7 @@ bool Compiler::impReturnInstruction(BasicBlock *block, int prefixFlags, OPCODE &
                 {
                     // If single eightbyte, the return type would have been normalized and there won't be a temp var.
                     // This code will be called only if the struct return has not been normalized (i.e. 2 eightbytes - max allowed.)
-                    assert(retRegCount == CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_RETURN_IN_REGISTERS);
+                    assert(retRegCount == MAX_RET_REG_COUNT);
                     // Same as !structDesc.passedInRegisters but just don't bother with impAssignStructPtr.
 #endif // !defined(_TARGET_ARM_)
 
