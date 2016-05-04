@@ -11692,9 +11692,11 @@ mono_marshal_get_thunk_invoke_wrapper (MonoMethod *method)
 	GHashTable *cache;
 	MonoMethod *res;
 	int i, param_count, sig_size, pos_leave;
-	int coop_gc_var, coop_gc_dummy_local;
 
 	g_assert (method);
+
+	// FIXME: we need to store the exception into a MonoHandle
+	g_assert (!mono_threads_is_coop_enabled ());
 
 	klass = method->klass;
 	image = method->klass->image;
@@ -11745,25 +11747,10 @@ mono_marshal_get_thunk_invoke_wrapper (MonoMethod *method)
 	if (!MONO_TYPE_IS_VOID (sig->ret))
 		mono_mb_add_local (mb, sig->ret);
 
-	if (mono_threads_is_coop_enabled ()) {
-		/* local 4, the local to be used when calling the reset_blocking funcs */
-		/* tons of code hardcode 3 to be the return var */
-		coop_gc_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-		/* local 5, the local used to get a stack address for suspend funcs */
-		coop_gc_dummy_local = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-	}
-
 	/* clear exception arg */
 	mono_mb_emit_ldarg (mb, param_count - 1);
 	mono_mb_emit_byte (mb, CEE_LDNULL);
 	mono_mb_emit_byte (mb, CEE_STIND_REF);
-
-	if (mono_threads_is_coop_enabled ()) {
-		/* FIXME this is technically wrong as the callback itself must be executed in gc unsafe context. */
-		mono_mb_emit_ldloc_addr (mb, coop_gc_dummy_local);
-		mono_mb_emit_icall (mb, mono_threads_reset_blocking_start);
-		mono_mb_emit_stloc (mb, coop_gc_var);
-	}
 
 	/* try */
 	clause = (MonoExceptionClause *)mono_image_alloc0 (image, sizeof (MonoExceptionClause));
@@ -11832,13 +11819,6 @@ mono_marshal_get_thunk_invoke_wrapper (MonoMethod *method)
 		/* box the return value */
 		if (MONO_TYPE_ISSTRUCT (sig->ret))
 			mono_mb_emit_op (mb, CEE_BOX, mono_class_from_mono_type (sig->ret));
-	}
-
-	if (mono_threads_is_coop_enabled ()) {
-		/* XXX merge reset_blocking_end with detach */
-		mono_mb_emit_ldloc (mb, coop_gc_var);
-		mono_mb_emit_ldloc_addr (mb, coop_gc_dummy_local);
-		mono_mb_emit_icall (mb, mono_threads_reset_blocking_end);
 	}
 
 	mono_mb_emit_byte (mb, CEE_RET);

@@ -585,6 +585,12 @@ endif
 
 endif
 
+if ENABLE_COOP
+COOP_DISABLED_TESTS= thunks.exe
+else
+COOP_DISABLED_TESTS= 
+endif
+
 # The two finalizer tests only work under sgen
 # gc-altstack.exe fails under boehm because it has no support for altstack
 # bug-459094.exe creates an extremely deep directory tree
@@ -598,7 +604,8 @@ DISABLED_TESTS=			\
 	delegate-invoke.exe \
 	bug-Xamarin-5278.exe \
 	$(PLATFORM_DISABLED_TESTS) \
-	$(EXTRA_DISABLED_TESTS)
+	$(EXTRA_DISABLED_TESTS) \
+	$(COOP_DISABLED_TESTS)
 
 DISABLED_TESTS_WRENCH=	\
 	$(DISABLED_TESTS)	\
