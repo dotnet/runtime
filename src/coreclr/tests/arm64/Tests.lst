@@ -5051,7 +5051,7 @@ RelativePath=JIT\Directed\tailcall\tailcall\tailcall.cmd
 WorkingDir=JIT\Directed\tailcall\tailcall
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_FAIL;ISSUE_4420
+Categories=Pri0;EXPECTED_PASS
 HostStyle=0
 [fault.cmd_745]
 RelativePath=JIT\Directed\throwbox\fault\fault.cmd
@@ -38245,7 +38245,7 @@ RelativePath=JIT\Regression\JitBlue\devdiv_902271\DevDiv_902271\DevDiv_902271.cm
 WorkingDir=JIT\Regression\JitBlue\devdiv_902271\DevDiv_902271
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_FAIL;ISSUE_4420
+Categories=Pri0;EXPECTED_PASS
 HostStyle=0
 [DevDiv_911875_d.cmd_5569]
 RelativePath=JIT\Regression\JitBlue\devdiv_911875\DevDiv_911875_d\DevDiv_911875_d.cmd

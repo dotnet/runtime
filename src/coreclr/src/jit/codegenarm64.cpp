@@ -5172,12 +5172,10 @@ void CodeGen::genCallInstruction(GenTreePtr node)
 #endif // DEBUG
 
     // If fast tail call, then we are done.  In this case we setup the args (both reg args
-    // and stack args in incoming arg area) and call target in rax.  Epilog sequence would
-    // generate "br x0".
+    // and stack args in incoming arg area) and call target in IP0.  Epilog sequence would
+    // generate "br IP0".
     if (call->IsFastTailCall())
     {
-        NYI_ARM64("CodeGen - IsFastTailCall");
-
         // Don't support fast tail calling JIT helpers
         assert(callType != CT_HELPER);
 
@@ -5185,14 +5183,13 @@ void CodeGen::genCallInstruction(GenTreePtr node)
         assert(target != nullptr);
 
         genConsumeReg(target);
-#if 0
-        if (target->gtRegNum != REG_RAX)
+
+        if (target->gtRegNum != REG_IP0)
         {
-            inst_RV_RV(INS_mov, REG_RAX, target->gtRegNum);
+            inst_RV_RV(INS_mov, REG_IP0, target->gtRegNum);
         }
-#endif
         return;
-    }   
+    }
 
     // For a pinvoke to unmanged code we emit a label to clear 
     // the GC pointer state before the callsite.
@@ -6467,10 +6464,7 @@ void CodeGen::genPutArgStk(GenTreePtr treeNode)
     // All other calls - stk arg is setup in out-going arg area.
     if (putInIncomingArgArea)
     {
-        // The first varNum is guaranteed to be the first incoming arg of the method being compiled.
-        // See lvaInitTypeRef() for the order in which lvaTable entries are initialized.
-        varNum = 0;
-#ifdef DEBUG
+        varNum = getFirstArgWithStackSlot();
 #if FEATURE_FASTTAILCALL
         // This must be a fast tail call.
         assert(treeNode->AsPutArgStk()->gtCall->AsCall()->IsFastTailCall());
@@ -6478,11 +6472,9 @@ void CodeGen::genPutArgStk(GenTreePtr treeNode)
         // Since it is a fast tail call, the existence of first incoming arg is guaranteed
         // because fast tail call requires that in-coming arg area of caller is >= out-going
         // arg area required for tail call.
-        LclVarDsc* varDsc = compiler->lvaTable;mit
+        LclVarDsc* varDsc = &(compiler->lvaTable[varNum]);
         assert(varDsc != nullptr);
-        assert(varDsc->lvIsRegArg && ((varDsc->lvArgReg == REG_ARG_0) || (varDsc->lvArgReg == REG_FLTARG_0))); 
 #endif // FEATURE_FASTTAILCALL
-#endif
     }
     else
     {
