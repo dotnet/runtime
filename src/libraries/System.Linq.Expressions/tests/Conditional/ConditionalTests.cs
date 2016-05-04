@@ -184,6 +184,52 @@ namespace System.Linq.Expressions.Tests
             Assert.Same(expected, func());
         }
 
+        [Fact]
+        public void ByRefType()
+        {
+            Assert.Throws<ArgumentException>(() => Expression.Condition(
+                Expression.Constant(true),
+                Expression.Constant(null),
+                Expression.Constant(null),
+                typeof(string).MakeByRefType()));
+        }
+
+        [Fact]
+        public void PointerType()
+        {
+            Assert.Throws<ArgumentException>(() => Expression.Condition(
+                Expression.Constant(true),
+                Expression.Constant(null),
+                Expression.Constant(null),
+                typeof(string).MakePointerType()));
+        }
+
+        [Fact]
+        public void GenericType()
+        {
+            Assert.Throws<ArgumentException>(() => Expression.Condition(
+                Expression.Constant(true),
+                Expression.Constant(null),
+                Expression.Constant(null),
+                typeof(List<>)));
+        }
+
+        [Fact]
+        public void TypeContainsGenericParameters()
+        {
+            Assert.Throws<ArgumentException>(() => Expression.Condition(
+                Expression.Constant(true),
+                Expression.Constant(null),
+                Expression.Constant(null),
+                typeof(List<>.Enumerator)));
+            Assert.Throws<ArgumentException>(() => Expression.Condition(
+                Expression.Constant(true),
+                Expression.Constant(null),
+                Expression.Constant(null),
+                typeof(List<>).MakeGenericType(typeof(List<>))));
+        }
+
+
         private static IEnumerable<object[]> ConditionalValues()
         {
             yield return new object[] { true, "yes", "no", "yes" };
