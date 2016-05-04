@@ -11,3 +11,5 @@ mono.VC.db
 /x64/
 /include/
 /package/
+/build/
+/distribution/

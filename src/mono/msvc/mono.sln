@@ -2,7 +2,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25123.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Embedded Samples", "Embedded Samples", "{5FE09AA5-C3C9-45EA-A323-36A11B653CEC}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "EmbeddedSamples", "EmbeddedSamples", "{5FE09AA5-C3C9-45EA-A323-36A11B653CEC}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tools", "Tools", "{EE2CC761-9652-44AC-9204-7EB31194CAA6}"
 EndProject
@@ -384,9 +384,9 @@ Global
 		{A0068765-334B-414C-8E21-8376CD2EC9F6} = {ECA11C76-E192-4F67-A8FA-28B637D9716F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		AMDCaPersistentConfig = Debug|Win32
-		AMDCaPersistentStartup = mono
 		AMDCaProjectFile = C:\Users\Owner\Development\monogit\mono\msvc\CodeAnalyst\mono.caw
+		AMDCaPersistentStartup = mono
+		AMDCaPersistentConfig = Debug|Win32
 	EndGlobalSection
 	GlobalSection(DPCodeReviewSolutionGUID) = preSolution
 		DPCodeReviewSolutionGUID = {00000000-0000-0000-0000-000000000000}

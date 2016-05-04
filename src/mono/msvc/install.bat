@@ -43,8 +43,9 @@ IF NOT EXIST %BUILD_DIR% (
 )
 
 IF NOT EXIST %INSTALL_DIR% (
-	ECHO Error: '%INSTALL_DIR%', directory doesn't eixst.
-	GOTO ON_ERROR
+	ECHO Install directory '%INSTALL_DIR%', directory doesn't eixst, creating....
+	mkdir "%INSTALL_DIR%"
+	ECHO Install directory '%INSTALL_DIR%' created.
 )
 
 SET PACKAGE_DIR=%BUILD_DIR%\package\%PLATFORM%\%CONFIG%
