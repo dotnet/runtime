@@ -5100,7 +5100,7 @@ void gc_heap::destroy_thread_support ()
     }
 }
 
-#if !defined(FEATURE_REDHAWK) && !defined(FEATURE_CORECLR)
+#if !defined(FEATURE_REDHAWK) && !defined(FEATURE_PAL)
 void set_thread_group_affinity_for_heap(int heap_number, GCThreadAffinity* affinity)
 {
     affinity->Group = GCThreadAffinity::None;
@@ -5114,7 +5114,7 @@ void set_thread_group_affinity_for_heap(int heap_number, GCThreadAffinity* affin
     {
         if (bit_number == gpn)
         {
-            dprintf(3, ("using processor group %d, mask %x%Ix for heap %d\n", gn, mask, heap_number));
+            dprintf(3, ("using processor group %d, mask %Ix for heap %d\n", gn, mask, heap_number));
             affinity->Processor = gpn;
             affinity->Group = gn;
             heap_select::set_cpu_group_for_heap(heap_number, (uint8_t)gn);
@@ -5157,29 +5157,20 @@ void set_thread_affinity_mask_for_heap(int heap_number, GCThreadAffinity* affini
             {
                 if (bit_number == heap_number)
                 {
-                    dprintf (3, ("Using processor %d for heap %d\n", proc_number, heap_number));
+                    dprintf (3, ("Using processor %d for heap %d", proc_number, heap_number));
                     affinity->Processor = proc_number;
                     heap_select::set_proc_no_for_heap(heap_number, proc_number);
                     if (NumaNodeInfo::CanEnableGCNumaAware())
-                    { // have the processor number, find the numa node
-#if !defined(FEATURE_CORESYSTEM)
-                        uint8_t node_no = 0;
-                        if (NumaNodeInfo::GetNumaProcessorNode(proc_number, &node_no))
-                            heap_select::set_numa_node_for_heap(heap_number, node_no);
-#else
-                        uint16_t gn, gpn;
+                    {
                         uint16_t node_no = 0;
-                        CPUGroupInfo::GetGroupForProcessor((uint16_t)heap_number, &gn, &gpn);
-                        
                         PROCESSOR_NUMBER proc_no;
-                        proc_no.Group = gn;
-                        proc_no.Number = (uint8_t)gpn;
+                        proc_no.Group = 0;
+                        proc_no.Number = (uint8_t)proc_number;
                         proc_no.Reserved = 0;
                         if (NumaNodeInfo::GetNumaProcessorNodeEx(&proc_no, &node_no))
                         {
                             heap_select::set_numa_node_for_heap(heap_number, (uint8_t)node_no);
                         }
-#endif
                     }
                     return;
                 }
@@ -5199,7 +5190,7 @@ bool gc_heap::create_gc_thread ()
     affinity.Group = GCThreadAffinity::None;
     affinity.Processor = GCThreadAffinity::None;
 
-#if !defined(FEATURE_REDHAWK) && !defined(FEATURE_CORECLR)
+#if !defined(FEATURE_REDHAWK) && !defined(FEATURE_PAL)
     //We are about to set affinity for GC threads, it is a good place to setup NUMA and
     //CPU groups, because the process mask, processor number, group number are all
     //readyly available.
@@ -5208,7 +5199,7 @@ bool gc_heap::create_gc_thread ()
     else
         set_thread_affinity_mask_for_heap(heap_number, &affinity);
 
-#endif // !FEATURE_REDHAWK && !FEATURE_CORECLR
+#endif // !FEATURE_REDHAWK && !FEATURE_PAL
 
     return GCToOSInterface::CreateThread(gc_thread_stub, this, &affinity);
 }
@@ -13172,7 +13163,7 @@ try_again:
                 if ((max_hp == org_hp) && (end < finish))
                 {   
                     start = end; end = finish; 
-                    delta = dd_min_size(dd)/4; //Use the same threshold as tier 1 for now. Tune it later
+                    delta = dd_min_size(dd)/2; // Make it twice as hard to balance to remote nodes on NUMA.
                     goto try_again;
                 }
 
