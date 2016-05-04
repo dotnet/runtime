@@ -197,6 +197,7 @@ CONFIG_INTEGER(JitInlineLimit, W("JitInlineLimit"), -1)
 CONFIG_INTEGER(JitInlinePolicyDiscretionary, W("JitInlinePolicyDiscretionary"), 0)
 CONFIG_INTEGER(JitInlinePolicyModel, W("JitInlinePolicyModel"), 0)
 CONFIG_INTEGER(JitInlinePolicyFull, W("JitInlinePolicyFull"), 0)
+CONFIG_INTEGER(JitInlinePolicySize, W("JitInlinePolicySize"), 0)
 CONFIG_STRING(JitNoInlineRange, W("JitNoInlineRange"))
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 

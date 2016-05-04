@@ -656,7 +656,7 @@ public:
                               InlineResult*   inlineResult);
 
     // Compiler associated with this strategy
-    Compiler* GetCompiler()
+    Compiler* GetCompiler() const
     {
         return m_Compiler;
     }
@@ -665,21 +665,33 @@ public:
     InlineContext* GetRootContext();
 
     // Get IL size for maximum allowable inline
-    unsigned GetMaxInlineILSize()
+    unsigned GetMaxInlineILSize() const
     {
         return m_MaxInlineSize;
     }
 
     // Get depth of maximum allowable inline
-    unsigned GetMaxInlineDepth()
+    unsigned GetMaxInlineDepth() const
     {
         return m_MaxInlineDepth;
     }
 
-    // Number of successful inlines into the root.
-    unsigned GetInlineCount()
+    // Number of successful inlines into the root
+    unsigned GetInlineCount() const
     {
         return m_InlineCount;
+    }
+
+    // Return the current code size estimate for this method
+    int GetCurrentSizeEstimate() const
+    {
+        return m_CurrentSizeEstimate;
+    }
+
+    // Return the initial code size estimate for this method
+    int GetInitialSizeEstimate() const
+    {
+        return m_InitialSizeEstimate;
     }
 
     // Inform strategy that there's a new inline candidate.
