@@ -10068,6 +10068,81 @@ DWORD CEEInfo::getJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes)
 }
 
 /*********************************************************************/
+#if !defined(PLATFORM_UNIX)
+
+struct RunWithErrorTrapFilterParam
+{
+    ICorDynamicInfo* m_corInfo;
+    void (*m_function)(void*);
+    void* m_param;
+    EXCEPTION_POINTERS m_exceptionPointers;
+};
+
+static LONG RunWithErrorTrapFilter(struct _EXCEPTION_POINTERS* exceptionPointers, void* theParam)
+{
+    WRAPPER_NO_CONTRACT;
+
+    auto* param = reinterpret_cast<RunWithErrorTrapFilterParam*>(theParam);
+    param->m_exceptionPointers = *exceptionPointers;
+    return param->m_corInfo->FilterException(exceptionPointers);
+}
+
+#endif // !defined(PLATFORM_UNIX)
+
+bool CEEInfo::runWithErrorTrap(void (*function)(void*), void* param)
+{
+    // No dynamic contract here because SEH is used
+    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_SO_INTOLERANT;
+    STATIC_CONTRACT_MODE_PREEMPTIVE;
+
+    // NOTE: the lack of JIT/EE transition markers in this method is intentional. Any
+    //       transitions into the EE proper should occur either via the call to
+    //       `EEFilterException` (which is appropraitely marked) or via JIT/EE
+    //       interface calls made by `function`.
+
+    bool success = true;
+
+#if !defined(PLATFORM_UNIX)
+
+    RunWithErrorTrapFilterParam trapParam;
+    trapParam.m_corInfo = m_pOverride == nullptr ? this : m_pOverride;
+    trapParam.m_function = function;
+    trapParam.m_param = param;
+
+    PAL_TRY(RunWithErrorTrapFilterParam*, pTrapParam, &trapParam)
+    {
+        pTrapParam->m_function(pTrapParam->m_param);
+    }
+    PAL_EXCEPT_FILTER(RunWithErrorTrapFilter)
+    {
+        HandleException(&trapParam.m_exceptionPointers);
+        success = false;
+    }
+    PAL_ENDTRY
+
+#else // !defined(PLATFORM_UNIX)
+
+    // We shouldn't need PAL_TRY on *nix: any exceptions that we are able to catch
+    // ought to originate from the runtime itself and should be catchable inside of
+    // EX_TRY/EX_CATCH, including emulated SEH exceptions.
+    EX_TRY
+    {
+        function(param);
+    }
+    EX_CATCH
+    {
+        success = false;
+    }
+    EX_END_CATCH(RethrowTerminalExceptions);
+
+#endif
+
+    return success;
+}
+
+/*********************************************************************/
 IEEMemoryManager* CEEInfo::getMemoryManager()
 {
     CONTRACTL {
