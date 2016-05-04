@@ -300,18 +300,6 @@ if "%CORE_ROOT%" == "" (
     echo %__MsgPrefix%Error: Ensure you have done a successful build of the Product and Run - runtest BuildArch BuildType {path to product binaries}.
     exit /b 1
 )
-:: Pull down dependent packages needed for testing
-setlocal
-if defined __TestEnv call %__TestEnv%
-if defined COMPlus_GCStress set __Result=true
-endlocal & set __IsGCTest=%__Result%
-if "%__IsGCTest%"=="true" (
-    call tests\setup-runtime-dependencies.cmd /arch %__BuildArch% /outputdir %CORE_ROOT%
-    if errorlevel 1 (
-        echo Failed to donwload runtime packages
-        exit /b 1
-    )
-)
 
 :: Long GC tests take about 10 minutes per test on average, so
 :: they often bump up against the default 10 minute timeout.
