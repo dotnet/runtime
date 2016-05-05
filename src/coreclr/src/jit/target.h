@@ -558,7 +558,7 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   // We don't allow using ebp as a source register. Maybe we should only prevent this for ETW_EBP_FRAMED (but that is always set right now).
   #define RBM_WRITE_BARRIER_SRC    (RBM_EAX|RBM_ECX|RBM_EBX|RBM_ESI|RBM_EDI)
 
-  #define RBM_CALLEE_TRASH_NOGC    RBM_NONE
+  #define RBM_CALLEE_TRASH_NOGC    RBM_EDX
 #endif // NOGC_WRITE_BARRIERS
 
   // IL stub's secret parameter (CORJIT_FLG_PUBLISH_SECRET_PARAM)
