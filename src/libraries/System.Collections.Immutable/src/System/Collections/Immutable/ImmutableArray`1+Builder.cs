@@ -133,7 +133,7 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <param name="index">The index.</param>
             /// <returns></returns>
-            /// <exception cref="System.IndexOutOfRangeException">
+            /// <exception cref="IndexOutOfRangeException">
             /// </exception>
             public T this[int index]
             {
