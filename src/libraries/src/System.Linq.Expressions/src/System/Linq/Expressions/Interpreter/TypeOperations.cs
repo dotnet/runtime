@@ -2185,7 +2185,7 @@ namespace System.Linq.Expressions.Interpreter
                 case "ToString": return s_toString ?? (s_toString = new ToStringClass());
                 default:
                     // System.Nullable doesn't have other instance methods 
-                    throw Assert.Unreachable;
+                    throw ContractUtils.Unreachable;
             }
         }
 
