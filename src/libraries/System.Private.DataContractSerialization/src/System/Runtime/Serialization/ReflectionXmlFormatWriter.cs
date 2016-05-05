@@ -63,10 +63,6 @@ namespace System.Runtime.Serialization
                         var nsChildElement = classContract.ChildElementNamespaces[i + _childElementIndex];
                         _arg0XmlWriter.WriteNamespaceDecl(nsChildElement);
                     }
-                    if (memberValue == null)
-                    {
-                        throw new NotImplementedException("memberValue == null");
-                    }
                     ReflectionWriteValue(memberType, memberValue, writeXsiType);
                     ReflectionWriteEndElement();
                 }
