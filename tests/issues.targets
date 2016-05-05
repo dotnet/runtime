@@ -401,18 +401,6 @@
     <!-- The following x86 failures only occur with RyuJIT/x86 -->
 
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(BuildArch)' == 'x86'">
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\AsgOp\i8\i8_cs_d\i8_cs_d.cmd">
-             <Issue>4659</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\AsgOp\i8\i8_cs_do\i8_cs_do.cmd">
-             <Issue>4659</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\AsgOp\i8\i8_cs_r\i8_cs_r.cmd">
-             <Issue>4659</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\AsgOp\i8\i8_cs_ro\i8_cs_ro.cmd">
-             <Issue>4659</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\stringintern\_Simpletest1\_Simpletest1.cmd">
              <Issue>3554</Issue>
         </ExcludeList>
