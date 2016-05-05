@@ -14,22 +14,27 @@ namespace System.Runtime.Loader.Tests
 {
     public class DefaultLoadContextTests
     {
+        private static string s_loadFromPath = null;
+
         private static Assembly ResolveAssembly(AssemblyLoadContext sender, AssemblyName assembly)
         {
             string assemblyFilename = assembly.Name + ".dll";
             
-            return sender.LoadFromAssemblyPath(Path.Combine(Path.GetTempPath(), assemblyFilename));
+            return sender.LoadFromAssemblyPath(Path.Combine(s_loadFromPath, assemblyFilename));
         }
 
         private static void Init()
         {
             // Delete the assembly from the temp location if it exists.
             var assemblyFilename = "System.Runtime.Loader.Noop.Assembly.dll";
-            var targetPath = Path.Combine(Path.GetTempPath(), assemblyFilename);
-            if (File.Exists(targetPath))
-            {
-                File.Delete(targetPath);
-            }
+
+            // Form the dynamic path that would not collide if another instance of this test is running.
+            s_loadFromPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+            
+            // Create the folder
+            Directory.CreateDirectory(s_loadFromPath);
+            
+            var targetPath = Path.Combine(s_loadFromPath, assemblyFilename);
 
             // Rename the file local to the test folder.
             var sourcePath = Path.Combine(Directory.GetCurrentDirectory(),assemblyFilename);
@@ -48,7 +53,6 @@ namespace System.Runtime.Loader.Tests
             File.Copy(targetRenamedPath, targetPath); 
         }
 
-        [ActiveIssue(7805, PlatformID.Linux)]
         [Fact]
         public static void LoadInDefaultContext()
         {
