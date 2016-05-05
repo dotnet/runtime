@@ -170,7 +170,7 @@ if %__TotalSpecifiedBuildArch% GTR 1 (
 
 if %__BuildArchX64%==1      set __BuildArch=x64
 if %__BuildArchX86%==1      set __BuildArch=x86
-if %__BuildArchArm%==1      set __BuildArch=arm 
+if %__BuildArchArm%==1      set __BuildArch=arm
 if %__BuildArchArm64%==1 (
     set __BuildArch=arm64
     set __CrossArch=x64
