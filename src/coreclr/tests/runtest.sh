@@ -424,31 +424,31 @@ declare -a failingTests
 declare -a playlistTests
 ((runFailingTestsOnly = 0))
 
+# Get an array of items by reading the specified file line by line.
+function read_array {
+    local theArray=()
+
+    # bash in Mac OS X doesn't support 'readarray', so using alternate way instead.
+    # readarray -t theArray < "$1"
+    while IFS='' read -r line || [ -n "$line" ]; do
+        theArray[${#theArray[@]}]=$line
+    done < "$1"
+    echo ${theArray[@]}
+}
+
 function load_unsupported_tests {
     # Load the list of tests that are not supported on this platform. These tests are disabled (skipped) permanently.
-    # bash in Mac OS X doesn't support 'readarray', so sing alternate way instead.
-    # readarray -t unsupportedTests <"$(dirname "$0")/testsUnsupportedOutsideWindows.txt"
-    while IFS='' read -r line || [ -n "$line" ]; do
-        unsupportedTests[${#unsupportedTests[@]}]=$line
-    done <"$(dirname "$0")/testsUnsupportedOutsideWindows.txt"
+    unsupportedTests=($(read_array "$(dirname "$0")/testsUnsupportedOutsideWindows.txt"))
 }
 
 function load_failing_tests {
     # Load the list of tests that fail on this platform. These tests are disabled (skipped) temporarily, pending investigation.
-    # bash in Mac OS X doesn't support 'readarray', so sing alternate way instead.
-    # readarray -t failingTests <"$(dirname "$0")/testsFailingOutsideWindows.txt"
-    while IFS='' read -r line || [ -n "$line" ]; do
-        failingTests[${#failingTests[@]}]=$line
-    done <"$(dirname "$0")/testsFailingOutsideWindows.txt"
+    failingTests=($(read_array "$(dirname "$0")/testsFailingOutsideWindows.txt"))
 }
 
 function load_playlist_tests {
     # Load the list of tests that are enabled as a part of this test playlist.
-    # bash in Mac OS X doesn't support 'readarray', so sing alternate way instead.
-    # readarray -t playlistTests <"${playlistFile}"
-    while IFS='' read -r line || [ -n "$line" ]; do
-        playlistTests[${#playlistTests[@]}]=$line
-    done <"${playlistFile}"
+    playlistTests=($(read_array "${playlistFile}"))
 }
 
 function is_unsupported_test {
@@ -647,12 +647,7 @@ function set_test_directories {
     then
         exit_with_error "$errorSource" "Test directories file not found at $listFileName"
     fi
-
-    # bash in Mac OS X doesn't support 'readarray', so sing alternate way instead.
-    # readarray -t testDirectories < "$listFileName"
-    while IFS='' read -r line || [ -n "$line" ]; do
-        testDirectories[${#testDirectories[@]}]=$line
-    done < "$listFileName"
+    testDirectories=($(read_array "$listFileName"))
 }
 
 function run_tests_in_directory {
