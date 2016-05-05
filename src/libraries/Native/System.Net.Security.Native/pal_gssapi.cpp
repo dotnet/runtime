@@ -9,8 +9,13 @@
 #if HAVE_GSSFW_HEADERS
 #include <GSS/GSS.h>
 #else
+#if HAVE_HEIMDAL_HEADERS
+#include <gssapi/gssapi.h>
+#include <gssapi/gssapi_krb5.h>
+#else
 #include <gssapi/gssapi_ext.h>
 #include <gssapi/gssapi_krb5.h>
+#endif
 #endif
 
 #include <assert.h>
