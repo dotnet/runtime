@@ -12,100 +12,91 @@ namespace System.Reflection.Metadata.Ecma335
     {
         private const int StreamAlignment = 4;
 
-        public const ulong DebugMetadataTablesMask = 
-            1UL << (int)TableIndex.Document |
-            1UL << (int)TableIndex.MethodDebugInformation |
-            1UL << (int)TableIndex.LocalScope |
-            1UL << (int)TableIndex.LocalVariable |
-            1UL << (int)TableIndex.LocalConstant |
-            1UL << (int)TableIndex.ImportScope |
-            1UL << (int)TableIndex.StateMachineMethod |
-            1UL << (int)TableIndex.CustomDebugInformation;
-
-        public const ulong SortedDebugTables =
+        internal const ulong SortedDebugTables =
             1UL << (int)TableIndex.LocalScope |
             1UL << (int)TableIndex.StateMachineMethod |
             1UL << (int)TableIndex.CustomDebugInformation;
 
-        public readonly bool IsMinimalDelta;
+        internal readonly bool IsMinimalDelta;
 
         // EnC delta tables are stored as uncompressed metadata table stream
-        public bool IsMetadataTableStreamCompressed => !IsMinimalDelta;
+        internal bool IsMetadataTableStreamCompressed => !IsMinimalDelta;
 
-        public readonly byte BlobIndexSize;
-        public readonly byte StringIndexSize;
-        public readonly byte GuidIndexSize;
-        public readonly byte CustomAttributeTypeCodedIndexSize;
-        public readonly byte DeclSecurityCodedIndexSize;
-        public readonly byte EventDefIndexSize;
-        public readonly byte FieldDefIndexSize;
-        public readonly byte GenericParamIndexSize;
-        public readonly byte HasConstantCodedIndexSize;
-        public readonly byte HasCustomAttributeCodedIndexSize;
-        public readonly byte HasFieldMarshalCodedIndexSize;
-        public readonly byte HasSemanticsCodedIndexSize;
-        public readonly byte ImplementationCodedIndexSize;
-        public readonly byte MemberForwardedCodedIndexSize;
-        public readonly byte MemberRefParentCodedIndexSize;
-        public readonly byte MethodDefIndexSize;
-        public readonly byte MethodDefOrRefCodedIndexSize;
-        public readonly byte ModuleRefIndexSize;
-        public readonly byte ParameterIndexSize;
-        public readonly byte PropertyDefIndexSize;
-        public readonly byte ResolutionScopeCodedIndexSize;
-        public readonly byte TypeDefIndexSize;
-        public readonly byte TypeDefOrRefCodedIndexSize;
-        public readonly byte TypeOrMethodDefCodedIndexSize;
+        internal readonly byte BlobIndexSize;
+        internal readonly byte StringIndexSize;
+        internal readonly byte GuidIndexSize;
+        internal readonly byte CustomAttributeTypeCodedIndexSize;
+        internal readonly byte DeclSecurityCodedIndexSize;
+        internal readonly byte EventDefIndexSize;
+        internal readonly byte FieldDefIndexSize;
+        internal readonly byte GenericParamIndexSize;
+        internal readonly byte HasConstantCodedIndexSize;
+        internal readonly byte HasCustomAttributeCodedIndexSize;
+        internal readonly byte HasFieldMarshalCodedIndexSize;
+        internal readonly byte HasSemanticsCodedIndexSize;
+        internal readonly byte ImplementationCodedIndexSize;
+        internal readonly byte MemberForwardedCodedIndexSize;
+        internal readonly byte MemberRefParentCodedIndexSize;
+        internal readonly byte MethodDefIndexSize;
+        internal readonly byte MethodDefOrRefCodedIndexSize;
+        internal readonly byte ModuleRefIndexSize;
+        internal readonly byte ParameterIndexSize;
+        internal readonly byte PropertyDefIndexSize;
+        internal readonly byte ResolutionScopeCodedIndexSize;
+        internal readonly byte TypeDefIndexSize;
+        internal readonly byte TypeDefOrRefCodedIndexSize;
+        internal readonly byte TypeOrMethodDefCodedIndexSize;
 
-        public readonly byte DocumentIndexSize;
-        public readonly byte LocalVariableIndexSize;
-        public readonly byte LocalConstantIndexSize;
-        public readonly byte ImportScopeIndexSize;
-        public readonly byte HasCustomDebugInformationSize;
-
-        /// <summary>
-        /// Table row counts. 
-        /// </summary>
-        public readonly ImmutableArray<int> RowCounts;
-
-        /// <summary>
-        /// External table row counts. 
-        /// </summary>
-        public readonly ImmutableArray<int> ExternalRowCounts;
-
-        /// <summary>
-        /// Non-empty tables that are emitted into the metadata table stream.
-        /// </summary>
-        public readonly ulong PresentTablesMask;
-
-        /// <summary>
-        /// Non-empty tables stored in an external metadata table stream that might be referenced from the metadata table stream being emitted.
-        /// </summary>
-        public readonly ulong ExternalTablesMask;
+        internal readonly byte DocumentIndexSize;
+        internal readonly byte LocalVariableIndexSize;
+        internal readonly byte LocalConstantIndexSize;
+        internal readonly byte ImportScopeIndexSize;
+        internal readonly byte HasCustomDebugInformationSize;
 
         /// <summary>
         /// Exact (unaligned) heap sizes.
         /// </summary>
-        public readonly ImmutableArray<int> HeapSizes;
+        /// <remarks>Use <see cref="GetAlignedHeapSize(HeapIndex)"/> to get an aligned heap size.</remarks>
+        public ImmutableArray<int> HeapSizes { get; }
+
+        /// <summary>
+        /// Table row counts. 
+        /// </summary>
+        public ImmutableArray<int> RowCounts { get; }
+
+        /// <summary>
+        /// External table row counts. 
+        /// </summary>
+        public ImmutableArray<int> ExternalRowCounts { get; }
+
+        /// <summary>
+        /// Non-empty tables that are emitted into the metadata table stream.
+        /// </summary>
+        internal readonly ulong PresentTablesMask;
+
+        /// <summary>
+        /// Non-empty tables stored in an external metadata table stream that might be referenced from the metadata table stream being emitted.
+        /// </summary>
+        internal readonly ulong ExternalTablesMask;
 
         /// <summary>
         /// Overall size of metadata stream storage (stream headers, table stream, heaps, additional streams).
         /// Aligned to <see cref="StreamAlignment"/>.
         /// </summary>
-        public readonly int MetadataStreamStorageSize;
+        internal readonly int MetadataStreamStorageSize;
 
         /// <summary>
         /// The size of metadata stream (#- or #~). Aligned.
         /// Aligned to <see cref="StreamAlignment"/>.
         /// </summary>
-        public readonly int MetadataTableStreamSize;
+        internal readonly int MetadataTableStreamSize;
 
         /// <summary>
         /// The size of #Pdb stream. Aligned.
         /// </summary>
-        public readonly int StandalonePdbStreamSize;
+        internal readonly int StandalonePdbStreamSize;
 
-        public MetadataSizes(
+        internal MetadataSizes(
             ImmutableArray<int> rowCounts,
             ImmutableArray<int> externalRowCounts,
             ImmutableArray<int> heapSizes,
@@ -287,9 +278,9 @@ namespace System.Reflection.Metadata.Ecma335
             this.MetadataStreamStorageSize = size;
         }
 
-        public bool IsStandaloneDebugMetadata => StandalonePdbStreamSize > 0;
+        internal bool IsStandaloneDebugMetadata => StandalonePdbStreamSize > 0;
 
-        public bool IsPresent(TableIndex table) => (PresentTablesMask & (1UL << (int)table)) != 0;
+        internal bool IsPresent(TableIndex table) => (PresentTablesMask & (1UL << (int)table)) != 0;
 
         /// <summary>
         /// Metadata header size.
@@ -298,7 +289,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// - storage header
         /// - stream headers
         /// </summary>
-        public int MetadataHeaderSize
+        internal int MetadataHeaderSize
         {
             get
             {
@@ -332,9 +323,9 @@ namespace System.Reflection.Metadata.Ecma335
         }
 
         // version must be 12 chars long, this observation is not supported by the standard
-        public const int MetadataVersionPaddedLength = 12;
+        internal const int MetadataVersionPaddedLength = 12;
 
-        public static int GetMetadataStreamHeaderSize(string streamName)
+        internal static int GetMetadataStreamHeaderSize(string streamName)
         {
             return
                 sizeof(int) + // offset
@@ -345,11 +336,20 @@ namespace System.Reflection.Metadata.Ecma335
         /// <summary>
         /// Total size of metadata (header and all streams).
         /// </summary>
-        public int MetadataSize => MetadataHeaderSize + MetadataStreamStorageSize;
+        internal int MetadataSize => MetadataHeaderSize + MetadataStreamStorageSize;
 
+        /// <summary>
+        /// Returns aligned size of the specified heap.
+        /// </summary>
         public int GetAlignedHeapSize(HeapIndex index)
         {
-            return BitArithmetic.Align(HeapSizes[(int)index], StreamAlignment);
+            int i = (int)index;
+            if (i < 0 || i > HeapSizes.Length)
+            {
+                Throw.ArgumentOutOfRange(nameof(index));
+            }
+
+            return BitArithmetic.Align(HeapSizes[i], StreamAlignment);
         }
 
         internal int CalculateTableStreamHeaderSize()
