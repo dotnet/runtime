@@ -12,7 +12,7 @@
     "System.Runtime.Handles": "4.0.0",
     "System.Runtime.InteropServices": "4.0.20",
     "System.Runtime.Numerics": "4.0.0",
-    "System.Security.Cryptography.Algorithms": "4.1.0-rc3-24105-00",
+    "System.Security.Cryptography.Algorithms": "4.2.0-rc3-24105-00",
     "System.Security.Cryptography.Encoding": "4.0.0-rc3-24105-00",
     "System.Security.Cryptography.OpenSsl": "4.0.0-rc3-24105-00",
     "System.Security.Cryptography.Primitives": "4.0.0-rc3-24105-00",
