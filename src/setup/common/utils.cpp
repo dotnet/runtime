@@ -37,6 +37,11 @@ bool ends_with(const pal::string_t& value, const pal::string_t& suffix, bool mat
 
 bool starts_with(const pal::string_t& value, const pal::string_t& prefix, bool match_case)
 {
+    if (prefix.empty())
+    {
+        // Cannot start with an empty string.
+        return false;
+    }
     auto cmp = match_case ? pal::strncmp : pal::strncasecmp;
     return (value.size() >= prefix.size()) &&
         cmp(value.c_str(), prefix.c_str(), prefix.size()) == 0;
