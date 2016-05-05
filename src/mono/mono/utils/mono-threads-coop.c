@@ -216,6 +216,21 @@ mono_threads_finish_blocking (void *cookie, void* stackdata)
 }
 
 
+gpointer
+mono_threads_cookie_for_reset_blocking_start (MonoThreadInfo *info, int reset_blocking_count)
+{
+#ifdef ENABLE_CHECKED_BUILD_GC
+	g_assert (reset_blocking_count != 0);
+	if (mono_check_mode_enabled (MONO_CHECK_MODE_GC)) {
+		int level = coop_tls_push (reset_blocking_count);
+		//g_warning("Entering reset nest; level %d; cookie %d\n", level, reset_blocking_count);
+		return (void *)(intptr_t)reset_blocking_count;
+	}
+#endif
+
+	return info;
+}
+
 void*
 mono_threads_reset_blocking_start (void* stackdata)
 {
@@ -233,7 +248,7 @@ mono_threads_reset_blocking_start (void* stackdata)
 	if (reset_blocking_count == 0) // We *do* require it be nonzero
 		reset_blocking_count = coop_reset_blocking_count = 1;
 #else
-	++coop_reset_blocking_count;
+	int reset_blocking_count = ++coop_reset_blocking_count;
 #endif
 
 	/* If the thread is not attached, it doesn't make sense prepare for suspend. */
@@ -259,15 +274,7 @@ mono_threads_reset_blocking_start (void* stackdata)
 		g_error ("Unknown thread state");
 	}
 
-#ifdef ENABLE_CHECKED_BUILD_GC
-	if (mono_check_mode_enabled (MONO_CHECK_MODE_GC)) {
-		int level = coop_tls_push (reset_blocking_count);
-		//g_warning("Entering reset nest; level %d; cookie %d\n", level, reset_blocking_count);
-		return (void *)(intptr_t)reset_blocking_count;
-	}
-#endif
-
-	return info;
+	return mono_threads_cookie_for_reset_blocking_start (info, reset_blocking_count);
 }
 
 void
@@ -286,7 +293,7 @@ mono_threads_reset_blocking_end (void *cookie, void* stackdata)
 		int level = coop_tls_pop (&desired_cookie);
 		//g_warning("Leaving reset nest; back to level %d; desired cookie %d; received cookie %d\n", level, desired_cookie, received_cookie);
 		if (level < 0)
-			mono_fatal_with_history ("Expected cookie %d but found no stack at all\n", desired_cookie);
+			mono_fatal_with_history ("Expected cookie %d but found no stack at all, %x\n", desired_cookie, level);
 		if (desired_cookie != received_cookie)
 			mono_fatal_with_history ("Expected cookie %d but received %d\n", desired_cookie, received_cookie);
 	} else // Notice this matches the line after the endif

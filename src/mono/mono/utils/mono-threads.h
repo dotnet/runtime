@@ -608,6 +608,9 @@ MonoAbortBlockingResult mono_threads_transition_abort_blocking (THREAD_INFO_TYPE
 
 MonoThreadUnwindState* mono_thread_info_get_suspend_state (THREAD_INFO_TYPE *info);
 
+gpointer
+mono_threads_cookie_for_reset_blocking_start (THREAD_INFO_TYPE *info, int reset_blocking_count);
+
 
 void mono_thread_info_wait_for_resume (THREAD_INFO_TYPE *info);
 /* Advanced suspend API, used for suspending multiple threads as once. */

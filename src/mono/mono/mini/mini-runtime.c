@@ -951,7 +951,7 @@ mono_jit_thread_attach (MonoDomain *domain, gpointer *dummy)
 
 			/* mono_threads_reset_blocking_start returns the current MonoThreadInfo
 			 * if we were in BLOCKING mode */
-			return mono_thread_info_current ();
+			return mono_threads_cookie_for_reset_blocking_start (mono_thread_info_current (), 1);
 		} else {
 			orig = mono_domain_get ();
 
