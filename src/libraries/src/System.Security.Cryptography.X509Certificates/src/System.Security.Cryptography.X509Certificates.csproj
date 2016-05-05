@@ -105,7 +105,7 @@
     <Compile Include="Internal\Cryptography\Pal.Windows\ChainPal.GetChainStatusInformation.cs" />
     <Compile Include="Internal\Cryptography\Pal.Windows\FindPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Windows\Native\Helpers.cs" />
-    <Compile Include="Internal\Cryptography\Pal.Windows\Native\Interop.advapi32.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Windows\Native\Interop.cryptoapi.cs" />
     <Compile Include="Internal\Cryptography\Pal.Windows\Native\Interop.crypt32.cs" />
     <Compile Include="Internal\Cryptography\Pal.Windows\Native\Interop.localization.cs" />
     <Compile Include="Internal\Cryptography\Pal.Windows\Native\Primitives.cs" />
