@@ -901,7 +901,7 @@ mono_set_lmf_addr (gpointer lmf_addr)
  *
  * In coop mode:
  *  - @dummy: contains the original domain
- *  - @return: a cookie containing current MonoThreadInfo* if it was in BLOCKING mode, NULL otherwise
+ *  - @return: a cookie containing current MonoThreadInfo*.
  */
 gpointer
 mono_jit_thread_attach (MonoDomain *domain, gpointer *dummy)
@@ -915,7 +915,18 @@ mono_jit_thread_attach (MonoDomain *domain, gpointer *dummy)
 
 	g_assert (domain);
 
-	if (!mono_threads_is_coop_enabled ()) {
+	/* On coop, when we detached, we moved the thread from  RUNNING->BLOCKING.  If we try to
+	 * reattach we do a BLOCKING->RUNNING transition.  If the thread is fresh,
+	 * mono_thread_attach() will do a STARTING->RUNNING transition so we're only responsible
+	 * for making the cookie. */
+	gboolean fresh_thread = FALSE;
+	{
+		MonoThreadInfo *info;
+
+		info = mono_thread_info_current_unchecked ();
+		fresh_thread = !info || !mono_thread_info_is_live (info);
+	}
+	{
 		gboolean attached;
 
 #ifdef MONO_HAVE_FAST_TLS
@@ -935,33 +946,17 @@ mono_jit_thread_attach (MonoDomain *domain, gpointer *dummy)
 		if (orig != domain)
 			mono_domain_set (domain, TRUE);
 
+	}
+	if (!mono_threads_is_coop_enabled ()) {
 		return orig != domain ? orig : NULL;
 	} else {
-		MonoThreadInfo *info;
-
-		info = mono_thread_info_current_unchecked ();
-		if (!info || !mono_thread_info_is_live (info)) {
-			/* thread state STARTING -> RUNNING */
-			mono_thread_attach (domain);
-
-			// #678164
-			mono_thread_set_state (mono_thread_internal_current (), ThreadState_Background);
-
+		if (fresh_thread) {
 			*dummy = NULL;
-
-			/* mono_threads_reset_blocking_start returns the current MonoThreadInfo
-			 * if we were in BLOCKING mode */
+			/* mono_thread_attach put the thread in RUNNING mode from STARTING, but we need to
+			 * return the right cookie. */
 			return mono_threads_cookie_for_reset_blocking_start (mono_thread_info_current (), 1);
 		} else {
-			orig = mono_domain_get ();
-
-			/* orig might be null if we did an attach -> detach -> attach sequence */
-
-			if (orig != domain)
-				mono_domain_set (domain, TRUE);
-
 			*dummy = orig;
-
 			/* thread state (BLOCKING|RUNNING) -> RUNNING */
 			return mono_threads_reset_blocking_start (dummy);
 		}
