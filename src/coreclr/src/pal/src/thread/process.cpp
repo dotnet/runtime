@@ -1518,6 +1518,9 @@ public:
             case EEXIST:
                 pe = ERROR_ALREADY_EXISTS;
                 break;
+            case ENOSPC:
+                pe = ERROR_TOO_MANY_SEMAPHORES;
+                break;
             default:
                 pe = ERROR_INVALID_PARAMETER;
                 break;
@@ -1546,7 +1549,7 @@ public:
         TRACE("PAL_RuntimeStartupHelper.Register startup sem '%s'\n", startupSemName);
 
         // Create the debuggee startup semaphore so the runtime (debuggee) knows to wait for a debugger connection.
-        m_startupSem = sem_open(startupSemName, O_CREAT | O_EXCL | O_RDWR, S_IRWXU, 0);
+        m_startupSem = sem_open(startupSemName, O_CREAT | O_EXCL, S_IRWXU, 0);
         if (m_startupSem == SEM_FAILED)
         {
             TRACE("sem_open(startup) failed: errno is %d (%s)\n", errno, strerror(errno));
@@ -1661,7 +1664,7 @@ public:
         TRACE("StartupHelperThread continue sem '%s'\n", continueSemName);
 
         // Does the continue semaphore exists? If it does, the runtime is ready to be debugged.
-        continueSem = sem_open(continueSemName, O_RDWR);
+        continueSem = sem_open(continueSemName, 0);
         if (continueSem != SEM_FAILED)
         {
             TRACE("StartupHelperThread continue sem exists - invoking callback\n");
@@ -1673,7 +1676,7 @@ public:
             if (sem_wait(m_startupSem) == 0)
             {
                 // The continue semaphore should exists now and is needed to wake up the runtimes below
-                continueSem = sem_open(continueSemName, O_RDWR);
+                continueSem = sem_open(continueSemName, 0);
                 if (continueSem != SEM_FAILED) 
                 {
                     TRACE("StartupHelperThread continue sem exists after wait - invoking callback\n");
@@ -1833,7 +1836,7 @@ PAL_NotifyRuntimeStarted()
     TRACE("PAL_NotifyRuntimeStarted opening continue (old) '%s' startup '%s'\n", g_continueSemName, startupSemName);
 
     // For backwards compatibility with RC2 (see issue #4410) first OPEN the continue semaphore with the old name "clrcoXXXX".
-    g_continueSem = sem_open(g_continueSemName, O_RDWR);
+    g_continueSem = sem_open(g_continueSemName, 0);
     if (g_continueSem == SEM_FAILED)
     {
         // Create the new continue semaphore name "clrctXXXX"
@@ -1842,7 +1845,7 @@ PAL_NotifyRuntimeStarted()
         TRACE("PAL_NotifyRuntimeStarted creating continue '%s'\n", g_continueSemName);
 
         // Create the continue semaphore. This tells dbgshim that coreclr is initialized and ready.
-        g_continueSem = sem_open(g_continueSemName, O_CREAT | O_EXCL | O_RDWR, S_IRWXU, 0);
+        g_continueSem = sem_open(g_continueSemName, O_CREAT | O_EXCL, S_IRWXU, 0);
         if (g_continueSem == SEM_FAILED)
         {
             ASSERT("sem_open(%s) failed: %d (%s)\n", g_continueSemName, errno, strerror(errno));
@@ -1853,7 +1856,7 @@ PAL_NotifyRuntimeStarted()
 
     // Open the debugger startup semaphore. If it doesn't exists, then we do nothing and
     // the function is successful.
-    startupSem = sem_open(startupSemName, O_RDWR);
+    startupSem = sem_open(startupSemName, 0);
     if (startupSem == SEM_FAILED)
     {
         TRACE("sem_open(%s) failed: %d (%s)\n", startupSemName, errno, strerror(errno));
