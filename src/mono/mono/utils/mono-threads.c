@@ -796,12 +796,6 @@ mono_thread_info_begin_resume (MonoThreadInfo *info)
 	return mono_thread_info_core_resume (info);
 }
 
-gboolean
-mono_thread_info_check_suspend_result (MonoThreadInfo *info)
-{
-	return check_async_suspend (info);
-}
-
 /*
 FIXME fix cardtable WB to be out of line and check with the runtime if the target is not the
 WB trampoline. Another option is to encode wb ranges in MonoJitInfo, but that is somewhat hard.
@@ -888,6 +882,8 @@ suspend_sync (MonoNativeThreadId tid, gboolean interrupt_kernel)
 	mono_threads_wait_pending_operations ();
 
 	if (!check_async_suspend (info)) {
+		mono_thread_info_core_resume (info);
+		mono_threads_wait_pending_operations ();
 		mono_hazard_pointer_clear (hp, 1);
 		return NULL;
 	}

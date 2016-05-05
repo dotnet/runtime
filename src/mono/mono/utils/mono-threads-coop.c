@@ -159,7 +159,7 @@ mono_threads_prepare_blocking (void* stackdata)
 	info = mono_thread_info_current_unchecked ();
 	/* If the thread is not attached, it doesn't make sense prepare for suspend. */
 	if (!info || !mono_thread_info_is_live (info)) {
-		THREADS_SUSPEND_DEBUG ("PREPARE-BLOCKING failed %p\n", mono_thread_info_get_tid (info));
+		THREADS_SUSPEND_DEBUG ("PREPARE-BLOCKING failed %p\n", info ? mono_thread_info_get_tid (info) : NULL);
 		return NULL;
 	}
 

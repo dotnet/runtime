@@ -2315,7 +2315,7 @@ sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 
 	FOREACH_THREAD (info) {
 		int skip_reason = 0;
-		void *aligned_stack_start = (void*)(mword) ALIGN_TO ((mword)info->client_info.stack_start, SIZEOF_VOID_P);
+		void *aligned_stack_start;
 
 		if (info->client_info.skip) {
 			SGEN_LOG (3, "Skipping dead thread %p, range: %p-%p, size: %zd", info, info->client_info.stack_start, info->client_info.stack_end, (char*)info->client_info.stack_end - (char*)info->client_info.stack_start);
@@ -2326,12 +2326,20 @@ sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 		} else if (!mono_thread_info_is_live (info)) {
 			SGEN_LOG (3, "Skipping non-running thread %p, range: %p-%p, size: %zd (state %x)", info, info->client_info.stack_start, info->client_info.stack_end, (char*)info->client_info.stack_end - (char*)info->client_info.stack_start, info->client_info.info.thread_state);
 			skip_reason = 3;
+		} else if (!info->client_info.stack_start) {
+			SGEN_LOG (3, "Skipping starting or detaching thread %p", info);
+			skip_reason = 4;
 		}
 
 		binary_protocol_scan_stack ((gpointer)mono_thread_info_get_tid (info), info->client_info.stack_start, info->client_info.stack_end, skip_reason);
 
 		if (skip_reason)
 			continue;
+
+		g_assert (info->client_info.stack_start);
+		g_assert (info->client_info.stack_end);
+
+		aligned_stack_start = (void*)(mword) ALIGN_TO ((mword)info->client_info.stack_start, SIZEOF_VOID_P);
 
 		g_assert (info->client_info.suspend_done);
 		SGEN_LOG (3, "Scanning thread %p, range: %p-%p, size: %zd, pinned=%zd", info, info->client_info.stack_start, info->client_info.stack_end, (char*)info->client_info.stack_end - (char*)info->client_info.stack_start, sgen_get_pinned_count ());
