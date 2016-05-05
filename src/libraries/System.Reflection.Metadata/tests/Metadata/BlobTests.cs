@@ -389,6 +389,22 @@ namespace System.Reflection.Metadata.Tests
             builder1.LinkSuffix(builder2);
 
             AssertEx.Equal(new byte[] { 1, 2, 3, 4 }, builder1.ToArray());
+            Assert.Equal(4, builder1.Count);
+            Assert.Equal(1, builder2.Count);
+
+            var builder3 = new BlobBuilder(16);
+            builder3.WriteByte(5);
+
+            var builder4 = new BlobBuilder(16);
+            builder4.WriteByte(6);
+
+            builder3.LinkSuffix(builder4);
+            builder1.LinkSuffix(builder3);
+
+            AssertEx.Equal(new byte[] { 1, 2, 3, 4, 5, 6 }, builder1.ToArray());
+            Assert.Equal(6, builder1.Count);
+            Assert.Equal(2, builder3.Count);
+            Assert.Equal(1, builder4.Count);
         }
 
         [Fact]
@@ -405,6 +421,9 @@ namespace System.Reflection.Metadata.Tests
             builder1.LinkPrefix(builder2);
 
             AssertEx.Equal(new byte[] { 4, 1, 2, 3 }, builder1.ToArray());
+
+            Assert.Equal(4, builder1.Count);
+            Assert.Equal(1, builder2.Count);
         }
 
         [Fact]
