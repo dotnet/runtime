@@ -1524,13 +1524,10 @@ CodeGen::genStructReturn(GenTreePtr treeNode)
 {
     assert(treeNode->OperGet() == GT_RETURN);
     GenTreePtr op1 = treeNode->gtGetOp1();
-    var_types targetType = treeNode->TypeGet();
 
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
     if (op1->OperGet() == GT_LCL_VAR)
     {
-        assert(op1->isContained());
-
         GenTreeLclVarCommon* lclVar = op1->AsLclVarCommon();
         LclVarDsc* varDsc = &(compiler->lvaTable[lclVar->gtLclNum]);
         assert(varDsc->lvIsMultiRegArgOrRet);
@@ -1540,22 +1537,69 @@ CodeGen::genStructReturn(GenTreePtr treeNode)
         unsigned regCount = retTypeDesc.GetReturnRegCount();
         assert(regCount == MAX_RET_REG_COUNT);
 
-        // Move the value into ABI return registers     
-        int offset = 0;
-        for (unsigned i = 0; i < regCount; ++i)
+        if (varTypeIsEnregisterableStruct(op1))
         {
-            var_types type = retTypeDesc.GetReturnRegType(i);
-            regNumber reg = retTypeDesc.GetABIReturnReg(i);
-            getEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), reg, lclVar->gtLclNum, offset);
-            offset += genTypeSize(type);
+            // Right now the only enregistrable structs supported are SIMD vector types.
+            assert(varTypeIsSIMD(op1));
+            assert(!op1->isContained());
+
+            // This is a case of operand is in a single reg and needs to be
+            // returned in multiple ABI return registers.
+            regNumber opReg = genConsumeReg(op1);
+            regNumber reg0 = retTypeDesc.GetABIReturnReg(0);
+            regNumber reg1 = retTypeDesc.GetABIReturnReg(1);
+
+            if (opReg != reg0 && opReg != reg1)
+            {
+                // Operand reg is different from return regs.
+                // Copy opReg to reg0 and let it to be handled by one of the
+                // two cases below.
+                inst_RV_RV(ins_Copy(TYP_DOUBLE), reg0, opReg, TYP_DOUBLE);
+                opReg = reg0;
+            }
+
+            if (opReg == reg0)
+            {
+                assert(opReg != reg1);
+
+                // reg0 - already has required 8-byte in bit position [63:0].
+                // reg1 = opReg.
+                // swap upper and lower 8-bytes of reg1 so that desired 8-byte is in bit position [63:0].
+                inst_RV_RV(ins_Copy(TYP_DOUBLE), reg1, opReg, TYP_DOUBLE);
+            }
+            else
+            {
+                assert(opReg == reg1);
+
+                // reg0 = opReg.
+                // swap upper and lower 8-bytes of reg1 so that desired 8-byte is in bit position [63:0].
+                inst_RV_RV(ins_Copy(TYP_DOUBLE), reg0, opReg, TYP_DOUBLE);                
+            }
+            inst_RV_RV_IV(INS_shufpd, EA_16BYTE, reg1, reg1, 0x01);
+        }
+        else
+        {
+            assert(op1->isContained());
+
+            // Copy var on stack into ABI return registers     
+            int offset = 0;
+            for (unsigned i = 0; i < regCount; ++i)
+            {
+                var_types type = retTypeDesc.GetReturnRegType(i);
+                regNumber reg = retTypeDesc.GetABIReturnReg(i);
+                getEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), reg, lclVar->gtLclNum, offset);
+                offset += genTypeSize(type);
+            }
         }
     }
     else
     {
-        assert(op1->IsMultiRegCall());
+        assert(op1->IsMultiRegCall() || op1->IsCopyOrReloadOfMultiRegCall());
+
         genConsumeRegs(op1);
 
-        GenTreeCall* call = op1->AsCall();
+        GenTree* actualOp1 = op1->gtSkipReloadOrCopy();
+        GenTreeCall* call = actualOp1->AsCall();
         ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
         unsigned regCount = retTypeDesc->GetReturnRegCount();
         assert(regCount == MAX_RET_REG_COUNT);
@@ -1576,6 +1620,23 @@ CodeGen::genStructReturn(GenTreePtr treeNode)
         regNumber returnReg1 = retTypeDesc->GetABIReturnReg(1);
         regNumber allocatedReg1 = call->GetRegNumByIdx(1);
         
+        if (op1->IsCopyOrReload())
+        {
+            // GT_COPY/GT_RELOAD will have valid reg for those positions
+            // that need to be copied or reloaded.
+            regNumber reloadReg = op1->AsCopyOrReload()->GetRegNumByIdx(0);
+            if (reloadReg != REG_NA)
+            {
+                allocatedReg0 = reloadReg;
+            }
+
+            reloadReg = op1->AsCopyOrReload()->GetRegNumByIdx(1);
+            if (reloadReg != REG_NA)
+            {
+                allocatedReg1 = reloadReg;
+            }
+        }
+
         if (allocatedReg0 == returnReg1 &&
             allocatedReg1 == returnReg0)
         {
@@ -2096,11 +2157,11 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
                         emit->emitInsBinary(ins_Move_Extend(targetType, true), emitTypeSize(treeNode), treeNode, op1);
                     }
                 }
+            }
 
-                if (treeNode->gtRegNum != REG_NA)
-                {
-                    genProduceReg(treeNode);
-                }
+            if (treeNode->gtRegNum != REG_NA)
+            {
+                genProduceReg(treeNode);
             }
         }
         break;
@@ -2706,18 +2767,16 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
 //
 // Assumption:
 //    The child of store is a multi-reg call node.
+//    genProduceReg() on treeNode is made by caller of this routine.
 //
 void
 CodeGen::genMultiRegCallStoreToLocal(GenTreePtr treeNode)
 {
-    assert(treeNode->OperGet() == GT_STORE_LCL_VAR);    
+    assert(treeNode->OperGet() == GT_STORE_LCL_VAR);
 
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
     // Structs of size >=9 and <=16 are returned in two return registers on x64 Unix.
     assert(varTypeIsStruct(treeNode));
-
-    // Assumption: struct local var needs to be in memory
-    noway_assert(!treeNode->InReg());
 
     // Assumption: current x64 Unix implementation requires that a multi-reg struct
     // var in 'var = call' is flagged as lvIsMultiRegArgOrRet to prevent it from
@@ -2725,7 +2784,7 @@ CodeGen::genMultiRegCallStoreToLocal(GenTreePtr treeNode)
     unsigned lclNum = treeNode->AsLclVarCommon()->gtLclNum;
     LclVarDsc* varDsc = &(compiler->lvaTable[lclNum]);
     noway_assert(varDsc->lvIsMultiRegArgOrRet);
-    
+
     GenTree* op1 = treeNode->gtGetOp1();
     GenTree* actualOp1 = op1->gtSkipReloadOrCopy();
     GenTreeCall* call = actualOp1->AsCall();
@@ -2737,25 +2796,85 @@ CodeGen::genMultiRegCallStoreToLocal(GenTreePtr treeNode)
     assert(retTypeDesc->GetReturnRegCount() == MAX_RET_REG_COUNT);
     unsigned regCount = retTypeDesc->GetReturnRegCount();
 
-    int offset = 0;
-    for (unsigned i = 0; i < regCount; ++i)
-    {
-        var_types type = retTypeDesc->GetReturnRegType(i);
-        regNumber reg = call->GetRegNumByIdx(i);
+    if (treeNode->gtRegNum != REG_NA)
+    {        
+        // Right now the only enregistrable structs supported are SIMD types.
+        assert(varTypeIsSIMD(treeNode));
+        assert(varTypeIsFloating(retTypeDesc->GetReturnRegType(0)));
+        assert(varTypeIsFloating(retTypeDesc->GetReturnRegType(1)));
+
+        // This is a case of two 8-bytes that comprise the operand is in
+        // two different xmm registers and needs to assembled into a single
+        // xmm register.
+        regNumber targetReg = treeNode->gtRegNum;
+        regNumber reg0 = call->GetRegNumByIdx(0);
+        regNumber reg1 = call->GetRegNumByIdx(1);
+
         if (op1->IsCopyOrReload())
         {
             // GT_COPY/GT_RELOAD will have valid reg for those positions
             // that need to be copied or reloaded.
-            regNumber reloadReg = op1->AsCopyOrReload()->GetRegNumByIdx(i);
+            regNumber reloadReg = op1->AsCopyOrReload()->GetRegNumByIdx(0);
             if (reloadReg != REG_NA)
             {
-                reg = reloadReg;
+                reg0 = reloadReg;
+            }
+
+            reloadReg = op1->AsCopyOrReload()->GetRegNumByIdx(1);
+            if (reloadReg != REG_NA)
+            {
+                reg1 = reloadReg;
             }
         }
 
-        assert(reg != REG_NA);
-        getEmitter()->emitIns_S_R(ins_Store(type), emitTypeSize(type), reg, lclNum, offset);
-        offset += genTypeSize(type);
+        if (targetReg != reg0 && targetReg != reg1)
+        {
+            // Copy reg0 into targetReg and let it to be handled by one
+            // of the cases below.
+            inst_RV_RV(ins_Copy(TYP_DOUBLE), targetReg, reg0, TYP_DOUBLE);
+            targetReg = reg0;
+        }
+
+        if (targetReg == reg0)
+        {
+            // targeReg[63:0] = targetReg[63:0]
+            // targetReg[127:64] = reg1[127:64]
+            inst_RV_RV_IV(INS_shufpd, EA_16BYTE, targetReg, reg1, 0x10);
+        }
+        else 
+        {
+            assert(targetReg == reg1);
+
+            // targeReg[63:0] = targetReg[127:64]
+            // targetReg[127:64] = reg0[63:0]
+            inst_RV_RV_IV(INS_shufpd, EA_16BYTE, targetReg, reg0, 0x01);
+        }
+    }
+    else
+    {
+        // Stack store
+        int offset = 0;
+        for (unsigned i = 0; i < regCount; ++i)
+        {
+            var_types type = retTypeDesc->GetReturnRegType(i);
+            regNumber reg = call->GetRegNumByIdx(i);
+            if (op1->IsCopyOrReload())
+            {
+                // GT_COPY/GT_RELOAD will have valid reg for those positions
+                // that need to be copied or reloaded.
+                regNumber reloadReg = op1->AsCopyOrReload()->GetRegNumByIdx(i);
+                if (reloadReg != REG_NA)
+                {
+                    reg = reloadReg;
+                }
+            }
+
+            assert(reg != REG_NA);
+            getEmitter()->emitIns_S_R(ins_Store(type), emitTypeSize(type), reg, lclNum, offset);
+            offset += genTypeSize(type);
+        }
+
+        varDsc->lvRegNum = REG_STK;
     }
 #else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
     assert(!"Unreached");
