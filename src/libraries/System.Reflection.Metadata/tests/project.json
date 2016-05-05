@@ -30,7 +30,7 @@
   },
   "frameworks": {
     "dnxcore50": {
-      "imports": "portable-net45+win8"
+      "imports": [ "netstandard1.6", "portable-net45+win8" ]
     }
   },
   "runtimes": {
