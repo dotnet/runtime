@@ -56,10 +56,16 @@ To trigger a job, post a comment on your PR with "@dotnet-bot {trigger-phrase}".
 - **Windows_NT x64 Checked CoreFX JitStressRegs=8 Build & Test:** "test Windows_NT corefx_jitstressregs8"
 - **Windows_NT x64 Checked CoreFX JitStressRegs=0x10 Build & Test:** "test Windows_NT corefx_jitstressregs0x10"
 - **Windows_NT x64 Checked CoreFX JitStressRegs=0x80 Build & Test:** "test Windows_NT corefx_jitstressregs0x80"
-- **Windows_NT x86 Release Ready-To-Run Priority 0 Legacy Backend Build & Test:** "test Windows_NT x86 Release r2r"
-- **Windows_NT x86 Release Ready-To-Run Priority 1 Legacy Backend Build & Test:** "test Windows_NT x86 Release pri1r2r"
-- **Windows_NT x86 Release GCStress=15 Ready-To-Run Priority 1 Legacy Backend Build & Test:** "test Windows_NT x86 Release gcstress15_pri1r2r"
-- **Windows_NT x86 Release Long-Running GC Build & Test:** "test Windows_NT x86 Release longgc
+- **Windows_NT x86 RyuJit Checked Priority 0 Build & Test:** "test Windows_NT x86 ryujit
+- **Windows_NT x86 legacy_backend Checked Priority 0 Build & Test:** "test Windows_NT x86 legacy_backend
+- **Windows_NT x86 RyuJit Release Ready-To-Run Priority 0 Build & Test:** "test Windows_NT x86 ryujit Release r2r"
+- **Windows_NT x86 legacy_backend Release Ready-To-Run Priority 0 Build & Test:** "test Windows_NT x86 legacy_backend Release r2r"
+- **Windows_NT x86 RyuJit Release Ready-To-Run Priority 1 Build & Test:** "test Windows_NT x86 ryujit Release pri1r2r"
+- **Windows_NT x86 legacy_backend Release Ready-To-Run Priority 1 Build & Test:** "test Windows_NT x86 legacy_backend Release pri1r2r"
+- **Windows_NT x86 RyuJit Release GCStress=15 Ready-To-Run Priority 1 Build & Test:** "test Windows_NT x86 ryujit Release gcstress15_pri1r2r"
+- **Windows_NT x86 legacy_backend Release GCStress=15 Ready-To-Run Priority 1 Build & Test:** "test Windows_NT x86 legacy_backend Release gcstress15_pri1r2r"
+- **Windows_NT x86 RyuJit Release Long-Running GC Build & Test:** "test Windows_NT x86 ryujit Release longgc
+- **Windows_NT x86 legacy_backend Release Long-Running GC Build & Test:** "test Windows_NT x86 legacy_backend Release longgc
 - **Ubuntu x64 Release Priority 1 Build & Test:** "test Ubuntu pri1"
 - **Ubuntu x64 Release IL RoundTrip Build & Test:** "test Ubuntu ilrt"
 - **Ubuntu x64 Release Long-Running GC Build & Test:**: "test Ubuntu Release longgc"
