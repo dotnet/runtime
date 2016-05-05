@@ -434,15 +434,6 @@ namespace System.Linq.Expressions.Interpreter
 
     internal static class Assert
     {
-        internal static Exception Unreachable
-        {
-            get
-            {
-                Debug.Assert(false, "Unreachable");
-                return new InvalidOperationException("Code supposed to be unreachable");
-            }
-        }
-
         [Conditional("DEBUG")]
         public static void NotNull(object var)
         {

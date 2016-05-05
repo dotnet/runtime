@@ -994,7 +994,7 @@ namespace System.Linq.Expressions.Interpreter
                 case ExpressionType.LessThanOrEqual: _instructions.EmitLessThanOrEqual(left.Type, node.IsLiftedToNull); break;
                 case ExpressionType.GreaterThan: _instructions.EmitGreaterThan(left.Type, node.IsLiftedToNull); break;
                 case ExpressionType.GreaterThanOrEqual: _instructions.EmitGreaterThanOrEqual(left.Type, node.IsLiftedToNull); break;
-                default: throw Assert.Unreachable;
+                default: throw ContractUtils.Unreachable;
             }
         }
 
@@ -1013,7 +1013,7 @@ namespace System.Linq.Expressions.Interpreter
                 case ExpressionType.MultiplyChecked: _instructions.EmitMul(left.Type, true); break;
                 case ExpressionType.Divide: _instructions.EmitDiv(left.Type); break;
                 case ExpressionType.Modulo: _instructions.EmitModulo(left.Type); break;
-                default: throw Assert.Unreachable;
+                default: throw ContractUtils.Unreachable;
             }
         }
 
