@@ -116,15 +116,27 @@ ensure_binaries_are_present()
 copy_test_overlay()
 {
   testDir=$1
-  cp -f -r $CoreClrBins/* $testDir/
-  cp -f $MscorlibBins/mscorlib.dll $testDir/
-  cp -f $CoreFxNativeBins/* $testDir/
+
+  link_files_in_directory "$CoreClrBins" "$testDir"
+  link_files_in_directory "$CoreFxNativeBins" "$testDir"
+
+  ln -f $MscorlibBins/mscorlib.dll $testDir/mscorlib.dll
 
   # If we have a native image for mscorlib, copy it as well.
   if [ -f $MscorlibBins/mscorlib.ni.dll ]
   then
-      cp -f $MscorlibBins/mscorlib.ni.dll $testDir/mscorlib.ni.dll
+      ln -f  $MscorlibBins/mscorlib.ni.dll $testDir/mscorlib.ni.dll
   fi
+}
+
+# $1 is the source directory
+# $2 is the destination directory
+link_files_in_directory()
+{
+    for path in `find $1 -maxdepth 1 -type f`; do
+      fileName=`basename $path`
+      ln -f $path "$2/$fileName"
+    done
 }
 
 # $1 is the name of the platform folder (e.g Unix.AnyCPU.Debug)
