@@ -548,7 +548,8 @@ void sgen_split_nursery_init (SgenMinorCollector *collector);
 /* Updating references */
 
 #ifdef SGEN_CHECK_UPDATE_REFERENCE
-gboolean sgen_thread_pool_is_thread_pool_thread (MonoNativeThreadId some_thread) MONO_INTERNAL;
+gboolean sgen_thread_pool_is_thread_pool_thread (MonoNativeThreadId some_thread);
+
 static inline void
 sgen_update_reference (GCObject **p, GCObject *o, gboolean allow_null)
 {
