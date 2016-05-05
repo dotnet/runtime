@@ -8238,6 +8238,9 @@ public:
 #endif // DEBUG
 #endif // MEASURE_MEM_ALLOC
 
+    void                compFunctionTraceStart();
+    void                compFunctionTraceEnd(void* methodCodePtr, ULONG methodCodeSize, bool isNYI);
+
 protected:
 
     unsigned            compMaxUncheckedOffsetForNullObject; 
