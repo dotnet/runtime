@@ -8,6 +8,8 @@ if(WIN32)
     add_compile_options($<$<CONFIG:RelWithDebInfo>:/MT>)
     add_compile_options($<$<CONFIG:Release>:/MT>)
     add_compile_options($<$<CONFIG:Debug>:/MTd>)
+else()
+    add_compile_options(-fPIE)
 endif()
 
 include(setup.cmake)
