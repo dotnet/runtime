@@ -16,6 +16,8 @@ using System.Threading;
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
 
+using Libraries = Interop.Libraries;
+
 namespace Internal.NativeCrypto
 {
     /// <summary>
@@ -1405,89 +1407,86 @@ namespace Internal.NativeCrypto
     /// </summary>
     internal static partial class CapiHelper
     {
-        public const String AdvapiDll = "Advapi32.dll";
-        public const String Capi2Dll = "Crypt32.dll";
-        public const String Kernel32Dll = "kernel32.dll";
         private static class Interop
         {
-            [DllImport(AdvapiDll, SetLastError = true, CharSet = CharSet.Unicode, EntryPoint = "CryptGetDefaultProviderW")]
+            [DllImport(Libraries.SecurityCryptoApi, SetLastError = true, CharSet = CharSet.Unicode, EntryPoint = "CryptGetDefaultProviderW")]
             [return: MarshalAs(UnmanagedType.Bool)]
             public static extern bool CryptGetDefaultProvider(int dwProvType, IntPtr pdwReserved, int dwFlags,
                                                               StringBuilder pszProvName, ref int IntPtrProvName);
 
-            [DllImport(AdvapiDll, SetLastError = true, CharSet = CharSet.Unicode, EntryPoint = "CryptAcquireContextW")]
+            [DllImport(Libraries.SecurityCryptoApi, SetLastError = true, CharSet = CharSet.Unicode, EntryPoint = "CryptAcquireContextW")]
             [return: MarshalAs(UnmanagedType.Bool)]
             public static extern bool CryptAcquireContext(out SafeProvHandle psafeProvHandle, string pszContainer,
                                                             string pszProvider, int dwProvType, uint dwFlags);
 
-            [DllImport(AdvapiDll, SetLastError = true)]
+            [DllImport(Libraries.SecurityCryptoApi, SetLastError = true)]
             [return: MarshalAs(UnmanagedType.Bool)]
             public static extern bool CryptGetProvParam(SafeProvHandle safeProvHandle, int dwParam, byte[] pbData,
                                                         ref int dwDataLen, int dwFlags);
 
-            [DllImport(AdvapiDll, SetLastError = true)]
+            [DllImport(Libraries.SecurityCryptoApi, SetLastError = true)]
             [return: MarshalAs(UnmanagedType.Bool)]
             public static extern bool CryptSetProvParam(SafeProvHandle safeProvHandle, CryptGetProvParam dwParam, ref IntPtr pbData, int dwFlags);
 
-            [DllImport(AdvapiDll, SetLastError = true, EntryPoint = "CryptGetUserKey")]
+            [DllImport(Libraries.SecurityCryptoApi, SetLastError = true, EntryPoint = "CryptGetUserKey")]
             [return: MarshalAs(UnmanagedType.Bool)]
             private static extern bool _CryptGetUserKey(SafeProvHandle safeProvHandle, int dwKeySpec, out SafeKeyHandle safeKeyHandle);
 
-            [DllImport(AdvapiDll, SetLastError = true)]
+            [DllImport(Libraries.SecurityCryptoApi, SetLastError = true)]
             [return: MarshalAs(UnmanagedType.Bool)]
             public static extern bool CryptGetKeyParam(SafeKeyHandle safeKeyHandle, int dwParam, byte[] pbData,
                                                         ref int pdwDataLen, int dwFlags);
 
-            [DllImport(AdvapiDll, SetLastError = true, EntryPoint = "CryptGenKey")]
+            [DllImport(Libraries.SecurityCryptoApi, SetLastError = true, EntryPoint = "CryptGenKey")]
             private static extern bool _CryptGenKey(SafeProvHandle safeProvHandle, int Algid, int dwFlags, out SafeKeyHandle safeKeyHandle);
 
-            [DllImport(AdvapiDll, SetLastError = true)]
+            [DllImport(Libraries.SecurityCryptoApi, SetLastError = true)]
             public static extern bool CryptReleaseContext(IntPtr safeProvHandle, int dwFlags);
 
-            [DllImport(AdvapiDll, SetLastError = true)]
+            [DllImport(Libraries.SecurityCryptoApi, SetLastError = true)]
             public static extern bool CryptDecrypt(SafeKeyHandle safeKeyHandle, SafeHashHandle safeHashHandle, bool Final,
                                                     int dwFlags, byte[] pbData, ref int pdwDataLen);
 
-            [DllImport(AdvapiDll, CharSet = CharSet.Unicode, SetLastError = true)]
+            [DllImport(Libraries.SecurityCryptoApi, CharSet = CharSet.Unicode, SetLastError = true)]
             [return: MarshalAs(UnmanagedType.Bool)]
             public static extern bool CryptEncrypt(SafeKeyHandle safeKeyHandle, SafeHashHandle safeHashHandle,
                                                     bool Final, int dwFlags, byte[] pbData, ref int pdwDataLen,
                                                     int dwBufLen);
 
-            [DllImport(AdvapiDll, CharSet = CharSet.Unicode, SetLastError = true)]
+            [DllImport(Libraries.SecurityCryptoApi, CharSet = CharSet.Unicode, SetLastError = true)]
             [return: MarshalAs(UnmanagedType.Bool)]
             public static extern bool CryptExportKey(SafeKeyHandle hKey, SafeKeyHandle hExpKey, int dwBlobType,
                                                     int dwFlags, [In, Out] byte[] pbData, ref int dwDataLen);
 
-            [DllImport(AdvapiDll, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "CryptImportKey")]
+            [DllImport(Libraries.SecurityCryptoApi, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "CryptImportKey")]
             [return: MarshalAs(UnmanagedType.Bool)]
             private static extern bool _CryptImportKey(SafeProvHandle hProv, byte[] pbData, int dwDataLen, SafeKeyHandle hPubKey, int dwFlags, out SafeKeyHandle phKey);
 
-            [DllImport(AdvapiDll, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "CryptCreateHash")]
+            [DllImport(Libraries.SecurityCryptoApi, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "CryptCreateHash")]
             [return: MarshalAs(UnmanagedType.Bool)]
             private static extern bool _CryptCreateHash(SafeProvHandle hProv, int algId, SafeKeyHandle hKey, CryptCreateHashFlags dwFlags, out SafeHashHandle phHash);
 
-            [DllImport(AdvapiDll, CharSet = CharSet.Unicode, SetLastError = true)]
+            [DllImport(Libraries.SecurityCryptoApi, CharSet = CharSet.Unicode, SetLastError = true)]
             [return: MarshalAs(UnmanagedType.Bool)]
             public static extern bool CryptGetHashParam(SafeHashHandle hHash, CryptHashProperty dwParam, out int pbData, [In, Out] ref int pdwDataLen, int dwFlags);
 
-            [DllImport(AdvapiDll, CharSet = CharSet.Unicode, SetLastError = true)]
+            [DllImport(Libraries.SecurityCryptoApi, CharSet = CharSet.Unicode, SetLastError = true)]
             [return: MarshalAs(UnmanagedType.Bool)]
             public static extern bool CryptSetHashParam(SafeHashHandle hHash, CryptHashProperty dwParam, byte[] buffer, int dwFlags);
 
-            [DllImport(AdvapiDll, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "CryptSignHashW")]
+            [DllImport(Libraries.SecurityCryptoApi, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "CryptSignHashW")]
             [return: MarshalAs(UnmanagedType.Bool)]
             public static extern bool CryptSignHash(SafeHashHandle hHash, KeySpec dwKeySpec, String sDescription, CryptSignAndVerifyHashFlags dwFlags, [Out] byte[] pbSignature, [In, Out] ref int pdwSigLen);
 
-            [DllImport(AdvapiDll, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "CryptVerifySignatureW")]
+            [DllImport(Libraries.SecurityCryptoApi, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "CryptVerifySignatureW")]
             [return: MarshalAs(UnmanagedType.Bool)]
             public static extern bool CryptVerifySignature(SafeHashHandle hHash, byte[] pbSignature, int dwSigLen, SafeKeyHandle hPubKey, String sDescription, CryptSignAndVerifyHashFlags dwFlags);
 
-            [DllImport(AdvapiDll, CharSet = CharSet.Unicode, SetLastError = true)]
+            [DllImport(Libraries.SecurityCryptoApi, CharSet = CharSet.Unicode, SetLastError = true)]
             [return: MarshalAs(UnmanagedType.Bool)]
             public static extern bool CryptDestroyKey(IntPtr hKey);
 
-            [DllImport(AdvapiDll, CharSet = CharSet.Unicode, SetLastError = true)]
+            [DllImport(Libraries.SecurityCryptoApi, CharSet = CharSet.Unicode, SetLastError = true)]
             [return: MarshalAs(UnmanagedType.Bool)]
             public static extern bool CryptDestroyHash(IntPtr hHash);
 
