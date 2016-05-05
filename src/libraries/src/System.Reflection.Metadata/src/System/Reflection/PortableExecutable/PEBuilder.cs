@@ -10,53 +10,28 @@ using System.Reflection.Metadata;
 
 namespace System.Reflection.PortableExecutable
 {
-    public sealed class PEBuilder
+    public abstract class PEBuilder
     {
-        // COFF:
-        public Machine Machine { get; }
-        public Characteristics ImageCharacteristics { get; set; }
+        public PEHeaderBuilder Header { get; }
+        public Func<IEnumerable<Blob>, ContentId> IdProvider { get; }
         public bool IsDeterministic { get; }
-        
-        // PE:
-        public byte MajorLinkerVersion { get; }
-        public byte MinorLinkerVersion { get; }
 
-        public ulong ImageBase { get; }
-        public int SectionAlignment { get; }
-        public int FileAlignment { get; }
+        protected ImmutableArray<Section> Sections { get; }
 
-        public ushort MajorOperatingSystemVersion { get; }
-        public ushort MinorOperatingSystemVersion { get; }
-
-        public ushort MajorImageVersion { get; }
-        public ushort MinorImageVersion { get; }
-
-        public ushort MajorSubsystemVersion { get; }
-        public ushort MinorSubsystemVersion { get; }
-
-        public Subsystem Subsystem { get; }
-        public DllCharacteristics DllCharacteristics { get; }
-
-        public ulong SizeOfStackReserve { get; }
-        public ulong SizeOfStackCommit { get; }
-        public ulong SizeOfHeapReserve { get; }
-        public ulong SizeOfHeapCommit { get; }
-
-        public Func<BlobBuilder, ContentId> IdProvider { get; }
-
-        private readonly List<Section> _sections;
-
-        private struct Section
+        protected struct Section
         {
             public readonly string Name;
             public readonly SectionCharacteristics Characteristics;
-            public readonly Func<PESectionLocation, BlobBuilder> Builder;
 
-            public Section(string name, SectionCharacteristics characteristics, Func<PESectionLocation, BlobBuilder> builder)
+            public Section(string name, SectionCharacteristics characteristics)
             {
+                if (name == null)
+                {
+                    throw new ArgumentNullException(nameof(name));
+                }
+
                 Name = name;
                 Characteristics = characteristics;
-                Builder = builder;
             }
         }
 
@@ -83,54 +58,22 @@ namespace System.Reflection.PortableExecutable
             public int VirtualSize => Builder.Count;
         }
 
-        public PEBuilder(
-            Machine machine,
-            int sectionAlignment, 
-            int fileAlignment, 
-            ulong imageBase,
-            byte majorLinkerVersion,
-            byte minorLinkerVersion,
-            ushort majorOperatingSystemVersion,
-            ushort minorOperatingSystemVersion,
-            ushort majorImageVersion,
-            ushort minorImageVersion,
-            ushort majorSubsystemVersion,
-            ushort minorSubsystemVersion,
-            Subsystem subsystem,
-            DllCharacteristics dllCharacteristics,
-            Characteristics imageCharacteristics,
-            ulong sizeOfStackReserve,
-            ulong sizeOfStackCommit,
-            ulong sizeOfHeapReserve,
-            ulong sizeOfHeapCommit,
-            Func<BlobBuilder, ContentId> deterministicIdProvider = null)
+        protected PEBuilder(PEHeaderBuilder header, Func<IEnumerable<Blob>, ContentId> deterministicIdProvider)
         {
-            Machine = machine;
-            SectionAlignment = sectionAlignment;
-            FileAlignment = fileAlignment;
-            ImageBase = imageBase;
-            MajorLinkerVersion = majorLinkerVersion;
-            MinorLinkerVersion = minorLinkerVersion;
-            MajorOperatingSystemVersion = majorOperatingSystemVersion;
-            MinorOperatingSystemVersion = minorOperatingSystemVersion;
-            MajorImageVersion = majorImageVersion;
-            MinorImageVersion = minorImageVersion;
-            MajorSubsystemVersion = majorSubsystemVersion;
-            MinorSubsystemVersion = minorSubsystemVersion;
-            Subsystem = subsystem;
-            DllCharacteristics = dllCharacteristics;
-            ImageCharacteristics = imageCharacteristics;
-            SizeOfStackReserve = sizeOfStackReserve;
-            SizeOfStackCommit = sizeOfStackCommit;
-            SizeOfHeapReserve = sizeOfHeapReserve;
-            SizeOfHeapCommit = sizeOfHeapCommit;
-            IsDeterministic = deterministicIdProvider != null;
-            IdProvider = deterministicIdProvider ?? GetCurrentTimeBasedIdProvider();
+            if (header == null)
+            {
+                throw new ArgumentNullException(nameof(header));
+            }
 
-            _sections = new List<Section>();
+            IdProvider = deterministicIdProvider ?? GetCurrentTimeBasedIdProvider();
+            IsDeterministic = deterministicIdProvider != null;
+            Header = header;
+            Sections = CreateSections();
         }
 
-        private static Func<BlobBuilder, ContentId> GetCurrentTimeBasedIdProvider()
+        protected abstract ImmutableArray<Section> CreateSections();
+
+        private static Func<IEnumerable<Blob>, ContentId> GetCurrentTimeBasedIdProvider()
         {
             // In the PE File Header this is a "Time/Date Stamp" whose description is "Time and date
             // the file was created in seconds since January 1st 1970 00:00:00 or 0"
@@ -139,31 +82,33 @@ namespace System.Reflection.PortableExecutable
             return content => new ContentId(Guid.NewGuid(), timestamp);
         }
 
-        private bool Is32Bit => Machine != Machine.Amd64 && Machine != Machine.IA64;
+        protected abstract BlobBuilder SerializeSection(string name, SectionLocation location);
 
-        public void AddSection(string name, SectionCharacteristics characteristics, Func<PESectionLocation, BlobBuilder> builder)
-        {
-            _sections.Add(new Section(name, characteristics, builder));
-        }
+        internal protected abstract PEDirectoriesBuilder GetDirectories();
 
-        public void Serialize(BlobBuilder builder, PEDirectoriesBuilder headers, out ContentId contentId)
+        public void Serialize(BlobBuilder builder, out ContentId contentId)
         {
+            // Define and serialize sections in two steps.
+            // We need to know about all sections before serializing them.
             var serializedSections = SerializeSections();
-            Blob stampFixup;
 
+            // The positions and sizes of directories are calculated during section serialization.
+            var directories = GetDirectories();
+
+            Blob stampFixup;
             WritePESignature(builder);
             WriteCoffHeader(builder, serializedSections, out stampFixup);
-            WritePEHeader(builder, headers, serializedSections);
+            WritePEHeader(builder, directories, serializedSections);
             WriteSectionHeaders(builder, serializedSections);
-            builder.Align(FileAlignment);
+            builder.Align(Header.FileAlignment);
 
             foreach (var section in serializedSections)
             {
                 builder.LinkSuffix(section.Builder);
-                builder.Align(FileAlignment);
+                builder.Align(Header.FileAlignment);
             }
 
-            contentId = IdProvider(builder);
+            contentId = IdProvider(builder.GetBlobs());
 
             // patch timestamp in COFF header:
             var stampWriter = new BlobWriter(stampFixup);
@@ -173,43 +118,31 @@ namespace System.Reflection.PortableExecutable
 
         private ImmutableArray<SerializedSection> SerializeSections()
         {
-            var result = ImmutableArray.CreateBuilder<SerializedSection>(_sections.Count);
-            int sizeOfPeHeaders = ComputeSizeOfPeHeaders(_sections.Count, Is32Bit);
+            var result = ImmutableArray.CreateBuilder<SerializedSection>(Sections.Length);
+            int sizeOfPeHeaders = Header.ComputeSizeOfPeHeaders(Sections.Length);
 
-            var nextRva = BitArithmetic.Align(sizeOfPeHeaders, SectionAlignment);
-            var nextPointer = BitArithmetic.Align(sizeOfPeHeaders, FileAlignment);
+            var nextRva = BitArithmetic.Align(sizeOfPeHeaders, Header.SectionAlignment);
+            var nextPointer = BitArithmetic.Align(sizeOfPeHeaders, Header.FileAlignment);
 
-            foreach (var section in _sections)
+            foreach (var section in Sections)
             {
-                var builder = section.Builder(new PESectionLocation(nextRva, nextPointer));
+                var builder = SerializeSection(section.Name, new SectionLocation(nextRva, nextPointer));
 
                 var serialized = new SerializedSection(
                     builder,
                     section.Name,
                     section.Characteristics,
                     relativeVirtualAddress: nextRva,
-                    sizeOfRawData: BitArithmetic.Align(builder.Count, FileAlignment),
+                    sizeOfRawData: BitArithmetic.Align(builder.Count, Header.FileAlignment),
                     pointerToRawData: nextPointer);
 
                 result.Add(serialized);
 
-                nextRva = BitArithmetic.Align(serialized.RelativeVirtualAddress + serialized.VirtualSize, SectionAlignment);
+                nextRva = BitArithmetic.Align(serialized.RelativeVirtualAddress + serialized.VirtualSize, Header.SectionAlignment);
                 nextPointer = serialized.PointerToRawData + serialized.SizeOfRawData;
             }
 
             return result.MoveToImmutable();
-        }
-
-        private static int ComputeSizeOfPeHeaders(int sectionCount, bool is32Bit)
-        {
-            // TODO: constants
-            int sizeOfPeHeaders = 128 + 4 + 20 + 224 + 40 * sectionCount;
-            if (!is32Bit)
-            {
-                sizeOfPeHeaders += 16;
-            }
-
-            return sizeOfPeHeaders;
         }
 
         private void WritePESignature(BlobBuilder builder)
@@ -244,7 +177,7 @@ namespace System.Reflection.PortableExecutable
         private void WriteCoffHeader(BlobBuilder builder, ImmutableArray<SerializedSection> sections, out Blob stampFixup)
         {
             // Machine
-            builder.WriteUInt16((ushort)(Machine == 0 ? Machine.I386 : Machine));
+            builder.WriteUInt16((ushort)(Header.Machine == 0 ? Machine.I386 : Header.Machine));
 
             // NumberOfSections
             builder.WriteUInt16((ushort)sections.Length);
@@ -265,17 +198,17 @@ namespace System.Reflection.PortableExecutable
             // SizeOfOptionalHeader:
             // The size of the optional header, which is required for executable files but not for object files. 
             // This value should be zero for an object file (TODO).
-            builder.WriteUInt16((ushort)(Is32Bit ? 224 : 240));
+            builder.WriteUInt16((ushort)(Header.Is32Bit ? 224 : 240));
 
             // Characteristics
-            builder.WriteUInt16((ushort)ImageCharacteristics);
+            builder.WriteUInt16((ushort)Header.ImageCharacteristics);
         }
 
-        private void WritePEHeader(BlobBuilder builder, PEDirectoriesBuilder headers, ImmutableArray<SerializedSection> sections)
+        private void WritePEHeader(BlobBuilder builder, PEDirectoriesBuilder directories, ImmutableArray<SerializedSection> sections)
         {
-            builder.WriteUInt16((ushort)(Is32Bit ? PEMagic.PE32 : PEMagic.PE32Plus));
-            builder.WriteByte(MajorLinkerVersion);
-            builder.WriteByte(MinorLinkerVersion);
+            builder.WriteUInt16((ushort)(Header.Is32Bit ? PEMagic.PE32 : PEMagic.PE32Plus));
+            builder.WriteByte(Header.MajorLinkerVersion);
+            builder.WriteByte(Header.MinorLinkerVersion);
 
             // SizeOfCode:
             builder.WriteUInt32((uint)SumRawDataSizes(sections, SectionCharacteristics.ContainsCode));
@@ -287,64 +220,65 @@ namespace System.Reflection.PortableExecutable
             builder.WriteUInt32((uint)SumRawDataSizes(sections, SectionCharacteristics.ContainsUninitializedData));
 
             // AddressOfEntryPoint:
-            builder.WriteUInt32((uint)headers.AddressOfEntryPoint);
+            builder.WriteUInt32((uint)directories.AddressOfEntryPoint);
 
             // BaseOfCode:
             int codeSectionIndex = IndexOfSection(sections, SectionCharacteristics.ContainsCode);
             builder.WriteUInt32((uint)(codeSectionIndex != -1 ? sections[codeSectionIndex].RelativeVirtualAddress : 0));
 
-            if (Is32Bit)
+            if (Header.Is32Bit)
             {
                 // BaseOfData:
                 int dataSectionIndex = IndexOfSection(sections, SectionCharacteristics.ContainsInitializedData);
                 builder.WriteUInt32((uint)(dataSectionIndex != -1 ? sections[dataSectionIndex].RelativeVirtualAddress : 0));
 
-                builder.WriteUInt32((uint)ImageBase);
+                builder.WriteUInt32((uint)Header.ImageBase);
             }
             else
             {
-                builder.WriteUInt64(ImageBase);
+                builder.WriteUInt64(Header.ImageBase);
             }
 
             // NT additional fields:
-            builder.WriteUInt32((uint)SectionAlignment);
-            builder.WriteUInt32((uint)FileAlignment);
-            builder.WriteUInt16(MajorOperatingSystemVersion);
-            builder.WriteUInt16(MinorOperatingSystemVersion);
-            builder.WriteUInt16(MajorImageVersion);
-            builder.WriteUInt16(MinorImageVersion);
-            builder.WriteUInt16(MajorSubsystemVersion);
-            builder.WriteUInt16(MinorSubsystemVersion);
-
+            builder.WriteUInt32((uint)Header.SectionAlignment);
+            builder.WriteUInt32((uint)Header.FileAlignment);
+            builder.WriteUInt16(Header.MajorOperatingSystemVersion);
+            builder.WriteUInt16(Header.MinorOperatingSystemVersion);
+            builder.WriteUInt16(Header.MajorImageVersion);
+            builder.WriteUInt16(Header.MinorImageVersion);
+            builder.WriteUInt16(Header.MajorSubsystemVersion);
+            builder.WriteUInt16(Header.MinorSubsystemVersion);
+                                
             // Win32VersionValue (reserved, should be 0)
             builder.WriteUInt32(0);
 
             // SizeOfImage:
             var lastSection = sections[sections.Length - 1];
-            builder.WriteUInt32((uint)BitArithmetic.Align(lastSection.RelativeVirtualAddress + lastSection.VirtualSize, SectionAlignment));
+            builder.WriteUInt32((uint)BitArithmetic.Align(lastSection.RelativeVirtualAddress + lastSection.VirtualSize, Header.SectionAlignment));
 
             // SizeOfHeaders:
-            builder.WriteUInt32((uint)BitArithmetic.Align(ComputeSizeOfPeHeaders(sections.Length, Is32Bit), FileAlignment));
+            builder.WriteUInt32((uint)BitArithmetic.Align(Header.ComputeSizeOfPeHeaders(sections.Length), Header.FileAlignment));
 
-            // Checksum (TODO: not supported):
+            // Checksum:
+            // Shall be zero for strong name signing. 
             builder.WriteUInt32(0);
 
-            builder.WriteUInt16((ushort)Subsystem);
-            builder.WriteUInt16((ushort)DllCharacteristics);
+            builder.WriteUInt16((ushort)Header.Subsystem);
+            builder.WriteUInt16((ushort)Header.DllCharacteristics);
 
-            if (Is32Bit)
+            if (Header.Is32Bit)
             {
-                builder.WriteUInt32((uint)SizeOfStackReserve);
-                builder.WriteUInt32((uint)SizeOfStackCommit);
-                builder.WriteUInt32((uint)SizeOfHeapReserve);
-                builder.WriteUInt32((uint)SizeOfHeapCommit);
+                builder.WriteUInt32((uint)Header.SizeOfStackReserve);
+                builder.WriteUInt32((uint)Header.SizeOfStackCommit);
+                builder.WriteUInt32((uint)Header.SizeOfHeapReserve);
+                builder.WriteUInt32((uint)Header.SizeOfHeapCommit);
             }
             else
             {
-                builder.WriteUInt64(SizeOfStackReserve);
-                builder.WriteUInt64(SizeOfStackCommit);
-                builder.WriteUInt64(SizeOfHeapReserve);
-                builder.WriteUInt64(SizeOfHeapCommit);
+                builder.WriteUInt64(Header.SizeOfStackReserve);
+                builder.WriteUInt64(Header.SizeOfStackCommit);
+                builder.WriteUInt64(Header.SizeOfHeapReserve);
+                builder.WriteUInt64(Header.SizeOfHeapCommit);
             }
 
             // LoaderFlags
@@ -354,36 +288,39 @@ namespace System.Reflection.PortableExecutable
             builder.WriteUInt32(16);
 
             // directory entries:
-            builder.WriteUInt32((uint)headers.ExportTable.RelativeVirtualAddress);
-            builder.WriteUInt32((uint)headers.ExportTable.Size);
-            builder.WriteUInt32((uint)headers.ImportTable.RelativeVirtualAddress);
-            builder.WriteUInt32((uint)headers.ImportTable.Size);
-            builder.WriteUInt32((uint)headers.ResourceTable.RelativeVirtualAddress);
-            builder.WriteUInt32((uint)headers.ResourceTable.Size);
-            builder.WriteUInt32((uint)headers.ExceptionTable.RelativeVirtualAddress);
-            builder.WriteUInt32((uint)headers.ExceptionTable.Size);
-            builder.WriteUInt32((uint)headers.CertificateTable.RelativeVirtualAddress);
-            builder.WriteUInt32((uint)headers.CertificateTable.Size);
-            builder.WriteUInt32((uint)headers.BaseRelocationTable.RelativeVirtualAddress);
-            builder.WriteUInt32((uint)headers.BaseRelocationTable.Size);
-            builder.WriteUInt32((uint)headers.DebugTable.RelativeVirtualAddress);
-            builder.WriteUInt32((uint)headers.DebugTable.Size);
-            builder.WriteUInt32((uint)headers.CopyrightTable.RelativeVirtualAddress);
-            builder.WriteUInt32((uint)headers.CopyrightTable.Size);
-            builder.WriteUInt32((uint)headers.GlobalPointerTable.RelativeVirtualAddress);
-            builder.WriteUInt32((uint)headers.GlobalPointerTable.Size);
-            builder.WriteUInt32((uint)headers.ThreadLocalStorageTable.RelativeVirtualAddress);
-            builder.WriteUInt32((uint)headers.ThreadLocalStorageTable.Size);
-            builder.WriteUInt32((uint)headers.LoadConfigTable.RelativeVirtualAddress);
-            builder.WriteUInt32((uint)headers.LoadConfigTable.Size);
-            builder.WriteUInt32((uint)headers.BoundImportTable.RelativeVirtualAddress);
-            builder.WriteUInt32((uint)headers.BoundImportTable.Size);
-            builder.WriteUInt32((uint)headers.ImportAddressTable.RelativeVirtualAddress);
-            builder.WriteUInt32((uint)headers.ImportAddressTable.Size);
-            builder.WriteUInt32((uint)headers.DelayImportTable.RelativeVirtualAddress);
-            builder.WriteUInt32((uint)headers.DelayImportTable.Size);
-            builder.WriteUInt32((uint)headers.CorHeaderTable.RelativeVirtualAddress);
-            builder.WriteUInt32((uint)headers.CorHeaderTable.Size);
+            builder.WriteUInt32((uint)directories.ExportTable.RelativeVirtualAddress);
+            builder.WriteUInt32((uint)directories.ExportTable.Size);
+            builder.WriteUInt32((uint)directories.ImportTable.RelativeVirtualAddress);
+            builder.WriteUInt32((uint)directories.ImportTable.Size);
+            builder.WriteUInt32((uint)directories.ResourceTable.RelativeVirtualAddress);
+            builder.WriteUInt32((uint)directories.ResourceTable.Size);
+            builder.WriteUInt32((uint)directories.ExceptionTable.RelativeVirtualAddress);
+            builder.WriteUInt32((uint)directories.ExceptionTable.Size);
+
+            // Authenticode CertificateTable directory. Shall be zero before the PE is signed.
+            builder.WriteUInt32(0);
+            builder.WriteUInt32(0);
+
+            builder.WriteUInt32((uint)directories.BaseRelocationTable.RelativeVirtualAddress);
+            builder.WriteUInt32((uint)directories.BaseRelocationTable.Size);
+            builder.WriteUInt32((uint)directories.DebugTable.RelativeVirtualAddress);
+            builder.WriteUInt32((uint)directories.DebugTable.Size);
+            builder.WriteUInt32((uint)directories.CopyrightTable.RelativeVirtualAddress);
+            builder.WriteUInt32((uint)directories.CopyrightTable.Size);
+            builder.WriteUInt32((uint)directories.GlobalPointerTable.RelativeVirtualAddress);
+            builder.WriteUInt32((uint)directories.GlobalPointerTable.Size);
+            builder.WriteUInt32((uint)directories.ThreadLocalStorageTable.RelativeVirtualAddress);
+            builder.WriteUInt32((uint)directories.ThreadLocalStorageTable.Size);
+            builder.WriteUInt32((uint)directories.LoadConfigTable.RelativeVirtualAddress);
+            builder.WriteUInt32((uint)directories.LoadConfigTable.Size);
+            builder.WriteUInt32((uint)directories.BoundImportTable.RelativeVirtualAddress);
+            builder.WriteUInt32((uint)directories.BoundImportTable.Size);
+            builder.WriteUInt32((uint)directories.ImportAddressTable.RelativeVirtualAddress);
+            builder.WriteUInt32((uint)directories.ImportAddressTable.Size);
+            builder.WriteUInt32((uint)directories.DelayImportTable.RelativeVirtualAddress);
+            builder.WriteUInt32((uint)directories.DelayImportTable.Size);
+            builder.WriteUInt32((uint)directories.CorHeaderTable.RelativeVirtualAddress);
+            builder.WriteUInt32((uint)directories.CorHeaderTable.Size);
 
             // Reserved, should be 0
             builder.WriteUInt64(0);
@@ -391,24 +328,24 @@ namespace System.Reflection.PortableExecutable
 
         private void WriteSectionHeaders(BlobBuilder builder, ImmutableArray<SerializedSection> serializedSections)
         {
-            for (int i = 0; i < serializedSections.Length; i++)
+            foreach (var serializedSection in serializedSections)
             {
-                WriteSectionHeader(builder, _sections[i], serializedSections[i]);
+                WriteSectionHeader(builder, serializedSection);
             }
         }
 
-        private static void WriteSectionHeader(BlobBuilder builder, Section section, SerializedSection serializedSection)
+        private static void WriteSectionHeader(BlobBuilder builder, SerializedSection serializedSection)
         {
             if (serializedSection.VirtualSize == 0)
             {
                 return;
             }
 
-            for (int j = 0, m = section.Name.Length; j < 8; j++)
+            for (int j = 0, m = serializedSection.Name.Length; j < 8; j++)
             {
                 if (j < m)
                 {
-                    builder.WriteByte((byte)section.Name[j]);
+                    builder.WriteByte((byte)serializedSection.Name[j]);
                 }
                 else
                 {
@@ -433,7 +370,7 @@ namespace System.Reflection.PortableExecutable
             // NumberOfLinenumbers (TODO: not supported):
             builder.WriteUInt16(0);
 
-            builder.WriteUInt32((uint)section.Characteristics);
+            builder.WriteUInt32((uint)serializedSection.Characteristics);
         }
 
         private static int IndexOfSection(ImmutableArray<SerializedSection> sections, SectionCharacteristics characteristics)
