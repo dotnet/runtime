@@ -745,7 +745,7 @@ void LegacyPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     const int threshold = (int)(m_CallsiteNativeSizeEstimate * m_Multiplier);
 
     // Note the LegacyPolicy estimates are scaled up by SIZE_SCALE
-    JITDUMP("calleeNativeSizeEstimate=%d\n", m_CalleeNativeSizeEstimate)
+    JITDUMP("\ncalleeNativeSizeEstimate=%d\n", m_CalleeNativeSizeEstimate)
     JITDUMP("callsiteNativeSizeEstimate=%d\n", m_CallsiteNativeSizeEstimate);
     JITDUMP("benefit multiplier=%g\n", m_Multiplier);
     JITDUMP("threshold=%d\n", threshold);
@@ -758,8 +758,8 @@ void LegacyPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
                     (LL_INFO100000,
                      "Native estimate for function size exceeds threshold"
                      " for inlining %g > %g (multiplier = %g)\n",
-                     m_CalleeNativeSizeEstimate / SIZE_SCALE,
-                     threshold / SIZE_SCALE,
+                     (double) m_CalleeNativeSizeEstimate / SIZE_SCALE,
+                     (double) threshold / SIZE_SCALE,
                      m_Multiplier));
 
         // Fail the inline
@@ -779,8 +779,8 @@ void LegacyPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
                     (LL_INFO100000,
                      "Native estimate for function size is within threshold"
                      " for inlining %g <= %g (multiplier = %g)\n",
-                     m_CalleeNativeSizeEstimate / SIZE_SCALE,
-                     threshold / SIZE_SCALE,
+                     (double) m_CalleeNativeSizeEstimate / SIZE_SCALE,
+                     (double) threshold / SIZE_SCALE,
                      m_Multiplier));
 
         // Update candidacy
@@ -1849,7 +1849,7 @@ void ModelPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
         JITLOG_THIS(m_RootCompiler,
                     (LL_INFO100000,
                      "Inline profitable, will decrease code size by %g bytes\n",
-                     -m_ModelCodeSizeEstimate / SIZE_SCALE));
+                     (double) -m_ModelCodeSizeEstimate / SIZE_SCALE));
 
         if (m_IsPrejitRoot)
         {
@@ -1873,7 +1873,7 @@ void ModelPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
                     (LL_INFO100000,
                      "Inline %s profitable: benefit=%g (mult=%g / size=%d)\n",
                      shouldInline ? "is" : "is not",
-                     benefit, m_Multiplier, m_ModelCodeSizeEstimate / SIZE_SCALE));
+                     benefit, m_Multiplier, (double) m_ModelCodeSizeEstimate / SIZE_SCALE));
         if (!shouldInline)
         {
             // Fail the inline
