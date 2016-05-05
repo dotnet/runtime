@@ -267,9 +267,10 @@ public:
 
     HRESULT Register()
     {
-        if (PAL_RegisterForRuntimeStartup(m_processId, RuntimeStartupHandler, this, &m_unregisterToken) != NO_ERROR)
+        DWORD pe = PAL_RegisterForRuntimeStartup(m_processId, RuntimeStartupHandler, this, &m_unregisterToken);
+        if (pe != NO_ERROR)
         {
-            return E_INVALIDARG;
+            return HRESULT_FROM_WIN32(pe);
         }
         return S_OK;
     }
