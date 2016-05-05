@@ -43,6 +43,9 @@ endif()
 # containing the reference instead of using definitions from other modules.
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic -Bsymbolic-functions")
+    add_compile_options(-fstack-protector-strong)
+elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    add_compile_options(-fstack-protector)
 endif()
 
 if(CLI_CMAKE_PLATFORM_ARCH_I386)
