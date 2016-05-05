@@ -19,49 +19,49 @@ namespace System.Reflection.Metadata.Ecma335
         private struct AssemblyRefTableRow { public Version Version; public BlobHandle PublicKeyToken; public StringHandle Name; public StringHandle Culture; public uint Flags; public BlobHandle HashValue; }
         private struct ModuleRow { public ushort Generation; public StringHandle Name; public GuidHandle ModuleVersionId; public GuidHandle EncId; public GuidHandle EncBaseId; }
         private struct AssemblyRow { public uint HashAlgorithm; public Version Version; public ushort Flags; public BlobHandle AssemblyKey; public StringHandle AssemblyName; public StringHandle AssemblyCulture; }
-        private struct ClassLayoutRow { public ushort PackingSize; public uint ClassSize; public uint Parent; }
-        private struct ConstantRow { public byte Type; public uint Parent; public BlobHandle Value; }
-        private struct CustomAttributeRow { public uint Parent; public uint Type; public BlobHandle Value; }
-        private struct DeclSecurityRow { public ushort Action; public uint Parent; public BlobHandle PermissionSet; }
+        private struct ClassLayoutRow { public ushort PackingSize; public uint ClassSize; public int Parent; }
+        private struct ConstantRow { public byte Type; public int Parent; public BlobHandle Value; }
+        private struct CustomAttributeRow { public int Parent; public int Type; public BlobHandle Value; }
+        private struct DeclSecurityRow { public ushort Action; public int Parent; public BlobHandle PermissionSet; }
         private struct EncLogRow { public uint Token; public byte FuncCode; }
         private struct EncMapRow { public uint Token; }
-        private struct EventRow { public ushort EventFlags; public StringHandle Name; public uint EventType; }
-        private struct EventMapRow { public uint Parent; public uint EventList; }
-        private struct ExportedTypeRow { public uint Flags; public uint TypeDefId; public StringHandle TypeName; public StringHandle TypeNamespace; public uint Implementation; }
-        private struct FieldLayoutRow { public uint Offset; public uint Field; }
-        private struct FieldMarshalRow { public uint Parent; public BlobHandle NativeType; }
-        private struct FieldRvaRow { public uint Offset; public uint Field; }
+        private struct EventRow { public ushort EventFlags; public StringHandle Name; public int EventType; }
+        private struct EventMapRow { public int Parent; public int EventList; }
+        private struct ExportedTypeRow { public uint Flags; public uint TypeDefId; public StringHandle TypeName; public StringHandle TypeNamespace; public int Implementation; }
+        private struct FieldLayoutRow { public int Offset; public int Field; }
+        private struct FieldMarshalRow { public int Parent; public BlobHandle NativeType; }
+        private struct FieldRvaRow { public uint Offset; public int Field; }
         private struct FieldDefRow { public ushort Flags; public StringHandle Name; public BlobHandle Signature; }
         private struct FileTableRow { public uint Flags; public StringHandle FileName; public BlobHandle HashValue; }
-        private struct GenericParamConstraintRow { public uint Owner; public uint Constraint; }
-        private struct GenericParamRow { public ushort Number; public ushort Flags; public uint Owner; public StringHandle Name; }
-        private struct ImplMapRow { public ushort MappingFlags; public uint MemberForwarded; public StringHandle ImportName; public uint ImportScope; }
-        private struct InterfaceImplRow { public uint Class; public uint Interface; }
-        private struct ManifestResourceRow { public uint Offset; public uint Flags; public StringHandle Name; public uint Implementation; }
-        private struct MemberRefRow { public uint Class; public StringHandle Name; public BlobHandle Signature; }
-        private struct MethodImplRow { public uint Class; public uint MethodBody; public uint MethodDecl; }
-        private struct MethodSemanticsRow { public ushort Semantic; public uint Method; public uint Association; }
-        private struct MethodSpecRow { public uint Method; public BlobHandle Instantiation; }
-        private struct MethodRow { public int BodyOffset; public ushort ImplFlags; public ushort Flags; public StringHandle Name; public BlobHandle Signature; public uint ParamList; }
+        private struct GenericParamConstraintRow { public int Owner; public int Constraint; }
+        private struct GenericParamRow { public ushort Number; public ushort Flags; public int Owner; public StringHandle Name; }
+        private struct ImplMapRow { public ushort MappingFlags; public int MemberForwarded; public StringHandle ImportName; public int ImportScope; }
+        private struct InterfaceImplRow { public int Class; public int Interface; }
+        private struct ManifestResourceRow { public uint Offset; public uint Flags; public StringHandle Name; public int Implementation; }
+        private struct MemberRefRow { public int Class; public StringHandle Name; public BlobHandle Signature; }
+        private struct MethodImplRow { public int Class; public int MethodBody; public int MethodDecl; }
+        private struct MethodSemanticsRow { public ushort Semantic; public int Method; public int Association; }
+        private struct MethodSpecRow { public int Method; public BlobHandle Instantiation; }
+        private struct MethodRow { public int BodyOffset; public ushort ImplFlags; public ushort Flags; public StringHandle Name; public BlobHandle Signature; public int ParamList; }
         private struct ModuleRefRow { public StringHandle Name; }
-        private struct NestedClassRow { public uint NestedClass; public uint EnclosingClass; }
+        private struct NestedClassRow { public int NestedClass; public int EnclosingClass; }
         private struct ParamRow { public ushort Flags; public ushort Sequence; public StringHandle Name; }
-        private struct PropertyMapRow { public uint Parent; public uint PropertyList; }
+        private struct PropertyMapRow { public int Parent; public int PropertyList; }
         private struct PropertyRow { public ushort PropFlags; public StringHandle Name; public BlobHandle Type; }
-        private struct TypeDefRow { public uint Flags; public StringHandle Name; public StringHandle Namespace; public uint Extends; public uint FieldList; public uint MethodList; }
-        private struct TypeRefRow { public uint ResolutionScope; public StringHandle Name; public StringHandle Namespace; }
+        private struct TypeDefRow { public uint Flags; public StringHandle Name; public StringHandle Namespace; public int Extends; public int FieldList; public int MethodList; }
+        private struct TypeRefRow { public int ResolutionScope; public StringHandle Name; public StringHandle Namespace; }
         private struct TypeSpecRow { public BlobHandle Signature; }
         private struct StandaloneSigRow { public BlobHandle Signature; }
        
         // debug table rows:
         private struct DocumentRow { public BlobHandle Name; public GuidHandle HashAlgorithm; public BlobHandle Hash; public GuidHandle Language; }
-        private struct MethodDebugInformationRow { public uint Document; public BlobHandle SequencePoints; }
-        private struct LocalScopeRow { public uint Method; public uint ImportScope; public uint VariableList; public uint ConstantList; public uint StartOffset; public uint Length; }
+        private struct MethodDebugInformationRow { public int Document; public BlobHandle SequencePoints; }
+        private struct LocalScopeRow { public int Method; public int ImportScope; public int VariableList; public int ConstantList; public int StartOffset; public int Length; }
         private struct LocalVariableRow { public ushort Attributes; public ushort Index; public StringHandle Name; } 
         private struct LocalConstantRow { public StringHandle Name; public BlobHandle Signature; }
-        private struct ImportScopeRow { public uint Parent; public BlobHandle Imports; }
-        private struct StateMachineMethodRow { public uint MoveNextMethod; public uint KickoffMethod; }
-        private struct CustomDebugInformationRow { public uint Parent; public GuidHandle Kind; public BlobHandle Value; }
+        private struct ImportScopeRow { public int Parent; public BlobHandle Imports; }
+        private struct StateMachineMethodRow { public int MoveNextMethod; public int KickoffMethod; }
+        private struct CustomDebugInformationRow { public int Parent; public GuidHandle Kind; public BlobHandle Value; }
 
         // type system tables:
         private readonly List<ModuleRow> _moduleTable = new List<ModuleRow>(1);
@@ -69,15 +69,15 @@ namespace System.Reflection.Metadata.Ecma335
         private readonly List<ClassLayoutRow> _classLayoutTable = new List<ClassLayoutRow>();
 
         private readonly List<ConstantRow> _constantTable = new List<ConstantRow>();
-        private uint _constantTableLastParent;
+        private int _constantTableLastParent;
         private bool _constantTableNeedsSorting;
 
         private readonly List<CustomAttributeRow> _customAttributeTable = new List<CustomAttributeRow>();
-        private uint _customAttributeTableLastParent;
+        private int _customAttributeTableLastParent;
         private bool _customAttributeTableNeedsSorting;
 
         private readonly List<DeclSecurityRow> _declSecurityTable = new List<DeclSecurityRow>();
-        private uint _declSecurityTableLastParent;
+        private int _declSecurityTableLastParent;
         private bool _declSecurityTableNeedsSorting;
 
         private readonly List<EncLogRow> _encLogTable = new List<EncLogRow>();
@@ -88,7 +88,7 @@ namespace System.Reflection.Metadata.Ecma335
         private readonly List<FieldLayoutRow> _fieldLayoutTable = new List<FieldLayoutRow>();
 
         private readonly List<FieldMarshalRow> _fieldMarshalTable = new List<FieldMarshalRow>();
-        private uint _fieldMarshalTableLastParent;
+        private int _fieldMarshalTableLastParent;
         private bool _fieldMarshalTableNeedsSorting;
 
         private readonly List<FieldRvaRow> _fieldRvaTable = new List<FieldRvaRow>();
@@ -103,7 +103,7 @@ namespace System.Reflection.Metadata.Ecma335
         private readonly List<MethodImplRow> _methodImplTable = new List<MethodImplRow>();
 
         private readonly List<MethodSemanticsRow> _methodSemanticsTable = new List<MethodSemanticsRow>();
-        private uint _methodSemanticsTableLastAssociation;
+        private int _methodSemanticsTableLastAssociation;
         private bool _methodSemanticsTableNeedsSorting;
 
         private readonly List<MethodSpecRow> _methodSpecTable = new List<MethodSpecRow>();
@@ -273,9 +273,9 @@ namespace System.Reflection.Metadata.Ecma335
                 Flags = (uint)attributes,
                 Name = name,
                 Namespace = @namespace,
-                Extends = baseType.IsNil ? 0 : (uint)CodedIndex.ToTypeDefOrRefOrSpec(baseType),
-                FieldList = (uint)MetadataTokens.GetRowNumber(fieldList),
-                MethodList = (uint)MetadataTokens.GetRowNumber(methodList)
+                Extends = baseType.IsNil ? 0 : CodedIndex.ToTypeDefOrRefOrSpec(baseType),
+                FieldList = MetadataTokens.GetRowNumber(fieldList),
+                MethodList = MetadataTokens.GetRowNumber(methodList)
             });
 
             return MetadataTokens.TypeDefinitionHandle(_typeDefTable.Count);
@@ -288,7 +288,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             _classLayoutTable.Add(new ClassLayoutRow
             {
-                Parent = (uint)MetadataTokens.GetRowNumber(type),
+                Parent = MetadataTokens.GetRowNumber(type),
                 PackingSize = packingSize,
                 ClassSize = size
             });
@@ -300,8 +300,8 @@ namespace System.Reflection.Metadata.Ecma335
         {
             _interfaceImplTable.Add(new InterfaceImplRow
             {
-                Class = (uint)MetadataTokens.GetRowNumber(type),
-                Interface = (uint)CodedIndex.ToTypeDefOrRefOrSpec(implementedInterface)
+                Class = MetadataTokens.GetRowNumber(type),
+                Interface = CodedIndex.ToTypeDefOrRefOrSpec(implementedInterface)
             });
 
             // TODO:
@@ -314,8 +314,8 @@ namespace System.Reflection.Metadata.Ecma335
         {
             _nestedClassTable.Add(new NestedClassRow
             {
-                NestedClass = (uint)MetadataTokens.GetRowNumber(type),
-                EnclosingClass = (uint)MetadataTokens.GetRowNumber(enclosingType)
+                NestedClass = MetadataTokens.GetRowNumber(type),
+                EnclosingClass = MetadataTokens.GetRowNumber(enclosingType)
             });
         }
 
@@ -329,7 +329,7 @@ namespace System.Reflection.Metadata.Ecma335
 
             _typeRefTable.Add(new TypeRefRow
             {
-                ResolutionScope = (uint)CodedIndex.ToResolutionScope(resolutionScope),
+                ResolutionScope = CodedIndex.ToResolutionScope(resolutionScope),
                 Name = name,
                 Namespace = @namespace
             });
@@ -373,8 +373,8 @@ namespace System.Reflection.Metadata.Ecma335
         {
             _propertyMapTable.Add(new PropertyMapRow
             {
-                Parent = (uint)MetadataTokens.GetRowNumber(declaringType),
-                PropertyList = (uint)MetadataTokens.GetRowNumber(propertyList)
+                Parent = MetadataTokens.GetRowNumber(declaringType),
+                PropertyList = MetadataTokens.GetRowNumber(propertyList)
             });
         }
 
@@ -384,7 +384,7 @@ namespace System.Reflection.Metadata.Ecma335
             {
                 EventFlags = (ushort)attributes,
                 Name = name,
-                EventType = (uint)CodedIndex.ToTypeDefOrRefOrSpec(type)
+                EventType = CodedIndex.ToTypeDefOrRefOrSpec(type)
             });
 
             return MetadataTokens.EventDefinitionHandle(_eventTable.Count);
@@ -394,14 +394,14 @@ namespace System.Reflection.Metadata.Ecma335
         {
             _eventMapTable.Add(new EventMapRow
             {
-                Parent = (uint)MetadataTokens.GetRowNumber(declaringType),
-                EventList = (uint)MetadataTokens.GetRowNumber(eventList)
+                Parent = MetadataTokens.GetRowNumber(declaringType),
+                EventList = MetadataTokens.GetRowNumber(eventList)
             });
         }
 
         public ConstantHandle AddConstant(EntityHandle parent, object value)
         {
-            uint parentCodedIndex = (uint)CodedIndex.ToHasConstant(parent);
+            int parentCodedIndex = CodedIndex.ToHasConstant(parent);
 
             // the table is required to be sorted by Parent:
             _constantTableNeedsSorting |= parentCodedIndex < _constantTableLastParent;
@@ -419,7 +419,7 @@ namespace System.Reflection.Metadata.Ecma335
 
         public void AddMethodSemantics(EntityHandle association, ushort semantics, MethodDefinitionHandle methodDefinition)
         {
-            uint associationCodedIndex = (uint)CodedIndex.ToHasSemantics(association);
+            int associationCodedIndex = CodedIndex.ToHasSemantics(association);
 
             // the table is required to be sorted by Association:
             _methodSemanticsTableNeedsSorting |= associationCodedIndex < _methodSemanticsTableLastAssociation;
@@ -428,14 +428,14 @@ namespace System.Reflection.Metadata.Ecma335
             _methodSemanticsTable.Add(new MethodSemanticsRow
             {
                 Association = associationCodedIndex,
-                Method = (uint)MetadataTokens.GetRowNumber(methodDefinition),
+                Method = MetadataTokens.GetRowNumber(methodDefinition),
                 Semantic = semantics
             });
         }
 
         public CustomAttributeHandle AddCustomAttribute(EntityHandle parent, EntityHandle constructor, BlobHandle value)
         {
-            uint parentCodedIndex = (uint)CodedIndex.ToHasCustomAttribute(parent);
+            int parentCodedIndex = CodedIndex.ToHasCustomAttribute(parent);
 
             // the table is required to be sorted by Parent:
             _customAttributeTableNeedsSorting |= parentCodedIndex < _customAttributeTableLastParent;
@@ -444,7 +444,7 @@ namespace System.Reflection.Metadata.Ecma335
             _customAttributeTable.Add(new CustomAttributeRow
             {
                 Parent = parentCodedIndex,
-                Type = (uint)CodedIndex.ToCustomAttributeType(constructor),
+                Type = CodedIndex.ToCustomAttributeType(constructor),
                 Value = value
             });
 
@@ -455,7 +455,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             _methodSpecTable.Add(new MethodSpecRow
             {
-                Method = (uint)CodedIndex.ToMethodDefOrRef(method),
+                Method = CodedIndex.ToMethodDefOrRef(method),
                 Instantiation = instantiation
             });
 
@@ -495,7 +495,7 @@ namespace System.Reflection.Metadata.Ecma335
                 Flags = (ushort)attributes,
                 Name = name,
                 Number = (ushort)index,
-                Owner = (uint)CodedIndex.ToTypeOrMethodDef(parent)
+                Owner = CodedIndex.ToTypeOrMethodDef(parent)
             });
 
             return MetadataTokens.GenericParameterHandle(_genericParamTable.Count);
@@ -507,8 +507,8 @@ namespace System.Reflection.Metadata.Ecma335
         {
             _genericParamConstraintTable.Add(new GenericParamConstraintRow
             {
-                Owner = (uint)MetadataTokens.GetRowNumber(genericParameter),
-                Constraint = (uint)CodedIndex.ToTypeDefOrRefOrSpec(constraint),
+                Owner = MetadataTokens.GetRowNumber(genericParameter),
+                Constraint = CodedIndex.ToTypeDefOrRefOrSpec(constraint),
             });
 
             return MetadataTokens.GenericParameterConstraintHandle(_genericParamConstraintTable.Count);
@@ -535,8 +535,8 @@ namespace System.Reflection.Metadata.Ecma335
         {
             _fieldLayoutTable.Add(new FieldLayoutRow
             {
-                Field = (uint)MetadataTokens.GetRowNumber(field),
-                Offset = (uint)offset
+                Field = MetadataTokens.GetRowNumber(field),
+                Offset = offset
             });
         }
 
@@ -544,7 +544,7 @@ namespace System.Reflection.Metadata.Ecma335
             EntityHandle parent,
             BlobHandle descriptor)
         {
-            uint codedIndex = (uint)CodedIndex.ToHasFieldMarshal(parent);
+            int codedIndex = CodedIndex.ToHasFieldMarshal(parent);
 
             // the table is required to be sorted by Parent:
             _fieldMarshalTableNeedsSorting |= codedIndex < _fieldMarshalTableLastParent;
@@ -563,7 +563,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             _fieldRvaTable.Add(new FieldRvaRow
             {
-                Field = (uint)MetadataTokens.GetRowNumber(field),
+                Field = MetadataTokens.GetRowNumber(field),
                 Offset = (uint)relativeVirtualAddress
             });
         }
@@ -583,7 +583,7 @@ namespace System.Reflection.Metadata.Ecma335
                 Name = name,
                 Signature = signature,
                 BodyOffset = bodyOffset,
-                ParamList = (uint)MetadataTokens.GetRowNumber(paramList)
+                ParamList = MetadataTokens.GetRowNumber(paramList)
             });
 
             return MetadataTokens.MethodDefinitionHandle(_methodDefTable.Count);
@@ -597,9 +597,9 @@ namespace System.Reflection.Metadata.Ecma335
         {
             _implMapTable.Add(new ImplMapRow
             {
-                MemberForwarded = (uint)CodedIndex.ToMemberForwarded(member),
+                MemberForwarded = CodedIndex.ToMemberForwarded(member),
                 ImportName = name,
-                ImportScope = (uint)MetadataTokens.GetRowNumber(module),
+                ImportScope = MetadataTokens.GetRowNumber(module),
                 MappingFlags = (ushort)attributes,
             });
         }
@@ -611,9 +611,9 @@ namespace System.Reflection.Metadata.Ecma335
         {
             _methodImplTable.Add(new MethodImplRow
             {
-                Class = (uint)MetadataTokens.GetRowNumber(type),
-                MethodBody = (uint)CodedIndex.ToMethodDefOrRef(methodBody),
-                MethodDecl = (uint)CodedIndex.ToMethodDefOrRef(methodDeclaration)
+                Class = MetadataTokens.GetRowNumber(type),
+                MethodBody = CodedIndex.ToMethodDefOrRef(methodBody),
+                MethodDecl = CodedIndex.ToMethodDefOrRef(methodDeclaration)
             });
 
             return MetadataTokens.MethodImplementationHandle(_methodImplTable.Count);
@@ -626,7 +626,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             _memberRefTable.Add(new MemberRefRow
             {
-                Class = (uint)CodedIndex.ToMemberRefParent(parent),
+                Class = CodedIndex.ToMemberRefParent(parent),
                 Name = name,
                 Signature = signature
             });
@@ -638,14 +638,14 @@ namespace System.Reflection.Metadata.Ecma335
             ManifestResourceAttributes attributes,
             StringHandle name,
             EntityHandle implementation,
-            long offset)
+            uint offset)
         {
             _manifestResourceTable.Add(new ManifestResourceRow
             {
                 Flags = (uint)attributes,
                 Name = name,
-                Implementation = implementation.IsNil ? 0 : (uint)CodedIndex.ToImplementation(implementation),
-                Offset = (uint)offset
+                Implementation = implementation.IsNil ? 0 : CodedIndex.ToImplementation(implementation),
+                Offset = offset
             });
 
             return MetadataTokens.ManifestResourceHandle(_manifestResourceTable.Count);
@@ -676,7 +676,7 @@ namespace System.Reflection.Metadata.Ecma335
             _exportedTypeTable.Add(new ExportedTypeRow
             {
                 Flags = (uint)attributes,
-                Implementation = (uint)CodedIndex.ToImplementation(implementation),
+                Implementation = CodedIndex.ToImplementation(implementation),
                 TypeNamespace = @namespace,
                 TypeName = name,
                 TypeDefId = (uint)typeDefinitionId
@@ -696,7 +696,7 @@ namespace System.Reflection.Metadata.Ecma335
             DeclarativeSecurityAction action,
             BlobHandle permissionSet)
         {
-            uint parentCodedIndex = (uint)CodedIndex.ToHasDeclSecurity(parent);
+            int parentCodedIndex = CodedIndex.ToHasDeclSecurity(parent);
 
             // the table is required to be sorted by Parent:
             _declSecurityTableNeedsSorting |= parentCodedIndex < _declSecurityTableLastParent;
@@ -746,7 +746,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             _methodDebugInformationTable.Add(new MethodDebugInformationRow
             {
-                Document = (uint)MetadataTokens.GetRowNumber(document),
+                Document = MetadataTokens.GetRowNumber(document),
                 SequencePoints = sequencePoints
             });
 
@@ -758,12 +758,12 @@ namespace System.Reflection.Metadata.Ecma335
         {
             _localScopeTable.Add(new LocalScopeRow
             {
-                Method = (uint)MetadataTokens.GetRowNumber(method),
-                ImportScope = (uint)MetadataTokens.GetRowNumber(importScope),
-                VariableList = (uint)MetadataTokens.GetRowNumber(variableList),
-                ConstantList = (uint)MetadataTokens.GetRowNumber(constantList),
-                StartOffset = (uint)startOffset,
-                Length = (uint)length
+                Method = MetadataTokens.GetRowNumber(method),
+                ImportScope = MetadataTokens.GetRowNumber(importScope),
+                VariableList = MetadataTokens.GetRowNumber(variableList),
+                ConstantList = MetadataTokens.GetRowNumber(constantList),
+                StartOffset = startOffset,
+                Length = length
             });
 
             return MetadataTokens.LocalScopeHandle(_localScopeTable.Count);
@@ -796,7 +796,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             _importScopeTable.Add(new ImportScopeRow
             {
-                Parent = (uint)MetadataTokens.GetRowNumber(parentScope),
+                Parent = MetadataTokens.GetRowNumber(parentScope),
                 Imports = imports
             });
 
@@ -807,8 +807,8 @@ namespace System.Reflection.Metadata.Ecma335
         {
             _stateMachineMethodTable.Add(new StateMachineMethodRow
             {
-                MoveNextMethod  = (uint)MetadataTokens.GetRowNumber(moveNextMethod),
-                KickoffMethod = (uint)MetadataTokens.GetRowNumber(kickoffMethod)
+                MoveNextMethod  = MetadataTokens.GetRowNumber(moveNextMethod),
+                KickoffMethod = MetadataTokens.GetRowNumber(kickoffMethod)
             });
         }
 
@@ -816,7 +816,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             _customDebugInformationTable.Add(new CustomDebugInformationRow
             {
-                Parent = (uint)CodedIndex.ToHasCustomDebugInformation(parent),
+                Parent = CodedIndex.ToHasCustomDebugInformation(parent),
                 Kind = kind,
                 Value = value
             });
@@ -1167,10 +1167,10 @@ namespace System.Reflection.Metadata.Ecma335
             foreach (var moduleRow in _moduleTable)
             {
                 writer.WriteUInt16(moduleRow.Generation);
-                writer.WriteReference((uint)GetHeapOffset(moduleRow.Name), metadataSizes.StringIndexSize);
-                writer.WriteReference((uint)GetHeapOffset(moduleRow.ModuleVersionId), metadataSizes.GuidIndexSize);
-                writer.WriteReference((uint)GetHeapOffset(moduleRow.EncId), metadataSizes.GuidIndexSize);
-                writer.WriteReference((uint)GetHeapOffset(moduleRow.EncBaseId), metadataSizes.GuidIndexSize);
+                writer.WriteReference(GetHeapOffset(moduleRow.Name), metadataSizes.StringIndexSize);
+                writer.WriteReference(GetHeapOffset(moduleRow.ModuleVersionId), metadataSizes.GuidIndexSize);
+                writer.WriteReference(GetHeapOffset(moduleRow.EncId), metadataSizes.GuidIndexSize);
+                writer.WriteReference(GetHeapOffset(moduleRow.EncBaseId), metadataSizes.GuidIndexSize);
             }
         }
 
@@ -1196,8 +1196,8 @@ namespace System.Reflection.Metadata.Ecma335
             foreach (TypeRefRow typeRef in _typeRefTable)
             {
                 writer.WriteReference(typeRef.ResolutionScope, metadataSizes.ResolutionScopeCodedIndexSize);
-                writer.WriteReference((uint)GetHeapOffset(typeRef.Name), metadataSizes.StringIndexSize);
-                writer.WriteReference((uint)GetHeapOffset(typeRef.Namespace), metadataSizes.StringIndexSize);
+                writer.WriteReference(GetHeapOffset(typeRef.Name), metadataSizes.StringIndexSize);
+                writer.WriteReference(GetHeapOffset(typeRef.Namespace), metadataSizes.StringIndexSize);
             }
         }
 
@@ -1206,8 +1206,8 @@ namespace System.Reflection.Metadata.Ecma335
             foreach (TypeDefRow typeDef in _typeDefTable)
             {
                 writer.WriteUInt32(typeDef.Flags);
-                writer.WriteReference((uint)GetHeapOffset(typeDef.Name), metadataSizes.StringIndexSize);
-                writer.WriteReference((uint)GetHeapOffset(typeDef.Namespace), metadataSizes.StringIndexSize);
+                writer.WriteReference(GetHeapOffset(typeDef.Name), metadataSizes.StringIndexSize);
+                writer.WriteReference(GetHeapOffset(typeDef.Namespace), metadataSizes.StringIndexSize);
                 writer.WriteReference(typeDef.Extends, metadataSizes.TypeDefOrRefCodedIndexSize);
                 writer.WriteReference(typeDef.FieldList, metadataSizes.FieldDefIndexSize);
                 writer.WriteReference(typeDef.MethodList, metadataSizes.MethodDefIndexSize);
@@ -1219,8 +1219,8 @@ namespace System.Reflection.Metadata.Ecma335
             foreach (FieldDefRow fieldDef in _fieldTable)
             {
                 writer.WriteUInt16(fieldDef.Flags);
-                writer.WriteReference((uint)GetHeapOffset(fieldDef.Name), metadataSizes.StringIndexSize);
-                writer.WriteReference((uint)GetHeapOffset(fieldDef.Signature), metadataSizes.BlobIndexSize);
+                writer.WriteReference(GetHeapOffset(fieldDef.Name), metadataSizes.StringIndexSize);
+                writer.WriteReference(GetHeapOffset(fieldDef.Signature), metadataSizes.BlobIndexSize);
             }
         }
 
@@ -1234,13 +1234,13 @@ namespace System.Reflection.Metadata.Ecma335
                 }
                 else
                 {
-                    writer.WriteUInt32((uint)(methodBodyStreamRva + method.BodyOffset));
+                    writer.WriteInt32(methodBodyStreamRva + method.BodyOffset);
                 }
 
                 writer.WriteUInt16(method.ImplFlags);
                 writer.WriteUInt16(method.Flags);
-                writer.WriteReference((uint)GetHeapOffset(method.Name), metadataSizes.StringIndexSize);
-                writer.WriteReference((uint)GetHeapOffset(method.Signature), metadataSizes.BlobIndexSize);
+                writer.WriteReference(GetHeapOffset(method.Name), metadataSizes.StringIndexSize);
+                writer.WriteReference(GetHeapOffset(method.Signature), metadataSizes.BlobIndexSize);
                 writer.WriteReference(method.ParamList, metadataSizes.ParameterIndexSize);
             }
         }
@@ -1251,7 +1251,7 @@ namespace System.Reflection.Metadata.Ecma335
             {
                 writer.WriteUInt16(param.Flags);
                 writer.WriteUInt16(param.Sequence);
-                writer.WriteReference((uint)GetHeapOffset(param.Name), metadataSizes.StringIndexSize);
+                writer.WriteReference(GetHeapOffset(param.Name), metadataSizes.StringIndexSize);
             }
         }
 
@@ -1271,8 +1271,8 @@ namespace System.Reflection.Metadata.Ecma335
             foreach (MemberRefRow memberRef in _memberRefTable)
             {
                 writer.WriteReference(memberRef.Class, metadataSizes.MemberRefParentCodedIndexSize);
-                writer.WriteReference((uint)GetHeapOffset(memberRef.Name), metadataSizes.StringIndexSize);
-                writer.WriteReference((uint)GetHeapOffset(memberRef.Signature), metadataSizes.BlobIndexSize);
+                writer.WriteReference(GetHeapOffset(memberRef.Name), metadataSizes.StringIndexSize);
+                writer.WriteReference(GetHeapOffset(memberRef.Signature), metadataSizes.BlobIndexSize);
             }
         }
 
@@ -1286,7 +1286,7 @@ namespace System.Reflection.Metadata.Ecma335
                 writer.WriteByte(constant.Type);
                 writer.WriteByte(0);
                 writer.WriteReference(constant.Parent, metadataSizes.HasConstantCodedIndexSize);
-                writer.WriteReference((uint)GetHeapOffset(constant.Value), metadataSizes.BlobIndexSize);
+                writer.WriteReference(GetHeapOffset(constant.Value), metadataSizes.BlobIndexSize);
             }
         }
 
@@ -1300,7 +1300,7 @@ namespace System.Reflection.Metadata.Ecma335
             {
                 writer.WriteReference(customAttribute.Parent, metadataSizes.HasCustomAttributeCodedIndexSize);
                 writer.WriteReference(customAttribute.Type, metadataSizes.CustomAttributeTypeCodedIndexSize);
-                writer.WriteReference((uint)GetHeapOffset(customAttribute.Value), metadataSizes.BlobIndexSize);
+                writer.WriteReference(GetHeapOffset(customAttribute.Value), metadataSizes.BlobIndexSize);
             }
         }
 
@@ -1312,7 +1312,7 @@ namespace System.Reflection.Metadata.Ecma335
             foreach (FieldMarshalRow fieldMarshal in ordered)
             {
                 writer.WriteReference(fieldMarshal.Parent, metadataSizes.HasFieldMarshalCodedIndexSize);
-                writer.WriteReference((uint)GetHeapOffset(fieldMarshal.NativeType), metadataSizes.BlobIndexSize);
+                writer.WriteReference(GetHeapOffset(fieldMarshal.NativeType), metadataSizes.BlobIndexSize);
             }
         }
 
@@ -1326,7 +1326,7 @@ namespace System.Reflection.Metadata.Ecma335
             {
                 writer.WriteUInt16(declSecurity.Action);
                 writer.WriteReference(declSecurity.Parent, metadataSizes.DeclSecurityCodedIndexSize);
-                writer.WriteReference((uint)GetHeapOffset(declSecurity.PermissionSet), metadataSizes.BlobIndexSize);
+                writer.WriteReference(GetHeapOffset(declSecurity.PermissionSet), metadataSizes.BlobIndexSize);
             }
         }
 
@@ -1356,7 +1356,7 @@ namespace System.Reflection.Metadata.Ecma335
 #endif
             foreach (FieldLayoutRow fieldLayout in _fieldLayoutTable)
             {
-                writer.WriteUInt32(fieldLayout.Offset);
+                writer.WriteInt32(fieldLayout.Offset);
                 writer.WriteReference(fieldLayout.Field, metadataSizes.FieldDefIndexSize);
             }
         }
@@ -1365,7 +1365,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             foreach (StandaloneSigRow row in _standAloneSigTable)
             {
-                writer.WriteReference((uint)GetHeapOffset(row.Signature), metadataSizes.BlobIndexSize);
+                writer.WriteReference(GetHeapOffset(row.Signature), metadataSizes.BlobIndexSize);
             }
         }
 
@@ -1383,7 +1383,7 @@ namespace System.Reflection.Metadata.Ecma335
             foreach (EventRow eventRow in _eventTable)
             {
                 writer.WriteUInt16(eventRow.EventFlags);
-                writer.WriteReference((uint)GetHeapOffset(eventRow.Name), metadataSizes.StringIndexSize);
+                writer.WriteReference(GetHeapOffset(eventRow.Name), metadataSizes.StringIndexSize);
                 writer.WriteReference(eventRow.EventType, metadataSizes.TypeDefOrRefCodedIndexSize);
             }
         }
@@ -1402,8 +1402,8 @@ namespace System.Reflection.Metadata.Ecma335
             foreach (PropertyRow property in _propertyTable)
             {
                 writer.WriteUInt16(property.PropFlags);
-                writer.WriteReference((uint)GetHeapOffset(property.Name), metadataSizes.StringIndexSize);
-                writer.WriteReference((uint)GetHeapOffset(property.Type), metadataSizes.BlobIndexSize);
+                writer.WriteReference(GetHeapOffset(property.Name), metadataSizes.StringIndexSize);
+                writer.WriteReference(GetHeapOffset(property.Type), metadataSizes.BlobIndexSize);
             }
         }
 
@@ -1441,7 +1441,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             foreach (ModuleRefRow moduleRef in _moduleRefTable)
             {
-                writer.WriteReference((uint)GetHeapOffset(moduleRef.Name), metadataSizes.StringIndexSize);
+                writer.WriteReference(GetHeapOffset(moduleRef.Name), metadataSizes.StringIndexSize);
             }
         }
 
@@ -1449,7 +1449,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             foreach (TypeSpecRow typeSpec in _typeSpecTable)
             {
-                writer.WriteReference((uint)GetHeapOffset(typeSpec.Signature), metadataSizes.BlobIndexSize);
+                writer.WriteReference(GetHeapOffset(typeSpec.Signature), metadataSizes.BlobIndexSize);
             }
         }
 
@@ -1465,7 +1465,7 @@ namespace System.Reflection.Metadata.Ecma335
             {
                 writer.WriteUInt16(implMap.MappingFlags);
                 writer.WriteReference(implMap.MemberForwarded, metadataSizes.MemberForwardedCodedIndexSize);
-                writer.WriteReference((uint)GetHeapOffset(implMap.ImportName), metadataSizes.StringIndexSize);
+                writer.WriteReference(GetHeapOffset(implMap.ImportName), metadataSizes.StringIndexSize);
                 writer.WriteReference(implMap.ImportScope, metadataSizes.ModuleRefIndexSize);
             }
         }
@@ -1495,9 +1495,9 @@ namespace System.Reflection.Metadata.Ecma335
                 writer.WriteUInt16((ushort)row.Version.Build);
                 writer.WriteUInt16((ushort)row.Version.Revision);
                 writer.WriteUInt32(row.Flags);
-                writer.WriteReference((uint)GetHeapOffset(row.AssemblyKey), metadataSizes.BlobIndexSize);
-                writer.WriteReference((uint)GetHeapOffset(row.AssemblyName), metadataSizes.StringIndexSize);
-                writer.WriteReference((uint)GetHeapOffset(row.AssemblyCulture), metadataSizes.StringIndexSize);
+                writer.WriteReference(GetHeapOffset(row.AssemblyKey), metadataSizes.BlobIndexSize);
+                writer.WriteReference(GetHeapOffset(row.AssemblyName), metadataSizes.StringIndexSize);
+                writer.WriteReference(GetHeapOffset(row.AssemblyCulture), metadataSizes.StringIndexSize);
             }
         }
 
@@ -1510,10 +1510,10 @@ namespace System.Reflection.Metadata.Ecma335
                 writer.WriteUInt16((ushort)row.Version.Build);
                 writer.WriteUInt16((ushort)row.Version.Revision);
                 writer.WriteUInt32(row.Flags);
-                writer.WriteReference((uint)GetHeapOffset(row.PublicKeyToken), metadataSizes.BlobIndexSize);
-                writer.WriteReference((uint)GetHeapOffset(row.Name), metadataSizes.StringIndexSize);
-                writer.WriteReference((uint)GetHeapOffset(row.Culture), metadataSizes.StringIndexSize);
-                writer.WriteReference((uint)GetHeapOffset(row.HashValue), metadataSizes.BlobIndexSize);
+                writer.WriteReference(GetHeapOffset(row.PublicKeyToken), metadataSizes.BlobIndexSize);
+                writer.WriteReference(GetHeapOffset(row.Name), metadataSizes.StringIndexSize);
+                writer.WriteReference(GetHeapOffset(row.Culture), metadataSizes.StringIndexSize);
+                writer.WriteReference(GetHeapOffset(row.HashValue), metadataSizes.BlobIndexSize);
             }
         }
 
@@ -1522,8 +1522,8 @@ namespace System.Reflection.Metadata.Ecma335
             foreach (FileTableRow fileReference in _fileTable)
             {
                 writer.WriteUInt32(fileReference.Flags);
-                writer.WriteReference((uint)GetHeapOffset(fileReference.FileName), metadataSizes.StringIndexSize);
-                writer.WriteReference((uint)GetHeapOffset(fileReference.HashValue), metadataSizes.BlobIndexSize);
+                writer.WriteReference(GetHeapOffset(fileReference.FileName), metadataSizes.StringIndexSize);
+                writer.WriteReference(GetHeapOffset(fileReference.HashValue), metadataSizes.BlobIndexSize);
             }
         }
 
@@ -1531,10 +1531,10 @@ namespace System.Reflection.Metadata.Ecma335
         {
             foreach (ExportedTypeRow exportedType in _exportedTypeTable)
             {
-                writer.WriteUInt32((uint)exportedType.Flags);
+                writer.WriteUInt32(exportedType.Flags);
                 writer.WriteUInt32(exportedType.TypeDefId);
-                writer.WriteReference((uint)GetHeapOffset(exportedType.TypeName), metadataSizes.StringIndexSize);
-                writer.WriteReference((uint)GetHeapOffset(exportedType.TypeNamespace), metadataSizes.StringIndexSize);
+                writer.WriteReference(GetHeapOffset(exportedType.TypeName), metadataSizes.StringIndexSize);
+                writer.WriteReference(GetHeapOffset(exportedType.TypeNamespace), metadataSizes.StringIndexSize);
                 writer.WriteReference(exportedType.Implementation, metadataSizes.ImplementationCodedIndexSize);
             }
         }
@@ -1545,7 +1545,7 @@ namespace System.Reflection.Metadata.Ecma335
             {
                 writer.WriteUInt32(manifestResource.Offset);
                 writer.WriteUInt32(manifestResource.Flags);
-                writer.WriteReference((uint)GetHeapOffset(manifestResource.Name), metadataSizes.StringIndexSize);
+                writer.WriteReference(GetHeapOffset(manifestResource.Name), metadataSizes.StringIndexSize);
                 writer.WriteReference(manifestResource.Implementation, metadataSizes.ImplementationCodedIndexSize);
             }
         }
@@ -1580,7 +1580,7 @@ namespace System.Reflection.Metadata.Ecma335
                 writer.WriteUInt16(genericParam.Number);
                 writer.WriteUInt16(genericParam.Flags);
                 writer.WriteReference(genericParam.Owner, metadataSizes.TypeOrMethodDefCodedIndexSize);
-                writer.WriteReference((uint)GetHeapOffset(genericParam.Name), metadataSizes.StringIndexSize);
+                writer.WriteReference(GetHeapOffset(genericParam.Name), metadataSizes.StringIndexSize);
             }
         }
 
@@ -1604,7 +1604,7 @@ namespace System.Reflection.Metadata.Ecma335
             foreach (MethodSpecRow methodSpec in _methodSpecTable)
             {
                 writer.WriteReference(methodSpec.Method, metadataSizes.MethodDefOrRefCodedIndexSize);
-                writer.WriteReference((uint)GetHeapOffset(methodSpec.Instantiation), metadataSizes.BlobIndexSize);
+                writer.WriteReference(GetHeapOffset(methodSpec.Instantiation), metadataSizes.BlobIndexSize);
             }
         }
 
@@ -1612,10 +1612,10 @@ namespace System.Reflection.Metadata.Ecma335
         {
             foreach (var row in _documentTable)
             {
-                writer.WriteReference((uint)GetHeapOffset(row.Name), metadataSizes.BlobIndexSize);
-                writer.WriteReference((uint)GetHeapOffset(row.HashAlgorithm), metadataSizes.GuidIndexSize);
-                writer.WriteReference((uint)GetHeapOffset(row.Hash), metadataSizes.BlobIndexSize);
-                writer.WriteReference((uint)GetHeapOffset(row.Language), metadataSizes.GuidIndexSize);
+                writer.WriteReference(GetHeapOffset(row.Name), metadataSizes.BlobIndexSize);
+                writer.WriteReference(GetHeapOffset(row.HashAlgorithm), metadataSizes.GuidIndexSize);
+                writer.WriteReference(GetHeapOffset(row.Hash), metadataSizes.BlobIndexSize);
+                writer.WriteReference(GetHeapOffset(row.Language), metadataSizes.GuidIndexSize);
             }
         }
 
@@ -1624,7 +1624,7 @@ namespace System.Reflection.Metadata.Ecma335
             foreach (var row in _methodDebugInformationTable)
             {
                 writer.WriteReference(row.Document, metadataSizes.DocumentIndexSize);
-                writer.WriteReference((uint)GetHeapOffset(row.SequencePoints), metadataSizes.BlobIndexSize);
+                writer.WriteReference(GetHeapOffset(row.SequencePoints), metadataSizes.BlobIndexSize);
             }
         }
 
@@ -1651,8 +1651,8 @@ namespace System.Reflection.Metadata.Ecma335
                 writer.WriteReference(row.ImportScope, metadataSizes.ImportScopeIndexSize);
                 writer.WriteReference(row.VariableList, metadataSizes.LocalVariableIndexSize);
                 writer.WriteReference(row.ConstantList, metadataSizes.LocalConstantIndexSize);
-                writer.WriteUInt32(row.StartOffset);
-                writer.WriteUInt32(row.Length);
+                writer.WriteInt32(row.StartOffset);
+                writer.WriteInt32(row.Length);
             }
         }
 
@@ -1662,7 +1662,7 @@ namespace System.Reflection.Metadata.Ecma335
             {
                 writer.WriteUInt16(row.Attributes);
                 writer.WriteUInt16(row.Index);
-                writer.WriteReference((uint)GetHeapOffset(row.Name), metadataSizes.StringIndexSize);
+                writer.WriteReference(GetHeapOffset(row.Name), metadataSizes.StringIndexSize);
             }
         }
 
@@ -1670,8 +1670,8 @@ namespace System.Reflection.Metadata.Ecma335
         {
             foreach (var row in _localConstantTable)
             {
-                writer.WriteReference((uint)GetHeapOffset(row.Name), metadataSizes.StringIndexSize);
-                writer.WriteReference((uint)GetHeapOffset(row.Signature), metadataSizes.BlobIndexSize);
+                writer.WriteReference(GetHeapOffset(row.Name), metadataSizes.StringIndexSize);
+                writer.WriteReference(GetHeapOffset(row.Signature), metadataSizes.BlobIndexSize);
             }
         }
 
@@ -1680,7 +1680,7 @@ namespace System.Reflection.Metadata.Ecma335
             foreach (var row in _importScopeTable)
             {
                 writer.WriteReference(row.Parent, metadataSizes.ImportScopeIndexSize);
-                writer.WriteReference((uint)GetHeapOffset(row.Imports), metadataSizes.BlobIndexSize);
+                writer.WriteReference(GetHeapOffset(row.Imports), metadataSizes.BlobIndexSize);
             }
         }
 
@@ -1710,8 +1710,8 @@ namespace System.Reflection.Metadata.Ecma335
             }))
             {
                 writer.WriteReference(row.Parent, metadataSizes.HasCustomDebugInformationSize);
-                writer.WriteReference((uint)GetHeapOffset(row.Kind), metadataSizes.GuidIndexSize);
-                writer.WriteReference((uint)GetHeapOffset(row.Value), metadataSizes.BlobIndexSize);
+                writer.WriteReference(GetHeapOffset(row.Kind), metadataSizes.GuidIndexSize);
+                writer.WriteReference(GetHeapOffset(row.Value), metadataSizes.BlobIndexSize);
             }
         }
 

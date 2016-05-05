@@ -14,7 +14,7 @@ namespace System.Reflection.Metadata.Tests
         {
             var builder = new MetadataBuilder();
 
-            builder.AddModule(default(Int32), default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
+            builder.AddModule(default(int), default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
             Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.Module]);
 
             builder.AddAssembly(default(StringHandle), default(Version), default(StringHandle), default(BlobHandle), default(AssemblyFlags), default(AssemblyHashAlgorithm));
@@ -28,7 +28,7 @@ namespace System.Reflection.Metadata.Tests
             Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.TypeDef]);
             Assert.Equal(1, MetadataTokens.GetRowNumber(typeDefinition));
 
-            builder.AddTypeLayout(default(TypeDefinitionHandle), default(UInt16), default(UInt32));
+            builder.AddTypeLayout(default(TypeDefinitionHandle), default(ushort), default(uint));
             Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.ClassLayout]);
 
             builder.AddInterfaceImplementation(MetadataTokens.TypeDefinitionHandle(1), MetadataTokens.TypeDefinitionHandle(1));
@@ -59,10 +59,10 @@ namespace System.Reflection.Metadata.Tests
             builder.AddEventMap(default(TypeDefinitionHandle), default(EventDefinitionHandle));
             Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.EventMap]);
 
-            builder.AddConstant(MetadataTokens.FieldDefinitionHandle(1), default(Object));
+            builder.AddConstant(MetadataTokens.FieldDefinitionHandle(1), default(object));
             Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.Constant]);
 
-            builder.AddMethodSemantics(MetadataTokens.EventDefinitionHandle(1), default(UInt16), default(MethodDefinitionHandle));
+            builder.AddMethodSemantics(MetadataTokens.EventDefinitionHandle(1), default(ushort), default(MethodDefinitionHandle));
             Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.MethodSemantics]);
 
             builder.AddCustomAttribute(MetadataTokens.TypeDefinitionHandle(1), MetadataTokens.MethodDefinitionHandle(1), default(BlobHandle));
@@ -74,10 +74,10 @@ namespace System.Reflection.Metadata.Tests
             builder.AddModuleReference(default(StringHandle));
             Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.ModuleRef]);
 
-            builder.AddParameter(default(ParameterAttributes), default(StringHandle), default(Int32));
+            builder.AddParameter(default(ParameterAttributes), default(StringHandle), default(int));
             Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.Param]);
 
-            var genericParameter = builder.AddGenericParameter(MetadataTokens.MethodDefinitionHandle(1), default(GenericParameterAttributes), default(StringHandle), default(Int32));
+            var genericParameter = builder.AddGenericParameter(MetadataTokens.MethodDefinitionHandle(1), default(GenericParameterAttributes), default(StringHandle), default(int));
             Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.GenericParam]);
             Assert.Equal(1, MetadataTokens.GetRowNumber(genericParameter));
 
@@ -87,16 +87,16 @@ namespace System.Reflection.Metadata.Tests
             builder.AddFieldDefinition(default(FieldAttributes), default(StringHandle), default(BlobHandle));
             Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.Field]);
 
-            builder.AddFieldLayout(default(FieldDefinitionHandle), default(Int32));
+            builder.AddFieldLayout(default(FieldDefinitionHandle), default(int));
             Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.FieldLayout]);
 
             builder.AddMarshallingDescriptor(MetadataTokens.FieldDefinitionHandle(1), default(BlobHandle));
             Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.FieldMarshal]);
 
-            builder.AddFieldRelativeVirtualAddress(default(FieldDefinitionHandle), default(Int32));
+            builder.AddFieldRelativeVirtualAddress(default(FieldDefinitionHandle), default(int));
             Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.FieldRva]);
 
-            var methodDefinition = builder.AddMethodDefinition(default(MethodAttributes), default(MethodImplAttributes), default(StringHandle), default(BlobHandle), default(Int32), default(ParameterHandle));
+            var methodDefinition = builder.AddMethodDefinition(default(MethodAttributes), default(MethodImplAttributes), default(StringHandle), default(BlobHandle), default(int), default(ParameterHandle));
             Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.MethodDef]);
             Assert.Equal(1, MetadataTokens.GetRowNumber(methodDefinition));
 
@@ -110,13 +110,13 @@ namespace System.Reflection.Metadata.Tests
             Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.MemberRef]);
             Assert.Equal(1, MetadataTokens.GetRowNumber(memberReference));
 
-            builder.AddManifestResource(default(ManifestResourceAttributes), default(StringHandle), MetadataTokens.AssemblyFileHandle(1), default(Int64));
+            builder.AddManifestResource(default(ManifestResourceAttributes), default(StringHandle), MetadataTokens.AssemblyFileHandle(1), default(uint));
             Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.ManifestResource]);
 
             builder.AddAssemblyFile(default(StringHandle), default(BlobHandle), default(Boolean));
             Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.File]);
 
-            builder.AddExportedType(default(TypeAttributes), default(StringHandle), default(StringHandle), MetadataTokens.AssemblyFileHandle(1), default(Int32));
+            builder.AddExportedType(default(TypeAttributes), default(StringHandle), default(StringHandle), MetadataTokens.AssemblyFileHandle(1), default(int));
             Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.ExportedType]);
 
             builder.AddDeclarativeSecurityAttribute(MetadataTokens.TypeDefinitionHandle(1), default(DeclarativeSecurityAction), default(BlobHandle));
@@ -135,11 +135,11 @@ namespace System.Reflection.Metadata.Tests
             builder.AddMethodDebugInformation(default(DocumentHandle), default(BlobHandle));
             Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.MethodDebugInformation]);
 
-            var localScope = builder.AddLocalScope(default(MethodDefinitionHandle), default(ImportScopeHandle), default(LocalVariableHandle), default(LocalConstantHandle), default(Int32), default(Int32));
+            var localScope = builder.AddLocalScope(default(MethodDefinitionHandle), default(ImportScopeHandle), default(LocalVariableHandle), default(LocalConstantHandle), default(int), default(int));
             Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.LocalScope]);
             Assert.Equal(1, MetadataTokens.GetRowNumber(localScope));
 
-            var localVariable = builder.AddLocalVariable(default(LocalVariableAttributes), default(Int32), default(StringHandle));
+            var localVariable = builder.AddLocalVariable(default(LocalVariableAttributes), default(int), default(StringHandle));
             Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.LocalVariable]);
             Assert.Equal(1, MetadataTokens.GetRowNumber(localVariable));
 

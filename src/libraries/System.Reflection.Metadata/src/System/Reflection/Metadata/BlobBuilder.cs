@@ -900,7 +900,7 @@ namespace System.Reflection.Metadata
         /// References may be small (2B) or large (4B).
         /// </remarks>
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
-        internal void WriteReference(uint reference, int size)
+        internal void WriteReference(int reference, int size)
         {
             Debug.Assert(size == 2 || size == 4);
 
@@ -911,7 +911,7 @@ namespace System.Reflection.Metadata
             }
             else
             {
-                WriteUInt32(reference);
+                WriteInt32(reference);
             }
         }
 
