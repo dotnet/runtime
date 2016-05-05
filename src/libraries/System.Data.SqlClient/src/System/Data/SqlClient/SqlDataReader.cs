@@ -4391,9 +4391,7 @@ namespace System.Data.SqlClient
 
                 if (task.IsCompleted)
                 {
-                    // If we've completed sync, then don't bother handling the TaskCompletionSource - we'll just return the completed task
                     CompleteRetryable(task, source, objectToDispose);
-                    return task;
                 }
                 else
                 {
