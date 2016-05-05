@@ -350,28 +350,13 @@ OBJECTREF AllocateArrayEx(TypeHandle arrayType, INT32 *pArgs, DWORD dwNumArgs, B
                 lowerBound = pArgs[i];
                 i++;
             }
-
             int length = pArgs[i];
             if (length < 0)
                 COMPlusThrow(kOverflowException);
-
             if ((SIZE_T)length > MaxArrayLength(componentSize))
-            {
-                // This will cause us to throw below if we don't throw anything else before then.
                 maxArrayDimensionLengthOverflow = true;
-            }
-
-            if (length > 0)
-            {
-                int highestAllowableLowerBound = INT32_MAX - (length - 1);
-                if (lowerBound > highestAllowableLowerBound)
-                {
-                    // We throw because the lower bound is large enough that the sum of the 
-                    // dimension's length and the lower bound would exceed INT32_MAX.
-                    COMPlusThrow(kArgumentOutOfRangeException, W("ArgumentOutOfRange_ArrayLBAndLength"));
-                }
-            }
-
+            if ((length > 0) && (lowerBound + (length - 1) < lowerBound))
+                COMPlusThrow(kArgumentOutOfRangeException, W("ArgumentOutOfRange_ArrayLBAndLength"));
             safeTotalElements = safeTotalElements * S_UINT32(length);
             if (safeTotalElements.IsOverflow())
                 ThrowOutOfMemoryDimensionsExceeded();
