@@ -230,10 +230,10 @@ def static getJobName(def configuration, def architecture, def os, def scenario,
             baseName = architecture.toLowerCase() + '_cross_' + configuration.toLowerCase() + '_' + os.toLowerCase()
             break
         case 'x86ryujit':
-            baseName = architecture.toLowerCase() + configuration.toLowerCase() + '_' + os.toLowerCase()
+            baseName = 'x86_ryujit_' + configuration.toLowerCase() + '_' + os.toLowerCase()
             break
         case 'x86lb':
-            baseName = architecture.toLowerCase() + '_lb_' + configuration.toLowerCase() + '_' + os.toLowerCase()
+            baseName = 'x86_lb_' + configuration.toLowerCase() + '_' + os.toLowerCase()
             break
         default:
             println("Unknown architecture: ${architecture}");
@@ -849,49 +849,55 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
         case 'x86lb':
             assert (scenario == 'default' || scenario == 'r2r' || scenario == 'pri1r2r' || scenario == 'gcstress15_pri1r2r' || scenario == 'longgc' || scenario == 'gcsimulator')
             // For windows, x86 runs by default
+            def arch = 'x86'
+            def jit = 'ryujit'
+            if (architecture == 'x86lb') {
+                jit = 'legacy_backend'
+            }
+            
             if (scenario == 'default') {
                 if (os == 'Windows_NT') {
                     if (configuration == 'Checked') {
-                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Legacy Backend Build and Test")
+                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${arch} ${jit} ${configuration} Build and Test")
                     }
                 }
                 else {
                     // default trigger
-                    Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build", "(?i).*test\\W+${architecture}\\W+${osGroup}.*")
+                    Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${arch} ${jit} ${configuration} Build", "(?i).*test\\W+${arch}\\W+${osGroup}.\\W+${jit}*")
                 }
             }
             else if (scenario == 'r2r') {
                 if (os == 'Windows_NT') {
                     if (configuration == 'Release') {
-                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} R2R pri0 Legacy Backend Build & Test", "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}.*")
+                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${arch} ${jit} ${configuration} R2R pri0 Build & Test", "(?i).*test\\W+${os}\\W+${arch}\\W+${jit}\\W+${configuration}\\W+${scenario}.*")
                     }
                 }
             }
             else if (scenario == 'pri1r2r') {
                 if (os == 'Windows_NT') {
                     if (configuration == 'Release') {
-                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} R2R pri1 Legacy Backend Build & Test", "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}.*")
+                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${arch} ${jit} ${configuration} R2R pri1 Build & Test", "(?i).*test\\W+${os}\\W+${arch}\\W+${jit}\\W+${configuration}\\W+${scenario}.*")
                     }
                 }
             }
             else if (scenario == 'gcstress15_pri1r2r'){
                 if (os == 'Windows_NT'){
                     if (configuration == 'Release'){
-                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} GCStress 15 R2R pri1 Build & Test", "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}.*")  
+                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${arch} ${jit} ${configuration} GCStress 15 R2R pri1 Build & Test", "(?i).*test\\W+${os}\\W+${arch}\\W+${jit}\\W+${configuration}\\W+${scenario}.*")  
                     }
                 }
             } 
             else if (scenario == 'longgc') {
                 if (os == 'Windows_NT'){
                     if (configuration == 'Release'){
-                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Long-Running GC Build & Test", "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}.*")  
+                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${arch} ${jit} ${configuration} Long-Running GC Build & Test", "(?i).*test\\W+${os}\\W+${arch}\\W+${jit}\\W+${configuration}\\W+${scenario}.*")  
                     }
                 }
             }
             else if (scenario == 'gcsimulator') {
                 if (os == 'Windows_NT') {
                     if (configuration == 'Release') {
-                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} GC Simulator", "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}.*")
+                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${arch} ${jit} ${configuration} GC Simulator", "(?i).*test\\W+${os}\\W+${arch}\\W+${jit}\\W+${configuration}\\W+${scenario}.*")
                     }
                 }
             }
@@ -1095,10 +1101,14 @@ combinedScenarios.each { scenario ->
                                 case 'x64':
                                 case 'x86ryujit':
                                 case 'x86lb':
+                                    def arch = architecture
+                                    if (architecture == 'x86ryujit' || architecture == 'x86lb') {
+                                        arch = 'x86'
+                                    }
                                     
                                     if (Constants.jitStressModeScenarios.containsKey(scenario) || scenario == 'default') {
                                         buildOpts = enableCorefxTesting ? 'skiptests' : ''
-                                        buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${architecture} ${buildOpts}"
+                                        buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${arch} ${buildOpts}"
                                     }
 
                                     // For Pri 1 tests, we must shorten the output test binary path names.
@@ -1108,37 +1118,37 @@ combinedScenarios.each { scenario ->
                                     // 35 characters long.
 
                                     else if (scenario == 'pri1') {
-                                        buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${architecture} Priority 1"
+                                        buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${arch} Priority 1"
                                     }
                                     else if (scenario == 'ilrt') {
                                         // First do the build with skiptests and then build the tests with ilasm roundtrip
-                                        buildCommands += "build.cmd ${lowerConfiguration} ${architecture} skiptests"
-                                        buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${architecture} ilasmroundtrip"
+                                        buildCommands += "build.cmd ${lowerConfiguration} ${arch} skiptests"
+                                        buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${arch} ilasmroundtrip"
                                     }
                                     else if (scenario == 'r2r') {
-                                        buildCommands += "build.cmd ${lowerConfiguration} ${architecture} skiptests"
-                                        buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${architecture} crossgen"
+                                        buildCommands += "build.cmd ${lowerConfiguration} ${arch} skiptests"
+                                        buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${arch} crossgen"
                                     }
                                     else if (scenario == 'pri1r2r') {
-                                        buildCommands += "build.cmd ${lowerConfiguration} ${architecture} skiptests"
-                                        buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${architecture} crossgen Priority 1"
+                                        buildCommands += "build.cmd ${lowerConfiguration} ${arch} skiptests"
+                                        buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${arch} crossgen Priority 1"
                                     }
                                     else if (scenario == 'gcstress15_pri1r2r') {
                                         //Build pri1 R2R tests with GC stress level 15
-                                        buildCommands += "build.cmd ${lowerConfiguration} ${architecture} skiptests"
-                                        buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${architecture} crossgen Priority 1 gcstresslevel 15"
+                                        buildCommands += "build.cmd ${lowerConfiguration} ${arch} skiptests"
+                                        buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${arch} crossgen Priority 1 gcstresslevel 15"
                                     }
                                     else if (scenario == 'longgc') {
-                                        buildCommands += "build.cmd ${lowerConfiguration} ${architecture} skiptests"
-                                        buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${architecture} longgctests"
+                                        buildCommands += "build.cmd ${lowerConfiguration} ${arch} skiptests"
+                                        buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${arch} longgctests"
                                     }
                                     else if (scenario == 'gcsimulator') {
-                                        buildCommands += "build.cmd ${lowerConfiguration} ${architecture} skiptests"
-                                        buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${architecture} gcsimulator"
+                                        buildCommands += "build.cmd ${lowerConfiguration} ${arch} skiptests"
+                                        buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${arch} gcsimulator"
                                     }
                                     else if (scenario == 'coverage') {
-                                        buildCommands += "build.cmd ${lowerConfiguration} ${architecture} skiptests"
-                                        buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${architecture} crossgen Priority 1"
+                                        buildCommands += "build.cmd ${lowerConfiguration} ${arch} skiptests"
+                                        buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${arch} crossgen Priority 1"
                                     }
                                     else {
                                         println("Unknown scenario: ${scenario}")
@@ -1174,34 +1184,34 @@ combinedScenarios.each { scenario ->
                                                 
                                                 // Run tests with the 
                                                 
-                                                buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${architecture} TestEnv ${stepScriptLocation}"
+                                                buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${arch} TestEnv ${stepScriptLocation}"
                                             }                                            
                                         }
                                         else if (architecture == 'x64') {
                                             if (isLongGc(scenario)) {
-                                                buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${architecture} longgctests sequential"
+                                                buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${arch} longgctests sequential"
                                             } 
                                             else {
-                                                buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${architecture}"
+                                                buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${arch}"
                                             }
                                         }                                        
                                         else if (architecture == 'x86ryujit') {
                                             def testEnvLocation = "%WORKSPACE%\\tests\\x86\\ryujit_x86_testenv.cmd"
                                             
                                             if (isLongGc(scenario)) {
-                                                buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${architecture} longgctests sequential TestEnv ${testEnvLocation}"
+                                                buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${arch} longgctests sequential TestEnv ${testEnvLocation}"
                                             } 
                                             else {
-                                                buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${architecture} TestEnv ${testEnvLocation}"
+                                                buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${arch} TestEnv ${testEnvLocation}"
                                             }
                                         }
 
                                         else if (architecture == 'x86lb') {
                                             if (isLongGc(scenario)) {
-                                                buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${architecture} longgctests sequential"
+                                                buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${arch} longgctests sequential"
                                             } 
                                             else {
-                                                buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${architecture} Exclude0 x86_legacy_backend_issues.targets"
+                                                buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${arch} Exclude0 x86_legacy_backend_issues.targets"
                                             }
                                         }
                                     }
@@ -1209,13 +1219,13 @@ combinedScenarios.each { scenario ->
                                     if (!enableCorefxTesting) {
                                         // Run the rest of the build    
                                         // Build the mscorlib for the other OS's
-                                        buildCommands += "build.cmd ${lowerConfiguration} ${architecture} linuxmscorlib"
-                                        buildCommands += "build.cmd ${lowerConfiguration} ${architecture} freebsdmscorlib"
-                                        buildCommands += "build.cmd ${lowerConfiguration} ${architecture} osxmscorlib"
+                                        buildCommands += "build.cmd ${lowerConfiguration} ${arch} linuxmscorlib"
+                                        buildCommands += "build.cmd ${lowerConfiguration} ${arch} freebsdmscorlib"
+                                        buildCommands += "build.cmd ${lowerConfiguration} ${arch} osxmscorlib"
                                     
                                         // Zip up the tests directory so that we don't use so much space/time copying
                                         // 10s of thousands of files around.
-                                        buildCommands += "powershell -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory('.\\bin\\tests\\${osGroup}.${architecture}.${configuration}', '.\\bin\\tests\\tests.zip')\"";
+                                        buildCommands += "powershell -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory('.\\bin\\tests\\${osGroup}.${arch}.${configuration}', '.\\bin\\tests\\tests.zip')\"";
                                         
                                         // For windows, pull full test results and test drops for x86/x64
                                         Utilities.addArchival(newJob, "bin/Product/**,bin/tests/tests.zip")
@@ -1279,18 +1289,23 @@ combinedScenarios.each { scenario ->
                                 case 'x64':
                                 case 'x86ryujit':
                                 case 'x86lb':
+                                    def arch = architecture
+                                    if (architecture != 'x86ryujit' || architecture == 'x86lb') {
+                                        arch = 'x86'
+                                    }
+                                
                                     if (!enableCorefxTesting) {
                                         // We run pal tests on all OS but generate mscorlib (and thus, nuget packages)
                                         // only on supported OS platforms.
                                         if ((os == 'FreeBSD') || (os == 'OpenSUSE13.2'))
                                         {
-                                            buildCommands += "./build.sh skipmscorlib verbose ${lowerConfiguration} ${architecture}"
+                                            buildCommands += "./build.sh skipmscorlib verbose ${lowerConfiguration} ${arch}"
                                         }
                                         else if (scenario == 'coverage')
                                         {
                                             assert os == 'Ubuntu'
                                             assert lowerConfiguration == 'release'
-                                            buildCommands += "./build.sh coverage verbose ${lowerConfiguration} ${architecture}"
+                                            buildCommands += "./build.sh coverage verbose ${lowerConfiguration} ${arch}"
 
                                             // Remove folders from obj that we don't expect to be covered. May update this later.
                                             buildCommands += "rm -rf ./bin/obj/Linux.x64.Release/src/ToolBox"
@@ -1303,9 +1318,9 @@ combinedScenarios.each { scenario ->
                                         }
                                         else
                                         {
-                                            buildCommands += "./build.sh verbose ${lowerConfiguration} ${architecture}"
+                                            buildCommands += "./build.sh verbose ${lowerConfiguration} ${arch}"
                                         }
-                                        buildCommands += "src/pal/tests/palsuite/runpaltests.sh \${WORKSPACE}/bin/obj/${osGroup}.${architecture}.${configuration} \${WORKSPACE}/bin/paltestout"
+                                        buildCommands += "src/pal/tests/palsuite/runpaltests.sh \${WORKSPACE}/bin/obj/${osGroup}.${arch}.${configuration} \${WORKSPACE}/bin/paltestout"
 
                                         // Delete PAL test obj files after we run them, if this is a coverage job
                                         if (scenario == 'coverage') {
