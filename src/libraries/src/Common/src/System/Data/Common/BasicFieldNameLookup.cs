@@ -107,8 +107,7 @@ namespace System.Data.ProviderBase
 
         private int LinearIndexOf(string fieldName, CompareOptions compareOptions)
         {
-            CompareInfo compareInfo = _compareInfo;
-            if (null == compareInfo)
+            if (null == _compareInfo)
             {
                 _compareInfo = GetCompareInfo();
             }
@@ -116,7 +115,7 @@ namespace System.Data.ProviderBase
             int length = _fieldNames.Length;
             for (int i = 0; i < length; ++i)
             {
-                if (0 == compareInfo.Compare(fieldName, _fieldNames[i], compareOptions))
+                if (0 == _compareInfo.Compare(fieldName, _fieldNames[i], compareOptions))
                 {
                     _fieldNameLookup[fieldName] = i; // add an exact match for the future
                     return i;
