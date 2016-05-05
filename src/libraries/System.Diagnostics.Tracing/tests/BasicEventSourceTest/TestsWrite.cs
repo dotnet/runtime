@@ -218,7 +218,6 @@ namespace BasicEventSourceTests
                 var dictInt = new Dictionary<string, int>() { { "elem1", 10 }, { "elem2", 20 } };
 
                 /*************************************************************************/
-#if false   // TODO: enable when dictionary events are working again. GitHub issue #4867.
                 tests.Add(new SubTest("Write/Dict/EventWithStringDict_C",
                     delegate()
                     {
@@ -297,7 +296,6 @@ namespace BasicEventSourceTests
 
                         Assert.Equal(evt.PayloadValue(2, "s"), "end");
                     }));
-#endif // false
                 /*************************************************************************/
                 /**************************** Empty Event TESTING ************************/
                 /*************************************************************************/
