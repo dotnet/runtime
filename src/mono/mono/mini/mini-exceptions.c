@@ -1506,6 +1506,7 @@ mono_handle_exception_internal_first_pass (MonoContext *ctx, MonoObject *obj, gi
 					if (is_user_frame)
 						setup_stack_trace (mono_ex, dynamic_methods, initial_trace_ips, &trace_ips);
 
+#ifndef MONO_CROSS_COMPILE
 #ifdef MONO_CONTEXT_SET_LLVM_EXC_REG
 					if (ji->from_llvm)
 						MONO_CONTEXT_SET_LLVM_EXC_REG (ctx, ex_obj);
@@ -1516,6 +1517,7 @@ mono_handle_exception_internal_first_pass (MonoContext *ctx, MonoObject *obj, gi
 					g_assert (!ji->from_llvm);
 					/* store the exception object in bp + ei->exvar_offset */
 					*((gpointer *)(gpointer)((char *)MONO_CONTEXT_GET_BP (ctx) + ei->exvar_offset)) = ex_obj;
+#endif
 #endif
 
 #ifdef MONO_CONTEXT_SET_LLVM_EH_SELECTOR_REG
@@ -1821,12 +1823,14 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 					ex_obj = obj;
 
 				if (((ei->flags == MONO_EXCEPTION_CLAUSE_NONE) || (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER))) {
+#ifndef MONO_CROSS_COMPILE
 #ifdef MONO_CONTEXT_SET_LLVM_EXC_REG
 					MONO_CONTEXT_SET_LLVM_EXC_REG (ctx, ex_obj);
 #else
 					g_assert (!ji->from_llvm);
 					/* store the exception object in bp + ei->exvar_offset */
 					*((gpointer *)(gpointer)((char *)MONO_CONTEXT_GET_BP (ctx) + ei->exvar_offset)) = ex_obj;
+#endif
 #endif
 				}
 
