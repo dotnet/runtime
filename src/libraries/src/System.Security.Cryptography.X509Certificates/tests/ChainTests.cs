@@ -55,18 +55,20 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             using (var testCert = new X509Certificate2(Path.Combine("TestData", "test.pfx"), TestData.ChainPfxPassword))
             {
-                X509Certificate2Collection collection = new X509Certificate2Collection();
-                collection.Import(Path.Combine("TestData", "test.pfx"), TestData.ChainPfxPassword, X509KeyStorageFlags.DefaultKeySet);
+                using (ImportedCollection ic = Cert.Import(Path.Combine("TestData", "test.pfx"), TestData.ChainPfxPassword, X509KeyStorageFlags.DefaultKeySet))
+                {
+                    X509Certificate2Collection collection = ic.Collection;
 
-                X509Chain chain = new X509Chain();
-                chain.ChainPolicy.ExtraStore.AddRange(collection);
-                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
-                chain.ChainPolicy.VerificationTime = new DateTime(2015, 9, 22, 12, 25, 0);
+                    X509Chain chain = new X509Chain();
+                    chain.ChainPolicy.ExtraStore.AddRange(collection);
+                    chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                    chain.ChainPolicy.VerificationTime = new DateTime(2015, 9, 22, 12, 25, 0);
 
-                bool valid = chain.Build(testCert);
+                    bool valid = chain.Build(testCert);
 
-                Assert.False(valid);
-                Assert.Contains(chain.ChainStatus, s => s.Status == X509ChainStatusFlags.UntrustedRoot);
+                    Assert.False(valid);
+                    Assert.Contains(chain.ChainStatus, s => s.Status == X509ChainStatusFlags.UntrustedRoot);
+                }
             }
         }
 
