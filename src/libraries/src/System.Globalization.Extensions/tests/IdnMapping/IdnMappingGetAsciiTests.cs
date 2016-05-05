@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -11,6 +12,28 @@ namespace System.Globalization.Tests
     {
         public static IEnumerable<object[]> GetAscii_TestData()
         {
+            for (int i = 0x20; i < 0x7F; i++)
+            {
+                char c = (char)i;
+                string ascii = c.ToString();
+                // [ActiveIssue(8242, PlatformId.AnyUnix)]
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    if ((c >= 'A' && c <= 'Z'))
+                    {
+                        yield return new object[] { ascii, 0, 1, ascii.ToLower() };
+                    }
+                    else if (c != '-' && (c != '.' || !RuntimeInformation.IsOSPlatform(OSPlatform.OSX)))
+                    {
+                        yield return new object[] { ascii, 0, 1, ascii };
+                    }
+                }
+                else if (c != '.')
+                {
+                    yield return new object[] { ascii, 0, 1, ascii };
+                }
+            }
+
             yield return new object[] { "\u0101", 0, 1, "xn--yda" };
             yield return new object[] { "\u0101\u0061\u0041", 0, 3, "xn--aa-cla" };
             yield return new object[] { "\u0061\u0101\u0062", 0, 3, "xn--ab-dla" };
@@ -75,6 +98,20 @@ namespace System.Globalization.Tests
             yield return new object[] { "\u0061\u0062\u0063.\u305D\u306E\u30B9\u30D4\u30FC\u30C9\u3067.\u30D1\u30D5\u30A3\u30FC\u0064\u0065\u30EB\u30F3\u30D0", 3, 8, typeof(ArgumentException) };
             yield return new object[] { "\u0061\u0062\u0063.\u305D\u306E\u30B9\u30D4\u30FC\u30C9\u3067.\u30D1\u30D5\u30A3\u30FC\u0064\u0065\u30EB\u30F3\u30D0", 3, 9, typeof(ArgumentException) };
             yield return new object[] { "\u0061\u0062\u0063.\u305D\u306E\u30B9\u30D4\u30FC\u30C9\u3067.\u30D1\u30D5\u30A3\u30FC\u0064\u0065\u30EB\u30F3\u30D0", 11, 10, typeof(ArgumentException) };
+            
+            // [ActiveIssue(8242, PlatformId.AnyUnix)]
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                {
+                    yield return new object[] { ".", 0, 1, typeof(ArgumentException) };
+                }
+                yield return new object[] { "-", 0, 1, typeof(ArgumentException) };
+            }
+            else
+            {                
+                yield return new object[] { ".", 0, 1, typeof(ArgumentException) };
+            }
 
             // Null containing strings
             yield return new object[] { "\u0101\u0000", 0, 2, typeof(ArgumentException) };
