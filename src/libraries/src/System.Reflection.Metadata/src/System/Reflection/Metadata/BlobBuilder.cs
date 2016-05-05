@@ -36,8 +36,10 @@ namespace System.Reflection.Metadata
         private BlobBuilder _nextOrPrevious;
         private BlobBuilder FirstChunk => _nextOrPrevious._nextOrPrevious;
 
-        // The sum of lengths of all preceding chunks (not including the current chunk).
-        private int _previousLength;
+        // The sum of lengths of all preceding chunks (not including the current chunk),
+        // or a difference between original buffer length of a builder that was linked as a suffix to another builder,
+        // and the current length of the buffer (not that the buffers are swapped when suffix linking).
+        private int _previousLengthOrFrozenSuffixLengthDelta;
 
         private byte[] _buffer;
 
@@ -120,7 +122,7 @@ namespace System.Reflection.Metadata
         internal void ClearChunk()
         {
             _length = 0;
-            _previousLength = 0;
+            _previousLengthOrFrozenSuffixLengthDelta = 0;
             _nextOrPrevious = this;
         }
 
@@ -129,11 +131,12 @@ namespace System.Reflection.Metadata
 #if DEBUG
             Debug.Assert(_buffer != null);
             Debug.Assert(Length >= 0 && Length <= _buffer.Length);
-            Debug.Assert(_previousLength >= 0);
             Debug.Assert(_nextOrPrevious != null);
 
             if (IsHead)
             {
+                Debug.Assert(_previousLengthOrFrozenSuffixLengthDelta >= 0);
+
                 // last chunk:
                 int totalLength = 0;
                 foreach (var chunk in GetChunks())
@@ -147,7 +150,21 @@ namespace System.Reflection.Metadata
 #endif
         }
 
-        public int Count => _previousLength + Length;
+        public int Count => _previousLengthOrFrozenSuffixLengthDelta + Length;
+
+        private int PreviousLength
+        {
+            get
+            {
+                Debug.Assert(IsHead);
+                return _previousLengthOrFrozenSuffixLengthDelta;
+            }
+            set
+            {
+                Debug.Assert(IsHead);
+                _previousLengthOrFrozenSuffixLengthDelta = value;
+            }
+        }
 
         private int FreeBytes => _buffer.Length - Length;
 
@@ -373,7 +390,7 @@ namespace System.Reflection.Metadata
                 return;
             }
 
-            _previousLength += prefix.Count;
+            PreviousLength += prefix.Count;
 
             // prefix is not a head anymore:
             prefix._length = prefix.FrozenLength;
@@ -436,14 +453,19 @@ namespace System.Reflection.Metadata
             // swap buffers of the heads:
             var suffixBuffer = suffix._buffer;
             uint suffixLength = suffix._length;
+            int suffixPreviousLength = suffix.PreviousLength;
+            int oldSuffixLength = suffix.Length;
             suffix._buffer = _buffer;
             suffix._length = FrozenLength; // suffix is not a head anymore
             _buffer = suffixBuffer;
             _length = suffixLength;
 
-            int suffixPreviousLength = suffix._previousLength;
-            suffix._previousLength = _previousLength;
-            _previousLength = _previousLength + suffix.Length + suffixPreviousLength;
+            PreviousLength += suffix.Length + suffixPreviousLength;
+
+            // Update the _previousLength of the suffix so that suffix.Count = suffix._previousLength + suffix.Length doesn't change.
+            // Note that the resulting previous length might be negative.
+            // The value is not used, other than for calculating the value of Count property.
+            suffix._previousLengthOrFrozenSuffixLengthDelta = suffixPreviousLength + oldSuffixLength - suffix.Length;
 
             // First and last chunks:
             //
@@ -529,10 +551,10 @@ namespace System.Reflection.Metadata
 
                 newChunk._buffer = _buffer;
                 newChunk._length = FrozenLength;
-                newChunk._previousLength = _previousLength;
+                newChunk._previousLengthOrFrozenSuffixLengthDelta = PreviousLength;
 
                 _buffer = newBuffer;
-                _previousLength += Length;
+                PreviousLength += Length;
                 _length = 0;
             }
 
