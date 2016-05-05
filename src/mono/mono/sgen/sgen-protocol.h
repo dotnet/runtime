@@ -22,11 +22,21 @@
 #define PROTOCOL_STRUCT(method) method ## _struct
 #define CLIENT_PROTOCOL_NAME(method) sgen_client_ ## method
 
+#ifndef TYPE_INT
 #define TYPE_INT int
+#endif
+#ifndef TYPE_LONGLONG
 #define TYPE_LONGLONG long long
+#endif
+#ifndef TYPE_SIZE
 #define TYPE_SIZE size_t
+#endif
+#ifndef TYPE_POINTER
 #define TYPE_POINTER gpointer
+#endif
+#ifndef TYPE_BOOL
 #define TYPE_BOOL gboolean
+#endif
 
 enum {
 #define BEGIN_PROTOCOL_ENTRY0(method) PROTOCOL_ID(method),
