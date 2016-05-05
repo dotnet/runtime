@@ -49,7 +49,9 @@ void add_unique_path(
     deps_entry_t::asset_types asset_type,
     const pal::string_t& path,
     std::unordered_set<pal::string_t>* existing,
-    pal::string_t* output)
+    pal::string_t* serviced,
+    pal::string_t* non_serviced,
+    const pal::string_t& svc_dir)
 {
     // Resolve sym links.
     pal::string_t real = path;
@@ -62,9 +64,18 @@ void add_unique_path(
 
     trace::verbose(_X("Adding to %s path: %s"), deps_entry_t::s_known_asset_types[asset_type], real.c_str());
 
-    output->append(real);
+    if (starts_with(real, svc_dir, false))
+    {
+        serviced->append(real);
+        serviced->push_back(PATH_SEPARATOR);
+    }
+    else
+    {
+        non_serviced->append(real);
+        non_serviced->push_back(PATH_SEPARATOR);
+    }
 
-    output->push_back(PATH_SEPARATOR);
+
     existing->insert(real);
 }
 
@@ -502,6 +513,9 @@ void deps_resolver_t::resolve_probe_dirs(
     };
     std::function<pal::string_t(const pal::string_t&)>& action = is_resources ? resources : native;
     std::unordered_set<pal::string_t> items;
+    pal::string_t core_servicing = m_core_servicing;
+    pal::realpath(&core_servicing);
+    pal::string_t non_serviced;
 
     std::vector<deps_entry_t> empty(0);
     const auto& entries = m_deps->get_entries(asset_type);
@@ -536,7 +550,7 @@ void deps_resolver_t::resolve_probe_dirs(
                 m_api_set_paths.insert(result_dir);
             }
 
-            add_unique_path(asset_type, result_dir, &items, output);
+            add_unique_path(asset_type, result_dir, &items, output, &non_serviced, core_servicing);
         }
     };
     std::for_each(entries.begin(), entries.end(), add_package_cache_entry);
@@ -551,7 +565,7 @@ void deps_resolver_t::resolve_probe_dirs(
         {
             if (entry.is_rid_specific && entry.asset_type == asset_type && entry.to_rel_path(m_app_dir, &candidate))
             {
-                add_unique_path(asset_type, action(candidate), &items, output);
+                add_unique_path(asset_type, action(candidate), &items, output, &non_serviced, core_servicing);
             }
 
             // App called out an explicit API set dependency.
@@ -566,7 +580,7 @@ void deps_resolver_t::resolve_probe_dirs(
     track_api_sets = m_api_set_paths.empty();
 
     // App local path
-    add_unique_path(asset_type, m_app_dir, &items, output);
+    add_unique_path(asset_type, m_app_dir, &items, output, &non_serviced, core_servicing);
 
     // If API sets is not found (i.e., empty) in the probe paths above:
     // 1. For standalone app, do nothing as all are sxs.
@@ -581,11 +595,13 @@ void deps_resolver_t::resolve_probe_dirs(
         {
             m_api_set_paths.insert(m_fx_dir);
         }
-        add_unique_path(asset_type, m_fx_dir, &items, output);
+        add_unique_path(asset_type, m_fx_dir, &items, output, &non_serviced, core_servicing);
     }
 
     // CLR path
-    add_unique_path(asset_type, clr_dir, &items, output);
+    add_unique_path(asset_type, clr_dir, &items, output, &non_serviced, core_servicing);
+
+    output->append(non_serviced);
 }
 
 
