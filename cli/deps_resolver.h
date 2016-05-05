@@ -31,6 +31,7 @@ public:
         , m_portable(init.is_portable)
         , m_deps(nullptr)
         , m_fx_deps(nullptr)
+        , m_core_servicing(args.core_servicing)
     {
         m_deps_file = args.deps_path;
         if (m_portable)
@@ -149,6 +150,9 @@ private:
     std::unordered_map<pal::string_t, pal::string_t> m_prerelease_roll_forward_cache;
 
     pal::string_t m_package_cache;
+
+    // Servicing root, could be empty on platforms that don't support or when errors occur.
+    pal::string_t m_core_servicing;
 
     // Special entry for api-sets
     std::unordered_set<pal::string_t> m_api_set_paths;
