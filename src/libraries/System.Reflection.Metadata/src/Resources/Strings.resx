@@ -405,4 +405,10 @@
   <data name="ReadersMustBeDeltaReaders" xml:space="preserve">
     <value>Specified readers must be minimal delta metadata readers.</value>
   </data>
+  <data name="SignatureProviderReturnedInvalidSignature" xml:space="preserve">
+    <value>Signature provider returned invalid signature.</value>
+  </data>
+  <data name="UnknownSectionName" xml:space="preserve">
+    <value>Unknown section name: '{0}'.</value>
+  </data>
 </root>

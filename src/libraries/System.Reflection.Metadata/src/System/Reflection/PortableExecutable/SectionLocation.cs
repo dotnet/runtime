@@ -4,12 +4,12 @@
 
 namespace System.Reflection.PortableExecutable
 {
-    public struct PESectionLocation
+    public struct SectionLocation
     {
         public int RelativeVirtualAddress { get; }
         public int PointerToRawData { get; }
 
-        public PESectionLocation(int relativeVirtualAddress, int pointerToRawData)
+        public SectionLocation(int relativeVirtualAddress, int pointerToRawData)
         {
             RelativeVirtualAddress = relativeVirtualAddress;
             PointerToRawData = pointerToRawData;
