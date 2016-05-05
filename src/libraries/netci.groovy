@@ -123,9 +123,9 @@ def osShortName = ['Windows 10': 'win10',
 
 			def newBuildJob = job(Utilities.getFullJobName(project, newBuildJobName, isPR)) {
         		steps {
-            		batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd /p:OSGroup=Windows_NT /p:ConfigurationGroup=${configurationGroup} /p:SkipTests=true /p:Outerloop=true /p:WithoutCategories=IgnoreForCI")
+            		batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd /p:OSGroup=Windows_NT /p:ConfigurationGroup=${configurationGroup} /p:SkipTests=true")
             		// Package up the results.
-            		batchFile("C:\\Packer\\Packer.exe .\\bin\\build.pack .\\ bin packages")
+            		batchFile("C:\\Packer\\Packer.exe .\\bin\\build.pack .\\bin")
         		}
 			}
 
@@ -134,7 +134,7 @@ def osShortName = ['Windows 10': 'win10',
             // Set up standard options.
             Utilities.standardJobSetup(newBuildJob, project, isPR, "*/${branch}")
             // Archive the results
-            Utilities.addArchival(newBuildJob, "bin/build.pack,run-test.cmd,msbuild.log")
+            Utilities.addArchival(newBuildJob, "bin/build.pack,run-test.cmd,bin/osGroup.AnyCPU.${configurationGroup}/**,bin/ref/**,bin/packages/**,msbuild.log")
             
             def fullCoreFXBuildJobName = projectFolder + '/' + newBuildJob.name
             def newTestJobName =  "outerloop_${osShortName[os]}_${configurationGroup.toLowerCase()}_tst"
@@ -150,7 +150,7 @@ def osShortName = ['Windows 10': 'win10',
 	                }
 
 	                // Unpack the build data
-	                batchFile("PowerShell -command \"\"C:\\Packer\\unpacker.ps1 .\\bin\\build.pack .\\ > .\\bin\\unpacker.log\"\"")
+	                batchFile("PowerShell -command \"\"C:\\Packer\\unpacker.ps1 .\\bin\\build.pack .\\bin > .\\bin\\unpacker.log\"\"")
 	                // Run the tests
 	                batchFile("run-test.cmd .\\bin\\tests\\Windows_NT.AnyCPU.${configurationGroup}")
                     // Run the tests
@@ -234,9 +234,9 @@ def outerloopLinuxOSes = ['Ubuntu16.04', 'CentOS7.1', 'OpenSUSE13.2', 'RHEL7.2']
 
             def newBuildJob = job(Utilities.getFullJobName(project, newBuildJobName, isPR)) {
                 steps {
-                    batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd /p:ConfigurationGroup=${configurationGroup} /p:TargetOS=${osGroup} /p:OSGroup=${osGroup} /p:SkipTests=true /p:TestNugetRuntimeId=${targetNugetRuntimeMap[os]} /p:WithoutCategories=IgnoreForCI /p:TestWithoutNativeImages=true /p:Outerloop=true")
+                    batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd /p:ConfigurationGroup=${configurationGroup} /p:OSGroup=${osGroup} /p:SkipTests=true /p:TestNugetRuntimeId=${targetNugetRuntimeMap[os]}")
                     // Package up the results.
-                    batchFile("C:\\Packer\\Packer.exe .\\bin\\build.pack .\\ bin packages")
+                    batchFile("C:\\Packer\\Packer.exe .\\bin\\build.pack .\\bin")
                 }
             }
 
@@ -245,7 +245,7 @@ def outerloopLinuxOSes = ['Ubuntu16.04', 'CentOS7.1', 'OpenSUSE13.2', 'RHEL7.2']
             // Set up standard options.
             Utilities.standardJobSetup(newBuildJob, project, isPR, "*/${branch}")
             // Archive the results
-            Utilities.addArchival(newBuildJob, "bin/build.pack,msbuild.log")
+            Utilities.addArchival(newBuildJob, "bin/build.pack,bin/osGroup.AnyCPU.${configurationGroup}/**,bin/ref/**,bin/packages/**,msbuild.log")
 
             //
             // Then we set up a job that runs the test on the target OS
@@ -323,7 +323,7 @@ def outerloopLinuxOSes = ['Ubuntu16.04', 'CentOS7.1', 'OpenSUSE13.2', 'RHEL7.2']
             def newJob = job(Utilities.getFullJobName(project, newJobName, isPR)) {
                 steps {
                     if (os == 'Windows 10' || os == 'Windows 7' || os == 'Windows_NT') {
-                        batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd /p:ConfigurationGroup=${configurationGroup} /p:Outerloop=true /p:WithoutCategories=IgnoreForCI")
+                        batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && Build.cmd /p:ConfigurationGroup=${configurationGroup} /p:Outerloop=true /p:WithoutCategories=IgnoreForCI")
                     }
                     else if (os == 'OSX') {
                         shell("HOME=\$WORKSPACE/tempHome ./build.sh /p:ConfigurationGroup=${configurationGroup} /p:Outerloop=true /p:TestWithLocalLibraries=true /p:WithoutCategories=IgnoreForCI")
@@ -436,7 +436,7 @@ def static addCopyCoreClrAndRunTestSteps(def job, def coreclrBranch, String os, 
             }
 
             // Unpack the build data
-            shell("unpacker ./bin/build.pack .")
+            shell("unpacker ./bin/build.pack ./bin")
             // Export the LTTNG environment variable and then run the tests
             shell("""export LTTNG_HOME=/home/dotnet-bot
             ${isOuterLoop ? 'sudo' : '' } ./run-test.sh \\
@@ -498,9 +498,9 @@ def innerLoopNonWindowsOSs = ['Ubuntu16.04', 'Debian8.2', 'CentOS7.1', 'OpenSUSE
 
             def newBuildJob = job(Utilities.getFullJobName(project, newBuildJobName, isPR)) {
                 steps {
-                    batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd /p:ConfigurationGroup=${configurationGroup} /p:TargetOS=${osGroup} /p:OSGroup=${osGroup} /p:SkipTests=true /p:TestNugetRuntimeId=${targetNugetRuntimeMap[os]} /p:WithoutCategories=IgnoreForCI /p:TestWithoutNativeImages=true")
+                    batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd /p:ConfigurationGroup=${configurationGroup} /p:OSGroup=${osGroup} /p:SkipTests=true /p:TestNugetRuntimeId=${targetNugetRuntimeMap[os]} /p:WithoutCategories=IgnoreForCI")
                     // Package up the results.
-                    batchFile("C:\\Packer\\Packer.exe .\\bin\\build.pack .\\ bin packages")
+                    batchFile("C:\\Packer\\Packer.exe .\\bin\\build.pack .\\bin")
                 }
             }
 
@@ -509,7 +509,7 @@ def innerLoopNonWindowsOSs = ['Ubuntu16.04', 'Debian8.2', 'CentOS7.1', 'OpenSUSE
             // Set up standard options.
             Utilities.standardJobSetup(newBuildJob, project, isPR, "*/${branch}")
             // Archive the results
-            Utilities.addArchival(newBuildJob, "bin/build.pack,msbuild.log")
+            Utilities.addArchival(newBuildJob, "bin/build.pack,bin/osGroup.AnyCPU.${configurationGroup}/**,bin/ref/**,bin/packages/**,msbuild.log")
 
             //
             // Then we set up a job that runs the test on the target OS
