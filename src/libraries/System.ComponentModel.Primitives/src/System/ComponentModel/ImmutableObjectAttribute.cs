@@ -32,27 +32,19 @@ namespace System.ComponentModel
         /// </summary>
         public static readonly ImmutableObjectAttribute Default = No;
 
-        private bool _immutable = true;
-
         /// <summary>
         ///  Constructs an ImmutableObjectAttribute object.
         ///
         /// </summary>
         public ImmutableObjectAttribute(bool immutable)
         {
-            _immutable = immutable;
+            Immutable = immutable;
         }
 
         /// <summary>
         ///    <para>[To be supplied.]</para>
         /// </summary>
-        public bool Immutable
-        {
-            get
-            {
-                return _immutable;
-            }
-        }
+        public bool Immutable { get; }
 
         /// <internalonly/>
         /// <summary>
@@ -65,7 +57,7 @@ namespace System.ComponentModel
             }
 
             ImmutableObjectAttribute other = obj as ImmutableObjectAttribute;
-            return other != null && other.Immutable == _immutable;
+            return other != null && other.Immutable == Immutable;
         }
 
         /// <summary>

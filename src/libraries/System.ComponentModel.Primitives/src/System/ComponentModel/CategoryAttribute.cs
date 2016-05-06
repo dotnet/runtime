@@ -11,20 +11,20 @@ namespace System.ComponentModel
     [AttributeUsage(AttributeTargets.All)]
     public class CategoryAttribute : Attribute, IIsDefaultAttribute
     {
+        private static volatile CategoryAttribute s_action;
         private static volatile CategoryAttribute s_appearance;
         private static volatile CategoryAttribute s_asynchronous;
         private static volatile CategoryAttribute s_behavior;
         private static volatile CategoryAttribute s_data;
         private static volatile CategoryAttribute s_design;
-        private static volatile CategoryAttribute s_action;
-        private static volatile CategoryAttribute s_format;
-        private static volatile CategoryAttribute s_layout;
-        private static volatile CategoryAttribute s_mouse;
-        private static volatile CategoryAttribute s_key;
-        private static volatile CategoryAttribute s_focus;
-        private static volatile CategoryAttribute s_windowStyle;
         private static volatile CategoryAttribute s_dragDrop;
         private static volatile CategoryAttribute s_defAttr;
+        private static volatile CategoryAttribute s_focus;
+        private static volatile CategoryAttribute s_format;
+        private static volatile CategoryAttribute s_key;
+        private static volatile CategoryAttribute s_layout;
+        private static volatile CategoryAttribute s_mouse;
+        private static volatile CategoryAttribute s_windowStyle;
 
         private bool _localized;
 
@@ -298,11 +298,8 @@ namespace System.ComponentModel
                 return true;
             }
 
-            if (obj is CategoryAttribute)
-            {
-                return Category.Equals(((CategoryAttribute)obj).Category);
-            }
-            return false;
+            CategoryAttribute other = obj as CategoryAttribute;
+            return other != null && Category.Equals(other.Category);
         }
 
         /// <summary>

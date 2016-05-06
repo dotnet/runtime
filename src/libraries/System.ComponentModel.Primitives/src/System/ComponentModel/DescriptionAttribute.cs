@@ -16,7 +16,6 @@ namespace System.ComponentModel
         ///    empty string (""). This <see langword='static'/> field is read-only.</para>
         /// </summary>
         public static readonly DescriptionAttribute Default = new DescriptionAttribute();
-        private string _description;
 
         /// <summary>
         ///    <para>[To be supplied.]</para>
@@ -30,36 +29,20 @@ namespace System.ComponentModel
         /// </summary>
         public DescriptionAttribute(string description)
         {
-            _description = description;
+            DescriptionValue = description;
         }
 
         /// <summary>
         ///    <para>Gets the description stored in this attribute.</para>
         /// </summary>
-        public virtual string Description
-        {
-            get
-            {
-                return DescriptionValue;
-            }
-        }
+        public virtual string Description => DescriptionValue;
 
         /// <summary>
         ///     Read/Write property that directly modifies the string stored
         ///     in the description attribute. The default implementation
         ///     of the Description property simply returns this value.
         /// </summary>
-        protected string DescriptionValue
-        {
-            get
-            {
-                return _description;
-            }
-            set
-            {
-                _description = value;
-            }
-        }
+        protected string DescriptionValue { get; set; }
 
         public override bool Equals(object obj)
         {
@@ -69,7 +52,6 @@ namespace System.ComponentModel
             }
 
             DescriptionAttribute other = obj as DescriptionAttribute;
-
             return (other != null) && other.Description == Description;
         }
 

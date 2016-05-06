@@ -31,9 +31,6 @@ namespace System.ComponentModel
         /// </summary>
         public static readonly NotifyParentPropertyAttribute Default = No;
 
-        private bool _notifyParent = false;
-
-
         /// <summary>
         /// <para>Initiailzes a new instance of the NotifyPropertyAttribute class 
         ///    that uses the specified value
@@ -41,7 +38,7 @@ namespace System.ComponentModel
         /// </summary>
         public NotifyParentPropertyAttribute(bool notifyParent)
         {
-            _notifyParent = notifyParent;
+            NotifyParent = notifyParent;
         }
 
 
@@ -51,14 +48,7 @@ namespace System.ComponentModel
         ///       on changes to a child namespace property.
         ///    </para>
         /// </summary>
-        public bool NotifyParent
-        {
-            get
-            {
-                return _notifyParent;
-            }
-        }
-
+        public bool NotifyParent { get; }
 
         /// <summary>
         ///    <para>
@@ -71,12 +61,9 @@ namespace System.ComponentModel
             {
                 return true;
             }
-            if ((obj != null) && (obj is NotifyParentPropertyAttribute))
-            {
-                return ((NotifyParentPropertyAttribute)obj).NotifyParent == _notifyParent;
-            }
 
-            return false;
+            NotifyParentPropertyAttribute other = obj as NotifyParentPropertyAttribute;
+            return other != null && other.NotifyParent == NotifyParent;
         }
 
         /// <summary>

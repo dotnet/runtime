@@ -37,8 +37,6 @@ namespace System.ComponentModel
         /// </summary>
         public static readonly MergablePropertyAttribute Default = Yes;
 
-        private bool _allowMerge;
-
         /// <summary>
         ///    <para>
         ///       Initializes a new instance of the <see cref='System.ComponentModel.MergablePropertyAttribute'/>
@@ -47,7 +45,7 @@ namespace System.ComponentModel
         /// </summary>
         public MergablePropertyAttribute(bool allowMerge)
         {
-            _allowMerge = allowMerge;
+            AllowMerge = allowMerge;
         }
 
         /// <summary>
@@ -57,13 +55,7 @@ namespace System.ComponentModel
         ///       properties window.
         ///    </para>
         /// </summary>
-        public bool AllowMerge
-        {
-            get
-            {
-                return _allowMerge;
-            }
-        }
+        public bool AllowMerge { get; }
 
         /// <internalonly/>
         /// <summary>
@@ -76,7 +68,7 @@ namespace System.ComponentModel
             }
 
             MergablePropertyAttribute other = obj as MergablePropertyAttribute;
-            return other != null && other.AllowMerge == _allowMerge;
+            return other != null && other.AllowMerge == AllowMerge;
         }
 
         /// <summary>

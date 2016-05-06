@@ -11,8 +11,6 @@ namespace System.ComponentModel
     [AttributeUsage(AttributeTargets.All)]
     public sealed class ReadOnlyAttribute : Attribute, IIsDefaultAttribute
     {
-        private bool _isReadOnly = false;
-
         /// <summary>
         ///    <para>
         ///       Specifies that the property this attribute is bound to is read-only and
@@ -45,7 +43,7 @@ namespace System.ComponentModel
         /// </summary>
         public ReadOnlyAttribute(bool isReadOnly)
         {
-            _isReadOnly = isReadOnly;
+            IsReadOnly = isReadOnly;
         }
 
         /// <summary>
@@ -54,13 +52,7 @@ namespace System.ComponentModel
         ///       read-only.
         ///    </para>
         /// </summary>
-        public bool IsReadOnly
-        {
-            get
-            {
-                return _isReadOnly;
-            }
-        }
+        public bool IsReadOnly { get; }
 
         /// <internalonly/>
         /// <summary>
@@ -73,7 +65,6 @@ namespace System.ComponentModel
             }
 
             ReadOnlyAttribute other = value as ReadOnlyAttribute;
-
             return other != null && other.IsReadOnly == IsReadOnly;
         }
 

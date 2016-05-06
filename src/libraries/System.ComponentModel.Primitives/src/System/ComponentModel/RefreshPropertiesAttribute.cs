@@ -38,14 +38,12 @@ namespace System.ComponentModel
         /// </summary>
         public static readonly RefreshPropertiesAttribute Default = new RefreshPropertiesAttribute(RefreshProperties.None);
 
-        private RefreshProperties _refresh;
-
         /// <summary>
         /// </summary>
         /// <internalonly/>
         public RefreshPropertiesAttribute(RefreshProperties refresh)
         {
-            _refresh = refresh;
+            RefreshProperties = refresh;
         }
 
         /// <summary>
@@ -54,26 +52,22 @@ namespace System.ComponentModel
         ///       the refresh properties for the member.
         ///    </para>
         /// </summary>
-        public RefreshProperties RefreshProperties
-        {
-            get
-            {
-                return _refresh;
-            }
-        }
+        public RefreshProperties RefreshProperties { get; }
 
         /// <summary>
         ///    <para>
         ///       Overrides object's Equals method.
         ///    </para>
         /// </summary>
-        public override bool Equals(object value)
+        public override bool Equals(object obj)
         {
-            if (value is RefreshPropertiesAttribute)
+            if (obj == this)
             {
-                return ((RefreshPropertiesAttribute)value).RefreshProperties == _refresh;
+                return true;
             }
-            return false;
+
+            RefreshPropertiesAttribute other = obj as RefreshPropertiesAttribute;
+            return (other != null) && other.RefreshProperties == RefreshProperties;
         }
 
         /// <summary>

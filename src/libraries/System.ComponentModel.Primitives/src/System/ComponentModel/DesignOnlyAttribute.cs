@@ -11,8 +11,6 @@ namespace System.ComponentModel
     [AttributeUsage(AttributeTargets.All)]
     public sealed class DesignOnlyAttribute : Attribute, IIsDefaultAttribute
     {
-        private readonly bool _isDesignOnly = false;
-
         /// <summary>
         ///    <para>
         ///       Initializes a new instance of the <see cref='System.ComponentModel.DesignOnlyAttribute'/> class.
@@ -20,7 +18,7 @@ namespace System.ComponentModel
         /// </summary>
         public DesignOnlyAttribute(bool isDesignOnly)
         {
-            _isDesignOnly = isDesignOnly;
+            IsDesignOnly = isDesignOnly;
         }
 
         /// <summary>
@@ -29,13 +27,7 @@ namespace System.ComponentModel
         ///       can be set only at design time.
         ///    </para>
         /// </summary>
-        public bool IsDesignOnly
-        {
-            get
-            {
-                return _isDesignOnly;
-            }
-        }
+        public bool IsDesignOnly { get; }
 
         /// <summary>
         ///    <para>
@@ -79,13 +71,12 @@ namespace System.ComponentModel
             }
 
             DesignOnlyAttribute other = obj as DesignOnlyAttribute;
-
-            return (other != null) && other._isDesignOnly == _isDesignOnly;
+            return (other != null) && other.IsDesignOnly == IsDesignOnly;
         }
 
         public override int GetHashCode()
         {
-            return _isDesignOnly.GetHashCode();
+            return IsDesignOnly.GetHashCode();
         }
     }
 }
