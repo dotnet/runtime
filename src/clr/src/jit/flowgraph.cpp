@@ -6666,6 +6666,19 @@ bool         Compiler::fgInDifferentRegions(BasicBlock *blk1, BasicBlock *blk2)
     return ((blk1->bbFlags & BBF_COLD)!= (blk2->bbFlags & BBF_COLD));
 }
 
+bool         Compiler::fgIsBlockCold(BasicBlock *blk)
+{
+    noway_assert(blk != NULL);
+
+    if (fgFirstColdBlock == NULL)
+    {
+        return false;
+    }
+
+    return ((blk->bbFlags & BBF_COLD) != 0);
+}
+
+
 /*****************************************************************************
  * This function returns true if tree is a GT_COMMA node with a call
  * that unconditionally throws an exception

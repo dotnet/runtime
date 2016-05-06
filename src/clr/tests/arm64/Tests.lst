@@ -39127,7 +39127,7 @@ RelativePath=JIT\Regression\VS-ia64-JIT\V1.2-M02\b28158\b28158\b28158.cmd
 WorkingDir=JIT\Regression\VS-ia64-JIT\V1.2-M02\b28158\b28158
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_FAIL;ISSUE_3668;LONG_RUNNING
+Categories=Pri0;JIT;EXPECTED_PASS
 HostStyle=0
 [b28158_64.cmd_5696]
 RelativePath=JIT\Regression\VS-ia64-JIT\V1.2-M02\b28158\b28158_64\b28158_64.cmd
