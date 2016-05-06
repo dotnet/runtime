@@ -419,5 +419,44 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Performance\CodeQuality\Serialization\Serialize\Serialize.cmd">
              <Issue>3597</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testC\hfa_nd0C_d\hfa_nd0C_d.cmd">
+             <Issue>4817</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testC\hfa_nd0C_r\hfa_nd0C_r.cmd">
+             <Issue>4817</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testC\hfa_nd1C_d\hfa_nd1C_d.cmd">
+             <Issue>4817</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testC\hfa_nd1C_r\hfa_nd1C_r.cmd">
+             <Issue>4817</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testC\hfa_sd0C_d\hfa_sd0C_d.cmd">
+             <Issue>4817</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testC\hfa_sd0C_r\hfa_sd0C_r.cmd">
+             <Issue>4817</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testC\hfa_sd1C_d\hfa_sd1C_d.cmd">
+             <Issue>4817</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testC\hfa_sd1C_r\hfa_sd1C_r.cmd">
+             <Issue>4817</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testE\hfa_nd0E_d\hfa_nd0E_d.cmd">
+             <Issue>4817</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testE\hfa_nd0E_r\hfa_nd0E_r.cmd">
+             <Issue>4817</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testE\hfa_nd1E_d\hfa_nd1E_d.cmd">
+             <Issue>4817</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testE\hfa_nd1E_r\hfa_nd1E_r.cmd">
+             <Issue>4817</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Performance\CodeQuality\V8\DeltaBlue\DeltaBlue\DeltaBlue.cmd">
+             <Issue>4817</Issue>
+        </ExcludeList>
     </ItemGroup>
 </Project>
