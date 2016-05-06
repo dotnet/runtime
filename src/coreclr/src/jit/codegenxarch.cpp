@@ -211,15 +211,15 @@ void                CodeGen::genEmitGSCookieCheck(bool pushReg)
         // ... all other cases.
         else
         {
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-            // For System V structs that are not returned in registers are always 
+#ifdef _TARGET_AMD64_
+            // For x64, structs that are not returned in registers are always 
             // returned in implicit RetBuf. If we reached here, we should not have
             // a RetBuf and the return type should not be a struct.
             assert(compiler->info.compRetBuffArg == BAD_VAR_NUM);
             assert(!varTypeIsStruct(compiler->info.compRetNativeType));
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // _TARGET_AMD64_
 
-            // For Windows we can't make such assertions since we generate code for returning of 
+            // For x86 Windows we can't make such assertions since we generate code for returning of 
             // the RetBuf in REG_INTRET only when the ProfilerHook is enabled. Otherwise
             // compRetNativeType could be TYP_STRUCT.
             gcInfo.gcMarkRegPtrVal(REG_INTRET, compiler->info.compRetNativeType);
