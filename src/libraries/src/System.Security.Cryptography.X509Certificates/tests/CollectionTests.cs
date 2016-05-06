@@ -477,18 +477,20 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             using (var pfxCer = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
             {
-                X509Certificate2Collection cc2 = new X509Certificate2Collection();
-                cc2.Import(TestData.StoreSavedAsCerData);
-                int count = cc2.Count;
-                Assert.Equal(1, count);
-
-                using (X509Certificate2 c = cc2[0])
+                using (ImportedCollection ic = Cert.Import(TestData.StoreSavedAsCerData))
                 {
-                    // pfxCer was loaded directly, cc2[0] was Imported, two distinct copies.
-                    Assert.NotSame(pfxCer, c);
+                    X509Certificate2Collection cc2 = ic.Collection;
+                    int count = cc2.Count;
+                    Assert.Equal(1, count);
 
-                    Assert.Equal(pfxCer, c);
-                    Assert.Equal(pfxCer.Thumbprint, c.Thumbprint);
+                    using (X509Certificate2 c = cc2[0])
+                    {
+                        // pfxCer was loaded directly, cc2[0] was Imported, two distinct copies.
+                        Assert.NotSame(pfxCer, c);
+
+                        Assert.Equal(pfxCer, c);
+                        Assert.Equal(pfxCer.Thumbprint, c.Thumbprint);
+                    }
                 }
             }
         }
@@ -499,18 +501,20 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             using (var pfxCer = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
             {
-                X509Certificate2Collection cc2 = new X509Certificate2Collection();
-                cc2.Import(TestData.StoreSavedAsSerializedCerData);
-                int count = cc2.Count;
-                Assert.Equal(1, count);
-
-                using (X509Certificate2 c = cc2[0])
+                using (ImportedCollection ic = Cert.Import(TestData.StoreSavedAsSerializedCerData))
                 {
-                    // pfxCer was loaded directly, cc2[0] was Imported, two distinct copies.
-                    Assert.NotSame(pfxCer, c);
+                    X509Certificate2Collection cc2 = ic.Collection;
+                    int count = cc2.Count;
+                    Assert.Equal(1, count);
 
-                    Assert.Equal(pfxCer, c);
-                    Assert.Equal(pfxCer.Thumbprint, c.Thumbprint);
+                    using (X509Certificate2 c = cc2[0])
+                    {
+                        // pfxCer was loaded directly, cc2[0] was Imported, two distinct copies.
+                        Assert.NotSame(pfxCer, c);
+
+                        Assert.Equal(pfxCer, c);
+                        Assert.Equal(pfxCer.Thumbprint, c.Thumbprint);
+                    }
                 }
             }
         }
@@ -530,10 +534,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             using (var msCer = new X509Certificate2(TestData.MsCertificate))
             using (var pfxCer = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
+            using (ImportedCollection ic = Cert.Import(TestData.StoreSavedAsSerializedStoreData))
             {
 
-                X509Certificate2Collection cc2 = new X509Certificate2Collection();
-                cc2.Import(TestData.StoreSavedAsSerializedStoreData);
+                X509Certificate2Collection cc2 = ic.Collection;
                 int count = cc2.Count;
                 Assert.Equal(2, count);
 
@@ -563,9 +567,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             using (var msCer = new X509Certificate2(TestData.MsCertificate))
             using (var pfxCer = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
+            using (ImportedCollection ic = Cert.Import(TestData.StoreSavedAsPfxData))
             {
-                X509Certificate2Collection cc2 = new X509Certificate2Collection();
-                cc2.Import(TestData.StoreSavedAsPfxData);
+                X509Certificate2Collection cc2 = ic.Collection;
                 int count = cc2.Count;
                 Assert.Equal(2, count);
 
@@ -592,18 +596,20 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             using (var pfxCer = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
             {
-                X509Certificate2Collection cc2 = new X509Certificate2Collection();
-                cc2.Import(Path.Combine("TestData" ,"My.pfx"), TestData.PfxDataPassword, X509KeyStorageFlags.DefaultKeySet);
-                int count = cc2.Count;
-                Assert.Equal(1, count);
-
-                using (X509Certificate2 c = cc2[0])
+                using (ImportedCollection ic = Cert.Import(Path.Combine("TestData", "My.pfx"), TestData.PfxDataPassword, X509KeyStorageFlags.DefaultKeySet))
                 {
-                    // pfxCer was loaded directly, cc2[0] was Imported, two distinct copies.
-                    Assert.NotSame(pfxCer, c);
+                    X509Certificate2Collection cc2 = ic.Collection;
+                    int count = cc2.Count;
+                    Assert.Equal(1, count);
 
-                    Assert.Equal(pfxCer, c);
-                    Assert.Equal(pfxCer.Thumbprint, c.Thumbprint);
+                    using (X509Certificate2 c = cc2[0])
+                    {
+                        // pfxCer was loaded directly, cc2[0] was Imported, two distinct copies.
+                        Assert.NotSame(pfxCer, c);
+
+                        Assert.Equal(pfxCer, c);
+                        Assert.Equal(pfxCer.Thumbprint, c.Thumbprint);
+                    }
                 }
             }
         }
@@ -612,14 +618,16 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [ActiveIssue(2745, PlatformID.AnyUnix)]
         public static void ImportMultiplePrivateKeysPfx()
         {
-            var collection = new X509Certificate2Collection();
-            collection.Import(TestData.MultiPrivateKeyPfx);
-
-            Assert.Equal(2, collection.Count);
-
-            foreach (X509Certificate2 cert in collection)
+            using (ImportedCollection ic = Cert.Import(TestData.MultiPrivateKeyPfx))
             {
-                Assert.True(cert.HasPrivateKey, "cert.HasPrivateKey");
+                X509Certificate2Collection collection = ic.Collection;
+
+                Assert.Equal(2, collection.Count);
+
+                foreach (X509Certificate2 cert in collection)
+                {
+                    Assert.True(cert.HasPrivateKey, "cert.HasPrivateKey");
+                }
             }
         }
 
@@ -720,28 +728,30 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 byte[] exported = collection.Export(X509ContentType.Pkcs12);
 
-                var importedCollection = new X509Certificate2Collection();
-                importedCollection.Import(exported);
-
-                // Verify that the two collections contain the same certificates,
-                // but the order isn't really a factor.
-                Assert.Equal(collection.Count, importedCollection.Count);
-
-                // Compare just the subject names first, because it's the easiest thing to read out of the failure message.
-                string[] subjects = new string[collection.Count];
-                string[] importedSubjects = new string[collection.Count];
-
-                for (int i = 0; i < collection.Count; i++)
+                using (ImportedCollection ic = Cert.Import(exported))
                 {
-                    subjects[i] = collection[i].GetNameInfo(X509NameType.SimpleName, false);
-                    importedSubjects[i] = importedCollection[i].GetNameInfo(X509NameType.SimpleName, false);
+                    X509Certificate2Collection importedCollection = ic.Collection;
+
+                    // Verify that the two collections contain the same certificates,
+                    // but the order isn't really a factor.
+                    Assert.Equal(collection.Count, importedCollection.Count);
+
+                    // Compare just the subject names first, because it's the easiest thing to read out of the failure message.
+                    string[] subjects = new string[collection.Count];
+                    string[] importedSubjects = new string[collection.Count];
+
+                    for (int i = 0; i < collection.Count; i++)
+                    {
+                        subjects[i] = collection[i].GetNameInfo(X509NameType.SimpleName, false);
+                        importedSubjects[i] = importedCollection[i].GetNameInfo(X509NameType.SimpleName, false);
+                    }
+
+                    Assert.Equal(subjects, importedSubjects);
+
+                    // But, really, the collections should be equivalent
+                    // (after being coerced to IEnumerable<X509Certificate2>)
+                    Assert.Equal(collection.OfType<X509Certificate2>(), importedCollection.OfType<X509Certificate2>());
                 }
-
-                Assert.Equal(subjects, importedSubjects);
-
-                // But, really, the collections should be equivalent
-                // (after being coerced to IEnumerable<X509Certificate2>)
-                Assert.Equal(collection.OfType<X509Certificate2>(), importedCollection.OfType<X509Certificate2>());
             }
         }
 
@@ -749,11 +759,19 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public static void MultipleImport()
         {
             var collection = new X509Certificate2Collection();
-
-            collection.Import(Path.Combine("TestData", "DummyTcpServer.pfx"), null, default(X509KeyStorageFlags));
-            collection.Import(TestData.PfxData, TestData.PfxDataPassword, default(X509KeyStorageFlags));
-
-            Assert.Equal(3, collection.Count);
+            try
+            {
+                collection.Import(Path.Combine("TestData", "DummyTcpServer.pfx"), null, default(X509KeyStorageFlags));
+                collection.Import(TestData.PfxData, TestData.PfxDataPassword, default(X509KeyStorageFlags));
+                Assert.Equal(3, collection.Count);
+            }
+            finally
+            {
+                foreach (X509Certificate2 cert in collection)
+                {
+                    cert.Dispose();
+                }
+            }
         }
 
         [Fact]
@@ -763,47 +781,59 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             var collection = new X509Certificate2Collection();
 
-            collection.Import(Path.Combine("TestData", "DummyTcpServer.pfx"), null, X509KeyStorageFlags.Exportable);
-            collection.Import(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.Exportable);
-
-            // Pre-condition, we have multiple private keys
-            int originalPrivateKeyCount = collection.OfType<X509Certificate2>().Count(c => c.HasPrivateKey);
-            Assert.Equal(2, originalPrivateKeyCount);
-
-            // Export, re-import.
-            byte[] exported;
-
             try
             {
-                exported = collection.Export(X509ContentType.Pkcs12);
-            }
-            catch (PlatformNotSupportedException)
-            {
-                // [ActiveIssue(2743, PlatformID.AnyUnix)]
-                // Our Unix builds can't export more than one private key in a single PFX, so this is
-                // their exit point.
-                //
-                // If Windows gets here, or any exception other than PlatformNotSupportedException is raised,
-                // let that fail the test.
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                collection.Import(Path.Combine("TestData", "DummyTcpServer.pfx"), null, X509KeyStorageFlags.Exportable);
+                collection.Import(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.Exportable);
+
+                // Pre-condition, we have multiple private keys
+                int originalPrivateKeyCount = collection.OfType<X509Certificate2>().Count(c => c.HasPrivateKey);
+                Assert.Equal(2, originalPrivateKeyCount);
+
+                // Export, re-import.
+                byte[] exported;
+
+                try
                 {
-                    throw;
+                    exported = collection.Export(X509ContentType.Pkcs12);
+                }
+                catch (PlatformNotSupportedException)
+                {
+                    // [ActiveIssue(2743, PlatformID.AnyUnix)]
+                    // Our Unix builds can't export more than one private key in a single PFX, so this is
+                    // their exit point.
+                    //
+                    // If Windows gets here, or any exception other than PlatformNotSupportedException is raised,
+                    // let that fail the test.
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    {
+                        throw;
+                    }
+
+                    return;
                 }
 
-                return;
+                // As the other half of issue 2743, if we make it this far we better be Windows (or remove the catch
+                // above)
+                Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), "RuntimeInformation.IsOSPlatform(OSPlatform.Windows)");
+
+                using (ImportedCollection ic = Cert.Import(exported))
+                {
+                    X509Certificate2Collection importedCollection = ic.Collection;
+
+                    Assert.Equal(collection.Count, importedCollection.Count);
+
+                    int importedPrivateKeyCount = importedCollection.OfType<X509Certificate2>().Count(c => c.HasPrivateKey);
+                    Assert.Equal(originalPrivateKeyCount, importedPrivateKeyCount);
+                }
             }
-
-            // As the other half of issue 2743, if we make it this far we better be Windows (or remove the catch
-            // above)
-            Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), "RuntimeInformation.IsOSPlatform(OSPlatform.Windows)");
-
-            var importedCollection = new X509Certificate2Collection();
-            importedCollection.Import(exported);
-
-            Assert.Equal(collection.Count, importedCollection.Count);
-
-            int importedPrivateKeyCount = importedCollection.OfType<X509Certificate2>().Count(c => c.HasPrivateKey);
-            Assert.Equal(originalPrivateKeyCount, importedPrivateKeyCount);
+            finally
+            {
+                foreach (X509Certificate2 cert in collection)
+                {
+                    cert.Dispose();
+                }
+            }
         }
 
         [Fact]
@@ -1324,17 +1354,19 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 Assert.Equal(ct, X509Certificate2.GetCertContentType(blob));
 
-                X509Certificate2Collection cc2 = new X509Certificate2Collection();
-                cc2.Import(blob);
-                int count = cc2.Count;
-                Assert.Equal(1, count);
-
-                using (X509Certificate2 c = cc2[0])
+                using (ImportedCollection ic = Cert.Import(blob))
                 {
-                    Assert.NotSame(msCer, c);
-                    Assert.NotSame(pfxCer, c);
+                    X509Certificate2Collection cc2 = ic.Collection;
+                    int count = cc2.Count;
+                    Assert.Equal(1, count);
 
-                    Assert.True(msCer.Equals(c) || pfxCer.Equals(c));
+                    using (X509Certificate2 c = cc2[0])
+                    {
+                        Assert.NotSame(msCer, c);
+                        Assert.NotSame(pfxCer, c);
+
+                        Assert.True(msCer.Equals(c) || pfxCer.Equals(c));
+                    }
                 }
             }
         }
@@ -1350,23 +1382,25 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 Assert.Equal(ct, X509Certificate2.GetCertContentType(blob));
 
-                X509Certificate2Collection cc2 = new X509Certificate2Collection();
-                cc2.Import(blob);
-                int count = cc2.Count;
-                Assert.Equal(2, count);
-
-                X509Certificate2[] cs = cc2.ToArray().OrderBy(c => c.Subject).ToArray();
-
-                using (X509Certificate2 first = cs[0])
+                using (ImportedCollection ic = Cert.Import(blob))
                 {
-                    Assert.NotSame(msCer, first);
-                    Assert.Equal(msCer, first);
-                }
+                    X509Certificate2Collection cc2 = ic.Collection;
+                    int count = cc2.Count;
+                    Assert.Equal(2, count);
 
-                using (X509Certificate2 second = cs[1])
-                {
-                    Assert.NotSame(pfxCer, second);
-                    Assert.Equal(pfxCer, second);
+                    X509Certificate2[] cs = cc2.ToArray().OrderBy(c => c.Subject).ToArray();
+
+                    using (X509Certificate2 first = cs[0])
+                    {
+                        Assert.NotSame(msCer, first);
+                        Assert.Equal(msCer, first);
+                    }
+
+                    using (X509Certificate2 second = cs[1])
+                    {
+                        Assert.NotSame(pfxCer, second);
+                        Assert.Equal(pfxCer, second);
+                    }
                 }
             }
         }

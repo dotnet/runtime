@@ -81,12 +81,17 @@
   <PropertyGroup>
     <ValidatePackageVersions>true</ValidatePackageVersions>
     <ProhibitFloatingDependencies>true</ProhibitFloatingDependencies>
-    <CoreFxExpectedPrerelease>rc3-24102-00</CoreFxExpectedPrerelease>
+    <CoreFxExpectedPrerelease>rc3-24105-00</CoreFxExpectedPrerelease>
+    <CoreFxVersionsIdentityRegex>^(?i)((System\..*)|(NETStandard\.Library)|(Microsoft\.CSharp)|(Microsoft\.NETCore.*)|(Microsoft\.TargetingPack\.Private\.(CoreCLR|NETNative))|(Microsoft\.Win32\..*)|(Microsoft\.VisualBasic))(?&lt;!TestData)(?&lt;!System\.Data\.SqlClient)$</CoreFxVersionsIdentityRegex>
   </PropertyGroup>
 
   <ItemGroup>
     <ValidationPattern Include="CoreFxVersions">
-      <IdentityRegex>^(?i)((System\..*)|(NETStandard\.Library)|(Microsoft\.CSharp)|(Microsoft\.NETCore.*)|(Microsoft\.TargetingPack\.Private\.(CoreCLR|NETNative))|(Microsoft\.Win32\..*)|(Microsoft\.VisualBasic))(?&lt;!TestData)$</IdentityRegex>
+      <IdentityRegex>$(CoreFxVersionsIdentityRegex)</IdentityRegex>
+      <ExpectedPrerelease>$(CoreFxExpectedPrerelease)</ExpectedPrerelease>
+    </ValidationPattern>
+    <ValidationPattern Include="ExternalVersions">
+      <IdentityRegex>^(?i)System\.Data\.SqlClient$</IdentityRegex>
       <ExpectedPrerelease>$(CoreFxExpectedPrerelease)</ExpectedPrerelease>
     </ValidationPattern>
     <ValidationPattern Include="TargetingPackVersions">
@@ -117,7 +122,8 @@
 
   <!-- This is the directory where we dynamically generate project.json's for our test build package dependencies -->
   <PropertyGroup Condition="'$(BuildTestsAgainstPackages)' == 'true'">
-      <GeneratedProjectJsonDir>$(ObjDir)generated</GeneratedProjectJsonDir>
+    <GeneratedProjectJsonDir>$(ObjDir)generated</GeneratedProjectJsonDir>
+    <BuildTestsAgainstPackagesIdentityRegex>$(CoreFxVersionsIdentityRegex)</BuildTestsAgainstPackagesIdentityRegex>
   </PropertyGroup>
 
   <!-- list of directories to perform batch restore -->
@@ -403,9 +409,7 @@
     </When>
     <When Condition="'$(TargetGroup)'=='dnxcore50'">
       <PropertyGroup>
-        <PackageTargetFramework>dnxcore50</PackageTargetFramework>
-        <TargetingPackNugetPackageId>Microsoft.TargetingPack.Private.CoreCLR</TargetingPackNugetPackageId>
-        <NuGetTargetMoniker>DNXCore,Version=v5.0</NuGetTargetMoniker>
+        <ConfigurationErrorMsg>$(ConfigurationErrorMsg);DNXCore50 has been deprecated.  Please use NETStandard1.X or NETCoreApp1.0 instead.</ConfigurationErrorMsg>
       </PropertyGroup>
     </When>
     <When Condition="'$(TargetGroup)'=='net463'">

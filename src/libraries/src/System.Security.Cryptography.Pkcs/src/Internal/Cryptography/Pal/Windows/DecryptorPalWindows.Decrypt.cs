@@ -186,19 +186,17 @@ namespace Internal.Cryptography.Pal.Windows
                                     candidateCerts.AddRange(originatorCerts);
                                     candidateCerts.AddRange(extraStore);
                                     SubjectIdentifier originatorId = pKeyAgreeRecipientInfo->OriginatorCertId.ToSubjectIdentifier();
-                                    using (X509Certificate2 originatorCert = candidateCerts.TryFindMatchingCertificate(originatorId))
+                                    X509Certificate2 originatorCert = candidateCerts.TryFindMatchingCertificate(originatorId);
+                                    if (originatorCert == null)
+                                        return ErrorCode.CRYPT_E_NOT_FOUND.ToCryptographicException();
+                                    using (SafeCertContextHandle hCertContext = originatorCert.CreateCertContextHandle())
                                     {
-                                        if (originatorCert == null)
-                                            return ErrorCode.CRYPT_E_NOT_FOUND.ToCryptographicException();
-                                        using (SafeCertContextHandle hCertContext = originatorCert.CreateCertContextHandle())
-                                        {
-                                            CERT_CONTEXT* pOriginatorCertContext = hCertContext.DangerousGetCertContext();
-                                            decryptPara.OriginatorPublicKey = pOriginatorCertContext->pCertInfo->SubjectPublicKeyInfo.PublicKey;
+                                        CERT_CONTEXT* pOriginatorCertContext = hCertContext.DangerousGetCertContext();
+                                        decryptPara.OriginatorPublicKey = pOriginatorCertContext->pCertInfo->SubjectPublicKeyInfo.PublicKey;
 
-                                            // Do not factor this call out of the switch statement as leaving this "using" block will free up
-                                            // native memory that decryptPara points to. 
-                                            return TryExecuteDecryptAgree(ref decryptPara);
-                                        }
+                                        // Do not factor this call out of the switch statement as leaving this "using" block will free up
+                                        // native memory that decryptPara points to. 
+                                        return TryExecuteDecryptAgree(ref decryptPara);
                                     }
                                 }
 

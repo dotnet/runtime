@@ -219,11 +219,17 @@ namespace System.Collections.Specialized.Tests
             Assert.Throws<ArgumentOutOfRangeException>("index", () => ld.CopyTo(data, -1));
             if (data.Length > 0)
             {
-                Assert.Throws<ArgumentException>(() => ld.CopyTo(new KeyValuePair<string, string>[1, data.Length], 0));
                 Assert.Throws<ArgumentException>(() => ld.CopyTo(new KeyValuePair<string, string>[0], data.Length - 1));
                 Assert.Throws<ArgumentException>(() => ld.CopyTo(new KeyValuePair<string, string>[data.Length - 1], 0));
                 Assert.Throws<InvalidCastException>(() => ld.CopyTo(new int[data.Length], 0));
             }
+
+            // Multidimensional array
+            Assert.Throws<ArgumentException>(() => ld.CopyTo(new KeyValuePair<string, string>[1, data.Length], 0));
+
+            // Invalid lower bound
+            Array arr = Array.CreateInstance(typeof(object), new int[] { 2 }, new int[] { 2 });
+            Assert.Throws<ArgumentException>(() => ld.CopyTo(arr, 0));
         }
 
         [Theory]
@@ -412,7 +418,15 @@ namespace System.Collections.Specialized.Tests
         public static void KeyCollection_CopyTo_InvalidArgument_Test(ListDictionary ld, KeyValuePair<string, string>[] data)
         {
             ICollection keys = ld.Keys;
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => keys.CopyTo(new object[] { }, -1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => keys.CopyTo(new object[0], -1));
+            Assert.Throws<ArgumentException>(null, () => keys.CopyTo(new object[data.Length], 1));
+
+            // Multidimensional array
+            Assert.Throws<ArgumentException>("array", () => keys.CopyTo(new object[data.Length, data.Length], 0));
+
+            // Invalid lower bound
+            Array arr = Array.CreateInstance(typeof(object), new int[] { 2 }, new int[] { 2 });
+            Assert.Throws<ArgumentException>(() => keys.CopyTo(arr, 0));
         }
 
         [Theory]

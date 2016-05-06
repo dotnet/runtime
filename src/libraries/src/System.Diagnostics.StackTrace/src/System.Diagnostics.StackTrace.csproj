@@ -28,7 +28,7 @@
     <Compile Include="System\Diagnostics\StackFrameExtensions.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'!='netcore50aot'">
-    <Compile Include="System\Diagnostics\StackFrameExtensions.dnxcore50.cs" />
+    <Compile Include="System\Diagnostics\StackFrameExtensions.CoreCLR.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netcore50aot'">
     <Compile Include="System\Diagnostics\StackTrace.netcore50aot.cs" />

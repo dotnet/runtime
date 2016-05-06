@@ -55,6 +55,7 @@
     <Compile Include="Metadata\PortablePdb\StandalonePortablePdbStreamTests.cs" />
     <Compile Include="Metadata\TagToTokenTests.cs" />
     <Compile Include="Metadata\PortablePdb\DocumentNameTests.cs" />
+    <Compile Include="TestUtilities\SigningUtilities.cs" />
     <Compile Include="Utilities\AbstractMemoryBlockTests.cs" />
     <Compile Include="PortableExecutable\BadImageFormat.cs" />
     <Compile Include="PortableExecutable\DebugDirectoryTests.cs" />
@@ -65,6 +66,7 @@
     <Compile Include="PortableExecutable\SectionHeaderTests.cs" />
     <Compile Include="Utilities\StreamExtensionsTests.cs" />
     <Compile Include="Metadata\MetadataReaderProviderTests.cs" />
+    <EmbeddedResource Include="Resources\Misc\KeyPair.snk" />
     <None Include="Resources\PortablePdbs\Documents.cs" />
     <Compile Include="Resources\TestResources.cs" />
     <Compile Include="TestUtilities\AssertEx.cs" />
