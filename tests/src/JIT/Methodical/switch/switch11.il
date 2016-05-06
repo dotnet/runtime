@@ -26,7 +26,9 @@
     IL_000b:  ldstr      "Test passed"
     IL_0010:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
     IL_0015:  pop
-	      ret
+              call       int32 ['mscorlib']System.Environment::get_ExitCode()
+              call       void ['mscorlib']System.Environment::Exit(int32)
+              ret
   } 
 
 } 
