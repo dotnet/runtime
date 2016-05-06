@@ -4,14 +4,14 @@
 
 namespace System.ComponentModel.Design
 {
-    /// <devdoc>
+    /// <summary>
     ///    <para>Provides an interface to list extender providers.</para>
-    /// </devdoc>
+    /// </summary>
     public interface IExtenderListService
     {
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets the set of extender providers for the component.</para>
-        /// </devdoc>
+        /// </summary>
         IExtenderProvider[] GetExtenderProviders();
     }
 }

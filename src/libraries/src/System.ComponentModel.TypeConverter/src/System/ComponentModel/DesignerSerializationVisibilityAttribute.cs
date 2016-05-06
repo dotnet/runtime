@@ -4,69 +4,69 @@
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///    <para>
     ///         Specifies the visibility of this property or method as seen
     ///         by the designer serializer.
     ///    </para>
-    /// </devdoc>
+    /// </summary>
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Method | AttributeTargets.Field | AttributeTargets.Event)]
     public sealed class DesignerSerializationVisibilityAttribute : Attribute, IIsDefaultAttribute
     {
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Specifies that a visual designer should serialize the contents of this property,
         ///       rather than the property itself.
         ///       This <see langword='static '/>field is read-only.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public static readonly DesignerSerializationVisibilityAttribute Content = new DesignerSerializationVisibilityAttribute(DesignerSerializationVisibility.Content);
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Specifies that a
         ///       visual designer will not serialize the value of this property.
         ///       This <see langword='static '/>field is read-only.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public static readonly DesignerSerializationVisibilityAttribute Hidden = new DesignerSerializationVisibilityAttribute(DesignerSerializationVisibility.Hidden);
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Specifies that a
         ///       visual designer may use default rules when serializing the value of a property.
         ///       This <see langword='static '/>field is read-only.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public static readonly DesignerSerializationVisibilityAttribute Visible = new DesignerSerializationVisibilityAttribute(DesignerSerializationVisibility.Visible);
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Specifies the default value, which is <see cref='System.ComponentModel.DesignerSerializationVisibilityAttribute.Visible'/>, that is, a visual designer 
         ///       uses default rules to generate the value of a property. This
         ///    <see langword='static '/>field is read-only. 
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public static readonly DesignerSerializationVisibilityAttribute Default = Visible;
 
         private DesignerSerializationVisibility _visibility;
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Initializes a new instance of the System.ComponentModel.PersistContentsAttribute class.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public DesignerSerializationVisibilityAttribute(DesignerSerializationVisibility visibility)
         {
             _visibility = visibility;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Gets a value indicating whether a
         ///       visual designer must generate special code to persist the value of a property.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public DesignerSerializationVisibility Visibility
         {
             get
@@ -76,8 +76,8 @@ namespace System.ComponentModel
         }
 
         /// <internalonly/>
-        /// <devdoc>
-        /// </devdoc>
+        /// <summary>
+        /// </summary>
         public override bool Equals(object obj)
         {
             if (obj == this)
@@ -89,18 +89,18 @@ namespace System.ComponentModel
             return other != null && other.Visibility == _visibility;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Returns the hashcode for this object.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public override int GetHashCode()
         {
             return base.GetHashCode();
         }
 
-        /// <devdoc>
-        /// </devdoc>
+        /// <summary>
+        /// </summary>
         /// <internalonly/>
         bool IIsDefaultAttribute.IsDefaultAttribute()
         {

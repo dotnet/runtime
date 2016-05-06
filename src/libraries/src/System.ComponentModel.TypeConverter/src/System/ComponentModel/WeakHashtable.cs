@@ -6,11 +6,11 @@ using System.Collections;
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///     This is a hashtable that stores object keys as weak references.  
     ///     It monitors memory usage and will periodically scavenge the
     ///     hash table to clean out dead references.
-    /// </devdoc>
+    /// </summary>
     internal sealed class WeakHashtable : Hashtable
     {
         private static readonly IEqualityComparer s_comparer = new WeakKeyComparer();
@@ -22,33 +22,33 @@ namespace System.ComponentModel
         {
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Override of clear that performs a scavenge.
-        /// </devdoc>
+        /// </summary>
         public override void Clear()
         {
             base.Clear();
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Override of remove that performs a scavenge.
-        /// </devdoc>
+        /// </summary>
         public override void Remove(object key)
         {
             base.Remove(key);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Override of Item that wraps a weak reference around the
         ///     key and performs a scavenge.
-        /// </devdoc>
+        /// </summary>
         public void SetWeak(object key, object value)
         {
             ScavengeKeys();
             this[new EqualityWeakReference(key)] = value;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     This method checks to see if it is necessary to
         ///     scavenge keys, and if it is it performs a scan
         ///     of all keys to see which ones are no longer valid.
@@ -59,7 +59,7 @@ namespace System.ComponentModel
         ///     will need to see if this is too often for extreme
         ///     use cases like the CompactFramework (they add
         ///     custom type data for every object at design time).
-        /// </devdoc>
+        /// </summary>
         private void ScavengeKeys()
         {
             int hashCount = Count;
@@ -162,14 +162,14 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     A subclass of WeakReference that overrides GetHashCode and
         ///     Equals so that the weak reference returns the same equality
         ///     semantics as the object it wraps.  This will always return
         ///     the object's hash code and will return True for a Equals
         ///     comparison of the object it is wrapping.  If the object
         ///     it is wrapping has finalized, Equals always returns false.
-        /// </devdoc>
+        /// </summary>
         private sealed class EqualityWeakReference : WeakReference
         {
             private int _hashCode;

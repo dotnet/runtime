@@ -7,9 +7,9 @@ using System.Reflection;
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///    <para>Provides a description of a property.</para>
-    /// </devdoc>
+    /// </summary>
 #if NETSTANDARD10
     public abstract class PropertyDescriptor
 #else
@@ -23,55 +23,55 @@ namespace System.ComponentModel
         private Type[] _editorTypes;
         private int _editorCount;
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Initializes a new instance of the <see cref='System.ComponentModel.PropertyDescriptor'/> class with the specified name and
         ///       attributes.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         protected PropertyDescriptor(string name, Attribute[] attrs)
         : base(name, attrs)
         {
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Initializes a new instance of the <see cref='System.ComponentModel.PropertyDescriptor'/> class with
         ///       the name and attributes in the specified <see cref='System.ComponentModel.MemberDescriptor'/>.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         protected PropertyDescriptor(MemberDescriptor descr)
         : base(descr)
         {
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Initializes a new instance of the <see cref='System.ComponentModel.PropertyDescriptor'/> class with
         ///       the name in the specified <see cref='System.ComponentModel.MemberDescriptor'/> and the
         ///       attributes in both the <see cref='System.ComponentModel.MemberDescriptor'/> and the
         ///    <see cref='System.Attribute'/> array. 
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         protected PropertyDescriptor(MemberDescriptor descr, Attribute[] attrs)
         : base(descr, attrs)
         {
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       When overridden in a derived class, gets the type of the
         ///       component this property
         ///       is bound to.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public abstract Type ComponentType { get; }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Gets the type converter for this property.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public virtual TypeConverter Converter
         {
             get
@@ -101,13 +101,13 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Gets a value
         ///       indicating whether this property should be localized, as
         ///       specified in the <see cref='System.ComponentModel.LocalizableAttribute'/>.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public virtual bool IsLocalizable
         {
             get
@@ -116,21 +116,21 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       When overridden in
         ///       a derived class, gets a value
         ///       indicating whether this property is read-only.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public abstract bool IsReadOnly { get; }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Gets a value
         ///       indicating whether this property should be serialized as specified in the <see cref='System.ComponentModel.DesignerSerializationVisibilityAttribute'/>.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public DesignerSerializationVisibility SerializationVisibility
         {
             get
@@ -140,17 +140,17 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       When overridden in a derived class,
         ///       gets the type of the property.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public abstract Type PropertyType { get; }
 
-        /// <devdoc>
+        /// <summary>
         ///     Allows interested objects to be notified when this property changes.
-        /// </devdoc>
+        /// </summary>
         public virtual void AddValueChanged(object component, EventHandler handler)
         {
             if (component == null) throw new ArgumentNullException(nameof(component));
@@ -165,22 +165,22 @@ namespace System.ComponentModel
             _valueChangedHandlers[component] = Delegate.Combine(h, handler);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       When overridden in a derived class, indicates whether
         ///       resetting the <paramref name="component "/>will change the value of the
         ///    <paramref name="component"/>.
         /// </para>
-        /// </devdoc>
+        /// </summary>
         public abstract bool CanResetValue(object component);
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Compares this to another <see cref='System.ComponentModel.PropertyDescriptor'/>
         ///       to see if they are equivalent.
         ///       NOTE: If you make a change here, you likely need to change GetHashCode() as well.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public override bool Equals(object obj)
         {
             try
@@ -212,12 +212,12 @@ namespace System.ComponentModel
             return false;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Creates an instance of the
         ///       specified type.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         protected object CreateInstance(Type type)
         {
             Type[] typeArgs = new Type[] { typeof(Type) };
@@ -230,11 +230,11 @@ namespace System.ComponentModel
             return TypeDescriptor.CreateInstance(null, type, null, null);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///       In an inheriting class, adds the attributes of the inheriting class to the
         ///       specified list of attributes in the parent class.  For duplicate attributes,
         ///       the last one added to the list will be kept.
-        /// </devdoc>
+        /// </summary>
         protected override void FillAttributes(IList attributeList)
         {
             // Each time we fill our attributes, we should clear our cached
@@ -248,33 +248,33 @@ namespace System.ComponentModel
         }
 
         /// <include file='doc\PropertyDescriptor.uex' path='docs/doc[@for="PropertyDescriptor.GetChildProperties"]/*' />
-        /// <devdoc>
+        /// <summary>
         ///    <para>[To be supplied.]</para>
-        /// </devdoc>
+        /// </summary>
         public PropertyDescriptorCollection GetChildProperties()
         {
             return GetChildProperties(null, null);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>[To be supplied.]</para>
-        /// </devdoc>
+        /// </summary>
         public PropertyDescriptorCollection GetChildProperties(Attribute[] filter)
         {
             return GetChildProperties(null, filter);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>[To be supplied.]</para>
-        /// </devdoc>
+        /// </summary>
         public PropertyDescriptorCollection GetChildProperties(object instance)
         {
             return GetChildProperties(instance, null);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    Retrieves the properties 
-        /// </devdoc>
+        /// </summary>
         public virtual PropertyDescriptorCollection GetChildProperties(object instance, Attribute[] filter)
         {
             if (instance == null)
@@ -288,11 +288,11 @@ namespace System.ComponentModel
         }
 
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Gets an editor of the specified type.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public virtual object GetEditor(Type editorBaseType)
         {
             object editor = null;
@@ -374,21 +374,21 @@ namespace System.ComponentModel
             return editor;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Try to keep this reasonable in [....] with Equals(). Specifically, 
         ///     if A.Equals(B) returns true, A & B should have the same hash code.
-        /// </devdoc>
+        /// </summary>
         public override int GetHashCode()
         {
             return this.NameHashCode ^ PropertyType.GetHashCode();
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     This method returns the object that should be used during invocation of members.
         ///     Normally the return value will be the same as the instance passed in.  If
         ///     someone associated another object with this instance, or if the instance is a
         ///     custom type descriptor, GetInvocationTarget may return a different value.
-        /// </devdoc>
+        /// </summary>
         protected override object GetInvocationTarget(Type type, object instance)
         {
             object target = base.GetInvocationTarget(type, instance);
@@ -401,9 +401,9 @@ namespace System.ComponentModel
             return target;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets a type using its name.</para>
-        /// </devdoc>
+        /// </summary>
         protected Type GetTypeFromName(string typeName)
         {
             if (typeName == null || typeName.Length == 0)
@@ -436,17 +436,17 @@ namespace System.ComponentModel
             return typeFromComponent ?? typeFromGetType;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       When overridden in a derived class, gets the current value of the property on a component.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public abstract object GetValue(object component);
 
-        /// <devdoc>
+        /// <summary>
         ///     This should be called by your property descriptor implementation
         ///     when the property value has changed.
-        /// </devdoc>
+        /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers")]
         protected virtual void OnValueChanged(object component, EventArgs e)
         {
@@ -456,9 +456,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Allows interested objects to be notified when this property changes.
-        /// </devdoc>
+        /// </summary>
         public virtual void RemoveValueChanged(object component, EventHandler handler)
         {
             if (component == null) throw new ArgumentNullException(nameof(component));
@@ -479,11 +479,11 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Return current set of ValueChanged event handlers for a specific
         ///     component, in the form of a combined multicast event handler.
         ///     Returns null if no event handlers currently assigned to component.
-        /// </devdoc>
+        /// </summary>
         internal protected EventHandler GetValueChangedHandler(object component)
         {
             if (component != null && _valueChangedHandlers != null)
@@ -496,35 +496,35 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       When overridden in a derived class, resets the value for this property of the component.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public abstract void ResetValue(object component);
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       When overridden in a derived class, sets the value of
         ///       the component to a different value.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public abstract void SetValue(object component, object value);
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       When overridden in a derived class, indicates whether the
         ///       value of this property needs to be persisted.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public abstract bool ShouldSerializeValue(object component);
 
-        /// <devdoc>
+        /// <summary>
         ///     Indicates whether value change notifications for this property may originate from outside the property
         ///     descriptor, such as from the component itself (value=true), or whether notifications will only originate
         ///     from direct calls made to PropertyDescriptor.SetValue (value=false). For example, the component may
         ///     implement the INotifyPropertyChanged interface, or may have an explicit '{name}Changed' event for this property.
-        /// </devdoc>
+        /// </summary>
         public virtual bool SupportsChangeEvents
         {
             get

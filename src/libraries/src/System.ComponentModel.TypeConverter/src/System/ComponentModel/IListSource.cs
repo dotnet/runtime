@@ -6,9 +6,9 @@ using System.Collections;
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///    <para>[To be supplied.]</para>
-    /// </devdoc>
+    /// </summary>
     [MergableProperty(false)]
     public interface IListSource
     {

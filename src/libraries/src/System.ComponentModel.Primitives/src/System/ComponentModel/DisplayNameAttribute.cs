@@ -4,38 +4,38 @@
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///    <para>Specifies the display name for a property or event.  The default is the name of the property or event.</para>
-    /// </devdoc>
+    /// </summary>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1813:AvoidUnsealedAttributes")]
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Event | AttributeTargets.Class | AttributeTargets.Method)]
     public class DisplayNameAttribute : Attribute, IIsDefaultAttribute
     {
-        /// <devdoc>
+        /// <summary>
         /// <para>Specifies the default value for the <see cref='System.ComponentModel.DisplayNameAttribute'/> , which is an
         ///    empty string (""). This <see langword='static'/> field is read-only.</para>
-        /// </devdoc>
+        /// </summary>
         public static readonly DisplayNameAttribute Default = new DisplayNameAttribute();
         private string _displayName;
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>[To be supplied.]</para>
-        /// </devdoc>
+        /// </summary>
         public DisplayNameAttribute() : this(string.Empty)
         {
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Initializes a new instance of the <see cref='System.ComponentModel.DisplayNameAttribute'/> class.</para>
-        /// </devdoc>
+        /// </summary>
         public DisplayNameAttribute(string displayName)
         {
             _displayName = displayName;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets the description stored in this attribute.</para>
-        /// </devdoc>
+        /// </summary>
         public virtual string DisplayName
         {
             get
@@ -44,11 +44,11 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Read/Write property that directly modifies the string stored
         ///     in the description attribute. The default implementation
         ///     of the Description property simply returns this value.
-        /// </devdoc>
+        /// </summary>
         protected string DisplayNameValue
         {
             get
@@ -79,8 +79,8 @@ namespace System.ComponentModel
         }
 
         /// <internalonly/>
-        /// <devdoc>
-        /// </devdoc>
+        /// <summary>
+        /// </summary>
         bool IIsDefaultAttribute.IsDefaultAttribute()
         {
             return this.Equals(Default);

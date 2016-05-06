@@ -4,38 +4,38 @@
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///    <para>Specifies a description for a property
     ///       or event.</para>
-    /// </devdoc>
+    /// </summary>
     [AttributeUsage(AttributeTargets.All)]
     public class DescriptionAttribute : Attribute, IIsDefaultAttribute
     {
-        /// <devdoc>
+        /// <summary>
         /// <para>Specifies the default value for the <see cref='System.ComponentModel.DescriptionAttribute'/> , which is an
         ///    empty string (""). This <see langword='static'/> field is read-only.</para>
-        /// </devdoc>
+        /// </summary>
         public static readonly DescriptionAttribute Default = new DescriptionAttribute();
         private string _description;
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>[To be supplied.]</para>
-        /// </devdoc>
+        /// </summary>
         public DescriptionAttribute() : this(string.Empty)
         {
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Initializes a new instance of the <see cref='System.ComponentModel.DescriptionAttribute'/> class.</para>
-        /// </devdoc>
+        /// </summary>
         public DescriptionAttribute(string description)
         {
             _description = description;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets the description stored in this attribute.</para>
-        /// </devdoc>
+        /// </summary>
         public virtual string Description
         {
             get
@@ -44,11 +44,11 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Read/Write property that directly modifies the string stored
         ///     in the description attribute. The default implementation
         ///     of the Description property simply returns this value.
-        /// </devdoc>
+        /// </summary>
         protected string DescriptionValue
         {
             get
@@ -79,8 +79,8 @@ namespace System.ComponentModel
         }
 
         /// <internalonly/>
-        /// <devdoc>
-        /// </devdoc>
+        /// <summary>
+        /// </summary>
         bool IIsDefaultAttribute.IsDefaultAttribute()
         {
             return this.Equals(Default);

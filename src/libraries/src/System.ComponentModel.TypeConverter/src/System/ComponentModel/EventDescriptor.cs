@@ -4,83 +4,83 @@
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///    <para>
     ///       Provides a description of an event.
     ///    </para>
-    /// </devdoc>
+    /// </summary>
     public abstract class EventDescriptor : MemberDescriptor
     {
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Initializes a new instance of the <see cref='System.ComponentModel.EventDescriptor'/> class with the
         ///       specified name and attribute array.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         protected EventDescriptor(string name, Attribute[] attrs)
             : base(name, attrs)
         {
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Initializes a new instance of the <see cref='System.ComponentModel.EventDescriptor'/> class with the name and attributes in
         ///       the specified <see cref='System.ComponentModel.MemberDescriptor'/>.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         protected EventDescriptor(MemberDescriptor descr)
             : base(descr)
         {
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Initializes a new instance of the <see cref='System.ComponentModel.EventDescriptor'/> class with
         ///       the name in the specified <see cref='System.ComponentModel.MemberDescriptor'/> and the
         ///       attributes in both the <see cref='System.ComponentModel.MemberDescriptor'/> and the <see cref='System.Attribute'/> array.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         protected EventDescriptor(MemberDescriptor descr, Attribute[] attrs)
             : base(descr, attrs)
         {
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       When overridden in a derived class, gets the type of the component this event is bound to.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public abstract Type ComponentType { get; }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       When overridden in a derived class, gets the type of delegate for the event.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public abstract Type EventType { get; }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       When overridden in a derived class, gets a value
         ///       indicating whether the event delegate is a multicast
         ///       delegate.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public abstract bool IsMulticast { get; }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       When overridden in a derived class, binds the event to the component.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public abstract void AddEventHandler(object component, Delegate value);
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       When overridden in a derived class, unbinds the delegate from the component
         ///       so that the delegate will no longer receive events from the component.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public abstract void RemoveEventHandler(object component, Delegate value);
     }
 }

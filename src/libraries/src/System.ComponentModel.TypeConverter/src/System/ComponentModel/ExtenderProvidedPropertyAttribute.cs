@@ -5,12 +5,12 @@
 namespace System.ComponentModel
 {
     /// <internalonly/>
-    /// <devdoc>
+    /// <summary>
     ///    <para>
     ///       ExtenderProvidedPropertyAttribute is an attribute that marks that a property
     ///       was actually offered up by and extender provider.
     ///    </para>
-    /// </devdoc>
+    /// </summary>
     [AttributeUsage(AttributeTargets.All)]
     public sealed class ExtenderProvidedPropertyAttribute : Attribute, IIsDefaultAttribute
     {
@@ -18,9 +18,9 @@ namespace System.ComponentModel
         private IExtenderProvider _provider;
         private Type _receiverType;
 
-        /// <devdoc>
+        /// <summary>
         ///     Creates a new ExtenderProvidedPropertyAttribute.
-        /// </devdoc>
+        /// </summary>
         internal static ExtenderProvidedPropertyAttribute Create(PropertyDescriptor extenderProperty, Type receiverType, IExtenderProvider provider)
         {
             ExtenderProvidedPropertyAttribute e = new ExtenderProvidedPropertyAttribute();
@@ -30,16 +30,16 @@ namespace System.ComponentModel
             return e;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Creates an empty ExtenderProvidedPropertyAttribute.
-        /// </devdoc>
+        /// </summary>
         public ExtenderProvidedPropertyAttribute()
         {
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     PropertyDescriptor of the property that is being provided.
-        /// </devdoc>
+        /// </summary>
         public PropertyDescriptor ExtenderProperty
         {
             get
@@ -48,9 +48,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Extender provider that is providing the property.
-        /// </devdoc>
+        /// </summary>
         public IExtenderProvider Provider
         {
             get
@@ -59,9 +59,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     The type of object that can receive these properties.
-        /// </devdoc>
+        /// </summary>
         public Type ReceiverType
         {
             get
@@ -88,8 +88,8 @@ namespace System.ComponentModel
         }
 
         /// <internalonly/>
-        /// <devdoc>
-        /// </devdoc>
+        /// <summary>
+        /// </summary>
         bool IIsDefaultAttribute.IsDefaultAttribute()
         {
             return _receiverType == null;

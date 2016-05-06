@@ -4,44 +4,44 @@
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///    <para>
     ///       Provides data for the <see cref='System.ComponentModel.TypeDescriptor.Refresh'/> event.
     ///    </para>
-    /// </devdoc>
+    /// </summary>
     public class RefreshEventArgs : EventArgs
     {
         private readonly object _componentChanged;
         private Type _typeChanged;
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Initializes a new instance of the <see cref='System.ComponentModel.RefreshEventArgs'/> class with
         ///       the component that has changed.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public RefreshEventArgs(object componentChanged)
         {
             _componentChanged = componentChanged;
             _typeChanged = componentChanged.GetType();
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Initializes a new instance of the <see cref='System.ComponentModel.RefreshEventArgs'/> class with
         ///       the type of component that has changed.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public RefreshEventArgs(Type typeChanged)
         {
             _typeChanged = typeChanged;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Gets the component that has changed its properties, events, or extenders.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public object ComponentChanged
         {
             get
@@ -50,11 +50,11 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Gets the type that has changed its properties, or events.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public Type TypeChanged
         {
             get

@@ -10,14 +10,14 @@ using System.Reflection;
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///     This type description provider provides type information through 
     ///     reflection.  Unless someone has provided a custom type description
     ///     provider for a type or instance, or unless an instance implements
     ///     ICustomTypeDescriptor, any query for type information will go through
     ///     this class.  There should be a single instance of this class associated
     ///     with "object", as it can provide all type information for any type.
-    /// </devdoc>
+    /// </summary>
     internal sealed partial class ReflectTypeDescriptionProvider : TypeDescriptionProvider
     {
         // Hastable of Type -> ReflectedTypeData.  ReflectedTypeData contains all
@@ -87,21 +87,21 @@ namespace System.ComponentModel
 
 
         private static object s_internalSyncObject = new object();
-        /// <devdoc>
+        /// <summary>
         ///     Creates a new ReflectTypeDescriptionProvider.  The type is the
         ///     type we will obtain type information for.
-        /// </devdoc>
+        /// </summary>
         internal ReflectTypeDescriptionProvider()
         {
             TypeDescriptor.Trace("Reflect : Creating ReflectTypeDescriptionProvider");
         }
 
-        /// <devdoc> 
+        /// <summary> 
         ///      This is a table we create for intrinsic types. 
         ///      There should be entries here ONLY for intrinsic 
         ///      types, as all other types we should be able to 
         ///      add attributes directly as metadata. 
-        /// </devdoc> 
+        /// </summary> 
         private static Hashtable IntrinsicTypeConverters
         {
             get
@@ -156,13 +156,13 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Adds an editor table for the given editor base type.
         ///     ypically, editors are specified as metadata on an object. If no metadata for a
         ///     equested editor base type can be found on an object, however, the
         ///     ypeDescriptor will search an editor
         ///     able for the editor type, if one can be found.
-        /// </devdoc>
+        /// </summary>
         internal static void AddEditorTable(Type editorBaseType, Hashtable table)
         {
             if (editorBaseType == null)
@@ -190,9 +190,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     CreateInstance implementation.  We delegate to Activator.
-        /// </devdoc>
+        /// </summary>
         public override object CreateInstance(IServiceProvider provider, Type objectType, Type[] argTypes, object[] args)
         {
             Debug.Assert(objectType != null, "Should have arg-checked before coming in here");
@@ -237,29 +237,29 @@ namespace System.ComponentModel
         }
 
 
-        /// <devdoc> 
+        /// <summary> 
         ///     Helper method to create editors and type converters. This checks to see if the
         ///     type implements a Type constructor, and if it does it invokes that ctor. 
         ///     Otherwise, it just tries to create the type.
-        /// </devdoc> 
+        /// </summary> 
         private static object CreateInstance(Type objectType, Type callingType)
         {
             return objectType.GetTypeInfo().GetConstructor(s_typeConstructor)?.Invoke(new object[] { callingType })
                 ?? Activator.CreateInstance(objectType);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Retrieves custom attributes.
-        /// </devdoc>
+        /// </summary>
         internal AttributeCollection GetAttributes(Type type)
         {
             ReflectedTypeData td = GetTypeData(type, true);
             return td.GetAttributes();
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Our implementation of GetCache sits on top of IDictionaryService.
-        /// </devdoc>
+        /// </summary>
         public override IDictionary GetCache(object instance)
         {
             IComponent comp = instance as IComponent;
@@ -281,48 +281,48 @@ namespace System.ComponentModel
             return null;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Retrieves the class name for our type.
-        /// </devdoc>
+        /// </summary>
         internal string GetClassName(Type type)
         {
             ReflectedTypeData td = GetTypeData(type, true);
             return td.GetClassName(null);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Retrieves the component name from the site.
-        /// </devdoc>
+        /// </summary>
         internal string GetComponentName(Type type, object instance)
         {
             ReflectedTypeData td = GetTypeData(type, true);
             return td.GetComponentName(instance);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Retrieves the type converter.  If instance is non-null,
         ///     it will be used to retrieve attributes.  Otherwise, _type
         ///     will be used.
-        /// </devdoc>
+        /// </summary>
         internal TypeConverter GetConverter(Type type, object instance)
         {
             ReflectedTypeData td = GetTypeData(type, true);
             return td.GetConverter(instance);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Return the default event. The default event is determined by the
         ///     presence of a DefaultEventAttribute on the class.
-        /// </devdoc>
+        /// </summary>
         internal EventDescriptor GetDefaultEvent(Type type, object instance)
         {
             ReflectedTypeData td = GetTypeData(type, true);
             return td.GetDefaultEvent(instance);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Return the default property.
-        /// </devdoc>
+        /// </summary>
         internal PropertyDescriptor GetDefaultProperty(Type type, object instance)
         {
             ReflectedTypeData td = GetTypeData(type, true);
@@ -330,9 +330,9 @@ namespace System.ComponentModel
         }
 
 #if FEATURE_EDITOR
-        /// <devdoc>
+        /// <summary>
         ///     Retrieves the editor for the given base type.
-        /// </devdoc>
+        /// </summary>
         internal object GetEditor(Type type, object instance, Type editorBaseType)
         {
             ReflectedTypeData td = GetTypeData(type, true);
@@ -340,9 +340,9 @@ namespace System.ComponentModel
         }
 #endif
 
-        /// <devdoc> 
+        /// <summary> 
         ///      Retrieves a default editor table for the given editor base type. 
-        /// </devdoc> 
+        /// </summary> 
         private static Hashtable GetEditorTable(Type editorBaseType)
         {
             if (s_editorTables == null)
@@ -396,88 +396,88 @@ namespace System.ComponentModel
             return (Hashtable)table;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Retrieves the events for this type.
-        /// </devdoc>
+        /// </summary>
         internal EventDescriptorCollection GetEvents(Type type)
         {
             ReflectedTypeData td = GetTypeData(type, true);
             return td.GetEvents();
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Retrieves custom extender attributes. We don't support
         ///     extender attributes, so we always return an empty collection.
-        /// </devdoc>
+        /// </summary>
         internal AttributeCollection GetExtendedAttributes(object instance)
         {
             return AttributeCollection.Empty;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Retrieves the class name for our type.
-        /// </devdoc>
+        /// </summary>
         internal string GetExtendedClassName(object instance)
         {
             return GetClassName(instance.GetType());
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Retrieves the component name from the site.
-        /// </devdoc>
+        /// </summary>
         internal string GetExtendedComponentName(object instance)
         {
             return GetComponentName(instance.GetType(), instance);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Retrieves the type converter.  If instance is non-null,
         ///     it will be used to retrieve attributes.  Otherwise, _type
         ///     will be used.
-        /// </devdoc>
+        /// </summary>
         internal TypeConverter GetExtendedConverter(object instance)
         {
             return GetConverter(instance.GetType(), instance);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Return the default event. The default event is determined by the
         ///     presence of a DefaultEventAttribute on the class.
-        /// </devdoc>
+        /// </summary>
         internal EventDescriptor GetExtendedDefaultEvent(object instance)
         {
             return null; // we don't support extended events.
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Return the default property.
-        /// </devdoc>
+        /// </summary>
         internal PropertyDescriptor GetExtendedDefaultProperty(object instance)
         {
             return null; // extender properties are never the default.
         }
 
 #if FEATURE_EDITOR
-        /// <devdoc>
+        /// <summary>
         ///     Retrieves the editor for the given base type.
-        /// </devdoc>
+        /// </summary>
         internal object GetExtendedEditor(object instance, Type editorBaseType)
         {
             return GetEditor(instance.GetType(), instance, editorBaseType);
         }
 #endif
 
-        /// <devdoc>
+        /// <summary>
         ///     Retrieves the events for this type.
-        /// </devdoc>
+        /// </summary>
         internal EventDescriptorCollection GetExtendedEvents(object instance)
         {
             return EventDescriptorCollection.Empty;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Retrieves the properties for this type.
-        /// </devdoc>
+        /// </summary>
         internal PropertyDescriptorCollection GetExtendedProperties(object instance)
         {
             // Is this object a sited component?  If not, then it
@@ -605,7 +605,7 @@ namespace System.ComponentModel
             return new IExtenderProvider[0];
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     GetExtenders builds a list of extender providers from
         ///     a collection of components.  It validates the extenders
         ///     against any cached collection of extenders in the 
@@ -613,7 +613,7 @@ namespace System.ComponentModel
         ///     any cached extender properties from the cache and
         ///     save the updated extender list.  If there is no
         ///     discrepancy this will simply return the cached list.
-        /// </devdoc>
+        /// </summary>
         private static IExtenderProvider[] GetExtenders(ICollection components, object instance, IDictionary cache)
         {
             bool newExtenders = false;
@@ -743,26 +743,26 @@ namespace System.ComponentModel
             return currentExtenders;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Retrieves the owner for a property.
-        /// </devdoc>
+        /// </summary>
         internal object GetExtendedPropertyOwner(object instance, PropertyDescriptor pd)
         {
             return GetPropertyOwner(instance.GetType(), instance, pd);
         }
 
         //////////////////////////////////////////////////////////
-        /// <devdoc>
+        /// <summary>
         ///     Provides a type descriptor for the given object.  We only support this
         ///     if the object is a component that 
-        /// </devdoc>
+        /// </summary>
         public override ICustomTypeDescriptor GetExtendedTypeDescriptor(object instance)
         {
             Debug.Fail("This should never be invoked.  TypeDescriptionNode should wrap for us.");
             return null;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     The name of the specified component, or null if the component has no name.
         ///     In many cases this will return the same value as GetComponentName. If the
         ///     component resides in a nested container or has other nested semantics, it may
@@ -770,7 +770,7 @@ namespace System.ComponentModel
         ///
         ///     If not overridden, the default implementation of this method will call
         ///     GetComponentName.
-        /// </devdoc>
+        /// </summary>
         public override string GetFullComponentName(object component)
         {
 #if FEATURE_NESTED_SITE
@@ -788,10 +788,10 @@ namespace System.ComponentModel
             return TypeDescriptor.GetComponentName(component);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Returns an array of types we have populated metadata for that live
         ///     in the current module.
-        /// </devdoc>
+        /// </summary>
         internal Type[] GetPopulatedTypes(Module module)
         {
             ArrayList typeList = new ArrayList(); ;
@@ -810,38 +810,38 @@ namespace System.ComponentModel
             return (Type[])typeList.ToArray(typeof(Type));
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Retrieves the properties for this type.
-        /// </devdoc>
+        /// </summary>
         internal PropertyDescriptorCollection GetProperties(Type type)
         {
             ReflectedTypeData td = GetTypeData(type, true);
             return td.GetProperties();
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Retrieves the owner for a property.
-        /// </devdoc>
+        /// </summary>
         internal object GetPropertyOwner(Type type, object instance, PropertyDescriptor pd)
         {
             return TypeDescriptor.GetAssociation(type, instance);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Returns an Type for the given type.  Since type implements IReflect,
         ///     we just return objectType.
-        /// </devdoc>
+        /// </summary>
         public override Type GetReflectionType(Type objectType, object instance)
         {
             Debug.Assert(objectType != null, "Should have arg-checked before coming in here");
             return objectType;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Returns the type data for the given type, or
         ///     null if there is no type data for the type yet and
         ///     createIfNeeded is false.
-        /// </devdoc>
+        /// </summary>
         private ReflectedTypeData GetTypeData(Type type, bool createIfNeeded)
         {
             ReflectedTypeData td = null;
@@ -876,23 +876,23 @@ namespace System.ComponentModel
             return td;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     This method returns a custom type descriptor for the given type / object.  
         ///     The objectType parameter is always valid, but the instance parameter may 
         ///     be null if no instance was passed to TypeDescriptor.  The method should 
         ///     return a custom type descriptor for the object.  If the method is not 
         ///     interested in providing type information for the object it should 
         ///     return null.
-        /// </devdoc>
+        /// </summary>
         public override ICustomTypeDescriptor GetTypeDescriptor(Type objectType, object instance)
         {
             Debug.Fail("This should never be invoked.  TypeDescriptionNode should wrap for us.");
             return null;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Retrieves a type from a name.
-        /// </devdoc>
+        /// </summary>
         private static Type GetTypeFromName(string typeName)
         {
             Type t = Type.GetType(typeName);
@@ -919,10 +919,10 @@ namespace System.ComponentModel
             return t;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     This method returns true if the data cache in this reflection 
         ///     type descriptor has data in it.
-        /// </devdoc>
+        /// </summary>
         internal bool IsPopulated(Type type)
         {
             ReflectedTypeData td = GetTypeData(type, false);
@@ -933,13 +933,13 @@ namespace System.ComponentModel
             return false;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Static helper API around reflection to get and cache
         ///     custom attributes.  This does not recurse, but it will
         ///     walk interfaces on the type.  Interfaces are added 
         ///     to the end, so merging should be done from length - 1
         ///     to 0.
-        /// </devdoc>
+        /// </summary>
         internal static Attribute[] ReflectGetAttributes(Type type)
         {
             if (s_attributeCache == null)
@@ -976,10 +976,10 @@ namespace System.ComponentModel
             return attrs;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Static helper API around reflection to get and cache
         ///     custom attributes.  This does not recurse to the base class.
-        /// </devdoc>
+        /// </summary>
         internal static Attribute[] ReflectGetAttributes(MemberInfo member)
         {
             if (s_attributeCache == null)
@@ -1014,10 +1014,10 @@ namespace System.ComponentModel
             return attrs;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Static helper API around reflection to get and cache
         ///     events.  This does not recurse to the base class.
-        /// </devdoc>
+        /// </summary>
         private static EventDescriptor[] ReflectGetEvents(Type type)
         {
             if (s_eventCache == null)
@@ -1095,7 +1095,7 @@ namespace System.ComponentModel
             return events;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     This performs the actual reflection needed to discover
         ///     extender properties.  If object caching is supported this
         ///     will maintain a cache of property descriptors on the
@@ -1110,7 +1110,7 @@ namespace System.ComponentModel
         ///     ReflectPropertyDescriptor values that don't change for each
         ///     provider instance, and a per-provider cache that contains
         ///     the ExtendedPropertyDescriptors.
-        /// </devdoc>
+        /// </summary>
         private static PropertyDescriptor[] ReflectGetExtendedProperties(IExtenderProvider provider)
         {
             IDictionary cache = TypeDescriptor.GetCache(provider);
@@ -1208,10 +1208,10 @@ namespace System.ComponentModel
             return properties;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Static helper API around reflection to get and cache
         ///     properties. This does not recurse to the base class.
-        /// </devdoc>
+        /// </summary>
         private static PropertyDescriptor[] ReflectGetProperties(Type type)
         {
             if (s_propertyCache == null)
@@ -1300,11 +1300,11 @@ namespace System.ComponentModel
             return properties;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Refreshes the contents of this type descriptor.  This does not
         ///     actually requery, but it will clear our state so the next
         ///     query re-populates.
-        /// </devdoc>
+        /// </summary>
         internal void Refresh(Type type)
         {
             ReflectedTypeData td = GetTypeData(type, false);
@@ -1314,7 +1314,7 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc> 
+        /// <summary> 
         ///      Searches the provided intrinsic hashtable for a match with the object type. 
         ///      At the beginning, the hashtable contains types for the various converters. 
         ///      As this table is searched, the types for these objects 
@@ -1322,7 +1322,7 @@ namespace System.ComponentModel
         ///      does the search up the base class hierarchy and will create instances 
         ///      for types as needed.  These instances are stored back into the table 
         ///      for the base type, and for the original component type, for fast access. 
-        /// </devdoc> 
+        /// </summary> 
         private static object SearchIntrinsicTable(Hashtable table, Type callingType)
         {
             object hashEntry = null;

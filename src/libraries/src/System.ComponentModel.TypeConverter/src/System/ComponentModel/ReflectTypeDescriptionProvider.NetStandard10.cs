@@ -10,14 +10,14 @@ using System.Threading;
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///     This type description provider provides type information through 
     ///     reflection.  Unless someone has provided a custom type description
     ///     provider for a type or instance, or unless an instance implements
     ///     ICustomTypeDescriptor, any query for type information will go through
     ///     this class.  There should be a single instance of this class associated
     ///     with "object", as it can provide all type information for any type.
-    /// </devdoc>
+    /// </summary>
     internal sealed class ReflectTypeDescriptionProvider
     {
         // This is where we store the various converters for the intrinsic types.
@@ -31,20 +31,20 @@ namespace System.ComponentModel
 
         private static object s_syncObject = new object();
 
-        /// <devdoc>
+        /// <summary>
         ///     Creates a new ReflectTypeDescriptionProvider.  The type is the
         ///     type we will obtain type information for.
-        /// </devdoc>
+        /// </summary>
         internal ReflectTypeDescriptionProvider()
         {
         }
 
-        /// <devdoc> 
+        /// <summary> 
         ///      This is a table we create for intrinsic types. 
         ///      There should be entries here ONLY for intrinsic 
         ///      types, as all other types we should be able to 
         ///      add attributes directly as metadata. 
-        /// </devdoc> 
+        /// </summary> 
         private static Dictionary<object, object> IntrinsicTypeConverters
         {
             get
@@ -94,11 +94,11 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc> 
+        /// <summary> 
         ///     Helper method to create type converters. This checks to see if the
         ///     type implements a Type constructor, and if it does it invokes that ctor. 
         ///     Otherwise, it just tries to create the type.
-        /// </devdoc> 
+        /// </summary> 
         private static object CreateInstance(Type objectType, Type parameterType, ref bool noTypeConstructor)
         {
             ConstructorInfo typeConstructor = null;
@@ -143,9 +143,9 @@ namespace System.ComponentModel
             return null;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    Gets a type converter for the specified type.
-        /// </devdoc>
+        /// </summary>
         internal static TypeConverter GetConverter(Type type)
         {
             if (type == null)
@@ -234,10 +234,10 @@ namespace System.ComponentModel
             return (TypeConverter)ReflectTypeDescriptionProvider.SearchIntrinsicTable(type);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Retrieve a type from a name, if the name is not a fully qualified assembly name, then 
         ///     look for this type name in the same assembly as the "type" parameter is defined in.
-        /// </devdoc>
+        /// </summary>
         private static Type GetTypeFromName(string typeName, Type type)
         {
             if (string.IsNullOrEmpty(typeName))
@@ -261,7 +261,7 @@ namespace System.ComponentModel
             return t;
         }
 
-        /// <devdoc> 
+        /// <summary> 
         ///      Searches the provided intrinsic hashtable for a match with the object type. 
         ///      At the beginning, the hashtable contains types for the various converters. 
         ///      As this table is searched, the types for these objects 
@@ -269,7 +269,7 @@ namespace System.ComponentModel
         ///      does the search up the base class hierarchy and will create instances 
         ///      for types as needed.  These instances are stored back into the table 
         ///      for the base type, and for the original component type, for fast access. 
-        /// </devdoc> 
+        /// </summary> 
         private static object SearchIntrinsicTable(Type callingType)
         {
             object hashEntry = null;

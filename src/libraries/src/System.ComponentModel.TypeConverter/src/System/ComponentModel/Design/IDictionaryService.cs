@@ -4,30 +4,30 @@
 
 namespace System.ComponentModel.Design
 {
-    /// <devdoc>
+    /// <summary>
     ///    <para>Provides a generic dictionary service that a designer can use
     ///       to store user-defined data on the site.</para>
-    /// </devdoc>
+    /// </summary>
     public interface IDictionaryService
     {
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Gets the key corresponding to the specified value.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         object GetKey(object value);
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Gets the value corresponding to the specified key.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         object GetValue(object key);
 
-        /// <devdoc>
+        /// <summary>
         ///    <para> 
         ///       Sets the specified key-value pair.</para>
-        /// </devdoc>
+        /// </summary>
         void SetValue(object key, object value);
     }
 }

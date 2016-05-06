@@ -4,39 +4,39 @@
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///    <para> Specifies which methods are extender
     ///       properties.</para>
-    /// </devdoc>
+    /// </summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
     public sealed class ProvidePropertyAttribute : Attribute, ITypeId
     {
         private readonly string _propertyName;
         private readonly string _receiverTypeName;
 
-        /// <devdoc>
+        /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.ComponentModel.ProvidePropertyAttribute'/> class.</para>
-        /// </devdoc>
+        /// </summary>
         public ProvidePropertyAttribute(string propertyName, Type receiverType)
         {
             _propertyName = propertyName;
             _receiverTypeName = receiverType.AssemblyQualifiedName;
         }
 
-        /// <devdoc>
+        /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.ComponentModel.ProvidePropertyAttribute'/> class.</para>
-        /// </devdoc>
+        /// </summary>
         public ProvidePropertyAttribute(string propertyName, string receiverTypeName)
         {
             _propertyName = propertyName;
             _receiverTypeName = receiverTypeName;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Gets the name of a property that this class provides.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public string PropertyName
         {
             get
@@ -45,11 +45,11 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Gets the name of the data type this property can extend
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public string ReceiverTypeName
         {
             get
@@ -58,9 +58,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>ProvidePropertyAttribute implements this to include the type name and the property name</para>
-        /// </devdoc>
+        /// </summary>
         object ITypeId.TypeId
         {
             get

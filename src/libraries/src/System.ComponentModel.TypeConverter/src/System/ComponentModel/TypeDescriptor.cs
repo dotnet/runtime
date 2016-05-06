@@ -14,10 +14,10 @@ using System.Threading;
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///    Provides information about the properties and events
     ///    for a component. This class cannot be inherited.
-    /// </devdoc>
+    /// </summary>
     public sealed class TypeDescriptor
     {
         // Note: this is initialized at class load because we 
@@ -79,10 +79,10 @@ namespace System.ComponentModel
         {
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     This property returns a Type object that can be passed to the various 
         ///     AddProvider methods to define a type description provider for interface types.
-        /// </devdoc>
+        /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static Type InterfaceType
         {
@@ -92,9 +92,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     This value increments each time someone refreshes or changes metadata.
-        /// </devdoc>
+        /// </summary>
         internal static int MetadataVersion
         {
             get
@@ -104,12 +104,12 @@ namespace System.ComponentModel
         }
 
         /// <include file='doc\TypeDescriptor.uex' path='docs/doc[@for="TypeDescriptor.Refreshed"]/*' />
-        /// <devdoc>
+        /// <summary>
         ///    Occurs when Refreshed is raised for a component.
-        /// </devdoc>
+        /// </summary>
         public static event RefreshEventHandler Refreshed;
 
-        /// <devdoc>
+        /// <summary>
         ///     The AddAttributes method allows you to add class-level attributes for a 
         ///     type or an instance.  This method simply implements a type description provider 
         ///     that merges the provided attributes with the attributes that already exist on 
@@ -118,7 +118,7 @@ namespace System.ComponentModel
         ///     window.  The return value form AddAttributes is the TypeDescriptionProvider 
         ///     that was used to add the attributes.  This provider can later be passed to 
         ///     RemoveProvider if the added attributes are no longer needed.
-        /// </devdoc>
+        /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static TypeDescriptionProvider AddAttributes(Type type, params Attribute[] attributes)
         {
@@ -138,7 +138,7 @@ namespace System.ComponentModel
             return provider;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     The AddAttributes method allows you to add class-level attributes for a 
         ///     type or an instance.  This method simply implements a type description provider 
         ///     that merges the provided attributes with the attributes that already exist on 
@@ -147,7 +147,7 @@ namespace System.ComponentModel
         ///     window.  The return value form AddAttributes is the TypeDescriptionProvider 
         ///     that was used to add the attributes.  This provider can later be passed to 
         ///     RemoveProvider if the added attributes are no longer needed.
-        /// </devdoc>
+        /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static TypeDescriptionProvider AddAttributes(object instance, params Attribute[] attributes)
         {
@@ -168,19 +168,19 @@ namespace System.ComponentModel
         }
 
         /// <internalonly/>
-        /// <devdoc>
+        /// <summary>
         ///     Adds an editor table for the given editor base type. Typically, editors are
         ///     specified as metadata on an object. If no metadata for a requested editor
         ///     base type can be found on an object, however, the TypeDescriptor will search
         ///     an editor table for the editor type, if one can be found.
-        /// </devdoc>
+        /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void AddEditorTable(Type editorBaseType, Hashtable table)
         {
             ReflectTypeDescriptionProvider.AddEditorTable(editorBaseType, table);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Adds a type description provider that will be called on to provide 
         ///     type and instance information for any object that is of, or a subtype 
         ///     of, the provided type.  Type can be any type, including interfaces.  
@@ -188,7 +188,7 @@ namespace System.ComponentModel
         ///     components, you would pass typeof(IComponent).  Passing typeof(object) 
         ///     will cause the provider to be called to provide type information for 
         ///     all types.
-        /// </devdoc>
+        /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void AddProvider(TypeDescriptionProvider provider, Type type)
         {
@@ -216,13 +216,13 @@ namespace System.ComponentModel
             Refresh(type);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Adds a type description provider that will be called on to provide 
         ///     type information for a single object instance.  A provider added 
         ///     using this method will never have its CreateInstance method called 
         ///     because the instance already exists.  This method does not prevent 
         ///     the object from finalizing.
-        /// </devdoc>
+        /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void AddProvider(TypeDescriptionProvider provider, object instance)
         {
@@ -255,7 +255,7 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Adds a type description provider that will be called on to provide 
         ///     type and instance information for any object that is of, or a subtype 
         ///     of, the provided type.  Type can be any type, including interfaces.  
@@ -268,7 +268,7 @@ namespace System.ComponentModel
         ///     <see cref="TypeDescriptorPermissionFlags.RestrictedRegistrationAccess"/>
         ///     is defined, the caller can register a provider for the specified type 
         ///     if it's also partially trusted.
-        /// </devdoc>
+        /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void AddProviderTransparent(TypeDescriptionProvider provider, Type type)
         {
@@ -285,7 +285,7 @@ namespace System.ComponentModel
             AddProvider(provider, type);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Adds a type description provider that will be called on to provide 
         ///     type information for a single object instance.  A provider added 
         ///     using this method will never have its CreateInstance method called 
@@ -296,7 +296,7 @@ namespace System.ComponentModel
         ///     <see cref="TypeDescriptorPermissionFlags.RestrictedRegistrationAccess"/>
         ///     is defined, the caller can register a provider for the specified instance 
         ///     if its type is also partially trusted.
-        /// </devdoc>
+        /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void AddProviderTransparent(TypeDescriptionProvider provider, object instance)
         {
@@ -315,11 +315,11 @@ namespace System.ComponentModel
             AddProvider(provider, instance);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     This method verifies that we have checked for the presence
         ///     of a default type description provider attribute for the
         ///     given type.
-        /// </devdoc>
+        /// </summary>
         private static void CheckDefaultProvider(Type type)
         {
             if (s_defaultProviders == null)
@@ -385,14 +385,14 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     The CreateAssocation method creates an association between two objects.  
         ///     Once an association is created, a designer or other filtering mechanism 
         ///     can add properties that route to either object into the primary object's 
         ///     property set.  When a property invocation is made against the primary 
         ///     object, GetAssocation will be called to resolve the actual object 
         ///     instance that is related to its type parameter.  
-        /// </devdoc>
+        /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void CreateAssociation(object primary, object secondary)
         {
@@ -454,28 +454,28 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     This dynamically binds an EventDescriptor to a type.
-        /// </devdoc>
+        /// </summary>
         public static EventDescriptor CreateEvent(Type componentType, string name, Type type, params Attribute[] attributes)
         {
             return new ReflectEventDescriptor(componentType, name, type, attributes);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     This creates a new event descriptor identical to an existing event descriptor.  The new event descriptor
         ///     has the specified metadata attributes merged with the existing metadata attributes.
-        /// </devdoc>
+        /// </summary>
         public static EventDescriptor CreateEvent(Type componentType, EventDescriptor oldEventDescriptor, params Attribute[] attributes)
         {
             return new ReflectEventDescriptor(componentType, oldEventDescriptor, attributes);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     This method will search internal tables within TypeDescriptor for 
         ///     a TypeDescriptionProvider object that is associated with the given 
         ///     data type.  If it finds one, it will delegate the call to that object.  
-        /// </devdoc>
+        /// </summary>
         public static object CreateInstance(IServiceProvider provider, Type objectType, Type[] argTypes, object[] args)
         {
             if (objectType == null)
@@ -516,18 +516,18 @@ namespace System.ComponentModel
 
             return instance;
         }
-        /// <devdoc>
+        /// <summary>
         ///     This dynamically binds a PropertyDescriptor to a type.
-        /// </devdoc>
+        /// </summary>
         public static PropertyDescriptor CreateProperty(Type componentType, string name, Type type, params Attribute[] attributes)
         {
             return new ReflectPropertyDescriptor(componentType, name, type, attributes);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     This creates a new property descriptor identical to an existing property descriptor.  The new property descriptor
         ///     has the specified metadata attributes merged with the existing metadata attributes.
-        /// </devdoc>
+        /// </summary>
         public static PropertyDescriptor CreateProperty(Type componentType, PropertyDescriptor oldPropertyDescriptor, params Attribute[] attributes)
         {
             // We must do some special case work here for extended properties.  If the old property descriptor is really
@@ -555,13 +555,13 @@ namespace System.ComponentModel
             return new ReflectPropertyDescriptor(componentType, oldPropertyDescriptor, attributes);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     This  API is used to remove any members from the given
         ///     collection that do not match the attribute array.  If members
         ///     need to be removed, a new ArrayList wil be created that
         ///     contains only the remaining members. The API returns
         ///     NULL if it did not need to filter any members.
-        /// </devdoc>
+        /// </summary>
         private static ArrayList FilterMembers(IList members, Attribute[] attributes)
         {
             ArrayList newMembers = null;
@@ -603,10 +603,10 @@ namespace System.ComponentModel
             return newMembers;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     The GetAssociation method returns the correct object to invoke 
         ///     for the requested type.  It never returns null.  
-        /// </devdoc>
+        /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static object GetAssociation(Type type, object primary)
         {
@@ -694,9 +694,9 @@ namespace System.ComponentModel
             return associatedObject;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Gets a collection of attributes for the specified type of component.
-        /// </devdoc>
+        /// </summary>
         public static AttributeCollection GetAttributes(Type componentType)
         {
             if (componentType == null)
@@ -709,17 +709,17 @@ namespace System.ComponentModel
             return attributes;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Gets a collection of attributes for the specified component.
-        /// </devdoc>
+        /// </summary>
         public static AttributeCollection GetAttributes(object component)
         {
             return GetAttributes(component, false);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Gets a collection of attributes for the specified component.
-        /// </devdoc>
+        /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static AttributeCollection GetAttributes(object component, bool noCustomTypeDesc)
         {
@@ -804,66 +804,66 @@ namespace System.ComponentModel
             return attrs;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Helper function to obtain a cache for the given object.
-        /// </devdoc>
+        /// </summary>
         internal static IDictionary GetCache(object instance)
         {
             return NodeFor(instance).GetCache(instance);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Gets the name of the class for the specified component.
-        /// </devdoc>
+        /// </summary>
         public static string GetClassName(object component)
         {
             return GetClassName(component, false);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Gets the name of the class for the specified component.
-        /// </devdoc>
+        /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static string GetClassName(object component, bool noCustomTypeDesc)
         {
             return GetDescriptor(component, noCustomTypeDesc).GetClassName();
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Gets the name of the class for the specified type.
-        /// </devdoc>
+        /// </summary>
         public static string GetClassName(Type componentType)
         {
             return GetDescriptor(componentType, "componentType").GetClassName();
         }
 
-        /// <devdoc>
+        /// <summary>
         ///       The name of the class for the specified component.
-        /// </devdoc>
+        /// </summary>
         public static string GetComponentName(object component)
         {
             return GetComponentName(component, false);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    Gets the name of the class for the specified component.
-        /// </devdoc>
+        /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static string GetComponentName(object component, bool noCustomTypeDesc)
         {
             return GetDescriptor(component, noCustomTypeDesc).GetComponentName();
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    Gets a type converter for the type of the specified component.
-        /// </devdoc>
+        /// </summary>
         public static TypeConverter GetConverter(object component)
         {
             return GetConverter(component, false);
         }
-        /// <devdoc>
+        /// <summary>
         ///    Gets a type converter for the type of the specified component.
-        /// </devdoc>
+        /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static TypeConverter GetConverter(object component, bool noCustomTypeDesc)
         {
@@ -871,18 +871,18 @@ namespace System.ComponentModel
             return converter;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    Gets a type converter for the specified type.
-        /// </devdoc>
+        /// </summary>
         public static TypeConverter GetConverter(Type type)
         {
             TypeConverter converter = GetDescriptor(type, "type").GetConverter();
             return converter;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Gets the default event for the specified type of component.
-        /// </devdoc>
+        /// </summary>
         public static EventDescriptor GetDefaultEvent(Type componentType)
         {
             if (componentType == null)
@@ -894,17 +894,17 @@ namespace System.ComponentModel
             return GetDescriptor(componentType, "componentType").GetDefaultEvent();
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Gets the default event for the specified component.
-        /// </devdoc>
+        /// </summary>
         public static EventDescriptor GetDefaultEvent(object component)
         {
             return GetDefaultEvent(component, false);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Gets the default event for a component.
-        /// </devdoc>
+        /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static EventDescriptor GetDefaultEvent(object component, bool noCustomTypeDesc)
         {
@@ -917,9 +917,9 @@ namespace System.ComponentModel
             return GetDescriptor(component, noCustomTypeDesc).GetDefaultEvent();
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Gets the default property for the specified type of component.
-        /// </devdoc>
+        /// </summary>
         public static PropertyDescriptor GetDefaultProperty(Type componentType)
         {
             if (componentType == null)
@@ -931,17 +931,17 @@ namespace System.ComponentModel
             return GetDescriptor(componentType, "componentType").GetDefaultProperty();
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Gets the default property for the specified component.
-        /// </devdoc>
+        /// </summary>
         public static PropertyDescriptor GetDefaultProperty(object component)
         {
             return GetDefaultProperty(component, false);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Gets the default property for the specified component.
-        /// </devdoc>
+        /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static PropertyDescriptor GetDefaultProperty(object component, bool noCustomTypeDesc)
         {
@@ -954,10 +954,10 @@ namespace System.ComponentModel
             return GetDescriptor(component, noCustomTypeDesc).GetDefaultProperty();
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Returns a custom type descriptor for the given type.
         ///     Performs arg checking so callers don't have to.
-        /// </devdoc>
+        /// </summary>
         internal static ICustomTypeDescriptor GetDescriptor(Type type, string typeName)
         {
             if (type == null)
@@ -968,12 +968,12 @@ namespace System.ComponentModel
             return NodeFor(type).GetTypeDescriptor(type);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Returns a custom type descriptor for the given instance.
         ///     Performs arg checking so callers don't have to.  This
         ///     will call through to instance if it is a custom type
         ///     descriptor.
-        /// </devdoc>
+        /// </summary>
         internal static ICustomTypeDescriptor GetDescriptor(object component, bool noCustomTypeDesc)
         {
             if (component == null)
@@ -997,9 +997,9 @@ namespace System.ComponentModel
             return desc;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Returns an extended custom type descriptor for the given instance.
-        /// </devdoc>
+        /// </summary>
         internal static ICustomTypeDescriptor GetExtendedDescriptor(object component)
         {
             if (component == null)
@@ -1010,19 +1010,19 @@ namespace System.ComponentModel
             return NodeFor(component).GetExtendedTypeDescriptor(component);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Gets an editor with the specified base type for the
         ///     specified component.
-        /// </devdoc>
+        /// </summary>
         public static object GetEditor(object component, Type editorBaseType)
         {
             return GetEditor(component, editorBaseType, false);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Gets an editor with the specified base type for the
         ///     specified component.
-        /// </devdoc>
+        /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static object GetEditor(object component, Type editorBaseType, bool noCustomTypeDesc)
         {
@@ -1034,9 +1034,9 @@ namespace System.ComponentModel
             return GetDescriptor(component, noCustomTypeDesc).GetEditor(editorBaseType);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    Gets an editor with the specified base type for the specified type.
-        /// </devdoc>
+        /// </summary>
         public static object GetEditor(Type type, Type editorBaseType)
         {
             if (editorBaseType == null)
@@ -1047,9 +1047,9 @@ namespace System.ComponentModel
             return GetDescriptor(type, "type").GetEditor(editorBaseType);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Gets a collection of events for a specified type of component.
-        /// </devdoc>
+        /// </summary>
         public static EventDescriptorCollection GetEvents(Type componentType)
         {
             if (componentType == null)
@@ -1061,10 +1061,10 @@ namespace System.ComponentModel
             return GetDescriptor(componentType, "componentType").GetEvents();
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Gets a collection of events for a specified type of
         ///     component using a specified array of attributes as a filter.
-        /// </devdoc>
+        /// </summary>
         public static EventDescriptorCollection GetEvents(Type componentType, Attribute[] attributes)
         {
             if (componentType == null)
@@ -1087,36 +1087,36 @@ namespace System.ComponentModel
             return events;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Gets a collection of events for a specified component.
-        /// </devdoc>
+        /// </summary>
         public static EventDescriptorCollection GetEvents(object component)
         {
             return GetEvents(component, null, false);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Gets a collection of events for a specified component.
-        /// </devdoc>
+        /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static EventDescriptorCollection GetEvents(object component, bool noCustomTypeDesc)
         {
             return GetEvents(component, null, noCustomTypeDesc);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Gets a collection of events for a specified component 
         ///     using a specified array of attributes as a filter.
-        /// </devdoc>
+        /// </summary>
         public static EventDescriptorCollection GetEvents(object component, Attribute[] attributes)
         {
             return GetEvents(component, attributes, false);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Gets a collection of events for a specified component 
         ///     using a specified array of attributes as a filter.
-        /// </devdoc>
+        /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static EventDescriptorCollection GetEvents(object component, Attribute[] attributes, bool noCustomTypeDesc)
         {
@@ -1203,14 +1203,14 @@ namespace System.ComponentModel
             return evts;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     This method is invoked during filtering when a name
         ///     collision is encountered between two properties or events.  This returns
         ///     a suffix that can be appended to the name to make
         ///     it unique.  This will first attempt ot use the name of the
         ///     extender.  Failing that it will fall back to a static
         ///     index that is continually incremented.
-        /// </devdoc>
+        /// </summary>
         private static string GetExtenderCollisionSuffix(MemberDescriptor member)
         {
             string suffix = null;
@@ -1243,12 +1243,12 @@ namespace System.ComponentModel
             return suffix;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     The name of the specified component, or null if the component has no name.
         ///     In many cases this will return the same value as GetComponentName. If the
         ///     component resides in a nested container or has other nested semantics, it may
         ///     return a different fully qualfied name.
-        /// </devdoc>
+        /// </summary>
         public static string GetFullComponentName(object component)
         {
             if (component == null) throw new ArgumentNullException(nameof(component));
@@ -1269,9 +1269,9 @@ namespace System.ComponentModel
             return typeInfo.BaseType;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Gets a collection of properties for a specified type of component.
-        /// </devdoc>
+        /// </summary>
         public static PropertyDescriptorCollection GetProperties(Type componentType)
         {
             if (componentType == null)
@@ -1283,10 +1283,10 @@ namespace System.ComponentModel
             return GetDescriptor(componentType, "componentType").GetProperties();
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    Gets a collection of properties for a specified type of 
         ///    component using a specified array of attributes as a filter.
-        /// </devdoc>
+        /// </summary>
         public static PropertyDescriptorCollection GetProperties(Type componentType, Attribute[] attributes)
         {
             if (componentType == null)
@@ -1309,48 +1309,48 @@ namespace System.ComponentModel
             return properties;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Gets a collection of properties for a specified component.
-        /// </devdoc>
+        /// </summary>
         public static PropertyDescriptorCollection GetProperties(object component)
         {
             return GetProperties(component, false);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Gets a collection of properties for a specified component.
-        /// </devdoc>
+        /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static PropertyDescriptorCollection GetProperties(object component, bool noCustomTypeDesc)
         {
             return GetPropertiesImpl(component, null, noCustomTypeDesc, true);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    Gets a collection of properties for a specified 
         ///    component using a specified array of attributes
         ///    as a filter.
-        /// </devdoc>
+        /// </summary>
         public static PropertyDescriptorCollection GetProperties(object component, Attribute[] attributes)
         {
             return GetProperties(component, attributes, false);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets a collection of properties for a specified 
         ///       component using a specified array of attributes
         ///       as a filter.</para>
-        /// </devdoc>
+        /// </summary>
         public static PropertyDescriptorCollection GetProperties(object component, Attribute[] attributes, bool noCustomTypeDesc)
         {
             return GetPropertiesImpl(component, attributes, noCustomTypeDesc, false);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    Gets a collection of properties for a specified component. Uses the attribute filter 
         ///    only if noAttributes is false. This is to preserve backward compat for the case when
         ///    no attribute filter was passed in (as against passing in null).
-        /// </devdoc>
+        /// </summary>
         private static PropertyDescriptorCollection GetPropertiesImpl(object component, Attribute[] attributes, bool noCustomTypeDesc, bool noAttributes)
         {
             if (component == null)
@@ -1436,13 +1436,13 @@ namespace System.ComponentModel
             return props;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     The GetProvider method returns a type description provider for 
         ///     the given object or type.  This will always return a type description 
         ///     provider.  Even the default TypeDescriptor implementation is built on 
         ///     a TypeDescriptionProvider, and this will be returned unless there is 
         ///     another provider that someone else has added.
-        /// </devdoc>
+        /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static TypeDescriptionProvider GetProvider(Type type)
         {
@@ -1454,13 +1454,13 @@ namespace System.ComponentModel
             return NodeFor(type, true);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     The GetProvider method returns a type description provider for 
         ///     the given object or type.  This will always return a type description 
         ///     provider.  Even the default TypeDescriptor implementation is built on 
         ///     a TypeDescriptionProvider, and this will be returned unless there is 
         ///     another provider that someone else has added.
-        /// </devdoc>
+        /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static TypeDescriptionProvider GetProvider(object instance)
         {
@@ -1472,21 +1472,21 @@ namespace System.ComponentModel
             return NodeFor(instance, true);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     This method returns a type description provider, but instead of creating
         ///     a delegating provider for the type, this will walk all base types until
         ///     it locates a provider.  The provider returned cannot be cached.  This
         ///     method is used by the DelegatingTypeDescriptionProvider to efficiently
         ///     locate the provider to delegate to.
-        /// </devdoc>
+        /// </summary>
         internal static TypeDescriptionProvider GetProviderRecursive(Type type)
         {
             return NodeFor(type, false);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Returns an Type instance that can be used to perform reflection.
-        /// </devdoc>
+        /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static Type GetReflectionType(Type type)
         {
@@ -1499,9 +1499,9 @@ namespace System.ComponentModel
         }
 
 
-        /// <devdoc>
+        /// <summary>
         ///     Returns an Type instance that can be used to perform reflection.
-        /// </devdoc>
+        /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static Type GetReflectionType(object instance)
         {
@@ -1513,19 +1513,19 @@ namespace System.ComponentModel
             return NodeFor(instance).GetReflectionType(instance);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Retrieves the head type description node for a type.
         ///     A head node pointing to a reflection based type description
         ///     provider will be created on demand.  This does not create
         ///     a delegator, in which case the node returned may be
         ///     a base type node.
-        /// </devdoc>
+        /// </summary>
         private static TypeDescriptionNode NodeFor(Type type)
         {
             return NodeFor(type, false);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Retrieves the head type description node for a type.
         ///     A head node pointing to a reflection based type description
         ///     provider will be created on demand.
@@ -1539,7 +1539,7 @@ namespace System.ComponentModel
         ///
         ///     If createDelegator is false, this method will recurse up the
         ///     base type chain looking for nodes.  
-        /// </devdoc>
+        /// </summary>
         private static TypeDescriptionNode NodeFor(Type type, bool createDelegator)
         {
             Debug.Assert(type != null, "Caller should validate");
@@ -1601,18 +1601,18 @@ namespace System.ComponentModel
             return node;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Retrieves the head type description node for an instance.
         ///     Instance-based node lists are rare.  If a node list is not
         ///     available for a given instance, this will return the head node
         ///     for the instance's type.
-        /// </devdoc>
+        /// </summary>
         private static TypeDescriptionNode NodeFor(object instance)
         {
             return NodeFor(instance, false);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Retrieves the head type description node for an instance.
         ///     Instance-based node lists are rare.  If a node list is not
         ///     available for a given instance, this will return the head node
@@ -1626,7 +1626,7 @@ namespace System.ComponentModel
         ///     not involve publicly exposing the type description provider for
         ///     the instance, the query should pass in fase (the default) for
         ///     createDelegator because no object will be created.
-        /// </devdoc>
+        /// </summary>
         private static TypeDescriptionNode NodeFor(object instance, bool createDelegator)
         {
             // For object instances, the provider cache key is not the object (that
@@ -1656,7 +1656,7 @@ namespace System.ComponentModel
             return node;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Simple linked list code to remove an element
         ///     from the list.  Returns the new head to the
         ///     list.  If the head points to an instance of
@@ -1673,7 +1673,7 @@ namespace System.ComponentModel
         ///     which is exposed as one of these nodes.  Therefore,
         ///     to remove a provider the node following is most likely
         ///     referenced by that provider
-        /// </devdoc>
+        /// </summary>
         private static void NodeRemove(object key, TypeDescriptionProvider provider)
         {
             lock (s_providerTable)
@@ -1747,10 +1747,10 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     This is the last stage in our filtering pipeline.  Here, we apply any
         ///     user-defined filter.  
-        /// </devdoc>
+        /// </summary>
         private static ICollection PipelineAttributeFilter(int pipelineType, ICollection members, Attribute[] filter, object instance, IDictionary cache)
         {
             Debug.Assert(pipelineType != PIPELINE_ATTRIBUTES, "PipelineAttributeFilter is not supported for attributes");
@@ -1821,14 +1821,14 @@ namespace System.ComponentModel
             return list;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Metdata filtering is the third stage of our pipeline.  
         ///     In this stage we check to see if the given object is a
         ///     sited component that provides the ITypeDescriptorFilterService
         ///     object.  If it does, we allow the TDS to filter the metadata.
         ///     This will use the cache, if available, to store filtered
         ///     metdata.
-        /// </devdoc>
+        /// </summary>
         private static ICollection PipelineFilter(int pipelineType, ICollection members, object instance, IDictionary cache)
         {
             IComponent component = instance as IComponent;
@@ -2029,10 +2029,10 @@ namespace System.ComponentModel
             return list;
         }
 
-        /// <devdoc>
+        /// <summary>
         /// This is the first stage in the pipeline.  This checks the incoming member collection and if it
         /// differs from what we have seen in the past, it invalidates all successive pipelines.
-        /// </devdoc>
+        /// </summary>
         private static ICollection PipelineInitialize(int pipelineType, ICollection members, IDictionary cache)
         {
             if (cache != null)
@@ -2069,11 +2069,11 @@ namespace System.ComponentModel
             return members;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Metadata merging is the second stage of our metadata pipeline.  This stage
         ///     merges extended metdata with primary metadata, and stores it in 
         ///     the cache if it is available.
-        /// </devdoc>
+        /// </summary>
         private static ICollection PipelineMerge(int pipelineType, ICollection primary, ICollection secondary, object instance, IDictionary cache)
         {
             // If there is no secondary collection, there is nothing to merge.
@@ -2202,10 +2202,10 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    Clears the properties and events for the specified 
         ///    component from the cache.
-        /// </devdoc>
+        /// </summary>
         public static void Refresh(object component)
         {
             Refresh(component, true);
@@ -2293,10 +2293,10 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    Clears the properties and events for the specified type 
         ///    of component from the cache.
-        /// </devdoc>
+        /// </summary>
         public static void Refresh(Type type)
         {
             if (type == null)
@@ -2357,10 +2357,10 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    Clears the properties and events for the specified 
         ///    module from the cache.
-        /// </devdoc>
+        /// </summary>
         public static void Refresh(Module module)
         {
             if (module == null)
@@ -2423,10 +2423,10 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    Clears the properties and events for the specified 
         ///    assembly from the cache.
-        /// </devdoc>
+        /// </summary>
         public static void Refresh(Assembly assembly)
         {
             if (assembly == null)
@@ -2441,9 +2441,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     The RemoveAssociation method removes an association with an object.  
-        /// </devdoc>
+        /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void RemoveAssociation(object primary, object secondary)
         {
@@ -2482,9 +2482,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     The RemoveAssociations method removes all associations for a primary object.
-        /// </devdoc>
+        /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void RemoveAssociations(object primary)
         {
@@ -2500,12 +2500,12 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     The RemoveProvider method removes a previously added type 
         ///     description provider.  Removing a provider causes a Refresh 
         ///     event to be raised for the object or type the provider is 
         ///     associated with.
-        /// </devdoc>
+        /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void RemoveProvider(TypeDescriptionProvider provider, Type type)
         {
@@ -2524,12 +2524,12 @@ namespace System.ComponentModel
             RaiseRefresh(type);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     The RemoveProvider method removes a previously added type 
         ///     description provider.  Removing a provider causes a Refresh 
         ///     event to be raised for the object or type the provider is 
         ///     associated with.
-        /// </devdoc>
+        /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void RemoveProvider(TypeDescriptionProvider provider, object instance)
         {
@@ -2549,7 +2549,7 @@ namespace System.ComponentModel
         }
 
 
-        /// <devdoc>
+        /// <summary>
         ///     The RemoveProvider method removes a previously added type 
         ///     description provider.  Removing a provider causes a Refresh 
         ///     event to be raised for the object or type the provider is 
@@ -2559,7 +2559,7 @@ namespace System.ComponentModel
         ///     <see cref="TypeDescriptorPermissionFlags.RestrictedRegistrationAccess"/>
         ///     is defined, the caller can unregister a provider for the specified type
         ///     if it's also partially trusted.
-        /// </devdoc>
+        /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void RemoveProviderTransparent(TypeDescriptionProvider provider, Type type)
         {
@@ -2576,7 +2576,7 @@ namespace System.ComponentModel
             RemoveProvider(provider, type);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     The RemoveProvider method removes a previously added type 
         ///     description provider.  Removing a provider causes a Refresh 
         ///     event to be raised for the object or type the provider is 
@@ -2586,7 +2586,7 @@ namespace System.ComponentModel
         ///     <see cref="TypeDescriptorPermissionFlags.RestrictedRegistrationAccess"/>
         ///     is defined, the caller can register a provider for the specified instance 
         ///     if its type is also partially trusted.
-        /// </devdoc>
+        /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void RemoveProviderTransparent(TypeDescriptionProvider provider, object instance)
         {
@@ -2605,12 +2605,12 @@ namespace System.ComponentModel
             RemoveProvider(provider, instance);
         }
 
-        /// <devdoc> 
+        /// <summary> 
         ///     This function takes a member descriptor and an attribute and determines whether 
         ///     the member satisfies the particular attribute.  This either means that the member 
         ///     contains the attribute or the member does not contain the attribute and the default 
         ///     for the attribute matches the passed in attribute. 
-        /// </devdoc> 
+        /// </summary> 
         private static bool ShouldHideMember(MemberDescriptor member, Attribute attribute)
         {
             if (member == null || attribute == null)
@@ -2629,9 +2629,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Sorts descriptors by name of the descriptor.
-        /// </devdoc>
+        /// </summary>
         public static void SortDescriptorArray(IList infos)
         {
             throw new NotImplementedException();
@@ -2643,9 +2643,9 @@ namespace System.ComponentModel
             //ArrayList.Adapter(infos).Sort(MemberDescriptorComparer.Instance);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Internal tracing API for debugging type descriptor.
-        /// </devdoc>
+        /// </summary>
         [Conditional("DEBUG")]
         internal static void Trace(string message, params object[] args)
         {
@@ -2653,53 +2653,53 @@ namespace System.ComponentModel
             Debug.WriteLine(string.Format(CultureInfo.InvariantCulture, "TypeDescriptor : {0}", string.Format(CultureInfo.InvariantCulture, message, args)));
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     This is a type description provider that adds the given
         ///     array of attributes to a class or instance, preserving the rest
         ///     of the metadata in the process.
-        /// </devdoc>
+        /// </summary>
         private sealed class AttributeProvider : TypeDescriptionProvider
         {
             private Attribute[] _attrs;
 
-            /// <devdoc>
+            /// <summary>
             ///     Creates a new attribute provider.
-            /// </devdoc>
+            /// </summary>
             internal AttributeProvider(TypeDescriptionProvider existingProvider, params Attribute[] attrs) : base(existingProvider)
             {
                 _attrs = attrs;
             }
 
-            /// <devdoc>
+            /// <summary>
             ///     Creates a custom type descriptor that replaces the attributes.
-            /// </devdoc>
+            /// </summary>
             public override ICustomTypeDescriptor GetTypeDescriptor(Type objectType, object instance)
             {
                 return new AttributeTypeDescriptor(_attrs, base.GetTypeDescriptor(objectType, instance));
             }
 
-            /// <devdoc>
+            /// <summary>
             ///     Our custom type descriptor.
-            /// </devdoc>
+            /// </summary>
             private class AttributeTypeDescriptor : CustomTypeDescriptor
             {
                 private Attribute[] _attributeArray;
 
-                /// <devdoc>
+                /// <summary>
                 ///     Creates a new custom type descriptor that can merge 
                 ///     the provided set of attributes with the existing set.
-                /// </devdoc>
+                /// </summary>
                 internal AttributeTypeDescriptor(Attribute[] attrs, ICustomTypeDescriptor parent) : base(parent)
                 {
                     _attributeArray = attrs;
                 }
 
-                /// <devdoc>
+                /// <summary>
                 ///     Retrieves the merged set of attributes.  We do not cache
                 ///     this because there is always the possibility that someone
                 ///     changed our parent provider's metadata.  TypeDescriptor
                 ///     will cache this for us anyhow.
-                /// </devdoc>
+                /// </summary>
                 public override AttributeCollection GetAttributes()
                 {
                     Attribute[] finalAttr = null;
@@ -2749,11 +2749,11 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     This is a simple class that is used to store a filtered
         ///     set of members in an object's dictionary cache.  It is
         ///     used by the PipelineAttributeFilter method.
-        /// </devdoc>
+        /// </summary>
         private sealed class AttributeFilterCacheItem
         {
             private Attribute[] _filter;
@@ -2781,10 +2781,10 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         /// This small class contains cache information for the filter stage of our
         /// caching algorithm.  It is used by the PipelineFilter method.
-        /// </devdoc>
+        /// </summary>
         private sealed class FilterCacheItem
         {
             private ITypeDescriptorFilterService _filterService;
@@ -2803,7 +2803,7 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     An unimplemented interface.  What is this?  It is an interface that nobody ever
         ///     implements, of course? Where and why would it be used?  Why, to find cross-process
         ///     remoted objects, of course!  If a well-known object comes in from a cross process
@@ -2818,12 +2818,12 @@ namespace System.ComponentModel
         ///     presence of an interface.  We do that all over the place here, so we do a check
         ///     during parameter validation to see if an object implements IUnimplemented.  If it
         ///     does, we know that what we really have is a lying remoting proxy, and we bail.
-        /// </devdoc>
+        /// </summary>
         private interface IUnimplemented { }
 
-        /// <devdoc>
+        /// <summary>
         ///     This comparer compares member descriptors for sorting.
-        /// </devdoc>
+        /// </summary>
         private sealed class MemberDescriptorComparer : IComparer
         {
             public static readonly MemberDescriptorComparer Instance = new MemberDescriptorComparer();
@@ -2834,29 +2834,29 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     This is a merged type descriptor that can merge the output of
         ///     a primary and secondary type descriptor.  If the primary doesn't
         ///     provide the needed information, the request is passed on to the 
         ///     secondary.
-        /// </devdoc>
+        /// </summary>
         private sealed class MergedTypeDescriptor : ICustomTypeDescriptor
         {
             private ICustomTypeDescriptor _primary;
             private ICustomTypeDescriptor _secondary;
 
-            /// <devdoc>
+            /// <summary>
             ///     Creates a new MergedTypeDescriptor.
-            /// </devdoc>
+            /// </summary>
             internal MergedTypeDescriptor(ICustomTypeDescriptor primary, ICustomTypeDescriptor secondary)
             {
                 _primary = primary;
                 _secondary = secondary;
             }
 
-            /// <devdoc>
+            /// <summary>
             ///     ICustomTypeDescriptor implementation.
-            /// </devdoc>
+            /// </summary>
             AttributeCollection ICustomTypeDescriptor.GetAttributes()
             {
                 AttributeCollection attrs = _primary.GetAttributes();
@@ -2869,9 +2869,9 @@ namespace System.ComponentModel
                 return attrs;
             }
 
-            /// <devdoc>
+            /// <summary>
             ///     ICustomTypeDescriptor implementation.
-            /// </devdoc>
+            /// </summary>
             string ICustomTypeDescriptor.GetClassName()
             {
                 string className = _primary.GetClassName();
@@ -2884,9 +2884,9 @@ namespace System.ComponentModel
                 return className;
             }
 
-            /// <devdoc>
+            /// <summary>
             ///     ICustomTypeDescriptor implementation.
-            /// </devdoc>
+            /// </summary>
             string ICustomTypeDescriptor.GetComponentName()
             {
                 string name = _primary.GetComponentName();
@@ -2898,9 +2898,9 @@ namespace System.ComponentModel
                 return name;
             }
 
-            /// <devdoc>
+            /// <summary>
             ///     ICustomTypeDescriptor implementation.
-            /// </devdoc>
+            /// </summary>
             TypeConverter ICustomTypeDescriptor.GetConverter()
             {
                 TypeConverter converter = _primary.GetConverter();
@@ -2913,9 +2913,9 @@ namespace System.ComponentModel
                 return converter;
             }
 
-            /// <devdoc>
+            /// <summary>
             ///     ICustomTypeDescriptor implementation.
-            /// </devdoc>
+            /// </summary>
             EventDescriptor ICustomTypeDescriptor.GetDefaultEvent()
             {
                 EventDescriptor evt = _primary.GetDefaultEvent();
@@ -2927,9 +2927,9 @@ namespace System.ComponentModel
                 return evt;
             }
 
-            /// <devdoc>
+            /// <summary>
             ///     ICustomTypeDescriptor implementation.
-            /// </devdoc>
+            /// </summary>
             PropertyDescriptor ICustomTypeDescriptor.GetDefaultProperty()
             {
                 PropertyDescriptor prop = _primary.GetDefaultProperty();
@@ -2941,9 +2941,9 @@ namespace System.ComponentModel
                 return prop;
             }
 
-            /// <devdoc>
+            /// <summary>
             ///     ICustomTypeDescriptor implementation.
-            /// </devdoc>
+            /// </summary>
             object ICustomTypeDescriptor.GetEditor(Type editorBaseType)
             {
                 if (editorBaseType == null)
@@ -2960,9 +2960,9 @@ namespace System.ComponentModel
                 return editor;
             }
 
-            /// <devdoc>
+            /// <summary>
             ///     ICustomTypeDescriptor implementation.
-            /// </devdoc>
+            /// </summary>
             EventDescriptorCollection ICustomTypeDescriptor.GetEvents()
             {
                 EventDescriptorCollection events = _primary.GetEvents();
@@ -2975,9 +2975,9 @@ namespace System.ComponentModel
                 return events;
             }
 
-            /// <devdoc>
+            /// <summary>
             ///     ICustomTypeDescriptor implementation.
-            /// </devdoc>
+            /// </summary>
             EventDescriptorCollection ICustomTypeDescriptor.GetEvents(Attribute[] attributes)
             {
                 EventDescriptorCollection events = _primary.GetEvents(attributes);
@@ -2990,9 +2990,9 @@ namespace System.ComponentModel
                 return events;
             }
 
-            /// <devdoc>
+            /// <summary>
             ///     ICustomTypeDescriptor implementation.
-            /// </devdoc>
+            /// </summary>
             PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties()
             {
                 PropertyDescriptorCollection properties = _primary.GetProperties();
@@ -3005,9 +3005,9 @@ namespace System.ComponentModel
                 return properties;
             }
 
-            /// <devdoc>
+            /// <summary>
             ///     ICustomTypeDescriptor implementation.
-            /// </devdoc>
+            /// </summary>
             PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[] attributes)
             {
                 PropertyDescriptorCollection properties = _primary.GetProperties(attributes);
@@ -3020,9 +3020,9 @@ namespace System.ComponentModel
                 return properties;
             }
 
-            /// <devdoc>
+            /// <summary>
             ///     ICustomTypeDescriptor implementation.
-            /// </devdoc>
+            /// </summary>
             object ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor pd)
             {
                 object owner = _primary.GetPropertyOwner(pd);
@@ -3035,7 +3035,7 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     This is a linked list node that is comprised of a type
         ///     description provider.  Each node contains a Next pointer
         ///     to the next node in the list and also a Provider pointer
@@ -3043,24 +3043,24 @@ namespace System.ComponentModel
         ///     represents.  The implementation of TypeDescriptionProvider
         ///     that the node provides simply invokes the corresponding
         ///     method on the node's provider.
-        /// </devdoc>
+        /// </summary>
         private sealed class TypeDescriptionNode : TypeDescriptionProvider
         {
             internal TypeDescriptionNode Next;
             internal TypeDescriptionProvider Provider;
 
-            /// <devdoc>
+            /// <summary>
             ///     Creates a new type description node.
-            /// </devdoc>
+            /// </summary>
             internal TypeDescriptionNode(TypeDescriptionProvider provider)
             {
                 Provider = provider;
             }
 
-            /// <devdoc>
+            /// <summary>
             ///     Implements CreateInstance.  This just walks the linked list
             ///     looking for someone who implements the call.
-            /// </devdoc>
+            /// </summary>
             public override object CreateInstance(IServiceProvider provider, Type objectType, Type[] argTypes, object[] args)
             {
                 if (objectType == null)
@@ -3084,10 +3084,10 @@ namespace System.ComponentModel
                 return Provider.CreateInstance(provider, objectType, argTypes, args);
             }
 
-            /// <devdoc>
+            /// <summary>
             ///     Implements GetCache.  This just walks the linked
             ///     list looking for someone who implements the call.
-            /// </devdoc>
+            /// </summary>
             public override IDictionary GetCache(object instance)
             {
                 if (instance == null)
@@ -3098,10 +3098,10 @@ namespace System.ComponentModel
                 return Provider.GetCache(instance);
             }
 
-            /// <devdoc>
+            /// <summary>
             ///     Implements GetExtendedTypeDescriptor.  This creates a custom type
             ///     descriptor that walks the linked list for each of its calls.
-            /// </devdoc>
+            /// </summary>
             public override ICustomTypeDescriptor GetExtendedTypeDescriptor(object instance)
             {
                 if (instance == null)
@@ -3122,7 +3122,7 @@ namespace System.ComponentModel
                 return Provider.GetExtenderProviders(instance);
             }
 
-            /// <devdoc>
+            /// <summary>
             ///     The name of the specified component, or null if the component has no name.
             ///     In many cases this will return the same value as GetComponentName. If the
             ///     component resides in a nested container or has other nested semantics, it may
@@ -3130,7 +3130,7 @@ namespace System.ComponentModel
             ///
             ///     If not overridden, the default implementation of this method will call
             ///     GetTypeDescriptor.GetComponentName.
-            /// </devdoc>
+            /// </summary>
             public override string GetFullComponentName(object component)
             {
                 if (component == null)
@@ -3141,10 +3141,10 @@ namespace System.ComponentModel
                 return Provider.GetFullComponentName(component);
             }
 
-            /// <devdoc>
+            /// <summary>
             ///     Implements GetReflectionType.  This just walks the linked list
             ///     looking for someone who implements the call.
-            /// </devdoc>
+            /// </summary>
             public override Type GetReflectionType(Type objectType, object instance)
             {
                 if (objectType == null)
@@ -3165,10 +3165,10 @@ namespace System.ComponentModel
                 return Provider.GetRuntimeType(objectType);
             }
 
-            /// <devdoc>
+            /// <summary>
             ///     Implements GetTypeDescriptor.  This creates a custom type
             ///     descriptor that walks the linked list for each of its calls.
-            /// </devdoc>
+            /// </summary>
             [SuppressMessage("Microsoft.Globalization", "CA1303:DoNotPassLiteralsAsLocalizedParameters")]
             public override ICustomTypeDescriptor GetTypeDescriptor(Type objectType, object instance)
             {
@@ -3194,27 +3194,27 @@ namespace System.ComponentModel
                 return Provider.IsSupportedType(type);
             }
 
-            /// <devdoc>
+            /// <summary>
             ///     A type descriptor for extended types.  This type descriptor
             ///     looks at the head node in the linked list.
-            /// </devdoc>
+            /// </summary>
             private struct DefaultExtendedTypeDescriptor : ICustomTypeDescriptor
             {
                 private TypeDescriptionNode _node;
                 private object _instance;
 
-                /// <devdoc>
+                /// <summary>
                 ///     Creates a new WalkingExtendedTypeDescriptor.
-                /// </devdoc>
+                /// </summary>
                 internal DefaultExtendedTypeDescriptor(TypeDescriptionNode node, object instance)
                 {
                     _node = node;
                     _instance = instance;
                 }
 
-                /// <devdoc>
+                /// <summary>
                 ///     ICustomTypeDescriptor implementation.
-                /// </devdoc>
+                /// </summary>
                 AttributeCollection ICustomTypeDescriptor.GetAttributes()
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3236,9 +3236,9 @@ namespace System.ComponentModel
                     return attrs;
                 }
 
-                /// <devdoc>
+                /// <summary>
                 ///     ICustomTypeDescriptor implementation.
-                /// </devdoc>
+                /// </summary>
                 string ICustomTypeDescriptor.GetClassName()
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3260,9 +3260,9 @@ namespace System.ComponentModel
                     return name;
                 }
 
-                /// <devdoc>
+                /// <summary>
                 ///     ICustomTypeDescriptor implementation.
-                /// </devdoc>
+                /// </summary>
                 string ICustomTypeDescriptor.GetComponentName()
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3282,9 +3282,9 @@ namespace System.ComponentModel
                     return desc.GetComponentName();
                 }
 
-                /// <devdoc>
+                /// <summary>
                 ///     ICustomTypeDescriptor implementation.
-                /// </devdoc>
+                /// </summary>
                 TypeConverter ICustomTypeDescriptor.GetConverter()
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3306,9 +3306,9 @@ namespace System.ComponentModel
                     return converter;
                 }
 
-                /// <devdoc>
+                /// <summary>
                 ///     ICustomTypeDescriptor implementation.
-                /// </devdoc>
+                /// </summary>
                 EventDescriptor ICustomTypeDescriptor.GetDefaultEvent()
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3328,9 +3328,9 @@ namespace System.ComponentModel
                     return desc.GetDefaultEvent();
                 }
 
-                /// <devdoc>
+                /// <summary>
                 ///     ICustomTypeDescriptor implementation.
-                /// </devdoc>
+                /// </summary>
                 PropertyDescriptor ICustomTypeDescriptor.GetDefaultProperty()
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3350,9 +3350,9 @@ namespace System.ComponentModel
                     return desc.GetDefaultProperty();
                 }
 
-                /// <devdoc>
+                /// <summary>
                 ///     ICustomTypeDescriptor implementation.
-                /// </devdoc>
+                /// </summary>
                 object ICustomTypeDescriptor.GetEditor(Type editorBaseType)
                 {
                     if (editorBaseType == null)
@@ -3379,9 +3379,9 @@ namespace System.ComponentModel
                     return desc.GetEditor(editorBaseType);
                 }
 
-                /// <devdoc>
+                /// <summary>
                 ///     ICustomTypeDescriptor implementation.
-                /// </devdoc>
+                /// </summary>
                 EventDescriptorCollection ICustomTypeDescriptor.GetEvents()
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3403,9 +3403,9 @@ namespace System.ComponentModel
                     return events;
                 }
 
-                /// <devdoc>
+                /// <summary>
                 ///     ICustomTypeDescriptor implementation.
-                /// </devdoc>
+                /// </summary>
                 EventDescriptorCollection ICustomTypeDescriptor.GetEvents(Attribute[] attributes)
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3432,9 +3432,9 @@ namespace System.ComponentModel
                     return evts;
                 }
 
-                /// <devdoc>
+                /// <summary>
                 ///     ICustomTypeDescriptor implementation.
-                /// </devdoc>
+                /// </summary>
                 PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties()
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3456,9 +3456,9 @@ namespace System.ComponentModel
                     return properties;
                 }
 
-                /// <devdoc>
+                /// <summary>
                 ///     ICustomTypeDescriptor implementation.
-                /// </devdoc>
+                /// </summary>
                 PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[] attributes)
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3485,9 +3485,9 @@ namespace System.ComponentModel
                     return properties;
                 }
 
-                /// <devdoc>
+                /// <summary>
                 ///     ICustomTypeDescriptor implementation.
-                /// </devdoc>
+                /// </summary>
                 object ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor pd)
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3510,18 +3510,18 @@ namespace System.ComponentModel
                 }
             }
 
-            /// <devdoc>
+            /// <summary>
             ///     The default type descriptor.
-            /// </devdoc>
+            /// </summary>
             private struct DefaultTypeDescriptor : ICustomTypeDescriptor
             {
                 private TypeDescriptionNode _node;
                 private Type _objectType;
                 private object _instance;
 
-                /// <devdoc>
+                /// <summary>
                 ///     Creates a new WalkingTypeDescriptor.
-                /// </devdoc>
+                /// </summary>
                 internal DefaultTypeDescriptor(TypeDescriptionNode node, Type objectType, object instance)
                 {
                     _node = node;
@@ -3529,9 +3529,9 @@ namespace System.ComponentModel
                     _instance = instance;
                 }
 
-                /// <devdoc>
+                /// <summary>
                 ///     ICustomTypeDescriptor implementation.
-                /// </devdoc>
+                /// </summary>
                 AttributeCollection ICustomTypeDescriptor.GetAttributes()
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3557,9 +3557,9 @@ namespace System.ComponentModel
                     return attrs;
                 }
 
-                /// <devdoc>
+                /// <summary>
                 ///     ICustomTypeDescriptor implementation.
-                /// </devdoc>
+                /// </summary>
                 string ICustomTypeDescriptor.GetClassName()
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3585,9 +3585,9 @@ namespace System.ComponentModel
                     return name;
                 }
 
-                /// <devdoc>
+                /// <summary>
                 ///     ICustomTypeDescriptor implementation.
-                /// </devdoc>
+                /// </summary>
                 string ICustomTypeDescriptor.GetComponentName()
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3612,9 +3612,9 @@ namespace System.ComponentModel
                     return name;
                 }
 
-                /// <devdoc>
+                /// <summary>
                 ///     ICustomTypeDescriptor implementation.
-                /// </devdoc>
+                /// </summary>
                 TypeConverter ICustomTypeDescriptor.GetConverter()
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3640,9 +3640,9 @@ namespace System.ComponentModel
                     return converter;
                 }
 
-                /// <devdoc>
+                /// <summary>
                 ///     ICustomTypeDescriptor implementation.
-                /// </devdoc>
+                /// </summary>
                 EventDescriptor ICustomTypeDescriptor.GetDefaultEvent()
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3667,9 +3667,9 @@ namespace System.ComponentModel
                     return defaultEvent;
                 }
 
-                /// <devdoc>
+                /// <summary>
                 ///     ICustomTypeDescriptor implementation.
-                /// </devdoc>
+                /// </summary>
                 PropertyDescriptor ICustomTypeDescriptor.GetDefaultProperty()
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3694,9 +3694,9 @@ namespace System.ComponentModel
                     return defaultProperty;
                 }
 
-                /// <devdoc>
+                /// <summary>
                 ///     ICustomTypeDescriptor implementation.
-                /// </devdoc>
+                /// </summary>
                 object ICustomTypeDescriptor.GetEditor(Type editorBaseType)
                 {
                     if (editorBaseType == null)
@@ -3730,9 +3730,9 @@ namespace System.ComponentModel
                     return editor;
                 }
 
-                /// <devdoc>
+                /// <summary>
                 ///     ICustomTypeDescriptor implementation.
-                /// </devdoc>
+                /// </summary>
                 EventDescriptorCollection ICustomTypeDescriptor.GetEvents()
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3758,9 +3758,9 @@ namespace System.ComponentModel
                     return events;
                 }
 
-                /// <devdoc>
+                /// <summary>
                 ///     ICustomTypeDescriptor implementation.
-                /// </devdoc>
+                /// </summary>
                 EventDescriptorCollection ICustomTypeDescriptor.GetEvents(Attribute[] attributes)
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3786,9 +3786,9 @@ namespace System.ComponentModel
                     return events;
                 }
 
-                /// <devdoc>
+                /// <summary>
                 ///     ICustomTypeDescriptor implementation.
-                /// </devdoc>
+                /// </summary>
                 PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties()
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3814,9 +3814,9 @@ namespace System.ComponentModel
                     return properties;
                 }
 
-                /// <devdoc>
+                /// <summary>
                 ///     ICustomTypeDescriptor implementation.
-                /// </devdoc>
+                /// </summary>
                 PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[] attributes)
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3842,9 +3842,9 @@ namespace System.ComponentModel
                     return properties;
                 }
 
-                /// <devdoc>
+                /// <summary>
                 ///     ICustomTypeDescriptor implementation.
-                /// </devdoc>
+                /// </summary>
                 object ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor pd)
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3872,10 +3872,10 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     This is a simple internal type that allows external parties to
         ///     register a custom type description provider for all interface types.
-        /// </devdoc>
+        /// </summary>
         private sealed class TypeDescriptorInterface
         {
         }

@@ -4,51 +4,51 @@
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///    <para>Specifies whether a property or event should be displayed in
     ///       a property browsing window.</para>
-    /// </devdoc>
+    /// </summary>
     [AttributeUsage(AttributeTargets.All)]
     public sealed class BrowsableAttribute : Attribute, IIsDefaultAttribute
     {
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Specifies that a property or event can be modified at
         ///       design time. This <see langword='static '/>
         ///       field is read-only.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public static readonly BrowsableAttribute Yes = new BrowsableAttribute(true);
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Specifies that a property or event cannot be modified at
         ///       design time. This <see langword='static '/>field is read-only.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public static readonly BrowsableAttribute No = new BrowsableAttribute(false);
 
-        /// <devdoc>
+        /// <summary>
         /// <para>Specifies the default value for the <see cref='System.ComponentModel.BrowsableAttribute'/>,
         ///    which is <see cref='System.ComponentModel.BrowsableAttribute.Yes'/>. This <see langword='static '/>field is read-only.</para>
-        /// </devdoc>
+        /// </summary>
         public static readonly BrowsableAttribute Default = Yes;
 
         private bool _browsable = true;
 
-        /// <devdoc>
+        /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.ComponentModel.BrowsableAttribute'/> class.</para>
-        /// </devdoc>
+        /// </summary>
         public BrowsableAttribute(bool browsable)
         {
             _browsable = browsable;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Gets a value indicating whether an object is browsable.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public bool Browsable
         {
             get
@@ -58,8 +58,8 @@ namespace System.ComponentModel
         }
 
         /// <internalonly/>
-        /// <devdoc>
-        /// </devdoc>
+        /// <summary>
+        /// </summary>
         public override bool Equals(object obj)
         {
             if (obj == this)
@@ -72,17 +72,17 @@ namespace System.ComponentModel
             return (other != null) && other.Browsable == _browsable;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>[To be supplied.]</para>
-        /// </devdoc>
+        /// </summary>
         public override int GetHashCode()
         {
             return _browsable.GetHashCode();
         }
 
         /// <internalonly/>
-        /// <devdoc>
-        /// </devdoc>
+        /// <summary>
+        /// </summary>
         bool IIsDefaultAttribute.IsDefaultAttribute()
         {
             return this.Equals(Default);

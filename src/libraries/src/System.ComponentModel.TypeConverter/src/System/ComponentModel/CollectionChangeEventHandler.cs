@@ -4,11 +4,11 @@
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///    <para>
     ///        Represents the method that will handle the <see langword='CollectionChanged '/>event
     ///        raised when adding elements to or removing elements from a collection.
     ///    </para>
-    /// </devdoc>
+    /// </summary>
     public delegate void CollectionChangeEventHandler(object sender, CollectionChangeEventArgs e);
 }

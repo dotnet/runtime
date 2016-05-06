@@ -11,10 +11,10 @@ namespace System.ComponentModel
 {
     internal sealed partial class ReflectTypeDescriptionProvider : TypeDescriptionProvider
     {
-        /// <devdoc>
+        /// <summary>
         ///     This class contains all the reflection information for a
         ///     given type.
-        /// </devdoc>
+        /// </summary>
         private class ReflectedTypeData
         {
             private readonly Type _type;
@@ -34,10 +34,10 @@ namespace System.ComponentModel
                 TypeDescriptor.Trace("Reflect : Creating ReflectedTypeData for {0}", type.Name);
             }
 
-            /// <devdoc>
+            /// <summary>
             ///     This method returns true if the data cache in this reflection 
             ///     type descriptor has data in it.
-            /// </devdoc>
+            /// </summary>
             internal bool IsPopulated
             {
                 get
@@ -46,9 +46,9 @@ namespace System.ComponentModel
                 }
             }
 
-            /// <devdoc>
+            /// <summary>
             ///     Retrieves custom attributes.
-            /// </devdoc>
+            /// </summary>
             internal AttributeCollection GetAttributes()
             {
                 // Worst case collision scenario:  we don't want the perf hit
@@ -164,17 +164,17 @@ namespace System.ComponentModel
                 return _attributes;
             }
 
-            /// <devdoc>
+            /// <summary>
             ///     Retrieves the class name for our type.
-            /// </devdoc>
+            /// </summary>
             internal string GetClassName(object instance)
             {
                 return _type.FullName;
             }
 
-            /// <devdoc>
+            /// <summary>
             ///     Retrieves the component name from the site.
-            /// </devdoc>
+            /// </summary>
             internal string GetComponentName(object instance)
             {
                 IComponent comp = instance as IComponent;
@@ -200,11 +200,11 @@ namespace System.ComponentModel
                 return null;
             }
 
-            /// <devdoc>
+            /// <summary>
             ///     Retrieves the type converter.  If instance is non-null,
             ///     it will be used to retrieve attributes.  Otherwise, _type
             ///     will be used.
-            /// </devdoc>
+            /// </summary>
             internal TypeConverter GetConverter(object instance)
             {
                 TypeConverterAttribute typeAttr = null;
@@ -262,10 +262,10 @@ namespace System.ComponentModel
                 return _converter;
             }
 
-            /// <devdoc>
+            /// <summary>
             ///     Return the default event. The default event is determined by the
             ///     presence of a DefaultEventAttribute on the class.
-            /// </devdoc>
+            /// </summary>
             internal EventDescriptor GetDefaultEvent(object instance)
             {
                 AttributeCollection attributes;
@@ -295,9 +295,9 @@ namespace System.ComponentModel
                 return null;
             }
 
-            /// <devdoc>
+            /// <summary>
             ///     Return the default property.
-            /// </devdoc>
+            /// </summary>
             internal PropertyDescriptor GetDefaultProperty(object instance)
             {
                 AttributeCollection attributes;
@@ -328,9 +328,9 @@ namespace System.ComponentModel
             }
 
 #if FEATURE_EDITOR
-            /// <devdoc>
+            /// <summary>
             ///     Retrieves the editor for the given base type.
-            /// </devdoc>
+            /// </summary>
             internal object GetEditor(object instance, Type editorBaseType)
             {
                 EditorAttribute typeAttr;
@@ -431,9 +431,9 @@ namespace System.ComponentModel
                 return editor;
             }
 
-            /// <devdoc>
+            /// <summary>
             ///     Helper method to return an editor attribute of the correct base type.
-            /// </devdoc>
+            /// </summary>
             private static EditorAttribute GetEditorAttribute(AttributeCollection attributes, Type editorBaseType)
             {
                 foreach (Attribute attr in attributes)
@@ -454,9 +454,9 @@ namespace System.ComponentModel
             }
 #endif
 
-            /// <devdoc>
+            /// <summary>
             ///     Retrieves the events for this type.
-            /// </devdoc>
+            /// </summary>
             internal EventDescriptorCollection GetEvents()
             {
                 // Worst case collision scenario:  we don't want the perf hit
@@ -494,9 +494,9 @@ namespace System.ComponentModel
                 return _events;
             }
 
-            /// <devdoc>
+            /// <summary>
             ///     Retrieves the properties for this type.
-            /// </devdoc>
+            /// </summary>
             internal PropertyDescriptorCollection GetProperties()
             {
                 // Worst case collision scenario:  we don't want the perf hit
@@ -534,11 +534,11 @@ namespace System.ComponentModel
                 return _properties;
             }
 
-            /// <devdoc>
+            /// <summary>
             ///     Retrieves a type from a name.  The Assembly of the type
             ///     that this PropertyDescriptor came from is first checked,
             ///     then a global Type.GetType is performed.
-            /// </devdoc>
+            /// </summary>
             private Type GetTypeFromName(string typeName)
             {
                 if (typeName == null || typeName.Length == 0)
@@ -576,11 +576,11 @@ namespace System.ComponentModel
                 return t;
             }
 
-            /// <devdoc>
+            /// <summary>
             ///     Refreshes the contents of this type descriptor.  This does not
             ///     actually requery, but it will clear our state so the next
             ///     query re-populates.
-            /// </devdoc>
+            /// </summary>
             internal void Refresh()
             {
                 _attributes = null;

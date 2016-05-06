@@ -4,48 +4,48 @@
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///  Specifies that a object has no sub properties that are editable.
-    /// </devdoc>
+    /// </summary>
     [AttributeUsage(AttributeTargets.All)]
     public sealed class ImmutableObjectAttribute : Attribute, IIsDefaultAttribute
     {
-        /// <devdoc>
+        /// <summary>
         ///  Specifies that a object has no sub properties that are editable.
         ///
         ///  This is usually used in the properties window to determine if an expandable object
         ///  should be rendered as read-only.
-        /// </devdoc>
+        /// </summary>
         public static readonly ImmutableObjectAttribute Yes = new ImmutableObjectAttribute(true);
 
-        /// <devdoc>
+        /// <summary>
         ///  Specifies that a object has at least one editable sub-property.
         ///
         ///  This is usually used in the properties window to determine if an expandable object
         ///  should be rendered as read-only.
-        /// </devdoc>
+        /// </summary>
         public static readonly ImmutableObjectAttribute No = new ImmutableObjectAttribute(false);
 
 
-        /// <devdoc>
+        /// <summary>
         ///  Defaults to ImmutableObjectAttribute.No
-        /// </devdoc>
+        /// </summary>
         public static readonly ImmutableObjectAttribute Default = No;
 
         private bool _immutable = true;
 
-        /// <devdoc>
+        /// <summary>
         ///  Constructs an ImmutableObjectAttribute object.
         ///
-        /// </devdoc>
+        /// </summary>
         public ImmutableObjectAttribute(bool immutable)
         {
             _immutable = immutable;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>[To be supplied.]</para>
-        /// </devdoc>
+        /// </summary>
         public bool Immutable
         {
             get
@@ -55,8 +55,8 @@ namespace System.ComponentModel
         }
 
         /// <internalonly/>
-        /// <devdoc>
-        /// </devdoc>
+        /// <summary>
+        /// </summary>
         public override bool Equals(object obj)
         {
             if (obj == this)
@@ -68,19 +68,19 @@ namespace System.ComponentModel
             return other != null && other.Immutable == _immutable;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Returns the hashcode for this object.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public override int GetHashCode()
         {
             return base.GetHashCode();
         }
 
         /// <internalonly/>
-        /// <devdoc>
-        /// </devdoc>
+        /// <summary>
+        /// </summary>
         bool IIsDefaultAttribute.IsDefaultAttribute()
         {
             return this.Equals(Default);

@@ -6,32 +6,32 @@ using System.Collections;
 
 namespace System.ComponentModel.Design
 {
-    /// <devdoc>
+    /// <summary>
     ///    <para>
     ///       Modifies the set of type descriptors that a component provides.
     ///    </para>
-    /// </devdoc>
+    /// </summary>
     public interface ITypeDescriptorFilterService
     {
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Provides a way to filter the attributes from a component that are displayed to the user.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         bool FilterAttributes(IComponent component, IDictionary attributes);
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Provides a way to filter the events from a component that are displayed to the user.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         bool FilterEvents(IComponent component, IDictionary events);
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Provides a way to filter the properties from a component that are displayed to the user.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         bool FilterProperties(IComponent component, IDictionary properties);
     }
 }

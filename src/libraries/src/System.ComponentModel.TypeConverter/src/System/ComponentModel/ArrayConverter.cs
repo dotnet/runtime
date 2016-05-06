@@ -6,15 +6,15 @@ using System.Globalization;
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     /// <para>Provides a type converter to convert <see cref='System.Array'/>
     /// objects to and from various other representations.</para>
-    /// </devdoc>
+    /// </summary>
     public class ArrayConverter : CollectionConverter
     {
-        /// <devdoc>
+        /// <summary>
         ///    <para>Converts the given value object to the specified destination type.</para>
-        /// </devdoc>
+        /// </summary>
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
             if (destinationType == null)
@@ -34,9 +34,9 @@ namespace System.ComponentModel
         }
 
 #if !NETSTANDARD10
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets a collection of properties for the type of array specified by the value parameter.</para>
-        /// </devdoc>
+        /// </summary>
         public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes)
         {
             PropertyDescriptor[] props = null;
@@ -60,9 +60,9 @@ namespace System.ComponentModel
         }
 #endif // !NETSTANDARD10
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets a value indicating whether this object supports properties.</para>
-        /// </devdoc>
+        /// </summary>
         public override bool GetPropertiesSupported(ITypeDescriptorContext context)
         {
             return true;

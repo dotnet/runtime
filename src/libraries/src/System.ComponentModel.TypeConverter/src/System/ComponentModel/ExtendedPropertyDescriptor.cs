@@ -8,21 +8,21 @@ using System.Diagnostics;
 namespace System.ComponentModel
 {
     /// <internalonly/>
-    /// <devdoc>
+    /// <summary>
     ///    <para>
     ///       This class wraps an PropertyDescriptor with something that looks like a property. It
     ///       allows you to treat extended properties the same as regular properties.
     ///    </para>
-    /// </devdoc>
+    /// </summary>
     internal sealed class ExtendedPropertyDescriptor : PropertyDescriptor
     {
         private readonly ReflectPropertyDescriptor _extenderInfo;       // the extender property
         private readonly IExtenderProvider _provider;           // the guy providing it
 
-        /// <devdoc>
+        /// <summary>
         ///     Creates a new extended property info.  Callers can then treat this as
         ///     a standard property.
-        /// </devdoc>
+        /// </summary>
         public ExtendedPropertyDescriptor(ReflectPropertyDescriptor extenderInfo, Type receiverType, IExtenderProvider provider, Attribute[] attributes)
             : base(extenderInfo, attributes)
         {
@@ -61,17 +61,17 @@ namespace System.ComponentModel
             _provider = attr.Provider;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Determines if the the component will allow its value to be reset.
-        /// </devdoc>
+        /// </summary>
         public override bool CanResetValue(object comp)
         {
             return _extenderInfo.ExtenderCanResetValue(_provider, comp);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Retrieves the type of the component this PropertyDescriptor is bound to.
-        /// </devdoc>
+        /// </summary>
         public override Type ComponentType
         {
             get
@@ -80,9 +80,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Determines if the property can be written to.
-        /// </devdoc>
+        /// </summary>
         public override bool IsReadOnly
         {
             get
@@ -91,9 +91,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Retrieves the data type of the property.
-        /// </devdoc>
+        /// </summary>
         public override Type PropertyType
         {
             get
@@ -102,11 +102,11 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Retrieves the display name of the property.  This is the name that will
         ///     be displayed in a properties window.  This will be the same as the property
         ///     name for most properties.
-        /// </devdoc>
+        /// </summary>
         public override string DisplayName
         {
             get
@@ -130,32 +130,32 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Retrieves the value of the property for the given component.  This will
         ///     throw an exception if the component does not have this property.
-        /// </devdoc>
+        /// </summary>
         public override object GetValue(object comp)
         {
             return _extenderInfo.ExtenderGetValue(_provider, comp);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Resets the value of this property on comp to the default value.
-        /// </devdoc>
+        /// </summary>
         public override void ResetValue(object comp)
         {
             _extenderInfo.ExtenderResetValue(_provider, comp, this);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Sets the value of this property on the given component.
-        /// </devdoc>
+        /// </summary>
         public override void SetValue(object component, object value)
         {
             _extenderInfo.ExtenderSetValue(_provider, component, value, this);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Determines if this property should be persisted.  A property is
         ///     to be persisted if it is marked as persistable through a
         ///     PersistableAttribute, and if the property contains something other
@@ -163,7 +163,7 @@ namespace System.ComponentModel
         ///     return true for design time properties as well, so callers
         ///     should also check to see if a property is design time only before
         ///     persisting to runtime storage.
-        /// </devdoc>
+        /// </summary>
         public override bool ShouldSerializeValue(object comp)
         {
             return _extenderInfo.ExtenderShouldSerializeValue(_provider, comp);
@@ -173,16 +173,16 @@ namespace System.ComponentModel
            The following code has been removed to fix FXCOP violations.  The code
            is left here incase it needs to be resurrected in the future.
 
-        /// <devdoc>
+        /// <summary>
         ///     Creates a new extended property info.  Callers can then treat this as
         ///     a standard property.
-        /// </devdoc>
+        /// </summary>
         public ExtendedPropertyDescriptor(ReflectPropertyDescriptor extenderInfo, Type receiverType, IExtenderProvider provider) : this(extenderInfo, receiverType, provider, null) {
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Retrieves the object that is providing this extending property.
-        /// </devdoc>
+        /// </summary>
         public IExtenderProvider Provider {
             get {
                 return provider;

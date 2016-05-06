@@ -4,49 +4,49 @@
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///    <para>Provides a value indicating whether the name of the associated property is parenthesized in the
     ///       properties window.</para>
-    /// </devdoc>
+    /// </summary>
     [AttributeUsage(AttributeTargets.All)]
     public sealed class ParenthesizePropertyNameAttribute : Attribute, IIsDefaultAttribute
     {
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Sets the System.ComponentModel.Design.ParenthesizePropertyName
         ///       attribute by default to
         ///    <see langword='false'/>.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public static readonly ParenthesizePropertyNameAttribute Default = new ParenthesizePropertyNameAttribute();
 
         private bool _needParenthesis;
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>[To be supplied.]</para>
-        /// </devdoc>
+        /// </summary>
         public ParenthesizePropertyNameAttribute() : this(false)
         {
         }
 
-        /// <devdoc>
+        /// <summary>
         /// <para>Initializes a new instance of the System.ComponentModel.Design.ParenthesizePropertyNameAttribute 
         /// class, using the specified value to indicate whether the attribute is
         /// marked for display with parentheses.</para>
-        /// </devdoc>
+        /// </summary>
         public ParenthesizePropertyNameAttribute(bool needParenthesis)
         {
             _needParenthesis = needParenthesis;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Gets a value indicating
         ///       whether the
         ///       attribute is placed in parentheses when listed in
         ///       the properties window.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public bool NeedParenthesis
         {
             get
@@ -55,10 +55,10 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Compares the specified object
         ///       to this object and tests for equality.</para>
-        /// </devdoc>
+        /// </summary>
         public override bool Equals(object o)
         {
             if (o is ParenthesizePropertyNameAttribute)
@@ -68,19 +68,19 @@ namespace System.ComponentModel
             return false;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Returns the hashcode for this object.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public override int GetHashCode()
         {
             return base.GetHashCode();
         }
 
-        /// <devdoc>
+        /// <summary>
         /// <para>Gets a value indicating whether this attribute is set to <see langword='true'/> by default.</para>
-        /// </devdoc>
+        /// </summary>
         bool IIsDefaultAttribute.IsDefaultAttribute()
         {
             return this.Equals(Default);

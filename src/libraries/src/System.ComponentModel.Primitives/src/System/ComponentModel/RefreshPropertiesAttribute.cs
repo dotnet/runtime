@@ -4,56 +4,56 @@
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///    <para> Specifies how a designer refreshes when the property value is changed.</para>
-    /// </devdoc>
+    /// </summary>
     [AttributeUsage(AttributeTargets.All)]
     public sealed class RefreshPropertiesAttribute : Attribute, IIsDefaultAttribute
     {
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Indicates all properties should
         ///       be refreshed if the property value is changed. This field is
         ///       read-only.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public static readonly RefreshPropertiesAttribute All = new RefreshPropertiesAttribute(RefreshProperties.All);
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Indicates all properties should
         ///       be invalidated and repainted if the
         ///       property value is changed. This field is read-only.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public static readonly RefreshPropertiesAttribute Repaint = new RefreshPropertiesAttribute(RefreshProperties.Repaint);
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Indicates that by default
         ///       no
         ///       properties should be refreshed if the property value
         ///       is changed. This field is read-only.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public static readonly RefreshPropertiesAttribute Default = new RefreshPropertiesAttribute(RefreshProperties.None);
 
         private RefreshProperties _refresh;
 
-        /// <devdoc>
-        /// </devdoc>
+        /// <summary>
+        /// </summary>
         /// <internalonly/>
         public RefreshPropertiesAttribute(RefreshProperties refresh)
         {
             _refresh = refresh;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Gets or sets
         ///       the refresh properties for the member.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public RefreshProperties RefreshProperties
         {
             get
@@ -62,11 +62,11 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Overrides object's Equals method.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public override bool Equals(object value)
         {
             if (value is RefreshPropertiesAttribute)
@@ -76,19 +76,19 @@ namespace System.ComponentModel
             return false;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Returns the hashcode for this object.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public override int GetHashCode()
         {
             return base.GetHashCode();
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets a value indicating whether the current attribute is the default.</para>
-        /// </devdoc>
+        /// </summary>
         bool IIsDefaultAttribute.IsDefaultAttribute()
         {
             return this.Equals(Default);

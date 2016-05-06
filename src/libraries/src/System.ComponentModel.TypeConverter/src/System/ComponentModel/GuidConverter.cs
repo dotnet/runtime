@@ -6,18 +6,18 @@ using System.Globalization;
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///    <para>Provides a
     ///       type converter to convert globally unique identifier objects to and from various
     ///       other representations.</para>
-    /// </devdoc>
+    /// </summary>
     public class GuidConverter : TypeConverter
     {
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets a value indicating whether this
         ///       converter can convert an object in the given source type to a globally unique identifier object
         ///       using the context.</para>
-        /// </devdoc>
+        /// </summary>
         public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
         {
             if (sourceType == typeof(string))
@@ -27,12 +27,12 @@ namespace System.ComponentModel
             return base.CanConvertFrom(context, sourceType);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///        Gets a value indicating whether this converter can convert an object to
         ///        the given destination type using the context.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
         {
 #if FEATURE_INSTANCEDESCRIPTOR
@@ -44,9 +44,9 @@ namespace System.ComponentModel
             return base.CanConvertTo(context, destinationType);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Converts the given object to a globally unique identifier object.</para>
-        /// </devdoc>
+        /// </summary>
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
             string text = value as string;
@@ -58,13 +58,13 @@ namespace System.ComponentModel
             return base.ConvertFrom(context, culture, value);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///      Converts the given object to another type.  The most common types to convert
         ///      are to and from a string object.  The default implementation will make a call
         ///      to ToString on the object if the object is valid and if the destination
         ///      type is string.  If this cannot convert to the desitnation type, this will
         ///      throw a NotSupportedException.
-        /// </devdoc>
+        /// </summary>
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
             if (destinationType == null)

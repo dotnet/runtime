@@ -6,24 +6,24 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///    <para>Provides a simple list of delegates. This class cannot be inherited.</para>
-    /// </devdoc>
+    /// </summary>
     public sealed class EventHandlerList : IDisposable
     {
         private ListEntry _head;
 
-        /// <devdoc>
+        /// <summary>
         ///    Creates a new event handler list.
-        /// </devdoc>
+        /// </summary>
         [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands")]
         public EventHandlerList()
         {
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets or sets the delegate for the specified key.</para>
-        /// </devdoc>
+        /// </summary>
         public Delegate this[object key]
         {
             [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands")]
@@ -53,9 +53,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>[To be supplied.]</para>
-        /// </devdoc>
+        /// </summary>
         [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands")]
         public void AddHandler(object key, Delegate value)
         {
@@ -70,7 +70,7 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc> allows you to add a list of events to this list </devdoc>
+        /// <summary> allows you to add a list of events to this list </summary>
         public void AddHandlers(EventHandlerList listToAddFrom)
         {
             ListEntry currentListEntry = listToAddFrom._head;
@@ -81,9 +81,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>[To be supplied.]</para>
-        /// </devdoc>
+        /// </summary>
         public void Dispose()
         {
             _head = null;
@@ -103,9 +103,9 @@ namespace System.ComponentModel
             return found;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>[To be supplied.]</para>
-        /// </devdoc>
+        /// </summary>
         [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands")]
         public void RemoveHandler(object key, Delegate value)
         {

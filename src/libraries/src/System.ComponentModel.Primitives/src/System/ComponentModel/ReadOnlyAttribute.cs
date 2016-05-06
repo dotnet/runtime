@@ -4,56 +4,56 @@
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///    <para>Specifies whether the property this attribute is bound to
     ///       is read-only or read/write.</para>
-    /// </devdoc>
+    /// </summary>
     [AttributeUsage(AttributeTargets.All)]
     public sealed class ReadOnlyAttribute : Attribute, IIsDefaultAttribute
     {
         private bool _isReadOnly = false;
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Specifies that the property this attribute is bound to is read-only and
         ///       cannot be modified in the server explorer. This <see langword='static '/>field is
         ///       read-only.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public static readonly ReadOnlyAttribute Yes = new ReadOnlyAttribute(true);
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Specifies that the property this attribute is bound to is read/write and can
         ///       be modified at design time. This <see langword='static '/>field is read-only.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public static readonly ReadOnlyAttribute No = new ReadOnlyAttribute(false);
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Specifies the default value for the <see cref='System.ComponentModel.ReadOnlyAttribute'/> , which is <see cref='System.ComponentModel.ReadOnlyAttribute.No'/>, that is,
         ///       the property this attribute is bound to is read/write. This <see langword='static'/> field is read-only.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public static readonly ReadOnlyAttribute Default = No;
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Initializes a new instance of the <see cref='System.ComponentModel.ReadOnlyAttribute'/> class.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public ReadOnlyAttribute(bool isReadOnly)
         {
             _isReadOnly = isReadOnly;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Gets a value indicating whether the property this attribute is bound to is
         ///       read-only.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public bool IsReadOnly
         {
             get
@@ -63,8 +63,8 @@ namespace System.ComponentModel
         }
 
         /// <internalonly/>
-        /// <devdoc>
-        /// </devdoc>
+        /// <summary>
+        /// </summary>
         public override bool Equals(object value)
         {
             if (this == value)
@@ -77,22 +77,22 @@ namespace System.ComponentModel
             return other != null && other.IsReadOnly == IsReadOnly;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Returns the hashcode for this object.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public override int GetHashCode()
         {
             return base.GetHashCode();
         }
 
         /// <internalonly/>
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Determines if this attribute is the default.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         bool IIsDefaultAttribute.IsDefaultAttribute()
         {
             return this.IsReadOnly == Default.IsReadOnly;

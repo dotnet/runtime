@@ -8,13 +8,13 @@ using System.Reflection;
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///    <para>
     ///       Declares an array of attributes for a member and defines
     ///       the properties and methods that give you access to the attributes in the array.
     ///       All attributes must derive from <see cref='System.Attribute'/>.
     ///    </para>
-    /// </devdoc>
+    /// </summary>
     public abstract class MemberDescriptor
     {
         private readonly string _name;
@@ -30,20 +30,20 @@ namespace System.ComponentModel
         private string _description;
         private object _lockCookie = new object();
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Initializes a new instance of the <see cref='System.ComponentModel.MemberDescriptor'/> class with the specified <paramref name="name"/> and no attributes.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         protected MemberDescriptor(string name) : this(name, null)
         {
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Initializes a new instance of the <see cref='System.ComponentModel.MemberDescriptor'/> class with the specified <paramref name="name"/> and <paramref name="attributes "/> array.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         protected MemberDescriptor(string name, Attribute[] attributes)
         {
             if (name == null || name.Length == 0)
@@ -64,11 +64,11 @@ namespace System.ComponentModel
             _originalAttributes = _attributes;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Initializes a new instance of the <see cref='System.ComponentModel.MemberDescriptor'/> class with the specified <see cref='System.ComponentModel.MemberDescriptor'/>.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         protected MemberDescriptor(MemberDescriptor descr)
         {
             _name = descr.Name;
@@ -83,13 +83,13 @@ namespace System.ComponentModel
             _originalAttributes = _attributes;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Initializes a new instance of the <see cref='System.ComponentModel.MemberDescriptor'/> class with the name in the specified
         ///    <see cref='System.ComponentModel.MemberDescriptor'/> and the attributes 
         ///       in both the old <see cref='System.ComponentModel.MemberDescriptor'/> and the <see cref='System.Attribute'/> array.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         protected MemberDescriptor(MemberDescriptor oldMemberDescriptor, Attribute[] newAttributes)
         {
             _name = oldMemberDescriptor.Name;
@@ -121,12 +121,12 @@ namespace System.ComponentModel
             _originalAttributes = _attributes;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Gets or sets an array of
         ///       attributes.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         protected virtual Attribute[] AttributeArray
         {
             get
@@ -147,11 +147,11 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Gets the collection of attributes for this member.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public virtual AttributeCollection Attributes
         {
             get
@@ -170,12 +170,12 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Gets the name of the category that the member belongs to, as specified 
         ///       in the <see cref='System.ComponentModel.CategoryAttribute'/>.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public virtual string Category
         {
             get
@@ -188,12 +188,12 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Gets the description of
         ///       the member as specified in the <see cref='System.ComponentModel.DescriptionAttribute'/>.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public virtual string Description
         {
             get
@@ -206,12 +206,12 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Gets a value indicating whether the member is browsable as specified in the
         ///    <see cref='System.ComponentModel.BrowsableAttribute'/>. 
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public virtual bool IsBrowsable
         {
             get
@@ -220,12 +220,12 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Gets the
         ///       name of the member.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public virtual string Name
         {
             get
@@ -238,12 +238,12 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Gets the hash
         ///       code for the name of the member as specified in <see cref='System.String.GetHashCode'/>.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         protected virtual int NameHashCode
         {
             get
@@ -252,12 +252,12 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Determines whether this member should be set only at
         ///       design time as specified in the <see cref='System.ComponentModel.DesignOnlyAttribute'/>.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public virtual bool DesignTimeOnly
         {
             get
@@ -266,12 +266,12 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Gets the name that can be displayed in a window like a
         ///       properties window.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public virtual string DisplayName
         {
             get
@@ -285,11 +285,11 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Called each time we access the attribtes on
         ///     this member descriptor to give deriving classes
         ///     a chance to change them on the fly.
-        /// </devdoc>
+        /// </summary>
         private void CheckAttributesValid()
         {
             if (_attributesFiltered)
@@ -304,23 +304,23 @@ namespace System.ComponentModel
         }
 
         /// <include file='doc\MemberDescriptor.uex' path='docs/doc[@for="MemberDescriptor.CreateAttributeCollection"]/*' />
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Creates a collection of attributes using the
         ///       array of attributes that you passed to the constructor.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         protected virtual AttributeCollection CreateAttributeCollection()
         {
             return new AttributeCollection(AttributeArray);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Compares this instance to the specified <see cref='System.ComponentModel.MemberDescriptor'/> to see if they are equivalent.
         ///       NOTE: If you make a change here, you likely need to change GetHashCode() as well.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public override bool Equals(object obj)
         {
             if (this == obj)
@@ -383,13 +383,13 @@ namespace System.ComponentModel
             return sameAttrs;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       In an inheriting class, adds the attributes of the inheriting class to the
         ///       specified list of attributes in the parent class.  For duplicate attributes,
         ///       the last one added to the list will be kept.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         protected virtual void FillAttributes(IList attributeList)
         {
             if (_originalAttributes != null)
@@ -444,21 +444,21 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Finds the given method through reflection.  This method only looks for public methods.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         protected static MethodInfo FindMethod(Type componentClass, string name, Type[] args, Type returnType)
         {
             return FindMethod(componentClass, name, args, returnType, true);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Finds the given method through reflection.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         protected static MethodInfo FindMethod(Type componentClass, string name, Type[] args, Type returnType, bool publicOnly)
         {
             MethodInfo result = null;
@@ -485,21 +485,21 @@ namespace System.ComponentModel
             return result;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Try to keep this reasonable in [....] with Equals(). Specifically, 
         ///     if A.Equals(B) returns true, A & B should have the same hash code.
-        /// </devdoc>
+        /// </summary>
         public override int GetHashCode()
         {
             return _nameHash;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     This method returns the object that should be used during invocation of members.
         ///     Normally the return value will be the same as the instance passed in.  If
         ///     someone associated another object with this instance, or if the instance is a
         ///     custom type descriptor, GetInvocationTarget may return a different value.
-        /// </devdoc>
+        /// </summary>
         protected virtual object GetInvocationTarget(Type type, object instance)
         {
             if (type == null)
@@ -515,12 +515,12 @@ namespace System.ComponentModel
             return TypeDescriptor.GetAssociation(type, instance);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Gets a component site
         ///       for the given component.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         protected static ISite GetSite(object component)
         {
             if (!(component is IComponent))

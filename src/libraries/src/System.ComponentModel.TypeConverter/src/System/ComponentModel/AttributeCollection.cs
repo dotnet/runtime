@@ -9,14 +9,14 @@ using System.Collections;
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///     Represents a collection of attributes.
-    /// </devdoc>
+    /// </summary>
     public class AttributeCollection : ICollection
     {
-        /// <devdoc>
+        /// <summary>
         ///     An empty AttributeCollection that can used instead of creating a new one.
-        /// </devdoc>
+        /// </summary>
         public static readonly AttributeCollection Empty = new AttributeCollection(null);
         private static Hashtable s_defaultAttributes;
 
@@ -36,9 +36,9 @@ namespace System.ComponentModel
 
         private int _index = 0;
 
-        /// <devdoc>
+        /// <summary>
         ///     Creates a new AttributeCollection.
-        /// </devdoc>
+        /// </summary>
         public AttributeCollection(params Attribute[] attributes)
         {
             _attributes = attributes ?? new Attribute[0];
@@ -56,9 +56,9 @@ namespace System.ComponentModel
         {
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Creates a new AttributeCollection from an existing AttributeCollection
-        /// </devdoc>
+        /// </summary>
         public static AttributeCollection FromExisting(AttributeCollection existing, params Attribute[] newAttributes)
         {
             // VSWhidbey #75418
@@ -121,9 +121,9 @@ namespace System.ComponentModel
             return new AttributeCollection(attributes);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Gets the attributes collection.
-        /// </devdoc>
+        /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays", Justification = "Matches constructor input type")]
         protected virtual Attribute[] Attributes
         {
@@ -133,9 +133,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Gets the number of attributes.
-        /// </devdoc>
+        /// </summary>
         public int Count
         {
             get
@@ -144,9 +144,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Gets the attribute with the specified index number.
-        /// </devdoc>
+        /// </summary>
         public virtual Attribute this[int index]
         {
             get
@@ -155,9 +155,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    Gets the attribute with the specified type.
-        /// </devdoc>
+        /// </summary>
         public virtual Attribute this[Type attributeType]
         {
             get
@@ -237,9 +237,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Determines if this collection of attributes has the specified attribute.
-        /// </devdoc>
+        /// </summary>
         public bool Contains(Attribute attribute)
         {
             Attribute attr = this[attribute.GetType()];
@@ -250,10 +250,10 @@ namespace System.ComponentModel
             return false;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Determines if this attribute collection contains the all
         ///     the specified attributes in the attribute array.
-        /// </devdoc>
+        /// </summary>
         public bool Contains(Attribute[] attributes)
         {
             if (attributes == null)
@@ -272,10 +272,10 @@ namespace System.ComponentModel
             return true;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Returns the default value for an attribute.  This uses the following heuristic:
         ///     1.  It looks for a public static field named "Default".
-        /// </devdoc>
+        /// </summary>
         protected Attribute GetDefaultAttribute(Type attributeType)
         {
             lock (s_internalSyncObject)
@@ -322,18 +322,18 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Gets an enumerator for this collection.
-        /// </devdoc>
+        /// </summary>
         public IEnumerator GetEnumerator()
         {
             return Attributes.GetEnumerator();
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Determines if a specified attribute is the same as an attribute
         ///     in the collection.
-        /// </devdoc>
+        /// </summary>
         public bool Matches(Attribute attribute)
         {
             for (int i = 0; i < Attributes.Length; i++)
@@ -346,10 +346,10 @@ namespace System.ComponentModel
             return false;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Determines if the attributes in the specified array are
         ///     the same as the attributes in the collection.
-        /// </devdoc>
+        /// </summary>
         public bool Matches(Attribute[] attributes)
         {
             for (int i = 0; i < attributes.Length; i++)
@@ -381,9 +381,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Copies this collection to an array.
-        /// </devdoc>
+        /// </summary>
         public void CopyTo(Array array, int index)
         {
             Array.Copy(Attributes, 0, array, index, Attributes.Length);

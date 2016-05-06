@@ -4,10 +4,10 @@
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///    <para>Specifies the category in which the property or event will be displayed in a
     ///       visual designer.</para>
-    /// </devdoc>
+    /// </summary>
     [AttributeUsage(AttributeTargets.All)]
     public class CategoryAttribute : Attribute, IIsDefaultAttribute
     {
@@ -28,16 +28,16 @@ namespace System.ComponentModel
 
         private bool _localized;
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Provides the actual category name.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         private string _categoryValue;
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets the action category attribute.</para>
-        /// </devdoc>
+        /// </summary>
         public static CategoryAttribute Action
         {
             get
@@ -50,9 +50,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets the appearance category attribute.</para>
-        /// </devdoc>
+        /// </summary>
         public static CategoryAttribute Appearance
         {
             get
@@ -65,9 +65,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets the asynchronous category attribute.</para>
-        /// </devdoc>
+        /// </summary>
         public static CategoryAttribute Asynchronous
         {
             get
@@ -80,9 +80,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets the behavior category attribute.</para>
-        /// </devdoc>
+        /// </summary>
         public static CategoryAttribute Behavior
         {
             get
@@ -95,9 +95,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets the data category attribute.</para>
-        /// </devdoc>
+        /// </summary>
         public static CategoryAttribute Data
         {
             get
@@ -110,9 +110,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets the default category attribute.</para>
-        /// </devdoc>
+        /// </summary>
         public static CategoryAttribute Default
         {
             get
@@ -125,9 +125,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets the design category attribute.</para>
-        /// </devdoc>
+        /// </summary>
         public static CategoryAttribute Design
         {
             get
@@ -140,9 +140,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets the drag and drop category attribute.</para>
-        /// </devdoc>
+        /// </summary>
         public static CategoryAttribute DragDrop
         {
             get
@@ -155,9 +155,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets the focus category attribute.</para>
-        /// </devdoc>
+        /// </summary>
         public static CategoryAttribute Focus
         {
             get
@@ -170,9 +170,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets the format category attribute.</para>
-        /// </devdoc>
+        /// </summary>
         public static CategoryAttribute Format
         {
             get
@@ -185,9 +185,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets the keyboard category attribute.</para>
-        /// </devdoc>
+        /// </summary>
         public static CategoryAttribute Key
         {
             get
@@ -200,9 +200,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets the layout category attribute.</para>
-        /// </devdoc>
+        /// </summary>
         public static CategoryAttribute Layout
         {
             get
@@ -215,9 +215,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets the mouse category attribute.</para>
-        /// </devdoc>
+        /// </summary>
         public static CategoryAttribute Mouse
         {
             get
@@ -230,10 +230,10 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para> Gets the window style category 
         ///       attribute.</para>
-        /// </devdoc>
+        /// </summary>
         public static CategoryAttribute WindowStyle
         {
             get
@@ -246,28 +246,28 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.ComponentModel.CategoryAttribute'/> 
         /// class with the default category.</para>
-        /// </devdoc>
+        /// </summary>
         public CategoryAttribute() : this(nameof(Default))
         {
         }
 
-        /// <devdoc>
+        /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.ComponentModel.CategoryAttribute'/> class with
         ///    the specified category name.</para>
-        /// </devdoc>
+        /// </summary>
         public CategoryAttribute(string category)
         {
             _categoryValue = category;
             _localized = false;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets the name of the category for the property or event 
         ///       that this attribute is bound to.</para>
-        /// </devdoc>
+        /// </summary>
         public string Category
         {
             get
@@ -285,10 +285,10 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
-        /// </devdoc>
-        /// <devdoc>
-        /// </devdoc>
+        /// <summary>
+        /// </summary>
+        /// <summary>
+        /// </summary>
         /// <internalonly/>
         /// <internalonly/>
         public override bool Equals(object obj)
@@ -305,26 +305,26 @@ namespace System.ComponentModel
             return false;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>[To be supplied.]</para>
-        /// </devdoc>
+        /// </summary>
         public override int GetHashCode()
         {
             return Category.GetHashCode();
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Looks up the localized name of a given category.</para>
-        /// </devdoc>
+        /// </summary>
         protected virtual string GetLocalizedString(string value)
         {
             return SR.GetResourceString("PropertyCategory" + value, null);
         }
 
-        /// <devdoc>
-        /// </devdoc>
-        /// <devdoc>
-        /// </devdoc>
+        /// <summary>
+        /// </summary>
+        /// <summary>
+        /// </summary>
         /// <internalonly/>
         /// <internalonly/>
         bool IIsDefaultAttribute.IsDefaultAttribute()
