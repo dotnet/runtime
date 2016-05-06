@@ -69,7 +69,6 @@
 
   <!-- Internal types (platform independent) -->
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' AND '$(GeneratePlatformNotSupportedAssembly)' != 'true'">
-    <Compile Include="Internal\Cryptography\ClonedCertificates.cs" />
     <Compile Include="Internal\Cryptography\DecryptorPal.cs" />
     <Compile Include="Internal\Cryptography\KeyAgreeRecipientInfoPal.cs" />
     <Compile Include="Internal\Cryptography\KeyLengths.cs" />
