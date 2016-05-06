@@ -101,6 +101,7 @@ namespace System.PrivateUri.Tests
         }
 
         [Fact]
+        [ActiveIssue(8362, PlatformID.OSX)]
         public void UriIPv4Host_DottedOctal_Success()
         {
             // 4.0 Uri truncates the leading zeros and reads these as decimal
@@ -108,6 +109,7 @@ namespace System.PrivateUri.Tests
         }
 
         [Fact]
+        [ActiveIssue(8362, PlatformID.OSX)]
         public void UriIPv4Host_DottedOctalExtraLeadingZeros_Success()
         {
             // 4.0 Uri truncates the leading zeros and reads these as decimal
@@ -115,6 +117,7 @@ namespace System.PrivateUri.Tests
         }
 
         [Fact]
+        [ActiveIssue(8362, PlatformID.OSX)]
         public void UriIPv4Host_PartialOctal_Success()
         {
             // 4.0 Uri truncates the leading zeros and reads these as decimal
@@ -129,6 +132,7 @@ namespace System.PrivateUri.Tests
         }
 
         [Fact]
+        [ActiveIssue(8361, PlatformID.AnyUnix)]
         public void UriIPv4Host_BadAddresses_AllFail()
         {
             ParseBadIPv4Address("");
@@ -299,6 +303,7 @@ namespace System.PrivateUri.Tests
         }
 
         [Fact]
+        [ActiveIssue(8360, PlatformID.AnyUnix)]
         public void UriIPv6Host_EmbeddedIPv4_Success()
         {
             ParseIPv6Address("FE08::192.168.0.1"); // Output is not IPv4 mapped
@@ -313,6 +318,7 @@ namespace System.PrivateUri.Tests
         }
 
         [Fact]
+        [ActiveIssue(8356, PlatformID.AnyUnix)]
         public void UriIPv6Host_BadAddresses_AllFail()
         {
             ParseBadIPv6Address("");
@@ -332,7 +338,7 @@ namespace System.PrivateUri.Tests
             ParseBadIPv6Address(":%12"); // Colon Scope
             ParseBadIPv6Address("%12"); // Just Scope
 
-            // Discrepency: IPAddrees doesn't accept bad scopes, Uri does
+            // TODO # 8330 Discrepency: IPAddress doesn't accept bad scopes, Uri does.
             // ParseBadIPv6Address("::%1a"); // Alpha numeric Scope
         }
 
