@@ -106,6 +106,8 @@ binary_protocol_init (const char *filename, long long limit)
 	file_size_limit = limit;
 
 	binary_protocol_open_file ();
+
+	binary_protocol_header (PROTOCOL_HEADER_CHECK, PROTOCOL_HEADER_VERSION, SIZEOF_VOID_P, G_BYTE_ORDER == G_LITTLE_ENDIAN);
 #else
 	g_error ("sgen binary protocol: not supported");
 #endif

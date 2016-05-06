@@ -694,6 +694,11 @@ sgen_client_binary_protocol_concurrent_sweep_end (long long timestamp)
 {
 }
 
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_header (long long check, int version, int ptr_size, gboolean little_endian)
+{
+}
+
 int sgen_thread_handshake (BOOL suspend);
 gboolean sgen_suspend_thread (SgenThreadInfo *info);
 gboolean sgen_resume_thread (SgenThreadInfo *info);
