@@ -3186,7 +3186,7 @@ void mono_cross_helpers_run (void);
  * Signal handling
  */
 
-#ifdef DISABLE_HW_TRAPS
+#if defined(DISABLE_HW_TRAPS) || defined(MONO_ARCH_DISABLE_HW_TRAPS)
  // Signal handlers not available
 #define MONO_ARCH_NEED_DIV_CHECK 1
 #endif
