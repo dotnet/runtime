@@ -4328,7 +4328,7 @@ int ThreadpoolMgr::GetCPUBusyTime_NT(PROCESS_CPU_INFORMATION* pOldInfo)
 
     if (CPUGroupInfo::CanEnableGCCPUGroups() && CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
     {
-#if !defined(FEATURE_CORECLR)
+#if !defined(FEATURE_REDHAWK) && !defined(FEATURE_PAL)
         FILETIME newIdleTime, newKernelTime, newUserTime;
 
         CPUGroupInfo::GetSystemTimes(&newIdleTime, &newKernelTime, &newUserTime);

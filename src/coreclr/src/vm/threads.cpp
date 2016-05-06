@@ -608,16 +608,18 @@ void Thread::ChooseThreadCPUGroupAffinity()
     }
     CONTRACTL_END;
 
-#if !defined(FEATURE_CORECLR)
+#ifndef FEATURE_PAL
     if (!CPUGroupInfo::CanEnableGCCPUGroups() || !CPUGroupInfo::CanEnableThreadUseAllCpuGroups()) 
          return;
 
+#ifndef FEATURE_CORECLR
     // We only handle the non-hosted case here. If CLR is hosted, the hosting 
     // process controls the physical OS Threads. If CLR is not hosted, we can 
     // set thread group affinity on OS threads directly.
     HostComHolder<IHostTask> pHostTask (GetHostTaskWithAddRef());
     if (pHostTask != NULL)
         return;
+#endif //!FEATURE_CORECLR
 
     //Borrow the ThreadStore Lock here: Lock ThreadStore before distributing threads
     ThreadStoreLockHolder TSLockHolder(TRUE);
@@ -634,7 +636,7 @@ void Thread::ChooseThreadCPUGroupAffinity()
     CPUGroupInfo::SetThreadGroupAffinity(GetThreadHandle(), &groupAffinity, NULL);
     m_wCPUGroup = groupAffinity.Group;
     m_pAffinityMask = groupAffinity.Mask;
-#endif
+#endif // !FEATURE_PAL
 }
 
 void Thread::ClearThreadCPUGroupAffinity()
@@ -646,16 +648,18 @@ void Thread::ClearThreadCPUGroupAffinity()
     }
     CONTRACTL_END;
 
-#if !defined(FEATURE_CORECLR)
+#ifndef FEATURE_PAL
     if (!CPUGroupInfo::CanEnableGCCPUGroups() || !CPUGroupInfo::CanEnableThreadUseAllCpuGroups()) 
          return;
 
+#ifndef FEATURE_CORECLR
     // We only handle the non-hosted case here. If CLR is hosted, the hosting 
     // process controls the physical OS Threads. If CLR is not hosted, we can 
     // set thread group affinity on OS threads directly.
     HostComHolder<IHostTask> pHostTask (GetHostTaskWithAddRef());
     if (pHostTask != NULL)
         return;
+#endif //!FEATURE_CORECLR
 
     ThreadStoreLockHolder TSLockHolder(TRUE);
 
@@ -670,7 +674,7 @@ void Thread::ClearThreadCPUGroupAffinity()
 
     m_wCPUGroup = 0;
     m_pAffinityMask = 0;
-#endif 
+#endif // !FEATURE_PAL
 }
 
 DWORD Thread::StartThread()
