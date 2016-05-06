@@ -14,6 +14,8 @@
     <ReferencePath>$(ProgramFiles)\Common Files\microsoft shared\VSTT	.0\UITestExtensionPackages</ReferencePath>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
     <NuGetPackageImportStamp>7a9bfb7d</NuGetPackageImportStamp>
+    <DisableProjectBuild Condition="'$(Platform)' == 'x64'">true</DisableProjectBuild>
+    <DisableProjectBuild Condition="'$(Platform)' == 'arm64'">true</DisableProjectBuild>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
