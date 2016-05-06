@@ -7554,7 +7554,7 @@ public :
         bool                dspOrder;       // Display names of each of the methods that we ngen/jit
         bool                dspUnwind;      // Display the unwind info output
         bool                dspDiffable;    // Makes the Jit Dump 'diff-able' (currently uses same COMPlus_* flag as disDiffable)
-        bool                compLargeBranches; // Force using large conditional branches
+        bool                compLongAddress;// Force using large pseudo instructions for long address (IF_LARGEJMP/IF_LARGEADR/IF_LARGLDC)
         bool                dspGCtbls;      // Display the GC tables
 #endif
 

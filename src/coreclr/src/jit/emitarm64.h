@@ -775,6 +775,7 @@ public:
     void            emitIns_R_C    (instruction  ins,
                                     emitAttr     attr,
                                     regNumber    reg,
+                                    regNumber    tmpReg,
                                     CORINFO_FIELD_HANDLE fldHnd,
                                     int          offs);
 
@@ -899,6 +900,9 @@ public:
 
     BYTE*           emitOutputLJ  (insGroup  *ig, BYTE *dst, instrDesc *i);
     unsigned        emitOutputCall(insGroup  *ig, BYTE *dst, instrDesc *i, code_t code);
+    BYTE*           emitOutputShortBranch(BYTE *dst, instruction ins, insFormat fmt, ssize_t distVal, instrDescJmp* id);
+    BYTE*           emitOutputShortAddress(BYTE *dst, instruction ins, insFormat fmt, ssize_t distVal, regNumber reg);
+    BYTE*           emitOutputShortConstant(BYTE *dst, instruction ins, insFormat fmt, ssize_t distVal, regNumber reg, emitAttr opSize);
 
 /*****************************************************************************
  *
@@ -907,7 +911,8 @@ public:
 
 inline bool        emitIsCondJump(instrDesc *jmp)
 {
-    return (jmp->idInsFmt() == IF_BI_0B);
+    return ((jmp->idInsFmt() == IF_BI_0B) ||
+            (jmp->idInsFmt() == IF_LARGEJMP));
 }
 
 
@@ -949,7 +954,19 @@ inline bool        emitIsDirectCall(instrDesc *call)
 
 inline bool        emitIsLoadLabel(instrDesc *jmp)
 {
-    return (jmp->idInsFmt() == IF_DI_1E); // adr or adrp
+    return ((jmp->idInsFmt() == IF_DI_1E) || // adr or arp
+            (jmp->idInsFmt() == IF_LARGEADR));
+}
+
+/*****************************************************************************
+*
+*  Given a instrDesc, return true if it's a load constant instruction.
+*/
+
+inline bool        emitIsLoadConstant(instrDesc *jmp)
+{
+    return ((jmp->idInsFmt() == IF_LS_1A) || // ldr
+            (jmp->idInsFmt() == IF_LARGELDC));
 }
 
 #endif // _TARGET_ARM64_

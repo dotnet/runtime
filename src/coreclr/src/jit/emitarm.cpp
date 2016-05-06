@@ -10,7 +10,6 @@ XX                                                                           XX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
-
 #include "jitpch.h"
 #ifdef _MSC_VER
 #pragma hdrstop
@@ -4280,7 +4279,7 @@ void                emitter::emitIns_J(instruction   ins,
         id->idjKeepLong = emitComp->fgInDifferentRegions(emitComp->compCurBB, dst);
 
 #ifdef DEBUG
-        if (emitComp->opts.compLargeBranches)        // Force long branches
+        if (emitComp->opts.compLongAddress)        // Force long branches
             id->idjKeepLong = 1;
 #endif // DEBUG
     }
