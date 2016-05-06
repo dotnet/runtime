@@ -11,8 +11,7 @@
   },
   "dependencies": {
     "Microsoft.DotNet.InternalAbstractions": {
-      "target": "project",
-      "version": "1.0.0-rc2-*"
+      "target": "project"
     },
     "Newtonsoft.Json": "7.0.1"
   },
