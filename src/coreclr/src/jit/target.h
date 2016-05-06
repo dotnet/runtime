@@ -1451,7 +1451,7 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   #define FEATURE_FIXED_OUT_ARGS   1       // Preallocate the outgoing arg area in the prolog
   #define FEATURE_STRUCTPROMOTE    1       // JIT Optimization to promote fields of structs into registers
   #define FEATURE_MULTIREG_STRUCT_PROMOTE 1  // True when we want to promote fields of a multireg struct into registers
-  #define FEATURE_FASTTAILCALL     0       // Tail calls made as epilog+jmp
+  #define FEATURE_FASTTAILCALL     1       // Tail calls made as epilog+jmp
   #define FEATURE_TAILCALL_OPT     0       // opportunistic Tail calls (i.e. without ".tail" prefix) made as fast tail calls.
   #define FEATURE_SET_FLAGS        1       // Set to true to force the JIT to mark the trees with GTF_SET_FLAGS when the flags need to be set
   #define FEATURE_MULTIREG_ARGS_OR_RET  1  // Support for passing and/or returning single values in more than one register  
@@ -1685,8 +1685,26 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   #define RBM_ARG_6                RBM_R6
   #define RBM_ARG_7                RBM_R7
 
+  #define REG_FLTARG_0             REG_V0
+  #define REG_FLTARG_1             REG_V1
+  #define REG_FLTARG_2             REG_V2
+  #define REG_FLTARG_3             REG_V3
+  #define REG_FLTARG_4             REG_V4
+  #define REG_FLTARG_5             REG_V5
+  #define REG_FLTARG_6             REG_V6
+  #define REG_FLTARG_7             REG_V7
+
+  #define RBM_FLTARG_0             RBM_V0
+  #define RBM_FLTARG_1             RBM_V1
+  #define RBM_FLTARG_2             RBM_V2
+  #define RBM_FLTARG_3             RBM_V3
+  #define RBM_FLTARG_4             RBM_V4
+  #define RBM_FLTARG_5             RBM_V5
+  #define RBM_FLTARG_6             RBM_V6
+  #define RBM_FLTARG_7             RBM_V7
+
   #define RBM_ARG_REGS            (RBM_ARG_0|RBM_ARG_1|RBM_ARG_2|RBM_ARG_3|RBM_ARG_4|RBM_ARG_5|RBM_ARG_6|RBM_ARG_7)
-  #define RBM_FLTARG_REGS         (RBM_V0|RBM_V1|RBM_V2|RBM_V3|RBM_V4|RBM_V5|RBM_V6|RBM_V7)
+  #define RBM_FLTARG_REGS         (RBM_FLTARG_0|RBM_FLTARG_1|RBM_FLTARG_2|RBM_FLTARG_3|RBM_FLTARG_4|RBM_FLTARG_5|RBM_FLTARG_6|RBM_FLTARG_7)
 
   SELECTANY const regNumber fltArgRegs [] = {REG_V0, REG_V1, REG_V2, REG_V3, REG_V4, REG_V5, REG_V6, REG_V7 };
   SELECTANY const regMaskTP fltArgMasks[] = {RBM_V0, RBM_V1, RBM_V2, RBM_V3, RBM_V4, RBM_V5, RBM_V6, RBM_V7 };
