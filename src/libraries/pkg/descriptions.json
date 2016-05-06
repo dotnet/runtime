@@ -1204,6 +1204,14 @@
         ]
     },
     {
+        "Name": "System.Runtime.Serialization.Formatters",
+        "Description": "Provides common types for libraries that support runtime serialization.",
+        "CommonTypes": [
+            "System.SerializableAttribute",
+            "System.Runtime.Serialization.ISerializable"
+        ]
+    },
+    {
         "Name": "System.Runtime.Serialization.Json",
         "Description": "Provides classes for serializing objects to the JavaScript Object Notation (JSON) and deserializing JSON data to objects.",
         "CommonTypes": [
