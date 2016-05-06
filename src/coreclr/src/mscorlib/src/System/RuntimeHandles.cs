@@ -537,7 +537,7 @@ namespace System
 #if FEATURE_HOSTED_BINDER
             IntPtr pPrivHostBinder,
 #endif
-            bool loadTypeFromPartialName, ObjectHandleOnStack type);
+            bool loadTypeFromPartialName, ObjectHandleOnStack type, ObjectHandleOnStack keepalive);
 
 #if FEATURE_HOSTED_BINDER
         // Wrapper function to reduce the need for ifdefs.
@@ -564,12 +564,14 @@ namespace System
 
             RuntimeType type = null;
 
+            Object keepAlive = null;
             GetTypeByName(name, throwOnError, ignoreCase, reflectionOnly,
                 JitHelpers.GetStackCrawlMarkHandle(ref stackMark),
 #if FEATURE_HOSTED_BINDER
                 pPrivHostBinder,
 #endif
-                loadTypeFromPartialName, JitHelpers.GetObjectHandleOnStack(ref type));
+                loadTypeFromPartialName, JitHelpers.GetObjectHandleOnStack(ref type), JitHelpers.GetObjectHandleOnStack(ref keepAlive));
+            GC.KeepAlive(keepAlive);
 
             return type;
         }

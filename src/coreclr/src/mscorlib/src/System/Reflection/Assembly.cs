@@ -1367,7 +1367,8 @@ namespace System.Reflection
                                                         String name, 
                                                         bool throwOnError, 
                                                         bool ignoreCase,
-                                                        ObjectHandleOnStack type);
+                                                        ObjectHandleOnStack type,
+                                                        ObjectHandleOnStack keepAlive);
         
         [System.Security.SecuritySafeCritical]
         public override Type GetType(String name, bool throwOnError, bool ignoreCase) 
@@ -1377,7 +1378,10 @@ namespace System.Reflection
                 throw new ArgumentNullException("name");
 
             RuntimeType type = null;
-            GetType(GetNativeHandle(), name, throwOnError, ignoreCase, JitHelpers.GetObjectHandleOnStack(ref type));
+            Object keepAlive = null;
+            GetType(GetNativeHandle(), name, throwOnError, ignoreCase, JitHelpers.GetObjectHandleOnStack(ref type), JitHelpers.GetObjectHandleOnStack(ref keepAlive));
+            GC.KeepAlive(keepAlive);
+            
             return type;
         }
 

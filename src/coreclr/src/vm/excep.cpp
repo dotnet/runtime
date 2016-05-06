@@ -8678,10 +8678,6 @@ void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pE
     // policy here. Do we want to let such funcitons throw, etc.? Right now, we believe that there are no such
     // frames on the stack to be unwound, so the SetFrame is alright (see the first comment above.) At the very
     // least, we should add some way to assert that.
-    //
-    // ~FrameWithCookieHolder is also calling SetFrame() and if UnwindAndContinueRethrowHelperInsideCatch is ever changed
-    // to not call SetFrame then the change should be reflected in the FrameWithCookieHolder as well.
-    //
     pThread->SetFrame(pEntryFrame);
 
 #ifdef _DEBUG
