@@ -5380,9 +5380,9 @@ bool                Compiler::impTailCallRetTypeCompatible(var_types callerRetTy
     if (callerRetType == calleeRetType)
     {
         return true;
-    }    
+    }
 
-#ifdef _TARGET_AMD64_
+#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
     // Jit64 compat:
     if (callerRetType == TYP_VOID)
     {
@@ -5410,7 +5410,7 @@ bool                Compiler::impTailCallRetTypeCompatible(var_types callerRetTy
     {
         return (varTypeIsIntegral(calleeRetType) || isCalleeRetTypMBEnreg) && (callerRetTypeSize == calleeRetTypeSize);
     }
-#endif // _TARGET_AMD64_
+#endif // _TARGET_AMD64_ || _TARGET_ARM64_
 
     return false;
 }
@@ -5620,13 +5620,6 @@ var_types           Compiler::impImportCall (OPCODE         opcode,
         canTailCall = false;
         szCanTailCallFailReason = "Caller requires a security check.";
     }
-
-#ifdef _TARGET_ARM64_
-    // Don't do opportunistic tail calls in ARM64 for now.
-    // TODO-ARM64-NYI:  Get this to work.
-    canTailCall = false;
-    szCanTailCallFailReason = "Arm64.";
-#endif // _TARGET_ARM64_
 
     // We only need to cast the return value of pinvoke inlined calls that return small types
 
