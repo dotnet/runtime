@@ -51,7 +51,6 @@ JIT/Regression/CLR-x86-JIT/V1.2-M02/b20785/b20785/b20785.sh
 JIT/Regression/CLR-x86-JIT/V2.0-Beta2/b399444/b399444a/b399444a.sh
 JIT/Regression/CLR-x86-JIT/V2.0-Beta2/b409748/b409748/b409748.sh
 JIT/Regression/VS-ia64-JIT/V1.2-Beta1/b302509/b302509/b302509.sh
-JIT/Regression/VS-ia64-JIT/V1.2-M02/b12011/b12011/b12011.sh
 JIT/opt/Tailcall/TailcallVerifyWithPrefix/TailcallVerifyWithPrefix.sh
 Loader/NativeLibs/FromNativePaths/FromNativePaths.sh
 JIT/Directed/coverage/importer/Desktop/bleref_il_d/bleref_il_d.sh
