@@ -326,15 +326,15 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
                     // op1 has to be either an lclvar or a multi-reg returning call
                     if (op1->OperGet() == GT_LCL_VAR)
                     {
-                        GenTreeLclVarCommon* lclVarPtr = op1->AsLclVarCommon();
-                        LclVarDsc* varDsc = &(compiler->lvaTable[lclVarPtr->gtLclNum]);
+                        GenTreeLclVarCommon* lclVarCommon = op1->AsLclVarCommon();
+                        LclVarDsc* varDsc = &(compiler->lvaTable[lclVarCommon->gtLclNum]);
                         assert(varDsc->lvIsMultiRegArgOrRet);
-                        varDsc->lvDoNotEnregister = true;
 
-                        // If this is a two eightbyte return, make the var
-                        // contained by the return expression. Codegen will put
-                        // the values in the right registers for return.
-                        MakeSrcContained(tree, op1);
+                        // Mark var as contained if not enregistrable.
+                        if (!varTypeIsEnregisterableStruct(op1))
+                        {
+                            MakeSrcContained(tree, op1);
+                        }
                     }
                     else
                     {

@@ -13544,25 +13544,8 @@ GenTreePtr Compiler::impAssignStructClassToVar(GenTreePtr op, CORINFO_CLASS_HAND
     // This code will be called only if the struct return has not been normalized (i.e. 2 eightbytes - max allowed.)
     assert(IsMultiRegReturnedType(hClass));
 
-    // The return value is based on eightbytes, so all the fields need to be on stack
-    // before loading the eightbyte in the corresponding return register.
-    //
-    // TODO-Amd64-Unix-CQ: Right now codegen assumes that tmpNum lcl var is on stack and 
-    // and does not live in a register.  For example, consider a case where Vector3/4
-    // return value of a call is assigned to tmpNum.  In such a case tmpNum will be of
-    // SIMD type and will be allocated a register unless explicitly marked as DoNotEnregister.
-    // Code quality can be improved by not marking enregistrable struct type tmpNum
-    // as DoNotEnregister=true.
-
-    // Mark the var so that fields are not promoted and stay together
+    // Mark the var so that fields are not promoted and stay together.
     lvaTable[tmpNum].lvIsMultiRegArgOrRet = true;
-
-    // For now to workaround codegen limitation marking tmpNum as DoNotEnregister
-    // if it can be enregistered.
-    if (varTypeIsEnregisterableStruct(op))
-    {
-        lvaTable[tmpNum].lvDoNotEnregister = true;
-    }
 #endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
     return ret;
