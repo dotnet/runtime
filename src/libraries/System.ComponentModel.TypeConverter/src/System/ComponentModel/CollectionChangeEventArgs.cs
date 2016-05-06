@@ -4,26 +4,26 @@
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     /// <para>Provides data for the <see langword='CollectionChange '/> event.</para>
-    /// </devdoc>
+    /// </summary>
     public class CollectionChangeEventArgs : EventArgs
     {
         private readonly CollectionChangeAction _action;
         private readonly object _element;
 
-        /// <devdoc>
+        /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.ComponentModel.CollectionChangeEventArgs'/> class.</para>
-        /// </devdoc>
+        /// </summary>
         public CollectionChangeEventArgs(CollectionChangeAction action, object element)
         {
             _action = action;
             _element = element;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets an action that specifies how the collection changed.</para>
-        /// </devdoc>
+        /// </summary>
         public virtual CollectionChangeAction Action
         {
             get
@@ -32,9 +32,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets the instance of the collection with the change. </para>
-        /// </devdoc>
+        /// </summary>
         public virtual object Element
         {
             get

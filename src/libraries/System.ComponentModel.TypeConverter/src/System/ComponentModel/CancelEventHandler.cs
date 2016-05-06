@@ -4,8 +4,8 @@
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///    <para>Represents the method that will handle the event raised when canceling an event.</para>
-    /// </devdoc>
+    /// </summary>
     public delegate void CancelEventHandler(object sender, CancelEventArgs e);
 }

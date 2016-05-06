@@ -4,31 +4,31 @@
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///    <para>Specifies whether a property can only be set at
     ///       design time.</para>
-    /// </devdoc>
+    /// </summary>
     [AttributeUsage(AttributeTargets.All)]
     public sealed class DesignOnlyAttribute : Attribute, IIsDefaultAttribute
     {
         private readonly bool _isDesignOnly = false;
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Initializes a new instance of the <see cref='System.ComponentModel.DesignOnlyAttribute'/> class.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public DesignOnlyAttribute(bool isDesignOnly)
         {
             _isDesignOnly = isDesignOnly;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Gets a value indicating whether a property
         ///       can be set only at design time.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public bool IsDesignOnly
         {
             get
@@ -37,34 +37,34 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Specifies that a property can be set only at design time. This
         ///    <see langword='static '/>field is read-only. 
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public static readonly DesignOnlyAttribute Yes = new DesignOnlyAttribute(true);
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Specifies
         ///       that a
         ///       property can be set at design time or at run
         ///       time. This <see langword='static '/>field is read-only.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public static readonly DesignOnlyAttribute No = new DesignOnlyAttribute(false);
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Specifies the default value for the <see cref='System.ComponentModel.DesignOnlyAttribute'/>, which is <see cref='System.ComponentModel.DesignOnlyAttribute.No'/>. This <see langword='static'/> field is
         ///       read-only.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public static readonly DesignOnlyAttribute Default = No;
 
-        /// <devdoc>
-        /// </devdoc>
+        /// <summary>
+        /// </summary>
         /// <internalonly/>
         bool IIsDefaultAttribute.IsDefaultAttribute()
         {

@@ -7,17 +7,17 @@ using System.Globalization;
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///    <para>Provides a type converter to convert
     ///       collection objects to and from various other representations.</para>
-    /// </devdoc>
+    /// </summary>
     public class CollectionConverter : TypeConverter
     {
-        /// <devdoc>
+        /// <summary>
         ///    <para>Converts the given
         ///       value object to the
         ///       specified destination type.</para>
-        /// </devdoc>
+        /// </summary>
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
             if (destinationType == null)
@@ -37,21 +37,21 @@ namespace System.ComponentModel
         }
 
 #if !NETSTANDARD10
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///        Gets a collection of properties for the type of array specified by the value parameter using
         ///        the specified context and attributes.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes)
         {
             return new PropertyDescriptorCollection(null);
         }
 #endif // !NETSTANDARD10
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets a value indicating whether this object supports properties.</para>
-        /// </devdoc>
+        /// </summary>
         public override bool GetPropertiesSupported(ITypeDescriptorContext context)
         {
             return false;

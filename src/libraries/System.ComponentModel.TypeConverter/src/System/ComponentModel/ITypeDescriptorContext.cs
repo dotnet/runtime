@@ -6,37 +6,37 @@ using System.Runtime.InteropServices;
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///    <para> 
     ///       Provides information about a context to a type converter or a value editor,
     ///       so that the type converter or editor can perform a conversion.</para>
-    /// </devdoc>
+    /// </summary>
     public interface ITypeDescriptorContext : IServiceProvider
     {
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets the container with the set of objects for this formatter.</para>
-        /// </devdoc>
+        /// </summary>
         IContainer Container { get; }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets the instance that is invoking the method on the formatter object.</para>
-        /// </devdoc>
+        /// </summary>
         object Instance { get; }
 
-        /// <devdoc>
+        /// <summary>
         ///      Retrieves the PropertyDescriptor that is surfacing the given context item.
-        /// </devdoc>
+        /// </summary>
         PropertyDescriptor PropertyDescriptor { get; }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets a value indicating whether this object can be changed.</para>
-        /// </devdoc>
+        /// </summary>
         bool OnComponentChanging();
 
-        /// <devdoc>
+        /// <summary>
         /// <para>Raises the <see cref='System.ComponentModel.Design.IComponentChangeService.ComponentChanged'/>
         /// event.</para>
-        /// </devdoc>
+        /// </summary>
         void OnComponentChanged();
     }
 }

@@ -6,30 +6,30 @@ using System.Globalization;
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///    <para>Provides a type
     ///       converter that can be used to populate a list box with available types.</para>
-    /// </devdoc>
+    /// </summary>
     public abstract class TypeListConverter : TypeConverter
     {
         private readonly Type[] _types;
         private StandardValuesCollection _values;
 
-        /// <devdoc>
+        /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.ComponentModel.TypeListConverter'/> class using
         ///    the type array as the available types.</para>
-        /// </devdoc>
+        /// </summary>
         protected TypeListConverter(Type[] types)
         {
             _types = types;
         }
 
         /// <internalonly/>
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets a value indicating whether this converter
         ///       can convert an object in the given source type to an enumeration object using
         ///       the specified context.</para>
-        /// </devdoc>
+        /// </summary>
         public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
         {
             if (sourceType == typeof(string))
@@ -39,12 +39,12 @@ namespace System.ComponentModel
             return base.CanConvertFrom(context, sourceType);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///        Gets a value indicating whether this converter can convert an object
         ///        to the given destination type using the context.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
         {
 #if FEATURE_INSTANCEDESCRIPTOR
@@ -57,9 +57,9 @@ namespace System.ComponentModel
         }
 
         /// <internalonly/>
-        /// <devdoc>
+        /// <summary>
         ///    <para>Converts the specified value object to an enumeration object.</para>
-        /// </devdoc>
+        /// </summary>
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
             if (value is string)
@@ -77,9 +77,9 @@ namespace System.ComponentModel
         }
 
         /// <internalonly/>
-        /// <devdoc>
+        /// <summary>
         ///    <para>Converts the given value object to the specified destination type.</para>
-        /// </devdoc>
+        /// </summary>
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
             if (destinationType == null)
@@ -102,9 +102,9 @@ namespace System.ComponentModel
             return base.ConvertTo(context, culture, value, destinationType);
         }
         /// <internalonly/>
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets a collection of standard values for the data type this validator is designed for.</para>
-        /// </devdoc>
+        /// </summary>
         public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext context)
         {
             if (_values == null)
@@ -127,22 +127,22 @@ namespace System.ComponentModel
         }
 
         /// <internalonly/>
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets a value indicating whether the list of standard values returned from
         ///    <see cref='System.ComponentModel.TypeListConverter.GetStandardValues'/> is an exclusive list. </para>
-        /// </devdoc>
+        /// </summary>
         public override bool GetStandardValuesExclusive(ITypeDescriptorContext context)
         {
             return true;
         }
 
         /// <internalonly/>
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///        Gets a value indicating whether this object supports a standard set of values that can be
         ///        picked from a list using the specified context.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public override bool GetStandardValuesSupported(ITypeDescriptorContext context)
         {
             return true;

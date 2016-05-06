@@ -11,7 +11,7 @@ using System.Reflection;
 namespace System.ComponentModel
 {
     /// <internalonly/>
-    /// <devdoc>
+    /// <summary>
     ///    <para>
     ///       ReflectPropertyDescriptor defines a property. Properties are the main way that a user can
     ///       set up the state of a component.
@@ -45,7 +45,7 @@ namespace System.ComponentModel
     ///    Attribute.
     ///    ReflectPropertyDescriptors can be obtained by a user programmatically through the
     ///    ComponentManager.
-    /// </devdoc>
+    /// </summary>
     internal sealed class ReflectPropertyDescriptor : PropertyDescriptor
     {
         private static readonly Type[] s_argsNone = new Type[0];
@@ -76,9 +76,9 @@ namespace System.ComponentModel
         private EventDescriptor _realIPropChangedEvent;      // INotifyPropertyChanged.PropertyChanged event handler on object
         private Type _receiverType;               // Only set if we are an extender
 
-        /// <devdoc>
+        /// <summary>
         ///     The main constructor for ReflectPropertyDescriptors.
-        /// </devdoc>
+        /// </summary>
         public ReflectPropertyDescriptor(Type componentClass, string name, Type type,
                                          Attribute[] attributes)
         : base(name, attributes)
@@ -108,9 +108,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     A constructor for ReflectPropertyDescriptors that have no attributes.
-        /// </devdoc>
+        /// </summary>
         public ReflectPropertyDescriptor(Type componentClass, string name, Type type, PropertyInfo propInfo, MethodInfo getMethod, MethodInfo setMethod, Attribute[] attrs) : this(componentClass, name, type, attrs)
         {
             _propInfo = propInfo;
@@ -122,9 +122,9 @@ namespace System.ComponentModel
                 _state[s_bitGetQueried | s_bitSetQueried] = true;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     A constructor for ReflectPropertyDescriptors that creates an extender property.
-        /// </devdoc>
+        /// </summary>
         public ReflectPropertyDescriptor(Type componentClass, string name, Type type, Type receiverType, MethodInfo getMethod, MethodInfo setMethod, Attribute[] attrs) : this(componentClass, name, type, attrs)
         {
             _receiverType = receiverType;
@@ -133,10 +133,10 @@ namespace System.ComponentModel
             _state[s_bitGetQueried | s_bitSetQueried] = true;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     This constructor takes an existing ReflectPropertyDescriptor and modifies it by merging in the
         ///     passed-in attributes.
-        /// </devdoc>
+        /// </summary>
         public ReflectPropertyDescriptor(Type componentClass, PropertyDescriptor oldReflectPropertyDescriptor, Attribute[] attributes)
         : base(oldReflectPropertyDescriptor, attributes)
         {
@@ -204,9 +204,9 @@ namespace System.ComponentModel
         }
 
 #if FEATURE_AMBIENTVALUE
-        /// <devdoc>
+        /// <summary>
         ///      Retrieves the ambient value for this property.
-        /// </devdoc>
+        /// </summary>
         private object AmbientValue
         {
             get
@@ -229,9 +229,9 @@ namespace System.ComponentModel
         }
 #endif
 
-        /// <devdoc>
+        /// <summary>
         ///     The EventDescriptor for the "{propertyname}Changed" event on the component, or null if there isn't one for this property.
-        /// </devdoc>
+        /// </summary>
         private EventDescriptor ChangedEventValue
         {
             get
@@ -246,9 +246,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     The EventDescriptor for the INotifyPropertyChanged.PropertyChanged event on the component, or null if there isn't one for this property.
-        /// </devdoc>
+        /// </summary>
         private EventDescriptor IPropChangedEventValue
         {
             get
@@ -273,9 +273,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Retrieves the type of the component this PropertyDescriptor is bound to.
-        /// </devdoc>
+        /// </summary>
         public override Type ComponentType
         {
             get
@@ -284,9 +284,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///      Retrieves the default value for this property.
-        /// </devdoc>
+        /// </summary>
         private object DefaultValue
         {
             get
@@ -313,9 +313,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     The GetMethod for this property
-        /// </devdoc>
+        /// </summary>
         private MethodInfo GetMethodValue
         {
             get
@@ -357,9 +357,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Determines if this property is an extender property.
-        /// </devdoc>
+        /// </summary>
         private bool IsExtender
         {
             get
@@ -368,9 +368,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Indicates whether this property is read only.
-        /// </devdoc>
+        /// </summary>
         public override bool IsReadOnly
         {
             get
@@ -380,9 +380,9 @@ namespace System.ComponentModel
         }
 
 
-        /// <devdoc>
+        /// <summary>
         ///     Retrieves the type of the property.
-        /// </devdoc>
+        /// </summary>
         public override Type PropertyType
         {
             get
@@ -391,9 +391,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Access to the reset method, if one exists for this property.
-        /// </devdoc>
+        /// </summary>
         private MethodInfo ResetMethodValue
         {
             get
@@ -419,9 +419,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Accessor for the set method
-        /// </devdoc>
+        /// </summary>
         private MethodInfo SetMethodValue
         {
             get
@@ -486,9 +486,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Accessor for the ShouldSerialize method.
-        /// </devdoc>
+        /// </summary>
         private MethodInfo ShouldSerializeMethodValue
         {
             get
@@ -524,9 +524,9 @@ namespace System.ComponentModel
             */
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Allows interested objects to be notified when this property changes.
-        /// </devdoc>
+        /// </summary>
         public override void AddValueChanged(object component, EventHandler handler)
         {
             if (component == null) throw new ArgumentNullException(nameof(component));
@@ -753,14 +753,14 @@ namespace System.ComponentModel
             return !object.Equals(DefaultValue, ExtenderGetValue(provider, component));
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Indicates whether reset will change the value of the component.  If there
         ///     is a DefaultValueAttribute, then this will return true if getValue returns
         ///     something different than the default value.  If there is a reset method and
         ///     a ShouldSerialize method, this will return what ShouldSerialize returns.
         ///     If there is just a reset method, this always returns true.  If none of these
         ///     cases apply, this returns false.
-        /// </devdoc>
+        /// </summary>
         public override bool CanResetValue(object component)
         {
             if (IsExtender || IsReadOnly)
@@ -968,11 +968,11 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Retrieves the current value of the property on component,
         ///     invoking the getXXX method.  An exception in the getXXX
         ///     method will pass through.
-        /// </devdoc>
+        /// </summary>
         public override object GetValue(object component)
         {
             Debug.WriteLine($"[{Name}]: GetValue({component?.GetType().Name ?? "(null)"})");
@@ -1031,10 +1031,10 @@ namespace System.ComponentModel
         }
 
 #if FEATURE_PROPERTY_CHANGED_EVENT_HANDLER
-        /// <devdoc>
+        /// <summary>
         ///     Handles INotifyPropertyChanged.PropertyChange events from components.
         ///     If event pertains to this property, issue a ValueChanged event.
-        /// </devdoc>
+        /// </summary>
         /// </internalonly>
         internal void OnINotifyPropertyChanged(object component, PropertyChangedEventArgs e)
         {
@@ -1046,10 +1046,10 @@ namespace System.ComponentModel
         }
 #endif
 
-        /// <devdoc>
+        /// <summary>
         ///     This should be called by your property descriptor implementation
         ///     when the property value has changed.
-        /// </devdoc>
+        /// </summary>
         protected override void OnValueChanged(object component, EventArgs e)
         {
             if (_state[s_bitChangedQueried] && _realChangedEvent == null)
@@ -1058,9 +1058,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Allows interested objects to be notified when this property changes.
-        /// </devdoc>
+        /// </summary>
         public override void RemoveValueChanged(object component, EventHandler handler)
         {
             if (component == null) throw new ArgumentNullException(nameof(component));
@@ -1095,14 +1095,14 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Will reset the default value for this property on the component.  If
         ///     there was a default value passed in as a DefaultValueAttribute, that
         ///     value will be set as the value of the property on the component.  If
         ///     there was no default value passed in, a ResetXXX method will be looked
         ///     for.  If one is found, it will be invoked.  If one is not found, this
         ///     is a nop.
-        /// </devdoc>
+        /// </summary>
         public override void ResetValue(object component)
         {
             object invokee = GetInvocationTarget(_componentClass, component);
@@ -1169,14 +1169,14 @@ namespace System.ComponentModel
 #endif
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     This will set value to be the new value of this property on the
         ///     component by invoking the setXXX method on the component.  If the
         ///     value specified is invalid, the component should throw an exception
         ///     which will be passed up.  The component designer should design the
         ///     property so that getXXX following a setXXX should return the value
         ///     passed in if no exception was thrown in the setXXX call.
-        /// </devdoc>
+        /// </summary>
         public override void SetValue(object component, object value)
         {
             Debug.WriteLine($"[{Name}]: SetValue({component?.GetType().Name ?? "(null)"}, {value?.GetType().Name ?? "(null)"})");
@@ -1266,7 +1266,7 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Indicates whether the value of this property needs to be persisted. In
         ///     other words, it indicates whether the state of the property is distinct
         ///     from when the component is first instantiated. If there is a default
@@ -1276,7 +1276,7 @@ namespace System.ComponentModel
         ///     these routes fail, true will be returned.
         ///
         ///     If this returns false, a tool should not persist this property's value.
-        /// </devdoc>
+        /// </summary>
         public override bool ShouldSerializeValue(object component)
         {
             component = GetInvocationTarget(_componentClass, component);
@@ -1308,12 +1308,12 @@ namespace System.ComponentModel
             return !object.Equals(DefaultValue, GetValue(component));
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Indicates whether value change notifications for this property may originate from outside the property
         ///     descriptor, such as from the component itself (value=true), or whether notifications will only originate
         ///     from direct calls made to PropertyDescriptor.SetValue (value=false). For example, the component may
         ///     implement the INotifyPropertyChanged interface, or may have an explicit '{name}Changed' event for this property.
-        /// </devdoc>
+        /// </summary>
         public override bool SupportsChangeEvents
         {
             get

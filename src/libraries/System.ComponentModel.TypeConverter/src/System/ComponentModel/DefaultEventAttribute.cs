@@ -4,35 +4,35 @@
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///    <para>Specifies the default event for a
     ///       component.</para>
-    /// </devdoc>
+    /// </summary>
     [AttributeUsage(AttributeTargets.Class)]
     public sealed class DefaultEventAttribute : Attribute
     {
-        /// <devdoc>
+        /// <summary>
         ///     This is the default event name.
-        /// </devdoc>
+        /// </summary>
         private readonly string _name;
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Initializes
         ///       a new instance of the <see cref='System.ComponentModel.DefaultEventAttribute'/> class.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public DefaultEventAttribute(string name)
         {
             _name = name;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Gets the name of the default event for
         ///       the component this attribute is bound to.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public string Name
         {
             get
@@ -41,13 +41,13 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Specifies the default value for the <see cref='System.ComponentModel.DefaultEventAttribute'/>, which is
         ///    <see langword='null'/>.
         ///       This <see langword='static '/>field is read-only.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public static readonly DefaultEventAttribute Default = new DefaultEventAttribute(null);
 
         public override bool Equals(object obj)

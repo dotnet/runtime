@@ -10,7 +10,7 @@ using System.Reflection;
 namespace System.ComponentModel
 {
     /// <internalonly/>
-    /// <devdoc>
+    /// <summary>
     ///    <para>
     ///       ReflectEventDescriptor defines an event. Events are the main way that a user can get
     ///       run-time notifications from a component.
@@ -57,7 +57,7 @@ namespace System.ComponentModel
     ///    Attribute.
     ///    ReflectEventDescriptors can be obtained by a user programmatically through the
     ///    ComponentManager.
-    /// </devdoc>
+    /// </summary>
     internal sealed class ReflectEventDescriptor : EventDescriptor
     {
         private static readonly Type[] s_argsNone = new Type[0];
@@ -71,9 +71,9 @@ namespace System.ComponentModel
         private EventInfo _realEvent;      // actual event info... may be null
         private bool _filledMethods = false;   // did we already call FillMethods() once?
 
-        /// <devdoc>
+        /// <summary>
         ///     This is the main constructor for an ReflectEventDescriptor.
-        /// </devdoc>
+        /// </summary>
         public ReflectEventDescriptor(Type componentClass, string name, Type type, Attribute[] attributes)
             : base(name, attributes)
         {
@@ -101,10 +101,10 @@ namespace System.ComponentModel
             _realEvent = eventInfo;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     This constructor takes an existing ReflectEventDescriptor and modifies it by merging in the
         ///     passed-in attributes.
-        /// </devdoc>
+        /// </summary>
         public ReflectEventDescriptor(Type componentType, EventDescriptor oldReflectEventDescriptor, Attribute[] attributes)
             : base(oldReflectEventDescriptor, attributes)
         {
@@ -120,9 +120,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Retrieves the type of the component this EventDescriptor is bound to.
-        /// </devdoc>
+        /// </summary>
         public override Type ComponentType
         {
             get
@@ -131,9 +131,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Retrieves the type of the delegate for this event.
-        /// </devdoc>
+        /// </summary>
         public override Type EventType
         {
             get
@@ -143,9 +143,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Indicates whether the delegate type for this event is a multicast delegate.
-        /// </devdoc>
+        /// </summary>
         public override bool IsMulticast
         {
             get
@@ -154,10 +154,10 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     This adds the delegate value as a listener to when this event is fired
         ///     by the component, invoking the addOnXXX method.
-        /// </devdoc>
+        /// </summary>
         public override void AddEventHandler(object component, Delegate value)
         {
             FillMethods();
@@ -338,10 +338,10 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     This fills the get and set method fields of the event info.  It is shared
         ///     by the various constructors.
-        /// </devdoc>
+        /// </summary>
         private void FillMethods()
         {
             if (_filledMethods) return;
@@ -471,10 +471,10 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     This will remove the delegate value from the event chain so that 
         ///     it no longer gets events from this component.
-        /// </devdoc>
+        /// </summary>
         public override void RemoveEventHandler(object component, Delegate value)
         {
             FillMethods();

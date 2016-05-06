@@ -12,16 +12,16 @@ using System.Diagnostics;
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///    <para>
     ///       Represents a collection of properties.
     ///    </para>
-    /// </devdoc>
+    /// </summary>
     public class PropertyDescriptorCollection : ICollection, IList, IDictionary
     {
-        /// <devdoc>
+        /// <summary>
         /// An empty PropertyDescriptorCollection that can used instead of creating a new one with no items.
-        /// </devdoc>
+        /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2112:SecuredTypesShouldNotExposeFields")]
         public static readonly PropertyDescriptorCollection Empty = new PropertyDescriptorCollection(null, true);
 
@@ -37,12 +37,12 @@ namespace System.ComponentModel
 
         private readonly object _internalSyncObject = new object();
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Initializes a new instance of the <see cref='System.ComponentModel.PropertyDescriptorCollection'/>
         ///       class.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public PropertyDescriptorCollection(PropertyDescriptor[] properties)
         {
             if (properties == null)
@@ -58,10 +58,10 @@ namespace System.ComponentModel
             _propsOwned = true;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Initializes a new instance of a property descriptor collection, and allows you to mark the
         ///     collection as read-only so it cannot be modified.
-        /// </devdoc>
+        /// </summary>
         public PropertyDescriptorCollection(PropertyDescriptor[] properties, bool readOnly)
             : this(properties)
         {
@@ -81,13 +81,13 @@ namespace System.ComponentModel
             _needSort = true;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Gets the number
         ///       of property descriptors in the
         ///       collection.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public int Count
         {
             get
@@ -96,10 +96,10 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets the property with the specified index
         ///       number.</para>
-        /// </devdoc>
+        /// </summary>
         public virtual PropertyDescriptor this[int index]
         {
             get
@@ -113,9 +113,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets the property with the specified name.</para>
-        /// </devdoc>
+        /// </summary>
         public virtual PropertyDescriptor this[string name]
         {
             get
@@ -124,9 +124,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>[To be supplied.]</para>
-        /// </devdoc>
+        /// </summary>
         public int Add(PropertyDescriptor value)
         {
             if (_readOnly)
@@ -139,9 +139,9 @@ namespace System.ComponentModel
             return _propCount - 1;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>[To be supplied.]</para>
-        /// </devdoc>
+        /// </summary>
         public void Clear()
         {
             if (_readOnly)
@@ -153,17 +153,17 @@ namespace System.ComponentModel
             _cachedFoundProperties = null;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>[To be supplied.]</para>
-        /// </devdoc>
+        /// </summary>
         public bool Contains(PropertyDescriptor value)
         {
             return IndexOf(value) >= 0;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>[To be supplied.]</para>
-        /// </devdoc>
+        /// </summary>
         public void CopyTo(Array array, int index)
         {
             EnsurePropsOwned();
@@ -212,9 +212,9 @@ namespace System.ComponentModel
             _properties = newProps;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets the description of the property with the specified name.</para>
-        /// </devdoc>
+        /// </summary>
         public virtual PropertyDescriptor Find(string name, bool ignoreCase)
         {
             lock (_internalSyncObject)
@@ -272,17 +272,17 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>[To be supplied.]</para>
-        /// </devdoc>
+        /// </summary>
         public int IndexOf(PropertyDescriptor value)
         {
             return Array.IndexOf(_properties, value, 0, _propCount);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>[To be supplied.]</para>
-        /// </devdoc>
+        /// </summary>
         public void Insert(int index, PropertyDescriptor value)
         {
             if (_readOnly)
@@ -299,9 +299,9 @@ namespace System.ComponentModel
             _propCount++;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>[To be supplied.]</para>
-        /// </devdoc>
+        /// </summary>
         public void Remove(PropertyDescriptor value)
         {
             if (_readOnly)
@@ -317,9 +317,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>[To be supplied.]</para>
-        /// </devdoc>
+        /// </summary>
         public void RemoveAt(int index)
         {
             if (_readOnly)
@@ -335,57 +335,57 @@ namespace System.ComponentModel
             _propCount--;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Sorts the members of this PropertyDescriptorCollection, using the default sort for this collection, 
         ///       which is usually alphabetical.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public virtual PropertyDescriptorCollection Sort()
         {
             return new PropertyDescriptorCollection(_properties, _propCount, _namedSort, _comparer);
         }
 
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Sorts the members of this PropertyDescriptorCollection.  Any specified NamedSort arguments will 
         ///       be applied first, followed by sort using the specified IComparer.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public virtual PropertyDescriptorCollection Sort(string[] names)
         {
             return new PropertyDescriptorCollection(_properties, _propCount, names, _comparer);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Sorts the members of this PropertyDescriptorCollection.  Any specified NamedSort arguments will 
         ///       be applied first, followed by sort using the specified IComparer.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public virtual PropertyDescriptorCollection Sort(string[] names, IComparer comparer)
         {
             return new PropertyDescriptorCollection(_properties, _propCount, names, comparer);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Sorts the members of this PropertyDescriptorCollection, using the specified IComparer to compare, 
         ///       the PropertyDescriptors contained in the collection.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public virtual PropertyDescriptorCollection Sort(IComparer comparer)
         {
             return new PropertyDescriptorCollection(_properties, _propCount, _namedSort, comparer);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Sorts the members of this PropertyDescriptorCollection.  Any specified NamedSort arguments will 
         ///       be applied first, followed by sort using the specified IComparer.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         protected void InternalSort(string[] names)
         {
             if (_properties == null || _properties.Length == 0)
@@ -436,11 +436,11 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Sorts the members of this PropertyDescriptorCollection using the specified IComparer.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         protected void InternalSort(IComparer sorter)
         {
             if (sorter == null)
@@ -453,11 +453,11 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Gets an enumerator for this <see cref='System.ComponentModel.PropertyDescriptorCollection'/>.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public virtual IEnumerator GetEnumerator()
         {
             EnsurePropsOwned();

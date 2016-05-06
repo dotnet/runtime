@@ -4,59 +4,59 @@
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///    <para>Specifies that
     ///       this property can be combined with properties belonging to
     ///       other objects in a properties window.</para>
-    /// </devdoc>
+    /// </summary>
     [AttributeUsage(AttributeTargets.All)]
     public sealed class MergablePropertyAttribute : Attribute, IIsDefaultAttribute
     {
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Specifies that a property can be combined with properties belonging to other
         ///       objects in a properties window. This <see langword='static '/>field is read-only.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public static readonly MergablePropertyAttribute Yes = new MergablePropertyAttribute(true);
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Specifies that a property cannot be combined with properties belonging to
         ///       other objects in a properties window. This <see langword='static '/>field is
         ///       read-only.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public static readonly MergablePropertyAttribute No = new MergablePropertyAttribute(false);
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Specifies the default value, which is <see cref='System.ComponentModel.MergablePropertyAttribute.Yes'/>, that is a property can be combined with
         ///       properties belonging to other objects in a properties window. This <see langword='static '/>field is read-only.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public static readonly MergablePropertyAttribute Default = Yes;
 
         private bool _allowMerge;
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Initializes a new instance of the <see cref='System.ComponentModel.MergablePropertyAttribute'/>
         ///       class.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public MergablePropertyAttribute(bool allowMerge)
         {
             _allowMerge = allowMerge;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Gets a value indicating whether this
         ///       property can be combined with properties belonging to other objects in a
         ///       properties window.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public bool AllowMerge
         {
             get
@@ -66,8 +66,8 @@ namespace System.ComponentModel
         }
 
         /// <internalonly/>
-        /// <devdoc>
-        /// </devdoc>
+        /// <summary>
+        /// </summary>
         public override bool Equals(object obj)
         {
             if (obj == this)
@@ -79,18 +79,18 @@ namespace System.ComponentModel
             return other != null && other.AllowMerge == _allowMerge;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Returns the hashcode for this object.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public override int GetHashCode()
         {
             return base.GetHashCode();
         }
 
-        /// <devdoc>
-        /// </devdoc>
+        /// <summary>
+        /// </summary>
         /// <internalonly/>
         bool IIsDefaultAttribute.IsDefaultAttribute()
         {

@@ -4,34 +4,34 @@
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///    <para>Specifies the default property for a component.</para>
-    /// </devdoc>
+    /// </summary>
     [AttributeUsage(AttributeTargets.Class)]
     public sealed class DefaultPropertyAttribute : Attribute
     {
-        /// <devdoc>
+        /// <summary>
         ///     This is the default event name.
-        /// </devdoc>
+        /// </summary>
         private readonly string _name;
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Initializes a new instance of
         ///       the <see cref='System.ComponentModel.DefaultPropertyAttribute'/> class.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public DefaultPropertyAttribute(string name)
         {
             _name = name;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Gets the name of the default property for the component this attribute is
         ///       bound to.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public string Name
         {
             get
@@ -40,12 +40,12 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Specifies the default value for the <see cref='System.ComponentModel.DefaultPropertyAttribute'/>, which is <see langword='null'/>. This
         ///    <see langword='static '/>field is read-only. 
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public static readonly DefaultPropertyAttribute Default = new DefaultPropertyAttribute(null);
 
         public override bool Equals(object obj)

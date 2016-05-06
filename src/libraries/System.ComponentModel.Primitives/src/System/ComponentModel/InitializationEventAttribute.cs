@@ -4,29 +4,29 @@
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///    <para>Specifies which event is fired on initialization.</para>
-    /// </devdoc>
+    /// </summary>
     [AttributeUsage(AttributeTargets.Class)]
     public sealed class InitializationEventAttribute : Attribute
     {
         private string _eventName = null;
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Initializes a new instance of the <see cref='System.ComponentModel.InitializationEventAttribute'/> class.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public InitializationEventAttribute(string eventName)
         {
             _eventName = eventName;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Gets the name of the initialization event.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public string EventName
         {
             get

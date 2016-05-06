@@ -4,24 +4,24 @@
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///    <para>Specifies how the collection is changed.</para>
-    /// </devdoc>
+    /// </summary>
     public enum CollectionChangeAction
     {
-        /// <devdoc>
+        /// <summary>
         ///    <para> Specifies that an element is added to the collection.</para>
-        /// </devdoc>
+        /// </summary>
         Add = 1,
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Specifies that an element is removed from the collection.</para>
-        /// </devdoc>
+        /// </summary>
         Remove = 2,
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Specifies that the entire collection has changed.</para>
-        /// </devdoc>
+        /// </summary>
         Refresh = 3
     }
 }

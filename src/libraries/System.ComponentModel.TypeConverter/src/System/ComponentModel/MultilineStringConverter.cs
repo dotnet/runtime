@@ -6,15 +6,15 @@ using System.Globalization;
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     /// Provides a type converter to convert multiline strings to a simple string.
-    /// </devdoc>
+    /// </summary>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
     public class MultilineStringConverter : TypeConverter
     {
-        /// <devdoc>
+        /// <summary>
         /// Converts the given value object to the specified destination type.
-        /// </devdoc>
+        /// </summary>
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
             if (destinationType == null)
@@ -34,19 +34,19 @@ namespace System.ComponentModel
         }
 
 #if !NETSTANDARD10
-        /// <devdoc>
+        /// <summary>
         /// Gets a collection of properties for the type of array specified by the value
         /// parameter using the specified context and attributes.
-        /// </devdoc>
+        /// </summary>
         public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes)
         {
             return null;
         }
 #endif // !NETSTANDARD10
 
-        /// <devdoc>
+        /// <summary>
         /// Gets a value indicating whether this object supports properties.
-        /// </devdoc>
+        /// </summary>
         public override bool GetPropertiesSupported(ITypeDescriptorContext context)
         {
             return false;

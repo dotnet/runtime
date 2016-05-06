@@ -5,8 +5,8 @@
 namespace System.ComponentModel
 {
     /// <include file='doc\AttributeProviderAttribute.uex' path='docs/doc[@for="AttributeProviderAttribute"]/*' />
-    /// <devdoc>
-    /// </devdoc>
+    /// <summary>
+    /// </summary>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1813:AvoidUnsealedAttributes")]
     [AttributeUsage(AttributeTargets.Property)]
     public class AttributeProviderAttribute : Attribute
@@ -15,9 +15,9 @@ namespace System.ComponentModel
         private string _propertyName;
 
         /// <include file='doc\AttributeProviderAttribute.uex' path='docs/doc[@for="AttributeProviderAttribute.AttributeProviderAttribute"]/*' />
-        /// <devdoc>
+        /// <summary>
         ///     Creates a new AttributeProviderAttribute object.
-        /// </devdoc>
+        /// </summary>
         public AttributeProviderAttribute(string typeName)
         {
             if (typeName == null)
@@ -29,9 +29,9 @@ namespace System.ComponentModel
         }
 
         /// <include file='doc\AttributeProviderAttribute.uex' path='docs/doc[@for="AttributeProviderAttribute.AttributeProviderAttribute"]/*' />
-        /// <devdoc>
+        /// <summary>
         ///     Creates a new AttributeProviderAttribute object.
-        /// </devdoc>
+        /// </summary>
         public AttributeProviderAttribute(string typeName, string propertyName)
         {
             if (typeName == null)
@@ -48,9 +48,9 @@ namespace System.ComponentModel
         }
 
         /// <include file='doc\AttributeProviderAttribute.uex' path='docs/doc[@for="AttributeProviderAttribute.AttributeProviderAttribute1"]/*' />
-        /// <devdoc>
+        /// <summary>
         ///     Creates a new AttributeProviderAttribute object.
-        /// </devdoc>
+        /// </summary>
         public AttributeProviderAttribute(Type type)
         {
             if (type == null)
@@ -62,10 +62,10 @@ namespace System.ComponentModel
         }
 
         /// <include file='doc\AttributeProviderAttribute.uex' path='docs/doc[@for="AttributeProviderAttribute.TypeName"]/*' />
-        /// <devdoc>
+        /// <summary>
         ///     The TypeName property returns the assembly qualified type name 
         ///     passed into the constructor.
-        /// </devdoc>
+        /// </summary>
         public string TypeName
         {
             get
@@ -75,9 +75,9 @@ namespace System.ComponentModel
         }
 
         /// <include file='doc\AttributeProviderAttribute.uex' path='docs/doc[@for="AttributeProviderAttribute.TypeName"]/*' />
-        /// <devdoc>
+        /// <summary>
         ///     The TypeName property returns the property name that will be used to query attributes from.
-        /// </devdoc>
+        /// </summary>
         public string PropertyName
         {
             get

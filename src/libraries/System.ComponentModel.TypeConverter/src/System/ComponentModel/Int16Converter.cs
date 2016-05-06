@@ -6,15 +6,15 @@ using System.Globalization;
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///    <para>Provides a type converter to convert 16-bit signed integer objects to and
     ///       from various other representations.</para>
-    /// </devdoc>
+    /// </summary>
     public class Int16Converter : BaseNumberConverter
     {
-        /// <devdoc>
+        /// <summary>
         /// The Type this converter is targeting (e.g. Int16, UInt32, etc.)
-        /// </devdoc>
+        /// </summary>
         internal override Type TargetType
         {
             get
@@ -23,35 +23,35 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         /// Convert the given value to a string using the given radix
-        /// </devdoc>
+        /// </summary>
         internal override object FromString(string value, int radix)
         {
             return Convert.ToInt16(value, radix);
         }
 
-        /// <devdoc>
+        /// <summary>
         /// Convert the given value to a string using the given CultureInfo
-        /// </devdoc>
+        /// </summary>
         internal override object FromString(string value, CultureInfo culture)
         {
             return Int16.Parse(value, culture);
         }
 
 
-        /// <devdoc>
+        /// <summary>
         /// Convert the given value to a string using the given formatInfo
-        /// </devdoc>
+        /// </summary>
         internal override object FromString(string value, NumberFormatInfo formatInfo)
         {
             return Int16.Parse(value, NumberStyles.Integer, formatInfo);
         }
 
 
-        /// <devdoc>
+        /// <summary>
         /// Convert the given value from a string using the given formatInfo
-        /// </devdoc>
+        /// </summary>
         internal override string ToString(object value, NumberFormatInfo formatInfo)
         {
             return ((Int16)value).ToString("G", formatInfo);

@@ -4,30 +4,30 @@
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///    <para>Specifies whether a property should be localized.</para>
-    /// </devdoc>
+    /// </summary>
     [AttributeUsage(AttributeTargets.All)]
     public sealed class LocalizableAttribute : Attribute, IIsDefaultAttribute
     {
         private bool _isLocalizable = false;
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Initializes a new instance of the <see cref='System.ComponentModel.LocalizableAttribute'/> class.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public LocalizableAttribute(bool isLocalizable)
         {
             _isLocalizable = isLocalizable;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Gets a value indicating whether
         ///       a property should be localized.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public bool IsLocalizable
         {
             get
@@ -36,34 +36,34 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Specifies that a property should be localized. This
         ///    <see langword='static '/>field is read-only. 
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public static readonly LocalizableAttribute Yes = new LocalizableAttribute(true);
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Specifies that a property should not be localized. This
         ///    <see langword='static '/>field is read-only. 
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public static readonly LocalizableAttribute No = new LocalizableAttribute(false);
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Specifies the default value, which is <see cref='System.ComponentModel.LocalizableAttribute.No'/> , that is
         ///       a property should not be localized. This <see langword='static '/>field is
         ///       read-only.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public static readonly LocalizableAttribute Default = No;
 
         /// <internalonly/>
-        /// <devdoc>
-        /// </devdoc>
+        /// <summary>
+        /// </summary>
         bool IIsDefaultAttribute.IsDefaultAttribute()
         {
             return IsLocalizable == Default.IsLocalizable;

@@ -4,21 +4,21 @@
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///    Provides information about the properties and events
     ///    for a component. This class cannot be inherited.
     ///
     ///    This is only a stub to support the TypeConverter scenario.
-    /// </devdoc>
+    /// </summary>
     public sealed class TypeDescriptor
     {
         private TypeDescriptor()
         {
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    Gets a type converter for the specified type.
-        /// </devdoc>
+        /// </summary>
         public static TypeConverter GetConverter(Type type)
         {
             return ReflectTypeDescriptionProvider.GetConverter(type);

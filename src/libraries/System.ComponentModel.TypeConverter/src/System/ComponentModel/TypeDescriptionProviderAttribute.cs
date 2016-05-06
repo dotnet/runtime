@@ -4,16 +4,16 @@
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
-    /// </devdoc>
+    /// <summary>
+    /// </summary>
     [AttributeUsage(AttributeTargets.Class, Inherited = true)]
     public sealed class TypeDescriptionProviderAttribute : Attribute
     {
         private string _typeName;
 
-        /// <devdoc>
+        /// <summary>
         ///     Creates a new TypeDescriptionProviderAttribute object.
-        /// </devdoc>
+        /// </summary>
         public TypeDescriptionProviderAttribute(string typeName)
         {
             if (typeName == null)
@@ -24,9 +24,9 @@ namespace System.ComponentModel
             _typeName = typeName;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Creates a new TypeDescriptionProviderAttribute object.
-        /// </devdoc>
+        /// </summary>
         public TypeDescriptionProviderAttribute(Type type)
         {
             if (type == null)
@@ -37,10 +37,10 @@ namespace System.ComponentModel
             _typeName = type.AssemblyQualifiedName;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     The TypeName property returns the assembly qualified type name 
         ///     for the type description provider.
-        /// </devdoc>
+        /// </summary>
         public string TypeName
         {
             get

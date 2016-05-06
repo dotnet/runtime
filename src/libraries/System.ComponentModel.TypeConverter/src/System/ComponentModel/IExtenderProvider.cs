@@ -4,21 +4,21 @@
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///    <para>
     ///       Defines the interface
     ///       for extending properties to other components in a container.
     ///    </para>
-    /// </devdoc>
+    /// </summary>
     public interface IExtenderProvider
     {
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///       Specifies
         ///       whether this object can provide its extender properties to
         ///       the specified object.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         bool CanExtend(object extendee);
     }
 }

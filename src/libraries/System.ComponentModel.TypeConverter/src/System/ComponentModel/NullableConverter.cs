@@ -8,18 +8,18 @@ using System.Reflection;
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     /// TypeConverter to convert Nullable types to and from strings or the underlying simple type.
-    /// </devdoc>
+    /// </summary>
     public class NullableConverter : TypeConverter
     {
         private Type _nullableType;
         private Type _simpleType;
         private TypeConverter _simpleTypeConverter;
 
-        /// <devdoc>
+        /// <summary>
         /// Nullable converter is initialized with the underlying simple type.
-        /// </devdoc>
+        /// </summary>
         public NullableConverter(Type type)
         {
             _nullableType = type;
@@ -33,10 +33,10 @@ namespace System.ComponentModel
             _simpleTypeConverter = TypeDescriptor.GetConverter(_simpleType);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets a value indicating whether this converter can convert an object in the
         ///       given source type to the underlying simple type or a null.</para>
-        /// </devdoc>
+        /// </summary>
         public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
         {
             if (sourceType == _simpleType)
@@ -53,9 +53,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    Converts the given value to the converter's underlying simple type or a null.
-        /// </devdoc>
+        /// </summary>
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
             if (value == null || value.GetType() == _simpleType)
@@ -76,9 +76,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         /// Gets a value indicating whether this converter can convert a value object to the destination type.
-        /// </devdoc>
+        /// </summary>
         public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
         {
             if (destinationType == _simpleType)
@@ -95,9 +95,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         /// Converts the given value object to the destination type.
-        /// </devdoc>
+        /// </summary>
         public override object ConvertTo(ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value, Type destinationType)
         {
             if (destinationType == null)
@@ -126,8 +126,8 @@ namespace System.ComponentModel
         }
 
         /// <include file='doc\NullableConverter.uex' path='docs/doc[@for="NullableConverter.CreateInstance"]/*' />
-        /// <devdoc>
-        /// </devdoc>
+        /// <summary>
+        /// </summary>
         public override object CreateInstance(ITypeDescriptorContext context, IDictionary propertyValues)
         {
             if (_simpleTypeConverter != null)
@@ -139,13 +139,13 @@ namespace System.ComponentModel
             return base.CreateInstance(context, propertyValues);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///        Gets a value indicating whether changing a value on this object requires a call to
         ///        <see cref='System.ComponentModel.TypeConverter.CreateInstance'/> to create a new value,
         ///        using the specified context.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public override bool GetCreateInstanceSupported(ITypeDescriptorContext context)
         {
             if (_simpleTypeConverter != null)
@@ -157,12 +157,12 @@ namespace System.ComponentModel
         }
 
 #if !NETSTANDARD10
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///        Gets a collection of properties for the type of array specified by the value
         ///        parameter using the specified context and attributes.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes)
         {
             if (_simpleTypeConverter != null)
@@ -175,9 +175,9 @@ namespace System.ComponentModel
         }
 #endif // !NETSTANDARD10
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets a value indicating whether this object supports properties using the specified context.</para>
-        /// </devdoc>
+        /// </summary>
         public override bool GetPropertiesSupported(ITypeDescriptorContext context)
         {
             if (_simpleTypeConverter != null)
@@ -188,9 +188,9 @@ namespace System.ComponentModel
             return base.GetPropertiesSupported(context);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets a collection of standard values for the data type this type converter is designed for.</para>
-        /// </devdoc>
+        /// </summary>
         public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext context)
         {
             if (_simpleTypeConverter != null)
@@ -215,13 +215,13 @@ namespace System.ComponentModel
             return base.GetStandardValues(context);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///        Gets a value indicating whether the collection of standard values returned from
         ///        <see cref='System.ComponentModel.TypeConverter.GetStandardValues'/> is an exclusive 
         ///        list of possible values, using the specified context.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public override bool GetStandardValuesExclusive(ITypeDescriptorContext context)
         {
             if (_simpleTypeConverter != null)
@@ -232,12 +232,12 @@ namespace System.ComponentModel
             return base.GetStandardValuesExclusive(context);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>
         ///        Gets a value indicating whether this object supports a standard set of values that can
         ///        be picked from a list using the specified context.
         ///    </para>
-        /// </devdoc>
+        /// </summary>
         public override bool GetStandardValuesSupported(ITypeDescriptorContext context)
         {
             if (_simpleTypeConverter != null)
@@ -248,9 +248,9 @@ namespace System.ComponentModel
             return base.GetStandardValuesSupported(context);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets a value indicating whether the given value object is valid for this type.</para>
-        /// </devdoc>
+        /// </summary>
         public override bool IsValid(ITypeDescriptorContext context, object value)
         {
             if (_simpleTypeConverter != null)
@@ -269,9 +269,9 @@ namespace System.ComponentModel
             return base.IsValid(context, value);
         }
 
-        /// <devdoc>
+        /// <summary>
         /// The type this converter was initialized with.
-        /// </devdoc>
+        /// </summary>
         public Type NullableType
         {
             get
@@ -280,9 +280,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         /// The simple type that is represented as a nullable.
-        /// </devdoc>
+        /// </summary>
         public Type UnderlyingType
         {
             get
@@ -291,9 +291,9 @@ namespace System.ComponentModel
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         /// Converter associated with the underlying simple type.
-        /// </devdoc>
+        /// </summary>
         public TypeConverter UnderlyingTypeConverter
         {
             get
