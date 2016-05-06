@@ -1290,7 +1290,7 @@ combinedScenarios.each { scenario ->
                                 case 'x86ryujit':
                                 case 'x86lb':
                                     def arch = architecture
-                                    if (architecture != 'x86ryujit' || architecture == 'x86lb') {
+                                    if (architecture == 'x86ryujit' || architecture == 'x86lb') {
                                         arch = 'x86'
                                     }
                                 
