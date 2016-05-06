@@ -9497,11 +9497,23 @@ void                CodeGen::genFnEpilog(BasicBlock* block)
         // figure out what jump we have
         GenTreePtr jmpStmt = block->lastTopLevelStmt();
         noway_assert(jmpStmt && (jmpStmt->gtOper == GT_STMT));
-
+#if !FEATURE_FASTTAILCALL
         noway_assert(jmpStmt->gtNext == nullptr);
         GenTreePtr jmpNode = jmpStmt->gtStmt.gtStmtExpr;
         noway_assert(jmpNode->gtOper == GT_JMP);
+#else
+        // arm64
+        // If jmpNode is GT_JMP then gtNext must be null.
+        // If jmpNode is a fast tail call, gtNext need not be null since it could have embedded stmts.
+        GenTreePtr jmpNode = jmpStmt->gtStmt.gtStmtExpr;
+        noway_assert((jmpNode->gtOper != GT_JMP) || (jmpStmt->gtNext == nullptr));
 
+        // Could either be a "jmp method" or "fast tail call" implemented as epilog+jmp
+        noway_assert((jmpNode->gtOper == GT_JMP) || ((jmpNode->gtOper == GT_CALL) && jmpNode->AsCall()->IsFastTailCall()));
+
+        // The next block is associated with this "if" stmt
+        if (jmpNode->gtOper == GT_JMP)
+#endif
         {
             // Simply emit a jump to the methodHnd. This is similar to a call so we can use
             // the same descriptor with some minor adjustments.
@@ -9530,6 +9542,16 @@ void                CodeGen::genFnEpilog(BasicBlock* block)
                 BAD_IL_OFFSET, REG_NA, REG_NA, 0, 0, /* iloffset, ireg, xreg, xmul, disp */
                 true);                     /* isJump */
         }
+#if FEATURE_FASTTAILCALL
+        else
+        {
+            // Fast tail call.
+            // Call target = REG_IP0.
+            // https://github.com/dotnet/coreclr/issues/4827
+            // Do we need a special encoding for stack walker like rex.w prefix for x64?
+            getEmitter()->emitIns_R(INS_br, emitTypeSize(TYP_I_IMPL), REG_IP0);
+        }
+#endif //FEATURE_FASTTAILCALL
     }
     else
     {
@@ -11531,6 +11553,72 @@ instruction CodeGen::genMapShiftInsToShiftByConstantIns(instruction ins, int shi
 }
 
 #endif // _TARGET_XARCH_
+
+#if !defined(LEGACY_BACKEND) && (defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_))
+
+//------------------------------------------------------------------------------------------------ //
+// getFirstArgWithStackSlot - returns the first argument with stack slot on the caller's frame.
+//
+// Return value:
+//    The number of the first argument with stack slot on the caller's frame.
+//
+// Note:
+//    On x64 Windows the caller always creates slots (homing space) in its frame for the
+//    first 4 arguments of a callee (register passed args). So, the the variable number
+//    (lclNum) for the first argument with a stack slot is always 0.
+//    For System V systems or arm64, there is no such calling convention requirement, and the code needs to find
+//    the first stack passed argument from the caller. This is done by iterating over
+//    all the lvParam variables and finding the first with lvArgReg equals to REG_STK.
+//
+unsigned
+CodeGen::getFirstArgWithStackSlot()
+{
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING) || defined(_TARGET_ARM64_)
+    unsigned baseVarNum = 0;
+#if defined(FEATURE_UNIX_AMR64_STRUCT_PASSING)
+    baseVarNum = compiler->lvaFirstStackIncomingArgNum;
+
+    if (compiler->lvaFirstStackIncomingArgNum != BAD_VAR_NUM)
+    {
+        baseVarNum = compiler->lvaFirstStackIncomingArgNum;
+    }
+    else
+#endif // FEATURE_UNIX_ARM64_STRUCT_PASSING
+    {
+        // Iterate over all the local variables in the Lcl var table.
+        // They contain all the implicit arguments - thisPtr, retBuf,
+        // generic context, PInvoke cookie, var arg cookie,no-standard args, etc.
+        LclVarDsc* varDsc = nullptr;
+        for (unsigned i = 0; i < compiler->info.compArgsCount; i++)
+        {
+            varDsc = &(compiler->lvaTable[i]);
+
+            // We are iterating over the arguments only.
+            assert(varDsc->lvIsParam);
+
+            if (varDsc->lvArgReg == REG_STK)
+            {
+                baseVarNum = i;
+#if defined(FEATURE_UNIX_AMR64_STRUCT_PASSING)
+                compiler->lvaFirstStackIncomingArgNum = baseVarNum;
+#endif // FEATURE_UNIX_ARM64_STRUCT_PASSING
+                break;
+            }
+        }
+        assert(varDsc != nullptr);
+    }
+
+    return baseVarNum;
+#elif defined(_TARGET_AMD64_)
+    return 0;
+#else
+    // Not implemented for x86.
+    NYI_X86("getFirstArgWithStackSlot not yet implemented for x86.");
+    return BAD_VAR_NUM;
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING || _TARGET_ARM64_
+}
+
+#endif // !LEGACY_BACKEND && (_TARGET_XARCH_ || _TARGET_ARM64_)
 
 /*****************************************************************************/
 #ifdef DEBUGGING_SUPPORT
