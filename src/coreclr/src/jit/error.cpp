@@ -170,6 +170,15 @@ void notYetImplemented(const char * msg, const char * filename, unsigned line)
 #endif // !DEBUG
 #endif // FUNC_INFO_LOGGING
 
+#ifdef DEBUG
+    Compiler* pCompiler = JitTls::GetCompiler();
+    if (pCompiler != nullptr)
+    {
+        // Assume we're within a compFunctionTrace boundary, which might not be true.
+        pCompiler->compFunctionTraceEnd(nullptr, 0, true);
+    }
+#endif // DEBUG 
+
     DWORD value = JitConfig.AltJitAssertOnNYI();
 
     // 0 means just silently skip
