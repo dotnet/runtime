@@ -632,7 +632,7 @@ bool                isRegParamType(var_types type)
 #endif // !_TARGET_X86_
 }
 
-#ifdef _TARGET_AMD64_
+#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
 /*****************************************************************************/
  // Returns true if 'type' is a struct that can be enregistered for call args 
  //                         or can be returned by value in multiple registers.
@@ -680,7 +680,7 @@ bool   Compiler::VarTypeIsMultiByteAndCanEnreg(var_types type,
 
     return result;
 }
-#endif //_TARGET_AMD64_
+#endif //_TARGET_AMD64_ || _TARGET_ARM64_
 
 
 /*****************************************************************************/
