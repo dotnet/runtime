@@ -161,6 +161,8 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	mono_add_unwind_op_def_cfa_reg (unwind_ops, code, buf, fp);
 	/* Allocate stack frame */
 	ARM_SUB_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, 32);
+	if (MONO_ARCH_FRAME_ALIGNMENT > 8)
+		ARM_SUB_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, (MONO_ARCH_FRAME_ALIGNMENT - 8));
 	info_offset = -4;
 	mrgctx_offset = -8;
 	callee_reg_area_offset = - (6 * 4);
