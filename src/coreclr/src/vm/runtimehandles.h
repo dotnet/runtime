@@ -183,7 +183,8 @@ public:
 #ifdef FEATURE_HOSTED_BINDER
                                  ICLRPrivBinder * pPrivHostBinder,
 #endif
-                                 BOOL bLoadTypeFromPartialNameHack, QCall::ObjectHandleOnStack retType);
+                                 BOOL bLoadTypeFromPartialNameHack, QCall::ObjectHandleOnStack retType,
+                                 QCall::ObjectHandleOnStack keepAlive);
 
     static FCDECL1(AssemblyBaseObject*, GetAssembly, ReflectClassBaseObject *pType);
     static FCDECL1(ReflectClassBaseObject*, GetBaseType, ReflectClassBaseObject* pType);
