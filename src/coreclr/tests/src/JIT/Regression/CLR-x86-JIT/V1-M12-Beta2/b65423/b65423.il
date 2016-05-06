@@ -248,7 +248,9 @@
 	IL_0047:  call       void ['mscorlib']System.Environment::set_ExitCode(int32)
 	IL_004c:  leave.s    IL_0083 
     }
-    IL_0083:  ret
+    IL_0083:  call       int32 ['mscorlib']System.Environment::get_ExitCode()
+              call       void ['mscorlib']System.Environment::Exit(int32)
+              ret
   } 
 
 } 

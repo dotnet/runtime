@@ -80,7 +80,9 @@
     IL_0001:  ldc.i4.1
     IL_0002:  call       void Test::DoSwitch(int32,
                                              int32)
-    IL_0007:  ret
+    IL_0007:  call       int32 ['mscorlib']System.Environment::get_ExitCode()
+              call       void ['mscorlib']System.Environment::Exit(int32)
+              ret
   } 
  
 } 

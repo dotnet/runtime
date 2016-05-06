@@ -7,9 +7,6 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M09\b13621\b13621\*" >
             <Issue>2235</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M09\b16102\b16102\*" >
-            <Issue>2236</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M10\b04914\b04914\*" >
             <Issue>2235</Issue>
         </ExcludeList>
@@ -49,9 +46,6 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\IL_Conformance\Old\Conformance_Base\conv_ovf_i8_i\conv_ovf_i8_i.cmd" >
              <Issue>2414</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\IL_Conformance\Old\Conformance_Base\rem_r4\rem_r4.cmd" >
-             <Issue>2414</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\localloc\verify\verify01_dynamic\verify01_dynamic.cmd" >
              <Issue>2414</Issue>
         </ExcludeList>
@@ -62,12 +56,6 @@
              <Issue>2414</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\regress\ndpw\21220\b21220\b21220.cmd" >
-             <Issue>2414</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\regress\vsw\102754\test1\test1.cmd" >
-             <Issue>2414</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\regress\vsw\102754\test2\test2.cmd" >
              <Issue>2414</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\cctor\misc\tail_il_d\tail_il_d.cmd" >
@@ -88,58 +76,10 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\cctor\simple\precise3_il_r\precise3_il_r.cmd" >
              <Issue>2414</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\switch\switch1\switch1.cmd" >
-             <Issue>2414</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\switch\switch10\switch10.cmd" >
-             <Issue>2414</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\switch\switch11\switch11.cmd" >
-             <Issue>2414</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\switch\switch2\switch2.cmd" >
-             <Issue>2414</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\switch\switch3\switch3.cmd" >
-             <Issue>2414</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\switch\switch4\switch4.cmd" >
-             <Issue>2414</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\switch\switch5\switch5.cmd" >
-             <Issue>2414</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\switch\switch6\switch6.cmd" >
-             <Issue>2414</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\switch\switch7\switch7.cmd" >
-             <Issue>2414</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\switch\switch8\switch8.cmd" >
-             <Issue>2414</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\switch\switch9\switch9.cmd" >
-             <Issue>2414</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\tailcall\_il_dbgrecurse_ep_void\_il_dbgrecurse_ep_void.cmd" >
-             <Issue>2414</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\tailcall\_il_dbgtest_void\_il_dbgtest_void.cmd" >
-             <Issue>2414</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\tailcall\_il_relrecurse_ep_void\_il_relrecurse_ep_void.cmd" >
-             <Issue>2414</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\tailcall\_il_reltest_void\_il_reltest_void.cmd" >
-             <Issue>2414</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\varargs\seh\fault_il_d\fault_il_d.cmd" >
              <Issue>2414</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\varargs\seh\fault_il_r\fault_il_r.cmd" >
-             <Issue>2414</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b65423\b65423\b65423.cmd" >
              <Issue>2414</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1.2-M01\b08046\b08046\b08046.cmd" >
