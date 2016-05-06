@@ -76,6 +76,11 @@ namespace Internal.Cryptography
         public abstract Exception CreateDecryptTwiceException();
 
         /// <summary>
+        /// Retrieve the certificate's subject key identifier value.
+        /// </summary>
+        public abstract byte[] GetSubjectKeyIdentifier(X509Certificate2 certificate);
+
+        /// <summary>
         /// Get the one (and only) instance of PkcsPal.
         /// </summary>
         public static PkcsPal Instance

@@ -156,5 +156,14 @@ namespace Internal.Cryptography.Pal.Windows
         {
             return ErrorCode.CRYPT_E_INVALID_MSG_TYPE.ToCryptographicException();
         }
+
+        public sealed override byte[] GetSubjectKeyIdentifier(X509Certificate2 certificate)
+        {
+            using (SafeCertContextHandle hCertContext = certificate.CreateCertContextHandle())
+            {
+                byte[] ski = hCertContext.GetSubjectKeyIdentifer();
+                return ski;
+            }
+        }
     }
 }
