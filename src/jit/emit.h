@@ -983,8 +983,32 @@ protected:
         void            idCodeSize(unsigned sz) { _idCodeSize = sz; assert(sz == _idCodeSize);     }
 
 #elif defined(_TARGET_ARM64_)
+        unsigned        idCodeSize() const      {
+                                                    int size = 4;
+                                                    switch (idInsFmt())
+                                                    {
+                                                        case IF_LARGEADR:
+                                                            // adrp + add
+                                                        case IF_LARGEJMP:
+                                                            // b<cond> + b<uncond>
+                                                            size = 8;
+                                                            break;
+                                                        case IF_LARGELDC:
+                                                            if (isVectorRegister(idReg1()))
+                                                            {
+                                                                // adrp + ldr + fmov
+                                                                size = 12;
+                                                            }
+                                                            else
+                                                            {
+                                                                // adrp + ldr
+                                                                size = 8;
+                                                            }
+                                                            break;
+                                                    }
 
-        unsigned        idCodeSize() const      { return 4; }
+                                                    return size;
+                                                 }
 
 #elif defined(_TARGET_ARM_)
 
@@ -1797,6 +1821,7 @@ public:
     void            emitSetFrameRangeArgs(int offsLo, int offsHi);
 
     static instruction      emitJumpKindToIns(emitJumpKind jumpKind);
+    static emitJumpKind     emitInsToJumpKind(instruction ins);
     static emitJumpKind     emitReverseJumpKind(emitJumpKind jumpKind);
 
 #ifdef _TARGET_ARM_

@@ -2465,7 +2465,7 @@ void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
     opts.disAsm2        = false;
     opts.dspUnwind      = false;
     s_dspMemStats       = false;
-    opts.compLargeBranches = false;
+    opts.compLongAddress = false;
     opts.compJitELTHookEnabled = false;
 
 #ifdef LATE_DISASM
@@ -2534,8 +2534,8 @@ void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
         if (JitConfig.DisplayMemStats() != 0)
             s_dspMemStats = true;
 
-        if (JitConfig.JitLargeBranches() != 0)
-            opts.compLargeBranches = true;
+        if (JitConfig.JitLongAddress() != 0)
+            opts.compLongAddress = true;
     }
 
     if (verboseDump)

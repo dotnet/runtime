@@ -2065,7 +2065,9 @@ void                CodeGen::genCodeForBBlist()
             break;
 
         case BBJ_EHCATCHRET:
-            getEmitter()->emitIns_R_L(INS_adr, EA_4BYTE_DSP_RELOC, block->bbJumpDest, REG_INTRET);
+            // For long address (default): `adrp + add` will be emitted.
+            // For short address (proven later): `adr` will be emitted.
+            getEmitter()->emitIns_R_L(INS_adr, EA_PTRSIZE, block->bbJumpDest, REG_INTRET);
 
             __fallthrough;
 
@@ -2248,10 +2250,17 @@ void                CodeGen::genSetRegToConst(regNumber targetReg, var_types tar
             }
             else
             {
+                // Get a temp integer register to compute long address.
+                regMaskTP addrRegMask = tree->gtRsvdRegs;
+                regNumber addrReg = genRegNumFromMask(addrRegMask);
+                noway_assert(addrReg != REG_NA);
+
                 // We must load the FP constant from the constant pool
                 // Emit a data section constant for the float or double constant.
                 CORINFO_FIELD_HANDLE hnd = emit->emitFltOrDblConst(dblConst);
-                emit->emitIns_R_C(INS_ldr, size, targetReg, hnd, 0);
+                // For long address (default): `adrp + ldr + fmov` will be emitted.
+                // For short address (proven later), `ldr` will be emitted.
+                emit->emitIns_R_C(INS_ldr, size, targetReg, addrReg, hnd, 0);
             }
         }
         break;
@@ -3271,6 +3280,9 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
     case GT_LABEL:
         genPendingCallLabel = genCreateTempLabel();
         treeNode->gtLabel.gtLabBB = genPendingCallLabel;
+
+        // For long address (default): `adrp + add` will be emitted.
+        // For short address (proven later): `adr` will be emitted.
         emit->emitIns_R_L(INS_adr, EA_PTRSIZE, genPendingCallLabel, targetReg);
         break;
 
@@ -4203,6 +4215,7 @@ CodeGen::genJumpTable(GenTree* treeNode)
     getEmitter()->emitIns_R_C(INS_lea,
         emitTypeSize(TYP_I_IMPL),
         treeNode->gtRegNum,
+        REG_NA,
         compiler->eeFindJitDataOffs(jmpTabBase),
         0);
     genProduceReg(treeNode);
