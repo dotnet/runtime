@@ -2188,7 +2188,7 @@ void                emitter::emitSetFrameRangeGCRs(int offsLo, int offsHi)
             printf("-%04X ... %04X\n", -offsLo, offsHi);
 #else
             printf("-%04X ... -%04X\n", -offsLo, -offsHi);
-            assert(offsHi <  0);
+            assert(offsHi <= 0);
 #endif
           
         }
