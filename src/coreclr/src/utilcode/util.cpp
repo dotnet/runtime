@@ -685,32 +685,20 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
 // NumaNodeInfo 
 //******************************************************************************
 #if !defined(FEATURE_REDHAWK) && !defined(FEATURE_PAL)
-#if !defined(FEATURE_CORESYSTEM)
-/*static*/ NumaNodeInfo::PGNPN    NumaNodeInfo::m_pGetNumaProcessorNode = NULL;
-#endif
 /*static*/ NumaNodeInfo::PGNHNN NumaNodeInfo::m_pGetNumaHighestNodeNumber = NULL;
 /*static*/ NumaNodeInfo::PVAExN NumaNodeInfo::m_pVirtualAllocExNuma = NULL;
-
-#if !defined(FEATURE_CORESYSTEM)
-/*static*/ BOOL NumaNodeInfo::GetNumaProcessorNode(UCHAR proc_no, PUCHAR node_no)
-{
-    return (*m_pGetNumaProcessorNode)(proc_no, node_no);
-}
-#endif
 
 /*static*/ LPVOID NumaNodeInfo::VirtualAllocExNuma(HANDLE hProc, LPVOID lpAddr, SIZE_T dwSize,
 		    		     DWORD allocType, DWORD prot, DWORD node)
 {
     return (*m_pVirtualAllocExNuma)(hProc, lpAddr, dwSize, allocType, prot, node);
 }
-#if !defined(FEATURE_CORECLR) || defined(FEATURE_CORESYSTEM)
 /*static*/ NumaNodeInfo::PGNPNEx NumaNodeInfo::m_pGetNumaProcessorNodeEx = NULL;
 
 /*static*/ BOOL NumaNodeInfo::GetNumaProcessorNodeEx(PPROCESSOR_NUMBER proc_no, PUSHORT node_no)
 {
     return (*m_pGetNumaProcessorNodeEx)(proc_no, node_no);
 }
-#endif
 #endif
 
 /*static*/ BOOL NumaNodeInfo::m_enableGCNumaAware = FALSE;
@@ -736,17 +724,9 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
     if (!m_pGetNumaHighestNodeNumber(&highest) || (highest == 0))
         return FALSE;
 
-#if !defined(FEATURE_CORESYSTEM)
-    m_pGetNumaProcessorNode = (PGNPN) GetProcAddress(hMod, "GetNumaProcessorNode");
-    if (m_pGetNumaProcessorNode == NULL)
-        return FALSE;
-#endif
-
-#if !defined(FEATURE_CORECLR) || defined(FEATURE_CORESYSTEM)
     m_pGetNumaProcessorNodeEx = (PGNPNEx) GetProcAddress(hMod, "GetNumaProcessorNodeEx");
     if (m_pGetNumaProcessorNodeEx == NULL)
         return FALSE;
-#endif
 
     m_pVirtualAllocExNuma = (PVAExN) GetProcAddress(hMod, "VirtualAllocExNuma");
     if (m_pVirtualAllocExNuma == NULL)
@@ -775,10 +755,8 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
 /*static*/ CPUGroupInfo::PGLPIEx CPUGroupInfo::m_pGetLogicalProcessorInformationEx = NULL;
 /*static*/ CPUGroupInfo::PSTGA   CPUGroupInfo::m_pSetThreadGroupAffinity = NULL;
 /*static*/ CPUGroupInfo::PGTGA   CPUGroupInfo::m_pGetThreadGroupAffinity = NULL;
-#if !defined(FEATURE_CORESYSTEM) && !defined(FEATURE_CORECLR)
 /*static*/ CPUGroupInfo::PGCPNEx CPUGroupInfo::m_pGetCurrentProcessorNumberEx = NULL;
 /*static*/ CPUGroupInfo::PGST    CPUGroupInfo::m_pGetSystemTimes = NULL;
-#endif
 /*static*/ //CPUGroupInfo::PNTQSIEx CPUGroupInfo::m_pNtQuerySystemInformationEx = NULL;
 
 /*static*/ BOOL CPUGroupInfo::GetLogicalProcessorInformationEx(DWORD relationship,
@@ -801,13 +779,11 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
     return (*m_pGetThreadGroupAffinity)(h, groupAffinity);
 }
 
-#if !defined(FEATURE_CORESYSTEM) && !defined(FEATURE_CORECLR)
 /*static*/ BOOL CPUGroupInfo::GetSystemTimes(FILETIME *idleTime, FILETIME *kernelTime, FILETIME *userTime)
 {
     LIMITED_METHOD_CONTRACT;
     return (*m_pGetSystemTimes)(idleTime, kernelTime, userTime);
 }
-#endif
 #endif
 
 /*static*/ BOOL  CPUGroupInfo::m_enableGCCPUGroups = FALSE;
@@ -845,7 +821,6 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
     if (m_pGetThreadGroupAffinity == NULL)
         return FALSE;
 
-#if !defined(FEATURE_CORESYSTEM) && !defined(FEATURE_CORECLR)
     m_pGetCurrentProcessorNumberEx = (PGCPNEx)GetProcAddress(hMod, "GetCurrentProcessorNumberEx");
     if (m_pGetCurrentProcessorNumberEx == NULL)
         return FALSE;
@@ -853,7 +828,6 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
     m_pGetSystemTimes = (PGST)GetProcAddress(hMod, "GetSystemTimes");
     if (m_pGetSystemTimes == NULL)
         return FALSE;
-#endif
 
     return TRUE;
 #else
@@ -973,10 +947,10 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
 
 #if !defined(FEATURE_REDHAWK) && defined(_TARGET_AMD64_) && !defined(FEATURE_PAL)
     BOOL enableGCCPUGroups     = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCCpuGroup) != 0;
-	BOOL threadUseAllCpuGroups = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Thread_UseAllCpuGroups) != 0;
+    BOOL threadUseAllCpuGroups = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Thread_UseAllCpuGroups) != 0;
 
-	if (!enableGCCPUGroups)
-		return;
+    if (!enableGCCPUGroups)
+        return;
 
     if (!InitCPUGroupInfoAPI())
         return;
@@ -1085,7 +1059,7 @@ retry:
     }
     CONTRACTL_END;
 
-#if !defined(FEATURE_REDHAWK) && !defined(FEATURE_CORESYSTEM) && !defined(FEATURE_CORECLR) && defined(_TARGET_AMD64_) && !defined(FEATURE_PAL)
+#if !defined(FEATURE_REDHAWK) && defined(_TARGET_AMD64_) && !defined(FEATURE_PAL)
     // m_enableGCCPUGroups and m_threadUseAllCpuGroups must be TRUE
     _ASSERTE(m_enableGCCPUGroups && m_threadUseAllCpuGroups);
 
@@ -1106,7 +1080,7 @@ retry:
 #endif
 }
 
-#if !defined(FEATURE_REDHAWK) && !defined(FEATURE_CORESYSTEM) && !defined(FEATURE_CORECLR) && !defined(FEATURE_PAL)
+#if !defined(FEATURE_REDHAWK) && !defined(FEATURE_PAL)
 //Lock ThreadStore before calling this function, so that updates of weights/counts are consistent
 /*static*/ void CPUGroupInfo::ChooseCPUGroupAffinity(GROUP_AFFINITY *gf)
 {
@@ -1203,7 +1177,7 @@ int GetCurrentProcessCpuCount()
     if (cCPUs != 0)
         return cCPUs;
 
-#if !defined(FEATURE_CORESYSTEM)
+#ifndef FEATURE_PAL
 
     DWORD_PTR pmask, smask;
 
@@ -1238,14 +1212,14 @@ int GetCurrentProcessCpuCount()
             
     return count;
 
-#else // !FEATURE_CORESYSTEM
+#else // !FEATURE_PAL
 
     SYSTEM_INFO sysInfo;
     ::GetSystemInfo(&sysInfo);
     cCPUs = sysInfo.dwNumberOfProcessors;
     return sysInfo.dwNumberOfProcessors;
 
-#endif // !FEATURE_CORESYSTEM
+#endif // !FEATURE_PAL
 }
 
 DWORD_PTR GetCurrentProcessCpuMask()
@@ -1258,7 +1232,7 @@ DWORD_PTR GetCurrentProcessCpuMask()
     }
     CONTRACTL_END;
 
-#if !defined(FEATURE_CORESYSTEM)
+#ifndef FEATURE_PAL
     DWORD_PTR pmask, smask;
 
     if (!GetProcessAffinityMask(GetCurrentProcess(), &pmask, &smask))
