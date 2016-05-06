@@ -43,9 +43,6 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\importer\Desktop\bleref_il_r\bleref_il_r.cmd" >
              <Issue>2414</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\IL_Conformance\Old\Conformance_Base\conv_ovf_i8_i\conv_ovf_i8_i.cmd" >
-             <Issue>2414</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\localloc\verify\verify01_dynamic\verify01_dynamic.cmd" >
              <Issue>2414</Issue>
         </ExcludeList>
