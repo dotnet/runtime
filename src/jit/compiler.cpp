@@ -3412,6 +3412,53 @@ bool  Compiler::compRsvdRegCheck(FrameLayoutState curState)
 }
 #endif // _TARGET_ARMARCH_
 
+void                Compiler::compFunctionTraceStart()
+{
+#ifdef DEBUG
+    if (compIsForInlining())
+        return;
+
+    if ((JitConfig.JitFunctionTrace() != 0) && !opts.disDiffable)
+    {
+        LONG newJitNestingLevel = InterlockedIncrement(&Compiler::jitNestingLevel);
+        if (newJitNestingLevel <= 0)
+        {
+            printf("{ Illegal nesting level %d }\n", newJitNestingLevel);
+        }
+
+        for (LONG i = 0; i < newJitNestingLevel - 1; i++)
+            printf("  ");
+        printf("{ Start Jitting %s\n", info.compFullName); /* } editor brace matching workaround for this printf */
+    }
+#endif // DEBUG
+}
+
+void                Compiler::compFunctionTraceEnd(void* methodCodePtr, ULONG methodCodeSize, bool isNYI)
+{
+#ifdef DEBUG
+    assert(!compIsForInlining());
+
+    if ((JitConfig.JitFunctionTrace() != 0) && !opts.disDiffable)
+    {
+        LONG newJitNestingLevel = InterlockedDecrement(&Compiler::jitNestingLevel);
+        if (newJitNestingLevel < 0)
+        {
+            printf("{ Illegal nesting level %d }\n", newJitNestingLevel);
+        }
+
+        for (LONG i = 0; i < newJitNestingLevel; i++)
+            printf("  ");
+        /* { editor brace-matching workaround for following printf */
+        printf("} Jitted Entry %03x at" FMT_ADDR "method %s size %08x%s\n", 
+            Compiler::jitTotalMethodCompiled,
+            DBG_ADDR(methodCodePtr),
+            info.compFullName,
+            methodCodeSize,
+            isNYI ? " NYI" : (compIsForImportOnly() ? " import only" : ""));
+    }
+#endif // DEBUG 
+}
+
 //*********************************************************************************************
 // #Phases
 // 
@@ -3441,21 +3488,7 @@ void                 Compiler::compCompile(void * * methodCodePtr,
 
     EndPhase(PHASE_PRE_IMPORT);
 
-#ifdef DEBUG
-    bool funcTrace = JitConfig.JitFunctionTrace() != 0;
-
-    if (!compIsForInlining())
-    {
-        LONG newJitNestingLevel = InterlockedIncrement(&Compiler::jitNestingLevel);
-        assert(newJitNestingLevel > 0);
-        if (funcTrace && !opts.disDiffable)
-        {
-            for (LONG i = 0; i < newJitNestingLevel - 1; i++)
-                printf("  ");
-            printf("{ Start Jitting %s\n", info.compFullName); /* } editor brace matching workaround for this printf */
-        }
-    }
-#endif // DEBUG
+    compFunctionTraceStart();
 
     /* Convert the instrs in each basic block to a tree based intermediate representation */
 
@@ -3489,7 +3522,10 @@ void                 Compiler::compCompile(void * * methodCodePtr,
 
     // Maybe the caller was not interested in generating code
     if (compIsForImportOnly())
+    {
+        compFunctionTraceEnd(nullptr, 0, false);
         return;
+    }
 
 #if !FEATURE_EH
     // If we aren't yet supporting EH in a compiler bring-up, remove as many EH handlers as possible, so
@@ -3889,28 +3925,17 @@ void                 Compiler::compCompile(void * * methodCodePtr,
     ++Compiler::jitTotalMethodCompiled;
 #endif // defined(DEBUG)
 
-#ifdef DEBUG
-    LONG newJitNestingLevel = InterlockedDecrement(&Compiler::jitNestingLevel);
-    assert(newJitNestingLevel >= 0);
-
-    if (funcTrace && !opts.disDiffable)
-    {
-        for (LONG i = 0; i < newJitNestingLevel; i++)
-            printf("  ");
-        /* { editor brace-matching workaround for following printf */
-        printf("} Jitted Entry %03x at" FMT_ADDR "method %s size %08x\n", 
-               Compiler::jitTotalMethodCompiled, DBG_ADDR(*methodCodePtr),
-               info.compFullName, *methodCodeSize);
-    }
+    compFunctionTraceEnd(*methodCodePtr, *methodCodeSize, false);
 
 #if FUNC_INFO_LOGGING
+#ifdef DEBUG // We only have access to info.compFullName in DEBUG builds.
     if (compJitFuncInfoFile != NULL)
     {
         assert(!compIsForInlining());
         fprintf(compJitFuncInfoFile, "%s\n", info.compFullName);
     }
+#endif // DEBUG
 #endif // FUNC_INFO_LOGGING
-#endif // DEBUG 
 }
 
 /*****************************************************************************/
