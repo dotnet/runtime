@@ -65,7 +65,7 @@ namespace System.ComponentModel
         private static readonly Guid s_extenderPropertiesKey = Guid.NewGuid();
         private static readonly Guid s_extenderProviderPropertiesKey = Guid.NewGuid();
 
-        // These are attribute that, when we discover them on interfaces, we do
+        // These are attributes that, when we discover them on interfaces, we do
         // not merge them into the attribute set for a class.
         private static readonly Type[] s_skipInterfaceAttributeList = new Type[]
         {

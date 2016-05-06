@@ -2634,13 +2634,12 @@ namespace System.ComponentModel
         /// </summary>
         public static void SortDescriptorArray(IList infos)
         {
-            throw new NotImplementedException();
-            //if (infos == null)
-            //{
-            //    throw new ArgumentNullException(nameof(infos));
-            //}
+            if (infos == null)
+            {
+                throw new ArgumentNullException(nameof(infos));
+            }
 
-            //ArrayList.Adapter(infos).Sort(MemberDescriptorComparer.Instance);
+            ArrayList.Adapter(infos).Sort(MemberDescriptorComparer.Instance);
         }
 
         /// <summary>
