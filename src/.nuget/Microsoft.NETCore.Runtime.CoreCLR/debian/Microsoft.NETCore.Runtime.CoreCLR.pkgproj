@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   
   <PropertyGroup>
-    <Version>1.0.2</Version>
+    <Version>1.0.3</Version>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <PackageTargetRuntime>debian.8-$(PackagePlatform)</PackageTargetRuntime>
     <!-- only build for x64 -->
@@ -23,6 +23,7 @@
     <ArchitectureSpecificNativeFile Include="$(BinDir)sosdocsunix.txt"/>
     <ArchitectureSpecificNativeFile Include="$(BinDir)mscorlib.ni.dll"/>
     <ArchitectureSpecificLibFile Include="$(BinDir)mscorlib.dll"/>
+    <ArchitectureSpecificLibFile Include="$(BinDir)System.Private.CoreLib.dll"/>
     <ArchitectureSpecificToolFile Include="$(BinDir)crossgen"/>
     <ArchitectureSpecificNativeFile Include="@(NativeSplittableBinary)"/>
 
