@@ -1551,7 +1551,6 @@ HRESULT AssemblySpec::EmitToken(
         NOTHROW;
         GC_NOTRIGGER;
         INJECT_FAULT(return E_OUTOFMEMORY;);
-        PRECONDITION(HasUniqueIdentity() || AppDomain::GetCurrentDomain()->IsCompilationDomain());
     }
     CONTRACTL_END;
 
