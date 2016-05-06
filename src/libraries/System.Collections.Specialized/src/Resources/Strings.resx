@@ -135,6 +135,9 @@
   <data name="Arg_MultiRank" xml:space="preserve">
     <value>Multi dimension array is not supported on this operation.</value>
   </data>
+  <data name="Arg_NonZeroLowerBound" xml:space="preserve">
+    <value>The lower bound of target array must be zero.</value>
+  </data>
   <data name="Arg_InsufficientSpace" xml:space="preserve">
     <value>Insufficient space in the target location to copy the information.</value>
   </data>

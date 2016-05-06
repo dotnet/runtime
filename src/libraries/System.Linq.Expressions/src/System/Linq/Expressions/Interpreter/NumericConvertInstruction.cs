@@ -37,7 +37,7 @@ namespace System.Linq.Expressions.Interpreter
                     // We cannot have null in a non-lifted numeric context. Throw the exception
                     // about not Nullable object requiring a value.
                     converted = (int)(int?)obj;
-                    throw Assert.Unreachable;
+                    throw ContractUtils.Unreachable;
                 }
             }
             else
@@ -89,7 +89,7 @@ namespace System.Linq.Expressions.Interpreter
                     case TypeCode.UInt64: return ConvertUInt64((UInt64)obj);
                     case TypeCode.Single: return ConvertDouble((Single)obj);
                     case TypeCode.Double: return ConvertDouble((Double)obj);
-                    default: throw Assert.Unreachable;
+                    default: throw ContractUtils.Unreachable;
                 }
             }
 
@@ -110,7 +110,7 @@ namespace System.Linq.Expressions.Interpreter
                         case TypeCode.UInt64: return (UInt64)obj;
                         case TypeCode.Single: return (Single)obj;
                         case TypeCode.Double: return (Double)obj;
-                        default: throw Assert.Unreachable;
+                        default: throw ContractUtils.Unreachable;
                     }
                 }
             }
@@ -132,7 +132,7 @@ namespace System.Linq.Expressions.Interpreter
                         case TypeCode.UInt64: return (UInt64)obj;
                         case TypeCode.Single: return (Single)obj;
                         case TypeCode.Double: return (Double)obj;
-                        default: throw Assert.Unreachable;
+                        default: throw ContractUtils.Unreachable;
                     }
                 }
             }
@@ -154,7 +154,7 @@ namespace System.Linq.Expressions.Interpreter
                         case TypeCode.UInt64: return (UInt64)obj;
                         case TypeCode.Single: return (Single)obj;
                         case TypeCode.Double: return (Double)obj;
-                        default: throw Assert.Unreachable;
+                        default: throw ContractUtils.Unreachable;
                     }
                 }
             }
@@ -176,7 +176,7 @@ namespace System.Linq.Expressions.Interpreter
                         case TypeCode.UInt64: return (UInt64)obj;
                         case TypeCode.Single: return (Single)obj;
                         case TypeCode.Double: return (Double)obj;
-                        default: throw Assert.Unreachable;
+                        default: throw ContractUtils.Unreachable;
                     }
                 }
             }
@@ -208,7 +208,7 @@ namespace System.Linq.Expressions.Interpreter
                     case TypeCode.UInt64: return ConvertUInt64((UInt64)obj);
                     case TypeCode.Single: return ConvertDouble((Single)obj);
                     case TypeCode.Double: return ConvertDouble((Double)obj);
-                    default: throw Assert.Unreachable;
+                    default: throw ContractUtils.Unreachable;
                 }
             }
 
@@ -229,7 +229,7 @@ namespace System.Linq.Expressions.Interpreter
                         case TypeCode.UInt64: return (UInt64)obj;
                         case TypeCode.Single: return (Single)obj;
                         case TypeCode.Double: return (Double)obj;
-                        default: throw Assert.Unreachable;
+                        default: throw ContractUtils.Unreachable;
                     }
                 }
             }
@@ -251,7 +251,7 @@ namespace System.Linq.Expressions.Interpreter
                         case TypeCode.UInt64: return (UInt64)obj;
                         case TypeCode.Single: return (Single)obj;
                         case TypeCode.Double: return (Double)obj;
-                        default: throw Assert.Unreachable;
+                        default: throw ContractUtils.Unreachable;
                     }
                 }
             }
@@ -273,7 +273,7 @@ namespace System.Linq.Expressions.Interpreter
                         case TypeCode.UInt64: return (UInt64)obj;
                         case TypeCode.Single: return (Single)obj;
                         case TypeCode.Double: return (Double)obj;
-                        default: throw Assert.Unreachable;
+                        default: throw ContractUtils.Unreachable;
                     }
                 }
             }
@@ -295,7 +295,7 @@ namespace System.Linq.Expressions.Interpreter
                         case TypeCode.UInt64: return (UInt64)obj;
                         case TypeCode.Single: return (Single)obj;
                         case TypeCode.Double: return (Double)obj;
-                        default: throw Assert.Unreachable;
+                        default: throw ContractUtils.Unreachable;
                     }
                 }
             }

@@ -62,20 +62,6 @@ namespace System.Collections.Tests
         /// </summary>
         protected virtual bool ICollection_NonGeneric_CopyTo_ArrayOfIncorrectValueType_ThrowsArgumentException { get { return true; } }
 
-        /// <summary>
-        /// Used for the ICollection_NonGeneric_CopyTo_NonZeroLowerBound test where we try to call CopyTo
-        /// on an Array of a non-zero lower bound. Some implementations don't throw an ArgumentException
-        /// when the count is zero, others do.
-        /// </summary>
-        protected virtual bool ICollection_NonGeneric_CopyTo_NonZeroLowerBound_ZeroCountThrowsArgumentException { get { return true; } }
-
-        /// <summary>
-        /// Used for the ICollection_NonGeneric_CopyTo_NonZeroLowerBound test where we try to call CopyTo
-        /// on an Array of a non-zero lower bound. Some implementations don't throw an ArgumentException
-        /// when the count is one, others do.
-        /// </summary>
-        protected virtual bool ICollection_NonGeneric_CopyTo_NonZeroLowerBound_SingleCountThrowsArgumentException { get { return true; } }
-
         #endregion
 
         #region IEnumerable Helper Methods
@@ -175,11 +161,7 @@ namespace System.Collections.Tests
             Array arr = Array.CreateInstance(typeof(object), new int[1] { 2 }, new int[1] { 2 });
             Assert.Equal(1, arr.Rank);
             Assert.Equal(2, arr.GetLowerBound(0));
-
-            if (ICollection_NonGeneric_CopyTo_NonZeroLowerBound_SingleCountThrowsArgumentException && (ICollection_NonGeneric_CopyTo_NonZeroLowerBound_ZeroCountThrowsArgumentException || count > 0))
-            {
-                Assert.ThrowsAny<ArgumentException>(() => collection.CopyTo(arr, 0));
-            }
+            Assert.ThrowsAny<ArgumentException>(() => collection.CopyTo(arr, 0));
         }
 
         [Theory]

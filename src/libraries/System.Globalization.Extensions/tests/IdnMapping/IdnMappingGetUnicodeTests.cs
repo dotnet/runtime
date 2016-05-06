@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -83,6 +84,13 @@ namespace System.Globalization.Tests
             }
             
             yield return new object[] { "abc" + (char)0x7F + "def", 0, 7, typeof(ArgumentException) };
+            
+            // [ActiveIssue(8242, PlatformId.AnyUnix)])]
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                yield return new object[] { "xn--\u1234", 0, 5, typeof(ArgumentException) };
+                yield return new object[] { "xn--\u1234pck", 0, 8, typeof(ArgumentException) };
+            }
         }
 
         [Theory]

@@ -24,6 +24,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Cert.cs" />
     <Compile Include="CertTests.cs" />
     <Compile Include="ChainTests.cs" />
     <Compile Include="CollectionImportTests.cs" />

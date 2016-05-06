@@ -205,11 +205,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 // Read it back as a collection, there should be only one cert, and it should
                 // be equal to the one we started with.
-                X509Certificate2Collection fromPfx = new X509Certificate2Collection();
-                fromPfx.Import(pkcs12Bytes);
+                using (ImportedCollection ic = Cert.Import(pkcs12Bytes))
+                {
+                    X509Certificate2Collection fromPfx = ic.Collection;
 
-                Assert.Equal(1, fromPfx.Count);
-                Assert.Equal(publicOnly, fromPfx[0]);
+                    Assert.Equal(1, fromPfx.Count);
+                    Assert.Equal(publicOnly, fromPfx[0]);
+                }
             }
         }
     }

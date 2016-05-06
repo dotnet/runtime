@@ -6,66 +6,94 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using System.Reflection.Metadata.Tests;
 using Xunit;
 
 namespace System.Reflection.PortableExecutable.Tests
 {
     public class PEBuilderTests
     {
-        private void VerifyPE(Stream peStream)
+        private void VerifyPE(Stream peStream, byte[] expectedSignature = null)
         {
-            var peReader = new PEReader(peStream);
-            var headers = peReader.PEHeaders;
-            var mdReader = peReader.GetMetadataReader();
+            peStream.Position = 0;
 
-            // TODO: more validation (can we use MetadataVisualizer until managed PEVerifier is available)?
+            using (var peReader = new PEReader(peStream))
+            {
+                var headers = peReader.PEHeaders;
+                var mdReader = peReader.GetMetadataReader();
+
+                // TODO: more validation (can we use MetadataVisualizer until managed PEVerifier is available)?
+
+                VerifyStrongNameSignatureDirectory(peReader, expectedSignature);
+            }
         }
 
-        private static void WritePEImage(Stream peStream, MetadataBuilder metadataBuilder, BlobBuilder ilBuilder, MethodDefinitionHandle entryPointHandle)
+        private unsafe static void VerifyStrongNameSignatureDirectory(PEReader peReader, byte[] expectedSignature)
+        {
+            var headers = peReader.PEHeaders;
+            
+            // even if the image is not signed we reserve space for a signature:
+            int strongNameDirOffset;
+            Assert.True(headers.TryGetDirectoryOffset(headers.CorHeader.StrongNameSignatureDirectory, out strongNameDirOffset));
+
+            int rva = headers.CorHeader.StrongNameSignatureDirectory.RelativeVirtualAddress;
+            int size = headers.CorHeader.StrongNameSignatureDirectory.Size;
+
+            int sectionIndex = headers.GetContainingSectionIndex(rva);
+            Assert.Equal(".text", headers.SectionHeaders[sectionIndex].Name);
+
+            var image = peReader.GetEntireImage();
+
+            var reader = new BlobReader(image.Pointer + strongNameDirOffset, size);
+            var signature = reader.ReadBytes(size);
+
+            if (expectedSignature != null)
+            {
+                AssertEx.Equal(expectedSignature, signature);
+            }
+            else
+            {
+                AssertEx.Equal(new byte[size], signature);
+            }
+        }
+
+        private static readonly Guid s_guid = new Guid("97F4DBD4-F6D1-4FAD-91B3-1001F92068E5");
+        private static readonly ContentId s_contentId = new ContentId(s_guid.ToByteArray(), new byte[] { 1, 2, 3, 4 });
+
+        private static void WritePEImage(
+            Stream peStream, 
+            MetadataBuilder metadataBuilder, 
+            BlobBuilder ilBuilder, 
+            MethodDefinitionHandle entryPointHandle,
+            byte[] privateKeyOpt = null)
         {
             var mappedFieldDataBuilder = new BlobBuilder();
             var managedResourceDataBuilder = new BlobBuilder();
 
-            var peBuilder = new PEBuilder(
-                machine: 0,
-                sectionAlignment: 0x2000,
-                fileAlignment: 0x200,
-                imageBase: 0x00400000,
-                majorLinkerVersion: 0x30, // (what is ref.emit using?)
-                minorLinkerVersion: 0,
-                majorOperatingSystemVersion: 4,
-                minorOperatingSystemVersion: 0,
-                majorImageVersion: 0,
-                minorImageVersion: 0,
-                majorSubsystemVersion: 4,
-                minorSubsystemVersion: 0,
-                subsystem: Subsystem.WindowsCui,
-                dllCharacteristics: DllCharacteristics.DynamicBase | DllCharacteristics.NxCompatible | DllCharacteristics.NoSeh | DllCharacteristics.TerminalServerAware,
-                imageCharacteristics: entryPointHandle.IsNil ? Characteristics.Dll : Characteristics.ExecutableImage,
-                sizeOfStackReserve: 0x00100000,
-                sizeOfStackCommit: 0x1000,
-                sizeOfHeapReserve: 0x00100000,
-                sizeOfHeapCommit: 0x1000);
-
-            var peDirectoriesBuilder = new PEDirectoriesBuilder();
-
-            peBuilder.AddManagedSections(
-                peDirectoriesBuilder,
+            var peBuilder = new ManagedPEBuilder(
+                entryPointHandle.IsNil ? PEHeaderBuilder.CreateLibraryHeader() : PEHeaderBuilder.CreateExecutableHeader(),
                 new TypeSystemMetadataSerializer(metadataBuilder, "v4.0.30319", isMinimalDelta: false),
                 ilBuilder,
                 mappedFieldDataBuilder,
                 managedResourceDataBuilder,
                 nativeResourceSectionSerializer: null,
-                strongNameSignatureSize: 0,
+                strongNameSignatureSize: 128,
                 entryPoint: entryPointHandle,
                 pdbPathOpt: null,
                 nativePdbContentId: default(ContentId),
                 portablePdbContentId: default(ContentId),
-                corFlags: CorFlags.ILOnly);
+                corFlags: CorFlags.ILOnly | (privateKeyOpt != null ? CorFlags.StrongNameSigned : 0),
+                deterministicIdProvider: content => s_contentId);
 
             var peBlob = new BlobBuilder();
-            ContentId peContentId;
-            peBuilder.Serialize(peBlob, peDirectoriesBuilder, out peContentId);
+
+            ContentId contentId;
+            peBuilder.Serialize(peBlob, out contentId);
+
+            if (privateKeyOpt != null)
+            {
+                peBuilder.Sign(peBlob, content => SigningUtilities.CalculateRsaSignature(content, privateKeyOpt));
+            }
 
             peBlob.WriteContentTo(peStream);
         }
@@ -80,8 +108,31 @@ namespace System.Reflection.PortableExecutable.Tests
                 var entryPoint = BasicValidationEmit(metadataBuilder, ilBuilder);
                 WritePEImage(peStream, metadataBuilder, ilBuilder, entryPoint);
 
-                peStream.Position = 0;
                 VerifyPE(peStream);
+            }
+        }
+
+        [Fact]
+        public void BasicValidationSigned()
+        {
+            using (var peStream = new MemoryStream())
+            {
+                var ilBuilder = new BlobBuilder();
+                var metadataBuilder = new MetadataBuilder();
+                var entryPoint = BasicValidationEmit(metadataBuilder, ilBuilder);
+                WritePEImage(peStream, metadataBuilder, ilBuilder, entryPoint, Misc.KeyPair);
+
+                VerifyPE(peStream, expectedSignature: new byte[] 
+                {
+                    0x58, 0xD4, 0xD7, 0x88, 0x3B, 0xF9, 0x19, 0x9F, 0x3A, 0x55, 0x8F, 0x1B, 0x88, 0xBE, 0xA8, 0x42,
+                    0x09, 0x2B, 0xE3, 0xB4, 0xC7, 0x09, 0xD5, 0x96, 0x35, 0x50, 0x0F, 0x3C, 0x87, 0x95, 0x6A, 0x31,
+                    0xA5, 0x5C, 0xC7, 0xE1, 0x14, 0x85, 0x8E, 0x63, 0xFC, 0xCF, 0x8F, 0x2A, 0x19, 0x27, 0xD5, 0x12,
+                    0x88, 0x75, 0x20, 0xBB, 0xBE, 0xD0, 0xA3, 0x04, 0x2D, 0xD3, 0x44, 0x48, 0xCC, 0xD7, 0x36, 0xBA,
+                    0x06, 0x86, 0x17, 0xE9, 0x0D, 0x8C, 0x9C, 0xD6, 0xBA, 0x75, 0x9E, 0x32, 0x0D, 0xCC, 0xC2, 0x8E,
+                    0x80, 0xD5, 0x81, 0x71, 0xD2, 0x4A, 0x90, 0x43, 0xA0, 0x67, 0x20, 0x39, 0x0A, 0x9F, 0x61, 0x5B,
+                    0x2F, 0x9F, 0xE5, 0x70, 0x42, 0xA8, 0x86, 0x61, 0x42, 0x94, 0xBD, 0x1E, 0x76, 0xDA, 0xB0, 0xF8,
+                    0xA6, 0x37, 0x71, 0xD4, 0x7F, 0x12, 0xCD, 0x39, 0x27, 0x6C, 0x4D, 0x28, 0x03, 0x7D, 0xF8, 0x89
+                });
             }
         }
 
@@ -90,16 +141,16 @@ namespace System.Reflection.PortableExecutable.Tests
             metadata.AddModule(
                 0, 
                 metadata.GetOrAddString("ConsoleApplication.exe"), 
-                metadata.GetOrAddGuid(Guid.NewGuid()),
+                metadata.GetOrAddGuid(s_guid),
                 default(GuidHandle), 
                 default(GuidHandle));
 
             metadata.AddAssembly(
                 metadata.GetOrAddString("ConsoleApplication"),
-                version: new Version(0, 0, 0, 0),
+                version: new Version(1, 0, 0, 0),
                 culture: default(StringHandle),
-                publicKey: default(BlobHandle),
-                flags: default(AssemblyFlags),
+                publicKey: metadata.GetOrAddBlob(ImmutableArray.Create(Misc.KeyPair_PublicKey)),
+                flags: AssemblyFlags.PublicKey,
                 hashAlgorithm: AssemblyHashAlgorithm.Sha1);
 
             var mscorlibAssemblyRef = metadata.AddAssemblyReference(

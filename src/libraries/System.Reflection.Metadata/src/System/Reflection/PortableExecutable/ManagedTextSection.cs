@@ -25,7 +25,7 @@ namespace System.Reflection.PortableExecutable
     /// - Runtime Startup Stub
     /// - Mapped Field Data
     /// </remarks>
-    public sealed class ManagedTextSection
+    internal sealed class ManagedTextSection
     {
         public Characteristics ImageCharacteristics { get; }
         public Machine Machine { get; }
@@ -276,6 +276,7 @@ namespace System.Reflection.PortableExecutable
         /// <param name="mappedFieldDataBuilder"><see cref="BlobBuilder"/> containing mapped field data. Must be populated with data. Linked into the <paramref name="builder"/> and can't be expanded afterwards.</param>
         /// <param name="resourceBuilder"><see cref="BlobBuilder"/> containing managed resource data. Must be populated with data. Linked into the <paramref name="builder"/> and can't be expanded afterwards.</param>
         /// <param name="debugTableBuilderOpt"><see cref="BlobBuilder"/> containing debug table data. Must be populated with data. Linked into the <paramref name="builder"/> and can't be expanded afterwards.</param>
+        /// <param name="strongNameSignature">Blob reserved in the <paramref name="builder"/> for strong name signature.</param>
         public void Serialize(
             BlobBuilder builder,
             int relativeVirtualAddess,
@@ -286,7 +287,8 @@ namespace System.Reflection.PortableExecutable
             BlobBuilder ilBuilder,
             BlobBuilder mappedFieldDataBuilder,
             BlobBuilder resourceBuilder,
-            BlobBuilder debugTableBuilderOpt)
+            BlobBuilder debugTableBuilderOpt,
+            out Blob strongNameSignature)
         {
             Debug.Assert(builder.Count == 0);
             Debug.Assert(metadataBuilder.Count == MetadataSize);
@@ -318,7 +320,11 @@ namespace System.Reflection.PortableExecutable
             builder.LinkSuffix(resourceBuilder);
 
             // strong name signature:
-            builder.WriteBytes(0, StrongNameSignatureSize);
+            strongNameSignature = builder.ReserveBytes(StrongNameSignatureSize);
+
+            // The bytes are required to be 0 for the purpose of calculating hash of the PE content
+            // when strong name signing.
+            new BlobWriter(strongNameSignature).WriteBytes(0, StrongNameSignatureSize);
 
             if (debugTableBuilderOpt != null)
             {
@@ -332,7 +338,7 @@ namespace System.Reflection.PortableExecutable
                 WriteRuntimeStartupStub(builder, importAddressTableRva, baseAddress);
             }
 
-            // mapped field data:            
+            // mapped field data:
             builder.LinkSuffix(mappedFieldDataBuilder);
 
             Debug.Assert(builder.Count == ComputeSizeOfTextSection());
@@ -500,7 +506,7 @@ namespace System.Reflection.PortableExecutable
         /// <summary>
         /// Write the entire "Debug Directory (Image Only)" along with data that it points to.
         /// </summary>
-        internal void WriteDebugTable(BlobBuilder builder, PESectionLocation textSectionLocation, ContentId nativePdbContentId, ContentId portablePdbContentId)
+        internal void WriteDebugTable(BlobBuilder builder, SectionLocation textSectionLocation, ContentId nativePdbContentId, ContentId portablePdbContentId)
         {
             Debug.Assert(builder.Count == 0);
 

@@ -17,19 +17,22 @@ instructions assume you are building for Linux, but are easily modifiable for OS
 
    From the root of your CoreCLR enlistment on Linux, run `./build.sh Release` in
    order to build.
-2. A coresponding version of mscorlib.dll. If you have mono installed, then
-   `build.sh` above will have produced this. Otherwise, this can be produced by
+2. A corresponding version of mscorlib.dll. Depending on your platform, this may
+   be produced when you run  `build.sh`. Otherwise, this can be produced by
    running `build.cmd linuxmscorlib Release` from a CoreCLR enlistment on
    Windows. Remember that the runtime and mscorlib are tightly coupled with
    respect to object sizes and layout so you need to ensure you have either a
    release coreclr and release mscorlib or debug coreclr and debug mscorlib.
 3. A Linux build of CoreFX. We currently have experimental support for building
    CoreFX on Linux via `build.sh`. The other option is to build the managed
-   parts of CoreFX on Windows,  To do so run `build.cmd /p:OSGroup=Linux`. It
-   is okay to build a Debug version of CoreFX and run it on top of a release
-   CoreCLR (which is exactly what we do in Jenkins).
+   parts of CoreFX on Windows, To do so run `build.cmd /p:TargetOS=Linux
+   /p:OSGroup=Linux`. It is okay to build a Debug version of CoreFX and run it
+   on top of a release CoreCLR (which is exactly what we do in Jenkins).
 4. A Linux build of the native CoreFX components. On Linux, run `./build.sh native` from
    the root of your CoreFX enlistment.
+5. The packages folder which contains all the packages restored from NuGet and
+   MyGet when building CoreFX.
+
 
 After building all the projects, we need to copy any of the files we built on Windows
 over to our Linux machine. The easiest way to do this is to mount a windows
@@ -42,7 +45,13 @@ share on linux. For example, I do:
 If needed, copy CoreFX:
 
 ```
-# rsync -v -r --exclude 'obj' --exclude 'packages' ~/mnt/matell3/d/git/corefx/bin/ ~/git/corefx/bin/
+# rsync -v -r ~/mnt/matell3/d/git/corefx/bin/tests ~/git/corefx/bin/tests
+```
+
+If needed, copy the packages folder:
+
+```
+# rsync -v -f ~/mnt/matell3/d/git/corefx/packages ~/git/corefx/packages
 ```
 
 If needed, copy mscorlib:

@@ -668,7 +668,7 @@ namespace System.Linq
         /// <summary>
         /// Returns the first element in the collection.
         /// </summary>
-        /// <exception cref="System.InvalidOperationException">Thrown if the collection is empty.</exception>
+        /// <exception cref="InvalidOperationException">Thrown if the collection is empty.</exception>
         [Pure]
         public static T First<T>(this ImmutableArray<T>.Builder builder)
         {
@@ -696,7 +696,7 @@ namespace System.Linq
         /// <summary>
         /// Returns the last element in the collection.
         /// </summary>
-        /// <exception cref="System.InvalidOperationException">Thrown if the collection is empty.</exception>
+        /// <exception cref="InvalidOperationException">Thrown if the collection is empty.</exception>
         [Pure]
         public static T Last<T>(this ImmutableArray<T>.Builder builder)
         {
