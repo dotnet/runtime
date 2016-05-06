@@ -81,13 +81,10 @@ namespace System.ComponentModel
 
             public override object GetValue(object instance)
             {
-                if (instance is Array)
+                var array = instance as Array;
+                if (array != null && array.GetLength(0) > _index)
                 {
-                    Array array = (Array)instance;
-                    if (array.GetLength(0) > _index)
-                    {
-                        return array.GetValue(_index);
-                    }
+                    return array.GetValue(_index);
                 }
 
                 return null;

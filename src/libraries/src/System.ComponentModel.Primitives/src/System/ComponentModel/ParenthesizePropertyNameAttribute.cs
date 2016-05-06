@@ -20,8 +20,6 @@ namespace System.ComponentModel
         /// </summary>
         public static readonly ParenthesizePropertyNameAttribute Default = new ParenthesizePropertyNameAttribute();
 
-        private bool _needParenthesis;
-
         /// <summary>
         ///    <para>[To be supplied.]</para>
         /// </summary>
@@ -36,7 +34,7 @@ namespace System.ComponentModel
         /// </summary>
         public ParenthesizePropertyNameAttribute(bool needParenthesis)
         {
-            _needParenthesis = needParenthesis;
+            NeedParenthesis = needParenthesis;
         }
 
         /// <summary>
@@ -47,25 +45,21 @@ namespace System.ComponentModel
         ///       the properties window.
         ///    </para>
         /// </summary>
-        public bool NeedParenthesis
-        {
-            get
-            {
-                return _needParenthesis;
-            }
-        }
+        public bool NeedParenthesis { get; }
 
         /// <summary>
         ///    <para>Compares the specified object
         ///       to this object and tests for equality.</para>
         /// </summary>
-        public override bool Equals(object o)
+        public override bool Equals(object obj)
         {
-            if (o is ParenthesizePropertyNameAttribute)
+            if (obj == this)
             {
-                return ((ParenthesizePropertyNameAttribute)o).NeedParenthesis == _needParenthesis;
+                return true;
             }
-            return false;
+
+            ParenthesizePropertyNameAttribute other = obj as ParenthesizePropertyNameAttribute;
+            return other != null && other.NeedParenthesis== NeedParenthesis;
         }
 
         /// <summary>

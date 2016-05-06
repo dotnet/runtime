@@ -34,7 +34,7 @@ namespace System.ComponentModel
         /// </summary>
         public static readonly BrowsableAttribute Default = Yes;
 
-        private bool _browsable = true;
+        private bool _browsable; 
 
         /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.ComponentModel.BrowsableAttribute'/> class.</para>
@@ -49,15 +49,8 @@ namespace System.ComponentModel
         ///       Gets a value indicating whether an object is browsable.
         ///    </para>
         /// </summary>
-        public bool Browsable
-        {
-            get
-            {
-                return _browsable;
-            }
-        }
+        public bool Browsable => _browsable;
 
-        /// <internalonly/>
         /// <summary>
         /// </summary>
         public override bool Equals(object obj)
@@ -73,14 +66,12 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///    <para>[To be supplied.]</para>
         /// </summary>
         public override int GetHashCode()
         {
             return _browsable.GetHashCode();
         }
 
-        /// <internalonly/>
         /// <summary>
         /// </summary>
         bool IIsDefaultAttribute.IsDefaultAttribute()

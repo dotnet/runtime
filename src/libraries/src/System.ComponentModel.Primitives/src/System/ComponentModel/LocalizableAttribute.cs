@@ -10,8 +10,6 @@ namespace System.ComponentModel
     [AttributeUsage(AttributeTargets.All)]
     public sealed class LocalizableAttribute : Attribute, IIsDefaultAttribute
     {
-        private bool _isLocalizable = false;
-
         /// <summary>
         ///    <para>
         ///       Initializes a new instance of the <see cref='System.ComponentModel.LocalizableAttribute'/> class.
@@ -19,7 +17,7 @@ namespace System.ComponentModel
         /// </summary>
         public LocalizableAttribute(bool isLocalizable)
         {
-            _isLocalizable = isLocalizable;
+            IsLocalizable = isLocalizable;
         }
 
         /// <summary>
@@ -28,13 +26,7 @@ namespace System.ComponentModel
         ///       a property should be localized.
         ///    </para>
         /// </summary>
-        public bool IsLocalizable
-        {
-            get
-            {
-                return _isLocalizable;
-            }
-        }
+        public bool IsLocalizable { get; }
 
         /// <summary>
         ///    <para>
@@ -71,8 +63,13 @@ namespace System.ComponentModel
 
         public override bool Equals(object obj)
         {
+            if(obj == this)
+            {
+                return true;
+            }
+
             LocalizableAttribute other = obj as LocalizableAttribute;
-            return (other != null) && other.IsLocalizable == _isLocalizable;
+            return (other != null) && other.IsLocalizable == IsLocalizable;
         }
 
         public override int GetHashCode()

@@ -10,8 +10,6 @@ namespace System.ComponentModel
     [AttributeUsage(AttributeTargets.Class)]
     public sealed class InitializationEventAttribute : Attribute
     {
-        private string _eventName = null;
-
         /// <summary>
         ///    <para>
         ///       Initializes a new instance of the <see cref='System.ComponentModel.InitializationEventAttribute'/> class.
@@ -19,7 +17,7 @@ namespace System.ComponentModel
         /// </summary>
         public InitializationEventAttribute(string eventName)
         {
-            _eventName = eventName;
+            EventName = eventName;
         }
 
         /// <summary>
@@ -27,12 +25,6 @@ namespace System.ComponentModel
         ///       Gets the name of the initialization event.
         ///    </para>
         /// </summary>
-        public string EventName
-        {
-            get
-            {
-                return _eventName;
-            }
-        }
+        public string EventName { get; }
     }
 }
