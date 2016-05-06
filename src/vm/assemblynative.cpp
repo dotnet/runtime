@@ -1170,7 +1170,7 @@ FCIMPL1(FC_BOOL_RET, AssemblyNative::IsReflectionOnly, AssemblyBaseObject *pAsse
 }
 FCIMPLEND
 
-void QCALLTYPE AssemblyNative::GetType(QCall::AssemblyHandle pAssembly, LPCWSTR wszName, BOOL bThrowOnError, BOOL bIgnoreCase, QCall::ObjectHandleOnStack retType)
+void QCALLTYPE AssemblyNative::GetType(QCall::AssemblyHandle pAssembly, LPCWSTR wszName, BOOL bThrowOnError, BOOL bIgnoreCase, QCall::ObjectHandleOnStack retType, QCall::ObjectHandleOnStack keepAlive)
 {
     CONTRACTL
     {
@@ -1186,26 +1186,16 @@ void QCALLTYPE AssemblyNative::GetType(QCall::AssemblyHandle pAssembly, LPCWSTR 
     if (!wszName)
         COMPlusThrowArgumentNull(W("name"), W("ArgumentNull_String"));
 
-    GCX_COOP();
+    BOOL prohibitAsmQualifiedName = TRUE;
 
-    OBJECTREF keepAlive = NULL;
-    GCPROTECT_BEGIN(keepAlive);
-
-    {
-        GCX_PREEMP();
-
-        BOOL prohibitAsmQualifiedName = TRUE;
-
-        // Load the class from this assembly (fail if it is in a different one).
-        retTypeHandle = TypeName::GetTypeManaged(wszName, pAssembly, bThrowOnError, bIgnoreCase, pAssembly->IsIntrospectionOnly(), prohibitAsmQualifiedName, NULL, FALSE, &keepAlive);
-    }
+    // Load the class from this assembly (fail if it is in a different one).
+    retTypeHandle = TypeName::GetTypeManaged(wszName, pAssembly, bThrowOnError, bIgnoreCase, pAssembly->IsIntrospectionOnly(), prohibitAsmQualifiedName, NULL, FALSE, (OBJECTREF*)keepAlive.m_ppObject);
 
     if (!retTypeHandle.IsNull())
     {
-        retType.Set(retTypeHandle.GetManagedClassObject());
+         GCX_COOP();
+         retType.Set(retTypeHandle.GetManagedClassObject());
     }
-
-    GCPROTECT_END();
 
     END_QCALL;
 
