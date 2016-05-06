@@ -7,7 +7,7 @@ namespace System.ComponentModel.Tests
     internal class MockEventDescriptor : EventDescriptor
     {
         public MockEventDescriptor(string name = null, Attribute[] attributes = null)
-            : base(name ?? nameof(MockEventDescriptor), attributes ?? new Attribute[0])
+            : base(name ?? nameof(MockEventDescriptor), attributes ?? Array.Empty<Attribute>())
         { }
 
         public override Type ComponentType
