@@ -221,15 +221,13 @@ namespace System.Security.Cryptography.Pkcs
             Exception exception = PkcsPal.Instance.CreateRecipientsNotFoundException();
             foreach (RecipientInfo recipientInfo in recipientInfos)
             {
-                using (X509Certificate2 cert = certs.TryFindMatchingCertificate(recipientInfo.RecipientIdentifier))
+                X509Certificate2 cert = certs.TryFindMatchingCertificate(recipientInfo.RecipientIdentifier);
+                if (cert == null)
                 {
-                    if (cert == null)
-                    {
-                        exception = PkcsPal.Instance.CreateRecipientsNotFoundException();
-                        continue;
-                    }
-                    newContentInfo = _decryptorPal.TryDecrypt(recipientInfo, cert, originatorCerts, extraStore, out exception);
+                    exception = PkcsPal.Instance.CreateRecipientsNotFoundException();
+                    continue;
                 }
+                newContentInfo = _decryptorPal.TryDecrypt(recipientInfo, cert, originatorCerts, extraStore, out exception);
                 if (exception != null)
                     continue;
 

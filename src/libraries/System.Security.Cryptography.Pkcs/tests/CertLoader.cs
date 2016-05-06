@@ -52,15 +52,7 @@ namespace Test.Cryptography
                     return null;
 
                 case CertLoadMode.LoadFromPfx:
-                    {
-                        // Loading the same PFX in multiple threads can cause test failures due to races as Crypto tries to 
-                        // manipulate the stored keys on disk. To avoid this, serialize all loads of PFX's. It would probably
-                        // suffice to serialize loads of the same PFX's, but it's not worth adding that complexity for a test harness.
-                        lock (s_pfxMutex)
-                        {
-                            return new X509Certificate2(PfxData, Password);
-                        }
-                    }
+                    return new X509Certificate2(PfxData, Password);
 
                 case CertLoadMode.LoadFromStore:
                     {
@@ -124,7 +116,6 @@ namespace Test.Cryptography
         }
 
         private bool _alreadySearchedMyStore = false;
-        private static object s_pfxMutex = new object();
     }
 
     internal sealed class CertLoaderFromRawData : CertLoader

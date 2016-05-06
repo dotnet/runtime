@@ -23,6 +23,75 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
     {
         [Fact]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
+        public static void ImportEdgeCase()
+        {
+            //
+            // Pfx's imported into a certificate collection propagate their "delete on Dispose" behavior to its cloned instances:
+            // a subtle difference from Pfx's created using the X509Certificate2 constructor that can lead to premature or
+            // double key deletion. Since EnvelopeCms.Decrypt() has no legitimate reason to clone the extraStore certs, this shouldn't
+            // be a problem, but this test will verify that it isn't.
+            //
+
+            byte[] encodedMessage =
+                ("3082010c06092a864886f70d010703a081fe3081fb0201003181c83081c5020100302e301a311830160603550403130f5253"
+                + "414b65795472616e7366657231021031d935fb63e8cfab48a0bf7b397b67c0300d06092a864886f70d01010105000481805e"
+                + "bb2d08773594be9ec5d30c0707cf339f2b982a4f0797b74d520a0c973d668a9a6ad9d28066ef36e5b5620fef67f4d79ee50c"
+                + "25eb999f0c656548347d5676ac4b779f8fce2b87e6388fbe483bb0fcf78ab1f1ff29169600401fded7b2803a0bf96cc160c4"
+                + "96726216e986869eed578bda652855c85604a056201538ee56b6c4302b06092a864886f70d010701301406082a864886f70d"
+                + "030704083adadf63cd297a86800835edc437e31d0b70").HexToByteArray();
+
+            EnvelopedCms ecms = new EnvelopedCms();
+            ecms.Decode(encodedMessage);
+
+            using (X509Certificate2 cert = Certificates.RSAKeyTransfer1.LoadPfxUsingCollectionImport())
+            {
+                X509Certificate2Collection extraStore = new X509Certificate2Collection(cert);
+                ecms.Decrypt(extraStore);
+
+                byte[] expectedContent = { 1, 2, 3 };
+                ContentInfo contentInfo = ecms.ContentInfo;
+                Assert.Equal<byte>(expectedContent, contentInfo.Content);
+            }
+        }
+
+        [Fact]
+        [OuterLoop(/* Leaks key on disk if interrupted */)]
+        public static void ImportEdgeCaseSki()
+        {
+            byte[] encodedMessage =
+                ("3081f206092a864886f70d010703a081e43081e10201023181ae3081ab0201028014f2008aa9fa3742e8370cb1674ce1d158"
+                + "2921dcc3300d06092a864886f70d01010105000481804336e978bc72ba2f5264cd854867fac438f36f2b3df6004528f2df83"
+                + "4fb2113d6f7c07667e7296b029756222d6ced396a8fffed32be838eec7f2e54b9467fa80f85d097f7d1f0fbde57e07ab3d46"
+                + "a60b31f37ef9844dcab2a8eef4fec5579fac5ec1e7ee82409898e17d30c3ac1a407fca15d23c9df2904a707294d78d4300ba"
+                + "302b06092a864886f70d010701301406082a864886f70d03070408355c596e3e8540608008f1f811e862e51bbd").HexToByteArray();
+
+            EnvelopedCms ecms = new EnvelopedCms();
+            ecms.Decode(encodedMessage);
+
+            using (X509Certificate2 cert = Certificates.RSAKeyTransfer1.LoadPfxUsingCollectionImport())
+            {
+                X509Certificate2Collection extraStore = new X509Certificate2Collection(cert);
+                ecms.Decrypt(extraStore);
+
+                byte[] expectedContent = { 1, 2, 3 };
+                ContentInfo contentInfo = ecms.ContentInfo;
+                Assert.Equal<byte>(new byte[] { 1, 2, 3 }, contentInfo.Content);
+                Assert.Equal<byte>(expectedContent, contentInfo.Content);
+            }
+        }
+
+        private static X509Certificate2 LoadPfxUsingCollectionImport(this CertLoader certLoader)
+        {
+            byte[] pfxData = certLoader.PfxData;
+            string password = certLoader.Password;
+            X509Certificate2Collection collection = new X509Certificate2Collection();
+            collection.Import(pfxData, password, X509KeyStorageFlags.DefaultKeySet);
+            Assert.Equal(1, collection.Count);
+            return collection[0];
+        }
+
+        [Fact]
+        [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void ZeroLengthContent_RoundTrip()
         {
             ContentInfo contentInfo = new ContentInfo(Array.Empty<byte>());
