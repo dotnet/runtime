@@ -238,7 +238,10 @@ namespace System.Tests
             Action<string> validate = result =>
             {
                 Assert.Equal(expected, result);
-                // if (result.Length == 0) Assert.Same(string.Empty, result);
+                if (result.Length == 0)
+                {
+                    Assert.Same(string.Empty, result);
+                }
             };
 
             if (values.Length == 2)
