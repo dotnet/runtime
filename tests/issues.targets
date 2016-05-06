@@ -413,9 +413,6 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\stringintern\test1-xassem\test1-xassem.cmd">
              <Issue>3554</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Performance\CodeQuality\Linq\Linq\Linq.cmd">
-             <Issue>4666</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Performance\CodeQuality\Serialization\Serialize\Serialize.cmd">
              <Issue>3597</Issue>
         </ExcludeList>
