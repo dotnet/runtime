@@ -51,7 +51,9 @@
     .maxstack  8
     IL_0000:  ldc.i4.2
     IL_0001:  call       void Test::DoSwitch(int32)
-    IL_0006:  ret
+    IL_0006:  call       int32 ['mscorlib']System.Environment::get_ExitCode()
+              call       void ['mscorlib']System.Environment::Exit(int32)
+              ret
   } 
 
 } 

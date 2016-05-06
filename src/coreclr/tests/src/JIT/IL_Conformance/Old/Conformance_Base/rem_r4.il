@@ -854,7 +854,7 @@ FINISH:
 	brfalse		FAIL
 
 // -- PASS --
-	ldc.i4	0xAAAA
+	ldc.i4	100
 	ret
 
 // -- FAIL --
