@@ -6,7 +6,7 @@ using System.Globalization;
 
 namespace System.Common.Tests
 {
-    public class ThreadCultureChange : IDisposable
+    public sealed class ThreadCultureChange : IDisposable
     {
         private CultureInfo _originalDefaultCultureInfo;
         private CultureInfo _originalDefaultUICultureInfo;
