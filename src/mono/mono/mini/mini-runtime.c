@@ -163,7 +163,8 @@ G_GNUC_UNUSED static char*
 get_method_from_ip (void *ip)
 {
 	MonoJitInfo *ji;
-	char *method;
+	MonoMethod *method;
+	char *method_name;
 	char *res;
 	MonoDomain *domain = mono_domain_get ();
 	MonoDebugSourceLocation *location;
@@ -192,14 +193,15 @@ get_method_from_ip (void *ip)
 		return res;
 	}
 
-	method = mono_method_full_name (jinfo_get_method (ji), TRUE);
+	method = jinfo_get_method (ji);
+	method_name = mono_method_full_name (method, TRUE);
 	/* FIXME: unused ? */
-	location = mono_debug_lookup_source_location (jinfo_get_method (ji), (guint32)((guint8*)ip - (guint8*)ji->code_start), domain);
+	location = mono_debug_lookup_source_location (method, (guint32)((guint8*)ip - (guint8*)ji->code_start), domain);
 
-	res = g_strdup_printf (" %s + 0x%x (%p %p) [%p - %s]", method, (int)((char*)ip - (char*)ji->code_start), ji->code_start, (char*)ji->code_start + ji->code_size, domain, domain->friendly_name);
+	res = g_strdup_printf (" %s {%p} + 0x%x (%p %p) [%p - %s]", method_name, method, (int)((char*)ip - (char*)ji->code_start), ji->code_start, (char*)ji->code_start + ji->code_size, domain, domain->friendly_name);
 
 	mono_debug_free_source_location (location);
-	g_free (method);
+	g_free (method_name);
 
 	return res;
 }
