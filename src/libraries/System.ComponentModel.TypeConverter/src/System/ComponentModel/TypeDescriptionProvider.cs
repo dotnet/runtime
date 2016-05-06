@@ -128,7 +128,7 @@ namespace System.ComponentModel
                 throw new ArgumentNullException(nameof(instance));
             }
 
-            return new IExtenderProvider[0];
+            return Array.Empty<IExtenderProvider>();
         }
 
         /// <summary>
