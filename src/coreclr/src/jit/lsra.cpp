@@ -3060,7 +3060,7 @@ LinearScan::buildRefPositionsForNode(GenTree *tree,
                 noPush = true;
             }
 
-            assert(consume <= 1);
+            assert(consume <= MAX_RET_REG_COUNT);
             if (consume == 1)
             {
                 Interval * srcInterval = stack->TopRef().interval;
