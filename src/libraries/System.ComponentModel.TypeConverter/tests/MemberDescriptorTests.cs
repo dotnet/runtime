@@ -19,8 +19,8 @@ namespace System.ComponentModel.Tests
         [Fact]
         public void MemberDescriptorFromNameAndAttributes()
         {
-            Assert.Throws<ArgumentException>(() => new MockMemberDescriptor((string)null, Array.Empty<Attribute>()));
-            Assert.Throws<ArgumentException>(() => new MockMemberDescriptor("", Array.Empty<Attribute>()));
+            Assert.Throws<ArgumentException>(() => new MockMemberDescriptor((string)null, new Attribute[0]));
+            Assert.Throws<ArgumentException>(() => new MockMemberDescriptor("", new Attribute[0]));
 
             var name = nameof(MemberDescriptorFromNameAndAttributes);
             var attributes = new Attribute[] { new MockAttribute1(), new MockAttribute2() };

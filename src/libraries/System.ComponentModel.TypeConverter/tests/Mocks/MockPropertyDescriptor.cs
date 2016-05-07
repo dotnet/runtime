@@ -7,7 +7,7 @@ namespace System.ComponentModel.Tests
     internal class MockPropertyDescriptor : PropertyDescriptor
     {
         public MockPropertyDescriptor(string name = null, Attribute[] attributes = null)
-            : base(name ?? nameof(MockPropertyDescriptor), attributes ?? Array.Empty<Attribute>())
+            : base(name ?? nameof(MockPropertyDescriptor), attributes ?? new Attribute[0])
         { }
 
         public override Type ComponentType

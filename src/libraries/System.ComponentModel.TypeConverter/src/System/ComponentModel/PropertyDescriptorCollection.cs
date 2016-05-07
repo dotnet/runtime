@@ -47,7 +47,7 @@ namespace System.ComponentModel
         {
             if (properties == null)
             {
-                _properties = Array.Empty<PropertyDescriptor>();
+                _properties = new PropertyDescriptor[0];
                 _propCount = 0;
             }
             else
