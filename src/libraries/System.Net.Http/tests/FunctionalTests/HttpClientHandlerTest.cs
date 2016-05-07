@@ -558,33 +558,31 @@ namespace System.Net.Http.Functional.Tests
             var cookie2 = new KeyValuePair<string, string>(".AspNetCore.Session", "RAExEmXpoCbueP_QYM");
             var cookie3 = new KeyValuePair<string, string>("name", "value");
 
-            await LoopbackServer.CreateClientAndServerAsync(async (handler, client, server, url) =>
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
-                Task<HttpResponseMessage> getResponse = client.GetAsync(url);
-
-                await LoopbackServer.AcceptSocketAsync(server, async (s, stream, reader, writer) =>
+                using (var handler = new HttpClientHandler())
+                using (var client = new HttpClient(handler))
                 {
-                    while (!string.IsNullOrEmpty(reader.ReadLine())) ;
-                    await writer.WriteAsync(
-                        $"HTTP/1.1 200 OK\r\n" +
-                        $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
-                        $"Set-Cookie: {cookie1.Key}={cookie1.Value}; Path=/\r\n" +
-                        $"Set-Cookie: {cookie2.Key}={cookie2.Value}; Path=/\r\n" +
-                        $"Set-Cookie: {cookie3.Key}={cookie3.Value}; Path=/\r\n" +
-                        "\r\n");
-                    await writer.FlushAsync();
-                    s.Shutdown(SocketShutdown.Send);
-                });
+                    Task<HttpResponseMessage> getResponse = client.GetAsync(url);
 
-                using (HttpResponseMessage response = await getResponse)
-                {
-                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                    CookieCollection cookies = handler.CookieContainer.GetCookies(url);
+                    await LoopbackServer.ReadRequestAndSendResponseAsync(server,
+                            $"HTTP/1.1 200 OK\r\n" +
+                            $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
+                            $"Set-Cookie: {cookie1.Key}={cookie1.Value}; Path=/\r\n" +
+                            $"Set-Cookie: {cookie2.Key}={cookie2.Value}; Path=/\r\n" +
+                            $"Set-Cookie: {cookie3.Key}={cookie3.Value}; Path=/\r\n" +
+                            "\r\n");
 
-                    Assert.Equal(3, cookies.Count);
-                    Assert.Equal(cookie1.Value, cookies[cookie1.Key].Value);
-                    Assert.Equal(cookie2.Value, cookies[cookie2.Key].Value);
-                    Assert.Equal(cookie3.Value, cookies[cookie3.Key].Value);
+                    using (HttpResponseMessage response = await getResponse)
+                    {
+                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                        CookieCollection cookies = handler.CookieContainer.GetCookies(url);
+
+                        Assert.Equal(3, cookies.Count);
+                        Assert.Equal(cookie1.Value, cookies[cookie1.Key].Value);
+                        Assert.Equal(cookie2.Value, cookies[cookie2.Key].Value);
+                        Assert.Equal(cookie3.Value, cookies[cookie3.Key].Value);
+                    }
                 }
             });
         }
@@ -635,45 +633,51 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task SendAsync_ReadFromSlowStreamingServer_PartialDataReturned()
         {
-            await LoopbackServer.CreateClientAndServerAsync(async (handler, client, server, url) =>
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
-                Task<HttpResponseMessage> getResponse = client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
-
-                await LoopbackServer.AcceptSocketAsync(server, async (s, stream, reader, writer) =>
+                using (var client = new HttpClient())
                 {
-                    while (!string.IsNullOrEmpty(reader.ReadLine())) ;
-                    await writer.WriteAsync(
-                        "HTTP/1.1 200 OK\r\n" +
-                        $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
-                        "Content-Length: 16000\r\n" +
-                        "\r\n" +
-                        "less than 16000 bytes");
-                    await writer.FlushAsync();
+                    Task<HttpResponseMessage> getResponse = client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
 
-                    using (HttpResponseMessage response = await getResponse)
+                    await LoopbackServer.AcceptSocketAsync(server, async (s, stream, reader, writer) =>
                     {
-                        var buffer = new byte[8000];
-                        using (Stream clientStream = await response.Content.ReadAsStreamAsync())
+                        while (!string.IsNullOrEmpty(reader.ReadLine())) ;
+                        await writer.WriteAsync(
+                            "HTTP/1.1 200 OK\r\n" +
+                            $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
+                            "Content-Length: 16000\r\n" +
+                            "\r\n" +
+                            "less than 16000 bytes");
+                        await writer.FlushAsync();
+
+                        using (HttpResponseMessage response = await getResponse)
                         {
-                            int bytesRead = await clientStream.ReadAsync(buffer, 0, buffer.Length);
-                            _output.WriteLine($"Bytes read from stream: {bytesRead}");
-                            Assert.True(bytesRead < buffer.Length, "bytesRead should be less than buffer.Length");
+                            var buffer = new byte[8000];
+                            using (Stream clientStream = await response.Content.ReadAsStreamAsync())
+                            {
+                                int bytesRead = await clientStream.ReadAsync(buffer, 0, buffer.Length);
+                                _output.WriteLine($"Bytes read from stream: {bytesRead}");
+                                Assert.True(bytesRead < buffer.Length, "bytesRead should be less than buffer.Length");
+                            }
                         }
-                    }
-                });
+                    });
+                }
             });
         }
 
         [Fact]
         public async Task Dispose_DisposingHandlerCancelsActiveOperations()
         {
-            await LoopbackServer.CreateClientAndServerAsync(async (handler, client, socket, url) =>
+            await LoopbackServer.CreateServerAsync(async (socket, url) =>
             {
-                Task<string> download = client.GetStringAsync(url);
-                using (Socket acceptedSocket = await socket.AcceptAsync())
+                using (var client = new HttpClient())
                 {
-                    client.Dispose();
-                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => download);
+                    Task<string> download = client.GetStringAsync(url);
+                    using (Socket acceptedSocket = await socket.AcceptAsync())
+                    {
+                        client.Dispose();
+                        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => download);
+                    }
                 }
             });
         }
@@ -1030,43 +1034,46 @@ namespace System.Net.Http.Functional.Tests
         {
             Version receivedRequestVersion = null;
 
-            await LoopbackServer.CreateClientAndServerAsync(async (handler, client, server, url) =>
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
                 var request = new HttpRequestMessage(HttpMethod.Get, url);
                 request.Version = requestVersion;
 
-                Task<HttpResponseMessage> getResponse = client.SendAsync(request);
-
-                await LoopbackServer.AcceptSocketAsync(server, async (s, stream, reader, writer) =>
+                using (var client = new HttpClient())
                 {
-                    string statusLine = reader.ReadLine();
-                    while (!string.IsNullOrEmpty(reader.ReadLine())) ;
+                    Task<HttpResponseMessage> getResponse = client.SendAsync(request);
 
-                    if (statusLine.Contains("/1.0"))
+                    await LoopbackServer.AcceptSocketAsync(server, async (s, stream, reader, writer) =>
                     {
-                        receivedRequestVersion = new Version(1,0);
-                    }
-                    else if (statusLine.Contains("/1.1"))
-                    {
-                        receivedRequestVersion = new Version(1,1);
-                    }
-                    else
-                    {
-                        Assert.True(false, "Invalid HTTP request version");
-                    }
+                        string statusLine = reader.ReadLine();
+                        while (!string.IsNullOrEmpty(reader.ReadLine())) ;
 
-                    await writer.WriteAsync(
-                        $"HTTP/1.1 200 OK\r\n" +
-                        $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
-                        "Content-Length: 0\r\n" +
-                        "\r\n");
-                    await writer.FlushAsync();
-                    s.Shutdown(SocketShutdown.Send);
-                });
+                        if (statusLine.Contains("/1.0"))
+                        {
+                            receivedRequestVersion = new Version(1, 0);
+                        }
+                        else if (statusLine.Contains("/1.1"))
+                        {
+                            receivedRequestVersion = new Version(1, 1);
+                        }
+                        else
+                        {
+                            Assert.True(false, "Invalid HTTP request version");
+                        }
 
-                using (HttpResponseMessage response = await getResponse)
-                {
-                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                        await writer.WriteAsync(
+                            $"HTTP/1.1 200 OK\r\n" +
+                            $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
+                            "Content-Length: 0\r\n" +
+                            "\r\n");
+                        await writer.FlushAsync();
+                        s.Shutdown(SocketShutdown.Send);
+                    });
+
+                    using (HttpResponseMessage response = await getResponse)
+                    {
+                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    }
                 }
             });
             

@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Net.Test.Common;
+using System.IO;
+using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -39,13 +41,18 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(BackendSupportsSslConfiguration))]
         public async Task SetProtcols_AfterRequest_ThrowsException()
         {
-            using (var handler = new HttpClientHandler())
+            using (var handler = new HttpClientHandler() { ServerCertificateCustomValidationCallback = LoopbackServer.AllowAllCertificates })
             using (var client = new HttpClient(handler))
             {
-                (await client.GetAsync(HttpTestServers.RemoteEchoServer)).Dispose();
+                await LoopbackServer.CreateServerAsync(async (server, url) =>
+                {
+                    await WhenAllCompletedOrAnyFailed(
+                        LoopbackServer.ReadRequestAndSendResponseAsync(server),
+                        client.GetAsync(url));
+                });
                 Assert.Throws<InvalidOperationException>(() => handler.SslProtocols = SslProtocols.Tls12);
             }
         }
@@ -67,55 +74,100 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Theory]
-        [InlineData(SslProtocols.Tls, HttpTestServers.TLSv10RemoteServer)]
-        [InlineData(SslProtocols.Tls11, HttpTestServers.TLSv11RemoteServer)]
-        [InlineData(SslProtocols.Tls12, HttpTestServers.TLSv12RemoteServer)]
-        public async Task GetAsync_AllowedSSLVersion_Succeeds(SslProtocols acceptedProtocol, string url)
+        [ConditionalTheory(nameof(BackendSupportsSslConfiguration))]
+        [InlineData(SslProtocols.Tls)]
+        [InlineData(SslProtocols.Tls11)]
+        [InlineData(SslProtocols.Tls12)]
+        public async Task GetAsync_AllowedSSLVersion_Succeeds(SslProtocols acceptedProtocol)
         {
-            using (var handler = new HttpClientHandler())
+            using (var handler = new HttpClientHandler() { SslProtocols = acceptedProtocol, ServerCertificateCustomValidationCallback = LoopbackServer.AllowAllCertificates })
             using (var client = new HttpClient(handler))
             {
-                handler.SslProtocols = acceptedProtocol;
-                using (await client.GetAsync(url)) { }
+                var options = new LoopbackServer.Options { UseSsl = true, SslProtocols = acceptedProtocol };
+                await LoopbackServer.CreateServerAsync(async (server, url) =>
+                {
+                    await WhenAllCompletedOrAnyFailed(
+                        LoopbackServer.ReadRequestAndSendResponseAsync(server, options: options),
+                        client.GetAsync(url));
+                }, options);
             }
         }
 
-        [Theory]
-        [InlineData(SslProtocols.Tls11, HttpTestServers.TLSv10RemoteServer)]
-        [InlineData(SslProtocols.Tls12, HttpTestServers.TLSv11RemoteServer)]
-        [InlineData(SslProtocols.Tls, HttpTestServers.TLSv12RemoteServer)]
-        public async Task GetAsync_AllowedSSLVersionDiffersFromServer_ThrowsException(SslProtocols allowedProtocol, string url)
+        [ConditionalTheory(nameof(BackendSupportsSslConfiguration))]
+        [InlineData(SslProtocols.Tls11, SslProtocols.Tls, typeof(IOException))]
+        [InlineData(SslProtocols.Tls12, SslProtocols.Tls11, typeof(IOException))]
+        [InlineData(SslProtocols.Tls, SslProtocols.Tls12, typeof(AuthenticationException))]
+        public async Task GetAsync_AllowedSSLVersionDiffersFromServer_ThrowsException(
+            SslProtocols allowedProtocol, SslProtocols acceptedProtocol, Type exceptedServerException)
         {
-            using (var handler = new HttpClientHandler())
+            using (var handler = new HttpClientHandler() { SslProtocols = allowedProtocol, ServerCertificateCustomValidationCallback = LoopbackServer.AllowAllCertificates })
             using (var client = new HttpClient(handler))
             {
-                handler.SslProtocols = allowedProtocol;
-                await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(url));
+                var options = new LoopbackServer.Options { UseSsl = true, SslProtocols = acceptedProtocol };
+                await LoopbackServer.CreateServerAsync(async (server, url) =>
+                {
+                    await WhenAllCompletedOrAnyFailed(
+                        Assert.ThrowsAsync(exceptedServerException, () => LoopbackServer.ReadRequestAndSendResponseAsync(server, options: options)),
+                        Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(url)));
+                }, options);
             }
         }
 
         [Fact]
         public async Task GetAsync_DisallowTls10_AllowTls11_AllowTls12()
         {
-            using (var handler = new HttpClientHandler())
+            using (var handler = new HttpClientHandler() { SslProtocols = SslProtocols.Tls11 | SslProtocols.Tls12, ServerCertificateCustomValidationCallback = LoopbackServer.AllowAllCertificates })
             using (var client = new HttpClient(handler))
             {
-                handler.SslProtocols = SslProtocols.Tls11 | SslProtocols.Tls12;
-                if (BackendSupportsFineGrainedProtocols)
+                if (BackendSupportsSslConfiguration)
                 {
-                    await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(HttpTestServers.TLSv10RemoteServer));
-                    using (await client.GetAsync(HttpTestServers.TLSv11RemoteServer)) { }
-                    using (await client.GetAsync(HttpTestServers.TLSv12RemoteServer)) { }
+                    LoopbackServer.Options options = new LoopbackServer.Options { UseSsl = true };
+
+                    options.SslProtocols = SslProtocols.Tls;
+                    await LoopbackServer.CreateServerAsync(async (server, url) =>
+                    {
+                        await WhenAllCompletedOrAnyFailed(
+                            Assert.ThrowsAsync<IOException>(() => LoopbackServer.ReadRequestAndSendResponseAsync(server, options: options)),
+                            Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(url)));
+                    }, options);
+
+                    foreach (var prot in new[] { SslProtocols.Tls11, SslProtocols.Tls12 })
+                    {
+                        options.SslProtocols = prot;
+                        await LoopbackServer.CreateServerAsync(async (server, url) =>
+                        {
+                            await WhenAllCompletedOrAnyFailed(
+                                LoopbackServer.ReadRequestAndSendResponseAsync(server, options: options),
+                                client.GetAsync(url));
+                        }, options);
+                    }
                 }
                 else
                 {
-                    await Assert.ThrowsAsync<NotSupportedException>(() => client.GetAsync(HttpTestServers.TLSv11RemoteServer));
+                    await Assert.ThrowsAnyAsync<NotSupportedException>(() => client.GetAsync($"http://{Guid.NewGuid().ToString()}/"));
                 }
             }
         }
 
-        private static bool BackendSupportsFineGrainedProtocols =>
+        private static Task WhenAllCompletedOrAnyFailed(params Task[] tasks)
+        {
+            var tcs = new TaskCompletionSource<bool>();
+
+            int remaining = tasks.Length;
+            foreach (var task in tasks)
+            {
+                task.ContinueWith(t =>
+                {
+                    if (t.IsFaulted) tcs.SetException(t.Exception.InnerExceptions);
+                    else if (t.IsCanceled) tcs.SetCanceled();
+                    else if (Interlocked.Decrement(ref remaining) == 0) tcs.SetResult(true);
+                }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+            }
+
+            return tcs.Task;
+        }
+
+        private static bool BackendSupportsSslConfiguration =>
             RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ||
             (CurlSslVersionDescription()?.StartsWith("OpenSSL") ?? false);
 
