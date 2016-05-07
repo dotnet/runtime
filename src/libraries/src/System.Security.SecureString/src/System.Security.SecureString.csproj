@@ -31,6 +31,9 @@
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' AND '$(TargetGroup)' == '' ">
     <Compile Include="System\Security\SecureString.Windows.cs" />
     <Compile Include="System\Security\SafeBSTRHandle.cs" />
+    <Compile Include="$(CommonPath)\Internal\Cryptography\Windows\CryptoThrowHelper.cs">
+      <Link>Common\Internal\Cryptography\Windows\CryptoThrowHelper.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
@@ -45,6 +48,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.DATA_BLOB.cs">
       <Link>Common\Interop\Windows\Interop.DATA_BLOB.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs">
+      <Link>Interop\Windows\Interop.FormatMessage.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.ZeroMemory.cs">
       <Link>Common\Interop\Windows\Interop.ZeroMemory.cs</Link>

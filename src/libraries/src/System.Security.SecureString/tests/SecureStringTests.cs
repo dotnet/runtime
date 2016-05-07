@@ -360,6 +360,17 @@ namespace System.Security.Tests
             }
         }
 
+        private static unsafe void AssertEquals(string expected, SecureString actual)
+        {
+            Assert.Equal(expected, CreateString(actual));
+        }
+
+        // WARNING:
+        // A key value of SecureString is in keeping string data off of the GC heap, such that it can
+        // be reliably cleared when no longer needed.  Creating a SecureString from a string or converting
+        // a SecureString to a string diminishes that value. These conversion functions are for testing that 
+        // SecureString works, and does not represent a pattern to follow in any non-test situation.
+
         private static unsafe SecureString CreateSecureString(string value)
         {
             if (string.IsNullOrEmpty(value))
@@ -373,12 +384,17 @@ namespace System.Security.Tests
             }
         }
 
-        private static unsafe void AssertEquals(string expected, SecureString actual)
+        private static string CreateString(SecureString value)
         {
-            IntPtr ptr = SecureStringMarshal.SecureStringToGlobalAllocUnicode(actual);
-            string actualString = Marshal.PtrToStringUni(ptr);
-            Marshal.ZeroFreeGlobalAllocUnicode(ptr);
-            Assert.Equal(expected, actualString);
+            IntPtr ptr = SecureStringMarshal.SecureStringToGlobalAllocUnicode(value);
+            try
+            {
+                return Marshal.PtrToStringUni(ptr);
+            }
+            finally
+            {
+                Marshal.ZeroFreeGlobalAllocUnicode(ptr);
+            }
         }
     }
 }

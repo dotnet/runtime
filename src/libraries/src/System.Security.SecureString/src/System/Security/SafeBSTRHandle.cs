@@ -27,7 +27,7 @@ namespace System.Security
 
         override protected bool ReleaseHandle()
         {
-            Interop.NtDll.ZeroMemory(handle, (UIntPtr)(Interop.OleAut32.SysStringLen(handle) * 2));
+            Interop.NtDll.ZeroMemory(handle, (UIntPtr)(Interop.OleAut32.SysStringLen(handle) * sizeof(char)));
             Interop.OleAut32.SysFreeString(handle);
             return true;
         }
@@ -38,7 +38,7 @@ namespace System.Security
             try
             {
                 AcquirePointer(ref bufferPtr);
-                Interop.NtDll.ZeroMemory((IntPtr)bufferPtr, (UIntPtr)(Interop.OleAut32.SysStringLen((IntPtr)bufferPtr) * 2));
+                Interop.NtDll.ZeroMemory((IntPtr)bufferPtr, (UIntPtr)(Interop.OleAut32.SysStringLen((IntPtr)bufferPtr) * sizeof(char)));
             }
             finally
             {
