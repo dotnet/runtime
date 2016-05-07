@@ -141,7 +141,7 @@ public:
     void QCALLTYPE RegisterWithHost(IUnknown *punkAppDomainManager);
 #endif // FEATURE_APPDOMAINMANAGER_INITOPTIONS
 
-#if defined(FEATURE_HOSTED_BINDER) && defined(FEATURE_APPX_BINDER)
+#if defined(FEATURE_APPX_BINDER)
     static
     ICLRPrivBinder * QCALLTYPE CreateDesignerContext(LPCWSTR *rgPaths, UINT cPaths, BOOL fShared);
 

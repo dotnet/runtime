@@ -32,9 +32,7 @@
 extern ICLRRuntimeInfo *g_pCLRRuntime;
 #endif // !FEATURE_CORECLR && !CROSSGEN_COMPILE
 
-#ifdef FEATURE_HOSTED_BINDER
 #include "clrprivhosting.h"
-#endif
 
 #ifndef FEATURE_CORECLR
 #include "clr/win32.h"
@@ -260,9 +258,7 @@ STDAPI InternalDllGetClassObject(
     if (rclsid == CLSID_CorMetaDataDispenser || rclsid == CLSID_CorMetaDataDispenserRuntime ||
         rclsid == CLSID_CorRuntimeHost || rclsid == CLSID_CLRRuntimeHost ||
         rclsid == CLSID_TypeNameFactory
-#ifdef FEATURE_HOSTED_BINDER
         || rclsid == __uuidof(CLRPrivRuntime)
-#endif
        )
     {
         hr = MetaDataDllGetClassObject(rclsid, riid, ppv);

@@ -51,9 +51,7 @@ DomainAssembly* LoadAssemblyFromPartialNameHack(SString* psszAssemblySpec, BOOL 
 DomainAssembly * LoadDomainAssembly(
     SString *  psszAssemblySpec, 
     Assembly * pRequestingAssembly, 
-#ifdef FEATURE_HOSTED_BINDER
     ICLRPrivBinder * pPrivHostBinder,
-#endif
     BOOL       bThrowIfNotFound, 
     BOOL       bIntrospectionOnly, 
     SString *  pssOuterTypeName);
@@ -375,11 +373,8 @@ public:
         BOOL bProhibitAssemblyQualifiedName,
         StackCrawlMark* pStackMark,
         BOOL bLoadTypeFromPartialNameHack,
-        OBJECTREF *pKeepAlive
-#ifdef FEATURE_HOSTED_BINDER
-        , ICLRPrivBinder * pPrivHostBinder = nullptr
-#endif
-        );
+        OBJECTREF *pKeepAlive,
+        ICLRPrivBinder * pPrivHostBinder = nullptr);
     
     
 public:
@@ -444,9 +439,7 @@ private:
                                     
         StackCrawlMark* pStackMark, 
         Assembly* pRequestingAssembly, 
-#ifdef FEATURE_HOSTED_BINDER
         ICLRPrivBinder * pPrivHostBinder,
-#endif
         BOOL bLoadTypeFromPartialNameHack,
         OBJECTREF *pKeepAlive);    
 

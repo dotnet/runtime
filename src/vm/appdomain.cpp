@@ -97,14 +97,12 @@
 #include "../binder/inc/clrprivbindercoreclr.h"
 #endif
 
-#if defined(FEATURE_APPX_BINDER) && defined(FEATURE_HOSTED_BINDER)
+#if defined(FEATURE_APPX_BINDER)
 #include "appxutil.h"
 #include "clrprivbinderappx.h"
 #endif
 
-#ifdef FEATURE_HOSTED_BINDER
 #include "clrprivtypecachewinrt.h"
-#endif
 
 #ifndef FEATURE_CORECLR
 #include "nlsinfo.h"
@@ -3409,11 +3407,8 @@ int g_fInitializingInitialAD = 0;
 // This routine completes the initialization of the default domaine.
 // After this call mananged code can be executed.
 void SystemDomain::InitializeDefaultDomain(
-    BOOL allowRedirects
-#ifdef FEATURE_HOSTED_BINDER
-    , ICLRPrivBinder * pBinder
-#endif
-    )
+    BOOL allowRedirects,
+    ICLRPrivBinder * pBinder)
 {
     STANDARD_VM_CONTRACT;
 
@@ -3474,7 +3469,6 @@ void SystemDomain::InitializeDefaultDomain(
 
     AppDomain* pDefaultDomain = SystemDomain::System()->DefaultDomain();
 
-#ifdef FEATURE_HOSTED_BINDER
     if (pBinder != nullptr)
     {
         pDefaultDomain->SetLoadContextHostBinder(pBinder);
@@ -3486,7 +3480,6 @@ void SystemDomain::InitializeDefaultDomain(
             pDefaultDomain->SetLoadContextHostBinder(pAppXBinder);
         }
     #endif
-#endif
 
     {
         GCX_COOP();
@@ -5066,7 +5059,6 @@ void AppDomain::Init()
     SetStage( STAGE_CREATING);
 
 
-#ifdef FEATURE_HOSTED_BINDER
     // The lock is taken also during stack walking (GC or profiler)
     //  - To prevent deadlock with GC thread, we cannot trigger GC while holding the lock
     //  - To prevent deadlock with profiler thread, we cannot allow thread suspension
@@ -5076,7 +5068,6 @@ void AppDomain::Init()
                     | CRST_DEBUGGER_THREAD 
                     INDEBUG(| CRST_DEBUG_ONLY_CHECK_FORBID_SUSPEND_THREAD)));
     m_crstHostAssemblyMapAdd.Init(CrstHostAssemblyMapAdd);
-#endif //FEATURE_HOSTED_BINDER
 
     m_dwId = SystemDomain::GetNewAppDomainId(this);
 
@@ -7637,7 +7628,6 @@ DomainAssembly * AppDomain::FindAssembly(PEAssembly * pFile, FindAssemblyOptions
 
     const bool includeFailedToLoad = (options & FindAssemblyOptions_IncludeFailedToLoad) != 0;
 
-#ifdef FEATURE_HOSTED_BINDER
     if (pFile->HasHostAssembly())
     {
         DomainAssembly * pDA = FindAssembly(pFile->GetHostAssembly());
@@ -7647,7 +7637,6 @@ DomainAssembly * AppDomain::FindAssembly(PEAssembly * pFile, FindAssemblyOptions
         }
         return nullptr;
     }
-#endif
 
     AssemblyIterator i = IterateAssembliesEx((AssemblyIterationFlags)(
         kIncludeLoaded | 
@@ -8194,7 +8183,6 @@ BOOL AppDomain::PostBindResolveAssembly(AssemblySpec  *pPrePolicySpec,
     return fFailure;
 }
 
-#ifdef FEATURE_HOSTED_BINDER
 //----------------------------------------------------------------------------------------
 // Helper class for hosted binder
 
@@ -8477,7 +8465,6 @@ AppDomain::BindHostedPrivAssembly(
 
     return S_OK;
 } // AppDomain::BindHostedPrivAssembly
-#endif // FEATURE_HOSTED_BINDER
 
 //---------------------------------------------------------------------------------------------------------------------
 PEAssembly * AppDomain::BindAssemblySpec(
@@ -8498,7 +8485,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
 
     BOOL fForceReThrow = FALSE;
 
-#if defined(FEATURE_HOSTED_BINDER) && defined(FEATURE_APPX_BINDER)
+#if defined(FEATURE_APPX_BINDER)
     //
     // If there is a host binder available and this is an unparented bind within the
     // default load context, then the bind will be delegated to the domain-wide host
@@ -8626,8 +8613,8 @@ EndTry1:;
         return pAssembly.Extract();
     }
     else
-#endif //FEATURE_HOSTED_BINDER && FEATURE_APPX_BINDER
-#if defined(FEATURE_HOSTED_BINDER) && defined(FEATURE_COMINTEROP)
+#endif // FEATURE_APPX_BINDER
+#if defined(FEATURE_COMINTEROP)
     // Handle WinRT assemblies in the classic/hybrid scenario. If this is an AppX process,
     // then this case will be handled by the previous block as part of the full set of
     // available binding hosts.
@@ -8709,7 +8696,7 @@ EndTry2:;
         return pAssembly.Extract();
     }
     else
-#endif // FEATURE_HOSTED_BINDER && FEATURE_COMINTEROP
+#endif // FEATURE_COMINTEROP
     if (pSpec->HasUniqueIdentity())
     {
         HRESULT hrBindResult = S_OK;
@@ -14625,7 +14612,6 @@ TypeEquivalenceHashTable * AppDomain::GetTypeEquivalenceCache()
 
 #endif //FEATURE_TYPEEQUIVALENCE
 
-#if defined(FEATURE_HOSTED_BINDER)
 #if !defined(DACCESS_COMPILE)
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -14834,8 +14820,6 @@ PTR_DomainAssembly AppDomain::FindAssembly(PTR_ICLRPrivAssembly pHostAssembly)
         }
     }
 }
-
-#endif //FEATURE_HOSTED_BINDER
 
 #if !defined(DACCESS_COMPILE) && defined(FEATURE_CORECLR) && defined(FEATURE_NATIVE_IMAGE_GENERATION)
 
