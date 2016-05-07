@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.22609.0
+VisualStudioVersion = 14.0.25123.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.SecureString", "src\System.Security.SecureString.csproj", "{A958BBDD-3238-4E58-AB7F-390AB6D88233}"
 EndProject
@@ -14,34 +14,24 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.SecureStrin
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Linux_Debug|Any CPU = Linux_Debug|Any CPU
-		Linux_Release|Any CPU = Linux_Release|Any CPU
-		OSX_Debug|Any CPU = OSX_Debug|Any CPU
-		OSX_Release|Any CPU = OSX_Release|Any CPU
+		Unix_Debug|Any CPU = Unix_Debug|Any CPU
+		Unix_Release|Any CPU = Unix_Release|Any CPU
 		Windows_Debug|Any CPU = Windows_Debug|Any CPU
 		Windows_Release|Any CPU = Windows_Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{A958BBDD-3238-4E58-AB7F-390AB6D88233}.Linux_Debug|Any CPU.ActiveCfg = Linux_Debug|Any CPU
-		{A958BBDD-3238-4E58-AB7F-390AB6D88233}.Linux_Debug|Any CPU.Build.0 = Linux_Debug|Any CPU
-		{A958BBDD-3238-4E58-AB7F-390AB6D88233}.Linux_Release|Any CPU.ActiveCfg = Linux_Release|Any CPU
-		{A958BBDD-3238-4E58-AB7F-390AB6D88233}.Linux_Release|Any CPU.Build.0 = Linux_Release|Any CPU
-		{A958BBDD-3238-4E58-AB7F-390AB6D88233}.OSX_Debug|Any CPU.ActiveCfg = OSX_Debug|Any CPU
-		{A958BBDD-3238-4E58-AB7F-390AB6D88233}.OSX_Debug|Any CPU.Build.0 = OSX_Debug|Any CPU
-		{A958BBDD-3238-4E58-AB7F-390AB6D88233}.OSX_Release|Any CPU.ActiveCfg = OSX_Release|Any CPU
-		{A958BBDD-3238-4E58-AB7F-390AB6D88233}.OSX_Release|Any CPU.Build.0 = OSX_Release|Any CPU
+		{A958BBDD-3238-4E58-AB7F-390AB6D88233}.Unix_Debug|Any CPU.ActiveCfg = Unix_Debug|Any CPU
+		{A958BBDD-3238-4E58-AB7F-390AB6D88233}.Unix_Debug|Any CPU.Build.0 = Unix_Debug|Any CPU
+		{A958BBDD-3238-4E58-AB7F-390AB6D88233}.Unix_Release|Any CPU.ActiveCfg = Unix_Release|Any CPU
+		{A958BBDD-3238-4E58-AB7F-390AB6D88233}.Unix_Release|Any CPU.Build.0 = Unix_Release|Any CPU
 		{A958BBDD-3238-4E58-AB7F-390AB6D88233}.Windows_Debug|Any CPU.ActiveCfg = Windows_Debug|Any CPU
 		{A958BBDD-3238-4E58-AB7F-390AB6D88233}.Windows_Debug|Any CPU.Build.0 = Windows_Debug|Any CPU
 		{A958BBDD-3238-4E58-AB7F-390AB6D88233}.Windows_Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
 		{A958BBDD-3238-4E58-AB7F-390AB6D88233}.Windows_Release|Any CPU.Build.0 = Windows_Release|Any CPU
-		{69609238-62C7-479D-A8CE-709F41101D3C}.Linux_Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{69609238-62C7-479D-A8CE-709F41101D3C}.Linux_Debug|Any CPU.Build.0 = Debug|Any CPU
-		{69609238-62C7-479D-A8CE-709F41101D3C}.Linux_Release|Any CPU.ActiveCfg = Release|Any CPU
-		{69609238-62C7-479D-A8CE-709F41101D3C}.Linux_Release|Any CPU.Build.0 = Release|Any CPU
-		{69609238-62C7-479D-A8CE-709F41101D3C}.OSX_Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{69609238-62C7-479D-A8CE-709F41101D3C}.OSX_Debug|Any CPU.Build.0 = Debug|Any CPU
-		{69609238-62C7-479D-A8CE-709F41101D3C}.OSX_Release|Any CPU.ActiveCfg = Release|Any CPU
-		{69609238-62C7-479D-A8CE-709F41101D3C}.OSX_Release|Any CPU.Build.0 = Release|Any CPU
+		{69609238-62C7-479D-A8CE-709F41101D3C}.Unix_Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{69609238-62C7-479D-A8CE-709F41101D3C}.Unix_Debug|Any CPU.Build.0 = Debug|Any CPU
+		{69609238-62C7-479D-A8CE-709F41101D3C}.Unix_Release|Any CPU.ActiveCfg = Release|Any CPU
+		{69609238-62C7-479D-A8CE-709F41101D3C}.Unix_Release|Any CPU.Build.0 = Release|Any CPU
 		{69609238-62C7-479D-A8CE-709F41101D3C}.Windows_Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{69609238-62C7-479D-A8CE-709F41101D3C}.Windows_Debug|Any CPU.Build.0 = Debug|Any CPU
 		{69609238-62C7-479D-A8CE-709F41101D3C}.Windows_Release|Any CPU.ActiveCfg = Release|Any CPU

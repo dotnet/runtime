@@ -1,7 +1,9 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace System.Security
 {
@@ -12,38 +14,32 @@ namespace System.Security
         private bool _readOnly;
         private int _decryptedLength;
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe SecureString()
         {
             InitializeSecureString(null, 0);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [CLSCompliant(false)]
         public unsafe SecureString(char* value, int length)
         {
             if (value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
-
             if (length < 0)
             {
-                throw new ArgumentOutOfRangeException("length", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
-
             if (length > MaxLength)
             {
-                throw new ArgumentOutOfRangeException("length", SR.ArgumentOutOfRange_Length);
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_Length);
             }
 
-            // Refactored since HandleProcessCorruptedStateExceptionsAttribute applies to methods only (yet).
             InitializeSecureString(value, length);
         }
 
         public int Length
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 lock (_methodLock)
@@ -54,7 +50,6 @@ namespace System.Security
             }
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public void AppendChar(char c)
         {
             lock (_methodLock)
@@ -66,7 +61,6 @@ namespace System.Security
         }
 
         // clears the current contents. Only available if writable
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public void Clear()
         {
             lock (_methodLock)
@@ -78,7 +72,6 @@ namespace System.Security
         }
 
         // Do a deep-copy of the SecureString 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public SecureString Copy()
         {
             lock (_methodLock)
@@ -88,7 +81,6 @@ namespace System.Security
             }
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public void Dispose()
         {
             lock (_methodLock)
@@ -97,14 +89,13 @@ namespace System.Security
             }
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public void InsertAt(int index, char c)
         {
             lock (_methodLock)
             {
                 if (index < 0 || index > _decryptedLength)
                 {
-                    throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_IndexString);
+                    throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexString);
                 }
 
                 EnsureNotDisposed();
@@ -114,7 +105,6 @@ namespace System.Security
             }
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public bool IsReadOnly()
         {
             lock (_methodLock)
@@ -124,7 +114,6 @@ namespace System.Security
             }
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public void MakeReadOnly()
         {
             lock (_methodLock)
@@ -134,7 +123,6 @@ namespace System.Security
             }
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public void RemoveAt(int index)
         {
             lock (_methodLock)
@@ -144,21 +132,20 @@ namespace System.Security
 
                 if (index < 0 || index >= _decryptedLength)
                 {
-                    throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_IndexString);
+                    throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexString);
                 }
 
                 RemoveAtCore(index);
             }
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public void SetAt(int index, char c)
         {
             lock (_methodLock)
             {
                 if (index < 0 || index >= _decryptedLength)
                 {
-                    throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_IndexString);
+                    throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexString);
                 }
                 Debug.Assert(index <= Int32.MaxValue / sizeof(char));
 
@@ -177,13 +164,24 @@ namespace System.Security
             }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
-        internal unsafe IntPtr ToUniStr()
+        internal unsafe IntPtr MarshalToString(bool globalAlloc, bool unicode)
         {
             lock (_methodLock)
             {
                 EnsureNotDisposed();
-                return ToUniStrCore();
+                return MarshalToStringCore(globalAlloc, unicode);
+            }
+        }
+
+        private static void MarshalFree(IntPtr ptr, bool globalAlloc)
+        {
+            if (globalAlloc)
+            {
+                Marshal.FreeHGlobal(ptr);
+            }
+            else
+            {
+                Marshal.FreeCoTaskMem(ptr);
             }
         }
     }
