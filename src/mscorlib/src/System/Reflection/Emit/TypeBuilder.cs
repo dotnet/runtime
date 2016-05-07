@@ -228,7 +228,7 @@ namespace System.Reflection.Emit {
             if (attr != null)
             {
                 localAttr = new byte[attr.Length];
-                Array.Copy(attr, localAttr, attr.Length);
+                Buffer.BlockCopy(attr, 0, localAttr, 0, attr.Length);
             }
 
             DefineCustomAttribute(module.GetNativeHandle(), tkAssociate, tkConstructor, 

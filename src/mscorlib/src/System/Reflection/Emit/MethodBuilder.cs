@@ -153,7 +153,7 @@ namespace System.Reflection.Emit
             if (parameterTypes != null)
             {
                 m_parameterTypes = new Type[parameterTypes.Length];
-                Array.Copy(parameterTypes, m_parameterTypes, parameterTypes.Length);
+                Array.Copy(parameterTypes, 0, m_parameterTypes, 0, parameterTypes.Length);
             }
             else
             {
@@ -831,7 +831,7 @@ namespace System.Reflection.Emit
             if (parameterTypes != null)
             {
                 m_parameterTypes = new Type[parameterTypes.Length];
-                Array.Copy (parameterTypes, m_parameterTypes, parameterTypes.Length);
+                Array.Copy (parameterTypes, 0, m_parameterTypes, 0, parameterTypes.Length);
             }
 
             m_returnTypeRequiredCustomModifiers = returnTypeRequiredCustomModifiers;
@@ -1085,7 +1085,7 @@ namespace System.Reflection.Emit
             }
 
             m_ubBody = new byte[count];
-            Array.Copy(il,m_ubBody,count);
+            Buffer.BlockCopy(il, 0, m_ubBody, 0, count);
 
             m_localSignature = null;
             m_exceptions = null;
@@ -1300,7 +1300,7 @@ namespace System.Reflection.Emit
             else if (m_iNameSpaceCount == m_namespace.Length)
             {
                 String [] strTemp = new String [checked(m_iNameSpaceCount * 2)];
-                Array.Copy(m_namespace, strTemp, m_iNameSpaceCount);
+                Array.Copy(m_namespace, 0, strTemp, 0, m_iNameSpaceCount);
                 m_namespace = strTemp;
             }
         }
@@ -1322,23 +1322,23 @@ namespace System.Reflection.Emit
                 // why aren't we just using lists here?
                 int newSize = checked(m_iLocalSymCount * 2);
                 int[] temp = new int [newSize];
-                Array.Copy(m_iLocalSlot, temp, m_iLocalSymCount);
+                Array.Copy(m_iLocalSlot, 0, temp, 0, m_iLocalSymCount);
                 m_iLocalSlot = temp;
 
                 temp = new int [newSize];
-                Array.Copy(m_iStartOffset, temp, m_iLocalSymCount);
+                Array.Copy(m_iStartOffset, 0, temp, 0, m_iLocalSymCount);
                 m_iStartOffset = temp;
 
                 temp = new int [newSize];
-                Array.Copy(m_iEndOffset, temp, m_iLocalSymCount);
+                Array.Copy(m_iEndOffset, 0, temp, 0, m_iLocalSymCount);
                 m_iEndOffset = temp;
 
                 String [] strTemp = new String [newSize];
-                Array.Copy(m_strName, strTemp, m_iLocalSymCount);
+                Array.Copy(m_strName, 0, strTemp, 0, m_iLocalSymCount);
                 m_strName = strTemp;
 
                 byte[][] ubTemp = new byte[newSize][];
-                Array.Copy(m_ubSignature, ubTemp, m_iLocalSymCount);
+                Array.Copy(m_ubSignature, 0, ubTemp, 0, m_iLocalSymCount);
                 m_ubSignature = ubTemp;
 
             }
