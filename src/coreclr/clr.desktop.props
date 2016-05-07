@@ -44,7 +44,6 @@
     <FeatureFusion>true</FeatureFusion>
     <FeatureHijack>true</FeatureHijack>
     <FeatureHosting>true</FeatureHosting>
-    <FeatureHostedBinder>true</FeatureHostedBinder>
     <FeatureIdentityReference>true</FeatureIdentityReference>
     <FeatureImpersonation>true</FeatureImpersonation>
     <FeatureIncludeAllInterfaces>true</FeatureIncludeAllInterfaces>

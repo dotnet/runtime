@@ -2102,7 +2102,7 @@ HRESULT RuntimeGetILFingerprintForPath(LPCWSTR path, IILFingerprint **ppFingerpr
 #endif //!DACCESS_COMPILE
 #endif //FEATURE_FUSION
 
-#if defined(FEATURE_HOSTED_BINDER) && !defined(DACCESS_COMPILE)
+#if !defined(DACCESS_COMPILE)
 PEImage * PEImage::OpenImage(
     ICLRPrivResource * pIResource,
     MDInternalImportFlags flags)

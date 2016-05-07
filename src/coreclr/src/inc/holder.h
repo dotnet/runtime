@@ -108,7 +108,7 @@ struct AutoExpVisibleValue
         const class AssemblyLocation                        *_asAssemblyLocation;
 #endif //FEATURE_FUSION
 
-#if defined(FEATURE_HOSTED_BINDER) && defined(FEATURE_APPX)
+#if defined(FEATURE_APPX)
         const class AppXBindResultImpl                      *_asAppXBindResultImpl;
 #endif
 

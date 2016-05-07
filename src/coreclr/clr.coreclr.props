@@ -71,7 +71,6 @@
     <FeatureWindowsPhone>true</FeatureWindowsPhone>
     <FeatureManagedEtw>true</FeatureManagedEtw>
     <FeatureManagedEtwChannels>true</FeatureManagedEtwChannels>
-    <FeatureHostedBinder>true</FeatureHostedBinder>
     <BinderDebugLog Condition="'$(_BuildType)'=='dbg'">true</BinderDebugLog>
     <FeatureAppX>true</FeatureAppX>
     <FeatureWinMDResilient>true</FeatureWinMDResilient>

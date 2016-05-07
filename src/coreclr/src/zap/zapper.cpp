@@ -2280,7 +2280,7 @@ void Zapper::ComputeDependenciesInCurrentDomain(LPCWSTR pAssemblyString, CORCOMP
     }
     else
     {
-#if defined(FEATURE_HOSTED_BINDER) && defined(FEATURE_APPX) && !defined(FEATURE_CORECLR)
+#if defined(FEATURE_APPX) && !defined(FEATURE_CORECLR)
         if (m_pOpt->m_fAutoNGen)
         {
             // Make sure we're not been spoofed into loading an assembly that might be unsafe to load.
