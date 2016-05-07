@@ -8,7 +8,6 @@
 // 
 //=====================================================================================================================
 
-#ifdef FEATURE_HOSTED_BINDER
 #ifdef FEATURE_REFLECTION_ONLY_LOAD
 
 #pragma once
@@ -294,4 +293,3 @@ private:
 };  // class CLRPrivAssemblyReflectionOnlyWinRT
 
 #endif //FEATURE_REFLECTION_ONLY_LOAD
-#endif //FEATURE_HOSTED_BINDER

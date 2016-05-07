@@ -1880,9 +1880,7 @@ void QCALLTYPE RuntimeTypeHandle::GetTypeByNameUsingCARules(LPCWSTR pwzClassName
 
 void QCALLTYPE RuntimeTypeHandle::GetTypeByName(LPCWSTR pwzClassName, BOOL bThrowOnError, BOOL bIgnoreCase, BOOL bReflectionOnly,
                                                 QCall::StackCrawlMarkHandle pStackMark, 
-#ifdef FEATURE_HOSTED_BINDER
                                                 ICLRPrivBinder * pPrivHostBinder,
-#endif
                                                 BOOL bLoadTypeFromPartialNameHack, QCall::ObjectHandleOnStack retType,
                                                 QCall::ObjectHandleOnStack keepAlive)
 {
@@ -1897,11 +1895,8 @@ void QCALLTYPE RuntimeTypeHandle::GetTypeByName(LPCWSTR pwzClassName, BOOL bThro
 
     {
         typeHandle = TypeName::GetTypeManaged(pwzClassName, NULL, bThrowOnError, bIgnoreCase, bReflectionOnly, /*bProhibitAsmQualifiedName =*/ FALSE, pStackMark,
-                                              bLoadTypeFromPartialNameHack, (OBJECTREF*)keepAlive.m_ppObject
-#ifdef FEATURE_HOSTED_BINDER
-                                              , pPrivHostBinder
-#endif
-            );
+                                              bLoadTypeFromPartialNameHack, (OBJECTREF*)keepAlive.m_ppObject,
+                                              pPrivHostBinder);
     }
 
     if (!typeHandle.IsNull())
