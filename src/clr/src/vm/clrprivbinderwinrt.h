@@ -9,8 +9,6 @@
 // 
 //=============================================================================================
 
-#ifdef FEATURE_HOSTED_BINDER
-
 #pragma once
 
 #include "holder.h"
@@ -463,5 +461,3 @@ private:
     BOOL m_fShareable;
     Volatile<DWORD> m_dwImageTypes;
 };  // class CLRPrivAssemblyWinRT
-
-#endif //FEATURE_HOSTED_BINDER

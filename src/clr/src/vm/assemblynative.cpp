@@ -52,7 +52,7 @@
 #include "assemblynativeresource.h"
 #endif // !FEATURE_CORECLR
 
-#if defined(FEATURE_HOSTED_BINDER) && !defined(FEATURE_CORECLR)
+#if !defined(FEATURE_CORECLR)
 #include "clrprivbinderloadfile.h" 
 #endif
 
@@ -137,7 +137,6 @@ FCIMPL1(FC_BOOL_RET, AssemblyNative::IsNewPortableAssembly, AssemblyNameBaseObje
 FCIMPLEND
 #endif // FEATURE_FUSION
 
-#ifdef FEATURE_HOSTED_BINDER
 FCIMPL9(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAFE, 
         StringObject* codeBaseUNSAFE, 
         Object* securityUNSAFE, 
@@ -147,16 +146,6 @@ FCIMPL9(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAF
         CLR_BOOL fThrowOnFileNotFound,
         CLR_BOOL fForIntrospection,
         CLR_BOOL fSuppressSecurityChecks)
-#else // !FEATURE_HOSTED_BINDER
-FCIMPL8(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAFE, 
-        StringObject* codeBaseUNSAFE, 
-        Object* securityUNSAFE, 
-        AssemblyBaseObject* requestingAssemblyUNSAFE,
-        StackCrawlMark* stackMark,
-        CLR_BOOL fThrowOnFileNotFound,
-        CLR_BOOL fForIntrospection,
-        CLR_BOOL fSuppressSecurityChecks)
-#endif // FEATURE_HOSTED_BINDER
 {
     FCALL_CONTRACT;
 
@@ -200,11 +189,9 @@ FCIMPL8(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAF
     }
     else if (!fForIntrospection)
     {
-#ifdef FEATURE_HOSTED_BINDER
         // name specified, if immersive ignore the codebase
         if (GetThread()->GetDomain()->HasLoadContextHostBinder())
             gc.codeBase = NULL;
-#endif //FEATURE_HOSTED_BINDER
 
         // Compute parent assembly
         Assembly * pRefAssembly;
@@ -243,13 +230,11 @@ FCIMPL8(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAF
         EEFileLoadException::Throw(&spec, COR_E_NOTSUPPORTED);
     }
     
-#ifdef FEATURE_HOSTED_BINDER
     if (pPrivHostBinder != NULL)
     {
         pParentAssembly = NULL;
         spec.SetHostBinder(pPrivHostBinder);
     }
-#endif // FEATURE_HOSTED_BINDER
     
     if (gc.codeBase != NULL)
         spec.SetCodeBase(&(pThread->m_MarshalAlloc), &gc.codeBase);
@@ -385,12 +370,12 @@ Assembly* AssemblyNative::LoadFromBuffer(BOOL fForIntrospection, const BYTE* pAs
 
         CLRPrivBinderLoadFile* pBinderToUse = NULL;
 
-#if defined(FEATURE_HOSTED_BINDER) && !defined(FEATURE_CORECLR)
+#if !defined(FEATURE_CORECLR)
         if (GetAppDomain()->HasLoadContextHostBinder())
         {
             pBinderToUse = CLRPrivBinderLoadFile::GetOrCreateBinder();
         }
-#endif //  FEATURE_HOSTED_BINDER && !FEATURE_CORECLR
+#endif // !FEATURE_CORECLR
 
         pFile = PEAssembly::OpenMemory(pCallersAssembly->GetManifestFile(),
                                                   pAssemblyData, (COUNT_T)uAssemblyLength, 

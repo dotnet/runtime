@@ -5384,9 +5384,7 @@ TypeHandle GetWinRTType(SString* ssTypeName, BOOL bThrowIfNotFound)
 
     SString ssAssemblyName(SString::Utf8Literal, "WindowsRuntimeAssemblyName, ContentType=WindowsRuntime");
     DomainAssembly *pAssembly = LoadDomainAssembly(&ssAssemblyName, NULL, 
-#ifdef FEATURE_HOSTED_BINDER
                                                    NULL, 
-#endif
                                                    bThrowIfNotFound, FALSE, ssTypeName);
     if (pAssembly != NULL)
     {

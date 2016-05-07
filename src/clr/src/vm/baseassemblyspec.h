@@ -33,9 +33,7 @@ protected:
 #endif
     LPCSTR                      m_szWinRtTypeNamespace;
     LPCSTR                      m_szWinRtTypeClassName;
-#ifdef FEATURE_HOSTED_BINDER
     ICLRPrivBinder             *m_pHostBinder;
-#endif
     int                         m_ownedFlags;
     BOOL                        m_fIntrospectionOnly;
 #if defined(FEATURE_CORECLR)

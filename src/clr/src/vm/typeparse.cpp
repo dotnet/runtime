@@ -1146,9 +1146,7 @@ TypeHandle TypeName::GetTypeUsingCASearchRules(LPCWSTR szTypeName, Assembly *pRe
         /*fProhibitAsmQualifiedName = */ FALSE, 
         NULL, 
         pRequestingAssembly, 
-#ifdef FEATURE_HOSTED_BINDER
         nullptr,
-#endif
         FALSE,
         &keepAlive);        
 
@@ -1189,11 +1187,8 @@ TypeHandle TypeName::GetTypeUsingCASearchRules(LPCWSTR szTypeName, Assembly *pRe
     BOOL bProhibitAsmQualifiedName,
     StackCrawlMark* pStackMark, 
     BOOL bLoadTypeFromPartialNameHack,
-    OBJECTREF *pKeepAlive
-#ifdef FEATURE_HOSTED_BINDER
-    , ICLRPrivBinder * pPrivHostBinder
-#endif
-    )
+    OBJECTREF *pKeepAlive,
+    ICLRPrivBinder * pPrivHostBinder)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1242,9 +1237,7 @@ TypeHandle TypeName::GetTypeUsingCASearchRules(LPCWSTR szTypeName, Assembly *pRe
         bProhibitAsmQualifiedName, 
         pStackMark, 
         NULL, 
-#ifdef FEATURE_HOSTED_BINDER
         pPrivHostBinder,
-#endif
         bLoadTypeFromPartialNameHack,
         pKeepAlive);      
 
@@ -1275,9 +1268,7 @@ TypeHandle TypeName::GetTypeUsingCASearchRules(LPCWSTR szTypeName, Assembly *pRe
             bProhibitAsmQualifiedName, 
             pStackMark, 
             NULL, 
-#ifdef FEATURE_HOSTED_BINDER
             pPrivHostBinder,
-#endif
             bLoadTypeFromPartialNameHack,
             pKeepAlive);      
     }
@@ -1336,9 +1327,7 @@ TypeHandle TypeName::GetTypeUsingCASearchRules(LPCWSTR szTypeName, Assembly *pRe
     }
 
     return pTypeName->GetTypeWorker(bThrowIfNotFound, /*bIgnoreCase = */FALSE, pAssembly->IsIntrospectionOnly(), pAssembly, /*fEnableCASearchRules = */FALSE, FALSE, NULL, NULL, 
-#ifdef FEATURE_HOSTED_BINDER
         nullptr, // pPrivHostBinder
-#endif
         FALSE, NULL /* cannot find a collectible type unless it is in assembly */);
 
 
@@ -1410,9 +1399,7 @@ TypeHandle TypeName::GetTypeFromAsm(BOOL bForIntrospection)
         FALSE, 
         NULL, 
         NULL, 
-#ifdef FEATURE_HOSTED_BINDER
         nullptr, // pPrivHostBinder
-#endif
         FALSE, 
         NULL /* cannot find a collectible type */);
 }
@@ -1436,9 +1423,7 @@ TypeHandle TypeName::GetTypeFromAsm(BOOL bForIntrospection)
     BOOL bProhibitAsmQualifiedName,
     StackCrawlMark* pStackMark, 
     Assembly* pRequestingAssembly, 
-#ifdef FEATURE_HOSTED_BINDER
     ICLRPrivBinder * pPrivHostBinder,
-#endif
     BOOL bLoadTypeFromPartialNameHack,
     OBJECTREF *pKeepAlive)
 {
@@ -1506,9 +1491,7 @@ TypeHandle TypeName::GetTypeFromAsm(BOOL bForIntrospection)
             EX_TRY
             {
                 DomainAssembly *pDomainAssembly = LoadDomainAssembly(GetAssembly(), pRequestingAssembly, 
-#ifdef FEATURE_HOSTED_BINDER
                                                                      pPrivHostBinder,
-#endif
                                                                      bThrowIfNotFound, bIntrospectionOnly, pssOuterTypeName);
                 if (pDomainAssembly)
                 {
@@ -1524,9 +1507,7 @@ TypeHandle TypeName::GetTypeFromAsm(BOOL bForIntrospection)
         else
         {
             DomainAssembly *pDomainAssembly = LoadDomainAssembly(GetAssembly(), pRequestingAssembly, 
-#ifdef FEATURE_HOSTED_BINDER
                                                                  pPrivHostBinder,
-#endif
                                                                  bThrowIfNotFound, bIntrospectionOnly, pssOuterTypeName);
             if (pDomainAssembly)
             {
@@ -1633,9 +1614,7 @@ TypeHandle TypeName::GetTypeFromAsm(BOOL bForIntrospection)
             TypeHandle thGenericArg = m_genericArguments[i]->GetTypeWorker(
                 bThrowIfNotFound, bIgnoreCase, bIntrospectionOnly, 
                 pAssemblyGetType, fEnableCASearchRules, bProhibitAsmQualifiedName, pStackMark, pRequestingAssembly, 
-#ifdef FEATURE_HOSTED_BINDER
                 pPrivHostBinder,
-#endif
                 bLoadTypeFromPartialNameHack, 
                 (pKeepAlive != NULL) ? &gc.keepAlive : NULL /* Only pass a keepalive parameter if we were passed a keepalive parameter */);
 
@@ -1884,9 +1863,7 @@ DomainAssembly* LoadAssemblyFromPartialNameHack(SString* psszAssemblySpec, BOOL 
 DomainAssembly * LoadDomainAssembly(
     SString *  psszAssemblySpec, 
     Assembly * pRequestingAssembly, 
-#ifdef FEATURE_HOSTED_BINDER
     ICLRPrivBinder * pPrivHostBinder,
-#endif
     BOOL       bThrowIfNotFound, 
     BOOL       bIntrospectionOnly, 
     SString *  pssOuterTypeName)
@@ -1915,14 +1892,11 @@ DomainAssembly * LoadDomainAssembly(
         spec.SetWindowsRuntimeType(*pssOuterTypeName);
     }
     
-#ifdef FEATURE_HOSTED_BINDER
     if (pPrivHostBinder)
     {
         spec.SetHostBinder(pPrivHostBinder);
     }
-    else 
-#endif
-    if (pRequestingAssembly && (!pRequestingAssembly->IsDomainNeutral()) && (!pRequestingAssembly->IsCollectible())) 
+    else if (pRequestingAssembly && (!pRequestingAssembly->IsDomainNeutral()) && (!pRequestingAssembly->IsCollectible())) 
     {
         GCX_PREEMP();
         spec.SetParentAssembly(pRequestingAssembly->GetDomainAssembly());

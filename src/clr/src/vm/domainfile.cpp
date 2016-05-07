@@ -1901,13 +1901,11 @@ DomainAssembly::~DomainAssembly()
     }
     CONTRACTL_END;
 
-    #ifdef FEATURE_HOSTED_BINDER
     if (m_fHostAssemblyPublished)
     {
         // Remove association first.
         GetAppDomain()->UnPublishHostedAssembly(this);
     }
-    #endif
 
     ModuleIterator i = IterateModules(kModIterIncludeLoading);
     while (i.Next())
@@ -2273,11 +2271,9 @@ void DomainAssembly::Begin()
         AppDomain::LoadLockHolder lock(m_pDomain);
         m_pDomain->AddAssembly(this);
     }
-#ifdef FEATURE_HOSTED_BINDER
     // Make it possible to find this DomainAssembly object from associated ICLRPrivAssembly.
     GetAppDomain()->PublishHostedAssembly(this);
     m_fHostAssemblyPublished = true;
-#endif
 }
 
 #ifdef FEATURE_PREJIT
@@ -2331,11 +2327,8 @@ void DomainAssembly::FindNativeImage()
 #ifdef FEATURE_FUSION
     DomainAssembly * pDomainAssembly = GetDomainAssembly();
     if (pDomainAssembly->GetSecurityDescriptor()->HasAdditionalEvidence() ||
-        !(pDomainAssembly->GetFile()->IsContextLoad()
-#ifdef FEATURE_HOSTED_BINDER
-        || pDomainAssembly->GetFile()->HasHostAssembly()
-#endif
-        ))
+        !(pDomainAssembly->GetFile()->IsContextLoad() ||
+        pDomainAssembly->GetFile()->HasHostAssembly()))
     {
         m_pFile->SetCannotUseNativeImage();
     }
@@ -2895,12 +2888,10 @@ Retry:
     fInsertIntoAssemblySpecBindingCache = GetFile()->GetLoadContext() == LOADCTX_TYPE_DEFAULT;
 #endif
     
-#if defined(FEATURE_HOSTED_BINDER)
 #if defined(FEATURE_APPX_BINDER)
     fInsertIntoAssemblySpecBindingCache = fInsertIntoAssemblySpecBindingCache && !GetFile()->HasHostAssembly();
 #else
     fInsertIntoAssemblySpecBindingCache = fInsertIntoAssemblySpecBindingCache && GetFile()->CanUseWithBindingCache();
-#endif
 #endif
 
     if (fInsertIntoAssemblySpecBindingCache)

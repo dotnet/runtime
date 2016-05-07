@@ -50,7 +50,7 @@
 #include "winrttypenameconverter.h"
 #endif
 
-#if defined(FEATURE_HOSTED_BINDER) && defined(FEATURE_APPX_BINDER)
+#if defined(FEATURE_APPX_BINDER)
 #include "clrprivbinderappx.h"
 #include "clrprivtypecachewinrt.h"
 #endif
@@ -1545,7 +1545,6 @@ HRESULT CorHost2::ExecuteInAppDomain(DWORD dwAppDomainId,
     return hr;
 }
 
-#if defined(FEATURE_CORECLR) || defined(FEATURE_HOSTED_BINDER)
 #define EMPTY_STRING_TO_NULL(s) {if(s && s[0] == 0) {s=NULL;};}
 
 HRESULT CorHost2::_CreateAppDomain(
@@ -1556,7 +1555,7 @@ HRESULT CorHost2::_CreateAppDomain(
     int nProperties, 
     LPCWSTR* pPropertyNames, 
     LPCWSTR* pPropertyValues,
-#if defined(FEATURE_HOSTED_BINDER) && !defined(FEATURE_CORECLR)
+#if !defined(FEATURE_CORECLR)
     ICLRPrivBinder* pBinder,
 #endif
     DWORD* pAppDomainID)
@@ -1632,7 +1631,7 @@ HRESULT CorHost2::_CreateAppDomain(
     if (dwFlags & APPDOMAIN_FORCE_TRIVIAL_WAIT_OPERATIONS)
         pDomain->SetForceTrivialWaitOperations();
 
-#if defined(FEATURE_HOSTED_BINDER) && !defined(FEATURE_CORECLR)
+#if !defined(FEATURE_CORECLR)
     if (pBinder != NULL)
         pDomain->SetLoadContextHostBinder(pBinder);
 #endif
@@ -1874,8 +1873,6 @@ HRESULT CorHost2::_CreateDelegate(
 
     return hr;
 }
-
-#endif // defined(FEATURE_CORECLR) || defined(FEATURE_HOSTED_BINDER)
 
 #ifdef FEATURE_CORECLR
 HRESULT CorHost2::CreateAppDomainWithManager(
@@ -2259,7 +2256,7 @@ STARTUP_FLAGS CorHost2::GetStartupFlags()
 
 #ifndef DACCESS_COMPILE
 
-#if defined(FEATURE_HOSTED_BINDER) && !defined(FEATURE_CORECLR)
+#if !defined(FEATURE_CORECLR)
 /*************************************************************************************
  ** ICLRPrivRuntime Methods
  *************************************************************************************/
@@ -2508,9 +2505,6 @@ VOID CorHost2::ExecuteMainInner(Assembly* pRootAssembly)
     PAL_ENDTRY
 }
 
-#endif // FEATURE_HOSTED_BINDER
-
-#ifndef FEATURE_CORECLR
 // static
 HRESULT CorHost2::SetFlagsAndHostConfig(STARTUP_FLAGS dwStartupFlags, LPCWSTR pwzHostConfigFile, BOOL fFinalize)
 {
@@ -3666,7 +3660,7 @@ HRESULT CorHost2::QueryInterface(REFIID riid, void **ppUnk)
 
         *ppUnk = static_cast<ICLRExecutionManager *>(this);
     }
-#if defined(FEATURE_HOSTED_BINDER) && !defined(FEATURE_CORECLR)
+#if !defined(FEATURE_CORECLR)
     else if (riid == __uuidof(ICLRPrivRuntime))
     {
         ULONG version = 2;
@@ -8734,9 +8728,7 @@ HRESULT STDMETHODCALLTYPE DllGetActivationFactoryImpl(LPCWSTR wszAssemblyName,
 #ifndef FEATURE_CORECLR // coreclr uses winrt binder which does not allow redirects
     {
         BaseDomain::LockHolder lh(pDomain);
-#ifdef FEATURE_HOSTED_BINDER
         if (!pDomain->HasLoadContextHostBinder())
-#endif
         {
             // don't allow redirects
             SystemDomain::InitializeDefaultDomain(FALSE);
