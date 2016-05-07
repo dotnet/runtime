@@ -405,12 +405,8 @@ namespace System.IO
         /// <internalonly/>
         private void NotifyInternalBufferOverflowEvent()
         {
-            ErrorEventHandler handler = _onErrorHandler;
-            if (handler != null)
-            {
-                handler(this, new ErrorEventArgs(
+            _onErrorHandler?.Invoke(this, new ErrorEventArgs(
                     new InternalBufferOverflowException(SR.Format(SR.FSW_BufferOverflow, _directory))));
-            }
         }
 
         /// <devdoc>
@@ -463,11 +459,7 @@ namespace System.IO
         [SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", MessageId = "0#", Justification = "Changing from protected to private would be a breaking change")]
         protected void OnChanged(FileSystemEventArgs e)
         {
-            FileSystemEventHandler changedHandler = _onChangedHandler;
-            if (changedHandler != null)
-            {
-                changedHandler(this, e);
-            }
+            _onChangedHandler?.Invoke(this, e);
         }
 
         /// <devdoc>
@@ -476,11 +468,7 @@ namespace System.IO
         [SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", MessageId = "0#", Justification = "Changing from protected to private would be a breaking change")]
         protected void OnCreated(FileSystemEventArgs e)
         {
-            FileSystemEventHandler createdHandler = _onCreatedHandler;
-            if (createdHandler != null)
-            {
-                createdHandler(this, e);
-            }
+            _onCreatedHandler?.Invoke(this, e);
         }
 
         /// <devdoc>
@@ -489,11 +477,7 @@ namespace System.IO
         [SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", MessageId = "0#", Justification = "Changing from protected to private would be a breaking change")]
         protected void OnDeleted(FileSystemEventArgs e)
         {
-            FileSystemEventHandler deletedHandler = _onDeletedHandler;
-            if (deletedHandler != null)
-            {
-                deletedHandler(this, e);
-            }
+            _onDeletedHandler?.Invoke(this, e);
         }
 
         /// <devdoc>
@@ -502,11 +486,7 @@ namespace System.IO
         [SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", MessageId = "0#", Justification = "Changing from protected to private would be a breaking change")]
         protected void OnError(ErrorEventArgs e)
         {
-            ErrorEventHandler errorHandler = _onErrorHandler;
-            if (errorHandler != null)
-            {
-                errorHandler(this, e);
-            }
+            _onErrorHandler?.Invoke(this, e);
         }
 
         /// <devdoc>
@@ -515,11 +495,7 @@ namespace System.IO
         [SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", MessageId = "0#", Justification = "Changing from protected to private would be a breaking change")]
         protected void OnRenamed(RenamedEventArgs e)
         {
-            RenamedEventHandler renamedHandler = _onRenamedHandler;
-            if (renamedHandler != null)
-            {
-                renamedHandler(this, e);
-            }
+            _onRenamedHandler?.Invoke(this, e);
         }
 
         /// <devdoc>
