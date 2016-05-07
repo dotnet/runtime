@@ -721,11 +721,10 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory, MemberData(nameof(VerifyUploadServersStreamsAndExpectedData))]
-        public async Task PostAsync_CallMethod_StreamContent(Uri remoteServer, Stream requestContentStream, byte[] expectedData)
+        public async Task PostAsync_CallMethod_StreamContent(Uri remoteServer, HttpContent content, byte[] expectedData)
         {
             using (var client = new HttpClient())
             {
-                HttpContent content = new StreamContent(requestContentStream);
                 content.Headers.ContentMD5 = TestHelper.ComputeMD5Hash(expectedData);
 
                 using (HttpResponseMessage response = await client.PostAsync(remoteServer, content))
@@ -735,11 +734,42 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        private sealed class StreamContentWithSyncAsyncCopy : StreamContent
+        {
+            private readonly Stream _stream;
+            private readonly bool _syncCopy;
+
+            public StreamContentWithSyncAsyncCopy(Stream stream, bool syncCopy) : base(stream)
+            {
+                _stream = stream;
+                _syncCopy = syncCopy;
+            }
+
+            protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
+            {
+                if (_syncCopy)
+                {
+                    try
+                    {
+                        _stream.CopyTo(stream, 128); // arbitrary size likely to require multiple read/writes
+                        return Task.CompletedTask;
+                    }
+                    catch (Exception exc)
+                    {
+                        return Task.FromException(exc);
+                    }
+                }
+
+                return base.SerializeToStreamAsync(stream, context);
+            }
+        }
+
         public static IEnumerable<object[]> VerifyUploadServersStreamsAndExpectedData
         {
             get
             {
-                foreach (object[] serverArr in VerifyUploadServers)
+                foreach (object[] serverArr in VerifyUploadServers) // target server
+                foreach (bool syncCopy in new[] { true, false }) // force the content copy to happen via Read/Write or ReadAsync/WriteAsync
                 {
                     Uri server = (Uri)serverArr[0];
 
@@ -749,7 +779,7 @@ namespace System.Net.Http.Functional.Tests
                     // A MemoryStream
                     {
                         var memStream = new MemoryStream(data, writable: false);
-                        yield return new object[] { server, memStream, data };
+                        yield return new object[] { server, new StreamContentWithSyncAsyncCopy(memStream, syncCopy: syncCopy), data };
                     }
 
                     // A stream that provides the data synchronously and has a known length
@@ -761,7 +791,7 @@ namespace System.Net.Http.Functional.Tests
                             lengthFunc: () => wrappedMemStream.Length,
                             positionGetFunc: () => wrappedMemStream.Position,
                             readAsyncFunc: (buffer, offset, count, token) => wrappedMemStream.ReadAsync(buffer, offset, count, token));
-                        yield return new object[] { server, syncKnownLengthStream, data };
+                        yield return new object[] { server, new StreamContentWithSyncAsyncCopy(syncKnownLengthStream, syncCopy: syncCopy), data };
                     }
 
                     // A stream that provides the data synchronously and has an unknown length
@@ -778,7 +808,7 @@ namespace System.Net.Http.Functional.Tests
                                 syncUnknownLengthStreamOffset += bytesToCopy;
                                 return Task.FromResult(bytesToCopy);
                             });
-                        yield return new object[] { server, syncUnknownLengthStream, data };
+                        yield return new object[] { server, new StreamContentWithSyncAsyncCopy(syncUnknownLengthStream, syncCopy: syncCopy), data };
                     }
 
                     // A stream that provides the data asynchronously
@@ -796,7 +826,7 @@ namespace System.Net.Http.Functional.Tests
                                 asyncStreamOffset += bytesToCopy;
                                 return bytesToCopy;
                             });
-                        yield return new object[] { server, asyncStream, data };
+                        yield return new object[] { server, new StreamContentWithSyncAsyncCopy(asyncStream, syncCopy: syncCopy), data };
                     }
                 }
             }
