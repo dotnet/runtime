@@ -787,7 +787,7 @@ void ChangeU(U* p)
 	p->uiPtr = (LPVOID)(64);
 	p->s = 32767;
 	p->us = 0;
-	p->b = 255;
+	p->b = -1;
 	p->sb = -128;
 	p->l = -1234567890;
 	p->ul = 0;
