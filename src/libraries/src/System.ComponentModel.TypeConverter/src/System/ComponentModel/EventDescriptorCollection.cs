@@ -39,7 +39,7 @@ namespace System.ComponentModel
             _events = events;
             if (events == null)
             {
-                _events = Array.Empty<EventDescriptor>();
+                _events = new EventDescriptor[0];
                 _eventCount = 0;
             }
             else

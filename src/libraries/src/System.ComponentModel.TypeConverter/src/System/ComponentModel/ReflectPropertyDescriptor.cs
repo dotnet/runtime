@@ -48,7 +48,7 @@ namespace System.ComponentModel
     /// </summary>
     internal sealed class ReflectPropertyDescriptor : PropertyDescriptor
     {
-        private static readonly Type[] s_argsNone = Array.Empty<Type>();
+        private static readonly Type[] s_argsNone = new Type[0];
         private static readonly object s_noValue = new object();
 
         private static readonly int s_bitDefaultValueQueried = BitVector32.CreateMask();
@@ -330,9 +330,9 @@ namespace System.ComponentModel
                         {
 #if VERIFY_REFLECTION_CHANGE
                             BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.GetProperty;
-                            _propInfo = _componentClass.GetProperty(Name, bindingFlags, null, PropertyType, Array.Empty<Type>(), Array.Empty<ParameterModifier>());
+                            _propInfo = _componentClass.GetProperty(Name, bindingFlags, null, PropertyType, new Type[0], new ParameterModifier[0]);
 #else 
-                            _propInfo = _componentClass.GetTypeInfo().GetProperty(Name, PropertyType, Array.Empty<Type>(), Array.Empty<ParameterModifier>());
+                            _propInfo = _componentClass.GetTypeInfo().GetProperty(Name, PropertyType, new Type[0], new ParameterModifier[0]);
 #endif
                         }
                         if (_propInfo != null)
@@ -442,9 +442,9 @@ namespace System.ComponentModel
                             }
 #if VERIFY_REFLECTION_CHANGE
                             BindingFlags bindingFlags = BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance;
-                            PropertyInfo p = t.GetProperty(name, bindingFlags, null, PropertyType, Array.Empty<Type>(), null);
+                            PropertyInfo p = t.GetProperty(name, bindingFlags, null, PropertyType, new Type[0], null);
 #endif
-                            PropertyInfo p = t.GetTypeInfo().GetProperty(name, PropertyType, Array.Empty<Type>(), null);
+                            PropertyInfo p = t.GetTypeInfo().GetProperty(name, PropertyType, new Type[0], null);
                             if (p != null)
                             {
                                 _setMethod = p.SetMethod;
@@ -466,9 +466,9 @@ namespace System.ComponentModel
                         {
 #if VERIFY_REFLECTION_CHANGE
                             BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.GetProperty;
-                            _propInfo = _componentClass.GetProperty(Name, bindingFlags, null, PropertyType, Array.Empty<Type>(), Array.Empty<ParameterModifier>());
+                            _propInfo = _componentClass.GetProperty(Name, bindingFlags, null, PropertyType, new Type[0], new ParameterModifier[0]);
 #else
-                            _propInfo = _componentClass.GetTypeInfo().GetProperty(Name, PropertyType, Array.Empty<Type>(), Array.Empty<ParameterModifier>());
+                            _propInfo = _componentClass.GetTypeInfo().GetProperty(Name, PropertyType, new Type[0], new ParameterModifier[0]);
 #endif
                         }
                         if (_propInfo != null)
@@ -871,7 +871,7 @@ namespace System.ComponentModel
                     }
                     else
                     {
-                        memberInfo = currentReflectType.GetProperty(Name, bindingFlags, null, PropertyType, Array.Empty<Type>(), Array.Empty<ParameterModifier>());
+                        memberInfo = currentReflectType.GetProperty(Name, bindingFlags, null, PropertyType, new Type[0], new ParameterModifier[0]);
                     }
 #else
                     // Fill in our member info so we can get at the custom attributes.
@@ -883,7 +883,7 @@ namespace System.ComponentModel
                     }
                     else
                     {
-                        memberInfo = currentReflectType.GetTypeInfo().GetProperty(Name, PropertyType, Array.Empty<Type>(), Array.Empty<ParameterModifier>()); 
+                        memberInfo = currentReflectType.GetTypeInfo().GetProperty(Name, PropertyType, new Type[0], new ParameterModifier[0]);
                     }
 #endif
                     // Get custom attributes for the member info.
