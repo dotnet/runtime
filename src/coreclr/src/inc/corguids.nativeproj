@@ -88,14 +88,14 @@
     <DataFile Include="$(IntermediateOutputDirectory)\mscoree.h" />
     <DataFile Include="$(IntermediateOutputDirectory)\\corsym.h" />
     <DataFile Include="$(ClrLibPath)\$(OutputName).lib" />
-    <DataFile Include="$(Clrbase)\src\inc\CLRPrivAppXHosting.idl" Condition="'$(FeatureHostedBinder)'=='true'" />
-    <DataFile Include="$(IntermediateOutputDirectory)\CLRPrivAppXHosting.h" Condition="'$(FeatureHostedBinder)'=='true'" />
-    <DataFile Include="$(Clrbase)\src\inc\CLRPrivHosting.idl" Condition="'$(FeatureHostedBinder)'=='true'" />
-    <DataFile Include="$(IntermediateOutputDirectory)\CLRPrivHosting.h" Condition="'$(FeatureHostedBinder)'=='true'" />
-    <DataFile Include="$(Clrbase)\src\inc\CLRPrivBinding.idl" Condition="'$(FeatureHostedBinder)'=='true'" />
-    <DataFile Include="$(IntermediateOutputDirectory)\CLRPrivBinding.h" Condition="'$(FeatureHostedBinder)'=='true'" />
-    <DataFile Include="$(Clrbase)\src\inc\CLRPrivRuntimeBinders.idl" Condition="'$(FeatureHostedBinder)'=='true'" />
-    <DataFile Include="$(IntermediateOutputDirectory)\CLRPrivRuntimeBinders.h" Condition="'$(FeatureHostedBinder)'=='true'" />
+    <DataFile Include="$(Clrbase)\src\inc\CLRPrivAppXHosting.idl" />
+    <DataFile Include="$(IntermediateOutputDirectory)\CLRPrivAppXHosting.h" />
+    <DataFile Include="$(Clrbase)\src\inc\CLRPrivHosting.idl" />
+    <DataFile Include="$(IntermediateOutputDirectory)\CLRPrivHosting.h" />
+    <DataFile Include="$(Clrbase)\src\inc\CLRPrivBinding.idl" />
+    <DataFile Include="$(IntermediateOutputDirectory)\CLRPrivBinding.h" />
+    <DataFile Include="$(Clrbase)\src\inc\CLRPrivRuntimeBinders.idl" />
+    <DataFile Include="$(IntermediateOutputDirectory)\CLRPrivRuntimeBinders.h" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(FeatureCoreClr)' == 'true'">
@@ -347,11 +347,11 @@
       <Visibility>Inter</Visibility>
       <FileType>Include</FileType>
     </PublishPartGenerated>
-    <PublishPartGenerated Include="$(Clrbase)\src\inc\CLRPrivAppXHosting.idl" Condition="'$(FeatureHostedBinder)'=='true'"> 
+    <PublishPartGenerated Include="$(Clrbase)\src\inc\CLRPrivAppXHosting.idl"> 
       <Visibility>Inter</Visibility>
       <FileType>Include</FileType>
     </PublishPartGenerated>
-    <PublishPartGenerated Include="$(IntermediateOutputDirectory)\CLRPrivAppXHosting.h" Condition="'$(FeatureHostedBinder)'=='true'"> 
+    <PublishPartGenerated Include="$(IntermediateOutputDirectory)\CLRPrivAppXHosting.h"> 
       <Visibility>Inter</Visibility>
       <FileType>Include</FileType>
     </PublishPartGenerated>
@@ -380,11 +380,11 @@
       <Visibility>Intra</Visibility>
       <FileType>Include</FileType>
     </PublishPartGenerated>
-    <PublishPartGenerated Include="$(IntermediateOutputDirectory)\ClrPrivHosting.h" Condition="'$(FeatureHostedBinder)'=='true'">
+    <PublishPartGenerated Include="$(IntermediateOutputDirectory)\ClrPrivHosting.h">
       <Visibility>Intra</Visibility>
       <FileType>Include</FileType>
     </PublishPartGenerated>
-    <PublishPartGenerated Include="$(IntermediateOutputDirectory)\CLRPrivRuntimeBinders.h" Condition="'$(FeatureHostedBinder)'=='true'">
+    <PublishPartGenerated Include="$(IntermediateOutputDirectory)\CLRPrivRuntimeBinders.h">
       <Visibility>Intra</Visibility>
       <FileType>Include</FileType>
     </PublishPartGenerated>
