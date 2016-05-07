@@ -53,11 +53,9 @@
     <Compile Include="System\Data\SqlDbType.cs" />
     <Compile Include="System\Data\Common\ActivityCorrelator.cs" />
     <Compile Include="System\Data\Common\AdapterUtil.cs" />
-    <Compile Include="System\Data\Common\DataRecordInternal.cs" />
     <Compile Include="System\Data\Common\DbConnectionOptions.cs" />
     <Compile Include="System\Data\Common\DbConnectionPoolKey.cs" />
     <Compile Include="System\Data\Common\DbConnectionStringCommon.cs" />
-    <Compile Include="System\Data\Common\DbEnumerator.cs" />
     <Compile Include="$(CommonPath)\System\Data\Common\FieldNameLookup.cs">
       <Link>System\Data\Common\FieldNameLookup.cs</Link>
     </Compile>
