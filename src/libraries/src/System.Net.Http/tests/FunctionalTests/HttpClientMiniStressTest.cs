@@ -81,25 +81,28 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(5000)]
         public async Task MakeAndFaultManyRequests(int numRequests)
         {
-            await LoopbackServer.CreateClientAndServerAsync(async (handler, client, server, url) =>
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
-                client.Timeout = Timeout.InfiniteTimeSpan;
-
-                var ep = (IPEndPoint)server.LocalEndPoint;
-                Task<string>[] tasks =
-                    (from i in Enumerable.Range(0, numRequests)
-                     select client.GetStringAsync($"http://{ep.Address}:{ep.Port}"))
-                     .ToArray();
-
-                Assert.All(tasks, t => Assert.Equal(TaskStatus.WaitingForActivation, t.Status));
-
-                server.Dispose();
-
-                foreach (Task<string> task in tasks)
+                using (var client = new HttpClient())
                 {
-                    await Assert.ThrowsAnyAsync<HttpRequestException>(() => task);
+                    client.Timeout = Timeout.InfiniteTimeSpan;
+
+                    var ep = (IPEndPoint)server.LocalEndPoint;
+                    Task<string>[] tasks =
+                        (from i in Enumerable.Range(0, numRequests)
+                         select client.GetStringAsync($"http://{ep.Address}:{ep.Port}"))
+                         .ToArray();
+
+                    Assert.All(tasks, t => Assert.Equal(TaskStatus.WaitingForActivation, t.Status));
+
+                    server.Dispose();
+
+                    foreach (Task<string> task in tasks)
+                    {
+                        await Assert.ThrowsAnyAsync<HttpRequestException>(() => task);
+                    }
                 }
-            }, backlog: numRequests);
+            }, new LoopbackServer.Options { ListenBacklog = numRequests });
         }
 
         public static IEnumerable<object[]> GetStressOptions()
@@ -183,27 +186,29 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(nameof(HttpStressEnabled))]
         public async Task UnreadResponseMessage_Collectible()
         {
-            await LoopbackServer.CreateClientAndServerAsync(async (handler, client, server, url) =>
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
-                Func<Task<WeakReference>> getAsync = async () =>
-                    new WeakReference(await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead));
-                Task<WeakReference> wrt = getAsync();
-
-                await LoopbackServer.AcceptSocketAsync(server, async (s, stream, reader, writer) =>
+                using (var client = new HttpClient())
                 {
-                    while (!string.IsNullOrEmpty(await reader.ReadLineAsync())) ;
-                    await writer.WriteAsync(CreateResponse(new string('a', 32 * 1024)));
-                    await writer.FlushAsync();
+                    Func<Task<WeakReference>> getAsync = async () => new WeakReference(await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead));
+                    Task<WeakReference> wrt = getAsync();
 
-                    WeakReference wr = wrt.GetAwaiter().GetResult();
-                    Assert.True(SpinWait.SpinUntil(() =>
+                    await LoopbackServer.AcceptSocketAsync(server, async (s, stream, reader, writer) =>
                     {
-                        GC.Collect();
-                        GC.WaitForPendingFinalizers();
-                        GC.Collect();
-                        return !wr.IsAlive;
-                    }, 10 * 1000), "Response object should have been collected");
-                });
+                        while (!string.IsNullOrEmpty(await reader.ReadLineAsync())) ;
+                        await writer.WriteAsync(CreateResponse(new string('a', 32 * 1024)));
+                        await writer.FlushAsync();
+
+                        WeakReference wr = wrt.GetAwaiter().GetResult();
+                        Assert.True(SpinWait.SpinUntil(() =>
+                        {
+                            GC.Collect();
+                            GC.WaitForPendingFinalizers();
+                            GC.Collect();
+                            return !wr.IsAlive;
+                        }, 10 * 1000), "Response object should have been collected");
+                    });
+                }
             });
         }
 
