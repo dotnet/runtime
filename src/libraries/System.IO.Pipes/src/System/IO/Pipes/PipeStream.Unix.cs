@@ -392,7 +392,7 @@ namespace System.IO.Pipes
 
         private static void CreateDirectory(string directoryPath)
         {
-            int result = Interop.Sys.MkDir(directoryPath, (int)Interop.Sys.Permissions.S_IRWXU);
+            int result = Interop.Sys.MkDir(directoryPath, (int)Interop.Sys.Permissions.Mask);
 
             // If successful created, we're done.
             if (result >= 0)
