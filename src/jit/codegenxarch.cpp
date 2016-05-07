@@ -2839,15 +2839,26 @@ CodeGen::genMultiRegCallStoreToLocal(GenTreePtr treeNode)
         {
             // targeReg[63:0] = targetReg[63:0]
             // targetReg[127:64] = reg1[127:64]
-            inst_RV_RV_IV(INS_shufpd, EA_16BYTE, targetReg, reg1, 0x10);
+            inst_RV_RV_IV(INS_shufpd, EA_16BYTE, targetReg, reg1, 0x00);
         }
         else 
         {
             assert(targetReg == reg1);
 
-            // targeReg[63:0] = targetReg[127:64]
+            // We need two shuffles to achieve this
+            // First:
+            // targeReg[63:0] = targetReg[63:0]
             // targetReg[127:64] = reg0[63:0]
-            inst_RV_RV_IV(INS_shufpd, EA_16BYTE, targetReg, reg0, 0x01);
+            //
+            // Second:
+            // targeReg[63:0] = targetReg[127:64]
+            // targetReg[127:64] = targetReg[63:0]
+            //
+            // Essentially copy low 8-bytes from reg0 to high 8-bytes of targetReg
+            // and next swap low and high 8-bytes of targetReg to have them
+            // rearranged in the right order.
+            inst_RV_RV_IV(INS_shufpd, EA_16BYTE, targetReg, reg0, 0x00);
+            inst_RV_RV_IV(INS_shufpd, EA_16BYTE, targetReg, targetReg, 0x01);
         }
     }
     else

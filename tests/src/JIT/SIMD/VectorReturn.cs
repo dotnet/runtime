@@ -57,6 +57,79 @@ internal partial class VectorTest
         return F1(u);
     }
 
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    public static Vector<T> VectorOne<T>() where T: struct
+    {
+        return Vector<T>.One;
+    }
+
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    public static Vector<T> VectorPlusOne<T>(Vector<T> v1) where T : struct
+    {
+        Vector<T> v2 = VectorOne<T>();
+        return v1 + v2;
+    }
+
+    public static int VectorTReturnTest()
+    {
+        Vector<float> v1 = new Vector<float>(2.0f);
+        Vector<float> result1 = VectorPlusOne<float>(v1);
+        for (int i=0; i < Vector<float>.Count; ++i)
+        {
+            if (!CheckValue<float>(result1[i], 3.0f))
+            {
+                Console.WriteLine("Expected result is " + 3.0f);
+                Console.WriteLine("Instead got " + result1[i]);
+                Console.WriteLine("FAILED");
+                return Fail;
+            }
+        }
+
+        Vector<int> v2 = new Vector<int>(5);
+        Vector<int> result2 = VectorPlusOne<int>(v2);
+        for (int i = 0; i < Vector<int>.Count; ++i)
+        {
+            if (!CheckValue<int>(result2[i], 6))
+            {
+                Console.WriteLine("Expected result is " + 6);
+                Console.WriteLine("Instead got " + result2[i]);
+                Console.WriteLine("FAILED");
+                return Fail;
+            }
+        }
+
+        return Pass;
+    }
+
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    public static Vector3 GetVector3One()
+    {
+        return new Vector3(1.0f);
+    }
+
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    public static Vector3 GetVector3PlusOne(Vector3 v1)
+    {
+        Vector3 v2 = GetVector3One();
+        return v1 + v2;
+    }
+
+    public static int Vector3ReturnTest()
+    {
+        Vector3 v1 = new Vector3(3.0f, 4.0f, 5.0f);
+        Vector3 result = GetVector3PlusOne(v1);
+
+        if (!CheckValue<float>(result.X, 4.0f) ||
+            !CheckValue<float>(result.Y, 5.0f) ||
+            !CheckValue<float>(result.Z, 6.0f))
+        {
+            Console.WriteLine("Vector3ReturnTest did not return expected value");
+            return Fail;
+        }
+
+        return Pass;
+    }
+
     public static int Main()
     {
         init();
@@ -69,6 +142,19 @@ internal partial class VectorTest
             Console.WriteLine("FAILED");
             return Fail;
         }
+
+        if (VectorTReturnTest() != Pass)
+        {
+            Console.WriteLine("FAILED");
+            return Fail;
+        }
+
+        if (Vector3ReturnTest() != Pass)
+        {
+            Console.WriteLine("FAILED");
+            return Fail;
+        }
+
         Console.WriteLine("PASSED");
         return Pass;
     }
