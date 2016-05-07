@@ -508,28 +508,36 @@ namespace System.IO
             // The full framework implementation doesn't do any argument validation, so
             // none is done here, either.
 
-            // Create a TCS, used as a convenient way to communicate a result from
-            // one thread to another blocked thread.
             var tcs = new TaskCompletionSource<WaitForChangedResult>();
-            
-            // Create the event handlers to use to complete the task when an appropriate event occurs.
-            FileSystemEventHandler fseh = (s, e) =>
-            {
-                if ((e.ChangeType & changeType) != 0)
-                    tcs.TrySetResult(new WaitForChangedResult(e.ChangeType, e.Name, null, false));
-            };
-            RenamedEventHandler reh = (s, e) =>
-            {
-                if ((e.ChangeType & changeType) != 0)
-                    tcs.TrySetResult(new WaitForChangedResult(e.ChangeType, e.Name, e.OldName, false));
-            };
+            FileSystemEventHandler fseh = null;
+            RenamedEventHandler reh = null;
 
             // Register the event handlers based on what events are desired.  The full framework
             // doesn't register for the Error event, so this doesn't either.
-            if ((changeType & WatcherChangeTypes.Created) != 0) Created += fseh;
-            if ((changeType & WatcherChangeTypes.Deleted) != 0) Deleted += fseh;
-            if ((changeType & WatcherChangeTypes.Changed) != 0) Changed += fseh;
-            if ((changeType & WatcherChangeTypes.Renamed) != 0) Renamed += reh;
+            if ((changeType & (WatcherChangeTypes.Created | WatcherChangeTypes.Deleted | WatcherChangeTypes.Changed)) != 0)
+            {
+                fseh = (s, e) =>
+                {
+                    if ((e.ChangeType & changeType) != 0)
+                    {
+                        tcs.TrySetResult(new WaitForChangedResult(e.ChangeType, e.Name, oldName: null, timedOut: false));
+                    }
+                };
+                if ((changeType & WatcherChangeTypes.Created) != 0) Created += fseh;
+                if ((changeType & WatcherChangeTypes.Deleted) != 0) Deleted += fseh;
+                if ((changeType & WatcherChangeTypes.Changed) != 0) Changed += fseh;
+            }
+            if ((changeType & WatcherChangeTypes.Renamed) != 0)
+            {
+                reh = (s, e) =>
+                {
+                    if ((e.ChangeType & changeType) != 0)
+                    {
+                        tcs.TrySetResult(new WaitForChangedResult(e.ChangeType, e.Name, e.OldName, timedOut: false));
+                    }
+                };
+                Renamed += reh;
+            }
             try
             {
                 // Enable the FSW if it wasn't already.
@@ -548,10 +556,16 @@ namespace System.IO
             finally
             {
                 // Unregister the event handlers.
-                if ((changeType & WatcherChangeTypes.Renamed) != 0) Renamed -= reh;
-                if ((changeType & WatcherChangeTypes.Changed) != 0) Changed -= fseh;
-                if ((changeType & WatcherChangeTypes.Deleted) != 0) Deleted -= fseh;
-                if ((changeType & WatcherChangeTypes.Created) != 0) Created -= fseh;
+                if (reh != null)
+                {
+                    Renamed -= reh;
+                }
+                if (fseh != null)
+                {
+                    if ((changeType & WatcherChangeTypes.Changed) != 0) Changed -= fseh;
+                    if ((changeType & WatcherChangeTypes.Deleted) != 0) Deleted -= fseh;
+                    if ((changeType & WatcherChangeTypes.Created) != 0) Created -= fseh;
+                }
             }
 
             // Return the results.
