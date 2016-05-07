@@ -158,7 +158,7 @@ namespace System.Security
                     Buffer.MemoryCopy(
                         source: bufferPtr,
                         destination: (byte*)stringPtr.ToPointer(),
-                        destinationSizeInBytes: ((length + 1) * sizeof(char)),
+                        destinationSizeInBytes: resultLength,
                         sourceBytesToCopy: length * sizeof(char));
                     *(length + (char*)stringPtr) = '\0';
                 }
