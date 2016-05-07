@@ -39,6 +39,7 @@
     <Compile Include="System\IO\RenamedEventArgs.cs" />
     <Compile Include="System\IO\RenamedEventHandler.cs" />
     <Compile Include="System\IO\WatcherChangeTypes.cs" />
+    <Compile Include="System\IO\WaitForChangedResult.cs" />
     <Compile Include="$(CommonPath)\System\IO\PathInternal.cs">
       <Link>Common\System\IO\PathInternal.cs</Link>
     </Compile>

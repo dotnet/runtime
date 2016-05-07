@@ -4,6 +4,8 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.IO
 {
@@ -496,6 +498,66 @@ namespace System.IO
         protected void OnRenamed(RenamedEventArgs e)
         {
             _onRenamedHandler?.Invoke(this, e);
+        }
+
+        public WaitForChangedResult WaitForChanged(WatcherChangeTypes changeType) => 
+            WaitForChanged(changeType, Timeout.Infinite);
+
+        public WaitForChangedResult WaitForChanged(WatcherChangeTypes changeType, int timeout)
+        {
+            // The full framework implementation doesn't do any argument validation, so
+            // none is done here, either.
+
+            // Create a TCS, used as a convenient way to communicate a result from
+            // one thread to another blocked thread.
+            var tcs = new TaskCompletionSource<WaitForChangedResult>();
+            
+            // Create the event handlers to use to complete the task when an appropriate event occurs.
+            FileSystemEventHandler fseh = (s, e) =>
+            {
+                if ((e.ChangeType & changeType) != 0)
+                    tcs.TrySetResult(new WaitForChangedResult(e.ChangeType, e.Name, null, false));
+            };
+            RenamedEventHandler reh = (s, e) =>
+            {
+                if ((e.ChangeType & changeType) != 0)
+                    tcs.TrySetResult(new WaitForChangedResult(e.ChangeType, e.Name, e.OldName, false));
+            };
+
+            // Register the event handlers based on what events are desired.  The full framework
+            // doesn't register for the Error event, so this doesn't either.
+            if ((changeType & WatcherChangeTypes.Created) != 0) Created += fseh;
+            if ((changeType & WatcherChangeTypes.Deleted) != 0) Deleted += fseh;
+            if ((changeType & WatcherChangeTypes.Changed) != 0) Changed += fseh;
+            if ((changeType & WatcherChangeTypes.Renamed) != 0) Renamed += reh;
+            try
+            {
+                // Enable the FSW if it wasn't already.
+                bool wasEnabled = EnableRaisingEvents;
+                if (!wasEnabled)
+                {
+                    EnableRaisingEvents = true;
+                }
+
+                // Block until an appropriate event arrives or until we timeout.
+                tcs.Task.Wait(timeout);
+
+                // Reset the enabled state to what it was.
+                EnableRaisingEvents = wasEnabled;
+            }
+            finally
+            {
+                // Unregister the event handlers.
+                if ((changeType & WatcherChangeTypes.Renamed) != 0) Renamed -= reh;
+                if ((changeType & WatcherChangeTypes.Changed) != 0) Changed -= fseh;
+                if ((changeType & WatcherChangeTypes.Deleted) != 0) Deleted -= fseh;
+                if ((changeType & WatcherChangeTypes.Created) != 0) Created -= fseh;
+            }
+
+            // Return the results.
+            return tcs.Task.Status == TaskStatus.RanToCompletion ?
+                tcs.Task.Result :
+                WaitForChangedResult.TimedOutResult;
         }
 
         /// <devdoc>
