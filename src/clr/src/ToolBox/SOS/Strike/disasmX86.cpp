@@ -383,7 +383,7 @@ void HandleCall(TADDR callee, Register *reg)
         if (MethodDescData.Request(g_sos, TO_CDADDR(methodDesc)) == S_OK)
         {
             NameForMD_s(methodDesc, g_mdName,mdNameLen);                    
-            ExtOut(" (%S, mdToken: %p)", g_mdName, (UINT64)MethodDescData.MDToken);
+            ExtOut(" (%S, mdToken: %p)", g_mdName, SOS_PTR(MethodDescData.MDToken));
             return;
         }
     }
@@ -414,7 +414,7 @@ void HandleCall(TADDR callee, Register *reg)
             if (MethodDescData.Request(g_sos, md) == S_OK)
             {
                 NameForMD_s(md, g_mdName,mdNameLen);
-                ExtOut(" (%S, mdToken: %p)", g_mdName, (UINT64)MethodDescData.MDToken);
+                ExtOut(" (%S, mdToken: %p)", g_mdName, SOS_PTR(MethodDescData.MDToken));
                 return;
             }
         }

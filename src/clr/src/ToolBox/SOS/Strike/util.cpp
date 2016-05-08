@@ -2113,9 +2113,9 @@ HRESULT FileNameForModule (DacpModuleData *pModule, __out_ecount (MAX_LONGPATH) 
 
 void AssemblyInfo(DacpAssemblyData *pAssembly)
 {
-    ExtOut("ClassLoader:        %p\n", (ULONG64)pAssembly->ClassLoader);
+    ExtOut("ClassLoader:        %p\n", SOS_PTR(pAssembly->ClassLoader));
     if ((ULONG64)pAssembly->AssemblySecDesc != NULL)
-        ExtOut("SecurityDescriptor: %p\n", (ULONG64)pAssembly->AssemblySecDesc);
+        ExtOut("SecurityDescriptor: %p\n", SOS_PTR(pAssembly->AssemblySecDesc));
     ExtOut("  Module Name\n");
     
     ArrayHolder<CLRDATA_ADDRESS> Modules = new CLRDATA_ADDRESS[pAssembly->ModuleCount];
@@ -2194,12 +2194,12 @@ const char *GetStageText(DacpAppDomainDataStage stage)
 \**********************************************************************/
 void DomainInfo (DacpAppDomainData *pDomain)
 {
-    ExtOut("LowFrequencyHeap:   %p\n", (ULONG64)pDomain->pLowFrequencyHeap);
-    ExtOut("HighFrequencyHeap:  %p\n", (ULONG64)pDomain->pHighFrequencyHeap);
-    ExtOut("StubHeap:           %p\n", (ULONG64)pDomain->pStubHeap);
+    ExtOut("LowFrequencyHeap:   %p\n", SOS_PTR(pDomain->pLowFrequencyHeap));
+    ExtOut("HighFrequencyHeap:  %p\n", SOS_PTR(pDomain->pHighFrequencyHeap));
+    ExtOut("StubHeap:           %p\n", SOS_PTR(pDomain->pStubHeap));
     ExtOut("Stage:              %s\n", GetStageText(pDomain->appDomainStage));
     if ((ULONG64)pDomain->AppSecDesc != NULL)
-        ExtOut("SecurityDescriptor: %p\n", (ULONG64)pDomain->AppSecDesc);
+        ExtOut("SecurityDescriptor: %p\n", SOS_PTR(pDomain->AppSecDesc));
     ExtOut("Name:               ");
 
     if (g_sos->GetAppDomainName(pDomain->AppDomainPtr, mdNameLen, g_mdName, NULL)!=S_OK)
@@ -2274,7 +2274,7 @@ BOOL NameForMD_s (DWORD_PTR pMD, __out_ecount (capacity_mdName) WCHAR *mdName, s
     //
     if (!IsMiniDumpFile() && MethodDescData.Request(g_sos,StartAddr) != S_OK)
     {
-        ExtOut("%p is not a MethodDesc\n", (ULONG64)StartAddr);
+        ExtOut("%p is not a MethodDesc\n", SOS_PTR(StartAddr));
         return FALSE;
     }
 
