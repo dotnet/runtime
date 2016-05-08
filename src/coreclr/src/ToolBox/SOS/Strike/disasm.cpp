@@ -888,7 +888,7 @@ BOOL PrintCallInfo(DWORD_PTR vEBP, DWORD_PTR IP, DumpStackFlag& DSFlag, BOOL bSy
     {
         bOutput = TRUE;
         if (!bSymbolOnly)
-            DMLOut("%p %s ", (ULONG64)vEBP, DMLIP(IP));
+            DMLOut("%p %s ", SOS_PTR(vEBP), DMLIP(IP));
         DMLOut("(MethodDesc %s ", DMLMethodDesc(methodDesc));    
         
         // TODO: Microsoft, more checks to make sure method is not eeimpl, etc. Add this field to MethodDesc
@@ -918,7 +918,7 @@ BOOL PrintCallInfo(DWORD_PTR vEBP, DWORD_PTR IP, DumpStackFlag& DSFlag, BOOL bSy
             bOutput = TRUE;
             const char *name;
             if (!bSymbolOnly)
-                DMLOut("%p %s ", (ULONG64)vEBP, DMLIP(IP));
+                DMLOut("%p %s ", SOS_PTR(vEBP), DMLIP(IP));
 
             // if AMD64 ever becomes a cross platform target this must be resolved through
             // virtual dispatch rather than conditional compilation
@@ -1030,9 +1030,9 @@ void DumpStackWorker (DumpStackFlag &DSFlag)
                     ExtOut(" ====> Exception ");
                     if (exrAddr)
                         ExtOut("Code %x ", exr.ExceptionCode);
-                    ExtOut ("cxr@%p", (ULONG64)cxrAddr);
+                    ExtOut ("cxr@%p", SOS_PTR(cxrAddr));
                     if (exrAddr)
-                        ExtOut(" exr@%p", (ULONG64)exrAddr);
+                        ExtOut(" exr@%p", SOS_PTR(exrAddr));
                     ExtOut("\n");
                 }
             }
