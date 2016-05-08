@@ -6534,8 +6534,8 @@ var_types           Compiler::impImportCall (OPCODE         opcode,
                 
             if (!bIntrinsicImported)
             {
-                // Is it an inline candidate?        
-               impMarkInlineCandidate(call, exactContextHnd);       
+                // Is it an inline candidate?
+                impMarkInlineCandidate(call, exactContextHnd, callInfo);
             }
 
             // append the call node.
@@ -6751,7 +6751,7 @@ DONE_CALL:
         }
 
         // Is it an inline candidate?        
-        impMarkInlineCandidate(call, exactContextHnd); 
+        impMarkInlineCandidate(call, exactContextHnd, callInfo);
     }
 
     // Push or append the result of the call
@@ -16436,7 +16436,9 @@ BOOL                Compiler::impInlineIsGuaranteedThisDerefBeforeAnySideEffects
 // otherwise build tree context) so when we do the inlining pass we
 // can capture these reasons
 
-void          Compiler::impMarkInlineCandidate(GenTreePtr callNode, CORINFO_CONTEXT_HANDLE exactContextHnd)
+void          Compiler::impMarkInlineCandidate(GenTreePtr callNode, 
+                                               CORINFO_CONTEXT_HANDLE exactContextHnd, 
+                                               CORINFO_CALL_INFO* callInfo)
 {
     if  (!opts.OptEnabled(CLFLG_INLINING))
     {                 
@@ -16518,11 +16520,18 @@ void          Compiler::impMarkInlineCandidate(GenTreePtr callNode, CORINFO_CONT
      * restricts the inliner to non-expanding inlines.  I removed the check to allow for non-expanding
      * inlining in throw blocks.  I should consider the same thing for catch and filter regions. */
 
+    CORINFO_METHOD_HANDLE fncHandle = call->gtCallMethHnd;
     unsigned methAttr;
-    CORINFO_METHOD_HANDLE fncHandle;
 
-    fncHandle = call->gtCallMethHnd;
-    methAttr = info.compCompHnd->getMethodAttribs(fncHandle);
+    // Reuse method flags from the original callInfo if possible
+    if (fncHandle == callInfo->hMethod)
+    {
+        methAttr = callInfo->methodFlags;
+    }
+    else
+    {
+        methAttr = info.compCompHnd->getMethodAttribs(fncHandle);
+    }
 
 #ifdef DEBUG
     if (compStressCompile(STRESS_FORCE_INLINE, 0))
@@ -16584,13 +16593,7 @@ void          Compiler::impMarkInlineCandidate(GenTreePtr callNode, CORINFO_CONT
         return;
     }
 
-    /* Cannot inline native or synchronized methods */
-
-    if  (methAttr & CORINFO_FLG_NATIVE)
-    {
-        inlineResult.NoteFatal(InlineObservation::CALLEE_IS_NATIVE);
-        return;
-    }
+    /* Cannot inline synchronized methods */
 
     if  (methAttr & CORINFO_FLG_SYNCH)
     {

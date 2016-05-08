@@ -2696,12 +2696,12 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
         // convention for x86/SSE.
         if (!lateArgsComputed)
         {
-            if (call->IsUnmanaged())
+            if (call->IsUnmanaged() && !opts.ShouldUsePInvokeHelpers())
             {
                 assert(!call->gtCallCookie);
                 // Add a conservative estimate of the stack size in a special parameter (r11) at the call site.
                 // It will be used only on the intercepted-for-host code path to copy the arguments.             
-                
+
                 GenTree* cns = new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, fgEstimateCallStackSize(call));
                 call->gtCallArgs = gtNewListNode(cns, call->gtCallArgs);
                 NonStandardArg nsa = {REG_PINVOKE_COOKIE_PARAM, cns};

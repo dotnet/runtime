@@ -6000,21 +6000,7 @@ void CodeGen::genCallInstruction(GenTreePtr node)
         else
         {
             // Direct call to a non-virtual user function.
-            CORINFO_ACCESS_FLAGS  aflags = CORINFO_ACCESS_ANY;
-            if (call->IsSameThis())
-            {
-                aflags = (CORINFO_ACCESS_FLAGS)(aflags | CORINFO_ACCESS_THIS);
-            }
-
-            if ((call->NeedsNullCheck()) == 0)
-            {
-                aflags = (CORINFO_ACCESS_FLAGS)(aflags | CORINFO_ACCESS_NONNULL);
-            }
-
-            CORINFO_CONST_LOOKUP addrInfo;
-            compiler->info.compCompHnd->getFunctionEntryPoint(methHnd, &addrInfo, aflags);
-
-            addr = addrInfo.addr;
+            addr = call->gtDirectCallAddress;
         }
 
         // Non-virtual direct calls to known addresses
