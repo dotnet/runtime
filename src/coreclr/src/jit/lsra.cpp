@@ -400,8 +400,7 @@ LinearScan::newInterval(RegisterType theRegisterType)
     Interval *newInt = &intervals.back();
 
 #ifdef DEBUG
-    newInt->intervalIndex = intervalCount;
-    intervalCount++;
+    newInt->intervalIndex = static_cast<unsigned>(intervals.size() - 1);
 #endif // DEBUG
 
     DBEXEC(VERBOSE, newInt->dump());
@@ -414,9 +413,8 @@ LinearScan::newRefPositionRaw(LsraLocation nodeLocation, GenTree* treeNode, RefT
     refPositions.emplace_back(curBBNum, nodeLocation, treeNode, refType);
     RefPosition *newRP = &refPositions.back();
 #ifdef DEBUG
-    newRP->rpNum = refPositionCount;
+    newRP->rpNum = static_cast<unsigned>(refPositions.size() - 1);
 #endif // DEBUG
-    refPositionCount++;
     return newRP;
 }
 
@@ -998,7 +996,6 @@ LinearScan::LinearScan(Compiler * theCompiler)
     , refPositions(LinearScanMemoryAllocatorRefPosition(theCompiler))
 {
 #ifdef DEBUG
-    intervalCount = 0;
     maxNodeLocation = 0;
     activeRefPosition = nullptr;
     initRefTypeNames();
@@ -1044,7 +1041,6 @@ LinearScan::LinearScan(Compiler * theCompiler)
     dumpTerse = (JitConfig.JitDumpTerseLsra() != 0);
 
 #endif // DEBUG
-    refPositionCount = 0;
     availableIntRegs = (RBM_ALLINT & ~compiler->codeGen->regSet.rsMaskResvd);
 #if ETW_EBP_FRAMED
     availableIntRegs &= ~RBM_FPBASE;
@@ -9936,7 +9932,7 @@ LinearScan::dumpRegRecordHeader()
 
     // First, determine the width of each register column (which holds a reg name in the
     // header, and an interval name in each subsequent row).
-    int intervalNumberWidth = (int)log10((double)intervalCount) + 1;
+    int intervalNumberWidth = (int)log10((double)intervals.size()) + 1;
     // The regColumnWidth includes the identifying character (I or V) and an 'i' or 'a' (inactive or active)
     regColumnWidth = intervalNumberWidth + 2;
     if (regColumnWidth < 4)
@@ -9959,9 +9955,9 @@ LinearScan::dumpRegRecordHeader()
 
     maxNodeLocation = (maxNodeLocation == 0) ? 1: maxNodeLocation;  // corner case of a method with an infinite loop without any gentree nodes
     assert(maxNodeLocation >= 1);
-    assert(refPositionCount >= 1);
+    assert(refPositions.size() >= 1);
     int nodeLocationWidth = (int)log10((double)maxNodeLocation) + 1;
-    int refPositionWidth  = (int)log10((double)refPositionCount) + 1;
+    int refPositionWidth  = (int)log10((double)refPositions.size()) + 1;
     int refTypeInfoWidth = 4 /*TYPE*/ + 2 /* last-use and delayed */ + 1 /* space */;
     int locationAndRPNumWidth = nodeLocationWidth + 2 /* .# */ + refPositionWidth + 1 /* space */;
     int shortRefPositionDumpWidth = locationAndRPNumWidth +
