@@ -2405,7 +2405,8 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
            else
            {
                // a direct call within range of hardware relative call instruction
-               // there is no extra code to generate
+               // stash the address for codegen
+               call->gtDirectCallAddress = addr;
            }
            break;
 
@@ -2608,19 +2609,6 @@ void Lowering::InsertPInvokeMethodProlog()
 
     if (comp->opts.ShouldUsePInvokeHelpers())
     {
-        // Initialize the P/Invoke frame by calling CORINFO_HELP_INIT_PINVOKE_FRAME:
-        //
-        // OpaqueFrame opaqueFrame;
-        // CORINFO_HELP_INIT_PINVOKE_FRAME(&opaqueFrame);
-
-        GenTree* frameAddr = new(comp, GT_LCL_VAR_ADDR)
-            GenTreeLclVar(GT_LCL_VAR_ADDR, TYP_BYREF, comp->lvaInlinedPInvokeFrameVar, BAD_IL_OFFSET);
-
-        GenTree* helperCall = comp->gtNewHelperCallNode(CORINFO_HELP_INIT_PINVOKE_FRAME, TYP_VOID, 0, comp->gtNewArgList(frameAddr));
-
-        GenTreeStmt* stmt = LowerMorphAndSeqTree(helperCall);
-        comp->fgInsertStmtAtBeg(comp->fgFirstBB, stmt);
-
         return;
     }
 
@@ -3064,19 +3052,31 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
         }
 #endif
 
-        GenTree* address = AddrGen(lookup.addr);
+        void* addr = lookup.addr;
         switch (lookup.accessType)
         {
             case IAT_VALUE:
-                result = address;
+                if (!IsCallTargetInRange(addr))
+                {
+                    result = AddrGen(addr);
+                }
+                else
+                {
+                   // a direct call within range of hardware relative call instruction
+                   // stash the address for codegen
+                    call->gtDirectCallAddress = addr;
+#ifdef FEATURE_READYTORUN_COMPILER
+                    call->gtEntryPoint.addr = nullptr;
+#endif
+                }
                 break;
 
             case IAT_PVALUE:
-                result = Ind(address);
+                result = Ind(AddrGen(addr));
                 break;
 
             case IAT_PPVALUE:
-                result = Ind(Ind(address));
+                result = Ind(Ind(AddrGen(addr)));
                 break;
         }
     }
