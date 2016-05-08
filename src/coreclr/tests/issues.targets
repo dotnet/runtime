@@ -455,5 +455,8 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Performance\CodeQuality\V8\DeltaBlue\DeltaBlue\DeltaBlue.cmd">
              <Issue>4817</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\MDArray\basics\stringarr_cs_do\stringarr_cs_do.cmd">
+             <Issue>4844</Issue>
+        </ExcludeList>
     </ItemGroup>
 </Project>
