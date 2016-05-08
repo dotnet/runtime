@@ -86,7 +86,7 @@ static void DllsNameFromPeb(
     if (FAILED(g_ExtData->ReadVirtual(ProcessPeb+Offset_Ldr, &peb.Ldr,
                                       sizeof(peb.Ldr), NULL)))
     {
-        ExtOut ( "    Unable to read PEB_LDR_DATA address at %p\n", (ULONG64)(ProcessPeb+Offset_Ldr));
+        ExtOut ( "    Unable to read PEB_LDR_DATA address at %p\n", SOS_PTR(ProcessPeb+Offset_Ldr));
         return;
     }
 
@@ -123,7 +123,7 @@ static void DllsNameFromPeb(
                                       sizeof(Ldr.InMemoryOrderModuleList),
                                       NULL)))
     {
-        ExtOut ( "    Unable to read InMemoryOrderModuleList address at %p\n", OrderModuleListStart);
+        ExtOut ( "    Unable to read InMemoryOrderModuleList address at %p\n", SOS_PTR(OrderModuleListStart));
         return;
     }
     Next = (ULONG64)Ldr.InMemoryOrderModuleList.Flink;
@@ -201,7 +201,7 @@ static void DllsNameFromPeb(
             {
 #if 0
                 ExtOut ( "    Unable to read FullDllName.Buffer address at %p\n",
-                         (ULONG64)FullDllName.Buffer);
+                         SOS_PTR(FullDllName.Buffer));
 #endif
                 ZeroMemory( dllName, MAX_LONGPATH * sizeof (WCHAR) );
             }
