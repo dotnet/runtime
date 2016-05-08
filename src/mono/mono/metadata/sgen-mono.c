@@ -2718,7 +2718,7 @@ sgen_client_degraded_allocation (size_t size)
 }
 
 void
-sgen_client_log_timing (GGTimingInfo *info, mword last_major_num_sections, mword last_los_memory_usage)
+sgen_client_log_timing (GGTimingInfo *info, mword promoted_size, mword last_los_memory_usage)
 {
 	SgenMajorCollector *major_collector = sgen_get_major_collector ();
 	mword num_major_sections = major_collector->get_num_major_sections ();
@@ -2741,7 +2741,7 @@ sgen_client_log_timing (GGTimingInfo *info, mword last_major_num_sections, mword
 	                info->reason ? info->reason : "",
 	                (int)info->total_time / 10000.0f,
 	                full_timing_buff,
-	                (num_major_sections - last_major_num_sections) * major_collector->section_size / 1024,
+	                (int)promoted_size / 1024,
 	                major_collector->section_size * num_major_sections / 1024,
 	                los_memory_usage / 1024);
 }

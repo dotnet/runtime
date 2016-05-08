@@ -25,6 +25,9 @@
 
 #define MIN_MINOR_COLLECTION_ALLOWANCE	((mword)(DEFAULT_NURSERY_SIZE * default_allowance_nursery_size_ratio))
 
+mword total_promoted_size = 0;
+static mword total_promoted_size_start;
+
 /*Heap limits and allocation knobs*/
 static mword max_heap_size = ((mword)0)- ((mword)1);
 static mword soft_heap_limit = ((mword)0) - ((mword)1);
@@ -160,6 +163,7 @@ sgen_need_major_collection (mword space_needed)
 void
 sgen_memgov_minor_collection_start (void)
 {
+	total_promoted_size_start = total_promoted_size;
 }
 
 void
@@ -222,7 +226,7 @@ sgen_memgov_collection_end (int generation, GGTimingInfo* info, int info_count)
 	int i;
 	for (i = 0; i < info_count; ++i) {
 		if (info[i].generation != -1)
-			sgen_client_log_timing (&info [i], last_major_num_sections, last_los_memory_usage);
+			sgen_client_log_timing (&info [i], total_promoted_size - total_promoted_size_start, last_los_memory_usage);
 	}
 	last_los_memory_usage = los_memory_usage;
 }

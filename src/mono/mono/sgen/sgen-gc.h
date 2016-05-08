@@ -951,6 +951,7 @@ extern int default_nursery_size;
 extern guint32 tlab_size;
 extern NurseryClearPolicy nursery_clear_policy;
 extern gboolean sgen_try_free_some_memory;
+extern mword total_promoted_size;
 
 extern MonoCoopMutex gc_mutex;
 
