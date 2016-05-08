@@ -692,7 +692,7 @@ namespace Output
             {
                 if (mFormat == Formats::Default || mFormat == Formats::Pointer)
                 {
-                    ExtOut("%p", (__int64)mValue);
+                    ExtOut("%p", SOS_PTR(mValue));
                 }
                 else
                 {
