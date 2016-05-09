@@ -39,6 +39,11 @@ namespace System.ComponentModel
         /// </summary>
         public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes)
         {
+            if (value == null)
+            {
+                return null;
+            }
+
             PropertyDescriptor[] props = null;
 
             if (value.GetType().IsArray)
