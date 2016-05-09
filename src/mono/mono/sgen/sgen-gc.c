@@ -2231,6 +2231,7 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 	int overflow_generation_to_collect = -1;
 	int oldest_generation_collected = generation_to_collect;
 	const char *overflow_reason = NULL;
+	gboolean finish_concurrent = concurrent_collection_in_progress && (major_should_finish_concurrent_collection () || generation_to_collect == GENERATION_OLD);
 
 	binary_protocol_collection_requested (generation_to_collect, requested_size, wait_to_finish ? 1 : 0);
 
@@ -2242,47 +2243,26 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 
 	TV_GETTIME (gc_total_start);
 
-	if (concurrent_collection_in_progress) {
-		/*
-		 * If the concurrent worker is finished or we are asked to do a major collection
-		 * then we finish the concurrent collection.
-		 */
-		gboolean finish = major_should_finish_concurrent_collection () || generation_to_collect == GENERATION_OLD;
-
-		if (finish) {
-			major_finish_concurrent_collection (wait_to_finish);
-			oldest_generation_collected = GENERATION_OLD;
-		} else {
-			SGEN_ASSERT (0, generation_to_collect == GENERATION_NURSERY, "Why aren't we finishing the concurrent collection?");
-			major_update_concurrent_collection ();
-			collect_nursery (NULL, FALSE);
-		}
-
-		goto done;
-	}
-
-	SGEN_ASSERT (0, !concurrent_collection_in_progress, "Why did this not get handled above?");
-
-	/*
-	 * There's no concurrent collection in progress.  Collect the generation we're asked
-	 * to collect.  If the major collector is concurrent and we're not forced to wait,
-	 * start a concurrent collection.
-	 */
 	// FIXME: extract overflow reason
-	if (generation_to_collect == GENERATION_NURSERY) {
-		if (collect_nursery (NULL, FALSE)) {
+	// FIXME: minor overflow for concurrent case
+	if (generation_to_collect == GENERATION_NURSERY && !finish_concurrent) {
+		if (concurrent_collection_in_progress)
+			major_update_concurrent_collection ();
+
+		if (collect_nursery (NULL, FALSE) && !concurrent_collection_in_progress) {
 			overflow_generation_to_collect = GENERATION_OLD;
 			overflow_reason = "Minor overflow";
 		}
+	} else if (finish_concurrent) {
+		major_finish_concurrent_collection (wait_to_finish);
+		oldest_generation_collected = GENERATION_OLD;
 	} else {
+		SGEN_ASSERT (0, generation_to_collect == GENERATION_OLD, "We should have handled nursery collections above");
 		if (major_collector.is_concurrent && !wait_to_finish) {
 			collect_nursery (NULL, FALSE);
 			major_start_concurrent_collection (reason);
-			// FIXME: set infos[0] properly
-			goto done;
-		}
-
-		if (major_do_collection (reason, wait_to_finish)) {
+			oldest_generation_collected = GENERATION_NURSERY;
+		} else if (major_do_collection (reason, wait_to_finish)) {
 			overflow_generation_to_collect = GENERATION_NURSERY;
 			overflow_reason = "Excessive pinning";
 		}
@@ -2291,15 +2271,15 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 	TV_GETTIME (gc_end);
 
 	memset (infos, 0, sizeof (infos));
-	infos [0].generation = generation_to_collect;
+	infos [0].generation = oldest_generation_collected;
 	infos [0].reason = reason;
 	infos [0].is_overflow = FALSE;
 	infos [1].generation = -1;
 	infos [0].total_time = SGEN_TV_ELAPSED (gc_start, gc_end);
 
-	SGEN_ASSERT (0, !concurrent_collection_in_progress, "Why did this not get handled above?");
-
 	if (overflow_generation_to_collect != -1) {
+		SGEN_ASSERT (0, !concurrent_collection_in_progress, "We don't yet support overflow collections with the concurrent collector");
+
 		/*
 		 * We need to do an overflow collection, either because we ran out of memory
 		 * or the nursery is fully pinned.
@@ -2331,7 +2311,6 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 		degraded_mode = 1;
 	}
 
- done:
 	g_assert (sgen_gray_object_queue_is_empty (&gray_queue));
 
 	TV_GETTIME (gc_total_end);
