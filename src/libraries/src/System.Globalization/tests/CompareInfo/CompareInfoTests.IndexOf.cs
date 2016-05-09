@@ -99,24 +99,28 @@ namespace System.Globalization.Tests
             yield return new object[] { s_currentCompare, "\u0131", "\u0131", 0, 1, CompareOptions.Ordinal, 0 };
             yield return new object[] { s_currentCompare, "\u0130", "\u0131", 0, 1, CompareOptions.Ordinal, -1 };
             yield return new object[] { s_currentCompare, "\u0131", "\u0130", 0, 1, CompareOptions.Ordinal, -1 };
+            
+            // Platform differences
+            yield return new object[] { s_hungarianCompare, "foobardzsdzs", "rddzs", 0, 12, CompareOptions.None, PlatformDetection.IsWindows ? 5 : -1};
         }
 
         public static IEnumerable<object[]> IndexOf_Aesc_Ligature_TestData()
         {
+            bool isWindows = PlatformDetection.IsWindows;
             // Searches for the ligature Æ
             string source1 = "Is AE or ae the same as \u00C6 or \u00E6?";
-            yield return new object[] { s_invariantCompare, source1, "AE", 8, 18, CompareOptions.None, 24 };
+            yield return new object[] { s_invariantCompare, source1, "AE", 8, 18, CompareOptions.None, isWindows ? 24 : -1};
             yield return new object[] { s_invariantCompare, source1, "ae", 8, 18, CompareOptions.None, 9 };
             yield return new object[] { s_invariantCompare, source1, "\u00C6", 8, 18, CompareOptions.None, 24 };
-            yield return new object[] { s_invariantCompare, source1, "\u00E6", 8, 18, CompareOptions.None, 9 };
+            yield return new object[] { s_invariantCompare, source1, "\u00E6", 8, 18, CompareOptions.None, isWindows ? 9 : -1};
             yield return new object[] { s_invariantCompare, source1, "AE", 8, 18, CompareOptions.Ordinal, -1 };
             yield return new object[] { s_invariantCompare, source1, "ae", 8, 18, CompareOptions.Ordinal, 9 };
             yield return new object[] { s_invariantCompare, source1, "\u00C6", 8, 18, CompareOptions.Ordinal, 24 };
             yield return new object[] { s_invariantCompare, source1, "\u00E6", 8, 18, CompareOptions.Ordinal, -1 };
             yield return new object[] { s_invariantCompare, source1, "AE", 8, 18, CompareOptions.IgnoreCase, 9 };
             yield return new object[] { s_invariantCompare, source1, "ae", 8, 18, CompareOptions.IgnoreCase, 9 };
-            yield return new object[] { s_invariantCompare, source1, "\u00C6", 8, 18, CompareOptions.IgnoreCase, 9 };
-            yield return new object[] { s_invariantCompare, source1, "\u00E6", 8, 18, CompareOptions.IgnoreCase, 9 };
+            yield return new object[] { s_invariantCompare, source1, "\u00C6", 8, 18, CompareOptions.IgnoreCase, isWindows? 9 : 24 };
+            yield return new object[] { s_invariantCompare, source1, "\u00E6", 8, 18, CompareOptions.IgnoreCase, isWindows? 9 : 24 };
         }
 
         public static IEnumerable<object[]> IndexOf_U_WithDiaeresis_TestData()
@@ -139,6 +143,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(IndexOf_TestData))]
+        [MemberData(nameof(IndexOf_Aesc_Ligature_TestData))]
         [MemberData(nameof(IndexOf_U_WithDiaeresis_TestData))]
         public void IndexOf_String(CompareInfo compareInfo, string source, string value, int startIndex, int count, CompareOptions options, int expected)
         {
@@ -200,29 +205,12 @@ namespace System.Globalization.Tests
             Assert.Equal(expected, compareInfo.IndexOf(source, value, startIndex, count, options));
         }
 
-        [Theory]
-        [MemberData(nameof(IndexOf_Aesc_Ligature_TestData))]
-        [ActiveIssue(5463, Xunit.PlatformID.AnyUnix)]
-        public void IndexOf_Aesc_Ligature(CompareInfo compareInfo, string source, string value, int startIndex, int count, CompareOptions options, int expected)
-        {
-            // TODO: Remove this function, and combine into IndexOf_String once 5463 is fixed
-            IndexOf_String(compareInfo, source, value, startIndex, count, options, expected);
-        }
-
         [Fact]
-        [ActiveIssue(5463, Xunit.PlatformID.AnyUnix)]
         public void IndexOf_UnassignedUnicode()
         {
-            IndexOf_String(s_invariantCompare, "FooBar", "Foo" + UnassignedUnicodeCharacter() + "Bar", 0, 6, CompareOptions.None, 0);
-            IndexOf_String(s_invariantCompare, "~FooBar", "Foo" + UnassignedUnicodeCharacter() + "Bar", 0, 7, CompareOptions.IgnoreNonSpace, 1);
-        }
-
-        [Fact]
-        [ActiveIssue(5463, Xunit.PlatformID.AnyUnix)]
-        public void IndexOf_Hungarian()
-        {
-            // TODO: Remove this function, and combine into IndexOf_TestData once 5463 is fixed
-            IndexOf_String(s_hungarianCompare, "foobardzsdzs", "rddzs", 0, 12, CompareOptions.None, 5);
+            bool isWindows = PlatformDetection.IsWindows; 
+            IndexOf_String(s_invariantCompare, "FooBar", "Foo\uFFFFBar", 0, 6, CompareOptions.None, isWindows ? 0 : -1);
+            IndexOf_String(s_invariantCompare, "~FooBar", "Foo\uFFFFBar", 0, 7, CompareOptions.IgnoreNonSpace, isWindows ? 1 : -1);
         }
 
         [Fact]
@@ -334,18 +322,6 @@ namespace System.Globalization.Tests
             // with invalid offsets.
             Assert.Equal(0, s_invariantCompare.IndexOf("", "", -1, CompareOptions.None));
             Assert.Equal(-1, s_invariantCompare.IndexOf("", "a", -1, CompareOptions.None));
-        }
-
-        private static char UnassignedUnicodeCharacter()
-        {
-            for (char ch = '\uFFFF'; ch > '\u0000'; ch++)
-            {
-                if (CharUnicodeInfo.GetUnicodeCategory(ch) == UnicodeCategory.OtherNotAssigned)
-                {
-                    return ch;
-                }
-            }
-            return char.MinValue; // There are no unassigned unicode characters from \u0000 - \uFFFF
         }
     }
 }
