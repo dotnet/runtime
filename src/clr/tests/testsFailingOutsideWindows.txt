@@ -40,7 +40,6 @@ JIT/Directed/pinning/object-pin/object-pin/object-pin.sh
 JIT/Directed/pinvoke/preemptive_cooperative/preemptive_cooperative.sh
 JIT/Directed/tls/mutualrecurthd-tls/mutualrecurthd-tls.sh
 JIT/Directed/tls/test-tls/test-tls.sh
-JIT/IL_Conformance/Old/Conformance_Base/conv_ovf_i8_i/conv_ovf_i8_i.sh
 JIT/jit64/localloc/verify/verify01_dynamic/verify01_dynamic.sh
 JIT/jit64/localloc/verify/verify01_large/verify01_large.sh
 JIT/jit64/localloc/verify/verify01_small/verify01_small.sh
