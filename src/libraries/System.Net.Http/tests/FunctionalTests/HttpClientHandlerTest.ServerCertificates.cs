@@ -150,6 +150,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ActiveIssue(7812, PlatformID.Windows)]
         [ConditionalTheory(nameof(BackendSupportsCustomCertificateHandling))]
         [InlineData(HttpTestServers.ExpiredCertRemoteServer, SslPolicyErrors.RemoteCertificateChainErrors)]
         [InlineData(HttpTestServers.SelfSignedCertRemoteServer, SslPolicyErrors.RemoteCertificateChainErrors)]
