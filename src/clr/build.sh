@@ -240,28 +240,35 @@ isMSBuildOnNETCoreSupported()
     fi
 }
 
-build_mscorlib_ni()
+build_CoreLib_ni()
 {
     if [ $__SkipCoreCLR == 0 -a -e $__BinDir/crossgen ]; then
-        echo "Generating native image for mscorlib."
+        echo "Generating native image for System.Private.CoreLib."
+        $__BinDir/crossgen $__BinDir/System.Private.CoreLib.dll
+        if [ $? -ne 0 ]; then
+            echo "Failed to generate native image for System.Private.CoreLib."
+            exit 1
+        fi
+
+        echo "Generating native image for MScorlib Facade."
         $__BinDir/crossgen $__BinDir/mscorlib.dll
         if [ $? -ne 0 ]; then
-            echo "Failed to generate native image for mscorlib."
+            echo "Failed to generate native image for mscorlib facade."
             exit 1
         fi
     fi
 }
 
-build_mscorlib()
+build_CoreLib()
 {
 
     if [ $__isMSBuildOnNETCoreSupported == 0 ]; then
-        echo "Mscorlib.dll build unsupported."
+        echo "System.Private.CoreLib.dll build unsupported."
         return
     fi
 
     if [ $__SkipMSCorLib == 1 ]; then
-       echo "Skipping building mscorlib."
+       echo "Skipping building System.Private.CoreLib."
        return
     fi
 
@@ -269,13 +276,13 @@ build_mscorlib()
 
     restoreBuildTools
 
-    echo "Commencing build of mscorlib components for $__BuildOS.$__BuildArch.$__BuildType"
+    echo "Commencing build of managed components for $__BuildOS.$__BuildArch.$__BuildType"
 
     # Invoke MSBuild
-    $__ProjectRoot/Tools/corerun "$__MSBuildPath" /nologo "$__ProjectRoot/build.proj" /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__LogsDir/MSCorLib_$__BuildOS__$__BuildArch__$__BuildType.log" /t:Build /p:__BuildOS=$__BuildOS /p:__BuildArch=$__BuildArch /p:__BuildType=$__BuildType /p:__IntermediatesDir=$__IntermediatesDir /p:__RootBinDir=$__RootBinDir /p:BuildNugetPackage=false /p:UseSharedCompilation=false ${__SignTypeReal}
+    $__ProjectRoot/Tools/corerun "$__MSBuildPath" /nologo "$__ProjectRoot/build.proj" /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__LogsDir/System.Private.CoreLib_$__BuildOS__$__BuildArch__$__BuildType.log" /t:Build /p:__BuildOS=$__BuildOS /p:__BuildArch=$__BuildArch /p:__BuildType=$__BuildType /p:__IntermediatesDir=$__IntermediatesDir /p:__RootBinDir=$__RootBinDir /p:BuildNugetPackage=false /p:UseSharedCompilation=false ${__SignTypeReal}
 
     if [ $? -ne 0 ]; then
-        echo "Failed to build mscorlib."
+        echo "Failed to build managed components."
         exit 1
     fi
 
@@ -283,11 +290,11 @@ build_mscorlib()
     if [ $__CrossBuild != 1 ]; then
        # The architecture of host pc must be same architecture with target.
        if [[ ( "$__HostArch" == "$__BuildArch" ) ]]; then
-           build_mscorlib_ni
+           build_CoreLib_ni
        elif [[ ( "$__HostArch" == "x64" ) && ( "$__BuildArch" == "x86" ) ]]; then
-           build_mscorlib_ni
+           build_CoreLib_ni
        elif [[ ( "$__HostArch" == "arm64" ) && ( "$__BuildArch" == "arm" ) ]]; then
-           build_mscorlib_ni
+           build_CoreLib_ni
        else 
            exit 1
        fi
@@ -678,9 +685,9 @@ check_prereqs
 
 build_coreclr
 
-# Build mscorlib.
+# Build System.Private.CoreLib.
 
-build_mscorlib
+build_CoreLib
 
 # Generate nuget packages
 
