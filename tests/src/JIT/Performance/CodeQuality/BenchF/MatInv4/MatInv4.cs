@@ -10,7 +10,7 @@ using Xunit;
 [assembly: OptimizeForBenchmarks]
 [assembly: MeasureInstructionsRetired]
 
-public static class LLoops
+public static class MatInv4
 {
 #if DEBUG
     public const int Iterations = 1;
