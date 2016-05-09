@@ -157,7 +157,7 @@ HRESULT CheckIfWinMDAdapterNeeded(IMDCommon *pRawMDCommon)
         LPCSTR arefName;
         USHORT usMajorVersion;
         IfFailGo(pNewAdapter->m_pRawMetaModelCommonRO->CommonGetAssemblyRefProps(mdar, &usMajorVersion, NULL, NULL, NULL, NULL, NULL, NULL, &arefName, NULL, NULL, NULL));
-        if (0 == strcmp(arefName, "mscorlib"))
+        if (0 == strcmp(arefName, CoreLibName_A))
         {
             pNewAdapter->m_assemblyRefMscorlib = mdar;
 

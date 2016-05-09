@@ -880,7 +880,7 @@ namespace System.Resources {
                 // If this assert fires, please fix the build process for the
                 // BCL directory.
                 if (a == typeof(Object).Assembly) {
-                    Contract.Assert(false, "mscorlib's SatelliteContractVersionAttribute is a malformed version string!");
+                    Contract.Assert(false, System.CoreLib.Name+"'s SatelliteContractVersionAttribute is a malformed version string!");
                     return null;
                 }
 
@@ -932,7 +932,7 @@ namespace System.Resources {
                 return false;
 
             // to match IsMscorlib() in VM
-            if (String.Compare(an1.Name, "mscorlib", StringComparison.OrdinalIgnoreCase) == 0)
+            if (String.Compare(an1.Name, System.CoreLib.Name, StringComparison.OrdinalIgnoreCase) == 0)
                 return true;
 
 
