@@ -5596,14 +5596,12 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_ISUB_OVF_UN:
 		case OP_IMUL_OVF:
 		case OP_IMUL_OVF_UN:
-#if SIZEOF_VOID_P == 8
 		case OP_LADD_OVF:
 		case OP_LADD_OVF_UN:
 		case OP_LSUB_OVF:
 		case OP_LSUB_OVF_UN:
 		case OP_LMUL_OVF:
 		case OP_LMUL_OVF_UN:
-#endif
 			{
 				LLVMValueRef args [2], val, ovf, func;
 
