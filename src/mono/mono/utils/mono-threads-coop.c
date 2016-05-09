@@ -267,8 +267,8 @@ mono_threads_reset_blocking_start (void* stackdata)
 	case AbortBlockingOk:
 		info->thread_saved_state [SELF_SUSPEND_STATE_INDEX].valid = FALSE;
 		break;
-	case AbortBlockingOkAndPool:
-		mono_threads_state_poll ();
+	case AbortBlockingWait:
+		mono_thread_info_wait_for_resume (info);
 		break;
 	default:
 		g_error ("Unknown thread state");
