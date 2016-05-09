@@ -4,6 +4,8 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.IO
 {
@@ -405,12 +407,8 @@ namespace System.IO
         /// <internalonly/>
         private void NotifyInternalBufferOverflowEvent()
         {
-            ErrorEventHandler handler = _onErrorHandler;
-            if (handler != null)
-            {
-                handler(this, new ErrorEventArgs(
+            _onErrorHandler?.Invoke(this, new ErrorEventArgs(
                     new InternalBufferOverflowException(SR.Format(SR.FSW_BufferOverflow, _directory))));
-            }
         }
 
         /// <devdoc>
@@ -463,11 +461,7 @@ namespace System.IO
         [SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", MessageId = "0#", Justification = "Changing from protected to private would be a breaking change")]
         protected void OnChanged(FileSystemEventArgs e)
         {
-            FileSystemEventHandler changedHandler = _onChangedHandler;
-            if (changedHandler != null)
-            {
-                changedHandler(this, e);
-            }
+            _onChangedHandler?.Invoke(this, e);
         }
 
         /// <devdoc>
@@ -476,11 +470,7 @@ namespace System.IO
         [SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", MessageId = "0#", Justification = "Changing from protected to private would be a breaking change")]
         protected void OnCreated(FileSystemEventArgs e)
         {
-            FileSystemEventHandler createdHandler = _onCreatedHandler;
-            if (createdHandler != null)
-            {
-                createdHandler(this, e);
-            }
+            _onCreatedHandler?.Invoke(this, e);
         }
 
         /// <devdoc>
@@ -489,11 +479,7 @@ namespace System.IO
         [SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", MessageId = "0#", Justification = "Changing from protected to private would be a breaking change")]
         protected void OnDeleted(FileSystemEventArgs e)
         {
-            FileSystemEventHandler deletedHandler = _onDeletedHandler;
-            if (deletedHandler != null)
-            {
-                deletedHandler(this, e);
-            }
+            _onDeletedHandler?.Invoke(this, e);
         }
 
         /// <devdoc>
@@ -502,11 +488,7 @@ namespace System.IO
         [SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", MessageId = "0#", Justification = "Changing from protected to private would be a breaking change")]
         protected void OnError(ErrorEventArgs e)
         {
-            ErrorEventHandler errorHandler = _onErrorHandler;
-            if (errorHandler != null)
-            {
-                errorHandler(this, e);
-            }
+            _onErrorHandler?.Invoke(this, e);
         }
 
         /// <devdoc>
@@ -515,11 +497,81 @@ namespace System.IO
         [SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", MessageId = "0#", Justification = "Changing from protected to private would be a breaking change")]
         protected void OnRenamed(RenamedEventArgs e)
         {
-            RenamedEventHandler renamedHandler = _onRenamedHandler;
-            if (renamedHandler != null)
+            _onRenamedHandler?.Invoke(this, e);
+        }
+
+        public WaitForChangedResult WaitForChanged(WatcherChangeTypes changeType) => 
+            WaitForChanged(changeType, Timeout.Infinite);
+
+        public WaitForChangedResult WaitForChanged(WatcherChangeTypes changeType, int timeout)
+        {
+            // The full framework implementation doesn't do any argument validation, so
+            // none is done here, either.
+
+            var tcs = new TaskCompletionSource<WaitForChangedResult>();
+            FileSystemEventHandler fseh = null;
+            RenamedEventHandler reh = null;
+
+            // Register the event handlers based on what events are desired.  The full framework
+            // doesn't register for the Error event, so this doesn't either.
+            if ((changeType & (WatcherChangeTypes.Created | WatcherChangeTypes.Deleted | WatcherChangeTypes.Changed)) != 0)
             {
-                renamedHandler(this, e);
+                fseh = (s, e) =>
+                {
+                    if ((e.ChangeType & changeType) != 0)
+                    {
+                        tcs.TrySetResult(new WaitForChangedResult(e.ChangeType, e.Name, oldName: null, timedOut: false));
+                    }
+                };
+                if ((changeType & WatcherChangeTypes.Created) != 0) Created += fseh;
+                if ((changeType & WatcherChangeTypes.Deleted) != 0) Deleted += fseh;
+                if ((changeType & WatcherChangeTypes.Changed) != 0) Changed += fseh;
             }
+            if ((changeType & WatcherChangeTypes.Renamed) != 0)
+            {
+                reh = (s, e) =>
+                {
+                    if ((e.ChangeType & changeType) != 0)
+                    {
+                        tcs.TrySetResult(new WaitForChangedResult(e.ChangeType, e.Name, e.OldName, timedOut: false));
+                    }
+                };
+                Renamed += reh;
+            }
+            try
+            {
+                // Enable the FSW if it wasn't already.
+                bool wasEnabled = EnableRaisingEvents;
+                if (!wasEnabled)
+                {
+                    EnableRaisingEvents = true;
+                }
+
+                // Block until an appropriate event arrives or until we timeout.
+                tcs.Task.Wait(timeout);
+
+                // Reset the enabled state to what it was.
+                EnableRaisingEvents = wasEnabled;
+            }
+            finally
+            {
+                // Unregister the event handlers.
+                if (reh != null)
+                {
+                    Renamed -= reh;
+                }
+                if (fseh != null)
+                {
+                    if ((changeType & WatcherChangeTypes.Changed) != 0) Changed -= fseh;
+                    if ((changeType & WatcherChangeTypes.Deleted) != 0) Deleted -= fseh;
+                    if ((changeType & WatcherChangeTypes.Created) != 0) Created -= fseh;
+                }
+            }
+
+            // Return the results.
+            return tcs.Task.Status == TaskStatus.RanToCompletion ?
+                tcs.Task.Result :
+                WaitForChangedResult.TimedOutResult;
         }
 
         /// <devdoc>
