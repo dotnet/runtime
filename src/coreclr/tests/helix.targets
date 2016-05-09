@@ -25,6 +25,7 @@
     </PropertyGroup>
     <ItemGroup>
       <TestNugetProjectLockFile Include="$(SourceDir)$(Category)\**\project.lock.json"/>
+      <TestNugetProjectLockFile Include="$(TestRuntimeProjectLockJson)"/>
     </ItemGroup>
   </Target>
 
