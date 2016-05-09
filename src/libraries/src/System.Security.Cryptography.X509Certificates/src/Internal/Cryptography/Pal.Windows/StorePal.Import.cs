@@ -82,17 +82,21 @@ namespace Internal.Cryptography.Pal
                                 if (certStore == null || certStore.IsInvalid)
                                     throw Marshal.GetLastWin32Error().ToCryptographicException();
                             }
-                        }
 
-
-                        if (!persistKeySet)
-                        {
-                            SafeCertContextHandle pCertContext = null;
-                            while (Interop.crypt32.CertEnumCertificatesInStore(certStore, ref pCertContext))
+                            if (!persistKeySet)
                             {
-                                CRYPTOAPI_BLOB nullBlob = new CRYPTOAPI_BLOB(0, null);
-                                if (!Interop.crypt32.CertSetCertificateContextProperty(pCertContext, CertContextPropId.CERT_DELETE_KEYSET_PROP_ID, CertSetPropertyFlags.CERT_SET_PROPERTY_INHIBIT_PERSIST_FLAG, &nullBlob))
-                                    throw Marshal.GetLastWin32Error().ToCryptographicException();
+                                //
+                                // If the user did not want us to persist private keys, then we should loop through all
+                                // the certificates in the collection and set our custom CERT_DELETE_KEYSET_PROP_ID property
+                                // so the key container will be deleted when the cert contexts will go away.
+                                //
+                                SafeCertContextHandle pCertContext = null;
+                                while (Interop.crypt32.CertEnumCertificatesInStore(certStore, ref pCertContext))
+                                {
+                                    CRYPTOAPI_BLOB nullBlob = new CRYPTOAPI_BLOB(0, null);
+                                    if (!Interop.crypt32.CertSetCertificateContextProperty(pCertContext, CertContextPropId.CERT_DELETE_KEYSET_PROP_ID, CertSetPropertyFlags.CERT_SET_PROPERTY_INHIBIT_PERSIST_FLAG, &nullBlob))
+                                        throw Marshal.GetLastWin32Error().ToCryptographicException();
+                                }
                             }
                         }
 
