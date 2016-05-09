@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  
   <PropertyGroup>
     <AssemblyName>mscorlib</AssemblyName>
     <ProjectGuid>{263342A6-FC48-4CFC-B16A-2AF964D3536C}</ProjectGuid>
@@ -18,7 +19,14 @@
 
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
+    <AvailablePlatforms>amd64,x86,arm,arm64</AvailablePlatforms>
+    <Configuration Condition=" '$(Configuration)' == '' ">$(BuildType)</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">$(BuildArch)</Platform>
+    <!-- The CLR properties use amd64 as their platform string, we want to keep in sync with those, so set Platform appropriately,
+         though still use the 'x64' output path (see use of BuildArch below) -->
+    <Platform Condition=" '$(Platform)' == 'x64' ">amd64</Platform>
   </PropertyGroup>
+
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
@@ -34,7 +42,6 @@
     <DebugSymbols>false</DebugSymbols>
     <DebugType>none</DebugType>
   </PropertyGroup>
-
   <!-- Output paths -->
   <PropertyGroup>
     <BaseIntermediateOutputPath>$(RootBinDir)\obj</BaseIntermediateOutputPath>
