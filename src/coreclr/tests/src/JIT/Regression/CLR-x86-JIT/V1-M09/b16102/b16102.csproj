@@ -32,6 +32,7 @@
     <NoStandardLib>True</NoStandardLib>
     <Noconfig>True</Noconfig>
     <DefineConstants>$(DefineConstants);CORECLR</DefineConstants>
+    <CLRTestExitCode>0</CLRTestExitCode>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="b16102.cs" />
