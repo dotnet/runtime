@@ -11,8 +11,9 @@ typedef struct {
 	MonoTraceMask	mask;
 } MonoLogLevelEntry;
 
-GLogLevelFlags mono_internal_current_level		= INT_MAX;
-MonoTraceMask  mono_internal_current_mask		= MONO_TRACE_ALL;
+GLogLevelFlags mono_internal_current_level	= INT_MAX;
+MonoTraceMask  mono_internal_current_mask	= MONO_TRACE_ALL;
+gboolean mono_trace_log_header			= FALSE;
 
 static GQueue		*level_stack		= NULL;
 static const char	*mono_log_domain	= "Mono";
@@ -39,8 +40,8 @@ mono_trace_init (void)
 
 		mono_trace_set_mask_string(g_getenv("MONO_LOG_MASK"));
 		mono_trace_set_level_string(g_getenv("MONO_LOG_LEVEL"));
-		mono_trace_set_logdest_string(g_getenv("MONO_LOG_DEST"));
 		mono_trace_set_logheader_string(g_getenv("MONO_LOG_HEADER"));
+		mono_trace_set_logdest_string(g_getenv("MONO_LOG_DEST"));
 	}
 }
 
@@ -122,7 +123,7 @@ mono_trace_set_mask (MonoTraceMask mask)
 	if(level_stack == NULL)
 		mono_trace_init();
 
-	mono_internal_current_mask	= mask;
+	mono_internal_current_mask = mask;
 }
 
 /**
@@ -166,13 +167,10 @@ mono_trace_set_logheader_string(const char *head)
 {
 	MonoLogCallback logger;
 
-	if(level_stack == NULL)
-		mono_trace_init();
-
 	if (head == NULL) {
-		logger.header = FALSE;
+		mono_trace_log_header = FALSE;
 	} else {
-		logger.header = TRUE;
+		mono_trace_log_header = TRUE;
 	}
 }
 
@@ -319,6 +317,7 @@ mono_trace_set_log_handler (MonoLogCallback *callback, const char *dest, void *u
 	logCallback.opener = callback->opener;
 	logCallback.writer = callback->writer;
 	logCallback.closer = callback->closer;
+	logCallback.header = mono_trace_log_header;
 	logCallback.opener(dest, user_data);
 }
 
