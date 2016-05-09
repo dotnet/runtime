@@ -143,6 +143,25 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        public void SearchPatternByExtension()
+        {
+            if (TestFiles)
+            {
+                DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+                using (File.Create(Path.Combine(testDir.FullName, "TestFile1.txt")))
+                using (File.Create(Path.Combine(testDir.FullName, "TestFile2.xxt")))
+                using (File.Create(Path.Combine(testDir.FullName, "Test1File2.txt")))
+                using (File.Create(Path.Combine(testDir.FullName, "Test1Dir2.txx")))
+                {
+                    string[] strArr = GetEntries(testDir.FullName, "*.txt");
+                    Assert.Equal(2, strArr.Length);
+                    Assert.Contains(Path.Combine(testDir.FullName, "TestFile1.txt"), strArr);
+                    Assert.Contains(Path.Combine(testDir.FullName, "Test1File2.txt"), strArr);
+                }
+            }
+        }
+
+        [Fact]
         public void SearchPatternExactMatch()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
