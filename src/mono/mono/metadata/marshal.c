@@ -7985,9 +7985,10 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 	 *   ex = mono_gchandle_new (e, false);
 	 * } finally {
 	 *   mono_jit_detach ();
+	 *
+	 *   if (ex != -1)
+	 *     mono_marshal_ftnptr_eh_callback (ex);
 	 * }
-	 * if (ex != -1)
-	 *   mono_marshal_ftnptr_eh_callback (ex);
 	 *
 	 * return ret;
 	 */
@@ -8165,7 +8166,9 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 
 	leave_try_pos = mono_mb_emit_branch (mb, CEE_LEAVE);
 
-	/* } catch (Exception e) { */
+	/* } [endtry] */
+
+	/* catch (Exception e) { */
 	clause_catch->try_len = mono_mb_get_label (mb) - clause_catch->try_offset;
 	clause_catch->handler_offset = mono_mb_get_label (mb);
 
@@ -8193,7 +8196,7 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 	/* } [endcatch] */
 	clause_catch->handler_len = mono_mb_get_pos (mb) - clause_catch->handler_offset;
 
-	/* } finally { */
+	/* finally { */
 	clause_finally->try_len = mono_mb_get_label (mb) - clause_finally->try_offset;
 	clause_finally->handler_offset = mono_mb_get_label (mb);
 
@@ -8204,14 +8207,6 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 	 */
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_byte (mb, CEE_MONO_JIT_DETACH);
-
-	mono_mb_emit_byte (mb, CEE_ENDFINALLY);
-
-	/* } [endfinally] */
-	clause_finally->handler_len = mono_mb_get_pos (mb) - clause_finally->handler_offset;
-
-	mono_mb_patch_branch (mb, leave_try_pos);
-	mono_mb_patch_branch (mb, leave_catch_pos);
 
 	/* if (ex != -1) */
 	mono_mb_emit_ldloc (mb, ex_local);
@@ -8225,6 +8220,14 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 
 	/* [ex == -1] */
 	mono_mb_patch_branch (mb, ex_m1_pos);
+
+	mono_mb_emit_byte (mb, CEE_ENDFINALLY);
+
+	/* } [endfinally] */
+	clause_finally->handler_len = mono_mb_get_pos (mb) - clause_finally->handler_offset;
+
+	mono_mb_patch_branch (mb, leave_try_pos);
+	mono_mb_patch_branch (mb, leave_catch_pos);
 
 	/* return ret; */
 	if (m->retobj_var) {
