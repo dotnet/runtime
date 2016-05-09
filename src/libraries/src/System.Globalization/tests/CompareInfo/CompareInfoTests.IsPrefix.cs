@@ -27,6 +27,7 @@ namespace System.Globalization.Tests
             // Hungarian
             yield return new object[] { s_invariantCompare, "dzsdzsfoobar", "ddzsf", CompareOptions.None, false };
             yield return new object[] { s_invariantCompare, "dzsdzsfoobar", "ddzsf", CompareOptions.Ordinal, false };
+            yield return new object[] { s_hungarianCompare, "dzsdzsfoobar", "ddzsf", CompareOptions.Ordinal, false };            
 
             // Turkish
             yield return new object[] { s_turkishCompare, "interesting", "I", CompareOptions.None, false };
@@ -51,6 +52,9 @@ namespace System.Globalization.Tests
             // Ignore symbols
             yield return new object[] { s_invariantCompare, "Test's can be interesting", "Tests", CompareOptions.IgnoreSymbols, true };
             yield return new object[] { s_invariantCompare, "Test's can be interesting", "Tests", CompareOptions.None, false };
+            
+            // Platform differences
+            yield return new object[] { s_hungarianCompare, "dzsdzsfoobar", "ddzsf", CompareOptions.None, PlatformDetection.IsWindows ? true : false };
         }
 
         [Theory]
@@ -65,20 +69,11 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(5463, Xunit.PlatformID.AnyUnix)]
-        public void IsPrefix_Hungarian()
-        {
-            // TODO: Remove this function, and combine into IsPrefix_TestData once 5463 is fixed
-            IsPrefix(s_hungarianCompare, "dzsdzsfoobar", "ddzsf", CompareOptions.None, true);
-            IsPrefix(s_hungarianCompare, "dzsdzsfoobar", "ddzsf", CompareOptions.Ordinal, false);
-        }
-
-        [Fact]
-        [ActiveIssue(5463, Xunit.PlatformID.AnyUnix)]
         public void IsPrefix_UnassignedUnicode()
         {
-            IsPrefix(s_invariantCompare, "FooBar", "Foo" + UnassignedUnicodeCharacter() + "Bar", CompareOptions.None, true);
-            IsPrefix(s_invariantCompare, "FooBar", "Foo" + UnassignedUnicodeCharacter() + "Bar", CompareOptions.IgnoreNonSpace, true);
+            bool result = PlatformDetection.IsWindows ? true : false;
+            IsPrefix(s_invariantCompare, "FooBar", "Foo\uFFFFBar", CompareOptions.None, result);
+            IsPrefix(s_invariantCompare, "FooBar", "Foo\uFFFFBar", CompareOptions.IgnoreNonSpace, result);
         }
 
         [Fact]
@@ -102,18 +97,6 @@ namespace System.Globalization.Tests
             Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IsPrefix("Test's", "Tests", CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth));
             Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IsPrefix("Test's", "Tests", (CompareOptions)(-1)));
             Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IsPrefix("Test's", "Tests", (CompareOptions)0x11111111));
-        }
-
-        private static char UnassignedUnicodeCharacter()
-        {
-            for (char ch = '\uFFFF'; ch > '\u0000'; ch++)
-            {
-                if (CharUnicodeInfo.GetUnicodeCategory(ch) == UnicodeCategory.OtherNotAssigned)
-                {
-                    return ch;
-                }
-            }
-            return char.MinValue; // There are no unassigned unicode characters from \u0000 - \uFFFF
         }
     }
 }

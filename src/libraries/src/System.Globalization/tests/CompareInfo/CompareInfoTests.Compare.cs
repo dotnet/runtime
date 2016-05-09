@@ -22,7 +22,7 @@ namespace System.Globalization.Tests
         // On ICU, half and fullwidth characters that aren't in the "Halfwidth and fullwidth forms" block U+FF00-U+FFEF
         // sort before the corresponding characters that are in the block U+FF00-U+FFEF
         private static int s_expectedHalfToFullFormsComparison = PlatformDetection.IsWindows ? -1 : 1;
-
+        
         private const string SoftHyphen = "\u00AD";
         
         public static IEnumerable<object[]> Compare_TestData()
@@ -222,6 +222,33 @@ namespace System.Globalization.Tests
 
             // Spanish
             yield return new object[] { new CultureInfo("es-ES").CompareInfo, "llegar", "lugar", CompareOptions.None, -1 };
+            
+            // Misc differences between platforms
+            bool isWindows = PlatformDetection.IsWindows;
+             
+            yield return new object[] { s_invariantCompare, "\u3042", "\u30A1", CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase, isWindows ? 1: 0 };
+            yield return new object[] { s_invariantCompare, "'\u3000'", "''", CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase, isWindows ? 1 : -1 };
+            yield return new object[] { s_invariantCompare, "\u30C7\u30BF\u30D9\u30B9", "\uFF83\uFF9E\uFF80\uFF8D\uFF9E\uFF7D", CompareOptions.None, isWindows ? 1 : -1 };
+            yield return new object[] { s_invariantCompare, "\u30C7", "\uFF83\uFF9E", CompareOptions.None, isWindows ? 1 : -1 };
+            yield return new object[] { s_invariantCompare, "\u30C7\u30BF", "\uFF83\uFF9E\uFF80", CompareOptions.None, isWindows ? 1 : -1 };
+            yield return new object[] { s_invariantCompare, "\u30C7\u30BF\u30D9", "\uFF83\uFF9E\uFF80\uFF8D\uFF9E", CompareOptions.None, isWindows ? 1 : -1 };
+            yield return new object[] { s_invariantCompare, "\u30BF", "\uFF80", CompareOptions.None, isWindows ? 1 : -1 };
+            yield return new object[] { s_invariantCompare, "\uFF83\uFF9E\uFF70\uFF80\uFF8D\uFF9E\uFF70\uFF7D", "\u3067\u30FC\u305F\u3079\u30FC\u3059", CompareOptions.None, isWindows ? -1 : 1 };            
+            yield return new object[] { s_invariantCompare, "'\u3000'", "''", CompareOptions.None, isWindows ? 1 : -1 };
+            yield return new object[] { s_invariantCompare, "\u30FC", "\uFF70", CompareOptions.None, isWindows ? 0 : -1 };
+            yield return new object[] { s_hungarianCompare, "dzsdzs", "ddzs", CompareOptions.None, isWindows ? 0 : -1 };          
+            yield return new object[] { s_invariantCompare, "Test's", "Tests", CompareOptions.None, isWindows ? 1 : -1 };
+            yield return new object[] { new CultureInfo("de-DE").CompareInfo, "Ü", "UE", CompareOptions.None, -1 };
+            yield return new object[] { new CultureInfo("de-DE_phoneb").CompareInfo, "Ü", "UE", CompareOptions.None, isWindows ? 0 : -1 };
+            yield return new object[] { new CultureInfo("es-ES_tradnl").CompareInfo, "llegar", "lugar", CompareOptions.None, isWindows ? 1 : -1 };
+        }
+
+        [Fact]
+        public void CompareWithUnassignedChars()
+        {
+            int result = PlatformDetection.IsWindows ? 0 : -1;
+            Compare(s_invariantCompare, "FooBar", "Foo\uFFFFBar", CompareOptions.None, result);
+            Compare(s_invariantCompare, "FooBar", "Foo\uFFFFBar", CompareOptions.IgnoreNonSpace, result);
         }
 
         [Theory]
@@ -318,32 +345,6 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(5436, Xunit.PlatformID.AnyUnix)]
-        public void Compare_Issue5463()
-        {
-            // TODO: Remove this function, and combine into Compare_TestData once #5463 is fixed
-            Compare(s_invariantCompare, "\u3042", "\u30A1", CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase, 1);
-            Compare(s_invariantCompare, "'\u3000'", "''", CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase, 1);
-            Compare(s_invariantCompare, "\u30C7\u30BF\u30D9\u30B9", "\uFF83\uFF9E\uFF80\uFF8D\uFF9E\uFF7D", CompareOptions.None, 1);
-            Compare(s_invariantCompare, "\u30C7", "\uFF83\uFF9E", CompareOptions.None, 1);
-            Compare(s_invariantCompare, "\u30C7\u30BF", "\uFF83\uFF9E\uFF80", CompareOptions.None, 1);
-            Compare(s_invariantCompare, "\u30C7\u30BF\u30D9", "\uFF83\uFF9E\uFF80\uFF8D\uFF9E", CompareOptions.None, 1);
-            Compare(s_invariantCompare, "\u30BF", "\uFF80", CompareOptions.None, 1);
-            Compare(s_invariantCompare, "\uFF83\uFF9E\uFF70\uFF80\uFF8D\uFF9E\uFF70\uFF7D", "\u3067\u30FC\u305F\u3079\u30FC\u3059", CompareOptions.None, -1);
-            Compare(s_invariantCompare, "'\u3000'", "''", CompareOptions.None, 1);
-            Compare(s_invariantCompare, "\u30FC", "\uFF70", CompareOptions.None, 0);
-            Compare(s_hungarianCompare, "dzsdzs", "ddzs", CompareOptions.None, 0);
-            Compare(s_invariantCompare, "FooBar", "Foo" + UnassignedUnicodeCharacter() + "Bar", CompareOptions.None, 0);
-            Compare(s_invariantCompare, "FooBar", "Foo" + UnassignedUnicodeCharacter() + "Bar", CompareOptions.IgnoreNonSpace, 0);
-            Compare(s_invariantCompare, "Test's", "Tests", CompareOptions.None, 1);
-
-            Compare(new CultureInfo("de-DE").CompareInfo, "Ü", "UE", CompareOptions.None, -1);
-            Compare(new CultureInfo("de-DE_phoneb").CompareInfo, "Ü", "UE", CompareOptions.None, 0);
-
-            Compare(new CultureInfo("es-ES_tradnl").CompareInfo, "llegar", "lugar", CompareOptions.None, 1);
-        }
-
-        [Fact]
         public void Compare_Invalid()
         {
             // Compare options are invalid
@@ -406,18 +407,6 @@ namespace System.Globalization.Tests
             // Offset2 + length2 > string2.Length
             Assert.Throws<ArgumentOutOfRangeException>("string2", () => s_invariantCompare.Compare("Test", 0, 2, "Test", 2, 3));
             Assert.Throws<ArgumentOutOfRangeException>("string2", () => s_invariantCompare.Compare("Test", 0, 2, "Test", 2, 3, CompareOptions.None));
-        }
-
-        private static char UnassignedUnicodeCharacter()
-        {
-            for (char ch = '\uFFFF'; ch > '\u0000'; ch++)
-            {
-                if (CharUnicodeInfo.GetUnicodeCategory(ch) == UnicodeCategory.OtherNotAssigned)
-                {
-                    return ch;
-                }
-            }
-            return char.MinValue; // There are no unassigned Unicode characters from \u0000 - \uFFFF
         }
     }
 }
