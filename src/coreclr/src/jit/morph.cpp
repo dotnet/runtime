@@ -12602,7 +12602,7 @@ bool Compiler::fgShouldUseMagicNumberDivide(GenTreeOp* tree)
         return false;
 
     // codegen will expand these
-    if (isPow2(cons))
+    if (cons == SSIZE_T_MIN || isPow2(abs(cons)))
         return false;
 
     // someone else will fold this away, so don't make it complicated for them
