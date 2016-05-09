@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -19,11 +19,10 @@
     <Compile Include="System\NonSerializedAttribute.cs" />
     <Compile Include="System\SerializableAttribute.cs" />
     <Compile Include="System\Runtime\Serialization\IDeserializationCallback.cs" />
+    <Compile Include="System\Runtime\Serialization\IFormatterConverter.cs" />
     <Compile Include="System\Runtime\Serialization\ISerializable.cs" />
     <Compile Include="System\Runtime\Serialization\SerializationInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Resources\" />
+    <Compile Include="System\Runtime\Serialization\SerializationInfoEnumerator.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
