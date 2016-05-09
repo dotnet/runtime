@@ -17,8 +17,6 @@ namespace System.Security.AccessControl
 {
     internal static class Win32
     {
-        internal const System.Int32 TRUE = 1;
-
         //
         // Wrapper around advapi32.ConvertSecurityDescriptorToStringSecurityDescriptorW
         //
@@ -33,7 +31,7 @@ namespace System.Security.AccessControl
             IntPtr ByteArray;
             uint ByteArraySize = 0;
 
-            if (TRUE != Interop.mincore.ConvertSdToStringSd(binaryForm, (uint)requestedRevision, (uint)si, out ByteArray, ref ByteArraySize))
+            if (!Interop.mincore.ConvertSdToStringSd(binaryForm, (uint)requestedRevision, (uint)si, out ByteArray, ref ByteArraySize))
             {
                 errorCode = Marshal.GetLastWin32Error();
                 goto Error;
