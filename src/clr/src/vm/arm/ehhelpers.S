@@ -129,7 +129,6 @@ OFFSET_OF_FRAME=(4 + SIZEOF__GSCookie)
 
         PROLOG_PUSH  "{r7, lr}"
         PROLOG_STACK_SAVE r7
-        alloc_stack  4
 
         // On entry:
         //
@@ -143,7 +142,6 @@ OFFSET_OF_FRAME=(4 + SIZEOF__GSCookie)
         // Invoke the filter funclet
         blx r2
 
-        free_stack   4
         EPILOG_POP   "{r7, pc}"
 
         NESTED_END CallEHFilterFunclet, _TEXT
