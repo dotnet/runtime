@@ -280,43 +280,6 @@ bool isSingleRegister(regMaskTP regMask)
     return (regMask != RBM_NONE && genMaxOneBit(regMask));
 }
 
-#ifdef DEBUG
-// TODO-Cleanup: Consider using a #include file with custom #defines for both defining
-// the enum as well as the string array
-const char * refTypeNames [RefTypeBound];
-const char* shortRefTypeNames[RefTypeBound];
-void initRefTypeNames()
-{
-    refTypeNames[RefTypeInvalid]  = "RefTypeInvalid";
-    refTypeNames[RefTypeDef]      = "RefTypeDef";
-    refTypeNames[RefTypeUse]      = "RefTypeUse";
-    refTypeNames[RefTypeKill]     = "RefTypeKill";
-    refTypeNames[RefTypeBB]       = "RefTypeBB";
-    refTypeNames[RefTypeFixedReg] = "RefTypeFixedReg";
-    refTypeNames[RefTypeParamDef] = "RefTypeParamDef";
-    refTypeNames[RefTypeDummyDef] = "RefTypeDummyDef";
-    refTypeNames[RefTypeExpUse]   = "RefTypeExpUse";
-    refTypeNames[RefTypeZeroInit] = "RefTypeZeroInit";
-    refTypeNames[RefTypeUpperVectorSaveDef] = "RefTypeUpperVectorSaveDef";
-    refTypeNames[RefTypeUpperVectorSaveUse] = "RefTypeUpperVectorSaveUse";
-    refTypeNames[RefTypeKillGCRefs] = "RefTypeKillGCRefs";
-
-    shortRefTypeNames[RefTypeInvalid]  = "Invl";
-    shortRefTypeNames[RefTypeDef]      = "Def ";
-    shortRefTypeNames[RefTypeUse]      = "Use ";
-    shortRefTypeNames[RefTypeKill]     = "Kill";
-    shortRefTypeNames[RefTypeBB]       = "BB  ";
-    shortRefTypeNames[RefTypeFixedReg] = "Fixd";
-    shortRefTypeNames[RefTypeParamDef] = "Parm";
-    shortRefTypeNames[RefTypeDummyDef] = "DDef";
-    shortRefTypeNames[RefTypeExpUse]   = "ExpU";
-    shortRefTypeNames[RefTypeZeroInit] = "Zero";
-    shortRefTypeNames[RefTypeUpperVectorSaveDef] = "UVSv";
-    shortRefTypeNames[RefTypeUpperVectorSaveUse] = "UVRs";
-    shortRefTypeNames[RefTypeKillGCRefs] = "KlGC";
-}
-#endif // DEBUG
-
 /*****************************************************************************
  * Inline functions for RegRecord
  *****************************************************************************/
@@ -1001,7 +964,6 @@ LinearScan::LinearScan(Compiler * theCompiler)
     intervalCount = 0;
     maxNodeLocation = 0;
     activeRefPosition = nullptr;
-    initRefTypeNames();
 
     // Get the value of the environment variable that controls stress for register allocation
     lsraStressMask = JitConfig.JitStressRegs();
@@ -8922,6 +8884,28 @@ void dumpRegMask(regMaskTP regs)
     }
 }
 
+static const char* getRefTypeName(RefType refType)
+{
+    switch (refType)
+    {
+#define DEF_REFTYPE(memberName, memberValue, shortName) case memberName: return #memberName;
+#include "lsra_reftypes.h"
+#undef DEF_REFTYPE
+    default: return nullptr;
+    }
+}
+
+static const char* getRefTypeShortName(RefType refType)
+{
+    switch (refType)
+    {
+#define DEF_REFTYPE(memberName, memberValue, shortName) case memberName: return shortName;
+#include "lsra_reftypes.h"
+#undef DEF_REFTYPE
+    default: return nullptr;
+    }
+}
+
 void RefPosition::dump()
 {
     printf("<RefPosition #%-3u @%-3u", rpNum, nodeLocation);
@@ -8929,7 +8913,7 @@ void RefPosition::dump()
     if (nextRefPosition)
         printf(" ->#%-3u", nextRefPosition->rpNum);
 
-    printf(" %s ", refTypeNames[refType]);
+    printf(" %s ", getRefTypeName(refType));
 
     if (this->isPhysRegRef)
         this->getReg()->tinyDump();
@@ -10191,20 +10175,20 @@ LinearScan::dumpRefPositionShort(RefPosition* refPosition, BasicBlock* currentBl
                 delayChar = 'D';
             }
         }
-        printf("  %s%c%c ", shortRefTypeNames[refPosition->refType], lastUseChar, delayChar);
+        printf("  %s%c%c ", getRefTypeShortName(refPosition->refType), lastUseChar, delayChar);
     }
     else if (refPosition->isPhysRegRef)
     {
         RegRecord* regRecord = refPosition->getReg();
         printf(regNameFormat, getRegName(regRecord->regNum));
-        printf(" %s   ", shortRefTypeNames[refPosition->refType]);
+        printf(" %s   ", getRefTypeShortName(refPosition->refType));
     }
     else
     {
         assert(refPosition->refType == RefTypeKillGCRefs);
         // There's no interval or reg name associated with this.
         printf(regNameFormat, "   ");
-        printf(" %s   ", shortRefTypeNames[refPosition->refType]);
+        printf(" %s   ", getRefTypeShortName(refPosition->refType));
     }
 }
 
@@ -10532,7 +10516,6 @@ LinearScan::verifyFinalAllocation()
             break;
 
         case RefTypeInvalid:
-        case RefTypeBound:
             // for these 'currentRefPosition->refType' values, No action to take
             break;
         }
