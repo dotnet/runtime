@@ -31,6 +31,10 @@ IF "\" == "%BUILD_DIR:~-1%" (
 	SET BUILD_DIR=%BUILD_DIR:~0,-1%
 )
 
+IF "/" == "%BUILD_DIR:~-1%" (
+	SET BUILD_DIR=%BUILD_DIR:~0,-1%
+)
+
 IF NOT EXIST %BUILD_DIR%\%PLATFORM%\lib\%CONFIG% (
 	ECHO Error: No lib directory available for %PLATFORM% %CONFIG% at '%BUILD_DIR%'. Any build availalbe for platform, configuration pair?
 	GOTO ON_ERROR

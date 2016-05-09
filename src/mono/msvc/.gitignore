@@ -12,4 +12,4 @@ mono.VC.db
 /include/
 /package/
 /build/
-/distribution/
+/dist/

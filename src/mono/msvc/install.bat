@@ -33,7 +33,15 @@ IF "\" == "%BUILD_DIR:~-1%" (
 	SET BUILD_DIR=%BUILD_DIR:~0,-1%
 )
 
+IF "/" == "%BUILD_DIR:~-1%" (
+	SET BUILD_DIR=%BUILD_DIR:~0,-1%
+)
+
 IF "\" == "%INSTALL_DIR:~-1%" (
+	SET INSTALL_DIR=%INSTALL_DIR:~0,-1%
+)
+
+IF "/" == "%INSTALL_DIR:~-1%" (
 	SET INSTALL_DIR=%INSTALL_DIR:~0,-1%
 )
 

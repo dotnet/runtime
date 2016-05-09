@@ -36,9 +36,7 @@
     </ClCompile>
     <ClCompile Include="..\mono\mini\mini-amd64-gsharedvt.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_SGen|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SGen|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\mono\mini\mini-runtime.c" />
     <ClCompile Include="..\mono\mini\mini-windows.c" />
@@ -48,9 +46,7 @@
     </ClCompile>
     <ClCompile Include="..\mono\mini\mini-x86-gsharedvt.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_SGen|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SGen|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\mono\mini\mini.c" />
     <ClInclude Include="..\mono\metadata\remoting.h" />
@@ -63,9 +59,7 @@
     </ClInclude>
     <ClInclude Include="..\mono\mini\mini-amd64-gsharedvt.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_SGen|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SGen|Win32'">true</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="..\mono\mini\mini-x86.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -111,9 +105,7 @@
     </ClCompile>
     <ClCompile Include="..\mono\mini\tramp-amd64-gsharedvt.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_SGen|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SGen|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\mono\mini\tramp-x86.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -121,9 +113,7 @@
     </ClCompile>
     <ClCompile Include="..\mono\mini\tramp-x86-gsharedvt.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_SGen|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SGen|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\mono\mini\branch-opts.c" />
     <ClCompile Include="..\mono\mini\mini-generic-sharing.c" />
