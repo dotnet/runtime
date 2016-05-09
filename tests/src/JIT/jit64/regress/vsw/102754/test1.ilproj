@@ -26,6 +26,7 @@
     </CodeAnalysisDependentAssemblyPaths>
   </ItemGroup>
   <PropertyGroup>
+    <CLRTestExitCode>0</CLRTestExitCode>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="test1.il" />
