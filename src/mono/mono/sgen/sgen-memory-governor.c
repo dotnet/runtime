@@ -51,9 +51,6 @@ static mword major_collection_trigger_size;
 static mword major_pre_sweep_heap_size;
 static mword major_start_heap_size;
 
-static mword last_major_num_sections = 0;
-static mword last_los_memory_usage = 0;
-
 static gboolean need_calculate_minor_collection_allowance;
 
 /* The size of the LOS after the last major collection, after sweeping. */
@@ -187,10 +184,8 @@ sgen_memgov_major_post_sweep (void)
 {
 	mword num_major_sections = major_collector.get_num_major_sections ();
 
-	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_MAJOR_SWEEP: major %dK/%dK",
-		num_major_sections * major_collector.section_size / 1024,
-		last_major_num_sections * major_collector.section_size / 1024);
-	last_major_num_sections = num_major_sections;
+	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_MAJOR_SWEEP: major %dK",
+		num_major_sections * major_collector.section_size / 1024);
 }
 
 void
@@ -226,9 +221,8 @@ sgen_memgov_collection_end (int generation, GGTimingInfo* info, int info_count)
 	int i;
 	for (i = 0; i < info_count; ++i) {
 		if (info[i].generation != -1)
-			sgen_client_log_timing (&info [i], total_promoted_size - total_promoted_size_start, last_los_memory_usage);
+			sgen_client_log_timing (&info [i], total_promoted_size - total_promoted_size_start);
 	}
-	last_los_memory_usage = los_memory_usage;
 }
 
 /*

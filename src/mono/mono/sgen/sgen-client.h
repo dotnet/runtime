@@ -201,7 +201,7 @@ void sgen_client_clear_togglerefs (char *start, char *end, ScanCopyContext ctx);
  * Called after collections, reporting the amount of time they took.  No action is
  * necessary.
  */
-void sgen_client_log_timing (GGTimingInfo *info, mword promoted_size, mword last_los_memory_usage);
+void sgen_client_log_timing (GGTimingInfo *info, mword promoted_size);
 
 /*
  * Called to handle `MONO_GC_PARAMS` and `MONO_GC_DEBUG` options.  The `handle` functions
