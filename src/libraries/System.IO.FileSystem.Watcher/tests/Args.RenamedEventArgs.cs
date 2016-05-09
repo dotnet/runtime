@@ -2,15 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.IO;
 using Xunit;
 
 namespace System.IO.Tests
 {
-    public partial class RenamedEventArgsTests
+    public class RenamedEventArgsTests
     {
-        private static void ValidateRenamedEventArgs(WatcherChangeTypes changeType, string directory, string name, string oldName)
+        [Theory]
+        [InlineData(WatcherChangeTypes.Changed, "C:", "foo.txt", "bar.txt")]
+        [InlineData(WatcherChangeTypes.All, "C:", "foo.txt", "bar.txt")]
+        [InlineData(0, "", "", "")]
+        [InlineData(0, "", null, null)]
+        public static void RenamedEventArgs_ctor(WatcherChangeTypes changeType, string directory, string name, string oldName)
         {
             RenamedEventArgs args = new RenamedEventArgs(changeType, directory, name, oldName);
 
@@ -28,15 +31,8 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public static void RenamedEventArgs_ctor()
+        public static void RenamedEventArgs_ctor_Invalid()
         {
-            ValidateRenamedEventArgs(WatcherChangeTypes.Changed, "C:" + Path.DirectorySeparatorChar, "foo.txt", "bar.txt");
-            ValidateRenamedEventArgs(WatcherChangeTypes.Changed, "C:", "foo.txt", "bar.txt");
-            ValidateRenamedEventArgs(WatcherChangeTypes.All, "C:" + Path.DirectorySeparatorChar, "foo.txt", "bar.txt");
-
-            ValidateRenamedEventArgs((WatcherChangeTypes)0, String.Empty, String.Empty, String.Empty);
-            ValidateRenamedEventArgs((WatcherChangeTypes)0, String.Empty, null, null);
-
             Assert.Throws<NullReferenceException>(() => new RenamedEventArgs((WatcherChangeTypes)0, null, String.Empty, String.Empty));
         }
     }
