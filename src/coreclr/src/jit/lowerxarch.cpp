@@ -575,31 +575,6 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
             op1 = tree->gtOp.gtOp1;
             op2 = tree->gtOp.gtOp2;
 
-            // See if we have an optimizable power of 2 which will be expanded 
-            // using instructions other than division.
-            // (fgMorph has already done magic number transforms)
-
-            if (op2->IsIntCnsFitsInI32())
-            {
-                bool isSigned = tree->OperGet() == GT_MOD || tree->OperGet() == GT_DIV;
-                ssize_t amount = op2->gtIntConCommon.IconValue();
-
-                if (isPow2(abs(amount)) && (isSigned || amount > 0)
-                    && amount != -1)
-                {
-                    MakeSrcContained(tree, op2);
-                    
-                    if (isSigned)
-                    {
-                        // we are going to use CDQ instruction so want these RDX:RAX
-                        info->setDstCandidates(l, RBM_RAX);
-                        // If possible would like to have op1 in RAX to avoid a register move
-                        op1->gtLsraInfo.setSrcCandidates(l, RBM_RAX);
-                    }
-                    break;
-                }
-            }
-
             // Amd64 Div/Idiv instruction: 
             //    Dividend in RAX:RDX  and computes
             //    Quotient in RAX, Remainder in RDX
