@@ -11,9 +11,6 @@ internal partial class Interop
     internal partial class OleAut32
     {
         [DllImport(Libraries.OleAut32, CharSet = CharSet.Unicode)]
-        internal static extern SafeBSTRHandle SysAllocStringLen(string src, uint len);  // BSTR
-
-        [DllImport(Libraries.OleAut32, CharSet = CharSet.Unicode)]
         internal static extern SafeBSTRHandle SysAllocStringLen(IntPtr src, uint len);  // BSTR
     }
 }
