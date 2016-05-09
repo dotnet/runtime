@@ -33,12 +33,12 @@ namespace System.Runtime.CompilerServices
         /// </remarks>
         public TupleElementNamesAttribute(string[] transformNames)
         {
-            if ((object)transformNames == null)
+            if (transformNames == null)
             {
                 throw new ArgumentNullException(nameof(transformNames));
             }
 
-            this._transformNames = transformNames;
+            _transformNames = transformNames;
         }
 
         /// <summary>
@@ -58,12 +58,6 @@ namespace System.Runtime.CompilerServices
         /// construction, which <see cref="System.ValueTuple"/> occurrences are meant to
         /// carry element names.
         /// </summary>
-        public IList<string> TransformNames
-        {
-            get
-            {
-                return _transformNames;
-            }
-        }
+        public IList<string> TransformNames => _transformNames;
     }
 }
