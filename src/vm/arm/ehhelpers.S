@@ -114,7 +114,9 @@ OFFSET_OF_FRAME=(4 + SIZEOF__GSCookie)
         // Save the SP of this function
         str sp, [r3]
         // apply the non-volatiles corresponding to the CrawlFrame
-        ldm r2, {r4-r11}
+        ldm r2!, {r4-r6}
+        add r2, r2, #4
+        ldm r2!, {r8-r11}
         // Invoke the funclet
         blx r1
 
