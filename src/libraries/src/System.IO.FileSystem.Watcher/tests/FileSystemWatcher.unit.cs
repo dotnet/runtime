@@ -25,6 +25,46 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        public void FileSystemWatcher_NewFileInfoAction_TriggersNothing()
+        {
+            using (var testDirectory = new TempDirectory(GetTestFilePath()))
+            using (var file = new TempFile(Path.Combine(testDirectory.Path, "file")))
+            using (var watcher = new FileSystemWatcher(testDirectory.Path, Path.GetFileName(file.Path)))
+            {
+                Action action = () => new FileInfo(file.Path);
+
+                ExpectEvent(watcher, 0, action, expectedPath: file.Path);
+            }
+        }
+
+        [Fact]
+        public void FileSystemWatcher_FileInfoGetter_TriggersNothing()
+        {
+            using (var testDirectory = new TempDirectory(GetTestFilePath()))
+            using (var file = new TempFile(Path.Combine(testDirectory.Path, "file")))
+            using (var watcher = new FileSystemWatcher(testDirectory.Path, Path.GetFileName(file.Path)))
+            {
+                FileAttributes res;
+                Action action = () => res = new FileInfo(file.Path).Attributes;
+
+                ExpectEvent(watcher, 0, action, expectedPath: file.Path);
+            }
+        }
+
+        [Fact]
+        public void FileSystemWatcher_EmptyAction_TriggersNothing()
+        {
+            using (var testDirectory = new TempDirectory(GetTestFilePath()))
+            using (var file = new TempFile(Path.Combine(testDirectory.Path, "file")))
+            using (var watcher = new FileSystemWatcher(testDirectory.Path, Path.GetFileName(file.Path)))
+            {
+                Action action = () => { };
+
+                ExpectEvent(watcher, 0, action, expectedPath: file.Path);
+            }
+        }
+
+        [Fact]
         public void FileSystemWatcher_ctor()
         {
             string path = String.Empty;
@@ -147,7 +187,6 @@ namespace System.IO.Tests
             }
         }
 
-
         [Fact]
         public void FileSystemWatcher_Error()
         {
@@ -204,7 +243,6 @@ namespace System.IO.Tests
             watcher.Filter = "ABC.DLL";
             Assert.Equal("ABC.DLL", watcher.Filter);
         }
-
 
         [Fact]
         public void FileSystemWatcher_IncludeSubdirectories()
@@ -300,30 +338,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void FileSystemWatcher_OnChangedGivesExpectedFullPath()
-        {
-            using (var dir = new TempDirectory(GetTestFilePath()))
-            using (var fsw = new FileSystemWatcher(dir.Path))
-            {
-                AutoResetEvent are = new AutoResetEvent(false);
-                string fullPath = Path.Combine(dir.Path, "Foo.txt");
-
-                fsw.Created += (o, e) =>
-                {
-                    Assert.Equal(e.FullPath, fullPath);
-                    are.Set();
-                };
-
-                fsw.EnableRaisingEvents = true;
-                using (var file = new TempFile(fullPath))
-                {
-                    File.SetLastWriteTime(file.Path, DateTime.Now + TimeSpan.FromSeconds(10));
-                    ExpectEvent(are, "changed");
-                }
-            }
-        }
-
-        [Fact]
         public void FileSystemWatcher_OnCreated()
         {
             using (TestFileSystemWatcher watcher = new TestFileSystemWatcher())
@@ -343,29 +357,6 @@ namespace System.IO.Tests
                 Assert.True(eventOccurred, "Event should be invoked");
                 Assert.Equal(watcher, obj);
                 Assert.Equal(expectedArgs, actualArgs);
-            }
-        }
-
-        [Fact]
-        public void FileSystemWatcher_OnCreatedGivesExpectedFullPath()
-        {
-            using (var dir = new TempDirectory(GetTestFilePath()))
-            using (var fsw = new FileSystemWatcher(dir.Path))
-            {
-                AutoResetEvent are = new AutoResetEvent(false);
-                string fullPath = Path.Combine(dir.Path, "Foo.txt");
-
-                fsw.Created += (o, e) =>
-                {
-                    Assert.Equal(e.FullPath, fullPath);
-                    are.Set();
-                };
-
-                fsw.EnableRaisingEvents = true;
-                using (var file = new TempFile(fullPath))
-                {
-                    ExpectEvent(are, "created");
-                }
             }
         }
 
@@ -413,27 +404,6 @@ namespace System.IO.Tests
                 Assert.True(eventOccurred, "Event should be invoked");
                 Assert.Equal(watcher, obj);
                 Assert.Equal(expectedArgs, actualArgs);
-            }
-        }
-
-        [Fact]
-        public void FileSystemWatcher_OnDeletedGivesExpectedFullPath()
-        {
-            using (var dir = new TempDirectory(GetTestFilePath()))
-            using (var fsw = new FileSystemWatcher(dir.Path))
-            {
-                AutoResetEvent are = new AutoResetEvent(false);
-                string fullPath = Path.Combine(dir.Path, "Foo.txt");
-
-                fsw.Deleted += (o, e) =>
-                {
-                    Assert.Equal(e.FullPath, fullPath);
-                    are.Set();
-                };
-
-                fsw.EnableRaisingEvents = true;
-                using (var file = new TempFile(fullPath)) { }
-                ExpectEvent(are, "deleted");
             }
         }
 
@@ -488,11 +458,12 @@ namespace System.IO.Tests
         public void FileSystemWatcher_Windows_OnRenameGivesExpectedFullPath()
         {
             using (var dir = new TempDirectory(GetTestFilePath()))
-            using (var file = new TempFile(Path.Combine(dir.Path, GetTestFileName())))
+            using (var file = new TempFile(Path.Combine(dir.Path, "file")))
             using (var fsw = new FileSystemWatcher(dir.Path))
             {
-                AutoResetEvent eventOccurred = WatchForEvents(fsw, WatcherChangeTypes.Renamed);
-                string newPath = Path.Combine(dir.Path, GetTestFileName());
+                AutoResetEvent eventOccurred = WatchRenamed(fsw);
+
+                string newPath = Path.Combine(dir.Path, "newPath");
 
                 fsw.Renamed += (o, e) =>
                 {
@@ -503,25 +474,6 @@ namespace System.IO.Tests
                 fsw.EnableRaisingEvents = true;
                 File.Move(file.Path, newPath);
                 ExpectEvent(eventOccurred, "renamed");
-            }
-        }
-
-        [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)] // Unix FSW don't trigger on a file rename.
-        public void FileSystemWatcher_Unix_RenameDoesntTrigger()
-        {
-            using (var dir = new TempDirectory(GetTestFilePath()))
-            using (var file = new TempFile(Path.Combine(dir.Path, GetTestFileName())))
-            using (var fsw = new FileSystemWatcher(dir.Path))
-            {
-                AutoResetEvent eventOccurred = WatchForEvents(fsw, WatcherChangeTypes.Renamed);
-                string newPathInSameDir = Path.Combine(dir.Path, GetTestFileName());
-
-                fsw.EnableRaisingEvents = true;
-                File.Move(file.Path, newPathInSameDir);
-                File.Move(newPathInSameDir, file.Path);
-                File.Move(file.Path, newPathInSameDir);
-                ExpectNoEvent(eventOccurred, "renamed");
             }
         }
 
@@ -621,44 +573,37 @@ namespace System.IO.Tests
             }
         }
 
+        [Fact]
         [PlatformSpecific(PlatformID.Linux)]
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public void FileSystemWatcher_CreateManyConcurrentWatches(bool enableBeforeCreatingWatches)
+        public void FileSystemWatcher_CreateManyConcurrentWatches()
         {
             int maxUserWatches = int.Parse(File.ReadAllText("/proc/sys/fs/inotify/max_user_watches"));
 
             using (var dir = new TempDirectory(GetTestFilePath()))
             using (var watcher = new FileSystemWatcher(dir.Path) { IncludeSubdirectories = true, NotifyFilter = NotifyFilters.FileName })
             {
-                Exception exc = null;
-                ManualResetEventSlim mres = new ManualResetEventSlim();
-                watcher.Error += (s, e) =>
+                Action action = () =>
                 {
-                    exc = e.GetException();
-                    mres.Set();
+                    // Create enough directories to exceed the number of allowed watches
+                    for (int i = 0; i <= maxUserWatches; i++)
+                    {
+                        Directory.CreateDirectory(Path.Combine(dir.Path, i.ToString()));
+                    }
+                };
+                Action cleanup = () =>
+                {
+                    for (int i = 0; i <= maxUserWatches; i++)
+                    {
+                        Directory.Delete(Path.Combine(dir.Path, i.ToString()));
+                    }
                 };
 
-                if (enableBeforeCreatingWatches)
-                    watcher.EnableRaisingEvents = true;
-
-                // Create enough directories to exceed the number of allowed watches
-                for (int i = 0; i <= maxUserWatches; i++)
-                {
-                    Directory.CreateDirectory(Path.Combine(dir.Path, i.ToString()));
-                }
-
-                if (!enableBeforeCreatingWatches)
-                    watcher.EnableRaisingEvents = true;
-
-                Assert.True(mres.Wait(WaitForExpectedEventTimeout));
-                Assert.IsType<IOException>(exc);
+                ExpectError(watcher, action, cleanup);
 
                 // Make sure existing watches still work even after we've had one or more failures
-                AutoResetEvent are = WatchForEvents(watcher, WatcherChangeTypes.Created);
-                new TempFile(Path.Combine(dir.Path, Path.GetRandomFileName())).Dispose();
-                ExpectEvent(are, "file created");
+                Action createAction = () => File.WriteAllText(Path.Combine(dir.Path, Path.GetRandomFileName()), "text");
+                Action createCleanup = () => File.Delete(Path.Combine(dir.Path, Path.GetRandomFileName()));
+                ExpectEvent(watcher, WatcherChangeTypes.Created, createAction, createCleanup);
             }
         }
 
@@ -702,10 +647,10 @@ namespace System.IO.Tests
         public void FileSystemWatcher_WatchingAliasedFolderResolvesToRealPathWhenWatching()
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, GetTestFileName())))
+            using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, "dir")))
             using (var fsw = new FileSystemWatcher(dir.Path))
             {
-                AutoResetEvent are = WatchForEvents(fsw, WatcherChangeTypes.Created);
+                AutoResetEvent are = WatchCreated(fsw);
 
                 fsw.Filter = "*";
                 fsw.EnableRaisingEvents = true;
