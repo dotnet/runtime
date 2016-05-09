@@ -953,6 +953,7 @@ extern guint32 tlab_size;
 extern NurseryClearPolicy nursery_clear_policy;
 extern gboolean sgen_try_free_some_memory;
 extern mword total_promoted_size;
+extern mword total_allocated_major;
 
 extern MonoCoopMutex gc_mutex;
 

@@ -652,6 +652,8 @@ alloc_obj (GCVTable vtable, size_t size, gboolean pinned, gboolean has_reference
 	/* FIXME: assumes object layout */
 	*(GCVTable*)obj = vtable;
 
+	total_allocated_major += block_obj_sizes [size_index]; 
+
 	return (GCObject *)obj;
 }
 
@@ -1652,6 +1654,7 @@ sweep_job_func (void *thread_data_untyped, SgenThreadPoolJob *job)
 static void
 sweep_finish (void)
 {
+	mword used_slots_size = 0;
 	int i;
 
 	for (i = 0; i < num_block_obj_sizes; ++i) {
@@ -1665,9 +1668,11 @@ sweep_finish (void)
 		} else {
 			evacuate_block_obj_sizes [i] = FALSE;
 		}
+
+		used_slots_size += sweep_slots_used [i] * block_obj_sizes [i];
 	}
 
-	sgen_memgov_major_post_sweep ();
+	sgen_memgov_major_post_sweep (used_slots_size);
 
 	set_sweep_state (SWEEP_STATE_SWEPT, SWEEP_STATE_COMPACTING);
 	if (concurrent_sweep)

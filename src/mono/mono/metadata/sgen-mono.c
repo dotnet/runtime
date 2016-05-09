@@ -2718,7 +2718,7 @@ sgen_client_degraded_allocation (size_t size)
 }
 
 void
-sgen_client_log_timing (GGTimingInfo *info, mword promoted_size)
+sgen_client_log_timing (GGTimingInfo *info, mword promoted_size, mword major_used_size)
 {
 	SgenMajorCollector *major_collector = sgen_get_major_collector ();
 	mword num_major_sections = major_collector->get_num_major_sections ();
@@ -2736,13 +2736,14 @@ sgen_client_log_timing (GGTimingInfo *info, mword promoted_size)
 	                los_memory_usage_total / 1024,
 	                los_memory_usage / 1024);
 	else
-	        mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_MINOR%s: (%s) pause %.2fms, %s promoted %dK major %dK los size: %dK in use: %dK",
+	        mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_MINOR%s: (%s) pause %.2fms, %s promoted %dK major size: %dK in use: %dK los size: %dK in use: %dK",
 	        		info->is_overflow ? "_OVERFLOW" : "",
 	                info->reason ? info->reason : "",
 	                (int)info->total_time / 10000.0f,
 	                full_timing_buff,
 	                (int)promoted_size / 1024,
 	                major_collector->section_size * num_major_sections / 1024,
+			major_used_size / 1024,
 	                los_memory_usage_total / 1024,
 			los_memory_usage / 1024);
 }
