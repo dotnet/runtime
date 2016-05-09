@@ -168,26 +168,5 @@ namespace System.ComponentModel
         {
             return _extenderInfo.ExtenderShouldSerializeValue(_provider, comp);
         }
-
-        /* 
-           The following code has been removed to fix FXCOP violations.  The code
-           is left here incase it needs to be resurrected in the future.
-
-        /// <summary>
-        ///     Creates a new extended property info.  Callers can then treat this as
-        ///     a standard property.
-        /// </summary>
-        public ExtendedPropertyDescriptor(ReflectPropertyDescriptor extenderInfo, Type receiverType, IExtenderProvider provider) : this(extenderInfo, receiverType, provider, null) {
-        }
-
-        /// <summary>
-        ///     Retrieves the object that is providing this extending property.
-        /// </summary>
-        public IExtenderProvider Provider {
-            get {
-                return provider;
-            }
-        }
-        */
     }
 }

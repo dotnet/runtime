@@ -512,16 +512,6 @@ namespace System.ComponentModel
                 }
                 return _shouldSerializeMethod;
             }
-
-            /* 
-            The following code has been removed to fix FXCOP violations.  The code
-            is left here incase it needs to be resurrected in the future.
-
-            set {
-                state[BitShouldSerializeQueried] = true;
-                shouldSerializeMethod = value; 
-            }
-            */
         }
 
         /// <summary>
