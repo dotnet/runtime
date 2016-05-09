@@ -153,7 +153,9 @@
     IL_001b:  ldloc.0
     IL_001c:  ldc.i4.3
     IL_001d:  call       instance void TestStack::DoSwitch(int32)
-    IL_0022:  ret
+    IL_0022:  call       int32 ['mscorlib']System.Environment::get_ExitCode()
+              call       void ['mscorlib']System.Environment::Exit(int32)
+              ret
   } 
 
 } 
