@@ -165,6 +165,8 @@ private:
     void LowerInd(GenTreePtr* ppTree);
     void LowerAddrMode(GenTreePtr* ppTree, GenTree* before, Compiler::fgWalkData* data, bool isIndir);
     void LowerAdd(GenTreePtr* ppTree, Compiler::fgWalkData* data);
+    void LowerUnsignedDivOrMod(GenTree* tree);
+    void LowerSignedDivOrMod(GenTreePtr* ppTree, Compiler::fgWalkData* data);
 
     // Remove the nodes that are no longer used after an addressing mode is constructed under a GT_IND
     void LowerIndCleanupHelper(GenTreeAddrMode* addrMode, GenTreePtr tree);
@@ -201,7 +203,7 @@ private:
     static bool NodesAreEquivalentLeaves       (GenTreePtr candidate, GenTreePtr storeInd);
 
     GenTreePtr  CreateLocalTempAsg      (GenTreePtr rhs, unsigned refCount, GenTreePtr *ppLclVar = nullptr);
-
+    GenTreeStmt* CreateTemporary        (GenTree** ppTree);
     bool AreSourcesPossiblyModified     (GenTree* use, GenTree* src1, GenTree *src2);
     void ReplaceNode                    (GenTree** ppTreeLocation,
                                          GenTree* replacementNode,
