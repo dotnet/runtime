@@ -9,6 +9,7 @@
     <AssemblyName>System.ValueTuple.Tests</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="TupleElementNamesAttribute\UnitTests.cs" />
     <Compile Include="ValueTuple\UnitTests.cs" />
   </ItemGroup>
   <ItemGroup>
