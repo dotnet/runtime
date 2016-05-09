@@ -99,7 +99,7 @@ LPSTR build_return_string(const char* pReturn)
 // end up with different byte sequence.
 
 const int NSTRINGS = 6;
-#ifdef _WIN32	
+#ifdef _WIN32
 wchar_t  *utf8Strings[] = { L"Managed",
 L"S\x00EEne kl\x00E2wen durh die wolken sint geslagen" ,
 L"\x0915\x093E\x091A\x0902 \x0936\x0915\x094D\x0928\x094B\x092E\x094D\x092F\x0924\x094D\x0924\x0941\x092E\x094D \x0964 \x0928\x094B\x092A\x0939\x093F\x0928\x0938\x094D\x0924\x093F \x092E\x093E\x092E\x094D",
@@ -157,7 +157,7 @@ extern "C" DLL_EXPORT void __cdecl StringBuilderParameterInOut(/*[In,Out] String
 }
 
 //out string builder
-extern "C" DLL_EXPORT void __cdecl  StringBuilderParameterOut(/*[In,Out] StringBuilder*/ char *s, int index)
+extern "C" DLL_EXPORT void __cdecl  StringBuilderParameterOut(/*[Out] StringBuilder*/ char *s, int index)
 {
 
 #ifdef _WIN32
@@ -284,6 +284,10 @@ extern "C" DLL_EXPORT void __cdecl StringParameterRef(/*ref*/ char **s, int inde
         }
     }
 
+    if (*s)
+    {
+       CoTaskMemFree(*s);
+    }
     // overwrite the orginal 
     *s = (LPSTR)(CoTaskMemAlloc(sizeof(char)* (strLength + 1)));
     memcpy(*s, pszTextutf8, strLength);
@@ -291,15 +295,6 @@ extern "C" DLL_EXPORT void __cdecl StringParameterRef(/*ref*/ char **s, int inde
 #ifdef _WIN32
     CoTaskMemFree(pszTextutf8);
 #endif
-}
-
-extern "C" DLL_EXPORT void __cdecl StringParameterLPStr(/*out*/ char **s)
-{
-    const char *managed = "ManagedString";
-    size_t strLength = strlen(managed);
-    *s = (LPSTR)(CoTaskMemAlloc(sizeof(char)* (strLength + 1)));
-    memcpy(*s, managed, strLength);
-    (*s)[strLength] = '\0';
 }
 
 // delegate test

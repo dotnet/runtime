@@ -3190,12 +3190,14 @@ VOID FieldMarshaler_StringUtf8::UpdateNativeImpl(OBJECTREF* pCLRValue, LPVOID pN
             COMPlusThrow(kMarshalDirectiveException, IDS_EE_STRING_TOOLONG);
 
         // Characters would be # of characters + 1 in case left over high surrogate is ?
-        // Max 3 bytes per char for basic multi-lingual plane.          
-        nc = (nc + 1) * 3;
+        // Max 3 bytes per char for basic multi-lingual plane.
+        nc = (nc + 1) * MAX_UTF8_CHAR_SIZE;
         // +1 for '\0'
         LPUTF8  lpBuffer = (LPUTF8)CoTaskMemAlloc(nc + 1);
         if (!lpBuffer)
+        {
             COMPlusThrowOM();
+        }
 
         // UTF8Marshaler.ConvertToNative
         MethodDescCallSite convertToNative(METHOD__CUTF8MARSHALER__CONVERT_TO_NATIVE);
@@ -3221,18 +3223,20 @@ VOID FieldMarshaler_StringUtf8::UpdateCLRImpl(const VOID *pNativeValue, OBJECTRE
     CONTRACTL
     {
         THROWS;
-    GC_TRIGGERS;
-    MODE_COOPERATIVE;
-    INJECT_FAULT(COMPlusThrowOM());
-    PRECONDITION(CheckPointer(pNativeValue));
-    PRECONDITION(CheckPointer(ppProtectedCLRValue));
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+        INJECT_FAULT(COMPlusThrowOM());
+        PRECONDITION(CheckPointer(pNativeValue));
+        PRECONDITION(CheckPointer(ppProtectedCLRValue));
     }
     CONTRACTL_END;
 
     STRINGREF pString = NULL;
     LPCUTF8  sz = (LPCUTF8)MAYBE_UNALIGNED_READ(pNativeValue, _PTR);
     if (!sz)
+    {
         pString = NULL;
+    }
     else
     {
         MethodDescCallSite convertToManaged(METHOD__CUTF8MARSHALER__CONVERT_TO_MANAGED);
@@ -3260,10 +3264,10 @@ VOID FieldMarshaler_StringUtf8::DestroyNativeImpl(LPVOID pNativeValue) const
     }
     CONTRACTL_END;
 
-    LPSTR lpBuffer = (LPSTR)MAYBE_UNALIGNED_READ(pNativeValue, _PTR);
+    LPCUTF8 lpBuffer = (LPCUTF8)MAYBE_UNALIGNED_READ(pNativeValue, _PTR);
     MAYBE_UNALIGNED_WRITE(pNativeValue, _PTR, NULL);
     if (lpBuffer)
-        CoTaskMemFree(lpBuffer);
+        CoTaskMemFree((LPVOID)lpBuffer);
 }
 
 //=======================================================================
