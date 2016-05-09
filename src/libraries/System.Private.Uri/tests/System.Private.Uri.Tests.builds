@@ -2,10 +2,16 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <Project Include="System.Private.Uri.Tests.csproj">
+    <Project Include="FunctionalTests\System.Private.Uri.Functional.Tests.csproj">
       <OSGroup>Unix</OSGroup>
     </Project>
-    <Project Include="System.Private.Uri.Tests.csproj">
+    <Project Include="FunctionalTests\System.Private.Uri.Functional.Tests.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+    </Project>
+    <Project Include="UnitTests\System.Private.Uri.Unit.Tests.csproj">
+      <OSGroup>Unix</OSGroup>
+    </Project>
+    <Project Include="UnitTests\System.Private.Uri.Unit.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
     </Project>
   </ItemGroup>

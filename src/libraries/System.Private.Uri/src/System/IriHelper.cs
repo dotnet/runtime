@@ -93,7 +93,7 @@ namespace System
                     (component != UriComponents.Fragment)
                 )
             {
-                return (component == (UriComponents)0) ? Uri.IsGenDelim(ch) : false;
+                return (component == (UriComponents)0) ? UriHelper.IsGenDelim(ch) : false;
             }
             else
             {
@@ -284,7 +284,7 @@ namespace System
                     {
                         if (CheckIriUnicodeRange(ch, component == UriComponents.Query))
                         {
-                            if (!Uri.IsBidiControlCharacter(ch))
+                            if (!UriHelper.IsBidiControlCharacter(ch))
                             {
                                 // copy it
                                 Debug.Assert(dest.Length > destOffset, "Destination length exceeded destination offset.");
@@ -324,7 +324,7 @@ namespace System
 
                         fixed (char* pNewDest = newDest)
                         {
-                            Buffer.MemoryCopy((byte*)pDest, (byte*)pNewDest, newBufferLength, destOffset * sizeof(char));
+                            Buffer.MemoryCopy((byte*)pDest, (byte*)pNewDest, newBufferLength * sizeof(char), destOffset * sizeof(char));
                         }
 
                         if (destHandle.IsAllocated)

@@ -4,7 +4,6 @@
 
 /*============================================================
 **
-** Class:  LowLevelList<T>
 **
 ** Private version of List<T> for internal System.Private.CoreLib use. This
 ** permits sharing more source between BCL and System.Private.CoreLib (as well as the

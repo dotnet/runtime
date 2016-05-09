@@ -7,9 +7,9 @@ namespace System
     // Used to control whether absolute or relative URIs are used
     public enum UriKind
     {
-        RelativeOrAbsolute  = 0,
-        Absolute            = 1,
-        Relative            = 2
+        RelativeOrAbsolute = 0,
+        Absolute = 1,
+        Relative = 2
     }
 
     [Flags]
@@ -17,15 +17,15 @@ namespace System
     {
         // Generic parts.
         // ATTN: The values must stay in sync with Uri.Flags.xxxNotCanonical
-        Scheme      = 0x1,
-        UserInfo    = 0x2,
-        Host        = 0x4,
-        Port        = 0x8,
-        Path        = 0x10,
-        Query       = 0x20,
-        Fragment    = 0x40,
+        Scheme = 0x1,
+        UserInfo = 0x2,
+        Host = 0x4,
+        Port = 0x8,
+        Path = 0x10,
+        Query = 0x20,
+        Fragment = 0x40,
 
-        StrongPort  = 0x80,
+        StrongPort = 0x80,
         NormalizedHost = 0x100,
 
         // This will also return respective delimiters for scheme, userinfo or port

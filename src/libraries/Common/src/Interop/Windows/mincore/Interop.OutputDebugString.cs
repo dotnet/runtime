@@ -8,7 +8,7 @@ internal partial class Interop
 {
     internal partial class mincore
     {
-        [DllImport(Interop.Libraries.Debug, CharSet = CharSet.Unicode, EntryPoint="OutputDebugStringW", ExactSpelling=true)]
+        [DllImport(Interop.Libraries.Debug, CharSet = CharSet.Unicode, EntryPoint = "OutputDebugStringW", ExactSpelling = true)]
         internal static extern void OutputDebugString(string message);
     }
 }

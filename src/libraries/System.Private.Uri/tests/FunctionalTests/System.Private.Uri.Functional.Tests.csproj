@@ -10,10 +10,32 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
+    <Compile Include="AppxUriValue.cs" />
+    <Compile Include="IdnCheckHostNameTest.cs" />
+    <Compile Include="IdnDnsSafeHostTest.cs" />
+    <Compile Include="IdnHostNameValidationTest.cs" />
+    <Compile Include="IriRelativeFileResolutionTest.cs" />
+    <Compile Include="IriTest.cs" />
+    <Compile Include="UriBuilderParameterTest.cs" />
+    <Compile Include="UriBuilderRefreshTest.cs" />
     <Compile Include="UriBuilderTests.cs" />
+    <Compile Include="UriEscapingTest.cs" />
+    <Compile Include="UriGetComponentsTest.cs" />
+    <Compile Include="UriIpHostTest.cs" />
+    <Compile Include="UriIsWellFormedUriStringTest.cs" />
+    <Compile Include="UriMailToTest.cs" />
+    <Compile Include="UriParameterValidationTest.cs" />
+    <Compile Include="UriRelativeResolutionTest.cs" />
+    <Compile Include="UriTests.cs" />
+    <Compile Include="WebSocketsUriParserTest.cs" />
+    
+    <!-- Test common -->
+    <Compile Include="$(CommonTestPath)\System\ThreadCultureChange.cs">
+      <Link>Common\System\ThreadCultureChange.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\System.Private.Uri.csproj">
+    <ProjectReference Include="..\..\src\System.Private.Uri.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
