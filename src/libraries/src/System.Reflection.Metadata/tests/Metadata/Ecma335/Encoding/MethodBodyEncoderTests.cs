@@ -205,7 +205,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             branchBuilder.AddBranch(254, l0, (byte)ILOpCode.Brfalse_s); // long branch at the end
 
             var dstBuilder = new BlobBuilder();
-            var srcBuilder = new BlobBuilder(size: 17);
+            var srcBuilder = new BlobBuilder(capacity: 17);
             WriteFakeILWithBranches(srcBuilder, branchBuilder, size: 256);
 
             branchBuilder.FixupBranches(srcBuilder, dstBuilder);

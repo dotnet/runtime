@@ -22,36 +22,36 @@ namespace System.Reflection.Metadata.Ecma335
         // EnC delta tables are stored as uncompressed metadata table stream
         internal bool IsMetadataTableStreamCompressed => !IsMinimalDelta;
 
-        internal readonly byte BlobIndexSize;
-        internal readonly byte StringIndexSize;
-        internal readonly byte GuidIndexSize;
-        internal readonly byte CustomAttributeTypeCodedIndexSize;
-        internal readonly byte DeclSecurityCodedIndexSize;
-        internal readonly byte EventDefIndexSize;
-        internal readonly byte FieldDefIndexSize;
-        internal readonly byte GenericParamIndexSize;
-        internal readonly byte HasConstantCodedIndexSize;
-        internal readonly byte HasCustomAttributeCodedIndexSize;
-        internal readonly byte HasFieldMarshalCodedIndexSize;
-        internal readonly byte HasSemanticsCodedIndexSize;
-        internal readonly byte ImplementationCodedIndexSize;
-        internal readonly byte MemberForwardedCodedIndexSize;
-        internal readonly byte MemberRefParentCodedIndexSize;
-        internal readonly byte MethodDefIndexSize;
-        internal readonly byte MethodDefOrRefCodedIndexSize;
-        internal readonly byte ModuleRefIndexSize;
-        internal readonly byte ParameterIndexSize;
-        internal readonly byte PropertyDefIndexSize;
-        internal readonly byte ResolutionScopeCodedIndexSize;
-        internal readonly byte TypeDefIndexSize;
-        internal readonly byte TypeDefOrRefCodedIndexSize;
-        internal readonly byte TypeOrMethodDefCodedIndexSize;
+        internal readonly bool BlobReferenceIsSmall;
+        internal readonly bool StringReferenceIsSmall;
+        internal readonly bool GuidReferenceIsSmall;
+        internal readonly bool CustomAttributeTypeCodedIndexIsSmall;
+        internal readonly bool DeclSecurityCodedIndexIsSmall;
+        internal readonly bool EventDefReferenceIsSmall;
+        internal readonly bool FieldDefReferenceIsSmall;
+        internal readonly bool GenericParamReferenceIsSmall;
+        internal readonly bool HasConstantCodedIndexIsSmall;
+        internal readonly bool HasCustomAttributeCodedIndexIsSmall;
+        internal readonly bool HasFieldMarshalCodedIndexIsSmall;
+        internal readonly bool HasSemanticsCodedIndexIsSmall;
+        internal readonly bool ImplementationCodedIndexIsSmall;
+        internal readonly bool MemberForwardedCodedIndexIsSmall;
+        internal readonly bool MemberRefParentCodedIndexIsSmall;
+        internal readonly bool MethodDefReferenceIsSmall;
+        internal readonly bool MethodDefOrRefCodedIndexIsSmall;
+        internal readonly bool ModuleRefReferenceIsSmall;
+        internal readonly bool ParameterReferenceIsSmall;
+        internal readonly bool PropertyDefReferenceIsSmall;
+        internal readonly bool ResolutionScopeCodedIndexIsSmall;
+        internal readonly bool TypeDefReferenceIsSmall;
+        internal readonly bool TypeDefOrRefCodedIndexIsSmall;
+        internal readonly bool TypeOrMethodDefCodedIndexIsSmall;
 
-        internal readonly byte DocumentIndexSize;
-        internal readonly byte LocalVariableIndexSize;
-        internal readonly byte LocalConstantIndexSize;
-        internal readonly byte ImportScopeIndexSize;
-        internal readonly byte HasCustomDebugInformationSize;
+        internal readonly bool DocumentReferenceIsSmall;
+        internal readonly bool LocalVariableReferenceIsSmall;
+        internal readonly bool LocalConstantReferenceIsSmall;
+        internal readonly bool ImportScopeReferenceIsSmall;
+        internal readonly bool HasCustomDebugInformationCodedIndexIsSmall;
 
         /// <summary>
         /// Exact (unaligned) heap sizes.
@@ -107,32 +107,29 @@ namespace System.Reflection.Metadata.Ecma335
             Debug.Assert(externalRowCounts.Length == MetadataTokens.TableCount);
             Debug.Assert(heapSizes.Length == MetadataTokens.HeapCount);
 
-            const byte large = 4;
-            const byte small = 2;
+            RowCounts = rowCounts;
+            ExternalRowCounts = externalRowCounts;
+            HeapSizes = heapSizes;
+            IsMinimalDelta = isMinimalDelta;
 
-            this.RowCounts = rowCounts;
-            this.ExternalRowCounts = externalRowCounts;
-            this.HeapSizes = heapSizes;
-            this.IsMinimalDelta = isMinimalDelta;
+            BlobReferenceIsSmall = !isMinimalDelta && heapSizes[(int)HeapIndex.Blob] <= ushort.MaxValue;
+            StringReferenceIsSmall = !isMinimalDelta && heapSizes[(int)HeapIndex.String] <= ushort.MaxValue;
+            GuidReferenceIsSmall = !isMinimalDelta && heapSizes[(int)HeapIndex.Guid] <= ushort.MaxValue;
 
-            this.BlobIndexSize = (isMinimalDelta || heapSizes[(int)HeapIndex.Blob] > ushort.MaxValue) ? large : small;
-            this.StringIndexSize = (isMinimalDelta || heapSizes[(int)HeapIndex.String] > ushort.MaxValue) ? large : small;
-            this.GuidIndexSize = (isMinimalDelta || heapSizes[(int)HeapIndex.Guid] > ushort.MaxValue) ? large : small;
-
-            this.PresentTablesMask = ComputeNonEmptyTableMask(rowCounts);
-            this.ExternalTablesMask = ComputeNonEmptyTableMask(externalRowCounts);
+            PresentTablesMask = ComputeNonEmptyTableMask(rowCounts);
+            ExternalTablesMask = ComputeNonEmptyTableMask(externalRowCounts);
 
             // table can either be present or external, it can't be both:
             Debug.Assert((PresentTablesMask & ExternalTablesMask) == 0);
 
-            this.CustomAttributeTypeCodedIndexSize = this.GetReferenceByteSize(3, TableIndex.MethodDef, TableIndex.MemberRef);
-            this.DeclSecurityCodedIndexSize = this.GetReferenceByteSize(2, TableIndex.MethodDef, TableIndex.TypeDef);
-            this.EventDefIndexSize = this.GetReferenceByteSize(0, TableIndex.Event);
-            this.FieldDefIndexSize = this.GetReferenceByteSize(0, TableIndex.Field);
-            this.GenericParamIndexSize = this.GetReferenceByteSize(0, TableIndex.GenericParam);
-            this.HasConstantCodedIndexSize = this.GetReferenceByteSize(2, TableIndex.Field, TableIndex.Param, TableIndex.Property);
+            CustomAttributeTypeCodedIndexIsSmall = IsReferenceSmall(3, TableIndex.MethodDef, TableIndex.MemberRef);
+            DeclSecurityCodedIndexIsSmall = IsReferenceSmall(2, TableIndex.MethodDef, TableIndex.TypeDef);
+            EventDefReferenceIsSmall = IsReferenceSmall(0, TableIndex.Event);
+            FieldDefReferenceIsSmall = IsReferenceSmall(0, TableIndex.Field);
+            GenericParamReferenceIsSmall = IsReferenceSmall(0, TableIndex.GenericParam);
+            HasConstantCodedIndexIsSmall = IsReferenceSmall(2, TableIndex.Field, TableIndex.Param, TableIndex.Property);
 
-            this.HasCustomAttributeCodedIndexSize = this.GetReferenceByteSize(5,
+            HasCustomAttributeCodedIndexIsSmall = IsReferenceSmall(5,
                 TableIndex.MethodDef,
                 TableIndex.Field,
                 TableIndex.TypeRef,
@@ -156,27 +153,27 @@ namespace System.Reflection.Metadata.Ecma335
                 TableIndex.GenericParamConstraint,
                 TableIndex.MethodSpec);
 
-            this.HasFieldMarshalCodedIndexSize = this.GetReferenceByteSize(1, TableIndex.Field, TableIndex.Param);
-            this.HasSemanticsCodedIndexSize = this.GetReferenceByteSize(1, TableIndex.Event, TableIndex.Property);
-            this.ImplementationCodedIndexSize = this.GetReferenceByteSize(2, TableIndex.File, TableIndex.AssemblyRef, TableIndex.ExportedType);
-            this.MemberForwardedCodedIndexSize = this.GetReferenceByteSize(1, TableIndex.Field, TableIndex.MethodDef);
-            this.MemberRefParentCodedIndexSize = this.GetReferenceByteSize(3, TableIndex.TypeDef, TableIndex.TypeRef, TableIndex.ModuleRef, TableIndex.MethodDef, TableIndex.TypeSpec);
-            this.MethodDefIndexSize = this.GetReferenceByteSize(0, TableIndex.MethodDef);
-            this.MethodDefOrRefCodedIndexSize = this.GetReferenceByteSize(1, TableIndex.MethodDef, TableIndex.MemberRef);
-            this.ModuleRefIndexSize = this.GetReferenceByteSize(0, TableIndex.ModuleRef);
-            this.ParameterIndexSize = this.GetReferenceByteSize(0, TableIndex.Param);
-            this.PropertyDefIndexSize = this.GetReferenceByteSize(0, TableIndex.Property);
-            this.ResolutionScopeCodedIndexSize = this.GetReferenceByteSize(2, TableIndex.Module, TableIndex.ModuleRef, TableIndex.AssemblyRef, TableIndex.TypeRef);
-            this.TypeDefIndexSize = this.GetReferenceByteSize(0, TableIndex.TypeDef);
-            this.TypeDefOrRefCodedIndexSize = this.GetReferenceByteSize(2, TableIndex.TypeDef, TableIndex.TypeRef, TableIndex.TypeSpec);
-            this.TypeOrMethodDefCodedIndexSize = this.GetReferenceByteSize(1, TableIndex.TypeDef, TableIndex.MethodDef);
+            HasFieldMarshalCodedIndexIsSmall = IsReferenceSmall(1, TableIndex.Field, TableIndex.Param);
+            HasSemanticsCodedIndexIsSmall = IsReferenceSmall(1, TableIndex.Event, TableIndex.Property);
+            ImplementationCodedIndexIsSmall = IsReferenceSmall(2, TableIndex.File, TableIndex.AssemblyRef, TableIndex.ExportedType);
+            MemberForwardedCodedIndexIsSmall = IsReferenceSmall(1, TableIndex.Field, TableIndex.MethodDef);
+            MemberRefParentCodedIndexIsSmall = IsReferenceSmall(3, TableIndex.TypeDef, TableIndex.TypeRef, TableIndex.ModuleRef, TableIndex.MethodDef, TableIndex.TypeSpec);
+            MethodDefReferenceIsSmall = IsReferenceSmall(0, TableIndex.MethodDef);
+            MethodDefOrRefCodedIndexIsSmall = IsReferenceSmall(1, TableIndex.MethodDef, TableIndex.MemberRef);
+            ModuleRefReferenceIsSmall = IsReferenceSmall(0, TableIndex.ModuleRef);
+            ParameterReferenceIsSmall = IsReferenceSmall(0, TableIndex.Param);
+            PropertyDefReferenceIsSmall = IsReferenceSmall(0, TableIndex.Property);
+            ResolutionScopeCodedIndexIsSmall = IsReferenceSmall(2, TableIndex.Module, TableIndex.ModuleRef, TableIndex.AssemblyRef, TableIndex.TypeRef);
+            TypeDefReferenceIsSmall = IsReferenceSmall(0, TableIndex.TypeDef);
+            TypeDefOrRefCodedIndexIsSmall = IsReferenceSmall(2, TableIndex.TypeDef, TableIndex.TypeRef, TableIndex.TypeSpec);
+            TypeOrMethodDefCodedIndexIsSmall = IsReferenceSmall(1, TableIndex.TypeDef, TableIndex.MethodDef);
 
-            this.DocumentIndexSize = this.GetReferenceByteSize(0, TableIndex.Document);
-            this.LocalVariableIndexSize = this.GetReferenceByteSize(0, TableIndex.LocalVariable);
-            this.LocalConstantIndexSize = this.GetReferenceByteSize(0, TableIndex.LocalConstant);
-            this.ImportScopeIndexSize = this.GetReferenceByteSize(0, TableIndex.ImportScope);
+            DocumentReferenceIsSmall = IsReferenceSmall(0, TableIndex.Document);
+            LocalVariableReferenceIsSmall = IsReferenceSmall(0, TableIndex.LocalVariable);
+            LocalConstantReferenceIsSmall = IsReferenceSmall(0, TableIndex.LocalConstant);
+            ImportScopeReferenceIsSmall = IsReferenceSmall(0, TableIndex.ImportScope);
 
-            this.HasCustomDebugInformationSize = this.GetReferenceByteSize(5,
+            HasCustomDebugInformationCodedIndexIsSmall = IsReferenceSmall(5,
                 TableIndex.MethodDef,
                 TableIndex.Field,
                 TableIndex.TypeRef,
@@ -205,77 +202,110 @@ namespace System.Reflection.Metadata.Ecma335
                 TableIndex.LocalConstant,
                 TableIndex.ImportScope);
 
-            int size = this.CalculateTableStreamHeaderSize();
+            int size = CalculateTableStreamHeaderSize();
 
-            size += GetTableSize(TableIndex.Module, 2 + 3 * this.GuidIndexSize + this.StringIndexSize);
-            size += GetTableSize(TableIndex.TypeRef, this.ResolutionScopeCodedIndexSize + this.StringIndexSize + this.StringIndexSize);
-            size += GetTableSize(TableIndex.TypeDef, 4 + this.StringIndexSize + this.StringIndexSize + this.TypeDefOrRefCodedIndexSize + this.FieldDefIndexSize + this.MethodDefIndexSize);
+            const byte small = 2;
+            const byte large = 4;
+
+            byte blobReferenceSize = BlobReferenceIsSmall ? small : large;
+            byte stringReferenceSize = StringReferenceIsSmall ? small : large;
+            byte guidReferenceSize = GuidReferenceIsSmall ? small : large;
+            byte customAttributeTypeCodedIndexSize = CustomAttributeTypeCodedIndexIsSmall ? small : large;
+            byte declSecurityCodedIndexSize = DeclSecurityCodedIndexIsSmall ? small : large;
+            byte eventDefReferenceSize = EventDefReferenceIsSmall ? small : large;
+            byte fieldDefReferenceSize = FieldDefReferenceIsSmall ? small : large;
+            byte genericParamReferenceSize = GenericParamReferenceIsSmall ? small : large;
+            byte hasConstantCodedIndexSize = HasConstantCodedIndexIsSmall ? small : large;
+            byte hasCustomAttributeCodedIndexSize = HasCustomAttributeCodedIndexIsSmall ? small : large;
+            byte hasFieldMarshalCodedIndexSize = HasFieldMarshalCodedIndexIsSmall ? small : large;
+            byte hasSemanticsCodedIndexSize = HasSemanticsCodedIndexIsSmall ? small : large;
+            byte implementationCodedIndexSize = ImplementationCodedIndexIsSmall ? small : large;
+            byte memberForwardedCodedIndexSize = MemberForwardedCodedIndexIsSmall ? small : large;
+            byte memberRefParentCodedIndexSize = MemberRefParentCodedIndexIsSmall ? small : large;
+            byte methodDefReferenceSize = MethodDefReferenceIsSmall ? small : large;
+            byte methodDefOrRefCodedIndexSize = MethodDefOrRefCodedIndexIsSmall ? small : large;
+            byte moduleRefReferenceSize = ModuleRefReferenceIsSmall ? small : large;
+            byte parameterReferenceSize = ParameterReferenceIsSmall ? small : large;
+            byte propertyDefReferenceSize = PropertyDefReferenceIsSmall ? small : large;
+            byte resolutionScopeCodedIndexSize = ResolutionScopeCodedIndexIsSmall ? small : large;
+            byte typeDefReferenceSize = TypeDefReferenceIsSmall ? small : large;
+            byte typeDefOrRefCodedIndexSize = TypeDefOrRefCodedIndexIsSmall ? small : large;
+            byte typeOrMethodDefCodedIndexSize = TypeOrMethodDefCodedIndexIsSmall ? small : large;
+            byte documentReferenceSize = DocumentReferenceIsSmall ? small : large;
+            byte localVariableReferenceSize = LocalVariableReferenceIsSmall ? small : large;
+            byte localConstantReferenceSize = LocalConstantReferenceIsSmall ? small : large;
+            byte importScopeReferenceSize = ImportScopeReferenceIsSmall ? small : large;
+            byte hasCustomDebugInformationCodedIndexSize = HasCustomDebugInformationCodedIndexIsSmall ? small : large;
+
+            size += GetTableSize(TableIndex.Module, 2 + 3 * guidReferenceSize + stringReferenceSize);
+            size += GetTableSize(TableIndex.TypeRef, resolutionScopeCodedIndexSize + stringReferenceSize + stringReferenceSize);
+            size += GetTableSize(TableIndex.TypeDef, 4 + stringReferenceSize + stringReferenceSize + typeDefOrRefCodedIndexSize + fieldDefReferenceSize + methodDefReferenceSize);
             Debug.Assert(rowCounts[(int)TableIndex.FieldPtr] == 0);
-            size += GetTableSize(TableIndex.Field, 2 + this.StringIndexSize + this.BlobIndexSize);
+            size += GetTableSize(TableIndex.Field, 2 + stringReferenceSize + blobReferenceSize);
             Debug.Assert(rowCounts[(int)TableIndex.MethodPtr] == 0);
-            size += GetTableSize(TableIndex.MethodDef, 8 + this.StringIndexSize + this.BlobIndexSize + this.ParameterIndexSize);
+            size += GetTableSize(TableIndex.MethodDef, 8 + stringReferenceSize + blobReferenceSize + parameterReferenceSize);
             Debug.Assert(rowCounts[(int)TableIndex.ParamPtr] == 0);
-            size += GetTableSize(TableIndex.Param, 4 + this.StringIndexSize);
-            size += GetTableSize(TableIndex.InterfaceImpl, this.TypeDefIndexSize + this.TypeDefOrRefCodedIndexSize);
-            size += GetTableSize(TableIndex.MemberRef, this.MemberRefParentCodedIndexSize + this.StringIndexSize + this.BlobIndexSize);
-            size += GetTableSize(TableIndex.Constant, 2 + this.HasConstantCodedIndexSize + this.BlobIndexSize);
-            size += GetTableSize(TableIndex.CustomAttribute, this.HasCustomAttributeCodedIndexSize + this.CustomAttributeTypeCodedIndexSize + this.BlobIndexSize);
-            size += GetTableSize(TableIndex.FieldMarshal, this.HasFieldMarshalCodedIndexSize + this.BlobIndexSize);
-            size += GetTableSize(TableIndex.DeclSecurity, 2 + this.DeclSecurityCodedIndexSize + this.BlobIndexSize);
-            size += GetTableSize(TableIndex.ClassLayout, 6 + this.TypeDefIndexSize);
-            size += GetTableSize(TableIndex.FieldLayout, 4 + this.FieldDefIndexSize);
-            size += GetTableSize(TableIndex.StandAloneSig, this.BlobIndexSize);
-            size += GetTableSize(TableIndex.EventMap, this.TypeDefIndexSize + this.EventDefIndexSize);
+            size += GetTableSize(TableIndex.Param, 4 + stringReferenceSize);
+            size += GetTableSize(TableIndex.InterfaceImpl, typeDefReferenceSize + typeDefOrRefCodedIndexSize);
+            size += GetTableSize(TableIndex.MemberRef, memberRefParentCodedIndexSize + stringReferenceSize + blobReferenceSize);
+            size += GetTableSize(TableIndex.Constant, 2 + hasConstantCodedIndexSize + blobReferenceSize);
+            size += GetTableSize(TableIndex.CustomAttribute, hasCustomAttributeCodedIndexSize + customAttributeTypeCodedIndexSize + blobReferenceSize);
+            size += GetTableSize(TableIndex.FieldMarshal, hasFieldMarshalCodedIndexSize + blobReferenceSize);
+            size += GetTableSize(TableIndex.DeclSecurity, 2 + declSecurityCodedIndexSize + blobReferenceSize);
+            size += GetTableSize(TableIndex.ClassLayout, 6 + typeDefReferenceSize);
+            size += GetTableSize(TableIndex.FieldLayout, 4 + fieldDefReferenceSize);
+            size += GetTableSize(TableIndex.StandAloneSig, blobReferenceSize);
+            size += GetTableSize(TableIndex.EventMap, typeDefReferenceSize + eventDefReferenceSize);
             Debug.Assert(rowCounts[(int)TableIndex.EventPtr] == 0);
-            size += GetTableSize(TableIndex.Event, 2 + this.StringIndexSize + this.TypeDefOrRefCodedIndexSize);
-            size += GetTableSize(TableIndex.PropertyMap, this.TypeDefIndexSize + this.PropertyDefIndexSize);
+            size += GetTableSize(TableIndex.Event, 2 + stringReferenceSize + typeDefOrRefCodedIndexSize);
+            size += GetTableSize(TableIndex.PropertyMap, typeDefReferenceSize + propertyDefReferenceSize);
             Debug.Assert(rowCounts[(int)TableIndex.PropertyPtr] == 0);
-            size += GetTableSize(TableIndex.Property, 2 + this.StringIndexSize + this.BlobIndexSize);
-            size += GetTableSize(TableIndex.MethodSemantics, 2 + this.MethodDefIndexSize + this.HasSemanticsCodedIndexSize);
-            size += GetTableSize(TableIndex.MethodImpl, 0 + this.TypeDefIndexSize + this.MethodDefOrRefCodedIndexSize + this.MethodDefOrRefCodedIndexSize);
-            size += GetTableSize(TableIndex.ModuleRef, 0 + this.StringIndexSize);
-            size += GetTableSize(TableIndex.TypeSpec, 0 + this.BlobIndexSize);
-            size += GetTableSize(TableIndex.ImplMap, 2 + this.MemberForwardedCodedIndexSize + this.StringIndexSize + this.ModuleRefIndexSize);
-            size += GetTableSize(TableIndex.FieldRva, 4 + this.FieldDefIndexSize);
+            size += GetTableSize(TableIndex.Property, 2 + stringReferenceSize + blobReferenceSize);
+            size += GetTableSize(TableIndex.MethodSemantics, 2 + methodDefReferenceSize + hasSemanticsCodedIndexSize);
+            size += GetTableSize(TableIndex.MethodImpl, typeDefReferenceSize + methodDefOrRefCodedIndexSize + methodDefOrRefCodedIndexSize);
+            size += GetTableSize(TableIndex.ModuleRef, stringReferenceSize);
+            size += GetTableSize(TableIndex.TypeSpec, blobReferenceSize);
+            size += GetTableSize(TableIndex.ImplMap, 2 + memberForwardedCodedIndexSize + stringReferenceSize + moduleRefReferenceSize);
+            size += GetTableSize(TableIndex.FieldRva, 4 + fieldDefReferenceSize);
             size += GetTableSize(TableIndex.EncLog, 8);
             size += GetTableSize(TableIndex.EncMap, 4);
-            size += GetTableSize(TableIndex.Assembly, 16 + this.BlobIndexSize + this.StringIndexSize + this.StringIndexSize);
+            size += GetTableSize(TableIndex.Assembly, 16 + blobReferenceSize + stringReferenceSize + stringReferenceSize);
             Debug.Assert(rowCounts[(int)TableIndex.AssemblyProcessor] == 0);
             Debug.Assert(rowCounts[(int)TableIndex.AssemblyOS] == 0);
-            size += GetTableSize(TableIndex.AssemblyRef, 12 + this.BlobIndexSize + this.StringIndexSize + this.StringIndexSize + this.BlobIndexSize);
+            size += GetTableSize(TableIndex.AssemblyRef, 12 + blobReferenceSize + stringReferenceSize + stringReferenceSize + blobReferenceSize);
             Debug.Assert(rowCounts[(int)TableIndex.AssemblyRefProcessor] == 0);
             Debug.Assert(rowCounts[(int)TableIndex.AssemblyRefOS] == 0);
-            size += GetTableSize(TableIndex.File, 4 + this.StringIndexSize + this.BlobIndexSize);
-            size += GetTableSize(TableIndex.ExportedType, 8 + this.StringIndexSize + this.StringIndexSize + this.ImplementationCodedIndexSize);
-            size += GetTableSize(TableIndex.ManifestResource, 8 + this.StringIndexSize + this.ImplementationCodedIndexSize);
-            size += GetTableSize(TableIndex.NestedClass, this.TypeDefIndexSize + this.TypeDefIndexSize);
-            size += GetTableSize(TableIndex.GenericParam, 4 + this.TypeOrMethodDefCodedIndexSize + this.StringIndexSize);
-            size += GetTableSize(TableIndex.MethodSpec, this.MethodDefOrRefCodedIndexSize + this.BlobIndexSize);
-            size += GetTableSize(TableIndex.GenericParamConstraint, this.GenericParamIndexSize + this.TypeDefOrRefCodedIndexSize);
+            size += GetTableSize(TableIndex.File, 4 + stringReferenceSize + blobReferenceSize);
+            size += GetTableSize(TableIndex.ExportedType, 8 + stringReferenceSize + stringReferenceSize + implementationCodedIndexSize);
+            size += GetTableSize(TableIndex.ManifestResource, 8 + stringReferenceSize + implementationCodedIndexSize);
+            size += GetTableSize(TableIndex.NestedClass, typeDefReferenceSize + typeDefReferenceSize);
+            size += GetTableSize(TableIndex.GenericParam, 4 + typeOrMethodDefCodedIndexSize + stringReferenceSize);
+            size += GetTableSize(TableIndex.MethodSpec, methodDefOrRefCodedIndexSize + blobReferenceSize);
+            size += GetTableSize(TableIndex.GenericParamConstraint, genericParamReferenceSize + typeDefOrRefCodedIndexSize);
 
-            size += GetTableSize(TableIndex.Document, this.BlobIndexSize + this.GuidIndexSize + this.BlobIndexSize + this.GuidIndexSize);
-            size += GetTableSize(TableIndex.MethodDebugInformation, this.DocumentIndexSize + this.BlobIndexSize);
-            size += GetTableSize(TableIndex.LocalScope, this.MethodDefIndexSize + this.ImportScopeIndexSize + this.LocalVariableIndexSize + this.LocalConstantIndexSize + 4 + 4);
-            size += GetTableSize(TableIndex.LocalVariable, 2 + 2 + this.StringIndexSize);
-            size += GetTableSize(TableIndex.LocalConstant, this.StringIndexSize + this.BlobIndexSize);
-            size += GetTableSize(TableIndex.ImportScope, this.ImportScopeIndexSize + this.BlobIndexSize);
-            size += GetTableSize(TableIndex.StateMachineMethod, this.MethodDefIndexSize + this.MethodDefIndexSize);
-            size += GetTableSize(TableIndex.CustomDebugInformation, this.HasCustomDebugInformationSize + this.GuidIndexSize + this.BlobIndexSize);
+            size += GetTableSize(TableIndex.Document, blobReferenceSize + guidReferenceSize + blobReferenceSize + guidReferenceSize);
+            size += GetTableSize(TableIndex.MethodDebugInformation, documentReferenceSize + blobReferenceSize);
+            size += GetTableSize(TableIndex.LocalScope, methodDefReferenceSize + importScopeReferenceSize + localVariableReferenceSize + localConstantReferenceSize + 4 + 4);
+            size += GetTableSize(TableIndex.LocalVariable, 2 + 2 + stringReferenceSize);
+            size += GetTableSize(TableIndex.LocalConstant, stringReferenceSize + blobReferenceSize);
+            size += GetTableSize(TableIndex.ImportScope, importScopeReferenceSize + blobReferenceSize);
+            size += GetTableSize(TableIndex.StateMachineMethod, methodDefReferenceSize + methodDefReferenceSize);
+            size += GetTableSize(TableIndex.CustomDebugInformation, hasCustomDebugInformationCodedIndexSize + guidReferenceSize + blobReferenceSize);
 
             // +1 for terminating 0 byte
             size = BitArithmetic.Align(size + 1, StreamAlignment);
 
-            this.MetadataTableStreamSize = size;
+            MetadataTableStreamSize = size;
 
             size += GetAlignedHeapSize(HeapIndex.String);
             size += GetAlignedHeapSize(HeapIndex.UserString);
             size += GetAlignedHeapSize(HeapIndex.Guid);
             size += GetAlignedHeapSize(HeapIndex.Blob);
 
-            this.StandalonePdbStreamSize = isStandaloneDebugMetadata ? CalculateStandalonePdbStreamSize() : 0;
-            size += this.StandalonePdbStreamSize;
+            StandalonePdbStreamSize = isStandaloneDebugMetadata ? CalculateStandalonePdbStreamSize() : 0;
+            size += StandalonePdbStreamSize;
 
-            this.MetadataStreamStorageSize = size;
+            MetadataStreamStorageSize = size;
         }
 
         internal bool IsStandaloneDebugMetadata => StandalonePdbStreamSize > 0;
@@ -406,13 +436,10 @@ namespace System.Reflection.Metadata.Ecma335
             return RowCounts[(int)index] * rowSize;
         }
 
-        private byte GetReferenceByteSize(int tagBitSize, params TableIndex[] tables)
+        private bool IsReferenceSmall(int tagBitSize, params TableIndex[] tables)
         {
-            const byte large = 4;
-            const byte small = 2;
             const int smallBitCount = 16;
-
-            return (!IsMetadataTableStreamCompressed || !ReferenceFits(smallBitCount - tagBitSize, tables)) ? large : small;
+            return IsMetadataTableStreamCompressed && ReferenceFits(smallBitCount - tagBitSize, tables);
         }
 
         private bool ReferenceFits(int bitCount, TableIndex[] tables)

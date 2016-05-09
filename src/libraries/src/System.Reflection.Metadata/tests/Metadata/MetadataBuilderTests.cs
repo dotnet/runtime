@@ -17,10 +17,10 @@ namespace System.Reflection.Metadata.Tests
             builder.AddModule(default(int), default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
             Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.Module]);
 
-            builder.AddAssembly(default(StringHandle), default(Version), default(StringHandle), default(BlobHandle), default(AssemblyFlags), default(AssemblyHashAlgorithm));
+            builder.AddAssembly(default(StringHandle), new Version(0, 0, 0, 0), default(StringHandle), default(BlobHandle), default(AssemblyFlags), default(AssemblyHashAlgorithm));
             Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.Assembly]);
 
-            var assemblyReference = builder.AddAssemblyReference(default(StringHandle), default(Version), default(StringHandle), default(BlobHandle), default(AssemblyFlags), default(BlobHandle));
+            var assemblyReference = builder.AddAssemblyReference(default(StringHandle), new Version(0, 0, 0, 0), default(StringHandle), default(BlobHandle), default(AssemblyFlags), default(BlobHandle));
             Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.AssemblyRef]);
             Assert.Equal(1, MetadataTokens.GetRowNumber(assemblyReference));
 
@@ -158,6 +158,38 @@ namespace System.Reflection.Metadata.Tests
             Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.CustomDebugInformation]);
         }
 
+        /// <summary>
+        /// Add methods do miminal validation to avoid overhead.
+        /// </summary>
+        [Fact]
+        public void Add_Errors()
+        {
+            var builder = new MetadataBuilder();
+
+            var badHandleKind = CustomAttributeHandle.FromRowId(1);
+
+            Assert.Throws<ArgumentNullException>(() => builder.AddAssemblyReference(default(StringHandle), null, default(StringHandle), default(BlobHandle), 0, default(BlobHandle)));
+            Assert.Throws<ArgumentException>(() => builder.AddTypeDefinition(0, default(StringHandle), default(StringHandle), badHandleKind, default(FieldDefinitionHandle), default(MethodDefinitionHandle)));
+            Assert.Throws<ArgumentException>(() => builder.AddInterfaceImplementation(default(TypeDefinitionHandle), badHandleKind));
+            Assert.Throws<ArgumentException>(() => builder.AddTypeReference(badHandleKind, default(StringHandle), default(StringHandle)));
+            Assert.Throws<ArgumentException>(() => builder.AddEvent(0, default(StringHandle), badHandleKind));
+            Assert.Throws<ArgumentException>(() => builder.AddConstant(badHandleKind, 0));
+            Assert.Throws<ArgumentException>(() => builder.AddMethodSemantics(badHandleKind, 0, default(MethodDefinitionHandle)));
+            Assert.Throws<ArgumentException>(() => builder.AddCustomAttribute(badHandleKind, default(MethodDefinitionHandle), default(BlobHandle)));
+            Assert.Throws<ArgumentException>(() => builder.AddCustomAttribute(default(TypeDefinitionHandle), badHandleKind, default(BlobHandle)));
+            Assert.Throws<ArgumentException>(() => builder.AddMethodSpecification(badHandleKind, default(BlobHandle)));
+            Assert.Throws<ArgumentException>(() => builder.AddGenericParameter(badHandleKind, 0, default(StringHandle), 0));
+            Assert.Throws<ArgumentException>(() => builder.AddGenericParameterConstraint(default(GenericParameterHandle), badHandleKind));
+            Assert.Throws<ArgumentException>(() => builder.AddMarshallingDescriptor(badHandleKind, default(BlobHandle)));
+            Assert.Throws<ArgumentException>(() => builder.AddMethodImplementation(default(TypeDefinitionHandle), badHandleKind, default(MethodDefinitionHandle)));
+            Assert.Throws<ArgumentException>(() => builder.AddMethodImplementation(default(TypeDefinitionHandle), default(MethodDefinitionHandle), badHandleKind));
+            Assert.Throws<ArgumentException>(() => builder.AddMemberReference(badHandleKind, default(StringHandle), default(BlobHandle)));
+            Assert.Throws<ArgumentException>(() => builder.AddManifestResource(0, default(StringHandle), badHandleKind, 0));
+            Assert.Throws<ArgumentException>(() => builder.AddExportedType(0, default(StringHandle), default(StringHandle), badHandleKind, 0));
+            Assert.Throws<ArgumentException>(() => builder.AddDeclarativeSecurityAttribute(badHandleKind, 0, default(BlobHandle)));
+            Assert.Throws<ArgumentException>(() => builder.AddCustomDebugInformation(badHandleKind, default(GuidHandle), default(BlobHandle)));
+        }
+
         [Fact, ActiveIssue("https://github.com/dotnet/roslyn/issues/9852")]
         public void HeapOverflow_UserString()
         {
@@ -191,5 +223,38 @@ namespace System.Reflection.Metadata.Tests
         }
 
         // TODO: test overflow of other heaps, tables
+
+        [Fact]
+        public void SetCapacity()
+        {
+            var builder = new MetadataBuilder();
+
+            builder.GetOrAddString("11111");
+            builder.GetOrAddGuid(Guid.NewGuid());
+            builder.GetOrAddBlob("2222");
+            builder.GetOrAddUserString("3333");
+
+            builder.AddMethodDefinition(0, 0, default(StringHandle), default(BlobHandle), 0, default(ParameterHandle));
+            builder.AddMethodDefinition(0, 0, default(StringHandle), default(BlobHandle), 0, default(ParameterHandle));
+            builder.AddMethodDefinition(0, 0, default(StringHandle), default(BlobHandle), 0, default(ParameterHandle));
+
+            builder.SetCapacity(TableIndex.MethodDef, 1);
+            builder.SetCapacity(TableIndex.MethodDef, 1000);
+            Assert.Throws<ArgumentOutOfRangeException>(() => builder.SetCapacity(TableIndex.MethodDef, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => builder.SetCapacity(TableIndex.MethodDef, -1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => builder.SetCapacity((TableIndex)0xff, 10));
+
+            builder.SetCapacity(HeapIndex.String, 3);
+            builder.SetCapacity(HeapIndex.String, 1000);
+            builder.SetCapacity(HeapIndex.Blob, 3);
+            builder.SetCapacity(HeapIndex.Blob, 1000);
+            builder.SetCapacity(HeapIndex.Guid, 3);
+            builder.SetCapacity(HeapIndex.Guid, 1000);
+            builder.SetCapacity(HeapIndex.UserString, 3);
+            builder.SetCapacity(HeapIndex.UserString, 1000);
+            Assert.Throws<ArgumentOutOfRangeException>(() => builder.SetCapacity(HeapIndex.String, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => builder.SetCapacity(HeapIndex.String, -1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => builder.SetCapacity((HeapIndex)0xff, 10));
+        }
     }
 }
