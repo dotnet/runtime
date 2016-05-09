@@ -11,7 +11,7 @@ internal static partial class Interop
     {
         [DllImport(Interop.Libraries.SecuritySddl, EntryPoint = "ConvertStringSecurityDescriptorToSecurityDescriptorW",
             CallingConvention = CallingConvention.Winapi, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Unicode)]
-        internal static extern int ConvertStringSdToSd(
+        internal static extern bool ConvertStringSdToSd(
             string stringSd,
             /* DWORD */ uint stringSdRevision, 
             out IntPtr resultSd,
