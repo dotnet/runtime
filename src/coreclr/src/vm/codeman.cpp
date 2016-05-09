@@ -1439,6 +1439,8 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT I
 
         EX_TRY
         {
+            bool fContinueToLoadJIT = false;
+#if !defined(FEATURE_CORECLR)
             typedef void (__stdcall* psxsJitStartup) (CoreClrCallbacks const &);
             psxsJitStartup sxsJitStartupFn = (psxsJitStartup) GetProcAddress(*phJit, "sxsJitStartup");
 
@@ -1450,7 +1452,16 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT I
                 (*sxsJitStartupFn) (cccallbacks);
 
                 pJitLoadData->jld_status = JIT_LOAD_STATUS_DONE_CALL_SXSJITSTARTUP;
+                fContinueToLoadJIT = true;
+            }
+#else // FEATURE_CORECLR
+            // For CoreCLR, we never use "sxsJitStartup" as that is Desktop utilcode initialization
+            // specific. Thus, assume we always got 
+            fContinueToLoadJIT = true;
+#endif // !defined(FEATURE_CORECLR)
 
+            if (fContinueToLoadJIT)
+            {
                 typedef void (__stdcall* pjitStartup)(ICorJitHost*);
                 pjitStartup jitStartupFn = (pjitStartup) GetProcAddress(*phJit, "jitStartup");
 
