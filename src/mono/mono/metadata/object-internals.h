@@ -1403,7 +1403,7 @@ gboolean
 mono_image_build_metadata (MonoReflectionModuleBuilder *module, MonoError *error);
 
 int
-mono_get_constant_value_from_blob (MonoDomain* domain, MonoTypeEnum type, const char *blob, void *value);
+mono_get_constant_value_from_blob (MonoDomain* domain, MonoTypeEnum type, const char *blob, void *value, MonoError *error);
 
 void
 mono_release_type_locks (MonoInternalThread *thread);
@@ -1604,7 +1604,10 @@ MonoObject *
 mono_object_new_alloc_specific_checked (MonoVTable *vtable, MonoError *error);
 
 void
-mono_field_static_get_value_for_thread (MonoInternalThread *thread, MonoVTable *vt, MonoClassField *field, void *value);
+mono_field_static_get_value_checked (MonoVTable *vt, MonoClassField *field, void *value, MonoError *error);
+
+void
+mono_field_static_get_value_for_thread (MonoInternalThread *thread, MonoVTable *vt, MonoClassField *field, void *value, MonoError *error);
 
 /* exported, used by the debugger */
 MONO_API void *

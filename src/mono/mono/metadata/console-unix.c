@@ -247,9 +247,11 @@ do_console_cancel_event (void)
 		mono_error_cleanup (&error);
 		return;
 	}
-	mono_field_static_get_value (vtable, cancel_handler_field, &load_value);
-	if (load_value == NULL)
+	mono_field_static_get_value_checked (vtable, cancel_handler_field, &load_value, &error);
+	if (load_value == NULL || !is_ok (&error)) {
+		mono_error_cleanup (&error);
 		return;
+	}
 
 	klass = load_value->object.vtable->klass;
 	method = mono_class_get_method_from_name (klass, "BeginInvoke", -1);
