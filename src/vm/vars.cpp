@@ -22,15 +22,15 @@ bool g_fAllowNativeImages = true;
 //
 // Default install library
 //
-const WCHAR g_pwBaseLibrary[]     = W("mscorlib.dll");
-const WCHAR g_pwBaseLibraryName[] = W("mscorlib");
-const char g_psBaseLibrary[]      = "mscorlib.dll";
-const char g_psBaseLibraryName[]  = "mscorlib";
-const char g_psBaseLibrarySatelliteAssemblyName[]  = "mscorlib.resources";
+const WCHAR g_pwBaseLibrary[]     = CoreLibName_IL_W;
+const WCHAR g_pwBaseLibraryName[] = CoreLibName_W;
+const char g_psBaseLibrary[]      = CoreLibName_IL_A;
+const char g_psBaseLibraryName[]  = CoreLibName_A;
+const char g_psBaseLibrarySatelliteAssemblyName[]  = CoreLibSatelliteName_A;
 
 #ifdef FEATURE_COMINTEROP
-const WCHAR g_pwBaseLibraryTLB[]  = W("mscorlib.tlb");
-const char g_psBaseLibraryTLB[]   = "mscorlib.tlb";
+const WCHAR g_pwBaseLibraryTLB[]  = CoreLibName_TLB_W;
+const char g_psBaseLibraryTLB[]   = CoreLibName_TLB_A;
 #endif  // FEATURE_COMINTEROP
 
 Volatile<LONG>       g_TrapReturningThreads;

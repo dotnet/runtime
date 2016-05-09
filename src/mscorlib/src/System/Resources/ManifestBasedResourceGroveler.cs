@@ -253,7 +253,7 @@ namespace System.Resources {
                 // fires, please fix the build process for the BCL directory.
                 if (a == typeof(Object).Assembly)
                 {
-                    Contract.Assert(false, "mscorlib's NeutralResourcesLanguageAttribute is a malformed culture name! name: \"" + cultureName + "\"  Exception: " + e);
+                    Contract.Assert(false, System.CoreLib.Name+"'s NeutralResourcesLanguageAttribute is a malformed culture name! name: \"" + cultureName + "\"  Exception: " + e);
                     return CultureInfo.InvariantCulture;
                 }
 
@@ -289,8 +289,8 @@ namespace System.Resources {
                     if (resMgrHeaderVersion == ResourceManager.HeaderVersionNumber)
                     {
                         br.ReadInt32();  // We don't want the number of bytes to skip.
-                        readerTypeName = br.ReadString();
-                        resSetTypeName = br.ReadString();
+                        readerTypeName = System.CoreLib.FixupCoreLibName(br.ReadString());
+                        resSetTypeName = System.CoreLib.FixupCoreLibName(br.ReadString());
                     }
                     else if (resMgrHeaderVersion > ResourceManager.HeaderVersionNumber)
                     {
@@ -301,8 +301,8 @@ namespace System.Resources {
                         int numBytesToSkip = br.ReadInt32();
                         long endPosition = br.BaseStream.Position + numBytesToSkip;
 
-                        readerTypeName = br.ReadString();
-                        resSetTypeName = br.ReadString();
+                        readerTypeName = System.CoreLib.FixupCoreLibName(br.ReadString());
+                        resSetTypeName = System.CoreLib.FixupCoreLibName(br.ReadString());
 
                         br.BaseStream.Seek(endPosition, SeekOrigin.Begin);
                     }
@@ -650,13 +650,13 @@ namespace System.Resources {
         private void HandleResourceStreamMissing(String fileName)
         {
             // Keep people from bothering me about resources problems
-            if (_mediator.MainAssembly == typeof(Object).Assembly && _mediator.BaseName.Equals("mscorlib"))
+            if (_mediator.MainAssembly == typeof(Object).Assembly && _mediator.BaseName.Equals(System.CoreLib.Name))
             {
                 // This would break CultureInfo & all our exceptions.
-                Contract.Assert(false, "Couldn't get mscorlib" + ResourceManager.ResFileExtension + " from mscorlib's assembly" + Environment.NewLine + Environment.NewLine + "Are you building the runtime on your machine?  Chances are the BCL directory didn't build correctly.  Type 'build -c' in the BCL directory.  If you get build errors, look at buildd.log.  If you then can't figure out what's wrong (and you aren't changing the assembly-related metadata code), ask a BCL dev.\n\nIf you did NOT build the runtime, you shouldn't be seeing this and you've found a bug.");
+                Contract.Assert(false, "Couldn't get " + System.CoreLib.Name+ResourceManager.ResFileExtension + " from "+System.CoreLib.Name+"'s assembly" + Environment.NewLine + Environment.NewLine + "Are you building the runtime on your machine?  Chances are the BCL directory didn't build correctly.  Type 'build -c' in the BCL directory.  If you get build errors, look at buildd.log.  If you then can't figure out what's wrong (and you aren't changing the assembly-related metadata code), ask a BCL dev.\n\nIf you did NOT build the runtime, you shouldn't be seeing this and you've found a bug.");
                 
                 // We cannot continue further - simply FailFast.
-                string mesgFailFast = "mscorlib" + ResourceManager.ResFileExtension + " couldn't be found!  Large parts of the BCL won't work!";
+                string mesgFailFast = System.CoreLib.Name + ResourceManager.ResFileExtension + " couldn't be found!  Large parts of the BCL won't work!";
                 System.Environment.FailFast(mesgFailFast);
             }
             // We really don't think this should happen - we always

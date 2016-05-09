@@ -1984,7 +1984,7 @@ BOOL PEAssembly::CheckNativeImageVersion(PEImage *peimage)
         CorCompileConfigFlags instrumentationConfigFlags = (CorCompileConfigFlags) (configFlags & CORCOMPILE_CONFIG_INSTRUMENTATION);
         if ((info->wConfigFlags & instrumentationConfigFlags) != instrumentationConfigFlags)
         {
-            ExternalLog(LL_ERROR, "Instrumented native image for Mscorlib.dll expected.");
+            ExternalLog(LL_ERROR, "Instrumented native image for System.Private.CoreLib.dll expected.");
             ThrowHR(COR_E_NI_AND_RUNTIME_VERSION_MISMATCH);
         }
     }

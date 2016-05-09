@@ -25,7 +25,7 @@ namespace System.Threading.Tasks
     [EventSource(
         Name = "System.Threading.Tasks.TplEventSource",
         Guid = "2e5dba47-a3d2-4d16-8ee0-6671ffdcd7b5", 
-        LocalizationResources = "mscorlib")]
+        LocalizationResources = System.CoreLib.Name)]
     internal sealed class TplEtwProvider : EventSource
     {
         /// Used to determine if tasks should generate Activity IDs for themselves
