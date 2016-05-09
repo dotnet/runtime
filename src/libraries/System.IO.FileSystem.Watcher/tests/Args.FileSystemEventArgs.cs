@@ -2,15 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.IO;
 using Xunit;
 
 namespace System.IO.Tests
 {
     public class FileSystemEventArgsTests
     {
-        private static void ValidateFileSystemEventArgs(WatcherChangeTypes changeType, string directory, string name)
+        [Theory]
+        [InlineData(WatcherChangeTypes.Changed, "C:", "foo.txt")]
+        [InlineData(WatcherChangeTypes.All, "C:", "foo.txt")]
+        [InlineData(0, "", "")]
+        [InlineData(0, "", null)]
+        public static void FileSystemEventArgs_ctor(WatcherChangeTypes changeType, string directory, string name)
         {
             FileSystemEventArgs args = new FileSystemEventArgs(changeType, directory, name);
 
@@ -25,15 +28,8 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void FileSystemEventArgs_ctor()
+        public static void FileSystemEventArgs_ctor_Invalid()
         {
-            ValidateFileSystemEventArgs(WatcherChangeTypes.Changed, "C:" + Path.DirectorySeparatorChar, "foo.txt");
-            ValidateFileSystemEventArgs(WatcherChangeTypes.Changed, "C:", "foo.txt");
-            ValidateFileSystemEventArgs(WatcherChangeTypes.All, "C:" + Path.DirectorySeparatorChar, "foo.txt");
-
-            ValidateFileSystemEventArgs((WatcherChangeTypes)0, String.Empty, String.Empty);
-            ValidateFileSystemEventArgs((WatcherChangeTypes)0, String.Empty, null);
-
             Assert.Throws<NullReferenceException>(() => new FileSystemEventArgs((WatcherChangeTypes)0, null, String.Empty));
         }
     }

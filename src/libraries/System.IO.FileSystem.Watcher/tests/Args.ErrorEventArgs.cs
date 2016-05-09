@@ -2,16 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.IO;
 using Xunit;
 
 namespace System.IO.Tests
 {
     public class ErrorEventArgsTests
     {
-        private static void ValidateErrorEventArgs(Exception exception)
+        [Fact]
+        public void ErrorEventArgs_ctor()
         {
+            Exception exception = new Exception();
+
             ErrorEventArgs args = new ErrorEventArgs(exception);
 
             Assert.Equal(exception, args.GetException());
@@ -21,11 +22,14 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void ErrorEventArgs_ctor()
+        public void ErrorEventArgs_ctor_Null()
         {
-            ValidateErrorEventArgs(null);
+            ErrorEventArgs args = new ErrorEventArgs(null);
 
-            ValidateErrorEventArgs(new Exception());
+            Assert.Null(args.GetException());
+
+            // Make sure method is consistent.
+            Assert.Null(args.GetException());
         }
     }
 }
