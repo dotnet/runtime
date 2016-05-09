@@ -7,7 +7,7 @@ using System.Text;
 namespace System
 {
 #if INTERNAL_GLOBALIZATION_EXTENSIONS
-    internal 
+    internal
 #else
     public 
 #endif
