@@ -171,8 +171,6 @@ void SEHCleanupSignals()
 {
     TRACE("Restoring default signal handlers\n");
 
-    // Do not remove handlers for SIGUSR1 and SIGUSR2. They must remain so threads can be suspended
-    // during cleanup after this function has been called.
     restore_signal(SIGILL, &g_previous_sigill);
     restore_signal(SIGTRAP, &g_previous_sigtrap);
     restore_signal(SIGFPE, &g_previous_sigfpe);
