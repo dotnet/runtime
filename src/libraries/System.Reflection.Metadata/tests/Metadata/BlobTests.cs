@@ -18,13 +18,13 @@ namespace System.Reflection.Metadata.Tests
         public void Ctor()
         {
             var builder = new BlobBuilder();
-            Assert.Equal(BlobBuilder.DefaultChunkSize, builder.BufferSize);
+            Assert.Equal(BlobBuilder.DefaultChunkSize, builder.ChunkCapacity);
 
             builder = new BlobBuilder(0);
-            Assert.Equal(BlobBuilder.MinChunkSize, builder.BufferSize);
+            Assert.Equal(BlobBuilder.MinChunkSize, builder.ChunkCapacity);
 
             builder = new BlobBuilder(10001);
-            Assert.Equal(10001, builder.BufferSize);
+            Assert.Equal(10001, builder.ChunkCapacity);
         }
 
         [Fact]
