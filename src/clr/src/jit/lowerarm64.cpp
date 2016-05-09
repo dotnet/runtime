@@ -353,7 +353,6 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
         case GT_MULHI:
         case GT_UDIV:
             {
-                // TODO-ARM64-CQ: Optimize a divide by power of 2 as we do for AMD64
                 info->srcCount = 2;
                 info->dstCount = 1;
             }
