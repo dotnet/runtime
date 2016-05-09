@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   
   <PropertyGroup>
-    <Version>1.0.2</Version>
+    <Version>1.0.3</Version>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <MinOSForArch>win7</MinOSForArch>
     <MinOSForArch Condition="$(PackagePlatform.StartsWith('arm'))">win8</MinOSForArch>
@@ -22,6 +22,7 @@
     <ArchitectureSpecificNativeFile Include="$(BinDir)mscorrc.dll"/>
     <ArchitectureSpecificNativeFile Include="$(BinDir)sos.dll"/>
 
+    <ArchitectureSpecificLibFile Include="$(BinDir)System.Private.CoreLib.dll"/>
     <ArchitectureSpecificLibFile Include="$(BinDir)mscorlib.dll"/>
 
     <ArchitectureSpecificToolFile Include="$(BinDir)crossgen.exe"/>
