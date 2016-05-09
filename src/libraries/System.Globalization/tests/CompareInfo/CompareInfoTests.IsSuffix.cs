@@ -52,6 +52,9 @@ namespace System.Globalization.Tests
             // Ignore symbols
             yield return new object[] { s_invariantCompare, "More Test's", "Tests", CompareOptions.IgnoreSymbols, true };
             yield return new object[] { s_invariantCompare, "More Test's", "Tests", CompareOptions.None, false };
+            
+            // Platform differences 
+            yield return new object[] { s_hungarianCompare, "foobardzsdzs", "rddzs", CompareOptions.None, PlatformDetection.IsWindows ? true : false };
         }
 
         [Theory]
@@ -66,19 +69,12 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(5463, Xunit.PlatformID.AnyUnix)]
-        public void IsSuffix_Hungarian()
-        {
-            // TODO: Remove this function, and combine into IsSuffix_TestData once 5463 is fixed
-            IsSuffix(s_hungarianCompare, "foobardzsdzs", "rddzs", CompareOptions.None, true);
-        }
-
-        [Fact]
-        [ActiveIssue(5463, Xunit.PlatformID.AnyUnix)]
         public void IsSuffix_UnassignedUnicode()
         {
-            IsSuffix(s_invariantCompare, "FooBar", "Foo" + UnassignedUnicodeCharacter() + "Bar", CompareOptions.None, true);
-            IsSuffix(s_invariantCompare, "FooBar", "Foo" + UnassignedUnicodeCharacter() + "Bar", CompareOptions.IgnoreNonSpace, true);
+            bool result = PlatformDetection.IsWindows ? true : false;
+            
+            IsSuffix(s_invariantCompare, "FooBar", "Foo\uFFFFBar", CompareOptions.None, result);
+            IsSuffix(s_invariantCompare, "FooBar", "Foo\uFFFFBar", CompareOptions.IgnoreNonSpace, result);
         }
 
         [Fact]
@@ -102,18 +98,6 @@ namespace System.Globalization.Tests
             Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IsSuffix("Test's", "Tests", CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth));
             Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IsSuffix("Test's", "Tests", (CompareOptions)(-1)));
             Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IsSuffix("Test's", "Tests", (CompareOptions)0x11111111));
-        }
-
-        private static char UnassignedUnicodeCharacter()
-        {
-            for (char ch = '\uFFFF'; ch > '\u0000'; ch++)
-            {
-                if (CharUnicodeInfo.GetUnicodeCategory(ch) == UnicodeCategory.OtherNotAssigned)
-                {
-                    return ch;
-                }
-            }
-            return char.MinValue; // There are no unassigned unicode characters from \u0000 - \uFFFF
         }
     }
 }
