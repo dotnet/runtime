@@ -21,8 +21,8 @@ using Xunit;
 
 public static partial class DataContractSerializerTests
 {
-#if DEBUG//FALSE
     [Fact]
+    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_DateTimeOffsetAsRoot()
     {
         // Assume that UTC offset doesn't change more often than once in the day 2013-01-02
@@ -304,6 +304,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_DictionaryGenericMembers()
     {
         TypeWithDictionaryGenericMembers x = new TypeWithDictionaryGenericMembers
@@ -378,6 +379,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_DictionaryMembers()
     {
         TypeWithDictionaryMembers x = new TypeWithDictionaryMembers();
@@ -778,6 +780,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_CustomType()
     {
         MyTypeA x = new MyTypeA
@@ -806,6 +809,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_DataMemberAttribute()
     {
         SerializeAndDeserialize<DMA_1>(new DMA_1 { P1 = "abc", P2 = 12, P3 = true, P4 = 'a', P5 = 10, MyDataMemberInAnotherNamespace = new MyDataContractClass04_1() { MyDataMember = "Test" }, Order100 = true, OrderMaxValue = false }, @"<DMA_1 xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><MyDataMemberInAnotherNamespace xmlns:a=""http://MyDataContractClass04_1.com/""><a:MyDataMember>Test</a:MyDataMember></MyDataMemberInAnotherNamespace><P1>abc</P1><P4>97</P4><P5>10</P5><xyz>12</xyz><P3>true</P3><Order100>true</Order100><OrderMaxValue>false</OrderMaxValue></DMA_1>");
@@ -837,6 +841,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_EnumAsMember()
     {
         TypeWithEnumMembers x = new TypeWithEnumMembers { F1 = MyEnum.Three, P1 = MyEnum.Two };
@@ -848,6 +853,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_DCClassWithEnumAndStruct()
     {
         var x = new DCClassWithEnumAndStruct(true);
@@ -886,6 +892,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_CircularLink()
     {
         CircularLinkDerived circularLinkDerived = new CircularLinkDerived(true);
@@ -893,6 +900,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_GenericBase()
     {
         var actual = SerializeAndDeserialize<GenericBase2<SimpleBaseDerived, SimpleBaseDerived2>>(new GenericBase2<SimpleBaseDerived, SimpleBaseDerived2>(true), @"<GenericBase2OfSimpleBaseDerivedSimpleBaseDerived2zbP0weY4 z:Id=""i1"" xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:z=""http://schemas.microsoft.com/2003/10/Serialization/""><genericData1 z:Id=""i2""><BaseData/><DerivedData/></genericData1><genericData2 z:Id=""i3""><BaseData/><DerivedData/></genericData2></GenericBase2OfSimpleBaseDerivedSimpleBaseDerived2zbP0weY4>");
@@ -908,6 +916,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_DictionaryWithVariousKeyValueTypes()
     {
         var x = new DictionaryWithVariousKeyValueTypes(true);
@@ -934,6 +943,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_WithDuplicateNames()
     {
         var x = new WithDuplicateNames(true);
@@ -1012,6 +1022,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_DerivedTypeWithDifferentOverrides()
     {
         var x = new DerivedTypeWithDifferentOverrides() { Name1 = "Name1", Name2 = "Name2", Name3 = "Name3", Name4 = "Name4", Name5 = "Name5" };
@@ -1071,6 +1082,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_MyDataContractResolver()
     {
         var myresolver = new MyResolver();
@@ -1087,6 +1099,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_EnumerableStruct()
     {
         var original = new EnumerableStruct();
@@ -1099,6 +1112,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_EnumerableCollection()
     {
         var original = new EnumerableCollection();
@@ -1112,6 +1126,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_BaseClassAndDerivedClassWithSameProperty()
     {
         var value = new DerivedClassWithSameProperty() { DateTimeProperty = new DateTime(100), IntProperty = 5, StringProperty = "TestString", ListProperty = new List<string>() };
@@ -1178,6 +1193,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_Nullables()
     {
         // Arrange
@@ -1287,6 +1303,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_DuplicatedKnownTypesWithAdapterThroughConstructor()
     {
         //Constructor# 5  
@@ -1345,6 +1362,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_ExceptionObject()
     {
         var value = new ArgumentException("Test Exception");
@@ -1392,6 +1410,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_TypeWithUriTypeProperty()
     {
         var value = new TypeWithUriTypeProperty() { ConfigUri = new Uri("http://www.bing.com") };
@@ -1402,6 +1421,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_TypeWithDatetimeOffsetTypeProperty()
     {
         var value = new TypeWithDateTimeOffsetTypeProperty() { ModifiedTime = new DateTimeOffset(new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Utc)) };
@@ -1560,6 +1580,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_SystemVersion()
     {
         Version value = new Version(1, 2, 3, 4);
@@ -1572,6 +1593,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_TypeWithCommonTypeProperties()
     {
         TypeWithCommonTypeProperties value = new TypeWithCommonTypeProperties { Ts = new TimeSpan(1, 1, 1), Id = new Guid("ad948f1e-9ba9-44c8-8e2e-b6ba969ec987") };
@@ -1620,6 +1642,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_TypeWithKnownTypeAttributeAndInterfaceMember()
     {
         TypeWithKnownTypeAttributeAndInterfaceMember value = new TypeWithKnownTypeAttributeAndInterfaceMember();
@@ -1631,6 +1654,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_TypeWithKnownTypeAttributeAndListOfInterfaceMember()
     {
         TypeWithKnownTypeAttributeAndListOfInterfaceMember value = new TypeWithKnownTypeAttributeAndListOfInterfaceMember();
@@ -1682,6 +1706,7 @@ public static partial class DataContractSerializerTests
      */
 
     [Fact]
+    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_DerivedTypeWithBaseTypeWithDataMember()
     {
         DerivedTypeWithDataMemberInBaseType value = new DerivedTypeWithDataMemberInBaseType() { EmbeddedDataMember = new TypeAsEmbeddedDataMember { Name = "Foo" } };
@@ -1691,6 +1716,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_PocoDerivedTypeWithBaseTypeWithDataMember()
     {
         PocoDerivedTypeWithDataMemberInBaseType value = new PocoDerivedTypeWithDataMemberInBaseType() { EmbeddedDataMember = new PocoTypeAsEmbeddedDataMember { Name = "Foo" } };
@@ -1729,6 +1755,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_DuplicatedKeyDateTimeOffset()
     {
         DateTimeOffset value = new DateTimeOffset(new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Utc).AddMinutes(7));
@@ -1740,6 +1767,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_DuplicatedKeyXmlQualifiedName()
     {
         XmlQualifiedName qname = new XmlQualifiedName("abc", "def");
@@ -1800,6 +1828,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_ConcurrentDictionary()
     {
         var value = new ConcurrentDictionary<string, int>();
@@ -1854,6 +1883,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_CollectionDataContractWithCustomKeyName()
     {
         CollectionDataContractWithCustomKeyName value = new CollectionDataContractWithCustomKeyName();
@@ -1867,6 +1897,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_CollectionDataContractWithCustomKeyNameDuplicate()
     {
         CollectionDataContractWithCustomKeyNameDuplicate value = new CollectionDataContractWithCustomKeyNameDuplicate();
@@ -1880,6 +1911,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_TypeWithCollectionWithoutDefaultConstructor()
     {
         TypeWithCollectionWithoutDefaultConstructor value = new TypeWithCollectionWithoutDefaultConstructor();
@@ -1904,6 +1936,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_MyPersonSurrogate()
     {
         DataContractSerializer dcs = new DataContractSerializer(typeof(Family));
@@ -2007,6 +2040,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_EnumerableInterfaceGetOnlyCollection()
     {
         // Expect exception in deserialization process
@@ -2482,7 +2516,6 @@ public static partial class DataContractSerializerTests
     }
 
     #endregion
-#endif
 
     private static T SerializeAndDeserialize<T>(T value, string baseline, DataContractSerializerSettings settings = null, Func<DataContractSerializer> serializerFactory = null, bool skipStringCompare = false)
     {
