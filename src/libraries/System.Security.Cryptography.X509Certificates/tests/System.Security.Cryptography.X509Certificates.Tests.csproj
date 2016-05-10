@@ -73,7 +73,7 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
-    <SupplementalTestData Include="$(PackagesDir)System.Security.Cryptography.X509Certificates.TestData\1.0.1-prerelease\content\**\*.*" />
+    <SupplementalTestData Include="$(PackagesDir)System.Security.Cryptography.X509Certificates.TestData\1.0.2-prerelease\content\**\*.*" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
