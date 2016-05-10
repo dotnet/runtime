@@ -9559,6 +9559,8 @@ void CEEInfo::getEEInfo(CORINFO_EE_INFO *pEEInfoOut)
 
     pEEInfoOut->offsetOfObjArrayData       = (DWORD)PtrArray::GetDataOffset();
 
+    pEEInfoOut->sizeOfReversePInvokeFrame  = (DWORD)-1;
+
     OSVERSIONINFO   sVerInfo;
     sVerInfo.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
     GetOSVersion(&sVerInfo);
