@@ -53,6 +53,9 @@
     <Compile Include="ServiceNameCollectionTest.cs" />
 
     <!-- Common test files -->
+    <Compile Include="$(CommonTestPath)\System\Net\CertificateConfiguration.cs">
+      <Link>Common\System\Net\CertificateConfiguration.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\HttpTestServers.cs">
       <Link>Common\System\Net\HttpTestServers.cs</Link>
     </Compile>

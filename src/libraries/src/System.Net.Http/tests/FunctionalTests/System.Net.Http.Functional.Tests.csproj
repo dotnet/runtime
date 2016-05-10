@@ -35,6 +35,9 @@
     <Compile Include="$(CommonTestPath)\System\IO\FileCleanupTestBase.cs">
       <Link>Common\System\IO\FileCleanupTestBase.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\CertificateConfiguration.cs">
+      <Link>Common\System\Net\CertificateConfiguration.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\HttpTestServers.cs">
       <Link>Common\System\Net\HttpTestServers.cs</Link>
     </Compile>
@@ -90,6 +93,9 @@
       <Name>RemoteExecutorConsoleApp</Name>
       <OSGroup>$(InputOSGroup)</OSGroup>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <SupplementalTestData Include="$(PackagesDir)System.Net.TestData\1.0.0-prerelease\content\**\*.*" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

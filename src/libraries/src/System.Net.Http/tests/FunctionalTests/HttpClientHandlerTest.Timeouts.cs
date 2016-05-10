@@ -66,36 +66,38 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task ConnectTimeout_TimesOut_Throws()
         {
-            await LoopbackServer.CreateClientAndServerAsync(async (handler, client, server, url) =>
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
-                const int NumBacklogSockets = 16; // must be larger than OS' queue length when using Listen(1).
-                var socketBacklog = new List<Socket>(NumBacklogSockets);
-                try
+                using (var handler = new HttpClientHandler() { ConnectTimeout = TimeSpan.FromMilliseconds(10) })
+                using (var client = new HttpClient(handler))
                 {
-                    handler.ConnectTimeout = TimeSpan.FromMilliseconds(10);
-
-                    // Listen's backlog is only advisory; the OS may actually allow a larger backlog than that.
-                    // As such, create a bunch of clients to connect to the endpoint so that our actual request
-                    // will timeout while trying to connect.
-                    for (int i = 0; i < NumBacklogSockets; i++)
+                    const int NumBacklogSockets = 16; // must be larger than OS' queue length when using Listen(1).
+                    var socketBacklog = new List<Socket>(NumBacklogSockets);
+                    try
                     {
-                        var tmpClient = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                        var ignored = tmpClient.ConnectAsync(new IPEndPoint(IPAddress.Parse(url.Host), url.Port));
-                        socketBacklog.Add(tmpClient);
+                        // Listen's backlog is only advisory; the OS may actually allow a larger backlog than that.
+                        // As such, create a bunch of clients to connect to the endpoint so that our actual request
+                        // will timeout while trying to connect.
+                        for (int i = 0; i < NumBacklogSockets; i++)
+                        {
+                            var tmpClient = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                            var ignored = tmpClient.ConnectAsync(new IPEndPoint(IPAddress.Parse(url.Host), url.Port));
+                            socketBacklog.Add(tmpClient);
+                        }
+
+                        // Make the actual connection.  It should timeout in connect.
+                        var sw = Stopwatch.StartNew();
+                        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => client.GetAsync(url));
+                        sw.Stop();
+
+                        Assert.InRange(sw.ElapsedMilliseconds, 1, 10 * 1000); // allow a very wide range
                     }
-
-                    // Make the actual connection.  It should timeout in connect.
-                    var sw = Stopwatch.StartNew();
-                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => client.GetAsync(url));
-                    sw.Stop();
-
-                    Assert.InRange(sw.ElapsedMilliseconds, 1, 10 * 1000); // allow a very wide range
-                }
-                finally
-                {
-                    foreach (Socket c in socketBacklog)
+                    finally
                     {
-                        c.Dispose();
+                        foreach (Socket c in socketBacklog)
+                        {
+                            c.Dispose();
+                        }
                     }
                 }
             });

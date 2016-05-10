@@ -4,6 +4,7 @@
 
 using System.Net.Sockets;
 using System.Net.Test.Common;
+using System.Net.Tests;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 
@@ -11,7 +12,7 @@ using Xunit;
 
 namespace System.Net.Security.Tests
 {
-    public class CertificateValidationClientServer
+    public class CertificateValidationClientServer : IDisposable
     {
         private readonly X509Certificate2 _clientCertificate;
         private readonly X509Certificate2Collection _clientCertificateCollection;
@@ -20,11 +21,19 @@ namespace System.Net.Security.Tests
 
         public CertificateValidationClientServer()
         {
-            _serverCertificateCollection = TestConfiguration.GetServerCertificateCollection();
-            _serverCertificate = TestConfiguration.GetServerCertificate();
+            _serverCertificateCollection = CertificateConfiguration.GetServerCertificateCollection();
+            _serverCertificate = CertificateConfiguration.GetServerCertificate();
 
-            _clientCertificateCollection = TestConfiguration.GetClientCertificateCollection();
-            _clientCertificate = TestConfiguration.GetClientCertificate();
+            _clientCertificateCollection = CertificateConfiguration.GetClientCertificateCollection();
+            _clientCertificate = CertificateConfiguration.GetClientCertificate();
+        }
+
+        public void Dispose()
+        {
+            _serverCertificate.Dispose();
+            _clientCertificate.Dispose();
+            foreach (X509Certificate2 cert in _serverCertificateCollection) cert.Dispose();
+            foreach (X509Certificate2 cert in _clientCertificateCollection) cert.Dispose();
         }
 
         [Theory]
