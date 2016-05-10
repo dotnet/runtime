@@ -11,12 +11,10 @@ namespace System.Security
     {
         internal SafeBSTRHandle() : base(true) { }
 
-        internal static SafeBSTRHandle Allocate(uint lenInChars) => Allocate(IntPtr.Zero, lenInChars * sizeof(char));
-
-        internal static SafeBSTRHandle Allocate(IntPtr src, uint lenInBytes)
+        internal static SafeBSTRHandle Allocate(uint lenInChars)
         {
-            Debug.Assert(lenInBytes % sizeof(char) == 0);
-            SafeBSTRHandle bstr = Interop.OleAut32.SysAllocStringLen(src, lenInBytes / sizeof(char));
+            uint lenInBytes = lenInChars * sizeof(char);
+            SafeBSTRHandle bstr = Interop.OleAut32.SysAllocStringLen(IntPtr.Zero, lenInChars);
             if (bstr.IsInvalid) // SysAllocStringLen returns a NULL ptr when there's insufficient memory
             {
                 throw new OutOfMemoryException();
@@ -64,18 +62,18 @@ namespace System.Security
                 source.AcquirePointer(ref sourcePtr);
                 target.AcquirePointer(ref targetPtr);
 
-                Debug.Assert(Interop.OleAut32.SysStringLen((IntPtr)sourcePtr) * sizeof(char) >= bytesToCopy, "Source buffer is too small.");
-                Buffer.MemoryCopy(sourcePtr, targetPtr, Interop.OleAut32.SysStringLen((IntPtr)targetPtr) * sizeof(char), bytesToCopy);
+                Debug.Assert(source.ByteLength >= bytesToCopy, "Source buffer is too small.");
+                Buffer.MemoryCopy(sourcePtr, targetPtr, target.ByteLength, bytesToCopy);
             }
             finally
             {
-                if (sourcePtr != null)
-                {
-                    source.ReleasePointer();
-                }
                 if (targetPtr != null)
                 {
                     target.ReleasePointer();
+                }
+                if (sourcePtr != null)
+                {
+                    source.ReleasePointer();
                 }
             }
         }
