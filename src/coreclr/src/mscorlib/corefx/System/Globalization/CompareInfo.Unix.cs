@@ -21,7 +21,7 @@ namespace System.Globalization
         {
             m_name = culture.m_name;
             m_sortName = culture.SortName;
-            m_sortHandle = Interop.GlobalizationInterop.GetSortHandle(System.Text.Encoding.UTF8.GetBytes(m_sortName));
+            m_sortHandle = Interop.GlobalizationInterop.GetSortHandle(GetNullTerminatedUtf8String(m_sortName));
             m_isAsciiEqualityOrdinal = (m_sortName == "en-US" || m_sortName == "");
         }
 
@@ -297,6 +297,20 @@ namespace System.Globalization
         {
             // Unlike the other Ignore options, IgnoreSymbols impacts ASCII characters (e.g. ').
             return (options & CompareOptions.IgnoreSymbols) == 0;
+        }
+
+        private static byte[] GetNullTerminatedUtf8String(string s)
+        {
+            int byteLen = System.Text.Encoding.UTF8.GetByteCount(s);
+
+            // Allocate an extra byte (which defaults to 0) as the null terminator.
+            byte[] buffer = new byte[byteLen + 1];
+
+            int bytesWritten = System.Text.Encoding.UTF8.GetBytes(s, 0, s.Length, buffer, 0);
+
+            Contract.Assert(bytesWritten == byteLen);
+
+            return buffer;
         }
     }
 }
