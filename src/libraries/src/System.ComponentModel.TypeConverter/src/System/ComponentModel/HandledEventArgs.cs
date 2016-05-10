@@ -13,12 +13,6 @@ namespace System.ComponentModel
     public class HandledEventArgs : EventArgs
     {
         /// <summary>
-        ///     Indicates, on return, whether or not the event was handled in the application's event handler.  
-        ///     'true' means the application handled the event, 'false' means it didn't.
-        /// </summary>
-        private bool _handled;
-
-        /// <summary>
         ///    <para>
         ///       Initializes a new instance of the <see cref='System.ComponentModel.HandledEventArgs'/> class with
         ///       handled set to <see langword='false'/>.
@@ -37,25 +31,14 @@ namespace System.ComponentModel
         public HandledEventArgs(bool defaultHandledValue)
         : base()
         {
-            _handled = defaultHandledValue;
+            Handled = defaultHandledValue;
         }
 
         /// <summary>
         ///    <para>
-        ///       Gets or sets a value
-        ///       indicating whether the event is handled.
+        ///       Gets or sets a value indicating whether the event was handled in the application's event handler.
         ///    </para>
         /// </summary>
-        public bool Handled
-        {
-            get
-            {
-                return _handled;
-            }
-            set
-            {
-                _handled = value;
-            }
-        }
+        public bool Handled { get; set; }
     }
 }
