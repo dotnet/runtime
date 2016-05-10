@@ -2541,8 +2541,7 @@ LinearScan::getKillSetForNode(GenTree* tree)
             case GenTreeBlkOp::BlkOpKindHelper:
                 killMask = compiler->compHelperCallKillSet(CORINFO_HELP_MEMCPY);
                 break;
-#ifdef _TARGET_AMD64_
-
+#ifdef _TARGET_XARCH_
             case GenTreeBlkOp::BlkOpKindRepInstr:
                 // rep movs kills RCX, RDI and RSI
                 killMask = RBM_RCX | RBM_RDI | RBM_RSI;
