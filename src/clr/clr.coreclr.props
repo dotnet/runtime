@@ -101,4 +101,8 @@
 
     <FeatureCoreFxGlobalization>true</FeatureCoreFxGlobalization>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetsUnix)' != 'true'">
+    <FeatureImplicitLongPath>true</FeatureImplicitLongPath>
+  </PropertyGroup>
 </Project>

@@ -20,8 +20,13 @@ namespace System.IO
         internal const string UncExtendedPathPrefix = @"\\?\UNC\";
         internal const string DevicePathPrefix = @"\\.\";
         internal const int DevicePrefixLength = 4;
+#if !PLATFORM_UNIX
         internal const int MaxShortPath = 260;
         internal const int MaxShortDirectoryPath = 248;
+#else
+        internal const int MaxShortPath = 1024;
+        internal const int MaxShortDirectoryPath = MaxShortPath;
+#endif
 
         // Windows is limited in long paths by the max size of its internal representation of a unicode string.
         // UNICODE_STRING has a max length of USHORT in _bytes_ without a trailing null.
@@ -29,6 +34,7 @@ namespace System.IO
         internal const int MaxLongPath = short.MaxValue;
         internal static readonly int MaxComponentLength = 255;
 
+#if !PLATFORM_UNIX
         internal static readonly char[] InvalidPathChars =
         {
             '\"', '<', '>', '|', '\0',
@@ -37,6 +43,10 @@ namespace System.IO
             (char)21, (char)22, (char)23, (char)24, (char)25, (char)26, (char)27, (char)28, (char)29, (char)30,
             (char)31
         };
+#else
+        internal static readonly char[] InvalidPathChars = { '\0' };
+#endif
+
 
         /// <summary>
         /// Validates volume separator only occurs as C: or \\?\C:. This logic is meant to filter out Alternate Data Streams.
@@ -353,7 +363,11 @@ namespace System.IO
         /// </summary>
         internal static bool AnyPathHasIllegalCharacters(string path, bool checkAdditional = false)
         {
-            return path.IndexOfAny(InvalidPathChars) >= 0 || (checkAdditional && AnyPathHasWildCardCharacters(path));
+            return path.IndexOfAny(InvalidPathChars) >= 0
+#if !PLATFORM_UNIX
+             || (checkAdditional && AnyPathHasWildCardCharacters(path))
+#endif
+             ;
         }
 
         /// <summary>
@@ -411,6 +425,11 @@ namespace System.IO
         private unsafe static uint GetRootLength(char* path, ulong pathLength)
         {
             uint i = 0;
+
+#if PLATFORM_UNIX
+            if (pathLength >= 1 && (IsDirectorySeparator(path[0])))
+                i = 1;
+#else
             uint volumeSeparatorLength = 2;  // Length to the colon "C:"
             uint uncRootLength = 2;          // Length to the start of the server name "\\"
 
@@ -452,6 +471,7 @@ namespace System.IO
                 i = volumeSeparatorLength;
                 if (pathLength >= volumeSeparatorLength + 1 && IsDirectorySeparator(path[volumeSeparatorLength])) i++;
             }
+#endif // !PLATFORM_UNIX
             return i;
         }
 
@@ -480,6 +500,9 @@ namespace System.IO
         /// </remarks>
         internal static bool IsPartiallyQualified(string path)
         {
+#if PLATFORM_UNIX
+            return !(path.Length >= 1 && path[0] == Path.DirectorySeparatorChar);
+#else
             if (path.Length < 2)
             {
                 // It isn't fixed, it must be relative.  There is no way to specify a fixed
@@ -502,6 +525,7 @@ namespace System.IO
                 // To match old behavior we'll check the drive character for validity as the path is technically
                 // not qualified if you don't have a valid drive. "=:\" is the "=" file's default data stream.
                 && IsValidDriveChar(path[0]));
+#endif // !PLATFORM_UNIX
         }
 
         /// <summary>
@@ -518,6 +542,9 @@ namespace System.IO
         /// </remarks>
         internal static bool IsPartiallyQualified(StringBuffer path)
         {
+#if PLATFORM_UNIX
+            return !(path.Length >= 1 && path[0] == Path.DirectorySeparatorChar);
+#else
             if (path.Length < 2)
             {
                 // It isn't fixed, it must be relative.  There is no way to specify a fixed
@@ -540,10 +567,11 @@ namespace System.IO
                 // To match old behavior we'll check the drive character for validity as the path is technically
                 // not qualified if you don't have a valid drive. "=:\" is the "=" file's default data stream.
                 && IsValidDriveChar(path[0]));
+#endif // !PLATFORM_UNIX
         }
 
         /// <summary>
-        /// Returns the characters to skip at the start of the path if it starts with space(s) and a drive or directory separator.
+        /// On Windows, returns the characters to skip at the start of the path if it starts with space(s) and a drive or directory separator.
         /// (examples are " C:", " \")
         /// This is a legacy behavior of Path.GetFullPath().
         /// </summary>
@@ -552,6 +580,7 @@ namespace System.IO
         /// </remarks>
         internal static int PathStartSkip(string path)
         {
+#if !PLATFORM_UNIX
             int startIndex = 0;
             while (startIndex < path.Length && path[startIndex] == ' ') startIndex++;
 
@@ -561,6 +590,7 @@ namespace System.IO
                 // Go ahead and skip spaces as we're either " C:" or " \"
                 return startIndex;
             }
+#endif
 
             return 0;
         }
@@ -571,7 +601,11 @@ namespace System.IO
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool IsDirectorySeparator(char c)
         {
-            return c == Path.DirectorySeparatorChar || c == Path.AltDirectorySeparatorChar;
+            return c == Path.DirectorySeparatorChar
+#if !PLATFORM_UNIX
+                 || c == Path.AltDirectorySeparatorChar
+#endif
+                 ;
         }
 
         /// <summary>
@@ -616,10 +650,13 @@ namespace System.IO
                     current = path[i];
                     if (IsDirectorySeparator(current)
                         && (current != Path.DirectorySeparatorChar
+#if !PLATFORM_UNIX
                             // Check for sequential separators past the first position (we need to keep initial two for UNC/extended)
-                            || (i > 0 && i + 1 < path.Length && IsDirectorySeparator(path[i + 1]))))
+                            || (i > 0 && i + 1 < path.Length && IsDirectorySeparator(path[i + 1]))
+#endif
+                        ))
                     {
-                        normalized = false;
+                    normalized = false;
                         break;
                     }
                 }
@@ -629,11 +666,14 @@ namespace System.IO
 
             StringBuilder builder = StringBuilderCache.Acquire(path.Length);
 
+#if !PLATFORM_UNIX
+            // On Windows we always keep the first separator, even if the next is a separator (we need to keep initial two for UNC/extended)
             if (IsDirectorySeparator(path[start]))
             {
                 start++;
                 builder.Append(Path.DirectorySeparatorChar);
             }
+#endif
 
             for (int i = start; i < path.Length; i++)
             {
@@ -657,5 +697,105 @@ namespace System.IO
 
             return StringBuilderCache.GetStringAndRelease(builder);
         }
+
+#if PLATFORM_UNIX
+        // We rely on Windows to remove relative segments on Windows. This would need to be updated to
+        // handle the proper rooting on Windows if we for some reason need it.
+
+        /// <summary>
+        /// Try to remove relative segments from the given path (without combining with a root).
+        /// </summary>
+        /// <param name="skip">Skip the specified number of characters before evaluating.</param>
+        internal static string RemoveRelativeSegments(string path, int skip = 0)
+        {
+            bool flippedSeparator = false;
+
+            // Remove "//", "/./", and "/../" from the path by copying each character to the output, 
+            // except the ones we're removing, such that the builder contains the normalized path 
+            // at the end.
+            var sb = StringBuilderCache.Acquire(path.Length);
+            if (skip > 0)
+            {
+                sb.Append(path, 0, skip);
+            }
+
+            int componentCharCount = 0;
+            for (int i = skip; i < path.Length; i++)
+            {
+                char c = path[i];
+
+                if (PathInternal.IsDirectorySeparator(c) && i + 1 < path.Length)
+                {
+                    componentCharCount = 0;
+
+                    // Skip this character if it's a directory separator and if the next character is, too,
+                    // e.g. "parent//child" => "parent/child"
+                    if (PathInternal.IsDirectorySeparator(path[i + 1]))
+                    {
+                        continue;
+                    }
+
+                    // Skip this character and the next if it's referring to the current directory,
+                    // e.g. "parent/./child" =? "parent/child"
+                    if ((i + 2 == path.Length || PathInternal.IsDirectorySeparator(path[i + 2])) &&
+                        path[i + 1] == '.')
+                    {
+                        i++;
+                        continue;
+                    }
+
+                    // Skip this character and the next two if it's referring to the parent directory,
+                    // e.g. "parent/child/../grandchild" => "parent/grandchild"
+                    if (i + 2 < path.Length &&
+                        (i + 3 == path.Length || PathInternal.IsDirectorySeparator(path[i + 3])) &&
+                        path[i + 1] == '.' && path[i + 2] == '.')
+                    {
+                        // Unwind back to the last slash (and if there isn't one, clear out everything).
+                        int s;
+                        for (s = sb.Length - 1; s >= 0; s--)
+                        {
+                            if (PathInternal.IsDirectorySeparator(sb[s]))
+                            {
+                                sb.Length = s;
+                                break;
+                            }
+                        }
+                        if (s < 0)
+                        {
+                            sb.Length = 0;
+                        }
+
+                        i += 2;
+                        continue;
+                    }
+                }
+
+                if (++componentCharCount > PathInternal.MaxComponentLength)
+                {
+                    throw new PathTooLongException();
+                }
+
+                // Normalize the directory separator if needed
+                if (c != Path.DirectorySeparatorChar && c == Path.AltDirectorySeparatorChar)
+                {
+                    c = Path.DirectorySeparatorChar;
+                    flippedSeparator = true;
+                }
+
+                sb.Append(c);
+            }
+
+            if (flippedSeparator || sb.Length != path.Length)
+            {
+                return StringBuilderCache.GetStringAndRelease(sb);
+            }
+            else
+            {
+                // We haven't changed the source path, return the original
+                StringBuilderCache.Release(sb);
+                return path;
+            }
+        }
+#endif // PLATFORM_UNIX
     }
 }
