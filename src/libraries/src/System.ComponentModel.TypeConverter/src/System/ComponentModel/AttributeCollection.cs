@@ -243,11 +243,8 @@ namespace System.ComponentModel
         public bool Contains(Attribute attribute)
         {
             Attribute attr = this[attribute.GetType()];
-            if (attr != null && attr.Equals(attribute))
-            {
-                return true;
-            }
-            return false;
+
+            return attr != null && attr.Equals(attribute);
         }
 
         /// <summary>

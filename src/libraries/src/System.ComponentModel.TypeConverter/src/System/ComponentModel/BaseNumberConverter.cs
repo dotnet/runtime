@@ -65,11 +65,7 @@ namespace System.ComponentModel
         /// </summary>
         public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
         {
-            if (sourceType == typeof(string))
-            {
-                return true;
-            }
-            return base.CanConvertFrom(context, sourceType);
+            return sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
         }
 
         /// <summary>
@@ -140,11 +136,7 @@ namespace System.ComponentModel
 
         public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
         {
-            if (base.CanConvertTo(context, destinationType) || destinationType.GetTypeInfo().IsPrimitive)
-            {
-                return true;
-            }
-            return false;
+            return base.CanConvertTo(context, destinationType) || destinationType.GetTypeInfo().IsPrimitive;
         }
     }
 }

@@ -25,12 +25,9 @@ namespace System.ComponentModel
                 throw new ArgumentNullException(nameof(destinationType));
             }
 
-            if (destinationType == typeof(string))
+            if (destinationType == typeof(string) && value is ICollection)
             {
-                if (value is ICollection)
-                {
-                    return SR.Collection;
-                }
+                return SR.Collection;
             }
 
             return base.ConvertTo(context, culture, value, destinationType);
