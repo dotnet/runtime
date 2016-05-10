@@ -1301,6 +1301,9 @@ namespace Microsoft.Win32 {
                   int nBufferLength,
                   [Out]StringBuilder lpBuffer);
 
+        [DllImport(KERNEL32, SetLastError = true, ExactSpelling = true)]
+        internal static extern uint GetCurrentDirectoryW(uint nBufferLength, SafeHandle lpBuffer);
+
         [DllImport(KERNEL32, SetLastError=true, CharSet=CharSet.Auto, BestFitMapping=false)]
         internal static extern bool GetFileAttributesEx(String name, int fileInfoLevel, ref WIN32_FILE_ATTRIBUTE_DATA lpFileInformation);
 

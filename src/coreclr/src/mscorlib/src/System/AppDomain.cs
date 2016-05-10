@@ -3816,11 +3816,19 @@ namespace System {
         [SecuritySafeCritical]
         internal static string NormalizePath(string path, bool fullCheck)
         {
-            return Path.NormalizePath(
+#if FEATURE_PATHCOMPAT
+            // Appcontext switches can't currently be safely hit during AppDomain bringup
+            return Path.LegacyNormalizePath(
                 path: path,
                 fullCheck: fullCheck,
                 maxPathLength: PathInternal.MaxShortPath,
                 expandShortPaths: true);
+#else
+            return Path.NormalizePath(
+                path: path,
+                fullCheck: fullCheck,
+                expandShortPaths: true);
+#endif
         }
 
 #if FEATURE_APTCA
@@ -3933,9 +3941,9 @@ namespace System {
 
 #endif
 
-    // This routine is called from unmanaged code to
-    // set the default fusion context.
-    [System.Security.SecurityCritical]  // auto-generated
+        // This routine is called from unmanaged code to
+        // set the default fusion context.
+        [System.Security.SecurityCritical]  // auto-generated
         private void SetupDomain(bool allowRedirects, String path, String configFile, String[] propertyNames, String[] propertyValues)
         {
             // It is possible that we could have multiple threads initializing
