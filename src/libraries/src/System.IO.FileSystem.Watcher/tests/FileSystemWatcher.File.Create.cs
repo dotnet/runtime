@@ -66,6 +66,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue(8410, PlatformID.Linux)]
         public void FileSystemWatcher_File_Create_DeepDirectoryStructure()
         {
             using (var dir = new TempDirectory(GetTestFilePath()))
