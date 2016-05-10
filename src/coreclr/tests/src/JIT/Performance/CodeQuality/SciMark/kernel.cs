@@ -16,6 +16,9 @@
 using Microsoft.Xunit.Performance;
 using System;
 
+[assembly: OptimizeForBenchmarks]
+[assembly: MeasureInstructionsRetired]
+
 namespace SciMark2
 {
     public static class kernel
