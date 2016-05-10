@@ -589,9 +589,9 @@ typedef enum {
 
 typedef enum {
 	AbortBlockingIgnore, //Ignore
-	AbortBlockingIgnoreAndPoll, //Ignore and pool
+	AbortBlockingIgnoreAndPoll, //Ignore and poll
 	AbortBlockingOk, //Abort worked
-	AbortBlockingOkAndPool, //Abort worked, but pool before
+	AbortBlockingWait, //Abort worked, but should wait for resume
 } MonoAbortBlockingResult;
 
 

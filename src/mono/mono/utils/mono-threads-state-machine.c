@@ -559,7 +559,7 @@ It returns one of:
 -Ignore: Thread was not in blocking, nothing to do;
 -IgnoreAndPool: Thread was not blocking and there's a pending suspend that needs to be processed;
 -Ok: Blocking state successfully aborted;
--OkAndPool: Blocking state successfully aborted, there's a pending suspend to be processed though
+-Wait: Blocking state successfully aborted, there's a pending suspend to be processed though
 */
 MonoAbortBlockingResult
 mono_threads_transition_abort_blocking (THREAD_INFO_TYPE* info)
@@ -584,10 +584,12 @@ retry_state_change:
 			trace_state_change ("ABORT_BLOCKING", info, raw_state, STATE_RUNNING, 0);
 			return AbortBlockingOk;
 		} else {
-			if (InterlockedCompareExchange (&info->thread_state, build_thread_state (STATE_SELF_SUSPEND_REQUESTED, suspend_count), raw_state) != raw_state)
+			if (!(suspend_count > 0))
+				mono_fatal_with_history ("suspend_count = %d, but should be > 0", suspend_count);
+			if (InterlockedCompareExchange (&info->thread_state, build_thread_state (STATE_BLOCKING_AND_SUSPENDED, suspend_count), raw_state) != raw_state)
 				goto retry_state_change;
-			trace_state_change ("ABORT_BLOCKING", info, raw_state, STATE_SELF_SUSPEND_REQUESTED, 0);
-			return AbortBlockingOkAndPool;
+			trace_state_change ("ABORT_BLOCKING", info, raw_state, STATE_BLOCKING_AND_SUSPENDED, 0);
+			return AbortBlockingWait;
 		}
 /*
 STATE_ASYNC_SUSPENDED:
