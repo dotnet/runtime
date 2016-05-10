@@ -66,7 +66,7 @@ DEFINE_NFT(NFT_DATETIMEOFFSET,              sizeof(INT64),          true)
 DEFINE_NFT(NFT_SYSTEMTYPE,                  sizeof(TypeNameNative), true)  // System.Type -> Windows.UI.Xaml.Interop.TypeName
 DEFINE_NFT(NFT_WINDOWSFOUNDATIONHRESULT,    sizeof(int),            true)  // Windows.Foundation.HResult is marshaled to System.Exception.
 #endif // FEATURE_COMINTEROP
-
+DEFINE_NFT(NFT_STRINGUTF8,                  sizeof(LPVOID),         false)
 DEFINE_NFT(NFT_ILLEGAL,                     1,                      true)
 
 #ifdef FEATURE_COMINTEROP

@@ -2918,6 +2918,7 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
             case NFT_STRINGUNI:
             case NFT_STRINGANSI:
             case NFT_ANSICHAR:
+            case NFT_STRINGUTF8:
             case NFT_WINBOOL:
             case NFT_CBOOL:
             case NFT_DELEGATE:
