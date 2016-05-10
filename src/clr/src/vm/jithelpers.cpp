@@ -3451,6 +3451,25 @@ HCIMPL2VA(Object*, JIT_NewMDArr, CORINFO_CLASS_HANDLE classHnd, unsigned dwNumAr
 HCIMPLEND
 
 /*************************************************************/
+HCIMPL3(Object*, JIT_NewMDArrNonVarArg, CORINFO_CLASS_HANDLE classHnd, unsigned dwNumArgs, INT32 * pArgList)
+{
+    FCALL_CONTRACT;
+
+    OBJECTREF    ret = 0;
+    HELPER_METHOD_FRAME_BEGIN_RET_1(ret);    // Set up a frame
+
+    TypeHandle typeHnd(classHnd);
+    typeHnd.CheckRestore();
+    _ASSERTE(typeHnd.GetMethodTable()->IsArray());
+
+    ret = AllocateArrayEx(typeHnd, pArgList, dwNumArgs);
+
+    HELPER_METHOD_FRAME_END();
+    return OBJECTREFToObject(ret);
+}
+HCIMPLEND
+
+/*************************************************************/
 /* returns '&array[idx], after doing all the proper checks */
 
 #include <optsmallperfcritical.h>
