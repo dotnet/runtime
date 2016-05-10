@@ -6124,6 +6124,7 @@
       <Member MemberType="Field" Name="LPStruct" />
       <Member MemberType="Field" Name="LPTStr" />
       <Member MemberType="Field" Name="LPWStr" />
+      <Member MemberType="Field" Name="LPUTF8Str" />
       <Member MemberType="Field" Name="R4" />
       <Member MemberType="Field" Name="R8" />
       <Member MemberType="Field" Name="SafeArray" />
@@ -10100,6 +10101,15 @@
       <Member Name="ConvertToManaged(System.IntPtr)" />
       <Member Name="ClearNative(System.IntPtr)" />
     </Type>
+     <Type Status="ImplRoot" Name="System.StubHelpers.UTF8Marshaler">
+      <Member Name="ConvertToNative(System.Int32,System.String,System.IntPtr)" />
+      <Member Name="ConvertToManaged(System.IntPtr)" />
+      <Member Name="ClearNative(System.IntPtr)" />
+    </Type>    
+      <Type Status="ImplRoot" Name="System.StubHelpers.UTF8BufferMarshaler">
+      <Member Name="ConvertToNative(System.Text.StringBuilder,System.IntPtr,System.Int32)" />
+      <Member Name="ConvertToManaged(System.Text.StringBuilder,System.IntPtr)" />      
+    </Type>    
     <Type Status="ApiFxInternal" Name="System.StubHelpers.EventArgsMarshaler" Condition="FEATURE_COMINTEROP">
       <Member Name="CreateNativeNCCEventArgsInstance(System.Int32,System.Object,System.Object,System.Int32,System.Int32)"/>
       <Member Name="CreateNativePCEventArgsInstance(System.String)" />

@@ -15,6 +15,8 @@
 
 #include "fcall.h"
 
+#define MAX_UTF8_CHAR_SIZE 3
+
 //!!! Must be kept in sync with ArrayWithOffset class layout.
 struct ArrayWithOffsetData
 {
