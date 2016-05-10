@@ -1744,26 +1744,14 @@ get_most_deep_clause (MonoCompile *cfg, EmitContext *ctx, MonoBasicBlock *bb)
 {
 	// Since they're sorted by nesting we just need
 	// the first one that the bb is a member of
-	MonoExceptionClause *last = NULL;
-
 	for (int i = 0; i < cfg->header->num_clauses; i++) {
 		MonoExceptionClause *curr = &cfg->header->clauses [i];
 
 		if (MONO_OFFSET_IN_CLAUSE (curr, bb->real_offset))
 			return curr;
-		/*
-		if (MONO_OFFSET_IN_CLAUSE (curr, bb->real_offset)) {
-			if (last && CLAUSE_END(last) > CLAUSE_END(curr))
-				last = curr;
-			else
-				last = curr;
-		} else if(last) {
-			break;
-		}
-		*/
 	}
 
-	return last;
+	return NULL;
 }
 	
 static void
