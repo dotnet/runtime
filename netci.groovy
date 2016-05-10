@@ -136,6 +136,9 @@ def static setTestJobTimeOut(newJob, scenario) {
     else if (isCoverage(scenario)) {
         Utilities.setJobTimeout(newJob, 1440)  
     }
+    else if (isLongGc(scenario)) {
+        Utilities.setJobTimeout(newJob, 1440)
+    }
     // Non-test jobs use the default timeout value.
 }
 
@@ -372,7 +375,11 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                 addEmailPublisher(job, 'dotnetgctests@microsoft.com')
                 break
             case 'gcsimulator':
-                // GCSimulator is currently only triggered by PR
+                assert (os == 'Ubuntu' || os == 'Windows_NT' || os == 'OSX')
+                assert configuration == 'Release'
+                assert architecture == 'x64'
+                Utilities.addPeriodicTrigger(job, 'H H * * 3,6') // some time every Wednesday and Saturday
+                addEmailPublisher(job, 'dotnetgctests@microsoft.com')
                 break
             case 'ilrt':
                 assert !(os in bidailyCrossList)
