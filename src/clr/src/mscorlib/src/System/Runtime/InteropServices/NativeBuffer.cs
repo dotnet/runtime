@@ -9,10 +9,6 @@ namespace System.Runtime.InteropServices
     /// <summary>
     /// Wrapper for access to the native heap. Dispose to free the memory. Try to use with using statements.
     /// Does not allocate zero size buffers, and will free the existing native buffer if capacity is dropped to zero.
-    /// 
-#if !FEATURE_CORECLR
-    /// NativeBuffer utilizes a cache of heap buffers.
-#endif
     /// </summary>
     /// <remarks>
     /// Suggested use through P/Invoke: define DllImport arguments that take a byte buffer as SafeHandle.
@@ -25,11 +21,6 @@ namespace System.Runtime.InteropServices
     /// </remarks>
     internal class NativeBuffer : IDisposable
     {
-#if !FEATURE_CORECLR
-        // The need for caching the heap handles isn't as great in CoreCLR as most current usages of this class'
-        // consumers are wrapped by CoreFx. (As opposed to NetFX 4.6 where there is no wrapping)
-        private readonly static SafeHeapHandleCache s_handleCache;
-#endif
         [System.Security.SecurityCritical]
         private readonly static SafeHandle s_emptyHandle;
         [System.Security.SecurityCritical]
@@ -40,9 +31,6 @@ namespace System.Runtime.InteropServices
         static NativeBuffer()
         {
             s_emptyHandle = new EmptySafeHandle();
-#if !FEATURE_CORECLR
-            s_handleCache = new SafeHeapHandleCache();
-#endif
         }
 
         /// <summary>
@@ -132,11 +120,7 @@ namespace System.Runtime.InteropServices
 
             if (_handle == null)
             {
-#if FEATURE_CORECLR
                 _handle = new SafeHeapHandle(byteLength);
-#else
-                _handle = s_handleCache.Acquire(byteLength);
-#endif
             }
             else
             {
@@ -149,9 +133,6 @@ namespace System.Runtime.InteropServices
         {
             if (_handle != null)
             {
-#if !FEATURE_CORECLR
-                s_handleCache.Release(_handle);
-#endif
                 _capacity = 0;
                 _handle = null;
             }
