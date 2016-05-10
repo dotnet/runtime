@@ -22,12 +22,9 @@ namespace System.ComponentModel
                 throw new ArgumentNullException(nameof(destinationType));
             }
 
-            if (destinationType == typeof(string))
+            if (destinationType == typeof(string) && value is Array)
             {
-                if (value is Array)
-                {
-                    return SR.Format(SR.Array, value.GetType().Name);
-                }
+                return SR.Format(SR.Array, value.GetType().Name);
             }
 
             return base.ConvertTo(context, culture, value, destinationType);
