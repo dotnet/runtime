@@ -42,8 +42,7 @@
     </ItemGroup>
 
     <PropertyGroup>
-    <!-- For RC2  we need to start with -rc2-3 so that it is higher then the last published -rc2-23931 -->
-    <VersionSuffix>-rc2-3$(CLIBuildVersion)</VersionSuffix>
+    <VersionSuffix>-rc3-$(CLIBuildVersion)</VersionSuffix>
     </PropertyGroup>
   </Target>
 
