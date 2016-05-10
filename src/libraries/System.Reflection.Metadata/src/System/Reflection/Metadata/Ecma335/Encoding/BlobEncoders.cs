@@ -29,6 +29,7 @@ namespace System.Reflection.Metadata.Ecma335
             return new SignatureTypeEncoder(Builder);
         }
 
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="genericArgumentCount"/> is not in range [0, 0xffff].</exception>
         public GenericTypeArgumentsEncoder MethodSpecificationSignature(int genericArgumentCount)
         {
             if (unchecked((uint)genericArgumentCount) > ushort.MaxValue) 
@@ -42,6 +43,7 @@ namespace System.Reflection.Metadata.Ecma335
             return new GenericTypeArgumentsEncoder(Builder);
         }
 
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="genericParameterCount"/> is not in range [0, 0xffff].</exception>
         public MethodSignatureEncoder MethodSignature(
             SignatureCallingConvention convention = SignatureCallingConvention.Default,
             int genericParameterCount = 0, 
@@ -92,6 +94,7 @@ namespace System.Reflection.Metadata.Ecma335
             namedArguments(namedArgumentsEncoder);
         }
 
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="variableCount"/> is not in range [0, 0x1fffffff].</exception>
         public LocalVariablesEncoder LocalVariableSignature(int variableCount)
         {
             if (unchecked((uint)variableCount) > BlobWriterImpl.MaxCompressedIntegerValue)
@@ -110,6 +113,7 @@ namespace System.Reflection.Metadata.Ecma335
             return new SignatureTypeEncoder(Builder);
         }
 
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="attributeCount"/> is not in range [0, 0x1fffffff].</exception>
         public PermissionSetEncoder PermissionSetBlob(int attributeCount)
         {
             if (unchecked((uint)attributeCount) > BlobWriterImpl.MaxCompressedIntegerValue)
@@ -672,22 +676,27 @@ namespace System.Reflection.Metadata.Ecma335
 
         public void Boolean() => WriteTypeCode(SignatureTypeCode.Boolean);
         public void Char() => WriteTypeCode(SignatureTypeCode.Char);
-        public void Int8() => WriteTypeCode(SignatureTypeCode.SByte);
-        public void UInt8() => WriteTypeCode(SignatureTypeCode.Byte);
+        public void SByte() => WriteTypeCode(SignatureTypeCode.SByte);
+        public void Byte() => WriteTypeCode(SignatureTypeCode.Byte);
         public void Int16() => WriteTypeCode(SignatureTypeCode.Int16);
         public void UInt16() => WriteTypeCode(SignatureTypeCode.UInt16);
         public void Int32() => WriteTypeCode(SignatureTypeCode.Int32);
         public void UInt32() => WriteTypeCode(SignatureTypeCode.UInt32);
         public void Int64() => WriteTypeCode(SignatureTypeCode.Int64);
         public void UInt64() => WriteTypeCode(SignatureTypeCode.UInt64);
-        public void Float32() => WriteTypeCode(SignatureTypeCode.Single);
-        public void Float64() => WriteTypeCode(SignatureTypeCode.Double);
+        public void Single() => WriteTypeCode(SignatureTypeCode.Single);
+        public void Double() => WriteTypeCode(SignatureTypeCode.Double);
         public void String() => WriteTypeCode(SignatureTypeCode.String);
         public void IntPtr() => WriteTypeCode(SignatureTypeCode.IntPtr);
         public void UIntPtr() => WriteTypeCode(SignatureTypeCode.UIntPtr);
         public void Object() => WriteTypeCode(SignatureTypeCode.Object);
 
-        internal static void WritePrimitiveType(BlobBuilder builder, PrimitiveTypeCode type)
+        /// <summary>
+        /// Writes primitive type code.
+        /// </summary>
+        /// <param name="type">Any primitive type code except for <see cref="PrimitiveTypeCode.TypedReference"/> and <see cref="PrimitiveTypeCode.Void"/>.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="type"/> is not valid in this context.</exception>
+        public void PrimitiveType(PrimitiveTypeCode type)
         {
             switch (type)
             {
@@ -707,10 +716,9 @@ namespace System.Reflection.Metadata.Ecma335
                 case PrimitiveTypeCode.UIntPtr:
                 case PrimitiveTypeCode.String:
                 case PrimitiveTypeCode.Object:
-                    builder.WriteByte((byte)type);
+                    Builder.WriteByte((byte)type);
                     return;
 
-                // TODO: should we allow these?
                 case PrimitiveTypeCode.TypedReference:
                 case PrimitiveTypeCode.Void:
                 default:
@@ -738,13 +746,34 @@ namespace System.Reflection.Metadata.Ecma335
             arrayShape(arrayShapeEncoder);
         }
 
-        public void TypeDefOrRefOrSpec(bool isValueType, EntityHandle typeRefDefSpec)
+        /// <summary>
+        /// Encodes a reference to a type.
+        /// </summary>
+        /// <param name="type"><see cref="TypeDefinitionHandle"/> or <see cref="TypeReferenceHandle"/>.</param>
+        /// <param name="isValueType">True to mark the type as value type, false to mark it as a reference type in the signature.</param>
+        /// <exception cref="ArgumentException"><paramref name="type"/> doesn't have the expected handle kind.</exception>
+        public void Type(EntityHandle type, bool isValueType)
         {
+            // Get the coded index before we start writing anything (might throw argument exception):
+            // Note: We don't allow TypeSpec as per https://github.com/dotnet/corefx/blob/master/src/System.Reflection.Metadata/specs/Ecma-335-Issues.md#proposed-specification-change
+            int codedIndex = CodedIndex.ToTypeDefOrRef(type);
+
             ClassOrValue(isValueType);
-            Builder.WriteCompressedInteger(CodedIndex.ToTypeDefOrRefOrSpec(typeRefDefSpec));
+            Builder.WriteCompressedInteger(codedIndex);
         }
 
-        public MethodSignatureEncoder FunctionPointer(SignatureCallingConvention convention, FunctionPointerAttributes attributes, int genericParameterCount)
+        /// <summary>
+        /// Starts a function pointer signature.
+        /// </summary>
+        /// <param name="convention">Calling convention.</param>
+        /// <param name="attributes">Function pointer attributes.</param>
+        /// <param name="genericParameterCount">Generic parameter count.</param>
+        /// <exception cref="ArgumentException"><paramref name="attributes"/> is invalid.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="genericParameterCount"/> is not in range [0, 0xffff].</exception>
+        public MethodSignatureEncoder FunctionPointer(
+            SignatureCallingConvention convention = SignatureCallingConvention.Default, 
+            FunctionPointerAttributes attributes = FunctionPointerAttributes.None, 
+            int genericParameterCount = 0)
         {
             // Spec:
             // The EXPLICITTHIS (0x40) bit can be set only in signatures for function pointers.
@@ -755,6 +784,11 @@ namespace System.Reflection.Metadata.Ecma335
                 attributes != FunctionPointerAttributes.HasExplicitThis)
             {
                 throw new ArgumentException(SR.InvalidSignature, nameof(attributes));
+            }
+
+            if (unchecked((uint)genericParameterCount) > ushort.MaxValue)
+            {
+                Throw.ArgumentOutOfRange(nameof(genericParameterCount));
             }
 
             Builder.WriteByte((byte)SignatureTypeCode.FunctionPointer);
@@ -768,45 +802,94 @@ namespace System.Reflection.Metadata.Ecma335
             return new MethodSignatureEncoder(Builder, hasVarArgs: convention == SignatureCallingConvention.VarArgs);
         }
 
-        public GenericTypeArgumentsEncoder GenericInstantiation(bool isValueType, EntityHandle typeRefDefSpec, int genericArgumentCount)
+        /// <summary>
+        /// Starts a generic instantiation signature.
+        /// </summary>
+        /// <param name="genericType"><see cref="TypeDefinitionHandle"/> or <see cref="TypeReferenceHandle"/>.</param>
+        /// <param name="genericArgumentCount">Generic argument count.</param>
+        /// <param name="isValueType">True to mark the type as value type, false to mark it as a reference type in the signature.</param>
+        /// <exception cref="ArgumentException"><paramref name="genericType"/> doesn't have the expected handle kind.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="genericArgumentCount"/> is not in range [1, 0xffff].</exception>
+        public GenericTypeArgumentsEncoder GenericInstantiation(EntityHandle genericType, int genericArgumentCount, bool isValueType)
         {
+            if (unchecked((uint)(genericArgumentCount - 1)) > ushort.MaxValue - 1)
+            {
+                Throw.ArgumentOutOfRange(nameof(genericArgumentCount));
+            }
+
+            // Get the coded index before we start writing anything (might throw argument exception):
+            // Note: We don't allow TypeSpec as per https://github.com/dotnet/corefx/blob/master/src/System.Reflection.Metadata/specs/Ecma-335-Issues.md#proposed-specification-change
+            int codedIndex = CodedIndex.ToTypeDefOrRef(genericType);
+
             Builder.WriteByte((byte)SignatureTypeCode.GenericTypeInstance);
             ClassOrValue(isValueType);
-            Builder.WriteCompressedInteger(CodedIndex.ToTypeDefOrRefOrSpec(typeRefDefSpec));
+            Builder.WriteCompressedInteger(codedIndex);
             Builder.WriteCompressedInteger(genericArgumentCount);
             return new GenericTypeArgumentsEncoder(Builder);
         }
 
+        /// <summary>
+        /// Encodes a reference to type parameter of a containing generic method.
+        /// </summary>
+        /// <param name="parameterIndex">Parameter index.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="parameterIndex"/> is not in range [0, 0xffff].</exception>
         public void GenericMethodTypeParameter(int parameterIndex)
         {
+            if (unchecked((uint)parameterIndex) > ushort.MaxValue)
+            {
+                Throw.ArgumentOutOfRange(nameof(parameterIndex));
+            }
+
             Builder.WriteByte((byte)SignatureTypeCode.GenericMethodParameter);
             Builder.WriteCompressedInteger(parameterIndex);
         }
 
+        /// <summary>
+        /// Encodes a reference to type parameter of a containing generic type.
+        /// </summary>
+        /// <param name="parameterIndex">Parameter index.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="parameterIndex"/> is not in range [0, 0xffff].</exception>
         public void GenericTypeParameter(int parameterIndex)
         {
+            if (unchecked((uint)parameterIndex) > ushort.MaxValue)
+            {
+                Throw.ArgumentOutOfRange(nameof(parameterIndex));
+            }
+
             Builder.WriteByte((byte)SignatureTypeCode.GenericTypeParameter);
             Builder.WriteCompressedInteger(parameterIndex);
         }
 
+        /// <summary>
+        /// Starts pointer signature.
+        /// </summary>
         public SignatureTypeEncoder Pointer()
         {
             Builder.WriteByte((byte)SignatureTypeCode.Pointer);
             return this;
         }
 
+        /// <summary>
+        /// Encodes <code>void*</code>.
+        /// </summary>
         public void VoidPointer()
         {
             Builder.WriteByte((byte)SignatureTypeCode.Pointer);
             Builder.WriteByte((byte)SignatureTypeCode.Void);
         }
 
+        /// <summary>
+        /// Starts SZ array (vector) signature.
+        /// </summary>
         public SignatureTypeEncoder SZArray()
         {
             Builder.WriteByte((byte)SignatureTypeCode.SZArray);
             return this;
         }
 
+        /// <summary>
+        /// Starts a signature of a type with custom modifiers.
+        /// </summary>
         public CustomModifiersEncoder CustomModifiers()
         {
             return new CustomModifiersEncoder(Builder);

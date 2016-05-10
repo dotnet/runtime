@@ -32,6 +32,7 @@ namespace System.Reflection.Metadata.Ecma335
         public static int ToMemberRefParent(EntityHandle handle) => MetadataTokens.GetRowNumber(handle).ToCodedIndex(ToMemberRefParentTag(handle.Kind));
         public static int ToMethodDefOrRef(EntityHandle handle) => MetadataTokens.GetRowNumber(handle).ToCodedIndex(ToMethodDefOrRefTag(handle.Kind));
         public static int ToResolutionScope(EntityHandle handle) => MetadataTokens.GetRowNumber(handle).ToCodedIndex(ToResolutionScopeTag(handle.Kind));
+        public static int ToTypeDefOrRef(EntityHandle handle) => MetadataTokens.GetRowNumber(handle).ToCodedIndex(ToTypeDefOrRefTag(handle.Kind));
         public static int ToTypeDefOrRefOrSpec(EntityHandle handle) => MetadataTokens.GetRowNumber(handle).ToCodedIndex(ToTypeDefOrRefOrSpecTag(handle.Kind));
         public static int ToTypeOrMethodDef(EntityHandle handle) => MetadataTokens.GetRowNumber(handle).ToCodedIndex(ToTypeOrMethodDefTag(handle.Kind));
         public static int ToHasCustomDebugInformation(EntityHandle handle) => MetadataTokens.GetRowNumber(handle).ToCodedIndex(ToHasCustomDebugInformationTag(handle.Kind));
@@ -336,6 +337,18 @@ namespace System.Reflection.Metadata.Ecma335
                 case HandleKind.TypeDefinition: return TypeDefOrRefOrSpec.TypeDef;
                 case HandleKind.TypeReference: return TypeDefOrRefOrSpec.TypeRef;
                 case HandleKind.TypeSpecification: return TypeDefOrRefOrSpec.TypeSpec;
+
+                default:
+                    throw UnexpectedHandleKind(kind);
+            }
+        }
+
+        private static TypeDefOrRefOrSpec ToTypeDefOrRefTag(HandleKind kind)
+        {
+            switch (kind)
+            {
+                case HandleKind.TypeDefinition: return TypeDefOrRefOrSpec.TypeDef;
+                case HandleKind.TypeReference: return TypeDefOrRefOrSpec.TypeRef;
 
                 default:
                     throw UnexpectedHandleKind(kind);
