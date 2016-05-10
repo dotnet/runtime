@@ -412,7 +412,7 @@ namespace System.Reflection.PortableExecutable.Tests
                 metadata.GetOrAddString("_sumCache"),
                 metadata.GetOrAddBlob(BuildSignature(e => 
                 {
-                    var inst = e.FieldSignature().GenericInstantiation(isValueType: false, typeRefDefSpec: dictionaryTypeRef, genericArgumentCount: 2);
+                    var inst = e.FieldSignature().GenericInstantiation(genericType: dictionaryTypeRef, genericArgumentCount: 2, isValueType: false);
                     inst.AddArgument().Int32();
                     inst.AddArgument().Object();
                 })));
@@ -427,7 +427,7 @@ namespace System.Reflection.PortableExecutable.Tests
             var derivedClassBCFieldDef = metadata.AddFieldDefinition(
               FieldAttributes.Assembly,
               metadata.GetOrAddString("_bc"),
-              metadata.GetOrAddBlob(BuildSignature(e => e.FieldSignature().TypeDefOrRefOrSpec(isValueType: false, typeRefDefSpec: baseClassTypeDef))));
+              metadata.GetOrAddBlob(BuildSignature(e => e.FieldSignature().Type(type: baseClassTypeDef, isValueType: false))));
 
             var methodBodies = new MethodBodiesEncoder(ilBuilder);
 
