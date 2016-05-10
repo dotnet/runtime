@@ -3289,7 +3289,7 @@ namespace System {
                                       AppDomainSetup info)
         {
             if (friendlyName == null)
-                throw new ArgumentNullException(Environment.GetResourceString("ArgumentNull_String"));
+                throw new ArgumentNullException("friendlyName", Environment.GetResourceString("ArgumentNull_String"));
 
             Contract.EndContractBlock();
 
