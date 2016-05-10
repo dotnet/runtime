@@ -1288,7 +1288,7 @@ namespace System.Collections.Concurrent
         /// name="keyValuePair"/> is a null reference (Nothing in Visual Basic).</exception>
         bool ICollection<KeyValuePair<TKey, TValue>>.Remove(KeyValuePair<TKey, TValue> keyValuePair)
         {
-            if (keyValuePair.Key == null) throw new ArgumentNullException(SR.ConcurrentDictionary_ItemKeyIsNull);
+            if (keyValuePair.Key == null) throw new ArgumentNullException(nameof(keyValuePair), SR.ConcurrentDictionary_ItemKeyIsNull);
 
             TValue throwAwayValue;
             return TryRemoveInternal(keyValuePair.Key, out throwAwayValue, true, keyValuePair.Value);
