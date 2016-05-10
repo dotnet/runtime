@@ -37,17 +37,8 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CryptProtectData.cs">
-      <Link>Common\Interop\Windows\Interop.CryptProtectData.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CryptProtectDataFlags.cs">
-      <Link>Common\Interop\Windows\Interop.CryptProtectDataFlags.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CryptUnprotectData.cs">
-      <Link>Common\Interop\Windows\Interop.CryptUnprotectData.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.DATA_BLOB.cs">
-      <Link>Common\Interop\Windows\Interop.DATA_BLOB.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CryptProtectMemory.cs">
+      <Link>Common\Interop\Windows\Interop.CryptProtectMemory.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs">
       <Link>Interop\Windows\Interop.FormatMessage.cs</Link>

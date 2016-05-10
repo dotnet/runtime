@@ -13,81 +13,80 @@ namespace System.Security
     {
         internal SecureString(SecureString str)
         {
-            AllocateBuffer(str.EncryptedBufferLength);
-            SafeBSTRHandle.Copy(str._encryptedBuffer, _encryptedBuffer, str.EncryptedBufferLength * sizeof(char));
+            Debug.Assert(str != null, "Expected non-null SecureString");
+            Debug.Assert(str._buffer != null, "Expected other SecureString's buffer to be non-null");
+            Debug.Assert(str._encrypted, "Expected to be used only on encrypted SecureStrings");
+
+            AllocateBuffer(str._buffer.Length);
+            SafeBSTRHandle.Copy(str._buffer, _buffer, str._buffer.Length * sizeof(char));
+
             _decryptedLength = str._decryptedLength;
+            _encrypted = str._encrypted;
         }
 
         private unsafe void InitializeSecureString(char* value, int length)
         {
-            if (length == 0)
-            {
-                AllocateBuffer(0);
-                _decryptedLength = 0;
-                return;
-            }
+            Debug.Assert(length >= 0, $"Expected non-negative length, got {length}");
 
-            _encryptedBuffer = SafeBSTRHandle.Allocate(0);
-            SafeBSTRHandle decryptedBuffer = SafeBSTRHandle.Allocate((uint)length);
+            AllocateBuffer((uint)length);
             _decryptedLength = length;
 
             byte* bufferPtr = null;
             try
             {
-                decryptedBuffer.AcquirePointer(ref bufferPtr);
-                Buffer.MemoryCopy((byte*)value, bufferPtr, decryptedBuffer.Length * sizeof(char), length * sizeof(char));
+                _buffer.AcquirePointer(ref bufferPtr);
+                Buffer.MemoryCopy((byte*)value, bufferPtr, (long)_buffer.ByteLength, length * sizeof(char));
             }
             finally
             {
                 if (bufferPtr != null)
                 {
-                    decryptedBuffer.ReleasePointer();
+                    _buffer.ReleasePointer();
                 }
             }
 
-            ProtectMemory(decryptedBuffer);
+            ProtectMemory();
         }
 
         private void AppendCharCore(char c)
         {
-            SafeBSTRHandle decryptedBuffer = UnprotectMemory();
+            UnprotectMemory();
             try
             {
-                EnsureCapacity(ref decryptedBuffer, _decryptedLength + 1);
-                decryptedBuffer.Write<char>((uint)_decryptedLength * sizeof(char), c);
+                EnsureCapacity(_decryptedLength + 1);
+                _buffer.Write<char>((uint)_decryptedLength * sizeof(char), c);
                 _decryptedLength++;
             }
             finally
             {
-                ProtectMemory(decryptedBuffer);
+                ProtectMemory();
             }
         }
 
-        // clears the current contents. Only available if writable
         private void ClearCore()
         {
             _decryptedLength = 0;
-            _encryptedBuffer.ClearBuffer();
+            _buffer.ClearBuffer();
         }
 
         private void DisposeCore()
         {
-            if (_encryptedBuffer != null && !_encryptedBuffer.IsInvalid)
+            if (_buffer != null)
             {
-                _encryptedBuffer.Dispose();
-                _encryptedBuffer = null;
+                _buffer.Dispose();
+                _buffer = null;
             }
         }
 
         private unsafe void InsertAtCore(int index, char c)
         {
             byte* bufferPtr = null;
-            SafeBSTRHandle decryptedBuffer = UnprotectMemory();
+            UnprotectMemory();
             try
             {
-                EnsureCapacity(ref decryptedBuffer, _decryptedLength + 1);
+                EnsureCapacity(_decryptedLength + 1);
 
-                decryptedBuffer.AcquirePointer(ref bufferPtr);
+                _buffer.AcquirePointer(ref bufferPtr);
                 char* pBuffer = (char*)bufferPtr;
 
                 for (int i = _decryptedLength; i > index; i--)
@@ -99,21 +98,21 @@ namespace System.Security
             }
             finally
             {
+                ProtectMemory();
                 if (bufferPtr != null)
                 {
-                    decryptedBuffer.ReleasePointer();
+                    _buffer.ReleasePointer();
                 }
-                ProtectMemory(decryptedBuffer);
             }
         }
 
         private unsafe void RemoveAtCore(int index)
         {
             byte* bufferPtr = null;
-            SafeBSTRHandle decryptedBuffer = UnprotectMemory();
+            UnprotectMemory();
             try
             {
-                decryptedBuffer.AcquirePointer(ref bufferPtr);
+                _buffer.AcquirePointer(ref bufferPtr);
                 char* pBuffer = (char*)bufferPtr;
 
                 for (int i = index; i < _decryptedLength - 1; i++)
@@ -124,24 +123,24 @@ namespace System.Security
             }
             finally
             {
+                ProtectMemory();
                 if (bufferPtr != null)
                 {
-                    decryptedBuffer.ReleasePointer();
+                    _buffer.ReleasePointer();
                 }
-                ProtectMemory(decryptedBuffer);
             }
         }
 
         private void SetAtCore(int index, char c)
         {
-            SafeBSTRHandle decryptedBuffer = UnprotectMemory();
+            UnprotectMemory();
             try
             {
-                decryptedBuffer.Write<char>((uint)index * sizeof(char), c);
+                _buffer.Write<char>((uint)index * sizeof(char), c);
             }
             finally
             {
-                ProtectMemory(decryptedBuffer);
+                ProtectMemory();
             }
         }
 
@@ -152,10 +151,10 @@ namespace System.Security
             IntPtr result = IntPtr.Zero;
             byte* bufferPtr = null;
 
-            SafeBSTRHandle decryptedBuffer = UnprotectMemory();
+            UnprotectMemory();
             try
             {
-                decryptedBuffer.AcquirePointer(ref bufferPtr);
+                _buffer.AcquirePointer(ref bufferPtr);
                 if (unicode)
                 {
                     int resultByteLength = (length + 1) * sizeof(char);
@@ -177,6 +176,8 @@ namespace System.Security
             }
             finally
             {
+                ProtectMemory();
+
                 // If we failed for any reason, free the new buffer
                 if (result == IntPtr.Zero && ptr != IntPtr.Zero)
                 {
@@ -186,7 +187,7 @@ namespace System.Security
 
                 if (bufferPtr != null)
                 {
-                    decryptedBuffer.ReleasePointer();
+                    _buffer.ReleasePointer();
                 }
             }
             return result;
@@ -194,7 +195,7 @@ namespace System.Security
 
         private void EnsureNotDisposed()
         {
-            if (_encryptedBuffer == null)
+            if (_buffer == null)
             {
                 throw new ObjectDisposedException(GetType().Name);
             }
@@ -204,152 +205,65 @@ namespace System.Security
         // ---- PAL layer ends here ----
         // -----------------------------
 
-        private SafeBSTRHandle _encryptedBuffer;
-
-        private uint EncryptedBufferLength
-        {
-            get
-            {
-                Debug.Assert(_encryptedBuffer != null, "Buffer is not initialized!");
-                return _encryptedBuffer.Length;
-            }
-        }
+        private const int BlockSize = (int)Interop.Crypt32.CRYPTPROTECTMEMORY_BLOCK_SIZE / sizeof(char);
+        private SafeBSTRHandle _buffer;
+        private bool _encrypted;
 
         private void AllocateBuffer(uint size)
         {
-            _encryptedBuffer = SafeBSTRHandle.Allocate(size);
+            _buffer = SafeBSTRHandle.Allocate(GetAlignedSize(size));
         }
 
-        private void EnsureCapacity(ref SafeBSTRHandle decryptedBuffer, int capacity)
+        private static uint GetAlignedSize(uint size) =>
+            size == 0 || size % BlockSize != 0 ?
+                BlockSize + ((size / BlockSize) * BlockSize) :
+                size;
+
+        private void EnsureCapacity(int capacity)
         {
             if (capacity > MaxLength)
             {
                 throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_Capacity);
             }
 
-            Debug.Assert(capacity > _decryptedLength, $"Expected to only be called when growing capacity = {capacity}, _decryptedLength = {_decryptedLength}");
-
-            SafeBSTRHandle newBuffer = SafeBSTRHandle.Allocate((uint)capacity);
-            SafeBSTRHandle.Copy(decryptedBuffer, newBuffer, (uint)_decryptedLength * sizeof(char));
-            decryptedBuffer.Dispose();
-            decryptedBuffer = newBuffer;
-        }
-
-        private void ProtectMemory(SafeBSTRHandle decryptedBuffer)
-        {
-            Debug.Assert(!decryptedBuffer.IsInvalid, "Invalid buffer!");
-
-            if (_decryptedLength == 0)
+            if (((uint)capacity * sizeof(char)) <= _buffer.ByteLength)
             {
                 return;
             }
 
-            try
-            {
-                SafeBSTRHandle newEncryptedBuffer;
-                if (!CryptProtectData(decryptedBuffer, out newEncryptedBuffer))
-                {
-                    throw Marshal.GetLastWin32Error().ToCryptographicException();
-                }
-
-                _encryptedBuffer.Dispose();
-                _encryptedBuffer = newEncryptedBuffer;
-            }
-            finally
-            {
-                decryptedBuffer.ClearBuffer();
-                decryptedBuffer.Dispose();
-            }
+            var oldBuffer = _buffer;
+            SafeBSTRHandle newBuffer = SafeBSTRHandle.Allocate(GetAlignedSize((uint)capacity));
+            SafeBSTRHandle.Copy(oldBuffer, newBuffer, (uint)_decryptedLength * sizeof(char));
+            _buffer = newBuffer;
+            oldBuffer.Dispose();
         }
 
-        private SafeBSTRHandle UnprotectMemory()
+        private void ProtectMemory()
         {
-            Debug.Assert(!_encryptedBuffer.IsInvalid, "Invalid buffer!");
+            Debug.Assert(!_buffer.IsInvalid, "Invalid buffer!");
 
-            if (_decryptedLength == 0)
+            if (_decryptedLength != 0 &&
+                !_encrypted &&
+                !Interop.Crypt32.CryptProtectMemory(_buffer, _buffer.Length * sizeof(char), Interop.Crypt32.CRYPTPROTECTMEMORY_SAME_PROCESS))
             {
-                return _encryptedBuffer;
+                throw new CryptographicException(Marshal.GetLastWin32Error());
             }
 
-            SafeBSTRHandle decryptedBuffer;
-            if (!CryptUnprotectData(_encryptedBuffer, out decryptedBuffer))
-            {
-                throw Marshal.GetLastWin32Error().ToCryptographicException();
-            }
-
-            return decryptedBuffer;
+            _encrypted = true;
         }
 
-        private static unsafe bool CryptProtectData(SafeBSTRHandle decryptedBuffer, out SafeBSTRHandle encryptedBuffer)
+        private void UnprotectMemory()
         {
-            byte* uncryptedBufferPtr = null;
-            Interop.Crypt32.DATA_BLOB pDataOut = default(Interop.Crypt32.DATA_BLOB);
-            try
+            Debug.Assert(!_buffer.IsInvalid, "Invalid buffer!");
+
+            if (_decryptedLength != 0 &&
+                _encrypted &&
+                !Interop.Crypt32.CryptUnprotectMemory(_buffer, _buffer.Length * sizeof(char), Interop.Crypt32.CRYPTPROTECTMEMORY_SAME_PROCESS))
             {
-                decryptedBuffer.AcquirePointer(ref uncryptedBufferPtr);
-
-                Interop.Crypt32.DATA_BLOB optionalEntropyBlob = default(Interop.Crypt32.DATA_BLOB);
-                Interop.Crypt32.DATA_BLOB pDataIn = new Interop.Crypt32.DATA_BLOB((IntPtr)uncryptedBufferPtr, decryptedBuffer.Length * sizeof(char));
-                if (Interop.Crypt32.CryptProtectData(ref pDataIn, string.Empty, ref optionalEntropyBlob, IntPtr.Zero, IntPtr.Zero, 0, out pDataOut))
-                {
-                    encryptedBuffer = SafeBSTRHandle.Allocate(pDataOut.pbData, pDataOut.cbData);
-                    return true;
-                }
-                else
-                {
-                    encryptedBuffer = null;
-                    return false;
-                }
+                throw new CryptographicException(Marshal.GetLastWin32Error());
             }
-            finally
-            {
-                if (uncryptedBufferPtr != null)
-                {
-                    decryptedBuffer.ReleasePointer();
-                }
 
-                if (pDataOut.pbData != IntPtr.Zero)
-                {
-                    Interop.NtDll.ZeroMemory(pDataOut.pbData, (UIntPtr)pDataOut.cbData);
-                    Marshal.FreeHGlobal(pDataOut.pbData);
-                }
-            }
-        }
-
-        internal static unsafe bool CryptUnprotectData(SafeBSTRHandle encryptedBuffer, out SafeBSTRHandle decryptedBuffer)
-        {
-            byte* cryptedBufferPtr = null;
-            Interop.Crypt32.DATA_BLOB pDataOut = default(Interop.Crypt32.DATA_BLOB);
-            try
-            {
-                encryptedBuffer.AcquirePointer(ref cryptedBufferPtr);
-
-                Interop.Crypt32.DATA_BLOB optionalEntropyBlob = default(Interop.Crypt32.DATA_BLOB);
-                Interop.Crypt32.DATA_BLOB pDataIn = new Interop.Crypt32.DATA_BLOB((IntPtr)cryptedBufferPtr, encryptedBuffer.Length * sizeof(char));
-                if (Interop.Crypt32.CryptUnprotectData(ref pDataIn, IntPtr.Zero, ref optionalEntropyBlob, IntPtr.Zero, IntPtr.Zero, 0, out pDataOut))
-                {
-                    decryptedBuffer = SafeBSTRHandle.Allocate(pDataOut.pbData, pDataOut.cbData);
-                    return true;
-                }
-                else
-                {
-                    decryptedBuffer = null;
-                    return false;
-                }
-            }
-            finally
-            {
-                if (cryptedBufferPtr != null)
-                {
-                    encryptedBuffer.ReleasePointer();
-                }
-
-                if (pDataOut.pbData != IntPtr.Zero)
-                {
-                    Interop.NtDll.ZeroMemory(pDataOut.pbData, (UIntPtr)pDataOut.cbData);
-                    Marshal.FreeHGlobal(pDataOut.pbData);
-                }
-            }
+            _encrypted = false;
         }
     }
 }
