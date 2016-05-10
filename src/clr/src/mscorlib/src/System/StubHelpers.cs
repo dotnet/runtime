@@ -1670,7 +1670,7 @@ namespace  System.StubHelpers {
         {
             if (pHandle == null)
             {
-                throw new ArgumentNullException(Environment.GetResourceString("ArgumentNull_SafeHandle"));
+                throw new ArgumentNullException("pHandle", Environment.GetResourceString("ArgumentNull_SafeHandle"));
             }
             Contract.EndContractBlock();
 
@@ -1686,7 +1686,7 @@ namespace  System.StubHelpers {
         {
             if (pHandle == null)
             {
-                throw new ArgumentNullException(Environment.GetResourceString("ArgumentNull_SafeHandle"));
+                throw new ArgumentNullException("pHandle", Environment.GetResourceString("ArgumentNull_SafeHandle"));
             }
             Contract.EndContractBlock();
 

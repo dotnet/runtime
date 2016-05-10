@@ -1108,7 +1108,7 @@ namespace System.Text {
                 {
                     return this;
                 }
-                throw new ArgumentNullException(Environment.GetResourceString("ArgumentNull_String"));
+                throw new ArgumentNullException("value", Environment.GetResourceString("ArgumentNull_String"));
             }
 
             //Range check the array.
