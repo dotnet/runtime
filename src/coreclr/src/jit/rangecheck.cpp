@@ -754,7 +754,7 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTreePtr stmt, GenTreePtr o
             if (m_pCompiler->bbJtrueAssertionOut != NULL)
             {
                 assertions = m_pCompiler->bbJtrueAssertionOut[pred->bbNum];
-                JITDUMP("Merge assertions from pred BB%02d JTrue edge: %0I64X\n", pred->bbNum, assertions);
+                JITDUMP("Merge assertions from pred BB%02d JTrue edge: %s\n", pred->bbNum, BitVecOps::ToString(m_pCompiler->apTraits, assertions));
             }
         }
     }
@@ -858,7 +858,7 @@ Range RangeCheck::ComputeRangeForLocalDef(BasicBlock* block, GenTreePtr stmt, Ge
     case GT_ASG:
         {
             Range range = GetRange(loc->block, loc->stmt, asg->gtGetOp2(), path, monotonic DEBUGARG(indent));
-            JITDUMP("Merge assertions from BB%02d:%016I64X for assignment about %p\n", block->bbNum, block->bbAssertionIn, dspPtr(asg->gtGetOp1()));
+            JITDUMP("Merge assertions from BB%02d:%s for assignment about %p\n", block->bbNum, BitVecOps::ToString(m_pCompiler->apTraits, block->bbAssertionIn), dspPtr(asg->gtGetOp1()));
             MergeEdgeAssertions(asg->gtGetOp1(), block->bbAssertionIn, &range);
             JITDUMP("done merging\n");
             return range;
