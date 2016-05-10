@@ -49,7 +49,7 @@ namespace System.ComponentModel
         /// </summary>
         public static readonly DesignerSerializationVisibilityAttribute Default = Visible;
 
-        private DesignerSerializationVisibility _visibility;
+        private readonly DesignerSerializationVisibility _visibility;
 
         /// <summary>
         ///    <para>

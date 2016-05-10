@@ -20,7 +20,7 @@ namespace System.ComponentModel
         public static readonly AttributeCollection Empty = new AttributeCollection(null);
         private static Hashtable s_defaultAttributes;
 
-        private Attribute[] _attributes;
+        private readonly Attribute[] _attributes;
 
         private static readonly object s_internalSyncObject = new object();
 

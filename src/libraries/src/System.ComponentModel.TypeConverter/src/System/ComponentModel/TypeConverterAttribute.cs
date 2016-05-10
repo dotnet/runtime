@@ -13,7 +13,7 @@ namespace System.ComponentModel
     [AttributeUsage(AttributeTargets.All)]
     public sealed class TypeConverterAttribute : Attribute
     {
-        private string _typeName;
+        private readonly string _typeName;
 
         /// <summary>
         ///    <para>

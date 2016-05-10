@@ -15,7 +15,7 @@ namespace System.ComponentModel
     /// </summary>
     internal sealed class DelegatingTypeDescriptionProvider : TypeDescriptionProvider
     {
-        private Type _type;
+        private readonly Type _type;
 
         /// <summary>
         ///     Creates a new DelegatingTypeDescriptionProvider.  The type is the type we will delegate to.

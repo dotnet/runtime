@@ -18,11 +18,11 @@ namespace System.ComponentModel
     {
         private EventDescriptor[] _events;
         private string[] _namedSort;
-        private IComparer _comparer;
-        private bool _eventsOwned = true;
+        private readonly IComparer _comparer;
+        private bool _eventsOwned;
         private bool _needSort = false;
         private int _eventCount;
-        private bool _readOnly = false;
+        private readonly bool _readOnly = false;
 
         /// <summary>
         /// An empty AttributeCollection that can used instead of creating a new one with no items.

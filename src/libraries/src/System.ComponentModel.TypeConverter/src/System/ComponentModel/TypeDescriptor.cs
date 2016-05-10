@@ -2755,8 +2755,8 @@ namespace System.ComponentModel
         /// </summary>
         private sealed class AttributeFilterCacheItem
         {
-            private Attribute[] _filter;
-            internal ICollection FilteredMembers;
+            private readonly Attribute[] _filter;
+            internal readonly ICollection FilteredMembers;
 
             internal AttributeFilterCacheItem(Attribute[] filter, ICollection filteredMembers)
             {
@@ -2786,8 +2786,8 @@ namespace System.ComponentModel
         /// </summary>
         private sealed class FilterCacheItem
         {
-            private ITypeDescriptorFilterService _filterService;
-            internal ICollection FilteredMembers;
+            private readonly ITypeDescriptorFilterService _filterService;
+            internal readonly ICollection FilteredMembers;
 
             internal FilterCacheItem(ITypeDescriptorFilterService filterService, ICollection filteredMembers)
             {
@@ -2841,8 +2841,8 @@ namespace System.ComponentModel
         /// </summary>
         private sealed class MergedTypeDescriptor : ICustomTypeDescriptor
         {
-            private ICustomTypeDescriptor _primary;
-            private ICustomTypeDescriptor _secondary;
+            private readonly ICustomTypeDescriptor _primary;
+            private readonly ICustomTypeDescriptor _secondary;
 
             /// <summary>
             ///     Creates a new MergedTypeDescriptor.
@@ -3199,8 +3199,8 @@ namespace System.ComponentModel
             /// </summary>
             private struct DefaultExtendedTypeDescriptor : ICustomTypeDescriptor
             {
-                private TypeDescriptionNode _node;
-                private object _instance;
+                private readonly TypeDescriptionNode _node;
+                private readonly object _instance;
 
                 /// <summary>
                 ///     Creates a new WalkingExtendedTypeDescriptor.
@@ -3514,9 +3514,9 @@ namespace System.ComponentModel
             /// </summary>
             private struct DefaultTypeDescriptor : ICustomTypeDescriptor
             {
-                private TypeDescriptionNode _node;
-                private Type _objectType;
-                private object _instance;
+                private readonly TypeDescriptionNode _node;
+                private readonly Type _objectType;
+                private readonly object _instance;
 
                 /// <summary>
                 ///     Creates a new WalkingTypeDescriptor.

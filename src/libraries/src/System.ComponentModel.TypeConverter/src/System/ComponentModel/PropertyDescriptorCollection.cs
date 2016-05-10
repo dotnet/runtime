@@ -29,8 +29,8 @@ namespace System.ComponentModel
         private bool _cachedIgnoreCase;
         private PropertyDescriptor[] _properties;
         private int _propCount = 0;
-        private string[] _namedSort;
-        private IComparer _comparer;
+        private readonly string[] _namedSort;
+        private readonly IComparer _comparer;
         private bool _propsOwned = true;
         private bool _needSort = false;
         private bool _readOnly = false;

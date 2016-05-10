@@ -12,7 +12,7 @@ namespace System.ComponentModel
     public class RefreshEventArgs : EventArgs
     {
         private readonly object _componentChanged;
-        private Type _typeChanged;
+        private readonly Type _typeChanged;
 
         /// <summary>
         ///    <para>

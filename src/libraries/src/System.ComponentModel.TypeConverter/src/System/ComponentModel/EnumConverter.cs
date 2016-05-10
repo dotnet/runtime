@@ -32,7 +32,7 @@ namespace System.ComponentModel
         ///       associated with.
         ///    </para>
         /// </summary>
-        private Type _type;
+        private readonly Type _type;
 
         /// <summary>
         ///    <para>
