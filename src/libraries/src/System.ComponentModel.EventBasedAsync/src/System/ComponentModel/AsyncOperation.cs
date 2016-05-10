@@ -109,7 +109,7 @@ namespace System.ComponentModel
         {
             if (d == null)
             {
-                throw new ArgumentNullException(SR.Async_NullDelegate, nameof(d));
+                throw new ArgumentNullException(nameof(d), SR.Async_NullDelegate);
             }
         }
 

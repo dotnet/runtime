@@ -158,6 +158,13 @@ namespace System.ServiceProcess.Tests
         }
 
         [ConditionalFact(nameof(RunningWithElevatedPrivileges))]
+        public void Start_NullArg_ThrowsArgumentNullException()
+        {
+            var controller = new ServiceController(_testService.TestServiceName);
+            Assert.Throws<ArgumentNullException>("args[0]", () => controller.Start(new string[] { null } ));
+        }
+
+        [ConditionalFact(nameof(RunningWithElevatedPrivileges))]
         public void StopAndStart()
         {
             var controller = new ServiceController(_testService.TestServiceName);

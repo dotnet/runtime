@@ -2216,7 +2216,7 @@ namespace System.Net.Sockets
             // Validate input parameters.
             if ((checkRead == null || checkRead.Count == 0) && (checkWrite == null || checkWrite.Count == 0) && (checkError == null || checkError.Count == 0))
             {
-                throw new ArgumentNullException(SR.net_sockets_empty_select);
+                throw new ArgumentNullException(null, SR.net_sockets_empty_select);
             }
             const int MaxSelect = 65536;
             if (checkRead != null && checkRead.Count > MaxSelect)

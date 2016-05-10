@@ -736,6 +736,13 @@ namespace System.Collections.Concurrent.Tests
         }
 
         [Fact]
+        public static void IDicionary_Remove_NullKeyInKeyValuePair_ThrowsArgumentNullException()
+        {
+            IDictionary<string, int> dictionary = new ConcurrentDictionary<string, int>();
+            Assert.Throws<ArgumentNullException>("keyValuePair", () => dictionary.Remove(new KeyValuePair<string, int>(null, 0)));
+        }
+
+        [Fact]
         public static void TestICollection()
         {
             ICollection dictionary = new ConcurrentDictionary<int, int>();
