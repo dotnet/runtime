@@ -8104,6 +8104,14 @@ mono_aot_get_method_name (MonoCompile *cfg)
 gboolean
 mono_aot_is_linkonce_method (MonoMethod *method)
 {
+	// FIXME:
+	// This doesn't work yet, because
+	// it can make us call methods which belong
+	// to aot modules which haven't been loaded yet,
+	// so the init method will read uninitialized got
+	// entries.
+	return FALSE;
+#if 0
 	WrapperInfo *info;
 
 	// FIXME: Add more cases
@@ -8113,6 +8121,7 @@ mono_aot_is_linkonce_method (MonoMethod *method)
 	if ((info && (info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG || info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG)))
 		return TRUE;
 	return FALSE;
+#endif
 }
 
 static gboolean
