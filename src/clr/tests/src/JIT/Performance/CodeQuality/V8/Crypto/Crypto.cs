@@ -43,6 +43,9 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 
+[assembly: OptimizeForBenchmarks]
+[assembly: MeasureInstructionsRetired]
+
 namespace Crypto
 {
     public class Support
