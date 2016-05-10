@@ -768,25 +768,7 @@ endif
 test-env-options:
 	MONO_ENV_OPTIONS="--version" $(RUNTIME) array-init.exe | grep -q Architecture:
 
-if AMD64
 test-sgen : sgen-tests
-else
-if X86
-if HOST_WIN32
-test-sgen :
-else
-test-sgen : sgen-tests
-endif
-else
-if ARM
-test-sgen : sgen-tests
-else
-if S390X
-test-sgen : sgen-regular-tests
-endif
-endif
-endif
-endif
 
 # Precompile the test assemblies in parallel
 compile-tests:
@@ -969,9 +951,11 @@ EXTRA_DIST += sgen-bridge.cs sgen-descriptors.cs sgen-gshared-vtype.cs sgen-brid
 
 sgen-tests:
 	$(MAKE) sgen-regular-tests
+if !S390X
 	$(MAKE) sgen-toggleref-tests
 	$(MAKE) sgen-bridge-tests
 	$(MAKE) sgen-bridge2-tests
+endif
 
 SGEN_REGULAR_TESTS =	\
 	finalizer-wait.exe	\
