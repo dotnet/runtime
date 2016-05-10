@@ -8,6 +8,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security;
 using Xunit;
 using System.Text;
 
@@ -188,14 +189,20 @@ namespace System.IO.FileSystem.DriveInfoTests
 
         [Fact]
         [PlatformSpecific(PlatformID.Windows)]
-        public void VolumeLabelOnNetworkOrCdRom_Throws_UnauthorizedAccessException()
+        public void VolumeLabelOnNetworkOrCdRom_Throws()
         {
-            // Test UnauthorizedAccess on Network or CD-ROM
+            // Test setting the volume label on a Network or CD-ROM
             var noAccessDrive = DriveInfo.GetDrives().Where(d => d.DriveType == DriveType.Network || d.DriveType == DriveType.CDRom);
             foreach (var adrive in noAccessDrive)
             {
                 if (adrive.IsReady)
-                    Assert.Throws<UnauthorizedAccessException>(() => { adrive.VolumeLabel = null; });
+                {
+                    Exception e = Assert.ThrowsAny<Exception>(() => { adrive.VolumeLabel = null; });
+                    Assert.True(
+                        e is UnauthorizedAccessException || 
+                        e is IOException ||
+                        e is SecurityException);
+                }
             }
         }
 
