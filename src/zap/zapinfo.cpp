@@ -3433,16 +3433,34 @@ void ZapInfo::getReadyToRunHelper(
         break;
 
     case CORINFO_HELP_READYTORUN_ISINSTANCEOF:
+        if ((getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_SHAREDINST) != 0)
+        {
+            // READYTORUN: FUTURE: Generics
+            m_zapper->Warning(W("ReadyToRun: Generic dictionary lookup required\n"));
+            ThrowHR(E_NOTIMPL);
+        }
         pImport = m_pImage->GetImportTable()->GetDynamicHelperCell(
             (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_ISINSTANCEOF_HELPER | fAtypicalCallsite), pResolvedToken->hClass);
         break;
 
     case CORINFO_HELP_READYTORUN_CHKCAST:
+        if ((getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_SHAREDINST) != 0)
+        {
+            // READYTORUN: FUTURE: Generics
+            m_zapper->Warning(W("ReadyToRun: Generic dictionary lookup required\n"));
+            ThrowHR(E_NOTIMPL);
+        }
         pImport = m_pImage->GetImportTable()->GetDynamicHelperCell(
             (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_CHKCAST_HELPER | fAtypicalCallsite), pResolvedToken->hClass);
         break;
 
     case CORINFO_HELP_READYTORUN_STATIC_BASE:
+        if ((getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_SHAREDINST) != 0)
+        {
+            // READYTORUN: FUTURE: Generics
+            m_zapper->Warning(W("ReadyToRun: Generic dictionary lookup required\n"));
+            ThrowHR(E_NOTIMPL);
+        }
         if (m_pImage->GetCompileInfo()->IsInCurrentVersionBubble(m_pEEJitInfo->getClassModule(pResolvedToken->hClass)))
         {
             pImport = m_pImage->GetImportTable()->GetDynamicHelperCell(
