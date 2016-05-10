@@ -343,23 +343,22 @@ namespace System.Reflection.Metadata
         }
 
         /// <summary>
-        /// Writes a reference to a heap (heap index) or a table (row id).
+        /// Writes a reference to a heap (heap offset) or a table (row number).
         /// </summary>
-        /// <remarks>
-        /// References may be small (2B) or large (4B).
-        /// </remarks>
-        public void WriteReference(uint reference, int size)
+        /// <param name="reference">Heap offset or table row number.</param>
+        /// <param name="isSmall">True to encode the reference as 16-bit integer, false to encode as 32-bit integer.</param>
+        public void WriteReference(int reference, bool isSmall)
         {
-            Debug.Assert(size == 2 || size == 4);
+            // This code is a very hot path, hence we don't check if the reference actually fits 2B.
 
-            if (size == 2)
+            if (isSmall)
             {
-                Debug.Assert((ushort)reference == reference);
+                Debug.Assert(unchecked((ushort)reference) == reference);
                 WriteUInt16((ushort)reference);
             }
             else
             {
-                WriteUInt32(reference);
+                WriteInt32(reference);
             }
         }
 

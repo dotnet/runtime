@@ -53,11 +53,11 @@ namespace System.Reflection.Metadata
         private int Length => (int)(_length & ~IsFrozenMask);
         private uint FrozenLength => _length | IsFrozenMask;
 
-        public BlobBuilder(int size = DefaultChunkSize)
+        public BlobBuilder(int capacity = DefaultChunkSize)
         {
-            if (size < 0)
+            if (capacity < 0)
             {
-                Throw.ArgumentOutOfRange(nameof(size));
+                Throw.ArgumentOutOfRange(nameof(capacity));
             }
 
             // the writer assumes little-endian architecture:
@@ -67,7 +67,7 @@ namespace System.Reflection.Metadata
             }
 
             _nextOrPrevious = this;
-            _buffer = new byte[Math.Max(MinChunkSize, size)];
+            _buffer = new byte[Math.Max(MinChunkSize, capacity)];
         }
 
         protected virtual BlobBuilder AllocateChunk(int minimalSize)
@@ -166,10 +166,10 @@ namespace System.Reflection.Metadata
             }
         }
 
-        private int FreeBytes => _buffer.Length - Length;
+        protected int FreeBytes => _buffer.Length - Length;
 
         // internal for testing
-        internal int BufferSize => _buffer.Length;
+        internal protected int ChunkCapacity => _buffer.Length;
 
         // internal for testing
         internal Chunks GetChunks()
@@ -517,7 +517,7 @@ namespace System.Reflection.Metadata
             }
 
             var newChunk = AllocateChunk(Math.Max(newLength, MinChunkSize));
-            if (newChunk.BufferSize < newLength)
+            if (newChunk.ChunkCapacity < newLength)
             {
                 // The overridden allocator didn't provide large enough buffer:
                 throw new InvalidOperationException(SR.Format(SR.ReturnedBuilderSizeTooSmall, GetType(), nameof(AllocateChunk)));
@@ -894,24 +894,23 @@ namespace System.Reflection.Metadata
         }
 
         /// <summary>
-        /// Writes a reference to a heap (heap index) or a table (row id).
+        /// Writes a reference to a heap (heap offset) or a table (row number).
         /// </summary>
-        /// <remarks>
-        /// References may be small (2B) or large (4B).
-        /// </remarks>
+        /// <param name="reference">Heap offset or table row number.</param>
+        /// <param name="isSmall">True to encode the reference as 16-bit integer, false to encode as 32-bit integer.</param>
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
-        internal void WriteReference(uint reference, int size)
+        public void WriteReference(int reference, bool isSmall)
         {
-            Debug.Assert(size == 2 || size == 4);
+            // This code is a very hot path, hence we don't check if the reference actually fits 2B.
 
-            if (size == 2)
+            if (isSmall)
             {
-                Debug.Assert((ushort)reference == reference);
+                Debug.Assert(unchecked((ushort)reference) == reference);
                 WriteUInt16((ushort)reference);
             }
             else
             {
-                WriteUInt32(reference);
+                WriteInt32(reference);
             }
         }
 
