@@ -2682,7 +2682,7 @@ void CEEInfo::embedGenericHandle(
         }
 
         // IsSharedByGenericInstantiations would not work here. The runtime lookup is required
-        // even for standalone generic variables that show up as __Cannon here.
+        // even for standalone generic variables that show up as __Canon here.
         fRuntimeLookup = th.IsCanonicalSubtype();
     }
 
@@ -3271,7 +3271,7 @@ NoSpecialCase:
                 sigBuilder.AppendElementType(ELEMENT_TYPE_SZARRAY);
 
             // Note that we can come here with pResolvedToken->pTypeSpec == NULL for invalid IL that 
-            // directly references __Cannon
+            // directly references __Canon
             if (pResolvedToken->pTypeSpec != NULL)
             {
                 SigPointer sigptr(pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec);
