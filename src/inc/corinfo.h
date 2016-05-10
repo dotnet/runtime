@@ -231,11 +231,11 @@ TODO: Talk about initializing strutures before use
 #if COR_JIT_EE_VERSION > 460
 
 // Update this one
-SELECTANY const GUID JITEEVersionIdentifier = { /* 57813506-0058-41df-8b1b-e0b68c3a9da3 */
-    0x57813506,
-    0x58,
-    0x41df,
-    { 0x8b, 0x1b, 0xe0, 0xb6, 0x8c, 0x3a, 0x9d, 0xa3 }
+SELECTANY const GUID JITEEVersionIdentifier = { /* 7fe8ebd7-2f61-41fc-8aac-2be394620be0 */
+    0x7fe8ebd7, 
+    0x2f61, 
+    0x41fc,
+    { 0x8a, 0xac, 0x2b, 0xe3, 0x94, 0x62, 0xb, 0xe0 }
 };
 
 #else
@@ -432,7 +432,10 @@ enum CorInfoHelpFunc
     CORINFO_HELP_NEWFAST,
     CORINFO_HELP_NEWSFAST,          // allocator for small, non-finalizer, non-array object
     CORINFO_HELP_NEWSFAST_ALIGN8,   // allocator for small, non-finalizer, non-array object, 8 byte aligned
-    CORINFO_HELP_NEW_MDARR,         // multi-dim array helper (with or without lower bounds)
+    CORINFO_HELP_NEW_MDARR,         // multi-dim array helper (with or without lower bounds - dimensions passed in as vararg)
+#if COR_JIT_EE_VERSION > 460
+    CORINFO_HELP_NEW_MDARR_NONVARARG,// multi-dim array helper (with or without lower bounds - dimensions passed in as unmanaged array)
+#endif
     CORINFO_HELP_NEWARR_1_DIRECT,   // helper for any one dimensional array creation
     CORINFO_HELP_NEWARR_1_OBJ,      // optimized 1-D object arrays
     CORINFO_HELP_NEWARR_1_VC,       // optimized 1-D value class arrays
@@ -687,6 +690,9 @@ enum CorInfoHelpFunc
 
     CORINFO_HELP_JIT_PINVOKE_BEGIN, // Transition to preemptive mode before a P/Invoke, frame is the first argument
     CORINFO_HELP_JIT_PINVOKE_END,   // Transition to cooperative mode after a P/Invoke, frame is the first argument
+
+    CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER, // Transition to cooperative mode in reverse P/Invoke prolog, frame is the first argument
+    CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT,  // Transition to preemptive mode in reverse P/Invoke epilog, frame is the first argument
 #endif
 
     CORINFO_HELP_COUNT,
@@ -1773,7 +1779,7 @@ struct CORINFO_EE_INFO
         unsigned    offsetOfReturnAddress;
     }
     inlinedCallFrameInfo;
-   
+
     // Offsets into the Thread structure
     unsigned    offsetOfThreadFrame;            // offset of the current Frame
     unsigned    offsetOfGCState;                // offset of the preemptive/cooperative state of the Thread
@@ -1788,6 +1794,11 @@ struct CORINFO_EE_INFO
 
     // Array offsets
     unsigned    offsetOfObjArrayData;
+
+#if COR_JIT_EE_VERSION > 460
+    // Reverse PInvoke offsets
+    unsigned    sizeOfReversePInvokeFrame;
+#endif
 
     CORINFO_OS  osType;
     unsigned    osMajor;
