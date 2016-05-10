@@ -2152,12 +2152,16 @@ ves_icall_MonoField_GetRawConstantValue (MonoReflectionField *rfield)
 			return NULL;
 		}
 		v = ((gchar *) o) + sizeof (MonoObject);
-		mono_get_constant_value_from_blob (domain, def_type, def_value, v);
+		mono_get_constant_value_from_blob (domain, def_type, def_value, v, &error);
+		if (mono_error_set_pending_exception (&error))
+			return NULL;
 		break;
 	}
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_CLASS:
-		mono_get_constant_value_from_blob (domain, def_type, def_value, &o);
+		mono_get_constant_value_from_blob (domain, def_type, def_value, &o, &error);
+		if (mono_error_set_pending_exception (&error))
+			return NULL;
 		break;
 	default:
 		g_assert_not_reached ();

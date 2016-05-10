@@ -3068,7 +3068,7 @@ direct_icalls_enabled (MonoCompile *cfg)
 {
 	/* LLVM on amd64 can't handle calls to non-32 bit addresses */
 #ifdef TARGET_AMD64
-	if (cfg->compile_llvm)
+	if (cfg->compile_llvm && !cfg->llvm_only)
 		return FALSE;
 #endif
 	if (cfg->gen_sdb_seq_points || cfg->disable_direct_icalls)
@@ -3077,7 +3077,7 @@ direct_icalls_enabled (MonoCompile *cfg)
 }
 
 MonoInst*
-mono_emit_jit_icall_by_info (MonoCompile *cfg, MonoJitICallInfo *info, MonoInst **args)
+mono_emit_jit_icall_by_info (MonoCompile *cfg, int il_offset, MonoJitICallInfo *info, MonoInst **args)
 {
 	/*
 	 * Call the jit icall without a wrapper if possible.
@@ -3104,7 +3104,7 @@ mono_emit_jit_icall_by_info (MonoCompile *cfg, MonoJitICallInfo *info, MonoInst 
 		 * an exception check.
 		 */
 		costs = inline_method (cfg, info->wrapper_method, NULL,
-							   args, NULL, cfg->real_offset, TRUE);
+							   args, NULL, il_offset, TRUE);
 		g_assert (costs > 0);
 		g_assert (!MONO_TYPE_IS_VOID (info->sig->ret));
 
@@ -6110,12 +6110,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			return NULL;
 	} else if (cmethod->klass == mono_defaults.monitor_class) {
 		gboolean is_enter = FALSE;
-		gboolean is_v4 = FALSE;
 
-		if (!strcmp (cmethod->name, "enter_with_atomic_var") && mono_method_signature (cmethod)->param_count == 2) {
-			is_enter = TRUE;
-			is_v4 = TRUE;
-		}
 		if (!strcmp (cmethod->name, "Enter") && mono_method_signature (cmethod)->param_count == 1)
 			is_enter = TRUE;
 
@@ -6128,10 +6123,10 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 			NEW_BBLOCK (cfg, end_bb);
 
-			ins = mono_emit_jit_icall (cfg, is_v4 ? (gpointer)mono_monitor_enter_v4_fast : (gpointer)mono_monitor_enter_fast, args);
+			ins = mono_emit_jit_icall (cfg, (gpointer)mono_monitor_enter_fast, args);
 			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ICOMPARE_IMM, -1, ins->dreg, 0);
 			MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_IBNE_UN, end_bb);
-			ins = mono_emit_jit_icall (cfg, is_v4 ? (gpointer)mono_monitor_enter_v4 : (gpointer)mono_monitor_enter, args);
+			ins = mono_emit_jit_icall (cfg, (gpointer)mono_monitor_enter, args);
 			MONO_START_BB (cfg, end_bb);
 			return ins;
 		}
@@ -13639,6 +13634,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				mono_create_spvar_for_region (cfg, bb->region);
 			if (cfg->verbose_level > 2)
 				printf ("REGION BB%d IL_%04x ID_%08X\n", bb->block_num, bb->real_offset, bb->region);
+		}
+	} else {
+		MonoBasicBlock *bb;
+		/* get_most_deep_clause () in mini-llvm.c depends on this for inlined bblocks */
+		for (bb = start_bblock; bb != end_bblock; bb  = bb->next_bb) {
+			bb->real_offset = inline_offset;
 		}
 	}
 

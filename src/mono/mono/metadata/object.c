@@ -50,7 +50,7 @@
 #include "cominterop.h"
 
 static void
-get_default_field_value (MonoDomain* domain, MonoClassField *field, void *value);
+get_default_field_value (MonoDomain* domain, MonoClassField *field, void *value, MonoError *error);
 
 static MonoString*
 mono_ldstr_metadata_sig (MonoDomain *domain, const char* sig, MonoError *error);
@@ -3460,9 +3460,11 @@ mono_field_get_value_object_checked (MonoDomain *domain, MonoClassField *field, 
 	
 	if (is_ref) {
 		if (is_literal) {
-			get_default_field_value (domain, field, &o);
+			get_default_field_value (domain, field, &o, error);
+			return_val_if_nok (error, NULL);
 		} else if (is_static) {
-			mono_field_static_get_value (vtable, field, &o);
+			mono_field_static_get_value_checked (vtable, field, &o, error);
+			return_val_if_nok (error, NULL);
 		} else {
 			mono_field_get_value (obj, field, &o);
 		}
@@ -3483,9 +3485,11 @@ mono_field_get_value_object_checked (MonoDomain *domain, MonoClassField *field, 
 
 		v = &ptr;
 		if (is_literal) {
-			get_default_field_value (domain, field, v);
+			get_default_field_value (domain, field, v, error);
+			return_val_if_nok (error, NULL);
 		} else if (is_static) {
-			mono_field_static_get_value (vtable, field, v);
+			mono_field_static_get_value_checked (vtable, field, v, error);
+			return_val_if_nok (error, NULL);
 		} else {
 			mono_field_get_value (obj, field, v);
 		}
@@ -3512,9 +3516,11 @@ mono_field_get_value_object_checked (MonoDomain *domain, MonoClassField *field, 
 	v = ((gchar *) o) + sizeof (MonoObject);
 
 	if (is_literal) {
-		get_default_field_value (domain, field, v);
+		get_default_field_value (domain, field, v, error);
+		return_val_if_nok (error, NULL);
 	} else if (is_static) {
-		mono_field_static_get_value (vtable, field, v);
+		mono_field_static_get_value_checked (vtable, field, v, error);
+		return_val_if_nok (error, NULL);
 	} else {
 		mono_field_get_value (obj, field, v);
 	}
@@ -3523,11 +3529,11 @@ mono_field_get_value_object_checked (MonoDomain *domain, MonoClassField *field, 
 }
 
 int
-mono_get_constant_value_from_blob (MonoDomain* domain, MonoTypeEnum type, const char *blob, void *value)
+mono_get_constant_value_from_blob (MonoDomain* domain, MonoTypeEnum type, const char *blob, void *value, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoError error;
+	mono_error_init (error);
 	int retval = 0;
 	const char *p = blob;
 	mono_metadata_decode_blob_size (p, &p);
@@ -3558,8 +3564,7 @@ mono_get_constant_value_from_blob (MonoDomain* domain, MonoTypeEnum type, const 
 		readr8 (p, (double*) value);
 		break;
 	case MONO_TYPE_STRING:
-		*(gpointer*) value = mono_ldstr_metadata_sig (domain, blob, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		*(gpointer*) value = mono_ldstr_metadata_sig (domain, blob, error);
 		break;
 	case MONO_TYPE_CLASS:
 		*(gpointer*) value = NULL;
@@ -3572,28 +3577,32 @@ mono_get_constant_value_from_blob (MonoDomain* domain, MonoTypeEnum type, const 
 }
 
 static void
-get_default_field_value (MonoDomain* domain, MonoClassField *field, void *value)
+get_default_field_value (MonoDomain* domain, MonoClassField *field, void *value, MonoError *error)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 
 	MonoTypeEnum def_type;
 	const char* data;
+
+	mono_error_init (error);
 	
 	data = mono_class_get_field_default_value (field, &def_type);
-	mono_get_constant_value_from_blob (domain, def_type, data, value);
+	mono_get_constant_value_from_blob (domain, def_type, data, value, error);
 }
 
 void
-mono_field_static_get_value_for_thread (MonoInternalThread *thread, MonoVTable *vt, MonoClassField *field, void *value)
+mono_field_static_get_value_for_thread (MonoInternalThread *thread, MonoVTable *vt, MonoClassField *field, void *value, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	void *src;
 
+	mono_error_init (error);
+
 	g_return_if_fail (field->type->attrs & FIELD_ATTRIBUTE_STATIC);
 	
 	if (field->type->attrs & FIELD_ATTRIBUTE_LITERAL) {
-		get_default_field_value (vt->domain, field, value);
+		get_default_field_value (vt->domain, field, value, error);
 		return;
 	}
 
@@ -3628,7 +3637,37 @@ mono_field_static_get_value (MonoVTable *vt, MonoClassField *field, void *value)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 
-	mono_field_static_get_value_for_thread (mono_thread_internal_current (), vt, field, value);
+	MonoError error;
+	mono_field_static_get_value_checked (vt, field, value, &error);
+	mono_error_cleanup (&error);
+}
+
+/**
+ * mono_field_static_get_value_checked:
+ * @vt: vtable to the object
+ * @field: MonoClassField describing the field to fetch information from
+ * @value: where the value is returned
+ * @error: set on error
+ *
+ * Use this routine to get the value of the static field @field value.
+ *
+ * The pointer provided by value must be of the field type, for reference
+ * types this is a MonoObject*, for value types its the actual pointer to
+ * the value type.
+ *
+ * For example:
+ *     int i;
+ *     mono_field_static_get_value_checked (vt, int_field, &i, error);
+ *     if (!is_ok (error)) { ... }
+ *
+ * On failure sets @error.
+ */
+void
+mono_field_static_get_value_checked (MonoVTable *vt, MonoClassField *field, void *value, MonoError *error)
+{
+	MONO_REQ_GC_NEUTRAL_MODE;
+
+	mono_field_static_get_value_for_thread (mono_thread_internal_current (), vt, field, value, error);
 }
 
 /**

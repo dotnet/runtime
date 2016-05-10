@@ -356,6 +356,7 @@ typedef struct MonoCompileArch {
 
 #ifdef TARGET_WATCHOS
 #define MONO_ARCH_DISABLE_HW_TRAPS 1
+#define MONO_ARCH_HAVE_UNWIND_BACKTRACE 1
 #endif
 
 /* ARM doesn't have too many registers, so we have to use a callee saved one */

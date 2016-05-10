@@ -2873,6 +2873,7 @@ case "$host" in
 		TARGET=ARM;
 		TARGET_SYS=WATCHOS
 		arch_target=arm;
+		arm_fpu=VFP_HARD
 		ACCESS_UNALIGNED="no"
 		CPPFLAGS="$CPPFLAGS -D__ARM_EABI__"
 		;;
@@ -2933,6 +2934,7 @@ if test "x$host" != "x$target"; then
 		with_tls=pthread
 		case "$target" in
 		armv7k-*)
+			arm_fpu=VFP_HARD
 			AC_DEFINE(TARGET_WATCHOS, 1, [...])
 			;;
 		esac		
@@ -3445,6 +3447,10 @@ if test ${TARGET} = ARM; then
 		], [
 			fpu=NONE
 		])
+	fi
+
+	if test x$arm_fpu != x; then
+	   fpu=$arm_fpu
 	fi
 
 	AC_MSG_RESULT($fpu)

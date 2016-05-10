@@ -1744,26 +1744,14 @@ get_most_deep_clause (MonoCompile *cfg, EmitContext *ctx, MonoBasicBlock *bb)
 {
 	// Since they're sorted by nesting we just need
 	// the first one that the bb is a member of
-	MonoExceptionClause *last = NULL;
-
 	for (int i = 0; i < cfg->header->num_clauses; i++) {
 		MonoExceptionClause *curr = &cfg->header->clauses [i];
 
 		if (MONO_OFFSET_IN_CLAUSE (curr, bb->real_offset))
 			return curr;
-		/*
-		if (MONO_OFFSET_IN_CLAUSE (curr, bb->real_offset)) {
-			if (last && CLAUSE_END(last) > CLAUSE_END(curr))
-				last = curr;
-			else
-				last = curr;
-		} else if(last) {
-			break;
-		}
-		*/
 	}
 
-	return last;
+	return NULL;
 }
 	
 static void
@@ -5549,6 +5537,43 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 #endif
 			break;
 		}
+		case OP_GC_SAFE_POINT: {
+			LLVMValueRef val, cmp, callee;
+			LLVMBasicBlockRef poll_bb, cont_bb;
+			static LLVMTypeRef sig;
+			const char *icall_name = "mono_threads_state_poll";
+
+			if (!sig)
+				sig = LLVMFunctionType0 (LLVMVoidType (), FALSE);
+
+			/*
+			 * if (!*sreg1)
+			 *   mono_threads_state_poll ();
+			 * FIXME: Use a preserveall wrapper
+			 */
+			val = mono_llvm_build_load (builder, convert (ctx, lhs, LLVMPointerType (IntPtrType (), 0)), "", TRUE, LLVM_BARRIER_NONE);
+			cmp = LLVMBuildICmp (builder, LLVMIntEQ, val, LLVMConstNull (LLVMTypeOf (val)), "");
+			poll_bb = gen_bb (ctx, "POLL_BB");
+			cont_bb = gen_bb (ctx, "CONT_BB");
+			LLVMBuildCondBr (builder, cmp, cont_bb, poll_bb);
+
+			ctx->builder = builder = create_builder (ctx);
+			LLVMPositionBuilderAtEnd (builder, poll_bb);
+
+			if (ctx->cfg->compile_aot) {
+				callee = get_callee (ctx, sig, MONO_PATCH_INFO_INTERNAL_METHOD, icall_name);
+			} else {
+				gpointer target = resolve_patch (ctx->cfg, MONO_PATCH_INFO_INTERNAL_METHOD, icall_name);
+				callee = emit_jit_callee (ctx, icall_name, sig, target);
+			}
+			LLVMBuildCall (builder, callee, NULL, 0, "");
+			LLVMBuildBr (builder, cont_bb);
+
+			ctx->builder = builder = create_builder (ctx);
+			LLVMPositionBuilderAtEnd (builder, cont_bb);
+			ctx->bblocks [bb->block_num].end_bblock = cont_bb;
+			break;
+		}
 
 			/*
 			 * Overflow opcodes.
@@ -5559,14 +5584,12 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_ISUB_OVF_UN:
 		case OP_IMUL_OVF:
 		case OP_IMUL_OVF_UN:
-#if SIZEOF_VOID_P == 8
 		case OP_LADD_OVF:
 		case OP_LADD_OVF_UN:
 		case OP_LSUB_OVF:
 		case OP_LSUB_OVF_UN:
 		case OP_LMUL_OVF:
 		case OP_LMUL_OVF_UN:
-#endif
 			{
 				LLVMValueRef args [2], val, ovf, func;
 

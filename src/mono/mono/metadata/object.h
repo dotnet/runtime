@@ -322,6 +322,7 @@ mono_field_static_set_value (MonoVTable *vt, MonoClassField *field, void *value)
 MONO_API void
 mono_field_get_value (MonoObject *obj, MonoClassField *field, void *value);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API void
 mono_field_static_get_value (MonoVTable *vt, MonoClassField *field, void *value);
 

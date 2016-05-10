@@ -1085,7 +1085,11 @@ get_wrapper_shared_type (MonoType *t)
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_ARRAY:
 	case MONO_TYPE_PTR:
-		return &mono_defaults.int_class->byval_arg;
+		// FIXME: refs and intptr cannot be shared because
+		// they are treated differently when a method has a vret arg,
+		// see get_call_info ().
+		return &mono_defaults.object_class->byval_arg;
+		//return &mono_defaults.int_class->byval_arg;
 	case MONO_TYPE_GENERICINST: {
 		MonoError error;
 		MonoClass *klass;

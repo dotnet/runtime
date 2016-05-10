@@ -618,8 +618,10 @@ get_family_hint (MonoError *error)
 		mono_runtime_class_init_full (vtable, error);
 		return_val_if_nok (error, -1);
 
-		mono_field_static_get_value (vtable, ipv4_field, &ipv4_enabled);
-		mono_field_static_get_value (vtable, ipv6_field, &ipv6_enabled);
+		mono_field_static_get_value_checked (vtable, ipv4_field, &ipv4_enabled, error);
+		return_val_if_nok (error, -1);
+		mono_field_static_get_value_checked (vtable, ipv6_field, &ipv6_enabled, error);
+		return_val_if_nok (error, -1);
 
 		mono_domain_lock (domain);
 		if (ipv4_enabled == 1 && ipv6_enabled == 1) {

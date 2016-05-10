@@ -2225,6 +2225,7 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 		case RegTypeIRegPair:
 		case RegTypeBase:
 		case RegTypeBaseGen:
+		case RegTypeFP:
 			linfo->args [i].storage = LLVMArgNormal;
 			break;
 		case RegTypeStructByVal:

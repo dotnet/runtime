@@ -4370,8 +4370,18 @@ mono_thread_execute_interruption (void)
 		mono_thread_info_clear_self_interrupt ();
 	}
 
-	if ((thread->state & ThreadState_AbortRequested) != 0) {
+	/* If there's a pending exception and an AbortRequested, the pending exception takes precedence */
+	if (sys_thread->pending_exception) {
+		MonoException *exc;
+
+		exc = sys_thread->pending_exception;
+		sys_thread->pending_exception = NULL;
+
 		UNLOCK_THREAD (thread);
+		return exc;
+	} else if ((thread->state & ThreadState_AbortRequested) != 0) {
+		UNLOCK_THREAD (thread);
+		g_assert (sys_thread->pending_exception == NULL);
 		if (thread->abort_exc == NULL) {
 			/* 
 			 * This might be racy, but it has to be called outside the lock
@@ -4393,14 +4403,6 @@ mono_thread_execute_interruption (void)
 		
 		mono_thread_exit ();
 		return NULL;
-	} else if (sys_thread->pending_exception) {
-		MonoException *exc;
-
-		exc = sys_thread->pending_exception;
-		sys_thread->pending_exception = NULL;
-
-        UNLOCK_THREAD (thread);
-        return exc;
 	} else if (thread->thread_interrupt_requested) {
 
 		thread->thread_interrupt_requested = FALSE;
