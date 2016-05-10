@@ -70,7 +70,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(2583, PlatformID.Windows)]
         public static void TestPrivateKey()
         {
             using (var c = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
@@ -88,7 +87,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(2885, PlatformID.Windows)]
         public static void ExportWithPrivateKey()
         {
             using (var cert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.Exportable))
