@@ -65,31 +65,34 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n", 39, true)]
         public async Task ThresholdExceeded_ThrowsException(string responseHeaders, int maxResponseHeadersLength, bool shouldSucceed)
         {
-            await LoopbackServer.CreateClientAndServerAsync(async (handler, client, server, url) =>
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
-                handler.MaxResponseHeadersLength = maxResponseHeadersLength;
-                Task<HttpResponseMessage> getAsync = client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
-
-                await LoopbackServer.AcceptSocketAsync(server, async (s, serverStream, reader, writer) =>
+                using (var handler = new HttpClientHandler() { MaxResponseHeadersLength = maxResponseHeadersLength })
+                using (var client = new HttpClient(handler))
                 {
-                    using (s) using (serverStream) using (reader) using (writer)
-                    {
-                        string line;
-                        while ((line = reader.ReadLine()) != null && !string.IsNullOrEmpty(line)) ;
+                    Task<HttpResponseMessage> getAsync = client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
 
-                        byte[] headerData = Encoding.ASCII.GetBytes(responseHeaders);
-                        serverStream.Write(headerData, 0, headerData.Length);
-                    }
+                    await LoopbackServer.AcceptSocketAsync(server, async (s, serverStream, reader, writer) =>
+                    {
+                        using (s) using (serverStream) using (reader) using (writer)
+                        {
+                            string line;
+                            while ((line = reader.ReadLine()) != null && !string.IsNullOrEmpty(line)) ;
 
-                    if (shouldSucceed)
-                    {
-                        (await getAsync).Dispose();
-                    }
-                    else
-                    {
-                        await Assert.ThrowsAsync<HttpRequestException>(() => getAsync);
-                    }
-                });
+                            byte[] headerData = Encoding.ASCII.GetBytes(responseHeaders);
+                            serverStream.Write(headerData, 0, headerData.Length);
+                        }
+
+                        if (shouldSucceed)
+                        {
+                            (await getAsync).Dispose();
+                        }
+                        else
+                        {
+                            await Assert.ThrowsAsync<HttpRequestException>(() => getAsync);
+                        }
+                    });
+                }
             });
 
         }
