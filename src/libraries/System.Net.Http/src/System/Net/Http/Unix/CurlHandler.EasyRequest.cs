@@ -199,23 +199,33 @@ namespace System.Net.Http
 
             private void SetUrl()
             {
-                string url = GetAbsoluteUri(_requestMessage.RequestUri);
-                EventSourceTrace<string>("Url: {0}", url);
-                SetCurlOption(CURLoption.CURLOPT_URL, url);
+                Uri requestUri = _requestMessage.RequestUri;
+
+                long scopeId;
+                if (IsLinkLocal(requestUri, out scopeId))
+                {
+                    // Uri.AbsoluteUri doesn't include the ScopeId/ZoneID, so if it is link-local,
+                    // we separately pass the scope to libcurl.
+                    EventSourceTrace("ScopeId: {0}", scopeId);
+                    SetCurlOption(CURLoption.CURLOPT_ADDRESS_SCOPE, scopeId);
+                }
+
+                EventSourceTrace("Url: {0}", requestUri);
+                SetCurlOption(CURLoption.CURLOPT_URL, requestUri.AbsoluteUri);
                 SetCurlOption(CURLoption.CURLOPT_PROTOCOLS, (long)(CurlProtocols.CURLPROTO_HTTP | CurlProtocols.CURLPROTO_HTTPS));
             }
 
-            private static string GetAbsoluteUri(Uri uri)
+            private static bool IsLinkLocal(Uri url, out long scopeId)
             {
-                // uri.AbsoluteUri/ToString() do not include IPv6 scope IDs, but when provided they
-                // should be used or else libcurl may be unable to correctly connect.  SerializationInfoString
-                // ensures these details are included.  However, SerializationInfoString does not properly
-                // handle international hosts.  So as a workaround we check whether the host is a link-local IP address,
-                // and based on that either return the SerializationInfoString or the AbsoluteUri.
                 IPAddress ip;
-                return IPAddress.TryParse(uri.DnsSafeHost, out ip) && ip.IsIPv6LinkLocal ?
-                    uri.GetComponents(UriComponents.SerializationInfoString, UriFormat.UriEscaped) :
-                    uri.AbsoluteUri;
+                if (IPAddress.TryParse(url.DnsSafeHost, out ip) && ip.IsIPv6LinkLocal)
+                {
+                    scopeId = ip.ScopeId;
+                    return true;
+                }
+
+                scopeId = 0;
+                return false;
             }
 
             private void SetMultithreading()
@@ -434,7 +444,18 @@ namespace System.Net.Http
 
                 // Configure libcurl with the gathered proxy information
 
-                string proxyUrl = GetAbsoluteUri(proxyUri);
+                // uri.AbsoluteUri/ToString() omit IPv6 scope IDs.  SerializationInfoString ensures these details 
+                // are included, but does not properly handle international hosts.  As a workaround we check whether 
+                // the host is a link-local IP address, and based on that either return the SerializationInfoString 
+                // or the AbsoluteUri. (When setting the request Uri itself, we instead use CURLOPT_ADDRESS_SCOPE to
+                // set the scope id and the url separately, avoiding these issues and supporting versions of libcurl
+                // prior to v7.37 that don't support parsing scope IDs out of the url's host.  As similar feature
+                // doesn't exist for proxies.)
+                IPAddress ip;
+                string proxyUrl = IPAddress.TryParse(proxyUri.DnsSafeHost, out ip) && ip.IsIPv6LinkLocal ?
+                    proxyUri.GetComponents(UriComponents.SerializationInfoString, UriFormat.UriEscaped) :
+                    proxyUri.AbsoluteUri;
+
                 EventSourceTrace<string>("Proxy: {0}", proxyUrl);
                 SetCurlOption(CURLoption.CURLOPT_PROXYTYPE, (long)CURLProxyType.CURLPROXY_HTTP);
                 SetCurlOption(CURLoption.CURLOPT_PROXY, proxyUrl);
