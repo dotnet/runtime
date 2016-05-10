@@ -62,6 +62,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ActiveIssue(8181, PlatformID.Linux)] // failing to timeout on Ubuntu 16.04 in CI
         [Fact]
         public async Task ConnectTimeout_TimesOut_Throws()
         {
