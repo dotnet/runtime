@@ -13,9 +13,9 @@ namespace System.ComponentModel
     /// </summary>
     public class NullableConverter : TypeConverter
     {
-        private Type _nullableType;
-        private Type _simpleType;
-        private TypeConverter _simpleTypeConverter;
+        private readonly Type _nullableType;
+        private readonly Type _simpleType;
+        private readonly TypeConverter _simpleTypeConverter;
 
         /// <summary>
         /// Nullable converter is initialized with the underlying simple type.

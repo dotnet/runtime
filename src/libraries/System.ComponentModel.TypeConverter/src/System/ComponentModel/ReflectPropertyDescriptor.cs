@@ -63,8 +63,8 @@ namespace System.ComponentModel
         private static readonly int s_bitSetOnDemand = BitVector32.CreateMask(s_bitAmbientValueQueried);
 
         private BitVector32 _state = new BitVector32();  // Contains the state bits for this proeprty descriptor.
-        private Type _componentClass;             // used to determine if we should all on us or on the designer
-        private Type _type;                       // the data type of the property
+        private readonly Type _componentClass;             // used to determine if we should all on us or on the designer
+        private readonly Type _type;                       // the data type of the property
         private object _defaultValue;               // the default value of the property (or noValue)
         private object _ambientValue;               // the ambient value of the property (or noValue)
         private PropertyInfo _propInfo;                   // the property info
@@ -74,7 +74,7 @@ namespace System.ComponentModel
         private MethodInfo _resetMethod;                // the reset property method
         private EventDescriptor _realChangedEvent;           // <propertyname>Changed event handler on object
         private EventDescriptor _realIPropChangedEvent;      // INotifyPropertyChanged.PropertyChanged event handler on object
-        private Type _receiverType;               // Only set if we are an extender
+        private readonly Type _receiverType;               // Only set if we are an extender
 
         /// <summary>
         ///     The main constructor for ReflectPropertyDescriptors.

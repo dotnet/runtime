@@ -8,7 +8,7 @@ namespace System.ComponentModel
     /// </summary>
     public abstract class CustomTypeDescriptor : ICustomTypeDescriptor
     {
-        private ICustomTypeDescriptor _parent;
+        private readonly ICustomTypeDescriptor _parent;
 
         /// <summary>
         ///     Creates a new CustomTypeDescriptor object.  There are two versions 

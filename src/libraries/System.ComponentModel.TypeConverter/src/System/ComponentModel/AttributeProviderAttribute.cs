@@ -11,8 +11,8 @@ namespace System.ComponentModel
     [AttributeUsage(AttributeTargets.Property)]
     public class AttributeProviderAttribute : Attribute
     {
-        private string _typeName;
-        private string _propertyName;
+        private readonly string _typeName;
+        private readonly string _propertyName;
 
         /// <include file='doc\AttributeProviderAttribute.uex' path='docs/doc[@for="AttributeProviderAttribute.AttributeProviderAttribute"]/*' />
         /// <summary>

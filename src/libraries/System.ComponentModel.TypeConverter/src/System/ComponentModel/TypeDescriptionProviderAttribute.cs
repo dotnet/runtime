@@ -9,7 +9,7 @@ namespace System.ComponentModel
     [AttributeUsage(AttributeTargets.Class, Inherited = true)]
     public sealed class TypeDescriptionProviderAttribute : Attribute
     {
-        private string _typeName;
+        private readonly string _typeName;
 
         /// <summary>
         ///     Creates a new TypeDescriptionProviderAttribute object.
