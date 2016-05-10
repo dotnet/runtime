@@ -23,11 +23,20 @@ namespace System.Runtime.Serialization
         internal void ReflectionWriteClass(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, ClassDataContract classContract)
         {
             ReflectionInitArgs(xmlWriter, obj, context, classContract);
-            ReflectionWriteMembers(xmlWriter, obj, context, classContract, classContract);
+            ReflectionWriteMembers(xmlWriter, _arg1Object, _arg2Context, _arg3ClassDataContract, _arg3ClassDataContract);
         }
 
         private void ReflectionInitArgs(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, ClassDataContract classContract)
         {
+            if (obj.GetType() == typeof(DateTimeOffset))
+            {
+                obj = DateTimeOffsetAdapter.GetDateTimeOffsetAdapter((DateTimeOffset)obj);
+            }
+            else if (obj.GetType().GetTypeInfo().IsGenericType && obj.GetType().GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
+            {
+                obj = classContract.KeyValuePairAdapterConstructorInfo.Invoke(new object[] { obj });
+            }
+
             _arg0XmlWriter = xmlWriter;
             _arg1Object = obj;
             _arg2Context = context;
@@ -52,8 +61,7 @@ namespace System.Runtime.Serialization
                     context.StoreIsGetOnlyCollection();
                 }
                 bool writeXsiType = CheckIfMemberHasConflict(member, classContract, derivedMostClassContract);
-                MemberInfo[] memberInfos = classType.GetMember(member.Name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                MemberInfo memberInfo = memberInfos[0];
+                MemberInfo memberInfo = member.MemberInfo;
                 object memberValue = ReflectionGetMemberValue(obj, memberInfo);
                 if (writeXsiType || !ReflectionTryWritePrimitive(xmlWriter, context, memberType, memberValue, member.MemberInfo, null /*arrayItemIndex*/, ns, memberNames[i] /*nameLocal*/, i + _childElementIndex))
                 {

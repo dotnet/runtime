@@ -22,7 +22,6 @@ using Xunit;
 public static partial class DataContractSerializerTests
 {
     [Fact]
-    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_DateTimeOffsetAsRoot()
     {
         // Assume that UTC offset doesn't change more often than once in the day 2013-01-02
@@ -809,7 +808,6 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
-    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_DataMemberAttribute()
     {
         SerializeAndDeserialize<DMA_1>(new DMA_1 { P1 = "abc", P2 = 12, P3 = true, P4 = 'a', P5 = 10, MyDataMemberInAnotherNamespace = new MyDataContractClass04_1() { MyDataMember = "Test" }, Order100 = true, OrderMaxValue = false }, @"<DMA_1 xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><MyDataMemberInAnotherNamespace xmlns:a=""http://MyDataContractClass04_1.com/""><a:MyDataMember>Test</a:MyDataMember></MyDataMemberInAnotherNamespace><P1>abc</P1><P4>97</P4><P5>10</P5><xyz>12</xyz><P3>true</P3><Order100>true</Order100><OrderMaxValue>false</OrderMaxValue></DMA_1>");
@@ -1303,7 +1301,6 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
-    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_DuplicatedKnownTypesWithAdapterThroughConstructor()
     {
         //Constructor# 5  
@@ -1755,7 +1752,6 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
-    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_DuplicatedKeyDateTimeOffset()
     {
         DateTimeOffset value = new DateTimeOffset(new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Utc).AddMinutes(7));
@@ -1936,7 +1932,6 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
-    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_MyPersonSurrogate()
     {
         DataContractSerializer dcs = new DataContractSerializer(typeof(Family));

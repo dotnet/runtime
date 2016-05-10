@@ -43,6 +43,16 @@ namespace System.Runtime.Serialization
             object obj = ReflectionCreateObject(_classContract);
             context.AddNewObject(obj);
             ReflectionReadMembers(obj, xmlReader, context, memberNames, memberNamespaces);
+
+            if (obj.GetType() == typeof(DateTimeOffsetAdapter))
+            {
+                obj = DateTimeOffsetAdapter.GetDateTimeOffset((DateTimeOffsetAdapter)obj);
+            }
+            else if (obj.GetType().GetTypeInfo().IsGenericType && obj.GetType().GetGenericTypeDefinition() == typeof(KeyValuePairAdapter<,>))
+            {
+                obj = _classContract.GetKeyValuePairMethodInfo.Invoke(obj, Array.Empty<object>());
+            }
+
             return obj;
         }
 
@@ -94,10 +104,10 @@ namespace System.Runtime.Serialization
             Type memberType = dataMember.MemberType;
 
             var value = ReflectionReadValue(memberType, dataMember.Name, _classContract.StableName.Namespace);
-            MemberInfo[] memberInfos = classType.GetMember(dataMember.Name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            if (memberInfos.Length == 1)
+            MemberInfo memberInfo = dataMember.MemberInfo;
+            if (memberInfo != null)
             {
-                ReflectionSetMemberValue(obj, value, memberInfos[0]);
+                ReflectionSetMemberValue(obj, value, memberInfo);
             }
             else
             {
@@ -202,7 +212,7 @@ namespace System.Runtime.Serialization
 
         private object ReflectionCreateObject(ClassDataContract classContract)
         {
-            Type classType = classContract.UnadaptedClassType;
+            Type classType = classContract.UnderlyingType;
             bool isValueType = classType.GetTypeInfo().IsValueType;
             //if (type.GetTypeInfo().IsValueType && !classContract.IsNonAttributedType)
             //    type = Globals.TypeOfValueType;
