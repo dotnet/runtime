@@ -38,9 +38,10 @@
     <OutputPath>$(BinDir)\facade</OutputPath>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)'=='true'">
+  <ItemGroup>
     <ProjectReference Include="..\System.Private.CoreLib.csproj" />
   </ItemGroup>
+
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
