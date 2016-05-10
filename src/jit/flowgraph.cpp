@@ -21429,7 +21429,7 @@ void                Compiler::fgInline()
             if ((expr->gtOper == GT_CALL) && ((expr->gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0))
             {
                 GenTreeCall* call = expr->AsCall();
-                InlineResult inlineResult(this, call, "fgInline");
+                InlineResult inlineResult(this, call, stmt->gtInlineContext, "fgInline");
 
                 fgMorphStmt = stmt;
 
@@ -21555,7 +21555,7 @@ Compiler::fgWalkResult      Compiler::fgFindNonInlineCandidate(GenTreePtr* pTree
 void Compiler::fgNoteNonInlineCandidate(GenTreePtr   tree,
                                         GenTreeCall* call)
 {
-    InlineResult inlineResult(this, call, "fgNotInlineCandidate");
+    InlineResult inlineResult(this, call, nullptr, "fgNotInlineCandidate");
     InlineObservation currentObservation = InlineObservation::CALLSITE_NOT_CANDIDATE;
 
     // Try and recover the reason left behind when the jit decided

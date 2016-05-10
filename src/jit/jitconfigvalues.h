@@ -198,7 +198,9 @@ CONFIG_INTEGER(JitInlinePolicyDiscretionary, W("JitInlinePolicyDiscretionary"), 
 CONFIG_INTEGER(JitInlinePolicyModel, W("JitInlinePolicyModel"), 0)
 CONFIG_INTEGER(JitInlinePolicyFull, W("JitInlinePolicyFull"), 0)
 CONFIG_INTEGER(JitInlinePolicySize, W("JitInlinePolicySize"), 0)
+CONFIG_INTEGER(JitInlinePolicyReplay, W("JitInlinePolicyReplay"), 0)
 CONFIG_STRING(JitNoInlineRange, W("JitNoInlineRange"))
+CONFIG_STRING(JitInlineReplayFile, W("JitInlineReplayFile"))
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
 #undef CONFIG_INTEGER
