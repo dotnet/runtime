@@ -38,19 +38,19 @@ namespace System.IO {
         // Platform specific directory separator character.  This is backslash
         // ('\') on Windows and slash ('/') on Unix.
         // 
-#if !PLATFORM_UNIX        
+#if !PLATFORM_UNIX
         public static readonly char DirectorySeparatorChar = '\\';
         internal const string DirectorySeparatorCharAsString = "\\";
 #else
         public static readonly char DirectorySeparatorChar = '/';
         internal const string DirectorySeparatorCharAsString = "/";
 #endif // !PLATFORM_UNIX
-        
-        // Platform specific alternate directory separator character.  
+
+        // Platform specific alternate directory separator character.
         // There is only one directory separator char on Unix, 
         // so the same definition is used for both Unix and Windows.
         public static readonly char AltDirectorySeparatorChar = '/';
-    
+
         // Platform specific volume separator character.  This is colon (':')
         // on Windows and MacOS, and slash ('/') on Unix.  This is mostly
         // useful for parsing paths like "c:\windows" or "MacVolume:System Folder".  
@@ -59,8 +59,8 @@ namespace System.IO {
         public static readonly char VolumeSeparatorChar = ':';
 #else
         public static readonly char VolumeSeparatorChar = '/';
-#endif // !PLATFORM_UNIX        
-        
+#endif // !PLATFORM_UNIX
+
         // Platform specific invalid list of characters in a path.
         // See the "Naming a File" MSDN conceptual docs for more details on
         // what is valid in a file name (which is slightly different from what
@@ -74,21 +74,25 @@ namespace System.IO {
 #endif // !PLATFORM_UNIX
 
         // Trim trailing white spaces, tabs etc but don't be aggressive in removing everything that has UnicodeCategory of trailing space.
-        // String.WhitespaceChars will trim aggressively than what the underlying FS does (for ex, NTFS, FAT).    
-        internal static readonly char[] TrimEndChars = { (char) 0x9, (char) 0xA, (char) 0xB, (char) 0xC, (char) 0xD, (char) 0x20,   (char) 0x85, (char) 0xA0};
-        
-#if !PLATFORM_UNIX
-        private static readonly char[] RealInvalidPathChars = { '\"', '<', '>', '|', '\0', (Char)1, (Char)2, (Char)3, (Char)4, (Char)5, (Char)6, (Char)7, (Char)8, (Char)9, (Char)10, (Char)11, (Char)12, (Char)13, (Char)14, (Char)15, (Char)16, (Char)17, (Char)18, (Char)19, (Char)20, (Char)21, (Char)22, (Char)23, (Char)24, (Char)25, (Char)26, (Char)27, (Char)28, (Char)29, (Char)30, (Char)31 };
+        // String.WhitespaceChars will trim aggressively than what the underlying FS does (for ex, NTFS, FAT).
+        internal static readonly char[] TrimEndChars =
+        {
+            (char)0x09,         // Horizontal tab
+            (char)0x0A,         // Line feed
+            (char)0x0B,         // Vertical tab
+            (char)0x0C,         // Form feed
+            (char)0x0D,         // Carriage return
+            (char)0x20,         // Space
+            (char)0x85,         // Next line
+            (char)0xA0          // Non breaking space
+        };
 
-        // This is used by HasIllegalCharacters
-        private static readonly char[] InvalidPathCharsWithAdditionalChecks = { '\"', '<', '>', '|', '\0', (Char)1, (Char)2, (Char)3, (Char)4, (Char)5, (Char)6, (Char)7, (Char)8, (Char)9, (Char)10, (Char)11, (Char)12, (Char)13, (Char)14, (Char)15, (Char)16, (Char)17, (Char)18, (Char)19, (Char)20, (Char)21, (Char)22, (Char)23, (Char)24, (Char)25, (Char)26, (Char)27, (Char)28, (Char)29, (Char)30, (Char)31, '*', '?' };
+#if !PLATFORM_UNIX
+        private static readonly char[] RealInvalidPathChars = PathInternal.InvalidPathChars;
 
         private static readonly char[] InvalidFileNameChars = { '\"', '<', '>', '|', '\0', (Char)1, (Char)2, (Char)3, (Char)4, (Char)5, (Char)6, (Char)7, (Char)8, (Char)9, (Char)10, (Char)11, (Char)12, (Char)13, (Char)14, (Char)15, (Char)16, (Char)17, (Char)18, (Char)19, (Char)20, (Char)21, (Char)22, (Char)23, (Char)24, (Char)25, (Char)26, (Char)27, (Char)28, (Char)29, (Char)30, (Char)31, ':', '*', '?', '\\', '/' };
 #else
         private static readonly char[] RealInvalidPathChars = { '\0' };
-
-        // This is used by HasIllegalCharacters
-        private static readonly char[] InvalidPathCharsWithAdditionalChecks = { '\0', '*', '?' };
 
         private static readonly char[] InvalidFileNameChars = { '\0', '/' };
 #endif // !PLATFORM_UNIX
@@ -103,18 +107,14 @@ namespace System.IO {
         // Make this public sometime.
         // The max total path is 260, and the max individual component length is 255. 
         // For example, D:\<256 char file name> isn't legal, even though it's under 260 chars.
-#if !PLATFORM_UNIX
-        internal static readonly int MaxPath = 260;
-#else
-        internal static readonly int MaxPath = 1024;
-#endif
+        internal static readonly int MaxPath = PathInternal.MaxShortPath;
 
         private static readonly int MaxDirectoryLength = 255;
 
         // Windows API definitions
         internal const int MAX_PATH = 260;  // From WinDef.h
         internal const int MAX_DIRECTORY_PATH = 248;   // cannot create directories greater than 248 characters
-    
+
         // Changes the extension of a file path. The path parameter
         // specifies a file path, and the extension parameter
         // specifies a file extension (with a leading period, such as
@@ -151,28 +151,47 @@ namespace System.IO {
             return null;
         }
 
-       
         // Returns the directory path of a file path. This method effectively
         // removes the last element of the given file path, i.e. it returns a
         // string consisting of all characters up to but not including the last
         // backslash ("\") in the file path. The returned value is null if the file
         // path is null or if the file path denotes a root (such as "\", "C:", or
         // "\\server\share").
-        //
-        public static String GetDirectoryName(String path) {
-            if (path != null) {
+        public static String GetDirectoryName(String path)
+        {
+            if (path != null)
+            {
                 CheckInvalidPathChars(path);
 
-                string normalizedPath = NormalizePath(path, false);
+                // Expanding short paths is dangerous in this case as the results will change with the current directory.
+                //
+                // Suppose you have a path called "PICTUR~1\Foo". Now suppose you have two folders on disk "C:\Mine\Pictures Of Me"
+                // and "C:\Yours\Pictures of You". If the current directory is neither you'll get back "PICTUR~1". If it is "C:\Mine"
+                // get back "Pictures Of Me". "C:\Yours" would give back "Pictures of You".
+                //
+                // Because of this and as it isn't documented that short paths are expanded we will not expand short names unless
+                // we're in legacy mode.
+                string normalizedPath = NormalizePath(path, fullCheck: false, expandShortPaths:
+#if FEATURE_PATHCOMPAT
+                    AppContextSwitches.UseLegacyPathHandling
+#else
+                    false
+#endif
+                );
 
                 // If there are no permissions for PathDiscovery to this path, we should NOT expand the short paths
                 // as this would leak information about paths to which the user would not have access to.
-                if (path.Length > 0)
+                if (path.Length > 0
+#if FEATURE_CAS_POLICY
+                    // Only do the extra logic if we're not in full trust
+                    && !CodeAccessSecurityEngine.QuickCheckForAllDemands()
+#endif
+                    )
                 {
                     try
                     {
                         // If we were passed in a path with \\?\ we need to remove it as FileIOPermission does not like it.
-                        string tempPath = Path.RemoveLongPathPrefix(path);
+                        string tempPath = RemoveLongPathPrefix(path);
 
                         // FileIOPermission cannot handle paths that contain ? or *
                         // So we only pass to FileIOPermission the text up to them.
@@ -185,14 +204,15 @@ namespace System.IO {
                         // While we don't use the result of this call we are using it as a consistent way of 
                         // doing the security checks. 
                         if (pos > 0)
-                            Path.GetFullPath(tempPath.Substring(0, pos));
+                            GetFullPath(tempPath.Substring(0, pos));
                     }
-                    catch (SecurityException) {
+                    catch (SecurityException)
+                    {
                         // If the user did not have permissions to the path, make sure that we don't leak expanded short paths
                         // Only re-normalize if the original path had a ~ in it.
                         if (path.IndexOf("~", StringComparison.Ordinal) != -1)
                         {
-                            normalizedPath = NormalizePath(path, /*fullCheck*/ false, /*expandShortPaths*/ false);
+                            normalizedPath = NormalizePath(path, fullCheck: false, expandShortPaths: false);
                         }
                     }
                     catch (PathTooLongException) { }
@@ -205,10 +225,11 @@ namespace System.IO {
 
                 int root = GetRootLength(path);
                 int i = path.Length;
-                if (i > root) {
+                if (i > root)
+                {
                     i = path.Length;
                     if (i == root) return null;
-                    while (i > root && path[--i] != DirectorySeparatorChar && path[i] != AltDirectorySeparatorChar);                    
+                    while (i > root && path[--i] != DirectorySeparatorChar && path[i] != AltDirectorySeparatorChar);
                     return path.Substring(0, i);
                 }
             }
@@ -218,40 +239,45 @@ namespace System.IO {
         // Gets the length of the root DirectoryInfo or whatever DirectoryInfo markers
         // are specified for the first part of the DirectoryInfo name.
         // 
-        internal static int GetRootLength(String path) {
+        internal static int GetRootLength(string path)
+        {
             CheckInvalidPathChars(path);
-            
-            int i = 0;
-            int length = path.Length;
 
-#if !PLATFORM_UNIX
-            if (length >= 1 && (IsDirectorySeparator(path[0]))) {
-                // handles UNC names and directories off current drive's root.
-                i = 1;
-                if (length >= 2 && (IsDirectorySeparator(path[1]))) {
-                    i = 2;
-                    int n = 2;
-                    while (i < length && ((path[i] != DirectorySeparatorChar && path[i] != AltDirectorySeparatorChar) || --n > 0)) i++;
+#if !PLATFORM_UNIX && FEATURE_PATHCOMPAT
+            if (AppContextSwitches.UseLegacyPathHandling)
+            {
+                int i = 0;
+                int length = path.Length;
+
+                if (length >= 1 && (IsDirectorySeparator(path[0])))
+                {
+                    // handles UNC names and directories off current drive's root.
+                    i = 1;
+                    if (length >= 2 && (IsDirectorySeparator(path[1])))
+                    {
+                        i = 2;
+                        int n = 2;
+                        while (i < length && ((path[i] != DirectorySeparatorChar && path[i] != AltDirectorySeparatorChar) || --n > 0)) i++;
+                    }
                 }
+                else if (length >= 2 && path[1] == VolumeSeparatorChar)
+                {
+                    // handles A:\foo.
+                    i = 2;
+                    if (length >= 3 && (IsDirectorySeparator(path[2]))) i++;
+                }
+                return i;
             }
-            else if (length >= 2 && path[1] == VolumeSeparatorChar) {
-                // handles A:\foo.
-                i = 2;
-                if (length >= 3 && (IsDirectorySeparator(path[2]))) i++;
+            else
+#endif // !PLATFORM_UNIX && FEATURE_PATHCOMPAT
+            {
+                return PathInternal.GetRootLength(path);
             }
-            return i;
-#else
-            if (length >= 1 && (IsDirectorySeparator(path[0]))) {
-                i = 1;
-            }
-            return i;
-#endif // !PLATFORM_UNIX
         }
 
         internal static bool IsDirectorySeparator(char c) {
             return (c==DirectorySeparatorChar || c == AltDirectorySeparatorChar);
         }
-
 
         public static char[] GetInvalidPathChars()
         {
@@ -324,34 +350,160 @@ namespace System.IO {
         // method does that, finding the current drive &; directory.  But
         // as long as we don't return this info to the user, we're good.  However,
         // the public GetFullPath does need to do a security check.
-        internal static String GetFullPathInternal(String path) {
+        internal static string GetFullPathInternal(string path)
+        {
             if (path == null)
                 throw new ArgumentNullException("path");
             Contract.EndContractBlock();
 
-            String newPath = NormalizePath(path, true);
-
+            string newPath = NormalizePath(path, fullCheck: true);
             return newPath;
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
-        internal unsafe static String NormalizePath(String path, bool fullCheck) {
-            return NormalizePath(path, fullCheck, MaxPath);
-        }
-
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        internal unsafe static String NormalizePath(String path, bool fullCheck, bool expandShortPaths)
+        internal unsafe static string NormalizePath(string path, bool fullCheck)
         {
-            return NormalizePath(path, fullCheck, MaxPath, expandShortPaths);
+            return NormalizePath(path, fullCheck,
+#if FEATURE_PATHCOMPAT
+                AppContextSwitches.BlockLongPaths ? PathInternal.MaxShortPath :
+#endif
+                PathInternal.MaxLongPath);
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
-        internal unsafe static String NormalizePath(String path, bool fullCheck, int maxPathLength) {
-            return NormalizePath(path, fullCheck, maxPathLength, true);
+        internal unsafe static string NormalizePath(string path, bool fullCheck, bool expandShortPaths)
+        {
+            return NormalizePath(path, fullCheck,
+#if FEATURE_PATHCOMPAT
+                AppContextSwitches.BlockLongPaths ? PathInternal.MaxShortPath :
+#endif
+                PathInternal.MaxLongPath,
+                expandShortPaths);
         }
 
+        [System.Security.SecuritySafeCritical]  // auto-generated
+        internal static string NormalizePath(string path, bool fullCheck, int maxPathLength)
+        {
+            return NormalizePath(path, fullCheck, maxPathLength, expandShortPaths: true);
+        }
+
+        [System.Security.SecuritySafeCritical]
+        internal static string NormalizePath(string path, bool fullCheck, int maxPathLength, bool expandShortPaths)
+        {
+#if FEATURE_PATHCOMPAT
+            if (AppContextSwitches.UseLegacyPathHandling)
+            {
+                return LegacyNormalizePath(path, fullCheck, maxPathLength, expandShortPaths);
+            }
+            else
+#endif // FEATURE_APPCOMPAT
+            {
+                if (PathInternal.IsExtended(path))
+                {
+                    // We can't really know what is valid for all cases of extended paths.
+                    //
+                    //  - object names can include other characters as well (':', '/', etc.)
+                    //  - even file objects have different rules (pipe names can contain most characters)
+                    //
+                    // As such we will do no further analysis of extended paths to avoid blocking known and unknown
+                    // scenarios as well as minimizing compat breaks should we block now and need to unblock later.
+                    return path;
+                }
+
+                string normalizedPath = null;
+
+                if (fullCheck == false)
+                {
+                    // Disabled fullCheck is only called by GetDirectoryName and GetPathRoot.
+                    // Avoid adding addtional callers and try going direct to lighter weight NormalizeDirectorySeparators.
+                    normalizedPath = NewNormalizePathLimitedChecks(path, maxPathLength, expandShortPaths);
+                }
+                else
+                {
+                    normalizedPath = NewNormalizePath(path, maxPathLength, expandShortPaths: true);
+                }
+
+                if (string.IsNullOrWhiteSpace(normalizedPath))
+                    throw new ArgumentException(Environment.GetResourceString("Arg_PathIllegal"));
+                return normalizedPath;
+            }
+        }
+
+        [System.Security.SecuritySafeCritical]
+        private static string NewNormalizePathLimitedChecks(string path, int maxPathLength, bool expandShortPaths)
+        {
+            string normalized = PathInternal.NormalizeDirectorySeparators(path);
+
+            if (PathInternal.IsPathTooLong(normalized) || PathInternal.AreSegmentsTooLong(normalized))
+                throw new PathTooLongException();
+
+#if !PLATFORM_UNIX
+            if (!PathInternal.IsDevice(normalized) && PathInternal.HasInvalidVolumeSeparator(path))
+                throw new ArgumentException(Environment.GetResourceString("Arg_PathIllegal"));
+
+            if (expandShortPaths && normalized.IndexOf('~') != -1)
+            {
+                try
+                {
+                    return LongPathHelper.GetLongPathName(normalized);
+                }
+                catch
+                {
+                    // Don't care if we can't get the long path- might not exist, etc.
+                }
+            }
+#endif
+
+            return normalized;
+        }
+
+        /// <summary>
+        /// Normalize the path and check for bad characters or other invalid syntax.
+        /// </summary>
+        [System.Security.SecuritySafeCritical]
+        [ResourceExposure(ResourceScope.Machine)]
+        [ResourceConsumption(ResourceScope.Machine)]
+        private static string NewNormalizePath(string path, int maxPathLength, bool expandShortPaths)
+        {
+            Contract.Requires(path != null, "path can't be null");
+
+            // Embedded null characters are the only invalid character case we want to check up front.
+            // This is because the nulls will signal the end of the string to Win32 and therefore have
+            // unpredictable results. Other invalid characters we give a chance to be normalized out.
+            if (path.IndexOf('\0') != -1)
+                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidPathChars"));
+
+#if !PLATFORM_UNIX
+            // Note that colon and wildcard checks happen in FileIOPermissions
+
+            // Technically this doesn't matter but we used to throw for this case
+            if (string.IsNullOrWhiteSpace(path))
+                throw new ArgumentException(Environment.GetResourceString("Arg_PathIllegal"));
+
+            // We don't want to check invalid characters for device format- see comments for extended above
+            return LongPathHelper.Normalize(path, (uint)maxPathLength, checkInvalidCharacters: !PathInternal.IsDevice(path), expandShortPaths: expandShortPaths);
+#else
+            if (path.Length == 0)
+                throw new ArgumentException(Environment.GetResourceString("Arg_PathIllegal"));
+
+            // Expand with current directory if necessary
+            if (!IsPathRooted(path))
+                path = Combine(Directory.GetCurrentDirectory(), path);
+
+            // We would ideally use realpath to do this, but it resolves symlinks, requires that the file actually exist,
+            // and turns it into a full path, which we only want if fullCheck is true.
+            string collapsedString = PathInternal.RemoveRelativeSegments(path);
+
+            if (collapsedString.Length > maxPathLength)
+                throw new PathTooLongException(Environment.GetResourceString("IO.PathTooLong"));
+
+            return collapsedString.Length == 0 ? "/" : collapsedString;
+#endif // PLATFORM_UNIX
+        }
+
+#if FEATURE_PATHCOMPAT
         [System.Security.SecurityCritical]  // auto-generated
-        internal unsafe static String NormalizePath(String path, bool fullCheck, int maxPathLength, bool expandShortPaths) {
+        internal unsafe static String LegacyNormalizePath(String path, bool fullCheck, int maxPathLength, bool expandShortPaths) {
 
             Contract.Requires(path != null, "path can't be null");
             // If we're doing a full path check, trim whitespace and look for
@@ -362,7 +514,8 @@ namespace System.IO {
                 path = path.TrimEnd(TrimEndChars);
 
                 // Look for illegal path characters.
-                CheckInvalidPathChars(path);
+                if (PathInternal.AnyPathHasIllegalCharacters(path))
+                    throw new ArgumentException(Environment.GetResourceString("Argument_InvalidPathChars"));
             }
 
             int index = 0;
@@ -771,51 +924,86 @@ namespace System.IO {
 
             return newBuffer.ToStringOrExisting(path);
         }
-        internal const int MaxLongPath = 32000;
+#endif // FEATURE_PATHCOMPAT
 
-        private const string LongPathPrefix = @"\\?\";
-        private const string UNCPathPrefix = @"\\";
-        private const string UNCLongPathPrefixToInsert = @"?\UNC\";
-        private const string UNCLongPathPrefix = @"\\?\UNC\";
+        internal const int MaxLongPath = PathInternal.MaxLongPath;
 
-        internal unsafe static bool HasLongPathPrefix(String path)
+        private const string LongPathPrefix = PathInternal.ExtendedPathPrefix;
+        private const string UNCPathPrefix = PathInternal.UncPathPrefix;
+        private const string UNCLongPathPrefixToInsert = PathInternal.UncExtendedPrefixToInsert;
+        private const string UNCLongPathPrefix = PathInternal.UncExtendedPathPrefix;
+
+        internal static bool HasLongPathPrefix(string path)
         {
-            return path.StartsWith(LongPathPrefix, StringComparison.Ordinal);
+#if FEATURE_PATHCOMPAT
+            if (AppContextSwitches.UseLegacyPathHandling)
+                return path.StartsWith(LongPathPrefix, StringComparison.Ordinal);
+            else
+#endif
+            return PathInternal.IsExtended(path);
         }
 
-        internal unsafe static String AddLongPathPrefix(String path)
+        internal static string AddLongPathPrefix(string path)
         {
-            if (path.StartsWith(LongPathPrefix, StringComparison.Ordinal))
-                return path;
+#if FEATURE_PATHCOMPAT
+            if (AppContextSwitches.UseLegacyPathHandling)
+            {
+                if (path.StartsWith(LongPathPrefix, StringComparison.Ordinal))
+                    return path;
 
-            if (path.StartsWith(UNCPathPrefix, StringComparison.Ordinal))
-                return path.Insert(2, UNCLongPathPrefixToInsert); // Given \\server\share in longpath becomes \\?\UNC\server\share  => UNCLongPathPrefix + path.SubString(2); => The actual command simply reduces the operation cost.
+                if (path.StartsWith(UNCPathPrefix, StringComparison.Ordinal))
+                    return path.Insert(2, UNCLongPathPrefixToInsert); // Given \\server\share in longpath becomes \\?\UNC\server\share  => UNCLongPathPrefix + path.SubString(2); => The actual command simply reduces the operation cost.
 
-            return LongPathPrefix + path;
+                return LongPathPrefix + path;
+            }
+            else
+#endif
+            {
+                return PathInternal.EnsureExtendedPrefix(path);
+            }
         }
 
-        internal unsafe static String RemoveLongPathPrefix(String path)
+        internal static string RemoveLongPathPrefix(string path)
         {
-            if (!path.StartsWith(LongPathPrefix, StringComparison.Ordinal))
-                return path;
+#if FEATURE_PATHCOMPAT
+            if (AppContextSwitches.UseLegacyPathHandling)
+            {
+                if (!path.StartsWith(LongPathPrefix, StringComparison.Ordinal))
+                    return path;
 
-            if (path.StartsWith(UNCLongPathPrefix, StringComparison.OrdinalIgnoreCase))
-                return path.Remove(2, 6); // Given \\?\UNC\server\share we return \\server\share => @'\\' + path.SubString(UNCLongPathPrefix.Length) => The actual command simply reduces the operation cost.
+                if (path.StartsWith(UNCLongPathPrefix, StringComparison.OrdinalIgnoreCase))
+                    return path.Remove(2, 6); // Given \\?\UNC\server\share we return \\server\share => @'\\' + path.SubString(UNCLongPathPrefix.Length) => The actual command simply reduces the operation cost.
 
-            return path.Substring(4);
+                return path.Substring(4);
+            }
+            else
+#endif
+            {
+                return PathInternal.RemoveExtendedPrefix(path);
+            }
         }
 
-        internal unsafe static StringBuilder RemoveLongPathPrefix(StringBuilder pathSB)
+        internal static StringBuilder RemoveLongPathPrefix(StringBuilder pathSB)
         {
-            string path = pathSB.ToString();
-            if (!path.StartsWith(LongPathPrefix, StringComparison.Ordinal))
-                return pathSB;
+#if FEATURE_PATHCOMPAT
+            if (AppContextSwitches.UseLegacyPathHandling)
+            {
+                if (!PathInternal.StartsWithOrdinal(pathSB, LongPathPrefix))
+                    return pathSB;
 
-            if (path.StartsWith(UNCLongPathPrefix, StringComparison.OrdinalIgnoreCase))
-                return pathSB.Remove(2, 6);  // Given \\?\UNC\server\share we return \\server\share => @'\\' + path.SubString(UNCLongPathPrefix.Length) => The actual command simply reduces the operation cost.
+                // Given \\?\UNC\server\share we return \\server\share => @'\\' + path.SubString(UNCLongPathPrefix.Length) => The actual command simply reduces the operation cost.
+                if (PathInternal.StartsWithOrdinal(pathSB, UNCLongPathPrefix, ignoreCase: true))
+                    return pathSB.Remove(2, 6);
 
-            return pathSB.Remove(0, 4);
+                return pathSB.Remove(0, 4);
+            }
+            else
+#endif
+            {
+                return PathInternal.RemoveExtendedPrefix(pathSB);
+            }
         }
+
 
         // Returns the name and extension parts of the given path. The resulting
         // string contains the characters of path that follow the last
@@ -868,7 +1056,10 @@ namespace System.IO {
         [Pure]
         public static String GetPathRoot(String path) {
             if (path == null) return null;
-            path = NormalizePath(path, false);
+
+            // Expanding short paths has no impact on the path root- there is no such thing as an
+            // 8.3 volume or server/share name.
+            path = NormalizePath(path, fullCheck: false, expandShortPaths: false);
             return path.Substring(0, GetRootLength(path));
         }
 
@@ -878,8 +1069,8 @@ namespace System.IO {
 #if !FEATURE_CORECLR
             new EnvironmentPermission(PermissionState.Unrestricted).Demand();
 #endif
-            StringBuilder sb = new StringBuilder(MaxPath);
-            uint r = Win32Native.GetTempPath(MaxPath, sb);
+            StringBuilder sb = new StringBuilder(PathInternal.MaxShortPath);
+            uint r = Win32Native.GetTempPath(PathInternal.MaxShortPath, sb);
             String path = sb.ToString();
             if (r==0) __Error.WinIOError();
             path = GetFullPathInternal(path);
@@ -893,17 +1084,7 @@ namespace System.IO {
         internal static bool IsRelative(string path)
         {
             Contract.Assert(path != null, "path can't be null");
-#if !PLATFORM_UNIX
-            if ((path.Length >= 3 && path[1] == VolumeSeparatorChar && path[2] == DirectorySeparatorChar && 
-                   ((path[0] >= 'a' && path[0] <= 'z') || (path[0] >= 'A' && path[0] <= 'Z'))) ||
-                  (path.Length >= 2 && path[0] == '\\' && path[1] == '\\'))
-#else
-            if(path.Length >= 1 && path[0] == VolumeSeparatorChar)
-#endif // !PLATFORM_UNIX
-                return false;
-            else
-                return true;
-        
+            return PathInternal.IsPartiallyQualified(path);
         }
 
         // Returns a cryptographically strong random 8.3 string that can be 
@@ -958,7 +1139,7 @@ namespace System.IO {
             return InternalGetTempFileName(false);
         }
 
-        [System.Security.SecurityCritical]  
+        [System.Security.SecurityCritical]
         private static String InternalGetTempFileName(bool checkHost) 
         {
             String path = GetTempPath();
@@ -974,7 +1155,7 @@ namespace System.IO {
                 state.EnsureState();
             }
 #else
-            new FileIOPermission(FileIOPermissionAccess.Write, path).Demand();
+            FileIOPermission.QuickDemand(FileIOPermissionAccess.Write, path);
 #endif
             StringBuilder sb = new StringBuilder(MaxPath);
             uint r = Win32Native.GetTempFileName(path, "tmp", 0, sb);
@@ -1005,8 +1186,7 @@ namespace System.IO {
             }
             return false;
         }
-    
-    
+
         // Tests if the given path contains a root. A path is considered rooted
         // if it starts with a backslash ("\") or a drive letter and a colon (":").
         //
@@ -1218,28 +1398,15 @@ namespace System.IO {
 
         }
 
-        internal static bool HasIllegalCharacters(String path, bool checkAdditional)
-        {
-            Contract.Requires(path != null);
-
-            if (checkAdditional)
-            {
-                return path.IndexOfAny(InvalidPathCharsWithAdditionalChecks) >= 0;
-            }
-
-            return path.IndexOfAny(RealInvalidPathChars) >= 0;
-        }
-
         internal static void CheckInvalidPathChars(String path, bool checkAdditional = false)
         {
             if (path == null)
                 throw new ArgumentNullException("path");
 
-            if (Path.HasIllegalCharacters(path, checkAdditional))
+            if (PathInternal.HasIllegalCharacters(path, checkAdditional))
                 throw new ArgumentException(Environment.GetResourceString("Argument_InvalidPathChars"));
         }
 
-        
         internal static String InternalCombine(String path1, String path2) {
             if (path1==null || path2==null)
                 throw new ArgumentNullException((path1==null) ? "path1" : "path2");

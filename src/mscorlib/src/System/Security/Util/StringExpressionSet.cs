@@ -219,10 +219,12 @@ namespace System.Security.Util {
                 if (str[index] == null)
                     throw new ArgumentNullException( "str" );
 
+                // Replace alternate directory separators
                 String oneString = StaticProcessWholeString( str[index] );
 
                 if (oneString != null && oneString.Length != 0)
                 {
+                    // Trim leading and trailing spaces
                     String temp = StaticProcessSingleString( oneString);
 
                     int indexOfNull = temp.IndexOf( '\0' );
@@ -232,13 +234,12 @@ namespace System.Security.Util {
 
                     if (temp != null && temp.Length != 0)
                     {
-                        if (Path.IsRelative(temp))
+                        if (PathInternal.IsPartiallyQualified(temp))
                         {
-                            throw new ArgumentException( Environment.GetResourceString( "Argument_AbsolutePathRequired" ) );
+                            throw new ArgumentException(Environment.GetResourceString( "Argument_AbsolutePathRequired" ) );
                         }
 
                         temp = CanonicalizePath( temp, needFullPath );
-
 
                         retArrayList.Add( temp );
                     }
@@ -737,27 +738,14 @@ namespace System.Security.Util {
         }
 
         [System.Security.SecurityCritical]  // auto-generated
-        internal static String CanonicalizePath( String path, bool needFullPath )
+        internal static string CanonicalizePath(string path, bool needFullPath)
         {
-
-#if !PLATFORM_UNIX
-            if (path.IndexOf( '~' ) != -1)
-            {
-                string longPath = null;
-                GetLongPathName(path, JitHelpers.GetStringHandleOnStack(ref longPath));
-                path = (longPath != null) ? longPath : path;
-            }
-
-            if (path.IndexOf( ':', 2 ) != -1)
-                throw new NotSupportedException( Environment.GetResourceString( "Argument_PathFormatNotSupported" ) );
-#endif // !PLATFORM_UNIX               
-
             if (needFullPath)
             {
-                String newPath = System.IO.Path.GetFullPathInternal( path );
-                if (path.EndsWith( m_directorySeparator + ".", StringComparison.Ordinal ))
+                string newPath = Path.GetFullPathInternal(path);
+                if (path.EndsWith(m_directorySeparator + ".", StringComparison.Ordinal))
                 {
-                    if (newPath.EndsWith( m_directorySeparator ))
+                    if (newPath.EndsWith(m_directorySeparator))
                     {
                         newPath += ".";
                     }
@@ -765,11 +753,25 @@ namespace System.Security.Util {
                     {
                         newPath += m_directorySeparator + ".";
                     }
-                }                
-                return newPath;
+                }
+                path = newPath;
             }
-            else
-                return path;
+#if !PLATFORM_UNIX
+            else if (path.IndexOf('~') != -1)
+            {
+                // GetFullPathInternal() will expand 8.3 file names
+                string longPath = null;
+                GetLongPathName(path, JitHelpers.GetStringHandleOnStack(ref longPath));
+                path = (longPath != null) ? longPath : path;
+            }
+
+            // This blocks usage of alternate data streams and some extended syntax paths (\\?\C:\). Checking after
+            // normalization allows valid paths such as " C:\" to be considered ok (as it will become "C:\").
+            if (path.IndexOf(':', 2) != -1)
+                throw new NotSupportedException(Environment.GetResourceString("Argument_PathFormatNotSupported"));
+#endif // !PLATFORM_UNIX
+
+            return path;
         }
     }
 }

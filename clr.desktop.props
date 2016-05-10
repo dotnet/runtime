@@ -67,6 +67,7 @@
     <FeatureMultiModuleAssemblies>true</FeatureMultiModuleAssemblies>
     <FeatureNativeImageGeneration>true</FeatureNativeImageGeneration>
     <FeatureNongenericCollections>true</FeatureNongenericCollections>
+    <FeaturePathCompat>true</FeaturePathCompat>
     <FeaturePerfmon>true</FeaturePerfmon>
     <FeaturePls>true</FeaturePls>
     <FeaturePrejit>true</FeaturePrejit>
