@@ -1060,7 +1060,7 @@ namespace System.Runtime.InteropServices
             }
 
             if (rtModule == null)
-                throw new ArgumentNullException(Environment.GetResourceString("Argument_MustBeRuntimeModule"));
+                throw new ArgumentNullException("m", Environment.GetResourceString("Argument_MustBeRuntimeModule"));
 
             return GetHINSTANCE(rtModule.GetNativeHandle());
         }    

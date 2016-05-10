@@ -2056,7 +2056,7 @@ namespace System.Globalization {
             {
                 if (patterns[i] == null)
                 {
-                    throw new ArgumentNullException(Environment.GetResourceString("ArgumentNull_ArrayValue"));
+                    throw new ArgumentNullException("patterns[" + i + "]", Environment.GetResourceString("ArgumentNull_ArrayValue"));
                 }
             }
 
