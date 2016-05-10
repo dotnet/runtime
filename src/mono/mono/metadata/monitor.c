@@ -1132,6 +1132,8 @@ mono_monitor_enter_v4_fast (MonoObject *obj, char *lock_taken)
 {
 	if (*lock_taken == 1)
 		return FALSE;
+	if (G_UNLIKELY (!obj))
+		return FALSE;
 	gint32 res = mono_monitor_try_enter_internal (obj, 0, TRUE);
 	*lock_taken = res == 1;
 	return res == 1;
