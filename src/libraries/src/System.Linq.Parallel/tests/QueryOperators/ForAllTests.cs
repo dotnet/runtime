@@ -6,26 +6,24 @@ using Xunit;
 
 namespace System.Linq.Parallel.Tests
 {
-    public class ForAllTests
+    public static class ForAllTests
     {
         [Theory]
-        [MemberData(nameof(Sources.Ranges), new[] { 1, 2, 16 }, MemberType = typeof(Sources))]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 1, 2, 16 }, MemberType = typeof(UnorderedSources))]
-        public static void ForAll(Labeled<ParallelQuery<int>> labeled, int count)
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(16)]
+        public static void ForAll(int count)
         {
-            ParallelQuery<int> query = labeled.Item;
             IntegerRangeSet seen = new IntegerRangeSet(0, count);
-            query.ForAll<int>(x => seen.Add(x));
+            ParallelEnumerable.Range(0, count).ForAll(x => seen.Add(x));
             seen.AssertComplete();
         }
 
-        [Theory]
+        [Fact]
         [OuterLoop]
-        [MemberData(nameof(Sources.Ranges), new[] { 1024 * 1024, 1024 * 1024 * 4 }, MemberType = typeof(Sources))]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 1024 * 1024, 1024 * 1024 * 4 }, MemberType = typeof(UnorderedSources))]
-        public static void ForAll_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
+        public static void ForAll_Longrunning()
         {
-            ForAll(labeled, count);
+            ForAll(Sources.OuterLoopCount);
         }
 
         [Fact]
@@ -47,19 +45,18 @@ namespace System.Linq.Parallel.Tests
             AssertThrows.AlreadyCanceled(source => source.ForAll(x => { }));
         }
 
-        [Theory]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 1 }, MemberType = typeof(UnorderedSources))]
-        public static void ForAll_AggregateException(Labeled<ParallelQuery<int>> labeled, int count)
+        [Fact]
+        public static void ForAll_AggregateException()
         {
-            Functions.AssertThrowsWrapped<DeliberateTestException>(() => labeled.Item.ForAll(x => { throw new DeliberateTestException(); }));
-            Functions.AssertThrowsWrapped<DeliberateTestException>(() => labeled.Item.Select((Func<int, int>)(x => { throw new DeliberateTestException(); })).ForAll(x => { }));
+            AssertThrows.Wrapped<DeliberateTestException>(() => ParallelEnumerable.Range(0, 1).ForAll(x => { throw new DeliberateTestException(); }));
+            AssertThrows.Wrapped<DeliberateTestException>(() => ParallelEnumerable.Range(0, 1).Select((Func<int, int>)(x => { throw new DeliberateTestException(); })).ForAll(x => { }));
         }
 
         [Fact]
         public static void ForAll_ArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<int>)null).ForAll(x => { }));
-            Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Range(0, 1).ForAll(null));
+            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<int>)null).ForAll(x => { }));
+            Assert.Throws<ArgumentNullException>("action", () => ParallelEnumerable.Range(0, 1).ForAll(null));
         }
     }
 }

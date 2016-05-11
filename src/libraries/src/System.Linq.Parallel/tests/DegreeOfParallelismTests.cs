@@ -10,14 +10,14 @@ using Xunit;
 
 namespace System.Linq.Parallel.Tests
 {
-    public class DegreeOfParallelismTests
+    public static class DegreeOfParallelismTests
     {
         // If ThreadPool becomes available, uncomment the below
         //private static ThreadPoolManager _poolManager = new ThreadPoolManager();
 
         public static IEnumerable<object[]> DegreeData(int[] counts, int[] degrees)
         {
-            foreach (object[] results in UnorderedSources.Ranges(counts.Cast<int>(), x => degrees.Cast<int>().DefaultIfEmpty(x)))
+            foreach (object[] results in UnorderedSources.Ranges(counts.DefaultIfEmpty(Sources.OuterLoopCount), x => degrees.DefaultIfEmpty(x)))
             {
                 yield return results;
             }
@@ -30,7 +30,7 @@ namespace System.Linq.Parallel.Tests
                 Labeled<ParallelQuery<int>> query = (Labeled<ParallelQuery<int>>)results[0];
                 if (query.ToString().StartsWith("Partitioner"))
                 {
-                    yield return new object[] { Labeled.Label(query.ToString(), Partitioner.Create(UnorderedSources.GetRangeArray(0, (int)results[1]), false).AsParallel()), results[1], results[2] };
+                    yield return new object[] { Labeled.Label(query.ToString(), Partitioner.Create(Enumerable.Range(0, (int)results[1]).ToArray(), false).AsParallel()), results[1], results[2] };
                 }
                 else if (query.ToString().StartsWith("Enumerable.Range"))
                 {
@@ -70,7 +70,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(DegreeData), new[] { 128 * 1024 }, new[] { 1, 4, 64, 512 })]
+        [MemberData(nameof(DegreeData), new int[] { /* Sources.OuterLoopCount */ }, new[] { 1, 4, 64, 512 })]
         [OuterLoop]
         public static void DegreeOfParallelism_Pipelining(Labeled<ParallelQuery<int>> labeled, int count, int degree)
         {
@@ -154,7 +154,7 @@ namespace System.Linq.Parallel.Tests
         [Fact]
         public static void DegreeOfParallelism_ArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<bool>)null).WithDegreeOfParallelism(2));
+            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<bool>)null).WithDegreeOfParallelism(2));
         }
 
         // ThreadPool is not currently exposed.

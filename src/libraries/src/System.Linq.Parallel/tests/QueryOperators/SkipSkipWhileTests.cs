@@ -7,33 +7,37 @@ using Xunit;
 
 namespace System.Linq.Parallel.Tests
 {
-    public class SkipSkipWhileTests
+    public static class SkipSkipWhileTests
     {
+        private static readonly Func<int, IEnumerable<int>> SkipPosition = x => new[] { -x, -1, 0, 1, x / 2, x, x * 2 }.Distinct();
         //
         // Skip
         //
 
         public static IEnumerable<object[]> SkipUnorderedData(int[] counts)
         {
-            Func<int, IEnumerable<int>> skip = x => new[] { -x, -1, 0, 1, x / 2, x, x * 2 }.Distinct();
-            foreach (object[] results in UnorderedSources.Ranges(counts.Cast<int>(), skip)) yield return results;
+            foreach (int count in counts.DefaultIfEmpty(Sources.OuterLoopCount / 4))
+            {
+                foreach (int position in SkipPosition(count))
+                {
+                    yield return new object[] { count, position };
+                }
+            }
         }
 
         public static IEnumerable<object[]> SkipData(int[] counts)
         {
-            Func<int, IEnumerable<int>> skip = x => new[] { -x, -1, 0, 1, x / 2, x, x * 2 }.Distinct();
-            foreach (object[] results in Sources.Ranges(counts.Cast<int>(), skip)) yield return results;
+            foreach (object[] results in Sources.Ranges(counts.DefaultIfEmpty(Sources.OuterLoopCount / 4), SkipPosition)) yield return results;
         }
 
         [Theory]
         [MemberData(nameof(SkipUnorderedData), new[] { 0, 1, 2, 16 })]
-        public static void Skip_Unordered(Labeled<ParallelQuery<int>> labeled, int count, int skip)
+        public static void Skip_Unordered(int count, int skip)
         {
-            ParallelQuery<int> query = labeled.Item;
             // For unordered collections, which elements are skipped isn't actually guaranteed, but an effect of the implementation.
             // If this test starts failing it should be updated, and possibly mentioned in release notes.
             IntegerRangeSet seen = new IntegerRangeSet(Math.Max(skip, 0), Math.Min(count, Math.Max(0, count - skip)));
-            foreach (int i in query.Skip(skip))
+            foreach (int i in UnorderedSources.Default(count).Skip(skip))
             {
                 seen.Add(i);
             }
@@ -42,10 +46,10 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(SkipUnorderedData), new[] { 1024 * 32 })]
-        public static void Skip_Unordered_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int skip)
+        [MemberData(nameof(SkipUnorderedData), new int[] { /* Sources.OuterLoopCount */ })]
+        public static void Skip_Unordered_Longrunning(int count, int skip)
         {
-            Skip_Unordered(labeled, count, skip);
+            Skip_Unordered(count, skip);
         }
 
         [Theory]
@@ -63,7 +67,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(SkipData), new[] { 1024 * 32 })]
+        [MemberData(nameof(SkipData), new int[] { /* Sources.OuterLoopCount */ })]
         public static void Skip_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int skip)
         {
             Skip(labeled, count, skip);
@@ -71,22 +75,21 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [MemberData(nameof(SkipUnorderedData), new[] { 0, 1, 2, 16 })]
-        public static void Skip_Unordered_NotPipelined(Labeled<ParallelQuery<int>> labeled, int count, int skip)
+        public static void Skip_Unordered_NotPipelined(int count, int skip)
         {
-            ParallelQuery<int> query = labeled.Item;
             // For unordered collections, which elements are skipped isn't actually guaranteed, but an effect of the implementation.
             // If this test starts failing it should be updated, and possibly mentioned in release notes.
             IntegerRangeSet seen = new IntegerRangeSet(Math.Max(skip, 0), Math.Min(count, Math.Max(0, count - skip)));
-            Assert.All(query.Skip(skip).ToList(), x => seen.Add(x));
+            Assert.All(UnorderedSources.Default(count).Skip(skip).ToList(), x => seen.Add(x));
             seen.AssertComplete();
         }
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(SkipUnorderedData), new[] { 1024 * 32 })]
-        public static void Skip_Unordered_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int skip)
+        [MemberData(nameof(SkipUnorderedData), new int[] { /* Sources.OuterLoopCount */ })]
+        public static void Skip_Unordered_NotPipelined_Longrunning(int count, int skip)
         {
-            Skip_Unordered_NotPipelined(labeled, count, skip);
+            Skip_Unordered_NotPipelined(count, skip);
         }
 
         [Theory]
@@ -101,7 +104,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(SkipData), new[] { 1024 * 32 })]
+        [MemberData(nameof(SkipData), new int[] { /* Sources.OuterLoopCount */ })]
         public static void Skip_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int skip)
         {
             Skip_NotPipelined(labeled, count, skip);
@@ -110,7 +113,7 @@ namespace System.Linq.Parallel.Tests
         [Fact]
         public static void Skip_ArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<bool>)null).Skip(0));
+            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<bool>)null).Skip(0));
         }
 
         //
@@ -118,23 +121,22 @@ namespace System.Linq.Parallel.Tests
         //
         public static IEnumerable<object[]> SkipWhileData(int[] counts)
         {
-            foreach (object[] results in Sources.Ranges(counts.Cast<int>()))
+            foreach (object[] results in Sources.Ranges(counts.DefaultIfEmpty(Sources.OuterLoopCount / 4)))
             {
                 yield return new[] { results[0], results[1], new[] { 0 } };
-                yield return new[] { results[0], results[1], Enumerable.Range((int)results[1] / 2, ((int)results[1] - 1) / 2 + 1) };
+                yield return new[] { results[0], results[1], Enumerable.Range((int)results[1] / 2, ((int)results[1] - 1) / 2 + 1).ToArray() };
                 yield return new[] { results[0], results[1], new[] { (int)results[1] - 1 } };
             }
         }
 
         [Theory]
         [MemberData(nameof(SkipUnorderedData), new[] { 0, 1, 2, 16 })]
-        public static void SkipWhile_Unordered(Labeled<ParallelQuery<int>> labeled, int count, int skip)
+        public static void SkipWhile_Unordered(int count, int skip)
         {
-            ParallelQuery<int> query = labeled.Item;
             // For unordered collections, which elements (if any) are skipped isn't actually guaranteed, but an effect of the implementation.
             // If this test starts failing it should be updated, and possibly mentioned in release notes.
             IntegerRangeSet seen = new IntegerRangeSet(Math.Max(skip, 0), Math.Min(count, Math.Max(0, count - skip)));
-            foreach (int i in query.SkipWhile(x => x < skip))
+            foreach (int i in UnorderedSources.Default(count).SkipWhile(x => x < skip))
             {
                 seen.Add(i);
             }
@@ -143,10 +145,10 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(SkipUnorderedData), new[] { 1024 * 32 })]
-        public static void SkipWhile_Unordered_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int skip)
+        [MemberData(nameof(SkipUnorderedData), new int[] { /* Sources.OuterLoopCount */ })]
+        public static void SkipWhile_Unordered_Longrunning(int count, int skip)
         {
-            SkipWhile_Unordered(labeled, count, skip);
+            SkipWhile_Unordered(count, skip);
         }
 
         [Theory]
@@ -164,7 +166,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(SkipData), new[] { 1024 * 32 })]
+        [MemberData(nameof(SkipData), new int[] { /* Sources.OuterLoopCount */ })]
         public static void SkipWhile_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int skip)
         {
             SkipWhile(labeled, count, skip);
@@ -172,22 +174,21 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [MemberData(nameof(SkipUnorderedData), new[] { 0, 1, 2, 16 })]
-        public static void SkipWhile_Unordered_NotPipelined(Labeled<ParallelQuery<int>> labeled, int count, int skip)
+        public static void SkipWhile_Unordered_NotPipelined(int count, int skip)
         {
-            ParallelQuery<int> query = labeled.Item;
             // For unordered collections, which elements (if any) are skipped isn't actually guaranteed, but an effect of the implementation.
             // If this test starts failing it should be updated, and possibly mentioned in release notes.
             IntegerRangeSet seen = new IntegerRangeSet(Math.Max(skip, 0), Math.Min(count, Math.Max(0, count - skip)));
-            Assert.All(query.SkipWhile(x => x < skip).ToList(), x => seen.Add(x));
+            Assert.All(UnorderedSources.Default(count).SkipWhile(x => x < skip).ToList(), x => seen.Add(x));
             seen.AssertComplete();
         }
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(SkipUnorderedData), new[] { 1024 * 32 })]
-        public static void SkipWhile_Unordered_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int skip)
+        [MemberData(nameof(SkipUnorderedData), new int[] { /* Sources.OuterLoopCount */ })]
+        public static void SkipWhile_Unordered_NotPipelined_Longrunning(int count, int skip)
         {
-            SkipWhile_Unordered_NotPipelined(labeled, count, skip);
+            SkipWhile_Unordered_NotPipelined(count, skip);
         }
 
         [Theory]
@@ -202,7 +203,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(SkipData), new[] { 1024 * 32 })]
+        [MemberData(nameof(SkipData), new int[] { /* Sources.OuterLoopCount */ })]
         public static void SkipWhile_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int skip)
         {
             SkipWhile_NotPipelined(labeled, count, skip);
@@ -210,13 +211,12 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [MemberData(nameof(SkipUnorderedData), new[] { 0, 1, 2, 16 })]
-        public static void SkipWhile_Indexed_Unordered(Labeled<ParallelQuery<int>> labeled, int count, int skip)
+        public static void SkipWhile_Indexed_Unordered(int count, int skip)
         {
-            ParallelQuery<int> query = labeled.Item;
             // For unordered collections, which elements (if any) are skipped isn't actually guaranteed, but an effect of the implementation.
             // If this test starts failing it should be updated, and possibly mentioned in release notes.
             IntegerRangeSet seen = new IntegerRangeSet(Math.Max(skip, 0), Math.Min(count, Math.Max(0, count - skip)));
-            foreach (int i in query.SkipWhile((x, index) => index < skip))
+            foreach (int i in UnorderedSources.Default(count).SkipWhile((x, index) => index < skip))
             {
                 seen.Add(i);
             }
@@ -225,10 +225,10 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(SkipUnorderedData), new[] { 1024 * 32 })]
-        public static void SkipWhile_Indexed_Unordered_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int skip)
+        [MemberData(nameof(SkipUnorderedData), new int[] { /* Sources.OuterLoopCount */ })]
+        public static void SkipWhile_Indexed_Unordered_Longrunning(int count, int skip)
         {
-            SkipWhile_Indexed_Unordered(labeled, count, skip);
+            SkipWhile_Indexed_Unordered(count, skip);
         }
 
         [Theory]
@@ -246,7 +246,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(SkipData), new[] { 1024 * 32 })]
+        [MemberData(nameof(SkipData), new int[] { /* Sources.OuterLoopCount */ })]
         public static void SkipWhile_Indexed_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int skip)
         {
             SkipWhile_Indexed(labeled, count, skip);
@@ -254,22 +254,21 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [MemberData(nameof(SkipUnorderedData), new[] { 0, 1, 2, 16 })]
-        public static void SkipWhile_Indexed_Unordered_NotPipelined(Labeled<ParallelQuery<int>> labeled, int count, int skip)
+        public static void SkipWhile_Indexed_Unordered_NotPipelined(int count, int skip)
         {
-            ParallelQuery<int> query = labeled.Item;
             // For unordered collections, which elements (if any) are skipped isn't actually guaranteed, but an effect of the implementation.
             // If this test starts failing it should be updated, and possibly mentioned in release notes.
             IntegerRangeSet seen = new IntegerRangeSet(Math.Max(skip, 0), Math.Min(count, Math.Max(0, count - skip)));
-            Assert.All(query.SkipWhile((x, index) => index < skip), x => seen.Add(x));
+            Assert.All(UnorderedSources.Default(count).SkipWhile((x, index) => index < skip), x => seen.Add(x));
             seen.AssertComplete();
         }
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(SkipUnorderedData), new[] { 1024 * 32 })]
-        public static void SkipWhile_Indexed_Unordered_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int skip)
+        [MemberData(nameof(SkipUnorderedData), new int[] { /* Sources.OuterLoopCount */ })]
+        public static void SkipWhile_Indexed_Unordered_NotPipelined_Longrunning(int count, int skip)
         {
-            SkipWhile_Indexed_Unordered_NotPipelined(labeled, count, skip);
+            SkipWhile_Indexed_Unordered_NotPipelined(count, skip);
         }
 
         [Theory]
@@ -284,7 +283,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(SkipData), new[] { 1024 * 32 })]
+        [MemberData(nameof(SkipData), new int[] { /* Sources.OuterLoopCount */ })]
         public static void SkipWhile_Indexed_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int skip)
         {
             SkipWhile_Indexed_NotPipelined(labeled, count, skip);
@@ -302,7 +301,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(SkipData), new[] { 1024 * 32 })]
+        [MemberData(nameof(SkipData), new int[] { /* Sources.OuterLoopCount */ })]
         public static void SkipWhile_AllFalse_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int skip)
         {
             SkipWhile_AllFalse(labeled, count, skip);
@@ -320,7 +319,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(SkipData), new[] { 1024 * 32 })]
+        [MemberData(nameof(SkipData), new int[] { /* Sources.OuterLoopCount */ })]
         public static void SkipWhile_AllTrue_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int skip)
         {
             SkipWhile_AllTrue(labeled, count, skip);
@@ -328,7 +327,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [MemberData(nameof(SkipWhileData), new[] { 2, 16 })]
-        public static void SkipWhile_SomeTrue(Labeled<ParallelQuery<int>> labeled, int count, IEnumerable<int> skip)
+        public static void SkipWhile_SomeTrue(Labeled<ParallelQuery<int>> labeled, int count, int[] skip)
         {
             ParallelQuery<int> query = labeled.Item;
             int seen = skip.Min() == 0 ? 1 : 0;
@@ -338,15 +337,15 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(SkipWhileData), new[] { 1024 * 32 })]
-        public static void SkipWhile_SomeTrue_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, IEnumerable<int> skip)
+        [MemberData(nameof(SkipWhileData), new int[] { /* Sources.OuterLoopCount */ })]
+        public static void SkipWhile_SomeTrue_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int[] skip)
         {
             SkipWhile_SomeTrue(labeled, count, skip);
         }
 
         [Theory]
         [MemberData(nameof(SkipWhileData), new[] { 2, 16 })]
-        public static void SkipWhile_SomeFalse(Labeled<ParallelQuery<int>> labeled, int count, IEnumerable<int> skip)
+        public static void SkipWhile_SomeFalse(Labeled<ParallelQuery<int>> labeled, int count, int[] skip)
         {
             ParallelQuery<int> query = labeled.Item;
             int seen = skip.Min();
@@ -356,8 +355,8 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(SkipWhileData), new[] { 1024 * 32 })]
-        public static void SkipWhile_SomeFalse_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, IEnumerable<int> skip)
+        [MemberData(nameof(SkipWhileData), new int[] { /* Sources.OuterLoopCount */ })]
+        public static void SkipWhile_SomeFalse_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int[] skip)
         {
             SkipWhile_SomeFalse(labeled, count, skip);
         }
@@ -365,9 +364,9 @@ namespace System.Linq.Parallel.Tests
         [Fact]
         public static void SkipWhile_ArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<bool>)null).SkipWhile(x => true));
-            Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Empty<bool>().SkipWhile((Func<bool, bool>)null));
-            Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Empty<bool>().SkipWhile((Func<bool, int, bool>)null));
+            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<bool>)null).SkipWhile(x => true));
+            Assert.Throws<ArgumentNullException>("predicate", () => ParallelEnumerable.Empty<bool>().SkipWhile((Func<bool, bool>)null));
+            Assert.Throws<ArgumentNullException>("predicate", () => ParallelEnumerable.Empty<bool>().SkipWhile((Func<bool, int, bool>)null));
         }
     }
 }

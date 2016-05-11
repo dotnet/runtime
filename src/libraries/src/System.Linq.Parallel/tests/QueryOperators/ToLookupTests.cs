@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Linq.Parallel.Tests
 {
-    public class ToLookupTests
+    public static class ToLookupTests
     {
         [Theory]
         [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(UnorderedSources))]
@@ -34,81 +34,86 @@ namespace System.Linq.Parallel.Tests
             while (e1.MoveNext())
             {
                 e2.MoveNext();
-                Assert.Equal(((IGrouping<int,int>)e1.Current).Key, e2.Current.Key);
+                Assert.Equal(((IGrouping<int, int>)e1.Current).Key, e2.Current.Key);
             }
             Assert.False(e2.MoveNext());
         }
 
         [Theory]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(UnorderedSources))]
-        public static void ToLookup(Labeled<ParallelQuery<int>> labeled, int count)
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(16)]
+        public static void ToLookup(int count)
         {
-            ParallelQuery<int> query = labeled.Item;
             IntegerRangeSet seen = new IntegerRangeSet(0, count);
-            ILookup<int, int> lookup = query.ToLookup(x => x * 2);
+            ILookup<int, int> lookup = UnorderedSources.Default(count).ToLookup(x => x * 2);
             Assert.All(lookup,
                 group => { seen.Add(group.Key / 2); Assert.Equal(group.Key, Assert.Single(group) * 2); });
             seen.AssertComplete();
             Assert.Empty(lookup[-1]);
         }
 
-        [Theory]
+        [Fact]
         [OuterLoop]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 1024 * 4, 1024 * 128 }, MemberType = typeof(UnorderedSources))]
-        public static void ToLookup_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
+        public static void ToLookup_Longrunning()
         {
-            ToLookup(labeled, count);
+            ToLookup(Sources.OuterLoopCount);
         }
 
         [Theory]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(UnorderedSources))]
-        public static void ToLookup_ElementSelector(Labeled<ParallelQuery<int>> labeled, int count)
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(16)]
+        public static void ToLookup_ElementSelector(int count)
         {
-            ParallelQuery<int> query = labeled.Item;
             IntegerRangeSet seen = new IntegerRangeSet(0, count);
-            ILookup<int, int> lookup = query.ToLookup(x => x, y => y * 2);
+            ILookup<int, int> lookup = UnorderedSources.Default(count).ToLookup(x => x, y => y * 2);
             Assert.All(lookup,
                 group => { seen.Add(group.Key); Assert.Equal(group.Key * 2, Assert.Single(group)); });
             seen.AssertComplete();
             Assert.Empty(lookup[-1]);
         }
 
-        [Theory]
+        [Fact]
         [OuterLoop]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 1024 * 4, 1024 * 128 }, MemberType = typeof(UnorderedSources))]
-        public static void ToLookup_ElementSelector_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
+        public static void ToLookup_ElementSelector_Longrunning()
         {
-            ToLookup_ElementSelector(labeled, count);
+            ToLookup_ElementSelector(Sources.OuterLoopCount);
         }
 
         [Theory]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(UnorderedSources))]
-        public static void ToLookup_CustomComparator(Labeled<ParallelQuery<int>> labeled, int count)
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(16)]
+        public static void ToLookup_CustomComparator(int count)
         {
-            ParallelQuery<int> query = labeled.Item;
             IntegerRangeSet seen = new IntegerRangeSet(0, count);
-            ILookup<int, int> lookup = query.ToLookup(x => x * 2, new ModularCongruenceComparer(count * 2));
+            ILookup<int, int> lookup = UnorderedSources.Default(count).ToLookup(x => x * 2, new ModularCongruenceComparer(count * 2));
             Assert.All(lookup,
                 group => { seen.Add(group.Key / 2); Assert.Equal(group.Key, Assert.Single(group) * 2); });
             seen.AssertComplete();
             Assert.Empty(lookup[-1]);
         }
 
-        [Theory]
+        [Fact]
         [OuterLoop]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 1024 * 4, 1024 * 128 }, MemberType = typeof(UnorderedSources))]
-        public static void ToLookup_CustomComparator_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
+        public static void ToLookup_CustomComparator_Longrunning()
         {
-            ToLookup_CustomComparator(labeled, count);
+            ToLookup_CustomComparator(Sources.OuterLoopCount);
         }
 
         [Theory]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(UnorderedSources))]
-        public static void ToLookup_ElementSelector_CustomComparator(Labeled<ParallelQuery<int>> labeled, int count)
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(16)]
+        public static void ToLookup_ElementSelector_CustomComparator(int count)
         {
-            ParallelQuery<int> query = labeled.Item;
             IntegerRangeSet seen = new IntegerRangeSet(0, count);
-            ILookup<int, int> lookup = query.ToLookup(x => x, y => y * 2, new ModularCongruenceComparer(count));
+            ILookup<int, int> lookup = UnorderedSources.Default(count).ToLookup(x => x, y => y * 2, new ModularCongruenceComparer(count));
             Assert.All(lookup,
                 group => { seen.Add(group.Key); Assert.Equal(group.Key * 2, Assert.Single(group)); });
             seen.AssertComplete();
@@ -120,19 +125,20 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 1024 * 4, 1024 * 128 }, MemberType = typeof(UnorderedSources))]
-        public static void ToLookup_ElementSelector_CustomComparator_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
+        public static void ToLookup_ElementSelector_CustomComparator_Longrunning()
         {
-            ToLookup_ElementSelector_CustomComparator(labeled, count);
+            ToLookup_ElementSelector_CustomComparator(Sources.OuterLoopCount);
         }
 
         [Theory]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(UnorderedSources))]
-        public static void ToLookup_DuplicateKeys(Labeled<ParallelQuery<int>> labeled, int count)
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(16)]
+        public static void ToLookup_DuplicateKeys(int count)
         {
-            ParallelQuery<int> query = labeled.Item;
             IntegerRangeSet seenOuter = new IntegerRangeSet(0, Math.Min(count, 2));
-            ILookup<int, int> lookup = query.ToLookup(x => x % 2);
+            ILookup<int, int> lookup = UnorderedSources.Default(count).ToLookup(x => x % 2);
             Assert.All(lookup,
                 group =>
                 {
@@ -145,21 +151,22 @@ namespace System.Linq.Parallel.Tests
             Assert.Empty(lookup[-1]);
         }
 
-        [Theory]
+        [Fact]
         [OuterLoop]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 1024 * 4, 1024 * 128 }, MemberType = typeof(UnorderedSources))]
-        public static void ToLookup_DuplicateKeys_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
+        public static void ToLookup_DuplicateKeys_Longrunning()
         {
-            ToLookup_DuplicateKeys(labeled, count);
+            ToLookup_DuplicateKeys(Sources.OuterLoopCount);
         }
 
         [Theory]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(UnorderedSources))]
-        public static void ToLookup_DuplicateKeys_ElementSelector(Labeled<ParallelQuery<int>> labeled, int count)
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(16)]
+        public static void ToLookup_DuplicateKeys_ElementSelector(int count)
         {
-            ParallelQuery<int> query = labeled.Item;
             IntegerRangeSet seenOuter = new IntegerRangeSet(0, Math.Min(count, 2));
-            ILookup<int, int> lookup = query.ToLookup(x => x % 2, y => -y);
+            ILookup<int, int> lookup = UnorderedSources.Default(count).ToLookup(x => x % 2, y => -y);
             Assert.All(lookup,
                 group =>
                 {
@@ -172,21 +179,22 @@ namespace System.Linq.Parallel.Tests
             Assert.Empty(lookup[-1]);
         }
 
-        [Theory]
+        [Fact]
         [OuterLoop]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 1024 * 4, 1024 * 128 }, MemberType = typeof(UnorderedSources))]
-        public static void ToLookup_DuplicateKeys_ElementSelector_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
+        public static void ToLookup_DuplicateKeys_ElementSelector_Longrunning()
         {
-            ToLookup_DuplicateKeys_ElementSelector(labeled, count);
+            ToLookup_DuplicateKeys_ElementSelector(Sources.OuterLoopCount);
         }
 
         [Theory]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(UnorderedSources))]
-        public static void ToLookup_DuplicateKeys_CustomComparator(Labeled<ParallelQuery<int>> labeled, int count)
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(16)]
+        public static void ToLookup_DuplicateKeys_CustomComparator(int count)
         {
-            ParallelQuery<int> query = labeled.Item;
             IntegerRangeSet seenOuter = new IntegerRangeSet(0, Math.Min(count, 2));
-            ILookup<int, int> lookup = query.ToLookup(x => x, new ModularCongruenceComparer(2));
+            ILookup<int, int> lookup = UnorderedSources.Default(count).ToLookup(x => x, new ModularCongruenceComparer(2));
             Assert.All(lookup,
                 group =>
                 {
@@ -202,21 +210,22 @@ namespace System.Linq.Parallel.Tests
             }
         }
 
-        [Theory]
+        [Fact]
         [OuterLoop]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 1024 * 4, 1024 * 128 }, MemberType = typeof(UnorderedSources))]
-        public static void ToLookup_DuplicateKeys_CustomComparator_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
+        public static void ToLookup_DuplicateKeys_CustomComparator_Longrunning()
         {
-            ToLookup_DuplicateKeys_CustomComparator(labeled, count);
+            ToLookup_DuplicateKeys_CustomComparator(Sources.OuterLoopCount);
         }
 
         [Theory]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(UnorderedSources))]
-        public static void ToLookup_DuplicateKeys_ElementSelector_CustomComparator(Labeled<ParallelQuery<int>> labeled, int count)
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(16)]
+        public static void ToLookup_DuplicateKeys_ElementSelector_CustomComparator(int count)
         {
-            ParallelQuery<int> query = labeled.Item;
             IntegerRangeSet seenOuter = new IntegerRangeSet(0, Math.Min(count, 2));
-            ILookup<int, int> lookup = query.ToLookup(x => x, y => -y, new ModularCongruenceComparer(2));
+            ILookup<int, int> lookup = UnorderedSources.Default(count).ToLookup(x => x, y => -y, new ModularCongruenceComparer(2));
             Assert.All(lookup,
                 group =>
                 {
@@ -232,12 +241,11 @@ namespace System.Linq.Parallel.Tests
             }
         }
 
-        [Theory]
+        [Fact]
         [OuterLoop]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 1024 * 4, 1024 * 128 }, MemberType = typeof(UnorderedSources))]
-        public static void ToLookup_DuplicateKeys_ElementSelector_CustomComparator_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
+        public static void ToLookup_DuplicateKeys_ElementSelector_CustomComparator_Longrunning()
         {
-            ToLookup_DuplicateKeys_ElementSelector_CustomComparator(labeled, count);
+            ToLookup_DuplicateKeys_ElementSelector_CustomComparator(Sources.OuterLoopCount);
         }
 
         [Fact]
@@ -270,31 +278,31 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(UnorderedSources.Ranges), new[] { 1 }, MemberType = typeof(UnorderedSources))]
         public static void ToLookup_AggregateException(Labeled<ParallelQuery<int>> labeled, int count)
         {
-            Functions.AssertThrowsWrapped<DeliberateTestException>(() => labeled.Item.ToLookup((Func<int, int>)(x => { throw new DeliberateTestException(); })));
-            Functions.AssertThrowsWrapped<DeliberateTestException>(() => labeled.Item.ToLookup((Func<int, int>)(x => { throw new DeliberateTestException(); }), y => y));
-            Functions.AssertThrowsWrapped<DeliberateTestException>(() => labeled.Item.ToLookup(x => x, (Func<int, int>)(y => { throw new DeliberateTestException(); })));
+            AssertThrows.Wrapped<DeliberateTestException>(() => labeled.Item.ToLookup((Func<int, int>)(x => { throw new DeliberateTestException(); })));
+            AssertThrows.Wrapped<DeliberateTestException>(() => labeled.Item.ToLookup((Func<int, int>)(x => { throw new DeliberateTestException(); }), y => y));
+            AssertThrows.Wrapped<DeliberateTestException>(() => labeled.Item.ToLookup(x => x, (Func<int, int>)(y => { throw new DeliberateTestException(); })));
 
-            Functions.AssertThrowsWrapped<DeliberateTestException>(() => labeled.Item.ToLookup((Func<int, int>)(x => { throw new DeliberateTestException(); }), EqualityComparer<int>.Default));
-            Functions.AssertThrowsWrapped<DeliberateTestException>(() => labeled.Item.ToLookup((Func<int, int>)(x => { throw new DeliberateTestException(); }), y => y, EqualityComparer<int>.Default));
-            Functions.AssertThrowsWrapped<DeliberateTestException>(() => labeled.Item.ToLookup(x => x, (Func<int, int>)(y => { throw new DeliberateTestException(); }), EqualityComparer<int>.Default));
+            AssertThrows.Wrapped<DeliberateTestException>(() => labeled.Item.ToLookup((Func<int, int>)(x => { throw new DeliberateTestException(); }), EqualityComparer<int>.Default));
+            AssertThrows.Wrapped<DeliberateTestException>(() => labeled.Item.ToLookup((Func<int, int>)(x => { throw new DeliberateTestException(); }), y => y, EqualityComparer<int>.Default));
+            AssertThrows.Wrapped<DeliberateTestException>(() => labeled.Item.ToLookup(x => x, (Func<int, int>)(y => { throw new DeliberateTestException(); }), EqualityComparer<int>.Default));
 
-            Functions.AssertThrowsWrapped<DeliberateTestException>(() => labeled.Item.ToLookup(x => x, new FailingEqualityComparer<int>()));
-            Functions.AssertThrowsWrapped<DeliberateTestException>(() => labeled.Item.ToLookup(x => x, y => y, new FailingEqualityComparer<int>()));
+            AssertThrows.Wrapped<DeliberateTestException>(() => labeled.Item.ToLookup(x => x, new FailingEqualityComparer<int>()));
+            AssertThrows.Wrapped<DeliberateTestException>(() => labeled.Item.ToLookup(x => x, y => y, new FailingEqualityComparer<int>()));
         }
 
         [Fact]
         public static void ToLookup_ArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<int>)null).ToLookup(x => x));
-            Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<int>)null).ToLookup(x => x, EqualityComparer<int>.Default));
-            Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<int>)null).ToLookup(x => x, y => y));
-            Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<int>)null).ToLookup(x => x, y => y, EqualityComparer<int>.Default));
-            Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Empty<int>().ToLookup((Func<int, int>)null));
-            Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Empty<int>().ToLookup((Func<int, int>)null, EqualityComparer<int>.Default));
-            Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Empty<int>().ToLookup((Func<int, int>)null, y => y));
-            Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Empty<int>().ToLookup((Func<int, int>)null, y => y, EqualityComparer<int>.Default));
-            Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Empty<int>().ToLookup(x => x, (Func<int, int>)null));
-            Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Empty<int>().ToLookup(x => x, (Func<int, int>)null, EqualityComparer<int>.Default));
+            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<int>)null).ToLookup(x => x));
+            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<int>)null).ToLookup(x => x, EqualityComparer<int>.Default));
+            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<int>)null).ToLookup(x => x, y => y));
+            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<int>)null).ToLookup(x => x, y => y, EqualityComparer<int>.Default));
+            Assert.Throws<ArgumentNullException>("keySelector", () => ParallelEnumerable.Empty<int>().ToLookup((Func<int, int>)null));
+            Assert.Throws<ArgumentNullException>("keySelector", () => ParallelEnumerable.Empty<int>().ToLookup((Func<int, int>)null, EqualityComparer<int>.Default));
+            Assert.Throws<ArgumentNullException>("keySelector", () => ParallelEnumerable.Empty<int>().ToLookup((Func<int, int>)null, y => y));
+            Assert.Throws<ArgumentNullException>("keySelector", () => ParallelEnumerable.Empty<int>().ToLookup((Func<int, int>)null, y => y, EqualityComparer<int>.Default));
+            Assert.Throws<ArgumentNullException>("elementSelector", () => ParallelEnumerable.Empty<int>().ToLookup(x => x, (Func<int, int>)null));
+            Assert.Throws<ArgumentNullException>("elementSelector", () => ParallelEnumerable.Empty<int>().ToLookup(x => x, (Func<int, int>)null, EqualityComparer<int>.Default));
         }
     }
 }

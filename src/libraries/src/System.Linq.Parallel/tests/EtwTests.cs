@@ -8,10 +8,10 @@ using Xunit;
 
 namespace System.Linq.Parallel.Tests
 {
-    public class EtwTests
+    public static class EtwTests
     {
         [Fact]
-        public void TestEtw()
+        public static void TestEtw()
         {
             using (var listener = new TestEventListener(new Guid("159eeeec-4a14-4418-a8fe-faabcd987887"), EventLevel.Verbose))
             {
