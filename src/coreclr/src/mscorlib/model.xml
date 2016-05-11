@@ -5915,6 +5915,8 @@
       <Member Name="PrelinkAll(System.Type)" />
       <Member Name="PtrToStringAnsi(System.IntPtr)" />
       <Member Name="PtrToStringAnsi(System.IntPtr,System.Int32)" />
+      <Member Name="PtrToStringUTF8(System.IntPtr)" />
+      <Member Name="PtrToStringUTF8(System.IntPtr,System.Int32)" />
       <Member Name="PtrToStringUni(System.IntPtr)" />
       <Member Name="PtrToStringUni(System.IntPtr,System.Int32)" />
       <Member Name="PtrToStructure(System.IntPtr,System.Object)" />
@@ -5994,6 +5996,7 @@
       <Member Name="StringToCoTaskMemUni(System.String)" />
       <Member Name="StringToHGlobalAnsi(System.String)" />
       <Member Name="StringToHGlobalUni(System.String)" />
+      <Member Name="StringToAllocatedMemoryUTF8(System.String)" />
       <Member Name="StructureToPtr&lt;T&gt;(T,System.IntPtr,System.Boolean)" />
       <Member Name="UnsafeAddrOfPinnedArrayElement&lt;T&gt;(T[],System.Int32)" />
       <Member Name="WriteByte(System.Object,System.Int32,System.Byte)" />
@@ -6006,6 +6009,7 @@
       <Member Name="ZeroFreeCoTaskMemAnsi(System.IntPtr)" />
       <Member Name="ZeroFreeGlobalAllocAnsi(System.IntPtr)" />
       <Member Name="ZeroFreeGlobalAllocUnicode(System.IntPtr)" />
+      <Member Name="ZeroFreeMemoryUTF8(System.IntPtr)" />
     </Type>
     <Type Name="System.Runtime.InteropServices.MarshalAsAttribute">
       <Member MemberType="Field" Name="ArraySubType" />
