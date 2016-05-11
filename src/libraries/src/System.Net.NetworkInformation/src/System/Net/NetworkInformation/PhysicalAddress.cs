@@ -68,7 +68,7 @@ namespace System.Net.NetworkInformation
                 return false;
             }
 
-            if (_address.GetHashCode() != address._address.GetHashCode())
+            if (GetHashCode() != address.GetHashCode())
             {
                 return false;
             }
