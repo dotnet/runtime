@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Linq.Parallel.Tests
 {
-    public class ExchangeTests
+    public static class ExchangeTests
     {
         private static readonly ParallelMergeOptions[] Options = new[] {
             ParallelMergeOptions.AutoBuffered,
@@ -27,7 +27,7 @@ namespace System.Linq.Parallel.Tests
         /// the second element is the count, and the third is the number of partitions or degrees of parallelism to use.</returns>
         public static IEnumerable<object[]> PartitioningData(int[] counts)
         {
-            foreach (object[] results in Sources.Ranges(counts.Cast<int>(), x => new[] { 1, 2, 4 }))
+            foreach (object[] results in Sources.Ranges(counts.DefaultIfEmpty(Sources.OuterLoopCount), x => new[] { 1, 2, 4 }))
             {
                 yield return results;
             }
@@ -43,7 +43,7 @@ namespace System.Linq.Parallel.Tests
         /// the second element is the count, and the third is the ParallelMergeOption to use.</returns>
         public static IEnumerable<object[]> MergeData(int[] counts)
         {
-            foreach (object[] results in Sources.Ranges(counts.Cast<int>(), x => Options))
+            foreach (object[] results in Sources.Ranges(counts.DefaultIfEmpty(Sources.OuterLoopCount), x => Options))
             {
                 yield return results;
             }
@@ -58,7 +58,7 @@ namespace System.Linq.Parallel.Tests
         /// the second element is the count, and the third is the ParallelMergeOption to use.</returns>
         public static IEnumerable<object[]> ThrowOnCount_AllMergeOptions_MemberData(int[] counts)
         {
-            foreach (int count in counts.Cast<int>())
+            foreach (int count in counts)
             {
                 var labeled = Labeled.Label("ThrowOnEnumeration " + count, Enumerables<int>.ThrowOnEnumeration(count).AsParallel().AsOrdered());
                 foreach (ParallelMergeOptions option in Options)
@@ -101,7 +101,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(PartitioningData), new[] { 1024 * 4, 1024 * 1024 })]
+        [MemberData(nameof(PartitioningData), new int[] { /* Sources.OuterLoopCount */ })]
         public static void Partitioning_Default_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int partitions)
         {
             Partitioning_Default(labeled, count, partitions);
@@ -120,7 +120,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(PartitioningData), new[] { 1024 * 4, 1024 * 1024 })]
+        [MemberData(nameof(PartitioningData), new int[] { /* Sources.OuterLoopCount */ })]
         public static void Partitioning_Striped_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int partitions)
         {
             Partitioning_Striped(labeled, count, partitions);
@@ -139,7 +139,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(MergeData), new[] { 1024 * 4, 1024 * 1024 })]
+        [MemberData(nameof(MergeData), new int[] { /* Sources.OuterLoopCount */ })]
         public static void Merge_Ordered_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, ParallelMergeOptions options)
         {
             Merge_Ordered(labeled, count, options);
@@ -174,7 +174,7 @@ namespace System.Linq.Parallel.Tests
         {
             ParallelQuery<int> query = labeled.Item;
 
-            Assert.Throws<ArgumentException>(() => query.WithMergeOptions((ParallelMergeOptions)4));
+            Assert.Throws<ArgumentException>(null, () => query.WithMergeOptions((ParallelMergeOptions)4));
         }
 
         [Theory]
@@ -187,7 +187,7 @@ namespace System.Linq.Parallel.Tests
         [Fact]
         public static void Merge_ArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<int>)null).WithMergeOptions(ParallelMergeOptions.AutoBuffered));
+            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<int>)null).WithMergeOptions(ParallelMergeOptions.AutoBuffered));
         }
 
         // The plinq chunk partitioner takes an IEnumerator over the source, and disposes the

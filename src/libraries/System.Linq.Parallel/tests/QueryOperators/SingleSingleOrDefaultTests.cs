@@ -7,26 +7,15 @@ using Xunit;
 
 namespace System.Linq.Parallel.Tests
 {
-    public class SingleSingleOrDefaultTests
+    public static class SingleSingleOrDefaultTests
     {
         public static IEnumerable<object[]> SingleSpecificData(int[] counts)
         {
-            Func<int, IEnumerable<int>> positions = x => new[] { 0, x / 2, Math.Max(0, x - 1) }.Distinct();
-            foreach (object[] results in UnorderedSources.Ranges(counts.Cast<int>(), positions)) yield return results;
-            foreach (object[] results in Sources.Ranges(counts.Cast<int>(), positions)) yield return results;
-        }
-
-        public static IEnumerable<object[]> SingleData(int[] elements, int[] counts)
-        {
-            foreach (int element in elements)
+            foreach (int count in counts.DefaultIfEmpty(Sources.OuterLoopCount))
             {
-                foreach (object[] results in UnorderedSources.Ranges(element, counts.Cast<int>()))
+                foreach (int position in new[] { 0, count / 2, Math.Max(0, count - 1) }.Distinct())
                 {
-                    yield return new object[] { results[0], results[1], element };
-                }
-                foreach (object[] results in Sources.Ranges(element, counts.Cast<int>()))
-                {
-                    yield return new object[] { results[0], results[1], element };
+                    yield return new object[] { count, position };
                 }
             }
         }
@@ -35,134 +24,134 @@ namespace System.Linq.Parallel.Tests
         // Single and SingleOrDefault
         //
         [Theory]
-        [MemberData(nameof(SingleData), new[] { 0, 2, 16, 1024 * 1024 }, new[] { 1 })]
-        public static void Single(Labeled<ParallelQuery<int>> labeled, int count, int element)
+        [InlineData(1)]
+        [InlineData("string")]
+        [InlineData((object)null)]
+        public static void Single<T>(T element)
         {
-            ParallelQuery<int> query = labeled.Item;
-            Assert.Equal(element, query.Single());
-            Assert.Equal(element, query.Single(x => true));
+            Assert.Equal(element, ParallelEnumerable.Repeat(element, 1).Single());
+            Assert.Equal(element, ParallelEnumerable.Repeat(element, 1).Single(x => true));
         }
 
         [Theory]
-        [MemberData(nameof(SingleData), new[] { 0, 2, 16, 1024 * 1024 }, new[] { 0, 1 })]
-        public static void SingleOrDefault(Labeled<ParallelQuery<int>> labeled, int count, int element)
+        [InlineData(1, 0)]
+        [InlineData("string", 0)]
+        [InlineData((object)null, 0)]
+        [InlineData(1, 1)]
+        [InlineData("string", 1)]
+        [InlineData((object)null, 1)]
+        public static void SingleOrDefault<T>(T element, int count)
         {
-            ParallelQuery<int> query = labeled.Item;
-            Assert.Equal(count >= 1 ? element : default(int), query.SingleOrDefault());
-            Assert.Equal(count >= 1 ? element : default(int), query.SingleOrDefault(x => true));
+            Assert.Equal(count >= 1 ? element : default(T), ParallelEnumerable.Repeat(element, count).SingleOrDefault());
+            Assert.Equal(count >= 1 ? element : default(T), ParallelEnumerable.Repeat(element, count).SingleOrDefault(x => true));
+        }
+
+        [Fact]
+        public static void Single_Empty()
+        {
+            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Empty<int>().Single());
+            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Empty<int>().Single(x => true));
         }
 
         [Theory]
-        [MemberData(nameof(SingleData), new[] { 0, 1024 * 1024 }, new[] { 0 })]
-        public static void Single_Empty(Labeled<ParallelQuery<int>> labeled, int count, int element)
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(16)]
+        public static void Single_NoMatch(int count)
         {
-            ParallelQuery<int> query = labeled.Item;
-            Assert.Throws<InvalidOperationException>(() => query.Single());
-            Assert.Throws<InvalidOperationException>(() => query.Single(x => true));
-        }
-
-        [Theory]
-        [MemberData(nameof(SingleData), new[] { 0 }, new[] { 0, 1, 2, 16 })]
-        public static void Single_NoMatch(Labeled<ParallelQuery<int>> labeled, int count, int element)
-        {
-            ParallelQuery<int> query = labeled.Item;
             IntegerRangeSet seen = new IntegerRangeSet(0, count);
-            Assert.Throws<InvalidOperationException>(() => query.Single(x => !seen.Add(x)));
+            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Range(0, count).Single(x => !seen.Add(x)));
             seen.AssertComplete();
         }
 
-        [Theory]
+        [Fact]
         [OuterLoop]
-        [MemberData(nameof(SingleData), new[] { 0 }, new[] { 1024 * 4, 1024 * 1024 })]
-        public static void Single_NoMatch_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int element)
+        public static void Single_NoMatch_Longrunning()
         {
-            Single_NoMatch(labeled, count, element);
+            Single_NoMatch(Sources.OuterLoopCount);
         }
 
         [Theory]
-        [MemberData(nameof(SingleData), new[] { 0 }, new[] { 0, 1, 2, 16 })]
-        public static void SingleOrDefault_NoMatch(Labeled<ParallelQuery<int>> labeled, int count, int element)
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(16)]
+        public static void SingleOrDefault_NoMatch(int count)
         {
-            ParallelQuery<int> query = labeled.Item;
             IntegerRangeSet seen = new IntegerRangeSet(0, count);
-            Assert.Equal(default(int), query.SingleOrDefault(x => !seen.Add(x)));
+            Assert.Equal(default(int), ParallelEnumerable.Range(0, count).SingleOrDefault(x => !seen.Add(x)));
             seen.AssertComplete();
         }
 
-        [Theory]
+        [Fact]
         [OuterLoop]
-        [MemberData(nameof(SingleData), new[] { 0 }, new[] { 1024 * 4, 1024 * 1024 })]
-        public static void SingleOrDefault_NoMatch_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int element)
+        public static void SingleOrDefault_NoMatch_Longrunning()
         {
-            SingleOrDefault_NoMatch(labeled, count, element);
+            SingleOrDefault_NoMatch(Sources.OuterLoopCount);
         }
 
         [Theory]
-        [MemberData(nameof(SingleData), new[] { 0 }, new[] { 2, 16 })]
-        public static void Single_AllMatch(Labeled<ParallelQuery<int>> labeled, int count, int element)
+        [InlineData(2)]
+        [InlineData(16)]
+        public static void Single_AllMatch(int count)
         {
-            ParallelQuery<int> query = labeled.Item;
-            Assert.Throws<InvalidOperationException>(() => query.Single(x => true));
+            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Range(0, count).Single(x => true));
         }
 
-        [Theory]
+        [Fact]
         [OuterLoop]
-        [MemberData(nameof(SingleData), new[] { 0 }, new[] { 1024 * 4, 1024 * 1024 })]
-        public static void Single_AllMatch_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int element)
+        public static void Single_AllMatch_Longrunning()
         {
-            Single_AllMatch(labeled, count, element);
+            Single_AllMatch(Sources.OuterLoopCount);
         }
 
         [Theory]
-        [MemberData(nameof(SingleData), new[] { 0 }, new[] { 2, 16 })]
-        public static void SingleOrDefault_AllMatch(Labeled<ParallelQuery<int>> labeled, int count, int element)
+        [InlineData(2)]
+        [InlineData(16)]
+        public static void SingleOrDefault_AllMatch(int count)
         {
-            ParallelQuery<int> query = labeled.Item;
-            Assert.Throws<InvalidOperationException>(() => query.SingleOrDefault(x => true));
+            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Range(0, count).SingleOrDefault(x => true));
         }
 
-        [Theory]
+        [Fact]
         [OuterLoop]
-        [MemberData(nameof(SingleData), new[] { 0 }, new[] { 1024 * 4, 1024 * 1024 })]
-        public static void SingleOrDefault_AllMatch_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int element)
+        public static void SingleOrDefault_AllMatch_Longrunning()
         {
-            SingleOrDefault_AllMatch(labeled, count, element);
+            SingleOrDefault_AllMatch(Sources.OuterLoopCount);
         }
 
         [Theory]
         [MemberData(nameof(SingleSpecificData), new[] { 1, 2, 16 })]
-        public static void Single_OneMatch(Labeled<ParallelQuery<int>> labeled, int count, int element)
+        public static void Single_OneMatch(int count, int element)
         {
-            ParallelQuery<int> query = labeled.Item;
             IntegerRangeSet seen = new IntegerRangeSet(0, count);
-            Assert.Equal(element, query.Single(x => seen.Add(x) && x == element));
+            Assert.Equal(element, ParallelEnumerable.Range(0, count).Single(x => seen.Add(x) && x == element));
             seen.AssertComplete();
         }
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(SingleSpecificData), new[] { 1024 * 4, 1024 * 1024 })]
-        public static void Single_OneMatch_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int element)
+        [MemberData(nameof(SingleSpecificData), new int[] { /* Sources.OuterLoopCount */ })]
+        public static void Single_OneMatch_Longrunning(int count, int element)
         {
-            Single_OneMatch(labeled, count, element);
+            Single_OneMatch(count, element);
         }
 
         [Theory]
         [MemberData(nameof(SingleSpecificData), new[] { 0, 1, 2, 16 })]
-        public static void SingleOrDefault_OneMatch(Labeled<ParallelQuery<int>> labeled, int count, int element)
+        public static void SingleOrDefault_OneMatch(int count, int element)
         {
-            ParallelQuery<int> query = labeled.Item;
             IntegerRangeSet seen = new IntegerRangeSet(0, count);
-            Assert.Equal(element, query.SingleOrDefault(x => seen.Add(x) && x == element));
+            Assert.Equal(element, ParallelEnumerable.Range(0, count).SingleOrDefault(x => seen.Add(x) && x == element));
             seen.AssertComplete();
         }
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(SingleSpecificData), new[] { 1024 * 4, 1024 * 1024 })]
-        public static void SingleOrDefault_OneMatch_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int element)
+        [MemberData(nameof(SingleSpecificData), new int[] { /* Sources.OuterLoopCount */ })]
+        public static void SingleOrDefault_OneMatch_Longrunning(int count, int element)
         {
-            SingleOrDefault_OneMatch(labeled, count, element);
+            SingleOrDefault_OneMatch(count, element);
         }
 
         [Fact]
@@ -205,22 +194,21 @@ namespace System.Linq.Parallel.Tests
             AssertThrows.AlreadyCanceled(source => source.SingleOrDefault(x => true));
         }
 
-        [Theory]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 1 }, MemberType = typeof(UnorderedSources))]
-        public static void Single_AggregateException(Labeled<ParallelQuery<int>> labeled, int count)
+        [Fact]
+        public static void Single_AggregateException()
         {
-            Functions.AssertThrowsWrapped<DeliberateTestException>(() => labeled.Item.Single(x => { throw new DeliberateTestException(); }));
-            Functions.AssertThrowsWrapped<DeliberateTestException>(() => labeled.Item.SingleOrDefault(x => { throw new DeliberateTestException(); }));
+            AssertThrows.Wrapped<DeliberateTestException>(() => ParallelEnumerable.Range(0, 1).Single(x => { throw new DeliberateTestException(); }));
+            AssertThrows.Wrapped<DeliberateTestException>(() => ParallelEnumerable.Range(0, 1).SingleOrDefault(x => { throw new DeliberateTestException(); }));
         }
 
         [Fact]
         public static void Single_ArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<bool>)null).Single());
-            Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<bool>)null).SingleOrDefault());
+            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<bool>)null).Single());
+            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<bool>)null).SingleOrDefault());
 
-            Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Empty<int>().Single(null));
-            Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Empty<int>().SingleOrDefault(null));
+            Assert.Throws<ArgumentNullException>("predicate", () => ParallelEnumerable.Empty<int>().Single(null));
+            Assert.Throws<ArgumentNullException>("predicate", () => ParallelEnumerable.Empty<int>().SingleOrDefault(null));
         }
     }
 }

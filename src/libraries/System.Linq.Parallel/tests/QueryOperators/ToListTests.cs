@@ -6,24 +6,25 @@ using Xunit;
 
 namespace System.Linq.Parallel.Tests
 {
-    public class ToListTests
+    public static class ToListTests
     {
         [Theory]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(UnorderedSources))]
-        public static void ToList_Unordered(Labeled<ParallelQuery<int>> labeled, int count)
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(16)]
+        public static void ToList_Unordered(int count)
         {
-            ParallelQuery<int> query = labeled.Item;
             IntegerRangeSet seen = new IntegerRangeSet(0, count);
-            Assert.All(query.ToList(), x => seen.Add(x));
+            Assert.All(UnorderedSources.Default(count).ToList(), x => seen.Add(x));
             seen.AssertComplete();
         }
 
-        [Theory]
+        [Fact]
         [OuterLoop]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 1024 * 4, 1024 * 1024 }, MemberType = typeof(UnorderedSources))]
-        public static void ToList_Unordered_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
+        public static void ToList_Unordered_Longrunning()
         {
-            ToList_Unordered(labeled, count);
+            ToList_Unordered(Sources.OuterLoopCount);
         }
 
         [Theory]
@@ -38,7 +39,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(Sources.Ranges), new[] { 1024 * 4, 1024 * 1024 }, MemberType = typeof(Sources))]
+        [MemberData(nameof(Sources.OuterLoopRanges), MemberType = typeof(Sources))]
         public static void ToList_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ToList(labeled, count);
@@ -53,7 +54,7 @@ namespace System.Linq.Parallel.Tests
         [Fact]
         public static void ToList_ArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<bool>)null).ToList());
+            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<bool>)null).ToList());
         }
     }
 }

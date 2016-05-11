@@ -8,16 +8,22 @@ using Xunit;
 
 namespace System.Linq.Parallel.Tests
 {
-    public class ConcatTests
+    public static class ConcatTests
     {
         public static IEnumerable<object[]> ConcatUnorderedData(int[] counts)
         {
-            foreach (object[] parms in UnorderedSources.BinaryRanges(counts.Cast<int>(), (left, right) => left, counts.Cast<int>())) yield return parms.Take(4).ToArray();
+            foreach (int leftCount in counts)
+            {
+                foreach (int rightCount in counts)
+                {
+                    yield return new object[] { leftCount, rightCount };
+                }
+            }
         }
 
         public static IEnumerable<object[]> ConcatData(int[] counts)
         {
-            foreach (object[] parms in ConcatUnorderedData(counts))
+            foreach (object[] parms in UnorderedSources.BinaryRanges(counts.DefaultIfEmpty(Sources.OuterLoopCount), (left, right) => left, counts))
             {
                 yield return new object[] { ((Labeled<ParallelQuery<int>>)parms[0]).Order(), parms[1], ((Labeled<ParallelQuery<int>>)parms[2]).Order(), parms[3] };
                 yield return new object[] { ((Labeled<ParallelQuery<int>>)parms[0]).Order(), parms[1], parms[2], parms[3] };
@@ -30,30 +36,30 @@ namespace System.Linq.Parallel.Tests
         //
         [Theory]
         [MemberData(nameof(ConcatUnorderedData), new[] { 0, 1, 2, 16 })]
-        public static void Concat_Unordered(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
+        public static void Concat_Unordered(int leftCount, int rightCount)
         {
-            ParallelQuery<int> leftQuery = left.Item;
-            ParallelQuery<int> rightQuery = right.Item;
             IntegerRangeSet seen = new IntegerRangeSet(0, leftCount + rightCount);
-            foreach (int i in leftQuery.Concat(rightQuery))
+            foreach (int i in UnorderedSources.Default(0, leftCount).Concat(UnorderedSources.Default(leftCount, rightCount)))
             {
                 seen.Add(i);
             }
             seen.AssertComplete();
         }
 
-        [Theory]
+        [Fact]
         [OuterLoop]
-        [MemberData(nameof(ConcatUnorderedData), new[] { 1024, 1024 * 16 })]
-        public static void Concat_Unordered_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
+        public static void Concat_Unordered_Longrunning()
         {
-            Concat_Unordered(left, leftCount, right, rightCount);
+            Concat_Unordered(Sources.OuterLoopCount, Sources.OuterLoopCount);
         }
 
         [Theory]
         [MemberData(nameof(ConcatData), new[] { 0, 1, 2, 16 })]
         public static void Concat(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
+            // The ordering of Concat is only guaranteed when both operands are ordered,
+            // however the current implementation manages to perform ordering if either operand is ordered _in most cases_.
+            // If this test starts failing, consider revising the operators and mention the change in release notes.
             ParallelQuery<int> leftQuery = left.Item;
             ParallelQuery<int> rightQuery = right.Item;
             int seen = 0;
@@ -66,7 +72,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(ConcatData), new[] { 1024, 1024 * 16 })]
+        [MemberData(nameof(ConcatData), new int[] { /* Sources.OuterLoopCount */ })]
         public static void Concat_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             Concat(left, leftCount, right, rightCount);
@@ -74,27 +80,27 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [MemberData(nameof(ConcatUnorderedData), new[] { 0, 1, 2, 16 })]
-        public static void Concat_Unordered_NotPipelined(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
+        public static void Concat_Unordered_NotPipelined(int leftCount, int rightCount)
         {
-            ParallelQuery<int> leftQuery = left.Item;
-            ParallelQuery<int> rightQuery = right.Item;
             IntegerRangeSet seen = new IntegerRangeSet(0, leftCount + rightCount);
-            Assert.All(leftQuery.Concat(rightQuery).ToList(), x => seen.Add(x));
+            Assert.All(UnorderedSources.Default(leftCount).Concat(UnorderedSources.Default(leftCount, rightCount)).ToList(), x => seen.Add(x));
             seen.AssertComplete();
         }
 
-        [Theory]
+        [Fact]
         [OuterLoop]
-        [MemberData(nameof(ConcatUnorderedData), new[] { 1024, 1024 * 16 })]
-        public static void Concat_Unordered_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
+        public static void Concat_Unordered_NotPipelined_Longrunning()
         {
-            Concat_Unordered_NotPipelined(left, leftCount, right, rightCount);
+            Concat_Unordered_NotPipelined(Sources.OuterLoopCount, Sources.OuterLoopCount);
         }
 
         [Theory]
         [MemberData(nameof(ConcatData), new[] { 0, 1, 2, 16 })]
         public static void Concat_NotPipelined(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
+            // The ordering of Concat is only guaranteed when both operands are ordered,
+            // however the current implementation manages to perform ordering if either operand is ordered _in most cases_.
+            // If this test starts failing, consider revising the operators and mention the change in release notes.
             ParallelQuery<int> leftQuery = left.Item;
             ParallelQuery<int> rightQuery = right.Item;
             int seen = 0;
@@ -104,7 +110,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(ConcatData), new[] { 1024, 1024 * 16 })]
+        [MemberData(nameof(ConcatData), new int[] { /* Sources.OuterLoopCount */ })]
         public static void Concat_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             Concat_NotPipelined(left, leftCount, right, rightCount);
@@ -132,8 +138,8 @@ namespace System.Linq.Parallel.Tests
         [Fact]
         public static void Concat_ArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<int>)null).Concat(ParallelEnumerable.Range(0, 1)));
-            Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Range(0, 1).Concat(null));
+            Assert.Throws<ArgumentNullException>("first", () => ((ParallelQuery<int>)null).Concat(ParallelEnumerable.Range(0, 1)));
+            Assert.Throws<ArgumentNullException>("second", () => ParallelEnumerable.Range(0, 1).Concat(null));
         }
 
         [Fact]

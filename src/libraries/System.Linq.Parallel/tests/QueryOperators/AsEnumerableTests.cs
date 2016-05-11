@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Linq.Parallel.Tests
 {
-    public class AsEnumerableTests
+    public static class AsEnumerableTests
     {
         [Theory]
         [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(UnorderedSources))]
@@ -21,7 +21,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 1024 * 1024, 1024 * 1024 * 4 }, MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.OuterLoopRanges), MemberType = typeof(UnorderedSources))]
         public static void AsEnumerable_Unordered_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
             AsEnumerable_Unordered(labeled, count);
@@ -39,7 +39,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(Sources.Ranges), new[] { 1024 * 4, 1024 * 128 }, MemberType = typeof(Sources))]
+        [MemberData(nameof(Sources.OuterLoopRanges), MemberType = typeof(Sources))]
         public static void AsEnumerable_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
             AsEnumerable(labeled, count);
@@ -84,7 +84,7 @@ namespace System.Linq.Parallel.Tests
         [Fact]
         public static void AsEnumerable_ArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<int>)null).AsEnumerable());
+            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<int>)null).AsEnumerable());
         }
     }
 }

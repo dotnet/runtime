@@ -8,13 +8,33 @@ using Xunit;
 
 namespace System.Linq.Parallel.Tests
 {
-    public class JoinTests
+    public static class JoinTests
     {
         private const int KeyFactor = 8;
 
-        public static IEnumerable<object[]> JoinData(int[] leftCounts, int[] rightCounts)
+        public static IEnumerable<object[]> JoinUnorderedData(int[] counts)
         {
-            foreach (object[] parms in UnorderedSources.BinaryRanges(leftCounts, rightCounts))
+            foreach (int leftCount in counts)
+            {
+                foreach (int rightCount in counts)
+                {
+                    yield return new object[] { leftCount, rightCount };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> JoinData(int[] counts)
+        {
+            // When dealing with joins, if there aren't multiple matches the ordering of the second operand is immaterial.
+            foreach (object[] parms in Sources.Ranges(counts, i => counts))
+            {
+                yield return parms;
+            }
+        }
+
+        public static IEnumerable<object[]> JoinMultipleData(int[] counts)
+        {
+            foreach (object[] parms in UnorderedSources.BinaryRanges(counts, counts))
             {
                 yield return new object[] { ((Labeled<ParallelQuery<int>>)parms[0]).Order(), parms[1], ((Labeled<ParallelQuery<int>>)parms[2]).Order(), parms[3] };
             }
@@ -24,11 +44,11 @@ namespace System.Linq.Parallel.Tests
         // Join
         //
         [Theory]
-        [MemberData(nameof(UnorderedSources.BinaryRanges), new[] { 0, 1, 2, 16 }, new[] { 0, 1, 16 }, MemberType = typeof(UnorderedSources))]
-        public static void Join_Unordered(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
+        [MemberData(nameof(JoinUnorderedData), new[] { 0, 1, 2, KeyFactor * 2 })]
+        public static void Join_Unordered(int leftCount, int rightCount)
         {
-            ParallelQuery<int> leftQuery = left.Item;
-            ParallelQuery<int> rightQuery = right.Item;
+            ParallelQuery<int> leftQuery = UnorderedSources.Default(leftCount);
+            ParallelQuery<int> rightQuery = UnorderedSources.Default(rightCount);
             IntegerRangeSet seen = new IntegerRangeSet(0, Math.Min(leftCount, (rightCount + (KeyFactor - 1)) / KeyFactor));
             foreach (var p in leftQuery.Join(rightQuery, x => x * KeyFactor, y => y, (x, y) => KeyValuePair.Create(x, y)))
             {
@@ -38,20 +58,19 @@ namespace System.Linq.Parallel.Tests
             seen.AssertComplete();
         }
 
-        [Theory]
+        [Fact]
         [OuterLoop]
-        [MemberData(nameof(UnorderedSources.BinaryRanges), new[] { 1024 * 4, 1024 * 8 }, new[] { 0, 1, 1024 * 8, 1024 * 16 }, MemberType = typeof(UnorderedSources))]
-        public static void Join_Unordered_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
+        public static void Join_Unordered_Longrunning()
         {
-            Join_Unordered(left, leftCount, right, rightCount);
+            Join_Unordered(Sources.OuterLoopCount / 64, Sources.OuterLoopCount / 64);
         }
 
         [Theory]
-        [MemberData(nameof(JoinData), new[] { 0, 1, 2, 16 }, new[] { 0, 1, 16 })]
-        public static void Join(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
+        [MemberData(nameof(JoinData), new[] { 0, 1, 2, KeyFactor * 2 })]
+        public static void Join(Labeled<ParallelQuery<int>> left, int leftCount, int rightCount)
         {
             ParallelQuery<int> leftQuery = left.Item;
-            ParallelQuery<int> rightQuery = right.Item;
+            ParallelQuery<int> rightQuery = UnorderedSources.Default(rightCount);
             int seen = 0;
             foreach (var p in leftQuery.Join(rightQuery, x => x * KeyFactor, y => y, (x, y) => KeyValuePair.Create(x, y)))
             {
@@ -63,38 +82,37 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(JoinData), new[] { 1024 * 4, 1024 * 8 }, new[] { 0, 1, 1024 * 8, 1024 * 16 })]
-        public static void Join_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
+        [MemberData(nameof(JoinData), new[] { 512, 1024 })]
+        public static void Join_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, int rightCount)
         {
-            Join(left, leftCount, right, rightCount);
+            Join(left, leftCount, rightCount);
         }
 
         [Theory]
-        [MemberData(nameof(UnorderedSources.BinaryRanges), new[] { 0, 1, 2, 16 }, new[] { 0, 1, 16 }, MemberType = typeof(UnorderedSources))]
-        public static void Join_Unordered_NotPipelined(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
+        [MemberData(nameof(JoinUnorderedData), new[] { 0, 1, 2, KeyFactor * 2 })]
+        public static void Join_Unordered_NotPipelined(int leftCount, int rightCount)
         {
-            ParallelQuery<int> leftQuery = left.Item;
-            ParallelQuery<int> rightQuery = right.Item;
+            ParallelQuery<int> leftQuery = UnorderedSources.Default(leftCount);
+            ParallelQuery<int> rightQuery = UnorderedSources.Default(rightCount);
             IntegerRangeSet seen = new IntegerRangeSet(0, Math.Min(leftCount, (rightCount + (KeyFactor - 1)) / KeyFactor));
             Assert.All(leftQuery.Join(rightQuery, x => x * KeyFactor, y => y, (x, y) => KeyValuePair.Create(x, y)).ToList(),
                 p => { Assert.Equal(p.Key * KeyFactor, p.Value); seen.Add(p.Key); });
             seen.AssertComplete();
         }
 
-        [Theory]
+        [Fact]
         [OuterLoop]
-        [MemberData(nameof(UnorderedSources.BinaryRanges), new[] { 1024 * 4, 1024 * 8 }, new[] { 0, 1, 1024 * 8, 1024 * 16 }, MemberType = typeof(UnorderedSources))]
-        public static void Join_Unordered_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
+        public static void Join_Unordered_NotPipelined_Longrunning()
         {
-            Join_Unordered_NotPipelined(left, leftCount, right, rightCount);
+            Join_Unordered_NotPipelined(Sources.OuterLoopCount / 64, Sources.OuterLoopCount / 64);
         }
 
         [Theory]
-        [MemberData(nameof(JoinData), new[] { 0, 1, 2, 16 }, new[] { 0, 1, 16 })]
-        public static void Join_NotPipelined(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
+        [MemberData(nameof(JoinData), new[] { 0, 1, 2, KeyFactor * 2 })]
+        public static void Join_NotPipelined(Labeled<ParallelQuery<int>> left, int leftCount, int rightCount)
         {
             ParallelQuery<int> leftQuery = left.Item;
-            ParallelQuery<int> rightQuery = right.Item;
+            ParallelQuery<int> rightQuery = UnorderedSources.Default(rightCount);
             int seen = 0;
             Assert.All(leftQuery.Join(rightQuery, x => x * KeyFactor, y => y, (x, y) => KeyValuePair.Create(x, y)).ToList(),
                 p => { Assert.Equal(seen++, p.Key); Assert.Equal(p.Key * KeyFactor, p.Value); });
@@ -103,18 +121,18 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(JoinData), new[] { 1024 * 4, 1024 * 8 }, new[] { 0, 1, 1024 * 8, 1024 * 16 })]
-        public static void Join_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
+        [MemberData(nameof(JoinData), new[] { 512, 1024 })]
+        public static void Join_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, int rightCount)
         {
-            Join_NotPipelined(left, leftCount, right, rightCount);
+            Join_NotPipelined(left, leftCount, rightCount);
         }
 
         [Theory]
-        [MemberData(nameof(UnorderedSources.BinaryRanges), new[] { 0, 1, 2, 16 }, new[] { 0, 1, 16 }, MemberType = typeof(UnorderedSources))]
-        public static void Join_Unordered_Multiple(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
+        [MemberData(nameof(JoinUnorderedData), new[] { 0, 1, 2, KeyFactor * 2 })]
+        public static void Join_Unordered_Multiple(int leftCount, int rightCount)
         {
-            ParallelQuery<int> leftQuery = left.Item;
-            ParallelQuery<int> rightQuery = right.Item;
+            ParallelQuery<int> leftQuery = UnorderedSources.Default(leftCount);
+            ParallelQuery<int> rightQuery = UnorderedSources.Default(rightCount);
             IntegerRangeSet seenOuter = new IntegerRangeSet(0, Math.Min(leftCount, (rightCount + (KeyFactor - 1)) / KeyFactor));
             IntegerRangeSet seenInner = new IntegerRangeSet(0, Math.Min(leftCount * KeyFactor, rightCount));
             Assert.All(leftQuery.Join(rightQuery, x => x, y => y / KeyFactor, (x, y) => KeyValuePair.Create(x, y)),
@@ -128,17 +146,16 @@ namespace System.Linq.Parallel.Tests
             seenInner.AssertComplete();
         }
 
-        [Theory]
+        [Fact]
         [OuterLoop]
-        [MemberData(nameof(UnorderedSources.BinaryRanges), new[] { 1024 * 4, 1024 * 8 }, new[] { 0, 1, 1024 * 8, 1024 * 16 }, MemberType = typeof(UnorderedSources))]
-        public static void Join_Unordered_Multiple_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
+        public static void Join_Unordered_Multiple_Longrunning()
         {
-            Join_Unordered_Multiple(left, leftCount, right, rightCount);
+            Join_Unordered_Multiple(Sources.OuterLoopCount / 64, Sources.OuterLoopCount / 64);
         }
 
         [Theory]
         [ActiveIssue(1155)]
-        [MemberData(nameof(JoinData), new[] { 0, 1, 2, 16 }, new[] { 0, 1, 16 })]
+        [MemberData(nameof(JoinMultipleData), new[] { 0, 1, 2, KeyFactor * 2 })]
         public static void Join_Multiple(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -156,18 +173,18 @@ namespace System.Linq.Parallel.Tests
         [Theory]
         [ActiveIssue(1155)]
         [OuterLoop]
-        [MemberData(nameof(JoinData), new[] { 1024 * 4, 1024 * 8 }, new[] { 0, 1, 1024 * 8, 1024 * 16 })]
+        [MemberData(nameof(JoinMultipleData), new[] { 512, 1024 })]
         public static void Join_Multiple_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             Join_Multiple(left, leftCount, right, rightCount);
         }
 
         [Theory]
-        [MemberData(nameof(UnorderedSources.BinaryRanges), new[] { 0, 1, 2, 16 }, new[] { 0, 1, 16 }, MemberType = typeof(UnorderedSources))]
-        public static void Join_Unordered_CustomComparator(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
+        [MemberData(nameof(JoinUnorderedData), new[] { 0, 1, 2, KeyFactor * 2 })]
+        public static void Join_Unordered_CustomComparator(int leftCount, int rightCount)
         {
-            ParallelQuery<int> leftQuery = left.Item;
-            ParallelQuery<int> rightQuery = right.Item;
+            ParallelQuery<int> leftQuery = UnorderedSources.Default(leftCount);
+            ParallelQuery<int> rightQuery = UnorderedSources.Default(rightCount);
             IntegerRangeCounter seenOuter = new IntegerRangeCounter(0, leftCount);
             IntegerRangeCounter seenInner = new IntegerRangeCounter(0, rightCount);
             Assert.All(leftQuery.Join(rightQuery, x => x, y => y,
@@ -191,17 +208,16 @@ namespace System.Linq.Parallel.Tests
             }
         }
 
-        [Theory]
+        [Fact]
         [OuterLoop]
-        [MemberData(nameof(UnorderedSources.BinaryRanges), new[] { 512, 1024 }, new[] { 0, 1, 1024 }, MemberType = typeof(UnorderedSources))]
-        public static void Join_Unordered_CustomComparator_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
+        public static void Join_Unordered_CustomComparator_Longrunning()
         {
-            Join_Unordered_CustomComparator(left, leftCount, right, rightCount);
+            Join_Unordered_CustomComparator(Sources.OuterLoopCount / 64, Sources.OuterLoopCount / 64);
         }
 
         [Theory]
         [ActiveIssue(1155)]
-        [MemberData(nameof(JoinData), new[] { 0, 1, 2, 16 }, new[] { 0, 1, 16 })]
+        [MemberData(nameof(JoinMultipleData), new[] { 0, 1, 2, KeyFactor * 2 })]
         public static void Join_CustomComparator(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -234,18 +250,18 @@ namespace System.Linq.Parallel.Tests
         [Theory]
         [ActiveIssue(1155)]
         [OuterLoop]
-        [MemberData(nameof(JoinData), new[] { 512, 1024 }, new[] { 0, 1, 1024 })]
+        [MemberData(nameof(JoinMultipleData), new[] { 512, 1024 })]
         public static void Join_CustomComparator_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             Join_CustomComparator(left, leftCount, right, rightCount);
         }
 
         [Theory]
-        [MemberData(nameof(JoinData), new[] { 0, 1, 2, 16 }, new[] { 0, 1, 16 })]
-        public static void Join_InnerJoin_Ordered(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
+        [MemberData(nameof(JoinData), new[] { 0, 1, 2, KeyFactor * 2 })]
+        public static void Join_InnerJoin_Ordered(Labeled<ParallelQuery<int>> left, int leftCount, int rightCount)
         {
             ParallelQuery<int> leftQuery = left.Item;
-            ParallelQuery<int> rightQuery = right.Item;
+            ParallelQuery<int> rightQuery = UnorderedSources.Default(rightCount);
             ParallelQuery<int> middleQuery = ParallelEnumerable.Range(0, leftCount).AsOrdered();
 
             int seen = 0;
@@ -263,10 +279,10 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(JoinData), new[] { 1024 * 4, 1024 * 8 }, new[] { 0, 1, 1024 * 8, 1024 * 16 })]
-        public static void Join_InnerJoin_Ordered_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
+        [MemberData(nameof(JoinData), new[] { 512, 1024 })]
+        public static void Join_InnerJoin_Ordered_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, int rightCount)
         {
-            Join_InnerJoin_Ordered(left, leftCount, right, rightCount);
+            Join_InnerJoin_Ordered(left, leftCount, rightCount);
         }
 
         [Fact]
@@ -292,16 +308,16 @@ namespace System.Linq.Parallel.Tests
         [Fact]
         public static void Join_ArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<int>)null).Join(ParallelEnumerable.Range(0, 1), i => i, i => i, (i, j) => i));
-            Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Range(0, 1).Join((ParallelQuery<int>)null, i => i, i => i, (i, j) => i));
-            Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Range(0, 1).Join(ParallelEnumerable.Range(0, 1), (Func<int, int>)null, i => i, (i, j) => i));
-            Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Range(0, 1).Join(ParallelEnumerable.Range(0, 1), i => i, (Func<int, int>)null, (i, j) => i));
-            Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Range(0, 1).Join(ParallelEnumerable.Range(0, 1), i => i, i => i, (Func<int, int, int>)null));
-            Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<int>)null).Join(ParallelEnumerable.Range(0, 1), i => i, i => i, (i, j) => i, EqualityComparer<int>.Default));
-            Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Range(0, 1).Join((ParallelQuery<int>)null, i => i, i => i, (i, j) => i, EqualityComparer<int>.Default));
-            Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Range(0, 1).Join(ParallelEnumerable.Range(0, 1), (Func<int, int>)null, i => i, (i, j) => i, EqualityComparer<int>.Default));
-            Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Range(0, 1).Join(ParallelEnumerable.Range(0, 1), i => i, (Func<int, int>)null, (i, j) => i, EqualityComparer<int>.Default));
-            Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Range(0, 1).Join(ParallelEnumerable.Range(0, 1), i => i, i => i, (Func<int, int, int>)null, EqualityComparer<int>.Default));
+            Assert.Throws<ArgumentNullException>("outer", () => ((ParallelQuery<int>)null).Join(ParallelEnumerable.Range(0, 1), i => i, i => i, (i, j) => i));
+            Assert.Throws<ArgumentNullException>("inner", () => ParallelEnumerable.Range(0, 1).Join((ParallelQuery<int>)null, i => i, i => i, (i, j) => i));
+            Assert.Throws<ArgumentNullException>("outerKeySelector", () => ParallelEnumerable.Range(0, 1).Join(ParallelEnumerable.Range(0, 1), (Func<int, int>)null, i => i, (i, j) => i));
+            Assert.Throws<ArgumentNullException>("innerKeySelector", () => ParallelEnumerable.Range(0, 1).Join(ParallelEnumerable.Range(0, 1), i => i, (Func<int, int>)null, (i, j) => i));
+            Assert.Throws<ArgumentNullException>("resultSelector", () => ParallelEnumerable.Range(0, 1).Join(ParallelEnumerable.Range(0, 1), i => i, i => i, (Func<int, int, int>)null));
+            Assert.Throws<ArgumentNullException>("outer", () => ((ParallelQuery<int>)null).Join(ParallelEnumerable.Range(0, 1), i => i, i => i, (i, j) => i, EqualityComparer<int>.Default));
+            Assert.Throws<ArgumentNullException>("inner", () => ParallelEnumerable.Range(0, 1).Join((ParallelQuery<int>)null, i => i, i => i, (i, j) => i, EqualityComparer<int>.Default));
+            Assert.Throws<ArgumentNullException>("outerKeySelector", () => ParallelEnumerable.Range(0, 1).Join(ParallelEnumerable.Range(0, 1), (Func<int, int>)null, i => i, (i, j) => i, EqualityComparer<int>.Default));
+            Assert.Throws<ArgumentNullException>("innerKeySelector", () => ParallelEnumerable.Range(0, 1).Join(ParallelEnumerable.Range(0, 1), i => i, (Func<int, int>)null, (i, j) => i, EqualityComparer<int>.Default));
+            Assert.Throws<ArgumentNullException>("resultSelector", () => ParallelEnumerable.Range(0, 1).Join(ParallelEnumerable.Range(0, 1), i => i, i => i, (Func<int, int, int>)null, EqualityComparer<int>.Default));
         }
     }
 }
