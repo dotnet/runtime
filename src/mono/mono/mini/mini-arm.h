@@ -229,12 +229,15 @@ typedef struct {
 
 
 #define PARAM_REGS 4
+#define FP_PARAM_REGS 8
 #define DYN_CALL_STACK_ARGS 10
 
 typedef struct {
-	mgreg_t regs [PARAM_REGS + DYN_CALL_STACK_ARGS];
+	mgreg_t regs [PARAM_REGS + FP_PARAM_REGS];
+	double fpregs [FP_PARAM_REGS];
 	mgreg_t res, res2;
 	guint8 *ret;
+	guint32 has_fpregs;
 } DynCallArgs;
 
 void arm_patch (guchar *code, const guchar *target);

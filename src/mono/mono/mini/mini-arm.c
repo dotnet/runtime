@@ -2705,6 +2705,7 @@ dyn_call_supported (CallInfo *cinfo, MonoMethodSignature *sig)
 		case RegTypeGeneral:
 		case RegTypeIRegPair:
 		case RegTypeBaseGen:
+		case RegTypeFP:
 			break;
 		case RegTypeBase:
 			if (ainfo->offset >= (DYN_CALL_STACK_ARGS * sizeof (gpointer)))
@@ -2799,6 +2800,7 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 
 	p->res = 0;
 	p->ret = ret;
+	p->has_fpregs = 0;
 
 	arg_index = 0;
 	greg = 0;
@@ -2821,6 +2823,7 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 
 		if (ainfo->storage == RegTypeGeneral || ainfo->storage == RegTypeIRegPair || ainfo->storage == RegTypeStructByVal) {
 			slot = ainfo->reg;
+		} else if (ainfo->storage == RegTypeFP) {
 		} else if (ainfo->storage == RegTypeBase) {
 			slot = PARAM_REGS + (ainfo->offset / 4);
 		} else if (ainfo->storage == RegTypeBaseGen) {
@@ -2870,11 +2873,22 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 			p->regs [slot] = (mgreg_t)arg [1];
 			break;
 		case MONO_TYPE_R4:
-			p->regs [slot] = *(mgreg_t*)arg;
+			if (ainfo->storage == RegTypeFP) {
+				float f = *(float*)arg;
+				p->fpregs [ainfo->reg / 2] = *(double*)&f;
+				p->has_fpregs = 1;
+			} else {
+				p->regs [slot] = *(mgreg_t*)arg;
+			}
 			break;
 		case MONO_TYPE_R8:
-			p->regs [slot ++] = (mgreg_t)arg [0];
-			p->regs [slot] = (mgreg_t)arg [1];
+			if (ainfo->storage == RegTypeFP) {
+				p->fpregs [ainfo->reg / 2] = *(double*)arg;
+				p->has_fpregs = 1;
+			} else {
+				p->regs [slot ++] = (mgreg_t)arg [0];
+				p->regs [slot] = (mgreg_t)arg [1];
+			}
 			break;
 		case MONO_TYPE_GENERICINST:
 			if (MONO_TYPE_IS_REFERENCE (t)) {
@@ -2920,10 +2934,11 @@ void
 mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 {
 	ArchDynCallInfo *ainfo = (ArchDynCallInfo*)info;
+	DynCallArgs *p = (DynCallArgs*)buf;
 	MonoType *ptype = ainfo->rtype;
-	guint8 *ret = ((DynCallArgs*)buf)->ret;
-	mgreg_t res = ((DynCallArgs*)buf)->res;
-	mgreg_t res2 = ((DynCallArgs*)buf)->res2;
+	guint8 *ret = p->ret;
+	mgreg_t res = p->res;
+	mgreg_t res2 = p->res2;
 
 	switch (ptype->type) {
 	case MONO_TYPE_VOID:
@@ -2976,16 +2991,23 @@ mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 		break;
 	case MONO_TYPE_R4:
 		g_assert (IS_VFP);
-		*(float*)ret = *(float*)&res;
+		if (IS_HARD_FLOAT)
+			*(float*)ret = *(float*)&p->fpregs [0];
+		else
+			*(float*)ret = *(float*)&res;
 		break;
 	case MONO_TYPE_R8: {
 		mgreg_t regs [2];
 
 		g_assert (IS_VFP);
-		regs [0] = res;
-		regs [1] = res2;
+		if (IS_HARD_FLOAT) {
+			*(double*)ret = p->fpregs [0];
+		} else {
+			regs [0] = res;
+			regs [1] = res2;
 
-		*(double*)ret = *(double*)&regs;
+			*(double*)ret = *(double*)&regs;
+		}
 		break;
 	}
 	default:
@@ -5140,14 +5162,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_DYN_CALL: {
 			int i;
 			MonoInst *var = cfg->dyn_call_var;
+			guint8 *buf [16];
 
 			g_assert (var->opcode == OP_REGOFFSET);
 			g_assert (arm_is_imm12 (var->inst_offset));
 
 			/* lr = args buffer filled by mono_arch_get_dyn_call_args () */
-			ARM_MOV_REG_REG( code, ARMREG_LR, ins->sreg1);
+			ARM_MOV_REG_REG (code, ARMREG_LR, ins->sreg1);
 			/* ip = ftn */
-			ARM_MOV_REG_REG( code, ARMREG_IP, ins->sreg2);
+			ARM_MOV_REG_REG (code, ARMREG_IP, ins->sreg2);
 
 			/* Save args buffer */
 			ARM_STR_IMM (code, ARMREG_LR, var->inst_basereg, var->inst_offset);
@@ -5157,6 +5180,20 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			for (i = 0; i < DYN_CALL_STACK_ARGS; ++i) {
 				ARM_LDR_IMM (code, ARMREG_R0, ARMREG_LR, (PARAM_REGS + i) * sizeof (mgreg_t));
 				ARM_STR_IMM (code, ARMREG_R0, ARMREG_SP, i * sizeof (mgreg_t));
+			}
+
+			/* Set fp argument registers */
+			if (IS_HARD_FLOAT) {
+				ARM_LDR_IMM (code, ARMREG_R0, ARMREG_LR, MONO_STRUCT_OFFSET (DynCallArgs, has_fpregs));
+				ARM_CMP_REG_IMM (code, ARMREG_R0, 0, 0);
+				buf [0] = code;
+				ARM_B_COND (code, ARMCOND_EQ, 0);
+				for (i = 0; i < FP_PARAM_REGS; ++i) {
+					int offset = MONO_STRUCT_OFFSET (DynCallArgs, fpregs) + (i * sizeof (double));
+					g_assert (arm_is_fpimm8 (offset));
+					ARM_FLDD (code, i * 2, ARMREG_LR, offset);
+				}
+				arm_patch (buf [0], code);
 			}
 
 			/* Set argument registers */
@@ -5170,7 +5207,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* Save result */
 			ARM_LDR_IMM (code, ARMREG_IP, var->inst_basereg, var->inst_offset);
 			ARM_STR_IMM (code, ARMREG_R0, ARMREG_IP, MONO_STRUCT_OFFSET (DynCallArgs, res)); 
-			ARM_STR_IMM (code, ARMREG_R1, ARMREG_IP, MONO_STRUCT_OFFSET (DynCallArgs, res2)); 
+			ARM_STR_IMM (code, ARMREG_R1, ARMREG_IP, MONO_STRUCT_OFFSET (DynCallArgs, res2));
+			if (IS_HARD_FLOAT)
+				ARM_FSTD (code, ARM_VFP_D0, ARMREG_IP, MONO_STRUCT_OFFSET (DynCallArgs, fpregs));
 			break;
 		}
 		case OP_THROW: {
