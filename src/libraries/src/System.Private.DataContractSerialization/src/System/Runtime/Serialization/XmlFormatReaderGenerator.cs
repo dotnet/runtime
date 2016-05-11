@@ -8,6 +8,7 @@ using System.Xml.Schema;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Security;
 #if NET_NATIVE
@@ -38,7 +39,7 @@ namespace System.Runtime.Serialization
             ?.GetMethod("GetUninitializedObject", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static)
             ?.CreateDelegate(typeof(Func<Type, object>));
 
-        private static readonly Dictionary<Type, bool> s_typeHasDefaultConstructorMap = new Dictionary<Type, bool>();
+        private static readonly ConcurrentDictionary<Type, bool> s_typeHasDefaultConstructorMap = new ConcurrentDictionary<Type, bool>();
 
 #if !NET_NATIVE
         [SecurityCritical]
@@ -871,12 +872,8 @@ namespace System.Runtime.Serialization
                   return Activator.CreateInstance(type);
             }
 
-            bool hasDefaultConstructor;
-            if (!s_typeHasDefaultConstructorMap.TryGetValue(type, out hasDefaultConstructor))
-            {
-                hasDefaultConstructor = type.GetConstructor(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, Array.Empty<Type>()) != null;
-                s_typeHasDefaultConstructorMap[type] = hasDefaultConstructor;
-            }
+            const BindingFlags Flags = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance;
+            bool hasDefaultConstructor = s_typeHasDefaultConstructorMap.GetOrAdd(type, t => t.GetConstructor(Flags, Array.Empty<Type>()) != null);
             return hasDefaultConstructor ? Activator.CreateInstance(type) : TryGetUninitializedObjectWithFormatterServices(type) ?? Activator.CreateInstance(type);
 #else
             return RuntimeAugments.NewObject(type.TypeHandle);
