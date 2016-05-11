@@ -2238,7 +2238,9 @@ mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params)
 			MonoArray *out_args;
 			method = delegate->method;
 
-			msg = mono_method_call_message_new (mono_marshal_method_from_wrapper (method), params, NULL, &async_callback, &state);
+			msg = mono_method_call_message_new (mono_marshal_method_from_wrapper (method), params, NULL, &async_callback, &state, &error);
+			if (mono_error_set_pending_exception (&error))
+				return NULL;
 			ares = mono_async_result_new (mono_domain_get (), NULL, state, NULL, NULL, &error);
 			if (mono_error_set_pending_exception (&error))
 				return NULL;
@@ -2968,7 +2970,9 @@ mono_delegate_end_invoke (MonoDelegate *delegate, gpointer *params)
 
 	sig = mono_signature_no_pinvoke (method);
 
-	msg = mono_method_call_message_new (method, params, NULL, NULL, NULL);
+	msg = mono_method_call_message_new (method, params, NULL, NULL, NULL, &error);
+	if (mono_error_set_pending_exception (&error))
+		return NULL;
 
 	ares = (MonoAsyncResult *)mono_array_get (msg->args, gpointer, sig->param_count - 1);
 	if (ares == NULL) {

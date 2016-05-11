@@ -7557,33 +7557,35 @@ mono_delegate_ctor (MonoObject *this_obj, MonoObject *target, gpointer addr, Mon
  * @invoke: optional, delegate invoke.
  * @cb: async callback delegate.
  * @state: state passed to the async callback.
+ * @error: set on error.
  *
  * Translates arguments pointers into a MonoMethodMessage.
+ * On failure returns NULL and sets @error.
  */
 MonoMethodMessage *
 mono_method_call_message_new (MonoMethod *method, gpointer *params, MonoMethod *invoke, 
-			      MonoDelegate **cb, MonoObject **state)
+			      MonoDelegate **cb, MonoObject **state, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoError error;
+	mono_error_init (error);
 
 	MonoDomain *domain = mono_domain_get ();
 	MonoMethodSignature *sig = mono_method_signature (method);
 	MonoMethodMessage *msg;
 	int i, count;
 
-	msg = (MonoMethodMessage *)mono_object_new_checked (domain, mono_defaults.mono_method_message_class, &error); 
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	msg = (MonoMethodMessage *)mono_object_new_checked (domain, mono_defaults.mono_method_message_class, error); 
+	return_val_if_nok  (error, NULL);
 
 	if (invoke) {
-		MonoReflectionMethod *rm = mono_method_get_object_checked (domain, invoke, NULL, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		MonoReflectionMethod *rm = mono_method_get_object_checked (domain, invoke, NULL, error);
+		return_val_if_nok (error, NULL);
 		mono_message_init (domain, msg, rm, NULL);
 		count =  sig->param_count - 2;
 	} else {
-		MonoReflectionMethod *rm = mono_method_get_object_checked (domain, method, NULL, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		MonoReflectionMethod *rm = mono_method_get_object_checked (domain, method, NULL, error);
+		return_val_if_nok (error, NULL);
 		mono_message_init (domain, msg, rm, NULL);
 		count =  sig->param_count;
 	}
@@ -7601,8 +7603,8 @@ mono_method_call_message_new (MonoMethod *method, gpointer *params, MonoMethod *
 		klass = mono_class_from_mono_type (sig->params [i]);
 
 		if (klass->valuetype) {
-			arg = mono_value_box_checked (domain, klass, vpos, &error);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			arg = mono_value_box_checked (domain, klass, vpos, error);
+			return_val_if_nok (error, NULL);
 		} else 
 			arg = *((MonoObject **)vpos);
 		      

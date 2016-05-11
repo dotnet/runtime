@@ -400,7 +400,9 @@ mono_remoting_wrapper (MonoMethod *method, gpointer *params)
 		return res;
 	}
 
-	msg = mono_method_call_message_new (method, params, NULL, NULL, NULL);
+	msg = mono_method_call_message_new (method, params, NULL, NULL, NULL, &error);
+	if (!is_ok (&error))
+		goto fail;
 
 	res = mono_remoting_invoke ((MonoObject *)this_obj->rp, msg, &exc, &out_args, &error);
 	if (!is_ok (&error))

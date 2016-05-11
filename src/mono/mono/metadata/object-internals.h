@@ -615,7 +615,7 @@ mono_message_invoke	    (MonoObject *target, MonoMethodMessage *msg,
 
 MonoMethodMessage *
 mono_method_call_message_new (MonoMethod *method, gpointer *params, MonoMethod *invoke, 
-			      MonoDelegate **cb, MonoObject **state);
+			      MonoDelegate **cb, MonoObject **state, MonoError *error);
 
 void
 mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoArray *out_args, MonoError *error);
