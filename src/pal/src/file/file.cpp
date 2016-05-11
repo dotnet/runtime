@@ -1115,12 +1115,6 @@ DeleteFileA(
     
     FILEDosToUnixPathA( lpunixFileName );
     
-    if ( !FILEGetFileNameFromSymLink(lpunixFileName))
-    {
-        dwLastError = FILEGetLastErrorFromErrnoAndFilename(lpunixFileName);
-        goto done;
-    }
-    
     // Compute the absolute pathname to the file.  This pathname is used
     // to determine if two file names represent the same file.
     palError = InternalCanonicalizeRealPath(lpunixFileName, lpFullunixFileName);
@@ -1350,15 +1344,8 @@ MoveFileExA(
         dwLastError = ERROR_NOT_ENOUGH_MEMORY;
         goto done;
     }
-    
-    FILEDosToUnixPathA( dest );
 
-    if ( !FILEGetFileNameFromSymLink(source))
-    {
-        TRACE( "FILEGetFileNameFromSymLink failed\n" );
-        dwLastError = FILEGetLastErrorFromErrnoAndFilename(source);
-        goto done;
-    }
+    FILEDosToUnixPathA( dest );
 
     if ( !(dwFlags & MOVEFILE_REPLACE_EXISTING) )
     {
@@ -1440,9 +1427,9 @@ MoveFileExA(
         case ENOENT:
             {
                 struct stat buf;
-                if (stat(source, &buf) == -1)
+                if (lstat(source, &buf) == -1)
                 {
-                    FILEGetProperNotFoundError(dest, &dwLastError);
+                    FILEGetProperNotFoundError(source, &dwLastError);
                 }
                 else
                 {
@@ -4754,7 +4741,6 @@ fail:
     return FALSE;
 }
 
-
 /*++
 FILECleanupStdHandles
 
@@ -4793,44 +4779,6 @@ void FILECleanupStdHandles(void)
         CloseHandle(stderr_handle);
     }
 }
-
-
-/*++
-FILEGetFileNameFromSymLink
-
-Input parameters:
-
-source  = path to the file on input, path to the file with all 
-          symbolic links traversed on return
-
-Return value:
-    TRUE on success, FALSE on failure
---*/
-BOOL FILEGetFileNameFromSymLink(PathCharString& source)
-{
-    int ret;
-    PathCharString sLinkDataString;
-    struct stat sb;
-
-    do
-    {
-        if (lstat(source, &sb) == -1) 
-        {
-            break;
-        }
-        
-        char * sLinkData = sLinkDataString.OpenStringBuffer(sb.st_size);
-        ret = readlink(source, sLinkData, sb.st_size);
-        if (ret > 0)
-        {
-            sLinkDataString.CloseBuffer(ret);
-            source.Set(sLinkDataString);
-        }
-    } while (ret > 0);
-
-    return (errno == EINVAL);
-}
-
 
 /*++
 Function:
