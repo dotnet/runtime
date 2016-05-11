@@ -49,7 +49,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 await LoopbackServer.CreateServerAsync(async (server, url) =>
                 {
-                    await WhenAllCompletedOrAnyFailed(
+                    await TestHelper.WhenAllCompletedOrAnyFailed(
                         LoopbackServer.ReadRequestAndSendResponseAsync(server),
                         client.GetAsync(url));
                 });
@@ -87,7 +87,7 @@ namespace System.Net.Http.Functional.Tests
                 var options = new LoopbackServer.Options { UseSsl = true, SslProtocols = acceptedProtocol };
                 await LoopbackServer.CreateServerAsync(async (server, url) =>
                 {
-                    await WhenAllCompletedOrAnyFailed(
+                    await TestHelper.WhenAllCompletedOrAnyFailed(
                         LoopbackServer.ReadRequestAndSendResponseAsync(server, options: options),
                         client.GetAsync(url));
                 }, options);
@@ -107,7 +107,7 @@ namespace System.Net.Http.Functional.Tests
                 var options = new LoopbackServer.Options { UseSsl = true, SslProtocols = acceptedProtocol };
                 await LoopbackServer.CreateServerAsync(async (server, url) =>
                 {
-                    await WhenAllCompletedOrAnyFailed(
+                    await TestHelper.WhenAllCompletedOrAnyFailed(
                         Assert.ThrowsAsync(exceptedServerException, () => LoopbackServer.ReadRequestAndSendResponseAsync(server, options: options)),
                         Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(url)));
                 }, options);
@@ -127,7 +127,7 @@ namespace System.Net.Http.Functional.Tests
                     options.SslProtocols = SslProtocols.Tls;
                     await LoopbackServer.CreateServerAsync(async (server, url) =>
                     {
-                        await WhenAllCompletedOrAnyFailed(
+                        await TestHelper.WhenAllCompletedOrAnyFailed(
                             Assert.ThrowsAsync<IOException>(() => LoopbackServer.ReadRequestAndSendResponseAsync(server, options: options)),
                             Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(url)));
                     }, options);
@@ -137,7 +137,7 @@ namespace System.Net.Http.Functional.Tests
                         options.SslProtocols = prot;
                         await LoopbackServer.CreateServerAsync(async (server, url) =>
                         {
-                            await WhenAllCompletedOrAnyFailed(
+                            await TestHelper.WhenAllCompletedOrAnyFailed(
                                 LoopbackServer.ReadRequestAndSendResponseAsync(server, options: options),
                                 client.GetAsync(url));
                         }, options);
@@ -148,24 +148,6 @@ namespace System.Net.Http.Functional.Tests
                     await Assert.ThrowsAnyAsync<NotSupportedException>(() => client.GetAsync($"http://{Guid.NewGuid().ToString()}/"));
                 }
             }
-        }
-
-        private static Task WhenAllCompletedOrAnyFailed(params Task[] tasks)
-        {
-            var tcs = new TaskCompletionSource<bool>();
-
-            int remaining = tasks.Length;
-            foreach (var task in tasks)
-            {
-                task.ContinueWith(t =>
-                {
-                    if (t.IsFaulted) tcs.SetException(t.Exception.InnerExceptions);
-                    else if (t.IsCanceled) tcs.SetCanceled();
-                    else if (Interlocked.Decrement(ref remaining) == 0) tcs.SetResult(true);
-                }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
-            }
-
-            return tcs.Task;
         }
 
         private static bool BackendSupportsSslConfiguration =>

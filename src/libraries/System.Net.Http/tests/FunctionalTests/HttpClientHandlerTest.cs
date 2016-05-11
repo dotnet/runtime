@@ -162,6 +162,33 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [Theory]
+        [MemberData(nameof(GetAsync_IPv6Uri_Success_MemberData))]
+        public async Task GetAsync_IPv6Uri_Success(IPAddress address)
+        {
+            using (var client = new HttpClient())
+            {
+                var options = new LoopbackServer.Options { Address = address };
+                await LoopbackServer.CreateServerAsync(async (server, url) =>
+                {
+                    await TestHelper.WhenAllCompletedOrAnyFailed(
+                        LoopbackServer.ReadRequestAndSendResponseAsync(server, options: options),
+                        client.GetAsync(url));
+                }, options);
+            }
+        }
+
+        public static IEnumerable<object[]> GetAsync_IPv6Uri_Success_MemberData()
+        {
+            yield return new object[] { IPAddress.IPv6Loopback };
+
+            IPAddress addr = LoopbackServer.GetIPv6LinkLocalAddress();
+            if (addr != null)
+            {
+                yield return new object[] { addr };
+            }
+        }
+
         [Fact]
         public async Task SendAsync_MultipleRequestsReusingSameClient_Success()
         {
