@@ -151,7 +151,9 @@ typedef enum {
 	GSHAREDVT_RET_I1 = 3,
 	GSHAREDVT_RET_U1 = 4,
 	GSHAREDVT_RET_I2 = 5,
-	GSHAREDVT_RET_U2 = 6
+	GSHAREDVT_RET_U2 = 6,
+	GSHAREDVT_RET_VFP_R4 = 7,
+	GSHAREDVT_RET_VFP_R8 = 8
 } GSharedVtRetMarshal;
 
 typedef struct {
@@ -170,6 +172,9 @@ typedef struct {
 	int calli;
 	/* Whenever this is a in or an out call */
 	int gsharedvt_in;
+	/* Whenever this call uses fp registers */
+	int have_fregs;
+	gpointer caller_cinfo, callee_cinfo;
 	/* Maps stack slots/registers in the caller to the stack slots/registers in the callee */
 	/* A negative value means a register, i.e. -1=r0, -2=r1 etc. */
 	int map [MONO_ZERO_LEN_ARRAY];
@@ -248,7 +253,7 @@ void
 mono_arm_throw_exception_by_token (guint32 type_token, mgreg_t pc, mgreg_t sp, mgreg_t *int_regs, gdouble *fp_regs);
 
 gpointer
-mono_arm_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpointer *callee, gpointer mrgctx_reg);
+mono_arm_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpointer *callee, gpointer mrgctx_reg, double *caller_fregs, double *callee_fregs);
 
 typedef enum {
 	MONO_ARM_FPU_NONE = 0,

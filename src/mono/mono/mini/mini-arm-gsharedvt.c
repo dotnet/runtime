@@ -121,6 +121,7 @@ mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_si
 	MonoMethodSignature *caller_sig, *callee_sig;
 	int aindex, i;
 	gboolean var_ret = FALSE;
+	gboolean have_fregs = FALSE;
 	CallInfo *cinfo, *gcinfo;
 	MonoMethodSignature *sig, *gsig;
 	GPtrArray *map;
@@ -190,6 +191,11 @@ mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_si
 		ArgInfo *ainfo2 = &callee_cinfo->args [aindex];
 		int *src = NULL, *dst = NULL;
 		int nsrc, ndst, nslots, src_slot, arg_marshal;
+
+		if (ainfo->storage == RegTypeFP || ainfo2->storage == RegTypeFP) {
+			have_fregs = TRUE;
+			continue;
+		}
 
 		/*
 		 * The src descriptor looks like this:
@@ -298,11 +304,17 @@ mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_si
 			info->ret_marshal = GSHAREDVT_RET_IREGS;
 			break;
 		case RegTypeFP:
-			// FIXME: VFP
-			if (cinfo->ret.size == 4)
-				info->ret_marshal = GSHAREDVT_RET_IREG;
-			else
-				info->ret_marshal = GSHAREDVT_RET_IREGS;
+			if (mono_arm_is_hard_float ()) {
+				if (cinfo->ret.size == 4)
+					info->ret_marshal = GSHAREDVT_RET_VFP_R4;
+				else
+					info->ret_marshal = GSHAREDVT_RET_VFP_R8;
+			} else {
+				if (cinfo->ret.size == 4)
+					info->ret_marshal = GSHAREDVT_RET_IREG;
+				else
+					info->ret_marshal = GSHAREDVT_RET_IREGS;
+			}
 			break;
 		case RegTypeStructByAddr:
 			info->ret_marshal = GSHAREDVT_RET_NONE;
@@ -319,9 +331,9 @@ mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_si
 	}
 
 	info->stack_usage = ALIGN_TO (info->stack_usage, MONO_ARCH_FRAME_ALIGNMENT);
-
-	g_free (caller_cinfo);
-	g_free (callee_cinfo);
+	info->caller_cinfo = caller_cinfo;
+	info->callee_cinfo = callee_cinfo;
+	info->have_fregs = have_fregs;
 
 	return info;
 }
