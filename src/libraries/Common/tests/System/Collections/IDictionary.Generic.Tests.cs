@@ -124,9 +124,9 @@ namespace System.Collections.Tests
             return GenericIDictionaryFactory(count);
         }
 
-        protected override bool DefaultValueAllowed { get { return false; } }
+        protected override bool DefaultValueAllowed => false;
 
-        protected override bool DuplicateValuesAllowed { get { return false; } }
+        protected override bool DuplicateValuesAllowed => false;
 
         protected override void AddToCollection(ICollection<KeyValuePair<TKey, TValue>> collection, int numberOfItemsToAdd)
         {
@@ -203,13 +203,18 @@ namespace System.Collections.Tests
 
         /// <summary>
         /// Used in IDictionary_Generic_Values_ModifyingTheDictionaryUpdatesTheCollection and 
-        /// IDictionary_Generic_Keys_ModifyingTheDictionaryUpdatesTheCollection/
-        /// Some collections (e..g ConcurrentDictionary) use iterators in the Keys and Values properties,
+        /// IDictionary_Generic_Keys_ModifyingTheDictionaryUpdatesTheCollection.
+        /// Some collections (e.g ConcurrentDictionary) use iterators in the Keys and Values properties,
         /// and do not respond to updates in the base collection.
         /// </summary>
         protected virtual bool IDictionary_Generic_Keys_Values_ModifyingTheDictionaryUpdatesTheCollection => true;
 
-        protected virtual bool IDictionary_Generic_Keys_Values_ResetImplemented => ResetImplemented;
+        /// <summary>
+        /// Used in IDictionary_Generic_Keys_Enumeration_Reset and IDictionary_Generic_Values_Enumeration_Reset.
+        /// Typically, the support for Reset in enumerators for the Keys and Values depend on the support for it
+        /// in the parent dictionary. However, some collections (e.g. ConcurrentDictionary) don't.
+        /// </summary>
+        protected virtual bool IDictionary_Generic_Keys_Values_Enumeration_ResetImplemented => ResetImplemented;
 
         #endregion
 
@@ -359,16 +364,21 @@ namespace System.Collections.Tests
         [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_Generic_Keys_Enumeration_ParentDictionaryModifiedInvalidates(int count)
         {
+            IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
+            ICollection<TKey> keys = dictionary.Keys;
+            IEnumerator<TKey> keysEnum = keys.GetEnumerator();
+            dictionary.Add(GetNewKey(dictionary), CreateTValue(3432));
             if (IDictionary_Generic_Keys_Values_Enumeration_ThrowsInvalidOperation_WhenParentModified)
             {
-                IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
-                ICollection<TKey> keys = dictionary.Keys;
-                IEnumerator<TKey> keysEnum = keys.GetEnumerator();
-                dictionary.Add(GetNewKey(dictionary), CreateTValue(3432));
                 Assert.Throws<InvalidOperationException>(() => keysEnum.MoveNext());
                 Assert.Throws<InvalidOperationException>(() => keysEnum.Reset());
-                var cur = keysEnum.Current;
             }
+            else
+            {
+                keysEnum.MoveNext();
+                keysEnum.Reset();
+            }
+            var cur = keysEnum.Current;
         }
 
         [Theory]
@@ -390,7 +400,7 @@ namespace System.Collections.Tests
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
             ICollection<TKey> keys = dictionary.Keys;
             var enumerator = keys.GetEnumerator();
-            if (IDictionary_Generic_Keys_Values_ResetImplemented)
+            if (IDictionary_Generic_Keys_Values_Enumeration_ResetImplemented)
                 enumerator.Reset();
             else
                 Assert.Throws<NotSupportedException>(() => enumerator.Reset());
@@ -449,16 +459,21 @@ namespace System.Collections.Tests
         [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_Generic_Values_Enumeration_ParentDictionaryModifiedInvalidates(int count)
         {
+            IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
+            ICollection<TValue> values = dictionary.Values;
+            IEnumerator<TValue> valuesEnum = values.GetEnumerator();
+            dictionary.Add(GetNewKey(dictionary), CreateTValue(3432));
             if (IDictionary_Generic_Keys_Values_Enumeration_ThrowsInvalidOperation_WhenParentModified)
             {
-                IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
-                ICollection<TValue> values = dictionary.Values;
-                IEnumerator<TValue> valuesEnum = values.GetEnumerator();
-                dictionary.Add(GetNewKey(dictionary), CreateTValue(3432));
                 Assert.Throws<InvalidOperationException>(() => valuesEnum.MoveNext());
                 Assert.Throws<InvalidOperationException>(() => valuesEnum.Reset());
-                var cur = valuesEnum.Current;
             }
+            else
+            {
+                valuesEnum.MoveNext();
+                valuesEnum.Reset();
+            }
+            var cur = valuesEnum.Current;
         }
 
         [Theory]
@@ -480,7 +495,7 @@ namespace System.Collections.Tests
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
             ICollection<TValue> values = dictionary.Values;
             var enumerator = values.GetEnumerator();
-            if (IDictionary_Generic_Keys_Values_ResetImplemented)
+            if (IDictionary_Generic_Keys_Values_Enumeration_ResetImplemented)
                 enumerator.Reset();
             else
                 Assert.Throws<NotSupportedException>(() => enumerator.Reset());

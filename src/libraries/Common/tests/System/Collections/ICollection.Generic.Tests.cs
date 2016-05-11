@@ -34,11 +34,12 @@ namespace System.Collections.Tests
             return collection;
         }
 
-        protected virtual bool DuplicateValuesAllowed { get { return true; } }
-        protected virtual bool DefaultValueWhenNotAllowed_Throws { get { return true; } }
-        protected virtual bool IsReadOnly { get { return false; } }
-        protected virtual bool DefaultValueAllowed { get { return true; } }
-        protected virtual IEnumerable<T> InvalidValues { get { return Array.Empty<T>(); } }
+        protected virtual bool DuplicateValuesAllowed => true;
+        protected virtual bool DefaultValueWhenNotAllowed_Throws => true;
+        protected virtual bool IsReadOnly => false;
+        protected virtual bool DefaultValueAllowed => true;
+        protected virtual IEnumerable<T> InvalidValues => Array.Empty<T>();
+
         protected virtual void AddToCollection(ICollection<T> collection, int numberOfItemsToAdd)
         {
             int seed = 9600;
