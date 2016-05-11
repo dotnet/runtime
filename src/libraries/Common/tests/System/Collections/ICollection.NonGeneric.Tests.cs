@@ -62,6 +62,12 @@ namespace System.Collections.Tests
         /// </summary>
         protected virtual bool ICollection_NonGeneric_CopyTo_ArrayOfIncorrectValueType_ThrowsArgumentException { get { return true; } }
 
+        /// <summary>
+        /// Used for ICollection_NonGeneric_SyncRoot tests. Some implementations (e.g. ConcurrentDictionary)
+        /// don't support the SyncRoot property of an ICollection and throw a NotSupportedException
+        /// </summary>
+        public virtual bool ICollection_NonGeneric_SupportsSyncRoot => true;
+
         #endregion
 
         #region IEnumerable Helper Methods
@@ -105,27 +111,47 @@ namespace System.Collections.Tests
         [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_NonGeneric_SyncRoot_NonNull(int count)
         {
-            ICollection collection = NonGenericICollectionFactory(count);
-            Assert.NotNull(collection.SyncRoot);
+            if (ICollection_NonGeneric_SupportsSyncRoot)
+            {
+                ICollection collection = NonGenericICollectionFactory(count);
+                Assert.NotNull(collection.SyncRoot);
+            }
         }
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_NonGeneric_SyncRootConsistent(int count)
         {
-            ICollection collection = NonGenericICollectionFactory(count);
-            object syncRoot1 = collection.SyncRoot;
-            object syncRoot2 = collection.SyncRoot;
-            Assert.Same(syncRoot1, syncRoot2);
+            if (ICollection_NonGeneric_SupportsSyncRoot)
+            {
+                ICollection collection = NonGenericICollectionFactory(count);
+                object syncRoot1 = collection.SyncRoot;
+                object syncRoot2 = collection.SyncRoot;
+                Assert.Same(syncRoot1, syncRoot2);
+            }
         }
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_NonGeneric_SyncRootUnique(int count)
         {
-            ICollection collection1 = NonGenericICollectionFactory(count);
-            ICollection collection2 = NonGenericICollectionFactory(count);
-            Assert.NotSame(collection1.SyncRoot, collection2.SyncRoot);
+            if (ICollection_NonGeneric_SupportsSyncRoot)
+            {
+                ICollection collection1 = NonGenericICollectionFactory(count);
+                ICollection collection2 = NonGenericICollectionFactory(count);
+                Assert.NotSame(collection1.SyncRoot, collection2.SyncRoot);
+            }
+        }
+        
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void ICollection_NonGeneric_SyncRoot_ThrowsNotSupportedException(int count)
+        {
+            if (!ICollection_NonGeneric_SupportsSyncRoot)
+            {
+                ICollection collection = NonGenericICollectionFactory(count);
+                Assert.Throws<NotSupportedException>(() => collection.SyncRoot);
+            }
         }
 
         #endregion
