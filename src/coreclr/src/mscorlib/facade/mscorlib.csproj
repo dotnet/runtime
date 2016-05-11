@@ -15,6 +15,9 @@
     <!-- These prevent the default MsBuild targets from referencing System.dll and mscorlib.dll -->
     <NoStdLib>true</NoStdLib>
     <NoCompilerStandardLib>true</NoCompilerStandardLib>
+
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -25,6 +28,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net462_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net462_Release|AnyCPU'" />
+
+  <!-- Roslyn does not support writing PDBs on Unix -->
+  <PropertyGroup Condition="'$(OsEnvironment)' == 'Unix'">
+    <DebugSymbols>false</DebugSymbols>
+    <DebugType>none</DebugType>
+  </PropertyGroup>
 
   <!-- Output paths -->
   <PropertyGroup>
@@ -38,9 +47,10 @@
     <OutputPath>$(BinDir)\facade</OutputPath>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)'=='true'">
+  <ItemGroup>
     <ProjectReference Include="..\System.Private.CoreLib.csproj" />
   </ItemGroup>
+
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>

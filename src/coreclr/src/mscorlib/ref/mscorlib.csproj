@@ -7,12 +7,9 @@
 
   <!-- Compilation options -->
   <PropertyGroup>
-    <AvailablePlatforms>amd64,x86,arm,arm64</AvailablePlatforms>
     <Configuration Condition=" '$(Configuration)' == '' ">$(BuildType)</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">$(BuildArch)</Platform>
-    <!-- The CLR properties use amd64 as their platform string, we want to keep in sync with those, so set Platform appropriately,
-         though still use the 'x64' output path (see use of BuildArch below) -->
-    <Platform Condition=" '$(Platform)' == 'x64' ">amd64</Platform>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+
     <ProjectGuid>{B8ADD332-40B6-4916-B418-FBB79E5898B3}</ProjectGuid>
 
     <OutputType>Library</OutputType>
@@ -24,9 +21,6 @@
     <NoStdLib>true</NoStdLib>
     <NoCompilerStandardLib>true</NoCompilerStandardLib>
     
-    <SubsystemVersion>6.00</SubsystemVersion>
-    <UTF8OutPut>true</UTF8OutPut>
-    <HighEntropyVA>true</HighEntropyVA>
     <ErrorReport>prompt</ErrorReport>
     <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
     <GenerateNativeVersionInfo Condition="'$(OsEnvironment)'=='Windows_NT'">true</GenerateNativeVersionInfo>
@@ -41,23 +35,11 @@
     <DelaySign>true</DelaySign>
   </PropertyGroup>
 
-  <!-- Platform specific properties -->
-  <PropertyGroup Condition="'$(Platform)' == 'amd64'">
-    <PlatformTarget>x64</PlatformTarget>
-    <Prefer32Bit>false</Prefer32Bit>
-    <BaseAddress>0x180000000</BaseAddress>
+  <!-- On Windows we support FEATURE_COMINTEROP and FEATURE_COREFX_GLOBALIZATION -->
+  <PropertyGroup Condition="'$(TargetsUnix)'!='true'">
+    <DefineConstants>$(DefineConstants);FEATURE_COREFX_GLOBALIZATION;FEATURE_COMINTEROP</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Platform)' == 'x86'">
-    <PlatformTarget>x86</PlatformTarget>
-    <BaseAddress>0x10000000</BaseAddress>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Platform)' == 'arm'">
-    <PlatformTarget>arm</PlatformTarget>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Platform)' == 'arm64'">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-  </PropertyGroup>
-  
+ 
   <!-- Roslyn does not support writing PDBs on Unix -->
   <PropertyGroup Condition="'$(OsEnvironment)' == 'Unix'">
     <DebugSymbols>false</DebugSymbols>
