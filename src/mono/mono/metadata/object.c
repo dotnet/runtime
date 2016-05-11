@@ -7077,21 +7077,23 @@ mono_runtime_capture_context (MonoDomain *domain, MonoError *error)
  * @handle: wait handle.
  * @state: state to pass to AsyncResult
  * @data: C closure data.
+ * @error: set on error.
  *
  * Creates a new MonoAsyncResult (AsyncResult C# class) in the given domain.
  * If the handle is not null, the handle is initialized to a MonOWaitHandle.
+ * On failure returns NULL and sets @error.
  *
  */
 MonoAsyncResult *
-mono_async_result_new (MonoDomain *domain, HANDLE handle, MonoObject *state, gpointer data, MonoObject *object_data)
+mono_async_result_new (MonoDomain *domain, HANDLE handle, MonoObject *state, gpointer data, MonoObject *object_data, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoError error;
-	MonoAsyncResult *res = (MonoAsyncResult *)mono_object_new_checked (domain, mono_defaults.asyncresult_class, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
-	MonoObject *context = mono_runtime_capture_context (domain, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	mono_error_init (error);
+	MonoAsyncResult *res = (MonoAsyncResult *)mono_object_new_checked (domain, mono_defaults.asyncresult_class, error);
+	return_val_if_nok (error, NULL);
+	MonoObject *context = mono_runtime_capture_context (domain, error);
+	return_val_if_nok (error, NULL);
 	/* we must capture the execution context from the original thread */
 	if (context) {
 		MONO_OBJECT_SETREF (res, execution_context, context);
@@ -7101,8 +7103,8 @@ mono_async_result_new (MonoDomain *domain, HANDLE handle, MonoObject *state, gpo
 	res->data = (void **)data;
 	MONO_OBJECT_SETREF (res, object_data, object_data);
 	MONO_OBJECT_SETREF (res, async_state, state);
-	MonoWaitHandle *wait_handle = mono_wait_handle_new (domain, handle, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	MonoWaitHandle *wait_handle = mono_wait_handle_new (domain, handle, error);
+	return_val_if_nok (error, NULL);
 	if (handle != NULL)
 		MONO_OBJECT_SETREF (res, handle, (MonoObject *) wait_handle);
 
