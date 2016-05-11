@@ -64,6 +64,12 @@ namespace System.Collections.Tests
         protected bool MoveNextAtEndThrowsOnModifiedCollection { get { return true; } }
 
         /// <summary>
+        /// Used in IEnumerable_Generic_Enumerator_Current.
+        /// Some enumerators do not throw accessing Current if enumeration has not yet started (e.g. ConcurrentDictionary)
+        /// </summary>
+        protected virtual bool IEnumerable_Generic_Enumerator_Current_EnumerationNotStarted_ThrowsInvalidOperationException => true;
+
+        /// <summary>
         /// Specifies whether this IEnumerable follows some sort of ordering pattern.
         /// </summary>
         protected virtual EnumerableOrder Order { get { return EnumerableOrder.Sequential; } }
@@ -174,8 +180,14 @@ namespace System.Collections.Tests
             {
                 for (var i = 0; i < 3; i++)
                 {
-                    Assert.Throws<InvalidOperationException>(
-                        () => enumerator.Current);
+                    if (IEnumerable_Generic_Enumerator_Current_EnumerationNotStarted_ThrowsInvalidOperationException)
+                    {
+                        Assert.Throws<InvalidOperationException>(() => enumerator.Current);
+                    }
+                    else
+                    {
+                        var cur = enumerator.Current;
+                    }
                 }
             }
 
