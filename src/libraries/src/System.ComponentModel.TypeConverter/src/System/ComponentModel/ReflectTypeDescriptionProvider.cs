@@ -130,9 +130,6 @@ namespace System.ComponentModel
                     temp[typeof(UInt64)] = typeof(UInt64Converter);
                     temp[typeof(object)] = typeof(TypeConverter);
                     temp[typeof(void)] = typeof(TypeConverter);
-#if FEATURE_CULTUREINFO_CONVERTER
-                    temp[typeof(CultureInfo)] = typeof(CultureInfoConverter);
-#endif
                     temp[typeof(DateTime)] = typeof(DateTimeConverter);
                     temp[typeof(DateTimeOffset)] = typeof(DateTimeOffsetConverter);
                     temp[typeof(Decimal)] = typeof(DecimalConverter);
@@ -145,9 +142,6 @@ namespace System.ComponentModel
 
                     // Special cases for things that are not bound to a specific type
                     //
-#if FEATURE_REFERENCE_CONVERTER
-                    temp[s_intrinsicReferenceKey] = typeof(ReferenceConverter);
-#endif
                     temp[s_intrinsicNullableKey] = typeof(NullableConverter);
 
                     s_intrinsicTypeConverters = temp;
