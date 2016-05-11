@@ -485,27 +485,36 @@ copy_app_domain_setup (MonoDomain *domain, MonoAppDomainSetup *setup, MonoError 
 
 	mono_domain_set_internal (domain);
 
-	MONO_OBJECT_SETREF (copy, application_base, mono_marshal_xdomain_copy_value ((MonoObject*)setup->application_base));
-	MONO_OBJECT_SETREF (copy, application_name, mono_marshal_xdomain_copy_value ((MonoObject*)setup->application_name));
-	MONO_OBJECT_SETREF (copy, cache_path, mono_marshal_xdomain_copy_value ((MonoObject*)setup->cache_path));
-	MONO_OBJECT_SETREF (copy, configuration_file, mono_marshal_xdomain_copy_value ((MonoObject*)setup->configuration_file));
-	MONO_OBJECT_SETREF (copy, dynamic_base, mono_marshal_xdomain_copy_value ((MonoObject*)setup->dynamic_base));
-	MONO_OBJECT_SETREF (copy, license_file, mono_marshal_xdomain_copy_value ((MonoObject*)setup->license_file));
-	MONO_OBJECT_SETREF (copy, private_bin_path, mono_marshal_xdomain_copy_value ((MonoObject*)setup->private_bin_path));
-	MONO_OBJECT_SETREF (copy, private_bin_path_probe, mono_marshal_xdomain_copy_value ((MonoObject*)setup->private_bin_path_probe));
-	MONO_OBJECT_SETREF (copy, shadow_copy_directories, mono_marshal_xdomain_copy_value ((MonoObject*)setup->shadow_copy_directories));
-	MONO_OBJECT_SETREF (copy, shadow_copy_files, mono_marshal_xdomain_copy_value ((MonoObject*)setup->shadow_copy_files));
+#define XCOPY_FIELD(dst,field,src,error)					\
+	do {								\
+		MonoObject *copied_val = mono_marshal_xdomain_copy_value ((MonoObject*)(src), error); \
+		return_val_if_nok (error, NULL);			\
+		MONO_OBJECT_SETREF ((dst),field,copied_val);		\
+	} while (0)
+
+	XCOPY_FIELD (copy, application_base, setup->application_base, error);
+	XCOPY_FIELD (copy, application_name, setup->application_name, error);
+	XCOPY_FIELD (copy, cache_path, setup->cache_path, error);
+	XCOPY_FIELD (copy, configuration_file, setup->configuration_file, error);
+	XCOPY_FIELD (copy, dynamic_base, setup->dynamic_base, error);
+	XCOPY_FIELD (copy, license_file, setup->license_file, error);
+	XCOPY_FIELD (copy, private_bin_path, setup->private_bin_path, error);
+	XCOPY_FIELD (copy, private_bin_path_probe, setup->private_bin_path_probe, error);
+	XCOPY_FIELD (copy, shadow_copy_directories, setup->shadow_copy_directories, error);
+	XCOPY_FIELD (copy, shadow_copy_files, setup->shadow_copy_files, error);
 	copy->publisher_policy = setup->publisher_policy;
 	copy->path_changed = setup->path_changed;
 	copy->loader_optimization = setup->loader_optimization;
 	copy->disallow_binding_redirects = setup->disallow_binding_redirects;
 	copy->disallow_code_downloads = setup->disallow_code_downloads;
-	MONO_OBJECT_SETREF (copy, domain_initializer_args, mono_marshal_xdomain_copy_value ((MonoObject*)setup->domain_initializer_args));
+	XCOPY_FIELD (copy, domain_initializer_args, setup->domain_initializer_args, error);
 	copy->disallow_appbase_probe = setup->disallow_appbase_probe;
-	MONO_OBJECT_SETREF (copy, application_trust, mono_marshal_xdomain_copy_value ((MonoObject*)setup->application_trust));
-	MONO_OBJECT_SETREF (copy, configuration_bytes, mono_marshal_xdomain_copy_value ((MonoObject*)setup->configuration_bytes));
-	MONO_OBJECT_SETREF (copy, serialized_non_primitives, mono_marshal_xdomain_copy_value ((MonoObject*)setup->serialized_non_primitives));
+	XCOPY_FIELD (copy, application_trust, setup->application_trust, error);
+	XCOPY_FIELD (copy, configuration_bytes, setup->configuration_bytes, error);
+	XCOPY_FIELD (copy, serialized_non_primitives, setup->serialized_non_primitives, error);
 
+#undef COPY_FIELD
+	
 	mono_domain_set_internal (caller_domain);
 
 	return copy;

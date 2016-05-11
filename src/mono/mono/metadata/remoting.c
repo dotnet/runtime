@@ -193,7 +193,7 @@ mono_remoting_marshal_init (void)
 		register_icall (type_from_handle, "type_from_handle", "object ptr", FALSE);
 		register_icall (mono_marshal_set_domain_by_id, "mono_marshal_set_domain_by_id", "int32 int32 int32", FALSE);
 		register_icall (mono_marshal_check_domain_image, "mono_marshal_check_domain_image", "int32 int32 ptr", FALSE);
-		register_icall (mono_marshal_xdomain_copy_value, "mono_marshal_xdomain_copy_value", "object object", FALSE);
+		register_icall (ves_icall_mono_marshal_xdomain_copy_value, "ves_icall_mono_marshal_xdomain_copy_value", "object object", FALSE);
 		register_icall (mono_marshal_xdomain_copy_out_value, "mono_marshal_xdomain_copy_out_value", "void object object", FALSE);
 		register_icall (mono_remoting_wrapper, "mono_remoting_wrapper", "object ptr ptr", FALSE);
 		register_icall (mono_upgrade_remote_class_wrapper, "mono_upgrade_remote_class_wrapper", "void object object", FALSE);
@@ -210,6 +210,7 @@ mono_remoting_marshal_init (void)
 	module_initialized = TRUE;
 }
 
+/* This is an icall, it will return NULL and set pending exception on failure */
 static MonoReflectionType *
 type_from_handle (MonoType *handle)
 {
@@ -221,7 +222,7 @@ type_from_handle (MonoType *handle)
 	mono_class_init (klass);
 
 	ret = mono_type_get_object_checked (domain, handle, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	mono_error_set_pending_exception (&error);
 
 	return ret;
 }
@@ -507,6 +508,7 @@ mono_marshal_get_remoting_invoke (MonoMethod *method)
 static void
 mono_marshal_xdomain_copy_out_value (MonoObject *src, MonoObject *dst)
 {
+	MonoError error;
 	if (src == NULL || dst == NULL) return;
 	
 	g_assert (mono_object_class (src) == mono_object_class (dst));
@@ -520,7 +522,9 @@ mono_marshal_xdomain_copy_out_value (MonoObject *src, MonoObject *dst)
 			int i, len = mono_array_length ((MonoArray *)dst);
 			for (i = 0; i < len; i++) {
 				MonoObject *item = (MonoObject *)mono_array_get ((MonoArray *)src, gpointer, i);
-				mono_array_setref ((MonoArray *)dst, i, mono_marshal_xdomain_copy_value (item));
+				MonoObject *item_copy = mono_marshal_xdomain_copy_value (item, &error);
+				mono_error_raise_exception (&error); /* FIXME don't raise here */
+				mono_array_setref ((MonoArray *)dst, i, item_copy);
 			}
 		} else {
 			mono_array_full_copy ((MonoArray *)src, (MonoArray *)dst);
@@ -538,7 +542,7 @@ mono_marshal_xdomain_copy_out_value (MonoObject *src, MonoObject *dst)
 static void
 mono_marshal_emit_xdomain_copy_value (MonoMethodBuilder *mb, MonoClass *pclass)
 {
-	mono_mb_emit_icall (mb, mono_marshal_xdomain_copy_value);
+	mono_mb_emit_icall (mb, ves_icall_mono_marshal_xdomain_copy_value);
 	mono_mb_emit_op (mb, CEE_CASTCLASS, pclass);
 }
 
@@ -2017,9 +2021,9 @@ mono_get_xdomain_marshal_type (MonoType *t)
  * Makes a copy of "val" suitable for the current domain.
  */
 MonoObject *
-mono_marshal_xdomain_copy_value (MonoObject *val)
+mono_marshal_xdomain_copy_value (MonoObject *val, MonoError *error)
 {
-	MonoError error;
+	mono_error_init (error);
 	MonoDomain *domain;
 	if (val == NULL) return NULL;
 
@@ -2041,16 +2045,14 @@ mono_marshal_xdomain_copy_value (MonoObject *val)
 	case MONO_TYPE_U8:
 	case MONO_TYPE_R4:
 	case MONO_TYPE_R8: {
-		MonoObject *res = mono_value_box_checked (domain, mono_object_class (val), ((char*)val) + sizeof(MonoObject), &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		MonoObject *res = mono_value_box_checked (domain, mono_object_class (val), ((char*)val) + sizeof(MonoObject), error);
 		return res;
 
 	}
 	case MONO_TYPE_STRING: {
 		MonoString *str = (MonoString *) val;
 		MonoObject *res = NULL;
-		res = (MonoObject *) mono_string_new_utf16_checked (domain, mono_string_chars (str), mono_string_length (str), &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		res = (MonoObject *) mono_string_new_utf16_checked (domain, mono_string_chars (str), mono_string_length (str), error);
 		return res;
 	}
 	case MONO_TYPE_ARRAY:
@@ -2058,14 +2060,16 @@ mono_marshal_xdomain_copy_value (MonoObject *val)
 		MonoArray *acopy;
 		MonoXDomainMarshalType mt = mono_get_xdomain_marshal_type (&(mono_object_class (val)->element_class->byval_arg));
 		if (mt == MONO_MARSHAL_SERIALIZE) return NULL;
-		acopy = mono_array_clone_in_domain (domain, (MonoArray *) val, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		acopy = mono_array_clone_in_domain (domain, (MonoArray *) val, error);
+		return_val_if_nok (error, NULL);
 
 		if (mt == MONO_MARSHAL_COPY) {
 			int i, len = mono_array_length (acopy);
 			for (i = 0; i < len; i++) {
 				MonoObject *item = (MonoObject *)mono_array_get (acopy, gpointer, i);
-				mono_array_setref (acopy, i, mono_marshal_xdomain_copy_value (item));
+				MonoObject *item_copy = mono_marshal_xdomain_copy_value (item, error);
+				return_val_if_nok (error, NULL);
+				mono_array_setref (acopy, i, item_copy);
 			}
 		}
 		return (MonoObject *) acopy;
@@ -2075,4 +2079,16 @@ mono_marshal_xdomain_copy_value (MonoObject *val)
 	}
 
 	return NULL;
+}
+
+/* mono_marshal_xdomain_copy_value
+ * Makes a copy of "val" suitable for the current domain.
+ */
+MonoObject *
+ves_icall_mono_marshal_xdomain_copy_value (MonoObject *val)
+{
+	MonoError error;
+	MonoObject *result = mono_marshal_xdomain_copy_value (val, &error);
+	mono_error_set_pending_exception (&error);
+	return result;
 }
