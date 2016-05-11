@@ -543,8 +543,6 @@ emit_float_args (MonoCompile *cfg, MonoCallInst *inst, guint8 *code, int *max_le
 {
 	GSList *list;
 
-	g_assert (!cfg->r4fp);
-
 	for (list = inst->float_args; list; list = list->next) {
 		FloatArgData *fad = list->data;
 		MonoInst *var = get_vreg_to_inst (cfg, fad->vreg);
@@ -2460,7 +2458,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 				 *
 				 * So we create a variable for the float argument and an instruction to store
 				 * the argument into the variable. We then store the list of these arguments
-				 * in cfg->float_args. This list is then used by emit_float_args later to
+				 * in call->float_args. This list is then used by emit_float_args later to
 				 * pass the arguments in the various call opcodes.
 				 *
 				 * This is not very nice, and we should really try to fix the allocator.
@@ -5523,8 +5521,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			MonoType *sig_ret = mini_get_underlying_type (mono_method_signature (cfg->method)->ret);
 			if (sig_ret->type == MONO_TYPE_R4) {
 				if (cfg->r4fp) {
-					g_assert (!IS_HARD_FLOAT);
-					ARM_FMRS (code, ARMREG_R0, ins->sreg1);
+					if (IS_HARD_FLOAT) {
+						if (ins->sreg1 != ARM_VFP_D0)
+							ARM_CPYS (code, ARM_VFP_D0, ins->sreg1);
+					} else {
+						ARM_FMRS (code, ARMREG_R0, ins->sreg1);
+					}
 				} else {
 					ARM_CVTD (code, ARM_VFP_F0, ins->sreg1);
 
