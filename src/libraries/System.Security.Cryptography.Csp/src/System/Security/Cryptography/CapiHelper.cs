@@ -567,11 +567,6 @@ namespace Internal.NativeCrypto
             {
                 case Constants.CLR_KEYLEN:
                     {
-                        //ToDO : Check if we should use silent flag here as this might not run
-                        //downlevel so we might want to use silent flag
-
-                        // Some Csp's may pop up a UI here since we don't use CRYPT_SILENT flag
-                        // which is not supported in downlevel platforms
                         if (!Interop.CryptGetKeyParam(safeKeyHandle, (int)CryptGetKeyParamQueryType.KP_KEYLEN, null, ref cb, 0))
                         {
                             throw new CryptographicException(SR.Format(SR.CryptGetKeyParam_Failed, Convert.ToString(GetErrorCode())));
@@ -682,22 +677,6 @@ namespace Internal.NativeCrypto
                     throw new ArgumentException(SR.Format(SR.Argument_InvalidValue, Convert.ToString(flags)));
                 }
             }
-
-            //TODO : I don't think we need following commented code. Leaving it now for confirming the same 
-            // during code review. Reviewers please let me kn know?
-
-            // make sure we are allowed to display the key protection UI if a user protected key is requested.
-            //if ((flags & CspProviderFlags.UseUserProtectedKey) != 0)
-            //{
-            //    // UI only allowed in interactive session.
-            //    if (!System.Environment.UserInteractive)
-            //    {
-            //        throw new InvalidOperationException(("Cryptography_NotInteractive"));
-            //    }
-            //    // we need to demand UI permission here.
-            //    UIPermission uiPermission = new UIPermission(UIPermissionWindow.SafeTopLevelWindows);
-            //    uiPermission.Demand();
-            //}
         }
 
         /// <summary>
@@ -804,7 +783,7 @@ namespace Internal.NativeCrypto
             }
             byte[] dataTobeDecrypted = new byte[encryptedDataLength];
             Buffer.BlockCopy(encryptedData, 0, dataTobeDecrypted, 0, encryptedDataLength);
-            Array.Reverse(dataTobeDecrypted); //ToDO: Check is this is really needed? To be confirmed with tests
+            Array.Reverse(dataTobeDecrypted);
 
             int dwFlags = fOAEP ? (int)CryptDecryptFlags.CRYPT_OAEP : 0;
             int decryptedDataLength = encryptedDataLength;
