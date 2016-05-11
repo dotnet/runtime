@@ -1796,6 +1796,14 @@ void   Compiler::lvaPromoteLongVars()
             fieldVarDsc->lvIsParam        = isParam;
         }
     }
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("\nlvaTable after lvaPromoteLongVars\n");
+        lvaTableDump();
+    }
+#endif // DEBUG
 }
 #endif // !_TARGET_64BIT_
 
