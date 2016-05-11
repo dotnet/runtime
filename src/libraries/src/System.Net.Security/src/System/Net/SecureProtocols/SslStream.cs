@@ -447,22 +447,22 @@ namespace System.Net.Security
             _sslState.SecureStream.Write(buffer, offset, count);
         }
 
-        private IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState)
+        private IAsyncResult BeginReadPrivate(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState)
         {
             return _sslState.SecureStream.BeginRead(buffer, offset, count, asyncCallback, asyncState);
         }
 
-        private int EndRead(IAsyncResult asyncResult)
+        private int EndReadPrivate(IAsyncResult asyncResult)
         {
             return _sslState.SecureStream.EndRead(asyncResult);
         }
 
-        private IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState)
+        private IAsyncResult BeginWritePrivate(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState)
         {
             return _sslState.SecureStream.BeginWrite(buffer, offset, count, asyncCallback, asyncState);
         }
 
-        private void EndWrite(IAsyncResult asyncResult)
+        private void EndWritePrivate(IAsyncResult asyncResult)
         {
             _sslState.SecureStream.EndWrite(asyncResult);
         }
@@ -490,8 +490,8 @@ namespace System.Net.Security
             }
 
             return Task.Factory.FromAsync(
-                (bufferArg, offsetArg, sizeArg, callback, state) => ((SslStream)state).BeginRead(bufferArg, offsetArg, sizeArg, callback, state),
-                iar => ((SslStream)iar.AsyncState).EndRead(iar),
+                (bufferArg, offsetArg, sizeArg, callback, state) => ((SslStream)state).BeginReadPrivate(bufferArg, offsetArg, sizeArg, callback, state),
+                iar => ((SslStream)iar.AsyncState).EndReadPrivate(iar),
                 buffer,
                 offset,
                 size,
@@ -521,8 +521,8 @@ namespace System.Net.Security
             }
 
             return Task.Factory.FromAsync(
-                (bufferArg, offsetArg, sizeArg, callback, state) => ((SslStream)state).BeginWrite(bufferArg, offsetArg, sizeArg, callback, state),
-                iar => ((SslStream)iar.AsyncState).EndWrite(iar),
+                (bufferArg, offsetArg, sizeArg, callback, state) => ((SslStream)state).BeginWritePrivate(bufferArg, offsetArg, sizeArg, callback, state),
+                iar => ((SslStream)iar.AsyncState).EndWritePrivate(iar),
                 buffer,
                 offset,
                 size,
