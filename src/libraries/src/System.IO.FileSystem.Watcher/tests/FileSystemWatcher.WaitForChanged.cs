@@ -61,6 +61,7 @@ namespace System.IO.Tests
             }
         }
 
+        [ActiveIssue(8439, PlatformID.AnyUnix)]
         [Theory]
         [InlineData(WatcherChangeTypes.Created)]
         [InlineData(WatcherChangeTypes.Deleted)]
