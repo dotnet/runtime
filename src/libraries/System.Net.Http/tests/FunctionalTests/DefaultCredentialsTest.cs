@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Net.Test.Common;
 using System.Security.Principal;
 using System.Threading.Tasks;
 
@@ -10,6 +11,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
+    // TODO: #2383 - Consolidate the use of the environment variable settings to Common/tests.
     public class DefaultCredentialsTest
     {
         private static string HttpInternalTestServer => Environment.GetEnvironmentVariable("HTTP_INTERNAL_TESTSERVER");
@@ -32,7 +34,7 @@ namespace System.Net.Http.Functional.Tests
 
         [ConditionalTheory(nameof(HttpInternalTestsEnabled))]
         [InlineData(false)]
-        // TODO: Issue #8176 [InlineData(true)]
+        [InlineData(true)]
         public async Task UseDefaultCredentials_DefaultValue_Unauthorized(bool useProxy)
         {
             var handler = new HttpClientHandler();
@@ -99,7 +101,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalTheory(nameof(HttpInternalTestsEnabled))]
-        // TODO: Issue #8176 [InlineData(false)]
+        [InlineData(false)]
         [InlineData(true)]
         public async Task Credentials_SetToWrappedDefaultCredential_ConnectAsCurrentIdentity(bool useProxy)
         {
@@ -119,6 +121,50 @@ namespace System.Net.Http.Functional.Tests
                 WindowsIdentity currentIdentity = WindowsIdentity.GetCurrent();
                 _output.WriteLine("currentIdentity={0}", currentIdentity.Name);
                 VerifyAuthentication(responseBody, true, currentIdentity.Name);
+            }
+        }
+
+        [ConditionalFact(nameof(HttpInternalTestsEnabled))]
+        public async Task Proxy_UseAuthenticatedProxyWithNoCredentials_ProxyAuthenticationRequired()
+        {
+            var handler = new HttpClientHandler();
+            handler.Proxy = new AuthenticatedProxy(null);
+
+            using (var client = new HttpClient(handler))
+            using (HttpResponseMessage response = await client.GetAsync(HttpTestServers.RemoteEchoServer))
+            {
+                Assert.Equal(HttpStatusCode.ProxyAuthenticationRequired, response.StatusCode);
+            }
+        }
+
+        [ConditionalFact(nameof(HttpInternalTestsEnabled))]
+        public async Task Proxy_UseAuthenticatedProxyWithDefaultCredentials_OK()
+        {
+            var handler = new HttpClientHandler();
+            handler.Proxy = new AuthenticatedProxy(CredentialCache.DefaultCredentials);
+
+            using (var client = new HttpClient(handler))
+            using (HttpResponseMessage response = await client.GetAsync(HttpTestServers.RemoteEchoServer))
+            {
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            }
+        }
+
+        [ConditionalFact(nameof(HttpInternalTestsEnabled))]
+        public async Task Proxy_UseAuthenticatedProxyWithWrappedDefaultCredentials_OK()
+        {
+            ICredentials wrappedCreds = new CredentialWrapper
+            {
+                InnerCredentials = CredentialCache.DefaultCredentials
+            };
+
+            var handler = new HttpClientHandler();
+            handler.Proxy = new AuthenticatedProxy(wrappedCreds);
+
+            using (var client = new HttpClient(handler))
+            using (HttpResponseMessage response = await client.GetAsync(HttpTestServers.RemoteEchoServer))
+            {
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             }
         }
 
@@ -153,5 +199,50 @@ namespace System.Net.Http.Functional.Tests
             public NetworkCredential GetCredential(Uri uri, String authType) => 
                 InnerCredentials?.GetCredential(uri, authType);
         }
+
+        private class AuthenticatedProxy : IWebProxy
+        {
+            ICredentials _credentials;
+            Uri _proxyUri;
+
+            public AuthenticatedProxy(ICredentials credentials)
+            {
+                _credentials = credentials;
+
+                string host = Environment.GetEnvironmentVariable("HTTP_INTERNAL_PROXYSERVER");
+                Assert.False(string.IsNullOrEmpty(host), "HTTP_INTERNAL_PROXYSERVER must specify proxy hostname");
+
+                string portString = Environment.GetEnvironmentVariable("HTTP_INTERNAL_PROXYSERVER_PORT");
+                Assert.False(string.IsNullOrEmpty(portString), "HTTP_INTERNAL_PROXYSERVER_PORT must specify proxy port number");
+
+                int port;
+                Assert.True(int.TryParse(portString, out port), "HTTP_INTERNAL_PROXYSERVER_PORT must be a valid port number");
+
+                _proxyUri = new Uri(string.Format("http://{0}:{1}", host, port));
+            }
+
+            public ICredentials Credentials
+            {
+                get
+                {
+                    return _credentials;
+                }
+
+                set
+                {
+                    throw new NotImplementedException();
+                }
+            }
+
+            public Uri GetProxy(Uri destination)
+            {
+                return _proxyUri;
+            }
+
+            public bool IsBypassed(Uri host)
+            {
+                return false;
+            }
+        }        
     }
 }
