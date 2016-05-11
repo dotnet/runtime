@@ -505,7 +505,7 @@ namespace System.Net.Http.Functional.Tests
 
         private static async Task<T> WhenCanceled<T>(CancellationToken cancellationToken)
         {
-            await Task.Delay(-1, cancellationToken);
+            await Task.Delay(-1, cancellationToken).ConfigureAwait(false);
             return default(T);
         }
 
