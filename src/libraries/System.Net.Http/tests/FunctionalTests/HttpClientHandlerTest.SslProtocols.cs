@@ -74,6 +74,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ActiveIssue(8444, PlatformID.AnyUnix)]
         [ConditionalTheory(nameof(BackendSupportsSslConfiguration))]
         [InlineData(SslProtocols.Tls)]
         [InlineData(SslProtocols.Tls11)]
