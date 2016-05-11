@@ -46,7 +46,6 @@ function print_usage {
     echo '  --useServerGC                    : Enable server GC for this test run'
     echo '  --test-env                       : Script to set environment variables for tests'
     echo '  --runcrossgentests               : Runs the ready to run tests' 
-    echo ''
     echo '  --jitstress=<n>                  : Runs the tests with COMPlus_JitStress=n'
     echo '  --jitstressregs=<n>              : Runs the tests with COMPlus_JitStressRegs=n'
     echo '  --jitminopts                     : Runs the tests with COMPlus_JITMinOpts=1'
@@ -55,6 +54,8 @@ function print_usage {
     echo '    0: None                                1: GC on all allocs and 'easy' places'
     echo '    2: GC on transitions to preemptive GC  4: GC on every allowable JITed instr'
     echo '    8: GC on every allowable NGEN instr   16: GC only on a unique stack trace'
+    echo '  --show-time                      : Print execution sequence and running time for each test'
+    echo '  --no-lf-conversion               : Do not execute LF conversion before running test script'
     echo ''
     echo 'Runtime Code Coverage options:'
     echo '  --coreclr-coverage               : Optional argument to get coreclr code coverage reports'
@@ -381,9 +382,9 @@ function create_core_overlay {
 function precompile_overlay_assemblies {
 
     if [ $doCrossgen == 1 ]; then
-    
+
         local overlayDir=$CORE_ROOT
-        
+
         filesToPrecompile=$(ls -trh $overlayDir/*.dll)
         for fileToPrecompile in ${filesToPrecompile}
         do
@@ -395,7 +396,7 @@ function precompile_overlay_assemblies {
                     $overlayDir/crossgen /Platform_Assemblies_Paths $overlayDir $filename 2>/dev/null
                     local exitCode=$?
                     if [ $exitCode == -2146230517 ]; then
-                        echo $filename is not a managed assembly.    
+                        echo $filename is not a managed assembly.
                     elif [ $exitCode != 0 ]; then
                         echo Unable to precompile $filename.
                     else
@@ -406,7 +407,7 @@ function precompile_overlay_assemblies {
         done
     else
         echo Skipping crossgen of FX assemblies.
-    fi    
+    fi
 }
 
 function copy_test_native_bin_to_test_root {
@@ -554,6 +555,7 @@ fi
 declare -a scriptFilePaths
 declare -a outputFilePaths
 declare -a processIds
+declare -a testStartTimes
 
 function finish_test {
     wait ${processIds[$nextProcessIndex]}
@@ -564,26 +566,36 @@ function finish_test {
     local outputFilePath=${outputFilePaths[$nextProcessIndex]}
     local scriptFileName=$(basename "$scriptFilePath")
 
+    local testEndTime=
+    local testRunningTime=
+    local header=
+
+    if [ "$showTime" == "ON" ]; then
+        testEndTime=$(date +%s)
+        testRunningTime=$(echo "$testEndTime - ${testStartTimes[$nextProcessIndex]}" | bc)
+        header=$(printf "[%03d:%4.0fs] " "$countTotalTests" "$testRunningTime")
+    fi
+
     local xunitTestResult
     case $testScriptExitCode in
         0)
             let countPassedTests++
             xunitTestResult='Pass'
             if ((verbose == 1 || runFailingTestsOnly == 1)); then
-                echo "PASSED   - $scriptFilePath"
+                echo "PASSED   - ${header}${scriptFilePath}"
             else
-                echo "         - $scriptFilePath"
+                echo "         - ${header}${scriptFilePath}"
             fi
             ;;
         2)
             let countSkippedTests++
             xunitTestResult='Skip'
-            echo "SKIPPED  - $scriptFilePath"
+            echo "SKIPPED  - ${header}${scriptFilePath}"
             ;;
         *)
             let countFailedTests++
             xunitTestResult='Fail'
-            echo "FAILED   - $scriptFilePath"
+            echo "FAILED   - ${header}${scriptFilePath}"
             ;;
     esac
     let countTotalTests++
@@ -614,9 +626,11 @@ function prep_test {
 
     test "$verbose" == 1 && echo "Preparing $scriptFilePath"
 
-    # Convert DOS line endings to Unix if needed
-    perl -pi -e 's/\r\n|\n|\r/\n/g' "$scriptFilePath"
-    
+    if [ ! "$noLFConversion" == "ON" ]; then
+        # Convert DOS line endings to Unix if needed
+        perl -pi -e 's/\r\n|\n|\r/\n/g' "$scriptFilePath"
+    fi
+        
     # Add executable file mode bit if needed
     chmod +x "$scriptFilePath"
 
@@ -630,7 +644,7 @@ function start_test {
     if ((runFailingTestsOnly == 1)) && ! is_failing_test "$scriptFilePath"; then
         return
     fi
-    
+
     # Skip any test that's not in the current playlist, if a playlist was
     # given to us.
     if [ -n "$playlistFile" ] && ! is_playlist_test "$scriptFilePath"; then
@@ -645,6 +659,10 @@ function start_test {
     local scriptFileName=$(basename "$scriptFilePath")
     local outputFilePath=$(dirname "$scriptFilePath")/${scriptFileName}.out
     outputFilePaths[$nextProcessIndex]=$outputFilePath
+
+    if [ "$showTime" == "ON" ]; then
+        testStartTimes[$nextProcessIndex]=$(date +%s)
+    fi
 
     test "$verbose" == 1 && echo "Starting $scriptFilePath"
     if is_unsupported_test "$scriptFilePath"; then
@@ -742,6 +760,8 @@ coreClrSrc=
 coverageOutputDir=
 testEnv=
 playlistFile=
+showTime=
+noLFConversion=
 
 ((disableEventLogging = 0))
 ((serverGC = 0))
@@ -838,6 +858,12 @@ do
         --gcstresslevel=*)
             export COMPlus_GCStress=${i#*=}
             ;;            
+        --show-time)
+            showTime=ON
+            ;;
+        --no-lf-conversion)
+            noLFConversion=ON
+            ;;
         *)
             echo "Unknown switch: $i"
             print_usage
@@ -868,7 +894,7 @@ if [ -z "$mscorlibDir" ]; then
 	mscorlibDir=$coreClrBinDir
 fi
 if [ -d $mscorlibDir/bin ]; then
-    cp $mscorlibDir/bin/* $mscorlibDir   
+    cp $mscorlibDir/bin/* $mscorlibDir
 fi
 
 # If this is a coverage run, make sure the appropriate args have been passed
@@ -928,7 +954,7 @@ cd "$testRootDir"
 time_start=$(date +"%s")
 if [ -z "$testDirectories" ]
 then
-    # No test directories were specified, so run everything in the current 
+    # No test directories were specified, so run everything in the current
     # directory and its subdirectories.
     run_tests_in_directory "."
 else
