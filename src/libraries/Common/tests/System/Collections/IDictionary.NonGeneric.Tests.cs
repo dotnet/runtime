@@ -683,14 +683,38 @@ namespace System.Collections.Tests
         public void IDictionary_NonGeneric_IDictionaryEnumerator_Current_FromStartToFinish(int count)
         {
             IDictionaryEnumerator enumerator = NonGenericIDictionaryFactory(count).GetEnumerator();
-            object current, key, value, entry;
-            while (enumerator.MoveNext())
+            for (int i = 0; i < 2; i++)
             {
-                current = enumerator.Current;
-                key = enumerator.Key;
-                value = enumerator.Value;
-                entry = enumerator.Entry;
+                int counter = 0;
+                while (enumerator.MoveNext())
+                {
+                    object current = enumerator.Current;
+                    object key = enumerator.Key;
+                    object value = enumerator.Value;
+                    DictionaryEntry entry = enumerator.Entry;
+                    Assert.Equal(current, entry);
+                    Assert.Equal(key, entry.Key);
+                    Assert.Equal(value, entry.Value);
+                    counter++;
+                }
+                Assert.Equal(count, counter);
+                if (!ResetImplemented)
+                {
+                    break;
+                }
+                enumerator.Reset();
             }
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void IDictionary_NonGeneric_IDictionaryEnumerator_Reset_BeforeIteration_Support(int count)
+        {
+            IDictionaryEnumerator enumerator = NonGenericIDictionaryFactory(count).GetEnumerator();
+            if (ResetImplemented)
+                enumerator.Reset();
+            else
+                Assert.Throws<NotSupportedException>(() => enumerator.Reset());
         }
 
         [Theory]
