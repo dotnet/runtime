@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using System.Linq;
+using System.Net.NetworkInformation;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.Tests;
@@ -20,6 +22,7 @@ namespace System.Net.Http.Functional.Tests
 
         public class Options
         {
+            public IPAddress Address { get; set; } = IPAddress.Loopback;
             public int ListenBacklog { get; set; } = 1;
             public bool UseSsl { get; set; } = false;
             public SslProtocols SslProtocols { get; set; } = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12;
@@ -36,13 +39,16 @@ namespace System.Net.Http.Functional.Tests
             options = options ?? new Options();
             try
             {
-                var server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                var server = new Socket(options.Address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
 
-                server.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                server.Bind(new IPEndPoint(options.Address, 0));
                 server.Listen(options.ListenBacklog);
 
                 localEndPoint = (IPEndPoint)server.LocalEndPoint;
-                var url = new Uri($"{(options.UseSsl ? "https" : "http")}://{localEndPoint.Address}:{localEndPoint.Port}/");
+                string host = options.Address.AddressFamily == AddressFamily.InterNetworkV6 ? 
+                    $"[{localEndPoint.Address}]" :
+                    localEndPoint.Address.ToString();
+                var url = new Uri($"{(options.UseSsl ? "https" : "http")}://{host}:{localEndPoint.Port}/");
 
                 return funcAsync(server, url).ContinueWith(t =>
                 {
@@ -58,6 +64,14 @@ namespace System.Net.Http.Functional.Tests
         }
 
         public static string DefaultHttpResponse => $"HTTP/1.1 200 OK\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 0\r\n\r\n";
+
+        public static IPAddress GetIPv6LinkLocalAddress() =>
+            NetworkInterface
+                .GetAllNetworkInterfaces()
+                .SelectMany(i => i.GetIPProperties().UnicastAddresses)
+                .Select(a => a.Address)
+                .Where(a => a.IsIPv6LinkLocal)
+                .FirstOrDefault();
 
         public static Task ReadRequestAndSendResponseAsync(Socket server, string response = null, Options options = null)
         {
