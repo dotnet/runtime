@@ -62,7 +62,7 @@ namespace System.Collections.Tests
         protected override bool DuplicateValuesAllowed { get { return false; } }
         protected override bool IsReadOnly { get { return true; } }
         protected override bool Enumerator_Current_UndefinedOperation_Throws { get { return true; } }
-        protected override bool ICollection_NonGeneric_CopyTo_ArrayOfEnumType_ThrowsArgumentException { get { return true; } }
+        protected override Type ICollection_NonGeneric_CopyTo_ArrayOfEnumType_ThrowType => typeof(ArgumentException);
 
         protected override ICollection NonGenericICollectionFactory()
         {

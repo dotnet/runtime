@@ -44,7 +44,7 @@ namespace System.Collections.Concurrent.Tests
     }
 
     /// <summary>
-    /// Contains tests that ensure the correctness of the Dictionary class.
+    /// Contains tests that ensure the correctness of the ConcurrentDictionary class.
     /// </summary>
     public abstract class ConcurrentDictionary_Generic_Tests<TKey, TValue> : IDictionary_Generic_Tests<TKey, TValue>
     {
@@ -64,7 +64,7 @@ namespace System.Collections.Concurrent.Tests
         protected override bool IDictionary_Generic_Keys_Values_ModifyingTheDictionaryUpdatesTheCollection => false;
 
         protected override bool ResetImplemented => false;
-        protected override bool IDictionary_Generic_Keys_Values_ResetImplemented => true;
+        protected override bool IDictionary_Generic_Keys_Values_Enumeration_ResetImplemented => true;
 
         protected override EnumerableOrder Order => EnumerableOrder.Unspecified;
 
