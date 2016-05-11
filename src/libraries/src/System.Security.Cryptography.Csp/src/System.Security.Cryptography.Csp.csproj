@@ -2,6 +2,7 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
+    <Configuration Condition="'$(Configuration)'==''">Windows_NT_Debug</Configuration>
     <ProjectGuid>{3B7F91D7-0677-40CA-B4E7-D4E09D89A74E}</ProjectGuid>
     <AssemblyName>System.Security.Cryptography.Csp</AssemblyName>
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
@@ -13,10 +14,8 @@
     <GeneratePlatformNotSupportedAssembly Condition="'$(TargetsUnix)' == 'true'">true</GeneratePlatformNotSupportedAssembly>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_NT_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_NT_Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)' != 'net46' AND '$(TargetsWindows)' == 'true'">
     <Compile Include="System\Security\Cryptography\CspProviderFlags.cs" />
     <Compile Include="System\Security\Cryptography\ICspAsymmetricAlgorithm.cs" />
