@@ -82,19 +82,19 @@ namespace System.Net.NetworkInformation
         {
             while (socket == s_socket)
             {
-                Interop.Sys.NetworkChangeKind kind = Interop.Sys.ReadSingleEvent(socket);
-                if (kind == Interop.Sys.NetworkChangeKind.None)
+                Interop.Sys.ReadEvents(socket, ProcessEvent);
+            }
+        }
+        
+        private static void ProcessEvent(int socket, Interop.Sys.NetworkChangeKind kind)
+        {
+            if (kind != Interop.Sys.NetworkChangeKind.None)
+            {
+                lock (s_lockObj)
                 {
-                    continue;
-                }
-                else
-                {
-                    lock (s_lockObj)
+                    if (socket == s_socket)
                     {
-                        if (socket == s_socket)
-                        {
-                            OnSocketEvent(kind);
-                        }
+                        OnSocketEvent(kind);
                     }
                 }
             }

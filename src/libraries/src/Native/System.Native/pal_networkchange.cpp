@@ -46,7 +46,7 @@ extern "C" Error SystemNative_CloseNetworkChangeListenerSocket(int32_t socket)
     return err == 0 || CheckInterrupted(err) ? PAL_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
 }
 
-extern "C" NetworkChangeKind SystemNative_ReadSingleEvent(int32_t sock)
+extern "C" void SystemNative_ReadEvents(int32_t sock, NetworkChangeEvent onNetworkChange)
 {
     char buffer[4096];
     iovec iov = {buffer, sizeof(buffer)};
@@ -57,30 +57,32 @@ extern "C" NetworkChangeKind SystemNative_ReadSingleEvent(int32_t sock)
     if (len == -1)
     {
         // Probably means the socket has been closed.
-        // If so, the managed side will ignore the return value.
-        return NetworkChangeKind::None;
+        return;
     }
 
-    nlmsghdr* hdr = reinterpret_cast<nlmsghdr*>(buffer);
-    // This channel should only send a single message at a time.
-    // This means there should be no multi-part messages (NLM_F_MULTI).
-    assert((hdr->nlmsg_flags & NLM_F_MULTI) == 0);
-    switch (hdr->nlmsg_type)
+    for (nlmsghdr* hdr = reinterpret_cast<nlmsghdr*>(buffer); NLMSG_OK(hdr, len); NLMSG_NEXT(hdr, len))
     {
-        case NLMSG_DONE:
-            return NetworkChangeKind::None;
-        case NLMSG_ERROR:
-            return NetworkChangeKind::None;
-        case RTM_NEWADDR:
-            return NetworkChangeKind::AddressAdded;
-        case RTM_DELADDR:
-            return NetworkChangeKind::AddressRemoved;
-        case RTM_NEWLINK:
-            return ReadNewLinkMessage(hdr);
-        case RTM_DELLINK:
-            return NetworkChangeKind::LinkRemoved;
-        default:
-            return NetworkChangeKind::None;
+        switch (hdr->nlmsg_type)
+        {
+            case NLMSG_DONE:
+                return; // End of a multi-part message; stop reading.
+            case NLMSG_ERROR:
+                return;
+            case RTM_NEWADDR:
+                onNetworkChange(sock, NetworkChangeKind::AddressAdded);
+                break;
+            case RTM_DELADDR:
+                onNetworkChange(sock, NetworkChangeKind::AddressRemoved);
+                break;
+            case RTM_NEWLINK:
+                onNetworkChange(sock, ReadNewLinkMessage(hdr));
+                break;
+            case RTM_DELLINK:
+                onNetworkChange(sock, NetworkChangeKind::LinkRemoved);
+                break;
+            default:
+                break;
+        }
     }
 }
 
