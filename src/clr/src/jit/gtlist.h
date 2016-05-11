@@ -148,16 +148,16 @@ GTNODE(LEA        , "lea"        ,0,GTK_BINOP|GTK_EXOP)
 // of its two (lower and upper half) operands.  Some GT_LONG nodes are transient,
 // during the decomposing of longs; others are handled by codegen as operands of
 // nodes such as calls, returns and stores of long lclVars.
-GTNODE(LONG       , "long"       ,0,GTK_BINOP)
+GTNODE(LONG       , "gt_long"    ,0,GTK_BINOP)
 
 // The following are nodes representing the upper half of a 64-bit operation
 // that requires a carry/borrow.  However, they are all named GT_XXX_HI for
 // consistency.
-GTNODE(ADD_HI     , "+Hi"          ,1,GTK_BINOP|GTK_EXOP)
-GTNODE(SUB_HI     , "-Hi"          ,0,GTK_BINOP|GTK_EXOP)
-GTNODE(MUL_HI     , "*Hi"          ,1,GTK_BINOP|GTK_EXOP)
-GTNODE(DIV_HI     , "/Hi"          ,0,GTK_BINOP|GTK_EXOP)
-GTNODE(MOD_HI     , "%Hi"          ,0,GTK_BINOP|GTK_EXOP)
+GTNODE(ADD_HI     , "+Hi"          ,1,GTK_BINOP)
+GTNODE(SUB_HI     , "-Hi"          ,0,GTK_BINOP)
+GTNODE(MUL_HI     , "*Hi"          ,1,GTK_BINOP)
+GTNODE(DIV_HI     , "/Hi"          ,0,GTK_BINOP)
+GTNODE(MOD_HI     , "%Hi"          ,0,GTK_BINOP)
 #endif // !defined(LEGACY_BACKEND) && !defined(_TARGET_64BIT_)
 
 #ifdef FEATURE_SIMD
