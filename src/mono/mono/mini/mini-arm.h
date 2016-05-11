@@ -403,14 +403,6 @@ mono_arm_patchable_b (guint8 *code, int cond);
 guint8*
 mono_arm_patchable_bl (guint8 *code, int cond);
 
-#ifdef USE_JUMP_TABLES
-guint8*
-mono_arm_load_jumptable_entry_addr (guint8 *code, gpointer *jte, ARMReg reg);
-
-guint8*
-mono_arm_load_jumptable_entry (guint8 *code, gpointer *jte, ARMReg reg);
-#endif
-
 gboolean
 mono_arm_is_hard_float (void);
 

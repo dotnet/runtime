@@ -2749,21 +2749,6 @@ gpointer mono_arch_get_seq_point_info           (MonoDomain *domain, guint8 *cod
 void     mono_arch_init_lmf_ext                 (MonoLMFExt *ext, gpointer prev_lmf);
 #endif
 
-#ifdef USE_JUMP_TABLES
-void
-mono_jumptable_init  (void);
-gpointer*
-mono_jumptable_add_entry (void);
-gpointer*
-mono_jumptable_add_entries (guint32 entries);
-void
-mono_jumptable_cleanup  (void);
-gpointer*
-mono_arch_jumptable_entry_from_code (guint8 *code);
-gpointer*
-mono_jumptable_get_entry (guint8 *code);
-#endif
-
 gboolean
 mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls, 
 						MonoJitInfo *ji, MonoContext *ctx, 
