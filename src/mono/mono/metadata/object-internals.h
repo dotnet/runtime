@@ -1683,6 +1683,9 @@ MonoString *
 mono_string_new_size_checked (MonoDomain *domain, gint32 len, MonoError *error);
 
 MonoString*
+mono_ldstr_checked (MonoDomain *domain, MonoImage *image, uint32_t str_index, MonoError *error);
+
+MonoString*
 mono_string_new_len_checked (MonoDomain *domain, const char *text, guint length, MonoError *error);
 
 MonoString*

@@ -6517,18 +6517,36 @@ mono_string_intern_checked (MonoString *str, MonoError *error)
 MonoString*
 mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 idx)
 {
-	MONO_REQ_GC_UNSAFE_MODE;
 	MonoError error;
+	MonoString *result = mono_ldstr_checked (domain, image, idx, &error);
+	mono_error_cleanup (&error);
+	return result;
+}
+
+/**
+ * mono_ldstr_checked:
+ * @domain: the domain where the string will be used.
+ * @image: a metadata context
+ * @idx: index into the user string table.
+ * @error: set on error.
+ * 
+ * Implementation for the ldstr opcode.
+ * Returns: a loaded string from the @image/@idx combination.
+ * On failure returns NULL and sets @error.
+ */
+MonoString*
+mono_ldstr_checked (MonoDomain *domain, MonoImage *image, guint32 idx, MonoError *error)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+	mono_error_init (error);
 
 	if (image->dynamic) {
-		MonoString *str = (MonoString *)mono_lookup_dynamic_token (image, MONO_TOKEN_STRING | idx, NULL, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		MonoString *str = (MonoString *)mono_lookup_dynamic_token (image, MONO_TOKEN_STRING | idx, NULL, error);
 		return str;
 	} else {
 		if (!mono_verifier_verify_string_signature (image, idx, NULL))
 			return NULL; /*FIXME we should probably be raising an exception here*/
-		MonoString *str = mono_ldstr_metadata_sig (domain, mono_metadata_user_string (image, idx), &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		MonoString *str = mono_ldstr_metadata_sig (domain, mono_metadata_user_string (image, idx), error);
 		return str;
 	}
 }

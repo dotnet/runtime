@@ -1127,15 +1127,30 @@ mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, gpointe
 }
 
 MonoString*
+ves_icall_mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 idx)
+{
+	MonoError error;
+	MonoString *result = mono_ldstr_checked (domain, image, idx, &error);
+	mono_error_set_pending_exception (&error);
+	return result;
+}
+
+MonoString*
 mono_helper_ldstr (MonoImage *image, guint32 idx)
 {
-	return mono_ldstr (mono_domain_get (), image, idx);
+	MonoError error;
+	MonoString *result = mono_ldstr_checked (mono_domain_get (), image, idx, &error);
+	mono_error_set_pending_exception (&error);
+	return result;
 }
 
 MonoString*
 mono_helper_ldstr_mscorlib (guint32 idx)
 {
-	return mono_ldstr (mono_domain_get (), mono_defaults.corlib, idx);
+	MonoError error;
+	MonoString *result = mono_ldstr_checked (mono_domain_get (), mono_defaults.corlib, idx, &error);
+	mono_error_set_pending_exception (&error);
+	return result;
 }
 
 MonoObject*

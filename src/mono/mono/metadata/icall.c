@@ -6190,7 +6190,9 @@ ves_icall_System_Reflection_Module_ResolveStringToken (MonoImage *image, guint32
 
 	/* FIXME: What to do if the index points into the middle of a string ? */
 
-	return mono_ldstr (mono_domain_get (), image, index);
+	MonoString *result = mono_ldstr_checked (mono_domain_get (), image, index, &error);
+	mono_error_set_pending_exception (&error);
+	return result;
 }
 
 ICALL_EXPORT MonoClassField*

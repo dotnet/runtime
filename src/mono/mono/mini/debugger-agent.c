@@ -8666,11 +8666,12 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 		// FIXME: Generics
 		switch (mono_metadata_token_code (token)) {
 		case MONO_TOKEN_STRING: {
+			MonoError error;
 			MonoString *s;
 			char *s2;
 
-			s = mono_ldstr (domain, method->klass->image, mono_metadata_token_index (token));
-			g_assert (s);
+			s = mono_ldstr_checked (domain, method->klass->image, mono_metadata_token_index (token), &error);
+			mono_error_assert_ok (&error); /* FIXME don't swallow the error */
 
 			s2 = mono_string_to_utf8 (s);
 
