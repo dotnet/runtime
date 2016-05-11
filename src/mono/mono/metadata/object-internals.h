@@ -605,9 +605,9 @@ mono_wait_handle_new	    (MonoDomain *domain, HANDLE handle, MonoError *error);
 HANDLE
 mono_wait_handle_get_handle (MonoWaitHandle *handle);
 
-void
+gboolean
 mono_message_init	    (MonoDomain *domain, MonoMethodMessage *this_obj, 
-			     MonoReflectionMethod *method, MonoArray *out_args);
+			     MonoReflectionMethod *method, MonoArray *out_args, MonoError *error);
 
 MonoObject *
 mono_message_invoke	    (MonoObject *target, MonoMethodMessage *msg, 

@@ -7155,18 +7155,19 @@ ves_icall_System_Runtime_Remoting_Messaging_AsyncResult_Invoke (MonoAsyncResult 
 	return res;
 }
 
-void
+gboolean
 mono_message_init (MonoDomain *domain,
 		   MonoMethodMessage *this_obj, 
 		   MonoReflectionMethod *method,
-		   MonoArray *out_args)
+		   MonoArray *out_args,
+		   MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	static MonoClass *object_array_klass;
 	static MonoClass *byte_array_klass;
 	static MonoClass *string_array_klass;
-	MonoError error;
+	mono_error_init (error);
 	MonoMethodSignature *sig = mono_method_signature (method->method);
 	MonoString *name;
 	MonoArray *arr;
@@ -7193,13 +7194,13 @@ mono_message_init (MonoDomain *domain,
 
 	MONO_OBJECT_SETREF (this_obj, method, method);
 
-	arr = mono_array_new_specific_checked (mono_class_vtable (domain, object_array_klass), sig->param_count, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	arr = mono_array_new_specific_checked (mono_class_vtable (domain, object_array_klass), sig->param_count, error);
+	return_val_if_nok (error, FALSE);
 
 	MONO_OBJECT_SETREF (this_obj, args, arr);
 
-	arr = mono_array_new_specific_checked (mono_class_vtable (domain, byte_array_klass), sig->param_count, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	arr = mono_array_new_specific_checked (mono_class_vtable (domain, byte_array_klass), sig->param_count, error);
+	return_val_if_nok (error, FALSE);
 
 	MONO_OBJECT_SETREF (this_obj, arg_types, arr);
 
@@ -7209,13 +7210,16 @@ mono_message_init (MonoDomain *domain,
 	names = g_new (char *, sig->param_count);
 	mono_method_get_param_names (method->method, (const char **) names);
 
-	arr = mono_array_new_specific_checked (mono_class_vtable (domain, string_array_klass), sig->param_count, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	arr = mono_array_new_specific_checked (mono_class_vtable (domain, string_array_klass), sig->param_count, error);
+	if (!is_ok (error))
+		goto fail;
 
 	MONO_OBJECT_SETREF (this_obj, names, arr);
 	
 	for (i = 0; i < sig->param_count; i++) {
-		name = mono_string_new (domain, names [i]);
+		name = mono_string_new_checked (domain, names [i], error);
+		if (!is_ok (error))
+			goto fail;
 		mono_array_setref (this_obj->names, i, name);	
 	}
 
@@ -7237,6 +7241,11 @@ mono_message_init (MonoDomain *domain,
 		}
 		mono_array_set (this_obj->arg_types, guint8, i, arg_type);
 	}
+
+	return TRUE;
+fail:
+	g_free (names);
+	return FALSE;
 }
 
 #ifndef DISABLE_REMOTING
@@ -7581,12 +7590,14 @@ mono_method_call_message_new (MonoMethod *method, gpointer *params, MonoMethod *
 	if (invoke) {
 		MonoReflectionMethod *rm = mono_method_get_object_checked (domain, invoke, NULL, error);
 		return_val_if_nok (error, NULL);
-		mono_message_init (domain, msg, rm, NULL);
+		mono_message_init (domain, msg, rm, NULL, error);
+		return_val_if_nok (error, NULL);
 		count =  sig->param_count - 2;
 	} else {
 		MonoReflectionMethod *rm = mono_method_get_object_checked (domain, method, NULL, error);
 		return_val_if_nok (error, NULL);
-		mono_message_init (domain, msg, rm, NULL);
+		mono_message_init (domain, msg, rm, NULL, error);
+		return_val_if_nok (error, NULL);
 		count =  sig->param_count;
 	}
 
@@ -7758,7 +7769,8 @@ mono_load_remote_field_checked (MonoObject *this_obj, MonoClass *klass, MonoClas
 	return_val_if_nok (error, NULL);
 	MonoReflectionMethod *rm = mono_method_get_object_checked (domain, getter, NULL, error);
 	return_val_if_nok (error, NULL);
-	mono_message_init (domain, msg, rm, out_args);
+	mono_message_init (domain, msg, rm, out_args, error);
+	return_val_if_nok (error, NULL);
 
 	full_name = mono_type_get_full_name (klass);
 	mono_array_setref (msg->args, 0, mono_string_new (domain, full_name));
@@ -7885,7 +7897,8 @@ mono_load_remote_field_new_checked (MonoObject *this_obj, MonoClass *klass, Mono
 
 	MonoReflectionMethod *rm = mono_method_get_object_checked (domain, getter, NULL, error);
 	return_val_if_nok (error, NULL);
-	mono_message_init (domain, msg, rm, out_args);
+	mono_message_init (domain, msg, rm, out_args, error);
+	return_val_if_nok (error, NULL);
 
 	full_name = mono_type_get_full_name (klass);
 	mono_array_setref (msg->args, 0, mono_string_new (domain, full_name));
@@ -7989,7 +8002,8 @@ mono_store_remote_field_checked (MonoObject *this_obj, MonoClass *klass, MonoCla
 	return_val_if_nok (error, FALSE);
 	MonoReflectionMethod *rm = mono_method_get_object_checked (domain, setter, NULL, error);
 	return_val_if_nok (error, FALSE);
-	mono_message_init (domain, msg, rm, NULL);
+	mono_message_init (domain, msg, rm, NULL, error);
+	return_val_if_nok (error, FALSE);
 
 	full_name = mono_type_get_full_name (klass);
 	mono_array_setref (msg->args, 0, mono_string_new (domain, full_name));
@@ -8089,7 +8103,8 @@ mono_store_remote_field_new_checked (MonoObject *this_obj, MonoClass *klass, Mon
 	return_val_if_nok (error, FALSE);
 	MonoReflectionMethod *rm = mono_method_get_object_checked (domain, setter, NULL, error);
 	return_val_if_nok (error, FALSE);
-	mono_message_init (domain, msg, rm, NULL);
+	mono_message_init (domain, msg, rm, NULL, error);
+	return_val_if_nok (error, FALSE);
 
 	full_name = mono_type_get_full_name (klass);
 	mono_array_setref (msg->args, 0, mono_string_new (domain, full_name));
