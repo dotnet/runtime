@@ -4,6 +4,8 @@
   <!-- List the projects that need to be built -->
   <ItemGroup>
     <Project Include="mscorlib\mscorlib.csproj" />
+    <Project Include="mscorlib\ref\mscorlib.csproj" />
+    <Project Include="mscorlib\facade\mscorlib.csproj" />
     <Project Include="mscorlib\System.Private.CoreLib.csproj" />
   </ItemGroup>
 

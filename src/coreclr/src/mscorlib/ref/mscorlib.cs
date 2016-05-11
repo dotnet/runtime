@@ -5129,8 +5129,10 @@ namespace System.Globalization
     {
         public const int CurrentEra = 0;
         protected Calendar() { }
+#if FEATURE_COREFX_GLOBALIZATION 
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public virtual System.Globalization.CalendarAlgorithmType AlgorithmType { get { return default(System.Globalization.CalendarAlgorithmType); } }
+#endif
         protected virtual int DaysInYearBeforeMinSupportedYear { get { return default(int); } }
         public abstract int[] Eras { get; }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
@@ -5177,6 +5179,7 @@ namespace System.Globalization
         public abstract System.DateTime ToDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int era);
         public virtual int ToFourDigitYear(int year) { return default(int); }
     }
+#if FEATURE_COREFX_GLOBALIZATION
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public enum CalendarAlgorithmType
     {
@@ -5185,6 +5188,7 @@ namespace System.Globalization
         SolarCalendar = 1,
         Unknown = 0,
     }
+#endif
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public enum CalendarWeekRule
     {
@@ -5382,7 +5386,9 @@ namespace System.Globalization
     public abstract partial class EastAsianLunisolarCalendar : System.Globalization.Calendar
     {
         internal EastAsianLunisolarCalendar() { }
+#if FEATURE_COREFX_GLOBALIZATION
         public override System.Globalization.CalendarAlgorithmType AlgorithmType { get { return default(System.Globalization.CalendarAlgorithmType); } }
+#endif
         public override int TwoDigitYearMax { get { return default(int); } set { } }
         public override System.DateTime AddMonths(System.DateTime time, int months) { return default(System.DateTime); }
         public override System.DateTime AddYears(System.DateTime time, int years) { return default(System.DateTime); }
@@ -5410,8 +5416,10 @@ namespace System.Globalization
         public const int ADEra = 1;
         public GregorianCalendar() { }
         public GregorianCalendar(System.Globalization.GregorianCalendarTypes type) { }
+#if FEATURE_COREFX_GLOBALIZATION 
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public override System.Globalization.CalendarAlgorithmType AlgorithmType { get { return default(System.Globalization.CalendarAlgorithmType); } }
+#endif
         public virtual System.Globalization.GregorianCalendarTypes CalendarType { get { return default(System.Globalization.GregorianCalendarTypes); } set { } }
         public override int[] Eras { get { return default(int[]); } }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
@@ -5452,7 +5460,9 @@ namespace System.Globalization
     public partial class HebrewCalendar : System.Globalization.Calendar
     {
         public HebrewCalendar() { }
+#if FEATURE_COREFX_GLOBALIZATION 
         public override System.Globalization.CalendarAlgorithmType AlgorithmType { get { return default(System.Globalization.CalendarAlgorithmType); } }
+#endif
         public override int[] Eras { get { return default(int[]); } }
         public override System.DateTime MaxSupportedDateTime { get { return default(System.DateTime); } }
         public override System.DateTime MinSupportedDateTime { get { return default(System.DateTime); } }
@@ -5479,8 +5489,10 @@ namespace System.Globalization
     public partial class HijriCalendar : System.Globalization.Calendar
     {
         public HijriCalendar() { }
+#if FEATURE_COREFX_GLOBALIZATION 
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public override System.Globalization.CalendarAlgorithmType AlgorithmType { get { return default(System.Globalization.CalendarAlgorithmType); } }
+#endif
         protected override int DaysInYearBeforeMinSupportedYear { get { return default(int); } }
         public override int[] Eras { get { return default(int[]); } }
         public int HijriAdjustment { [System.Security.SecuritySafeCriticalAttribute]get { return default(int); } set { } }
@@ -5512,8 +5524,10 @@ namespace System.Globalization
     public partial class JapaneseCalendar : System.Globalization.Calendar
     {
         public JapaneseCalendar() { }
+#if FEATURE_COREFX_GLOBALIZATION 
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public override System.Globalization.CalendarAlgorithmType AlgorithmType { get { return default(System.Globalization.CalendarAlgorithmType); } }
+#endif
         public override int[] Eras { get { return default(int[]); } }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public override System.DateTime MaxSupportedDateTime { get { return default(System.DateTime); } }
@@ -5557,8 +5571,10 @@ namespace System.Globalization
     {
         public static readonly int JulianEra;
         public JulianCalendar() { }
+#if FEATURE_COREFX_GLOBALIZATION 
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public override System.Globalization.CalendarAlgorithmType AlgorithmType { get { return default(System.Globalization.CalendarAlgorithmType); } }
+#endif
         public override int[] Eras { get { return default(int[]); } }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public override System.DateTime MaxSupportedDateTime { get { return default(System.DateTime); } }
@@ -5589,8 +5605,10 @@ namespace System.Globalization
     {
         public const int KoreanEra = 1;
         public KoreanCalendar() { }
+#if FEATURE_COREFX_GLOBALIZATION 
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public override System.Globalization.CalendarAlgorithmType AlgorithmType { get { return default(System.Globalization.CalendarAlgorithmType); } }
+#endif
         public override int[] Eras { get { return default(int[]); } }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public override System.DateTime MaxSupportedDateTime { get { return default(System.DateTime); } }
@@ -5692,7 +5710,9 @@ namespace System.Globalization
     {
         public static readonly int PersianEra;
         public PersianCalendar() { }
+#if FEATURE_COREFX_GLOBALIZATION 
         public override System.Globalization.CalendarAlgorithmType AlgorithmType { get { return default(System.Globalization.CalendarAlgorithmType); } }
+#endif
         public override int[] Eras { get { return default(int[]); } }
         public override System.DateTime MaxSupportedDateTime { get { return default(System.DateTime); } }
         public override System.DateTime MinSupportedDateTime { get { return default(System.DateTime); } }
@@ -5755,8 +5775,10 @@ namespace System.Globalization
     public partial class TaiwanCalendar : System.Globalization.Calendar
     {
         public TaiwanCalendar() { }
+#if FEATURE_COREFX_GLOBALIZATION 
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public override System.Globalization.CalendarAlgorithmType AlgorithmType { get { return default(System.Globalization.CalendarAlgorithmType); } }
+#endif
         public override int[] Eras { get { return default(int[]); } }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public override System.DateTime MaxSupportedDateTime { get { return default(System.DateTime); } }
@@ -5832,8 +5854,10 @@ namespace System.Globalization
     {
         public const int ThaiBuddhistEra = 1;
         public ThaiBuddhistCalendar() { }
+#if FEATURE_COREFX_GLOBALIZATION 
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public override System.Globalization.CalendarAlgorithmType AlgorithmType { get { return default(System.Globalization.CalendarAlgorithmType); } }
+#endif
         public override int[] Eras { get { return default(int[]); } }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public override System.DateTime MaxSupportedDateTime { get { return default(System.DateTime); } }
@@ -5871,7 +5895,9 @@ namespace System.Globalization
     public partial class UmAlQuraCalendar : System.Globalization.Calendar
     {
         public UmAlQuraCalendar() { }
+#if FEATURE_COREFX_GLOBALIZATION 
         public override System.Globalization.CalendarAlgorithmType AlgorithmType { get { return default(System.Globalization.CalendarAlgorithmType); } }
+#endif
         protected override int DaysInYearBeforeMinSupportedYear { get { return default(int); } }
         public override int[] Eras { get { return default(int[]); } }
         public override System.DateTime MaxSupportedDateTime { get { return default(System.DateTime); } }
@@ -6768,7 +6794,6 @@ namespace System.Reflection
         public string Value { get { return default(string); } }
     }
     [System.Runtime.InteropServices.ClassInterfaceAttribute((System.Runtime.InteropServices.ClassInterfaceType)(0))]
-    //[System.Runtime.InteropServices.ComDefaultInterfaceAttribute(typeof(System.Runtime.InteropServices._AssemblyName))]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public sealed partial class AssemblyName
     {
@@ -7008,7 +7033,6 @@ namespace System.Reflection
         SpecialName = 512,
     }
     [System.Runtime.InteropServices.ClassInterfaceAttribute((System.Runtime.InteropServices.ClassInterfaceType)(0))]
-    //[System.Runtime.InteropServices.ComDefaultInterfaceAttribute(typeof(System.Runtime.InteropServices._EventInfo))]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public abstract partial class EventInfo : System.Reflection.MemberInfo
     {
@@ -7179,7 +7203,6 @@ namespace System.Reflection
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public delegate bool MemberFilter(System.Reflection.MemberInfo m, object filterCriteria);
     [System.Runtime.InteropServices.ClassInterfaceAttribute((System.Runtime.InteropServices.ClassInterfaceType)(0))]
-    //[System.Runtime.InteropServices.ComDefaultInterfaceAttribute(typeof(System.Runtime.InteropServices._MemberInfo))]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public abstract partial class MemberInfo : System.Reflection.ICustomAttributeProvider
     {
@@ -7241,7 +7264,6 @@ namespace System.Reflection
         VtableLayoutMask = 256,
     }
     [System.Runtime.InteropServices.ClassInterfaceAttribute((System.Runtime.InteropServices.ClassInterfaceType)(0))]
-    //[System.Runtime.InteropServices.ComDefaultInterfaceAttribute(typeof(System.Runtime.InteropServices._MethodBase))]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public abstract partial class MethodBase : System.Reflection.MemberInfo
     {
@@ -7304,7 +7326,6 @@ namespace System.Reflection
         Unmanaged = 4,
     }
     [System.Runtime.InteropServices.ClassInterfaceAttribute((System.Runtime.InteropServices.ClassInterfaceType)(0))]
-    //[System.Runtime.InteropServices.ComDefaultInterfaceAttribute(typeof(System.Runtime.InteropServices._MethodInfo))]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public abstract partial class MethodInfo : System.Reflection.MethodBase
     {
@@ -7331,7 +7352,6 @@ namespace System.Reflection
         public static readonly System.Reflection.Missing Value;
     }
     [System.Runtime.InteropServices.ClassInterfaceAttribute((System.Runtime.InteropServices.ClassInterfaceType)(0))]
-    //[System.Runtime.InteropServices.ComDefaultInterfaceAttribute(typeof(System.Runtime.InteropServices._Module))]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public abstract partial class Module : System.Reflection.ICustomAttributeProvider
     {
@@ -7394,7 +7414,6 @@ namespace System.Reflection
         Retval = 8,
     }
     [System.Runtime.InteropServices.ClassInterfaceAttribute((System.Runtime.InteropServices.ClassInterfaceType)(0))]
-    //[System.Runtime.InteropServices.ComDefaultInterfaceAttribute(typeof(System.Runtime.InteropServices._ParameterInfo))]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class ParameterInfo : System.Reflection.ICustomAttributeProvider
     {
@@ -7451,7 +7470,6 @@ namespace System.Reflection
         SpecialName = 512,
     }
     [System.Runtime.InteropServices.ClassInterfaceAttribute((System.Runtime.InteropServices.ClassInterfaceType)(0))]
-    //[System.Runtime.InteropServices.ComDefaultInterfaceAttribute(typeof(System.Runtime.InteropServices._PropertyInfo))]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public abstract partial class PropertyInfo : System.Reflection.MemberInfo
     {
@@ -7623,7 +7641,6 @@ namespace System.Reflection
 namespace System.Reflection.Emit
 {
     [System.Runtime.InteropServices.ClassInterfaceAttribute((System.Runtime.InteropServices.ClassInterfaceType)(0))]
-    //[System.Runtime.InteropServices.ComDefaultInterfaceAttribute(typeof(System.Runtime.InteropServices._AssemblyBuilder))]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     
     public sealed partial class AssemblyBuilder : System.Reflection.Assembly
@@ -7671,7 +7688,6 @@ namespace System.Reflection.Emit
         RunAndCollect = 9,
     }
     [System.Runtime.InteropServices.ClassInterfaceAttribute((System.Runtime.InteropServices.ClassInterfaceType)(0))]
-    //[System.Runtime.InteropServices.ComDefaultInterfaceAttribute(typeof(System.Runtime.InteropServices._ConstructorBuilder))]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     
     public sealed partial class ConstructorBuilder : System.Reflection.ConstructorInfo
@@ -7706,7 +7722,6 @@ namespace System.Reflection.Emit
         public override string ToString() { return default(string); }
     }
     [System.Runtime.InteropServices.ClassInterfaceAttribute((System.Runtime.InteropServices.ClassInterfaceType)(0))]
-    //[System.Runtime.InteropServices.ComDefaultInterfaceAttribute(typeof(System.Runtime.InteropServices._CustomAttributeBuilder))]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     
     public partial class CustomAttributeBuilder
@@ -7767,7 +7782,6 @@ namespace System.Reflection.Emit
         public override string ToString() { return default(string); }
     }
     [System.Runtime.InteropServices.ClassInterfaceAttribute((System.Runtime.InteropServices.ClassInterfaceType)(0))]
-    //[System.Runtime.InteropServices.ComDefaultInterfaceAttribute(typeof(System.Runtime.InteropServices._EnumBuilder))]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     
     public sealed partial class EnumBuilder : System.Reflection.TypeInfo
@@ -7837,7 +7851,6 @@ namespace System.Reflection.Emit
         public void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder) { }
     }
     [System.Runtime.InteropServices.ClassInterfaceAttribute((System.Runtime.InteropServices.ClassInterfaceType)(0))]
-    //[System.Runtime.InteropServices.ComDefaultInterfaceAttribute(typeof(System.Runtime.InteropServices._EventBuilder))]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     
     public sealed partial class EventBuilder
@@ -7871,7 +7884,6 @@ namespace System.Reflection.Emit
         public static bool operator !=(System.Reflection.Emit.EventToken a, System.Reflection.Emit.EventToken b) { return default(bool); }
     }
     [System.Runtime.InteropServices.ClassInterfaceAttribute((System.Runtime.InteropServices.ClassInterfaceType)(0))]
-    //[System.Runtime.InteropServices.ComDefaultInterfaceAttribute(typeof(System.Runtime.InteropServices._FieldBuilder))]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     
     public sealed partial class FieldBuilder : System.Reflection.FieldInfo
@@ -8004,7 +8016,6 @@ namespace System.Reflection.Emit
         public override string ToString() { return default(string); }
     }
     [System.Runtime.InteropServices.ClassInterfaceAttribute((System.Runtime.InteropServices.ClassInterfaceType)(0))]
-    //[System.Runtime.InteropServices.ComDefaultInterfaceAttribute(typeof(System.Runtime.InteropServices._ILGenerator))]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class ILGenerator
     {
@@ -8068,7 +8079,6 @@ namespace System.Reflection.Emit
         public static bool operator !=(System.Reflection.Emit.Label a, System.Reflection.Emit.Label b) { return default(bool); }
     }
     [System.Runtime.InteropServices.ClassInterfaceAttribute((System.Runtime.InteropServices.ClassInterfaceType)(0))]
-    //[System.Runtime.InteropServices.ComDefaultInterfaceAttribute(typeof(System.Runtime.InteropServices._LocalBuilder))]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public sealed partial class LocalBuilder : System.Reflection.LocalVariableInfo
     {
@@ -8080,7 +8090,6 @@ namespace System.Reflection.Emit
         public void SetLocalSymInfo(string name, int startOffset, int endOffset) { }
     }
     [System.Runtime.InteropServices.ClassInterfaceAttribute((System.Runtime.InteropServices.ClassInterfaceType)(0))]
-    //[System.Runtime.InteropServices.ComDefaultInterfaceAttribute(typeof(System.Runtime.InteropServices._MethodBuilder))]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     
     public sealed partial class MethodBuilder : System.Reflection.MethodInfo
@@ -8148,7 +8157,6 @@ namespace System.Reflection.Emit
         public static bool operator !=(System.Reflection.Emit.MethodToken a, System.Reflection.Emit.MethodToken b) { return default(bool); }
     }
     [System.Runtime.InteropServices.ClassInterfaceAttribute((System.Runtime.InteropServices.ClassInterfaceType)(0))]
-    //[System.Runtime.InteropServices.ComDefaultInterfaceAttribute(typeof(System.Runtime.InteropServices._ModuleBuilder))]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     
     public partial class ModuleBuilder : System.Reflection.Module
@@ -8530,7 +8538,6 @@ namespace System.Reflection.Emit
         Unspecified = 0,
     }
     [System.Runtime.InteropServices.ClassInterfaceAttribute((System.Runtime.InteropServices.ClassInterfaceType)(0))]
-    //[System.Runtime.InteropServices.ComDefaultInterfaceAttribute(typeof(System.Runtime.InteropServices._ParameterBuilder))]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class ParameterBuilder
     {
@@ -8570,7 +8577,6 @@ namespace System.Reflection.Emit
         WindowApplication = 3,
     }
     [System.Runtime.InteropServices.ClassInterfaceAttribute((System.Runtime.InteropServices.ClassInterfaceType)(0))]
-    //[System.Runtime.InteropServices.ComDefaultInterfaceAttribute(typeof(System.Runtime.InteropServices._PropertyBuilder))]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     
     public sealed partial class PropertyBuilder : System.Reflection.PropertyInfo
@@ -8623,7 +8629,6 @@ namespace System.Reflection.Emit
         public static bool operator !=(System.Reflection.Emit.PropertyToken a, System.Reflection.Emit.PropertyToken b) { return default(bool); }
     }
     [System.Runtime.InteropServices.ClassInterfaceAttribute((System.Runtime.InteropServices.ClassInterfaceType)(0))]
-    //[System.Runtime.InteropServices.ComDefaultInterfaceAttribute(typeof(System.Runtime.InteropServices._SignatureHelper))]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public sealed partial class SignatureHelper
     {
@@ -8712,7 +8717,6 @@ namespace System.Reflection.Emit
         public static bool operator !=(System.Reflection.Emit.StringToken a, System.Reflection.Emit.StringToken b) { return default(bool); }
     }
     [System.Runtime.InteropServices.ClassInterfaceAttribute((System.Runtime.InteropServices.ClassInterfaceType)(0))]
-    //[System.Runtime.InteropServices.ComDefaultInterfaceAttribute(typeof(System.Runtime.InteropServices._TypeBuilder))]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     
     public sealed partial class TypeBuilder : System.Reflection.TypeInfo
@@ -10928,6 +10932,7 @@ namespace System.Runtime.InteropServices.ComTypes
 }
 namespace System.Runtime.InteropServices.WindowsRuntime
 {
+#if FEATURE_COMINTEROP    
     [System.AttributeUsageAttribute((System.AttributeTargets)(1028), AllowMultiple=false, Inherited=false)]
     public sealed partial class DefaultInterfaceAttribute : System.Attribute
     {
@@ -10999,6 +11004,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     {
         public WriteOnlyArrayAttribute() { }
     }
+#endif //FEATURE_COMINTEROP
 }
 namespace System.Runtime.Loader
 {
