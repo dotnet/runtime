@@ -31,7 +31,7 @@ namespace System.Runtime.Serialization.Json
         private const string xmlnsNamespace = "http://www.w3.org/2000/xmlns/";
 
         // This array was part of a perf improvement for escaping characters < WHITESPACE.
-        private static readonly string[] s_escapedJsonStringTables; 
+        private static readonly string[] s_escapedJsonStringTable = CreateEscapedJsonStringTable();
 
         [SecurityCritical]
         private static BinHexEncoding s_binHexEncoding;
@@ -74,24 +74,18 @@ namespace System.Runtime.Serialization.Json
             InitializeWriter();
         }
 
-        static XmlJsonWriter()
+        private static string[] CreateEscapedJsonStringTable()
         {
-            s_escapedJsonStringTables = new string[WHITESPACE];
-            for(int ch = 0; ch < WHITESPACE; ch++)
+            var table = new string[WHITESPACE];
+            for (int ch = 0; ch < WHITESPACE; ch++)
             {
-                string escapedJsonString;
                 char abbrev;
-                if (TryEscapeControlCharacter((char)ch, out abbrev)) 
-                {
-                    escapedJsonString = string.Concat(BACK_SLASH, abbrev);
-                }
-                else
-                {
-                    escapedJsonString = string.Format(CultureInfo.InvariantCulture, "\\u{0:x4}", ch);
-                }
-                
-                s_escapedJsonStringTables[ch] = escapedJsonString;
+                table[ch] = TryEscapeControlCharacter((char)ch, out abbrev) ?
+                    string.Concat(BACK_SLASH, abbrev) :
+                    string.Format(CultureInfo.InvariantCulture, "\\u{0:x4}", ch);
             }
+            
+            return table;
         }
 
         private enum JsonDataType
@@ -1422,7 +1416,7 @@ namespace System.Runtime.Serialization.Json
                         else if (ch < WHITESPACE)
                         {
                             _nodeWriter.WriteChars(chars + i, j - i);
-                            _nodeWriter.WriteText(s_escapedJsonStringTables[ch]);
+                            _nodeWriter.WriteText(s_escapedJsonStringTable[ch]);
                             i = j + 1;
                         }
                     }
