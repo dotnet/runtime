@@ -51,12 +51,17 @@ update_current_thread_stack (void *start)
 {
 	int stack_guard = 0;
 	SgenThreadInfo *info = mono_thread_info_current ();
-	
+
 	info->client_info.stack_start = align_pointer (&stack_guard);
 	g_assert (info->client_info.stack_start);
 	g_assert (info->client_info.stack_start >= info->client_info.stack_start_limit && info->client_info.stack_start < info->client_info.stack_end);
-	MONO_CONTEXT_GET_CURRENT (cur_thread_ctx);
-	memcpy (&info->client_info.ctx, &cur_thread_ctx, sizeof (MonoContext));
+
+#if !defined(MONO_CROSS_COMPILE) && MONO_ARCH_HAS_MONO_CONTEXT
+	MONO_CONTEXT_GET_CURRENT (info->client_info.ctx);
+#else
+	g_error ("Sgen STW requires a working mono-context");
+#endif
+
 	if (mono_gc_get_gc_callbacks ()->thread_suspend_func)
 		mono_gc_get_gc_callbacks ()->thread_suspend_func (info->client_info.runtime_data, NULL, &info->client_info.ctx);
 }
