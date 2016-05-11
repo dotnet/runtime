@@ -1442,6 +1442,14 @@ mono_generic_class_init (MonoVTable *vtable)
 	mono_error_set_pending_exception (&error);
 }
 
+void
+ves_icall_mono_delegate_ctor (MonoObject *this_obj, MonoObject *target, gpointer addr)
+{
+	MonoError error;
+	mono_delegate_ctor (this_obj, target, addr, &error);
+	mono_error_set_pending_exception (&error);
+}
+
 gpointer
 mono_fill_class_rgctx (MonoVTable *vtable, int index)
 {

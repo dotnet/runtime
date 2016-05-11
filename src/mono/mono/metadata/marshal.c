@@ -584,7 +584,9 @@ mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn)
 		gpointer compiled_ptr = mono_compile_method_checked (wrapper, &error);
 		if (mono_error_set_pending_exception (&error))
 			return NULL;
-		mono_delegate_ctor_with_method ((MonoObject*)d, this_obj, compiled_ptr, wrapper);
+		mono_delegate_ctor_with_method ((MonoObject*)d, this_obj, compiled_ptr, wrapper, &error);
+		if (mono_error_set_pending_exception (&error))
+			return NULL;
 	}
 
 	if (d->object.vtable->domain != mono_domain_get ()) {

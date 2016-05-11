@@ -192,6 +192,9 @@ ves_icall_runtime_class_init (MonoVTable *vtable);
 void
 mono_generic_class_init (MonoVTable *vtable);
 
+void
+ves_icall_mono_delegate_ctor (MonoObject *this_obj, MonoObject *target, gpointer addr);
+
 MonoObject*
 mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *klass, gboolean deref_arg, gpointer *args);
 

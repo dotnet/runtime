@@ -7465,23 +7465,25 @@ mono_print_unhandled_exception (MonoObject *exc)
 }
 
 /**
- * mono_delegate_ctor:
+ * mono_delegate_ctor_with_method:
  * @this: pointer to an uninitialized delegate object
  * @target: target object
  * @addr: pointer to native code
  * @method: method
+ * @error: set on error.
  *
  * Initialize a delegate and sets a specific method, not the one
  * associated with addr.  This is useful when sharing generic code.
  * In that case addr will most probably not be associated with the
  * correct instantiation of the method.
+ * On failure returns FALSE and sets @error.
  */
-void
-mono_delegate_ctor_with_method (MonoObject *this_obj, MonoObject *target, gpointer addr, MonoMethod *method)
+gboolean
+mono_delegate_ctor_with_method (MonoObject *this_obj, MonoObject *target, gpointer addr, MonoMethod *method, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoError error;
+	mono_error_init (error);
 	MonoDelegate *delegate = (MonoDelegate *)this_obj;
 
 	g_assert (this_obj);
@@ -7498,8 +7500,8 @@ mono_delegate_ctor_with_method (MonoObject *this_obj, MonoObject *target, gpoint
 	if (target && target->vtable->klass == mono_defaults.transparent_proxy_class) {
 		g_assert (method);
 		method = mono_marshal_get_remoting_invoke (method);
-		delegate->method_ptr = mono_compile_method_checked (method, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		delegate->method_ptr = mono_compile_method_checked (method, error);
+		return_val_if_nok (error, FALSE);
 		MONO_OBJECT_SETREF (delegate, target, target);
 	} else
 #endif
@@ -7511,6 +7513,7 @@ mono_delegate_ctor_with_method (MonoObject *this_obj, MonoObject *target, gpoint
 	delegate->invoke_impl = arch_create_delegate_trampoline (delegate->object.vtable->domain, delegate->object.vtable->klass);
 	if (callbacks.init_delegate)
 		callbacks.init_delegate (delegate);
+	return TRUE;
 }
 
 /**
@@ -7518,14 +7521,17 @@ mono_delegate_ctor_with_method (MonoObject *this_obj, MonoObject *target, gpoint
  * @this: pointer to an uninitialized delegate object
  * @target: target object
  * @addr: pointer to native code
+ * @error: set on error.
  *
  * This is used to initialize a delegate.
+ * On failure returns FALSE and sets @error.
  */
-void
-mono_delegate_ctor (MonoObject *this_obj, MonoObject *target, gpointer addr)
+gboolean
+mono_delegate_ctor (MonoObject *this_obj, MonoObject *target, gpointer addr, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	mono_error_init (error);
 	MonoDomain *domain = mono_domain_get ();
 	MonoJitInfo *ji;
 	MonoMethod *method = NULL;
@@ -7541,7 +7547,7 @@ mono_delegate_ctor (MonoObject *this_obj, MonoObject *target, gpointer addr)
 		g_assert (!method->klass->generic_container);
 	}
 
-	mono_delegate_ctor_with_method (this_obj, target, addr, method);
+	return mono_delegate_ctor_with_method (this_obj, target, addr, method, error);
 }
 
 /**
