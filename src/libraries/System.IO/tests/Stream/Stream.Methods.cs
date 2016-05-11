@@ -217,52 +217,69 @@ namespace System.IO.Tests
             stream.Seek(1, SeekOrigin.Current); // In the original test, success here would end the test
 
             //[] we will do some async tests here now
-            stream.Position = 0;
-
-            btArr = new byte[iLength];
-            for (int i = 0; i < iLength; i++)
-                btArr[i] = (byte)(i + 5);
-
-            await stream.WriteAsync(btArr, 0, btArr.Length);
-
-            stream.Position = 0;
-            for (int i = 0; i < iLength; i++)
+            for (int asyncMethod = 0; asyncMethod < 2; asyncMethod++) // 0 == apm, 1 == async
             {
-                Assert.Equal((byte)(i + 5), stream.ReadByte());
-            }
+                stream.Position = 0;
 
-            //we will read asynchronously
-            stream.Position = 0;
+                btArr = new byte[iLength];
+                for (int i = 0; i < iLength; i++)
+                    btArr[i] = (byte)(i + 5);
 
-            byte[] compArr = new byte[iLength];
+                await (asyncMethod == 0 ?
+                    Task.Factory.FromAsync(stream.BeginWrite, stream.EndWrite, btArr, 0, btArr.Length, null) :
+                    stream.WriteAsync(btArr, 0, btArr.Length));
 
-            iValue = await stream.ReadAsync(compArr, 0, compArr.Length);
+                stream.Position = 0;
+                for (int i = 0; i < iLength; i++)
+                {
+                    Assert.Equal((byte)(i + 5), stream.ReadByte());
+                }
 
-            Assert.Equal(btArr.Length, iValue);
+                //we will read asynchronously
+                stream.Position = 0;
 
-            for (int i = 0; i < iLength; i++)
-            {
-                Assert.Equal(compArr[i], btArr[i]);
+                byte[] compArr = new byte[iLength];
+
+                iValue = await (asyncMethod == 0 ?
+                    Task.Factory.FromAsync(stream.BeginRead, stream.EndRead, compArr, 0, compArr.Length, null) :
+                    stream.ReadAsync(compArr, 0, compArr.Length));
+
+                Assert.Equal(btArr.Length, iValue);
+
+                for (int i = 0; i < iLength; i++)
+                {
+                    Assert.Equal(compArr[i], btArr[i]);
+                }
             }
         }
 
-        [Fact]
-        public async Task FlushAsyncTest()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task FlushAsyncTest(bool apm)
         {
             byte[] data = Enumerable.Range(0, 8000).Select(i => (byte)i).ToArray();
             Stream stream = CreateStream();
 
             for (int i = 0; i < 4; i++)
             {
-                await stream.WriteAsync(data, 2000 * i, 2000);
+                await (apm ?
+                    Task.Factory.FromAsync(stream.BeginWrite, stream.EndWrite, data, 2000 * i, 2000, null) :
+                    stream.WriteAsync(data, 2000 * i, 2000));
                 await stream.FlushAsync();
             }
 
             stream.Position = 0;
             byte[] output = new byte[data.Length];
             int bytesRead, totalRead = 0;
-            while ((bytesRead = await stream.ReadAsync(output, totalRead, data.Length - totalRead)) > 0)
+            while (true)
+            {
+                Task<int> readTask = apm ?
+                    Task.Factory.FromAsync(stream.BeginRead, stream.EndRead, output, totalRead, data.Length - totalRead, null) :
+                    stream.ReadAsync(output, totalRead, data.Length - totalRead);
+                if ((bytesRead = await readTask) == 0) break;
                 totalRead += bytesRead;
+            }
             Assert.Equal(data, output);
         }
 

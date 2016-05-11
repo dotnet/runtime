@@ -119,6 +119,10 @@ namespace System.IO.Tests
             await source.WriteAsync(buffer, offset, count);
             Assert.Equal(copy, buffer);
             Assert.Equal(0, source.Position);
+
+            await Task.Factory.FromAsync(source.BeginWrite, source.EndWrite, buffer, offset, count, null);
+            Assert.Equal(copy, buffer);
+            Assert.Equal(0, source.Position);
         }
         
         [Fact]
