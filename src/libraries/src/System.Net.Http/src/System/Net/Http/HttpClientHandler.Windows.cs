@@ -171,6 +171,8 @@ namespace System.Net.Http
             UseProxy = true;
             UseCookies = true;
             CookieContainer = new CookieContainer();
+            _winHttpHandler.DefaultProxyCredentials = null;
+            _winHttpHandler.ServerCredentials = null;
 
             // The existing .NET Desktop HttpClientHandler based on the HWR stack uses only WinINet registry
             // settings for the proxy.  This also includes supporting the "Automatic Detect a proxy" using
