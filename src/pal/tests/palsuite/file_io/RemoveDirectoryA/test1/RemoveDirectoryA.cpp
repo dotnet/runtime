@@ -12,7 +12,11 @@
 **===================================================================*/
 
 
+#define PAL_STDCPP_COMPAT
 #include <palsuite.h>
+#undef PAL_STDCPP_COMPAT
+
+#include <unistd.h>
 
 
 int __cdecl main(int argc, char *argv[])
@@ -36,38 +40,57 @@ int __cdecl main(int argc, char *argv[])
     bRc = RemoveDirectoryA(NULL);
     if (bRc != FALSE)
     {
-		Fail("Error[%ul]:RemoveDirectoryA: Failed since it was able to remove a"
+        Fail("Error[%ul]:RemoveDirectoryA: Failed since it was able to remove a"
             " NULL directory name\n", GetLastError());
     }
 
     /* 
      * remove a directory that does not exist 
      */
-	szTemp = (char *) malloc (sizeof("test_directory"));
+    szTemp = (char *) malloc (sizeof("test_directory"));
     sprintf(szTemp, "test_directory");
-	bRc = RemoveDirectoryA(szTemp);
+    bRc = RemoveDirectoryA(szTemp);
     if (bRc != FALSE)
     {
         free(szTemp);
-		Fail("Error[%ul]:RemoveDirectoryA: Failed since it was able to remove"
+        Fail("Error[%ul]:RemoveDirectoryA: Failed since it was able to remove"
             " the non-existant directory \"test_directory\"\n", GetLastError());
     }
 
     /* 
-     * remove a directory that exists 
+     * remove a symlink to a directory
      */
     bRc = CreateDirectoryA(szTemp, NULL);
     if (bRc != TRUE)
     {
         free(szTemp);
-		Fail("Error[%ul]:RemoveDirectoryA: Failed to create the directory "
-            "\"test_directory\" when it exists already.\n", GetLastError());
+        Fail("Error[%ul]:RemoveDirectoryA: Failed to create the directory "
+            "\"test_directory\".\n", GetLastError());
     }
+
+    char *szSymlinkName = (char *) malloc (sizeof("test_directory_symlink"));
+    sprintf(szSymlinkName, "test_directory_symlink");
+    if (symlink(szTemp, szSymlinkName) != 0)
+    {
+        Fail("Error:RemoveDirectoryA: Failed to create a symlink to the directory \"test_directory\".\n");
+    }
+
+    bRc = RemoveDirectoryA(szSymlinkName);
+    if (bRc != FALSE)
+    {
+        Fail("Error:RemoveDirectoryA: RemoveDirectoryA should return FALSE when passed a symlink.\n");
+    }
+
+    unlink(szSymlinkName);
+
+    /* 
+     * remove a directory that exists 
+     */
     bRc = RemoveDirectoryA(szTemp);
     if (bRc == FALSE)
     {
         free(szTemp);
-		Fail("Error[%ul]:RemoveDirectoryW: Failed to remove the directory "
+        Fail("Error[%ul]:RemoveDirectoryW: Failed to remove the directory "
             "\"test_directory\"\n",
             GetLastError());
     }
@@ -75,7 +98,7 @@ int __cdecl main(int argc, char *argv[])
     if( -1 != GetFileAttributesA(szTemp) )
     {
         free(szTemp);
-		Fail("Error[%ul]:RemoveDirectoryA: Able to get the attributes of "
+        Fail("Error[%ul]:RemoveDirectoryA: Able to get the attributes of "
              "the removed directory\n" , GetLastError());
     }
     free(szTemp);
@@ -86,21 +109,21 @@ int __cdecl main(int argc, char *argv[])
     curDirLen = GetCurrentDirectoryA(0, NULL) + 1;
     memset(szDirName, 0, 252);
     memset(szDirName, 'a', 245 - curDirLen);
-	szTemp = (char *) malloc (sizeof(szDirName));
-	szTemp = strncpy(szTemp, szDirName, strlen(szDirName) + 1);
+    szTemp = (char *) malloc (sizeof(szDirName));
+    szTemp = strncpy(szTemp, szDirName, strlen(szDirName) + 1);
 
     bRc = CreateDirectoryA(szTemp, NULL);
     if (bRc == FALSE)
     {
         free(szTemp);
-		Fail("Error[%ul]:RemoveDirectoryA: Failed to create a directory name "
+        Fail("Error[%ul]:RemoveDirectoryA: Failed to create a directory name "
             "245 chars long\n" , GetLastError());
     }
     bRc = RemoveDirectoryA(szTemp);
     if (bRc == FALSE)
     {
         free(szTemp);
-		Fail("Error[%ul]:RemoveDirectoryA: Failed to remove a 245 char "
+        Fail("Error[%ul]:RemoveDirectoryA: Failed to remove a 245 char "
             "long directory\n", GetLastError());
     }
 
@@ -108,7 +131,7 @@ int __cdecl main(int argc, char *argv[])
     if( -1 != GetFileAttributesA(szTemp) )
     {
         free(szTemp);
-		Fail("Error[%ul]:RemoveDirectoryA: Able to get the attributes of "
+        Fail("Error[%ul]:RemoveDirectoryA: Able to get the attributes of "
              "the removed directory\n", GetLastError());
     }
     free(szTemp);
@@ -118,27 +141,27 @@ int __cdecl main(int argc, char *argv[])
      */
     memset(szDirName, 0, 252);
     sprintf(szDirName, ".dotDirectory");
-	szTemp = (char *) malloc (sizeof(szDirName));
-	szTemp = strncpy(szTemp, szDirName, strlen(szDirName) + 1);
+    szTemp = (char *) malloc (sizeof(szDirName));
+    szTemp = strncpy(szTemp, szDirName, strlen(szDirName) + 1);
 
-	bRc = CreateDirectoryA(szTemp, NULL);
+    bRc = CreateDirectoryA(szTemp, NULL);
     if (bRc == FALSE)
     {
         free(szTemp);
-		Fail("Error[%ul]:RemoveDirectoryA: Failed to create \"%s\"\n", GetLastError(), szDirName);
+        Fail("Error[%ul]:RemoveDirectoryA: Failed to create \"%s\"\n", GetLastError(), szDirName);
     }
     bRc = RemoveDirectoryA(szTemp);
     if (bRc == FALSE)
     {
         free(szTemp);
-		Fail("Error[%ul]:RemoveDirectoryA: Failed to remove \"%s\"\n", GetLastError(), szDirName);
+        Fail("Error[%ul]:RemoveDirectoryA: Failed to remove \"%s\"\n", GetLastError(), szDirName);
     }
 
     /* Make sure the directory was removed */
     if( -1 != GetFileAttributesA(szTemp) )
     {
         free(szTemp);
-		Fail("Error[%ul]:RemoveDirectoryA: Able to get the attributes of "
+        Fail("Error[%ul]:RemoveDirectoryA: Able to get the attributes of "
              "the removed directory\n", GetLastError());
     }
     free(szTemp);
@@ -148,14 +171,14 @@ int __cdecl main(int argc, char *argv[])
      */
     memset(szDirName, 0, 252);
     sprintf(szDirName, "removedirectoryw.c");
-	szTemp = (char *) malloc (sizeof(szDirName));
-	szTemp = strncpy(szTemp, szDirName, strlen(szDirName) + 1);
+    szTemp = (char *) malloc (sizeof(szDirName));
+    szTemp = strncpy(szTemp, szDirName, strlen(szDirName) + 1);
 
     bRc = RemoveDirectoryA(szTemp);
     free(szTemp);
     if (bRc != FALSE)
     {
-		Fail("Error[%ul]:RemoveDirectoryA: should have failed when "
+        Fail("Error[%ul]:RemoveDirectoryA: should have failed when "
              "called with a valid file name", GetLastError() );
     }
 
@@ -178,21 +201,21 @@ int __cdecl main(int argc, char *argv[])
     }
 
     /* Create non_empty_dir */
-	sprintf( szDirName, "non_empty_dir");
-	szTemp = (char *) malloc (sizeof(szDirName));
-	szTemp = strncpy(szTemp, szDirName, strlen(szDirName) + 1);
+    sprintf( szDirName, "non_empty_dir");
+    szTemp = (char *) malloc (sizeof(szDirName));
+    szTemp = strncpy(szTemp, szDirName, strlen(szDirName) + 1);
     bRc = CreateDirectoryA(szTemp, NULL);
     if (bRc != TRUE)
     {
         free(szTemp);
-		Fail("Error[%ul]:RemoveDirectoryA: Failed to create the directory "
+        Fail("Error[%ul]:RemoveDirectoryA: Failed to create the directory "
              "\"non_empty_dir\" when it exists already.\n", GetLastError());
     }
 
     if( 0 == SetCurrentDirectoryA(szTemp) )
     {
         free(szTemp);
-		Fail("Error[%ul]:RemoveDirectoryA: Failed to set current directory to "
+        Fail("Error[%ul]:RemoveDirectoryA: Failed to set current directory to "
             "\"non_empty_dir\" with SetCurrentDirectoryA.\n", GetLastError());
     }
 
@@ -201,20 +224,20 @@ int __cdecl main(int argc, char *argv[])
     if( 0 == GetCurrentDirectoryA(MAX_PATH, szwSubDir) )
     {
         free(szTemp);
-		Fail("Error[%ul]:RemoveDirectoryA: Failed to get current directory "
+        Fail("Error[%ul]:RemoveDirectoryA: Failed to get current directory "
             "with GetCurrentDirectoryA.\n", GetLastError());
     }
 
     /* Create sub_dir */
-	sprintf (szDirName, "sub_dir");
-	szTemp2 = (char *) malloc (sizeof(szDirName));
-	szTemp2 = strncpy(szTemp2, szDirName, strlen(szDirName) + 1);
+    sprintf (szDirName, "sub_dir");
+    szTemp2 = (char *) malloc (sizeof(szDirName));
+    szTemp2 = strncpy(szTemp2, szDirName, strlen(szDirName) + 1);
     bRc = CreateDirectoryA(szTemp2, NULL);
     if (bRc != TRUE)
     {
         free(szTemp);
         free(szTemp2);
-		Fail("Error[%ul]:RemoveDirectoryA: Failed to create the directory "
+        Fail("Error[%ul]:RemoveDirectoryA: Failed to create the directory "
             "\"sub_dir\" when it exists already.\n", GetLastError());
     }
 
@@ -223,7 +246,7 @@ int __cdecl main(int argc, char *argv[])
     {
         free(szTemp);
         free(szTemp2);
-		Fail("Error[%ul]:RemoveDirectoryA: Failed to set current directory to "
+        Fail("Error[%ul]:RemoveDirectoryA: Failed to set current directory to "
             "\"non_empty_dir\" with SetCurrentDirectoryA.\n", GetLastError());
     }
 
@@ -233,7 +256,7 @@ int __cdecl main(int argc, char *argv[])
     {
         free(szTemp);
         free(szTemp2);
-		Fail("Error[%ul]:RemoveDirectoryA: shouldn't have been able to remove "
+        Fail("Error[%ul]:RemoveDirectoryA: shouldn't have been able to remove "
              "the non empty directory \"non_empty_dir\"\n", GetLastError());
     }
 
@@ -242,7 +265,7 @@ int __cdecl main(int argc, char *argv[])
     {
         free(szTemp);
         free(szTemp2);
-		Fail("Error[%ul]:RemoveDirectoryA: Failed to set current directory to "
+        Fail("Error[%ul]:RemoveDirectoryA: Failed to set current directory to "
             "\"non_empty_dir\" with SetCurrentDirectoryA.\n", GetLastError());
     }
 
@@ -251,7 +274,7 @@ int __cdecl main(int argc, char *argv[])
     {
         free(szTemp);
         free(szTemp2);
-		Fail("Error[%ul]:RemoveDirectoryA: unable to remove "
+        Fail("Error[%ul]:RemoveDirectoryA: unable to remove "
              "directory \"sub_dir\" \n",
              GetLastError());
     }
@@ -267,7 +290,7 @@ int __cdecl main(int argc, char *argv[])
     if( 0 == SetCurrentDirectoryA(szwCurrentDir) )
     {
         free(szTemp);
-		Fail("Error[%ul]:RemoveDirectoryA: Failed to set current directory to "
+        Fail("Error[%ul]:RemoveDirectoryA: Failed to set current directory to "
             "\"..\non_empty_dir\" with SetCurrentDirectoryA.\n", GetLastError());
     }
     bRc = RemoveDirectoryA(szTemp);
@@ -281,7 +304,7 @@ int __cdecl main(int argc, char *argv[])
     /* Make sure the directory was removed */
     if( -1 != GetFileAttributesA(szTemp) )
     {
-		Fail("Error[%ul]:RemoveDirectoryA: Able to get the attributes of "
+        Fail("Error[%ul]:RemoveDirectoryA: Able to get the attributes of "
              "the removed directory\n", GetLastError());
     }
     free(szTemp); 
