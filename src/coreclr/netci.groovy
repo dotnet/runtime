@@ -89,6 +89,13 @@ def static setMachineAffinity(def job, def os, def architecture) {
 }
 
 def static isGCStressRelatedTesting(def scenario) {
+    // The 'gcstress15_pri1r2r' scenario is a basic scenario.
+    // Detect it and make it a GCStress related.
+    if (scenario == 'gcstress15_pri1r2r')
+    {
+        return true;
+    }
+
     def gcStressTestEnvVars = [ 'COMPlus_GCStress', 'COMPlus_ZapDisable', 'COMPlus_HeapVerify']
     def scenarioName = scenario.toLowerCase()
     def isGCStressTesting = false
@@ -122,7 +129,7 @@ def static isLongGc(def scenario) {
 
 def static setTestJobTimeOut(newJob, scenario) {
     if (isGCStressRelatedTesting(scenario)) {
-        Utilities.setJobTimeout(newJob, 1440)
+        Utilities.setJobTimeout(newJob, 4320)
     }
     else if (isCorefxTesting(scenario)) {
         Utilities.setJobTimeout(newJob, 360)
