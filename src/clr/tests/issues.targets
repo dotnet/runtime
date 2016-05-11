@@ -353,18 +353,6 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Performance\CodeQuality\Serialization\Serialize\Serialize.cmd">
              <Issue>3597</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testE\hfa_nd0E_d\hfa_nd0E_d.cmd">
-             <Issue>4817</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testE\hfa_nd0E_r\hfa_nd0E_r.cmd">
-             <Issue>4817</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testE\hfa_nd1E_d\hfa_nd1E_d.cmd">
-             <Issue>4817</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testE\hfa_nd1E_r\hfa_nd1E_r.cmd">
-             <Issue>4817</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Performance\CodeQuality\V8\DeltaBlue\DeltaBlue\DeltaBlue.cmd">
              <Issue>4817</Issue>
         </ExcludeList>
