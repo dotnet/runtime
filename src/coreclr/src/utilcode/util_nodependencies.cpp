@@ -978,10 +978,18 @@ HighCharHelper::HighCharTable[]= {
     TRUE, /* 0x7, .*/
     TRUE, /* 0x8, .*/
     FALSE, /* 0x9,   */
+#ifdef PLATFORM_UNIX
+    TRUE, /* 0xA,  */
+#else    
     FALSE, /* 0xA,  */
+#endif // PLATFORM_UNIX
     FALSE, /* 0xB, .*/
     FALSE, /* 0xC, .*/
+#ifdef PLATFORM_UNIX
+    TRUE, /* 0xD,  */
+#else    
     FALSE, /* 0xD,  */
+#endif // PLATFORM_UNIX
     TRUE, /* 0xE, .*/
     TRUE, /* 0xF, .*/
     TRUE, /* 0x10, .*/
