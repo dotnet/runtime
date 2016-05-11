@@ -949,12 +949,9 @@ private:
     }
 
 #ifdef DEBUG
-    unsigned int        intervalCount;
     // This is used for dumping
     RefPosition*        activeRefPosition;
 #endif // DEBUG
-
-    unsigned int        refPositionCount;
 
     IntervalList        intervals;
 
