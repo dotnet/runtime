@@ -532,7 +532,7 @@ namespace System.ComponentModel
             // Otherwise let the base class add the handler to its ValueChanged event for this component
             else
             {
-#if FEATURE_PROPERTYCHANGED
+#if FEATURE_PROPERTY_CHANGED_EVENT_HANDLER
                 // Special case: If this will be the FIRST handler added for this component, and the component implements
                 // INotifyPropertyChanged, the property descriptor must START listening to the generic PropertyChanged event
                 if (GetValueChangedHandler(component) == null)
