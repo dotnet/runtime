@@ -27,19 +27,17 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)'==''">
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">  
+    <Compile Include="Internal\Cryptography\TripleDesImplementation.cs" />  
+    <Compile Include="System\Security\Cryptography\Aes.cs" />  
+    <Compile Include="System\Security\Cryptography\DeriveBytes.cs" />  
+    <None Include="System\Security\Cryptography\DSAParameters.cs" />  
     <Compile Include="System\Security\Cryptography\ECCurve.cs" />
     <Compile Include="System\Security\Cryptography\ECCurve.ECCurveType.cs" />
     <Compile Include="System\Security\Cryptography\ECCurve.NamedCurves.cs" />
     <Compile Include="System\Security\Cryptography\ECDsa.cs" />
     <Compile Include="System\Security\Cryptography\ECParameters.cs" />
     <Compile Include="System\Security\Cryptography\ECPoint.cs" />
-  </ItemGroup>  
-  <ItemGroup Condition="'$(TargetGroup)'=='' OR '$(TargetGroup)'=='netcore50'">  
-    <Compile Include="Internal\Cryptography\TripleDesImplementation.cs" />  
-    <Compile Include="System\Security\Cryptography\Aes.cs" />  
-    <Compile Include="System\Security\Cryptography\DeriveBytes.cs" />  
-    <None Include="System\Security\Cryptography\DSAParameters.cs" />  
     <Compile Include="System\Security\Cryptography\MD5.cs" />
     <Compile Include="System\Security\Cryptography\SHA1.cs" />
     <Compile Include="System\Security\Cryptography\SHA256.cs" />
@@ -80,7 +78,7 @@
       <Link>Internal\Cryptography\UniversalCryptoDecryptor.cs</Link>
     </Compile>
   </ItemGroup>
-    <ItemGroup Condition=" '$(TargetsWindows)' == 'true' AND ('$(TargetGroup)'=='' OR '$(TargetGroup)'=='netcore50')">
+    <ItemGroup Condition=" '$(TargetsWindows)' == 'true' AND '$(IsPartialFacadeAssembly)' != 'true' ">
     <Compile Include="System\Security\Cryptography\CngKeyLite.cs" />
     <Compile Include="System\Security\Cryptography\RNGCryptoServiceProvider.Windows.cs" />
     <Compile Include="System\Security\Cryptography\RSACng.cs" />
