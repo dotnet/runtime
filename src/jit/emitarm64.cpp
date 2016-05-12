@@ -5097,7 +5097,7 @@ void                emitter::emitIns_R_R_R(instruction ins,
     case INS_str:
     case INS_strb:
     case INS_strh:
-        emitIns_R_R_R_Ext(ins, attr, reg1, reg2, reg3);
+        emitIns_R_R_R_Ext(ins, attr, reg1, reg2, reg3, opt);
         return;
 
     case INS_ldp:
@@ -5473,6 +5473,7 @@ void                emitter::emitIns_R_R_R_Ext(instruction ins,
             assert(isValidGeneralDatasize(size));
             scale = (size == EA_8BYTE) ? 3 : 2;
         }
+
         break;
 
     default:
@@ -6359,6 +6360,13 @@ void                emitter::emitIns_R_C (instruction  ins,
 
     switch (ins)
     {
+    case INS_adr:
+        // This is case to get address to the constant data.
+        fmt = IF_LARGEADR;
+        assert(isGeneralRegister(reg));
+        assert(isValidGeneralDatasize(size));
+        break;
+
     case INS_ldr:
         fmt = IF_LARGELDC;
         if (isVectorRegister(reg))
@@ -6391,7 +6399,10 @@ void                emitter::emitIns_R_C (instruction  ins,
     id->idSetIsBound();    // We won't patch address since we will know the exact distance once JIT code and data are allocated together.
 
     id->idReg1(reg);       // destination register that will get the constant value.
-    id->idReg2(addrReg);   // integer register to compute long address (used for vector dest when we end up with long address)
+    if (addrReg != REG_NA)
+    {
+        id->idReg2(addrReg);   // integer register to compute long address (used for vector dest when we end up with long address)
+    }
     id->idjShort = false;  // Assume loading constant from long address
 
     // Keep it long if it's in cold code.
@@ -7880,6 +7891,39 @@ void                emitter::emitIns_Call(EmitCallType  callType,
     }
 }
 
+BYTE*               emitter::emitOutputLoadLabel(BYTE* dst, BYTE* srcAddr, BYTE* dstAddr, instrDescJmp *id)
+{
+    instruction  ins = id->idIns();
+    insFormat    fmt = id->idInsFmt();
+    regNumber dstReg = id->idReg1();
+    if (id->idjShort)
+    {
+        // adr x, [rel addr] --  compute address: current addr(ip) + rel addr.
+        assert(ins == INS_adr);
+        assert(fmt == IF_DI_1E);
+        ssize_t distVal = (ssize_t)(dstAddr - srcAddr);
+        dst = emitOutputShortAddress(dst, ins, fmt, distVal, dstReg);
+    }
+    else
+    {
+        // adrp x, [rel page addr] -- compute page address: current page addr + rel page addr
+        assert(fmt == IF_LARGEADR);
+        ssize_t relPageAddr = (((ssize_t)dstAddr & 0xFFFFFFFFFFFFF000LL) - ((ssize_t)srcAddr & 0xFFFFFFFFFFFFF000LL)) >> 12;
+        dst = emitOutputShortAddress(dst, INS_adrp, IF_DI_1E, relPageAddr, dstReg);
+
+        // add x, x, page offs -- compute address = page addr + page offs
+        ssize_t imm12 = (ssize_t)dstAddr & 0xFFF;      // 12 bits
+        assert(isValidUimm12(imm12));
+        code_t code = emitInsCode(INS_add, IF_DI_2A);  // DI_2A  X0010001shiiiiii iiiiiinnnnnddddd   1100 0000   imm(i12, sh)
+        code |= insEncodeDatasize(EA_8BYTE);           // X
+        code |= ((code_t)imm12 << 10);                 // iiiiiiiiiiii
+        code |= insEncodeReg_Rd(dstReg);               // ddddd
+        code |= insEncodeReg_Rn(dstReg);               // nnnnn
+        dst += emitOutput_Instr(dst, code);
+    }
+    return dst;
+}
+
 /*****************************************************************************
  *
  *  Output a local jump or other instruction with a pc-relative immediate.
@@ -7921,17 +7965,12 @@ BYTE*               emitter::emitOutputLJ(insGroup  *ig, BYTE *dst, instrDesc *i
 
     case INS_ldr:
     case INS_ldrsw:
+        loadConstant = true;
+        break;
+
     case INS_adr:
     case INS_adrp:
-        // Any reference to JIT data is assumed to load constant.
-        if (id->idAddr()->iiaIsJitDataOffset())
-        {
-            loadConstant = true;
-        }
-        else
-        {
-            loadLabel = true;
-        }
+        loadLabel = true;
         break;
     }
 
@@ -7940,9 +7979,9 @@ BYTE*               emitter::emitOutputLJ(insGroup  *ig, BYTE *dst, instrDesc *i
     srcOffs = emitCurCodeOffs(dst);
     srcAddr = emitOffsetToPtr(srcOffs);
 
-    if (loadConstant)
+    if (id->idAddr()->iiaIsJitDataOffset())
     {
-        /* This is actually a reference to the JIT data section */
+        assert(loadConstant || loadLabel);
         int doff = id->idAddr()->iiaGetJitDataOffset();
         assert(doff >= 0);
         ssize_t imm = emitGetInsSC(id);
@@ -7956,55 +7995,63 @@ BYTE*               emitter::emitOutputLJ(insGroup  *ig, BYTE *dst, instrDesc *i
         regNumber addrReg = dstReg; // an integer register to compute long address.
         emitAttr opSize = id->idOpSize();
 
-        if (id->idjShort)
+        if (loadConstant)
         {
-            // ldr x/v, [rel addr] -- load constant from current addr(ip) + rel addr.
-            assert(ins == INS_ldr);
-            assert(fmt == IF_LS_1A);
-            distVal = (ssize_t)(dstAddr - srcAddr);
-            dst = emitOutputShortConstant(dst, ins, fmt, distVal, dstReg, opSize);
+            if (id->idjShort)
+            {
+                // ldr x/v, [rel addr] -- load constant from current addr(ip) + rel addr.
+                assert(ins == INS_ldr);
+                assert(fmt == IF_LS_1A);
+                distVal = (ssize_t)(dstAddr - srcAddr);
+                dst = emitOutputShortConstant(dst, ins, fmt, distVal, dstReg, opSize);
+            }
+            else
+            {
+                // adrp x, [rel page addr] -- compute page address: current page addr + rel page addr
+                assert(fmt == IF_LARGELDC);
+                ssize_t relPageAddr = (((ssize_t)dstAddr & 0xFFFFFFFFFFFFF000LL) - ((ssize_t)srcAddr & 0xFFFFFFFFFFFFF000LL)) >> 12;
+                if (isVectorRegister(dstReg))
+                {
+                    // Update addrReg with the reserved integer register
+                    // since we cannot use dstReg (vector) to load constant directly from memory.
+                    addrReg = id->idReg2();
+                    assert(isGeneralRegister(addrReg));
+                }
+                ins = INS_adrp;
+                fmt = IF_DI_1E;
+                dst = emitOutputShortAddress(dst, ins, fmt, relPageAddr, addrReg);
+
+                // ldr x, [x, page offs] -- load constant from page address + page offset into integer register.
+                ssize_t imm12 = (ssize_t)dstAddr & 0xFFF; // 12 bits
+                assert(isValidUimm12(imm12));
+                ins = INS_ldr;
+                fmt = IF_LS_2B;
+                dst = emitOutputShortConstant(dst, ins, fmt, imm12, addrReg, opSize);
+
+                // fmov v, d -- copy constant in integer register to vector register.
+                // This is needed only for vector constant.
+                if (addrReg != dstReg)
+                {
+                    //  fmov    Vd,Rn                DV_2I  X00111100X100111 000000nnnnnddddd   1E27 0000   Vd,Rn    (scalar, from general)
+                    assert(isVectorRegister(dstReg) && isGeneralRegister(addrReg));
+                    ins = INS_fmov;
+                    fmt = IF_DV_2I;
+                    code_t code = emitInsCode(ins, fmt);
+
+                    code |= insEncodeReg_Vd(dstReg);             // ddddd
+                    code |= insEncodeReg_Rn(addrReg);            // nnnnn
+                    if (id->idOpSize() == EA_8BYTE)
+                    {
+                        code |= 0x80400000;                      // X ... X
+                    }
+                    dst += emitOutput_Instr(dst, code);
+                }
+            }
         }
         else
         {
-            // adrp x, [rel page addr] -- compute page address: current page addr + rel page addr
-            assert(fmt == IF_LARGELDC);
-            ssize_t relPageAddr = (((ssize_t)dstAddr & 0xFFFFFFFFFFFFF000LL) - ((ssize_t)srcAddr & 0xFFFFFFFFFFFFF000LL)) >> 12;
-            if (isVectorRegister(dstReg))
-            {
-                // Update addrReg with the reserved integer register
-                // since we cannot use dstReg (vector) to load constant directly from memory.
-                addrReg = id->idReg2();
-                assert(isGeneralRegister(addrReg));
-            }
-            ins = INS_adrp;
-            fmt = IF_DI_1E;
-            dst = emitOutputShortAddress(dst, ins, fmt, relPageAddr, addrReg);
-
-            // ldr x, [x, page offs] -- load constant from page address + page offset into integer register.
-            ssize_t imm12 = (ssize_t)dstAddr & 0xFFF; // 12 bits
-            assert(isValidUimm12(imm12));
-            ins = INS_ldr;
-            fmt = IF_LS_2B;
-            dst = emitOutputShortConstant(dst, ins, fmt, imm12, addrReg, opSize);
-
-            // fmov v, d -- copy constant in integer register to vector register.
-            // This is needed only for vector constant.
-            if (addrReg != dstReg)
-            {
-                //  fmov    Vd,Rn                DV_2I  X00111100X100111 000000nnnnnddddd   1E27 0000   Vd,Rn    (scalar, from general)
-                assert(isVectorRegister(dstReg) && isGeneralRegister(addrReg));
-                ins = INS_fmov;
-                fmt = IF_DV_2I;
-                code_t code = emitInsCode(ins, fmt);
-
-                code |= insEncodeReg_Vd(dstReg);             // ddddd
-                code |= insEncodeReg_Rn(addrReg);            // nnnnn
-                if (id->idOpSize() == EA_8BYTE)
-                {
-                    code |= 0x80400000;                      // X ... X
-                }
-                dst += emitOutput_Instr(dst, code);
-            }
+            assert(loadLabel);
+            dst = emitOutputLoadLabel(dst, srcAddr, dstAddr, id);
         }
 
         return dst;
@@ -8154,7 +8201,7 @@ BYTE*               emitter::emitOutputLJ(insGroup  *ig, BYTE *dst, instrDesc *i
             ins = INS_b;
             fmt = IF_BI_0A;
 
-            // The distVal was computed based on the beginning of the pseudo-instruction.
+            // The distVal was computed based on the beginning of the pseudo-instruction,
             // So subtract the size of the conditional branch so that it is relative to the
             // unconditional branch.
             distVal -= 4;
@@ -8164,31 +8211,7 @@ BYTE*               emitter::emitOutputLJ(insGroup  *ig, BYTE *dst, instrDesc *i
     }
     else if (loadLabel)
     {
-        regNumber dstReg = id->idReg1();
-        if (id->idjShort)
-        {
-            // adr x, [rel addr] --  compute address: current addr(ip) + rel addr.
-            assert(ins == INS_adr);
-            assert(fmt == IF_DI_1E);
-            dst = emitOutputShortAddress(dst, ins, fmt, distVal, dstReg);
-        }
-        else
-        {
-            // adrp x, [rel page addr] -- compute page address: current page addr + rel page addr
-            assert(fmt == IF_LARGEADR);
-            ssize_t relPageAddr = (((ssize_t)dstAddr & 0xFFFFFFFFFFFFF000LL) - ((ssize_t)srcAddr & 0xFFFFFFFFFFFFF000LL)) >> 12;
-            dst = emitOutputShortAddress(dst, INS_adrp, IF_DI_1E, relPageAddr, dstReg);
-
-            // add x, x, page offs -- compute address = page addr + page offs
-            ssize_t imm12 = (ssize_t)dstAddr & 0xFFF;      // 12 bits
-            assert(isValidUimm12(imm12));
-            code_t code = emitInsCode(INS_add, IF_DI_2A);  // DI_2A  X0010001shiiiiii iiiiiinnnnnddddd   1100 0000   imm(i12, sh)
-            code |= insEncodeDatasize(EA_8BYTE);           // X
-            code |= ((code_t)imm12 << 10);                 // iiiiiiiiiiii
-            code |= insEncodeReg_Rd(dstReg);               // ddddd
-            code |= insEncodeReg_Rn(dstReg);               // nnnnn
-            dst += emitOutput_Instr(dst, code);
-        }
+        dst = emitOutputLoadLabel(dst, srcAddr, dstAddr, id);
     }
 
     return  dst;
@@ -10288,29 +10311,39 @@ void                emitter::emitDispIns(instrDesc *  id,
         break;
 
     case IF_LS_1A:    // LS_1A   XX...V..iiiiiiii iiiiiiiiiiittttt      Rt    PC imm(1MB)
+    case IF_DI_1E:    // DI_1E   .ii.....iiiiiiii iiiiiiiiiiiddddd      Rd       simm21
     case IF_LARGELDC:
+    case IF_LARGEADR:
         assert(insOptsNone(id->idInsOpt()));
         emitDispReg(id->idReg1(), size, true);
         imm = emitGetInsSC(id);
 
         /* Is this actually a reference to a data section? */
-        doffs = Compiler::eeGetJitDataOffs(id->idAddr()->iiaFieldHnd);
+        if (fmt == IF_LARGEADR)
+        {
+            printf("(LARGEADR)");
+        }
+        else if (fmt == IF_LARGELDC)
+        {
+            printf("(LARGELDC)");
+        }
 
         if (fmt == IF_LARGELDC)
         {
             printf("(LARGELDC)");
         }
         printf("[");
-        if  (doffs >= 0)
+        if (id->idAddr()->iiaIsJitDataOffset())
         {
+            doffs = Compiler::eeGetJitDataOffs(id->idAddr()->iiaFieldHnd);
             /* Display a data section reference */
 
-            if  (doffs & 1)
-                printf("@CNS%02u", doffs-1);
+            if (doffs & 1)
+                printf("@CNS%02u", doffs - 1);
             else
                 printf("@RWD%02u", doffs);
 
-            if  (imm != 0)
+            if (imm != 0)
                 printf("%+Id", imm);
         }
         else
@@ -10415,24 +10448,6 @@ void                emitter::emitDispIns(instrDesc *  id,
         emitDispReg(encodingZRtoSP(id->idReg1()), size, true);
         bmi.immNRS = (unsigned) emitGetInsSC(id);
         emitDispImm(emitDecodeBitMaskImm(bmi, size), false);
-        break;
-
-    case IF_DI_1E:    // DI_1E   .ii.....iiiiiiii iiiiiiiiiiiddddd      Rd       simm21
-    case IF_LARGEADR:
-        assert(insOptsNone(id->idInsOpt()));
-        emitDispReg(id->idReg1(), size, true);
-        if (fmt == IF_LARGEADR)
-        {
-            printf("(LARGEADR)");
-        }
-        if (id->idIsBound())
-        {
-            printf("G_M%03u_IG%02u", Compiler::s_compMethodsCount, id->idAddr()->iiaIGlabel->igNum);
-        }
-        else
-        {
-            printf("L_M%03u_BB%02u", Compiler::s_compMethodsCount, id->idAddr()->iiaBBlabel->bbNum);
-        }
         break;
 
     case IF_DI_2A:    // DI_2A   X.......shiiiiii iiiiiinnnnnddddd      Rd Rn    imm(i12,sh)
