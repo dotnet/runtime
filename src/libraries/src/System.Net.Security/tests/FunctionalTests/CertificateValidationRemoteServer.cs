@@ -18,11 +18,11 @@ namespace System.Net.Security.Tests
         {
             using (var client = new TcpClient(AddressFamily.InterNetwork))
             {
-                await client.ConnectAsync(HttpTestServers.Host, 443);
+                await client.ConnectAsync(TestSettings.Http.SecureHost, 443);
 
                 using (SslStream sslStream = new SslStream(client.GetStream(), false, RemoteHttpsCertValidation, null))
                 {
-                    await sslStream.AuthenticateAsClientAsync(HttpTestServers.Host);
+                    await sslStream.AuthenticateAsClientAsync(TestSettings.Http.SecureHost);
                 }
             }
         }

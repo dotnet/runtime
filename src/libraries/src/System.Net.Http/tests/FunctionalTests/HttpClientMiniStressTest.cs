@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
+using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -13,7 +14,7 @@ namespace System.Net.Http.Functional.Tests
 {
     public class HttpClientMiniStress
     {
-        private static bool HttpStressEnabled => Environment.GetEnvironmentVariable("HTTP_STRESS") == "1";
+        private static bool HttpStressEnabled => TestSettings.Http.StressEnabled;
 
         [ConditionalTheory(nameof(HttpStressEnabled))]
         [MemberData(nameof(GetStressOptions))]

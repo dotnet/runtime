@@ -6,8 +6,9 @@ namespace System.Net.Test.Common
 {
     internal class HttpTestServers
     {
-        public const string Host = "corefx-net.cloudapp.net";
-        public const string Http2Host = "http2.akamai.com";
+        public readonly static string Host = TestSettings.Http.Host;
+        public readonly static string SecureHost = TestSettings.Http.SecureHost;
+        public readonly static string Http2Host = TestSettings.Http.Http2Host;
 
         public const string SSLv2RemoteServer = "https://www.ssllabs.com:10200/";
         public const string SSLv3RemoteServer = "https://www.ssllabs.com:10300/";
@@ -32,10 +33,10 @@ namespace System.Net.Test.Common
         private const string GZipHandler = "GZip.ashx";
 
         public readonly static Uri RemoteEchoServer = new Uri("http://" + Host + "/" + EchoHandler);
-        public readonly static Uri SecureRemoteEchoServer = new Uri("https://" + Host + "/" + EchoHandler);
+        public readonly static Uri SecureRemoteEchoServer = new Uri("https://" + SecureHost + "/" + EchoHandler);
 
         public readonly static Uri RemoteVerifyUploadServer = new Uri("http://" + Host + "/" + VerifyUploadHandler);
-        public readonly static Uri SecureRemoteVerifyUploadServer = new Uri("https://" + Host + "/" + VerifyUploadHandler);
+        public readonly static Uri SecureRemoteVerifyUploadServer = new Uri("https://" + SecureHost + "/" + VerifyUploadHandler);
 
         public readonly static Uri RemoteEmptyContentServer = new Uri("http://" + Host + "/" + EmptyContentHandler);
         public readonly static Uri RemoteDeflateServer = new Uri("http://" + Host + "/" + DeflateHandler);
