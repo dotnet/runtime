@@ -458,6 +458,8 @@ static void thread_cleanup (MonoInternalThread *thread)
 	if (!mono_thread_info_lookup (MONO_UINT_TO_NATIVE_THREAD_ID (thread->tid))->tools_thread)
 		mono_profiler_thread_end (thread->tid);
 
+	mono_hazard_pointer_clear (mono_hazard_pointer_get (), 1);
+
 	if (thread == mono_thread_internal_current ()) {
 		/*
 		 * This will signal async signal handlers that the thread has exited.
@@ -727,12 +729,13 @@ static guint32 WINAPI start_wrapper_internal(void *data)
 	mono_profiler_thread_start (tid);
 
 	/* if the name was set before starting, we didn't invoke the profiler callback */
-	if (internal->name && (internal->flags & MONO_THREAD_FLAG_NAME_SET)) {
+	if (internal->name) {
 		char *tname = g_utf16_to_utf8 (internal->name, internal->name_len, NULL, NULL, NULL);
 		mono_profiler_thread_name (internal->tid, tname);
-		mono_thread_info_set_name (MONO_UINT_TO_NATIVE_THREAD_ID (internal->tid), tname);
+		mono_native_thread_set_name (MONO_UINT_TO_NATIVE_THREAD_ID (internal->tid), tname);
 		g_free (tname);
 	}
+
 	/* start_func is set only for unmanaged start functions */
 	if (start_func) {
 		start_func (start_arg);
@@ -1364,13 +1367,13 @@ ves_icall_System_Threading_Thread_GetName_internal (MonoInternalThread *this_obj
 }
 
 void 
-mono_thread_set_name_internal (MonoInternalThread *this_obj, MonoString *name, gboolean managed, MonoError *error)
+mono_thread_set_name_internal (MonoInternalThread *this_obj, MonoString *name, gboolean permanent, MonoError *error)
 {
 	LOCK_THREAD (this_obj);
 
 	mono_error_init (error);
 
-	if ((this_obj->flags & MONO_THREAD_FLAG_NAME_SET) && !this_obj->threadpool_thread) {
+	if ((this_obj->flags & MONO_THREAD_FLAG_NAME_SET)) {
 		UNLOCK_THREAD (this_obj);
 		
 		mono_error_set_invalid_operation (error, "Thread.Name can only be set once.");
@@ -1384,19 +1387,20 @@ mono_thread_set_name_internal (MonoInternalThread *this_obj, MonoString *name, g
 		this_obj->name = g_new (gunichar2, mono_string_length (name));
 		memcpy (this_obj->name, mono_string_chars (name), mono_string_length (name) * 2);
 		this_obj->name_len = mono_string_length (name);
+
+		if (permanent)
+			this_obj->flags |= MONO_THREAD_FLAG_NAME_SET;
 	}
 	else
 		this_obj->name = NULL;
 
-	if (managed)
-		this_obj->flags |= MONO_THREAD_FLAG_NAME_SET;
 	
 	UNLOCK_THREAD (this_obj);
 
 	if (this_obj->name && this_obj->tid) {
 		char *tname = mono_string_to_utf8 (name);
 		mono_profiler_thread_name (this_obj->tid, tname);
-		mono_thread_info_set_name (thread_get_tid (this_obj), tname);
+		mono_native_thread_set_name (thread_get_tid (this_obj), tname);
 		mono_free (tname);
 	}
 }
