@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
@@ -88,6 +88,7 @@
     <Compile Include="System\Data\SqlClient\SqlBulkCopyColumnMappingCollection.cs" />
     <Compile Include="System\Data\SqlClient\SqlBulkCopyOptions.cs" />
     <Compile Include="System\Data\SqlClient\SqlCachedBuffer.cs" />
+    <Compile Include="System\Data\SqlClient\SqlClientDiagnosticListenerExtensions.cs" />
     <Compile Include="System\Data\SqlClient\SqlClientFactory.cs" />
     <Compile Include="System\Data\SqlClient\SqlCommand.cs" />
     <Compile Include="System\Data\SqlClient\SqlConnection.cs" />
