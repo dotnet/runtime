@@ -7512,7 +7512,7 @@ void                Compiler::gtDispVN(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
-// gtDispNode: Print a tree to stdout.
+// gtDispNode: Print a tree to jitstdout.
 //
 // Arguments:
 //    tree - the tree to be printed
@@ -8257,7 +8257,7 @@ void Compiler::gtDispFieldSeq(FieldSeqNode* pfsn)
 }
 
 //------------------------------------------------------------------------
-// gtDispLeaf: Print a single leaf node to stdout.
+// gtDispLeaf: Print a single leaf node to jitstdout.
 //
 // Arguments:
 //    tree - the tree to be printed
@@ -8496,7 +8496,7 @@ Compiler::gtDispLeaf(GenTree *tree, IndentStack* indentStack)
 }
 
 //------------------------------------------------------------------------
-// gtDispLeaf: Print a child node to stdout.
+// gtDispLeaf: Print a child node to jitstdout.
 //
 // Arguments:
 //    tree - the tree to be printed
