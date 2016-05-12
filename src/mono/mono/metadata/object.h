@@ -259,6 +259,7 @@ MONO_API MonoObject*
 mono_runtime_delegate_invoke (MonoObject *delegate, void **params, 
 			      MonoObject **exc);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoObject*
 mono_runtime_invoke_array   (MonoMethod *method, void *obj, MonoArray *params,
 			     MonoObject **exc);

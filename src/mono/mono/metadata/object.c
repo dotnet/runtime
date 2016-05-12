@@ -4844,9 +4844,114 @@ MonoObject*
 mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			   MonoObject **exc)
 {
+	MonoError error;
+	if (exc) {
+		MonoObject *result = mono_runtime_try_invoke_array (method, obj, params, exc, &error);
+		if (*exc) {
+			mono_error_cleanup (&error);
+			return NULL;
+		} else {
+			if (!is_ok (&error))
+				*exc = (MonoObject*)mono_error_convert_to_exception (&error);
+			return result;
+		}
+	} else {
+		MonoObject *result = mono_runtime_try_invoke_array (method, obj, params, NULL, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		return result;
+	}
+}
+
+/**
+ * mono_runtime_invoke_array_checked:
+ * @method: method to invoke
+ * @obJ: object instance
+ * @params: arguments to the method
+ * @error: set on failure.
+ *
+ * Invokes the method represented by @method on the object @obj.
+ *
+ * obj is the 'this' pointer, it should be NULL for static
+ * methods, a MonoObject* for object instances and a pointer to
+ * the value type for value types.
+ *
+ * The params array contains the arguments to the method with the
+ * same convention: MonoObject* pointers for object instances and
+ * pointers to the value type otherwise. The _invoke_array
+ * variant takes a C# object[] as the params argument (MonoArray
+ * *params): in this case the value types are boxed inside the
+ * respective reference representation.
+ *
+ * From unmanaged code you'll usually use the
+ * mono_runtime_invoke_checked() variant.
+ *
+ * Note that this function doesn't handle virtual methods for
+ * you, it will exec the exact method you pass: we still need to
+ * expose a function to lookup the derived class implementation
+ * of a virtual method (there are examples of this in the code,
+ * though).
+ *
+ * On failure or exception, @error will be set. In that case, you
+ * can't use the MonoObject* result from the function.
+ *
+ * If the method returns a value type, it is boxed in an object
+ * reference.
+ */
+MonoObject*
+mono_runtime_invoke_array_checked (MonoMethod *method, void *obj, MonoArray *params,
+				   MonoError *error)
+{
+	mono_error_init (error);
+	return mono_runtime_try_invoke_array (method, obj, params, NULL, error);
+}
+
+/**
+ * mono_runtime_try_invoke_array:
+ * @method: method to invoke
+ * @obJ: object instance
+ * @params: arguments to the method
+ * @exc: exception information.
+ * @error: set on failure.
+ *
+ * Invokes the method represented by @method on the object @obj.
+ *
+ * obj is the 'this' pointer, it should be NULL for static
+ * methods, a MonoObject* for object instances and a pointer to
+ * the value type for value types.
+ *
+ * The params array contains the arguments to the method with the
+ * same convention: MonoObject* pointers for object instances and
+ * pointers to the value type otherwise. The _invoke_array
+ * variant takes a C# object[] as the params argument (MonoArray
+ * *params): in this case the value types are boxed inside the
+ * respective reference representation.
+ *
+ * From unmanaged code you'll usually use the
+ * mono_runtime_invoke_checked() variant.
+ *
+ * Note that this function doesn't handle virtual methods for
+ * you, it will exec the exact method you pass: we still need to
+ * expose a function to lookup the derived class implementation
+ * of a virtual method (there are examples of this in the code,
+ * though).
+ *
+ * You can pass NULL as the exc argument if you don't want to catch
+ * exceptions, otherwise, *exc will be set to the exception thrown, if
+ * any.  On other failures, @error will be set. If an exception is
+ * thrown or there's an error, you can't use the MonoObject* result
+ * from the function.
+ *
+ * If the method returns a value type, it is boxed in an object
+ * reference.
+ */
+MonoObject*
+mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
+			       MonoObject **exc, MonoError *error)
+{
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoError error;
+	mono_error_init (error);
+
 	MonoMethodSignature *sig = mono_method_signature (method);
 	gpointer *pa = NULL;
 	MonoObject *res;
@@ -4857,9 +4962,8 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 		pa = (void **)alloca (sizeof (gpointer) * mono_array_length (params));
 		for (i = 0; i < mono_array_length (params); i++) {
 			MonoType *t = sig->params [i];
-			pa [i] = invoke_array_extract_argument (params, i, t, &has_byref_nullables, &error);
-			if (!is_ok (&error))
-				mono_error_raise_exception (&error); /* FIXME don't raise here */
+			pa [i] = invoke_array_extract_argument (params, i, t, &has_byref_nullables, error);
+			return_val_if_nok (error, NULL);
 		}
 	}
 
@@ -4873,15 +4977,14 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			if (!params)
 				return NULL;
 			else {
-				MonoObject *result = mono_value_box_checked (mono_domain_get (), method->klass->cast_class, pa [0], &error);
-				mono_error_raise_exception (&error); /* FIXME don't raise here */
-				return result;
+				return mono_value_box_checked (mono_domain_get (), method->klass->cast_class, pa [0], error);
 			}
 		}
 
 		if (!obj) {
-			obj = mono_object_new_checked (mono_domain_get (), method->klass, &error);
-			g_assert (obj && mono_error_ok (&error)); /*maybe we should raise a TLE instead?*/ /* FIXME don't swallow error */
+			obj = mono_object_new_checked (mono_domain_get (), method->klass, error);
+			mono_error_assert_ok (error);
+			g_assert (obj); /*maybe we should raise a TLE instead?*/
 #ifndef DISABLE_REMOTING
 			if (mono_object_class(obj) == mono_defaults.transparent_proxy_class) {
 				method = mono_marshal_get_remoting_invoke (method->slot == -1 ? method : method->klass->vtable [method->slot]);
@@ -4892,19 +4995,14 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			else
 				o = obj;
 		} else if (method->klass->valuetype) {
-			obj = mono_value_box_checked (mono_domain_get (), method->klass, obj, &error);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			obj = mono_value_box_checked (mono_domain_get (), method->klass, obj, error);
+			return_val_if_nok (error, NULL);
 		}
 
 		if (exc) {
-			mono_runtime_try_invoke (method, o, pa, exc, &error);
-			if (*exc == NULL && !mono_error_ok (&error))
-				*exc = (MonoObject*) mono_error_convert_to_exception (&error);
-			else
-				mono_error_cleanup (&error);
+			mono_runtime_try_invoke (method, o, pa, exc, error);
 		} else {
-			mono_runtime_invoke_checked (method, o, pa, &error);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			mono_runtime_invoke_checked (method, o, pa, error);
 		}
 
 		return (MonoObject *)obj;
@@ -4913,26 +5011,22 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			MonoObject *nullable;
 
 			/* Convert the unboxed vtype into a Nullable structure */
-			nullable = mono_object_new_checked (mono_domain_get (), method->klass, &error);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			nullable = mono_object_new_checked (mono_domain_get (), method->klass, error);
+			return_val_if_nok (error, NULL);
 
-			MonoObject *boxed = mono_value_box_checked (mono_domain_get (), method->klass->cast_class, obj, &error);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			MonoObject *boxed = mono_value_box_checked (mono_domain_get (), method->klass->cast_class, obj, error);
+			return_val_if_nok (error, NULL);
 			mono_nullable_init ((guint8 *)mono_object_unbox (nullable), boxed, method->klass);
 			obj = mono_object_unbox (nullable);
 		}
 
 		/* obj must be already unboxed if needed */
 		if (exc) {
-			res = mono_runtime_try_invoke (method, obj, pa, exc, &error);
-			if (*exc == NULL && !mono_error_ok (&error))
-				*exc = (MonoObject*) mono_error_convert_to_exception (&error);
-			else
-				mono_error_cleanup (&error);
+			res = mono_runtime_try_invoke (method, obj, pa, exc, error);
 		} else {
-			res = mono_runtime_invoke_checked (method, obj, pa, &error);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			res = mono_runtime_invoke_checked (method, obj, pa, error);
 		}
+		return_val_if_nok (error, NULL);
 
 		if (sig->ret->type == MONO_TYPE_PTR) {
 			MonoClass *pointer_class;
@@ -4950,12 +5044,12 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 
 			g_assert (res->vtable->klass == mono_defaults.int_class);
 			box_args [0] = ((MonoIntPtr*)res)->m_value;
-			box_args [1] = mono_type_get_object_checked (mono_domain_get (), sig->ret, &error);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			box_args [1] = mono_type_get_object_checked (mono_domain_get (), sig->ret, error);
+			return_val_if_nok (error, NULL);
 
-			res = mono_runtime_try_invoke (box_method, NULL, box_args, &box_exc, &error);
+			res = mono_runtime_try_invoke (box_method, NULL, box_args, &box_exc, error);
 			g_assert (box_exc == NULL);
-			mono_error_assert_ok (&error);
+			mono_error_assert_ok (error);
 		}
 
 		if (has_byref_nullables) {
@@ -7405,7 +7499,8 @@ mono_message_invoke (MonoObject *target, MonoMethodMessage *msg,
 	mono_gc_wbarrier_generic_store (out_args, (MonoObject*) arr);
 	*exc = NULL;
 
-	ret = mono_runtime_invoke_array (method, method->klass->valuetype? mono_object_unbox (target): target, msg->args, exc);
+	ret = mono_runtime_try_invoke_array (method, method->klass->valuetype? mono_object_unbox (target): target, msg->args, exc, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	for (i = 0, j = 0; i < sig->param_count; i++) {
 		if (sig->params [i]->byref) {

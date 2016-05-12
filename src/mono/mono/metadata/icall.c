@@ -3313,7 +3313,9 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this_arg, Mo
 			return (MonoObject*)arr;
 		}
 	}
-	return mono_runtime_invoke_array (m, obj, params, NULL);
+	MonoObject *result = mono_runtime_invoke_array_checked (m, obj, params, &error);
+	mono_error_set_pending_exception (&error);
+	return result;
 }
 
 #ifndef DISABLE_REMOTING
@@ -3435,7 +3437,9 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this_arg, M
 
 	/* This can be called only on MBR objects, so no need to unbox for valuetypes. */
 	g_assert (!method->method->klass->valuetype);
-	result = mono_runtime_invoke_array (method->method, this_arg, params, NULL);
+	result = mono_runtime_invoke_array_checked (method->method, this_arg, params, &error);
+	if (mono_error_set_pending_exception (&error))
+		return NULL;
 
 	for (i = 0, j = 0; i < mono_array_length (params); i++) {
 		if (sig->params [i]->byref) {
