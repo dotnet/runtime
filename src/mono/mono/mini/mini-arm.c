@@ -939,6 +939,11 @@ mono_arch_cpu_enumerate_simd_versions (void)
 	return 0;
 }
 
+gboolean
+mono_arm_is_hard_float (void)
+{
+	return arm_fpu == MONO_ARM_FPU_VFP_HARD;
+}
 
 #ifndef DISABLE_JIT
 
@@ -966,12 +971,6 @@ mono_arch_is_soft_float (void)
 	return arm_fpu == MONO_ARM_FPU_NONE;
 }
 #endif
-
-gboolean
-mono_arm_is_hard_float (void)
-{
-	return arm_fpu == MONO_ARM_FPU_VFP_HARD;
-}
 
 static gboolean
 is_regsize_var (MonoType *t)
