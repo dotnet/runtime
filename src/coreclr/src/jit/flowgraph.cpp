@@ -19188,7 +19188,7 @@ ONE_FILE_PER_METHOD:;
     }
     else if (wcscmp(filename, W("stdout")) == 0)
     {
-        fgxFile = stdout;
+        fgxFile = jitstdout;
         *wbDontClose = true;
     }
     else if (wcscmp(filename, W("stderr")) == 0)
@@ -19527,7 +19527,7 @@ bool               Compiler::fgDumpFlowGraph(Phases phase)
 
     if (dontClose)
     {
-        // fgxFile is stdout or stderr
+        // fgxFile is jitstdout or stderr
         fprintf(fgxFile, "\n");
     }
     else
