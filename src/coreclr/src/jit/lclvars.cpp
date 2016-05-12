@@ -134,7 +134,7 @@ void                Compiler::lvaInitTypeRef()
     if (!hasRetBuffArg && varTypeIsStruct(info.compRetNativeType))
     {
 #if FEATURE_MULTIREG_RET && defined(FEATURE_HFA)
-        if (!info.compIsVarArgs && !opts.compUseSoftFP && IsHfa(info.compMethodInfo->args.retTypeClass))
+        if (!info.compIsVarArgs && IsHfa(info.compMethodInfo->args.retTypeClass))
         {
             info.compRetNativeType = TYP_STRUCT;
         }
