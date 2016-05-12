@@ -17,10 +17,8 @@ namespace System.IO.Tests
             return new BufferedStream(new MemoryStream());
         }
 
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task ConcurrentOperationsAreSerialized(bool apm)
+        [Fact]
+        public async Task ConcurrentOperationsAreSerialized()
         {
             byte[] data = Enumerable.Range(0, 1000).Select(i => (byte)i).ToArray();
             var mcaos = new ManuallyReleaseAsyncOperationsStream();
@@ -29,9 +27,7 @@ namespace System.IO.Tests
             var tasks = new Task[4];
             for (int i = 0; i < 4; i++)
             {
-                tasks[i] = apm ?
-                    Task.Factory.FromAsync(stream.BeginWrite, stream.EndWrite, data, 250 * i, 250, null) :
-                    stream.WriteAsync(data, 250 * i, 250);
+                tasks[i] = stream.WriteAsync(data, 250 * i, 250);
             }
             Assert.False(tasks.All(t => t.IsCompleted));
 
@@ -53,7 +49,6 @@ namespace System.IO.Tests
             Assert.Equal(TaskStatus.Faulted, stream.ReadAsync(new byte[1], 0, 1).Status);
 
             Assert.Equal(TaskStatus.Faulted, stream.WriteAsync(new byte[10000], 0, 10000).Status);
-            Assert.Equal(TaskStatus.Faulted, Task.Factory.FromAsync(stream.BeginWrite, stream.EndWrite, new byte[10000], 0, 10000, null).Status);
 
             stream.WriteByte(1);
             Assert.Equal(TaskStatus.Faulted, stream.FlushAsync().Status);
@@ -221,29 +216,9 @@ namespace System.IO.Tests
             throw new InvalidOperationException("Exception from ReadAsync");
         }
 
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
-        {
-            throw new InvalidOperationException("Exception from BeginRead");
-        }
-
-        public override int EndRead(IAsyncResult asyncResult)
-        {
-            throw new InvalidOperationException("Exception from EndRead");
-        }
-
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             throw new InvalidOperationException("Exception from WriteAsync");
-        }
-
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
-        {
-            throw new InvalidOperationException("Exception from BeginWrite");
-        }
-
-        public override void EndWrite(IAsyncResult asyncResult)
-        {
-            throw new InvalidOperationException("Exception from EndWrite");
         }
 
         public override Task FlushAsync(CancellationToken cancellationToken)
