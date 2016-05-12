@@ -231,11 +231,11 @@ TODO: Talk about initializing strutures before use
 #if COR_JIT_EE_VERSION > 460
 
 // Update this one
-SELECTANY const GUID JITEEVersionIdentifier = { /* 7fe8ebd7-2f61-41fc-8aac-2be394620be0 */
-    0x7fe8ebd7, 
-    0x2f61, 
-    0x41fc,
-    { 0x8a, 0xac, 0x2b, 0xe3, 0x94, 0x62, 0xb, 0xe0 }
+SELECTANY const GUID JITEEVersionIdentifier = { /* 7a6aa61a-78b1-4dfb-9e06-655fb4774d7f */
+    0x7a6aa61a,
+    0x78b1,
+    0x4dfb,
+    { 0x9e, 0x6, 0x65, 0x5f, 0xb4, 0x77, 0x4d, 0x7f }
 };
 
 #else
@@ -641,6 +641,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR,
 
 #if COR_JIT_EE_VERSION > 460
+    CORINFO_HELP_READYTORUN_GENERIC_HANDLE,
     CORINFO_HELP_READYTORUN_DELEGATE_CTOR,
 #else
     #define CORINFO_HELP_READYTORUN_DELEGATE_CTOR CORINFO_HELP_EE_PRESTUB
@@ -1309,11 +1310,28 @@ enum CORINFO_RUNTIME_LOOKUP_KIND
     CORINFO_LOOKUP_CLASSPARAM,
 };
 
+#if COR_JIT_EE_VERSION > 460
+
+struct CORINFO_LOOKUP_KIND
+{
+    bool                        needsRuntimeLookup;
+    CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind;
+
+    // The 'runtimeLookupFlags' field is just for internal VM / ZAP communication, 
+    // not to be used by the JIT.
+    WORD                        runtimeLookupFlags;
+} ;
+
+#else
+
 struct CORINFO_LOOKUP_KIND
 {
     bool                        needsRuntimeLookup;
     CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind;
 } ;
+
+#endif
+
 
 // CORINFO_RUNTIME_LOOKUP indicates the details of the runtime lookup
 // operation to be performed.
@@ -2405,19 +2423,27 @@ public:
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
 
-    virtual void getReadyToRunHelper(
+#if COR_JIT_EE_VERSION > 460
+    virtual bool getReadyToRunHelper(
             CORINFO_RESOLVED_TOKEN * pResolvedToken,
+            CORINFO_LOOKUP_KIND *    pGenericLookupKind,
             CorInfoHelpFunc          id,
             CORINFO_CONST_LOOKUP *   pLookup
             ) = 0;
 
-#if COR_JIT_EE_VERSION > 460
     virtual void getReadyToRunDelegateCtorHelper(
             CORINFO_RESOLVED_TOKEN * pTargetMethod,
             CORINFO_CLASS_HANDLE     delegateType,
             CORINFO_CONST_LOOKUP *   pLookup
             ) = 0;
+#else
+    virtual void getReadyToRunHelper(
+            CORINFO_RESOLVED_TOKEN * pResolvedToken,
+            CorInfoHelpFunc          id,
+            CORINFO_CONST_LOOKUP *   pLookup
+            ) = 0;
 #endif
+
 
     virtual const char* getHelperName(
             CorInfoHelpFunc

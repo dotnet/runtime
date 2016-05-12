@@ -1633,7 +1633,11 @@ GenTreePtr          Compiler::impReadyToRunHelperToTree(CORINFO_RESOLVED_TOKEN *
                                         GenTreePtr arg)
 {
     CORINFO_CONST_LOOKUP lookup;
+#if COR_JIT_EE_VERSION > 460
+    info.compCompHnd->getReadyToRunHelper(pResolvedToken, nullptr, helper, &lookup);
+#else
     info.compCompHnd->getReadyToRunHelper(pResolvedToken, helper, &lookup);
+#endif
 
     GenTreeArgList* args = NULL;
 
