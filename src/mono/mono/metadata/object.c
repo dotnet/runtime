@@ -4703,6 +4703,106 @@ mono_runtime_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
 	return rval;
 }
 
+/** invoke_array_extract_argument:
+ * @params: array of arguments to the method.
+ * @i: the index of the argument to extract.
+ * @t: ith type from the method signature.
+ * @has_byref_nullables: outarg - TRUE if method expects a byref nullable argument
+ * @error: set on error.
+ *
+ * Given an array of method arguments, return the ith one using the corresponding type
+ * to perform necessary unboxing.  If method expects a ref nullable argument, writes TRUE to @has_byref_nullables.
+ *
+ * On failure sets @error and returns NULL.
+ */
+static gpointer
+invoke_array_extract_argument (MonoArray *params, int i, MonoType *t, gboolean* has_byref_nullables, MonoError *error)
+{
+	MonoType *t_orig = t;
+	gpointer result = NULL;
+	mono_error_init (error);
+		again:
+			switch (t->type) {
+			case MONO_TYPE_U1:
+			case MONO_TYPE_I1:
+			case MONO_TYPE_BOOLEAN:
+			case MONO_TYPE_U2:
+			case MONO_TYPE_I2:
+			case MONO_TYPE_CHAR:
+			case MONO_TYPE_U:
+			case MONO_TYPE_I:
+			case MONO_TYPE_U4:
+			case MONO_TYPE_I4:
+			case MONO_TYPE_U8:
+			case MONO_TYPE_I8:
+			case MONO_TYPE_R4:
+			case MONO_TYPE_R8:
+			case MONO_TYPE_VALUETYPE:
+				if (t->type == MONO_TYPE_VALUETYPE && mono_class_is_nullable (mono_class_from_mono_type (t_orig))) {
+					/* The runtime invoke wrapper needs the original boxed vtype, it does handle byref values as well. */
+					result = mono_array_get (params, MonoObject*, i);
+					if (t->byref)
+						*has_byref_nullables = TRUE;
+				} else {
+					/* MS seems to create the objects if a null is passed in */
+					if (!mono_array_get (params, MonoObject*, i)) {
+						MonoObject *o = mono_object_new_checked (mono_domain_get (), mono_class_from_mono_type (t_orig), error);
+						return_val_if_nok (error, NULL);
+						mono_array_setref (params, i, o); 
+					}
+
+					if (t->byref) {
+						/*
+						 * We can't pass the unboxed vtype byref to the callee, since
+						 * that would mean the callee would be able to modify boxed
+						 * primitive types. So we (and MS) make a copy of the boxed
+						 * object, pass that to the callee, and replace the original
+						 * boxed object in the arg array with the copy.
+						 */
+						MonoObject *orig = mono_array_get (params, MonoObject*, i);
+						MonoObject *copy = mono_value_box_checked (mono_domain_get (), orig->vtable->klass, mono_object_unbox (orig), error);
+						return_val_if_nok (error, NULL);
+						mono_array_setref (params, i, copy);
+					}
+						
+					result = mono_object_unbox (mono_array_get (params, MonoObject*, i));
+				}
+				break;
+			case MONO_TYPE_STRING:
+			case MONO_TYPE_OBJECT:
+			case MONO_TYPE_CLASS:
+			case MONO_TYPE_ARRAY:
+			case MONO_TYPE_SZARRAY:
+				if (t->byref)
+					result = mono_array_addr (params, MonoObject*, i);
+					// FIXME: I need to check this code path
+				else
+					result = mono_array_get (params, MonoObject*, i);
+				break;
+			case MONO_TYPE_GENERICINST:
+				if (t->byref)
+					t = &t->data.generic_class->container_class->this_arg;
+				else
+					t = &t->data.generic_class->container_class->byval_arg;
+				goto again;
+			case MONO_TYPE_PTR: {
+				MonoObject *arg;
+
+				/* The argument should be an IntPtr */
+				arg = mono_array_get (params, MonoObject*, i);
+				if (arg == NULL) {
+					result = NULL;
+				} else {
+					g_assert (arg->vtable->klass == mono_defaults.int_class);
+					result = ((MonoIntPtr*)arg)->m_value;
+				}
+				break;
+			}
+			default:
+				g_error ("type 0x%x not handled in mono_runtime_invoke_array", t_orig->type);
+			}
+	return result;
+}
 /**
  * mono_runtime_invoke_array:
  * @method: method to invoke
@@ -4757,87 +4857,9 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 		pa = (void **)alloca (sizeof (gpointer) * mono_array_length (params));
 		for (i = 0; i < mono_array_length (params); i++) {
 			MonoType *t = sig->params [i];
-
-		again:
-			switch (t->type) {
-			case MONO_TYPE_U1:
-			case MONO_TYPE_I1:
-			case MONO_TYPE_BOOLEAN:
-			case MONO_TYPE_U2:
-			case MONO_TYPE_I2:
-			case MONO_TYPE_CHAR:
-			case MONO_TYPE_U:
-			case MONO_TYPE_I:
-			case MONO_TYPE_U4:
-			case MONO_TYPE_I4:
-			case MONO_TYPE_U8:
-			case MONO_TYPE_I8:
-			case MONO_TYPE_R4:
-			case MONO_TYPE_R8:
-			case MONO_TYPE_VALUETYPE:
-				if (t->type == MONO_TYPE_VALUETYPE && mono_class_is_nullable (mono_class_from_mono_type (sig->params [i]))) {
-					/* The runtime invoke wrapper needs the original boxed vtype, it does handle byref values as well. */
-					pa [i] = mono_array_get (params, MonoObject*, i);
-					if (t->byref)
-						has_byref_nullables = TRUE;
-				} else {
-					/* MS seems to create the objects if a null is passed in */
-					if (!mono_array_get (params, MonoObject*, i)) {
-						MonoObject *o = mono_object_new_checked (mono_domain_get (), mono_class_from_mono_type (sig->params [i]), &error);
-						mono_error_raise_exception (&error); /* FIXME don't raise here */
-						mono_array_setref (params, i, o); 
-					}
-
-					if (t->byref) {
-						/*
-						 * We can't pass the unboxed vtype byref to the callee, since
-						 * that would mean the callee would be able to modify boxed
-						 * primitive types. So we (and MS) make a copy of the boxed
-						 * object, pass that to the callee, and replace the original
-						 * boxed object in the arg array with the copy.
-						 */
-						MonoObject *orig = mono_array_get (params, MonoObject*, i);
-						MonoObject *copy = mono_value_box_checked (mono_domain_get (), orig->vtable->klass, mono_object_unbox (orig), &error);
-						mono_error_raise_exception (&error); /* FIXME don't raise here */
-						mono_array_setref (params, i, copy);
-					}
-						
-					pa [i] = mono_object_unbox (mono_array_get (params, MonoObject*, i));
-				}
-				break;
-			case MONO_TYPE_STRING:
-			case MONO_TYPE_OBJECT:
-			case MONO_TYPE_CLASS:
-			case MONO_TYPE_ARRAY:
-			case MONO_TYPE_SZARRAY:
-				if (t->byref)
-					pa [i] = mono_array_addr (params, MonoObject*, i);
-					// FIXME: I need to check this code path
-				else
-					pa [i] = mono_array_get (params, MonoObject*, i);
-				break;
-			case MONO_TYPE_GENERICINST:
-				if (t->byref)
-					t = &t->data.generic_class->container_class->this_arg;
-				else
-					t = &t->data.generic_class->container_class->byval_arg;
-				goto again;
-			case MONO_TYPE_PTR: {
-				MonoObject *arg;
-
-				/* The argument should be an IntPtr */
-				arg = mono_array_get (params, MonoObject*, i);
-				if (arg == NULL) {
-					pa [i] = NULL;
-				} else {
-					g_assert (arg->vtable->klass == mono_defaults.int_class);
-					pa [i] = ((MonoIntPtr*)arg)->m_value;
-				}
-				break;
-			}
-			default:
-				g_error ("type 0x%x not handled in mono_runtime_invoke_array", sig->params [i]->type);
-			}
+			pa [i] = invoke_array_extract_argument (params, i, t, &has_byref_nullables, &error);
+			if (!is_ok (&error))
+				mono_error_raise_exception (&error); /* FIXME don't raise here */
 		}
 	}
 
