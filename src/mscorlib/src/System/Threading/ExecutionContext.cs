@@ -339,11 +339,11 @@ namespace System.Threading
 #if FEATURE_CORRUPTING_EXCEPTIONS
         [HandleProcessCorruptedStateExceptions]
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
-        internal bool UndoNoThrow()
+        internal bool UndoNoThrow(Thread currentThread)
         {
             try
             {
-                Undo();
+                Undo(currentThread);
             }
             catch
             {
@@ -354,7 +354,7 @@ namespace System.Threading
         
         [System.Security.SecurityCritical]  // auto-generated
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
-        internal void Undo()
+        internal void Undo(Thread currentThread)
         {
             //
             // Don't use an uninitialized switcher, or one that's already been used.
@@ -363,7 +363,6 @@ namespace System.Threading
                 return; // Don't do anything
 
             Contract.Assert(Thread.CurrentThread == this.thread);
-            Thread currentThread = this.thread;
 
             // 
             // Restore the HostExecutionContext before restoring the ExecutionContext.
@@ -1086,7 +1085,7 @@ namespace System.Threading
             }
             catch
             {
-                ecsw.UndoNoThrow();
+                ecsw.UndoNoThrow(currentThread);
                 throw;
             }
             return ecsw;    
