@@ -161,11 +161,11 @@ CONFIG_INTEGER(EnableAVX, W("EnableAVX"), 1) // Enable AVX instruction set for w
 CONFIG_INTEGER(EnableAVX, W("EnableAVX"), 0) // Enable AVX instruction set for wide operations as default
 #endif // defined(_TARGET_AMD64_)
 
-#if (!defined(DEBUG) && !defined(_DEBUG)) || (defined(CROSSGEN_COMPILE) && !defined(FEATURE_CORECLR))
+#if !defined(DEBUG) && !defined(_DEBUG)
 CONFIG_INTEGER(JitEnableNoWayAssert, W("JitEnableNoWayAssert"), 0)
-#else // (defined(DEBUG) || defined(_DEBUG)) && (!defined(CROSSGEN_COMPILE) || defined(FEATURE_CORECLR))
+#else // defined(DEBUG) || defined(_DEBUG)
 CONFIG_INTEGER(JitEnableNoWayAssert, W("JitEnableNoWayAssert"), 1)
-#endif // (!defined(DEBUG) && !defined(_DEBUG)) || (defined(CROSSGEN_COMPILE) && !defined(FEATURE_CORECLR))
+#endif // !defined(DEBUG) && !defined(_DEBUG)
 
 CONFIG_INTEGER(JitAggressiveInlining, W("JitAggressiveInlining"), 0) // Aggressive inlining of all methods
 CONFIG_INTEGER(JitELTHookEnabled, W("JitELTHookEnabled"), 0) // On ARM, setting this will emit Enter/Leave/TailCall callbacks
