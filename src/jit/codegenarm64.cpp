@@ -4048,7 +4048,6 @@ void CodeGen::genCodeForCpBlk(GenTreeCpBlk* cpBlkNode)
 void
 CodeGen::genTableBasedSwitch(GenTree* treeNode)
 {
-    NYI("Emit table based switch");
     genConsumeOperands(treeNode->AsOp());
     regNumber idxReg = treeNode->gtOp.gtOp1->gtRegNum;
     regNumber baseReg = treeNode->gtOp.gtOp2->gtRegNum;
@@ -4056,21 +4055,21 @@ CodeGen::genTableBasedSwitch(GenTree* treeNode)
     regNumber tmpReg = genRegNumFromMask(treeNode->gtRsvdRegs);
 
     // load the ip-relative offset (which is relative to start of fgFirstBB)
-    //getEmitter()->emitIns_R_ARX(INS_mov, EA_4BYTE, baseReg, baseReg, idxReg, 4, 0);
+    getEmitter()->emitIns_R_R_R(INS_ldr, EA_4BYTE, baseReg, baseReg, idxReg, INS_OPTS_LSL);
 
     // add it to the absolute address of fgFirstBB
     compiler->fgFirstBB->bbFlags |= BBF_JMP_TARGET;
-    //getEmitter()->emitIns_R_L(INS_lea, EA_PTRSIZE, compiler->fgFirstBB, tmpReg);
-    //getEmitter()->emitIns_R_R(INS_add, EA_PTRSIZE, baseReg, tmpReg);
+    getEmitter()->emitIns_R_L(INS_adr, EA_PTRSIZE, compiler->fgFirstBB, tmpReg);
+    getEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, baseReg, baseReg, tmpReg);
+
     // jmp baseReg
-    // getEmitter()->emitIns_R(INS_i_jmp, emitTypeSize(TYP_I_IMPL), baseReg);
+    getEmitter()->emitIns_R(INS_br, emitTypeSize(TYP_I_IMPL), baseReg);
 }
 
 // emits the table and an instruction to get the address of the first element
 void
 CodeGen::genJumpTable(GenTree* treeNode)
 {
-    NYI("Emit Jump table");
     noway_assert(compiler->compCurBB->bbJumpKind == BBJ_SWITCH);
     assert(treeNode->OperGet() == GT_JMPTABLE);
 
@@ -4100,7 +4099,7 @@ CodeGen::genJumpTable(GenTree* treeNode)
     // Access to inline data is 'abstracted' by a special type of static member
     // (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
     // to constant data, not a real static field.
-    getEmitter()->emitIns_R_C(INS_lea,
+    getEmitter()->emitIns_R_C(INS_adr,
         emitTypeSize(TYP_I_IMPL),
         treeNode->gtRegNum,
         REG_NA,

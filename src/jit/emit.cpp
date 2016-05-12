@@ -3804,10 +3804,9 @@ AGAIN:
 #if defined(_TARGET_ARM64_)
         // JIT code and data will be allocated together for arm64 so the relative offset to JIT data is known.
         // In case such offset can be encodeable for `ldr` (+-1MB), shorten it.
-        if (emitIsLoadConstant(jmp))
+        if (jmp->idAddr()->iiaIsJitDataOffset())
         {
             // Reference to JIT data
-            assert(jmp->idAddr()->iiaIsJitDataOffset());
             assert(jmp->idIsBound());
             UNATIVE_OFFSET srcOffs = jmpIG->igOffs + jmp->idjOffs;
 
@@ -4288,6 +4287,14 @@ void                emitter::emitCheckFuncletBranch(instrDesc * jmp, insGroup * 
         return;
     }
 #endif // _TARGET_ARMARCH_
+
+#ifdef _TARGET_ARM64_
+    // No interest if it's not jmp.
+    if (emitIsLoadLabel(jmp) || emitIsLoadConstant(jmp))
+    {
+        return;
+    }
+#endif // _TARGET_ARM64_
 
     insGroup * tgtIG = jmp->idAddr()->iiaIGlabel;
     assert(tgtIG);
