@@ -359,9 +359,10 @@ namespace System.Net
                 throw new InvalidOperationException(SR.net_reqsubmitted);
             }
 
-            using (var handler = new HttpClientHandler())
+            var handler = new HttpClientHandler();
+            var request = new HttpRequestMessage(new HttpMethod(_originVerb), _requestUri);
+            
             using (var client = new HttpClient(handler))
-            using (var request = new HttpRequestMessage(new HttpMethod(_originVerb), _requestUri))
             {
                 if (_requestStream != null)
                 {
