@@ -675,7 +675,6 @@ namespace System.Net.Http.Functional.Tests
                             "Content-Length: 16000\r\n" +
                             "\r\n" +
                             "less than 16000 bytes");
-                        await writer.FlushAsync();
 
                         using (HttpResponseMessage response = await getResponse)
                         {
@@ -693,19 +692,66 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        public async Task Dispose_DisposingHandlerCancelsActiveOperations()
+        public async Task Dispose_DisposingHandlerCancelsActiveOperationsWithoutResponses()
         {
-            await LoopbackServer.CreateServerAsync(async (socket, url) =>
+            await LoopbackServer.CreateServerAsync(async (socket1, url1) =>
             {
-                using (var client = new HttpClient())
+                await LoopbackServer.CreateServerAsync(async (socket2, url2) =>
                 {
-                    Task<string> download = client.GetStringAsync(url);
-                    using (Socket acceptedSocket = await socket.AcceptAsync())
+                    await LoopbackServer.CreateServerAsync(async (socket3, url3) =>
                     {
-                        client.Dispose();
-                        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => download);
-                    }
-                }
+                        var unblockServers = new TaskCompletionSource<bool>(TaskContinuationOptions.RunContinuationsAsynchronously);
+
+                        // First server connects but doesn't send any response yet
+                        Task server1 = LoopbackServer.AcceptSocketAsync(socket1, async (s, stream, reader, writer) =>
+                        {
+                            await unblockServers.Task;
+                        });
+
+                        // Second server connects and sends some but not all headers
+                        Task server2 = LoopbackServer.AcceptSocketAsync(socket2, async (s, stream, reader, writer) =>
+                        {
+                            while (!string.IsNullOrEmpty(await reader.ReadLineAsync())) ;
+                            await writer.WriteAsync($"HTTP/1.1 200 OK\r\n");
+                            await unblockServers.Task;
+                        });
+
+                        // Third server connects and sends all headers and some but not all of the body
+                        Task server3 = LoopbackServer.AcceptSocketAsync(socket3, async (s, stream, reader, writer) =>
+                        {
+                            while (!string.IsNullOrEmpty(await reader.ReadLineAsync())) ;
+                            await writer.WriteAsync($"HTTP/1.1 200 OK\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 20\r\n\r\n");
+                            await writer.WriteAsync("1234567890");
+                            await unblockServers.Task;
+                            await writer.WriteAsync("1234567890");
+                            s.Shutdown(SocketShutdown.Send);
+                        });
+
+                        // Make three requests
+                        Task<HttpResponseMessage> get1, get2;
+                        HttpResponseMessage response3;
+                        using (var client = new HttpClient())
+                        {
+                            get1 = client.GetAsync(url1, HttpCompletionOption.ResponseHeadersRead);
+                            get2 = client.GetAsync(url2, HttpCompletionOption.ResponseHeadersRead);
+                            response3 = await client.GetAsync(url3, HttpCompletionOption.ResponseHeadersRead);
+                        }
+
+                        // Requests 1 and 2 should be canceled as we haven't finished receiving their headers
+                        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => get1);
+                        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => get2);
+
+                        // Request 3 should still be active, and we should be able to receive all of the data.
+                        unblockServers.SetResult(true);
+                        using (response3)
+                        {
+                            Assert.Equal("12345678901234567890", await response3.Content.ReadAsStringAsync());
+                        }
+
+                        try { await Task.WhenAll(server1, server2, server3); }
+                        catch { } // Ignore errors: we expect this may fail, as the clients may hang up on the servers
+                    });
+                });
             });
         }
 
@@ -1093,7 +1139,6 @@ namespace System.Net.Http.Functional.Tests
                             $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
                             "Content-Length: 0\r\n" +
                             "\r\n");
-                        await writer.FlushAsync();
                         s.Shutdown(SocketShutdown.Send);
                     });
 
