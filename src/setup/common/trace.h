@@ -15,6 +15,8 @@ namespace trace
     void info(const pal::char_t* format, ...);
     void warning(const pal::char_t* format, ...);
     void error(const pal::char_t* format, ...);
+    void println(const pal::char_t* format, ...);
+    void println();
 };
 
 #endif // TRACE_H

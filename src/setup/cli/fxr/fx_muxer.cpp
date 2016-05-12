@@ -15,6 +15,8 @@
 #include "deps_format.h"
 
 
+static const pal::char_t* s_dotnet_sdk_download_url = _X("http://go.microsoft.com/fwlink/?LinkID=798306&clcid=0x409");
+
 /**
  * When the framework is not found, display detailed error message
  *   about available frameworks and installation of new framework.
@@ -556,7 +558,29 @@ bool fx_muxer_t::resolve_sdk_dotnet_path(const pal::string_t& own_dir, pal::stri
 
 int muxer_usage()
 {
-    trace::error(_X("Usage: dotnet [--help | app.dll]"));
+    trace::println();
+    trace::println(_X("Microsoft .NET Core Shared Framework Host"));
+    trace::println();
+    trace::println(_X("  Version  : %s"), _STRINGIFY(HOST_FXR_PKG_VER));
+    trace::println(_X("  Build    : %s"), _STRINGIFY(REPO_COMMIT_HASH));
+    trace::println();
+    trace::println(_X("Usage: dotnet [common-options] [[options] path-to-application]"));
+    trace::println();
+    trace::println(_X("Common Options:"));
+    trace::println(_X("  --help                           Display .NET Core Shared Framework Host help."));
+    trace::println(_X("  --version                        Display .NET Core Shared Framework Host version."));
+    trace::println();
+    trace::println(_X("Options:"));
+    trace::println(_X("  --additionalprobingpath <path>   Path containing probing policy and assemblies to probe for."));
+    trace::println();
+    trace::println(_X("Path to Application:"));
+    trace::println(_X("  The path to a .NET Core managed application, dll or exe file to execute."));
+    trace::println();
+    trace::println(_X("If you are debugging the Shared Framework Host, set 'COREHOST_TRACE' to '1' in your environment."));
+    trace::println();
+    trace::println(_X("To get started on developing applications for .NET Core, install .NET SDK from:"));
+    trace::println(_X("  %s"), s_dotnet_sdk_download_url);
+    
     return StatusCode::InvalidArgFailure;
 }
 
@@ -778,7 +802,16 @@ int fx_muxer_t::execute(const int argc, const pal::char_t* argv[])
     pal::string_t sdk_dotnet;
     if (!resolve_sdk_dotnet_path(own_dir, &sdk_dotnet))
     {
-        trace::error(_X("Did not find a suitable dotnet SDK at '%s'. Install dotnet SDK from https://github.com/dotnet/cli"), own_dir.c_str());
+        assert(argc > 1);
+        if (pal::strcasecmp(_X("--help"), argv[1]) == 0 ||
+            pal::strcasecmp(_X("--version"), argv[1]) == 0 ||
+            pal::strcasecmp(_X("-h"), argv[1]) == 0 ||
+            pal::strcasecmp(_X("-v"), argv[1]) == 0)
+        {
+            return muxer_usage();
+        }
+        trace::error(_X("Did you mean to run dotnet SDK commands? Please install dotnet SDK from: "));
+        trace::error(_X("  %s"), s_dotnet_sdk_download_url);
         return StatusCode::LibHostSdkFindFailure;
     }
     append_path(&sdk_dotnet, _X("dotnet.dll"));

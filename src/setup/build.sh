@@ -27,11 +27,12 @@ init_distro_name_and_rid()
 
 usage()
 {
-    echo "Usage: $0 --arch <Architecture> --rid <Runtime Identifier> --policyver <HostPolicy library version> --commithash <Git commit hash> [--xcompiler <Cross C++ Compiler>]"
+    echo "Usage: $0 --arch <Architecture> --rid <Runtime Identifier> --fxrver <HostFxr library version> --policyver <HostPolicy library version> --commithash <Git commit hash> [--xcompiler <Cross C++ Compiler>]"
     echo ""
     echo "Options:"
     echo "  --arch <Architecture>             Target Architecture (amd64, x86, arm)"
     echo "  --rid <Runtime Identifier>        Target Runtime Identifier"
+    echo "  --fxrver <HostFxr version>        Version of the hostfxr library"
     echo "  --policyver <HostPolicy version>  Version of the hostpolicy library"
     echo "  --commithash <Git commit hash>   Current commit hash of the repo at build time"
     echo "  --xcompiler <Cross C++ Compiler>  Cross Compiler when the target is arm"
@@ -53,6 +54,7 @@ DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 __build_arch=
 __runtime_id=
 __policy_ver=
+__fxr_ver=
 __CrossBuild=0
 __commit_hash=
 
@@ -70,6 +72,10 @@ while [ "$1" != "" ]; do
         --rid) 
             shift
             __runtime_id=$1
+            ;;
+        --fxrver)
+            shift
+            __fxr_ver=$1
             ;;
         --policyver)
             shift
@@ -133,9 +139,9 @@ __base_rid=$__rid_plat-$__build_arch_lowcase
 echo "Building Corehost from $DIR to $(pwd)"
 set -x # turn on trace
 if [ $__CrossBuild == 1 ]; then
-    cmake "$DIR" -G "Unix Makefiles" $__cmake_defines -DCLI_CMAKE_RUNTIME_ID:STRING=$__runtime_id -DCLI_CMAKE_HOST_POLICY_VER:STRING=$__policy_ver -DCMAKE_CXX_COMPILER="$__CrossCompiler" -DCLI_CMAKE_PKG_RID:STRING=$__base_rid -DCLI_CMAKE_COMMIT_HASH:STRING=$__commit_hash
+    cmake "$DIR" -G "Unix Makefiles" $__cmake_defines -DCLI_CMAKE_RUNTIME_ID:STRING=$__runtime_id -DCLI_CMAKE_HOST_FXR_VER:STRING=$__fxr_ver -DCLI_CMAKE_HOST_POLICY_VER:STRING=$__policy_ver -DCLI_CMAKE_PKG_RID:STRING=$__base_rid -DCLI_CMAKE_COMMIT_HASH:STRING=$__commit_hash -DCMAKE_CXX_COMPILER="$__CrossCompiler"
 else
-    cmake "$DIR" -G "Unix Makefiles" $__cmake_defines -DCLI_CMAKE_RUNTIME_ID:STRING=$__runtime_id -DCLI_CMAKE_HOST_POLICY_VER:STRING=$__policy_ver -DCLI_CMAKE_PKG_RID:STRING=$__base_rid -DCLI_CMAKE_COMMIT_HASH:STRING=$__commit_hash
+    cmake "$DIR" -G "Unix Makefiles" $__cmake_defines -DCLI_CMAKE_RUNTIME_ID:STRING=$__runtime_id -DCLI_CMAKE_HOST_FXR_VER:STRING=$__fxr_ver -DCLI_CMAKE_HOST_POLICY_VER:STRING=$__policy_ver -DCLI_CMAKE_PKG_RID:STRING=$__base_rid -DCLI_CMAKE_COMMIT_HASH:STRING=$__commit_hash
 fi
 set +x # turn off trace
 make
