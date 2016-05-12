@@ -41,3 +41,12 @@ Replace underscores with hyphens to interop with existing .NET code.
 Returns the length of the string.
 */
 int FixupLocaleName(UChar* value, int32_t valueLength);
+
+/*
+Function:
+DetectDefaultLocaleName
+
+Detect the default locale for the machine, defaulting to Invaraint if
+we can't compute one (different from uloc_getDefault()) would do.
+*/
+const char* DetectDefaultLocaleName();
