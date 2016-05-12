@@ -3824,7 +3824,7 @@ AGAIN:
             UNATIVE_OFFSET maxDstOffs = emitTotalCodeSize + dataOffs;
 
             // Check if the distance is within the encoding length.
-            UNATIVE_OFFSET jmpDist = maxDstOffs - srcOffs;
+            jmpDist = maxDstOffs - srcOffs;
             extra = jmpDist - psd;
             if (extra <= 0)
             {
