@@ -10,7 +10,7 @@
 * Run Only
 > `<CLRTestKind>RunOnly</CLRTestKind>`
 
- * Will only execute another assembly. 
+ * Can use Ouput of Build and Run Project with different command line arguments. 
 * Build and Run
 > `<CLRTestKind>BuildAndRun</CLRTestKind>`
 
