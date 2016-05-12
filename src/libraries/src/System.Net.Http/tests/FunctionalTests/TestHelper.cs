@@ -90,9 +90,18 @@ namespace System.Net.Http.Functional.Tests
             {
                 task.ContinueWith(t =>
                 {
-                    if (t.IsFaulted) tcs.SetException(t.Exception.InnerExceptions);
-                    else if (t.IsCanceled) tcs.SetCanceled();
-                    else if (Interlocked.Decrement(ref remaining) == 0) tcs.SetResult(true);
+                    if (t.IsFaulted)
+                    {
+                        tcs.SetException(t.Exception.InnerExceptions);
+                    }
+                    else if (t.IsCanceled)
+                    {
+                        tcs.SetCanceled();
+                    }
+                    else if (Interlocked.Decrement(ref remaining) == 0)
+                    {
+                        tcs.SetResult(true);
+                    }
                 }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
             }
 
