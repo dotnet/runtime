@@ -8087,7 +8087,7 @@ public :
             nraTotalSizeUsed  += ms.nraTotalSizeUsed;
         }
 
-        void Print(FILE* f); // Print these stats to stdout.
+        void Print(FILE* f); // Print these stats to jitstdout.
     };
 
     static CritSecObject s_memStatsLock;    // This lock protects the data structures below.
