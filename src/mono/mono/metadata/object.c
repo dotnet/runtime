@@ -6768,10 +6768,28 @@ mono_string_to_utf32 (MonoString *s)
 MonoString *
 mono_string_from_utf16 (gunichar2 *data)
 {
+	MonoError error;
+	MonoString *result = mono_string_from_utf16_checked (data, &error);
+	mono_error_cleanup (&error);
+	return result;
+}
+
+/**
+ * mono_string_from_utf16_checked:
+ * @data: the UTF16 string (LPWSTR) to convert
+ * @error: set on error
+ *
+ * Converts a NULL terminated UTF16 string (LPWSTR) to a MonoString.
+ *
+ * Returns: a MonoString. On failure sets @error and returns NULL.
+ */
+MonoString *
+mono_string_from_utf16_checked (gunichar2 *data, MonoError *error)
+{
+
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoError error;
-	MonoString *res = NULL;
+	mono_error_init (error);
 	MonoDomain *domain = mono_domain_get ();
 	int len = 0;
 
@@ -6780,9 +6798,7 @@ mono_string_from_utf16 (gunichar2 *data)
 
 	while (data [len]) len++;
 
-	res = mono_string_new_utf16_checked (domain, data, len, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
-	return res;
+	return mono_string_new_utf16_checked (domain, data, len, error);
 }
 
 /**
@@ -6796,11 +6812,30 @@ mono_string_from_utf16 (gunichar2 *data)
 MonoString *
 mono_string_from_utf32 (mono_unichar4 *data)
 {
+	MonoError error;
+	MonoString *result = mono_string_from_utf32_checked (data, &error);
+	mono_error_cleanup (&error);
+	return result;
+}
+
+/**
+ * mono_string_from_utf32_checked:
+ * @data: the UTF32 string (LPWSTR) to convert
+ * @error: set on error
+ *
+ * Converts a UTF32 (UCS-4)to a MonoString.
+ *
+ * Returns: a MonoString. On failure returns NULL and sets @error.
+ */
+MonoString *
+mono_string_from_utf32_checked (mono_unichar4 *data, MonoError *error)
+{
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	mono_error_init (error);
 	MonoString* result = NULL;
 	mono_unichar2 *utf16_output = NULL;
-	GError *error = NULL;
+	GError *gerror = NULL;
 	glong items_written;
 	int len = 0;
 
@@ -6809,12 +6844,12 @@ mono_string_from_utf32 (mono_unichar4 *data)
 
 	while (data [len]) len++;
 
-	utf16_output = g_ucs4_to_utf16 (data, len, NULL, &items_written, &error);
+	utf16_output = g_ucs4_to_utf16 (data, len, NULL, &items_written, &gerror);
 
-	if (error)
-		g_error_free (error);
+	if (gerror)
+		g_error_free (gerror);
 
-	result = mono_string_from_utf16 (utf16_output);
+	result = mono_string_from_utf16_checked (utf16_output, error);
 	g_free (utf16_output);
 	return result;
 }
