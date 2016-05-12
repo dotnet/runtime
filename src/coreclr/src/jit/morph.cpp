@@ -2652,6 +2652,19 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
 
         // insert nonstandard args (outside the calling convention)
 
+#if !defined(LEGACY_BACKEND) && defined(_TARGET_X86_)
+        // The x86 CORINFO_HELP_INIT_PINVOKE_FRAME helper has a custom calling convention. Set the argument registers
+        // correctly here.
+        if ((call->gtCallType == CT_HELPER) && (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_INIT_PINVOKE_FRAME)))
+        {
+            GenTreeArgList* args = call->gtCallArgs;
+            GenTree* arg1 = args->Current();
+            assert(arg1 != nullptr);
+            NonStandardArg nsa = { REG_PINVOKE_FRAME, arg1 };
+            nonStandardArgs.Push(nsa);
+        }
+#endif // !defined(LEGACY_BACKEND) && defined(_TARGET_X86_)
+
 #if !defined(LEGACY_BACKEND) && !defined(_TARGET_X86_)
         // TODO-X86-CQ: Currently RyuJIT/x86 passes args on the stack, so this is not needed.
         // If/when we change that, the following code needs to be changed to correctly support the (TBD) managed calling
@@ -7544,8 +7557,6 @@ NO_TAIL_CALL:
 
     /* Process the "normal" argument list */
     call = fgMorphArgs(call);
-
-    // Optimize get_ManagedThreadId(get_CurrentThread)
     noway_assert(call->gtOper == GT_CALL);
 
     // Morph stelem.ref helper call to store a null value, into a store into an array without the helper.
@@ -7580,6 +7591,7 @@ NO_TAIL_CALL:
         }
     }
 
+    // Optimize get_ManagedThreadId(get_CurrentThread)
     if ((call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) &&
            info.compCompHnd->getIntrinsicID(call->gtCallMethHnd) == CORINFO_INTRINSIC_GetManagedThreadId)
     {
