@@ -14,13 +14,13 @@ namespace System.Net.Http.Functional.Tests
     // TODO: #2383 - Consolidate the use of the environment variable settings to Common/tests.
     public class DefaultCredentialsTest
     {
-        private static string HttpInternalTestServer => Environment.GetEnvironmentVariable("HTTP_INTERNAL_TESTSERVER");
-        private static bool HttpInternalTestsEnabled => !string.IsNullOrEmpty(HttpInternalTestServer);
+        private static string DomainJoinedTestServer => TestSettings.Http.DomainJoinedHttpHost;
+        private static bool DomainJoinedTestsEnabled => !string.IsNullOrEmpty(DomainJoinedTestServer);
         private static string SpecificUserName = "test";
         private static string SpecificPassword = "Password1";
-        private static string SpecificDomain = HttpInternalTestServer;
+        private static string SpecificDomain = DomainJoinedTestServer;
         private static Uri AuthenticatedServer =
-            new Uri($"http://{HttpInternalTestServer}/test/auth/negotiate/showidentity.ashx");
+            new Uri($"http://{DomainJoinedTestServer}/test/auth/negotiate/showidentity.ashx");
 
         private readonly ITestOutputHelper _output;
         private readonly NetworkCredential _specificCredential =
@@ -32,7 +32,7 @@ namespace System.Net.Http.Functional.Tests
             _output.WriteLine(AuthenticatedServer.ToString());
         }
 
-        [ConditionalTheory(nameof(HttpInternalTestsEnabled))]
+        [ConditionalTheory(nameof(DomainJoinedTestsEnabled))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task UseDefaultCredentials_DefaultValue_Unauthorized(bool useProxy)
@@ -47,7 +47,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalTheory(nameof(HttpInternalTestsEnabled))]
+        [ConditionalTheory(nameof(DomainJoinedTestsEnabled))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task UseDefaultCredentials_SetFalse_Unauthorized(bool useProxy)
@@ -61,7 +61,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalTheory(nameof(HttpInternalTestsEnabled))]
+        [ConditionalTheory(nameof(DomainJoinedTestsEnabled))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task UseDefaultCredentials_SetTrue_ConnectAsCurrentIdentity(bool useProxy)
@@ -80,7 +80,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalTheory(nameof(HttpInternalTestsEnabled))]
+        [ConditionalTheory(nameof(DomainJoinedTestsEnabled))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task Credentials_SetToSpecificCredential_ConnectAsSpecificIdentity(bool useProxy)
@@ -100,7 +100,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalTheory(nameof(HttpInternalTestsEnabled))]
+        [ConditionalTheory(nameof(DomainJoinedTestsEnabled))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task Credentials_SetToWrappedDefaultCredential_ConnectAsCurrentIdentity(bool useProxy)
@@ -124,7 +124,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalFact(nameof(HttpInternalTestsEnabled))]
+        [ConditionalFact(nameof(DomainJoinedTestsEnabled))]
         public async Task Proxy_UseAuthenticatedProxyWithNoCredentials_ProxyAuthenticationRequired()
         {
             var handler = new HttpClientHandler();
@@ -137,7 +137,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalFact(nameof(HttpInternalTestsEnabled))]
+        [ConditionalFact(nameof(DomainJoinedTestsEnabled))]
         public async Task Proxy_UseAuthenticatedProxyWithDefaultCredentials_OK()
         {
             var handler = new HttpClientHandler();
@@ -150,7 +150,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalFact(nameof(HttpInternalTestsEnabled))]
+        [ConditionalFact(nameof(DomainJoinedTestsEnabled))]
         public async Task Proxy_UseAuthenticatedProxyWithWrappedDefaultCredentials_OK()
         {
             ICredentials wrappedCreds = new CredentialWrapper
@@ -209,14 +209,14 @@ namespace System.Net.Http.Functional.Tests
             {
                 _credentials = credentials;
 
-                string host = Environment.GetEnvironmentVariable("HTTP_INTERNAL_PROXYSERVER");
-                Assert.False(string.IsNullOrEmpty(host), "HTTP_INTERNAL_PROXYSERVER must specify proxy hostname");
+                string host = TestSettings.Http.DomainJoinedProxyHost;
+                Assert.False(string.IsNullOrEmpty(host), "TestSettings.Http.DomainJoinedProxyHost must specify proxy hostname");
 
-                string portString = Environment.GetEnvironmentVariable("HTTP_INTERNAL_PROXYSERVER_PORT");
-                Assert.False(string.IsNullOrEmpty(portString), "HTTP_INTERNAL_PROXYSERVER_PORT must specify proxy port number");
+                string portString = TestSettings.Http.DomainJoinedProxyPort;
+                Assert.False(string.IsNullOrEmpty(portString), "TestSettings.Http.DomainJoinedProxyPort must specify proxy port number");
 
                 int port;
-                Assert.True(int.TryParse(portString, out port), "HTTP_INTERNAL_PROXYSERVER_PORT must be a valid port number");
+                Assert.True(int.TryParse(portString, out port), "TestSettings.Http.DomainJoinedProxyPort must be a valid port number");
 
                 _proxyUri = new Uri(string.Format("http://{0}:{1}", host, port));
             }

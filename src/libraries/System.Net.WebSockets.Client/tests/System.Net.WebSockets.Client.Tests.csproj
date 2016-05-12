@@ -23,6 +23,9 @@
     <Compile Include="$(CommonTestPath)\System\Net\HttpTestServers.cs">
       <Link>Common\System\Net\HttpTestServers.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\TestSettings.cs">
+      <Link>Common\System\Net\TestSettings.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\WebSocketTestServers.cs">
       <Link>Common\System\Net\WebSocketTestServers.cs</Link>
     </Compile>
