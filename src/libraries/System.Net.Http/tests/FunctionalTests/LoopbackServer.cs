@@ -79,7 +79,6 @@ namespace System.Net.Http.Functional.Tests
             {
                 while (!string.IsNullOrEmpty(await reader.ReadLineAsync().ConfigureAwait(false))) ;
                 await writer.WriteAsync(response ?? DefaultHttpResponse).ConfigureAwait(false);
-                await writer.FlushAsync().ConfigureAwait(false);
                 s.Shutdown(SocketShutdown.Send);
             }, options);
         }
@@ -105,7 +104,7 @@ namespace System.Net.Http.Functional.Tests
                 }
 
                 using (var reader = new StreamReader(stream, Encoding.ASCII))
-                using (var writer = new StreamWriter(stream, Encoding.ASCII))
+                using (var writer = new StreamWriter(stream, Encoding.ASCII) { AutoFlush = true })
                 {
                     await funcAsync(s, stream, reader, writer).ConfigureAwait(false);
                 }
@@ -179,7 +178,6 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await writer.WriteAsync($"{content}\r\n").ConfigureAwait(false);
                 }
-                await writer.FlushAsync().ConfigureAwait(false);
 
                 client.Shutdown(SocketShutdown.Both);
             }), out localEndPoint);
