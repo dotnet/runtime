@@ -548,7 +548,7 @@ are prefaced by '*' have been prototyped in an earlier version of the JIT, and t
 being re-integrated and tested, but may require some cleanup and/or phasing with other work items
 before a PR is submitted.
 
-  ### Mostly-Independent work items
+### Mostly-Independent work items
 1.	*Replace block ops with assignments & new nodes.
 
 2.	*Add new fixed-size types, and normalize them in the importer (might be best to do this with or after #1, but not really dependent)
