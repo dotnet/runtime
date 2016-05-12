@@ -4356,7 +4356,7 @@ mono_aot_get_method_checked (MonoDomain *domain, MonoMethod *method, MonoError *
 	guint8 *code;
 	gboolean cache_result = FALSE;
 
-	mono_error_ok (error);
+	mono_error_init (error);
 
 	if (domain != mono_get_root_domain ())
 		/* Non shared AOT code can't be used in other appdomains */
