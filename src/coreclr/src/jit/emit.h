@@ -1825,7 +1825,6 @@ public:
     static emitJumpKind     emitReverseJumpKind(emitJumpKind jumpKind);
 
 #ifdef _TARGET_ARM_
-    static emitJumpKind     emitInsToJumpKind(instruction ins);
     static unsigned         emitJumpKindCondCode(emitJumpKind jumpKind);
 #endif
 
