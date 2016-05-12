@@ -187,22 +187,11 @@ namespace System.IO
                 throw new NotSupportedException(SR.NotSupported_UnreadableStream);
             }
 
-            return cancellationToken.IsCancellationRequested ?
-                Task.FromCanceled<int>(cancellationToken) :
-                Task.Factory.FromAsync(
-                    (localBuffer, localOffset, localCount, callback, state) => ((Stream)state).BeginRead(localBuffer, localOffset, localCount, callback, state),
-                    iar => ((Stream)iar.AsyncState).EndRead(iar),
-                    buffer, offset, count, this, TaskCreationOptions.DenyChildAttach | TaskCreationOptions.HideScheduler);
-        }
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled<int>(cancellationToken);
+            }
 
-        public virtual IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state) =>
-            TaskToApm.Begin(ReadAsyncInternal(buffer, offset, count), callback, state);
-
-        public virtual int EndRead(IAsyncResult asyncResult) => 
-            TaskToApm.End<int>(asyncResult);
-
-        private Task<int> ReadAsyncInternal(Byte[] buffer, int offset, int count)
-        {
             // To avoid a race with a stream's position pointer & generating race 
             // conditions with internal buffer indexes in our own streams that 
             // don't natively support async IO operations when there are multiple 
@@ -234,22 +223,11 @@ namespace System.IO
                 throw new NotSupportedException(SR.NotSupported_UnwritableStream);
             }
 
-            return cancellationToken.IsCancellationRequested ?
-                Task.FromCanceled<int>(cancellationToken) :
-                Task.Factory.FromAsync(
-                    (localBuffer, localOffset, localCount, callback, state) => ((Stream)state).BeginWrite(localBuffer, localOffset, localCount, callback, state),
-                    iar => ((Stream)iar.AsyncState).EndWrite(iar),
-                    buffer, offset, count, this, TaskCreationOptions.DenyChildAttach | TaskCreationOptions.HideScheduler);
-        }
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
 
-        public virtual IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state) =>
-            TaskToApm.Begin(WriteAsyncInternal(buffer, offset, count), callback, state);
-
-        public virtual void EndWrite(IAsyncResult asyncResult) => 
-            TaskToApm.End(asyncResult);
-
-        private Task WriteAsyncInternal(Byte[] buffer, int offset, int count)
-        {
             // To avoid a race with a stream's position pointer & generating race 
             // conditions with internal buffer indexes in our own streams that 
             // don't natively support async IO operations when there are multiple 
@@ -410,12 +388,6 @@ namespace System.IO
             }
 #pragma warning restore 1998
 
-            public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state) =>
-                TaskToApm.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), callback, state);
-
-            public override int EndRead(IAsyncResult asyncResult) =>
-                TaskToApm.End<int>(asyncResult);
-
             public override int ReadByte()
             {
                 return -1;
@@ -431,12 +403,6 @@ namespace System.IO
                 cancellationToken.ThrowIfCancellationRequested();
             }
 #pragma warning restore 1998
-
-            public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state) =>
-                TaskToApm.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), callback, state);
-
-            public override void EndWrite(IAsyncResult asyncResult) =>
-                TaskToApm.End(asyncResult);
 
             public override void WriteByte(byte value)
             {
