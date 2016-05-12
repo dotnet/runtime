@@ -601,6 +601,19 @@ function finish_remaining_tests {
     ((nextProcessIndex = 0))
 }
 
+function prep_test {
+    local scriptFilePath=$1
+
+    test "$verbose" == 1 && echo "Preparing $scriptFilePath"
+
+    # Convert DOS line endings to Unix if needed
+    perl -pi -e 's/\r\n|\n|\r/\n/g' "$scriptFilePath"
+    
+    # Add executable file mode bit if needed
+    chmod +x "$scriptFilePath"
+
+}
+
 function start_test {
     local scriptFilePath=$1
     if ((runFailingTestsOnly == 1)) && ! is_failing_test "$scriptFilePath"; then
@@ -653,6 +666,12 @@ function set_test_directories {
 function run_tests_in_directory {
     local testDir=$1
 
+    # Recursively search through directories for .sh files to prepare them.
+    for scriptFilePath in $(find "$testDir" -type f -iname '*.sh' | sort)
+    do
+        prep_test "${scriptFilePath:2}"
+    done
+    echo "The tests have been prepared"
     # Recursively search through directories for .sh files to run.
     for scriptFilePath in $(find "$testDir" -type f -iname '*.sh' | sort)
     do
