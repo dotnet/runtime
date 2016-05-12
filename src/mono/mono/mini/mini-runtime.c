@@ -2007,7 +2007,7 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoError *er
 
 		mono_class_init (method->klass);
 
-		if ((code = mono_aot_get_method (domain, method))) {
+		if ((code = mono_aot_get_method_checked (domain, method, error))) {
 			MonoVTable *vtable;
 
 			/*
@@ -2022,6 +2022,8 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoError *er
 					return NULL;
 			}
 		}
+		if (!is_ok (error))
+			return NULL;
 	}
 #endif
 

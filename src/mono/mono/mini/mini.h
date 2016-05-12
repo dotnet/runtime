@@ -2486,6 +2486,8 @@ void      mono_aot_init                     (void);
 void      mono_aot_cleanup                  (void);
 gpointer  mono_aot_get_method               (MonoDomain *domain,
 											 MonoMethod *method);
+gpointer  mono_aot_get_method_checked       (MonoDomain *domain,
+											 MonoMethod *method, MonoError *error);
 gpointer  mono_aot_get_method_from_token    (MonoDomain *domain, MonoImage *image, guint32 token);
 gboolean  mono_aot_is_got_entry             (guint8 *code, guint8 *addr);
 guint8*   mono_aot_get_plt_entry            (guint8 *code);

@@ -3822,11 +3822,14 @@ register_jump_target_got_slot (MonoDomain *domain, MonoMethod *method, gpointer 
  * METHOD might not be set if the caller only has the image/token info.
  */
 static gpointer
-load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoMethod *method, guint32 token, int method_index)
+load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoMethod *method, guint32 token, int method_index,
+			 MonoError *error)
 {
 	MonoJitInfo *jinfo = NULL;
 	guint8 *code = NULL, *info;
 	gboolean res;
+
+	mono_error_init (error);
 
 	init_amodule_got (amodule);
 
@@ -3859,9 +3862,9 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 				char *full_name;
 
 				if (!method) {
-					MonoError error;
-					method = mono_get_method_checked (image, token, NULL, NULL, &error);
-					g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
+					method = mono_get_method_checked (image, token, NULL, NULL, error);
+					if (!method)
+						return NULL;
 				}
 				full_name = mono_method_full_name (method, TRUE);
 				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT: NOT FOUND: %s.", full_name);
@@ -3894,10 +3897,9 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 				return NULL;
 		else if (mono_jit_stats.methods_aot == mono_last_aot_method - 1) {
 			if (!method) {
-				MonoError error;
-				method = mono_get_method_checked (image, token, NULL, NULL, &error);
+				method = mono_get_method_checked (image, token, NULL, NULL, error);
 				if (!method)
-					mono_error_cleanup (&error);/* FIXME don't swallow the error */
+					return NULL;
 			}
 			if (method) {
 				char *name = mono_method_full_name (method, TRUE);
@@ -3910,11 +3912,7 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 	}
 
 	if (!(is_llvm_code (amodule, code) && (amodule->info.flags & MONO_AOT_FILE_FLAG_LLVM_ONLY))) {
-		MonoError error;
-
-		res = init_method (amodule, method_index, method, NULL, NULL, &error);
-		if (!mono_error_ok (&error))
-			mono_error_raise_exception (&error); /* FIXME: Don't raise here */
+		res = init_method (amodule, method_index, method, NULL, NULL, error);
 		if (!res)
 			goto cleanup;
 	}
@@ -3923,10 +3921,9 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 		char *full_name;
 
 		if (!method) {
-			MonoError error;
-			method = mono_get_method_checked (image, token, NULL, NULL, &error);
+			method = mono_get_method_checked (image, token, NULL, NULL, error);
 			if (!method)
-				g_error ("AOT runtime could not load method due to %s", mono_error_get_message (&error)); /* FIXME don't swallow the error */
+				return NULL;
 		}
 
 		full_name = mono_method_full_name (method, TRUE);
@@ -3955,10 +3952,9 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 		MonoJitInfo *jinfo;
 
 		if (!method) {
-			MonoError error;
-			method = mono_get_method_checked (amodule->assembly->image, token, NULL, NULL, &error);
+			method = mono_get_method_checked (amodule->assembly->image, token, NULL, NULL, error);
 			if (!method)
-				g_error ("AOT runtime could not load method due to %s", mono_error_get_message (&error)); /* FIXME don't swallow the error */
+				return NULL;
 		}
 		mono_profiler_method_jit (method);
 		jinfo = mono_jit_info_table_find (domain, (char*)code);
@@ -4294,6 +4290,7 @@ mono_aot_init_gshared_method_this (gpointer aot_module, guint32 method_index, Mo
 	g_assert (context);
 
 	res = init_method (amodule, method_index, NULL, klass, context, &error);
+	/* Its okay to raise in llvmonly mode */
 	mono_error_raise_exception (&error);
 }
 
@@ -4313,6 +4310,7 @@ mono_aot_init_gshared_method_mrgctx (gpointer aot_module, guint32 method_index, 
 	context.method_inst = rgctx->method_inst;
 
 	res = init_method (amodule, method_index, NULL, rgctx->class_vtable->klass, &context, &error);
+	/* Its okay to raise in llvmonly mode */
 	mono_error_raise_exception (&error);
 }
 
@@ -4337,18 +4335,19 @@ mono_aot_init_gshared_method_vtable (gpointer aot_module, guint32 method_index, 
 	g_assert (context);
 
 	res = init_method (amodule, method_index, NULL, klass, context, &error);
+	/* Its okay to raise in llvmonly mode */
 	mono_error_raise_exception (&error);
 }
 
 /*
- * mono_aot_get_method:
+ * mono_aot_get_method_checked:
  *
  *   Return a pointer to the AOTed native code for METHOD if it can be found,
  * NULL otherwise.
  * On platforms with function pointers, this doesn't return a function pointer.
  */
 gpointer
-mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
+mono_aot_get_method_checked (MonoDomain *domain, MonoMethod *method, MonoError *error)
 {
 	MonoClass *klass = method->klass;
 	MonoMethod *orig_method = method;
@@ -4356,6 +4355,8 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 	MonoAotModule *amodule = (MonoAotModule *)klass->image->aot_module;
 	guint8 *code;
 	gboolean cache_result = FALSE;
+
+	mono_error_ok (error);
 
 	if (domain != mono_get_root_domain ())
 		/* Non shared AOT code can't be used in other appdomains */
@@ -4571,13 +4572,32 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 		method_index = mono_metadata_token_index (method->token) - 1;
 	}
 
-	code = (guint8 *)load_method (domain, amodule, klass->image, method, method->token, method_index);
+	code = (guint8 *)load_method (domain, amodule, klass->image, method, method->token, method_index, error);
+	if (!is_ok (error))
+		return NULL;
 	if (code && cache_result) {
 		amodule_lock (amodule);
 		g_hash_table_insert (amodule->method_to_code, orig_method, code);
 		amodule_unlock (amodule);
 	}
 	return code;
+}
+
+/*
+ * mono_aot_get_method:
+ *
+ *   Return a pointer to the AOTed native code for METHOD if it can be found,
+ * NULL otherwise.
+ * On platforms with function pointers, this doesn't return a function pointer.
+ */
+gpointer
+mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
+{
+	MonoError error;
+
+	gpointer res = mono_aot_get_method_checked (domain, method, &error);
+	mono_error_raise_exception (&error);
+	return res;
 }
 
 /**
@@ -4589,13 +4609,17 @@ mono_aot_get_method_from_token (MonoDomain *domain, MonoImage *image, guint32 to
 {
 	MonoAotModule *aot_module = (MonoAotModule *)image->aot_module;
 	int method_index;
+	MonoError error;
+	gpointer res;
 
 	if (!aot_module)
 		return NULL;
 
 	method_index = mono_metadata_token_index (token) - 1;
 
-	return load_method (domain, aot_module, image, NULL, token, method_index);
+	res = load_method (domain, aot_module, image, NULL, token, method_index, &error);
+	mono_error_raise_exception (&error); /* FIXME: Don't raise here */
+	return res;
 }
 
 typedef struct {
