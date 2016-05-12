@@ -771,6 +771,7 @@ void Lowering::LowerNode(GenTreePtr* ppTree, Compiler::fgWalkData* data)
  *     internal temporaries to maintain the index we're evaluating plus we're using existing code from LinearCodeGen
  *     to implement this instead of implement all the control flow constructs using InstrDscs and InstrGroups downstream.
  */
+
 void Lowering::LowerSwitch(GenTreePtr* pTree)
 {
     unsigned     jumpCnt;
@@ -876,14 +877,7 @@ void Lowering::LowerSwitch(GenTreePtr* pTree)
     // because the code to load the base of the switch
     // table is huge and hideous due to the relocation... :(
     minSwitchTabJumpCnt += 2;
-#elif defined(_TARGET_ARM64_) // _TARGET_ARM_
-    // In the case of ARM64 we'll stick to generate a sequence of
-    // compare and branch for now to get switch working and revisit
-    // to implement jump tables in the future.
-    //
-    // TODO-AMD64-NYI: Implement Jump Tables.
-    minSwitchTabJumpCnt = -1; 
-#endif // _TARGET_ARM64_
+#endif // _TARGET_ARM_
     // Once we have the temporary variable, we construct the conditional branch for
     // the default case.  As stated above, this conditional is being shared between
     // both GT_SWITCH lowering code paths.
