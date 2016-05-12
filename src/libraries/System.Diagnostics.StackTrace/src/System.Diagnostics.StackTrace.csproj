@@ -4,6 +4,7 @@
   <PropertyGroup>
     <AssemblyName>System.Diagnostics.StackTrace</AssemblyName>
     <ProjectGuid>{02304469-722E-4723-92A1-820B9A37D275}</ProjectGuid>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)'!='netcore50aot'">true</IsPartialFacadeAssembly>
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework>
@@ -16,6 +17,10 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  <!-- Work around a bug that will be fixed by buildtools/#731 -->  
+  <PropertyGroup Condition="'$(TargetGroup)' == ''">  
+    <SkipValidatePackageTargetFramework>true</SkipValidatePackageTargetFramework>  
+  </PropertyGroup>  
   <ItemGroup Condition="'$(TargetGroup)'!='netcore50aot'">
     <TargetingPackReference Include="mscorlib" />
   </ItemGroup>
@@ -27,6 +32,19 @@
   <ItemGroup>
     <Compile Include="System\Diagnostics\StackFrameExtensions.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == ''">  
+    <Compile Include="System\Diagnostics\StackTraceSymbols.CoreCLR.cs" />  
+    <ProjectReference Include="..\..\System.Collections\src\System.Collections.csproj" />  
+    <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj">  
+      <OSGroup>Windows_NT</OSGroup>  
+    </ProjectReference>    
+    <ProjectReference Include="..\..\System.IO\src\System.IO.csproj" />  
+    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />  
+    <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj">  
+      <Aliases>SRE</Aliases>  
+      <OSGroup>Windows_NT</OSGroup>  
+    </ProjectReference>  
+  </ItemGroup>  
   <ItemGroup Condition="'$(TargetGroup)'!='netcore50aot'">
     <Compile Include="System\Diagnostics\StackFrameExtensions.CoreCLR.cs" />
   </ItemGroup>
@@ -34,6 +52,9 @@
     <Compile Include="System\Diagnostics\StackTrace.netcore50aot.cs" />
     <Compile Include="System\Diagnostics\StackFrame.netcore50aot.cs" />
     <Compile Include="System\Diagnostics\StackFrameExtensions.netcore50aot.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
