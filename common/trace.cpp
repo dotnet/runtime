@@ -66,6 +66,19 @@ void trace::error(const pal::char_t* format, ...)
     va_end(args);
 }
 
+void trace::println(const pal::char_t* format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    pal::out_vprintf(format, args);
+    va_end(args);
+}
+
+void trace::println()
+{
+    println(_X(""));
+}
+
 void trace::warning(const pal::char_t* format, ...)
 {
     if (g_enabled)
