@@ -584,11 +584,11 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   #define PREDICT_REG_VIRTUAL_STUB_PARAM  PREDICT_REG_EAX
 
   // Registers used by PInvoke frame setup
-  #define REG_PINVOKE_FRAME        REG_EDI
+  #define REG_PINVOKE_FRAME        REG_EDI      // EDI is p/invoke "Frame" pointer argument to CORINFO_HELP_INIT_PINVOKE_FRAME helper
   #define RBM_PINVOKE_FRAME        RBM_EDI
-  #define REG_PINVOKE_TCB          REG_ESI
+  #define REG_PINVOKE_TCB          REG_ESI      // ESI is set to Thread Control Block (TCB) on return from CORINFO_HELP_INIT_PINVOKE_FRAME helper
   #define RBM_PINVOKE_TCB          RBM_ESI
-  #define REG_PINVOKE_SCRATCH      REG_EAX
+  #define REG_PINVOKE_SCRATCH      REG_EAX      // EAX is trashed by CORINFO_HELP_INIT_PINVOKE_FRAME helper
   #define RBM_PINVOKE_SCRATCH      RBM_EAX
 
 #ifdef LEGACY_BACKEND

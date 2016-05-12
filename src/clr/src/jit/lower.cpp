@@ -3071,7 +3071,6 @@ GenTree* Lowering::CreateFrameLinkUpdate(FrameLinkAction action)
 //
 void Lowering::InsertPInvokeMethodProlog()
 {
-    NYI_X86("Implement PInvoke frame init inlining for x86");
     noway_assert(comp->info.compCallUnmanaged);
     noway_assert(comp->lvaInlinedPInvokeFrameVar != BAD_VAR_NUM);
 
@@ -3092,7 +3091,15 @@ void Lowering::InsertPInvokeMethodProlog()
 
     // Call runtime helper to fill in our InlinedCallFrame and push it on the Frame list:
     //     TCB = CORINFO_HELP_INIT_PINVOKE_FRAME(&symFrameStart, secretArg);
-    GenTree* call = comp->gtNewHelperCallNode(CORINFO_HELP_INIT_PINVOKE_FRAME, TYP_I_IMPL, 0, comp->gtNewArgList(frameAddr, PhysReg(REG_SECRET_STUB_PARAM)));
+    // for x86, don't pass the secretArg.
+
+#ifdef _TARGET_X86_
+    GenTreeArgList* argList = comp->gtNewArgList(frameAddr);
+#else // !_TARGET_X86_
+    GenTreeArgList* argList = comp->gtNewArgList(frameAddr, PhysReg(REG_SECRET_STUB_PARAM));
+#endif // !_TARGET_X86_
+
+    GenTree* call = comp->gtNewHelperCallNode(CORINFO_HELP_INIT_PINVOKE_FRAME, TYP_I_IMPL, 0, argList);
 
     // some sanity checks on the frame list root vardsc
     LclVarDsc* varDsc = &comp->lvaTable[comp->info.compLvFrameListRoot];
@@ -3109,6 +3116,8 @@ void Lowering::InsertPInvokeMethodProlog()
     GenTree* lastStmt = stmt;
     DISPTREE(lastStmt);
 
+#ifndef _TARGET_X86_ // For x86, this step is done at the call site.
+
     // --------------------------------------------------------
     // InlinedCallFrame.m_pCallSiteSP = @RSP;
 
@@ -3122,6 +3131,7 @@ void Lowering::InsertPInvokeMethodProlog()
     lastStmt = storeSPStmt;
     DISPTREE(lastStmt);
 
+#endif // !_TARGET_X86_
 
     // --------------------------------------------------------
     // InlinedCallFrame.m_pCalleeSavedEBP = @RBP;
