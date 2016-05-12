@@ -253,7 +253,7 @@ typedef struct {
 #if defined(HOST_WATCHOS)
 
 #define MONO_CONTEXT_GET_CURRENT(ctx) do { \
-	int _dummy; \
+	gpointer _dummy; \
     ctx.regs [ARMREG_SP] = &_dummy; \
 } while (0);
 
