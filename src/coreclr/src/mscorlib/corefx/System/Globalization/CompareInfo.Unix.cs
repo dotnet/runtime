@@ -165,7 +165,7 @@ namespace System.Globalization
                 return IndexOfOrdinal(source, target, startIndex, count, ignoreCase: false);
             }
 
-            if (m_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options) && source.IsAscii() && target.IsAscii())
+            if (m_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options) && source.IsFastSort() && target.IsFastSort())
             {
                 return IndexOf(source, target, startIndex, count, GetOrdinalCompareOptions(options));
             }
@@ -195,7 +195,7 @@ namespace System.Globalization
                 return LastIndexOfOrdinal(source, target, startIndex, count, ignoreCase: false);
             }
 
-            if (m_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options) && source.IsAscii() && target.IsAscii())
+            if (m_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options) && source.IsFastSort() && target.IsFastSort())
             {
                 return LastIndexOf(source, target, startIndex, count, GetOrdinalCompareOptions(options));
             }
@@ -219,7 +219,7 @@ namespace System.Globalization
             Contract.Assert(!string.IsNullOrEmpty(prefix));
             Contract.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
-            if (m_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options) && source.IsAscii() && prefix.IsAscii())
+            if (m_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options) && source.IsFastSort() && prefix.IsFastSort())
             {
                 return IsPrefix(source, prefix, GetOrdinalCompareOptions(options));
             }
@@ -234,7 +234,7 @@ namespace System.Globalization
             Contract.Assert(!string.IsNullOrEmpty(suffix));
             Contract.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
-            if (m_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options) && source.IsAscii() && suffix.IsAscii())
+            if (m_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options) && source.IsFastSort() && suffix.IsFastSort())
             {
                 return IsSuffix(source, suffix, GetOrdinalCompareOptions(options));
             }
