@@ -363,13 +363,14 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     if (architecture == 'x64') {
                         //Flow jobs should be Windows, Ubuntu, OSX, or CentOS
                         if (isFlowJob || os == 'Windows_NT') {
-                            Utilities.addGithubPushTrigger(job)
+                            // Add a weekly periodic trigger
+                            Utilities.addPeriodicTrigger(job, 'H H * * 3,6') // some time every Wednesday and Saturday
                         }
                     }
                     // For x86, only add per-commit jobs for Windows
                     else if (architecture == 'x86ryujit' || architecture == 'x86lb') {
                         if (os == 'Windows_NT') {
-                            Utilities.addGithubPushTrigger(job)
+                            Utilities.addPeriodicTrigger(job, 'H H * * 3,6') // some time every Wednesday and Saturday
                         }
                     }
                 }
