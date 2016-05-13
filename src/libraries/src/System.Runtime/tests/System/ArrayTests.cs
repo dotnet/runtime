@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Xunit;
 
 namespace System.Tests
@@ -101,46 +101,6 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void IList_GetEnumerator()
-        {
-            var intArray = new int[] { 7, 8, 9, 10, 11, 12, 13 };
-            IList<int> iList = intArray;
-
-            IEnumerator<int> enumerator = iList.GetEnumerator();
-            for (int i = 0; i < 2; i++)
-            {
-                int counter = 0;
-                while (enumerator.MoveNext())
-                {
-                    Assert.Equal(intArray[counter], enumerator.Current);
-                    counter++;
-                }
-                Assert.Equal(intArray.Length, counter);
-
-                enumerator.Reset();
-            }
-        }
-
-        [Fact]
-        public static void IList_GetEnumerator_Invalid()
-        {
-            IList<int> iList = new int[] { 7, 8, 9, 10, 11, 12, 13 };
-            IEnumerator<int> enumerator = iList.GetEnumerator();
-
-            // Enumerator should throw when accessing Current before starting enumeration
-            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
-            while (enumerator.MoveNext()) ;
-
-            // Enumerator should throw when accessing Current after finishing enumeration
-            Assert.False(enumerator.MoveNext());
-            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
-
-            // Enumerator should throw when accessing Current after being reset
-            enumerator.Reset();
-            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
-        }
-
-        [Fact]
         public static void Construction()
         {
             // Check a number of the simple APIs on Array for dimensions up to 4.
@@ -169,72 +129,91 @@ namespace System.Tests
             Assert.Equal(array.GetValue(0, 0, 0, 2), 3);
         }
 
-        public static IEnumerable<object[]> BinarySearch_TestData()
+        public static IEnumerable<object[]> BinarySearch_NonGeneric_TestData()
         {
-            var intArray = new int[] { 1, 3, 6, 6, 8, 10, 12, 16 };
-            IComparer intComparer = new IntegerComparer();
-            IComparer<int> genericIntComparer = new IntegerComparer();
+            string[] stringArray = new string[] { null, "aa", "bb", "bb", "cc", "dd", "ee" };
 
-            var stringArray = new string[] { null, "aa", "bb", "bb", "cc", "dd", "ee" };
-            IComparer stringComparer = new StringComparer();
-            IComparer<string> genericStringComparer = new StringComparer();
+            yield return new object[] { stringArray, 0, 7, "bb", null, 3 };
+            yield return new object[] { stringArray, 0, 7, "ee", null, 6 };
+            yield return new object[] { stringArray, 0, 7, null, null, 0 };
+            
+            yield return new object[] { stringArray, 3, 4, "bb", null, 3 };
+            yield return new object[] { stringArray, 4, 3, "bb", null, -5 };
+            yield return new object[] { stringArray, 4, 0, "bb", null, -5 };
 
-            yield return new object[] { intArray, 8, intComparer, genericIntComparer, new Func<int, bool>(i => i == 4) };
-            yield return new object[] { intArray, 99, intComparer, genericIntComparer, new Func<int, bool>(i => i == ~intArray.Length) };
-            yield return new object[] { intArray, 6, intComparer, genericIntComparer, new Func<int, bool>(i => i == 2 || i == 3) };
-            yield return new object[] { stringArray, "bb", stringComparer, genericStringComparer, new Func<int, bool>(i => i == 2 || i == 3) };
-            yield return new object[] { stringArray, null, stringComparer, null, new Func<int, bool>(i => i == 0) };
+            yield return new object[] { stringArray, 0, 7, "bb", new StringComparer(), 3 };
+            yield return new object[] { stringArray, 0, 7, "ee", new StringComparer(), 6 };
+            yield return new object[] { stringArray, 0, 7, null, new StringComparer(), 0 };
+            yield return new object[] { stringArray, 0, 7, "no-such-object", new StringComparer(), -8 };
+        }
+
+        public static IEnumerable<object[]> BinarySearch_Generic_TestData()
+        {
+            int[] intArray = new int[] { 1, 3, 6, 6, 8, 10, 12, 16 };
+
+            yield return new object[] { intArray, 0, 8, 8, null, 4 };
+            yield return new object[] { intArray, 0, 8, 6, null, 3 };
+            yield return new object[] { intArray, 0, 8, 12, null, 6 };
+
+            yield return new object[] { intArray, 0, 8, 0, null, -1 };
+            yield return new object[] { intArray, 0, 8, 99, null, ~intArray.Length };
+
+            yield return new object[] { intArray, 1, 5, 16, null, -7 };
+
+            yield return new object[] { intArray, 0, 8, 8, new IntegerComparer(), 4 };
+            yield return new object[] { intArray, 0, 8, 6, new IntegerComparer(), 3 };
+            yield return new object[] { intArray, 0, 8, 0, new IntegerComparer(), -1 };
         }
 
         [Theory]
-        [MemberData(nameof(BinarySearch_TestData))]
-        public static void BinarySearch<T>(T[] array, T value, IComparer comparer, IComparer<T> genericComparer, Func<int, bool> verifier)
+        [MemberData(nameof(BinarySearch_Generic_TestData))]
+        [MemberData(nameof(BinarySearch_NonGeneric_TestData))]
+        public static void BinarySearch_NonGeneric(Array array, int index, int length, object value, IComparer comparer, int expected)
         {
-            int idx = Array.BinarySearch(array, value, comparer);
-            Assert.True(verifier(idx));
-
-            idx = Array.BinarySearch(array, value, genericComparer);
-            Assert.True(verifier(idx));
-
-            idx = Array.BinarySearch(array, value);
-            Assert.True(verifier(idx));
-        }
-
-        public static IEnumerable<object[]> BinarySearch_Range_TestData()
-        {
-            var intArray = new int[] { 1, 3, 6, 6, 8, 10, 12, 16 };
-            IComparer intComparer = new IntegerComparer();
-            IComparer<int> genericIntComparer = new IntegerComparer();
-
-            var stringArray = new string[] { null, "aa", "bb", "bb", "cc", "dd", "ee" };
-            IComparer stringComparer = new StringComparer();
-            IComparer<string> genericStringComparer = new StringComparer();
-
-            yield return new object[] { intArray, 0, 8, 99, intComparer, genericIntComparer, new Func<int, bool>(i => i == ~(intArray.Length)) };
-            yield return new object[] { intArray, 0, 8, 6, intComparer, genericIntComparer, new Func<int, bool>(i => i == 2 || i == 3) };
-            yield return new object[] { intArray, 1, 5, 16, intComparer, genericIntComparer, new Func<int, bool>(i => i == -7) };
-            yield return new object[] { stringArray, 0, stringArray.Length, "bb", stringComparer, genericStringComparer, new Func<int, bool>(i => i == 2 || i == 3) };
-            yield return new object[] { stringArray, 3, 4, "bb", stringComparer, genericStringComparer, new Func<int, bool>(i => i == 3) };
-            yield return new object[] { stringArray, 4, 3, "bb", stringComparer, genericStringComparer, new Func<int, bool>(i => i == -5) };
-            yield return new object[] { stringArray, 4, 0, "bb", stringComparer, genericStringComparer, new Func<int, bool>(i => i == -5) };
-            yield return new object[] { stringArray, 0, 7, null, stringComparer, null, new Func<int, bool>(i => i == 0) };
+            bool isDefaultComparer = comparer == null || comparer == Comparer.Default;
+            if (index == 0 && length == array.Length)
+            {
+                if (isDefaultComparer)
+                {
+                    // Use BinarySearch(Array, object)
+                    Assert.Equal(expected, Array.BinarySearch(array, value));
+                    Assert.Equal(expected, Array.BinarySearch(array, value, Comparer.Default));
+                }
+                // Use BinarySearch(Array, object, IComparer)
+                Assert.Equal(expected, Array.BinarySearch(array, value, comparer));
+            }
+            if (isDefaultComparer)
+            {
+                // Use BinarySearch(Array, int, int, object)
+                Assert.Equal(expected, Array.BinarySearch(array, index, length, value));
+            }
+            // Use BinarySearch(Array, int, int, object, IComparer)
+            Assert.Equal(expected, Array.BinarySearch(array, index, length, value, comparer));
         }
 
         [Theory]
-        [MemberData(nameof(BinarySearch_Range_TestData))]
-        public static void BinarySearch_Range<T>(T[] array, int index, int length, T value, IComparer comparer, IComparer<T> genericComparer, Func<int, bool> verifier)
+        [MemberData(nameof(BinarySearch_Generic_TestData))]
+        public static void BinarySearch_Generic(int[] array, int index, int length, int value, IComparer<int> comparer, int expected)
         {
-            int idx = Array.BinarySearch(array, index, length, value, comparer);
-            Assert.True(verifier(idx));
-
-            idx = Array.BinarySearch(array, index, length, value, genericComparer);
-            Assert.True(verifier(idx));
-
-            idx = Array.BinarySearch((Array)array, index, length, value);
-            Assert.True(verifier(idx));
-
-            idx = Array.BinarySearch(array, index, length, value);
-            Assert.True(verifier(idx));
+            bool isDefaultComparer = comparer == null || comparer == Comparer<int>.Default;
+            if (index == 0 && length == array.Length)
+            {
+                if (isDefaultComparer)
+                {
+                    // Use BinarySearch<T>(T[], T)
+                    Assert.Equal(expected, Array.BinarySearch(array, value));
+                    Assert.Equal(expected, Array.BinarySearch(array, value, Comparer<int>.Default));
+                }
+                // Use BinarySearch<T>(T[], T, IComparer)
+                Assert.Equal(expected, Array.BinarySearch(array, value, comparer));
+            }
+            if (isDefaultComparer)
+            {
+                // Use BinarySearch<T>(T, int, int, T)
+                Assert.Equal(expected, Array.BinarySearch(array, index, length, value));
+            }
+            // Use BinarySearch<T>(T[], int, int, T, IComparer)
+            Assert.Equal(expected, Array.BinarySearch(array, index, length, value, comparer));
         }
 
         [Fact]
@@ -763,6 +742,9 @@ namespace System.Tests
             Assert.Throws<NotSupportedException>(() => Array.CreateInstance(typeof(int).MakeByRefType(), 0)); // Element type is not supported (ref)
 
             Assert.Throws<ArgumentOutOfRangeException>("length", () => Array.CreateInstance(typeof(int), -1)); // Length < 0
+
+            // Type is not a valid RuntimeType
+            Assert.Throws<ArgumentException>("elementType", () => Array.CreateInstance(Helpers.NonRuntimeType(), 0));
         }
 
         [Fact]
@@ -806,6 +788,9 @@ namespace System.Tests
             Assert.Throws<ArgumentNullException>("lengths", () => Array.CreateInstance(typeof(int), null)); // Lengths is null
             Assert.Throws<ArgumentException>(null, () => Array.CreateInstance(typeof(int), new int[0])); // Lengths is empty
             Assert.Throws<ArgumentOutOfRangeException>("lengths[0]", () => Array.CreateInstance(typeof(int), new int[] { -1 })); // Lengths contains negative integers
+
+            // Type is not a valid RuntimeType
+            Assert.Throws<ArgumentException>("elementType", () => Array.CreateInstance(Helpers.NonRuntimeType(), new int[] { 1 }));
         }
 
         [Fact]
@@ -836,6 +821,9 @@ namespace System.Tests
             Assert.Throws<ArgumentNullException>("lowerBounds", () => Array.CreateInstance(typeof(int), new int[] { 1 }, null)); // Lower bounds is null
 
             Assert.Throws<ArgumentException>(null, () => Array.CreateInstance(typeof(int), new int[] { 1 }, new int[] { 1, 2 })); // Lengths and lower bounds have different lengths
+
+            // Type is not a valid RuntimeType
+            Assert.Throws<ArgumentException>("elementType", () => Array.CreateInstance(Helpers.NonRuntimeType(), new int[] { 1 }, new int[] { 0 }));
         }
 
         [Fact]
@@ -988,31 +976,46 @@ namespace System.Tests
             Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => Array.FindLastIndex(new int[3], 3, 1, i => i == 43));
         }
 
+        public static IEnumerable<object[]> GetEnumerator_TestData()
+        {
+            yield return new object[] { new int[0] };
+            yield return new object[] { new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 } };
+            yield return new object[] { new int[,] { { 1, 2 }, { 2, 4 } } };
+
+            yield return new object[] { new char[] { '7', '8', '9' } };
+
+            yield return new object[] { Array.CreateInstance(typeof(int), new int[] { 3 }, new int[] { 4 }) };
+            yield return new object[] { Array.CreateInstance(typeof(int), new int[] { 3, 3 }, new int[] { 4, 5 }) };
+        }
+
         [Theory]
-        [InlineData(new int[] { 7, 8, 9 })]
-        [InlineData(new char[] { '7', '8', '9' })]
+        [MemberData(nameof(GetEnumerator_TestData))]
         public static void GetEnumerator(Array array)
         {
-            IEnumerator enumerator = array.GetEnumerator();
+            Assert.NotSame(array.GetEnumerator(), array.GetEnumerator());
+            Array expected = array.Cast<object>().ToArray(); // Flatten multidimensional arrays
 
+            IEnumerator enumerator = array.GetEnumerator();
             for (int i = 0; i < 2; i++)
             {
                 int counter = 0;
                 while (enumerator.MoveNext())
                 {
-                    Assert.Equal(array.GetValue(counter), enumerator.Current);
+                    Assert.Equal(expected.GetValue(counter), enumerator.Current);
                     counter++;
                 }
+                Assert.False(enumerator.MoveNext());
                 Assert.Equal(array.Length, counter);
 
                 enumerator.Reset();
             }
         }
 
-        [Fact]
-        public static void GetEnumerator_Invalid()
+        [Theory]
+        [MemberData(nameof(GetEnumerator_TestData))]
+        public static void GetEnumerator_Invalid(Array array)
         {
-            IEnumerator enumerator = new int[3].GetEnumerator();
+            IEnumerator enumerator = array.GetEnumerator();
 
             // Enumerator should throw when accessing Current before starting enumeration
             Assert.Throws<InvalidOperationException>(() => enumerator.Current);
@@ -1176,7 +1179,7 @@ namespace System.Tests
         [MemberData(nameof(LastIndexOf_Generic_TestData))]
         public static void LastIndexOf_NonGeneric(Array array, object value, int startIndex, int count, int expected)
         {
-            if (count - startIndex - 1 == 0)
+            if (count - startIndex - 1 == 0 || array.Length == 0)
             {
                 // Use LastIndexOf(Array, object) or LastIndexOf(Array, object, int)
                 if (count == array.Length)
@@ -1195,7 +1198,7 @@ namespace System.Tests
         [MemberData(nameof(LastIndexOf_Generic_TestData))]
         public static void LastIndexOf_Generic(int[] array, int value, int startIndex, int count, int expected)
         {
-            if (count - startIndex - 1 == 0)
+            if (count - startIndex - 1 == 0 || array.Length == 0)
             {
                 // Use LastIndexOf<T>(T[], T) or LastIndexOf<T>(T[], T, int)
                 if (count == array.Length)
@@ -1244,6 +1247,10 @@ namespace System.Tests
             // Count < 0
             Assert.Throws<ArgumentOutOfRangeException>("count", () => Array.LastIndexOf(intArray, "", 0, -1));
             Assert.Throws<ArgumentOutOfRangeException>("count", () => Array.LastIndexOf(stringArray, "", 0, -1));
+
+            // Count > startIndex + 1
+            Assert.Throws<ArgumentOutOfRangeException>("endIndex", () => Array.LastIndexOf(intArray, "", 2, 4));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => Array.LastIndexOf(intArray, 0, 2, 4));
         }
 
         public static IEnumerable<object[]> IStructuralComparable_TestData()
@@ -1298,6 +1305,10 @@ namespace System.Tests
             yield return new object[] { intArray, new int[] { 2, 3, 3, 5 }, new IntegerComparer(), false, false };
             yield return new object[] { intArray, new int[] { 2, 3, 4, 4 }, new IntegerComparer(), false, true };
 
+            var longIntArray = new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 };
+            yield return new object[] { longIntArray, longIntArray, new IntegerComparer(), true, true };
+            yield return new object[] { longIntArray, intArray, new IntegerComparer(), false, false };
+
             yield return new object[] { intArray, new int[] { 2 }, new IntegerComparer(), false, false };
             yield return new object[] { intArray, new int[] { 2, 3, 4, 5, 6 }, new IntegerComparer(), false, false };
             yield return new object[] { intArray, 123, new IntegerComparer(), false, false };
@@ -1347,14 +1358,30 @@ namespace System.Tests
 
         public static IEnumerable<object[]> Reverse_TestData()
         {
+            // int[] is a primitive type
             yield return new object[] { new int[] { 1, 2, 3, 4, 5 }, 0, 5, new int[] { 5, 4, 3, 2, 1 } };
             yield return new object[] { new int[] { 1, 2, 3, 4, 5 }, 2, 3, new int[] { 1, 2, 5, 4, 3 } };
+            yield return new object[] { new int[] { 1, 2, 3, 4, 5 }, 0, 0, new int[] { 1, 2, 3, 4, 5 } };
+            yield return new object[] { new int[] { 1, 2, 3, 4, 5 }, 5, 0, new int[] { 1, 2, 3, 4, 5 } };
+
+            // string[] can be cast to object[]
             yield return new object[] { new string[] { "1", "2", "3", "4", "5" }, 0, 5, new string[] { "5", "4", "3", "2", "1" } };
             yield return new object[] { new string[] { "1", "2", "3", "4", "5" }, 2, 3, new string[] { "1", "2", "5", "4", "3" } };
+            yield return new object[] { new string[] { "1", "2", "3", "4", "5" }, 0, 0, new string[] { "1", "2", "3", "4", "5" } };
+            yield return new object[] { new string[] { "1", "2", "3", "4", "5" }, 5, 0, new string[] { "1", "2", "3", "4", "5" } };
 
+            // TestEnum[] can be cast to int[]
             var enumArray = new TestEnum[] { TestEnum.Case1, TestEnum.Case2, TestEnum.Case3, TestEnum.Case1 };
             yield return new object[] { enumArray, 0, 4, new TestEnum[] { TestEnum.Case1, TestEnum.Case3, TestEnum.Case2, TestEnum.Case1 } };
             yield return new object[] { enumArray, 2, 2, new TestEnum[] { TestEnum.Case1, TestEnum.Case2, TestEnum.Case1, TestEnum.Case3 } };
+            yield return new object[] { enumArray, 0, 0, enumArray};
+            yield return new object[] { enumArray, 4, 0, enumArray};
+
+            // ValueType array
+            ComparableValueType[] valueTypeArray = new ComparableValueType[] { new ComparableValueType(0), new ComparableValueType(1) };
+            yield return new object[] { valueTypeArray, 0, 2, new ComparableValueType[] { new ComparableValueType(1), new ComparableValueType(0) } };
+            yield return new object[] { valueTypeArray, 0, 0, valueTypeArray };
+            yield return new object[] { valueTypeArray, 2, 0, valueTypeArray };
         }
 
         [Theory]
@@ -1626,6 +1653,7 @@ namespace System.Tests
         public static IEnumerable<object[]> Sort_Array_Array_Generic_TestData()
         {
             yield return new object[] { new string[] { "bcd", "bc", "c", "ab" }, new string[] { "a", "b", "c", "d" }, 0, 4, new StringComparer(), new string[] { "ab", "bc", "bcd", "c" }, new string[] { "d", "b", "a", "c" } };
+            yield return new object[] { new string[] { "bcd", "bc", "c", "ab" }, new string[] { "a", "b", "c", "d" }, 0, 4, null, new string[] { "ab", "bc", "bcd", "c" }, new string[] { "d", "b", "a", "c" } };
         }
 
         [Theory]
@@ -1954,51 +1982,11 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void ICollection_IsSynchronized()
+        public static void ICollection_IsSynchronized_ReturnsFalse()
         {
             ICollection array = new int[] { 1, 2, 3 };
             Assert.False(array.IsSynchronized);
             Assert.Same(array, array.SyncRoot);
-        }
-
-        [Fact]
-        public static void IEnumerable_GetEnumerator()
-        {
-            var intArray = new int[] { 7, 8, 9, 10, 11, 12, 13 };
-            IEnumerable iList = intArray;
-
-            IEnumerator enumerator = iList.GetEnumerator();
-            for (int i = 0; i < 2; i++)
-            {
-                int counter = 0;
-                while (enumerator.MoveNext())
-                {
-                    Assert.Equal(intArray[counter], enumerator.Current);
-                    counter++;
-                }
-                Assert.Equal(intArray.Length, counter);
-
-                enumerator.Reset();
-            }
-        }
-
-        [Fact]
-        public static void IEnumerable_GetEnumerator_Invalid()
-        {
-            IEnumerable enumerable = new int[] { 7, 8, 9, 10, 11, 12, 13 };
-            IEnumerator enumerator = enumerable.GetEnumerator();
-
-            // Enumerator should throw when accessing Current before starting enumeration
-            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
-            while (enumerator.MoveNext()) ;
-
-            // Enumerator should throw when accessing Current after finishing enumeration
-            Assert.False(enumerator.MoveNext());
-            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
-
-            // Enumerator should throw when accessing Current after being reset
-            enumerator.Reset();
-            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
         }
 
         [Theory]
