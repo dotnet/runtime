@@ -19,12 +19,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net45_Release|AnyCPU'" />
   
   <PropertyGroup Condition="'$(TargetGroup)'=='netstandard1.0'">
-      <DefineConstants>NETSTANDARD10</DefineConstants>
+    <DefineConstants>NETSTANDARD10</DefineConstants>
   </PropertyGroup>
   
   <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.0'">
-      <Compile Include="System\ComponentModel\ReflectTypeDescriptionProvider.NetStandard10.cs" />
-      <Compile Include="System\ComponentModel\TypeDescriptor.NetStandard10.cs" />
+    <Compile Include="System\ComponentModel\ReflectTypeDescriptionProvider.NetStandard10.cs" />
+    <Compile Include="System\ComponentModel\TypeDescriptor.NetStandard10.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetGroup)'=='' OR '$(TargetGroup)'=='netstandard1.0'">
@@ -75,7 +75,6 @@
     <Compile Include="System\ComponentModel\DesignerSerializationVisibilityAttribute.cs" />
     <Compile Include="System\ComponentModel\EventDescriptor.cs" />
     <Compile Include="System\ComponentModel\EventDescriptorCollection.cs" />
-    <Compile Include="System\ComponentModel\EventHandlerList.cs" />
     <Compile Include="System\ComponentModel\ExtendedPropertyDescriptor.cs" />
     <Compile Include="System\ComponentModel\ExtenderProvidedPropertyAttribute.cs" />
     <Compile Include="System\ComponentModel\HandledEventArgs.cs" />
