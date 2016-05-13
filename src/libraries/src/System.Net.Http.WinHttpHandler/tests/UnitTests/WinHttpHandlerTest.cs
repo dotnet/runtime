@@ -55,7 +55,6 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             Assert.Equal(CredentialCache.DefaultCredentials, handler.DefaultProxyCredentials);
             Assert.Equal(null, handler.Proxy);
             Assert.Equal(Int32.MaxValue, handler.MaxConnectionsPerServer);
-            Assert.Equal(TimeSpan.FromSeconds(60), handler.ConnectTimeout);
             Assert.Equal(TimeSpan.FromSeconds(30), handler.SendTimeout);
             Assert.Equal(TimeSpan.FromSeconds(30), handler.ReceiveHeadersTimeout);
             Assert.Equal(TimeSpan.FromSeconds(30), handler.ReceiveDataTimeout);
@@ -118,39 +117,6 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             SendRequestHelper.Send(handler, delegate { handler.CheckCertificateRevocationList = false; });
 
             Assert.Equal(false, APICallHistory.WinHttpOptionEnableSslRevocation.HasValue);
-        }
-
-        [Fact]
-        public void ConnectTimeout_SetNegativeValue_ThrowsArgumentOutOfRangeException()
-        {
-            var handler = new WinHttpHandler();
-
-            Assert.Throws<ArgumentOutOfRangeException>(() => { handler.ConnectTimeout = TimeSpan.FromMinutes(-10); });
-        }
-
-        [Fact]
-        public void ConnectTimeout_SetTooLargeValue_ThrowsArgumentOutOfRangeException()
-        {
-            var handler = new WinHttpHandler();
-
-            Assert.Throws<ArgumentOutOfRangeException>(
-                () => { handler.ConnectTimeout = TimeSpan.FromMilliseconds(int.MaxValue + 1.0); });
-        }
-
-        [Fact]
-        public void ConnectTimeout_SetZeroValue_ThrowsArgumentOutOfRangeException()
-        {
-            var handler = new WinHttpHandler();
-
-            Assert.Throws<ArgumentOutOfRangeException>(() => { handler.ConnectTimeout = TimeSpan.FromSeconds(0); });
-        }
-
-        [Fact]
-        public void ConnectTimeout_SetInfiniteValue_NoExceptionThrown()
-        {
-            var handler = new WinHttpHandler();
-
-            handler.ConnectTimeout = Timeout.InfiniteTimeSpan;
         }
 
         [Fact]
@@ -438,7 +404,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         {
             var handler = new WinHttpHandler();
 
-            handler.ConnectTimeout = Timeout.InfiniteTimeSpan;
+            handler.ReceiveHeadersTimeout = Timeout.InfiniteTimeSpan;
         }
 
         [Theory]

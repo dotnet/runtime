@@ -182,7 +182,6 @@ namespace System.Net.Http
             
             // Since the granular WinHttpHandler timeout properties are not exposed via the HttpClientHandler API,
             // we need to set them to infinite and allow the HttpClient.Timeout property to have precedence.
-            _winHttpHandler.ConnectTimeout = Timeout.InfiniteTimeSpan;
             _winHttpHandler.ReceiveHeadersTimeout = Timeout.InfiniteTimeSpan;
             _winHttpHandler.ReceiveDataTimeout = Timeout.InfiniteTimeSpan;
             _winHttpHandler.SendTimeout = Timeout.InfiniteTimeSpan;
