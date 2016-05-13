@@ -312,34 +312,6 @@ CorUnix::InternalOpen(
 
 
 /*++
-InternalDeleteFile
-
-Wrapper that does the same thing as unlink, except that
-it uses the SYS_Delete system call present on Apple instead of unlink.
-
-Input parameters:
-
-szPath = a symbolic link or a hard link to a file
-
-Return value:
-    Returns 0 on success and -1 on failure
---*/
-int
-CorUnix::InternalDeleteFile(
-    const char *szPath
-    )
-{
-    int nRet = -1;
-#if defined(__APPLE__) && defined(SYS_delete)
-    nRet = syscall(SYS_delete, szPath);
-#else
-    nRet = unlink(szPath);
-#endif // defined(__APPLE__) && defined(SYS_delete)
-    return nRet;
-}
-
-
-/*++
 PAL_rename
 
 Wrapper function for rename.

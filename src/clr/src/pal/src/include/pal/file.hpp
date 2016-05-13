@@ -192,15 +192,6 @@ namespace CorUnix
         );
 
     /*++
-    InternalDeleteFile
-    Wraps SYS_delete
-    --*/
-    int 
-    InternalDeleteFile(
-        const char *szPath
-        );
-
-    /*++
     InternalFgets
     Wraps fgets
     --*/
