@@ -16465,7 +16465,7 @@ void          Compiler::impMarkInlineCandidate(GenTreePtr callNode,
     }
     
     GenTreeCall* call = callNode->AsCall();
-    InlineResult inlineResult(this, call, "impMarkInlineCandidate");
+    InlineResult inlineResult(this, call, nullptr, "impMarkInlineCandidate");
     
     // Don't inline if not optimizing root method
     if (opts.compDbgCode)
