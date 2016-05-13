@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Tests
@@ -26,35 +24,28 @@ namespace System.Tests
             C c = new C();
             DFoo d1 = c.Foo;
             DFoo d2 = c.Foo;
-            Assert.False(RuntimeHelpers.ReferenceEquals(d1, d2));
-            bool b;
-            b = d1.Equals(d2);
-            Assert.True(b);
+            Assert.NotSame(d1, d2);
+            Assert.Equal(d1, d2);
             Assert.True(d1 == d2);
             Assert.False(d1 != d2);
 
             d1 = c.Foo;
             d2 = c.Goo;
-            b = d1.Equals(d2);
-            Assert.False(b);
+            Assert.NotEqual(d1, d2);
             Assert.False(d1 == d2);
             Assert.True(d1 != d2);
 
             d1 = new C().Foo;
             d2 = new C().Foo;
-            b = d1.Equals(d2);
-            Assert.False(b);
+            Assert.NotEqual(d1, d2);
             Assert.False(d1 == d2);
             Assert.True(d1 != d2);
 
             DGoo dgoo = c.Foo;
             d1 = c.Foo;
-            b = d1.Equals(dgoo);
-            Assert.False(b);
-
-            int h = d1.GetHashCode();
-            int h2 = d1.GetHashCode();
-            Assert.Equal(h, h2);
+            Assert.NotEqual(d1, (object)dgoo);
+            
+            Assert.Equal(d1.GetHashCode(), d1.GetHashCode());
         }
 
         [Fact]
@@ -67,7 +58,6 @@ namespace System.Tests
             string s = dret12(4);
             Assert.Equal(s, "BRet4");
             Assert.Equal(t.S, "ARet4BRet4");
-            return;
         }
 
         [Fact]
@@ -105,8 +95,6 @@ namespace System.Tests
             abcdabc(9);
             Assert.Equal(t1.S, "A9B9C9D9A9B9C9");
             CheckInvokeList(new D[] { a, b, c, d, a, b, c }, abcdabc, t1);
-
-            return;
         }
 
         [Fact]
@@ -183,8 +171,6 @@ namespace System.Tests
             abcd4(9);
             Assert.Equal(t1.S, "A9B9C9D9");
             CheckInvokeList(new D[] { a, b, c, d }, abcd4, t1);
-
-            return;
         }
 
         private static void CheckInvokeList(D[] expected, D combo, Tracker target)
@@ -195,8 +181,8 @@ namespace System.Tests
             {
                 CheckIsSingletonDelegate((D)(expected[i]), (D)(invokeList[i]), target);
             }
-            Assert.True(Object.ReferenceEquals(combo.Target, expected[expected.Length - 1].Target));
-            Assert.True(Object.ReferenceEquals(combo.Target, target));
+            Assert.Same(combo.Target, expected[expected.Length - 1].Target);
+            Assert.Same(combo.Target, target);
         }
 
         private static void CheckIsSingletonDelegate(D expected, D actual, Tracker target)
@@ -217,7 +203,7 @@ namespace System.Tests
 
             Assert.Equal(sExpected, sActual);
 
-            Assert.True(Object.ReferenceEquals(target, actual.Target));
+            Assert.Same(target, actual.Target);
         }
 
         private class Tracker

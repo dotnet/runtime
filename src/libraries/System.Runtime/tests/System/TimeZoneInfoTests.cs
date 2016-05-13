@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Runtime.InteropServices;
@@ -69,10 +70,12 @@ namespace System.Tests
             Assert.NotNull(local.DaylightName);
             Assert.NotNull(local.DisplayName);
             Assert.NotNull(local.StandardName);
+            Assert.NotNull(local.ToString());
 
             Assert.NotNull(utc.DaylightName);
             Assert.NotNull(utc.DisplayName);
             Assert.NotNull(utc.StandardName);
+            Assert.NotNull(utc.ToString());
         }
 
         [Fact]
@@ -905,6 +908,16 @@ namespace System.Tests
             localOffset = TimeZoneInfo.Local.GetUtcOffset(time1);
             VerifyConvert(time1, s_strTonga, time1.Subtract(localOffset).AddHours(13));
             VerifyConvert(time1local, s_strTonga, time1.Subtract(localOffset).AddHours(13));
+        }
+
+        [Fact]
+        public static void ConvertTime_NullTimeZone_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>("destinationTimeZone", () => TimeZoneInfo.ConvertTime(new DateTime(), null));
+            Assert.Throws<ArgumentNullException>("destinationTimeZone", () => TimeZoneInfo.ConvertTime(new DateTimeOffset(), null));
+
+            Assert.Throws<ArgumentNullException>("sourceTimeZone", () => TimeZoneInfo.ConvertTime(new DateTime(), null, s_casablancaTz));
+            Assert.Throws<ArgumentNullException>("destinationTimeZone", () => TimeZoneInfo.ConvertTime(new DateTime(), s_casablancaTz, null));
         }
 
         [Fact]
@@ -1831,10 +1844,32 @@ namespace System.Tests
             Assert.Equal(TimeSpan.FromHours(3), s_johannesburgTz.GetUtcOffset(transition.AddTicks(-1)));
             Assert.Equal(TimeSpan.FromHours(2), s_johannesburgTz.GetUtcOffset(transition));
         }
+        
+        public static IEnumerable<object[]> Equals_TestData()
+        {
+            yield return new object[] { s_casablancaTz, s_casablancaTz, true };
+            yield return new object[] { s_casablancaTz, s_LisbonTz, false };
 
-        //
-        //  Helper Methods
-        //
+            yield return new object[] { TimeZoneInfo.Utc, TimeZoneInfo.Utc, true };
+            yield return new object[] { TimeZoneInfo.Utc, s_casablancaTz, false };
+
+            yield return new object[] { TimeZoneInfo.Local, TimeZoneInfo.Local, true };
+
+            yield return new object[] { TimeZoneInfo.Local, new object(), false };
+            yield return new object[] { TimeZoneInfo.Local, null, false };
+        }
+
+        [Theory]
+        [MemberData(nameof(Equals_TestData))]
+        public static void Equals(TimeZoneInfo timeZoneInfo, object obj, bool expected)
+        {
+            Assert.Equal(expected, timeZoneInfo.Equals(obj));
+            if (obj is TimeZoneInfo)
+            {
+                Assert.Equal(expected, timeZoneInfo.Equals((TimeZoneInfo)obj));
+                Assert.Equal(expected, timeZoneInfo.GetHashCode().Equals(obj.GetHashCode()));
+            }
+        }
 
         private static void VerifyConvertException<EXCTYPE>(DateTimeOffset inputTime, string destinationTimeZoneId) where EXCTYPE : Exception
         {
