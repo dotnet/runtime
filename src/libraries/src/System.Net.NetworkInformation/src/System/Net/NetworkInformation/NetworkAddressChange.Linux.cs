@@ -15,6 +15,7 @@ namespace System.Net.NetworkInformation
         private static NetworkAddressChangedEventHandler s_addressChangedSubscribers;
         private static volatile int s_socket = 0;
         private static readonly object s_lockObj = new object();
+        private static readonly Interop.Sys.NetworkChangeEvent s_networkChangeCallback = ProcessEvent;
 
         public static event NetworkAddressChangedEventHandler NetworkAddressChanged
         {
@@ -82,7 +83,7 @@ namespace System.Net.NetworkInformation
         {
             while (socket == s_socket)
             {
-                Interop.Sys.ReadEvents(socket, ProcessEvent);
+                Interop.Sys.ReadEvents(socket, s_networkChangeCallback);
             }
         }
         
