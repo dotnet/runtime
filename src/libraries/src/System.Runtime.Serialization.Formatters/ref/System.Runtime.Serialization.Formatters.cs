@@ -65,36 +65,6 @@ namespace System.Runtime.Serialization
         void OnDeserialization(object sender);
     }
 
-    [AttributeUsage(AttributeTargets.Field, Inherited = false)]
-    public sealed class OptionalFieldAttribute : Attribute
-    {
-        public int VersionAdded
-        {
-            get { throw null; }
-            set { }
-        }
-    }
-
-    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
-    public sealed class OnSerializingAttribute : Attribute
-    {
-    }
-
-    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
-    public sealed class OnSerializedAttribute : Attribute
-    {
-    }
-
-    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
-    public sealed class OnDeserializingAttribute : Attribute
-    {
-    }
-
-    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
-    public sealed class OnDeserializedAttribute : Attribute
-    {
-    }
-
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public struct SerializationEntry
     {
@@ -164,12 +134,5 @@ namespace System.Runtime.Serialization
         public object Value { get { throw null; } }
         public bool MoveNext() { throw null; }
         public void Reset() { throw null; }
-    }
-
-    [Serializable]
-    [Flags]
-    public enum StreamingContextStates
-    {
-        All = 0xFF,
     }
 }
