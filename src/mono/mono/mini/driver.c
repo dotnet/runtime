@@ -1167,13 +1167,18 @@ load_agent (MonoDomain *domain, char *desc)
 		return 1;
 	}
 	
-	g_free (agent);
 
 	pa [0] = main_args;
 	/* Pass NULL as 'exc' so unhandled exceptions abort the runtime */
 	mono_runtime_invoke_checked (method, NULL, pa, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	if (!is_ok (&error)) {
+		g_print ("The entry point method of assembly '%s' could not execute due to %s\n", agent, mono_error_get_message (&error));
+		mono_error_cleanup (&error);
+		g_free (agent);
+		return 1;
+	}
 
+	g_free (agent);
 	return 0;
 }
 

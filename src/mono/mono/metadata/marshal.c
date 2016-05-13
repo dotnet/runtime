@@ -1600,7 +1600,7 @@ conv_to_icall (MonoMarshalConv conv, int *ind_store_type)
 		return mono_string_to_bstr;
 	case MONO_MARSHAL_CONV_BSTR_STR:
 		*ind_store_type = CEE_STIND_REF;
-		return mono_string_from_bstr;
+		return mono_string_from_bstr_icall;
 	case MONO_MARSHAL_CONV_STR_TBSTR:
 	case MONO_MARSHAL_CONV_STR_ANSIBSTR:
 		return mono_string_to_ansibstr;

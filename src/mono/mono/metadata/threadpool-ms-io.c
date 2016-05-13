@@ -347,7 +347,8 @@ selector_thread (gpointer data)
 				g_assert (job);
 
 				exists = mono_g_hash_table_lookup_extended (states, GINT_TO_POINTER (fd), &k, (gpointer*) &list);
-				list = mono_mlist_append (list, (MonoObject*) job);
+				list = mono_mlist_append_checked (list, (MonoObject*) job, &error);
+				mono_error_raise_exception (&error); /* FIXME don't raise here */
 				mono_g_hash_table_replace (states, GINT_TO_POINTER (fd), list);
 
 				operations = get_operations_for_jobs (list);
