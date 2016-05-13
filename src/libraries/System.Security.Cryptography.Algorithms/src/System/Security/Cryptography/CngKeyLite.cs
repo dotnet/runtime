@@ -5,6 +5,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using Internal.Cryptography;
 
 using Microsoft.Win32.SafeHandles;
@@ -261,5 +262,28 @@ namespace Microsoft.Win32.SafeHandles
 
     internal class SafeNCryptProviderHandle : SafeNCryptHandle
     {
+    }
+
+    internal class DuplicateSafeNCryptKeyHandle : SafeNCryptKeyHandle
+    {
+        public DuplicateSafeNCryptKeyHandle(SafeNCryptKeyHandle original)
+            : base()
+        {
+            bool success = false;
+            original.DangerousAddRef(ref success);
+            if (!success)
+                throw new CryptographicException(); // DangerousAddRef() never actually sets success to false, so no need to expend a resource string here.
+            SetHandle(original.DangerousGetHandle());
+            _original = original;
+        }
+
+        protected override bool ReleaseHandle()
+        {
+            _original.DangerousRelease();
+            SetHandle(IntPtr.Zero);
+            return true;
+        }
+
+        private readonly SafeNCryptKeyHandle _original;
     }
 }

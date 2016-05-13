@@ -52,7 +52,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        private SafeNCryptKeyHandle GetKeyHandle()
+        private SafeNCryptKeyHandle GetDuplicatedKeyHandle()
         {
             return Key.Handle;
         }

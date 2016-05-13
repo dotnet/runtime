@@ -23,7 +23,7 @@ namespace System.Security.Cryptography
             private SafeNCryptKeyHandle _keyHandle;
             private int _lastKeySize;
 
-            private SafeNCryptKeyHandle GetKeyHandle()
+            private SafeNCryptKeyHandle GetDuplicatedKeyHandle()
             {
                 int keySize = KeySize;
 
@@ -40,7 +40,7 @@ namespace System.Security.Cryptography
                     _lastKeySize = keySize;
                 }
 
-                return _keyHandle;
+                return new DuplicateSafeNCryptKeyHandle(_keyHandle);
             }
 
             private byte[] ExportKeyBlob(bool includePrivateParameters)
@@ -49,9 +49,10 @@ namespace System.Security.Cryptography
                     Interop.BCrypt.KeyBlobType.BCRYPT_RSAFULLPRIVATE_BLOB :
                     Interop.BCrypt.KeyBlobType.BCRYPT_PUBLIC_KEY_BLOB;
 
-                SafeNCryptKeyHandle keyHandle = GetKeyHandle();
-
-                return CngKeyLite.ExportKeyBlob(keyHandle, blobType);
+                using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
+                {
+                    return CngKeyLite.ExportKeyBlob(keyHandle, blobType);
+                }
             }
 
             private void ImportKeyBlob(byte[] rsaBlob, bool includePrivate)
