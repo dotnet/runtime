@@ -229,15 +229,6 @@ namespace System.ComponentModel
         public virtual System.ComponentModel.EventDescriptorCollection Sort(string[] names, System.Collections.IComparer comparer) { return default(System.ComponentModel.EventDescriptorCollection); }
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
     }
-    public sealed partial class EventHandlerList : System.IDisposable
-    {
-        public EventHandlerList() { }
-        public System.Delegate this[object key] { get { return default(System.Delegate); } set { } }
-        public void AddHandler(object key, System.Delegate value) { }
-        public void AddHandlers(System.ComponentModel.EventHandlerList listToAddFrom) { }
-        public void Dispose() { }
-        public void RemoveHandler(object key, System.Delegate value) { }
-    }
     public sealed partial class ExtenderProvidedPropertyAttribute : System.Attribute
     {
         public ExtenderProvidedPropertyAttribute() { }

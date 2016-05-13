@@ -75,6 +75,15 @@ namespace System.ComponentModel
         public override bool Equals(object obj) { return default(bool); }
         public override int GetHashCode() { return default(int); }
     }
+    public sealed partial class EventHandlerList : System.IDisposable
+    {
+        public EventHandlerList() { }
+        public System.Delegate this[object key] { get { return default(System.Delegate); } set { } }
+        public void AddHandler(object key, System.Delegate value) { }
+        public void AddHandlers(System.ComponentModel.EventHandlerList listToAddFrom) { }
+        public void Dispose() { }
+        public void RemoveHandler(object key, System.Delegate value) { }
+    }
     public partial interface IComponent : System.IDisposable
     {
         System.ComponentModel.ISite Site { get; set; }
