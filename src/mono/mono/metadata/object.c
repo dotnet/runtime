@@ -3966,6 +3966,44 @@ mono_runtime_delegate_invoke (MonoObject *delegate, void **params, MonoObject **
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	MonoError error;
+	if (exc) {
+		MonoObject *result = mono_runtime_delegate_try_invoke (delegate, params, exc, &error);
+		if (*exc) {
+			mono_error_cleanup (&error);
+			return NULL;
+		} else {
+			if (!is_ok (&error))
+				*exc = (MonoObject*)mono_error_convert_to_exception (&error);
+			return result;
+		}
+	} else {
+		MonoObject *result = mono_runtime_delegate_invoke_checked (delegate, params, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		return result;
+	}
+}
+
+/**
+ * mono_runtime_delegate_try_invoke:
+ * @delegate: pointer to a delegate object.
+ * @params: parameters for the delegate.
+ * @exc: Pointer to the exception result.
+ * @error: set on error
+ *
+ * Invokes the delegate method @delegate with the parameters provided.
+ *
+ * You can pass NULL as the exc argument if you don't want to
+ * catch exceptions, otherwise, *exc will be set to the exception
+ * thrown, if any.  On failure to execute, @error will be set.
+ * if an exception is thrown, you can't use the
+ * MonoObject* result from the function.
+ */
+MonoObject*
+mono_runtime_delegate_try_invoke (MonoObject *delegate, void **params, MonoObject **exc, MonoError *error)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
+	mono_error_init (error);
 	MonoMethod *im;
 	MonoClass *klass = delegate->vtable->klass;
 	MonoObject *o;
@@ -3975,17 +4013,30 @@ mono_runtime_delegate_invoke (MonoObject *delegate, void **params, MonoObject **
 		g_error ("Could not lookup delegate invoke method for delegate %s", mono_type_get_full_name (klass));
 
 	if (exc) {
-		o = mono_runtime_try_invoke (im, delegate, params, exc, &error);
-		if (*exc == NULL && !mono_error_ok (&error))
-			*exc = (MonoObject*) mono_error_convert_to_exception (&error);
-		else
-			mono_error_cleanup (&error);
+		o = mono_runtime_try_invoke (im, delegate, params, exc, error);
 	} else {
-		o = mono_runtime_invoke_checked (im, delegate, params, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		o = mono_runtime_invoke_checked (im, delegate, params, error);
 	}
 
 	return o;
+}
+
+/**
+ * mono_runtime_delegate_invoke_checked:
+ * @delegate: pointer to a delegate object.
+ * @params: parameters for the delegate.
+ * @error: set on error
+ *
+ * Invokes the delegate method @delegate with the parameters provided.
+ *
+ * On failure @error will be set and you can't use the MonoObject*
+ * result from the function.
+ */
+MonoObject*
+mono_runtime_delegate_invoke_checked (MonoObject *delegate, void **params, MonoError *error)
+{
+	mono_error_init (error);
+	return mono_runtime_delegate_try_invoke (delegate, params, NULL, error);
 }
 
 static char **main_args = NULL;
@@ -4414,7 +4465,13 @@ call_unhandled_exception_delegate (MonoDomain *domain, MonoObject *delegate, Mon
 	pa [0] = domain->domain;
 	pa [1] = create_unhandled_exception_eventargs (exc, &error);
 	mono_error_assert_ok (&error);
-	mono_runtime_delegate_invoke (delegate, pa, &e);
+	mono_runtime_delegate_try_invoke (delegate, pa, &e, &error);
+	if (!is_ok (&error)) {
+		if (e == NULL)
+			e = (MonoObject*)mono_error_convert_to_exception (&error);
+		else
+			mono_error_cleanup (&error);
+	}
 
 	if (domain != current_domain)
 		mono_domain_set_internal_with_options (current_domain, FALSE);
@@ -7108,7 +7165,9 @@ ves_icall_System_Runtime_Remoting_Messaging_AsyncResult_Invoke (MonoAsyncResult 
 
 	ac = (MonoAsyncCall*) ares->object_data;
 	if (!ac) {
-		res = mono_runtime_delegate_invoke (ares->async_delegate, (void**) &ares->async_state, NULL);
+		res = mono_runtime_delegate_invoke_checked (ares->async_delegate, (void**) &ares->async_state, &error);
+		if (mono_error_set_pending_exception (&error))
+			return NULL;
 	} else {
 		gpointer wait_event = NULL;
 

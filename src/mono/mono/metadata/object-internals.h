@@ -1709,6 +1709,14 @@ mono_runtime_invoke_checked (MonoMethod *method, void *obj, void **params, MonoE
 void* 
 mono_compile_method_checked (MonoMethod *method, MonoError *error);
 
+MonoObject*
+mono_runtime_delegate_try_invoke (MonoObject *delegate, void **params,
+				  MonoObject **exc, MonoError *error);
+
+MonoObject*
+mono_runtime_delegate_invoke_checked (MonoObject *delegate, void **params,
+				      MonoError *error);
+
 MonoArray*
 mono_runtime_get_main_args_checked (MonoError *error);
 

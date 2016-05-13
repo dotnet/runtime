@@ -254,6 +254,7 @@ mono_get_delegate_begin_invoke (MonoClass *klass);
 MONO_API MonoMethod *
 mono_get_delegate_end_invoke (MonoClass *klass);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoObject*
 mono_runtime_delegate_invoke (MonoObject *delegate, void **params, 
 			      MonoObject **exc);
