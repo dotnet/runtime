@@ -106,12 +106,6 @@ namespace System.Net.Http
             set { _curlHandler.AutomaticRedirection = value; }
         }
 
-        public TimeSpan ConnectTimeout
-        {
-            get { return _curlHandler.ConnectTimeout; }
-            set { _curlHandler.ConnectTimeout = value; }
-        }
-
         public int MaxAutomaticRedirections
         {
             get { return _curlHandler.MaxAutomaticRedirections; }
