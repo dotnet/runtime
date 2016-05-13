@@ -1,11 +1,7 @@
 {
   "description": "Abstractions for reading `.deps` files.",
   "version": "1.0.0-rc3-*",
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/dotnet/cli"
-  },
-  "compilationOptions": {
+  "buildOptions": {
     "warningsAsErrors": true,
     "keyFile": "../../tools/Key.snk"
   },
@@ -26,5 +22,11 @@
       }
     }
   },
-  "scripts": {}
+  "scripts": {},
+  "packOptions": {
+    "repository": {
+      "type": "git",
+      "url": "git://github.com/dotnet/cli"
+    }
+  }
 }
