@@ -7,7 +7,7 @@
       <TargetGroup>net46</TargetGroup>
     </Project>
     <Project Include="System.AppContext.csproj">
-      <TargetGroup>net462</TargetGroup>
+      <TargetGroup>net463</TargetGroup>
     </Project>
     <Project Include="System.AppContext.csproj">
       <TargetGroup>netcore50</TargetGroup>
