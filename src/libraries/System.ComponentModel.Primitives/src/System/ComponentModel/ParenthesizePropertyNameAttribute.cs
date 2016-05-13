@@ -59,7 +59,7 @@ namespace System.ComponentModel
             }
 
             ParenthesizePropertyNameAttribute other = obj as ParenthesizePropertyNameAttribute;
-            return other != null && other.NeedParenthesis== NeedParenthesis;
+            return other != null && other.NeedParenthesis == NeedParenthesis;
         }
 
         /// <summary>
