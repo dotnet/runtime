@@ -6,26 +6,6 @@
 #include <mono/utils/mono-context.h>
 #include <glib.h>
 
-#ifdef __native_client_codegen__
-#define kNaClAlignmentAMD64 32
-#define kNaClAlignmentMaskAMD64 (kNaClAlignmentAMD64 - 1)
-
-/* TODO: use kamd64NaClLengthOfCallImm    */
-/* temporarily using kNaClAlignmentAMD64 so padding in */
-/* image-writer.c doesn't happen                       */
-#define kNaClLengthOfCallImm kNaClAlignmentAMD64
-
-int is_nacl_call_reg_sequence (guint8* code);
-void amd64_nacl_clear_legacy_prefix_tag ();
-void amd64_nacl_tag_legacy_prefix (guint8* code);
-void amd64_nacl_tag_rex (guint8* code);
-guint8* amd64_nacl_get_legacy_prefix_tag ();
-guint8* amd64_nacl_get_rex_tag ();
-void amd64_nacl_instruction_pre ();
-void amd64_nacl_instruction_post (guint8 **start, guint8 **end);
-void amd64_nacl_membase_handler (guint8** code, gint8 basereg, gint32 offset, gint8 dreg);
-#endif
-
 #ifdef HOST_WIN32
 #include <windows.h>
 /* use SIG* defines if possible */
@@ -175,13 +155,7 @@ struct MonoLMF {
 	 * the 'rbp' field is not valid.
 	 */
 	gpointer    previous_lmf;
-#if defined(__default_codegen__) || defined(HOST_WIN32)
 	guint64     rip;
-#elif defined(__native_client_codegen__)
-	/* On 64-bit compilers, default alignment is 8 for this field, */
-	/* this allows the structure to match for 32-bit compilers.    */
-	guint64     rip __attribute__ ((aligned(8)));
-#endif
 	guint64     rbp;
 	guint64     rsp;
 };
@@ -349,7 +323,7 @@ typedef struct {
  */
 #define MONO_ARCH_VARARG_ICALLS 1
 
-#if (!defined( HOST_WIN32 ) && !defined(__native_client__) && !defined(__native_client_codegen__)) && defined (HAVE_SIGACTION)
+#if !defined( HOST_WIN32 ) && defined (HAVE_SIGACTION)
 
 #define MONO_ARCH_USE_SIGACTION 1
 
@@ -359,7 +333,7 @@ typedef struct {
 
 #endif
 
-#endif /* !HOST_WIN32 && !__native_client__ */
+#endif /* !HOST_WIN32 */
 
 #if !defined(__linux__)
 #define MONO_ARCH_NOMAP32BIT 1
@@ -406,9 +380,7 @@ typedef struct {
 #define MONO_ARCH_HAVE_GET_TRAMPOLINES 1
 
 #define MONO_ARCH_AOT_SUPPORTED 1
-#if !defined( __native_client__ )
 #define MONO_ARCH_SOFT_DEBUG_SUPPORTED 1
-#endif
 
 #define MONO_ARCH_SUPPORT_TASKLETS 1
 

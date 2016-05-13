@@ -348,8 +348,6 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 	/* jump to the saved IP */
 	x86_ret (code);
 
-	nacl_global_codeman_validate(&start, 128, &code);
-
 	if (info)
 		*info = mono_tramp_info_create ("restore_context", start, code - start, ji, unwind_ops);
 	else {
@@ -380,7 +378,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 	guint8 *code;
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
-	guint kMaxCodeSize = NACL_SIZE (64, 128);
+	guint kMaxCodeSize = 64;
 
 	/* call_filter (MonoContext *ctx, unsigned long eip) */
 	start = code = mono_global_codeman_reserve (kMaxCodeSize);
@@ -427,8 +425,6 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 	x86_pop_reg (code, X86_EBX);
 	x86_leave (code);
 	x86_ret (code);
-
-	nacl_global_codeman_validate(&start, kMaxCodeSize, &code);
 
 	if (info)
 		*info = mono_tramp_info_create ("call_filter", start, code - start, ji, unwind_ops);
@@ -544,7 +540,7 @@ get_throw_trampoline (const char *name, gboolean rethrow, gboolean llvm, gboolea
 	int i, stack_size, stack_offset, arg_offsets [5], regs_offset;
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
-	guint kMaxCodeSize = NACL_SIZE (128, 256);
+	guint kMaxCodeSize = 128;
 
 	start = code = mono_global_codeman_reserve (kMaxCodeSize);
 
@@ -653,8 +649,6 @@ get_throw_trampoline (const char *name, gboolean rethrow, gboolean llvm, gboolea
 		x86_call_code (code, resume_unwind ? (gpointer)(mono_x86_resume_unwind) : (corlib ? (gpointer)mono_x86_throw_corlib_exception : (gpointer)mono_x86_throw_exception));
 	}
 	x86_breakpoint (code);
-
-	nacl_global_codeman_validate(&start, kMaxCodeSize, &code);
 
 	g_assert ((code - start) < kMaxCodeSize);
 
@@ -895,7 +889,7 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 gpointer
 mono_arch_ip_from_context (void *sigctx)
 {
-#if defined(__native_client__) || defined(HOST_WATCHOS)
+#if defined(HOST_WATCHOS)
 	printf("WARNING: mono_arch_ip_from_context() called!\n");
 	return (NULL);
 #elif defined(MONO_ARCH_USE_SIGACTION)
@@ -1145,9 +1139,6 @@ mono_tasklets_arch_restore (void)
 	static guint8* saved = NULL;
 	guint8 *code, *start;
 
-#ifdef __native_client_codegen__
-	g_print("mono_tasklets_arch_restore needs to be aligned for Native Client\n");
-#endif
 	if (saved)
 		return (MonoContinuationRestore)saved;
 	code = start = mono_global_codeman_reserve (48);

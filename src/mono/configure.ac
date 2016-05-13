@@ -2549,9 +2549,6 @@ if test "x$enable_nacl_codegen" = "xyes"; then
    MONO_NACL_ALIGN_MASK_OFF=1
    AC_DEFINE(TARGET_NACL, 1, [...])
    AC_DEFINE(__native_client_codegen__, 1, [...])
-else
-   MONO_NACL_ALIGN_MASK_OFF=0
-   AC_DEFINE(__default_codegen__, 1, [...])
 fi
 if test "x$enable_nacl_gc" = "xyes"; then
    if test "x$TARGET" = "xAMD64" -o "x$TARGET" = "xX86"; then
@@ -3514,12 +3511,6 @@ if test ${TARGET} = ARM; then
 		AC_DEFINE(HAVE_ARMV7, 1, [ARM v7])
 		CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC -DHAVE_ARMV7=1"
 	fi
-fi
-
-if test ${TARGET} = ARM; then
-	if test "x${with_jumptables}" = "xyes"; then
-                AC_DEFINE(USE_JUMP_TABLES, 1, Use jump tables in JIT)
-        fi
 fi
 
 if test ${TARGET} = unknown; then

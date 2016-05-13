@@ -521,12 +521,6 @@ mono_domain_code_reserve_align (MonoDomain *domain, int size, int alignment);
 void
 mono_domain_code_commit (MonoDomain *domain, void *data, int size, int newsize);
 
-void *
-nacl_domain_get_code_dest (MonoDomain *domain, void *data);
-
-void 
-nacl_domain_code_validate (MonoDomain *domain, guint8 **buf_base, int buf_size, guint8 **code_end);
-
 void
 mono_domain_code_foreach (MonoDomain *domain, MonoCodeManagerFunc func, void *user_data);
 

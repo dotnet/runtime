@@ -601,8 +601,6 @@ mono_arch_ip_from_context (void *sigctx)
 {
 #ifdef MONO_CROSS_COMPILE
 	g_assert_not_reached ();
-#elif defined(__native_client__)
-	g_assert_not_reached ();
 #else
 	arm_ucontext *my_uc = sigctx;
 	return (void*) UCONTEXT_REG_PC (my_uc);

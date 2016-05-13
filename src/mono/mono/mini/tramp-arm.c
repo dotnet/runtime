@@ -968,7 +968,6 @@ mono_arch_get_gsharedvt_arg_trampoline (MonoDomain *domain, gpointer arg, gpoint
 
 	g_assert ((code - buf) <= buf_len);
 
-	nacl_domain_code_validate (domain, &buf, buf_len, &code);
 	mono_arch_flush_icache (buf, code - buf);
 	mono_profiler_code_buffer_new (buf, code - buf, MONO_PROFILER_CODE_BUFFER_GENERICS_TRAMPOLINE, NULL);
 

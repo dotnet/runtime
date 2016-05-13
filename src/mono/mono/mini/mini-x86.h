@@ -5,13 +5,6 @@
 #include <mono/utils/mono-sigcontext.h>
 #include <mono/utils/mono-context.h>
 
-#ifdef __native_client_codegen__
-#define kNaClAlignmentX86 32
-#define kNaClAlignmentMaskX86 (kNaClAlignmentX86 - 1)
-
-#define kNaClLengthOfCallImm kx86NaClLengthOfCallImm
-#endif
-
 #ifdef HOST_WIN32
 #include <windows.h>
 /* use SIG* defines if possible */
@@ -52,7 +45,7 @@ struct sigcontext {
 #define MONO_ARCH_USE_SIGACTION
 #endif
 
-#if defined(__native_client__) || defined(HOST_WATCHOS)
+#if defined(HOST_WATCHOS)
 #undef MONO_ARCH_USE_SIGACTION
 #endif
 
@@ -217,9 +210,7 @@ typedef struct {
 #define MONO_ARCH_HAVE_GENERALIZED_IMT_THUNK 1
 #define MONO_ARCH_HAVE_LIVERANGE_OPS 1
 #define MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX 1
-#if !defined(__native_client_codegen__)
 #define MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES 1
-#endif
 #define MONO_ARCH_GOT_REG X86_EBX
 #define MONO_ARCH_HAVE_GET_TRAMPOLINES 1
 #define MONO_ARCH_HAVE_GENERAL_RGCTX_LAZY_FETCH_TRAMPOLINE 1
