@@ -35,7 +35,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="sin.cs" />
-    <ProjectReference Include="sinlib_il_d.ilproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(JitPackagesConfigFileDirectory)minimal\project.json" />
@@ -43,6 +42,9 @@
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="sinlib_il.ilproj" />
   </ItemGroup>
   <PropertyGroup>
     <ProjectJson>$(JitPackagesConfigFileDirectory)minimal\project.json</ProjectJson>
