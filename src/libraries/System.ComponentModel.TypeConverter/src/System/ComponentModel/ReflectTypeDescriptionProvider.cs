@@ -93,7 +93,6 @@ namespace System.ComponentModel
         /// </summary>
         internal ReflectTypeDescriptionProvider()
         {
-            TypeDescriptor.Trace("Reflect : Creating ReflectTypeDescriptionProvider");
         }
 
         /// <summary> 
@@ -549,7 +548,6 @@ namespace System.ComponentModel
             //
             if (propertyList != null)
             {
-                TypeDescriptor.Trace("Extenders : Allocating property collection for {0} properties", propertyList.Count);
                 PropertyDescriptor[] fullArray = new PropertyDescriptor[propertyList.Count];
                 propertyList.CopyTo(fullArray, 0);
                 properties = new PropertyDescriptorCollection(fullArray, true);
@@ -561,7 +559,6 @@ namespace System.ComponentModel
 
             if (cache != null)
             {
-                TypeDescriptor.Trace("Extenders : caching extender results");
                 cache[s_extenderPropertiesKey] = properties;
             }
 
@@ -680,8 +677,6 @@ namespace System.ComponentModel
             }
             if (newExtenders)
             {
-                TypeDescriptor.Trace("Extenders : object has new extenders : {0}", instance.GetType().Name);
-                TypeDescriptor.Trace("Extenders : Identified {0} extender providers", extenderCount);
                 if (currentExtenders == null || extenderCount != currentExtenders.Length)
                 {
                     IExtenderProvider[] newExtenderArray = new IExtenderProvider[extenderCount];
@@ -725,7 +720,6 @@ namespace System.ComponentModel
 
                 if (cache != null)
                 {
-                    TypeDescriptor.Trace("Extenders : caching extender provider results");
                     cache[s_extenderProviderKey] = currentExtenders;
                     cache.Remove(s_extenderPropertiesKey);
                 }
@@ -958,8 +952,6 @@ namespace System.ComponentModel
                 attrs = (Attribute[])s_attributeCache[type];
                 if (attrs == null)
                 {
-                    TypeDescriptor.Trace("Attributes : Building attributes for {0}", type.Name);
-
                     // Get the type's attributes.
                     //
                     attrs = type.GetTypeInfo().GetCustomAttributes(typeof(Attribute), false).ToArray();
@@ -1037,7 +1029,6 @@ namespace System.ComponentModel
                 if (events == null)
                 {
                     BindingFlags bindingFlags = BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance;
-                    TypeDescriptor.Trace("Events : Building events for {0}", type.Name);
 
                     // Get the type's events.  Events may have their add and
                     // remove methods individually overridden in a derived
@@ -1232,7 +1223,6 @@ namespace System.ComponentModel
                 if (properties == null)
                 {
                     BindingFlags bindingFlags = BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance;
-                    TypeDescriptor.Trace("Properties : Building properties for {0}", type.Name);
 
                     // Get the type's properties.  Properties may have their
                     // get and set methods individually overridden in a derived

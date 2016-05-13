@@ -31,7 +31,6 @@ namespace System.ComponentModel
             internal ReflectedTypeData(Type type)
             {
                 _type = type;
-                TypeDescriptor.Trace("Reflect : Creating ReflectedTypeData for {0}", type.Name);
             }
 
             /// <summary>
@@ -57,8 +56,6 @@ namespace System.ComponentModel
                 //
                 if (_attributes == null)
                 {
-                    TypeDescriptor.Trace("Attributes : Building collection for {0}", _type.Name);
-
                     // Obtaining attributes follows a very critical order: we must take care that
                     // we merge attributes the right way.  Consider this:
                     //
@@ -109,7 +106,6 @@ namespace System.ComponentModel
                     //
                     int ifaceStartIdx = attrArray.Length;
                     Type[] interfaces = _type.GetTypeInfo().GetInterfaces();
-                    TypeDescriptor.Trace("Attributes : Walking {0} interfaces", interfaces.Length);
                     for (int idx = 0; idx < interfaces.Length; idx++)
                     {
                         Type iface = interfaces[idx];
@@ -233,8 +229,6 @@ namespace System.ComponentModel
                 //
                 if (_converter == null)
                 {
-                    TypeDescriptor.Trace("Converters : Building converter for {0}", _type.Name);
-
                     if (typeAttr == null)
                     {
                         typeAttr = (TypeConverterAttribute)TypeDescriptor.GetAttributes(_type)[typeof(TypeConverterAttribute)];
@@ -465,8 +459,6 @@ namespace System.ComponentModel
                 //
                 if (_events == null)
                 {
-                    TypeDescriptor.Trace("Events : Building collection for {0}", _type.Name);
-
                     EventDescriptor[] eventArray;
                     Dictionary<string, EventDescriptor> eventList = new Dictionary<string, EventDescriptor>(16);
                     Type baseType = _type;
@@ -505,8 +497,6 @@ namespace System.ComponentModel
                 //
                 if (_properties == null)
                 {
-                    TypeDescriptor.Trace("Properties : Building collection for {0}", _type.Name);
-
                     PropertyDescriptor[] propertyArray;
                     Dictionary<string, PropertyDescriptor> propertyList = new Dictionary<string, PropertyDescriptor>(10);
                     Type baseType = _type;

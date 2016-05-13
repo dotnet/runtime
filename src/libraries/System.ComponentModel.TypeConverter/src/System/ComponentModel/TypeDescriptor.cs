@@ -368,7 +368,6 @@ namespace System.ComponentModel
                 if (providerType != null && typeof(TypeDescriptionProvider).GetTypeInfo().IsAssignableFrom(providerType))
                 {
                     TypeDescriptionProvider prov = (TypeDescriptionProvider)Activator.CreateInstance(providerType);
-                    Trace("Providers : Default provider found : {0}", providerType.Name);
                     AddProvider(prov, type);
                     providerAdded = true;
                 }
@@ -643,12 +642,10 @@ namespace System.ComponentModel
                                 object secondary = weakRef.Target;
                                 if (secondary == null)
                                 {
-                                    Trace("Associations : Removing dead reference in assocation table");
                                     associations.RemoveAt(idx);
                                 }
                                 else if (type.GetTypeInfo().IsInstanceOfType(secondary))
                                 {
-                                    Trace("Associations : Associated {0} to {1}", primary.GetType().Name, secondary.GetType().Name);
                                     associatedObject = secondary;
                                 }
                             }
@@ -681,7 +678,6 @@ namespace System.ComponentModel
                                 //
                                 if (designer != null && type.GetTypeInfo().IsInstanceOfType(designer))
                                 {
-                                    Trace("Associations : Associated {0} to {1}", primary.GetType().Name, designer.GetType().Name);
                                     associatedObject = designer;
                                 }
                             }
@@ -795,7 +791,6 @@ namespace System.ComponentModel
             AttributeCollection attrs = results as AttributeCollection;
             if (attrs == null)
             {
-                Trace("Attributes : Allocated new attribute collection for {0}", component.GetType().Name);
                 Attribute[] attrArray = new Attribute[results.Count];
                 results.CopyTo(attrArray, 0);
                 attrs = new AttributeCollection(attrArray);
@@ -1194,7 +1189,6 @@ namespace System.ComponentModel
             EventDescriptorCollection evts = results as EventDescriptorCollection;
             if (evts == null)
             {
-                Trace("Events : Allocated new event collection for {0}", component.GetType().Name);
                 EventDescriptor[] eventArray = new EventDescriptor[results.Count];
                 results.CopyTo(eventArray, 0);
                 evts = new EventDescriptorCollection(eventArray, true);
@@ -1427,7 +1421,6 @@ namespace System.ComponentModel
             PropertyDescriptorCollection props = results as PropertyDescriptorCollection;
             if (props == null)
             {
-                Trace("Properties : Allocated new property collection for {0}", component.GetType().Name);
                 PropertyDescriptor[] propArray = new PropertyDescriptor[results.Count];
                 results.CopyTo(propArray, 0);
                 props = new PropertyDescriptorCollection(propArray, true);
@@ -1578,7 +1571,6 @@ namespace System.ComponentModel
                                 // can provide type information for all objects.
                                 node = new TypeDescriptionNode(new ReflectTypeDescriptionProvider());
                                 s_providerTable[searchType] = node;
-                                Trace("Nodes : Allocated new type node.  Now {0} nodes", s_providerTable.Count);
                             }
                         }
                     }
@@ -1645,7 +1637,6 @@ namespace System.ComponentModel
                 if (createDelegator)
                 {
                     node = new TypeDescriptionNode(new DelegatingTypeDescriptionProvider(type));
-                    Trace("Nodes : Allocated new instance node for {0}.  Now {1} nodes", type.Name, s_providerTable.Count);
                 }
                 else
                 {
@@ -1780,7 +1771,6 @@ namespace System.ComponentModel
             //
             if (list == null || list.IsReadOnly)
             {
-                Trace("Pipeline : Filter needs to create member list for {0}", instance.GetType().Name);
                 list = new ArrayList(members);
             }
 
@@ -1813,7 +1803,6 @@ namespace System.ComponentModel
                         break;
                 }
 
-                Trace("Pipeline : Attribute Filter results being cached for {0}", instance.GetType().Name);
                 AttributeFilterCacheItem filterCache = new AttributeFilterCacheItem(filter, cacheValue);
                 cache[s_pipelineAttributeFilterKeys[pipelineType]] = filterCache;
             }
@@ -1950,7 +1939,6 @@ namespace System.ComponentModel
             //
             if (list == null || list.IsReadOnly)
             {
-                Trace("Pipeline : Filter needs to create member list for {0}", instance.GetType().Name);
                 list = new ArrayList(filterTable.Values);
             }
             else
@@ -2018,8 +2006,6 @@ namespace System.ComponentModel
                         cacheValue = null;
                         break;
                 }
-
-                Trace("Pipeline : Filter results being cached for {0}", instance.GetType().Name);
 
                 FilterCacheItem cacheItem = new FilterCacheItem(componentFilter, cacheValue);
                 cache[s_pipelineFilterKeys[pipelineType]] = cacheItem;
@@ -2170,7 +2156,6 @@ namespace System.ComponentModel
                         break;
                 }
 
-                Trace("Pipeline : Merge results being cached for {0}", instance.GetType().Name);
                 cache[s_pipelineMergeKeys[pipelineType]] = cacheValue;
                 cache.Remove(s_pipelineFilterKeys[pipelineType]);
                 cache.Remove(s_pipelineAttributeFilterKeys[pipelineType]);
@@ -2276,7 +2261,6 @@ namespace System.ComponentModel
             {
                 if (cache != null)
                 {
-                    Trace("Pipeline : Refresh clearing all pipeline caches");
                     for (int idx = 0; idx < s_pipelineFilterKeys.Length; idx++)
                     {
                         cache.Remove(s_pipelineFilterKeys[idx]);
@@ -2640,16 +2624,6 @@ namespace System.ComponentModel
             }
 
             ArrayList.Adapter(infos).Sort(MemberDescriptorComparer.Instance);
-        }
-
-        /// <summary>
-        ///     Internal tracing API for debugging type descriptor.
-        /// </summary>
-        [Conditional("DEBUG")]
-        internal static void Trace(string message, params object[] args)
-        {
-            // TODO Determine the value this tracing adds
-            Debug.WriteLine(string.Format(CultureInfo.InvariantCulture, "TypeDescriptor : {0}", string.Format(CultureInfo.InvariantCulture, message, args)));
         }
 
         /// <summary>
