@@ -7085,6 +7085,12 @@ emit_method_inner (EmitContext *ctx)
 
 		// FIXME: beforefieldinit
 		if (ctx->has_got_access || mono_class_get_cctor (cfg->method->klass)) {
+			/*
+			 * linkonce methods shouldn't have initialization,
+			 * because they might belong to assemblies which
+			 * haven't been loaded yet.
+			 */
+			g_assert (!ctx->is_linkonce);
 			emit_init_method (ctx);
 		} else {
 			LLVMBuildBr (ctx->builder, ctx->inited_bb);

@@ -3044,6 +3044,10 @@ static void
 mono_create_gc_safepoint (MonoCompile *cfg, MonoBasicBlock *bblock)
 {
 	MonoInst *poll_addr, *ins;
+
+	if (cfg->disable_gc_safe_points)
+		return;
+
 	if (cfg->verbose_level > 1)
 		printf ("ADDING SAFE POINT TO BB %d\n", bblock->block_num);
 
@@ -3545,6 +3549,17 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	}
 
 	mini_gc_init_cfg (cfg);
+
+	if (method->wrapper_type == MONO_WRAPPER_UNKNOWN) {
+		WrapperInfo *info = mono_marshal_get_wrapper_info (method);
+
+		/* These wrappers are using linkonce linkage, so they can't access GOT slots */
+		if ((info && (info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG || info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG))) {
+			cfg->disable_gc_safe_points = TRUE;
+			/* This is safe, these wrappers only store to the stack */
+			cfg->gen_write_barriers = FALSE;
+		}
+	}
 
 	if (COMPILE_LLVM (cfg)) {
 		cfg->opt |= MONO_OPT_ABCREM;

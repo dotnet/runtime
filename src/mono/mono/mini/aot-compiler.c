@@ -8104,16 +8104,10 @@ mono_aot_get_method_name (MonoCompile *cfg)
 gboolean
 mono_aot_is_linkonce_method (MonoMethod *method)
 {
-	// FIXME:
-	// This doesn't work yet, because
-	// it can make us call methods which belong
-	// to aot modules which haven't been loaded yet,
-	// so the init method will read uninitialized got
-	// entries.
-	return FALSE;
-#if 0
 	WrapperInfo *info;
 
+	return FALSE;
+#if 0
 	// FIXME: Add more cases
 	if (method->wrapper_type != MONO_WRAPPER_UNKNOWN)
 		return FALSE;

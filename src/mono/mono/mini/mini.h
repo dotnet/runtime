@@ -1661,6 +1661,7 @@ typedef struct {
 	guint            disable_deadce_vars : 1;
 	guint            disable_out_of_line_bblocks : 1;
 	guint            disable_direct_icalls : 1;
+	guint            disable_gc_safe_points : 1;
 	guint            create_lmf_var : 1;
 	/*
 	 * When this is set, the code to push/pop the LMF from the LMF stack is generated as IR

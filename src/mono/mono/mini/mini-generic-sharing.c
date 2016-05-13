@@ -1359,6 +1359,9 @@ mini_get_gsharedvt_out_sig_wrapper (MonoMethodSignature *sig)
 		// FIXME:
 		if (stind_op == CEE_STOBJ)
 			mono_mb_emit_op (mb, CEE_STOBJ, mono_class_from_mono_type (sig->ret));
+		else if (stind_op == CEE_STIND_REF)
+			/* Avoid write barriers, the vret arg points to the stack */
+			mono_mb_emit_byte (mb, CEE_STIND_I);
 		else
 			mono_mb_emit_byte (mb, stind_op);
 	}

@@ -1264,6 +1264,9 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 				case OP_STOREV_MEMBASE: {
 					src_var = get_vreg_to_inst (cfg, ins->sreg1);
 
+					if (COMPILE_LLVM (cfg) && !mini_is_gsharedvt_klass (ins->klass) && !cfg->gen_write_barriers)
+						break;
+
 					if (!src_var) {
 						g_assert (ins->klass);
 						src_var = mono_compile_create_var_for_vreg (cfg, &ins->klass->byval_arg, OP_LOCAL, ins->sreg1);
