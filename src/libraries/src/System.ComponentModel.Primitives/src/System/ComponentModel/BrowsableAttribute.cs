@@ -34,7 +34,7 @@ namespace System.ComponentModel
         /// </summary>
         public static readonly BrowsableAttribute Default = Yes;
 
-        private bool _browsable; 
+        private bool _browsable;
 
         /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.ComponentModel.BrowsableAttribute'/> class.</para>

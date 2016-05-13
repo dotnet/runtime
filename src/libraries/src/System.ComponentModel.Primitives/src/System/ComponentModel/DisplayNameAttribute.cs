@@ -36,7 +36,7 @@ namespace System.ComponentModel
         ///    <para>Gets the description stored in this attribute.</para>
         /// </summary>
         public virtual string DisplayName => DisplayNameValue;
-        
+
         /// <summary>
         ///     Read/Write property that directly modifies the string stored
         ///     in the description attribute. The default implementation

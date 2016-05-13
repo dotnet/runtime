@@ -13,7 +13,7 @@ namespace System.ComponentModel
     {
         object TypeId { get; }
     }
- 
+
     /// <summary>
     /// These extension methods are used to mimic behavior from the .NET Framework where System.Attribute
     /// had extra methods. For compatibility reasons, they are implemented with interfaces on the attributes
