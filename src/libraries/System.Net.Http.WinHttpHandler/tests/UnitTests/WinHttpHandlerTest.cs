@@ -38,7 +38,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         {
             var handler = new WinHttpHandler();
 
-            Assert.Equal(SslProtocolSupport.DefaultSslProtocols, handler.SslProtocols);
+            Assert.Equal(SslProtocols.None, handler.SslProtocols);
             Assert.Equal(true, handler.AutomaticRedirection);
             Assert.Equal(50, handler.MaxAutomaticRedirections);
             Assert.Equal(DecompressionMethods.Deflate | DecompressionMethods.GZip, handler.AutomaticDecompression);
@@ -425,11 +425,11 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         }
 
         [Fact]
-        public void SslProtocols_SetUsingNone_Throws()
+        public void SslProtocols_SetUsingNone_Success()
         {
             var handler = new WinHttpHandler();
 
-            Assert.Throws<NotSupportedException>(() => { handler.SslProtocols = SslProtocols.None; });
+            handler.SslProtocols = SslProtocols.None;
         }
 
         [Fact]
