@@ -13,6 +13,10 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
+// This file is responsible for initializing `jitstdout` and therefore needs to
+// be able to refer to `stdout`.
+#define ALLOW_STDOUT
+
 #include "jitpch.h"
 #ifdef _MSC_VER
 #pragma hdrstop
@@ -20,8 +24,14 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "emit.h"
 #include "corexcep.h"
 
+#if !defined(PLATFORM_UNIX)
+#include <io.h>    // For _dup, _setmode
+#include <fcntl.h> // For _O_TEXT
+#endif
 
 /*****************************************************************************/
+
+FILE* jitstdout = nullptr;
 
 ICorJitHost* g_jitHost = nullptr;
 static CILJit* ILJitter = 0;        // The one and only JITTER I return
@@ -61,6 +71,18 @@ void __stdcall jitStartup(ICorJitHost* jitHost)
         JitConfig.initialize(jitHost);
     }
 
+#if defined(PLATFORM_UNIX)
+    jitstdout = stdout;
+#else
+    if (jitstdout == nullptr)
+    {
+        int jitstdoutFd = _dup(_fileno(stdout));
+        _setmode(jitstdoutFd, _O_TEXT);
+        jitstdout = _fdopen(jitstdoutFd, "w");
+        assert(jitstdout != nullptr);
+    }
+#endif
+
 #ifdef FEATURE_TRACELOGGING
     JitTelemetry::NotifyDllProcessAttach();
 #endif
@@ -70,6 +92,12 @@ void __stdcall jitStartup(ICorJitHost* jitHost)
 void jitShutdown()
 {
     Compiler::compShutdown();
+
+    if (jitstdout != stdout)
+    {
+        fclose(jitstdout);
+    }
+
 #ifdef FEATURE_TRACELOGGING
     JitTelemetry::NotifyDllProcessDetach();
 #endif

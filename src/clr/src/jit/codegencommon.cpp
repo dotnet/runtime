@@ -3094,7 +3094,7 @@ void                CodeGen::genGenerateCode(void * * codePtr,
         genCreateAndStoreGCInfo(codeSize, prologSize, epilogSize DEBUGARG(codePtr));
 
 #ifdef  DEBUG
-    FILE* dmpf = stdout;
+    FILE* dmpf = jitstdout;
 
     compiler->opts.dmpHex = false;
     if  (!strcmp(compiler->info.compMethodName, "<name of method you want the hex dump for"))
@@ -3133,7 +3133,7 @@ void                CodeGen::genGenerateCode(void * * codePtr,
         fflush(dmpf);
     }
 
-    if (dmpf != stdout)
+    if (dmpf != jitstdout)
     {
         fclose(dmpf);
     }
