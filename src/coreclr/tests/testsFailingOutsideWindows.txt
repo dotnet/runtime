@@ -53,8 +53,6 @@ JIT/Regression/CLR-x86-EJIT/v1-m10/b07847/b07847/b07847.sh
 JIT/Regression/CLR-x86-JIT/V1.2-M01/b03689/b03689/b03689.sh
 JIT/Regression/CLR-x86-JIT/V1.2-M01/b08046/b08046/b08046.sh
 JIT/Regression/Dev11/dev10_865840/dev10_865840/dev10_865840.sh
-JIT/SIMD/Vector3Interop_r/Vector3Interop_r.sh
-JIT/SIMD/Vector3Interop_ro/Vector3Interop_ro.sh
 JIT/Methodical/Boxing/xlang/_dbgsin_cs_il/_dbgsin_cs_il.sh
 JIT/Methodical/Boxing/xlang/_odbgsin_cs_il/_odbgsin_cs_il.sh
 JIT/Methodical/Boxing/xlang/_orelsin_cs_il/_orelsin_cs_il.sh
