@@ -62,13 +62,16 @@ namespace Internal.Cryptography
                 {
                     int numBytesWritten;
                     ErrorCode errorCode;
-                    if (_encrypting)
+                    using (SafeNCryptKeyHandle keyHandle = _cngKey.Handle)
                     {
-                        errorCode = Interop.NCrypt.NCryptEncrypt(_cngKey.Handle, pInput + inputOffset, count, null, pOutput + outputOffset, count, out numBytesWritten, AsymmetricPaddingMode.None);
-                    }
-                    else
-                    {
-                        errorCode = Interop.NCrypt.NCryptDecrypt(_cngKey.Handle, pInput + inputOffset, count, null, pOutput + outputOffset, count, out numBytesWritten, AsymmetricPaddingMode.None);
+                        if (_encrypting)
+                        {
+                            errorCode = Interop.NCrypt.NCryptEncrypt(keyHandle, pInput + inputOffset, count, null, pOutput + outputOffset, count, out numBytesWritten, AsymmetricPaddingMode.None);
+                        }
+                        else
+                        {
+                            errorCode = Interop.NCrypt.NCryptDecrypt(keyHandle, pInput + inputOffset, count, null, pOutput + outputOffset, count, out numBytesWritten, AsymmetricPaddingMode.None);
+                        }
                     }
                     if (errorCode != ErrorCode.ERROR_SUCCESS)
                         throw errorCode.ToCryptographicException();

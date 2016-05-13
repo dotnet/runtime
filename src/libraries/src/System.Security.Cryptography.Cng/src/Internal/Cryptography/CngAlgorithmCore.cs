@@ -5,6 +5,7 @@
 using System;
 using System.Diagnostics;
 using System.Security.Cryptography;
+using Microsoft.Win32.SafeHandles;
 
 namespace Internal.Cryptography
 {
@@ -15,7 +16,10 @@ namespace Internal.Cryptography
     {
         public static CngKey Duplicate(CngKey key)
         {
-            return CngKey.Open(key.Handle, key.IsEphemeral ? CngKeyHandleOpenOptions.EphemeralKey : CngKeyHandleOpenOptions.None);
+            using (SafeNCryptKeyHandle keyHandle = key.Handle)
+            {
+                return CngKey.Open(keyHandle, key.IsEphemeral ? CngKeyHandleOpenOptions.EphemeralKey : CngKeyHandleOpenOptions.None);
+            }
         }
 
         public CngKey GetOrGenerateKey(int keySize, CngAlgorithm algorithm)
