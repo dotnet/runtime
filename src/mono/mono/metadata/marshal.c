@@ -320,8 +320,8 @@ mono_marshal_init (void)
 		mono_remoting_init ();
 
 		if (mono_threads_is_coop_enabled ()) {
-			register_icall (mono_threads_prepare_blocking, "mono_threads_prepare_blocking", "ptr ptr", FALSE);
-			register_icall (mono_threads_finish_blocking, "mono_threads_finish_blocking", "void ptr ptr", FALSE);
+			register_icall (mono_threads_prepare_blocking, "mono_threads_prepare_blocking", "ptr ptr", TRUE);
+			register_icall (mono_threads_finish_blocking, "mono_threads_finish_blocking", "void ptr ptr", TRUE);
 			register_icall (mono_threads_reset_blocking_start, "mono_threads_reset_blocking_start","ptr ptr", TRUE);
 			register_icall (mono_threads_reset_blocking_end, "mono_threads_reset_blocking_end","void ptr ptr", TRUE);
 		}
@@ -7403,26 +7403,6 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 		}
 	}
 
-	/* Set LastError if needed */
-	if (piinfo->piflags & PINVOKE_ATTRIBUTE_SUPPORTS_LAST_ERROR) {
-		if (!get_last_error_sig) {
-			get_last_error_sig = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
-			get_last_error_sig->ret = &mono_defaults.int_class->byval_arg;
-			get_last_error_sig->pinvoke = 1;
-		}
-
-#ifdef TARGET_WIN32
-		/* 
-		 * Have to call GetLastError () early and without a wrapper, since various runtime components could
-		 * clobber its value.
-		 */
-		mono_mb_emit_native_call (mb, get_last_error_sig, GetLastError);
-		mono_mb_emit_icall (mb, mono_marshal_set_last_error_windows);
-#else
-		mono_mb_emit_icall (mb, mono_marshal_set_last_error);
-#endif
-	}		
-
 	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
 		MonoClass *klass = mono_class_from_mono_type (sig->ret);
 		mono_class_init (klass);
@@ -7441,6 +7421,26 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 		mono_mb_emit_icall (mb, mono_threads_finish_blocking);
 		mono_mb_emit_icon (mb, 1);
 		mono_mb_emit_stloc (mb, coop_unblocked_var);
+	}
+
+	/* Set LastError if needed */
+	if (piinfo->piflags & PINVOKE_ATTRIBUTE_SUPPORTS_LAST_ERROR) {
+		if (!get_last_error_sig) {
+			get_last_error_sig = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
+			get_last_error_sig->ret = &mono_defaults.int_class->byval_arg;
+			get_last_error_sig->pinvoke = 1;
+		}
+
+#ifdef TARGET_WIN32
+		/*
+		 * Have to call GetLastError () early and without a wrapper, since various runtime components could
+		 * clobber its value.
+		 */
+		mono_mb_emit_native_call (mb, get_last_error_sig, GetLastError);
+		mono_mb_emit_icall (mb, mono_marshal_set_last_error_windows);
+#else
+		mono_mb_emit_icall (mb, mono_marshal_set_last_error);
+#endif
 	}
 
 	/* convert the result */
