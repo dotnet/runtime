@@ -479,11 +479,6 @@ void InlineContext::DumpXml(FILE* file, unsigned indent)
         m_Sibling->DumpXml(file, indent);
     }
 
-    Compiler* compiler = m_InlineStrategy->GetCompiler();
-
-    mdMethodDef calleeToken =
-        compiler->info.compCompHnd->getMethodDefFromMethod(m_Callee);
-
     const bool isRoot = m_Parent == nullptr;
     const bool hasChild = m_Child != nullptr;
     const char* inlineType = m_Success ? "Inline" : "FailedInline";
@@ -491,6 +486,13 @@ void InlineContext::DumpXml(FILE* file, unsigned indent)
 
     if (!isRoot)
     {
+        Compiler* compiler = m_InlineStrategy->GetCompiler();
+
+        mdMethodDef calleeToken =
+            compiler->info.compCompHnd->getMethodDefFromMethod(m_Callee);
+        unsigned calleeHash =
+            compiler->info.compCompHnd->getMethodHash(m_Callee);
+
         const char* inlineReason = InlGetObservationString(m_Observation);
 
         int offset = -1;
@@ -501,6 +503,7 @@ void InlineContext::DumpXml(FILE* file, unsigned indent)
 
         fprintf(file, "%*s<%s>\n", indent, "", inlineType);
         fprintf(file, "%*s<Token>%u</Token>\n", indent + 2, "", calleeToken);
+        fprintf(file, "%*s<Hash>%u</Hash>\n", indent + 2, "", calleeHash);
         fprintf(file, "%*s<Offset>%u</Offset>\n", indent + 2, "", offset);
         fprintf(file, "%*s<Reason>%s</Reason>\n", indent + 2, "", inlineReason);
         newIndent = indent + 2;
@@ -1331,9 +1334,40 @@ void InlineStrategy::DumpXml(FILE* file, unsigned indent)
         microsecondsSpentJitting = (unsigned) ((counts / countsPerSec) * 1000 * 1000);
     }
 
+    // Get method name just for root method, to make it a bit easier
+    // to search for things in the inline xml.
+    const char* methodName = info.compCompHnd->getMethodName(info.compMethodHnd, nullptr);
+
+    // Cheap xml quoting for values. Only < and & are troublemakers,
+    // but change > for symmetry.
+    //
+    // Ok to truncate name, just ensure it's null terminated.
+    char buf[64];
+    strncpy(buf, methodName, sizeof(buf));
+    buf[sizeof(buf)-1] = 0;
+
+    for (int i = 0; i < sizeof(buf); i++)
+    {
+        switch (buf[i])
+        {
+        case '<':
+            buf[i] = '[';
+            break;
+        case '>':
+            buf[i] = ']';
+            break;
+        case '&':
+            buf[i] = '#';
+            break;
+        default:
+            break;
+        }
+    }
+
     fprintf(file, "%*s<Method>\n", indent, "");
     fprintf(file, "%*s<Token>%u</Token>\n", indent + 2, "", currentMethodToken);
     fprintf(file, "%*s<Hash>%u</Hash>\n", indent + 2, "", hash);
+    fprintf(file, "%*s<Name>%s</Name>\n", indent + 2, "", buf);
     fprintf(file, "%*s<InlineCount>%u</InlineCount>\n", indent + 2, "", m_InlineCount);
     fprintf(file, "%*s<HotSize>%u</HotSize>\n", indent + 2, "", info.compTotalHotCodeSize);
     fprintf(file, "%*s<ColdSize>%u</ColdSize>\n", indent + 2, "", info.compTotalColdCodeSize);
