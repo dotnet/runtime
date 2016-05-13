@@ -841,8 +841,14 @@ create_object_from_sockaddr (struct sockaddr *saddr, int sa_size, gint32 *werror
 	
 	/* Locate the SocketAddress data buffer in the object */
 	if (!domain->sockaddr_data_field) {
-		domain->sockaddr_data_field = mono_class_get_field_from_name (domain->sockaddr_class, "data");
+		domain->sockaddr_data_field = mono_class_get_field_from_name (domain->sockaddr_class, "m_Buffer");
 		g_assert (domain->sockaddr_data_field);
+	}
+
+	/* Locate the SocketAddress data buffer length in the object */
+	if (!domain->sockaddr_data_length_field) {
+		domain->sockaddr_data_length_field = mono_class_get_field_from_name (domain->sockaddr_class, "m_Size");
+		g_assert (domain->sockaddr_data_length_field);
 	}
 
 	/* May be the +2 here is too conservative, as sa_len returns
@@ -871,8 +877,9 @@ create_object_from_sockaddr (struct sockaddr *saddr, int sa_size, gint32 *werror
 		struct sockaddr_in *sa_in = (struct sockaddr_in *)saddr;
 		guint16 port = ntohs (sa_in->sin_port);
 		guint32 address = ntohl (sa_in->sin_addr.s_addr);
+		int buffer_size = 8;
 		
-		if (sa_size < 8) {
+		if (sa_size < buffer_size) {
 			mono_error_set_exception_instance (error, mono_exception_from_name (mono_get_corlib (), "System", "SystemException"));
 			return NULL;
 		}
@@ -885,15 +892,17 @@ create_object_from_sockaddr (struct sockaddr *saddr, int sa_size, gint32 *werror
 		mono_array_set (data, guint8, 7, (address) & 0xff);
 	
 		mono_field_set_value (sockaddr_obj, domain->sockaddr_data_field, data);
+		mono_field_set_value (sockaddr_obj, domain->sockaddr_data_length_field, &buffer_size);
 
 		return sockaddr_obj;
 	} else if (saddr->sa_family == AF_INET6) {
 		struct sockaddr_in6 *sa_in = (struct sockaddr_in6 *)saddr;
 		int i;
+		int buffer_size = 28;
 
 		guint16 port = ntohs (sa_in->sin6_port);
 
-		if (sa_size < 28) {
+		if (sa_size < buffer_size) {
 			mono_error_set_exception_instance (error, mono_exception_from_name (mono_get_corlib (), "System", "SystemException"));
 			return NULL;
 		}
@@ -921,17 +930,20 @@ create_object_from_sockaddr (struct sockaddr *saddr, int sa_size, gint32 *werror
 						(sa_in->sin6_scope_id >> 24) & 0xff);
 
 		mono_field_set_value (sockaddr_obj, domain->sockaddr_data_field, data);
+		mono_field_set_value (sockaddr_obj, domain->sockaddr_data_length_field, &buffer_size);
 
 		return sockaddr_obj;
 	}
 #ifdef HAVE_SYS_UN_H
 	else if (saddr->sa_family == AF_UNIX) {
 		int i;
+		int buffer_size = sa_size + 2;
 
 		for (i = 0; i < sa_size; i++)
 			mono_array_set (data, guint8, i + 2, saddr->sa_data [i]);
 		
 		mono_field_set_value (sockaddr_obj, domain->sockaddr_data_field, data);
+		mono_field_set_value (sockaddr_obj, domain->sockaddr_data_length_field, &buffer_size);
 
 		return sockaddr_obj;
 	}
@@ -1047,16 +1059,29 @@ ves_icall_System_Net_Sockets_Socket_RemoteEndPoint_internal (SOCKET sock, gint32
 static struct sockaddr*
 create_sockaddr_from_object (MonoObject *saddr_obj, socklen_t *sa_size, gint32 *werror, MonoError *error)
 {
-	MonoClassField *field;
+	MonoDomain *domain = mono_domain_get ();
 	MonoArray *data;
 	gint32 family;
 	int len;
 
 	mono_error_init (error);
 
-	/* Dig the SocketAddress data buffer out of the object */
-	field = mono_class_get_field_from_name (saddr_obj->vtable->klass, "data");
-	data = *(MonoArray **)(((char *)saddr_obj) + field->offset);
+	if (!domain->sockaddr_class)
+		domain->sockaddr_class = mono_class_load_from_name (get_socket_assembly (), "System.Net", "SocketAddress");
+
+	/* Locate the SocketAddress data buffer in the object */
+	if (!domain->sockaddr_data_field) {
+		domain->sockaddr_data_field = mono_class_get_field_from_name (domain->sockaddr_class, "m_Buffer");
+		g_assert (domain->sockaddr_data_field);
+	}
+
+	/* Locate the SocketAddress data buffer length in the object */
+	if (!domain->sockaddr_data_length_field) {
+		domain->sockaddr_data_length_field = mono_class_get_field_from_name (domain->sockaddr_class, "m_Size");
+		g_assert (domain->sockaddr_data_length_field);
+	}
+
+	data = *(MonoArray **)(((char *)saddr_obj) + domain->sockaddr_data_field->offset);
 
 	/* The data buffer is laid out as follows:
 	 * byte 0 is the address family low byte
@@ -1067,12 +1092,9 @@ create_sockaddr_from_object (MonoObject *saddr_obj, socklen_t *sa_size, gint32 *
 	 * UNIX:
 	 * 	the rest is the file name
 	 */
-	len = mono_array_length (data);
-	if (len < 2) {
-		mono_error_set_exception_instance (error, mono_exception_from_name (mono_get_corlib (), "System", "SystemException"));
-		return NULL;
-	}
-	
+	len = *(int *)(((char *)saddr_obj) + domain->sockaddr_data_length_field->offset);
+	g_assert (len >= 2);
+
 	family = convert_family ((MonoAddressFamily)(mono_array_get (data, guint8, 0) + (mono_array_get (data, guint8, 1) << 8)));
 	if (family == AF_INET) {
 		struct sockaddr_in *sa;
@@ -2157,19 +2179,20 @@ ipaddress_to_struct_in6_addr (MonoObject *ipaddr)
 	int i;
 
 	field = mono_class_get_field_from_name (ipaddr->vtable->klass, "m_Numbers");
+	g_assert (field);
 	data = *(MonoArray **)(((char *)ipaddr) + field->offset);
 
-/* Solaris has only the 8 bit version. */
-#ifndef s6_addr16
 	for (i = 0; i < 8; i++) {
-		guint16 s = mono_array_get (data, guint16, i);
+		const guint16 s = GUINT16_TO_BE (mono_array_get (data, guint16, i));
+
+/* Solaris/MacOS have only the 8 bit version. */
+#ifndef s6_addr16
 		in6addr.s6_addr[2 * i + 1] = (s >> 8) & 0xff;
 		in6addr.s6_addr[2 * i] = s & 0xff;
-	}
 #else
-	for (i = 0; i < 8; i++)
-		in6addr.s6_addr16[i] = mono_array_get (data, guint16, i);
+		in6addr.s6_addr16[i] = s;
 #endif
+	}
 	return in6addr;
 }
 #endif
@@ -2274,6 +2297,7 @@ ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal (SOCKET sock, gint3
 				 *	Get group address
 				 */
 				field = mono_class_get_field_from_name (obj_val->vtable->klass, "m_Group");
+				g_assert (field);
 				address = *(MonoObject **)(((char *)obj_val) + field->offset);
 				
 				if (address)

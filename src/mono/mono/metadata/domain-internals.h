@@ -409,6 +409,7 @@ struct _MonoDomain {
 	MonoImage *socket_assembly;
 	MonoClass *sockaddr_class;
 	MonoClassField *sockaddr_data_field;
+	MonoClassField *sockaddr_data_length_field;
 
 	/* Cache function pointers for architectures  */
 	/* that require wrappers */
