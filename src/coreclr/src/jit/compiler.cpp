@@ -73,14 +73,12 @@ void Compiler::JitLogEE(unsigned level, const char* fmt, ...)
 {
     va_list args;
 
-#ifndef CROSSGEN_COMPILE
     if (verbose)
     {
         va_start(args, fmt);
-        logf_stdout(fmt, args);
+        vflogf(jitstdout, fmt, args);
         va_end(args);
     }
-#endif
 
     va_start(args, fmt);
     vlogf(level, fmt, args);
@@ -657,7 +655,7 @@ void                Compiler::compStartup()
     // Static vars of ValueNumStore
     ValueNumStore::InitValueNumStoreStatics();
 
-    compDisplayStaticSizes(stdout);
+    compDisplayStaticSizes(jitstdout);
 }
 
 /*****************************************************************************
@@ -695,7 +693,7 @@ void                Compiler::compShutdown()
 #endif
 
     // Where should we write our statistics output?
-    FILE* fout = stdout;
+    FILE* fout = jitstdout;
 
 #ifdef FEATURE_JIT_METHOD_PERF
     if (compJitTimeLogFilename != NULL)
@@ -926,10 +924,10 @@ void                Compiler::compShutdown()
 #endif
     {
         fprintf(fout, "\nAll allocations:\n");
-        s_aggMemStats.Print(stdout);
+        s_aggMemStats.Print(jitstdout);
 
         fprintf(fout, "\nLargest method:\n");
-        s_maxCompMemStats.Print(stdout);
+        s_maxCompMemStats.Print(jitstdout);
     }
 
 #endif // MEASURE_MEM_ALLOC
@@ -939,7 +937,7 @@ void                Compiler::compShutdown()
     if (JitConfig.DisplayLoopHoistStats() != 0)
 #endif // DEBUG
     {
-        PrintAggregateLoopHoistStats(stdout);
+        PrintAggregateLoopHoistStats(jitstdout);
     }
 #endif // LOOP_HOIST_STATS
 
@@ -2825,7 +2823,7 @@ void JitDump(const char* pcFormat, ...)
 {
     va_list lst;    
     va_start(lst, pcFormat);
-    logf_stdout(pcFormat, lst);
+    vflogf(jitstdout, pcFormat, lst);
     va_end(lst);
 }
 
@@ -4134,7 +4132,7 @@ int           Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
     }
 #endif // FUNC_INFO_LOGGING
 
-//  if (s_compMethodsCount==0) setvbuf(stdout, NULL, _IONBF, 0);
+//  if (s_compMethodsCount==0) setvbuf(jitstdout, NULL, _IONBF, 0);
 
     info.compCompHnd     = compHnd;
     info.compMethodHnd   = methodHnd;
@@ -4362,7 +4360,7 @@ void Compiler::compCompileFinish()
     {
         printf("\nAllocations for %s (MethodHash=%08x)\n",
                info.compFullName, info.compMethodHash());
-        genMemStats.Print(stdout);
+        genMemStats.Print(jitstdout);
     }
 #endif // DEBUG
 #endif // MEASURE_MEM_ALLOC
