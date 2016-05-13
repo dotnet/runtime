@@ -199,7 +199,7 @@ namespace System.Runtime.InteropServices
         {
             if (byteLen < 0)
             {
-                throw new ArgumentException("len");
+                throw new ArgumentException("byteLen");
             }
             else if (IntPtr.Zero == ptr)
             {
@@ -1093,7 +1093,7 @@ namespace System.Runtime.InteropServices
             }
 
             if (rtModule == null)
-                throw new ArgumentNullException(Environment.GetResourceString("Argument_MustBeRuntimeModule"));
+                throw new ArgumentNullException("m",Environment.GetResourceString("Argument_MustBeRuntimeModule"));
 
             return GetHINSTANCE(rtModule.GetNativeHandle());
         }    
@@ -1905,7 +1905,7 @@ namespace System.Runtime.InteropServices
         }
 
         [System.Security.SecurityCritical]  // auto-generated_required
-        unsafe public static IntPtr StringToAllocatedMemoryUTF8(String s)
+        unsafe public static IntPtr StringToCoTaskMemUTF8(String s)
         {
             const int MAX_UTF8_CHAR_SIZE = 3;
             if (s == null)
