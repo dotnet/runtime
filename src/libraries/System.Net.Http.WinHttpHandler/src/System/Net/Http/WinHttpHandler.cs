@@ -73,7 +73,6 @@ namespace System.Net.Http
         private ICredentials _defaultProxyCredentials = CredentialCache.DefaultCredentials;
         private IWebProxy _proxy = null;
         private int _maxConnectionsPerServer = int.MaxValue;
-        private TimeSpan _connectTimeout = TimeSpan.FromSeconds(60);
         private TimeSpan _sendTimeout = TimeSpan.FromSeconds(30);
         private TimeSpan _receiveHeadersTimeout = TimeSpan.FromSeconds(30);
         private TimeSpan _receiveDataTimeout = TimeSpan.FromSeconds(30);
@@ -355,25 +354,6 @@ namespace System.Net.Http
 
                 CheckDisposedOrStarted();
                 _maxConnectionsPerServer = value;
-            }
-        }
-
-        public TimeSpan ConnectTimeout
-        {
-            get
-            {
-                return _connectTimeout;
-            }
-
-            set
-            {
-                if (value != Timeout.InfiniteTimeSpan && (value <= TimeSpan.Zero || value > s_maxTimeout))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
-
-                CheckDisposedOrStarted();
-                _connectTimeout = value;
             }
         }
 
@@ -944,7 +924,7 @@ namespace System.Net.Http
             if (!Interop.WinHttp.WinHttpSetTimeouts(
                 sessionHandle,
                 0,
-                (int)_connectTimeout.TotalMilliseconds,
+                0,
                 (int)_sendTimeout.TotalMilliseconds,
                 (int)_receiveHeadersTimeout.TotalMilliseconds))
             {
