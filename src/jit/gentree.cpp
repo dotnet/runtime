@@ -1103,7 +1103,7 @@ Compiler::fgWalkResult  Compiler::fgWalkTree(GenTreePtr  * pTree,
 void
 GenTree::gtClearReg(Compiler* compiler)
 {
-#if !defined(LEGACY_BACKEND) && !defined(_TARGET_64BIT_)
+#if CPU_LONG_USES_REGPAIR
     if (isRegPairType(TypeGet()) ||
         // (IsLocal() && isRegPairType(compiler->lvaTable[gtLclVarCommon.gtLclNum].TypeGet())) ||
         (OperGet() == GT_MUL && (gtFlags & GTF_MUL_64RSLT)))
@@ -1111,7 +1111,7 @@ GenTree::gtClearReg(Compiler* compiler)
         gtRegPair = REG_PAIR_NONE;
     }
     else
-#endif // !defined(LEGACY_BACKEND) && !defined(_TARGET_64BIT_)
+#endif // CPU_LONG_USES_REGPAIR
     {
         gtRegNum = REG_NA;
     }
