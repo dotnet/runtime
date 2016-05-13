@@ -360,82 +360,84 @@ namespace System.Net
             }
 
             var handler = new HttpClientHandler();
-            var client = new HttpClient(handler);
             var request = new HttpRequestMessage(new HttpMethod(_originVerb), _requestUri);
-
-            if (_requestStream != null)
+            
+            using (var client = new HttpClient(handler))
             {
-                ArraySegment<byte> bytes = _requestStream.GetBuffer();
-                request.Content = new ByteArrayContent(bytes.Array, bytes.Offset, bytes.Count);
-            }
-
-            // Set to match original defaults of HttpWebRequest.
-            // HttpClientHandler.AutomaticDecompression defaults to true; set it to false to match the desktop behavior 
-            handler.AutomaticDecompression = DecompressionMethods.None;
-            handler.Credentials = _credentials;
-
-            if (_cookieContainer != null)
-            {
-                handler.CookieContainer = _cookieContainer;
-                Debug.Assert(handler.UseCookies); // Default of handler.UseCookies is true.
-            }
-            else
-            {
-                handler.UseCookies = false;
-            }
-
-            Debug.Assert(handler.UseProxy); // Default of handler.UseProxy is true.
-            Debug.Assert(handler.Proxy == null); // Default of handler.Proxy is null.
-            if (_proxy == null)
-            {
-                handler.UseProxy = false;
-            }
-            else
-            {
-                handler.Proxy = _proxy;
-            }
-
-            // Copy the HttpWebRequest request headers from the WebHeaderCollection into HttpRequestMessage.Headers and
-            // HttpRequestMessage.Content.Headers.
-            foreach (string headerName in _webHeaderCollection)
-            {
-                // The System.Net.Http APIs require HttpRequestMessage headers to be properly divided between the request headers
-                // collection and the request content headers collection for all well-known header names.  And custom headers
-                // are only allowed in the request headers collection and not in the request content headers collection.
-                if (IsWellKnownContentHeader(headerName))
+                if (_requestStream != null)
                 {
-                    if (request.Content == null)
-                    {
-                        // Create empty content so that we can send the entity-body header.
-                        request.Content = new ByteArrayContent(Array.Empty<byte>());
-                    }
+                    ArraySegment<byte> bytes = _requestStream.GetBuffer();
+                    request.Content = new ByteArrayContent(bytes.Array, bytes.Offset, bytes.Count);
+                }
 
-                    request.Content.Headers.TryAddWithoutValidation(headerName, _webHeaderCollection[headerName]);
+                // Set to match original defaults of HttpWebRequest.
+                // HttpClientHandler.AutomaticDecompression defaults to true; set it to false to match the desktop behavior 
+                handler.AutomaticDecompression = DecompressionMethods.None;
+                handler.Credentials = _credentials;
+
+                if (_cookieContainer != null)
+                {
+                    handler.CookieContainer = _cookieContainer;
+                    Debug.Assert(handler.UseCookies); // Default of handler.UseCookies is true.
                 }
                 else
                 {
-                    request.Headers.TryAddWithoutValidation(headerName, _webHeaderCollection[headerName]);
+                    handler.UseCookies = false;
                 }
+
+                Debug.Assert(handler.UseProxy); // Default of handler.UseProxy is true.
+                Debug.Assert(handler.Proxy == null); // Default of handler.Proxy is null.
+                if (_proxy == null)
+                {
+                    handler.UseProxy = false;
+                }
+                else
+                {
+                    handler.Proxy = _proxy;
+                }
+
+                // Copy the HttpWebRequest request headers from the WebHeaderCollection into HttpRequestMessage.Headers and
+                // HttpRequestMessage.Content.Headers.
+                foreach (string headerName in _webHeaderCollection)
+                {
+                    // The System.Net.Http APIs require HttpRequestMessage headers to be properly divided between the request headers
+                    // collection and the request content headers collection for all well-known header names.  And custom headers
+                    // are only allowed in the request headers collection and not in the request content headers collection.
+                    if (IsWellKnownContentHeader(headerName))
+                    {
+                        if (request.Content == null)
+                        {
+                            // Create empty content so that we can send the entity-body header.
+                            request.Content = new ByteArrayContent(Array.Empty<byte>());
+                        }
+
+                        request.Content.Headers.TryAddWithoutValidation(headerName, _webHeaderCollection[headerName]);
+                    }
+                    else
+                    {
+                        request.Headers.TryAddWithoutValidation(headerName, _webHeaderCollection[headerName]);
+                    }
+                }
+
+                _sendRequestTask = client.SendAsync(
+                    request,
+                    _allowReadStreamBuffering ? HttpCompletionOption.ResponseContentRead : HttpCompletionOption.ResponseHeadersRead,
+                    _sendRequestCts.Token);
+                HttpResponseMessage responseMessage = await _sendRequestTask.ConfigureAwait(false);
+
+                HttpWebResponse response = new HttpWebResponse(responseMessage, _requestUri, _cookieContainer);
+
+                if (!responseMessage.IsSuccessStatusCode)
+                {
+                    throw new WebException(
+                        SR.Format(SR.net_servererror, (int)response.StatusCode, response.StatusDescription),
+                        null,
+                        WebExceptionStatus.ProtocolError,
+                        response);
+                }
+
+                return response;
             }
-
-            _sendRequestTask = client.SendAsync(
-                request,
-                _allowReadStreamBuffering ? HttpCompletionOption.ResponseContentRead : HttpCompletionOption.ResponseHeadersRead,
-                _sendRequestCts.Token);
-            HttpResponseMessage responseMessage = await _sendRequestTask.ConfigureAwait(false);
-
-            HttpWebResponse response = new HttpWebResponse(responseMessage, _requestUri, _cookieContainer);
-
-            if (!responseMessage.IsSuccessStatusCode)
-            {
-                throw new WebException(
-                    SR.Format(SR.net_servererror, (int)response.StatusCode, response.StatusDescription),
-                    null,
-                    WebExceptionStatus.ProtocolError,
-                    response);
-            }
-
-            return response;
         }
 
         public override IAsyncResult BeginGetResponse(AsyncCallback callback, object state)
