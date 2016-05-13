@@ -54,30 +54,32 @@ namespace System.Security.Cryptography
 
             unsafe
             {
-                SafeNCryptKeyHandle keyHandle = GetKeyHandle();
-                switch (padding.Mode)
+                using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
                 {
-                    case RSAEncryptionPaddingMode.Pkcs1:
-                        return EncryptOrDecrypt(keyHandle, data, AsymmetricPaddingMode.NCRYPT_PAD_PKCS1_FLAG, null, encryptOrDecrypt);
+                    switch (padding.Mode)
+                    {
+                        case RSAEncryptionPaddingMode.Pkcs1:
+                            return EncryptOrDecrypt(keyHandle, data, AsymmetricPaddingMode.NCRYPT_PAD_PKCS1_FLAG, null, encryptOrDecrypt);
 
-                    case RSAEncryptionPaddingMode.Oaep:
-                        {
-                            using (SafeUnicodeStringHandle safeHashAlgorithmName = new SafeUnicodeStringHandle(padding.OaepHashAlgorithm.Name))
+                        case RSAEncryptionPaddingMode.Oaep:
                             {
-                                BCRYPT_OAEP_PADDING_INFO paddingInfo = new BCRYPT_OAEP_PADDING_INFO()
+                                using (SafeUnicodeStringHandle safeHashAlgorithmName = new SafeUnicodeStringHandle(padding.OaepHashAlgorithm.Name))
                                 {
-                                    pszAlgId = safeHashAlgorithmName.DangerousGetHandle(),
+                                    BCRYPT_OAEP_PADDING_INFO paddingInfo = new BCRYPT_OAEP_PADDING_INFO()
+                                    {
+                                        pszAlgId = safeHashAlgorithmName.DangerousGetHandle(),
 
-                                    // It would nice to put randomized data here but RSAEncryptionPadding does not at this point provide support for this.
-                                    pbLabel = IntPtr.Zero,
-                                    cbLabel = 0,
-                                };
-                                return EncryptOrDecrypt(keyHandle, data, AsymmetricPaddingMode.NCRYPT_PAD_OAEP_FLAG, &paddingInfo, encryptOrDecrypt);
+                                        // It would nice to put randomized data here but RSAEncryptionPadding does not at this point provide support for this.
+                                        pbLabel = IntPtr.Zero,
+                                        cbLabel = 0,
+                                    };
+                                    return EncryptOrDecrypt(keyHandle, data, AsymmetricPaddingMode.NCRYPT_PAD_OAEP_FLAG, &paddingInfo, encryptOrDecrypt);
+                                }
                             }
-                        }
 
-                    default:
-                        throw new CryptographicException(SR.Cryptography_UnsupportedPaddingMode);
+                        default:
+                            throw new CryptographicException(SR.Cryptography_UnsupportedPaddingMode);
+                    }
                 }
             }
         }
