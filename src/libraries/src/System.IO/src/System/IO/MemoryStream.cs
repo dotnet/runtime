@@ -448,11 +448,6 @@ namespace System.IO
         }
 #pragma warning restore 1998
 
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state) =>
-            TaskToApm.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), callback, state);
-
-        public override int EndRead(IAsyncResult asyncResult) =>
-            TaskToApm.End<int>(asyncResult);
 
         public override int ReadByte()
         {
@@ -737,12 +732,6 @@ namespace System.IO
             Write(buffer, offset, count);
         }
 #pragma warning restore 1998
-
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state) =>
-            TaskToApm.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), callback, state);
-
-        public override void EndWrite(IAsyncResult asyncResult) =>
-            TaskToApm.End(asyncResult);
 
         public override void WriteByte(byte value)
         {

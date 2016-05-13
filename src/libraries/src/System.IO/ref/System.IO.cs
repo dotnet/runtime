@@ -89,11 +89,7 @@ namespace System.IO
         public override bool CanWrite { get { return default(bool); } }
         public override long Length { get { return default(long); } }
         public override long Position { get { return default(long); } set { } }
-        public override System.IAsyncResult BeginRead(byte[] buffer, int offset, int count, System.AsyncCallback callback, object state) { return default(System.IAsyncResult); }
-        public override System.IAsyncResult BeginWrite(byte[] buffer, int offset, int count, System.AsyncCallback callback, object state) { return default(System.IAsyncResult); }
         protected override void Dispose(bool disposing) { }
-        public override int EndRead(System.IAsyncResult asyncResult) { return 0; }
-        public override void EndWrite(System.IAsyncResult asyncResult) { return; }
         public override void Flush() { }
         public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
         public override int Read(byte[] array, int offset, int count) { return default(int); }
@@ -132,12 +128,8 @@ namespace System.IO
         public virtual int Capacity { get { return default(int); } set { } }
         public override long Length { get { return default(long); } }
         public override long Position { get { return default(long); } set { } }
-        public override System.IAsyncResult BeginRead(byte[] buffer, int offset, int count, System.AsyncCallback callback, object state) { return default(System.IAsyncResult); }
-        public override System.IAsyncResult BeginWrite(byte[] buffer, int offset, int count, System.AsyncCallback callback, object state) { return default(System.IAsyncResult); }
         public override System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, int bufferSize, System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
         protected override void Dispose(bool disposing) { }
-        public override int EndRead(System.IAsyncResult asyncResult) { return 0; }
-        public override void EndWrite(System.IAsyncResult asyncResult) { return; }
         public override void Flush() { }
         public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
         public override int Read(byte[] buffer, int offset, int count) { buffer = default(byte[]); return default(int); }
@@ -170,8 +162,6 @@ namespace System.IO
         public abstract long Position { get; set; }
         public virtual int ReadTimeout { get { return default(int); } set { } }
         public virtual int WriteTimeout { get { return default(int); } set { } }
-        public virtual System.IAsyncResult BeginRead(byte[] buffer, int offset, int count, System.AsyncCallback callback, object state) { return default(System.IAsyncResult); }
-        public virtual System.IAsyncResult BeginWrite(byte[] buffer, int offset, int count, System.AsyncCallback callback, object state) { return default(System.IAsyncResult); }
         public void CopyTo(System.IO.Stream destination) { }
         public void CopyTo(System.IO.Stream destination, int bufferSize) { }
         public System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination) { return default(System.Threading.Tasks.Task); }
@@ -179,8 +169,6 @@ namespace System.IO
         public virtual System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, int bufferSize, System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
-        public virtual int EndRead(System.IAsyncResult asyncResult) { return 0; }
-        public virtual void EndWrite(System.IAsyncResult asyncResult) { return; }
         public abstract void Flush();
         public System.Threading.Tasks.Task FlushAsync() { return default(System.Threading.Tasks.Task); }
         public virtual System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
