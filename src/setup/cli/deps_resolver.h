@@ -27,6 +27,7 @@ public:
     deps_resolver_t(const hostpolicy_init_t& init, const arguments_t& args)
         : m_fx_dir(init.fx_dir)
         , m_app_dir(args.app_dir)
+        , m_managed_app(args.managed_application)
         , m_coreclr_index(-1)
         , m_portable(init.is_portable)
         , m_deps(nullptr)
@@ -58,6 +59,11 @@ public:
             errors->assign(_X("An error occurred while parsing ") + m_deps_file);
             return false;
         }
+        if (m_portable && !m_fx_deps->exists())
+        {
+            errors->assign(_X("A fatal error was encountered, missing dependencies manifest at: ") + m_fx_deps_file);
+            return false;
+        }
         if (m_portable && !m_fx_deps->is_valid())
         {
             errors->assign(_X("An error occurred while parsing ") + m_fx_deps_file);
@@ -73,11 +79,12 @@ public:
     void setup_additional_probes(const std::vector<pal::string_t>& probe_paths);
 
     bool resolve_probe_paths(
-      const pal::string_t& clr_dir,
       probe_paths_t* probe_paths,
       std::unordered_set<pal::string_t>* breadcrumb);
 
-    pal::string_t resolve_coreclr_dir();
+    bool get_coreclr_dir_from_deps(const pal::string_t& deps_dir, deps_json_t* deps, pal::string_t* candidate);
+
+    bool resolve_coreclr_dir(pal::string_t* clr_dir);
 
     const pal::string_t& get_fx_deps_file() const
     {
@@ -104,15 +111,13 @@ private:
     }
 
     // Resolve order for TPA lookup.
-    void resolve_tpa_list(
-        const pal::string_t& clr_dir,
+    bool resolve_tpa_list(
         pal::string_t* output,
         std::unordered_set<pal::string_t>* breadcrumb);
 
     // Resolve order for culture and native DLL lookup.
-    void resolve_probe_dirs(
+    bool resolve_probe_dirs(
         deps_entry_t::asset_types asset_type,
-        const pal::string_t& clr_dir,
         pal::string_t* output,
         std::unordered_set<pal::string_t>* breadcrumb);
 
@@ -121,6 +126,12 @@ private:
         const pal::string_t& dir,
         const pal::string_t& dir_name,
         std::unordered_map<pal::string_t, pal::string_t>* dir_assemblies);
+
+    // Probe entry in probe configurations and deps dir.
+    bool probe_deps_entry(
+        const deps_entry_t& entry,
+        const pal::string_t& deps_dir,
+        pal::string_t* candidate);
 
     // Probe entry in probe configurations.
     bool probe_entry_in_configs(
@@ -143,13 +154,14 @@ private:
     // Map of simple name -> full path of local/fx assemblies populated
     // in priority order of their extensions.
     typedef std::unordered_map<pal::string_t, pal::string_t> dir_assemblies_t;
-    dir_assemblies_t m_local_assemblies;
-    dir_assemblies_t m_fx_assemblies;
 
     std::unordered_map<pal::string_t, pal::string_t> m_patch_roll_forward_cache;
     std::unordered_map<pal::string_t, pal::string_t> m_prerelease_roll_forward_cache;
 
     pal::string_t m_package_cache;
+
+    // The managed application the dependencies are being resolved for.
+    pal::string_t m_managed_app;
 
     // Servicing root, could be empty on platforms that don't support or when errors occur.
     pal::string_t m_core_servicing;
