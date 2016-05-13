@@ -85,7 +85,7 @@ BOOL ReadyToRunInfo::TryLookupTypeTokenFromName(NameHandle *pName, mdToken * pFo
     CONTRACTL
     {
         GC_NOTRIGGER;
-        NOTHROW;
+        THROWS;
         SO_INTOLERANT;
         SUPPORTS_DAC;
         PRECONDITION(!m_availableTypesHashtable.IsNull());
