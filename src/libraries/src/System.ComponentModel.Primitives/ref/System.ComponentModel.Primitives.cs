@@ -55,6 +55,18 @@ namespace System.ComponentModel
         public override bool Equals(object obj) { return default(bool); }
         public override int GetHashCode() { return default(int); }
     }
+    public sealed partial class DesignerCategoryAttribute : Attribute
+    {
+        public static readonly DesignerCategoryAttribute Component;
+        public static readonly DesignerCategoryAttribute Default;
+        public static readonly DesignerCategoryAttribute Form;
+        public static readonly DesignerCategoryAttribute Generic;
+        public DesignerCategoryAttribute() { }
+        public DesignerCategoryAttribute(string category) { }
+        public string Category { get; }
+        public override bool Equals(object obj) { return default(bool); }
+        public override int GetHashCode() { return default(int); }
+    }
     public enum DesignerSerializationVisibility
     {
         Content = 2,
@@ -72,7 +84,7 @@ namespace System.ComponentModel
         public override int GetHashCode() { return default(int); }
         public System.ComponentModel.DesignerSerializationVisibility Visibility { get; }
     }
-    public partial class DesignOnlyAttribute : System.Attribute
+    public sealed partial class DesignOnlyAttribute : System.Attribute
     {
         public static readonly DesignOnlyAttribute Default;
         public static readonly DesignOnlyAttribute No;
