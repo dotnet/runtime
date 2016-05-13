@@ -10328,10 +10328,6 @@ void                emitter::emitDispIns(instrDesc *  id,
             printf("(LARGELDC)");
         }
 
-        if (fmt == IF_LARGELDC)
-        {
-            printf("(LARGELDC)");
-        }
         printf("[");
         if (id->idAddr()->iiaIsJitDataOffset())
         {
@@ -10349,7 +10345,12 @@ void                emitter::emitDispIns(instrDesc *  id,
         else
         {
             assert(imm == 0);
-            if (id->idIsBound())
+            if (id->idIsReloc())
+            {
+                printf("RELOC ");
+                emitDispImm((ssize_t)id->idAddr()->iiaAddr, false);
+            }
+            else if (id->idIsBound())
             {
                 printf("G_M%03u_IG%02u", Compiler::s_compMethodsCount, id->idAddr()->iiaIGlabel->igNum);
             }
