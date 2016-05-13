@@ -4348,11 +4348,11 @@ mono_object_xdomain_representation (MonoObject *obj, MonoDomain *target_domain, 
 
 /* Used in call_unhandled_exception_delegate */
 static MonoObject *
-create_unhandled_exception_eventargs (MonoObject *exc)
+create_unhandled_exception_eventargs (MonoObject *exc, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoError error;
+	mono_error_init (error);
 	MonoClass *klass;
 	gpointer args [2];
 	MonoMethod *method = NULL;
@@ -4369,11 +4369,11 @@ create_unhandled_exception_eventargs (MonoObject *exc)
 	args [0] = exc;
 	args [1] = &is_terminating;
 
-	obj = mono_object_new_checked (mono_domain_get (), klass, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	obj = mono_object_new_checked (mono_domain_get (), klass, error);
+	return_val_if_nok (error, NULL);
 
-	mono_runtime_invoke_checked (method, obj, args, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	mono_runtime_invoke_checked (method, obj, args, error);
+	return_val_if_nok (error, NULL);
 
 	return obj;
 }
@@ -4383,6 +4383,7 @@ static void
 call_unhandled_exception_delegate (MonoDomain *domain, MonoObject *delegate, MonoObject *exc) {
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	MonoError error;
 	MonoObject *e = NULL;
 	gpointer pa [2];
 	MonoDomain *current_domain = mono_domain_get ();
@@ -4393,7 +4394,6 @@ call_unhandled_exception_delegate (MonoDomain *domain, MonoObject *delegate, Mon
 	g_assert (domain == mono_object_domain (domain->domain));
 
 	if (mono_object_domain (exc) != domain) {
-		MonoError error;
 
 		exc = mono_object_xdomain_representation (exc, domain, &error);
 		if (!exc) {
@@ -4412,14 +4412,14 @@ call_unhandled_exception_delegate (MonoDomain *domain, MonoObject *delegate, Mon
 	g_assert (mono_object_domain (exc) == domain);
 
 	pa [0] = domain->domain;
-	pa [1] = create_unhandled_exception_eventargs (exc);
+	pa [1] = create_unhandled_exception_eventargs (exc, &error);
+	mono_error_assert_ok (&error);
 	mono_runtime_delegate_invoke (delegate, pa, &e);
 
 	if (domain != current_domain)
 		mono_domain_set_internal_with_options (current_domain, FALSE);
 
 	if (e) {
-		MonoError error;
 		gchar *msg = mono_string_to_utf8_checked (((MonoException *) e)->message, &error);
 		if (!mono_error_ok (&error)) {
 			g_warning ("Exception inside UnhandledException handler with invalid message (Invalid characters)\n");
@@ -4490,10 +4490,10 @@ mono_unhandled_exception (MonoObject *exc)
 	root_domain = mono_get_root_domain ();
 
 	root_appdomain_delegate = mono_field_get_value_object_checked (root_domain, field, (MonoObject*) root_domain->domain, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	mono_error_assert_ok (&error);
 	if (current_domain != root_domain) {
 		current_appdomain_delegate = mono_field_get_value_object_checked (current_domain, field, (MonoObject*) current_domain->domain, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		mono_error_assert_ok (&error);
 	}
 
 	if (!current_appdomain_delegate && !root_appdomain_delegate) {
