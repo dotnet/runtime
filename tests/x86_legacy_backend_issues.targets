@@ -100,9 +100,6 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\deadcode\badcodeafterfinally_r\badcodeafterfinally_r.cmd">
       <Issue>needs triage</Issue>
     </ExcludeList>
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V2.0-Beta2\b399444\b399444a\b399444a.cmd">
-      <Issue>needs triage</Issue>
-    </ExcludeList>
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Boxing\xlang\_orelsin_cs_il\_orelsin_cs_il.cmd">
       <Issue>needs triage</Issue>
     </ExcludeList>
@@ -113,9 +110,6 @@
       <Issue>needs triage</Issue>
     </ExcludeList>
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\tls\mutualrecurthd-tls\mutualrecurthd-tls.cmd">
-      <Issue>needs triage</Issue>
-    </ExcludeList>
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b57367\b57367\b57367.cmd">
       <Issue>needs triage</Issue>
     </ExcludeList>
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\Dev11\dev10_865840\dev10_865840\dev10_865840.cmd Timed Out">
@@ -199,9 +193,6 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\rvastatics\rvastatic3\rvastatic3.cmd">
       <Issue>needs triage</Issue>
     </ExcludeList>
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M10\b04914\b04914\b04914.cmd">
-      <Issue>needs triage</Issue>
-    </ExcludeList>
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\varargs\seh\fault_il_d\fault_il_d.cmd">
       <Issue>needs triage</Issue>
     </ExcludeList>
@@ -224,9 +215,6 @@
       <Issue>needs triage</Issue>
     </ExcludeList>
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\tailcall\_il_reltest_implicit\_il_reltest_implicit.cmd">
-      <Issue>needs triage</Issue>
-    </ExcludeList>
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M09\b15307\b15307\b15307.cmd">
       <Issue>needs triage</Issue>
     </ExcludeList>
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Performance\CodeQuality\V8\DeltaBlue\DeltaBlue\DeltaBlue.cmd">
@@ -271,9 +259,6 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\RVAInit\extended\extended.cmd">
       <Issue>needs triage</Issue>
     </ExcludeList>
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M09\b15307\b15307\b15307.cmd Timed Out">
-      <Issue>needs triage</Issue>
-    </ExcludeList>
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\intrinsic\interlocked\rva_rvastatic4\rva_rvastatic4.cmd">
       <Issue>needs triage</Issue>
     </ExcludeList>
@@ -281,9 +266,6 @@
       <Issue>needs triage</Issue>
     </ExcludeList>
     <ExcludeList Include="$(XunitTestBinBase)\Threading\ThreadStatics\ThreadStatic06\ThreadStatic06.cmd Timed Out">
-      <Issue>needs triage</Issue>
-    </ExcludeList>
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M09\b13621\b13621\b13621.cmd">
       <Issue>needs triage</Issue>
     </ExcludeList>
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\intrinsic\interlocked\rva_rvastatic3\rva_rvastatic3.cmd">
