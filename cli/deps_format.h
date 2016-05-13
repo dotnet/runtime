@@ -28,6 +28,7 @@ class deps_json_t
 public:
     deps_json_t()
         : m_valid(false)
+        , m_file_exists(false)
         , m_coreclr_index(-1)
         , m_hostpolicy_index(-1)
     {
@@ -60,6 +61,11 @@ public:
     bool has_hostpolicy_entry()
     {
         return m_hostpolicy_index >= 0;
+    }
+
+    bool exists()
+    {
+        return m_file_exists;
     }
 
     const deps_entry_t& get_coreclr_entry()
@@ -109,6 +115,7 @@ private:
     rid_fallback_graph_t m_rid_fallback_graph;
     int m_coreclr_index;
     int m_hostpolicy_index;
+    bool m_file_exists;
     bool m_valid;
 };
 

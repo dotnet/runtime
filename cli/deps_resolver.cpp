@@ -330,89 +330,95 @@ bool deps_resolver_t::probe_entry_in_configs(const deps_entry_t& entry, pal::str
     return false;
 }
 
-// -----------------------------------------------------------------------------
-// Resolve coreclr directory from the deps file.
-//
-// Description:
-//    Look for CoreCLR from the dependency list in the package cache and then
-//    the packages directory.
-//
-pal::string_t deps_resolver_t::resolve_coreclr_dir()
+/**
+ * Probe helper for a deps entry. Lookup all probe configurations and then
+ * lookup in the directory where the deps file is present. For app dirs,
+ *     1. RID specific entries are present in the package relative structure.
+ *     2. Non-RID entries are present in the directory path.
+ */
+bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::string_t& deps_dir, pal::string_t* candidate)
 {
-    trace::verbose(_X("--- Resolving CoreCLR directory ---"));
-
-    auto process_coreclr = [&]
-        (bool is_portable, const pal::string_t& deps_dir, deps_json_t* deps) -> pal::string_t
+    if (probe_entry_in_configs(entry, candidate))
     {
-        pal::string_t candidate;
-
-        if (deps->has_coreclr_entry())
-        {
-            const deps_entry_t& entry = deps->get_coreclr_entry();
-            if (probe_entry_in_configs(entry, &candidate))
-            {
-                return get_directory(candidate);
-            }
-            else if (entry.is_rid_specific && entry.to_rel_path(deps_dir, &candidate))
-            {
-                return get_directory(candidate);
-            }
-        }
-        else
-        {
-            trace::verbose(_X("Deps has no CoreCLR entry."));
-        }
-
-        // App/FX main dir or standalone app dir.
-        trace::verbose(_X("Probing for CoreCLR in deps directory=[%s]"), deps_dir.c_str());
-        if (coreclr_exists_in_dir(deps_dir))
-        {
-            return deps_dir;
-        }
-
-        return pal::string_t();
-    };
-
-    trace::info(_X("-- Starting CoreCLR Probe from app deps.json"));
-    pal::string_t clr_dir = process_coreclr(m_portable, m_app_dir, m_deps.get());
-    if (clr_dir.empty() && m_portable)
-    {
-        trace::info(_X("-- Starting CoreCLR Probe from FX deps.json"));
-        clr_dir = process_coreclr(false, m_fx_dir, m_fx_deps.get());
+        return true;
     }
-    if (!clr_dir.empty())
+    if (entry.is_rid_specific && entry.to_rel_path(deps_dir, candidate))
     {
-        return clr_dir;
+        return true;
     }
-
-    // Use platform-specific search algorithm
-    pal::string_t install_dir;
-    if (pal::find_coreclr(&install_dir))
+    if (!entry.is_rid_specific && entry.to_dir_path(deps_dir, candidate))
     {
-        return install_dir;
+        return true;
     }
-
-    return pal::string_t();
+    return false;
 }
 
-void deps_resolver_t::resolve_tpa_list(
-        const pal::string_t& clr_dir,
+/**
+ * Helper for obtaining CoreCLR from a given deps file and the deps file's directory.
+ */
+bool deps_resolver_t::get_coreclr_dir_from_deps(const pal::string_t& deps_dir, deps_json_t* deps, pal::string_t* candidate)
+{
+    if (!deps->has_coreclr_entry())
+    {
+        return false;
+    }
+
+    pal::string_t coreclr;
+    if (probe_deps_entry(deps->get_coreclr_entry(), deps_dir, &coreclr))
+    {
+        *candidate = get_directory(coreclr);
+        return true;
+    }
+
+    return false;
+}
+
+
+/**
+ * Probe for coreclr relative to the app and then from the framework root.
+ * If deps does not exist, then just use the app base.
+ */
+bool deps_resolver_t::resolve_coreclr_dir(pal::string_t* clr_dir)
+{
+    trace::info(_X("-- Starting CoreCLR Probe from app deps.json"));
+
+    if (get_coreclr_dir_from_deps(m_app_dir, m_deps.get(), clr_dir))
+    {
+        return true;
+    }
+
+    if (m_portable)
+    {
+        trace::info(_X("-- Starting CoreCLR Probe from FX deps.json"));
+        if (get_coreclr_dir_from_deps(m_fx_dir, m_fx_deps.get(), clr_dir))
+        {
+            return true;
+        }
+    }
+
+    if (!m_deps->exists())
+    {
+        if (coreclr_exists_in_dir(m_app_dir))
+        {
+            *clr_dir = m_app_dir;
+            return true;
+        }   
+    }
+
+    return false;
+}
+
+/**
+ *  Resovle the TPA assembly locations
+ */
+bool deps_resolver_t::resolve_tpa_list(
         pal::string_t* output,
         std::unordered_set<pal::string_t>* breadcrumb)
 {
     const std::vector<deps_entry_t> empty(0);
-
-    // Obtain the local assemblies in the app dir.
-    get_dir_assemblies(m_app_dir, _X("local"), &m_local_assemblies);
-    if (m_portable)
-    {
-        // For portable also obtain FX dir assemblies.
-        get_dir_assemblies(m_fx_dir, _X("fx"), &m_fx_assemblies);
-    }
-
     std::unordered_set<pal::string_t> items;
 
-    auto process_entry = [&](const pal::string_t& deps_dir, deps_json_t* deps, const dir_assemblies_t& dir_assemblies, const deps_entry_t& entry)
+    auto process_entry = [&](const pal::string_t& deps_dir, deps_json_t* deps, const deps_entry_t& entry) -> bool
     {
         if (entry.is_serviceable)
         {
@@ -421,81 +427,81 @@ void deps_resolver_t::resolve_tpa_list(
         }
         if (items.count(entry.asset_name))
         {
-            return;
+            return true;
         }
+        // Ignore placeholders
+        if (ends_with(entry.relative_path, _X("/_._"), false))
+        {
+            return true;
+        }
+
         pal::string_t candidate;
 
         trace::info(_X("Processing TPA for deps entry [%s, %s, %s]"), entry.library_name.c_str(), entry.library_version.c_str(), entry.relative_path.c_str());
 
-        // Try to probe from the shared locations.
-        if (probe_entry_in_configs(entry, &candidate))
+        if (probe_deps_entry(entry, deps_dir, &candidate))
         {
             add_tpa_asset(entry.asset_name, candidate, &items, output);
         }
-        // The rid asset should be picked up from app relative subpath.
-        else if (entry.is_rid_specific && entry.to_rel_path(deps_dir, &candidate))
+        // Leave the mscorlib error handling to the CoreCLR -- this is because apps might choose to use mscorlib.ni.dll
+        // and delete mscorlib.dll and vice-versa.
+        else if (entry.asset_name != _X("mscorlib"))
         {
-            add_tpa_asset(entry.asset_name, candidate, &items, output);
+            trace::error(_X("Error: assembly specified in the dependencies manifest was not found -- package: '%s', version: '%s', path: '%s'"), 
+                entry.library_name.c_str(), entry.library_version.c_str(), entry.relative_path.c_str());
+            return false;
         }
-        // The rid-less asset should be picked up from the app base.
-        else if (dir_assemblies.count(entry.asset_name))
-        {
-            add_tpa_asset(entry.asset_name, dir_assemblies.find(entry.asset_name)->second, &items, output);
-        }
-        else
-        {
-            // FIXME: Consider this error as a fail fast?
-            trace::warning(_X("Could not resolve path to assembly: [%s, %s, %s]"), entry.library_name.c_str(), entry.library_version.c_str(), entry.relative_path.c_str());
-        }
+
+        return true;
     };
-    
+
+    // First add managed assembly to the TPA.
+    // TODO: Remove: the deps should contain the managed DLL.
+    // Workaround for: csc.deps.json doesn't have the csc.dll
+    pal::string_t managed_app_asset = get_filename_without_ext(m_managed_app);
+    add_tpa_asset(managed_app_asset, m_managed_app, &items, output);
+
     const auto& deps_entries = m_deps->get_entries(deps_entry_t::asset_types::runtime);
-    std::for_each(deps_entries.begin(), deps_entries.end(), [&](const deps_entry_t& entry) {
-        process_entry(m_app_dir, m_deps.get(), m_local_assemblies, entry);
-    });
+    for (const auto& entry : deps_entries)
+    {
+        if (!process_entry(m_app_dir, m_deps.get(), entry))
+        {
+            return false;
+        }
+    }
 
     // Finally, if the deps file wasn't present or has missing entries, then
     // add the app local assemblies to the TPA.
-    for (const auto& kv : m_local_assemblies)
+    if (!m_deps->exists())
     {
-        add_tpa_asset(kv.first, kv.second, &items, output);
+        dir_assemblies_t local_assemblies;
+
+        // Obtain the local assemblies in the app dir.
+        get_dir_assemblies(m_app_dir, _X("local"), &local_assemblies);
+        for (const auto& kv : local_assemblies)
+        {
+            add_tpa_asset(kv.first, kv.second, &items, output);
+        }
     }
 
+    // Probe FX deps entries after app assemblies are added.
     const auto& fx_entries = m_portable ? m_fx_deps->get_entries(deps_entry_t::asset_types::runtime) : empty;
-    std::for_each(fx_entries.begin(), fx_entries.end(), [&](const deps_entry_t& entry) {
-        process_entry(m_fx_dir, m_fx_deps.get(), m_fx_assemblies, entry);
-    });
-
-    for (const auto& kv : m_fx_assemblies)
+    for (const auto& entry : fx_entries)
     {
-        add_tpa_asset(kv.first, kv.second, &items, output);
+        if (!process_entry(m_fx_dir, m_fx_deps.get(), entry))
+        {
+            return false;
+        }
     }
+
+    return true;
 }
 
-// -----------------------------------------------------------------------------
-// Resolve the directories order for resources/native lookup
-//
-// Description:
-//    This general purpose function specifies priority order of directory lookup
-//    for both native images and resources specific resource images. Lookup for
-//    resources assemblies is done by looking up two levels above from the file
-//    path. Lookup for native images is done by looking up one level from the
-//    file path.
-//
-//  Parameters:
-//     asset_type        - The type of the asset that needs lookup, currently
-//                         supports "resources" and "native"
-//     app_dir           - The application local directory
-//     package_dir       - The directory path to where packages are restored
-//     package_cache_dir - The directory path to secondary cache for packages
-//     clr_dir           - The directory where the host loads the CLR
-//
-//  Returns:
-//     output - Pointer to a string that will hold the resolved lookup dirs
-//
-void deps_resolver_t::resolve_probe_dirs(
+/**
+ *  Resolve native and culture assembly directories based on "asset_type" parameter.
+ */
+bool deps_resolver_t::resolve_probe_dirs(
         deps_entry_t::asset_types asset_type,
-        const pal::string_t& clr_dir,
         pal::string_t* output,
         std::unordered_set<pal::string_t>* breadcrumb)
 {
@@ -511,10 +517,16 @@ void deps_resolver_t::resolve_probe_dirs(
     std::function<pal::string_t(const pal::string_t&)> native = [] (const pal::string_t& str) {
         return get_directory(str);
     };
+    // Action for post processing the resolved path
     std::function<pal::string_t(const pal::string_t&)>& action = is_resources ? resources : native;
+
+    // Set for de-duplication
     std::unordered_set<pal::string_t> items;
+
     pal::string_t core_servicing = m_core_servicing;
     pal::realpath(&core_servicing);
+
+    // Filter out non-serviced assets so the paths can be added after servicing paths.
     pal::string_t non_serviced;
 
     std::vector<deps_entry_t> empty(0);
@@ -523,85 +535,80 @@ void deps_resolver_t::resolve_probe_dirs(
 
     pal::string_t candidate;
 
-    bool track_api_sets = true;
-    auto add_package_cache_entry = [&](const deps_entry_t& entry)
+    auto add_package_cache_entry = [&](const deps_entry_t& entry, const pal::string_t& deps_dir) -> bool
     {
         if (entry.is_serviceable)
         {
             breadcrumb->insert(entry.library_name + _X(",") + entry.library_version);
             breadcrumb->insert(entry.library_name);
         }
-
-        if (probe_entry_in_configs(entry, &candidate))
+        if (items.count(entry.asset_name))
         {
-            // For standalone apps, on win7, coreclr needs ApiSets which has to be in the DLL search path.
-            const pal::string_t result_dir = action(candidate);
-
-            if (track_api_sets && pal::need_api_sets() &&
-                ends_with(entry.library_name, _X("Microsoft.NETCore.Windows.ApiSets"), false))
-            {
-                // For standalone and portable apps, get the ApiSets DLL directory,
-                // as they could come from servicing or other probe paths.
-                // Note: in portable apps, the API set would come from FX deps
-                // which is actually a standalone deps (rid specific API set).
-                // If the portable app relied on its version of API sets, then
-                // the rid selection fallback would have already been performed
-                // by the host (deps_format.cpp)
-                m_api_set_paths.insert(result_dir);
-            }
-
-            add_unique_path(asset_type, result_dir, &items, output, &non_serviced, core_servicing);
+            return true;
         }
+        // Ignore placeholders
+        if (ends_with(entry.relative_path, _X("/_._"), false))
+        {
+            return true;
+        }
+
+        trace::verbose(_X("Processing native/culture for deps entry [%s, %s, %s]"), 
+            entry.library_name.c_str(), entry.library_version.c_str(), entry.relative_path.c_str());
+
+        if (probe_deps_entry(entry, deps_dir, &candidate))
+        {
+            add_unique_path(asset_type, action(candidate), &items, output, &non_serviced, core_servicing);
+        }
+        else
+        {
+            // For standalone apps, dotnet.exe will be renamed. Do not use the full package name
+            // because of rid-fallback could happen (ex: CentOS falling back to RHEL)
+            if (ends_with(entry.library_name, _X(".Microsoft.NETCore.DotNetHost"), false) && entry.asset_name == _X("dotnet"))
+            {
+                trace::warning(_X("Warning: assembly specified in the dependencies manifest was not found -- package: '%s', version: '%s', path: '%s'"), 
+                    entry.library_name.c_str(), entry.library_version.c_str(), entry.relative_path.c_str());
+                return true;
+            }
+            trace::error(_X("Error: assembly specified in the dependencies manifest was not found -- package: '%s', version: '%s', path: '%s'"), 
+                entry.library_name.c_str(), entry.library_version.c_str(), entry.relative_path.c_str());
+            return false;
+        }
+
+        if (m_api_set_paths.empty() && pal::need_api_sets() &&
+                ends_with(entry.library_name, _X("Microsoft.NETCore.Windows.ApiSets"), false))
+        {
+            m_api_set_paths.insert(action(candidate));
+        }
+
+        return true;
     };
-    std::for_each(entries.begin(), entries.end(), add_package_cache_entry);
-    track_api_sets = m_api_set_paths.empty();
-    std::for_each(fx_entries.begin(), fx_entries.end(), add_package_cache_entry);
-    track_api_sets = m_api_set_paths.empty();
 
-    // For portable rid specific assets, the app relative directory must be used.
-    if (m_portable)
+    for (const auto& entry : entries)
     {
-        std::for_each(entries.begin(), entries.end(), [&](const deps_entry_t& entry)
+        if (!add_package_cache_entry(entry, m_app_dir))
         {
-            if (entry.is_rid_specific && entry.asset_type == asset_type && entry.to_rel_path(m_app_dir, &candidate))
-            {
-                add_unique_path(asset_type, action(candidate), &items, output, &non_serviced, core_servicing);
-            }
-
-            // App called out an explicit API set dependency.
-            if (track_api_sets && entry.is_rid_specific && pal::need_api_sets() &&
-                ends_with(entry.library_name, _X("Microsoft.NETCore.Windows.ApiSets"), false))
-            {
-                m_api_set_paths.insert(action(candidate));
-            }
-        });
-    }
-
-    track_api_sets = m_api_set_paths.empty();
-
-    // App local path
-    add_unique_path(asset_type, m_app_dir, &items, output, &non_serviced, core_servicing);
-
-    // If API sets is not found (i.e., empty) in the probe paths above:
-    // 1. For standalone app, do nothing as all are sxs.
-    // 2. For portable app, add FX dir.
-
-    // FX path if present
-    if (!m_fx_dir.empty())
-    {
-        // For portable apps, if we didn't find api sets in probe paths
-        // add the FX directory.
-        if (track_api_sets && pal::need_api_sets())
-        {
-            m_api_set_paths.insert(m_fx_dir);
+            return false;
         }
-        add_unique_path(asset_type, m_fx_dir, &items, output, &non_serviced, core_servicing);
     }
 
-    // CLR path
-    add_unique_path(asset_type, clr_dir, &items, output, &non_serviced, core_servicing);
+    // If the deps file is missing add known locations.
+    if (!m_deps->exists())
+    {
+        // App local path
+        add_unique_path(asset_type, m_app_dir, &items, output, &non_serviced, core_servicing);
+    }
+    
+    for (const auto& entry : fx_entries)
+    {
+        if (!add_package_cache_entry(entry, m_fx_dir))
+        {
+            return false;
+        }
+    }
 
     output->append(non_serviced);
+
+    return true;
 }
 
 
@@ -617,10 +624,19 @@ void deps_resolver_t::resolve_probe_dirs(
 //                         resolved path ordering.
 //
 //
-bool deps_resolver_t::resolve_probe_paths(const pal::string_t& clr_dir, probe_paths_t* probe_paths, std::unordered_set<pal::string_t>* breadcrumb)
+bool deps_resolver_t::resolve_probe_paths(probe_paths_t* probe_paths, std::unordered_set<pal::string_t>* breadcrumb)
 {
-    resolve_tpa_list(clr_dir, &probe_paths->tpa, breadcrumb);
-    resolve_probe_dirs(deps_entry_t::asset_types::native, clr_dir, &probe_paths->native, breadcrumb);
-    resolve_probe_dirs(deps_entry_t::asset_types::resources, clr_dir, &probe_paths->resources, breadcrumb);
+    if (!resolve_tpa_list(&probe_paths->tpa, breadcrumb))
+    {
+        return false;
+    }
+    if (!resolve_probe_dirs(deps_entry_t::asset_types::native, &probe_paths->native, breadcrumb))
+    {
+        return false;
+    }
+    if (!resolve_probe_dirs(deps_entry_t::asset_types::resources, &probe_paths->resources, breadcrumb))
+    {
+        return false;
+    }
     return true;
 }
