@@ -438,7 +438,7 @@ Parameters :
 static void inject_activation_handler(int code, siginfo_t *siginfo, void *context)
 {
     // Only accept activations from the current process
-    if (siginfo->si_pid == getpid() && g_activationFunction != NULL)
+    if (g_activationFunction != NULL && siginfo->si_pid == getpid())
     {
         _ASSERTE(g_safeActivationCheckFunction != NULL);
 
