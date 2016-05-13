@@ -39,9 +39,7 @@
     <Compile Include="Assembly\Assembly_ToStringTests.cs" />
     <Compile Include="Assembly\Assembly_GetEntryAssembly.cs" />
     <Compile Include="Common\ReflectionTestData.cs" />
-    <Compile Include="ConstructorInfo\ConstructorInfo_FieldTests.cs" />
-    <Compile Include="ConstructorInfo\ConstructorInfo_InvokeTests.cs" />
-    <Compile Include="ConstructorInfo\ConstructorInfo_MethodTests.cs" />
+    <Compile Include="ConstructorInfoTests.cs" />
     <Compile Include="EventInfo\EventInfo_Members.cs" />
     <Compile Include="EventInfo\EventInfo_MethodTests.cs" />
     <Compile Include="EventInfo\EventInfo_PropertyTests.cs" />
