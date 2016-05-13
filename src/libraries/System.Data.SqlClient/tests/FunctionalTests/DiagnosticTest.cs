@@ -11,6 +11,7 @@ namespace System.Data.SqlClient.Tests
     public class DiagnosticTest
     {
         private string _connectionString = "server=tcp:server,1432;database=test;uid=admin;pwd=SQLDB;connect timeout=60;";
+        private string _badConnectionString = "data source = bad; initial catalog = bad; uid = bad; password = bad; connection timeout = 1;";
         private readonly ITestOutputHelper _output;
 
         public DiagnosticTest(ITestOutputHelper output)
@@ -318,6 +319,52 @@ namespace System.Data.SqlClient.Tests
                 }
             });
         }
+
+        [Fact]
+        public void ConnectionOpenTest()
+        {
+            CollectStatisticsDiagnostics(() =>
+            {
+                using (SqlConnection sqlConnection = new SqlConnection(_connectionString))
+                {
+                    sqlConnection.Open();
+                }
+            });
+        }
+        [Fact]
+        public void ConnectionOpenErrorTest()
+        {
+            CollectStatisticsDiagnostics(() =>
+            {
+                using (SqlConnection sqlConnection = new SqlConnection(_badConnectionString))
+                {
+                    try { sqlConnection.Open(); } catch { }
+                }
+            });
+        }
+
+        [Fact]
+        public void ConnectionOpenAsyncTest()
+        {
+            CollectStatisticsDiagnosticsAsync(async () =>
+            {
+                using (SqlConnection sqlConnection = new SqlConnection(_connectionString))
+                {
+                    await sqlConnection.OpenAsync();
+                }
+            });
+        }
+        [Fact]
+        public void ConnectionOpenAsyncErrorTest()
+        {
+            CollectStatisticsDiagnosticsAsync(async () =>
+            {
+                using (SqlConnection sqlConnection = new SqlConnection(_badConnectionString))
+                {
+                    try { await sqlConnection.OpenAsync(); } catch { }
+                }
+            });
+        }
         
         private void CollectStatisticsDiagnostics(Action sqlOperation)
         {
@@ -342,6 +389,12 @@ namespace System.Data.SqlClient.Tests
                         string operation = GetPropertyValueFromType<string>(kvp.Value, "Operation");
                         Assert.False(string.IsNullOrWhiteSpace(operation));
 
+                        Guid connectionId = GetPropertyValueFromType<Guid>(kvp.Value, "ConnectionId");
+                        if (sqlCommand.Connection.State == ConnectionState.Open)
+                        { 
+                            Assert.NotEqual(connectionId, Guid.Empty);
+                        }
+
                         beginOperationId = retrievedOperationId;
                                                                         
                         statsLogged = true;
@@ -363,6 +416,12 @@ namespace System.Data.SqlClient.Tests
                         string operation = GetPropertyValueFromType<string>(kvp.Value, "Operation");
                         Assert.False(string.IsNullOrWhiteSpace(operation));
 
+                        Guid connectionId = GetPropertyValueFromType<Guid>(kvp.Value, "ConnectionId");
+                        if (sqlCommand.Connection.State == ConnectionState.Open)
+                        {
+                            Assert.NotEqual(connectionId, Guid.Empty);
+                        }
+
                         // if we get to this point, then statistics exist and this must be the "end" 
                         // event, so we need to make sure the operation IDs match
                         Assert.Equal(retrievedOperationId, beginOperationId);
@@ -383,6 +442,107 @@ namespace System.Data.SqlClient.Tests
 
                         string operation = GetPropertyValueFromType<string>(kvp.Value, "Operation");
                         Assert.False(string.IsNullOrWhiteSpace(operation));
+
+                        Guid connectionId = GetPropertyValueFromType<Guid>(kvp.Value, "ConnectionId");
+                        if (sqlCommand.Connection.State == ConnectionState.Open)
+                        {
+                            Assert.NotEqual(connectionId, Guid.Empty);
+                        }
+
+                        statsLogged = true;
+                    }
+                    else if (kvp.Key.Equals("System.Data.SqlClient.WriteConnectionOpenBefore"))
+                    {
+                        Assert.NotNull(kvp.Value);
+
+                        SqlConnection sqlConnection = GetPropertyValueFromType<SqlConnection>(kvp.Value, "Connection");
+                        Assert.NotNull(sqlConnection);
+
+                        string operation = GetPropertyValueFromType<string>(kvp.Value, "Operation");
+                        Assert.False(string.IsNullOrWhiteSpace(operation));
+
+                        statsLogged = true;
+                    }
+                    else if (kvp.Key.Equals("System.Data.SqlClient.WriteConnectionOpenAfter"))
+                    {
+                        Assert.NotNull(kvp.Value);
+
+                        SqlConnection sqlConnection = GetPropertyValueFromType<SqlConnection>(kvp.Value, "Connection");
+                        Assert.NotNull(sqlConnection);
+
+                        string operation = GetPropertyValueFromType<string>(kvp.Value, "Operation");
+                        Assert.False(string.IsNullOrWhiteSpace(operation));
+
+                        statistics = GetPropertyValueFromType<IDictionary>(kvp.Value, "Statistics");
+                        Assert.NotNull(statistics);
+
+                        Guid connectionId = GetPropertyValueFromType<Guid>(kvp.Value, "ConnectionId");
+                        Assert.NotEqual(connectionId, Guid.Empty);
+
+                        statsLogged = true;
+                    }
+                    else if (kvp.Key.Equals("System.Data.SqlClient.WriteConnectionOpenError"))
+                    {
+                        Assert.NotNull(kvp.Value);
+
+                        SqlConnection sqlConnection = GetPropertyValueFromType<SqlConnection>(kvp.Value, "Connection");
+                        Assert.NotNull(sqlConnection);
+
+                        string operation = GetPropertyValueFromType<string>(kvp.Value, "Operation");
+                        Assert.False(string.IsNullOrWhiteSpace(operation));
+
+                        Exception ex = GetPropertyValueFromType<Exception>(kvp.Value, "Exception");
+                        Assert.NotNull(ex);
+
+                        statsLogged = true;
+                    }
+                    else if (kvp.Key.Equals("System.Data.SqlClient.WriteConnectionCloseBefore"))
+                    {
+                        Assert.NotNull(kvp.Value);
+
+                        SqlConnection sqlConnection = GetPropertyValueFromType<SqlConnection>(kvp.Value, "Connection");
+                        Assert.NotNull(sqlConnection);
+
+                        string operation = GetPropertyValueFromType<string>(kvp.Value, "Operation");
+                        Assert.False(string.IsNullOrWhiteSpace(operation));
+
+                        Guid connectionId = GetPropertyValueFromType<Guid>(kvp.Value, "ConnectionId");
+                        Assert.NotEqual(connectionId, Guid.Empty);
+
+                        statsLogged = true;
+                    }
+                    else if (kvp.Key.Equals("System.Data.SqlClient.WriteConnectionCloseAfter"))
+                    {
+                        Assert.NotNull(kvp.Value);
+
+                        SqlConnection sqlConnection = GetPropertyValueFromType<SqlConnection>(kvp.Value, "Connection");
+                        Assert.NotNull(sqlConnection);
+
+                        string operation = GetPropertyValueFromType<string>(kvp.Value, "Operation");
+                        Assert.False(string.IsNullOrWhiteSpace(operation));
+
+                        statistics = GetPropertyValueFromType<IDictionary>(kvp.Value, "Statistics");
+
+                        Guid connectionId = GetPropertyValueFromType<Guid>(kvp.Value, "ConnectionId");
+                        Assert.NotEqual(connectionId, Guid.Empty);
+
+                        statsLogged = true;
+                    }
+                    else if (kvp.Key.Equals("System.Data.SqlClient.WriteConnectionCloseError"))
+                    {
+                        Assert.NotNull(kvp.Value);
+
+                        SqlConnection sqlConnection = GetPropertyValueFromType<SqlConnection>(kvp.Value, "Connection");
+                        Assert.NotNull(sqlConnection);
+
+                        string operation = GetPropertyValueFromType<string>(kvp.Value, "Operation");
+                        Assert.False(string.IsNullOrWhiteSpace(operation));
+
+                        Exception ex = GetPropertyValueFromType<Exception>(kvp.Value, "Exception");
+                        Assert.NotNull(ex);
+
+                        Guid connectionId = GetPropertyValueFromType<Guid>(kvp.Value, "ConnectionId");
+                        Assert.NotEqual(connectionId, Guid.Empty);
 
                         statsLogged = true;
                     }
@@ -462,6 +622,104 @@ namespace System.Data.SqlClient.Tests
 
                     string operation = GetPropertyValueFromType<string>(kvp.Value, "Operation");
                     Assert.False(string.IsNullOrWhiteSpace(operation));
+
+                    statsLogged = true;
+                }
+                else if (kvp.Key.Equals("System.Data.SqlClient.WriteConnectionOpenBefore"))
+                {
+                    Assert.NotNull(kvp.Value);
+
+                    SqlConnection sqlConnection = GetPropertyValueFromType<SqlConnection>(kvp.Value, "Connection");
+                    Assert.NotNull(sqlConnection);
+
+                    string operation = GetPropertyValueFromType<string>(kvp.Value, "Operation");
+                    Assert.False(string.IsNullOrWhiteSpace(operation));
+
+                    statsLogged = true;
+                }
+                else if (kvp.Key.Equals("System.Data.SqlClient.WriteConnectionOpenAfter"))
+                {
+                    Assert.NotNull(kvp.Value);
+
+                    SqlConnection sqlConnection = GetPropertyValueFromType<SqlConnection>(kvp.Value, "Connection");
+                    Assert.NotNull(sqlConnection);
+
+                    string operation = GetPropertyValueFromType<string>(kvp.Value, "Operation");
+                    Assert.False(string.IsNullOrWhiteSpace(operation));
+
+                    statistics = GetPropertyValueFromType<IDictionary>(kvp.Value, "Statistics");
+                    Assert.NotNull(statistics);
+
+                    Guid connectionId = GetPropertyValueFromType<Guid>(kvp.Value, "ConnectionId");
+                    if (sqlConnection.State == ConnectionState.Open)
+                    { 
+                        Assert.NotEqual(connectionId, Guid.Empty);
+                    }
+
+                    statsLogged = true;
+                }
+                else if (kvp.Key.Equals("System.Data.SqlClient.WriteConnectionOpenError"))
+                {
+                    Assert.NotNull(kvp.Value);
+
+                    SqlConnection sqlConnection = GetPropertyValueFromType<SqlConnection>(kvp.Value, "Connection");
+                    Assert.NotNull(sqlConnection);
+
+                    string operation = GetPropertyValueFromType<string>(kvp.Value, "Operation");
+                    Assert.False(string.IsNullOrWhiteSpace(operation));
+
+                    Exception ex = GetPropertyValueFromType<Exception>(kvp.Value, "Exception");
+                    Assert.NotNull(ex);
+
+                    statsLogged = true;
+                }
+                else if (kvp.Key.Equals("System.Data.SqlClient.WriteConnectionCloseBefore"))
+                {
+                    Assert.NotNull(kvp.Value);
+
+                    SqlConnection sqlConnection = GetPropertyValueFromType<SqlConnection>(kvp.Value, "Connection");
+                    Assert.NotNull(sqlConnection);
+
+                    string operation = GetPropertyValueFromType<string>(kvp.Value, "Operation");
+                    Assert.False(string.IsNullOrWhiteSpace(operation));
+
+                    Guid connectionId = GetPropertyValueFromType<Guid>(kvp.Value, "ConnectionId");
+                    Assert.NotEqual(connectionId, Guid.Empty);
+
+                    statsLogged = true;
+                }
+                else if (kvp.Key.Equals("System.Data.SqlClient.WriteConnectionCloseAfter"))
+                {
+                    Assert.NotNull(kvp.Value);
+
+                    SqlConnection sqlConnection = GetPropertyValueFromType<SqlConnection>(kvp.Value, "Connection");
+                    Assert.NotNull(sqlConnection);
+
+                    string operation = GetPropertyValueFromType<string>(kvp.Value, "Operation");
+                    Assert.False(string.IsNullOrWhiteSpace(operation));
+
+                    statistics = GetPropertyValueFromType<IDictionary>(kvp.Value, "Statistics");
+
+                    Guid connectionId = GetPropertyValueFromType<Guid>(kvp.Value, "ConnectionId");
+                    Assert.NotEqual(connectionId, Guid.Empty);
+
+                    statsLogged = true;
+                }
+                else if (kvp.Key.Equals("System.Data.SqlClient.WriteConnectionCloseError"))
+                {
+                    Assert.NotNull(kvp.Value);
+
+                    SqlConnection sqlConnection = GetPropertyValueFromType<SqlConnection>(kvp.Value, "Connection");
+                    Assert.NotNull(sqlConnection);
+
+                    string operation = GetPropertyValueFromType<string>(kvp.Value, "Operation");
+                    Assert.False(string.IsNullOrWhiteSpace(operation));
+
+                    Exception ex = GetPropertyValueFromType<Exception>(kvp.Value, "Exception");
+                    Assert.NotNull(ex);
+
+                    Guid connectionId = GetPropertyValueFromType<Guid>(kvp.Value, "ConnectionId");
+                    Assert.NotEqual(connectionId, Guid.Empty);
 
                     statsLogged = true;
                 }
