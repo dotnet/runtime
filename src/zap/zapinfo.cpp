@@ -1582,7 +1582,6 @@ ZapInfo::getLocationOfThisType(CORINFO_METHOD_HANDLE   context)
     return m_pEEJitInfo->getLocationOfThisType(context);
 }
 
-
 void
 ZapInfo::embedGenericHandle(CORINFO_RESOLVED_TOKEN * pResolvedToken,
                             BOOL                     fEmbedParent,
@@ -3394,8 +3393,9 @@ CorInfoHelpFunc ZapInfo::getNewArrHelper(CORINFO_CLASS_HANDLE arrayCls)
     return m_pEEJitInfo->getNewArrHelper(arrayCls);
 }
 
-void ZapInfo::getReadyToRunHelper(
+bool ZapInfo::getReadyToRunHelper(
         CORINFO_RESOLVED_TOKEN * pResolvedToken,
+        CORINFO_LOOKUP_KIND * pGenericLookupKind,
         CorInfoHelpFunc          id,
         CORINFO_CONST_LOOKUP *   pLookup
         )
@@ -3481,6 +3481,9 @@ void ZapInfo::getReadyToRunHelper(
 
     pLookup->accessType = IAT_PVALUE;
     pLookup->addr = pImport;
+    return true;
+#else
+	return false;
 #endif
 }
 
