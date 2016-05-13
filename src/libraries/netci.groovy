@@ -16,6 +16,7 @@ def projectFolder = Utilities.getFolderName(project) + '/' + Utilities.getFolder
 def osGroupMap = ['Ubuntu14.04':'Linux',
                   'Ubuntu16.04':'Linux',
                   'Debian8.2':'Linux',
+                  'Debian8.4':'Linux',
                   'OSX':'OSX',
                   'Windows_NT':'Windows_NT',
                   'CentOS7.1': 'Linux',
@@ -25,7 +26,8 @@ def osGroupMap = ['Ubuntu14.04':'Linux',
 def targetNugetRuntimeMap = ['OSX' : 'osx.10.10-x64',
                              'Ubuntu14.04' : 'ubuntu.14.04-x64',
                              'Ubuntu16.04' : 'ubuntu.14.04-x64',
-                             'Debian8.2' : 'ubuntu.14.04-x64',
+                             'Debian8.2' : 'debian.8.2-x64',
+                             'Debian8.4' : 'debian.8.2-x64',
                              'CentOS7.1' : 'centos.7-x64',
                              'OpenSUSE13.2' : 'ubuntu.14.04-x64',
                              'RHEL7.2': 'rhel.7-x64']
@@ -464,7 +466,7 @@ def static addCopyCoreClrAndRunTestSteps(def job, def coreclrBranch, String os, 
 // and then a build for the test of corefx on the target platform.  Then we link them with a build
 // flow job.
 
-def innerLoopNonWindowsOSs = ['Ubuntu16.04', 'Debian8.2', 'CentOS7.1', 'OpenSUSE13.2', 'RHEL7.2']
+def innerLoopNonWindowsOSs = ['Ubuntu16.04', 'Debian8.2', 'Debian8.4', 'CentOS7.1', 'OpenSUSE13.2', 'RHEL7.2']
 [true, false].each { isPR ->
     ['Debug', 'Release'].each { configurationGroup ->
         innerLoopNonWindowsOSs.each { os ->
