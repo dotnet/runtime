@@ -134,12 +134,6 @@ RemoveDirectoryHelper (
 
     FILEDosToUnixPathA( lpPathName );
 
-    if ( !FILEGetFileNameFromSymLink(lpPathName))
-    {
-        FILEGetProperNotFoundError( lpPathName, dwLastError );
-        goto done;
-    }
-
     if ( rmdir(lpPathName) != 0 )
     {
         TRACE("Removal of directory [%s] was unsuccessful, errno = %d.\n",
@@ -177,7 +171,6 @@ RemoveDirectoryHelper (
         bRet = TRUE;
     }
 
-done:
     return bRet;
 }
 
