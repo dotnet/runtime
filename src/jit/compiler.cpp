@@ -1871,7 +1871,6 @@ unsigned ReinterpretHexAsDecimal(unsigned in)
     return result;
 }
 
-inline
 void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
 {
 #ifdef UNIX_AMD64_ABI
