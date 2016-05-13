@@ -5996,7 +5996,7 @@
       <Member Name="StringToCoTaskMemUni(System.String)" />
       <Member Name="StringToHGlobalAnsi(System.String)" />
       <Member Name="StringToHGlobalUni(System.String)" />
-      <Member Name="StringToAllocatedMemoryUTF8(System.String)" />
+      <Member Name="StringToCoTaskMemUTF8(System.String)" />
       <Member Name="StructureToPtr&lt;T&gt;(T,System.IntPtr,System.Boolean)" />
       <Member Name="UnsafeAddrOfPinnedArrayElement&lt;T&gt;(T[],System.Int32)" />
       <Member Name="WriteByte(System.Object,System.Int32,System.Byte)" />
