@@ -159,20 +159,6 @@ Close promary handles for stdin, stdout and stderr
 void FILECleanupStdHandles(void);
 
 /*++
-FILEGetFileNameFromSymLink
-
-Input paramters:
-
-source  = path to the file on input, path to the file with all 
-          symbolic links traversed on return
-
-
-Return value:
-    TRUE on success, FALSE on failure
---*/
-BOOL FILEGetFileNameFromSymLink(PathCharString& source);
-
-/*++
 
 Function : 
     FILEGetProperNotFoundError
