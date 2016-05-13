@@ -1,6 +1,6 @@
 {
   "version": "1.0.0-*",
-  "compilationOptions": {
+  "buildOptions": {
     "emitEntryPoint": true
   },
   "dependencies": {
@@ -8,8 +8,12 @@
     "NuGet.Versioning": "3.5.0-rc-1285",
     "System.CommandLine": "0.1.0-e160119-1",
     "System.Runtime.Serialization.Json": "4.0.2-rc2-24027",
-    "Microsoft.DotNet.ProjectModel": { "target": "project" },
-    "Microsoft.DotNet.Cli.Utils": { "target": "project" },
+    "Microsoft.DotNet.ProjectModel": {
+      "target": "project"
+    },
+    "Microsoft.DotNet.Cli.Utils": {
+      "target": "project"
+    },
     "Microsoft.NETCore.ConsoleHost": "1.0.0-rc2-24027",
     "NETStandard.Library": "1.5.0-rc2-24027"
   },
