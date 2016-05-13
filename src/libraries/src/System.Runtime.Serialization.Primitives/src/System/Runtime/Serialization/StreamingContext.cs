@@ -18,37 +18,43 @@ namespace System.Runtime.Serialization
 {
     public struct StreamingContext
     {
-        internal readonly object _additionalContext;
-        internal readonly StreamingContextStates _state;
+        internal Object m_additionalContext;
+        internal StreamingContextStates m_state;
 
-        public StreamingContext(StreamingContextStates state)
+        internal StreamingContext(StreamingContextStates state)
             : this(state, null)
         {
         }
 
-        public StreamingContext(StreamingContextStates state, object additional)
+        internal StreamingContext(StreamingContextStates state, Object additional)
         {
-            _state = state;
-            _additionalContext = additional;
+            m_state = state;
+            m_additionalContext = additional;
         }
 
-        public object Context => _additionalContext;
-        
-        public StreamingContextStates State => _state;
-        
-        public override bool Equals(object obj)
+        internal Object Context
+        {
+            get { return m_additionalContext; }
+        }
+
+        public override bool Equals(Object obj)
         {
             if (!(obj is StreamingContext))
             {
                 return false;
             }
             StreamingContext ctx = (StreamingContext)obj;
-            return ctx._additionalContext == _additionalContext && ctx._state == _state;
+            return ctx.m_additionalContext == m_additionalContext && ctx.m_state == m_state;
         }
 
         public override int GetHashCode()
         {
-            return (int)_state;
+            return (int)m_state;
+        }
+
+        internal StreamingContextStates State
+        {
+            get { return m_state; }
         }
     }
 
@@ -56,16 +62,16 @@ namespace System.Runtime.Serialization
     // Keep these in sync with the version in vm\runtimehandles.h
     // **********************************************************
     [Flags]
-    public enum StreamingContextStates
+    internal enum StreamingContextStates
     {
-        //CrossProcess = 0x01,
-        //CrossMachine = 0x02,
-        //File = 0x04,
-        //Persistence = 0x08,
-        //Remoting = 0x10,
-        //Other = 0x20,
-        //Clone = 0x40,
-        //CrossAppDomain = 0x80,
+        CrossProcess = 0x01,
+        CrossMachine = 0x02,
+        File = 0x04,
+        Persistence = 0x08,
+        Remoting = 0x10,
+        Other = 0x20,
+        Clone = 0x40,
+        CrossAppDomain = 0x80,
         All = 0xFF,
     }
 }
