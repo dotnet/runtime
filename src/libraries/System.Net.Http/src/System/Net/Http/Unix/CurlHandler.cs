@@ -150,7 +150,7 @@ namespace System.Net.Http
         private X509Certificate2Collection _clientCertificates;
         private Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> _serverCertificateValidationCallback;
         private bool _checkCertificateRevocationList;
-        private SslProtocols _sslProtocols = SecurityProtocol.DefaultSecurityProtocols;
+        private SslProtocols _sslProtocols = SslProtocols.None; // use default
 
         private object LockObject { get { return _agent; } }
 
@@ -268,11 +268,13 @@ namespace System.Net.Http
             get { return _sslProtocols; }
             set
             {
-                SecurityProtocol.ThrowOnNotAllowed(value, allowNone: false);
+                SecurityProtocol.ThrowOnNotAllowed(value, allowNone: true);
                 CheckDisposedOrStarted();
                 _sslProtocols = value;
             }
         }
+
+        private SslProtocols ActualSslProtocols => this.SslProtocols != SslProtocols.None ? this.SslProtocols : SecurityProtocol.DefaultSecurityProtocols;
 
         internal bool SupportsAutomaticDecompression => s_supportsAutomaticDecompression;
 

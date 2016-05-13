@@ -19,12 +19,12 @@ namespace System.Net.Http.Functional.Tests
         {
             using (var handler = new HttpClientHandler())
             {
-                const SslProtocols expectedDefault = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12;
-                Assert.Equal(expectedDefault, handler.SslProtocols);
+                Assert.Equal(SslProtocols.None, handler.SslProtocols);
             }
         }
 
         [Theory]
+        [InlineData(SslProtocols.None)]
         [InlineData(SslProtocols.Tls)]
         [InlineData(SslProtocols.Tls11)]
         [InlineData(SslProtocols.Tls12)]
@@ -42,7 +42,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(BackendSupportsSslConfiguration))]
-        public async Task SetProtcols_AfterRequest_ThrowsException()
+        public async Task SetProtocols_AfterRequest_ThrowsException()
         {
             using (var handler = new HttpClientHandler() { ServerCertificateCustomValidationCallback = LoopbackServer.AllowAllCertificates })
             using (var client = new HttpClient(handler))
@@ -58,7 +58,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [InlineData(SslProtocols.None)]
         [InlineData(~SslProtocols.None)]
 #pragma warning disable 0618 // obsolete warning
         [InlineData(SslProtocols.Ssl2)]
