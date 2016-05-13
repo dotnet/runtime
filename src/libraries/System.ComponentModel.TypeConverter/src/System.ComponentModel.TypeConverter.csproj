@@ -71,8 +71,6 @@
     <Compile Include="System\ComponentModel\DefaultEventAttribute.cs" />
     <Compile Include="System\ComponentModel\DefaultPropertyAttribute.cs" />
     <Compile Include="System\ComponentModel\DelegatingTypeDescriptionProvider.cs" />
-    <Compile Include="System\ComponentModel\DesignerSerializationVisibility.cs" />
-    <Compile Include="System\ComponentModel\DesignerSerializationVisibilityAttribute.cs" />
     <Compile Include="System\ComponentModel\EventDescriptor.cs" />
     <Compile Include="System\ComponentModel\EventDescriptorCollection.cs" />
     <Compile Include="System\ComponentModel\ExtendedPropertyDescriptor.cs" />

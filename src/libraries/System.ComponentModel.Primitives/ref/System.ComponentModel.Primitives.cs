@@ -55,6 +55,23 @@ namespace System.ComponentModel
         public override bool Equals(object obj) { return default(bool); }
         public override int GetHashCode() { return default(int); }
     }
+    public enum DesignerSerializationVisibility
+    {
+        Content = 2,
+        Hidden = 0,
+        Visible = 1,
+    }
+    public sealed partial class DesignerSerializationVisibilityAttribute : System.Attribute
+    {
+        public static readonly System.ComponentModel.DesignerSerializationVisibilityAttribute Content;
+        public static readonly System.ComponentModel.DesignerSerializationVisibilityAttribute Default;
+        public static readonly System.ComponentModel.DesignerSerializationVisibilityAttribute Hidden;
+        public static readonly System.ComponentModel.DesignerSerializationVisibilityAttribute Visible;
+        public DesignerSerializationVisibilityAttribute(DesignerSerializationVisibility visibility) { }
+        public override bool Equals(object obj) { return default(bool); }
+        public override int GetHashCode() { return default(int); }
+        public System.ComponentModel.DesignerSerializationVisibility Visibility { get; }
+    }
     public partial class DesignOnlyAttribute : System.Attribute
     {
         public static readonly DesignOnlyAttribute Default;
