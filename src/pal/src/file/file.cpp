@@ -1094,7 +1094,6 @@ DeleteFileA(
         IN LPCSTR lpFileName)
 {
     PAL_ERROR palError = NO_ERROR;
-    DWORD dwShareMode = SHARE_MODE_NOT_INITALIZED;
     CPalThread *pThread;
     int     result;
     BOOL    bRet = FALSE;
@@ -1127,31 +1126,9 @@ DeleteFileA(
         }
     }
 
-    palError = g_pFileLockManager->GetFileShareModeForFile(lpFullunixFileName, &dwShareMode);
+    result = unlink( lpFullunixFileName );
 
-    // Use unlink if we succesfully found the file to be opened with
-    // a FILE_SHARE_DELETE mode.
-    // Note that there is a window here where a race condition can occur:
-    //   the check for the sharing mode and the unlink are two separate actions
-    //   (not a single atomic action). So it's possible that between the check
-    //   happening and the unlink happening, the file may have been closed. If 
-    //   it is just closed and not re-opened, no problems.
-    //   If it is closed and re-opened without any sharing, we should be calling
-    //   InternalDelete instead which would have failed.
-    //   Instead, we call unlink which will succeed.
-
-    if (palError == NO_ERROR &&
-    dwShareMode != SHARE_MODE_NOT_INITALIZED &&
-    (dwShareMode & FILE_SHARE_DELETE) != 0)
-    {
-      result = unlink( lpFullunixFileName );
-    }
-    else
-    {
-      result = InternalDeleteFile( lpFullunixFileName );
-    }
-
-    if ( result < 0 )
+    if (result < 0)
     {
         TRACE("unlink returns %d\n", result);
         dwLastError = FILEGetLastErrorFromErrnoAndFilename(lpFullunixFileName);
@@ -1166,11 +1143,11 @@ done:
     {
         pThread->SetLastError( dwLastError );
     }
+
     LOGEXIT("DeleteFileA returns BOOL %d\n", bRet);
     PERF_EXIT(DeleteFileA);
     return bRet;
 }
-
 
 /*++
 Function:
