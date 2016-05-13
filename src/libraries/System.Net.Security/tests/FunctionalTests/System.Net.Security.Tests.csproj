@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
@@ -14,7 +14,6 @@
   <PropertyGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-  
   <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' and '$(ProjectJson)' == '' ">
     <ProjectJson>win/project.json</ProjectJson>
     <ProjectLockJson>win/project.lock.json</ProjectLockJson>
@@ -33,6 +32,7 @@
   <ItemGroup>
     <Compile Include="DummyTcpServer.cs" />
     <Compile Include="TestConfiguration.cs" />
+  
     <!-- SslStream Tests -->
     <Compile Include="CertificateChainValidation.cs" />
     <Compile Include="CertificateValidationClientServer.cs" />
@@ -48,12 +48,15 @@
     <Compile Include="SslStreamNetworkStreamTest.cs" />
     <Compile Include="StreamAPMExtensions.cs" />
     <Compile Include="TransportContextTest.cs" />
+    
     <!-- NegotiateStream Tests -->
     <Compile Include="NegotiateStreamStreamToStreamTest.cs" />
-
     <Compile Include="ServiceNameCollectionTest.cs" />
 
     <!-- Common test files -->
+    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
+      <Link>Common\System\PlatformDetection.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\CertificateConfiguration.cs">
       <Link>Common\System\Net\CertificateConfiguration.cs</Link>
     </Compile>
@@ -87,7 +90,6 @@
     <Compile Include="$(CommonTestPath)\System\Threading\Tasks\TaskTimeoutExtensions.cs">
       <Link>Common\System\Threading\Tasks\TaskTimeoutExtensions.cs</Link>
     </Compile>
-
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="IdentityValidator.Windows.cs" />
@@ -95,7 +97,6 @@
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="IdentityValidator.Unix.cs" />
   </ItemGroup>
-  
   <ItemGroup Condition=" '$(TargetsLinux)' == 'true' ">
     <None Include="..\Scripts\setup-kdc.sh">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -125,23 +126,20 @@
       <Link>Common\Interop\Unix\System.Net.Security.Native\Interop.GssBuffer.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\GssSafeHandles.cs">
-       <Link>Common\Microsoft\Win32\SafeHandles\GssSafeHandles.cs</Link>
+      <Link>Common\Microsoft\Win32\SafeHandles\GssSafeHandles.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.cs">
       <Link>Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.cs</Link>
     </Compile>
   </ItemGroup>
-  
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\System.Net.Security.csproj">
-      <Project>{89F37791-6254-4D60-AB96-ACD3CCA0E771}</Project>
-      <Name>System.Net.Security</Name>
-      <!-- tests build as linux/osx but product binary is unix -->
-      <OSGroup Condition="'$(TargetsUnix)' == 'true'">Unix</OSGroup>
-    </ProjectReference>
-  </ItemGroup>
   <ItemGroup>
     <SupplementalTestData Include="$(PackagesDir)System.Net.TestData\1.0.0-prerelease\content\**\*.*" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\System.Net.Security.csproj">
+      <Project>{89f37791-6254-4d60-ab96-acd3cca0e771}</Project>
+      <Name>System.Net.Security</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
