@@ -6196,8 +6196,9 @@ CorInfoHelpFunc CEEInfo::getUnBoxHelper(CORINFO_CLASS_HANDLE clsHnd)
 }
 
 /***********************************************************************/
-void CEEInfo::getReadyToRunHelper(
+bool CEEInfo::getReadyToRunHelper(
         CORINFO_RESOLVED_TOKEN * pResolvedToken,
+        CORINFO_LOOKUP_KIND *    pGenericLookupKind,
         CorInfoHelpFunc          id,
         CORINFO_CONST_LOOKUP *   pLookup
         )
@@ -10096,7 +10097,7 @@ bool CEEInfo::runWithErrorTrap(void (*function)(void*), void* param)
     // No dynamic contract here because SEH is used
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_SO_INTOLERANT;
+    STATIC_CONTRACT_SO_TOLERANT;
     STATIC_CONTRACT_MODE_PREEMPTIVE;
 
     // NOTE: the lack of JIT/EE transition markers in this method is intentional. Any
