@@ -548,6 +548,7 @@ namespace System.IO
                 }
 
                 // Block until an appropriate event arrives or until we timeout.
+                Debug.Assert(EnableRaisingEvents, "Expected EnableRaisingEvents to be true");
                 tcs.Task.Wait(timeout);
 
                 // Reset the enabled state to what it was.
