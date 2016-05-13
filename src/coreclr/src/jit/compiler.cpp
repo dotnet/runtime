@@ -683,7 +683,7 @@ void                Compiler::compShutdown()
     emitter::emitDone();
 
 #if defined(DEBUG) || defined(INLINE_DATA)
-    // Finish off any in-progress inline xml
+    // Finish reading and/or writing inline xml
     InlineStrategy::FinalizeXml();
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
