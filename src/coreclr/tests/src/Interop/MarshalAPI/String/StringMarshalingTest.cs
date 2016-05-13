@@ -179,7 +179,7 @@ public class StringMarshalingTest
             if (srcString.Contains("\0"))
                 continue;
 
-            IntPtr ptrString = Marshal.StringToAllocatedMemoryUTF8(srcString);
+            IntPtr ptrString = Marshal.StringToCoTaskMemUTF8(srcString);
             string retString = Marshal.PtrToStringUTF8(ptrString);
 
             if (!srcString.Equals(retString))
