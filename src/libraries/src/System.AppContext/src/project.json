@@ -13,9 +13,9 @@
         "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc3-24112-00"
       }
     },
-    "net462": {
+    "net463": {
       "dependencies": {
-        "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
+        "Microsoft.TargetingPack.NETFramework.v4.6.2": "1.0.1"
       }
     }
   }
