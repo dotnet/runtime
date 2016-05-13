@@ -15,6 +15,8 @@ namespace System.Security.Cryptography
         public virtual System.Security.Cryptography.KeySizes[] LegalKeySizes { get { return default(System.Security.Cryptography.KeySizes[]); } }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
+        protected int KeySizeValue;
+        protected KeySizes[] LegalKeySizesValue;
     }
     public enum CipherMode
     {

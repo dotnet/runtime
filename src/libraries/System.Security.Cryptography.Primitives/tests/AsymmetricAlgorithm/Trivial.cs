@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Linq;
-using System.Reflection;
 using Xunit;
 
 namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
@@ -31,8 +30,26 @@ namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
                         Assert.Throws<CryptographicException>(() => s.KeySize = keySize);
                     }
                 }
+
+                const int UnusualKeySize = 37;
+                Assert.Throws<CryptographicException>(() => s.KeySize = UnusualKeySize);
+                s.SetKeySize(37);
+                Assert.Equal(UnusualKeySize, s.KeySize);
+
+                // The value is illegal.
+                Assert.Throws<CryptographicException>(() => s.KeySize = s.KeySize);
             }
-            return;
+        }
+
+        [Fact]
+        public static void ValidKeySizeUsesProperty()
+        {
+            using (AsymmetricAlgorithm aa = new DoesNotSetLegalKeySizesField())
+            {
+                // If the implementation relies on validating against the field
+                // this will result in an exception.
+                aa.KeySize = 1048576;
+            }
         }
 
         [Fact]
@@ -47,38 +64,37 @@ namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
             // Valid algorithms must override LegalKeySizes
         }
 
-        private class Trivial : AsymmetricAlgorithm
+        private class DoesNotSetLegalKeySizesField : AsymmetricAlgorithm
         {
-            public Trivial()
+            public DoesNotSetLegalKeySizesField()
             {
-                //
-                // Although the desktop CLR allows overriding the LegalKeySizes property, 
-                // the BlockSize setter does not invoke the overriding method when validating
-                // the blockSize. Instead, it accesses the underlying field (LegalKeySizesValue) directly.
-                //
-                // We've since removed this field from the public surface area (and fixed the BlockSize property
-                // to call LegalKeySizes rather than the underlying field.) To make this test also run on the desktop, however,
-                // we will also set the LegalKeySizesValue field if present.
-                //
-                FieldInfo legalKeySizesValue = typeof(AsymmetricAlgorithm).GetTypeInfo().GetDeclaredField("LegalKeySizesValue");
-                if (legalKeySizesValue != null && legalKeySizesValue.IsFamily)
-                {
-                    legalKeySizesValue.SetValue(this, LegalKeySizes);
-                }
+                // Verify the base class protected field default values.
+                Assert.Null(LegalKeySizesValue);
+                Assert.Equal(0, KeySizeValue);
             }
 
             public override KeySizes[] LegalKeySizes
             {
-                get
-                {
-                    return new KeySizes[]
+                get { return new[] { new KeySizes(1024, 1024 * 1024, 1024) }; }
+            }
+        }
+
+        private class Trivial : AsymmetricAlgorithm
+        {
+            public Trivial()
+            {
+                LegalKeySizesValue = new KeySizes[]
                     {
                         new KeySizes(5*8, -99*8, 0*8),
                         new KeySizes(13*8, 22*8, 6*8),
                         new KeySizes(101*8, 104*8, 1*8),
                         new KeySizes(101*8 + 1, 101*8 + 2, 1),
                     };
-                }
+            }
+
+            public void SetKeySize(int keySize)
+            {
+                KeySizeValue = keySize;
             }
         }
     }
