@@ -320,21 +320,6 @@ namespace System.Net.Http
             }
         }
 
-        public TimeSpan ConnectTimeout
-        {
-            get { return _connectTimeout; }
-            set
-            {
-                if (value != Timeout.InfiniteTimeSpan && (value <= TimeSpan.Zero || value > s_maxTimeout))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
-
-                CheckDisposedOrStarted();
-                _connectTimeout = value;
-            }
-        }
-
         internal int MaxAutomaticRedirections
         {
             get { return _maxAutomaticRedirections; }
