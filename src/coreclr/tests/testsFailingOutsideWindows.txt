@@ -17,14 +17,10 @@ JIT/Methodical/refany/_speed_dbgstress1/_speed_dbgstress1.sh
 JIT/Methodical/refany/_speed_dbgstress3/_speed_dbgstress3.sh
 JIT/Methodical/refany/_speed_relstress1/_speed_relstress1.sh
 JIT/Methodical/refany/_speed_relstress3/_speed_relstress3.sh
-JIT/Regression/CLR-x86-JIT/V1-M09/b15307/b15307/b15307.sh
-JIT/Regression/CLR-x86-JIT/V1-M10/b04914/b04914/b04914.sh
 JIT/Regression/CLR-x86-JIT/V1-M11-Beta1/b41391/b41391/b41391.sh
 JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b37646/b37646/b37646.sh
-JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b57367/b57367/b57367.sh
 JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b66533/b66533/b66533.sh
 JIT/Regression/CLR-x86-JIT/V1.2-M02/b20785/b20785/b20785.sh
-JIT/Regression/CLR-x86-JIT/V2.0-Beta2/b399444/b399444a/b399444a.sh
 JIT/Regression/VS-ia64-JIT/V1.2-Beta1/b302509/b302509/b302509.sh
 JIT/opt/Tailcall/TailcallVerifyWithPrefix/TailcallVerifyWithPrefix.sh
 Loader/NativeLibs/FromNativePaths/FromNativePaths.sh
@@ -78,7 +74,6 @@ JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b26324/b26324a/b26324a.sh
 JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b26324/b26324b/b26324b.sh
 JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b27098/b27098/b27098.sh
 JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b28911/b28911/b28911.sh
-JIT/Regression/CLR-x86-JIT/V1-M09/b14585/b14585/b14585.sh
 JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b28949/b28949b/b28949b.sh
 JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b47584/b47584/b47584.sh
 JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b51416/b51416/b51416.sh
@@ -89,7 +84,6 @@ JIT/Regression/VS-ia64-JIT/V1.2-M02/b16933/b16933/b16933.sh
 JIT/Regression/VS-ia64-JIT/V1.2-M02/b22545/b22545/b22545.sh
 JIT/Regression/VS-ia64-JIT/V1.2-M02/b22591/b22591/b22591.sh
 JIT/Regression/VS-ia64-JIT/V2.0-Beta2/b416776/b416776/b416776.sh
-JIT/Regression/CLR-x86-JIT/V1-M09/b13621/b13621/b13621.sh
 JIT/SIMD/Vector3Interop_r/Vector3Interop_r.sh
 JIT/SIMD/Vector3Interop_ro/Vector3Interop_ro.sh
 JIT/jit64/localloc/eh/eh01_dynamic/eh01_dynamic.sh
