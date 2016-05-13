@@ -95,6 +95,15 @@ mono_threads_reset_blocking_start_unbalanced (gpointer *stackdata);
 void
 mono_threads_reset_blocking_end_unbalanced (gpointer cookie, gpointer *stackdata);
 
+#define MONO_PREPARE_RESET_BLOCKING_UNBALANCED	\
+	do {	\
+		gpointer __dummy;	\
+		gpointer __reset_cookie = mono_threads_reset_blocking_start_unbalanced (&__dummy)
+
+#define MONO_FINISH_RESET_BLOCKING_UNBALANCED	\
+		mono_threads_reset_blocking_end_unbalanced (__reset_cookie, &__dummy);	\
+	} while (0)
+
 G_END_DECLS
 
 #endif

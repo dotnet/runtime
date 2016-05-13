@@ -822,16 +822,21 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTable *
 gpointer
 mono_magic_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp)
 {
-	MonoError error;
 	gpointer res;
+
+	MONO_PREPARE_RESET_BLOCKING_UNBALANCED;
+
+	MonoError error;
 
 	trampoline_calls ++;
 
 	res = common_call_trampoline (regs, code, (MonoMethod *)arg, NULL, NULL, &error);
-	if (!mono_error_ok (&error)) {
-		mono_error_set_pending_exception (&error);
-		return NULL;
-	}
+	mono_error_set_pending_exception (&error);
+
+	mono_interruption_checkpoint_from_trampoline ();
+
+	MONO_FINISH_RESET_BLOCKING_UNBALANCED;
+
 	return res;
 }
 
