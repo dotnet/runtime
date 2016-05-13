@@ -13,7 +13,7 @@ namespace System.Reflection.PortableExecutable
     public abstract class PEBuilder
     {
         public PEHeaderBuilder Header { get; }
-        public Func<IEnumerable<Blob>, ContentId> IdProvider { get; }
+        public Func<IEnumerable<Blob>, BlobContentId> IdProvider { get; }
         public bool IsDeterministic { get; }
 
         protected ImmutableArray<Section> Sections { get; }
@@ -58,14 +58,14 @@ namespace System.Reflection.PortableExecutable
             public int VirtualSize => Builder.Count;
         }
 
-        protected PEBuilder(PEHeaderBuilder header, Func<IEnumerable<Blob>, ContentId> deterministicIdProvider)
+        protected PEBuilder(PEHeaderBuilder header, Func<IEnumerable<Blob>, BlobContentId> deterministicIdProvider)
         {
             if (header == null)
             {
                 throw new ArgumentNullException(nameof(header));
             }
 
-            IdProvider = deterministicIdProvider ?? GetCurrentTimeBasedIdProvider();
+            IdProvider = deterministicIdProvider ?? BlobContentId.GetTimeBasedProvider();
             IsDeterministic = deterministicIdProvider != null;
             Header = header;
             Sections = CreateSections();
@@ -73,20 +73,11 @@ namespace System.Reflection.PortableExecutable
 
         protected abstract ImmutableArray<Section> CreateSections();
 
-        private static Func<IEnumerable<Blob>, ContentId> GetCurrentTimeBasedIdProvider()
-        {
-            // In the PE File Header this is a "Time/Date Stamp" whose description is "Time and date
-            // the file was created in seconds since January 1st 1970 00:00:00 or 0"
-            // However, when we want to make it deterministic we fill it in (later) with bits from the hash of the full PE file.
-            int timestamp = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
-            return content => new ContentId(Guid.NewGuid(), timestamp);
-        }
-
         protected abstract BlobBuilder SerializeSection(string name, SectionLocation location);
 
         internal protected abstract PEDirectoriesBuilder GetDirectories();
 
-        public void Serialize(BlobBuilder builder, out ContentId contentId)
+        public void Serialize(BlobBuilder builder, out BlobContentId contentId)
         {
             // Define and serialize sections in two steps.
             // We need to know about all sections before serializing them.
@@ -112,7 +103,7 @@ namespace System.Reflection.PortableExecutable
 
             // patch timestamp in COFF header:
             var stampWriter = new BlobWriter(stampFixup);
-            stampWriter.WriteBytes(contentId.Stamp);
+            stampWriter.WriteUInt32(contentId.Stamp);
             Debug.Assert(stampWriter.RemainingBytes == 0);
         }
 

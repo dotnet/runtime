@@ -22,7 +22,7 @@ namespace System.Reflection.Metadata
 
         internal const int DefaultChunkSize = 256;
 
-        // Must be at least the size of the largest primitive type we write atomically (decimal).
+        // Must be at least the size of the largest primitive type we write atomically (Guid).
         internal const int MinChunkSize = 16;
 
         // Builders are linked like so:
@@ -450,6 +450,8 @@ namespace System.Reflection.Metadata
                 return;
             }
 
+            bool isEmpty = Count == 0;
+
             // swap buffers of the heads:
             var suffixBuffer = suffix._buffer;
             uint suffixLength = suffix._length;
@@ -467,32 +469,35 @@ namespace System.Reflection.Metadata
             // The value is not used, other than for calculating the value of Count property.
             suffix._previousLengthOrFrozenSuffixLengthDelta = suffixPreviousLength + oldSuffixLength - suffix.Length;
 
-            // First and last chunks:
-            //
-            // [First]->[]->[Last] <- [this]    [SuffixFirst]->[]->[SuffixLast]  <- [suffix]
-            //    ^___________|                       ^_________________|
-            //
-            // Degenerate cases:
-            // this == First == Last and/or suffix == SuffixFirst == SuffixLast.
-            var first = FirstChunk;
-            var suffixFirst = suffix.FirstChunk;
-            var last = _nextOrPrevious;
-            var suffixLast = suffix._nextOrPrevious;
-
-            // Relink like so:
-            // [First]->[]->[Last] -> [suffix] -> [SuffixFirst]->[]->[SuffixLast]  <- [this]
-            //    ^_______________________________________________________|
-            _nextOrPrevious = suffixLast;
-            suffix._nextOrPrevious = (suffixFirst != suffix) ? suffixFirst : (first != this) ? first : suffix;
-
-            if (last != this)
+            if (!isEmpty)
             {
-                last._nextOrPrevious = suffix;
-            }
+                // First and last chunks:
+                //
+                // [First]->[]->[Last] <- [this]    [SuffixFirst]->[]->[SuffixLast]  <- [suffix]
+                //    ^___________|                       ^_________________|
+                //
+                // Degenerate cases:
+                // this == First == Last and/or suffix == SuffixFirst == SuffixLast.
+                var first = FirstChunk;
+                var suffixFirst = suffix.FirstChunk;
+                var last = _nextOrPrevious;
+                var suffixLast = suffix._nextOrPrevious;
 
-            if (suffixLast != suffix)
-            {
-                suffixLast._nextOrPrevious = (first != this) ? first : suffix;
+                // Relink like so:
+                // [First]->[]->[Last] -> [suffix] -> [SuffixFirst]->[]->[SuffixLast]  <- [this]
+                //    ^_______________________________________________________|
+                _nextOrPrevious = suffixLast;
+                suffix._nextOrPrevious = (suffixFirst != suffix) ? suffixFirst : (first != this) ? first : suffix;
+
+                if (last != this)
+                {
+                    last._nextOrPrevious = suffix;
+                }
+
+                if (suffixLast != suffix)
+                {
+                    suffixLast._nextOrPrevious = (first != this) ? first : suffix;
+                }
             }
 
             CheckInvariants();
@@ -596,7 +601,9 @@ namespace System.Reflection.Metadata
 
         private int ReserveBytesPrimitive(int byteCount)
         {
-            Debug.Assert(byteCount < MinChunkSize);
+            // If the primitive doesn't fit to the current chuck we'll allocate a new chunk that is at least MinChunkSize.
+            // That chunk has to fit the primitive otherwise we might keep allocating new chunks and never never end up with one that fits.
+            Debug.Assert(byteCount <= MinChunkSize);
             return ReserveBytesImpl(byteCount);
         }
 
@@ -606,7 +613,7 @@ namespace System.Reflection.Metadata
         {
             if (byteCount < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(byteCount));
+                Throw.ArgumentOutOfRange(nameof(byteCount));
             }
 
             if (!IsHead)
@@ -888,6 +895,13 @@ namespace System.Reflection.Metadata
         }
 
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
+        public void WriteGuid(Guid value)
+        {
+            int start = ReserveBytesPrimitive(BlobUtilities.SizeOfGuid);
+            _buffer.WriteGuid(start, value);
+        }
+
+        /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
         public void WriteDateTime(DateTime value)
         {
             WriteInt64(value.Ticks);
@@ -966,10 +980,12 @@ namespace System.Reflection.Metadata
         }
 
         /// <summary>
-        /// Writes string in SerString format (see ECMA-335-II 23.3 Custom attributes): 
+        /// Writes string in SerString format (see ECMA-335-II 23.3 Custom attributes).
+        /// </summary>
+        /// <remarks>
         /// The string is UTF8 encoded and prefixed by the its size in bytes. 
         /// Null string is represented as a single byte 0xFF.
-        /// </summary>
+        /// </remarks>
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
         public void WriteSerializedString(string value)
         {
@@ -983,11 +999,38 @@ namespace System.Reflection.Metadata
         }
 
         /// <summary>
+        /// Writes string in User String (#US) heap format (see ECMA-335-II 24.2.4 #US and #Blob heaps):
+        /// </summary>
+        /// <remarks>
+        /// The string is UTF16 encoded and prefixed by the its size in bytes.
+        /// 
+        /// This final byte holds the value 1 if and only if any UTF16 character within the string has any bit set in its top byte,
+        /// or its low byte is any of the following: 0x01–0x08, 0x0E–0x1F, 0x27, 0x2D, 0x7F. Otherwise, it holds 0. 
+        /// The 1 signifies Unicode characters that require handling beyond that normally provided for 8-bit encoding sets. 
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
+        public void WriteUserString(string value)
+        {
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
+            WriteCompressedInteger(BlobUtilities.GetUserStringByteLength(value.Length));
+            WriteUTF16(value);
+            WriteByte(BlobUtilities.GetUserStringTrailingByte(value));
+        }
+
+        /// <summary>
         /// Writes UTF8 encoded string at the current position.
         /// </summary>
+        /// <param name="value">Constant value.</param>
+        /// <param name="allowUnpairedSurrogates">
+        /// True to encode unpaired surrogates as specified, otherwise replace them with U+FFFD character.
+        /// </param>
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
-        public void WriteUTF8(string value, bool allowUnpairedSurrogates)
+        public void WriteUTF8(string value, bool allowUnpairedSurrogates = true)
         {
             if (value == null)
             {

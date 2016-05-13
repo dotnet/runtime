@@ -411,4 +411,10 @@
   <data name="UnknownSectionName" xml:space="preserve">
     <value>Unknown section name: '{0}'.</value>
   </data>
+  <data name="HashTooShort" xml:space="preserve">
+    <value>Hash must be at least {0}B long.</value>
+  </data>
+  <data name="ValueMustBeMultiple" xml:space="preserve">
+    <value>Value must be multiple of {0}.</value>
+  </data>
 </root>

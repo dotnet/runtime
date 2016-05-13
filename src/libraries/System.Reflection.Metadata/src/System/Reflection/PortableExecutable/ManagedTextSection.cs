@@ -484,7 +484,7 @@ namespace System.Reflection.PortableExecutable
         /// </summary>
         private static void WriteDebugTableEntry(
             BlobBuilder writer,
-            byte[] stamp,
+            uint stamp,
             uint version, // major and minor version, combined
             uint debugType,
             uint sizeOfData,
@@ -492,8 +492,7 @@ namespace System.Reflection.PortableExecutable
             uint pointerToRawData)
         {
             writer.WriteUInt32(0); // characteristics
-            Debug.Assert(stamp.Length == 4);
-            writer.WriteBytes(stamp);
+            writer.WriteUInt32(stamp);
             writer.WriteUInt32(version);
             writer.WriteUInt32(debugType);
             writer.WriteUInt32(sizeOfData);
@@ -501,12 +500,10 @@ namespace System.Reflection.PortableExecutable
             writer.WriteUInt32(pointerToRawData);
         }
 
-        private readonly static byte[] zeroStamp = new byte[4]; // four bytes of zero
-
         /// <summary>
         /// Write the entire "Debug Directory (Image Only)" along with data that it points to.
         /// </summary>
-        internal void WriteDebugTable(BlobBuilder builder, SectionLocation textSectionLocation, ContentId nativePdbContentId, ContentId portablePdbContentId)
+        internal void WriteDebugTable(BlobBuilder builder, SectionLocation textSectionLocation, BlobContentId nativePdbContentId, BlobContentId portablePdbContentId)
         {
             Debug.Assert(builder.Count == 0);
 
@@ -521,8 +518,8 @@ namespace System.Reflection.PortableExecutable
                 const int IMAGE_DEBUG_TYPE_CODEVIEW = 2; // from PE spec
                 uint dataOffset = (uint)(ComputeOffsetToDebugTable() + tableSize);
                 WriteDebugTableEntry(builder,
-                    stamp: nativePdbContentId.Stamp ?? portablePdbContentId.Stamp,
-                    version: portablePdbContentId.IsDefault ? (uint)0 : ('P' << 24 | 'M' << 16 | 0x01 << 8 | 0x00),
+                    stamp: portablePdbContentId.IsDefault ? nativePdbContentId.Stamp : portablePdbContentId.Stamp,
+                    version: portablePdbContentId.IsDefault ? 0u : ('P' << 24 | 'M' << 16 | 0x01 << 8 | 0x00),
                     debugType: IMAGE_DEBUG_TYPE_CODEVIEW,
                     sizeOfData: (uint)dataSize,
                     addressOfRawData: (uint)textSectionLocation.RelativeVirtualAddress + dataOffset, // RVA of the data
@@ -533,7 +530,7 @@ namespace System.Reflection.PortableExecutable
             {
                 const int IMAGE_DEBUG_TYPE_NO_TIMESTAMP = 16; // from PE spec
                 WriteDebugTableEntry(builder,
-                    stamp: zeroStamp,
+                    stamp: 0,
                     version: 0,
                     debugType: IMAGE_DEBUG_TYPE_NO_TIMESTAMP,
                     sizeOfData: 0,
@@ -556,7 +553,7 @@ namespace System.Reflection.PortableExecutable
                 builder.WriteByte((byte)'S');
 
                 // PDB id:
-                builder.WriteBytes(nativePdbContentId.Guid ?? portablePdbContentId.Guid);
+                builder.WriteGuid(portablePdbContentId.IsDefault ? nativePdbContentId.Guid : portablePdbContentId.Guid);
 
                 // age
                 builder.WriteUInt32(1); // TODO: allow specify for native PDBs
