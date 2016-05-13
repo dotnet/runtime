@@ -54,10 +54,9 @@ const   size_t      OS_page_size = (4*1024);
 
 extern FILE* jitstdout;
 
-#if !defined(ALLOW_STDOUT)
+inline FILE* procstdout() { return stdout; }
 #undef stdout
 #define stdout use_jitstdout
-#endif
 
 /*****************************************************************************/
 #endif
