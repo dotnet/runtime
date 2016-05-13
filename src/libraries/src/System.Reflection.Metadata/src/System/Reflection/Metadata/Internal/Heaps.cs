@@ -572,7 +572,6 @@ namespace System.Reflection.Metadata.Ecma335
     internal struct GuidStreamReader
     {
         internal readonly MemoryBlock Block;
-        internal const int GuidSize = 16;
 
         public GuidStreamReader(MemoryBlock block)
         {
@@ -588,7 +587,7 @@ namespace System.Reflection.Metadata.Ecma335
 
             // Metadata Spec: The Guid heap is an array of GUIDs, each 16 bytes wide. 
             // Its first element is numbered 1, its second 2, and so on.
-            return this.Block.PeekGuid((handle.Index - 1) * GuidSize);
+            return this.Block.PeekGuid((handle.Index - 1) * BlobUtilities.SizeOfGuid);
         }
     }
 

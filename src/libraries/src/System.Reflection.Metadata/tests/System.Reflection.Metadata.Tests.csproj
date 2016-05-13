@@ -33,6 +33,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Metadata\BlobContentIdTests.cs" />
     <Compile Include="Metadata\BlobTests.cs" />
     <Compile Include="Metadata\BlobUtilitiesTests.cs" />
     <Compile Include="Metadata\LargeTablesAndHeapsTests.cs" />
@@ -48,7 +49,7 @@
     <Compile Include="Metadata\HandleComparerTests.cs" />
     <Compile Include="Metadata\HandleTests.cs" />
     <Compile Include="Metadata\Ecma335\Encoding\LabelHandleTests.cs" />
-    <Compile Include="Metadata\MetadataBuilderTests.cs" />
+    <Compile Include="Metadata\Ecma335\MetadataBuilderTests.cs" />
     <Compile Include="Metadata\MetadataReaderTestHelpers.cs" />
     <Compile Include="Metadata\MetadataReaderTests.cs" />
     <Compile Include="Metadata\Ecma335\Encoding\MethodBodyEncoderTests.cs" />

@@ -22,10 +22,5 @@ namespace System.Reflection.Metadata
             : base(message, innerException)
         {
         }
-
-        internal static ImageFormatLimitationException HeapSizeLimitExceeded(HeapIndex heapIndex)
-        {
-            return new ImageFormatLimitationException(SR.Format(SR.HeapSizeLimitExceeded, heapIndex));
-        }
     }
 }

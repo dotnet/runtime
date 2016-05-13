@@ -12,6 +12,9 @@ namespace System.Reflection.PortableExecutable
 {
     public class ManagedPEBuilder : PEBuilder
     {
+        public const int ManagedResourcesDataAlignment = ManagedTextSection.ManagedResourcesDataAlignment;
+        public const int MappedFieldDataAlignment = ManagedTextSection.MappedFieldDataAlignment;
+
         private const string TextSectionName = ".text";
         private const string ResourceSectionName = ".rsrc";
         private const string RelocationSectionName = ".reloc";
@@ -25,8 +28,8 @@ namespace System.Reflection.PortableExecutable
         private readonly int _strongNameSignatureSize;
         private readonly MethodDefinitionHandle _entryPoint;
         private readonly string _pdbPathOpt;
-        private readonly ContentId _nativePdbContentId;
-        private readonly ContentId _portablePdbContentId;
+        private readonly BlobContentId _nativePdbContentId;
+        private readonly BlobContentId _portablePdbContentId;
         private readonly CorFlags _corFlags;
        
         private int _lazyEntryPointAddress;
@@ -42,10 +45,10 @@ namespace System.Reflection.PortableExecutable
             int strongNameSignatureSize,
             MethodDefinitionHandle entryPoint,
             string pdbPathOpt, // TODO: DebugTableBuilder
-            ContentId nativePdbContentId, // TODO: DebugTableBuilder
-            ContentId portablePdbContentId, // TODO: DebugTableBuilder
+            BlobContentId nativePdbContentId, // TODO: DebugTableBuilder
+            BlobContentId portablePdbContentId, // TODO: DebugTableBuilder
             CorFlags corFlags, 
-            Func<IEnumerable<Blob>, ContentId> deterministicIdProvider = null)
+            Func<IEnumerable<Blob>, BlobContentId> deterministicIdProvider = null)
             : base(header, deterministicIdProvider)
         {
             _metadataSerializer = metadataSerializer;

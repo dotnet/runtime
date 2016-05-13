@@ -25,6 +25,9 @@ namespace System.Reflection.PortableExecutable.Tests
                 // TODO: more validation (can we use MetadataVisualizer until managed PEVerifier is available)?
 
                 VerifyStrongNameSignatureDirectory(peReader, expectedSignature);
+
+                Assert.Equal(s_contentId.Stamp, unchecked((uint)peReader.PEHeaders.CoffHeader.TimeDateStamp));
+                Assert.Equal(s_guid, mdReader.GetGuid(mdReader.GetModuleDefinition().Mvid));
             }
         }
 
@@ -58,13 +61,14 @@ namespace System.Reflection.PortableExecutable.Tests
         }
 
         private static readonly Guid s_guid = new Guid("97F4DBD4-F6D1-4FAD-91B3-1001F92068E5");
-        private static readonly ContentId s_contentId = new ContentId(s_guid.ToByteArray(), new byte[] { 1, 2, 3, 4 });
+        private static readonly BlobContentId s_contentId = new BlobContentId(s_guid, 0x04030201);
 
         private static void WritePEImage(
             Stream peStream, 
             MetadataBuilder metadataBuilder, 
             BlobBuilder ilBuilder, 
             MethodDefinitionHandle entryPointHandle,
+            Blob mvidFixup = default(Blob),
             byte[] privateKeyOpt = null)
         {
             var mappedFieldDataBuilder = new BlobBuilder();
@@ -80,15 +84,20 @@ namespace System.Reflection.PortableExecutable.Tests
                 strongNameSignatureSize: 128,
                 entryPoint: entryPointHandle,
                 pdbPathOpt: null,
-                nativePdbContentId: default(ContentId),
-                portablePdbContentId: default(ContentId),
+                nativePdbContentId: default(BlobContentId),
+                portablePdbContentId: default(BlobContentId),
                 corFlags: CorFlags.ILOnly | (privateKeyOpt != null ? CorFlags.StrongNameSigned : 0),
                 deterministicIdProvider: content => s_contentId);
 
             var peBlob = new BlobBuilder();
 
-            ContentId contentId;
+            BlobContentId contentId;
             peBuilder.Serialize(peBlob, out contentId);
+
+            if (!mvidFixup.IsDefault)
+            {
+                new BlobWriter(mvidFixup).WriteGuid(contentId.Guid);
+            }
 
             if (privateKeyOpt != null)
             {
@@ -120,7 +129,7 @@ namespace System.Reflection.PortableExecutable.Tests
                 var ilBuilder = new BlobBuilder();
                 var metadataBuilder = new MetadataBuilder();
                 var entryPoint = BasicValidationEmit(metadataBuilder, ilBuilder);
-                WritePEImage(peStream, metadataBuilder, ilBuilder, entryPoint, Misc.KeyPair);
+                WritePEImage(peStream, metadataBuilder, ilBuilder, entryPoint, privateKeyOpt: Misc.KeyPair);
 
                 VerifyPE(peStream, expectedSignature: new byte[] 
                 {
@@ -316,9 +325,10 @@ namespace System.Reflection.PortableExecutable.Tests
             {
                 var ilBuilder = new BlobBuilder();
                 var metadataBuilder = new MetadataBuilder();
-                var entryPoint = ComplexEmit(metadataBuilder, ilBuilder);
+                Blob mvidFixup;
+                var entryPoint = ComplexEmit(metadataBuilder, ilBuilder, out mvidFixup);
 
-                WritePEImage(peStream, metadataBuilder, ilBuilder, entryPoint);
+                WritePEImage(peStream, metadataBuilder, ilBuilder, entryPoint, mvidFixup);
                 peStream.Position = 0;
                 VerifyPE(peStream);
             }
@@ -331,12 +341,12 @@ namespace System.Reflection.PortableExecutable.Tests
             return builder;
         }
 
-        private static MethodDefinitionHandle ComplexEmit(MetadataBuilder metadata, BlobBuilder ilBuilder)
+        private static MethodDefinitionHandle ComplexEmit(MetadataBuilder metadata, BlobBuilder ilBuilder, out Blob mvidFixup)
         {
             metadata.AddModule(
                 0,
                 metadata.GetOrAddString("ConsoleApplication.exe"),
-                metadata.GetOrAddGuid(Guid.NewGuid()),
+                metadata.ReserveGuid(out mvidFixup),
                 default(GuidHandle),
                 default(GuidHandle));
 
