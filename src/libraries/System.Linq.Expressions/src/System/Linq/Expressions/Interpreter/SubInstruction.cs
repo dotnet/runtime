@@ -177,7 +177,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public static Instruction Create(Type type)
         {
-            Debug.Assert(!type.GetTypeInfo().IsEnum);
+            Debug.Assert(TypeUtils.IsArithmetic(type));
             switch (System.Dynamic.Utils.TypeExtensions.GetTypeCode(TypeUtils.GetNonNullableType(type)))
             {
                 case TypeCode.Int16: return s_int16 ?? (s_int16 = new SubInt16());
@@ -188,9 +188,8 @@ namespace System.Linq.Expressions.Interpreter
                 case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new SubUInt64());
                 case TypeCode.Single: return s_single ?? (s_single = new SubSingle());
                 case TypeCode.Double: return s_double ?? (s_double = new SubDouble());
-
                 default:
-                    throw Error.ExpressionNotSupportedForType("Sub", type);
+                    throw ContractUtils.Unreachable;
             }
         }
 
@@ -202,7 +201,7 @@ namespace System.Linq.Expressions.Interpreter
 
     internal abstract class SubOvfInstruction : Instruction
     {
-        private static Instruction s_int16, s_int32, s_int64, s_UInt16, s_UInt32, s_UInt64, s_single, s_double;
+        private static Instruction s_int16, s_int32, s_int64, s_UInt16, s_UInt32, s_UInt64;
 
         public override int ConsumedStack { get { return 2; } }
         public override int ProducedStack { get { return 1; } }
@@ -328,47 +327,9 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class SubOvfSingle : SubOvfInstruction
-        {
-            public override int Run(InterpretedFrame frame)
-            {
-                object l = frame.Data[frame.StackIndex - 2];
-                object r = frame.Data[frame.StackIndex - 1];
-                if (l == null || r == null)
-                {
-                    frame.Data[frame.StackIndex - 2] = null;
-                }
-                else
-                {
-                    frame.Data[frame.StackIndex - 2] = (Single)((Single)l - (Single)r);
-                }
-                frame.StackIndex--;
-                return +1;
-            }
-        }
-
-        internal sealed class SubOvfDouble : SubOvfInstruction
-        {
-            public override int Run(InterpretedFrame frame)
-            {
-                object l = frame.Data[frame.StackIndex - 2];
-                object r = frame.Data[frame.StackIndex - 1];
-                if (l == null || r == null)
-                {
-                    frame.Data[frame.StackIndex - 2] = null;
-                }
-                else
-                {
-                    frame.Data[frame.StackIndex - 2] = (Double)l - (Double)r;
-                }
-                frame.StackIndex--;
-                return +1;
-            }
-        }
-
         public static Instruction Create(Type type)
         {
-            Debug.Assert(!type.GetTypeInfo().IsEnum);
+            Debug.Assert(TypeUtils.IsArithmetic(type));
             switch (System.Dynamic.Utils.TypeExtensions.GetTypeCode(TypeUtils.GetNonNullableType(type)))
             {
                 case TypeCode.Int16: return s_int16 ?? (s_int16 = new SubOvfInt16());
@@ -377,11 +338,8 @@ namespace System.Linq.Expressions.Interpreter
                 case TypeCode.UInt16: return s_UInt16 ?? (s_UInt16 = new SubOvfUInt16());
                 case TypeCode.UInt32: return s_UInt32 ?? (s_UInt32 = new SubOvfUInt32());
                 case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new SubOvfUInt64());
-                case TypeCode.Single: return s_single ?? (s_single = new SubOvfSingle());
-                case TypeCode.Double: return s_double ?? (s_double = new SubOvfDouble());
-
                 default:
-                    throw Error.ExpressionNotSupportedForType("SubOvf", type);
+                    return SubInstruction.Create(type);
             }
         }
 
