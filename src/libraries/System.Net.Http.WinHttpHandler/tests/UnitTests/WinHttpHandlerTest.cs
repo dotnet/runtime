@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -52,7 +53,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             Assert.Equal(false, handler.PreAuthenticate);
             Assert.Equal(null, handler.ServerCredentials);
             Assert.Equal(WindowsProxyUsePolicy.UseWinHttpProxy, handler.WindowsProxyUsePolicy);
-            Assert.Equal(CredentialCache.DefaultCredentials, handler.DefaultProxyCredentials);
+            Assert.Equal(null, handler.DefaultProxyCredentials);
             Assert.Equal(null, handler.Proxy);
             Assert.Equal(Int32.MaxValue, handler.MaxConnectionsPerServer);
             Assert.Equal(TimeSpan.FromSeconds(30), handler.SendTimeout);
@@ -60,6 +61,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             Assert.Equal(TimeSpan.FromSeconds(30), handler.ReceiveDataTimeout);
             Assert.Equal(64 * 1024, handler.MaxResponseHeadersLength);
             Assert.Equal(64 * 1024, handler.MaxResponseDrainSize);
+            Assert.NotNull(handler.Properties);
         }
 
         [Fact]
@@ -218,6 +220,28 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
                 });
 
             Assert.Equal(true, APICallHistory.WinHttpOptionDisableCookies.HasValue);
+        }
+
+        [Fact]
+        public void Properties_Get_CountIsZero()
+        {
+            var handler = new WinHttpHandler();
+            IDictionary<String, object> dict = handler.Properties;
+            Assert.Equal(0, dict.Count);
+        }
+
+        [Fact]
+        public void Properties_AddItemToDictionary_ItemPresent()
+        {
+            var handler = new WinHttpHandler();
+            IDictionary<String, object> dict = handler.Properties;
+
+            var item = new Object();
+            dict.Add("item", item);
+
+            object value;
+            Assert.True(dict.TryGetValue("item", out value));
+            Assert.Equal(item, value);
         }
 
         [Fact]
