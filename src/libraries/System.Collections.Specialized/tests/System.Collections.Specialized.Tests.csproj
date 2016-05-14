@@ -46,6 +46,9 @@
     <Compile Include="HybridDictionary\HybridDictionary.SetItemTests.cs" />
     <Compile Include="HybridDictionary\HybridDictionary.ValuesTests.cs" />
     <Compile Include="HybridDictionary\HybridDictionaryTests.cs" />
+    <Compile Include="ListDictionary\ListDictionary.Values.Tests.cs" />
+    <Compile Include="ListDictionary\ListDictionary.Keys.Tests.cs" />
+    <Compile Include="ListDictionary\ListDictionary.IDictionary.Tests.cs" />
     <Compile Include="ListDictionaryTests.cs" />
     <Compile Include="NameObjectCollectionBase\MyNameObjectCollection.cs" />
     <Compile Include="NameObjectCollectionBase\NameObjectCollectionBase.GetEnumeratorTests.cs" />
