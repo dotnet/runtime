@@ -7497,8 +7497,7 @@ GenTreePtr Compiler::fgGetCritSectOfStaticMethod()
 
 void                Compiler::fgAddSyncMethodEnterExit()
 {
-    if ((info.compFlags & CORINFO_FLG_SYNCH) == 0)
-        return;
+    assert((info.compFlags & CORINFO_FLG_SYNCH) != 0);
 
     // We need to do this transformation before funclets are created.
     assert(!fgFuncletsCreated);
@@ -7808,6 +7807,69 @@ void                Compiler::fgConvertSyncReturnToLeave(BasicBlock* block)
 
 #endif // !_TARGET_X86_
 
+//------------------------------------------------------------------------
+// fgAddReversePInvokeEnterExit: Add enter/exit calls for reverse PInvoke methods
+//
+// Arguments:
+//      None.
+//
+// Return Value:
+//      None.
+
+void Compiler::fgAddReversePInvokeEnterExit()
+{
+    assert(opts.IsReversePInvoke());
+
+    lvaReversePInvokeFrameVar = lvaGrabTempWithImplicitUse(false DEBUGARG("Reverse Pinvoke FrameVar"));
+
+    LclVarDsc* varDsc = &lvaTable[lvaReversePInvokeFrameVar];
+    varDsc->lvType = TYP_BLK;
+    varDsc->lvExactSize = eeGetEEInfo()->sizeOfReversePInvokeFrame;
+
+    GenTreePtr      tree;
+
+    // Add enter pinvoke exit callout at the start of prolog
+
+    tree = gtNewOperNode(GT_ADDR, TYP_I_IMPL, gtNewLclvNode(lvaReversePInvokeFrameVar, TYP_BLK));
+
+    tree = gtNewHelperCallNode(CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER,
+        TYP_VOID, 0,
+        gtNewArgList(tree));
+
+    fgEnsureFirstBBisScratch();
+
+    fgInsertStmtAtBeg(fgFirstBB, tree);
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("\nReverse PInvoke method - Add reverse pinvoke enter in first basic block [%08p]\n", dspPtr(fgFirstBB));
+        gtDispTree(tree);
+        printf("\n");
+    }
+#endif
+
+    // Add reverse pinvoke exit callout at the end of epilog
+
+    tree = gtNewOperNode(GT_ADDR, TYP_I_IMPL, gtNewLclvNode(lvaReversePInvokeFrameVar, TYP_BLK));
+
+    tree = gtNewHelperCallNode(CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT,
+        TYP_VOID, 0,
+        gtNewArgList(tree));
+
+    assert(genReturnBB != nullptr);
+
+    fgInsertStmtAtEnd(genReturnBB, tree);
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("\nReverse PInvoke method - Add reverse pinvoke exit in return basic block [%08p]\n", dspPtr(genReturnBB));
+        gtDispTree(tree);
+        printf("\n");
+    }
+#endif
+}
 
 /*****************************************************************************
  *
@@ -7913,12 +7975,6 @@ void                Compiler::fgAddInternal()
 
     /* Assume we will generate a single shared return sequence */
 
-    // This is the node for the oneReturn statement.
-    // It could be as simple as a CallNode if we only have
-    // only one callout. It will be a comma tree of CallNodes
-    // if we have multiple callouts.
-    //
-    GenTreePtr  oneReturnStmtNode = NULL;
     ULONG       returnWeight      = 0;
     bool        oneReturn;
     bool        allProfWeight;
@@ -7933,6 +7989,7 @@ void                Compiler::fgAddInternal()
 #if INLINE_NDIRECT
          (info.compCallUnmanaged != 0) ||
 #endif
+         opts.IsReversePInvoke() ||
          ((info.compFlags & CORINFO_FLG_SYNCH) != 0))
     {
         // We will generate only one return block
@@ -8010,7 +8067,10 @@ void                Compiler::fgAddInternal()
     // BBJ_RETURN block gets placed at the top-level, not within an EH region. (Otherwise,
     // we'd have to be really careful when creating the synchronized method try/finally
     // not to include the BBJ_RETURN block.)
-    fgAddSyncMethodEnterExit();
+    if ((info.compFlags & CORINFO_FLG_SYNCH) != 0)
+    {
+        fgAddSyncMethodEnterExit();
+    }
 #endif // !_TARGET_X86_
 
     if  (oneReturn)
@@ -8300,34 +8360,13 @@ void                Compiler::fgAddInternal()
                                        gtNewArgList(tree));
         }
 
-        /* Add the exitCrit expression to the oneReturnStmtNode */
-        if (oneReturnStmtNode != NULL)
-        {
-            //
-            // We add the newly created "tree" to op1, so we can evaluate the last added
-            // expression first.
-            //
-            oneReturnStmtNode = gtNewOperNode(GT_COMMA,
-                                              TYP_VOID,
-                                              tree,
-                                              oneReturnStmtNode);
-
-        }
-        else
-        {
-            oneReturnStmtNode = tree;
-        }
-
+        fgInsertStmtAtEnd(genReturnBB, tree);
 
 #ifdef DEBUG
         if (verbose)
         {
             printf("\nSynchronized method - Add exit expression ");
             printTreeID(tree);
-            printf(" to oneReturnStmtNode ");
-            printTreeID(oneReturnStmtNode);
-            printf("\nCurrent oneReturnStmtNode is\n");
-            gtDispTree(oneReturnStmtNode);
             printf("\n");
         }
 #endif
@@ -8371,6 +8410,11 @@ void                Compiler::fgAddInternal()
 
     }
 
+    if (opts.IsReversePInvoke())
+    {
+        fgAddReversePInvokeEnterExit();
+    }
+
     //
     //  Add 'return' expression to the return block if we made it as "oneReturn" before.
     //
@@ -8381,13 +8425,6 @@ void                Compiler::fgAddInternal()
         //
         // Make the 'return' expression.
         //
-
-        // spill any value that is currently in the oneReturnStmtNode
-        if (oneReturnStmtNode != nullptr)
-        {
-            fgInsertStmtAtEnd(genReturnBB, oneReturnStmtNode);
-            oneReturnStmtNode = nullptr;
-        }
 
         //make sure to reload the return value as part of the return (it is saved by the "real return").
         if (genReturnLocal != BAD_VAR_NUM)
