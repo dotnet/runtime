@@ -37,6 +37,7 @@ namespace System.Net.Http
         public int MaxResponseDrainSize { get { return default(int); } set { } }
         public int MaxResponseHeadersLength { get { return default(int); } set { } }
         public bool PreAuthenticate { get { return default(bool); } set { } }
+        public System.Collections.Generic.IDictionary<string, object> Properties { get { return default(System.Collections.Generic.IDictionary<string, object>); } }
         public System.Net.IWebProxy Proxy { get { return default(System.Net.IWebProxy); } set { } }
         public System.TimeSpan ReceiveDataTimeout { get { return default(System.TimeSpan); } set { } }
         public System.TimeSpan ReceiveHeadersTimeout { get { return default(System.TimeSpan); } set { } }
