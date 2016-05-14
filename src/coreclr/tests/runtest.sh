@@ -44,7 +44,8 @@ function print_usage {
     echo '  -v, --verbose                    : Show output from each test.'
     echo '  -h|--help                        : Show usage information.'
     echo '  --useServerGC                    : Enable server GC for this test run'
-    echo '  --test-en                        : Script to set environment variables for tests'
+    echo '  --test-env                       : Script to set environment variables for tests'
+    echo '  --runcrossgentests               : Runs the ready to run tests' 
     echo ''
     echo 'Runtime Code Coverage options:'
     echo '  --coreclr-coverage               : Optional argument to get coreclr code coverage reports'
@@ -523,12 +524,6 @@ function run_test {
     local scriptFileName=$(basename "$scriptFilePath")
     local outputFileName=$(basename "$outputFilePath")
 
-    # Convert DOS line endings to Unix if needed
-    perl -pi -e 's/\r\n|\n|\r/\n/g' "$scriptFileName"
-    
-    # Add executable file mode bit if needed
-    chmod +x "$scriptFileName"
-
     "./$scriptFileName" >"$outputFileName" 2>&1
     return $?
 }
@@ -612,6 +607,9 @@ function prep_test {
     # Add executable file mode bit if needed
     chmod +x "$scriptFilePath"
 
+    #remove any NI and Locks
+    rm -f *.ni.*
+    rm -rf lock
 }
 
 function start_test {
@@ -667,6 +665,8 @@ function run_tests_in_directory {
     local testDir=$1
 
     # Recursively search through directories for .sh files to prepare them.
+    # Note: This needs to occur before any test runs as some of the .sh files
+    # depend on other .sh files
     for scriptFilePath in $(find "$testDir" -type f -iname '*.sh' | sort)
     do
         prep_test "${scriptFilePath:2}"
@@ -783,6 +783,9 @@ do
         --disableEventLogging)
             ((disableEventLogging = 1))
             ;;
+        --runcrossgentests)
+            ((RunCrossGenTests = 1))
+            ;;
         --sequential)
             ((maxProcesses = 1))
             ;;
@@ -819,6 +822,9 @@ if ((disableEventLogging == 0)); then
     export COMPlus_EnableEventLog=1
 fi
 
+if ((RunCrossGenTests == 1)); then
+    export RunCrossGen=1
+fi
 export CORECLR_SERVER_GC="$serverGC"
 
 if [ -z "$testRootDir" ]; then

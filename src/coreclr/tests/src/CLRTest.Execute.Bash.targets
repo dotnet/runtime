@@ -19,38 +19,8 @@ WARNING:   When setting properties based on their current state (for example:
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <ItemGroup>
-    <CLRTestBashEnvironmentVariable Condition="'$(CrossGen)' == 'true'" Include="export complus_zaprequire=2" />
-    <CLRTestBashEnvironmentVariable Condition="'$(CrossGen)' == 'true'" Include="export complus_zaprequireexcludelist=corerun" />
     <CLRTestBashEnvironmentVariable Condition="'$(GCStressLevel)' != '' and '$(GCStressLevel)' != '0'" Include="export complus_gcstress=$(GCStressLevel)" />
   </ItemGroup>
-
-    <!--
-    Target: GetBatchCrossgenScript
-    This returns the portion of the execution script that generates the required lines to crossgen the test executable.
-  -->
-  <Target
-    Condition="'$(CrossGen)'=='true'"
-    Name="GetCrossgenBashScript"
-    Returns="$(CrossgenBashScript)">  
-    
-    <PropertyGroup>
-      <!-- CrossGen will create output if it needs to crossgen. Otherwise there will be silence. -->
-      <CrossgenBashScript Condition="'$(CLRTestKind)' == 'BuildAndRun'">
-        <![CDATA[
-if [ ! -f $(MSBuildProjectName).ni.exe ]; then
-  echo "$CORE_ROOT/crossgen" /Platform_Assemblies_Paths $CORE_ROOT%3A$PWD $(MSBuildProjectName).exe
-  "$CORE_ROOT/crossgen" /Platform_Assemblies_Paths $CORE_ROOT%3A$PWD $(MSBuildProjectName).exe
-  __cgExitCode=$?
-  if [ $__cgExitCode -ne 0 ]
-  then
-    echo Crossgen failed with exitcode: $__cgExitCode
-    exit 1
-  fi
-fi        
-        ]]>        
-      </CrossgenBashScript>
-    </PropertyGroup>
-  </Target>
 
   <Target
     Name="GetIlasmRoundTripBashScript"
@@ -133,7 +103,7 @@ fi
   <Target Name="GenerateBashExecutionScript"
     Inputs="$(MSBuildProjectFullPath)"
     Outputs="$(OutputPath)\$(MSBuildProjectName).sh"
-    DependsOnTargets="FetchExternalPropertiesForXpalt;GetCrossgenBashScript;GetIlasmRoundTripBashScript">
+    DependsOnTargets="FetchExternalPropertiesForXpalt;$(BashScriptSnippetGen);GetIlasmRoundTripBashScript">
 
     <Message Text="Project depends on $(_CLRTestToRunFileFullPath)." Condition="'$(_CLRTestNeedsProjectToRun)' == 'True'" />
 
@@ -212,11 +182,6 @@ fi
       </BashCLRTestExecutionScriptArgument>
     </ItemGroup>
 
-
-    <ItemGroup>
-      <CLRTestBashEnvironmentVariable Condition="'$(CrossGen)' == 'true' AND '$(_CLRTestNeedsProjectToRun)' == 'true'" Include="complus_zaprequirelist=$(_CLRTestToRunFileFullPath)" />
-      <CLRTestBashEnvironmentVariable Condition="'$(CrossGen)' == 'true' AND '$(_CLRTestNeedsProjectToRun)' == 'false'" Include="complus_zaprequirelist=$(MSBuildProjectName)" />
-    </ItemGroup>
     
     <PropertyGroup>
       <_CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"$CORE_ROOT/corerun"</_CLRTestRunFile>
@@ -312,7 +277,29 @@ $(BashCLRTestArgPrep)
       <!-- NOTE! semicolons must be escaped with %3B boooo -->
       <_CLRTestExecutionScriptText>
         <![CDATA[
+TakeLock()
+{
+    echo "in takeLock"
+    if mkdir $LockFile%3B then
+        return 2
+    else
+        sleep 10
+        TakeLock
+    fi
+    echo "exiting takelock"
+}
+
+ReleaseLock()
+{
+    echo "in ReleaseLock"
+    if [ -d "$LockFile" ]%3B then
+        rm -rf "$LockFile"
+        return 3
+    fi
+}
 cd "$%28dirname "$0")"
+LockFile="lock"
+
 
 # The __TestEnv variable may be used to specify something to run before the test.
 $__TestEnv
@@ -324,8 +311,6 @@ $(BashCLRTestExitCodePrep)
 # Long-running GC test checks
 $(BashCLRTestGCSimulatorSkipCondition)
 $(BashCLRTestGCLongTestSkipCondition)
-# CrossGen Script (when /p:CrossGen=true)
-$(CrossgenBashScript)
 # IlasmRoundTrip Script
 $(IlasmRoundTripBashScript)
 # PreCommands
