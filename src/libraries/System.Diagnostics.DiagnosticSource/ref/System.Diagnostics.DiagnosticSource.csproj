@@ -5,7 +5,6 @@
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <OutputType>Library</OutputType>
     <NuGetTargetMoniker>.NETStandard,Version=v1.0</NuGetTargetMoniker>
-    <UseOpenKey Condition="'$(UseOpenKey)'==''">true</UseOpenKey>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Diagnostics.DiagnosticSource.cs" />

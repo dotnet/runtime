@@ -1,7 +1,0 @@
-TypesMustExist : Type 'System.Runtime.Serialization.OnDeserializedAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.Serialization.OnDeserializingAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.Serialization.OnSerializedAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.Serialization.OnSerializingAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.Serialization.OptionalFieldAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.Serialization.StreamingContextStates' does not exist in the implementation but it does exist in the contract.
- 
