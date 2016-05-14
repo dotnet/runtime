@@ -54,24 +54,18 @@ namespace System.Collections.Tests
             }
         }
 
-        protected virtual int ISet_Large_Capacity { get { return 4000; } }
+        protected virtual int ISet_Large_Capacity => 4000;
 
         #endregion
 
         #region ICollection<T> Helper Methods
 
-        protected override ICollection<T> GenericICollectionFactory()
-        {
-            return GenericISetFactory();
-        }
+        protected override ICollection<T> GenericICollectionFactory() => GenericISetFactory();
 
-        protected override ICollection<T> GenericICollectionFactory(int count)
-        {
-            return GenericISetFactory(count);
-        }
+        protected override ICollection<T> GenericICollectionFactory(int count) => GenericISetFactory(count);
 
-        protected override bool DuplicateValuesAllowed { get { return false; } }
-        protected override bool DefaultValueWhenNotAllowed_Throws { get { return false; } }
+        protected override bool DuplicateValuesAllowed => false;
+        protected override bool DefaultValueWhenNotAllowed_Throws => false;
 
         #endregion
 

@@ -43,7 +43,7 @@ namespace System.Collections.Tests
         /// 
         /// If Reset is not implemented, this property must return False. The default value is true.
         /// </summary>
-        protected virtual bool ResetImplemented { get { return true; } }
+        protected virtual bool ResetImplemented => true;
 
         /// <summary>
         /// When calling Current of the enumerator before the first MoveNext, after the end of the collection,
@@ -55,13 +55,13 @@ namespace System.Collections.Tests
         /// If this property is set to true, the tests ensure that the exception is thrown. The default value is
         /// false.
         /// </summary>
-        protected virtual bool Enumerator_Current_UndefinedOperation_Throws { get { return false; } }
+        protected virtual bool Enumerator_Current_UndefinedOperation_Throws => false;
 
         /// <summary>
         /// The behavior of MoveNext at the end of the enumerable after modification is undefined for the generic
         /// IEnumerable. It may either throw an InvalidOperationException or do nothing.
         /// </summary>
-        protected bool MoveNextAtEndThrowsOnModifiedCollection { get { return true; } }
+        protected bool MoveNextAtEndThrowsOnModifiedCollection => true;
 
         /// <summary>
         /// Used in IEnumerable_Generic_Enumerator_Current.
@@ -72,7 +72,7 @@ namespace System.Collections.Tests
         /// <summary>
         /// Specifies whether this IEnumerable follows some sort of ordering pattern.
         /// </summary>
-        protected virtual EnumerableOrder Order { get { return EnumerableOrder.Sequential; } }
+        protected virtual EnumerableOrder Order => EnumerableOrder.Sequential;
 
         /// <summary>
         /// An enum to allow specification of the order of the Enumerable. Used in validation for enumerables.

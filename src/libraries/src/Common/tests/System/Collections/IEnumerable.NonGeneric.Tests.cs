@@ -43,7 +43,7 @@ namespace System.Collections.Tests
         /// 
         /// If Reset is not implemented, this property must return False. The default value is true.
         /// </summary>
-        protected virtual bool ResetImplemented { get { return true; } }
+        protected virtual bool ResetImplemented => true;
 
         /// <summary>
         /// When calling Current of the enumerator before the first MoveNext, after the end of the collection,
@@ -55,7 +55,7 @@ namespace System.Collections.Tests
         /// If this property is set to true, the tests ensure that the exception is thrown. The default value is
         /// false.
         /// </summary>
-        protected virtual bool Enumerator_Current_UndefinedOperation_Throws { get { return false; } }
+        protected virtual bool Enumerator_Current_UndefinedOperation_Throws => false;
 
         #endregion
 
