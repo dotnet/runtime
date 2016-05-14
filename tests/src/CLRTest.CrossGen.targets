@@ -1,0 +1,101 @@
+<!--
+***********************************************************************************************
+CLRTest.Execute.targets
+
+WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and have
+          created a backup copy.  Incorrect changes to this file will make it
+          impossible to load or build your projects from the command-line or the IDE.
+
+This file contains the logic for providing Execution Script generation.
+
+WARNING:   When setting properties based on their current state (for example:
+           <Foo Condition="'$(Foo)'==''>Bar</Foo>).  Be very careful.  Another script generation
+           target might be trying to do the same thing.  It's better to avoid this by instead setting a new property.
+           
+           Additionally, be careful with itemgroups.  Include will propagate outside of the target too!
+
+***********************************************************************************************
+-->
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <BashScriptSnippetGen>$(BashScriptSnippetGen);GetCrossgenBashScript</BashScriptSnippetGen>
+    <BatchScriptSnippetGen>$(BatchScriptSnippetGen);GetCrossgenBatchScript</BatchScriptSnippetGen>
+  </PropertyGroup>
+  <ItemGroup>
+    <CLRTestBashEnvironmentVariable  Condition="'$(CrossGenTest)' == 'true'" Include = "export RunCrossGen=1"/>
+    <CLRTestBatchEnvironmentVariable Condition="'$(CrossGenTest)' == 'true'" Include = "set RunCrossGen=1"/>
+  </ItemGroup>
+
+  <!--
+    Target: GetCrossgenBatctchcript
+    This returns the portion of the execution script that generates the required lines to crossgen the test executable.
+  -->
+  <Target Name="GetCrossgenBashScript">
+    
+    <PropertyGroup>
+      <CrossgenBashScript Condition="'$(CLRTestKind)' == 'BuildAndRun'">
+        <![CDATA[
+# CrossGen Script
+if [ ! -z ${RunCrossGen+x} ]%3B then
+    export complus_zaprequire=2
+    export complus_zaprequireexcludelist=corerun
+    export complus_zaprequirelist=$(MSBuildProjectName)
+    if [ ! -f $(MSBuildProjectName).ni.exe ]%3B then
+        TakeLock
+        if [ ! -f $(MSBuildProjectName).ni.exe ]%3B then
+          echo $_DebuggerFullPath "$CORE_ROOT/crossgen" /Platform_Assemblies_Paths $CORE_ROOT%3A$PWD $(MSBuildProjectName).exe
+          $_DebuggerFullPath "$CORE_ROOT/crossgen" /Platform_Assemblies_Paths $CORE_ROOT%3A$PWD $(MSBuildProjectName).exe
+          __cgExitCode=$?
+          if [ $__cgExitCode -ne 0 ]
+          then
+            echo Crossgen failed with exitcode: $__cgExitCode
+            ReleaseLock
+            exit 1
+          fi
+        fi 
+        ReleaseLock       
+    fi        
+fi        
+        ]]>        
+      </CrossgenBashScript>
+
+      <BashCLRTestPreCommands>$(BashCLRTestPreCommands);$(CrossgenBashScript)</BashCLRTestPreCommands>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="GetCrossgenBatchScript">
+    
+    <PropertyGroup>
+      <CrossgenBatchScript Condition="'$(CLRTestKind)' == 'BuildAndRun'">
+        <![CDATA[
+
+REM CrossGen Script
+if defined RunCrossGen ( 
+    set complus_zaprequire=2
+    set complus_zaprequireexcludelist=corerun
+    set complus_zaprequirelist=$(MSBuildProjectName)
+    if not exist "$(MSBuildProjectName).ni.exe" (
+        call :TakeLock
+        if not exist "$(MSBuildProjectName).ni.exe" (
+            echo "%_DebuggerFullPath% %CORE_ROOT%\crossgen.exe" /Platform_Assemblies_Paths %CORE_ROOT%%3B%~dp0 $(MSBuildProjectName).exe
+            %_DebuggerFullPath% "%CORE_ROOT%\crossgen.exe" /Platform_Assemblies_Paths %CORE_ROOT%%3B%~dp0 $(MSBuildProjectName).exe
+            IF NOT !ERRORLEVEL!==0 (
+            ECHO Crossgen failed with exitcode - !ERRORLEVEL!
+            call :ReleaseLock
+            Exit /b 1
+            )
+          )
+          call :ReleaseLock
+    )
+) 
+        ]]>
+      </CrossgenBatchScript>
+
+      <CLRTestBatchPreCommands>$(CLRTestBatchPreCommands);$(CrossgenBatchScript)</CLRTestBatchPreCommands>
+    </PropertyGroup>
+  </Target>
+
+
+  
+</Project>

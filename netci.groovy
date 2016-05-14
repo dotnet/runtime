@@ -70,7 +70,6 @@ class Constants {
                ]
     // This is the basic set of scenarios
     def static basicScenarios = ['default', 'pri1', 'ilrt', 'r2r', 'pri1r2r', 'gcstress15_pri1r2r', 'longgc', 'coverage', 'gcsimulator']
-    // This is the set of configurations
     def static configurationList = ['Debug', 'Checked', 'Release']
     // This is the set of architectures
     def static architectureList = ['arm', 'arm64', 'x64', 'x86ryujit', 'x86lb']
@@ -1123,7 +1122,7 @@ combinedScenarios.each { scenario ->
                                         arch = 'x86'
                                     }
                                     
-                                    if (Constants.jitStressModeScenarios.containsKey(scenario) || scenario == 'default') {
+                                    if (Constants.jitStressModeScenarios.containsKey(scenario) || scenario == 'default' || scenario == 'r2r') {
                                         buildOpts = enableCorefxTesting ? 'skiptests' : ''
                                         buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${arch} ${buildOpts}"
                                     }
@@ -1134,7 +1133,7 @@ combinedScenarios.each { scenario ->
                                     // binaries are sent to a default directory whose name is about
                                     // 35 characters long.
 
-                                    else if (scenario == 'pri1') {
+                                    else if (scenario == 'pri1' || scenario == 'pri1r2r' || scenario == 'coverage') {
                                         buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${arch} Priority 1"
                                     }
                                     else if (scenario == 'ilrt') {
@@ -1142,18 +1141,10 @@ combinedScenarios.each { scenario ->
                                         buildCommands += "build.cmd ${lowerConfiguration} ${arch} skiptests"
                                         buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${arch} ilasmroundtrip"
                                     }
-                                    else if (scenario == 'r2r') {
-                                        buildCommands += "build.cmd ${lowerConfiguration} ${arch} skiptests"
-                                        buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${arch} crossgen"
-                                    }
-                                    else if (scenario == 'pri1r2r') {
-                                        buildCommands += "build.cmd ${lowerConfiguration} ${arch} skiptests"
-                                        buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${arch} crossgen Priority 1"
-                                    }
                                     else if (scenario == 'gcstress15_pri1r2r') {
                                         //Build pri1 R2R tests with GC stress level 15
                                         buildCommands += "build.cmd ${lowerConfiguration} ${arch} skiptests"
-                                        buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${arch} crossgen Priority 1 gcstresslevel 15"
+                                        buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${arch}  Priority 1 gcstresslevel 0xf"
                                     }
                                     else if (scenario == 'longgc') {
                                         buildCommands += "build.cmd ${lowerConfiguration} ${arch} skiptests"
@@ -1162,10 +1153,6 @@ combinedScenarios.each { scenario ->
                                     else if (scenario == 'gcsimulator') {
                                         buildCommands += "build.cmd ${lowerConfiguration} ${arch} skiptests"
                                         buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${arch} gcsimulator"
-                                    }
-                                    else if (scenario == 'coverage') {
-                                        buildCommands += "build.cmd ${lowerConfiguration} ${arch} skiptests"
-                                        buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${arch} crossgen Priority 1"
                                     }
                                     else {
                                         println("Unknown scenario: ${scenario}")
@@ -1178,8 +1165,10 @@ combinedScenarios.each { scenario ->
                                     if (!isBuildOnly) {
                                         //If this is a crossgen build, pass 'crossgen' to runtest.cmd
                                         def crossgenStr = ''
+                                        def runcrossgentestsStr = ''
                                         if (scenario == 'r2r' || scenario == 'pri1r2r' || scenario == 'gcstress15_pri1r2r'){
                                             crossgenStr = 'crossgen'
+                                            runcrossgentestsStr = 'runcrossgentests'
                                         }
                                         if (Constants.jitStressModeScenarios.containsKey(scenario)) {
                                             if (enableCorefxTesting) {
@@ -1201,7 +1190,7 @@ combinedScenarios.each { scenario ->
                                                 
                                                 // Run tests with the 
                                                 
-                                                buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${arch} TestEnv ${stepScriptLocation}"
+                                                buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${arch} ${crossgenStr} ${runcrossgentestsStr} TestEnv ${stepScriptLocation}"
                                             }                                            
                                         }
                                         else if (architecture == 'x64') {
@@ -1558,14 +1547,21 @@ combinedScenarios.each { scenario ->
                     // If this is a stress scenario, there isn't any difference in the build job
                     // so we didn't create a build only job for windows_nt specific to that stress mode.  Just copy
                     // from the default scenario
+                    def testBuildScenario = scenario
+                    if (testBuildScenario == 'coverage' || testBuildScenario == 'pri1r2r') {
+                        testBuildScenario = 'pri1'
+                    }
+                    else if ( testBuildScenario == 'r2r'){
+                        testBuildScenario = 'default'
+                    }
                     def inputWindowTestsBuildName = ''
-                    if (Constants.jitStressModeScenarios.containsKey(scenario)) {
+                    if (Constants.jitStressModeScenarios.containsKey(testBuildScenario)) {
                         inputWindowTestsBuildName = projectFolder + '/' + 
                             Utilities.getFullJobName(project, getJobName(configuration, architecture, 'windows_nt', 'default', true), isPR)
                     }
                     else {
                         inputWindowTestsBuildName = projectFolder + '/' + 
-                            Utilities.getFullJobName(project, getJobName(configuration, architecture, 'windows_nt', scenario, true), isPR)
+                            Utilities.getFullJobName(project, getJobName(configuration, architecture, 'windows_nt', testBuildScenario, true), isPR)
                     }
                     // Enable Server GC for Ubuntu PR builds
                     def serverGCString = ''
@@ -1584,8 +1580,10 @@ combinedScenarios.each { scenario ->
 
                     // pass --crossgen to runtest.sh for crossgen builds
                     def crossgenStr = ''
+                    def runcrossgentestsStr = ''
                     if (scenario == 'r2r' || scenario == 'pri1r2r' || scenario == 'gcstress15_pri1r2r'){
                         crossgenStr = '--crossgen'
+                        runcrossgentestsStr = '--runcrossgentests'
                     }
 
                     if (isLongGc(scenario)) {
@@ -1745,7 +1743,7 @@ combinedScenarios.each { scenario ->
                 --mscorlibDir=\"\${WORKSPACE}/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
                 --coreFxBinDir=\"\${WORKSPACE}/bin/${osGroup}.AnyCPU.Release;\${WORKSPACE}/bin/Unix.AnyCPU.Release;\${WORKSPACE}/bin/AnyOS.AnyCPU.Release\" \\
                 --coreFxNativeBinDir=\"\${WORKSPACE}/bin/${osGroup}.${architecture}.Release\" \\
-                ${testEnvOpt} ${serverGCString} ${crossgenStr} ${sequentialString} ${playlistString}""")
+                ${testEnvOpt} ${serverGCString} ${crossgenStr} ${runcrossgentestsStr} ${sequentialString} ${playlistString}""")
                             }
                         }
                     }
