@@ -2146,17 +2146,8 @@ DWORD ZapIndirectHelperThunk::SaveWorker(ZapWriter * pZapWriter)
 #elif defined(_TARGET_ARM64_)
     if (IsDelayLoadHelper())
     {
-        if (IsVSD())
-        {
-            // x11 contains indirection cell
-            // Do nothing x11 contains our first param
-        }
-        else
-        {
-            // mov x11, x12
-            *(DWORD*)p = 0xaa0c03eb;
-            p += 4;
-        }
+        // x11 contains indirection cell
+        // Do nothing x11 contains our first param
 
         //  movz x8, #index
         DWORD index = GetSectionIndex();
@@ -2166,9 +2157,9 @@ DWORD ZapIndirectHelperThunk::SaveWorker(ZapWriter * pZapWriter)
 
         // move Module* -> x9
         // ldr x9, [PC+0x14]
-        *(DWORD*)p = 0x58000289;
+        *(DWORD*)p = 0x580000A9;
         p += 4;
-		
+
         //ldr x9, [x9]
         *(DWORD*)p = 0xf9400129;
         p += 4;
@@ -2178,7 +2169,7 @@ DWORD ZapIndirectHelperThunk::SaveWorker(ZapWriter * pZapWriter)
     {
         // Move Module* -> x1
         // ldr x1, [PC+0x14]
-        *(DWORD*)p = 0x58000289;
+        *(DWORD*)p = 0x580000A1;
         p += 4;
 
         // ldr x1, [x1]
@@ -2187,10 +2178,8 @@ DWORD ZapIndirectHelperThunk::SaveWorker(ZapWriter * pZapWriter)
     }
 
     // branch to helper
-	
-    // mov x12, [helper]
     // ldr x12, [PC+0x14]
-    *(DWORD*)p = 0x58000289;
+    *(DWORD*)p = 0x580000AC;
     p += 4;
 
     // ldr x12, [x12]
@@ -2199,12 +2188,13 @@ DWORD ZapIndirectHelperThunk::SaveWorker(ZapWriter * pZapWriter)
 
     // br x12
     *(DWORD *)p = 0xd61f0180;
-    p += 4;	
+    p += 4;
 
     // [Module*]
     if (pImage != NULL)
         pImage->WriteReloc(buffer, (int)(p - buffer), pImage->GetImportTable()->GetHelperImport(READYTORUN_HELPER_Module), 0, IMAGE_REL_BASED_PTR);
     p += 8;
+
     // [helper]
     if (pImage != NULL)
         pImage->WriteReloc(buffer, (int)(p - buffer), pImage->GetImportTable()->GetHelperImport(GetReadyToRunHelper()), 0, IMAGE_REL_BASED_PTR);
