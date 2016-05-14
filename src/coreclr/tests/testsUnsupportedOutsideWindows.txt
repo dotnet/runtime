@@ -215,8 +215,6 @@ JIT/jit64/mcc/interop/mcc_i85/mcc_i85.sh
 JIT/jit64/mcc/interop/mcc_i86/mcc_i86.sh
 JIT/jit64/mcc/interop/mcc_i87/mcc_i87.sh
 JIT/jit64/regress/vsw/286991/test/test.sh
-JIT/Methodical/Arrays/misc/_il_dbgarrres/_il_dbgarrres.sh
-JIT/Methodical/Arrays/misc/_il_relarrres/_il_relarrres.sh
 JIT/Methodical/cctor/xassem/xprecise3_cs_d/xprecise3_cs_d.sh
 JIT/Methodical/cctor/xassem/xprecise3_cs_do/xprecise3_cs_do.sh
 JIT/Methodical/cctor/xassem/xprecise3_cs_r/xprecise3_cs_r.sh
