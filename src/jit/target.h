@@ -1514,6 +1514,7 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   #define RBM_CALLEE_SAVED        (RBM_INT_CALLEE_SAVED | RBM_FLT_CALLEE_SAVED)
   #define RBM_CALLEE_TRASH        (RBM_INT_CALLEE_TRASH | RBM_FLT_CALLEE_TRASH)
   #define RBM_CALLEE_TRASH_NOGC   (RBM_R12|RBM_R13|RBM_R14|RBM_R15)
+  #define REG_DEFAULT_HELPER_CALL_TARGET REG_R12
 
   #define RBM_ALLINT              (RBM_INT_CALLEE_SAVED | RBM_INT_CALLEE_TRASH)
   #define RBM_ALLFLOAT            (RBM_FLT_CALLEE_SAVED | RBM_FLT_CALLEE_TRASH)
@@ -1605,6 +1606,11 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   #define REG_VIRTUAL_STUB_PARAM          REG_R11
   #define RBM_VIRTUAL_STUB_PARAM          RBM_R11
   #define PREDICT_REG_VIRTUAL_STUB_PARAM  PREDICT_REG_R11
+
+  // R2R indirect call. Use the same registers as VSD
+  #define REG_R2R_INDIRECT_PARAM          REG_R11
+  #define RBM_R2R_INDIRECT_PARAM          RBM_R11
+  #define PREDICT_REG_RER_INDIRECT_PARAM  PREDICT_REG_R11
 
   // Registers used by PInvoke frame setup
   #define REG_PINVOKE_FRAME        REG_R8

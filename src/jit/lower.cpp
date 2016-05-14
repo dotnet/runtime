@@ -2399,10 +2399,26 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
            break;
 
        case IAT_PVALUE:
+       {
            // Non-virtual direct calls to addresses accessed by
            // a single indirection.
-           result = Ind(AddrGen(addr));
+           GenTree* cellAddr = AddrGen(addr);
+           GenTree* indir = Ind(cellAddr);
+
+#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef _TARGET_ARM64_
+           // For arm64, we dispatch code same as VSD using X11 for indirection cell address,
+           // which ZapIndirectHelperThunk expects.
+           if (call->IsR2RRelativeIndir())
+           {
+               cellAddr->gtRegNum = REG_R2R_INDIRECT_PARAM;
+               indir->gtRegNum = REG_JUMP_THUNK_PARAM;
+           }
+#endif
+#endif
+           result = indir;
            break;
+       }
 
        case IAT_PPVALUE:
            // Non-virtual direct calls to addresses accessed by

@@ -7047,6 +7047,8 @@ GenTreePtr    Compiler::fgOptimizeDelegateConstructor(GenTreePtr call, CORINFO_C
                 info.compCompHnd->getReadyToRunHelper(targetMethod->gtFptrVal.gtLdftnResolvedToken,
                     CORINFO_HELP_READYTORUN_DELEGATE_CTOR, &call->gtCall.gtEntryPoint);
 #endif
+                // This is the case from GetDynamicHelperCell.
+                call->gtCall.setR2RRelativeIndir();
             }
         }
         else
