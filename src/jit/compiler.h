@@ -2818,12 +2818,13 @@ public:
         return impTokenToHandle(pResolvedToken, pRuntimeLookup, mustRestoreHandle, TRUE);
     }
 
-    GenTreePtr          impLookupToTree(CORINFO_LOOKUP *pLookup,
+    GenTreePtr          impLookupToTree(CORINFO_RESOLVED_TOKEN *pResolvedToken, 
+                                        CORINFO_LOOKUP *pLookup,
                                         unsigned flags,
                                         void *compileTimeHandle);
 
-    GenTreePtr          impRuntimeLookupToTree(CORINFO_RUNTIME_LOOKUP_KIND kind,
-                                               CORINFO_RUNTIME_LOOKUP *pLookup,
+    GenTreePtr          impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN *pResolvedToken, 
+                                               CORINFO_LOOKUP *pLookup,
                                                void * compileTimeHandle);
 
     GenTreePtr          impReadyToRunLookupToTree(CORINFO_CONST_LOOKUP *pLookup,
@@ -2833,7 +2834,8 @@ public:
     GenTreePtr          impReadyToRunHelperToTree(CORINFO_RESOLVED_TOKEN * pResolvedToken,
                                         CorInfoHelpFunc helper,
                                         var_types type,
-                                        GenTreePtr arg = NULL);
+                                        GenTreeArgList* arg = NULL,
+                                        CORINFO_LOOKUP_KIND * pGenericLookupKind = NULL);
 
     GenTreePtr          impCastClassOrIsInstToTree(GenTreePtr op1, 
                                         GenTreePtr op2,

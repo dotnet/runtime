@@ -544,10 +544,10 @@ public:
     CorInfoHelpFunc getUnBoxHelper(CORINFO_CLASS_HANDLE cls);
 
     bool getReadyToRunHelper(
-            CORINFO_RESOLVED_TOKEN * pResolvedToken,
-            CORINFO_LOOKUP_KIND *    pGenericLookupKind,
-            CorInfoHelpFunc          id,
-            CORINFO_CONST_LOOKUP *   pLookup
+            CORINFO_RESOLVED_TOKEN *        pResolvedToken,
+            CORINFO_LOOKUP_KIND *           pGenericLookupKind,
+            CorInfoHelpFunc                 id,
+            CORINFO_CONST_LOOKUP *          pLookup
             );
 
     void getReadyToRunDelegateCtorHelper(
@@ -949,10 +949,10 @@ public:
                                           void **ppIndirection);
     CORINFO_METHOD_HANDLE embedMethodHandle(CORINFO_METHOD_HANDLE handle,
                                             void **ppIndirection);
-    void embedGenericHandle(
-                        CORINFO_RESOLVED_TOKEN * pResolvedToken,
-                        BOOL                     fEmbedParent,
-                        CORINFO_GENERICHANDLE_RESULT *pResult);
+
+    void embedGenericHandle(CORINFO_RESOLVED_TOKEN * pResolvedToken,
+                            BOOL                     fEmbedParent,
+                            CORINFO_GENERICHANDLE_RESULT *pResult);
 
     CORINFO_LOOKUP_KIND getLocationOfThisType(CORINFO_METHOD_HANDLE context);
 
@@ -1135,6 +1135,26 @@ public:
 
     MethodDesc * GetMethodForSecurity(CORINFO_METHOD_HANDLE callerHandle);
 
+    // Prepare the information about how to do a runtime lookup of the handle with shared
+    // generic variables.
+    void ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entryKind,
+                                                   CORINFO_RESOLVED_TOKEN * pResolvedToken,
+                                                   CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken /* for ConstrainedMethodEntrySlot */,
+                                                   MethodDesc * pTemplateMD /* for method-based slots */,
+                                                   CORINFO_LOOKUP *pResultLookup);
+
+    static void ComputeRuntimeLookupForSharedGenericTokenStatic(DictionaryEntryKind entryKind,
+                                                                CORINFO_RESOLVED_TOKEN * pResolvedToken,
+                                                                CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken /* for ConstrainedMethodEntrySlot */,
+                                                                MethodDesc * pTemplateMD /* for method-based slots */,
+                                                                LoaderAllocator* pAllocator,
+                                                                DWORD numGenericArgs,
+                                                                DictionaryLayout* pDictionaryLayout,
+                                                                DWORD typeDictionaryIndex,
+                                                                CORINFO_LOOKUP *pResultLookup,
+                                                                BOOL fEnableTypeHandleLookupOptimization,
+                                                                BOOL fInstrument);
+
 protected:
     // NGen provides its own modifications to EE-JIT interface. From technical reason it cannot simply inherit 
     // from code:CEEInfo class (because it has dependencies on VM that NGen does not want).
@@ -1169,14 +1189,6 @@ protected:
     // The main entrypoints for module activation tracking
     void ScanToken(Module * pModule, CORINFO_RESOLVED_TOKEN * pResolvedToken, TypeHandle th, MethodDesc * pMD = NULL);
     void ScanTokenForDynamicScope(CORINFO_RESOLVED_TOKEN * pResolvedToken, TypeHandle th, MethodDesc * pMD = NULL);
-
-    // Prepare the information about how to do a runtime lookup of the handle with shared
-    // generic variables.
-    void ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entryKind,
-                                                   CORINFO_RESOLVED_TOKEN * pResolvedToken,
-                                                   CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken /* for ConstrainedMethodEntrySlot */,
-                                                   MethodDesc * pTemplateMD /* for method-based slots */,
-                                                   CORINFO_LOOKUP *pResultLookup);
 };
 
 
