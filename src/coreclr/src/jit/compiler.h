@@ -2220,6 +2220,7 @@ public :
 
 #if INLINE_NDIRECT
     unsigned            lvaInlinedPInvokeFrameVar;  // variable representing the InlinedCallFrame
+    unsigned            lvaReversePInvokeFrameVar;  // variable representing the reverse PInvoke frame
 #if FEATURE_FIXED_OUT_ARGS
     unsigned            lvaPInvokeFrameRegSaveVar;  // variable representing the RegSave for PInvoke inlining.
 #endif
@@ -3412,6 +3413,8 @@ public :
     void                fgConvertSyncReturnToLeave(BasicBlock* block);
 
 #endif // !_TARGET_X86_
+
+    void                fgAddReversePInvokeEnterExit();
 
     bool                fgMoreThanOneReturnBlock();
 
@@ -7457,6 +7460,17 @@ public :
         {
 #if COR_JIT_EE_VERSION > 460
             return (jitFlags->corJitFlags2 & CORJIT_FLG2_USE_PINVOKE_HELPERS) != 0;
+#else
+            return false;
+#endif
+        }
+
+        // true if we should use insert the REVERSE_PINVOKE_{ENTER,EXIT} helpers in the method
+        // prolog/epilog
+        inline bool         IsReversePInvoke()
+        {
+#if COR_JIT_EE_VERSION > 460
+            return (jitFlags->corJitFlags2 & CORJIT_FLG2_REVERSE_PINVOKE) != 0;
 #else
             return false;
 #endif
