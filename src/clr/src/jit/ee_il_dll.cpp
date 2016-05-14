@@ -13,10 +13,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
-// This file is responsible for initializing `jitstdout` and therefore needs to
-// be able to refer to `stdout`.
-#define ALLOW_STDOUT
-
 #include "jitpch.h"
 #ifdef _MSC_VER
 #pragma hdrstop
@@ -72,11 +68,11 @@ void __stdcall jitStartup(ICorJitHost* jitHost)
     }
 
 #if defined(PLATFORM_UNIX)
-    jitstdout = stdout;
+    jitstdout = procstdout();
 #else
     if (jitstdout == nullptr)
     {
-        int jitstdoutFd = _dup(_fileno(stdout));
+        int jitstdoutFd = _dup(_fileno(procstdout()));
         _setmode(jitstdoutFd, _O_TEXT);
         jitstdout = _fdopen(jitstdoutFd, "w");
         assert(jitstdout != nullptr);
@@ -93,7 +89,7 @@ void jitShutdown()
 {
     Compiler::compShutdown();
 
-    if (jitstdout != stdout)
+    if (jitstdout != procstdout())
     {
         fclose(jitstdout);
     }
