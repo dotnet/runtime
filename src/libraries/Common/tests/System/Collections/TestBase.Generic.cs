@@ -27,18 +27,12 @@ namespace System.Collections.Tests
         /// The EqualityComparer that can be used in the overriding class when creating test enumerables
         /// or test collections. Default if not overridden is the default comparator.
         /// </summary>
-        protected virtual IEqualityComparer<T> GetIEqualityComparer()
-        {
-            return EqualityComparer<T>.Default;
-        }
+        protected virtual IEqualityComparer<T> GetIEqualityComparer() => EqualityComparer<T>.Default;
 
         /// <summary>
         /// The Comparer that can be used in the overriding class when creating test enumerables
         /// or test collections. Default if not overridden is the default comparator.
-        protected virtual IComparer<T> GetIComparer()
-        {
-            return Comparer<T>.Default;
-        }
+        protected virtual IComparer<T> GetIComparer() => Comparer<T>.Default;
 
         /// <summary>
         /// MemberData to be passed to tests that take an IEnumerable{T}. This method returns every permutation of

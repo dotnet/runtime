@@ -69,21 +69,15 @@ namespace System.Collections.Tests
             }
         }
 
-        protected virtual bool ExpectedFixedSize { get { return false; } }
+        protected virtual bool ExpectedFixedSize => false;
 
         #endregion
 
         #region ICollection Helper Methods
 
-        protected override ICollection NonGenericICollectionFactory()
-        {
-            return NonGenericIListFactory();
-        }
+        protected override ICollection NonGenericICollectionFactory() => NonGenericIListFactory();
 
-        protected override ICollection NonGenericICollectionFactory(int count)
-        {
-            return NonGenericIListFactory(count);
-        }
+        protected override ICollection NonGenericICollectionFactory(int count) => NonGenericIListFactory(count);
 
         /// <summary>
         /// Returns a set of ModifyEnumerable delegates that modify the enumerable passed to them.

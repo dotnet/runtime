@@ -69,6 +69,13 @@ namespace System.Collections.Tests
         /// </summary>
         protected virtual bool ICollection_NonGeneric_SupportsSyncRoot => true;
 
+        /// <summary>
+        /// Used for the ICollection_NonGeneric_SyncRootType_MatchesExcepted test. Most SyncRoots are created
+        /// using System.Threading.Interlocked.CompareExchange(ref _syncRoot, new Object(), null)
+        /// so we should test that the SyncRoot is the type we expect.
+        /// </summary>
+        protected virtual Type ICollection_NonGeneric_SyncRootType => typeof(object);
+
         #endregion
 
         #region IEnumerable Helper Methods
@@ -143,7 +150,30 @@ namespace System.Collections.Tests
                 Assert.NotSame(collection1.SyncRoot, collection2.SyncRoot);
             }
         }
-        
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void ICollection_NonGeneric_SyncRoot_MatchesExpectedType(int count)
+        {
+            if (ICollection_NonGeneric_SupportsSyncRoot)
+            {
+                ICollection collection = NonGenericICollectionFactory(count);
+                
+                Assert.IsType(ICollection_NonGeneric_SyncRootType, collection.SyncRoot);
+
+                if (ICollection_NonGeneric_SyncRootType == collection.GetType())
+                {
+                    // If we expect the SyncRoot to be the same type as the collection, 
+                    // the SyncRoot should be the same as the collection (e.g. HybridDictionary)
+                    Assert.Same(collection, collection.SyncRoot);
+                }
+                else
+                {
+                    Assert.NotSame(collection, collection.SyncRoot);
+                }
+            }
+        }
+
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_NonGeneric_SyncRoot_ThrowsNotSupportedException(int count)
