@@ -5,36 +5,28 @@
 using Xunit;
 using System;
 using System.Reflection;
+using System.Collections.Generic;
 
 namespace System.Reflection.Tests
 {
     public class MethodInfo_GetBaseDefinition
     {
-        [Fact]
-        public void GetBaseDefinition()
+        public static IEnumerable<object[]> GetBaseDefinitionData()
+        { 
+            yield return new object[] { "ItfMethod1" , typeof(BaseClass), typeof(BaseClass) };
+            yield return new object[] { "ItfMethod1", typeof(DerivedClass), typeof(BaseClass) };
+            yield return new object[] { "BaseClassVirtualMethod", typeof(DerivedClass), typeof(BaseClass) };
+            yield return new object[] { "BaseClassMethod", typeof(DerivedClass), typeof(DerivedClass) };
+            yield return new object[] { "ToString", typeof(DerivedClass), typeof(object) };
+            yield return new object[] { "DerivedClassMethod", typeof(DerivedClass), typeof(DerivedClass) };
+        }
+
+        [Theory]
+        [MemberData(nameof(GetBaseDefinitionData))]
+        public void GetBaseDefinition(string str1, Type typ1, Type typ2)
         {
-            MethodInfo mi = typeof(BaseClass).GetTypeInfo().GetMethod("ItfMethod1").GetBaseDefinition();
-            Assert.Equal(typeof(BaseClass).GetTypeInfo().GetMethod("ItfMethod1"), mi);
-            Assert.Equal(MemberTypes.Method, mi.MemberType);
-
-            mi = typeof(DerivedClass).GetTypeInfo().GetMethod("ItfMethod1").GetBaseDefinition();
-            Assert.Equal(typeof(BaseClass).GetTypeInfo().GetMethod("ItfMethod1"), mi);
-            Assert.Equal(MemberTypes.Method, mi.MemberType);
-
-            mi = typeof(DerivedClass).GetTypeInfo().GetMethod("BaseClassVirtualMethod").GetBaseDefinition();
-            Assert.Equal(typeof(BaseClass).GetTypeInfo().GetMethod("BaseClassVirtualMethod"), mi);
-            Assert.Equal(MemberTypes.Method, mi.MemberType);
-
-            mi = typeof(DerivedClass).GetTypeInfo().GetMethod("BaseClassMethod").GetBaseDefinition();
-            Assert.Equal(typeof(DerivedClass).GetTypeInfo().GetMethod("BaseClassMethod"), mi);
-            Assert.Equal(MemberTypes.Method, mi.MemberType);
-
-            mi = typeof(DerivedClass).GetTypeInfo().GetMethod("ToString").GetBaseDefinition();
-            Assert.Equal(typeof(object).GetTypeInfo().GetMethod("ToString"), mi);
-            Assert.Equal(MemberTypes.Method, mi.MemberType);
-
-            mi = typeof(DerivedClass).GetTypeInfo().GetMethod("DerivedClassMethod").GetBaseDefinition();
-            Assert.Equal(typeof(DerivedClass).GetTypeInfo().GetMethod("DerivedClassMethod"), mi);
+            MethodInfo mi = typ1.GetTypeInfo().GetMethod(str1).GetBaseDefinition();
+            Assert.Equal(typ2.GetTypeInfo().GetMethod(str1), mi);
             Assert.Equal(MemberTypes.Method, mi.MemberType);
         }
 
