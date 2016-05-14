@@ -12,6 +12,7 @@ namespace System.Reflection.Tests
     public class MethodInfoCreateDelegateTests
     {
         //Create Open Instance delegate to a public method
+
         [Fact]
         public void TestCreateDelegate1()
         {
@@ -35,15 +36,12 @@ namespace System.Reflection.Tests
             Type typeGenericClassString = typeof(GenericClass<String>);
             RunGenericTestsHelper(typeGenericClassString);
         }
-
-
+        
         //create open instance delegate with incorrect delegate type
         [Fact]
         public void TestCreateDelegate4()
         {
-            ClassA TestClass = (ClassA)Activator.CreateInstance(typeof(ClassA));
             MethodInfo miPublicInstanceMethod = GetMethod(typeof(ClassA), "PublicInstanceMethod");
-            ClassA classAObj = new ClassA();
             Assert.Throws<ArgumentException>(() =>
             {
                 miPublicInstanceMethod.CreateDelegate(typeof(Delegate_Void_Int));
@@ -54,9 +52,7 @@ namespace System.Reflection.Tests
         [Fact]
         public void TestCreateDelegate5()
         {
-            ClassA TestClass = (ClassA)Activator.CreateInstance(typeof(ClassA));
             MethodInfo miPublicInstanceMethod = GetMethod(typeof(ClassA), "PublicInstanceMethod");
-            ClassA classAObj = new ClassA();
             Assert.Throws<ArgumentNullException>(() =>
             {
                 miPublicInstanceMethod.CreateDelegate(null);
@@ -69,7 +65,6 @@ namespace System.Reflection.Tests
         {
             ClassA TestClass = (ClassA)Activator.CreateInstance(typeof(ClassA));
             MethodInfo miPublicInstanceMethod = GetMethod(typeof(ClassA), "PublicInstanceMethod");
-            ClassA classAObj = new ClassA();
             Assert.Throws<ArgumentException>(() =>
             {
                 miPublicInstanceMethod.CreateDelegate(typeof(Delegate_TC_Int), TestClass);
@@ -82,39 +77,31 @@ namespace System.Reflection.Tests
         {
             ClassA TestClass = (ClassA)Activator.CreateInstance(typeof(ClassA));
             MethodInfo miPublicInstanceMethod = GetMethod(typeof(ClassA), "PublicInstanceMethod");
-            ClassA classAObj = new ClassA();
             Assert.Throws<ArgumentNullException>(() =>
             {
                 miPublicInstanceMethod.CreateDelegate(null, TestClass);
             });
         }
 
-        //closed instance delegate with incorrect object type
-        [Fact]
-        public void TestCreateDelegate8()
+        public static IEnumerable<object[]> TestCreateDelegateData()
         {
-            ClassA TestClass = (ClassA)Activator.CreateInstance(typeof(ClassA));
-            MethodInfo miPublicInstanceMethod = GetMethod(typeof(ClassA), "PublicInstanceMethod");
-            ClassA classAObj = new ClassA();
-            Assert.Throws<ArgumentException>(() =>
-            {
-                miPublicInstanceMethod.CreateDelegate(typeof(Delegate_Void_Int), new DummyClass());
-            });
+            //closed instance delegate with incorrect object type
+            yield return new object[] { typeof(Delegate_Void_Int) };
+            //create closed static method with incorrect argument
+            yield return new object[] { typeof(Delegate_Void_Str) };
         }
 
-        //create closed static method with incorrect argument
-        [Fact]
-        public void TestCreateDelegate9()
+        [Theory]
+        [MemberData(nameof(TestCreateDelegateData))]
+        public void TestCreateDelegate(Type TestData)
         {
-            ClassA TestClass = (ClassA)Activator.CreateInstance(typeof(ClassA));
             MethodInfo miPublicInstanceMethod = GetMethod(typeof(ClassA), "PublicInstanceMethod");
-            ClassA classAObj = new ClassA();
             Assert.Throws<ArgumentException>(() =>
             {
-                miPublicInstanceMethod.CreateDelegate(typeof(Delegate_Void_Str), new DummyClass());
+                miPublicInstanceMethod.CreateDelegate(TestData, new DummyClass());
             });
         }
-
+        
         [Fact]
         public void TestCreateDelegate10()
         {
@@ -176,6 +163,7 @@ namespace System.Reflection.Tests
 
             MethodInfo miMethod1String = GetMethod(typeGenericClassString, "Method1");
             MethodInfo miMethod2String = GetMethod(typeGenericClassString, "Method2");
+
             MethodInfo miMethod2IntGeneric = miMethod2String.MakeGenericMethod(new Type[] { typeof(int) });
             MethodInfo miMethod2StringGeneric = miMethod2String.MakeGenericMethod(new Type[] { typeof(String) });
 

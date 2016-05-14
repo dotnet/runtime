@@ -46,59 +46,24 @@ namespace System.Reflection.Tests
     public class AssemblyMethodInfoCustomAttributeTest
     {
         //Test for custom Attribute of type  Int32AttrSimple
-        [Fact]
-        public void Test_Int32AttrSimple()
+        public static IEnumerable<object[]> Test_Type()
         {
-            Type attrType = typeof(System.Reflection.CustomAttributesTests.Data.Int32Attr);
-            string attrstr = "[System.Reflection.CustomAttributesTests.Data.Int32Attr((Int32)77, name = \"Int32AttrSimple\")]";
-            VerifyCustomAttribute(attrType, attrstr);
+            yield return new object[] { typeof(Int32Attr), "[System.Reflection.CustomAttributesTests.Data.Int32Attr((Int32)77, name = \"Int32AttrSimple\")]" };
+            yield return new object[] { typeof(Int64Attr), "[System.Reflection.CustomAttributesTests.Data.Int64Attr((Int64)77, name = \"Int64AttrSimple\")]" };
+            yield return new object[] { typeof(StringAttr), "[System.Reflection.CustomAttributesTests.Data.StringAttr(\"hello\", name = \"StringAttrSimple\")]" };
+            yield return new object[] { typeof(EnumAttr), "[System.Reflection.CustomAttributesTests.Data.EnumAttr((System.Reflection.CustomAttributesTests.Data.MyColorEnum)1, name = \"EnumAttrSimple\")]" };
+            yield return new object[] { typeof(TypeAttr), "[System.Reflection.CustomAttributesTests.Data.TypeAttr(typeof(System.Object), name = \"TypeAttrSimple\")]" };
+            yield return new object[] { typeof(Attr), "[System.Reflection.CustomAttributesTests.Data.Attr((Int32)77, name = \"AttrSimple\")]" };
         }
 
-        //Test for custom Attribute of Type Int64Attr
-        [Fact]
-        public void Test_Int64Attr()
+        [Theory]
+        [MemberData(nameof(Test_Type))]
+
+        public void Test_Attr(Type attrType, string attrstr)
         {
-            Type attrType = typeof(System.Reflection.CustomAttributesTests.Data.Int64Attr);
-            string attrstr = "[System.Reflection.CustomAttributesTests.Data.Int64Attr((Int64)77, name = \"Int64AttrSimple\")]";
             VerifyCustomAttribute(attrType, attrstr);
         }
-
-        //Test for custom Attribute of TypeStringAttr
-        [Fact]
-        public void Test_StringAttr()
-        {
-            Type attrType = typeof(System.Reflection.CustomAttributesTests.Data.StringAttr);
-            string attrstr = "[System.Reflection.CustomAttributesTests.Data.StringAttr(\"hello\", name = \"StringAttrSimple\")]";
-            VerifyCustomAttribute(attrType, attrstr);
-        }
-
-        //Test for custom Attribute of type  EnumAttr
-        [Fact]
-        public void Test_EnumAttr()
-        {
-            Type attrType = typeof(System.Reflection.CustomAttributesTests.Data.EnumAttr);
-            string attrstr = "[System.Reflection.CustomAttributesTests.Data.EnumAttr((System.Reflection.CustomAttributesTests.Data.MyColorEnum)1, name = \"EnumAttrSimple\")]";
-            VerifyCustomAttribute(attrType, attrstr);
-        }
-
-        //Test for custom Attribute of type  TypeAttr
-        [Fact]
-        public void Test_TypeAttr()
-        {
-            Type attrType = typeof(System.Reflection.CustomAttributesTests.Data.TypeAttr);
-            string attrstr = "[System.Reflection.CustomAttributesTests.Data.TypeAttr(typeof(System.Object), name = \"TypeAttrSimple\")]";
-            VerifyCustomAttribute(attrType, attrstr);
-        }
-
-        //Test for custom Attribute of type Attribute
-        [Fact]
-        public void Test_SimpleAttribute()
-        {
-            Type attrType = typeof(System.Reflection.CustomAttributesTests.Data.Attr);
-            string attrstr = "[System.Reflection.CustomAttributesTests.Data.Attr((Int32)77, name = \"AttrSimple\")]";
-            VerifyCustomAttribute(attrType, attrstr);
-        }
-
+        
         private static void VerifyCustomAttribute(Type type, String attributeStr)
         {
             MethodInfo mi = GetMethod(typeof(MethodInfoTestClass), "MyMethod");

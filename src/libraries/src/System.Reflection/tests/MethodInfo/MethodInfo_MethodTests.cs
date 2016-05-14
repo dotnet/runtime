@@ -107,26 +107,22 @@ namespace System.Reflection.Tests
             Assert.Throws<InvalidOperationException>(() => { miDef = mi.GetGenericMethodDefinition(); });
         }
 
-        //Verify MakeGenericMethod() for method with multiple params
-        [Fact]
-        public void TestGetGenericArguments1()
+        public static IEnumerable<object> TestGetGenericArguementsData()
         {
-            MethodInfo mi = GetMethod(typeof(SampleM), "GenericMethod2");
-            Type[] types = null;
-
-            types = mi.GetGenericArguments();
-            Assert.Equal(types.Length, 2);
+            yield return new object[] { "GenericMethod2", 2 };
+            yield return new object[] { "NonGenericMethod", 0 };
         }
 
         //Verify MakeGenericMethod() for method with multiple params
-        [Fact]
-        public void TestGetGenericArguments2()
+        [Theory]
+        [MemberData(nameof(TestGetGenericArguementsData))]
+        public void TestGetGenericArguments(string methodName, int len)
         {
-            MethodInfo mi = GetMethod(typeof(SampleM), "NonGenericMethod");
+            MethodInfo mi = GetMethod(typeof(SampleM), methodName);
             Type[] types = null;
-            types = mi.GetGenericArguments();
 
-            Assert.Equal(types.Length, 0);
+            types = mi.GetGenericArguments();
+            Assert.Equal(types.Length, len);
         }
 
         //Verify GetHashCode Method

@@ -13,44 +13,25 @@ namespace System.Reflection.Tests
 {
     public class MethodInfoNameTests
     {
-        //Verify Method Signatures
-        [Fact]
-        public static void TestMethodName1()
-        {
-            VerifyMethodName("DummyMethod1");
-        }
 
         //Verify Method Signatures
-        [Fact]
-        public static void TestMethodName2()
+        public static IEnumerable<object> TestMethodNameData()
         {
-            VerifyMethodName("PrintStringArray");
+            yield return new object[] { typeof(MethodInfoNameTests), "DummyMethod1" };
+            yield return new object[] { typeof(MethodInfoNameTests), "PrintStringArray" };
+            yield return new object[] { typeof(MethodInfoNameTests), "DummyMethod2" };
+            yield return new object[] { typeof(MethodInfoInterlocked2), "Increment" };
+            yield return new object[] { typeof(MethodInfoInterlocked2), "Decrement" };
+            yield return new object[] { typeof(MethodInfoInterlocked2), "Exchange" };
+            yield return new object[] { typeof(MethodInfoInterlocked2), "CompareExchange" };
         }
 
-        //Verify Method Signatures for ref parameters
-        [Fact]
-        public static void TestMethodName3()
+        [Theory]
+        [MemberData(nameof(TestMethodNameData))]
+
+        public static void TestMethodName(Type type, string str1)
         {
-            Type type = typeof(MethodInfoInterlocked2);
-
-            //case 1
-            VerifyMethodName(type, "Increment");
-
-            //case 2
-            VerifyMethodName(type, "Decrement");
-
-            //case 3
-            VerifyMethodName(type, "Exchange");
-
-            //case 4
-            VerifyMethodName(type, "CompareExchange");
-        }
-
-        //Verify Method Signatures
-        [Fact]
-        public static void TestMethodName4()
-        {
-            VerifyMethodName("DummyMethod2");
+            VerifyMethodName(type, str1);
         }
 
         //Helper Method to Verify Method Signature

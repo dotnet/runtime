@@ -13,89 +13,41 @@ namespace System.Reflection.Tests
 {
     public class MethodInfoPropertyTests
     {
-        //Verify ReturnType for Method GetMethod
-        [Fact]
-        public static void TestReturnType1()
+        public static IEnumerable<object> TestReturnTypeData()
         {
-            VerifyReturnType("GetMethod", "MethodInfo");
+            yield return new object[] { "GetMethod", "MethodInfo" };
+            yield return new object[] { "DummyMethod1", "void" };
+            yield return new object[] { "DummyMethod2", "Int32" };
+            yield return new object[] { "DummyMethod3", "string" };
+            yield return new object[] { "DummyMethod4", "String[]" };
+            yield return new object[] { "DummyMethod5", "Boolean" };
         }
 
-        //Verify ReturnType for Method DummyMethod1
-        [Fact]
-        public static void TestReturnType2()
+        //Verify ReturnType for Methods
+        [Theory]
+        [MemberData(nameof(TestReturnTypeData))]
+        public static void TestReturnType(string str1, string str2)
         {
-            VerifyReturnType("DummyMethod1", "void");
+            VerifyReturnType(str1, str2);
         }
 
-        //Verify ReturnType for Method DummyMethod2
-        [Fact]
-        public static void TestReturnType3()
+        public static IEnumerable<object> TestReturnParamData()
         {
-            VerifyReturnType("DummyMethod2", "Int32");
+            yield return new object[] { "DummyMethod5", "Boolean" };
+            yield return new object[] { "DummyMethod4", "System.String[]" };
+            yield return new object[] { "DummyMethod3", "System.String" };
+            yield return new object[] { "DummyMethod2", "Int32" };
+            yield return new object[] { "DummyMethod1", "Void" };
         }
 
-        //Verify ReturnType for Method DummyMethod3
-        [Fact]
-        public static void TestReturnType4()
+        //Verify ReturnParameter for Methods
+        [Theory]
+        [MemberData(nameof(TestReturnParamData))]
+
+        public static void TestReturnParam(string str1, string str2)
         {
-            VerifyReturnType("DummyMethod3", "string");
+            VerifyReturnParameter(str1, str2);
         }
-
-        //Verify ReturnType for Method DummyMethod4
-        [Fact]
-        public static void TestReturnType5()
-        {
-            VerifyReturnType("DummyMethod4", "String[]");
-        }
-
-
-        //Verify ReturnType for Method DummyMethod5
-        [Fact]
-        public static void TestReturnType6()
-        {
-            VerifyReturnType("DummyMethod5", "Boolean");
-        }
-
-
-        //Verify ReturnParameter for Method DummyMethod5
-        [Fact]
-        public static void TestReturnParam1()
-        {
-            VerifyReturnParameter("DummyMethod5", "Boolean");
-        }
-
-
-        //Verify ReturnParameter for Method DummyMethod4
-        [Fact]
-        public static void TestReturnParam2()
-        {
-            VerifyReturnParameter("DummyMethod4", "System.String[]");
-        }
-
-
-        //Verify ReturnParameter for Method DummyMethod3
-        [Fact]
-        public static void TestReturnParam3()
-        {
-            VerifyReturnParameter("DummyMethod3", "System.String");
-        }
-
-
-        //Verify ReturnParameter for Method DummyMethod2
-        [Fact]
-        public static void TestReturnParam4()
-        {
-            VerifyReturnParameter("DummyMethod2", "Int32");
-        }
-
-
-        //Verify ReturnParameter for Method DummyMethod1
-        [Fact]
-        public static void TestReturnParam5()
-        {
-            VerifyReturnParameter("DummyMethod1", "Void");
-        }
-
 
         //Verify ReturnParameter forclassA method method1
         [Fact]

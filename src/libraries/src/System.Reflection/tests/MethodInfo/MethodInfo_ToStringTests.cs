@@ -11,92 +11,44 @@ namespace System.Reflection.Tests
 {
     public class MethodInfoToStringTests
     {
-        //Verify Method Signatures
-        [Fact]
-        public static void TestMethodSignature1()
+        
+        public static IEnumerable<object> TestMethodSignatureData1()
         {
-            VerifyMethodSignature("DummyMethod1", "Void DummyMethod1(System.String, Int32, Int64)");
-        }
-
-
-        //Verify Method Signatures
-        [Fact]
-        public static void TestMethodSignature2()
-        {
-            VerifyMethodSignature("PrintStringArray", "Void PrintStringArray(System.String[])");
-        }
-
-        //Verify Method Signatures for ref parameters
-        [Fact]
-        public static void TestMethodSignature3()
-        {
-            Type type = typeof(MethodInfoInterlocked3);
-
-            //case 1
-            VerifyMethodSignature(type, "Increment", "Int32 Increment(Int32 ByRef)");
-
-            //case 2
-            VerifyMethodSignature(type, "Decrement", "Int32 Decrement(Int32 ByRef)");
-
-            //case 3
-            VerifyMethodSignature(type, "Exchange", "Int32 Exchange(Int32 ByRef, Int32)");
-
-            //case 4
-            VerifyMethodSignature(type, "CompareExchange", "Int32 CompareExchange(Int32 ByRef, Int32, Int32)");
+            yield return new object[] { "DummyMethod1", "Void DummyMethod1(System.String, Int32, Int64)" };
+            yield return new object[] { "PrintStringArray", "Void PrintStringArray(System.String[])" };
+            yield return new object[] { "DummyMethod2", "Void DummyMethod2()" };
         }
 
         //Verify Method Signatures
-        [Fact]
-        public static void TestMethodSignature4()
+        [Theory]
+        [MemberData(nameof(TestMethodSignatureData1))]
+        public static void TestMethodSignature1(string str1, string str2)
         {
-            VerifyMethodSignature("DummyMethod2", "Void DummyMethod2()");
+            VerifyMethodSignature(str1, str2);
         }
 
-        //Verify Method Signatures
-        [Fact]
-        public static void TestMethodSignature5()
+        public static IEnumerable<object> TestMethodData2()
         {
-            VerifyMethodSignature(typeof(MethodInfoToStringSample), "Method1", "System.String Method1(System.DateTime)");
+            yield return new object[] { typeof(MethodInfoInterlocked3), "Increment", "Int32 Increment(Int32 ByRef)" };
+            yield return new object[] { typeof(MethodInfoInterlocked3), "Decrement", "Int32 Decrement(Int32 ByRef)" };
+            yield return new object[] { typeof(MethodInfoInterlocked3), "Exchange", "Int32 Exchange(Int32 ByRef, Int32)" };
+            yield return new object[] { typeof(MethodInfoInterlocked3), "CompareExchange", "Int32 CompareExchange(Int32 ByRef, Int32, Int32)" };
+            yield return new object[] { typeof(MethodInfoToStringSample), "Method1", "System.String Method1(System.DateTime)" };
+            yield return new object[] { typeof(MethodInfoToStringSample), "Method2", "System.String Method2[T,S](System.String, T, S)" };
+            yield return new object[] { typeof(MethodInfoToStringSampleG<>), "Method1", "T Method1(T)" };
+            yield return new object[] { typeof(MethodInfoToStringSampleG<>), "Method2", "T Method2[S](S, T, System.String)" };
+            yield return new object[] { typeof(MethodInfoToStringSampleG<string>), "Method1", "System.String Method1(System.String)" };
+            yield return new object[] { typeof(MethodInfoToStringSampleG<string>), "Method2", "System.String Method2[S](S, System.String, System.String)" };
         }
 
-
-        //Verify Method Signatures
-        [Fact]
-        public static void TestMethodSignature6()
+        //Verify Method Signatures ref parameters
+        [Theory]
+        [MemberData(nameof(TestMethodData2))]
+        public static void TestMethodSignature2(Type type, string str1, string str2)
         {
-            VerifyMethodSignature(typeof(MethodInfoToStringSample), "Method2", "System.String Method2[T,S](System.String, T, S)");
+            VerifyMethodSignature(type, str1, str2);
         }
-
-        //Verify Method Signatures
-        [Fact]
-        public static void TestMethodSignature7()
-        {
-            VerifyMethodSignature(typeof(MethodInfoToStringSampleG<>), "Method1", "T Method1(T)");
-        }
-
-
-        //Verify Method Signatures
-        [Fact]
-        public static void TestMethodSignature8()
-        {
-            VerifyMethodSignature(typeof(MethodInfoToStringSampleG<>), "Method2", "T Method2[S](S, T, System.String)");
-        }
-
-        //Verify Method Signatures
-        [Fact]
-        public static void TestMethodSignature9()
-        {
-            VerifyMethodSignature(typeof(MethodInfoToStringSampleG<string>), "Method1", "System.String Method1(System.String)");
-        }
-
-        //Verify Method Signatures
-        [Fact]
-        public static void TestMethodSignature10()
-        {
-            VerifyMethodSignature(typeof(MethodInfoToStringSampleG<string>), "Method2", "System.String Method2[S](S, System.String, System.String)");
-        }
-
-
+       
         //Verify Method Signatures
         [Fact]
         public static void TestMethodSignature11()

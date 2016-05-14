@@ -13,39 +13,36 @@ namespace System.Reflection.Tests
 {
     public class MethodInfoParametersTests
     {
-        //Verify Method Parameters
-        [Fact]
-        public static void FactParams1()
+        public static IEnumerable<object> FactParamsData()
         {
-            string methodName = "DummyMethod1";
-            String[] strParamNames = { "str", "iValue", "lValue" };
+            //Verify Method Parameters
+            yield return new object[] { "DummyMethod1" , new String[] { "str", "iValue", "lValue" } };
+            //Verify Method Parameters
+            yield return new object[] { "PrintStringArray", new String[] { "strArray" } };
+        }
 
+        [Theory]
+        [MemberData(nameof(FactParamsData))]
+        public static void FactParams(string methodName, String[] strParamNames)
+        {
             VerifyGetParameters(methodName, strParamNames);
         }
 
-        //Verify Method Parameters
-        [Fact]
-        public static void FactParams2()
+        public static IEnumerable<object> FactParamsData2()
         {
-            string methodName = "PrintStringArray";
-            String[] strParamNames = { "strArray" };
-
-            VerifyGetParameters(methodName, strParamNames);
+            yield return new object[] { "Increment", new String[] { "location" } };
+            yield return new object[] { "Decrement", new String[] { "location" } };
+            yield return new object[] { "Exchange", new String[] { "location1", "value" } };
+            yield return new object[] { "CompareExchange", new String[] { "location1", "value", "comparand" } };
         }
-
         //Verify Method Parameters for ref parameters
-        [Fact]
-        public static void FactParams3()
+        [Theory]
+        [MemberData(nameof(FactParamsData2))]
+
+        public static void FactParams3(string str1, string[] strarr1)
         {
             Type type = typeof(Interlocked2);
-            //case 1
-            VerifyGetParameters(type, "Increment", new String[] { "location" });
-            //case 2
-            VerifyGetParameters(type, "Decrement", new String[] { "location" });
-            //case 3
-            VerifyGetParameters(type, "Exchange", new String[] { "location1", "value" });
-            //case 4
-            VerifyGetParameters(type, "CompareExchange", new String[] { "location1", "value", "comparand" });
+            VerifyGetParameters(type, str1, strarr1);
         }
 
         //Test case for bug: 1720 (MethodInfo.GetParameters is doing shallow copy instead of deep copy)
