@@ -346,6 +346,20 @@
         },
         "linuxmint.17.3-x64": {
             "#import": [ "linuxmint.17.3", "linuxmint.17.2-x64" ]
+        },
+
+        "fedora": {
+            "#import": [ "linux" ]
+        },
+        "fedora-x64": {
+            "#import": [ "fedora", "linux-x64" ]
+        },
+
+        "fedora.23": {
+            "#import": [ "fedora" ]
+        },
+        "fedora.23-x64": {
+            "#import": [ "fedora.23", "fedora-x64" ]
         }
     }
  }
