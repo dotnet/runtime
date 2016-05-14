@@ -1,6 +1,6 @@
 <!--
 ***********************************************************************************************
-CLRTest.Execute.targets
+CLRTest.Execute.Batch.targets
 
 WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and have
           created a backup copy.  Incorrect changes to this file will make it
@@ -34,17 +34,6 @@ WARNING:   When setting properties based on their current state (for example:
     
     <PropertyGroup>
 <!-- CrossGen will create output if it needs to crossgen. Otherwise there will be silence. -->
-      <CrossgenBatchScript Condition="'$(CLRTestKind)' == 'RunOnly'">
-        <![CDATA[
-if not exist "$([MSBuild]::MakeRelative($(OutputPath), $(_CLRTestToRunFileFullPath)).Replace(".exe", ".ni.exe"))" (
-"%CORE_ROOT%\crossgen.exe" /Platform_Assemblies_Paths %CORE_ROOT%%3B%~dp0 $([MSBuild]::MakeRelative($(OutputPath), $(_CLRTestToRunFileFullPath)))
-IF NOT "!ERRORLEVEL!"=="0" (
-    ECHO Crossgen failed with exitcode - !ERRORLEVEL!
-    Exit /b 1
-    )
-)        
-        ]]>
-      </CrossgenBatchScript>
       <CrossgenBatchScript Condition="'$(CLRTestKind)' == 'BuildAndRun'">
         <![CDATA[
 if not exist "$(MSBuildProjectName).ni.exe" (
@@ -94,8 +83,11 @@ IF NOT "!ERRORLEVEL!"=="0" (
 
   <!-- This is here because of this bug: http://blogs.msdn.com/b/msbuild/archive/2006/01/03/508629.aspx-->
   <Target Name="FetchExternalProperties">
-    <!--Call GetExecuteShFullPath to get ToRunProject cmd file Path  -->
-    <MSBuild Projects="$(CLRTestProjectToRun)" Targets="GetExecuteShFullPath" Condition="'$(_CLRTestNeedsProjectToRun)' == 'True'">
+    <!--Call GetExecuteCmdFullPath to get ToRunProject cmd file Path  -->
+    <MSBuild Projects="$(CLRTestProjectToRun)" 
+             Targets="GetExecuteCmdFullPath"
+             Properties="GenerateRunScript=True"
+             Condition="'$(_CLRTestNeedsProjectToRun)' == 'True'">
       <Output TaskParameter="TargetOutputs" PropertyName="_CLRTestToRunFileFullPath"/>
     </MSBuild>
   </Target>
@@ -171,13 +163,13 @@ Exit /b 0
       ]]></BatchCLRTestGCSimulatorSkipCondition>
       <BatchCLRTestExitCodePrep Condition="$(_CLRTestNeedsToRun)">
         <![CDATA[
-set CLRTestExpectedExitCode=$(CLRTestExitCode)
+if not defined CLRTestExpectedExitCode (set CLRTestExpectedExitCode=$(CLRTestExitCode))
 ECHO BEGIN EXECUTION
       ]]>
       </BatchCLRTestExitCodePrep>
 
       <BatchCLRTestArgPrep Condition=" '$(CLRTestExecutionArguments)'!='' "><![CDATA[
-set CLRTestExecutionArguments=$(CLRTestExecutionArguments) 
+if not defined CLRTestExecutionArguments (set CLRTestExecutionArguments=$(CLRTestExecutionArguments) )
       ]]></BatchCLRTestArgPrep>
     
       <!-- By default, be prepared to do a full check -->
@@ -262,10 +254,18 @@ IF NOT "!ERRORLEVEL!"=="%CLRTestExpectedExitCode%" (
   Exit /b 1
 )
       ]]></BatchCLRTestLaunchCmds>
-      <BatchCLRTestLaunchCmds><![CDATA[
+      <BatchCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun'"><![CDATA[
 $(BatchCLRTestLaunchCmds)
-ECHO %LAUNCHER% $(InputAssemblyName) %CLRTestExecutionArguments% %Host_Args%
-%LAUNCHER% $(InputAssemblyName) %CLRTestExecutionArguments% %Host_Args%
+ECHO %LAUNCHER% $(InputAssemblyName) %CLRTestExecutionArguments%
+%LAUNCHER% $(InputAssemblyName) %CLRTestExecutionArguments%
+set CLRTestExitCode=!ERRORLEVEL!
+      ]]></BatchCLRTestLaunchCmds>
+
+      <BatchCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'RunOnly'"><![CDATA[
+$(BatchCLRTestLaunchCmds)
+ECHO  cmd /c $(InputAssemblyName)
+cmd /c $(InputAssemblyName)
+set CLRTestExpectedExitCode=0
 set CLRTestExitCode=!ERRORLEVEL!
       ]]></BatchCLRTestLaunchCmds>
     </PropertyGroup>
