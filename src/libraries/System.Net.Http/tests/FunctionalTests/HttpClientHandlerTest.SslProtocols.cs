@@ -113,6 +113,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ActiveIssue(8538, PlatformID.Windows)]
         [Fact]
         public async Task GetAsync_DisallowTls10_AllowTls11_AllowTls12()
         {

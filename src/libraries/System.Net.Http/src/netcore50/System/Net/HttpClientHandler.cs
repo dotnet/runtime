@@ -10,6 +10,7 @@ using System.Net.Http.Headers;
 using System.Net.Security;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
@@ -46,6 +47,7 @@ namespace System.Net.Http
         private DecompressionMethods automaticDecompression;
         private IWebProxy proxy;
         private X509Certificate2Collection clientCertificates;
+        private IDictionary<String, Object> properties; // Only create dictionary when required.
 
         #endregion Fields
 
@@ -226,6 +228,45 @@ namespace System.Net.Http
             }
         }
 
+        public ICredentials DefaultProxyCredentials
+        {
+            get
+            {
+                RTPasswordCredential rtCreds = rtFilter.ProxyCredential;
+                if (rtCreds == null)
+                {
+                    return null;
+                }
+
+                NetworkCredential creds = new NetworkCredential(rtCreds.UserName, rtCreds.Password);
+                return creds;
+            }
+            set
+            {
+                if (value == null)
+                {
+                    CheckDisposedOrStarted();
+                    rtFilter.ProxyCredential = null;
+                }
+                else if (value == CredentialCache.DefaultCredentials)
+                {
+                    CheckDisposedOrStarted();
+                    // System managed
+                    rtFilter.ProxyCredential = null;
+                }
+                else if (value is NetworkCredential)
+                {
+                    CheckDisposedOrStarted();
+                    rtFilter.ProxyCredential = RTPasswordCredentialFromNetworkCredential((NetworkCredential)value);
+                }
+                else
+                {
+                    throw new PlatformNotSupportedException(String.Format(CultureInfo.InvariantCulture,
+                        SR.net_http_value_not_supported, value, nameof(DefaultProxyCredentials)));
+                }
+            }
+        }
+
         public bool AllowAutoRedirect
         {
             get { return rtFilter.AllowAutoRedirect; }
@@ -251,6 +292,16 @@ namespace System.Net.Http
             }
         }
 
+        public int MaxConnectionsPerServer
+        {
+            get { return (int)rtFilter.MaxConnectionsPerServer; }
+            set
+            {
+                CheckDisposedOrStarted();
+                rtFilter.MaxConnectionsPerServer = (uint)value;
+            }
+        }
+        
         public long MaxRequestContentBufferSize
         {
             get { return HttpContent.MaxBufferSize; }
@@ -265,6 +316,16 @@ namespace System.Net.Http
                         SR.net_http_value_not_supported, value, nameof(MaxRequestContentBufferSize)));
                 }
                 CheckDisposedOrStarted();
+            }
+        }
+
+        public int MaxResponseHeadersLength
+        {
+            get { return 0; } // TODO: Issue #8541 - return default value used in Wininet.
+            set
+            {
+                throw new PlatformNotSupportedException(String.Format(CultureInfo.InvariantCulture,
+                    SR.net_http_value_not_supported, value, nameof(MaxResponseHeadersLength)));
             }
         }
 
@@ -319,6 +380,33 @@ namespace System.Net.Http
                     throw new PlatformNotSupportedException(String.Format(CultureInfo.InvariantCulture,
                         SR.net_http_value_not_supported, value, nameof(CheckCertificateRevocationList)));
                 }
+            }
+        }
+
+        public SslProtocols SslProtocols
+        {
+            get { return SslProtocols.None; }
+            set
+            {
+                CheckDisposedOrStarted();
+                if (value != SslProtocols.None)
+                {
+                    throw new PlatformNotSupportedException(String.Format(CultureInfo.InvariantCulture,
+                        SR.net_http_value_not_supported, value, nameof(SslProtocols)));
+                }
+            }
+        }
+
+        public IDictionary<String, Object> Properties
+        {
+            get
+            {
+                if (properties == null)
+                {
+                    properties = new Dictionary<String, object>();
+                }
+
+                return properties;
             }
         }
 
