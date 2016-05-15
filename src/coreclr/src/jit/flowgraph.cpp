@@ -7820,6 +7820,7 @@ void Compiler::fgAddReversePInvokeEnterExit()
 {
     assert(opts.IsReversePInvoke());
 
+#if COR_JIT_EE_VERSION > 460
     lvaReversePInvokeFrameVar = lvaGrabTempWithImplicitUse(false DEBUGARG("Reverse Pinvoke FrameVar"));
 
     LclVarDsc* varDsc = &lvaTable[lvaReversePInvokeFrameVar];
@@ -7869,6 +7870,8 @@ void Compiler::fgAddReversePInvokeEnterExit()
         printf("\n");
     }
 #endif
+
+#endif // COR_JIT_EE_VERSION > 460
 }
 
 /*****************************************************************************
