@@ -4557,8 +4557,9 @@ void           Compiler::impImportAndPushBox (CORINFO_RESOLVED_TOKEN * pResolved
     // Note we can only box do it if the class construtor has been called
     // We can always do it on primitive types
     
-    GenTreePtr op1, op2 = nullptr;
-    var_types       lclTyp;
+    GenTreePtr op1 = nullptr;
+    GenTreePtr op2 = nullptr;
+    var_types lclTyp;
     
     impSpillSpecialSideEff();
     
