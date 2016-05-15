@@ -104,6 +104,7 @@ namespace System.Net.Http.Functional.Tests
                 // Changes from .NET Framework (Desktop).
                 Assert.Equal(DecompressionMethods.GZip | DecompressionMethods.Deflate, handler.AutomaticDecompression);
                 Assert.Equal(0, handler.MaxRequestContentBufferSize);
+                Assert.NotNull(handler.Properties);
             }
         }
 
@@ -142,6 +143,29 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
                 }
             }
+        }
+
+        [Fact]
+        public void Properties_Get_CountIsZero()
+        {
+            var handler = new HttpClientHandler();
+            IDictionary<String, object> dict = handler.Properties;
+            Assert.Same(dict, handler.Properties);
+            Assert.Equal(0, dict.Count);
+        }
+
+        [Fact]
+        public void Properties_AddItemToDictionary_ItemPresent()
+        {
+            var handler = new HttpClientHandler();
+            IDictionary<String, object> dict = handler.Properties;
+
+            var item = new Object();
+            dict.Add("item", item);
+
+            object value;
+            Assert.True(dict.TryGetValue("item", out value));
+            Assert.Equal(item, value);
         }
 
         [Theory, MemberData(nameof(EchoServers))]
