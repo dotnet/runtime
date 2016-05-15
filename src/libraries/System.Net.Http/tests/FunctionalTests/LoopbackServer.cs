@@ -75,12 +75,14 @@ namespace System.Net.Http.Functional.Tests
 
         public static Task ReadRequestAndSendResponseAsync(Socket server, string response = null, Options options = null)
         {
-            return AcceptSocketAsync(server, async (s, stream, reader, writer) =>
-            {
-                while (!string.IsNullOrEmpty(await reader.ReadLineAsync().ConfigureAwait(false))) ;
-                await writer.WriteAsync(response ?? DefaultHttpResponse).ConfigureAwait(false);
-                s.Shutdown(SocketShutdown.Send);
-            }, options);
+            return AcceptSocketAsync(server, (s, stream, reader, writer) => ReadWriteAcceptedAsync(s, reader, writer, response), options);
+        }
+
+        public static async Task ReadWriteAcceptedAsync(Socket s, StreamReader reader, StreamWriter writer, string response = null)
+        {
+            while (!string.IsNullOrEmpty(await reader.ReadLineAsync().ConfigureAwait(false))) ;
+            await writer.WriteAsync(response ?? DefaultHttpResponse).ConfigureAwait(false);
+            s.Shutdown(SocketShutdown.Send);
         }
 
         public static async Task AcceptSocketAsync(Socket server, Func<Socket, Stream, StreamReader, StreamWriter, Task> funcAsync, Options options = null)
