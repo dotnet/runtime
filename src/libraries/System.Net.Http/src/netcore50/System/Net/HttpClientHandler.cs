@@ -321,7 +321,7 @@ namespace System.Net.Http
 
         public int MaxResponseHeadersLength
         {
-            get { return 0; } // TODO: Return default value used in Wininet.
+            get { return 0; } // TODO: Issue #8541 - return default value used in Wininet.
             set
             {
                 throw new PlatformNotSupportedException(String.Format(CultureInfo.InvariantCulture,

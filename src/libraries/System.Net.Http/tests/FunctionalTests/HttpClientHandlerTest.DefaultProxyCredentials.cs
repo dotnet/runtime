@@ -17,7 +17,7 @@ namespace System.Net.Http.Functional.Tests
         {
             using (var handler = new HttpClientHandler())
             {
-                Assert.Same(null, handler.DefaultProxyCredentials);
+                Assert.Null(handler.DefaultProxyCredentials);
             }
         }
 

@@ -235,6 +235,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         {
             var handler = new WinHttpHandler();
             IDictionary<String, object> dict = handler.Properties;
+            Assert.Same(dict, handler.Properties);
 
             var item = new Object();
             dict.Add("item", item);
