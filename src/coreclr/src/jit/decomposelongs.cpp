@@ -496,32 +496,100 @@ GenTree* DecomposeLongs::DecomposeCast(LIR::Use& use)
     assert(use.IsInitialized());
     assert(use.Def()->OperGet() == GT_CAST);
 
-    GenTree* tree     = use.Def();
+    GenTree* cast     = use.Def()->AsCast();
     GenTree* loResult = nullptr;
     GenTree* hiResult = nullptr;
 
-    assert(tree->gtPrev == tree->gtGetOp1());
-    NYI_IF(tree->gtOverflow(), "TYP_LONG cast with overflow");
-    switch (tree->AsCast()->CastFromType())
-    {
-        case TYP_INT:
-            if (tree->gtFlags & GTF_UNSIGNED)
-            {
-                loResult = tree->gtGetOp1();
-                Range().Remove(tree);
+    var_types srcType = cast->CastFromType();
+    var_types dstType = cast->CastToType();
 
-                hiResult = new (m_compiler, GT_CNS_INT) GenTreeIntCon(TYP_INT, 0);
+    if ((cast->gtFlags & GTF_UNSIGNED) != 0)
+    {
+        srcType = genUnsignedType(srcType);
+    }
+
+    if (varTypeIsLong(srcType))
+    {
+        if (cast->gtOverflow() && (varTypeIsUnsigned(srcType) != varTypeIsUnsigned(dstType)))
+        {
+            GenTree* srcOp = cast->gtGetOp1();
+            noway_assert(srcOp->OperGet() == GT_LONG);
+            GenTree* loSrcOp = srcOp->gtGetOp1();
+            GenTree* hiSrcOp = srcOp->gtGetOp2();
+
+            //
+            // When casting between long types an overflow check is needed only if the types
+            // have different signedness. In both cases (long->ulong and ulong->long) we only
+            // need to check if the high part is negative or not. Use the existing cast node
+            // to perform a int->uint cast of the high part to take advantage of the overflow
+            // check provided by codegen.
+            //
+
+            loResult = loSrcOp;
+
+            hiResult                       = cast;
+            hiResult->gtType               = TYP_INT;
+            hiResult->AsCast()->gtCastType = TYP_UINT;
+            hiResult->gtFlags &= ~GTF_UNSIGNED;
+            hiResult->gtOp.gtOp1 = hiSrcOp;
+
+            Range().Remove(cast);
+            Range().Remove(srcOp);
+            Range().InsertAfter(hiSrcOp, hiResult);
+        }
+        else
+        {
+            NYI("Unimplemented long->long no-op cast decomposition");
+        }
+    }
+    else if (varTypeIsIntegralOrI(srcType))
+    {
+        if (cast->gtOverflow() && !varTypeIsUnsigned(srcType) && varTypeIsUnsigned(dstType))
+        {
+            //
+            // An overflow check is needed only when casting from a signed type to ulong.
+            // Change the cast type to uint to take advantage of the overflow check provided
+            // by codegen and then zero extend the resulting uint to ulong.
+            //
+
+            loResult                       = cast;
+            loResult->AsCast()->gtCastType = TYP_UINT;
+            loResult->gtType               = TYP_INT;
+
+            hiResult = m_compiler->gtNewZeroConNode(TYP_INT);
+
+            Range().InsertAfter(loResult, hiResult);
+        }
+        else
+        {
+            if (varTypeIsUnsigned(srcType))
+            {
+                loResult = cast->gtGetOp1();
+                hiResult = m_compiler->gtNewZeroConNode(TYP_INT);
+
+                Range().Remove(cast);
                 Range().InsertAfter(loResult, hiResult);
             }
             else
             {
-                NYI("Lowering of signed cast TYP_INT->TYP_LONG");
-            }
-            break;
+                LIR::Use src(Range(), &(cast->gtOp.gtOp1), cast);
+                unsigned lclNum = src.ReplaceWithLclVar(m_compiler, m_blockWeight);
 
-        default:
-            NYI("Unimplemented type for Lowering of cast to TYP_LONG");
-            break;
+                loResult = src.Def();
+
+                GenTree* loCopy  = m_compiler->gtNewLclvNode(lclNum, TYP_INT);
+                GenTree* shiftBy = m_compiler->gtNewIconNode(31, TYP_INT);
+                hiResult         = m_compiler->gtNewOperNode(GT_RSH, TYP_INT, loCopy, shiftBy);
+
+                Range().Remove(cast);
+                Range().InsertAfter(loResult, loCopy, shiftBy, hiResult);
+                m_compiler->lvaIncRefCnts(loCopy);
+            }
+        }
+    }
+    else
+    {
+        NYI("Unimplemented cast decomposition");
     }
 
     return FinalizeDecomposition(use, loResult, hiResult);
