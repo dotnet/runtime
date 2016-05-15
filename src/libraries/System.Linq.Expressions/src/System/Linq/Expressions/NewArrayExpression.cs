@@ -151,15 +151,15 @@ namespace System.Linq.Expressions
                 throw Error.ArgumentCannotBeOfTypeVoid(nameof(type));
             }
 
-            TypeUtils.ValidateType(type);
+            TypeUtils.ValidateType(type, nameof(type));
             if (type.IsByRef)
             {
-                throw Error.TypeMustNotBeByRef();
+                throw Error.TypeMustNotBeByRef(nameof(type));
             }
 
             if (type.IsPointer)
             {
-                throw Error.TypeMustNotBePointer();
+                throw Error.TypeMustNotBePointer(nameof(type));
             }
 
             ReadOnlyCollection<Expression> initializerList = initializers.ToReadOnly();
@@ -231,15 +231,15 @@ namespace System.Linq.Expressions
                 throw Error.ArgumentCannotBeOfTypeVoid(nameof(type));
             }
 
-            TypeUtils.ValidateType(type);
+            TypeUtils.ValidateType(type, nameof(type));
             if (type.IsByRef)
             {
-                throw Error.TypeMustNotBeByRef();
+                throw Error.TypeMustNotBeByRef(nameof(type));
             }
 
             if (type.IsPointer)
             {
-                throw Error.TypeMustNotBePointer();
+                throw Error.TypeMustNotBePointer(nameof(type));
             }
 
             ReadOnlyCollection<Expression> boundsList = bounds.ToReadOnly();
@@ -253,7 +253,7 @@ namespace System.Linq.Expressions
                 RequiresCanRead(expr, nameof(bounds));
                 if (!TypeUtils.IsInteger(expr.Type))
                 {
-                    throw Error.ArgumentMustBeInteger($"bounds[{i}]");
+                    throw Error.ArgumentMustBeInteger($"{nameof(bounds)}[{i}]");
                 }
             }
 
