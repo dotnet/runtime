@@ -2868,7 +2868,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
             maxRegArgs++;
     }
 
-#if INLINE_NDIRECT
     if (call->IsUnmanaged())
     {
         noway_assert(intArgRegNum == 0);
@@ -2889,7 +2888,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
         if (callHasRetBuffArg)
             maxRegArgs++;
     }
-#endif // INLINE_NDIRECT
 #endif // _TARGET_X86_
 
     /* Morph the user arguments */
@@ -14716,12 +14714,10 @@ void                Compiler::fgSetOptions()
         codeGen->setFramePointerRequiredGCInfo(true);
     }
 
-#if INLINE_NDIRECT
     if (info.compCallUnmanaged)
     {
         codeGen->setFramePointerRequired(true);  // Setup of Pinvoke frame currently requires an EBP style frame
     }
-#endif
 
     if (info.compPublishStubParam)
     {

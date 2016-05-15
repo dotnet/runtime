@@ -427,8 +427,6 @@ void Compiler::fgPerStatementLocalVarLiveness(GenTreePtr startNode, GenTreePtr a
                 }
             }
 
-#if INLINE_NDIRECT
-
             // If this is a p/invoke unmanaged call or if this is a tail-call
             // and we have an unmanaged p/invoke call in the method,
             // then we're going to run the p/invoke epilog.
@@ -456,8 +454,6 @@ void Compiler::fgPerStatementLocalVarLiveness(GenTreePtr startNode, GenTreePtr a
                     }
                 }
             }
-
-#endif // INLINE_NDIRECT
 
             break;
 
@@ -628,8 +624,6 @@ void                Compiler::fgPerBlockLocalVarLiveness()
 #endif // LEGACY_BACKEND
         }
 
-#if INLINE_NDIRECT
-
         /* Get the TCB local and mark it as used */
 
         if (block->bbJumpKind == BBJ_RETURN && info.compCallUnmanaged)
@@ -650,8 +644,6 @@ void                Compiler::fgPerBlockLocalVarLiveness()
                 }
             }
         }
-
-#endif // INLINE_NDIRECT
 
 #ifdef DEBUG
         if  (verbose)
@@ -1742,8 +1734,6 @@ SKIP_QMARK:
 
         if (tree->gtOper == GT_CALL)
         {
-#if INLINE_NDIRECT
-
             // if this is a tail-call and we have any unmanaged p/invoke calls in
             // the method then we're going to run the p/invoke epilog
             // So we mark the FrameRoot as used by this instruction.
@@ -1854,7 +1844,6 @@ SKIP_QMARK:
                     }
                 }
             }
-#endif // INLINE_NDIRECT
         }
 
         // Is this a use/def of a local variable?
