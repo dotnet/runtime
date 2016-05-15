@@ -4753,10 +4753,8 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
         }
         info.compRetNativeType = info.compRetType         = JITtype2varType(methodInfo->args.retType);
 
-#if INLINE_NDIRECT
         info.compCallUnmanaged   = 0;
         info.compLvFrameListRoot = BAD_VAR_NUM;
-#endif
 
 #if FEATURE_FIXED_OUT_ARGS
         lvaOutgoingArgSpaceSize  = 0;
