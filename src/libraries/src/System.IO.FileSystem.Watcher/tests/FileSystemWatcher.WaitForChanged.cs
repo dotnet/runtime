@@ -125,6 +125,7 @@ namespace System.IO.Tests
             }
         }
 
+        [ActiveIssue(8547, PlatformID.OSX)]
         [Theory]
         [InlineData(WatcherChangeTypes.Created)]
         [InlineData(WatcherChangeTypes.Deleted)]
