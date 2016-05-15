@@ -82,12 +82,6 @@ JIT/Methodical/Boxing/xlang/_orelsin_il_cs/_orelsin_il_cs.sh
 JIT/Methodical/Boxing/xlang/_orelsin_il_il/_orelsin_il_il.sh
 JIT/Methodical/Boxing/xlang/_relsin_il_cs/_relsin_il_cs.sh
 JIT/Methodical/Boxing/xlang/_relsin_il_il/_relsin_il_il.sh
-JIT/Methodical/cctor/misc/tail_il_d/tail_il_d.sh
-JIT/Methodical/cctor/misc/tail_il_r/tail_il_r.sh
-JIT/Methodical/cctor/misc/threads3_il_d/threads3_il_d.sh
-JIT/Methodical/cctor/misc/threads3_il_r/threads3_il_r.sh
-JIT/Methodical/cctor/simple/precise3_il_d/precise3_il_d.sh
-JIT/Methodical/cctor/simple/precise3_il_r/precise3_il_r.sh
 JIT/Methodical/Coverage/arglist_pos/arglist_pos.sh
 JIT/Methodical/eh/deadcode/badcodeafterfinally_d/badcodeafterfinally_d.sh
 JIT/Methodical/eh/deadcode/badcodeafterfinally_r/badcodeafterfinally_r.sh
