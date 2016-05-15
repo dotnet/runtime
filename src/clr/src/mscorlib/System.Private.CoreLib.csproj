@@ -192,6 +192,12 @@
   <Import Project="$(MSBuildThisFileDirectory)Tools\Versioning\GenerateVersionInfo.targets"/>
   <!-- Override versioning targets -->
   <Import Condition="Exists('$(ToolsDir)versioning.targets')" Project="$(ToolsDir)versioning.targets" />
+
+  <PropertyGroup>
+    <!-- Use a different nativeresource file to avoid conflicts with mscorlib-->
+    <Win32Resource Condition="'$(GenerateNativeVersionInfo)'=='true'">$(IntermediateOutputPath)\System.Private.CoreLib.res</Win32Resource>
+  </PropertyGroup>
+
   <Import Project="GenerateSplitStringResources.targets"/>
   <Import Project="GenerateCompilerResponseFile.targets"/>
   <Import Project="$(PostProcessingToolsPath)" />
