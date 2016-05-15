@@ -6310,7 +6310,6 @@ bool CEEInfo::getReadyToRunHelper(
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE();      // only called during NGen
-    return false;
 }
 
 /***********************************************************************/
