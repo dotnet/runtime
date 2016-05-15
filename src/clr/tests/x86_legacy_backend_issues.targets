@@ -310,9 +310,6 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1.2-Beta1\b103058\b103058\b103058.cmd">
       <Issue>needs triage</Issue>
     </ExcludeList>
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Arrays\misc\_il_relarrres\_il_relarrres.cmd">
-      <Issue>needs triage</Issue>
-    </ExcludeList>
     <ExcludeList Include="$(XunitTestBinBase)\JIT\opt\perf\doublealign\Locals\Locals.cmd">
       <Issue>needs triage</Issue>
     </ExcludeList>
@@ -320,9 +317,6 @@
       <Issue>needs triage</Issue>
     </ExcludeList>
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Performance\CodeQuality\Roslyn\CscBench\CscBench.cmd">
-      <Issue>needs triage</Issue>
-    </ExcludeList>
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Arrays\misc\_il_dbgarrres\_il_dbgarrres.cmd">
       <Issue>needs triage</Issue>
     </ExcludeList>
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\lifetime\lifetime2\lifetime2.cmd">
