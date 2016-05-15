@@ -104,9 +104,6 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetPeerCertChain")]
         internal static extern SafeSharedX509StackHandle SslGetPeerCertChain(SafeSslHandle ssl);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetStreamSizes")]
-        internal static extern void GetStreamSizes(out int header, out int trailer, out int maximumMessage);
-
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetPeerFinished")]
         internal static extern int SslGetPeerFinished(SafeSslHandle ssl, IntPtr buf, int count);
 

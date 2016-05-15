@@ -534,6 +534,8 @@ extern "C" void CryptoNative_SslCtxSetClientCertCallback(SSL_CTX* ctx, SslClient
 
 extern "C" void CryptoNative_GetStreamSizes(int32_t* header, int32_t* trailer, int32_t* maximumMessage)
 {
+    // This function is kept for compatibility with RC2 builds on a jagged upgrade path.
+    // Removal is tracked via issue #8504.
     if (header)
     {
         *header = SSL3_RT_HEADER_LENGTH;
@@ -541,11 +543,6 @@ extern "C" void CryptoNative_GetStreamSizes(int32_t* header, int32_t* trailer, i
 
     if (trailer)
     {
-        // TODO (Issue #4223) : Trailer size requirement is changing based on protocol
-        //       SSL3/TLS1.0 - 68, TLS1.1 - 37 and TLS1.2 - 24
-        //       Current usage is only to compute max input buffer size for
-        //       encryption and so setting to the max
-
         *trailer = 68;
     }
 
