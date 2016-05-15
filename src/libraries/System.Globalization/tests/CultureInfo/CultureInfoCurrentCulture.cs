@@ -123,5 +123,31 @@ namespace System.Globalization.Tests
                 return SuccessExitCode;
             }, expectedCultureName, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
+
+        [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
+        [Theory]
+        [InlineData("")]
+        [InlineData(null)]
+        public void CurrentCulture_DefaultWithNoLang(string langEnvVar)
+        {
+            var psi = new ProcessStartInfo();
+            psi.Environment.Clear();
+
+            if (langEnvVar != null)
+            {
+               psi.Environment["LANG"] = langEnvVar;
+            }
+
+            RemoteInvoke(() =>
+            {
+                Assert.NotNull(CultureInfo.CurrentCulture);
+                Assert.NotNull(CultureInfo.CurrentUICulture);
+
+                Assert.Equal("", CultureInfo.CurrentCulture.Name);
+                Assert.Equal("", CultureInfo.CurrentUICulture.Name);
+
+                return SuccessExitCode;
+            }, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
+        }
     }
 }
