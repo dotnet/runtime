@@ -150,6 +150,7 @@ namespace System.Net.Http.Functional.Tests
         {
             var handler = new HttpClientHandler();
             IDictionary<String, object> dict = handler.Properties;
+            Assert.Same(dict, handler.Properties);
             Assert.Equal(0, dict.Count);
         }
 
