@@ -4,6 +4,7 @@
 
 using System.IO;
 using System.Net.Security;
+using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Threading;
@@ -93,6 +94,26 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ConditionalFact(nameof(BackendSupportsSslConfiguration), nameof(SslDefaultsToTls12))]
+        public async Task GetAsync_NoSpecifiedProtocol_DefaultsToTls12()
+        {
+            using (var handler = new HttpClientHandler() { ServerCertificateCustomValidationCallback = LoopbackServer.AllowAllCertificates })
+            using (var client = new HttpClient(handler))
+            {
+                var options = new LoopbackServer.Options { UseSsl = true };
+                await LoopbackServer.CreateServerAsync(async (server, url) =>
+                {
+                    await TestHelper.WhenAllCompletedOrAnyFailed(
+                        client.GetAsync(url),
+                        LoopbackServer.AcceptSocketAsync(server, async (s, stream, reader, writer) =>
+                        {
+                            Assert.Equal(SslProtocols.Tls12, Assert.IsType<SslStream>(stream).SslProtocol);
+                            await LoopbackServer.ReadWriteAcceptedAsync(s, reader, writer);
+                        }, options));
+                }, options);
+            }
+        }
+
         [ConditionalTheory(nameof(BackendSupportsSslConfiguration))]
         [InlineData(SslProtocols.Tls11, SslProtocols.Tls, typeof(IOException))]
         [InlineData(SslProtocols.Tls12, SslProtocols.Tls11, typeof(IOException))]
@@ -149,6 +170,10 @@ namespace System.Net.Http.Functional.Tests
                 }
             }
         }
+
+        private static bool SslDefaultsToTls12 => !PlatformDetection.IsWindows7;
+        // TLS 1.2 may not be enabled on Win7
+        // https://technet.microsoft.com/en-us/library/dn786418.aspx#BKMK_SchannelTR_TLS12
 
         private static bool BackendSupportsSslConfiguration =>
             RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ||
