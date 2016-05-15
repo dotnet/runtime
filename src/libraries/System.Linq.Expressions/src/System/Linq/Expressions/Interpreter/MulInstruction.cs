@@ -193,11 +193,6 @@ namespace System.Linq.Expressions.Interpreter
                     throw ContractUtils.Unreachable;
             }
         }
-
-        public override string ToString()
-        {
-            return "Mul()";
-        }
     }
 
     internal abstract class MulOvfInstruction : Instruction
@@ -342,11 +337,6 @@ namespace System.Linq.Expressions.Interpreter
                 default:
                     return MulInstruction.Create(type);
             }
-        }
-
-        public override string ToString()
-        {
-            return "MulOvf()";
         }
     }
 }

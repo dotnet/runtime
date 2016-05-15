@@ -192,11 +192,6 @@ namespace System.Linq.Expressions.Interpreter
                     throw ContractUtils.Unreachable;
             }
         }
-
-        public override string ToString()
-        {
-            return "Sub()";
-        }
     }
 
     internal abstract class SubOvfInstruction : Instruction
@@ -341,11 +336,6 @@ namespace System.Linq.Expressions.Interpreter
                 default:
                     return SubInstruction.Create(type);
             }
-        }
-
-        public override string ToString()
-        {
-            return "SubOvf()";
         }
     }
 }

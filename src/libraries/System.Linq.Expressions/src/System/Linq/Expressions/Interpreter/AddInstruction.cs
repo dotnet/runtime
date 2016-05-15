@@ -194,11 +194,6 @@ namespace System.Linq.Expressions.Interpreter
                     throw ContractUtils.Unreachable;
             }
         }
-
-        public override string ToString()
-        {
-            return "Add()";
-        }
     }
 
     internal abstract class AddOvfInstruction : Instruction
@@ -346,11 +341,6 @@ namespace System.Linq.Expressions.Interpreter
                 default:
                     return AddInstruction.Create(type);
             }
-        }
-
-        public override string ToString()
-        {
-            return "AddOvf()";
         }
     }
 }
