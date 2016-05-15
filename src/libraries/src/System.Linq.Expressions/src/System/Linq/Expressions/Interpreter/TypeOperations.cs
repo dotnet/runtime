@@ -421,11 +421,6 @@ namespace System.Linq.Expressions.Interpreter
                     throw Error.ExpressionNotSupportedForType("Negate", type);
             }
         }
-
-        public override string ToString()
-        {
-            return "Negate()";
-        }
     }
 
     internal abstract class NegateCheckedInstruction : Instruction
@@ -539,11 +534,6 @@ namespace System.Linq.Expressions.Interpreter
                 default:
                     throw Error.ExpressionNotSupportedForType("NegateChecked", type);
             }
-        }
-
-        public override string ToString()
-        {
-            return "NegateChecked()";
         }
     }
 
@@ -715,11 +705,6 @@ namespace System.Linq.Expressions.Interpreter
                     throw Error.ExpressionNotSupportedForType("OnesComplement", type);
             }
         }
-
-        public override string ToString()
-        {
-            return "OnesComplement()";
-        }
     }
 
     internal abstract class IncrementInstruction : Instruction
@@ -890,11 +875,6 @@ namespace System.Linq.Expressions.Interpreter
                     throw Error.ExpressionNotSupportedForType("Increment", type);
             }
         }
-
-        public override string ToString()
-        {
-            return "Increment()";
-        }
     }
 
     internal abstract class DecrementInstruction : Instruction
@@ -1064,11 +1044,6 @@ namespace System.Linq.Expressions.Interpreter
                 default:
                     throw Error.ExpressionNotSupportedForType("Decrement", type);
             }
-        }
-
-        public override string ToString()
-        {
-            return "Decrement()";
         }
     }
 
@@ -1251,11 +1226,6 @@ namespace System.Linq.Expressions.Interpreter
                     throw Error.ExpressionNotSupportedForType("LeftShift", type);
             }
         }
-
-        public override string ToString()
-        {
-            return "LeftShift()";
-        }
     }
 
     internal abstract class RightShiftInstruction : Instruction
@@ -1435,11 +1405,6 @@ namespace System.Linq.Expressions.Interpreter
                 default:
                     throw Error.ExpressionNotSupportedForType("RightShift", type);
             }
-        }
-
-        public override string ToString()
-        {
-            return "RightShift()";
         }
     }
 
@@ -1626,11 +1591,6 @@ namespace System.Linq.Expressions.Interpreter
         private static TypeCode GetTypeCode(Type type)
         {
             return System.Dynamic.Utils.TypeExtensions.GetTypeCode(type.GetTypeInfo().IsEnum ? Enum.GetUnderlyingType(type) : TypeUtils.GetNonNullableType(type));
-        }
-
-        public override string ToString()
-        {
-            return "ExclusiveOr()";
         }
     }
 
@@ -1825,11 +1785,6 @@ namespace System.Linq.Expressions.Interpreter
                     throw Error.ExpressionNotSupportedForType("Or", type);
             }
         }
-
-        public override string ToString()
-        {
-            return "Or()";
-        }
     }
 
     internal abstract class AndInstruction : Instruction
@@ -2022,11 +1977,6 @@ namespace System.Linq.Expressions.Interpreter
                 default:
                     throw Error.ExpressionNotSupportedForType("And", type);
             }
-        }
-
-        public override string ToString()
-        {
-            return "And()";
         }
     }
 

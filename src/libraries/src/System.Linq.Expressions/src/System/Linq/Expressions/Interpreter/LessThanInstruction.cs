@@ -325,11 +325,6 @@ namespace System.Linq.Expressions.Interpreter
                 }
             }
         }
-
-        public override string ToString()
-        {
-            return "LessThan()";
-        }
     }
 
     internal abstract class LessThanOrEqualInstruction : Instruction
@@ -645,11 +640,6 @@ namespace System.Linq.Expressions.Interpreter
                         throw Error.ExpressionNotSupportedForType("LessThanOrEqual", type);
                 }
             }
-        }
-
-        public override string ToString()
-        {
-            return "LessThanOrEqual()";
         }
     }
 }
