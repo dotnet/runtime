@@ -5013,7 +5013,6 @@ VOID ETW::InfoLog::RuntimeInformation(INT32 type)
 
 VOID ETW::CodeSymbolLog::EmitCodeSymbols(Module* pModule)
 {
-#if  !defined(FEATURE_PAL) //UNIXTODO: Enable EmitCodeSymbols
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -5043,14 +5042,15 @@ VOID ETW::CodeSymbolLog::EmitCodeSymbols(Module* pModule)
                     // estmate. 
                     static const DWORD maxDataSize = 63000;
 
-                    ldiv_t qr = ldiv(length, maxDataSize);
-
+                    DWORD quot = length / maxDataSize;
+                    
                     // We do not allow pdbs of size greater than 2GB for now, 
                     // so totalChunks should fit in 16 bits.
-                    if (qr.quot < UINT16_MAX)
+                    if (quot < UINT16_MAX)
                     {
                         // If there are trailing bits in the last chunk, then increment totalChunks by 1
-                        UINT16 totalChunks = (UINT16)(qr.quot + ((qr.rem != 0) ? 1 : 0));
+                        DWORD rem = length % maxDataSize;
+                        UINT16 totalChunks = (UINT16)(quot + ((rem != 0) ? 1 : 0));
                         NewArrayHolder<BYTE> chunk(new BYTE[maxDataSize]);
                         DWORD offset = 0;
                         for (UINT16 chunkNum = 0; offset < length; chunkNum++)
@@ -5071,7 +5071,6 @@ VOID ETW::CodeSymbolLog::EmitCodeSymbols(Module* pModule)
             }
         }
     } EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
-#endif//  !defined(FEATURE_PAL)
 }
 
 /* Returns the length of an in-memory symbol stream
