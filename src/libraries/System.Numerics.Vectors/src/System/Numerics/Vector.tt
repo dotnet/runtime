@@ -303,7 +303,7 @@ namespace System.Numerics
             }
             if (startIndex < 0 || startIndex >= destination.Length)
             {
-                throw new ArgumentOutOfRangeException(SR.Format(SR.Arg_ArgumentOutOfRangeException, startIndex));
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.Format(SR.Arg_ArgumentOutOfRangeException, startIndex));
             }
             if ((destination.Length - startIndex) < Count)
             {
