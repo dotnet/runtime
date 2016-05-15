@@ -5068,10 +5068,8 @@ void CodeGen::genCheckUseBlockInit()
             continue;
 
 #if FEATURE_FIXED_OUT_ARGS
-#if INLINE_NDIRECT
         if (varNum == compiler->lvaPInvokeFrameRegSaveVar)
             continue;
-#endif
         if (varNum == compiler->lvaOutgoingArgSpaceVar)
             continue;
 #endif
@@ -7744,14 +7742,12 @@ void                CodeGen::genFinalizeFrame()
 #endif // !_TARGET_AMD64_
     }
 
-#if INLINE_NDIRECT
     /* If we have any pinvoke calls, we might potentially trash everything */
     if (compiler->info.compCallUnmanaged)
     {
         noway_assert(isFramePointerUsed());  // Setup of Pinvoke frame currently requires an EBP style frame
         regSet.rsSetRegsModified(RBM_INT_CALLEE_SAVED & ~RBM_FPBASE);
     }
-#endif // INLINE_NDIRECT
 
     /* Count how many callee-saved registers will actually be saved (pushed) */
 
@@ -8187,7 +8183,6 @@ void                CodeGen::genFnProlog()
     regMaskTP  excludeMask    = intRegState.rsCalleeRegArgMaskLiveIn;
     regMaskTP  tempMask;
 
-#if INLINE_NDIRECT
     // We should not use the special PINVOKE registers as the initReg
     // since they are trashed by the jithelper call to setup the PINVOKE frame
     if (compiler->info.compCallUnmanaged)
@@ -8210,7 +8205,6 @@ void                CodeGen::genFnProlog()
             }
         }
     }
-#endif // INLINE_NDIRECT
 
 #ifdef _TARGET_ARM_
     // If we have a variable sized frame (compLocallocUsed is true)
@@ -8471,14 +8465,14 @@ void                CodeGen::genFnProlog()
 
     genReportGenericContextArg(initReg, &initRegZeroed);
 
-#if INLINE_NDIRECT && defined(LEGACY_BACKEND) // in RyuJIT backend this has already been expanded into trees
+#if defined(LEGACY_BACKEND) // in RyuJIT backend this has already been expanded into trees
     if (compiler->info.compCallUnmanaged)
     {
         getEmitter()->emitDisableRandomNops();
         initRegs = genPInvokeMethodProlog(initRegs);
         getEmitter()->emitEnableRandomNops();
     }
-#endif // !(INLINE_NDIRECT && defined(LEGACY_BACKEND))
+#endif // defined(LEGACY_BACKEND)
 
     // The local variable representing the security object must be on the stack frame
     // and must be 0 initialized.

@@ -226,15 +226,12 @@ void                CodeGen::genCodeForBBlist()
         regSet.rsSetRegsModified(RBM_INT_CALLEE_SAVED & ~RBM_FPBASE);
     }
 
-#if INLINE_NDIRECT
     /* If we have any pinvoke calls, we might potentially trash everything */
-    if  (compiler->info.compCallUnmanaged)
+    if (compiler->info.compCallUnmanaged)
     {
         noway_assert(isFramePointerUsed());  // Setup of Pinvoke frame currently requires an EBP style frame
         regSet.rsSetRegsModified(RBM_INT_CALLEE_SAVED & ~RBM_FPBASE);
     }
-
-#endif // INLINE_NDIRECT
 
     genPendingCallLabel = nullptr;
 

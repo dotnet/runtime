@@ -7985,13 +7985,12 @@ void                Compiler::fgAddInternal()
     //
     //  We will generate just one epilog (return block)
     //   when we are asked to generate enter/leave callbacks
+    //   or for methods with PInvoke
     //   or for methods calling into unmanaged code
     //   or for synchronized methods.
     //
     if ( compIsProfilerHookNeeded()    ||
-#if INLINE_NDIRECT
          (info.compCallUnmanaged != 0) ||
-#endif
          opts.IsReversePInvoke() ||
          ((info.compFlags & CORINFO_FLG_SYNCH) != 0))
     {
@@ -8185,7 +8184,6 @@ void                Compiler::fgAddInternal()
         genReturnLocal = BAD_VAR_NUM;
     }
 
-#if INLINE_NDIRECT
     if (info.compCallUnmanaged != 0)
     {
         // The P/Invoke helpers only require a frame variable, so only allocate the
@@ -8215,7 +8213,6 @@ void                Compiler::fgAddInternal()
         }
 #endif
     }
-#endif
 
     // Do we need to insert a "JustMyCode" callback?
 
