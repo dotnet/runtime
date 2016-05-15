@@ -64,8 +64,6 @@ protected:
     // Prolog functions and data (there are a few exceptions for more generally used things)
     //
 
-#if INLINE_NDIRECT
-
     regMaskTP           genPInvokeMethodProlog(regMaskTP    initRegs);
 
     void                genPInvokeMethodEpilog();    
@@ -77,8 +75,6 @@ protected:
 
     void                genPInvokeCallEpilog(LclVarDsc *    varDsc,
                                              regMaskTP      retVal);
-
-#endif // INLINE_NDIRECT
 
     regNumber           genLclHeap          (GenTreePtr     size);
 

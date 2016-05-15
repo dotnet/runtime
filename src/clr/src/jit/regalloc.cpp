@@ -4896,7 +4896,6 @@ HANDLE_SHIFT_COUNT:
                                                  lockedRegs | regArgMask);
         }
 
-#if INLINE_NDIRECT
         if (tree->gtFlags & GTF_CALL_UNMANAGED)
         {
             // Need a register for tcbReg
@@ -4906,7 +4905,6 @@ HANDLE_SHIFT_COUNT:
             callAddrMask |= rpPredictRegPick(TYP_I_IMPL, PREDICT_SCRATCH_REG, lockedRegs | regArgMask | callAddrMask);
 #endif
         }
-#endif
 
         tree->gtUsedRegs |= callAddrMask;
 

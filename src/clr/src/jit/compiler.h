@@ -2218,12 +2218,10 @@ public :
     unsigned            lvaVarargsBaseOfStkArgs;    // Pointer (computed based on incoming varargs handle) to the start of the stack arguments
 #endif // _TARGET_X86_
 
-#if INLINE_NDIRECT
     unsigned            lvaInlinedPInvokeFrameVar;  // variable representing the InlinedCallFrame
     unsigned            lvaReversePInvokeFrameVar;  // variable representing the reverse PInvoke frame
 #if FEATURE_FIXED_OUT_ARGS
     unsigned            lvaPInvokeFrameRegSaveVar;  // variable representing the RegSave for PInvoke inlining.
-#endif
 #endif
     unsigned            lvaMonAcquired; // boolean variable introduced into in synchronized methods 
                                         // that tracks whether the lock has been taken
@@ -2657,10 +2655,8 @@ protected :
                                                 unsigned mflags);
     GenTreePtr          impImportIndirectCall(CORINFO_SIG_INFO * sig,
                                               IL_OFFSETX ilOffset = BAD_IL_OFFSET);
-#ifdef INLINE_NDIRECT
     void                impPopArgsForUnmanagedCall(GenTreePtr call,
                                                    CORINFO_SIG_INFO * sig);
-#endif // INLINE_NDIRECT
 
     void                impInsertHelperCall(CORINFO_HELPER_DESC * helperCall);
     void                impHandleAccessAllowed(CorInfoIsAccessAllowedResult result,
@@ -7819,10 +7815,8 @@ public :
         UNATIVE_OFFSET  compTotalHotCodeSize;       // Total number of bytes of Hot Code in the method
         UNATIVE_OFFSET  compTotalColdCodeSize;      // Total number of bytes of Cold Code in the method
 
-#if INLINE_NDIRECT
         unsigned        compCallUnmanaged;          // count of unmanaged calls
         unsigned        compLvFrameListRoot;        // lclNum for the Frame root
-#endif
         unsigned        compXcptnsCount;            // Number of exception-handling clauses read in the method's IL.
                                                     // You should generally use compHndBBtabCount instead: it is the
                                                     // current number of EH clauses (after additions like synchronized
