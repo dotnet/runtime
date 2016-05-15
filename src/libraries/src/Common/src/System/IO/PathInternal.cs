@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Text;
 
 namespace System.IO
@@ -80,6 +81,33 @@ namespace System.IO
 
             builder.Length = end + 1;
             return builder;
+        }
+        
+        /// <summary>
+        /// Returns the start index of the filename
+        /// in the given path, or 0 if no directory
+        /// or volume separator is found.
+        /// </summary>
+        /// <param name="path">The path in which to find the index of the filename.</param>
+        /// <remarks>
+        /// This method returns path.Length for
+        /// inputs like "/usr/foo/" on Unix. As such,
+        /// it is not safe for being used to index
+        /// the string without additional verification.
+        /// </remarks>
+        internal static int FindFileNameIndex(string path)
+        {
+            Debug.Assert(path != null);
+            PathInternal.CheckInvalidPathChars(path);
+            
+            for (int i = path.Length - 1; i >= 0; i--)
+            {
+                char ch = path[i];
+                if (IsDirectoryOrVolumeSeparator(ch))
+                    return i + 1;
+            }
+            
+            return 0; // the whole path is the filename
         }
     }
 }
