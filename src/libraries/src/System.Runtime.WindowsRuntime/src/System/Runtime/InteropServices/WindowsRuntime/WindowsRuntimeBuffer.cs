@@ -241,7 +241,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             {
                 if (value > ((IBuffer)this).Capacity)
                 {
-                    ArgumentOutOfRangeException ex = new ArgumentOutOfRangeException(SR.Argument_BufferLengthExceedsCapacity, nameof(value));
+                    ArgumentOutOfRangeException ex = new ArgumentOutOfRangeException(nameof(value), SR.Argument_BufferLengthExceedsCapacity);
                     ex.SetErrorCode(HResults.E_BOUNDS);
                     throw ex;
                 }

@@ -51,9 +51,9 @@ namespace Windows.Foundation
                     double height)
         {
             if (width < 0)
-                throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_NeedNonNegNum, nameof(width));
+                throw new ArgumentOutOfRangeException(nameof(width), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (height < 0)
-                throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_NeedNonNegNum, nameof(height));
+                throw new ArgumentOutOfRangeException(nameof(height), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             _x = (float)x;
             _y = (float)y;
@@ -120,7 +120,7 @@ namespace Windows.Foundation
             set
             {
                 if (value < 0)
-                    throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_NeedNonNegNum, nameof(Width));
+                    throw new ArgumentOutOfRangeException(nameof(Width), SR.ArgumentOutOfRange_NeedNonNegNum);
 
                 _width = (float)value;
             }
@@ -132,7 +132,7 @@ namespace Windows.Foundation
             set
             {
                 if (value < 0)
-                    throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_NeedNonNegNum, nameof(Height));
+                    throw new ArgumentOutOfRangeException(nameof(Height), SR.ArgumentOutOfRange_NeedNonNegNum);
 
                 _height = (float)value;
             }
