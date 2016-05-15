@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -10,8 +9,73 @@ namespace System.IO.Tests
 {
     public partial class WaitForChangedTests : FileSystemWatcherTest
     {
-        private const int SuccessTimeoutSeconds = 10;
+        private const int SuccessTimeoutMilliseconds = 10000;
         private const int BetweenOperationsDelayMilliseconds = 100;
+
+        [Fact]
+        public static void WaitForChangedResult_DefaultValues()
+        {
+            var result = new WaitForChangedResult();
+            Assert.Equal((WatcherChangeTypes)0, result.ChangeType);
+            Assert.Null(result.Name);
+            Assert.Null(result.OldName);
+            Assert.False(result.TimedOut);
+        }
+
+        [Theory]
+        [InlineData(WatcherChangeTypes.All)]
+        [InlineData(WatcherChangeTypes.Changed)]
+        [InlineData(WatcherChangeTypes.Created)]
+        [InlineData(WatcherChangeTypes.Deleted)]
+        [InlineData(WatcherChangeTypes.Renamed)]
+        [InlineData(WatcherChangeTypes.Changed | WatcherChangeTypes.Created)]
+        [InlineData(WatcherChangeTypes.Deleted | WatcherChangeTypes.Renamed)]
+        [InlineData((WatcherChangeTypes)0)]
+        [InlineData((WatcherChangeTypes)int.MinValue)]
+        [InlineData((WatcherChangeTypes)int.MaxValue)]
+        [InlineData((WatcherChangeTypes)int.MaxValue)]
+        public static void WaitForChangedResult_ChangeType_Roundtrip(WatcherChangeTypes changeType)
+        {
+            var result = new WaitForChangedResult();
+            result.ChangeType = changeType;
+            Assert.Equal(changeType, result.ChangeType);
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData("myfile.txt")]
+        [InlineData("    ")]
+        [InlineData("  myfile.txt  ")]
+        public static void WaitForChangedResult_Name_Roundtrip(string name)
+        {
+            var result = new WaitForChangedResult();
+            result.Name = name;
+            Assert.Equal(name, result.Name);
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData("myfile.txt")]
+        [InlineData("    ")]
+        [InlineData("  myfile.txt  ")]
+        public static void WaitForChangedResult_OldName_Roundtrip(string name)
+        {
+            var result = new WaitForChangedResult();
+            result.OldName = name;
+            Assert.Equal(name, result.OldName);
+        }
+
+        [Theory]
+        public static void WaitForChangedResult_TimedOut_Roundtrip()
+        {
+            var result = new WaitForChangedResult();
+            result.TimedOut = true;
+            Assert.True(result.TimedOut);
+            result.TimedOut = false;
+            Assert.False(result.TimedOut);
+            result.TimedOut = true;
+            Assert.True(result.TimedOut);
+        }
 
         [Theory]
         [InlineData(false)]
@@ -61,28 +125,20 @@ namespace System.IO.Tests
             }
         }
 
-        [ActiveIssue(8439, PlatformID.AnyUnix)]
+        [ActiveIssue(8547, PlatformID.OSX)]
         [Theory]
         [InlineData(WatcherChangeTypes.Created)]
         [InlineData(WatcherChangeTypes.Deleted)]
-        public void Created_Success(WatcherChangeTypes changeType)
+        public void CreatedDeleted_Success(WatcherChangeTypes changeType)
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))
             using (var fsw = new FileSystemWatcher(testDirectory.Path))
-            using (var b = new Barrier(2))
             {
-                Task<WaitForChangedResult> t = Task.Run(() =>
-                {
-                    b.SignalAndWait();
-                    return fsw.WaitForChanged(changeType);
-                });
-
-                b.SignalAndWait();
-                DateTimeOffset end = DateTimeOffset.UtcNow + TimeSpan.FromSeconds(SuccessTimeoutSeconds);
-                while (!t.IsCompleted && DateTimeOffset.UtcNow < end)
+                Task<WaitForChangedResult> t = Task.Run(() => fsw.WaitForChanged(changeType, SuccessTimeoutMilliseconds));
+                while (!t.IsCompleted)
                 {
                     string path = Path.Combine(testDirectory.Path, Path.GetRandomFileName());
-                    File.Create(path).Dispose();
+                    File.WriteAllText(path, "text");
                     Task.Delay(BetweenOperationsDelayMilliseconds).Wait();
                     if ((changeType & WatcherChangeTypes.Deleted) != 0)
                     {
@@ -90,7 +146,6 @@ namespace System.IO.Tests
                     }
                 }
 
-                Assert.True(t.IsCompleted, "WaitForChanged didn't complete");
                 Assert.Equal(TaskStatus.RanToCompletion, t.Status);
                 Assert.Equal(changeType, t.Result.ChangeType);
                 Assert.NotNull(t.Result.Name);
@@ -104,26 +159,17 @@ namespace System.IO.Tests
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))
             using (var fsw = new FileSystemWatcher(testDirectory.Path))
-            using (var b = new Barrier(2))
             {
                 string name = Path.Combine(testDirectory.Path, Path.GetRandomFileName());
                 File.Create(name).Dispose();
 
-                Task<WaitForChangedResult> t = Task.Run(() =>
-                {
-                    b.SignalAndWait();
-                    return fsw.WaitForChanged(WatcherChangeTypes.Changed);
-                });
-
-                b.SignalAndWait();
-                DateTimeOffset end = DateTimeOffset.UtcNow + TimeSpan.FromSeconds(SuccessTimeoutSeconds);
-                while (!t.IsCompleted && DateTimeOffset.UtcNow < end)
+                Task<WaitForChangedResult> t = Task.Run(() => fsw.WaitForChanged(WatcherChangeTypes.Changed, SuccessTimeoutMilliseconds));
+                while (!t.IsCompleted)
                 {
                     File.AppendAllText(name, "text");
                     Task.Delay(BetweenOperationsDelayMilliseconds).Wait();
                 }
 
-                Assert.True(t.IsCompleted, "WaitForChanged didn't complete");
                 Assert.Equal(TaskStatus.RanToCompletion, t.Status);
                 Assert.Equal(WatcherChangeTypes.Changed, t.Result.ChangeType);
                 Assert.NotNull(t.Result.Name);
@@ -137,20 +183,14 @@ namespace System.IO.Tests
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))
             using (var fsw = new FileSystemWatcher(testDirectory.Path))
-            using (var b = new Barrier(2))
             {
                 Task<WaitForChangedResult> t = Task.Run(() =>
-                {
-                    b.SignalAndWait();
-                    return fsw.WaitForChanged(WatcherChangeTypes.Renamed | WatcherChangeTypes.Created); // on some OSes, the renamed might come through as Deleted/Created
-                });
+                    fsw.WaitForChanged(WatcherChangeTypes.Renamed | WatcherChangeTypes.Created, SuccessTimeoutMilliseconds)); // on some OSes, the renamed might come through as Deleted/Created
 
                 string name = Path.Combine(testDirectory.Path, Path.GetRandomFileName());
                 File.Create(name).Dispose();
 
-                b.SignalAndWait();
-                DateTimeOffset end = DateTimeOffset.UtcNow + TimeSpan.FromSeconds(SuccessTimeoutSeconds);
-                while (!t.IsCompleted && DateTimeOffset.UtcNow < end)
+                while (!t.IsCompleted)
                 {
                     string newName = Path.Combine(testDirectory.Path, Path.GetRandomFileName());
                     File.Move(name, newName);
@@ -158,7 +198,6 @@ namespace System.IO.Tests
                     Task.Delay(BetweenOperationsDelayMilliseconds).Wait();
                 }
 
-                Assert.True(t.IsCompleted, "WaitForChanged didn't complete");
                 Assert.Equal(TaskStatus.RanToCompletion, t.Status);
                 Assert.True(t.Result.ChangeType == WatcherChangeTypes.Created || t.Result.ChangeType == WatcherChangeTypes.Renamed);
                 Assert.NotNull(t.Result.Name);
