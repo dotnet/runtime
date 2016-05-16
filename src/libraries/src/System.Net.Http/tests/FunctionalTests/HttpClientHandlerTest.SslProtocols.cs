@@ -5,6 +5,7 @@
 using System.IO;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Net.Test.Common;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Threading;

@@ -51,6 +51,9 @@
     <Compile Include="$(CommonTestPath)\System\Net\TestWebProxies.cs">
       <Link>Common\System\Net\TestWebProxies.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Http\LoopbackServer.cs">
+      <Link>Common\System\Net\Http\LoopbackServer.cs</Link>
+    </Compile>
     <Compile Include="ByteArrayContentTest.cs" />
     <Compile Include="ChannelBindingAwareContent.cs" />
     <Compile Include="CustomContent.cs" />
@@ -71,7 +74,6 @@
     <Compile Include="HttpRequestMessageTest.cs" />
     <Compile Include="HttpResponseMessageTest.cs" />
     <Compile Include="LoopbackGetRequestHttpProxy.cs" />
-    <Compile Include="LoopbackServer.cs" />
     <Compile Include="MessageProcessingHandlerTest.cs" />
     <Compile Include="MultipartContentTest.cs" />
     <Compile Include="MultipartFormDataContentTest.cs" />
