@@ -21,6 +21,12 @@ namespace System.Net.Http.Functional.Tests
         private static string SpecificDomain = DomainJoinedTestServer;
         private static Uri AuthenticatedServer =
             new Uri($"http://{DomainJoinedTestServer}/test/auth/negotiate/showidentity.ashx");
+            
+        // This test endpoint offers multiple schemes, Basic and NTLM, in that specific order. This endpoint
+        // helps test that the client will use the stronger of the server proposed auth schemes and
+        // not the first auth scheme.
+        private static Uri MultipleSchemesAuthenticatedServer =
+            new Uri($"http://{DomainJoinedTestServer}/test/auth/multipleschemes/showidentity.ashx");
 
         private readonly ITestOutputHelper _output;
         private readonly NetworkCredential _specificCredential =
@@ -70,6 +76,25 @@ namespace System.Net.Http.Functional.Tests
 
             using (var client = new HttpClient(handler))
             using (HttpResponseMessage response = await client.GetAsync(AuthenticatedServer))
+            {
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                string responseBody = await response.Content.ReadAsStringAsync();
+                WindowsIdentity currentIdentity = WindowsIdentity.GetCurrent();
+                _output.WriteLine("currentIdentity={0}", currentIdentity.Name);
+                VerifyAuthentication(responseBody, true, currentIdentity.Name);
+            }
+        }
+
+        [ConditionalTheory(nameof(DomainJoinedTestsEnabled))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task UseDefaultCredentials_SetTrueAndServerOffersMultipleSchemes_Ok(bool useProxy)
+        {
+            var handler = new HttpClientHandler { UseProxy = useProxy, UseDefaultCredentials = true };
+
+            using (var client = new HttpClient(handler))
+            using (HttpResponseMessage response = await client.GetAsync(MultipleSchemesAuthenticatedServer))
             {
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
