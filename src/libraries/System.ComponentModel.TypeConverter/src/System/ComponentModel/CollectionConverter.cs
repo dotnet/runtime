@@ -7,17 +7,17 @@ using System.Globalization;
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///    <para>Provides a type converter to convert
     ///       collection objects to and from various other representations.</para>
-    /// </devdoc>
+    /// </summary>
     public class CollectionConverter : TypeConverter
     {
-        /// <devdoc>
+        /// <summary>
         ///    <para>Converts the given
         ///       value object to the
         ///       specified destination type.</para>
-        /// </devdoc>
+        /// </summary>
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
             if (destinationType == null)
@@ -25,16 +25,33 @@ namespace System.ComponentModel
                 throw new ArgumentNullException(nameof(destinationType));
             }
 
-            if (destinationType == typeof(string))
+            if (destinationType == typeof(string) && value is ICollection)
             {
-                if (value is ICollection)
-                {
-                    return SR.Collection;
-                }
+                return SR.Collection;
             }
 
             return base.ConvertTo(context, culture, value, destinationType);
         }
+
+#if !NETSTANDARD10
+        /// <summary>
+        ///    <para>
+        ///        Gets a collection of properties for the type of array specified by the value parameter using
+        ///        the specified context and attributes.
+        ///    </para>
+        /// </summary>
+        public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes)
+        {
+            return new PropertyDescriptorCollection(null);
+        }
+#endif // !NETSTANDARD10
+
+        /// <summary>
+        ///    <para>Gets a value indicating whether this object supports properties.</para>
+        /// </summary>
+        public override bool GetPropertiesSupported(ITypeDescriptorContext context)
+        {
+            return false;
+        }
     }
 }
-

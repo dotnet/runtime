@@ -2,47 +2,65 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Globalization;
-
 namespace System.ComponentModel
 {
-    /// <devdoc>
-    ///    <para>Specifies what type to use as
-    ///       a converter for the object
-    ///       this
-    ///       attribute is bound to. This class cannot
-    ///       be inherited.</para>
-    /// </devdoc>
+    /// <summary>
+    ///    <para>
+    ///        Specifies what type to use as a converter for the object this
+    ///        attribute is bound to. This class cannot be inherited.
+    ///    </para>
+    /// </summary>
     [AttributeUsage(AttributeTargets.All)]
     public sealed class TypeConverterAttribute : Attribute
     {
-        private string _typeName;
+        private readonly string _typeName;
 
-        /// <devdoc>
-        /// <para>Initializes a new instance of the <see cref='System.ComponentModel.TypeConverterAttribute'/> class, using 
-        ///    the specified type as the data converter for the object this attribute
-        ///    is bound
-        ///    to.</para>
-        /// </devdoc>
+        /// <summary>
+        ///    <para>
+        ///        Specifies the type to use as a converter for the object this attribute is bound to. This
+        ///        <see langword='static '/>field is read-only. </para>
+        /// </summary>
+        public static readonly TypeConverterAttribute Default = new TypeConverterAttribute();
+
+        /// <summary>
+        ///    <para>
+        ///       Initializes a new instance of the <see cref='System.ComponentModel.TypeConverterAttribute'/> class with the
+        ///       default type converter, which is an empty string ("").
+        ///    </para>
+        /// </summary>
+        public TypeConverterAttribute()
+        {
+            _typeName = string.Empty;
+        }
+
+        /// <summary>
+        ///     <para>
+        ///         Initializes a new instance of the <see cref='System.ComponentModel.TypeConverterAttribute'/> class,
+        ///         using the specified type as the data converter for the object this attribute is bound to.
+        ///     </para>
+        /// </summary>
         public TypeConverterAttribute(Type type)
         {
             _typeName = type.AssemblyQualifiedName;
         }
 
-        /// <devdoc>
-        /// <para>Initializes a new instance of the <see cref='System.ComponentModel.TypeConverterAttribute'/> class, using 
-        ///    the specified type name as the data converter for the object this attribute is bound to.</para>
-        /// </devdoc>
+        /// <summary>
+        ///     <para>
+        ///         Initializes a new instance of the <see cref='System.ComponentModel.TypeConverterAttribute'/> class,
+        ///         using the specified type name as the data converter for the object this attribute is bound to.
+        ///     </para>
+        /// </summary>
         public TypeConverterAttribute(string typeName)
         {
             _typeName = typeName;
         }
 
-        /// <devdoc>
-        /// <para>Gets the fully qualified type name of the <see cref='System.Type'/>
-        /// to use as a converter for the object this attribute
-        /// is bound to.</para>
-        /// </devdoc>
+        /// <summary>
+        ///     <para>
+        ///         Gets the fully qualified type name of the <see cref='System.Type'/> to use as a converter for
+        ///         the object this attribute is bound to.
+        ///     </para>
+        /// </summary>
         public string ConverterTypeName
         {
             get
@@ -63,4 +81,3 @@ namespace System.ComponentModel
         }
     }
 }
-

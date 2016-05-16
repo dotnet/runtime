@@ -10,6 +10,62 @@ namespace System.ComponentModel.Tests
     public class TypeDescriptorTests
     {
         [Fact]
+        public void AddAndRemoveProvider()
+        {
+            var provider = new InvocationRecordingTypeDescriptionProvider();
+            var component = new DescriptorTestComponent();
+            TypeDescriptor.AddProvider(provider, component);
+
+            var retrievedProvider = TypeDescriptor.GetProvider(component);
+            retrievedProvider.GetCache(component);
+
+            Assert.True(provider.ReceivedCall);
+
+            provider.Reset();
+            TypeDescriptor.RemoveProvider(provider, component);
+            retrievedProvider = TypeDescriptor.GetProvider(component);
+            retrievedProvider.GetCache(component);
+
+            Assert.False(provider.ReceivedCall);
+        }
+
+        [Fact]
+        public void AddAttribute()
+        {
+            var component = new DescriptorTestComponent();
+            var addedAttribute = new DescriptorTestAttribute("expected string");
+
+            TypeDescriptor.AddAttributes(component.GetType(), addedAttribute);
+
+            AttributeCollection attributes = TypeDescriptor.GetAttributes(component);
+            Assert.True(attributes.Contains(addedAttribute));
+        }
+
+        [Fact]
+        public void CreateInstancePassesCtorParameters()
+        {
+            var expectedString = "expected string";
+            var component = TypeDescriptor.CreateInstance(null, typeof(DescriptorTestComponent), new[] { expectedString.GetType() }, new[] { expectedString });
+
+            Assert.NotNull(component);
+            Assert.IsType(typeof(DescriptorTestComponent), component);
+            Assert.Equal(expectedString, (component as DescriptorTestComponent).StringProperty);
+        }
+
+        [Fact]
+        public void GetAssociationReturnsExpectedObject()
+        {
+            var primaryObject = new DescriptorTestComponent();
+            var secondaryObject = new MockEventDescriptor();
+            TypeDescriptor.CreateAssociation(primaryObject, secondaryObject);
+
+            var associatedObject = TypeDescriptor.GetAssociation(secondaryObject.GetType(), primaryObject);
+
+            Assert.IsType(secondaryObject.GetType(), associatedObject);
+            Assert.Equal(secondaryObject, associatedObject);
+        }
+
+        [Fact]
         public static void GetConverter()
         {
             foreach (Tuple<Type, Type> pair in s_typesWithConverters)
@@ -33,6 +89,135 @@ namespace System.ComponentModel.Tests
             Assert.Throws<MissingMethodException>(
                  () => TypeDescriptor.GetConverter(typeof(ClassWithInvalidConverter)));
             // GetConverter should throw MissingMethodException because parameterless constructor is missing in the InvalidConverter class.
+        }
+
+        [Fact]
+        public void GetEvents()
+        {
+            var component = new DescriptorTestComponent();
+
+            EventDescriptorCollection events = TypeDescriptor.GetEvents(component);
+
+            Assert.Equal(2, events.Count);
+        }
+
+        [Fact]
+        public void GetEventsFiltersByAttribute()
+        {
+            var defaultValueAttribute = new DefaultValueAttribute(null);
+            EventDescriptorCollection events = TypeDescriptor.GetEvents(typeof(DescriptorTestComponent), new[] { defaultValueAttribute });
+
+            Assert.Equal(1, events.Count);
+        }
+
+        [Fact]
+        public void GetPropertiesFiltersByAttribute()
+        {
+            var defaultValueAttribute = new DefaultValueAttribute(DescriptorTestComponent.DefaultPropertyValue);
+            PropertyDescriptorCollection properties = TypeDescriptor.GetProperties(typeof(DescriptorTestComponent), new[] { defaultValueAttribute });
+
+            Assert.Equal(1, properties.Count);
+        }
+
+        [Fact]
+        public void RemoveAssociationsRemovesAllAssociations()
+        {
+            var primaryObject = new DescriptorTestComponent();
+            var firstAssociatedObject = new MockEventDescriptor();
+            var secondAssociatedObject = new MockPropertyDescriptor();
+            TypeDescriptor.CreateAssociation(primaryObject, firstAssociatedObject);
+            TypeDescriptor.CreateAssociation(primaryObject, secondAssociatedObject);
+
+            TypeDescriptor.RemoveAssociations(primaryObject);
+
+            // GetAssociation never returns null. The default implementation returns the
+            // primary object when an association doesn't exist. This isn't documented,
+            // however, so here we only verify that the formerly associated objects aren't returned.
+            var firstAssociation = TypeDescriptor.GetAssociation(firstAssociatedObject.GetType(), primaryObject);
+            Assert.NotEqual(firstAssociatedObject, firstAssociation);
+            var secondAssociation = TypeDescriptor.GetAssociation(secondAssociatedObject.GetType(), primaryObject);
+            Assert.NotEqual(secondAssociatedObject, secondAssociation);
+        }
+
+        [Fact]
+        public void RemoveSingleAssociation()
+        {
+            var primaryObject = new DescriptorTestComponent();
+            var firstAssociatedObject = new MockEventDescriptor();
+            var secondAssociatedObject = new MockPropertyDescriptor();
+            TypeDescriptor.CreateAssociation(primaryObject, firstAssociatedObject);
+            TypeDescriptor.CreateAssociation(primaryObject, secondAssociatedObject);
+
+            TypeDescriptor.RemoveAssociation(primaryObject, firstAssociatedObject);
+
+            // the second association should remain
+            var secondAssociation = TypeDescriptor.GetAssociation(secondAssociatedObject.GetType(), primaryObject);
+            Assert.Equal(secondAssociatedObject, secondAssociation);
+
+            // the first association should not
+            var firstAssociation = TypeDescriptor.GetAssociation(firstAssociatedObject.GetType(), primaryObject);
+            Assert.NotEqual(firstAssociatedObject, firstAssociation);
+        }
+
+        private class InvocationRecordingTypeDescriptionProvider : TypeDescriptionProvider
+        {
+            public bool ReceivedCall { get; private set; } = false;
+
+            public void Reset() => ReceivedCall = false;
+
+            public override object CreateInstance(IServiceProvider provider, Type objectType, Type[] argTypes, object[] args)
+            {
+                ReceivedCall = true;
+                return base.CreateInstance(provider, objectType, argTypes, args);
+            }
+
+            public override IDictionary GetCache(object instance)
+            {
+                ReceivedCall = true;
+                return base.GetCache(instance);
+            }
+
+            public override ICustomTypeDescriptor GetExtendedTypeDescriptor(object instance)
+            {
+                ReceivedCall = true;
+                return base.GetExtendedTypeDescriptor(instance);
+            }
+
+            public override string GetFullComponentName(object component)
+            {
+                ReceivedCall = true;
+                return base.GetFullComponentName(component);
+            }
+
+            public override Type GetReflectionType(Type objectType, object instance)
+            {
+                ReceivedCall = true;
+                return base.GetReflectionType(objectType, instance);
+            }
+
+            protected override IExtenderProvider[] GetExtenderProviders(object instance)
+            {
+                ReceivedCall = true;
+                return base.GetExtenderProviders(instance);
+            }
+
+            public override Type GetRuntimeType(Type reflectionType)
+            {
+                ReceivedCall = true;
+                return base.GetRuntimeType(reflectionType);
+            }
+
+            public override ICustomTypeDescriptor GetTypeDescriptor(Type objectType, object instance)
+            {
+                ReceivedCall = true;
+                return base.GetTypeDescriptor(objectType, instance);
+            }
+
+            public override bool IsSupportedType(Type type)
+            {
+                ReceivedCall = true;
+                return base.IsSupportedType(type);
+            }
         }
 
         private static Tuple<Type, Type>[] s_typesWithConverters =

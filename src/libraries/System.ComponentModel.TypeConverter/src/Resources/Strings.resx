@@ -126,28 +126,76 @@
   <data name="ConvertFromException" xml:space="preserve">
     <value>{0} cannot convert from {1}.</value>
   </data>
-  <data name="ConvertToException" xml:space="preserve">
-    <value>'{0}' is unable to convert '{1}' to '{2}'.</value>
-  </data>
   <data name="ConvertInvalidPrimitive" xml:space="preserve">
     <value>{0} is not a valid value for {1}.</value>
+  </data>
+  <data name="ConvertToException" xml:space="preserve">
+    <value>'{0}' is unable to convert '{1}' to '{2}'.</value>
   </data>
   <data name="EnumConverterInvalidValue" xml:space="preserve">
     <value>The value '{0}' is not a valid value for the enum '{1}'.</value>
   </data>
+  <data name="ErrorInvalidEventHandler" xml:space="preserve">
+   <value>Invalid event handler for the {0} event.</value> 
+  </data>
+  <data name="ErrorInvalidEventType" xml:space="preserve">
+   <value>Invalid type for the {0} event.</value> 
+  </data>
+  <data name="ErrorInvalidPropertyType" xml:space="preserve">
+    <value>Invalid type for the {0} property</value>
+  </data>
+  <data name="ErrorMissingEventAccessors" xml:space="preserve">
+   <value>Accessor methods for the {0} event are missing.</value> 
+  </data>
+  <data name="ErrorMissingPropertyAccessors" xml:space="preserve">
+    <value>Accessor methods for the {0} property are missing.</value>
+  </data>
+  <data name="ErrorPropertyAccessorException" xml:space="preserve">
+    <value>Property accessor '{0}' on object '{1}' threw the following exception:'{2}'</value>
+  </data>
   <data name="InvalidMemberName" xml:space="preserve">
     <value>Invalid member name</value>
   </data>
-  <data name="Text" xml:space="preserve">
-    <value>(Text)</value>
+  <data name="InvalidNullArgument" xml:space="preserve">
+   <value>Null is not a valid value for {0}.</value> 
   </data>
-  <data name="NullableConverterBadCtorArg" xml:space="preserve">
-    <value>The specified type is not a nullable type.</value>
+  <data name="MetaExtenderName" xml:space="preserve">
+   <value>{0} on {1}</value> 
   </data>
   <data name="none" xml:space="preserve">
     <value>(none)</value>
   </data>
   <data name="Null" xml:space="preserve">
     <value>(null)</value>
+  </data>
+  <data name="NullableConverterBadCtorArg" xml:space="preserve">
+    <value>The specified type is not a nullable type.</value>
+  </data>
+  <data name="Text" xml:space="preserve">
+    <value>(Text)</value>
+  </data>
+  <data name="TypeDescriptorAlreadyAssociated" xml:space="preserve">
+    <value>The primary and secondary objects are already associated with each other.</value>
+  </data>
+  <data name="TypeDescriptorArgsCountMismatch" xml:space="preserve">
+    <value>The number of elements in the Type and Object arrays must match.</value>
+  </data>
+  <data name="TypeDescriptorProviderError" xml:space="preserve">
+    <value>The type description provider {0} has returned null from {1} which is illegal.</value>
+  </data>
+  <data name="TypeDescriptorUnsupportedRemoteObject" xml:space="preserve">
+    <value>The object {0} is being remoted by a proxy that does not support interface discovery.  This type of remoted object is not supported.</value>
+  </data>
+  <data name="TypeDescriptorExpectedElementType" xml:space="preserve">
+    <value>Expected types in the collection to be of type {0}.</value>
+  </data>
+  <data name="TypeDescriptorProviderError" xml:space="preserve">
+    <value>The type description provider {0} has returned null from {1} which is illegal.</value>
+  </data>
+  <data name="TypeDescriptorSameAssociation" xml:space="preserve">
+    <value>Cannot create an association when the primary and secondary objects are the same.</value>
+  </data>
+  <data name="TypeDescriptorUnsupportedRemoteObject" xml:space="preserve">
+    <value>The object {0} is being remoted by a proxy that does not support interface discovery.  This type of remoted object is not supported.</value>
   </data>
 </root>

@@ -20,26 +20,26 @@ namespace System.ComponentModel
      * provided "site".
      */
 
-    /// <devdoc>
+    /// <summary>
     ///    <para>Provides functionality required by all components.</para>
-    /// </devdoc>
+    /// </summary>
     public interface IComponent : IDisposable
     {
         // The site of the component.
-        /// <devdoc>
+        /// <summary>
         ///    <para>When implemented by a class, gets or sets
         ///       the <see cref='System.ComponentModel.ISite'/> associated
         ///       with the <see cref='System.ComponentModel.IComponent'/>.</para>
-        /// </devdoc>
+        /// </summary>
         ISite Site
         {
             get;
             set;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Adds a event handler to listen to the Disposed event on the component.</para>
-        /// </devdoc>
+        /// </summary>
         event EventHandler Disposed;
     }
 }
