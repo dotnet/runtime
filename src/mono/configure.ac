@@ -3595,6 +3595,8 @@ AC_ARG_WITH(cooperative_gc, [  --with-cooperative-gc=yes|no      Enable cooperat
 	fi
 ], [with_cooperative_gc=no])
 
+AM_CONDITIONAL([ENABLE_COOP], [test x$with_cooperative_gc != xno])
+
 AC_ARG_ENABLE(checked_build, [  --enable-checked-build=LIST      To enable checked build (expensive asserts), configure with a comma-separated LIST of checked build modules and then include that same list in the environment variable MONO_CHECK_MODE at runtime. Recognized checked build modules: all, gc, metadata, thread],[
 
 	if test x$enable_checked_build != x ; then

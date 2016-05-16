@@ -502,13 +502,13 @@ mini_add_method_wrappers_llvmonly (MonoMethod *m, gpointer compiled_method, gboo
 }
 
 /**
- * common_call_trampoline_inner:
+ * common_call_trampoline:
  *
  *   The code to handle normal, virtual, and interface method calls and jumps, both
  * from JITted and LLVM compiled code.
  */
 static gpointer
-common_call_trampoline_inner (mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTable *vt, gpointer *vtable_slot, MonoError *error)
+common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTable *vt, gpointer *vtable_slot, MonoError *error)
 {
 	gpointer addr, compiled_method;
 	gboolean generic_shared = FALSE;
@@ -804,16 +804,6 @@ common_call_trampoline_inner (mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVT
 	return addr;
 }
 
-static gpointer
-common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTable *vt, gpointer *vtable_slot, MonoError *error)
-{
-	gpointer res;
-	MONO_PREPARE_RESET_BLOCKING;
-	res = common_call_trampoline_inner (regs, code, m, vt, vtable_slot, error);
-	MONO_FINISH_RESET_BLOCKING;
-	return res;
-}
-
 /**
  * mono_magic_trampoline:
  *
@@ -822,16 +812,21 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTable *
 gpointer
 mono_magic_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp)
 {
-	MonoError error;
 	gpointer res;
+
+	MONO_PREPARE_RESET_BLOCKING_UNBALANCED;
+
+	MonoError error;
 
 	trampoline_calls ++;
 
 	res = common_call_trampoline (regs, code, (MonoMethod *)arg, NULL, NULL, &error);
-	if (!mono_error_ok (&error)) {
-		mono_error_set_pending_exception (&error);
-		return NULL;
-	}
+	mono_error_set_pending_exception (&error);
+
+	mono_interruption_checkpoint_from_trampoline ();
+
+	MONO_FINISH_RESET_BLOCKING_UNBALANCED;
+
 	return res;
 }
 
@@ -843,6 +838,8 @@ mono_magic_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp)
 static gpointer
 mono_vcall_trampoline (mgreg_t *regs, guint8 *code, int slot, guint8 *tramp)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	MonoObject *this_arg;
 	MonoVTable *vt;
 	gpointer *vtable_slot;
@@ -914,6 +911,8 @@ mono_vcall_trampoline (mgreg_t *regs, guint8 *code, int slot, guint8 *tramp)
 gpointer
 mono_generic_virtual_remoting_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8 *tramp)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	MonoError error;
 	MonoGenericContext context = { NULL, NULL };
 	MonoMethod *imt_method, *declaring;
@@ -962,6 +961,8 @@ gpointer
 mono_aot_trampoline (mgreg_t *regs, guint8 *code, guint8 *token_info, 
 					 guint8* tramp)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	MonoImage *image;
 	guint32 token;
 	MonoMethod *method = NULL;
@@ -1005,6 +1006,8 @@ gpointer
 mono_aot_plt_trampoline (mgreg_t *regs, guint8 *code, guint8 *aot_module, 
 						 guint8* tramp)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	guint32 plt_info_offset = mono_aot_get_plt_info_offset (regs, code);
 	gpointer res;
 	MonoError error;
@@ -1028,6 +1031,8 @@ mono_aot_plt_trampoline (mgreg_t *regs, guint8 *code, guint8 *aot_module,
 static gpointer
 mono_rgctx_lazy_fetch_trampoline (mgreg_t *regs, guint8 *code, gpointer data, guint8 *tramp)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	static gboolean inited = FALSE;
 	static int num_lookups = 0;
 	guint32 slot = GPOINTER_TO_UINT (data);
@@ -1067,6 +1072,8 @@ mono_rgctx_lazy_fetch_trampoline (mgreg_t *regs, guint8 *code, gpointer data, gu
 gpointer
 mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *arg, guint8* tramp)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	MonoDomain *domain = mono_domain_get ();
 	MonoDelegate *delegate;
 	MonoJitInfo *ji;
@@ -1254,6 +1261,8 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *arg, guint8* tr
 static gpointer
 mono_handler_block_guard_trampoline (mgreg_t *regs, guint8 *code, gpointer *tramp_info, guint8* tramp)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	MonoContext ctx;
 	MonoException *exc;
 	MonoJitTlsData *jit_tls = (MonoJitTlsData *)mono_native_tls_get_value (mono_jit_tls_id);

@@ -189,8 +189,6 @@ ves_icall_runtime_class_init (MonoVTable *vtable);
 void
 mono_generic_class_init (MonoVTable *vtable);
 
-void mono_interruption_checkpoint_from_trampoline (void);
-
 MonoObject*
 mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *klass, gboolean deref_arg, gpointer *args);
 
