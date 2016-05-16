@@ -13,45 +13,49 @@ namespace System.Tests
 {
     public static class FormatterServicesTests
     {
-    	private static Func<Type, Object> geo = FormatterServices.GetUninitializedObject;
-
         [Fact]
-        public static void NoArgument()
+        public static void NoArgument_Throws_ArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => geo(null));
+            Assert.Throws<ArgumentNullException>("type", () => FormatterServices.GetUninitializedObject(null));
         }
 
         [Theory]
         [InlineData(typeof(String))]
         [InlineData(typeof(int*))]
-    	public static void Throws_ArgumentException(Type type)
+    	public static void StringsAndPointers_Throw_ArgumentException(Type type)
     	{
-            Assert.Throws<ArgumentException>(() => geo(type));
+            Assert.Throws<ArgumentException>(null /* really should be 'type' */, () => FormatterServices.GetUninitializedObject(type));
     	}
 
-    	[Theory]
+        [Fact]
+        public static void InstantiatedArrays_Throw_ArgumentException()
+        {
+            Assert.Throws<ArgumentException>(null /* really should be 'type' */, () => FormatterServices.GetUninitializedObject((new int[] { }).GetType()));
+        }
+
+        [Theory]
     	[InlineData(typeof(Array))]
         [InlineData(typeof(ICollection))]
         [InlineData(typeof(Stream))]
-        public static void Throws_MemberAccessException(Type type)
+        public static void InterfacesAndAbstractClasses_Throw_MemberAccessException(Type type)
     	{
-    		Assert.Throws<MemberAccessException>(() => geo(type));
+    		Assert.Throws<MemberAccessException>(() => FormatterServices.GetUninitializedObject(type));
     	}
 
         [Theory]
         [InlineData(typeof(object))]
         [InlineData(typeof(MyClass))]
-        public static void Types(Type type)
+        public static void PlainObjects_Success(Type type)
         {
-            Assert.Equal(type, geo(type).GetType());
+            Assert.Equal(type, FormatterServices.GetUninitializedObject(type).GetType());
         }
 
         [Fact]
-        public static void Generic()
+        public static void Generic_Success()
         {
             var type = typeof(List<int>);
-            Assert.Equal(0, ((List<int>)geo(type)).Count);
-            Assert.Equal(type, geo(type).GetType());
+            Assert.Equal(0, ((List<int>)FormatterServices.GetUninitializedObject(type)).Count);
+            Assert.Equal(type, FormatterServices.GetUninitializedObject(type).GetType());
         }
 
         public static IEnumerable<object[]> TestData()
@@ -62,23 +66,23 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(TestData))]
-        public static void Valid(Type type, Object value)
+        public static void PrimitiveTypes_Success(Type type, Object value)
     	{
-    		Assert.Equal(value.ToString(), geo(type).ToString());
-    		Assert.Equal(type, geo(type).GetType());
+    		Assert.Equal(value.ToString(), FormatterServices.GetUninitializedObject(type).ToString());
+    		Assert.Equal(type, FormatterServices.GetUninitializedObject(type).GetType());
     	}
 
         [Fact]
-        public static void Nullable()
+        public static void Nullable_BecomesNonNullable_Success()
         {
-            Assert.Equal(typeof(Int32), geo(typeof(Int32?)).GetType());
+            Assert.Equal(typeof(Int32), FormatterServices.GetUninitializedObject(typeof(Int32?)).GetType());
         }
 
         [Fact]
-        public static void Mutable()
+        public static void Result_Is_Mutable()
         {
             // Sanity check the object is actually useable
-            MyClass mc = ((MyClass)geo(typeof(MyClass)));
+            MyClass mc = ((MyClass)FormatterServices.GetUninitializedObject(typeof(MyClass)));
             mc.MyMember = "foo";
             Assert.Equal("foo", mc.MyMember);
         }
