@@ -1401,9 +1401,9 @@ mono_threadpool_ms_end_invoke (MonoAsyncResult *ares, MonoArray **out_args, Mono
 			MONO_OBJECT_SETREF (ares, handle, (MonoObject*) wait_handle);
 		}
 		mono_monitor_exit ((MonoObject*) ares);
-		MONO_PREPARE_BLOCKING;
+		MONO_ENTER_GC_SAFE;
 		WaitForSingleObjectEx (wait_event, INFINITE, TRUE);
-		MONO_FINISH_BLOCKING;
+		MONO_EXIT_GC_SAFE;
 	}
 
 	ac = (MonoAsyncCall*) ares->object_data;
@@ -1461,9 +1461,9 @@ mono_threadpool_ms_remove_domain_jobs (MonoDomain *domain, int timeout)
 			}
 		}
 
-		MONO_PREPARE_BLOCKING;
+		MONO_ENTER_GC_SAFE;
 		WaitForSingleObject (sem, timeout != -1 ? end - now : timeout);
-		MONO_FINISH_BLOCKING;
+		MONO_EXIT_GC_SAFE;
 	}
 
 	domain->cleanup_semaphore = NULL;

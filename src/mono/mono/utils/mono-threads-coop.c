@@ -163,14 +163,14 @@ copy_stack_data (MonoThreadInfo *info, gpointer *stackdata_begin)
 }
 
 gpointer
-mono_threads_prepare_blocking (gpointer *stackdata)
+mono_threads_enter_gc_safe_region (gpointer *stackdata)
 {
 	gpointer cookie;
 
 	if (!mono_threads_is_coop_enabled ())
 		return NULL;
 
-	cookie = mono_threads_prepare_blocking_unbalanced (stackdata);
+	cookie = mono_threads_enter_gc_safe_region_unbalanced (stackdata);
 
 #ifdef ENABLE_CHECKED_BUILD_GC
 	if (mono_check_mode_enabled (MONO_CHECK_MODE_GC))
@@ -181,7 +181,7 @@ mono_threads_prepare_blocking (gpointer *stackdata)
 }
 
 gpointer
-mono_threads_prepare_blocking_unbalanced (gpointer *stackdata)
+mono_threads_enter_gc_safe_region_unbalanced (gpointer *stackdata)
 {
 	MonoThreadInfo *info;
 
@@ -215,7 +215,7 @@ retry:
 }
 
 void
-mono_threads_finish_blocking (gpointer cookie, gpointer *stackdata)
+mono_threads_exit_gc_safe_region (gpointer cookie, gpointer *stackdata)
 {
 	if (!mono_threads_is_coop_enabled ())
 		return;
@@ -225,11 +225,11 @@ mono_threads_finish_blocking (gpointer cookie, gpointer *stackdata)
 		coop_tls_pop (cookie);
 #endif
 
-	mono_threads_finish_blocking_unbalanced (cookie, stackdata);
+	mono_threads_exit_gc_safe_region_unbalanced (cookie, stackdata);
 }
 
 void
-mono_threads_finish_blocking_unbalanced (gpointer cookie, gpointer *stackdata)
+mono_threads_exit_gc_safe_region_unbalanced (gpointer cookie, gpointer *stackdata)
 {
 	static gboolean warned_about_bad_transition;
 	MonoThreadInfo *info;
@@ -263,28 +263,21 @@ mono_threads_finish_blocking_unbalanced (gpointer cookie, gpointer *stackdata)
 	}
 }
 
-gpointer
-mono_threads_cookie_for_reset_blocking_start (MonoThreadInfo *info)
+void
+mono_threads_assert_gc_safe_region (void)
 {
-	g_assert (mono_threads_is_coop_enabled ());
-
-#ifdef ENABLE_CHECKED_BUILD_GC
-	if (mono_check_mode_enabled (MONO_CHECK_MODE_GC))
-		coop_tls_push (info);
-#endif
-
-	return info;
+	MONO_REQ_GC_SAFE_MODE;
 }
 
 gpointer
-mono_threads_reset_blocking_start (gpointer *stackdata)
+mono_threads_enter_gc_unsafe_region (gpointer *stackdata)
 {
 	gpointer cookie;
 
 	if (!mono_threads_is_coop_enabled ())
 		return NULL;
 
-	cookie = mono_threads_reset_blocking_start_unbalanced (stackdata);
+	cookie = mono_threads_enter_gc_unsafe_region_unbalanced (stackdata);
 
 #ifdef ENABLE_CHECKED_BUILD_GC
 	if (mono_check_mode_enabled (MONO_CHECK_MODE_GC))
@@ -295,7 +288,7 @@ mono_threads_reset_blocking_start (gpointer *stackdata)
 }
 
 gpointer
-mono_threads_reset_blocking_start_unbalanced (gpointer *stackdata)
+mono_threads_enter_gc_unsafe_region_unbalanced (gpointer *stackdata)
 {
 	MonoThreadInfo *info;
 
@@ -332,8 +325,21 @@ mono_threads_reset_blocking_start_unbalanced (gpointer *stackdata)
 	return info;
 }
 
+gpointer
+mono_threads_enter_gc_unsafe_region_cookie (MonoThreadInfo *info)
+{
+	g_assert (mono_threads_is_coop_enabled ());
+
+#ifdef ENABLE_CHECKED_BUILD_GC
+	if (mono_check_mode_enabled (MONO_CHECK_MODE_GC))
+		coop_tls_push (info);
+#endif
+
+	return info;
+}
+
 void
-mono_threads_reset_blocking_end (gpointer cookie, gpointer *stackdata)
+mono_threads_exit_gc_unsafe_region (gpointer cookie, gpointer *stackdata)
 {
 	if (!mono_threads_is_coop_enabled ())
 		return;
@@ -343,11 +349,11 @@ mono_threads_reset_blocking_end (gpointer cookie, gpointer *stackdata)
 		coop_tls_pop (cookie);
 #endif
 
-	mono_threads_reset_blocking_end_unbalanced (cookie, stackdata);
+	mono_threads_exit_gc_unsafe_region_unbalanced (cookie, stackdata);
 }
 
 void
-mono_threads_reset_blocking_end_unbalanced (gpointer cookie, gpointer *stackdata)
+mono_threads_exit_gc_unsafe_region_unbalanced (gpointer cookie, gpointer *stackdata)
 {
 	if (!mono_threads_is_coop_enabled ())
 		return;
@@ -362,7 +368,13 @@ mono_threads_reset_blocking_end_unbalanced (gpointer cookie, gpointer *stackdata
 		g_assert (((MonoThreadInfo *)cookie) == mono_thread_info_current_unchecked ());
 	}
 
-	mono_threads_prepare_blocking_unbalanced (stackdata);
+	mono_threads_enter_gc_safe_region_unbalanced (stackdata);
+}
+
+void
+mono_threads_assert_gc_unsafe_region (void)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
 }
 
 void
@@ -395,52 +407,4 @@ mono_threads_coop_end_global_suspend (void)
 {
 	if (mono_threads_is_coop_enabled ())
 		mono_polling_required = 0;
-}
-
-gpointer
-mono_threads_enter_gc_unsafe_region (gpointer* stackdata)
-{
-	if (!mono_threads_is_coop_enabled ())
-		return NULL;
-
-	return mono_threads_reset_blocking_start (stackdata);
-}
-
-void
-mono_threads_exit_gc_unsafe_region (gpointer cookie, gpointer* stackdata)
-{
-	if (!mono_threads_is_coop_enabled ())
-		return;
-
-	mono_threads_reset_blocking_end (cookie, stackdata);
-}
-
-void
-mono_threads_assert_gc_unsafe_region (void)
-{
-	MONO_REQ_GC_UNSAFE_MODE;
-}
-
-gpointer
-mono_threads_enter_gc_safe_region (gpointer *stackdata)
-{
-	if (!mono_threads_is_coop_enabled ())
-		return NULL;
-
-	return mono_threads_prepare_blocking (stackdata);
-}
-
-void
-mono_threads_exit_gc_safe_region (gpointer cookie, gpointer *stackdata)
-{
-	if (!mono_threads_is_coop_enabled ())
-		return;
-
-	mono_threads_finish_blocking (cookie, stackdata);
-}
-
-void
-mono_threads_assert_gc_safe_region (void)
-{
-	MONO_REQ_GC_SAFE_MODE;
 }

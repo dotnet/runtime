@@ -695,9 +695,9 @@ ves_icall_System_Net_Sockets_Socket_Close_internal (SOCKET sock, gint32 *werror)
 	 * polling system does not notify when the socket is closed */
 	mono_threadpool_ms_io_remove_socket (GPOINTER_TO_INT (sock));
 
-	MONO_PREPARE_BLOCKING;
+	MONO_ENTER_GC_SAFE;
 	closesocket (sock);
-	MONO_FINISH_BLOCKING;
+	MONO_EXIT_GC_SAFE;
 }
 
 gint32
@@ -758,7 +758,7 @@ ves_icall_System_Net_Sockets_Socket_Accept_internal (SOCKET sock, gint32 *werror
 		return NULL;
 	}
 
-	MONO_PREPARE_BLOCKING;
+	MONO_ENTER_GC_SAFE;
 
 #ifdef HOST_WIN32
 	{
@@ -771,7 +771,7 @@ ves_icall_System_Net_Sockets_Socket_Accept_internal (SOCKET sock, gint32 *werror
 	newsock = _wapi_accept (sock, NULL, 0);
 #endif
 
-	MONO_FINISH_BLOCKING;
+	MONO_EXIT_GC_SAFE;
 
 	mono_thread_info_uninstall_interrupt (&interrupted);
 	if (interrupted) {
@@ -794,11 +794,11 @@ ves_icall_System_Net_Sockets_Socket_Listen_internal(SOCKET sock, guint32 backlog
 	
 	*werror = 0;
 
-	MONO_PREPARE_BLOCKING;
+	MONO_ENTER_GC_SAFE;
 
 	ret = _wapi_listen (sock, backlog);
 
-	MONO_FINISH_BLOCKING;
+	MONO_EXIT_GC_SAFE;
 
 	if (ret == SOCKET_ERROR)
 		*werror = WSAGetLastError ();
@@ -991,11 +991,11 @@ ves_icall_System_Net_Sockets_Socket_LocalEndPoint_internal (SOCKET sock, gint32 
 	}
 	sa = (salen <= 128) ? (gchar *)alloca (salen) : (gchar *)g_malloc0 (salen);
 
-	MONO_PREPARE_BLOCKING;
+	MONO_ENTER_GC_SAFE;
 
 	ret = _wapi_getsockname (sock, (struct sockaddr *)sa, &salen);
 
-	MONO_FINISH_BLOCKING;
+	MONO_EXIT_GC_SAFE;
 	
 	if (ret == SOCKET_ERROR) {
 		*werror = WSAGetLastError ();
@@ -1033,11 +1033,11 @@ ves_icall_System_Net_Sockets_Socket_RemoteEndPoint_internal (SOCKET sock, gint32
 	sa = (salen <= 128) ? (gchar *)alloca (salen) : (gchar *)g_malloc0 (salen);
 	/* Note: linux returns just 2 for AF_UNIX. Always. */
 
-	MONO_PREPARE_BLOCKING;
+	MONO_ENTER_GC_SAFE;
 
 	ret = _wapi_getpeername (sock, (struct sockaddr *)sa, &salen);
 
-	MONO_FINISH_BLOCKING;
+	MONO_EXIT_GC_SAFE;
 
 	if (ret == SOCKET_ERROR) {
 		*werror = WSAGetLastError ();
@@ -1250,11 +1250,11 @@ ves_icall_System_Net_Sockets_Socket_Poll_internal (SOCKET sock, gint mode,
 			return FALSE;
 		}
 
-		MONO_PREPARE_BLOCKING;
+		MONO_ENTER_GC_SAFE;
 
 		ret = mono_poll (pfds, 1, timeout);
 
-		MONO_FINISH_BLOCKING;
+		MONO_EXIT_GC_SAFE;
 
 		mono_thread_info_uninstall_interrupt (&interrupted);
 		if (interrupted) {
@@ -1329,11 +1329,11 @@ ves_icall_System_Net_Sockets_Socket_Connect_internal (SOCKET sock, MonoObject *s
 		return;
 	}
 
-	MONO_PREPARE_BLOCKING;
+	MONO_ENTER_GC_SAFE;
 
 	ret = _wapi_connect (sock, sa, sa_size);
 
-	MONO_FINISH_BLOCKING;
+	MONO_EXIT_GC_SAFE;
 
 	mono_thread_info_uninstall_interrupt (&interrupted);
 	if (interrupted) {
@@ -1376,7 +1376,7 @@ ves_icall_System_Net_Sockets_Socket_Disconnect_internal (SOCKET sock, MonoBoolea
 
 	LOGDEBUG (g_message("%s: disconnecting from socket %p (reuse %d)", __func__, sock, reuse));
 
-	MONO_PREPARE_BLOCKING;
+	MONO_ENTER_GC_SAFE;
 
 	/* I _think_ the extension function pointers need to be looked
 	 * up for each socket.  FIXME: check the best way to store
@@ -1386,7 +1386,7 @@ ves_icall_System_Net_Sockets_Socket_Disconnect_internal (SOCKET sock, MonoBoolea
 	ret = WSAIoctl (sock, SIO_GET_EXTENSION_FUNCTION_POINTER, (gchar *)&disco_guid, sizeof (GUID),
 					(gchar *)&_wapi_disconnectex, sizeof (void *), &output_bytes, NULL, NULL);
 
-	MONO_FINISH_BLOCKING;
+	MONO_EXIT_GC_SAFE;
 
 	if (ret != 0) {
 		/* make sure that WSAIoctl didn't put crap in the
@@ -1394,7 +1394,7 @@ ves_icall_System_Net_Sockets_Socket_Disconnect_internal (SOCKET sock, MonoBoolea
 		 */
 		_wapi_disconnectex = NULL;
 
-		MONO_PREPARE_BLOCKING;
+		MONO_ENTER_GC_SAFE;
 
 		/*
 		 * Use the SIO_GET_EXTENSION_FUNCTION_POINTER to
@@ -1407,7 +1407,7 @@ ves_icall_System_Net_Sockets_Socket_Disconnect_internal (SOCKET sock, MonoBoolea
 		ret = WSAIoctl (sock, SIO_GET_EXTENSION_FUNCTION_POINTER, (gchar *)&trans_guid, sizeof(GUID),
 				(gchar *)&_wapi_transmitfile, sizeof(void *), &output_bytes, NULL, NULL);
 
-		MONO_FINISH_BLOCKING;
+		MONO_EXIT_GC_SAFE;
 
 		if (ret != 0)
 			_wapi_transmitfile = NULL;
@@ -1419,7 +1419,7 @@ ves_icall_System_Net_Sockets_Socket_Disconnect_internal (SOCKET sock, MonoBoolea
 		return;
 	}
 
-	MONO_PREPARE_BLOCKING;
+	MONO_ENTER_GC_SAFE;
 
 	if (_wapi_disconnectex != NULL) {
 		if (!_wapi_disconnectex (sock, NULL, TF_REUSE_SOCKET, 0))
@@ -1431,7 +1431,7 @@ ves_icall_System_Net_Sockets_Socket_Disconnect_internal (SOCKET sock, MonoBoolea
 		*werror = ERROR_NOT_SUPPORTED;
 	}
 
-	MONO_FINISH_BLOCKING;
+	MONO_EXIT_GC_SAFE;
 
 	mono_thread_info_uninstall_interrupt (&interrupted);
 	if (interrupted)
@@ -1466,7 +1466,7 @@ ves_icall_System_Net_Sockets_Socket_Receive_internal (SOCKET sock, MonoArray *bu
 	if (interrupted)
 		return 0;
 
-	MONO_PREPARE_BLOCKING;
+	MONO_ENTER_GC_SAFE;
 
 #ifdef HOST_WIN32
 	{
@@ -1478,7 +1478,7 @@ ves_icall_System_Net_Sockets_Socket_Receive_internal (SOCKET sock, MonoArray *bu
 	ret = _wapi_recv (sock, buf, count, recvflags);
 #endif
 
-	MONO_FINISH_BLOCKING;
+	MONO_EXIT_GC_SAFE;
 
 	mono_thread_info_uninstall_interrupt (&interrupted);
 	if (interrupted) {
@@ -1520,11 +1520,11 @@ ves_icall_System_Net_Sockets_Socket_Receive_array_internal (SOCKET sock, MonoArr
 		return 0;
 	}
 
-	MONO_PREPARE_BLOCKING;
+	MONO_ENTER_GC_SAFE;
 
 	ret = WSARecv (sock, wsabufs, count, &recv, &recvflags, NULL, NULL);
 
-	MONO_FINISH_BLOCKING;
+	MONO_EXIT_GC_SAFE;
 
 	mono_thread_info_uninstall_interrupt (&interrupted);
 	if (interrupted) {
@@ -1581,11 +1581,11 @@ ves_icall_System_Net_Sockets_Socket_ReceiveFrom_internal (SOCKET sock, MonoArray
 		return 0;
 	}
 
-	MONO_PREPARE_BLOCKING;
+	MONO_ENTER_GC_SAFE;
 
 	ret = _wapi_recvfrom (sock, buf, count, recvflags, sa, &sa_size);
 
-	MONO_FINISH_BLOCKING;
+	MONO_EXIT_GC_SAFE;
 
 	mono_thread_info_uninstall_interrupt (&interrupted);
 	if (interrupted) {
@@ -1653,11 +1653,11 @@ ves_icall_System_Net_Sockets_Socket_Send_internal (SOCKET sock, MonoArray *buffe
 		return 0;
 	}
 
-	MONO_PREPARE_BLOCKING;
+	MONO_ENTER_GC_SAFE;
 
 	ret = _wapi_send (sock, buf, count, sendflags);
 
-	MONO_FINISH_BLOCKING;
+	MONO_EXIT_GC_SAFE;
 
 	mono_thread_info_uninstall_interrupt (&interrupted);
 	if (interrupted) {
@@ -1699,11 +1699,11 @@ ves_icall_System_Net_Sockets_Socket_Send_array_internal (SOCKET sock, MonoArray 
 		return 0;
 	}
 
-	MONO_PREPARE_BLOCKING;
+	MONO_ENTER_GC_SAFE;
 
 	ret = WSASend (sock, wsabufs, count, &sent, sendflags, NULL, NULL);
 
-	MONO_FINISH_BLOCKING;
+	MONO_EXIT_GC_SAFE;
 
 	mono_thread_info_uninstall_interrupt (&interrupted);
 	if (interrupted) {
@@ -1766,11 +1766,11 @@ ves_icall_System_Net_Sockets_Socket_SendTo_internal (SOCKET sock, MonoArray *buf
 		return 0;
 	}
 
-	MONO_PREPARE_BLOCKING;
+	MONO_ENTER_GC_SAFE;
 
 	ret = _wapi_sendto (sock, buf, count, sendflags, sa, sa_size);
 
-	MONO_FINISH_BLOCKING;
+	MONO_EXIT_GC_SAFE;
 
 	mono_thread_info_uninstall_interrupt (&interrupted);
 	if (interrupted) {
@@ -1857,11 +1857,11 @@ ves_icall_System_Net_Sockets_Socket_Select_internal (MonoArray **sockets, gint32
 			return;
 		}
 
-		MONO_PREPARE_BLOCKING;
+		MONO_ENTER_GC_SAFE;
 
 		ret = mono_poll (pfds, nfds, timeout);
 
-		MONO_FINISH_BLOCKING;
+		MONO_EXIT_GC_SAFE;
 
 		mono_thread_info_uninstall_interrupt (&interrupted);
 		if (interrupted) {
@@ -2003,7 +2003,7 @@ ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal (SOCKET sock, g
 		return;
 	}
 
-	MONO_PREPARE_BLOCKING;
+	MONO_ENTER_GC_SAFE;
 
 	/* No need to deal with MulticastOption names here, because
 	 * you cant getsockopt AddMembership or DropMembership (the
@@ -2030,7 +2030,7 @@ ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal (SOCKET sock, g
 		ret = _wapi_getsockopt (sock, system_level, system_name, &val, &valsize);
 	}
 
-	MONO_FINISH_BLOCKING;
+	MONO_EXIT_GC_SAFE;
 
 	if (ret == SOCKET_ERROR) {
 		*werror = WSAGetLastError ();
@@ -2142,11 +2142,11 @@ ves_icall_System_Net_Sockets_Socket_GetSocketOption_arr_internal (SOCKET sock, g
 	valsize = mono_array_length (*byte_val);
 	buf = mono_array_addr (*byte_val, guchar, 0);
 
-	MONO_PREPARE_BLOCKING;
+	MONO_ENTER_GC_SAFE;
 
 	ret = _wapi_getsockopt (sock, system_level, system_name, buf, &valsize);
 
-	MONO_FINISH_BLOCKING;
+	MONO_EXIT_GC_SAFE;
 
 	if (ret == SOCKET_ERROR)
 		*werror = WSAGetLastError ();
@@ -2446,12 +2446,12 @@ ves_icall_System_Net_Sockets_Socket_Shutdown_internal (SOCKET sock, gint32 how, 
 		return;
 	}
 
-	MONO_PREPARE_BLOCKING;
+	MONO_ENTER_GC_SAFE;
 
 	/* Currently, the values for how (recv=0, send=1, both=2) match the BSD API */
 	ret = _wapi_shutdown (sock, how);
 
-	MONO_FINISH_BLOCKING;
+	MONO_EXIT_GC_SAFE;
 
 	mono_thread_info_uninstall_interrupt (&interrupted);
 	if (interrupted) {
@@ -2493,11 +2493,11 @@ ves_icall_System_Net_Sockets_Socket_IOControl_internal (SOCKET sock, gint32 code
 		o_len = mono_array_length (output);
 	}
 
-	MONO_PREPARE_BLOCKING;
+	MONO_ENTER_GC_SAFE;
 
 	ret = WSAIoctl (sock, code, i_buffer, i_len, o_buffer, o_len, &output_bytes, NULL, NULL);
 
-	MONO_FINISH_BLOCKING;
+	MONO_EXIT_GC_SAFE;
 
 	if (ret == SOCKET_ERROR) {
 		*werror = WSAGetLastError ();
@@ -2712,7 +2712,7 @@ ves_icall_System_Net_Dns_GetHostByAddr_internal (MonoString *addr, MonoString **
 
 	g_free (address);
 
-	MONO_PREPARE_BLOCKING;
+	MONO_ENTER_GC_SAFE;
 
 	switch (family) {
 	case AF_INET: {
@@ -2733,7 +2733,7 @@ ves_icall_System_Net_Dns_GetHostByAddr_internal (MonoString *addr, MonoString **
 		g_assert_not_reached ();
 	}
 
-	MONO_FINISH_BLOCKING;
+	MONO_EXIT_GC_SAFE;
 
 	if (!ret)
 		return FALSE;
@@ -2804,11 +2804,11 @@ ves_icall_System_Net_Sockets_Socket_SendFile_internal (SOCKET sock, MonoString *
 		return FALSE;
 	}
 
-	MONO_PREPARE_BLOCKING;
+	MONO_ENTER_GC_SAFE;
 
 	ret = TransmitFile (sock, file, 0, 0, NULL, &buffers, flags);
 
-	MONO_FINISH_BLOCKING;
+	MONO_EXIT_GC_SAFE;
 
 	mono_thread_info_uninstall_interrupt (&interrupted);
 	if (interrupted) {
@@ -2817,11 +2817,11 @@ ves_icall_System_Net_Sockets_Socket_SendFile_internal (SOCKET sock, MonoString *
 		return FALSE;
 	}
 
-	MONO_PREPARE_BLOCKING;
+	MONO_ENTER_GC_SAFE;
 
 	CloseHandle (file);
 
-	MONO_FINISH_BLOCKING;
+	MONO_EXIT_GC_SAFE;
 
 	return ret;
 }

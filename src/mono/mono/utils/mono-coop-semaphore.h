@@ -35,11 +35,11 @@ mono_coop_sem_wait (MonoCoopSem *sem, MonoSemFlags flags)
 {
 	gint res;
 
-	MONO_PREPARE_BLOCKING;
+	MONO_ENTER_GC_SAFE;
 
 	res = mono_os_sem_wait (&sem->s, flags);
 
-	MONO_FINISH_BLOCKING;
+	MONO_EXIT_GC_SAFE;
 
 	return res;
 }
@@ -49,11 +49,11 @@ mono_coop_sem_timedwait (MonoCoopSem *sem, guint timeout_ms, MonoSemFlags flags)
 {
 	gint res;
 
-	MONO_PREPARE_BLOCKING;
+	MONO_ENTER_GC_SAFE;
 
 	res = mono_os_sem_timedwait (&sem->s, timeout_ms, flags);
 
-	MONO_FINISH_BLOCKING;
+	MONO_EXIT_GC_SAFE;
 
 	return res;
 }

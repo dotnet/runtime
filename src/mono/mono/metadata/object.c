@@ -2892,11 +2892,11 @@ do_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **ex
 	if (mono_profiler_get_events () & MONO_PROFILE_METHOD_EVENTS)
 		mono_profiler_method_start_invoke (method);
 
-	MONO_PREPARE_RESET_BLOCKING;
+	MONO_ENTER_GC_UNSAFE;
 
 	result = callbacks.runtime_invoke (method, obj, params, exc, error);
 
-	MONO_FINISH_RESET_BLOCKING;
+	MONO_EXIT_GC_UNSAFE;
 
 	if (mono_profiler_get_events () & MONO_PROFILE_METHOD_EVENTS)
 		mono_profiler_method_end_invoke (method);
@@ -3117,10 +3117,10 @@ mono_method_get_unmanaged_thunk (MonoMethod *method)
 
 	g_assert (!mono_threads_is_coop_enabled ());
 
-	MONO_PREPARE_RESET_BLOCKING;
+	MONO_ENTER_GC_UNSAFE;
 	method = mono_marshal_get_thunk_invoke_wrapper (method);
 	res = mono_compile_method (method);
-	MONO_FINISH_RESET_BLOCKING;
+	MONO_EXIT_GC_UNSAFE;
 
 	return res;
 }

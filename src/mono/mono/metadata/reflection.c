@@ -294,9 +294,9 @@ mono_reflection_init (void)
 static inline void
 dynamic_image_lock (MonoDynamicImage *image)
 {
-	MONO_PREPARE_BLOCKING;
+	MONO_ENTER_GC_SAFE;
 	mono_image_lock ((MonoImage*)image);
-	MONO_FINISH_BLOCKING;
+	MONO_EXIT_GC_SAFE;
 }
 
 static inline void
