@@ -5,6 +5,7 @@ SET (CMAKE_C_FLAGS_INIT                     "/W0 /FC")
 SET (CMAKE_C_FLAGS_DEBUG_INIT               "/Od /Zi")
 SET (CMAKE_C_FLAGS_RELEASE_INIT             "/Ox")
 SET (CMAKE_C_FLAGS_RELWITHDEBINFO_INIT      "/O2 /Zi")
+set(CMAKE_ASM_MASM_FLAGS                    "${CMAKE_ASM_MASM_FLAGS} /ZH:SHA_256")
 
 # CXX Compiler flags
 SET (CMAKE_CXX_FLAGS                        "-std=c++11")
@@ -47,6 +48,7 @@ add_compile_options(/Zm200)       # Specify Precompiled Header Memory Allocation
 add_compile_options(/Zi)          # enable debugging information
 add_compile_options(/Zl)          # enable debugging information
 add_compile_options(/wd4960 /wd4961 /wd4603 /wd4627 /wd4838 /wd4456 /wd4457 /wd4458 /wd4459 /wd4091 /we4640)
+add_compile_options(/ZH:SHA_256) # use SHA256 for generating hashes of compiler processed source files.
 
 if ($ENV{__BuildArch} STREQUAL "x86")
     add_compile_options(/Gz)
