@@ -3,9 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
-using System;
 using System.Linq;
-using System.Reflection;
+
 using System.Collections.Generic;
 
 #pragma warning disable 0414
@@ -14,492 +13,166 @@ namespace System.Reflection.Tests
 {
     public class FieldInfoPropertyTests
     {
-        //Verify Static int FieldType
-        [Fact]
-        public void TestFieldType_intstatic()
+        public static IEnumerable<object[]> TestFieldType_TestData()
         {
-            String fieldname = "intFieldStatic";
-            FieldInfo fi = getField(fieldname);
-            FieldInfoPropertyTests myInstance = new FieldInfoPropertyTests();
-
-            Assert.NotNull(fi);
-            Assert.True(fi.Name.Equals(fieldname));
-            Assert.True(fi.IsStatic);
+            yield return new object[] { "intFieldStatic", true };
+            yield return new object[] { "intFieldNonStatic", false };
+            yield return new object[] { "static_strField", true };
+            yield return new object[] { "nonstatic_strField", false };
+            yield return new object[] { "_privateInt", false };
         }
 
-        //Verify Non Static int FieldType
-        [Fact]
-        public void TestFieldType_intnonstatic()
+        public static IEnumerable<object[]> TestIsAssemblyAndIsFamily_TestData()
         {
-            String fieldname = "intFieldNonStatic";
-            FieldInfo fi = getField(fieldname);
-            FieldInfoPropertyTests myInstance = new FieldInfoPropertyTests();
-
-            Assert.NotNull(fi);
-            Assert.True(fi.Name.Equals(fieldname));
-            Assert.False(fi.IsStatic);
+            yield return new object[] { "s_field_Assembly1", false, false };
+            yield return new object[] { "s_field_Assembly2", false, false };
+            yield return new object[] { "Field_Assembly3", false, true };
+            yield return new object[] { "Field_Assembly4", false, false };
+            yield return new object[] { "Field_Assembly5", true, false };
         }
 
-        //Verify Static String FieldType
-        [Fact]
-        public void TestFieldType_strstatic()
+        public static IEnumerable<object[]> TestIsFamilyAndAssembly_TestData()
         {
-            String fieldname = "static_strField";
-            FieldInfo fi = getField(fieldname);
-            FieldInfoPropertyTests myInstance = new FieldInfoPropertyTests();
-
-            Assert.NotNull(fi);
-            Assert.True(fi.Name.Equals(fieldname));
-            Assert.True(fi.IsStatic);
+            yield return new object[] { "s_field_FamilyAndAssembly1", false };
+            yield return new object[] { "s_field_FamilyAndAssembly2", false };
+            yield return new object[] { "Field_FamilyAndAssembly3", false };
+            yield return new object[] { "Field_FamilyAndAssembly4", false };
+            yield return new object[] { "Field_FamilyAndAssembly5", false };
         }
 
-        //Verify Non Static String FieldType
-        [Fact]
-        public void TestFieldType_strnonstatic()
+        public static IEnumerable<object[]> TestIsFamilyOrAssembly_TestData()
         {
-            String fieldname = "nonstatic_strField";
-            FieldInfo fi = getField(fieldname);
-            FieldInfoPropertyTests myInstance = new FieldInfoPropertyTests();
-
-            Assert.NotNull(fi);
-            Assert.True(fi.Name.Equals(fieldname));
-            Assert.False(fi.IsStatic);
+            yield return new object[] { "s_field_FamilyOrAssembly1", false };
+            yield return new object[] { "s_field_FamilyOrAssembly2", false };
+            yield return new object[] { "Field_FamilyOrAssembly3", false };
+            yield return new object[] { "Field_FamilyOrAssembly4", false };
+            yield return new object[] { "Field_FamilyOrAssembly5", false };
         }
 
-        //Verify Public String FieldType using IsPublic
-        [Fact]
-        public void TestIsPublic1()
+        public static IEnumerable<object[]> TestIsPublicAndIsPrivate_TestData()
         {
-            String fieldname = "nonstatic_strField";
-            FieldInfo fi = getField(fieldname);
-            Assert.NotNull(fi);
-            Assert.True(fi.IsPublic);
+            yield return new object[] { "nonstatic_strField", true };
+            yield return new object[] { "intFieldStatic", true };
+            yield return new object[] { "_privateInt", false };
+            yield return new object[] { "_privateStr", false };
         }
 
-        //Verify Public int FieldType using IsPublic
-        [Fact]
-        public void TestIsPublic2()
+        public static IEnumerable<object[]> TestFieldAttributes_TestData()
         {
-            String fieldname = "intFieldStatic";
-            FieldInfo fi = getField(fieldname);
-
-            Assert.NotNull(fi);
-            Assert.True(fi.IsPublic);
+            yield return new object[] { "intFieldNonStatic", FieldAttributes.Public };
+            yield return new object[] { "intFieldStatic", FieldAttributes.Public | FieldAttributes.Static };
+            yield return new object[] { "_privateInt", FieldAttributes.Private };
+            yield return new object[] { "rointField", FieldAttributes.Public | FieldAttributes.InitOnly };
         }
 
-        //Verify Private int FieldType using IsPublic
-        [Fact]
-        public void TestIsPublic3()
+        // Verify static and non-static FieldTypes
+        [Theory]
+        [MemberData(nameof(TestFieldType_TestData))]
+        public void TestFieldTypeAndIsStatic(string fieldName, bool expectedIsStatic)
         {
-            String fieldname = "_privateInt";
-            FieldInfo fi = getField(fieldname);
+            FieldInfo fi = getField(fieldName);
             Assert.NotNull(fi);
-            Assert.False(fi.IsPublic);
+            Assert.Equal(fieldName, fi.Name);
+            Assert.Equal(expectedIsStatic, fi.IsStatic);
         }
 
-        //Verify Private String FieldType using IsPublic
-        [Fact]
-        public void TestIsPublic4()
+        // Verify IsAssembly and IsFamily for static and non-static objects
+        [Theory]
+        [MemberData(nameof(TestIsAssemblyAndIsFamily_TestData))]
+        public void TestIsAssemblyAndIsFamily(string fieldName, bool expectedIsAssembly, bool expectedIsFamily)
         {
-            String fieldname = "_privateStr";
-            FieldInfo fi = getField(fieldname);
+            FieldInfo fi = getField(fieldName);
             Assert.NotNull(fi);
-            Assert.False(fi.IsPublic);
+            Assert.Equal(expectedIsAssembly, fi.IsAssembly);
+            Assert.Equal(expectedIsFamily, fi.IsFamily);
         }
 
-        //Verify Private int FieldType using IsPrivate
-        [Fact]
-        public void TestIsPrivate1()
+        //Verify IsFamilyAndAssembly for static and non-static objects
+        [Theory]
+        [MemberData(nameof(TestIsFamilyAndAssembly_TestData))]
+        public void TestIsFamilyAndAssembly(string fieldName, bool expectedIsFamilyAndAssembly)
         {
-            String fieldname = "_privateInt";
-            FieldInfo fi = getField(fieldname);
+            FieldInfo fi = getField(fieldName);
             Assert.NotNull(fi);
-            Assert.True(fi.IsPrivate);
+            Assert.Equal(expectedIsFamilyAndAssembly, fi.IsFamilyAndAssembly);
         }
 
-        //Verify Private String FieldType using IsPrivate
-        [Fact]
-        public void TestIsPrivate2()
+        //Verify IsFamilyOrAssembly for static and non-static objects
+        [Theory]
+        [MemberData(nameof(TestIsFamilyOrAssembly_TestData))]
+        public void TestIsFamilyOrAssembly(string fieldName, bool expectedIsFamilyOrAssembly)
         {
-            String fieldname = "_privateStr";
-            FieldInfo fi = getField(fieldname);
+            FieldInfo fi = getField(fieldName);
             Assert.NotNull(fi);
-            Assert.True(fi.IsPrivate);
+            Assert.Equal(expectedIsFamilyOrAssembly, fi.IsFamilyOrAssembly);
         }
 
-        //Verify Public String FieldType using IsPrivate
-        [Fact]
-        public void TestIsPrivate3()
+        // Verify IsPublic and IsPrivate for public and private FieldTypes
+        [Theory]
+        [MemberData(nameof(TestIsPublicAndIsPrivate_TestData))]
+        public void TestIsPublicAndIsPrivate(string fieldName, bool expectedIsPublic)
         {
-            String fieldname = "nonstatic_strField";
-            FieldInfo fi = getField(fieldname);
+            FieldInfo fi = getField(fieldName);
             Assert.NotNull(fi);
-            Assert.False(fi.IsPrivate);
+            Assert.Equal(expectedIsPublic, fi.IsPublic);
+            Assert.Equal(!expectedIsPublic, fi.IsPrivate);
         }
 
-        //Verify Public int FieldType using IsPrivate
-        [Fact]
-        public void TestIsPrivate4()
+        // Verify IsInitOnly for readonly and non-readonly fields
+        [Theory]
+        [InlineData("rointField", true)]
+        [InlineData("intFieldNonStatic", false)]
+        public void TestIsInitOnly(string fieldName, bool expectedIsInitOnly)
         {
-            String fieldname = "intFieldStatic";
-            FieldInfo fi = getField(fieldname);
+            FieldInfo fi = getField(fieldName);
             Assert.NotNull(fi);
-            Assert.False(fi.IsPrivate);
+            Assert.Equal(expectedIsInitOnly, fi.IsInitOnly);
         }
 
-        //Verify Private int FieldType using IsStatic
-        [Fact]
-        public void TestIsStatic1()
+        //Verify IsLiteral for constant and non-constant fields 
+        [Theory]
+        [InlineData("constIntField", true)]
+        [InlineData("intFieldNonStatic", false)]
+        public void TestIsLiteral(string fieldName, bool expectedIsLiteral)
         {
-            String fieldname = "_privateInt";
-            FieldInfo fi = getField(fieldname);
+            FieldInfo fi = getField(fieldName);
             Assert.NotNull(fi);
-            Assert.False(fi.IsStatic);
+            Assert.Equal(expectedIsLiteral, fi.IsLiteral);
         }
 
-        //Verify public static int FieldType using IsStatic
-        [Fact]
-        public void TestIsStatic2()
+        // Verify FieldType for a field
+        [Theory]
+        [InlineData("intFieldNonStatic", "System.Int32")]
+        [InlineData("nonstatic_strField", "System.String")]
+        [InlineData("s_field_Assembly1", "System.Object")]
+        public void TestFieldType(string fieldName, string expectedFieldType)
         {
-            String fieldname = "intFieldStatic";
-            FieldInfo fi = getField(fieldname);
+            FieldInfo fi = getField(fieldName);
             Assert.NotNull(fi);
-            Assert.True(fi.IsStatic);
+            Assert.Equal(expectedFieldType, fi.FieldType.ToString());
         }
 
-        //Verify IsAssembly for static object
-        [Fact]
-        public void TestIsAssembly1()
+        // Verify FieldAttributes
+        [Theory]
+        [MemberData(nameof(TestFieldAttributes_TestData))]
+        public void TestFieldAttributes(string fieldName, FieldAttributes expectedAttributes)
         {
-            String fieldname = "s_field_Assembly1";
-            FieldInfo fi = getField(fieldname);
+            FieldInfo fi = getField(fieldName);
             Assert.NotNull(fi);
-            Assert.False(fi.IsAssembly);
-        }
-
-        //Verify IsAssembly for private static object
-        [Fact]
-        public void TestIsAssembly2()
-        {
-            String fieldname = "s_field_Assembly2";
-            FieldInfo fi = getField(fieldname);
-            Assert.NotNull(fi);
-            Assert.False(fi.IsAssembly);
-        }
-
-        //Verify IsAssembly for protected static object
-        [Fact]
-        public void TestIsAssembly3()
-        {
-            String fieldname = "Field_Assembly3";
-            FieldInfo fi = getField(fieldname);
-            Assert.NotNull(fi);
-            Assert.False(fi.IsAssembly);
-        }
-
-        //Verify IsAssembly for public static object
-        [Fact]
-        public void TestIsAssembly4()
-        {
-            String fieldname = "Field_Assembly4";
-            FieldInfo fi = getField(fieldname);
-            Assert.NotNull(fi);
-            Assert.False(fi.IsAssembly);
-        }
-
-        //Verify IsAssembly for internal static object
-        [Fact]
-        public void TestIsAssembly5()
-        {
-            String fieldname = "Field_Assembly5";
-            FieldInfo fi = getField(fieldname);
-            Assert.NotNull(fi);
-            Assert.True(fi.IsAssembly);
-        }
-
-        //Verify IsFamily for static object
-        [Fact]
-        public void TestIsFamily1()
-        {
-            String fieldname = "s_field_Assembly1";
-            FieldInfo fi = getField(fieldname);
-            Assert.NotNull(fi);
-            Assert.False(fi.IsFamily);
-        }
-
-        //Verify IsFamily for private static object
-        [Fact]
-        public void TestIsFamily2()
-        {
-            String fieldname = "s_field_Assembly2";
-            FieldInfo fi = getField(fieldname);
-            Assert.NotNull(fi);
-            Assert.False(fi.IsFamily);
-        }
-
-        //Verify IsFamily for protected static object
-        [Fact]
-        public void TestIsFamily3()
-        {
-            String fieldname = "Field_Assembly3";
-            FieldInfo fi = getField(fieldname);
-            Assert.NotNull(fi);
-            Assert.True(fi.IsFamily);
-        }
-
-        //Verify IsFamily for public static object
-        [Fact]
-        public void TestIsFamily4()
-        {
-            String fieldname = "Field_Assembly4";
-            FieldInfo fi = getField(fieldname);
-            Assert.NotNull(fi);
-            Assert.False(fi.IsFamily);
-        }
-
-        //Verify IsFamily for internal static object
-        [Fact]
-        public void TestIsFamily5()
-        {
-            String fieldname = "Field_Assembly5";
-            FieldInfo fi = getField(fieldname);
-            Assert.NotNull(fi);
-            Assert.False(fi.IsFamily);
-        }
-
-        //Verify IsFamilyAndAssembly for s_field_FamilyAndAssembly1
-        [Fact]
-        public void TestIsFamilyAndAssembly1()
-        {
-            String fieldname = "s_field_FamilyAndAssembly1";
-            FieldInfo fi = getField(fieldname);
-            Assert.NotNull(fi);
-            Assert.False(fi.IsFamilyAndAssembly);
-        }
-
-        //Verify IsFamilyAndAssembly for s_field_FamilyAndAssembly2
-        [Fact]
-        public void TestIsFamilyAndAssembly2()
-        {
-            String fieldname = "s_field_FamilyAndAssembly2";
-            FieldInfo fi = getField(fieldname);
-            Assert.NotNull(fi);
-            Assert.False(fi.IsFamilyAndAssembly);
-        }
-
-        //Verify IsFamilyAndAssembly for Field_FamilyAndAssembly3
-        [Fact]
-        public void TestIsFamilyAndAssembly3()
-        {
-            String fieldname = "Field_FamilyAndAssembly3";
-            FieldInfo fi = getField(fieldname);
-            Assert.NotNull(fi);
-            Assert.False(fi.IsFamilyAndAssembly);
-        }
-
-        //Verify IsFamilyAndAssembly for Field_FamilyAndAssembly4
-        [Fact]
-        public void TestIsFamilyAndAssembly4()
-        {
-            String fieldname = "Field_FamilyAndAssembly4";
-            FieldInfo fi = getField(fieldname);
-            Assert.NotNull(fi);
-            Assert.False(fi.IsFamilyAndAssembly);
-        }
-
-        //Verify IsFamilyAndAssembly for Field_FamilyAndAssembly5
-        [Fact]
-        public void TestIsFamilyAndAssembly5()
-        {
-            String fieldname = "Field_FamilyAndAssembly5";
-            FieldInfo fi = getField(fieldname);
-            Assert.NotNull(fi);
-            Assert.False(fi.IsFamilyAndAssembly);
-        }
-
-        //Verify IsFamilyOrAssembly for s_field_FamilyOrAssembly1
-        [Fact]
-        public void TestIsFamilyOrAssembly1()
-        {
-            String fieldname = "s_field_FamilyOrAssembly1";
-            FieldInfo fi = getField(fieldname);
-            Assert.NotNull(fi);
-            Assert.False(fi.IsFamilyOrAssembly);
-        }
-
-        //Verify IsFamilyOrAssembly for s_field_FamilyOrAssembly2
-        [Fact]
-        public void TestIsFamilyOrAssembly2()
-        {
-            String fieldname = "s_field_FamilyOrAssembly2";
-            FieldInfo fi = getField(fieldname);
-            Assert.NotNull(fi);
-            Assert.False(fi.IsFamilyOrAssembly);
-        }
-
-        //Verify IsFamilyOrAssembly for Field_FamilyOrAssembly3
-        [Fact]
-        public void TestIsFamilyOrAssembly3()
-        {
-            String fieldname = "Field_FamilyOrAssembly3";
-            FieldInfo fi = getField(fieldname);
-            Assert.NotNull(fi);
-            Assert.False(fi.IsFamilyOrAssembly);
-        }
-
-        //Verify IsFamilyOrAssembly for Field_FamilyOrAssembly4
-        [Fact]
-        public void TestIsFamilyOrAssembly4()
-        {
-            String fieldname = "Field_FamilyOrAssembly4";
-            FieldInfo fi = getField(fieldname);
-            Assert.NotNull(fi);
-            Assert.False(fi.IsFamilyOrAssembly);
-        }
-
-        //Verify IsFamilyOrAssembly for Field_FamilyOrAssembly5
-        [Fact]
-        public void TestIsFamilyOrAssembly5()
-        {
-            String fieldname = "Field_FamilyOrAssembly5";
-            FieldInfo fi = getField(fieldname);
-            Assert.NotNull(fi);
-            Assert.False(fi.IsFamilyOrAssembly);
-        }
-
-        //Verify IsInitOnly for readonly field
-        [Fact]
-        public void TestIsInitOnly1()
-        {
-            String fieldname = "rointField";
-            FieldInfo fi = getField(fieldname);
-            Assert.NotNull(fi);
-            Assert.True(fi.IsInitOnly);
-        }
-
-        //Verify IsInitOnly for non- readonly field
-        [Fact]
-        public void TestIsInitOnly2()
-        {
-            String fieldname = "intFieldNonStatic";
-            FieldInfo fi = getField(fieldname);
-            Assert.NotNull(fi);
-            Assert.False(fi.IsInitOnly);
-        }
-
-        //Verify IsLiteral for literal fields like constant
-        [Fact]
-        public void TestIsLiteral1()
-        {
-            String fieldname = "constIntField";
-            FieldInfo fi = getField(fieldname);
-            Assert.NotNull(fi);
-            Assert.True(fi.IsLiteral);
-        }
-
-        //Verify IsLiteral for non constant fields
-        [Fact]
-        public void TestIsLiteral2()
-        {
-            String fieldname = "intFieldNonStatic";
-            FieldInfo fi = getField(fieldname);
-            Assert.NotNull(fi);
-            Assert.False(fi.IsLiteral);
-        }
-
-        //Verify FieldType for int field
-        [Fact]
-        public void TestFieldType1()
-        {
-            String fieldname = "intFieldNonStatic";
-            FieldInfo fi = getField(fieldname);
-            string typeStr = "System.Int32";
-            Assert.NotNull(fi);
-            Assert.True(fi.FieldType.ToString().Equals(typeStr));
-        }
-
-        //Verify FieldType for string field
-        [Fact]
-        public void TestFieldType2()
-        {
-            String fieldname = "nonstatic_strField";
-            FieldInfo fi = getField(fieldname);
-            string typeStr = "System.String";
-            Assert.NotNull(fi);
-            Assert.True(fi.FieldType.ToString().Equals(typeStr), "Failed!! Expected FieldType to return " + typeStr);
-        }
-
-
-        //Verify FieldType for Object field
-        [Fact]
-        public void TestFieldType3()
-        {
-            String fieldname = "s_field_Assembly1";
-            FieldInfo fi = getField(fieldname);
-            string typeStr = "System.Object";
-
-
-            Assert.NotNull(fi);
-            Assert.True(fi.FieldType.ToString().Equals(typeStr), "Failed!! Expected FieldType to return " + typeStr);
-        }
-
-
-        //Verify FieldAttributes
-        [Fact]
-        public void TestFieldAttribute1()
-        {
-            String fieldname = "intFieldNonStatic";
-            FieldInfo fi = getField(fieldname);
-
-            Assert.NotNull(fi);
-            Assert.True(fi.Attributes.Equals(FieldAttributes.Public), "Failed!! Expected Field Attribute to be of type Public");
-        }
-
-
-        //Verify FieldAttributes
-        [Fact]
-        public void TestFieldAttribute2()
-        {
-            String fieldname = "intFieldStatic";
-            FieldInfo fi = getField(fieldname);
-
-            Assert.NotNull(fi);
-            Assert.True(fi.Attributes.Equals(FieldAttributes.Public | FieldAttributes.Static), "Failed!! Expected Field Attribute to be of type Public and static");
-        }
-
-
-        //Verify FieldAttributes
-        [Fact]
-        public void TestFieldAttribute3()
-        {
-            String fieldname = "_privateInt";
-            FieldInfo fi = getField(fieldname);
-            Assert.NotNull(fi);
-            Assert.True(fi.Attributes.Equals(FieldAttributes.Private), "Failed!! Expected Field Attribute to be of type Private");
-        }
-
-
-
-        //Verify FieldAttributes
-        [Fact]
-        public void TestFieldAttribute4()
-        {
-            String fieldname = "rointField";
-            FieldInfo fi = getField(fieldname);
-            Assert.NotNull(fi);
-            Assert.True(fi.Attributes.Equals(FieldAttributes.Public | FieldAttributes.InitOnly), "Failed!! Expected Field Attribute to be of type InitOnly");
+            Assert.Equal(expectedAttributes, fi.Attributes);
         }
 
         //Verify IsSpecialName for FieldInfo
         [Fact]
         public void TestIsSpecialName()
         {
-            String fieldname = "intFieldNonStatic";
+            string fieldname = "intFieldNonStatic";
             FieldInfo fi = getField(fieldname);
             Assert.NotNull(fi);
             Assert.False(fi.IsSpecialName, "Failed: FieldInfo IsSpecialName returned True for field: " + fieldname);
         }
 
+        // Helper method to get field from Type type
         private static FieldInfo getField(string field)
         {
             Type t = typeof(FieldInfoPropertyTests);
@@ -523,35 +196,35 @@ namespace System.Reflection.Tests
 
         private string _privateStr = "_privateStr";        // Field for Reflection
 
-        private static Object s_field_Assembly1 = null;				    // without keyword
+        private static object s_field_Assembly1 = null;				    // without keyword
 
-        private static Object s_field_Assembly2 = null;			// with private keyword
+        private static object s_field_Assembly2 = null;			// with private keyword
 
-        protected static Object Field_Assembly3 = null;			// with protected keyword
+        protected static object Field_Assembly3 = null;			// with protected keyword
 
-        public static Object Field_Assembly4 = null;			// with public keyword
+        public static object Field_Assembly4 = null;			// with public keyword
 
-        internal static Object Field_Assembly5 = null;			// with internal keyword
+        internal static object Field_Assembly5 = null;			// with internal keyword
 
-        private static Object s_field_FamilyAndAssembly1 = null;						// without keyword
+        private static object s_field_FamilyAndAssembly1 = null;						// without keyword
 
-        private static Object s_field_FamilyAndAssembly2 = null;			    // with private keyword
+        private static object s_field_FamilyAndAssembly2 = null;			    // with private keyword
 
-        protected static Object Field_FamilyAndAssembly3 = null;			// with protected keyword
+        protected static object Field_FamilyAndAssembly3 = null;			// with protected keyword
 
-        public static Object Field_FamilyAndAssembly4 = null;				// with public keyword
+        public static object Field_FamilyAndAssembly4 = null;				// with public keyword
 
-        internal static Object Field_FamilyAndAssembly5 = null;				// with internal keyword
+        internal static object Field_FamilyAndAssembly5 = null;				// with internal keyword
 
-        private static Object s_field_FamilyOrAssembly1 = null;				    // without keyword
+        private static object s_field_FamilyOrAssembly1 = null;				    // without keyword
 
-        private static Object s_field_FamilyOrAssembly2 = null;			// with private keyword
+        private static object s_field_FamilyOrAssembly2 = null;			// with private keyword
 
-        protected static Object Field_FamilyOrAssembly3 = null;			// with protected keyword
+        protected static object Field_FamilyOrAssembly3 = null;			// with protected keyword
 
-        public static Object Field_FamilyOrAssembly4 = null;			// with public keyword
+        public static object Field_FamilyOrAssembly4 = null;			// with public keyword
 
-        internal static Object Field_FamilyOrAssembly5 = null;			// with internal keyword
+        internal static object Field_FamilyOrAssembly5 = null;			// with internal keyword
 
         public readonly int rointField = 1;
 
