@@ -25,7 +25,11 @@ namespace System.Net.NetworkInformation
             _name = name;
         }
 
+        public override string Id { get { return _name; } }
+
         public sealed override string Name { get { return _name; } }
+
+        public override string Description { get { return _name; } }
 
         public sealed override NetworkInterfaceType NetworkInterfaceType { get { return _networkInterfaceType; } }
 
@@ -34,8 +38,6 @@ namespace System.Net.NetworkInformation
             Debug.Assert(_physicalAddress != null, "_physicalAddress was never initialized. This means no address with type AF_PACKET was discovered.");
             return _physicalAddress;
         }
-
-        public override string Id { get { return _index.ToString(); } }
 
         public override bool Supports(NetworkInterfaceComponent networkInterfaceComponent)
         {
