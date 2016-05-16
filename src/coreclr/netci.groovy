@@ -14,6 +14,7 @@ def static getOSGroup(def os) {
         'RHEL7.2': 'Linux',
         'Ubuntu16.04': 'Linux',
         'Debian8.2':'Linux',
+        'Fedora23':'Linux',
         'OSX':'OSX',
         'Windows_NT':'Windows_NT',
         'FreeBSD':'FreeBSD',
@@ -31,7 +32,7 @@ class Constants {
     // The Windows_NT_BuildOnly OS is a way to speed up the Non-NT builds temporarily by avoiding
     // test execution in the build flow runs.  It generates the exact same build
     // as Windows_NT but without the tests.
-    def static osList = ['Ubuntu', 'Debian8.2', 'OSX', 'Windows_NT', 'Windows_NT_BuildOnly', 'FreeBSD', 'CentOS7.1', 'OpenSUSE13.2', 'RHEL7.2', 'LinuxARMEmulator', 'Ubuntu16.04']
+    def static osList = ['Ubuntu', 'Debian8.2', 'OSX', 'Windows_NT', 'Windows_NT_BuildOnly', 'FreeBSD', 'CentOS7.1', 'OpenSUSE13.2', 'RHEL7.2', 'LinuxARMEmulator', 'Ubuntu16.04', 'Fedora23']
     def static crossList = ['Ubuntu', 'OSX', 'CentOS7.1', 'RHEL7.2', 'Debian8.2', 'OpenSUSE13.2']
     // This is a set of JIT stress modes combined with the set of variables that
     // need to be set to actually enable that stress mode.  The key of the map is the stress mode and
@@ -488,10 +489,11 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                         Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Pri 1 Build & Test", "(?i).*test\\W+${os}\\W+${scenario}.*")
                     }
                     break
+                case 'Fedora23':
                 case 'Ubuntu16.04':
                     assert !isFlowJob
                     assert scenario == 'default'
-                    Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build", '(?i).*test\\W+Ubuntu16\\.04.*')
+                    Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build", '(?i).*test\\W+${os}\\W+.*')
                     break                
                 case 'Ubuntu':
                 case 'OSX':
@@ -1300,6 +1302,7 @@ combinedScenarios.each { scenario ->
                         case 'CentOS7.1':
                         case 'RHEL7.2':
                         case 'OpenSUSE13.2':
+                        case 'Fedora23':
                             switch (architecture) {
                                 case 'x64':
                                 case 'x86ryujit':
