@@ -301,9 +301,9 @@ enum CorJitFuncKind
     CORJIT_FUNC_FILTER         // a funclet associated with an EH filter
 };
 
-#if !defined(FEATURE_USE_ASM_GC_WRITE_BARRIERS) && defined(FEATURE_COUNT_GC_WRITE_BARRIERS)
-// We have a performance-investigation mode (defined by the FEATURE settings above) in which the
-// JIT adds an argument of this enumeration to checked write barrier calls, to classify them.
+// We have a performance-investigation mode (defined by the FEATURE_USE_ASM_GC_WRITE_BARRIERS and
+// FEATURE_COUNT_GC_WRITE_BARRIER preprocessor symbols) in which the JIT adds an argument of this
+// enumeration to checked write barrier calls in order to classify them.
 enum CheckedWriteBarrierKinds {
     CWBKind_Unclassified,    // Not one of the ones below.
     CWBKind_RetBuf,          // Store through a return buffer pointer argument.
@@ -311,7 +311,6 @@ enum CheckedWriteBarrierKinds {
     CWBKind_OtherByRefLocal, // Store through a by-ref local variable.
     CWBKind_AddrOfLocal,     // Store through the address of a local (arguably a bug that this happens at all).
 };
-#endif
 
 #if COR_JIT_EE_VERSION > 460
 
