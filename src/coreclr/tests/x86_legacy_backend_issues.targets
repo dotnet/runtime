@@ -163,9 +163,6 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\opt\Inline\regression\mismatch32\mismatch32\mismatch32.cmd">
       <Issue>needs triage</Issue>
     </ExcludeList>
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\SIMD\CircleInConvex_ro\CircleInConvex_ro.cmd">
-      <Issue>needs triage</Issue>
-    </ExcludeList>
     <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\localloc\verify\verify01_small\verify01_small.cmd">
       <Issue>needs triage</Issue>
     </ExcludeList>
@@ -254,9 +251,6 @@
       <Issue>needs triage</Issue>
     </ExcludeList>
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\intrinsic\interlocked\rva_rvastatic3\rva_rvastatic3.cmd">
-      <Issue>needs triage</Issue>
-    </ExcludeList>
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\SIMD\CircleInConvex_r\CircleInConvex_r.cmd">
       <Issue>needs triage</Issue>
     </ExcludeList>
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\VS-ia64-JIT\V2.0-Beta2\b410474\b410474\b410474.cmd Timed Out">
