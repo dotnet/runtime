@@ -12,7 +12,7 @@ download) so managed components can only be built on a subset of distros.
 
 ### Prerequsites (native build)
 
-The ntive build produces shims over libc, openssl, libcurl and libz. The build
+The native build produces shims over libc, openssl, libcurl and libz. The build
 system uses CMake (2.8.12 or higher) to generate Makefiles using clang (3.5 or
 higher).  The build also uses git for generating some version information.
 
@@ -47,13 +47,13 @@ Once installed, the native components can be built by running:
 ./build.sh native
 ```
 
-From the root of the repository
+from the root of the repository
 
 ### Prerequsites (managed build)
 
 Since the managed build uses the .NET Core CLI, there are some additional
 pre-requesties from the CLI which need to be installed. Both libicu and
-libunwind are used by CoreCLR to execuite managed code, so they must be
+libunwind are used by CoreCLR to execute managed code, so they must be
 installed. Since CoreFX does not actually link against these packages, runtime
 versions are sufficent.  We also require curl to be present, which we use to
 download the .NET Core CLI.
@@ -67,8 +67,8 @@ For Ubuntu 14.04, install the following packages:
 `sudo apt-get install libunwind8 libicu52 curl`
 
 In addition to the above pacakges, the runtime versions of the packages listed
-in the native section should also be installed (this happens automaticlly on
-most systems when you install the development packages.
+in the native section should also be installed (this happens automatically on
+most systems when you install the development packages).
 
 On OS X, we also require that openssl has been installed via Homebrew.
 
