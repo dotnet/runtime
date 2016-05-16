@@ -1549,7 +1549,7 @@ CORINFO_METHOD_HANDLE ZapInfo::embedMethodHandle(CORINFO_METHOD_HANDLE handle,
 
     if (IsReadyToRunCompilation())
     {
-        _ASSERTE(!"embedMethodHandle");
+        // READYTORUN FUTURE: Handle this case correctly
         ThrowHR(E_NOTIMPL);
     }
 
@@ -1582,7 +1582,6 @@ ZapInfo::getLocationOfThisType(CORINFO_METHOD_HANDLE   context)
     return m_pEEJitInfo->getLocationOfThisType(context);
 }
 
-
 void
 ZapInfo::embedGenericHandle(CORINFO_RESOLVED_TOKEN * pResolvedToken,
                             BOOL                     fEmbedParent,
@@ -1598,7 +1597,8 @@ ZapInfo::embedGenericHandle(CORINFO_RESOLVED_TOKEN * pResolvedToken,
 
     if (pResult->lookup.lookupKind.needsRuntimeLookup)
     {
-        embedGenericSignature(&pResult->lookup);
+        if (!IsReadyToRunCompilation())
+            embedGenericSignature(&pResult->lookup);
 
         if (pResult->handleType == CORINFO_HANDLETYPE_METHOD)
         {
@@ -1682,7 +1682,7 @@ void ZapInfo::embedGenericSignature(CORINFO_LOOKUP * pLookup)
 
     if (IsReadyToRunCompilation())
     {
-        m_zapper->Warning(W("ReadyToRun: embedGenericSignature not yet supported\n"));
+        UNREACHABLE_MSG("We should never get here for the ReadyToRun compilation.");
         ThrowHR(E_NOTIMPL);
     }
 
@@ -2139,7 +2139,8 @@ void ZapInfo::getCallInfo(CORINFO_RESOLVED_TOKEN * pResolvedToken,
         {
             if (pResult->stubLookup.lookupKind.needsRuntimeLookup)
             {
-                embedGenericSignature(&pResult->stubLookup);
+                if (!IsReadyToRunCompilation())
+                    embedGenericSignature(&pResult->stubLookup);
                 return;
             }
 
@@ -2172,7 +2173,8 @@ void ZapInfo::getCallInfo(CORINFO_RESOLVED_TOKEN * pResolvedToken,
 
     case CORINFO_CALL_CODE_POINTER:
         _ASSERTE(pResult->codePointerLookup.lookupKind.needsRuntimeLookup);
-        embedGenericSignature(&pResult->codePointerLookup);
+        if (!IsReadyToRunCompilation())
+            embedGenericSignature(&pResult->codePointerLookup);
 
         // There is no easy way to detect method referenced via generic lookups in generated code.
         // Report this method reference unconditionally.
@@ -2213,23 +2215,15 @@ void ZapInfo::getCallInfo(CORINFO_RESOLVED_TOKEN * pResolvedToken,
 
     case CORINFO_VIRTUALCALL_LDVIRTFTN:
 #ifdef FEATURE_READYTORUN_COMPILER
-        if (IsReadyToRunCompilation())
+        if (IsReadyToRunCompilation() && !pResult->exactContextNeedsRuntimeLookup)
         {
-            if ((pResult->classFlags & CORINFO_FLG_SHAREDINST) != 0 ||
-                (pResult->methodFlags & CORINFO_FLG_SHAREDINST) != 0)
-            {
-                // READYTORUN: FUTURE: Generics
-                m_zapper->Warning(W("ReadyToRun: Generic dictionary lookup required\n"));
-                ThrowHR(E_NOTIMPL);
-            }
-
             DWORD fAtypicalCallsite = (flags & CORINFO_CALLINFO_ATYPICAL_CALLSITE) ? CORINFO_HELP_READYTORUN_ATYPICAL_CALLSITE : 0;
 
             ZapImport * pImport = m_pImage->GetImportTable()->GetDynamicHelperCell(
                 (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_VIRTUAL_ENTRY | fAtypicalCallsite), pResult->hMethod, pResolvedToken);
 
-            pResult->codePointerLookup.constLookup.accessType   = IAT_PVALUE;
-            pResult->codePointerLookup.constLookup.addr         = pImport;
+            pResult->codePointerLookup.constLookup.accessType = IAT_PVALUE;
+            pResult->codePointerLookup.constLookup.addr = pImport;
 
             _ASSERTE(!pResult->sig.hasTypeArg());
         }
@@ -2249,9 +2243,10 @@ void ZapInfo::getCallInfo(CORINFO_RESOLVED_TOKEN * pResolvedToken,
     {
         if (pResult->exactContextNeedsRuntimeLookup)
         {
-            // READYTORUN: FUTURE: Generics
-            m_zapper->Warning(W("ReadyToRun: Generic dictionary lookup not yet supported\n"));
-            ThrowHR(E_NOTIMPL);
+            // Nothing to do... The generic handle lookup gets embedded in to the codegen
+            // during the jitting of the call.
+            // (Note: The generic lookup in R2R is performed by a call to a helper at runtime, not by
+            // codegen emitted at crossgen time)
         }
         else
         {
@@ -3007,9 +3002,18 @@ void ZapInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
             break;
 
         case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
-            // READYTORUN: FUTURE: Generics
-            m_zapper->Warning(W("ReadyToRun: Shared generic static field access not yet supported\n"));
-            ThrowHR(E_NOTIMPL);
+            {
+                // Nothing to do... The generic handle lookup gets embedded in to the codegen
+                // during the jitting of the field lookup.
+                // (Note: The generic lookup in R2R is performed by a call to a helper at runtime, not by
+                // codegen emitted at crossgen time)
+                // TODO: replace the call to the generic lookup helper and the call to the static helper function
+                // with a single call to a R2R cell that performs:
+                //      1) Generic handle lookup
+                //      2) Computes the statics base address
+                //      3) Generates a stub for subsequent lookups that includes dictionary access
+                // (For perf reasons)
+            }
             break;
 
         case CORINFO_FIELD_STATIC_ADDRESS:           // field at given address
@@ -3355,6 +3359,9 @@ unsigned ZapInfo::getClassNumInstanceFields(CORINFO_CLASS_HANDLE cls)
 
 CorInfoHelpFunc ZapInfo::getNewHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, CORINFO_METHOD_HANDLE callerHandle)
 {
+    if (IsReadyToRunCompilation())
+        return CORINFO_HELP_NEWFAST;
+
     classMustBeLoadedBeforeCodeIsRun(pResolvedToken->hClass);
     return m_pEEJitInfo->getNewHelper(pResolvedToken, callerHandle);
 }
@@ -3386,19 +3393,24 @@ CorInfoHelpFunc ZapInfo::getUnBoxHelper(CORINFO_CLASS_HANDLE cls)
 
 CorInfoHelpFunc ZapInfo::getCastingHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, bool fThrowing)
 {
+    if (IsReadyToRunCompilation())
+        return (fThrowing ? CORINFO_HELP_CHKCASTANY : CORINFO_HELP_ISINSTANCEOFANY);
+
     return m_pEEJitInfo->getCastingHelper(pResolvedToken, fThrowing);
 }
 
 CorInfoHelpFunc ZapInfo::getNewArrHelper(CORINFO_CLASS_HANDLE arrayCls)
 {
+    if (IsReadyToRunCompilation())
+        return CORINFO_HELP_NEWARR_1_DIRECT;
+
     return m_pEEJitInfo->getNewArrHelper(arrayCls);
 }
 
-void ZapInfo::getReadyToRunHelper(
-        CORINFO_RESOLVED_TOKEN * pResolvedToken,
-        CorInfoHelpFunc          id,
-        CORINFO_CONST_LOOKUP *   pLookup
-        )
+bool ZapInfo::getReadyToRunHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, 
+                                  CORINFO_LOOKUP_KIND * pGenericLookupKind,
+                                  CorInfoHelpFunc id, 
+                                  CORINFO_CONST_LOOKUP * pLookup)
 {
 #ifdef FEATURE_READYTORUN_COMPILER
     _ASSERTE(IsReadyToRunCompilation());
@@ -3412,37 +3424,35 @@ void ZapInfo::getReadyToRunHelper(
     {
     case CORINFO_HELP_READYTORUN_NEW:
         if ((getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_SHAREDINST) != 0)
-        {
-            // READYTORUN: FUTURE: Generics
-            m_zapper->Warning(W("ReadyToRun: Generic dictionary lookup required\n"));
-            ThrowHR(E_NOTIMPL);
-        }
+            return false;   // Requires runtime lookup.
         pImport = m_pImage->GetImportTable()->GetDynamicHelperCell(
             (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_NEW_HELPER | fAtypicalCallsite), pResolvedToken->hClass);
         break;
 
     case CORINFO_HELP_READYTORUN_NEWARR_1:
         if ((getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_SHAREDINST) != 0)
-        {
-            // READYTORUN: FUTURE: Generics
-            m_zapper->Warning(W("ReadyToRun: Generic dictionary lookup required\n"));
-            ThrowHR(E_NOTIMPL);
-        }
+            return false;   // Requires runtime lookup.
         pImport = m_pImage->GetImportTable()->GetDynamicHelperCell(
             (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_NEW_ARRAY_HELPER | fAtypicalCallsite), pResolvedToken->hClass);
         break;
 
     case CORINFO_HELP_READYTORUN_ISINSTANCEOF:
+        if ((getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_SHAREDINST) != 0)
+            return false;   // Requires runtime lookup.
         pImport = m_pImage->GetImportTable()->GetDynamicHelperCell(
             (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_ISINSTANCEOF_HELPER | fAtypicalCallsite), pResolvedToken->hClass);
         break;
 
     case CORINFO_HELP_READYTORUN_CHKCAST:
+        if ((getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_SHAREDINST) != 0)
+            return false;   // Requires runtime lookup.
         pImport = m_pImage->GetImportTable()->GetDynamicHelperCell(
             (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_CHKCAST_HELPER | fAtypicalCallsite), pResolvedToken->hClass);
         break;
 
     case CORINFO_HELP_READYTORUN_STATIC_BASE:
+        if ((getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_SHAREDINST) != 0)
+            return false;   // Requires runtime lookup.
         if (m_pImage->GetCompileInfo()->IsInCurrentVersionBubble(m_pEEJitInfo->getClassModule(pResolvedToken->hClass)))
         {
             pImport = m_pImage->GetImportTable()->GetDynamicHelperCell(
@@ -3456,6 +3466,26 @@ void ZapInfo::getReadyToRunHelper(
         }
         break;
 
+    case CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
+        _ASSERTE(pGenericLookupKind != NULL && pGenericLookupKind->needsRuntimeLookup);
+        if (pGenericLookupKind->runtimeLookupKind == CORINFO_LOOKUP_METHODPARAM)
+        {
+            pImport = m_pImage->GetImportTable()->GetDictionaryLookupCell(
+                (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_DICTIONARY_LOOKUP_METHOD | fAtypicalCallsite), pResolvedToken, pGenericLookupKind);
+        }
+        else if (pGenericLookupKind->runtimeLookupKind == CORINFO_LOOKUP_THISOBJ)
+        {
+            pImport = m_pImage->GetImportTable()->GetDictionaryLookupCell(
+                (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_DICTIONARY_LOOKUP_THISOBJ | fAtypicalCallsite), pResolvedToken, pGenericLookupKind);
+        }
+        else
+        {
+            _ASSERTE(pGenericLookupKind->runtimeLookupKind == CORINFO_LOOKUP_CLASSPARAM);
+            pImport = m_pImage->GetImportTable()->GetDictionaryLookupCell(
+                (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_DICTIONARY_LOOKUP_TYPE | fAtypicalCallsite), pResolvedToken, pGenericLookupKind);
+        }
+        break;
+
     default:
         _ASSERTE(false);
         ThrowHR(E_NOTIMPL);
@@ -3463,6 +3493,9 @@ void ZapInfo::getReadyToRunHelper(
 
     pLookup->accessType = IAT_PVALUE;
     pLookup->addr = pImport;
+    return true;
+#else
+	return false;
 #endif
 }
 

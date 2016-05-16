@@ -1022,12 +1022,12 @@ public:
         {
             LIMITED_METHOD_CONTRACT;
 
-	    if (CPUGroupInfo::CanEnableGCCPUGroups() && CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
-            return pRecycledListPerProcessor[CPUGroupInfo::CalculateCurrentProcessorNumber()][memType];
-        else
-            // Turns out GetCurrentProcessorNumber can return a value greater than the number of processors reported by
-            // GetSystemInfo, if we're running in WOW64 on a machine with >32 processors.
-        	return pRecycledListPerProcessor[GetCurrentProcessorNumber()%NumberOfProcessors][memType];
+	        if (CPUGroupInfo::CanEnableGCCPUGroups() && CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
+                return pRecycledListPerProcessor[CPUGroupInfo::CalculateCurrentProcessorNumber()][memType];
+            else
+                // Turns out GetCurrentProcessorNumber can return a value greater than the number of processors reported by
+                // GetSystemInfo, if we're running in WOW64 on a machine with >32 processors.
+        	    return pRecycledListPerProcessor[GetCurrentProcessorNumber()%NumberOfProcessors][memType];
     	}
     };
 

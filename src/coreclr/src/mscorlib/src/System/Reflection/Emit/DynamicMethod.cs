@@ -915,7 +915,7 @@ namespace System.Reflection.Emit
             public override ParameterInfo[] GetParameters() {
                 ParameterInfo[] privateParameters = LoadParameters();
                 ParameterInfo[] parameters = new ParameterInfo[privateParameters.Length];
-                Array.Copy(privateParameters, parameters, privateParameters.Length);
+                Array.Copy(privateParameters, 0, parameters, 0, privateParameters.Length);
                 return parameters;
             }
             

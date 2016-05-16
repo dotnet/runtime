@@ -1880,10 +1880,9 @@ void QCALLTYPE RuntimeTypeHandle::GetTypeByNameUsingCARules(LPCWSTR pwzClassName
 
 void QCALLTYPE RuntimeTypeHandle::GetTypeByName(LPCWSTR pwzClassName, BOOL bThrowOnError, BOOL bIgnoreCase, BOOL bReflectionOnly,
                                                 QCall::StackCrawlMarkHandle pStackMark, 
-#ifdef FEATURE_HOSTED_BINDER
                                                 ICLRPrivBinder * pPrivHostBinder,
-#endif
-                                                BOOL bLoadTypeFromPartialNameHack, QCall::ObjectHandleOnStack retType)
+                                                BOOL bLoadTypeFromPartialNameHack, QCall::ObjectHandleOnStack retType,
+                                                QCall::ObjectHandleOnStack keepAlive)
 {
     QCALL_CONTRACT;
     
@@ -1894,32 +1893,16 @@ void QCALLTYPE RuntimeTypeHandle::GetTypeByName(LPCWSTR pwzClassName, BOOL bThro
     if (!pwzClassName)
             COMPlusThrowArgumentNull(W("className"),W("ArgumentNull_String"));
 
-    GCX_COOP();
     {
-        OBJECTREF keepAlive = NULL;
+        typeHandle = TypeName::GetTypeManaged(pwzClassName, NULL, bThrowOnError, bIgnoreCase, bReflectionOnly, /*bProhibitAsmQualifiedName =*/ FALSE, pStackMark,
+                                              bLoadTypeFromPartialNameHack, (OBJECTREF*)keepAlive.m_ppObject,
+                                              pPrivHostBinder);
+    }
 
-        // BEGIN_QCALL/END_QCALL define try/catch scopes for potential exceptions thrown when bThrowOnError is enabled.
-        // Originally, in case of an exception the GCFrame was removed from the Thread's Frame chain in the catch block, in UnwindAndContinueRethrowHelperInsideCatch.
-        // However, the catch block declared some local variables that overlapped the location of the now out of scope GCFrame and OBJECTREF, therefore corrupting
-        // those values. Having the GCX_COOP/GCX_PREEMP switching GC modes, allowed a situation where in case of an exception, the thread would wait for a GC to complete
-        // while still having the GCFrame in the Thread's Frame chain, but with a corrupt OBJECTREF due to stack location reuse in the catch block.
-        // The solution is to force the removal of GCFrame (and the Frames above) from the Thread's Frame chain before entering the catch block, at the time of 
-        // FrameWithCookieHolder's destruction.
-        GCPROTECT_HOLDER(keepAlive);
-
-        {
-            GCX_PREEMP();
-            typeHandle = TypeName::GetTypeManaged(pwzClassName, NULL, bThrowOnError, bIgnoreCase, bReflectionOnly, /*bProhibitAsmQualifiedName =*/ FALSE, pStackMark, bLoadTypeFromPartialNameHack, &keepAlive
-#ifdef FEATURE_HOSTED_BINDER
-                                                  , pPrivHostBinder
-#endif
-                );
-        }
-
-        if (!typeHandle.IsNull())
-        {
-            retType.Set(typeHandle.GetManagedClassObject());
-        }
+    if (!typeHandle.IsNull())
+    {
+        GCX_COOP();
+        retType.Set(typeHandle.GetManagedClassObject());
     }
 
     END_QCALL;

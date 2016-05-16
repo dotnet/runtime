@@ -314,10 +314,12 @@ LOCAL_LABEL(LNullThis):
         push                {r0-r3,r12}
         PROLOG_STACK_SAVE_OFFSET   r7, #28
 
-        //GBLA UMThunkStub_HiddenArg // offset of saved UMEntryThunk *
-        //GBLA UMThunkStub_StackArgs // offset of original stack args (total size of UMThunkStub frame)
-UMThunkStub_HiddenArg = 4*4
-UMThunkStub_StackArgs = 10*4
+        //GBLA UMThunkStub_HiddenArgOffest // offset of saved UMEntryThunk *
+        //GBLA UMThunkStub_StackArgsOffest // offset of original stack args
+        //GBLA UMThunkStub_StackArgsSize   // total size of UMThunkStub frame
+UMThunkStub_HiddenArgOffset = (-3)*4
+UMThunkStub_StackArgsOffset = 3*4
+UMThunkStub_StackArgsSize = 10*4
 
         CHECK_STACK_ALIGNMENT
 
@@ -336,7 +338,7 @@ LOCAL_LABEL(UMThunkStub_HaveThread):
         cbnz                r3, LOCAL_LABEL(UMThunkStub_DoTrapReturningThreads)
 
 LOCAL_LABEL(UMThunkStub_InCooperativeMode):
-        ldr                 r12, [r7, #UMThunkStub_HiddenArg]
+        ldr                 r12, [r7, #UMThunkStub_HiddenArgOffset]
 
         ldr                 r0, [r5, #Thread__m_pDomain]
         ldr                 r1, [r12, #UMEntryThunk__m_dwDomainId]
@@ -348,7 +350,7 @@ LOCAL_LABEL(UMThunkStub_InCooperativeMode):
         ldr                 r2, [r3, #UMThunkMarshInfo__m_cbActualArgSize]
         cbz                 r2, LOCAL_LABEL(UMThunkStub_ArgumentsSetup)
 
-        add                 r0, r7, #UMThunkStub_StackArgs // Source pointer
+        add                 r0, r7, #UMThunkStub_StackArgsOffset // Source pointer
         add                 r0, r0, r2
         lsr                 r1, r2, #2      // Count of stack slots to copy
 
@@ -365,7 +367,8 @@ LOCAL_LABEL(UMThunkStub_ArgumentsSetup):
         ldr                 r4, [r3, #UMThunkMarshInfo__m_pILStub]
 
         // reload argument registers
-        ldm                 r7, {r0-r3}
+        sub                 r0, r7, #28
+        ldm                 r0, {r0-r3}
 
         CHECK_STACK_ALIGNMENT
 
@@ -391,7 +394,7 @@ LOCAL_LABEL(UMThunkStub_DoTrapReturningThreads):
         sub                 sp, #SIZEOF__FloatArgumentRegisters
         vstm                sp, {d0-d7}
         mov                 r0, r5              // Thread* pThread
-        ldr                 r1, [r7, #UMThunkStub_HiddenArg]  // UMEntryThunk* pUMEntry
+        ldr                 r1, [r7, #UMThunkStub_HiddenArgOffset]  // UMEntryThunk* pUMEntry
         bl                  C_FUNC(UMThunkStubRareDisableWorker)
         vldm                sp, {d0-d7}
         add                 sp, #SIZEOF__FloatArgumentRegisters
@@ -401,7 +404,7 @@ LOCAL_LABEL(UMThunkStub_WrongAppDomain):
         sub                 sp, #SIZEOF__FloatArgumentRegisters
         vstm                sp, {d0-d7}
 
-        ldr                 r0, [r7, #UMThunkStub_HiddenArg]  // UMEntryThunk* pUMEntry
+        ldr                 r0, [r7, #UMThunkStub_HiddenArgOffset]  // UMEntryThunk* pUMEntry
         mov                 r2, r7              // void * pArgs
         // remaining arguments are unused
         bl                  C_FUNC(UM2MDoADCallBack)
@@ -441,7 +444,7 @@ LOCAL_LABEL(UMThunkStub_WrongAppDomain):
         ldr                 r2, [r3, #UMThunkMarshInfo__m_cbActualArgSize]
         cbz                 r2, LOCAL_LABEL(UM2MThunk_WrapperHelper_ArgumentsSetup)
 
-        add                 r0, r5, #UMThunkStub_StackArgs // Source pointer
+        add                 r0, r5, #UMThunkStub_StackArgsSize // Source pointer
         add                 r0, r0, r2
         lsr                 r1, r2, #2      // Count of stack slots to copy
 

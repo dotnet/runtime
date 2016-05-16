@@ -56,13 +56,13 @@ public:
 // Convert 8 bit string to unicode
 static LPCWSTR StringToUnicode(LPCSTR str)
 {
-    int length = MultiByteToWideChar(CP_ACP, 0, str, -1, NULL, 0);
+    int length = MultiByteToWideChar(CP_UTF8, 0, str, -1, NULL, 0);
     ASSERTE_ALL_BUILDS(length != 0);
 
     LPWSTR result = new (nothrow) WCHAR[length];
     ASSERTE_ALL_BUILDS(result != NULL);
     
-    length = MultiByteToWideChar(CP_ACP, 0, str, -1, result, length);
+    length = MultiByteToWideChar(CP_UTF8, 0, str, -1, result, length);
     ASSERTE_ALL_BUILDS(length != 0);
 
     return result;

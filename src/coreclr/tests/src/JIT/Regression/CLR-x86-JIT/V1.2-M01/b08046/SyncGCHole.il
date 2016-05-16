@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 .assembly extern System.Console
 {
@@ -78,7 +81,9 @@
     IL_0036:  ldc.i4.s   10
     IL_0038:  blt.s      IL_000a
 
-    IL_003a:  ret
+    IL_003a:  call       int32 ['mscorlib']System.Environment::get_ExitCode()
+              call       void ['mscorlib']System.Environment::Exit(int32)
+              ret
   } 
 
   .method public hidebysig instance void 

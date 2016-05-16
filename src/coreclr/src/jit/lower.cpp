@@ -627,6 +627,16 @@ void Lowering::LowerNode(GenTreePtr* ppTree, Compiler::fgWalkData* data)
         LowerAdd(ppTree, data);
         break;
         
+    case GT_UDIV:
+    case GT_UMOD:
+        LowerUnsignedDivOrMod(*ppTree);
+        break;
+
+    case GT_DIV:
+    case GT_MOD:
+        LowerSignedDivOrMod(ppTree, data);
+        break;
+
     case GT_SWITCH:
         LowerSwitch(ppTree);
         break;
@@ -761,6 +771,7 @@ void Lowering::LowerNode(GenTreePtr* ppTree, Compiler::fgWalkData* data)
  *     internal temporaries to maintain the index we're evaluating plus we're using existing code from LinearCodeGen
  *     to implement this instead of implement all the control flow constructs using InstrDscs and InstrGroups downstream.
  */
+
 void Lowering::LowerSwitch(GenTreePtr* pTree)
 {
     unsigned     jumpCnt;
@@ -866,14 +877,7 @@ void Lowering::LowerSwitch(GenTreePtr* pTree)
     // because the code to load the base of the switch
     // table is huge and hideous due to the relocation... :(
     minSwitchTabJumpCnt += 2;
-#elif defined(_TARGET_ARM64_) // _TARGET_ARM_
-    // In the case of ARM64 we'll stick to generate a sequence of
-    // compare and branch for now to get switch working and revisit
-    // to implement jump tables in the future.
-    //
-    // TODO-AMD64-NYI: Implement Jump Tables.
-    minSwitchTabJumpCnt = -1; 
-#endif // _TARGET_ARM64_
+#endif // _TARGET_ARM_
     // Once we have the temporary variable, we construct the conditional branch for
     // the default case.  As stated above, this conditional is being shared between
     // both GT_SWITCH lowering code paths.
@@ -1675,27 +1679,19 @@ void Lowering::LowerCall(GenTree* node)
             break;
 
         case GTF_CALL_NONVIRT:
-        {
-
-#if INLINE_PINVOKE
             if (call->IsUnmanaged())
             {
                 result = LowerNonvirtPinvokeCall(call);
-                break;
             }
-#endif
-            if  (call->gtCallType == CT_INDIRECT)
+            else if (call->gtCallType == CT_INDIRECT)
             {
                 result = LowerIndirectNonvirtCall(call);
-                break;
             }
             else
             {
                 result = LowerDirectCall(call);
-                break;
             }
-        }
-        break;
+            break;
 
         default:
             noway_assert(!"strange call type");
@@ -1992,14 +1988,12 @@ void Lowering::LowerFastTailCall(GenTreeCall *call)
     // fgLastBB with block number > loop header block number.
     //assert((comp->compCurBB->bbFlags & BBF_GC_SAFE_POINT) || !comp->optReachWithoutCall(comp->fgFirstBB, comp->compCurBB) || comp->genInterruptible);
 
-#if INLINE_PINVOKE
     // If PInvokes are in-lined, we have to remember to execute PInvoke method epilog anywhere that
     // a method returns.  This is a case of caller method has both PInvokes and tail calls.
     if (comp->info.compCallUnmanaged)
     {
         InsertPInvokeMethodEpilog(comp->compCurBB DEBUGARG(call));
     }
-#endif
 
     // Args for tail call are setup in incoming arg area.  The gc-ness of args of
     // caller and callee (which being tail called) may not match.  Therefore, everything
@@ -2233,14 +2227,12 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree *callTarget
     // GC starvation.
     assert(comp->compCurBB->bbFlags & BBF_GC_SAFE_POINT);
 
-#if INLINE_PINVOKE
     // If PInvokes are in-lined, we have to remember to execute PInvoke method epilog anywhere that
     // a method returns.  This is a case of caller method has both PInvokes and tail calls.
     if (comp->info.compCallUnmanaged)
     {
         InsertPInvokeMethodEpilog(comp->compCurBB DEBUGARG(call));
     }
-#endif
 
     // Remove gtCallAddr from execution order if one present.
     GenTreeStmt* callStmt = comp->compCurStmt->AsStmt();     
@@ -2302,14 +2294,12 @@ void Lowering::LowerJmpMethod(GenTree* jmp)
     DISPTREE(jmp);
     JITDUMP("============");
 
-#if INLINE_PINVOKE
     // If PInvokes are in-lined, we have to remember to execute PInvoke method epilog anywhere that
     // a method returns.
     if (comp->info.compCallUnmanaged)
     {
         InsertPInvokeMethodEpilog(comp->compCurBB DEBUGARG(jmp));
     }
-#endif
 }
 
 // Lower GT_RETURN node to insert PInvoke method epilog if required.
@@ -2321,13 +2311,11 @@ void Lowering::LowerRet(GenTree* ret)
     DISPTREE(ret);
     JITDUMP("============");
 
-#if INLINE_PINVOKE
     // Method doing PInvokes has exactly one return block unless it has tail calls.
     if (comp->info.compCallUnmanaged && (comp->compCurBB == comp->genReturnBB))
     {
         InsertPInvokeMethodEpilog(comp->compCurBB DEBUGARG(ret));
     }
-#endif
 }
 
 GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
@@ -2405,7 +2393,8 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
            else
            {
                // a direct call within range of hardware relative call instruction
-               // there is no extra code to generate
+               // stash the address for codegen
+               call->gtDirectCallAddress = addr;
            }
            break;
 
@@ -2608,19 +2597,6 @@ void Lowering::InsertPInvokeMethodProlog()
 
     if (comp->opts.ShouldUsePInvokeHelpers())
     {
-        // Initialize the P/Invoke frame by calling CORINFO_HELP_INIT_PINVOKE_FRAME:
-        //
-        // OpaqueFrame opaqueFrame;
-        // CORINFO_HELP_INIT_PINVOKE_FRAME(&opaqueFrame);
-
-        GenTree* frameAddr = new(comp, GT_LCL_VAR_ADDR)
-            GenTreeLclVar(GT_LCL_VAR_ADDR, TYP_BYREF, comp->lvaInlinedPInvokeFrameVar, BAD_IL_OFFSET);
-
-        GenTree* helperCall = comp->gtNewHelperCallNode(CORINFO_HELP_INIT_PINVOKE_FRAME, TYP_VOID, 0, comp->gtNewArgList(frameAddr));
-
-        GenTreeStmt* stmt = LowerMorphAndSeqTree(helperCall);
-        comp->fgInsertStmtAtBeg(comp->fgFirstBB, stmt);
-
         return;
     }
 
@@ -3064,19 +3040,31 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
         }
 #endif
 
-        GenTree* address = AddrGen(lookup.addr);
+        void* addr = lookup.addr;
         switch (lookup.accessType)
         {
             case IAT_VALUE:
-                result = address;
+                if (!IsCallTargetInRange(addr))
+                {
+                    result = AddrGen(addr);
+                }
+                else
+                {
+                   // a direct call within range of hardware relative call instruction
+                   // stash the address for codegen
+                    call->gtDirectCallAddress = addr;
+#ifdef FEATURE_READYTORUN_COMPILER
+                    call->gtEntryPoint.addr = nullptr;
+#endif
+                }
                 break;
 
             case IAT_PVALUE:
-                result = Ind(address);
+                result = Ind(AddrGen(addr));
                 break;
 
             case IAT_PPVALUE:
-                result = Ind(Ind(address));
+                result = Ind(Ind(AddrGen(addr)));
                 break;
         }
     }
@@ -3482,6 +3470,198 @@ void Lowering::LowerAdd(GenTreePtr* pTree, Compiler::fgWalkData* data)
 #endif // !_TARGET_ARMARCH_
 }
 
+//------------------------------------------------------------------------
+// LowerUnsignedDivOrMod: transform GT_UDIV/GT_UMOD nodes with a const power of 2
+// divisor into GT_RSZ/GT_AND nodes.
+//
+// Arguments:
+//    tree:   pointer to the GT_UDIV/GT_UMOD node to be lowered
+
+void Lowering::LowerUnsignedDivOrMod(GenTree* tree)
+{
+    assert(tree->OperGet() == GT_UDIV || tree->OperGet() == GT_UMOD);
+
+    GenTree* divisor = tree->gtGetOp2();
+
+    if (divisor->IsCnsIntOrI())
+    {
+        size_t divisorValue = static_cast<size_t>(divisor->gtIntCon.IconValue());
+
+        if (isPow2(divisorValue))
+        {
+            genTreeOps newOper;
+
+            if (tree->OperGet() == GT_UDIV)
+            {
+                newOper = GT_RSZ;
+                divisorValue = genLog2(divisorValue);
+            }
+            else
+            {
+                newOper = GT_AND;
+                divisorValue -= 1;
+            }
+
+            tree->SetOper(newOper);
+            divisor->gtIntCon.SetIconValue(divisorValue);
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// LowerSignedDivOrMod: transform integer GT_DIV/GT_MOD nodes with a power of 2 
+// const divisor into equivalent but faster sequences.
+//
+// Arguments:
+//    pTree:   pointer to the parent node's link to the node we care about
+
+void Lowering::LowerSignedDivOrMod(GenTreePtr* ppTree, Compiler::fgWalkData* data)
+{
+    GenTree* divMod = *ppTree;
+    assert(divMod->OperGet() == GT_DIV || divMod->OperGet() == GT_MOD);
+    GenTree* divisor = divMod->gtGetOp2();
+
+    if (divisor->IsCnsIntOrI())
+    {
+        const var_types type = divMod->TypeGet();
+        assert(type == TYP_INT || type == TYP_LONG);
+
+        GenTree* dividend = divMod->gtGetOp1();
+
+        if (dividend->IsCnsIntOrI())
+        {
+            // We shouldn't see a divmod with constant operands here but if we do then it's likely 
+            // because optimizations are disabled or it's a case that's supposed to throw an exception. 
+            // Don't optimize this.
+            return;
+        }
+
+        ssize_t divisorValue = divisor->gtIntCon.IconValue();
+
+        if (divisorValue == -1)
+        {
+            // x / -1 can't be optimized because INT_MIN / -1 is required to throw an exception.
+         
+            // x % -1 is always 0 and the IL spec says that the rem instruction "can" throw an exception if x is
+            // the minimum representable integer. However, the C# spec says that an exception "is" thrown in this
+            // case so optimizing this case would break C# code.
+
+            // A runtime check could be used to handle this case but it's probably too rare to matter.
+            return;
+        }
+        
+        bool isDiv = divMod->OperGet() == GT_DIV;
+
+        if (isDiv)
+        {
+            if ((type == TYP_INT && divisorValue == INT_MIN) ||
+                (type == TYP_LONG && divisorValue == INT64_MIN))
+            {
+                // If the divisor is the minimum representable integer value then we can use a compare, 
+                // the result is 1 iff the dividend equals divisor.
+                divMod->SetOper(GT_EQ);
+                return;
+            }
+        }
+
+        size_t absDivisorValue = (divisorValue == SSIZE_T_MIN) ? static_cast<size_t>(divisorValue) : static_cast<size_t>(abs(divisorValue));
+
+        if (isPow2(absDivisorValue))
+        {
+            // We need to use the dividend node multiple times so its value needs to be
+            // computed once and stored in a temp variable.
+            GenTreeStmt* newStmt = comp->fgInsertEmbeddedFormTemp(&(divMod->gtOp.gtOp1));
+            newStmt->gtFlags |= GTF_STMT_SKIP_LOWER;
+            dividend = divMod->gtGetOp1();
+
+            GenTreeStmt* curStmt = comp->compCurStmt->AsStmt();
+            unsigned curBBWeight = currBlock->getBBWeight(comp);
+            unsigned dividendLclNum = dividend->gtLclVar.gtLclNum;
+
+            GenTree* adjustment = comp->gtNewOperNode(
+                GT_RSH, type,
+                dividend,
+                comp->gtNewIconNode(type == TYP_INT ? 31 : 63));
+
+            if (absDivisorValue == 2)
+            {
+                // If the divisor is +/-2 then we'd end up with a bitwise and between 0/-1 and 1.
+                // We can get the same result by using GT_RSZ instead of GT_RSH.
+                adjustment->SetOper(GT_RSZ);
+            }
+            else
+            {
+                adjustment = comp->gtNewOperNode(
+                    GT_AND, type,
+                    adjustment,
+                    comp->gtNewIconNode(absDivisorValue - 1, type));
+            }
+
+            GenTree* adjustedDividend = comp->gtNewOperNode(
+                GT_ADD, type,
+                adjustment,
+                comp->gtNewLclvNode(dividendLclNum, type));
+
+            comp->lvaTable[dividendLclNum].incRefCnts(curBBWeight, comp);
+
+            GenTree* newDivMod;
+
+            if (isDiv)
+            {
+                // perform the division by right shifting the adjusted dividend
+                divisor->gtIntCon.SetIconValue(genLog2(absDivisorValue));
+
+                newDivMod = comp->gtNewOperNode(
+                    GT_RSH, type,
+                    adjustedDividend,
+                    divisor);
+
+                if (divisorValue < 0)
+                {
+                    // negate the result if the divisor is negative
+                    newDivMod = comp->gtNewOperNode(
+                        GT_NEG, type,
+                        newDivMod);
+                }
+            }
+            else
+            {
+                // divisor % dividend = dividend - divisor x (dividend / divisor)
+                // divisor x (dividend / divisor) translates to (dividend >> log2(divisor)) << log2(divisor)
+                // which simply discards the low log2(divisor) bits, that's just dividend & ~(divisor - 1)
+                divisor->gtIntCon.SetIconValue(~(absDivisorValue - 1));
+
+                newDivMod = comp->gtNewOperNode(
+                    GT_SUB, type,
+                    comp->gtNewLclvNode(dividendLclNum, type),
+                    comp->gtNewOperNode(
+                        GT_AND, type,
+                        adjustedDividend,
+                        divisor));
+
+                comp->lvaTable[dividendLclNum].incRefCnts(curBBWeight, comp);
+            }
+
+            // remove the divisor and dividend nodes from linear order so we can reuse them
+            comp->fgSnipNode(curStmt, divisor);
+            comp->fgSnipNode(curStmt, dividend);
+
+            // linearize and insert the new tree before the original divMod node
+            comp->gtSetEvalOrder(newDivMod);
+            comp->fgSetTreeSeq(newDivMod);
+            comp->fgInsertTreeInListBefore(newDivMod, divMod, curStmt);
+            comp->fgSnipNode(curStmt, divMod);
+
+            // the divMod that we've replaced could have been a call arg
+            comp->fgFixupIfCallArg(data->parentStack, divMod, newDivMod);
+
+            // replace the original divmod node with the new divmod tree
+            *ppTree = newDivMod;
+
+            return;
+        }
+    }
+}
 
 //------------------------------------------------------------------------
 // LowerInd: attempt to transform indirected expression into an addressing mode
@@ -3798,7 +3978,6 @@ void Lowering::DoPhase()
        }
     }
 
-#if INLINE_PINVOKE
     // If we have any PInvoke calls, insert the one-time prolog code. We've already inserted the epilog code in the appropriate spots.
     // NOTE: there is a minor optimization opportunity here, as we still create p/invoke data structures and setup/teardown
     // even if we've eliminated all p/invoke calls due to dead code elimination.
@@ -3806,7 +3985,6 @@ void Lowering::DoPhase()
     {
         InsertPInvokeMethodProlog();
     }
-#endif
 
 #ifdef DEBUG
     JITDUMP("Lower has completed modifying nodes, proceeding to initialize LSRA TreeNodeInfo structs...\n");

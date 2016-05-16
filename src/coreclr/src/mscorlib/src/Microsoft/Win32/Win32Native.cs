@@ -897,8 +897,17 @@ namespace Microsoft.Win32 {
         [DllImport(KERNEL32, SetLastError = true, CharSet = CharSet.Auto, BestFitMapping = false)]
         internal unsafe static extern int GetLongPathName(char* path, char* longPathBuffer, int bufferLength);
 
+        [DllImport(KERNEL32, SetLastError = true, ExactSpelling = true)]
+        internal unsafe static extern uint GetFullPathNameW(char* path, uint numBufferChars, SafeHandle buffer, IntPtr mustBeZero);
+
         [DllImport(KERNEL32, SetLastError = true, CharSet = CharSet.Auto, BestFitMapping = false)]
         internal static extern int GetLongPathName(String path, [Out]StringBuilder longPathBuffer, int bufferLength);
+
+        [DllImport(KERNEL32, SetLastError = true, ExactSpelling = true)]
+        internal static extern uint GetLongPathNameW(SafeHandle lpszShortPath, SafeHandle lpszLongPath, uint cchBuffer);
+
+        [DllImport(KERNEL32, SetLastError = true, CharSet = CharSet.Unicode, ExactSpelling = true)]
+        internal static extern uint GetLongPathNameW(string lpszShortPath, SafeHandle lpszLongPath, uint cchBuffer);
 
         // Disallow access to all non-file devices from methods that take
         // a String.  This disallows DOS devices like "con:", "com1:", 

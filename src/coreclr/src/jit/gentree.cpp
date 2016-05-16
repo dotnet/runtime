@@ -499,7 +499,6 @@ Compiler::fgWalkResult      Compiler::fgWalkTreePreRec(GenTreePtr *pTree, fgWalk
 
             assert(tree->gtFlags & GTF_CALL);
 
-#if INLINE_NDIRECT
             /* Is this a call to unmanaged code ? */
             if  (fgWalkData->wtprLclsOnly && (tree->gtFlags & GTF_CALL_UNMANAGED))
             {
@@ -507,7 +506,7 @@ Compiler::fgWalkResult      Compiler::fgWalkTreePreRec(GenTreePtr *pTree, fgWalk
                 if  (result == WALK_ABORT)
                     return result;
             }
-#endif
+
             if  (tree->gtCall.gtCallObjp)
             {
                 result = fgWalkTreePreRec<computeStack>(&tree->gtCall.gtCallObjp, fgWalkData);
@@ -7512,7 +7511,7 @@ void                Compiler::gtDispVN(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
-// gtDispNode: Print a tree to stdout.
+// gtDispNode: Print a tree to jitstdout.
 //
 // Arguments:
 //    tree - the tree to be printed
@@ -7969,10 +7968,8 @@ void                Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** 
             else if (lclNum == lvaGSSecurityCookie)
                 ilName = "GsCookie";
 #if FEATURE_FIXED_OUT_ARGS
-#if INLINE_NDIRECT
             else if (lclNum == lvaPInvokeFrameRegSaveVar)
                 ilName = "PInvokeFrameRegSave";
-#endif // INLINE_NDIRECT
             else if (lclNum == lvaOutgoingArgSpaceVar)
                 ilName = "OutArgs";
 #endif // FEATURE_FIXED_OUT_ARGS
@@ -8257,7 +8254,7 @@ void Compiler::gtDispFieldSeq(FieldSeqNode* pfsn)
 }
 
 //------------------------------------------------------------------------
-// gtDispLeaf: Print a single leaf node to stdout.
+// gtDispLeaf: Print a single leaf node to jitstdout.
 //
 // Arguments:
 //    tree - the tree to be printed
@@ -8496,7 +8493,7 @@ Compiler::gtDispLeaf(GenTree *tree, IndentStack* indentStack)
 }
 
 //------------------------------------------------------------------------
-// gtDispLeaf: Print a child node to stdout.
+// gtDispLeaf: Print a child node to jitstdout.
 //
 // Arguments:
 //    tree - the tree to be printed

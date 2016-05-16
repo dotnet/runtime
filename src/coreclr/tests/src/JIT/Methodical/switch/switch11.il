@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 // non-empty stack before switch
 
 .assembly extern legacy library mscorlib {}
@@ -26,7 +29,9 @@
     IL_000b:  ldstr      "Test passed"
     IL_0010:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
     IL_0015:  pop
-	      ret
+              call       int32 ['mscorlib']System.Environment::get_ExitCode()
+              call       void ['mscorlib']System.Environment::Exit(int32)
+              ret
   } 
 
 } 

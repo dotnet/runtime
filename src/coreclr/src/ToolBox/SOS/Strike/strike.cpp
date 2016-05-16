@@ -865,7 +865,7 @@ DECLARE_API(DumpIL)
         DacpMethodDescData MethodDescData;
         if (MethodDescData.Request(g_sos, TO_CDADDR(dwStartAddr)) != S_OK)
         {
-            ExtOut("%p is not a MethodDesc\n", (ULONG64)dwStartAddr);
+            ExtOut("%p is not a MethodDesc\n", SOS_PTR(dwStartAddr));
             return Status;
         }
 
@@ -874,7 +874,7 @@ DECLARE_API(DumpIL)
             dwDynamicMethodObj = TO_TADDR(MethodDescData.managedDynamicMethodObject);
             if (dwDynamicMethodObj == NULL)
             {
-                ExtOut("Unable to print IL for DynamicMethodDesc %p\n", (ULONG64) dwDynamicMethodObj);
+                ExtOut("Unable to print IL for DynamicMethodDesc %p\n", SOS_PTR(dwDynamicMethodObj));
                 return Status;
             }
         }
@@ -1679,7 +1679,7 @@ HRESULT PrintPermissionSet (TADDR p_PermSet)
         return S_FALSE;
     }
 
-    ExtOut("PermissionSet object: %p\n", (ULONG64)p_PermSet);
+    ExtOut("PermissionSet object: %p\n", SOS_PTR(p_PermSet));
     
     // Print basic info
 
@@ -2732,7 +2732,7 @@ DECLARE_API(PrintException)
 
             if (Status != S_OK)
             {
-                ExtOut("Error retrieving nested exception info %p\n", (ULONG64)currentNested);
+                ExtOut("Error retrieving nested exception info %p\n", SOS_PTR(currentNested));
                 return Status;
             }
 
@@ -3371,7 +3371,7 @@ DECLARE_API(EEHeap)
                     return Status;
                 }
                 ExtOut("------------------------------\n");
-                ExtOut("Heap %d (%p)\n", n, (ULONG64)heapAddrs[n]);
+                ExtOut("Heap %d (%p)\n", n, SOS_PTR(heapAddrs[n]));
                 DWORD_PTR heapSize = 0;
                 GCHeapInfo (heapDetails, heapSize);
                 totalSize += heapSize;
@@ -4012,7 +4012,7 @@ private:
             {
                 DMLOut("%s %s %8d", DMLObject(itr->GetAddress()), DMLDumpHeapMT(itr->GetMT()), itr->GetSize());
                 ExtOut(" ThinLock owner %x (%p) Recursive %x\n", lockInfo.ThreadId,
-                                        (ULONG64)lockInfo.ThreadPtr, lockInfo.Recursion);
+                                        SOS_PTR(lockInfo.ThreadPtr), lockInfo.Recursion);
 
                 count++;
             }
@@ -4360,7 +4360,7 @@ DECLARE_API(VerifyObj)
     if (FAILED(GetMTOfObject(taddrObj, &taddrMT)) ||
         !GetSizeEfficient(taddrObj, taddrMT, FALSE, objSize, bContainsPointers))
     {
-        ExtOut("object %#p does not have valid method table\n", (ULONG64)taddrObj);
+        ExtOut("object %#p does not have valid method table\n", SOS_PTR(taddrObj));
         goto Exit;
     }
 
@@ -4376,7 +4376,7 @@ DECLARE_API(VerifyObj)
 Exit:
     if (bValid)
     {
-        ExtOut("object %#p is a valid object\n", (ULONG64) taddrObj);
+        ExtOut("object %#p is a valid object\n", SOS_PTR(taddrObj));
     }
 
     return Status;
@@ -4437,7 +4437,7 @@ DECLARE_API(ListNearObj)
     DacpGcHeapDetails *heap = g_snapshot.GetHeap(taddrArg);
     if (heap == NULL)
     {
-        ExtOut("Address %p does not lie in the managed heap\n", (ULONG64) taddrObj);
+        ExtOut("Address %p does not lie in the managed heap\n", SOS_PTR(taddrObj));
         return Status;
     }
 
@@ -4448,7 +4448,7 @@ DECLARE_API(ListNearObj)
     if (!GCObjInHeap(taddrObj, *heap, trngSeg, gen, allocCtx, bLarge))
     {
         ExtOut("Failed to find the segment of the managed heap where the object %p resides\n", 
-            (ULONG64) taddrObj);
+            SOS_PTR(taddrObj));
         return Status;
     }
 
@@ -4552,8 +4552,8 @@ DECLARE_API(ListNearObj)
     if (bCur)
         LNODisplayOutput(W("Before: "), curMT, taddrCur, curSize);
     else
-        ExtOut("Before: couldn't find any object between %#p and %#p\n", 
-            (ULONG64)trngSeg.start, (ULONG64)taddrArg);
+        ExtOut("Before: couldn't find any object between %#p and %#p\n",
+            SOS_PTR(trngSeg.start), SOS_PTR(taddrArg));
 
     if (bObj)
         LNODisplayOutput(W("Current:"), objMT, taddrObj, objSize);
@@ -4561,8 +4561,8 @@ DECLARE_API(ListNearObj)
     if (bNxt)
         LNODisplayOutput(W("After:  "), nxtMT, taddrNxt, nxtSize);
     else
-        ExtOut("After:  couldn't find any object between %#p and %#p\n", 
-            (ULONG64)taddrArg, (ULONG64)trngSeg.end);
+        ExtOut("After:  couldn't find any object between %#p and %#p\n",
+            SOS_PTR(taddrArg), SOS_PTR(trngSeg.end));
 
     if (bCur && bNxt && 
         (((taddrCur+curSize == taddrObj) && (taddrObj+objSize == taddrNxt)) || (taddrCur+curSize == taddrNxt)))
@@ -5250,7 +5250,7 @@ DECLARE_API(DumpModule)
     DacpModuleData module;
     if ((Status=module.Request(g_sos, TO_CDADDR(p_ModuleAddr)))!=S_OK)
     {
-        ExtOut("Fail to fill Module %p\n", (ULONG64) p_ModuleAddr);
+        ExtOut("Fail to fill Module %p\n", SOS_PTR(p_ModuleAddr));
         return Status;
     }
     
@@ -5269,17 +5269,17 @@ DECLARE_API(DumpModule)
     
     DMLOut("Assembly:   %s\n", DMLAssembly(module.Assembly));
 
-    ExtOut("LoaderHeap:              %p\n", (ULONG64)module.pLookupTableHeap);
-    ExtOut("TypeDefToMethodTableMap: %p\n", (ULONG64)module.TypeDefToMethodTableMap);
-    ExtOut("TypeRefToMethodTableMap: %p\n", (ULONG64)module.TypeRefToMethodTableMap);
-    ExtOut("MethodDefToDescMap:      %p\n", (ULONG64)module.MethodDefToDescMap);
-    ExtOut("FieldDefToDescMap:       %p\n", (ULONG64)module.FieldDefToDescMap);
-    ExtOut("MemberRefToDescMap:      %p\n", (ULONG64)module.MemberRefToDescMap);
-    ExtOut("FileReferencesMap:       %p\n", (ULONG64)module.FileReferencesMap);
-    ExtOut("AssemblyReferencesMap:   %p\n", (ULONG64)module.ManifestModuleReferencesMap);
+    ExtOut("LoaderHeap:              %p\n", SOS_PTR(module.pLookupTableHeap));
+    ExtOut("TypeDefToMethodTableMap: %p\n", SOS_PTR(module.TypeDefToMethodTableMap));
+    ExtOut("TypeRefToMethodTableMap: %p\n", SOS_PTR(module.TypeRefToMethodTableMap));
+    ExtOut("MethodDefToDescMap:      %p\n", SOS_PTR(module.MethodDefToDescMap));
+    ExtOut("FieldDefToDescMap:       %p\n", SOS_PTR(module.FieldDefToDescMap));
+    ExtOut("MemberRefToDescMap:      %p\n", SOS_PTR(module.MemberRefToDescMap));
+    ExtOut("FileReferencesMap:       %p\n", SOS_PTR(module.FileReferencesMap));
+    ExtOut("AssemblyReferencesMap:   %p\n", SOS_PTR(module.ManifestModuleReferencesMap));
 
     if (module.ilBase && module.metadataStart)
-        ExtOut("MetaData start address:  %p (%d bytes)\n", (ULONG64)module.metadataStart, module.metadataSize);
+        ExtOut("MetaData start address:  %p (%d bytes)\n", SOS_PTR(module.metadataStart), module.metadataSize);
 
     if (bMethodTables)
     {
@@ -5407,7 +5407,7 @@ DECLARE_API(DumpDomain)
 
         if ((Status=appDomain.Request(g_sos, pArray[n])) != S_OK)
         {
-            ExtOut("Failed to get appdomain %p, error %lx\n", (ULONG64)pArray[n], Status);
+            ExtOut("Failed to get appdomain %p, error %lx\n", SOS_PTR(pArray[n]), Status);
             return Status;
         }
 
@@ -7284,7 +7284,7 @@ DECLARE_API(bpmd)
                     {
                         continue;
                     }
-                    ExtOut("MethodDesc = %p\n", (ULONG64) pMDs[i]);
+                    ExtOut("MethodDesc = %p\n", SOS_PTR(pMDs[i]));
                 }
             }
 
@@ -7316,10 +7316,10 @@ DECLARE_API(bpmd)
         INIT_API_DAC();
 
         DacpMethodDescData MethodDescData;
-        ExtOut("MethodDesc = %p\n", (ULONG64) pMD);
+        ExtOut("MethodDesc = %p\n", SOS_PTR(pMD));
         if (MethodDescData.Request(g_sos, TO_CDADDR(pMD)) != S_OK)
         {
-            ExtOut("%p is not a valid MethodDesc\n", (ULONG64)pMD);
+            ExtOut("%p is not a valid MethodDesc\n", SOS_PTR(pMD));
             return Status;
         }
         
@@ -7361,7 +7361,7 @@ DECLARE_API(bpmd)
             // Must issue a pending breakpoint.
             if (g_sos->GetMethodDescName(pMD, mdNameLen, FunctionName, NULL) != S_OK)
             {
-                ExtOut("Unable to get method name for MethodDesc %p\n", (ULONG64)pMD);
+                ExtOut("Unable to get method name for MethodDesc %p\n", SOS_PTR(pMD));
                 return Status;
             }
 
@@ -7451,10 +7451,10 @@ DECLARE_API(ThreadPool)
             }
 
             if (workRequestData.Function == threadpool.AsyncTimerCallbackCompletionFPtr)
-                ExtOut ("    AsyncTimerCallbackCompletion TimerInfo@%p\n", (ULONG64)workRequestData.Context);
+                ExtOut ("    AsyncTimerCallbackCompletion TimerInfo@%p\n", SOS_PTR(workRequestData.Context));
             else
-                ExtOut ("    Unknown Function: %p  Context: %p\n", (ULONG64)workRequestData.Function,
-                    (ULONG64)workRequestData.Context);
+                ExtOut ("    Unknown Function: %p  Context: %p\n", SOS_PTR(workRequestData.Function),
+                    SOS_PTR(workRequestData.Context));
 
             workRequestPtr = workRequestData.NextWorkRequest;
         }
@@ -7564,7 +7564,7 @@ DECLARE_API(FindAppDomain)
     
     if ((p_Object == 0) || !sos::IsObject(p_Object))
     {
-        ExtOut("%p is not a valid object\n", (ULONG64) p_Object);
+        ExtOut("%p is not a valid object\n", SOS_PTR(p_Object));
         return Status;
     }
     
@@ -7596,7 +7596,7 @@ DECLARE_API(FindAppDomain)
             if ((domain.Request(g_sos, appDomain) != S_OK) ||
                 (g_sos->GetAppDomainName(appDomain,mdNameLen,g_mdName, NULL)!=S_OK))
             {
-                ExtOut("Error getting AppDomain %p.\n", (ULONG64) appDomain);
+                ExtOut("Error getting AppDomain %p.\n", SOS_PTR(appDomain));
                 return Status;
             }
 
@@ -7661,7 +7661,7 @@ DECLARE_API(COMState)
         g_ExtSystem->SetCurrentThreadId(ids[i]);
         CLRDATA_ADDRESS cdaTeb;
         g_ExtSystem->GetCurrentThreadTeb(&cdaTeb);
-        ExtOut("%3d %4x %p", ids[i], sysIds[i], CDA_TO_UL64(cdaTeb));
+        ExtOut("%3d %4x %p", ids[i], sysIds[i], SOS_PTR(CDA_TO_UL64(cdaTeb)));
         // Apartment state
         TADDR OleTlsDataAddr;
         if (SafeReadMemory(TO_TADDR(cdaTeb) + offsetof(TEB,ReservedForOle),
@@ -7707,10 +7707,10 @@ DECLARE_API(COMState)
                 if (SafeReadMemory(OleTlsDataAddr+offsetof(SOleTlsData,pCurrentCtx),
                                    &Context,
                                    sizeof(Context), NULL)) {
-                    ExtOut(" %p", (ULONG64)Context);
+                    ExtOut(" %p", SOS_PTR(Context));
                 }
                 else
-                    ExtOut(" %p", (ULONG64)0);
+                    ExtOut(" %p", SOS_PTR(0));
 
             }
             else
@@ -7844,7 +7844,7 @@ DECLARE_API(EHInfo)
     DacpMethodDescData MD;
     if ((tmpAddr == 0) || (MD.Request(g_sos, TO_CDADDR(tmpAddr)) != S_OK))
     {
-        ExtOut("%p is not a MethodDesc\n", (ULONG64)tmpAddr);
+        ExtOut("%p is not a MethodDesc\n", SOS_PTR(tmpAddr));
         return Status;
     }
 
@@ -7925,7 +7925,7 @@ DECLARE_API(GCInfo)
     DacpMethodDescData MD;
     if ((tmpAddr == 0) || (MD.Request(g_sos, TO_CDADDR(tmpAddr)) != S_OK))
     {
-        ExtOut("%p is not a valid MethodDesc\n", (ULONG64)taStartAddr);
+        ExtOut("%p is not a valid MethodDesc\n", SOS_PTR(taStartAddr));
         return Status;
     }
 
@@ -7977,7 +7977,7 @@ DECLARE_API(GCInfo)
 
     taGCInfoAddr = TO_TADDR(codeHeaderData.GCInfo);
 
-    ExtOut("GC info %p\n", (ULONG64)taGCInfoAddr);
+    ExtOut("GC info %p\n", SOS_PTR(taGCInfoAddr));
 
     // assume that GC encoding table is never more than
     // 40 + methodSize * 2
@@ -7999,7 +7999,7 @@ DECLARE_API(GCInfo)
     // We avoid using move here, because we do not want to return
     if (!SafeReadMemory(taGCInfoAddr, table, tableSize, NULL))
     {
-        ExtOut("Could not read memory %p\n", (ULONG64)taGCInfoAddr);
+        ExtOut("Could not read memory %p\n", SOS_PTR(taGCInfoAddr));
         return Status;
     }
 
@@ -8247,12 +8247,12 @@ DECLARE_API(u)
     if (codeHeaderData.ColdRegionStart != NULL)
     {
         ExtOut("Begin %p, size %x. Cold region begin %p, size %x\n",
-            (ULONG64)codeHeaderData.MethodStart, codeHeaderData.HotRegionSize,
-            (ULONG64)codeHeaderData.ColdRegionStart, codeHeaderData.ColdRegionSize);
+            SOS_PTR(codeHeaderData.MethodStart), codeHeaderData.HotRegionSize,
+            SOS_PTR(codeHeaderData.ColdRegionStart), codeHeaderData.ColdRegionSize);
     }
     else
     {
-        ExtOut("Begin %p, size %x\n", (ULONG64)codeHeaderData.MethodStart, codeHeaderData.MethodSize);    
+        ExtOut("Begin %p, size %x\n", SOS_PTR(codeHeaderData.MethodStart), codeHeaderData.MethodSize);
     }
 
 #if !defined(FEATURE_PAL)
@@ -8294,7 +8294,7 @@ DECLARE_API(u)
         // We avoid using move here, because we do not want to return
         if (!SafeReadMemory(TO_TADDR(codeHeaderData.GCInfo), gcEncodingInfo.table, tableSize, NULL))
         {
-            ExtOut("Could not read memory %p\n", (ULONG64)codeHeaderData.GCInfo);
+            ExtOut("Could not read memory %p\n", SOS_PTR(codeHeaderData.GCInfo));
             return Status;
         }
 
@@ -9639,8 +9639,8 @@ DECLARE_API(GCWhere)
         if(FAILED(GetMTOfObject(taddrObj, &taddrMT)) ||
            !GetSizeEfficient(taddrObj, taddrMT, FALSE, size, bContainsPointers))
         {
-            ExtWarn("Couldn't get size for object %#p: possible heap corruption.\n", 
-                taddrObj);
+            ExtWarn("Couldn't get size for object %#p: possible heap corruption.\n",
+                SOS_PTR(taddrObj));
         }
     }
 
@@ -9657,7 +9657,7 @@ DECLARE_API(GCWhere)
         {
             ExtOut("Address   " WIN64_8SPACES " Gen   Heap   segment   " WIN64_8SPACES " begin     " WIN64_8SPACES " allocated  " WIN64_8SPACES " size\n");
             ExtOut("%p   %d     %2d     %p   %p   %p    0x%x(%d)\n",
-                (ULONG64)taddrObj, gen, 0, (ULONG64)trngSeg.segAddr, (ULONG64)trngSeg.start, (ULONG64)trngSeg.end, size, size);
+                SOS_PTR(taddrObj), gen, 0, SOS_PTR(trngSeg.segAddr), SOS_PTR(trngSeg.start), SOS_PTR(trngSeg.end), size, size);
             bFound = TRUE;
         }
     }
@@ -9698,7 +9698,7 @@ DECLARE_API(GCWhere)
             {
                 ExtOut("Address " WIN64_8SPACES " Gen Heap segment " WIN64_8SPACES " begin   " WIN64_8SPACES " allocated" WIN64_8SPACES " size\n");
                 ExtOut("%p   %d     %2d     %p   %p   %p    0x%x(%d)\n",
-                    (ULONG64)taddrObj, gen, n, (ULONG64)trngSeg.segAddr, (ULONG64)trngSeg.start, (ULONG64)trngSeg.end, size, size);
+                    SOS_PTR(taddrObj), gen, n, SOS_PTR(trngSeg.segAddr), SOS_PTR(trngSeg.start), SOS_PTR(trngSeg.end), size, size);
                 bFound = TRUE;
                 break;
             }
@@ -9707,7 +9707,7 @@ DECLARE_API(GCWhere)
 
     if (!bFound)
     {
-        ExtOut("Address %#p not found in the managed heap.\n", (ULONG64)taddrObj);
+        ExtOut("Address %#p not found in the managed heap.\n", SOS_PTR(taddrObj));
     }
 
     return Status;
@@ -9800,7 +9800,7 @@ DECLARE_API(FindRoots)
 
         if (g_snapshot.GetHeap(taObj) == NULL)
         {
-            ExtOut("Address %#p is not in the managed heap.\n", (ULONG64) taObj);
+            ExtOut("Address %#p is not in the managed heap.\n", SOS_PTR(taObj));
             return Status;
         }
 
@@ -9808,7 +9808,7 @@ DECLARE_API(FindRoots)
         if (ogen > CNotification::GetCondemnedGen())
         {
             DMLOut("Object %s will survive this collection:\n\tgen(%#p) = %d > %d = condemned generation.\n",
-                DMLObject(taObj), (ULONG64)taObj, ogen, CNotification::GetCondemnedGen());
+                DMLObject(taObj), SOS_PTR(taObj), ogen, CNotification::GetCondemnedGen());
             return Status;
         }
 
@@ -10663,7 +10663,7 @@ DECLARE_API(GCHandleLeaks)
     ExtOut("Found %d handles:\n",iFinal);
     for (i=1;i<=iFinal;i++)
     {
-        ExtOut("%p\t",(ULONG64)array[i-1]);
+        ExtOut("%p\t", SOS_PTR(array[i-1]));
         if ((i % 4) == 0)
             ExtOut("\n");
     }
@@ -10721,14 +10721,14 @@ DECLARE_API(GCHandleLeaks)
             {
                 if (IsInterrupt())
                 {
-                    ExtOut("Quitting at %p due to user abort\n",(ULONG64)memIter);
+                    ExtOut("Quitting at %p due to user abort\n", SOS_PTR(memIter));
                     bAbort = TRUE;
                     break;
                 }
 
                 if ((memIter % 0x10000000)==0x0)
                 {
-                    ExtOut("Searching %p...\n",(ULONG64)memIter);
+                    ExtOut("Searching %p...\n", SOS_PTR(memIter));
                 }
                 
                 ULONG size = 0;
@@ -10750,11 +10750,11 @@ DECLARE_API(GCHandleLeaks)
                             {
                                 if (stressLog.IsInStressLog (addrInDebugee))
                                 {
-                                    ExtOut("Found %p in stress log at location %p, reference not counted\n", (ULONG64)value, addrInDebugee);
+                                    ExtOut("Found %p in stress log at location %p, reference not counted\n", SOS_PTR(value), addrInDebugee);
                                 }
                                 else
                                 {
-                                    ExtOut("Found %p at location %p\n",(ULONG64)value, addrInDebugee);
+                                    ExtOut("Found %p at location %p\n", SOS_PTR(value), addrInDebugee);
                                     array[i] |= 0x1;
                                 }
                             }
@@ -10765,7 +10765,7 @@ DECLARE_API(GCHandleLeaks)
                 {
                     if (size > 0)
                     {
-                        ExtOut("only read %x bytes at %p\n",size,(ULONG64)memIter);
+                        ExtOut("only read %x bytes at %p\n", size, SOS_PTR(memIter));
                     }
                 }
             }
@@ -10780,7 +10780,7 @@ DECLARE_API(GCHandleLeaks)
         if ((array[i] & 0x1) == 0)
         {
             numNotFound++;
-            // ExtOut("WARNING: %p not found\n",(ULONG64)array[i]);
+            // ExtOut("WARNING: %p not found\n", SOS_PTR(array[i]));
         }
     }
 
@@ -10801,11 +10801,11 @@ DECLARE_API(GCHandleLeaks)
         for (i=0;i<iFinal;i++)
         {
             if ((array[i] & 0x1) == 0)
-            {             
+            {
                 numPrinted++;
-                ExtOut("%p\t",(ULONG64)array[i]);
+                ExtOut("%p\t", SOS_PTR(array[i]));
                 if ((numPrinted % 4) == 0)
-                    ExtOut("\n");            
+                    ExtOut("\n");
             }
         }   
         ExtOut("\n");
@@ -12369,7 +12369,7 @@ private:
                     }
                     else
                     {
-                        ExtOut("(0x%p) ", CDA_TO_UL64(addr));
+                        ExtOut("(0x%p) ", SOS_PTR(CDA_TO_UL64(addr)));
                     }
                     fPrintedLocation = TRUE;
                 }
@@ -12409,7 +12409,7 @@ private:
                     if (outVar)
                         DMLOut("0x%s\n", DMLObject(outVar));
                     else
-                        ExtOut("0x%p\n", (ULONG64)outVar);
+                        ExtOut("0x%p\n", SOS_PTR(outVar));
                 }
                 
             }
@@ -12462,7 +12462,7 @@ private:
                     }
                     else
                     {
-                        ExtOut("0x%p ", CDA_TO_UL64(addr));
+                        ExtOut("0x%p ", SOS_PTR(CDA_TO_UL64(addr)));
                     }
                 }
 
@@ -12503,7 +12503,7 @@ private:
                     if (outVar)
                         DMLOut("0x%s\n", DMLObject(outVar));
                     else
-                        ExtOut("0x%p\n", (ULONG64)outVar);
+                        ExtOut("0x%p\n", SOS_PTR(outVar));
                 }
             }
             else
@@ -12856,14 +12856,14 @@ DECLARE_API(SaveModule)
     }
     else
     {
-        ExtOut ("%p is not a Module or base address\n", (ULONG64)moduleAddr);
+        ExtOut ("%p is not a Module or base address\n", SOS_PTR(moduleAddr));
         return Status;
     }
 
     MEMORY_BASIC_INFORMATION64 mbi;
     if (FAILED(g_ExtData2->QueryVirtual(TO_CDADDR(dllBase), &mbi)))
     {
-        ExtOut("Failed to retrieve information about segment %p", (ULONG64)dllBase);
+        ExtOut("Failed to retrieve information about segment %p", SOS_PTR(dllBase));
         return Status;
     }
 
@@ -13849,7 +13849,7 @@ DECLARE_API(VerifyStackTrace)
             return Status;
         }
 
-        ExtOut("_EFN_GetManagedExcepStack(%P, wszStr, sizeof(wszStr)) returned:\n", (ULONG64) taExc);
+        ExtOut("_EFN_GetManagedExcepStack(%P, wszStr, sizeof(wszStr)) returned:\n", SOS_PTR(taExc));
         ExtOut("%S\n", wszStr);
 
         if (ImplementEFNGetManagedExcepStack((ULONG64)NULL, wszStr, cchStr) != S_OK)
@@ -13993,9 +13993,9 @@ DECLARE_API(VerifyStackTrace)
         }
         for (size_t j=0; j < contextLength; j++)
         {
-            ExtOut("%p %p %p\n", (ULONG64) pSimple[j].FrameOffset,
-                    (ULONG64) pSimple[j].StackOffset,
-                    (ULONG64) pSimple[j].InstructionOffset);
+            ExtOut("%p %p %p\n", SOS_PTR(pSimple[j].FrameOffset),
+                    SOS_PTR(pSimple[j].StackOffset),
+                    SOS_PTR(pSimple[j].InstructionOffset));
         }
         delete [] pSimple;
         delete[] wszBuffer;

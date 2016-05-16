@@ -12,7 +12,7 @@
      <DnuSourceList Include="$(CORE_ROOT)\.nuget\pkg" /> 
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
+    <None Include="$(TestRuntimeProjectJson)" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <Target Name="Build" /> 

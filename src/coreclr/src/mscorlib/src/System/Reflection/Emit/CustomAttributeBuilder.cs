@@ -130,7 +130,7 @@ namespace System.Reflection.Emit {
             // Cache information used elsewhere.
             m_con = con;
             m_constructorArgs = new Object[constructorArgs.Length];
-            Array.Copy(constructorArgs, m_constructorArgs, constructorArgs.Length);
+            Array.Copy(constructorArgs, 0, m_constructorArgs, 0, constructorArgs.Length);
 
             Type[] paramTypes;
             int i;

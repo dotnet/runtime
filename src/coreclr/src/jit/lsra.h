@@ -77,20 +77,9 @@ struct LsraBlockInfo
 // The low order 2 bits will be 1 for defs, and 2 for uses
 enum RefType : unsigned char
 {
-    RefTypeInvalid             = 0x00,
-    RefTypeDef                 = 0x01,
-    RefTypeUse                 = 0x02,
-    RefTypeKill                = 0x04,
-    RefTypeBB                  = 0x08,
-    RefTypeFixedReg            = 0x10,
-    RefTypeExpUse              = (0x20 | RefTypeUse),
-    RefTypeParamDef            = (0x10 | RefTypeDef),
-    RefTypeDummyDef            = (0x20 | RefTypeDef),
-    RefTypeZeroInit            = (0x30 | RefTypeDef),
-    RefTypeUpperVectorSaveDef  = (0x40 | RefTypeDef),
-    RefTypeUpperVectorSaveUse  = (0x40 | RefTypeUse),
-    RefTypeKillGCRefs          = 0x80,
-    RefTypeBound,
+#define DEF_REFTYPE(memberName, memberValue, shortName) memberName = memberValue,
+#include "lsra_reftypes.h"
+#undef DEF_REFTYPE
 };
 
 // position in a block (for resolution)
@@ -960,12 +949,9 @@ private:
     }
 
 #ifdef DEBUG
-    unsigned int        intervalCount;
     // This is used for dumping
     RefPosition*        activeRefPosition;
 #endif // DEBUG
-
-    unsigned int        refPositionCount;
 
     IntervalList        intervals;
 

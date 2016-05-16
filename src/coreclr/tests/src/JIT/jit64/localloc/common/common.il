@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 
 
@@ -12,12 +13,12 @@
 .assembly extern mscorlib
 {
 }
-.assembly Common
+.assembly common
 {
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module Common.dll
+.module common.dll
 .custom instance void [mscorlib]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 ) 
 .imagebase 0x00400000
 .subsystem 0x00000003

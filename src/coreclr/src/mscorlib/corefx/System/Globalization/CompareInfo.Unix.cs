@@ -21,7 +21,7 @@ namespace System.Globalization
         {
             m_name = culture.m_name;
             m_sortName = culture.SortName;
-            m_sortHandle = Interop.GlobalizationInterop.GetSortHandle(System.Text.Encoding.UTF8.GetBytes(m_sortName));
+            m_sortHandle = Interop.GlobalizationInterop.GetSortHandle(GetNullTerminatedUtf8String(m_sortName));
             m_isAsciiEqualityOrdinal = (m_sortName == "en-US" || m_sortName == "");
         }
 
@@ -165,7 +165,7 @@ namespace System.Globalization
                 return IndexOfOrdinal(source, target, startIndex, count, ignoreCase: false);
             }
 
-            if (m_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options) && source.IsAscii() && target.IsAscii())
+            if (m_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options) && source.IsFastSort() && target.IsFastSort())
             {
                 return IndexOf(source, target, startIndex, count, GetOrdinalCompareOptions(options));
             }
@@ -195,7 +195,7 @@ namespace System.Globalization
                 return LastIndexOfOrdinal(source, target, startIndex, count, ignoreCase: false);
             }
 
-            if (m_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options) && source.IsAscii() && target.IsAscii())
+            if (m_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options) && source.IsFastSort() && target.IsFastSort())
             {
                 return LastIndexOf(source, target, startIndex, count, GetOrdinalCompareOptions(options));
             }
@@ -219,7 +219,7 @@ namespace System.Globalization
             Contract.Assert(!string.IsNullOrEmpty(prefix));
             Contract.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
-            if (m_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options) && source.IsAscii() && prefix.IsAscii())
+            if (m_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options) && source.IsFastSort() && prefix.IsFastSort())
             {
                 return IsPrefix(source, prefix, GetOrdinalCompareOptions(options));
             }
@@ -234,7 +234,7 @@ namespace System.Globalization
             Contract.Assert(!string.IsNullOrEmpty(suffix));
             Contract.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
-            if (m_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options) && source.IsAscii() && suffix.IsAscii())
+            if (m_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options) && source.IsFastSort() && suffix.IsFastSort())
             {
                 return IsSuffix(source, suffix, GetOrdinalCompareOptions(options));
             }
@@ -297,6 +297,20 @@ namespace System.Globalization
         {
             // Unlike the other Ignore options, IgnoreSymbols impacts ASCII characters (e.g. ').
             return (options & CompareOptions.IgnoreSymbols) == 0;
+        }
+
+        private static byte[] GetNullTerminatedUtf8String(string s)
+        {
+            int byteLen = System.Text.Encoding.UTF8.GetByteCount(s);
+
+            // Allocate an extra byte (which defaults to 0) as the null terminator.
+            byte[] buffer = new byte[byteLen + 1];
+
+            int bytesWritten = System.Text.Encoding.UTF8.GetBytes(s, 0, s.Length, buffer, 0);
+
+            Contract.Assert(bytesWritten == byteLen);
+
+            return buffer;
         }
     }
 }
