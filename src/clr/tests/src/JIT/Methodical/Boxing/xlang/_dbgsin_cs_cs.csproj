@@ -45,7 +45,7 @@
     <ProjectLockJson>$(JitPackagesConfigFileDirectory)minimal\project.lock.json</ProjectLockJson>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="sinlib.csproj" />
+    <ProjectReference Include="sinlib_cs.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <PropertyGroup Condition=" '$(MsBuildProjectDirOverride)' != '' ">
