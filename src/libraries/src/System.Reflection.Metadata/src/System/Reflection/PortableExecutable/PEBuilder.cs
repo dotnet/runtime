@@ -16,8 +16,8 @@ namespace System.Reflection.PortableExecutable
         public Func<IEnumerable<Blob>, BlobContentId> IdProvider { get; }
         public bool IsDeterministic { get; }
 
-        protected ImmutableArray<Section> Sections { get; }
-
+        private readonly Lazy<ImmutableArray<Section>> _lazySections;
+        
         protected struct Section
         {
             public readonly string Name;
@@ -27,7 +27,7 @@ namespace System.Reflection.PortableExecutable
             {
                 if (name == null)
                 {
-                    throw new ArgumentNullException(nameof(name));
+                    Throw.ArgumentNull(nameof(name));
                 }
 
                 Name = name;
@@ -62,13 +62,24 @@ namespace System.Reflection.PortableExecutable
         {
             if (header == null)
             {
-                throw new ArgumentNullException(nameof(header));
+                Throw.ArgumentNull(nameof(header));
             }
 
             IdProvider = deterministicIdProvider ?? BlobContentId.GetTimeBasedProvider();
             IsDeterministic = deterministicIdProvider != null;
             Header = header;
-            Sections = CreateSections();
+            _lazySections = new Lazy<ImmutableArray<Section>>(CreateSections);
+        }
+
+        protected ImmutableArray<Section> GetSections()
+        {
+            var sections = _lazySections.Value;
+            if (sections.IsDefault)
+            {
+                throw new InvalidOperationException(SR.Format(SR.MustNotReturnNull, nameof(CreateSections)));
+            }
+
+            return sections;
         }
 
         protected abstract ImmutableArray<Section> CreateSections();
@@ -109,13 +120,14 @@ namespace System.Reflection.PortableExecutable
 
         private ImmutableArray<SerializedSection> SerializeSections()
         {
-            var result = ImmutableArray.CreateBuilder<SerializedSection>(Sections.Length);
-            int sizeOfPeHeaders = Header.ComputeSizeOfPeHeaders(Sections.Length);
+            var sections = GetSections();
+            var result = ImmutableArray.CreateBuilder<SerializedSection>(sections.Length);
+            int sizeOfPeHeaders = Header.ComputeSizeOfPeHeaders(sections.Length);
 
             var nextRva = BitArithmetic.Align(sizeOfPeHeaders, Header.SectionAlignment);
             var nextPointer = BitArithmetic.Align(sizeOfPeHeaders, Header.FileAlignment);
 
-            foreach (var section in Sections)
+            foreach (var section in sections)
             {
                 var builder = SerializeSection(section.Name, new SectionLocation(nextRva, nextPointer));
 

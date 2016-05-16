@@ -442,9 +442,7 @@ namespace System.Reflection.PortableExecutable
                 throw new BadImageFormatException(SR.InvalidDirectoryRVA);
             }
 
-            const int entrySize = 0x1c;
-
-            if (debugDirectory.Size % entrySize != 0)
+            if (debugDirectory.Size % DebugDirectoryEntry.Size != 0)
             {
                 throw new BadImageFormatException(SR.InvalidDirectorySize);
             }
@@ -452,33 +450,37 @@ namespace System.Reflection.PortableExecutable
             using (AbstractMemoryBlock block = _peImage.GetMemoryBlock(position, debugDirectory.Size))
             {
                 var reader = new BlobReader(block.Pointer, block.Size);
+                return ReadDebugDirectoryEntries(reader);
+            }
+        }
 
-                int entryCount = debugDirectory.Size / entrySize;
-                var builder = ImmutableArray.CreateBuilder<DebugDirectoryEntry>(entryCount);
-                for (int i = 0; i < entryCount; i++)
+        internal static ImmutableArray<DebugDirectoryEntry> ReadDebugDirectoryEntries(BlobReader reader)
+        {
+            int entryCount = reader.Length / DebugDirectoryEntry.Size;
+            var builder = ImmutableArray.CreateBuilder<DebugDirectoryEntry>(entryCount);
+            for (int i = 0; i < entryCount; i++)
+            {
+                // Reserved, must be zero.
+                int characteristics = reader.ReadInt32();
+                if (characteristics != 0)
                 {
-                    // Reserved, must be zero.
-                    int characteristics = reader.ReadInt32();
-                    if (characteristics != 0)
-                    {
-                        throw new BadImageFormatException(SR.InvalidDebugDirectoryEntryCharacteristics);
-                    }
-
-                    uint stamp = reader.ReadUInt32();
-                    ushort majorVersion = reader.ReadUInt16();
-                    ushort minorVersion = reader.ReadUInt16();
-
-                    var type = (DebugDirectoryEntryType)reader.ReadInt32();
-
-                    int dataSize = reader.ReadInt32();
-                    int dataRva = reader.ReadInt32();
-                    int dataPointer = reader.ReadInt32();
-
-                    builder.Add(new DebugDirectoryEntry(stamp, majorVersion, minorVersion, type, dataSize, dataRva, dataPointer));
+                    throw new BadImageFormatException(SR.InvalidDebugDirectoryEntryCharacteristics);
                 }
 
-                return builder.MoveToImmutable();
+                uint stamp = reader.ReadUInt32();
+                ushort majorVersion = reader.ReadUInt16();
+                ushort minorVersion = reader.ReadUInt16();
+
+                var type = (DebugDirectoryEntryType)reader.ReadInt32();
+
+                int dataSize = reader.ReadInt32();
+                int dataRva = reader.ReadInt32();
+                int dataPointer = reader.ReadInt32();
+
+                builder.Add(new DebugDirectoryEntry(stamp, majorVersion, minorVersion, type, dataSize, dataRva, dataPointer));
             }
+
+            return builder.MoveToImmutable();
         }
 
         /// <summary>

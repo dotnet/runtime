@@ -417,4 +417,7 @@
   <data name="ValueMustBeMultiple" xml:space="preserve">
     <value>Value must be multiple of {0}.</value>
   </data>
+  <data name="MustNotReturnNull" xml:space="preserve">
+    <value>{0} must not return null.</value>
+  </data>
 </root>

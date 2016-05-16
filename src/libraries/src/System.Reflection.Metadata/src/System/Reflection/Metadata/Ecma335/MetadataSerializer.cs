@@ -13,6 +13,7 @@ namespace System.Reflection.Metadata.Ecma335
     public sealed class StandaloneDebugMetadataSerializer : MetadataSerializer
     {
         private const string DebugMetadataVersionString = "PDB v1.0";
+        public ushort FormatVersion => 0x0100;
 
         private Blob _pdbIdBlob;
         private readonly MethodDefinitionHandle _entryPoint;
