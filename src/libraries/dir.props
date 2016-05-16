@@ -25,7 +25,7 @@
   <PropertyGroup>
     <IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>
   </PropertyGroup>
-  
+
   <PropertyGroup>
     <BuildToolsTargets45 Condition="'$(OsEnvironment)'=='Windows_NT'">true</BuildToolsTargets45>
   </PropertyGroup>
@@ -54,9 +54,9 @@
   </PropertyGroup>
 
   <Import Project="$(ToolRuntimePath)BuildVersion.targets" Condition="Exists('$(ToolRuntimePath)BuildVersion.targets')" />
-  
+
   <PropertyGroup>
-    <!-- temporarily increase assembly version of corefx impl of desktop inbox contracts to allow folks 
+    <!-- temporarily increase assembly version of corefx impl of desktop inbox contracts to allow folks
          to move to the latest packages.  Remove once the full stack is on the latest packages
          https://github.com/dotnet/corefx/issues/7114 -->
     <AssemblyVersionTransition>true</AssemblyVersionTransition>
@@ -197,6 +197,7 @@
     <!-- By default make all libraries to be AnyCPU but individual projects can override it if they need to -->
     <Platform>AnyCPU</Platform>
     <OutputType>Library</OutputType>
+    <RunApiCompat>true</RunApiCompat>
   </PropertyGroup>
 
   <!--
@@ -438,6 +439,13 @@
         <PackageTargetFramework>net46</PackageTargetFramework>
         <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6</TargetingPackNugetPackageId>
         <NuGetTargetMoniker>.NETFramework,Version=v4.6</NuGetTargetMoniker>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetGroup)'=='net451'">
+      <PropertyGroup>
+        <PackageTargetFramework>net45</PackageTargetFramework>
+        <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.5.1</TargetingPackNugetPackageId>
+        <NuGetTargetMoniker>.NETFramework,Version=v4.5.1</NuGetTargetMoniker>
       </PropertyGroup>
     </When>
     <When Condition="'$(TargetGroup)'=='net45'">
