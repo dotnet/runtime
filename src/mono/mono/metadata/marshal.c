@@ -322,8 +322,8 @@ mono_marshal_init (void)
 		register_icall (mono_gchandle_new, "mono_gchandle_new", "uint32 object bool", TRUE);
 		register_icall (mono_marshal_isinst_with_cache, "mono_marshal_isinst_with_cache", "object object ptr ptr", FALSE);
 		register_icall (mono_marshal_ftnptr_eh_callback, "mono_marshal_ftnptr_eh_callback", "void uint32", TRUE);
-		register_icall (mono_threads_prepare_blocking_unbalanced, "mono_threads_prepare_blocking_unbalanced", "ptr ptr", TRUE);
-		register_icall (mono_threads_finish_blocking_unbalanced, "mono_threads_finish_blocking_unbalanced", "void ptr ptr", TRUE);
+		register_icall (mono_threads_enter_gc_safe_region_unbalanced, "mono_threads_enter_gc_safe_region_unbalanced", "ptr ptr", TRUE);
+		register_icall (mono_threads_exit_gc_safe_region_unbalanced, "mono_threads_exit_gc_safe_region_unbalanced", "void ptr ptr", TRUE);
 
 		mono_cominterop_init ();
 		mono_remoting_init ();
@@ -7329,11 +7329,11 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 	}
 
 	/*
-	 * cookie = mono_threads_prepare_blocking_unbalanced (ref dummy);
+	 * cookie = mono_threads_enter_gc_safe_region_unbalanced (ref dummy);
 	 *
 	 * ret = method (...);
 	 *
-	 * mono_threads_finish_blocking_unbalanced (cookie, ref dummy);
+	 * mono_threads_exit_gc_safe_region_unbalanced (cookie, ref dummy);
 	 *
 	 * <interrupt check>
 	 *
@@ -7372,7 +7372,7 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 		}
 
 		mono_mb_emit_ldloc_addr (mb, coop_gc_stack_dummy);
-		mono_mb_emit_icall (mb, mono_threads_prepare_blocking_unbalanced);
+		mono_mb_emit_icall (mb, mono_threads_enter_gc_safe_region_unbalanced);
 		mono_mb_emit_stloc (mb, coop_gc_var);
 	}
 
@@ -7423,7 +7423,7 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 	if (mono_threads_is_coop_enabled ()) {
 		mono_mb_emit_ldloc (mb, coop_gc_var);
 		mono_mb_emit_ldloc_addr (mb, coop_gc_stack_dummy);
-		mono_mb_emit_icall (mb, mono_threads_finish_blocking_unbalanced);
+		mono_mb_emit_icall (mb, mono_threads_exit_gc_safe_region_unbalanced);
 	}
 
 	/* Set LastError if needed */
@@ -11840,7 +11840,7 @@ ftnptr_eh_callback_default (guint32 gchandle)
 
 	g_assert (gchandle >= 0);
 
-	mono_threads_reset_blocking_start_unbalanced (&stackdata);
+	mono_threads_enter_gc_unsafe_region_unbalanced (&stackdata);
 
 	exc = (MonoException*) mono_gchandle_get_target (gchandle);
 

@@ -50,11 +50,11 @@ mono_coop_mutex_lock (MonoCoopMutex *mutex)
 	if (mono_os_mutex_trylock (&mutex->m) == 0)
 		return 0;
 
-	MONO_PREPARE_BLOCKING;
+	MONO_ENTER_GC_SAFE;
 
 	res = mono_os_mutex_lock (&mutex->m);
 
-	MONO_FINISH_BLOCKING;
+	MONO_EXIT_GC_SAFE;
 
 	return res;
 }
@@ -88,11 +88,11 @@ mono_coop_cond_wait (MonoCoopCond *cond, MonoCoopMutex *mutex)
 {
 	gint res;
 
-	MONO_PREPARE_BLOCKING;
+	MONO_ENTER_GC_SAFE;
 
 	res = mono_os_cond_wait (&cond->c, &mutex->m);
 
-	MONO_FINISH_BLOCKING;
+	MONO_EXIT_GC_SAFE;
 
 	return res;
 }
@@ -102,11 +102,11 @@ mono_coop_cond_timedwait (MonoCoopCond *cond, MonoCoopMutex *mutex, guint32 time
 {
 	gint res;
 
-	MONO_PREPARE_BLOCKING;
+	MONO_ENTER_GC_SAFE;
 
 	res = mono_os_cond_timedwait (&cond->c, &mutex->m, timeout_ms);
 
-	MONO_FINISH_BLOCKING;
+	MONO_EXIT_GC_SAFE;
 
 	return res;
 }

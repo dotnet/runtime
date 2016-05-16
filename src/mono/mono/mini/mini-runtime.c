@@ -956,11 +956,11 @@ mono_jit_thread_attach (MonoDomain *domain, gpointer *dummy)
 			*dummy = NULL;
 			/* mono_thread_attach put the thread in RUNNING mode from STARTING, but we need to
 			 * return the right cookie. */
-			return mono_threads_cookie_for_reset_blocking_start (mono_thread_info_current ());
+			return mono_threads_enter_gc_unsafe_region_cookie (mono_thread_info_current ());
 		} else {
 			*dummy = orig;
 			/* thread state (BLOCKING|RUNNING) -> RUNNING */
-			return mono_threads_reset_blocking_start (dummy);
+			return mono_threads_enter_gc_unsafe_region (dummy);
 		}
 	}
 }
@@ -994,7 +994,7 @@ mono_jit_thread_detach (gpointer cookie, gpointer *dummy)
 
 		/* it won't do anything if cookie is NULL
 		 * thread state RUNNING -> (RUNNING|BLOCKING) */
-		mono_threads_reset_blocking_end (cookie, dummy);
+		mono_threads_exit_gc_unsafe_region (cookie, dummy);
 
 		if (orig != domain) {
 			if (!orig)

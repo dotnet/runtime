@@ -44,24 +44,23 @@ This will put the current thread in GC Unsafe mode.
 
 For further explanation of what can and can't be done in GC unsafe mode:
 http://www.mono-project.com/docs/advanced/runtime/docs/coop-suspend/#gc-unsafe-mode
-
 */
-#define MONO_BEGIN_GC_UNSAFE	\
+#define MONO_ENTER_GC_UNSAFE	\
 	do {	\
-		gpointer __dummy;	\
-		gpointer __gc_unsafe_cookie = mono_threads_enter_gc_unsafe_region (&__dummy)	\
+		gpointer __gc_unsafe_dummy;	\
+		gpointer __gc_unsafe_cookie = mono_threads_enter_gc_unsafe_region (&__gc_unsafe_dummy)	\
 
-#define MONO_END_GC_UNSAFE	\
-		mono_threads_exit_gc_unsafe_region	(__gc_unsafe_cookie, &__dummy);	\
+#define MONO_EXIT_GC_UNSAFE	\
+		mono_threads_exit_gc_unsafe_region	(__gc_unsafe_cookie, &__gc_unsafe_dummy);	\
 	} while (0)
 
-#define MONO_BEGIN_GC_SAFE	\
+#define MONO_ENTER_GC_SAFE	\
 	do {	\
-		gpointer __dummy;	\
-		gpointer __gc_safe_cookie = mono_threads_enter_gc_safe_region (&__dummy)	\
+		gpointer __gc_safe_dummy;	\
+		gpointer __gc_safe_cookie = mono_threads_enter_gc_safe_region (&__gc_safe_dummy)	\
 
-#define MONO_END_GC_SAFE	\
-		mono_threads_exit_gc_safe_region (__gc_safe_cookie, &__dummy);	\
+#define MONO_EXIT_GC_SAFE	\
+		mono_threads_exit_gc_safe_region (__gc_safe_cookie, &__gc_safe_dummy);	\
 	} while (0)
 
 MONO_END_DECLS

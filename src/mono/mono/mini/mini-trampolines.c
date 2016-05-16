@@ -814,7 +814,7 @@ mono_magic_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp)
 {
 	gpointer res;
 
-	MONO_PREPARE_RESET_BLOCKING_UNBALANCED;
+	MONO_ENTER_GC_UNSAFE_UNBALANCED;
 
 	MonoError error;
 
@@ -825,7 +825,7 @@ mono_magic_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp)
 
 	mono_interruption_checkpoint_from_trampoline ();
 
-	MONO_FINISH_RESET_BLOCKING_UNBALANCED;
+	MONO_EXIT_GC_UNSAFE_UNBALANCED;
 
 	return res;
 }

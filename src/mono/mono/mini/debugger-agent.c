@@ -1123,7 +1123,7 @@ socket_transport_recv (void *buf, int len)
 	static gint64 last_keepalive;
 	gint64 msecs;
 
-	MONO_PREPARE_BLOCKING;
+	MONO_ENTER_GC_SAFE;
 
 	do {
 	again:
@@ -1149,7 +1149,7 @@ socket_transport_recv (void *buf, int len)
 		}
 	} while ((res > 0 && total < len) || (res == -1 && get_last_sock_error () == MONO_EINTR));
 
-	MONO_FINISH_BLOCKING;
+	MONO_EXIT_GC_SAFE;
 
 	return total;
 }
@@ -1173,9 +1173,9 @@ set_keepalive (void)
 static int
 socket_transport_accept (int socket_fd)
 {
-	MONO_PREPARE_BLOCKING;
+	MONO_ENTER_GC_SAFE;
 	conn_fd = accept (socket_fd, NULL, NULL);
-	MONO_FINISH_BLOCKING;
+	MONO_EXIT_GC_SAFE;
 
 	if (conn_fd == -1) {
 		fprintf (stderr, "debugger-agent: Unable to listen on %d\n", socket_fd);
@@ -1191,13 +1191,13 @@ socket_transport_send (void *data, int len)
 {
 	int res;
 
-	MONO_PREPARE_BLOCKING;
+	MONO_ENTER_GC_SAFE;
 
 	do {
 		res = send (conn_fd, data, len, 0);
 	} while (res == -1 && get_last_sock_error () == MONO_EINTR);
 
-	MONO_FINISH_BLOCKING;
+	MONO_EXIT_GC_SAFE;
 
 	if (res != len)
 		return FALSE;
@@ -1316,9 +1316,9 @@ socket_transport_connect (const char *address)
 			FD_ZERO (&readfds);
 			FD_SET (sfd, &readfds);
 
-			MONO_PREPARE_BLOCKING;
+			MONO_ENTER_GC_SAFE;
 			res = select (sfd + 1, &readfds, NULL, NULL, &tv);
-			MONO_FINISH_BLOCKING;
+			MONO_EXIT_GC_SAFE;
 
 			if (res == 0) {
 				fprintf (stderr, "debugger-agent: Timed out waiting to connect.\n");
@@ -1345,16 +1345,16 @@ socket_transport_connect (const char *address)
 			if (sfd == -1)
 				continue;
 
-			MONO_PREPARE_BLOCKING;
+			MONO_ENTER_GC_SAFE;
 			res = connect (sfd, &sockaddr.addr, sock_len);
-			MONO_FINISH_BLOCKING;
+			MONO_EXIT_GC_SAFE;
 
 			if (res != -1)
 				break;       /* Success */
 			
-			MONO_PREPARE_BLOCKING;
+			MONO_ENTER_GC_SAFE;
 			close (sfd);
-			MONO_FINISH_BLOCKING;
+			MONO_EXIT_GC_SAFE;
 		}
 
 		if (rp == 0) {
@@ -1385,9 +1385,9 @@ socket_transport_close1 (void)
 #else
 	shutdown (conn_fd, SHUT_RD);
 	shutdown (listen_fd, SHUT_RDWR);
-	MONO_PREPARE_BLOCKING;
+	MONO_ENTER_GC_SAFE;
 	close (listen_fd);
-	MONO_FINISH_BLOCKING;
+	MONO_EXIT_GC_SAFE;
 #endif
 }
 
