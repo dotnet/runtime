@@ -13,89 +13,23 @@ namespace System.Reflection.Tests
 {
     public class PropertyInfoGetSetMethodTests
     {
-        //Verify GetMethod , SetMethod properties for PropertyInfo
-        [Fact]
-        public static void TestGetSetMethod1()
-        {
-            VerifyGetSetMethod(typeof(ReferenceTypeHelper), "PropertyGetterSetter", true, true);
-        }
 
-        //Verify GetMethod , SetMethod properties for PropertyInfo
-        [Fact]
-        public static void TestGetSetMethod2()
+        [Theory]
+        [InlineData(typeof(ReferenceTypeHelper), "PropertyGetterSetter", true, true)]
+        [InlineData(typeof(ReferenceTypeHelper), "PropertyGetter", true, false)]
+        [InlineData(typeof(ReferenceTypeHelper), "PropertySetter", false, true)]
+        [InlineData(typeof(ReferenceTypeHelper), "Item", true, true)]
+        [InlineData(typeof(ValueTypeHelper), "PropertyGetterSetter", true, true)]
+        [InlineData(typeof(ValueTypeHelper), "PropertyGetter", true, false)]
+        [InlineData(typeof(ValueTypeHelper), "PropertySetter", false, true)]
+        [InlineData(typeof(ValueTypeHelper), "Item", true, false)]
+        [InlineData(typeof(InterfaceHelper), "PropertyGetterSetter", true, true)]
+        [InlineData(typeof(InterfaceHelper), "PropertyGetter", true, false)]
+        [InlineData(typeof(InterfaceHelper), "PropertySetter", false, true)]
+        [InlineData(typeof(InterfaceHelper), "Item", false, true)]
+        public void GetSetMethod(Type type, string str, bool getter, bool setter)
         {
-            VerifyGetSetMethod(typeof(ReferenceTypeHelper), "PropertyGetter", true, false);
-        }
-
-        //Verify GetMethod , SetMethod properties for PropertyInfo
-        [Fact]
-        public static void TestGetSetMethod3()
-        {
-            VerifyGetSetMethod(typeof(ReferenceTypeHelper), "PropertySetter", false, true);
-        }
-
-
-        //Verify GetMethod , SetMethod properties for PropertyInfo
-        [Fact]
-        public static void TestGetSetMethod4()
-        {
-            VerifyGetSetMethod(typeof(ReferenceTypeHelper), "Item", true, true);
-        }
-
-        //Verify GetMethod , SetMethod properties for PropertyInfo
-        [Fact]
-        public static void TestGetSetMethod5()
-        {
-            VerifyGetSetMethod(typeof(ValueTypeHelper), "PropertyGetterSetter", true, true);
-        }
-
-        //Verify GetMethod , SetMethod properties for PropertyInfo
-        [Fact]
-        public static void TestGetSetMethod6()
-        {
-            VerifyGetSetMethod(typeof(ValueTypeHelper), "PropertyGetter", true, false);
-        }
-
-        //Verify GetMethod , SetMethod properties for PropertyInfo
-        [Fact]
-        public static void TestGetSetMethod7()
-        {
-            VerifyGetSetMethod(typeof(ValueTypeHelper), "PropertySetter", false, true);
-        }
-
-        //Verify GetMethod , SetMethod properties for PropertyInfo
-        [Fact]
-        public static void TestGetSetMethod8()
-        {
-            VerifyGetSetMethod(typeof(ValueTypeHelper), "Item", true, false);
-        }
-
-        //Verify GetMethod , SetMethod properties for PropertyInfo
-        [Fact]
-        public static void TestGetSetMethod9()
-        {
-            VerifyGetSetMethod(typeof(InterfaceHelper), "PropertyGetterSetter", true, true);
-        }
-
-        //Verify GetMethod , SetMethod properties for PropertyInfo
-        [Fact]
-        public static void TestGetSetMethod10()
-        {
-            VerifyGetSetMethod(typeof(InterfaceHelper), "PropertyGetter", true, false);
-        }
-
-        //Verify GetMethod , SetMethod properties for PropertyInfo
-        [Fact]
-        public static void TestGetSetMethod11()
-        {
-            VerifyGetSetMethod(typeof(InterfaceHelper), "PropertySetter", false, true);
-        }
-
-        //Verify GetMethod , SetMethod properties for PropertyInfo
-        [Fact]
-        public static void TestGetSetMethod12()
-        {
-            VerifyGetSetMethod(typeof(InterfaceHelper), "Item", false, true);
+            VerifyGetSetMethod(type, str, getter, setter);
         }
 
 
