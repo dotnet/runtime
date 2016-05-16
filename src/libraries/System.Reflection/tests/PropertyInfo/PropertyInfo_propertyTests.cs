@@ -17,7 +17,7 @@ namespace System.Reflection.Tests
         [InlineData("MyPropAA", true)]
         [InlineData("MyPropBB", true)]
         [InlineData("MyPropCC", false)]
-        public static void TestCanRead(String propName, String message, bool boolean)
+        public static void TestCanRead(String propName, bool boolean)
         {
             PropertyInfo pi = GetProperty(typeof(SampleProperty), propName);
 

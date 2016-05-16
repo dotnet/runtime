@@ -27,9 +27,20 @@ namespace System.Reflection.Tests
         [InlineData(typeof(InterfaceHelper), "PropertyGetter", true, false)]
         [InlineData(typeof(InterfaceHelper), "PropertySetter", false, true)]
         [InlineData(typeof(InterfaceHelper), "Item", false, true)]
-        public void GetSetMethod(Type type, string str, bool getter, bool setter)
+        public void GetSetMethod(Type type, string propertyName, bool getter, bool setter)
         {
-            VerifyGetSetMethod(type, str, getter, setter);
+            PropertyInfo pi = getProperty(type, propertyName);
+            Assert.NotNull(pi);
+
+            if (getter)
+            {
+                Assert.NotNull(pi.GetMethod);
+            }
+
+            if (setter)
+            {
+                Assert.NotNull(pi.SetMethod);
+            }
         }
 
 
@@ -50,23 +61,6 @@ namespace System.Reflection.Tests
                 }
             }
             return pi;
-        }
-
-        public static void VerifyGetSetMethod(Type type, String propertyName, Boolean getter, Boolean setter)
-        {
-            PropertyInfo pi = getProperty(type, propertyName);
-
-            Assert.NotNull(pi);
-
-            if (getter)
-            {
-                Assert.NotNull(pi.GetMethod);
-            }
-
-            if (setter)
-            {
-                Assert.NotNull(pi.SetMethod);
-            }
         }
     }
 
