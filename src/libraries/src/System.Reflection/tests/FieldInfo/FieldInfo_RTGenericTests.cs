@@ -3,13 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
-using System;
-using System.Reflection;
 using System.Collections.Generic;
 
-
 #pragma warning disable 0414
-
 
 namespace System.Reflection.Tests
 {
@@ -23,24 +19,8 @@ namespace System.Reflection.Tests
             myInstance.populateScenario();
 
             Type openType = typeof(PublicFieldGeneric<>);
-            foreach (Scenario sc in list)
-            {
-                Type type = openType.MakeGenericType(new Type[] { sc.gaType });
-                Object obj = Activator.CreateInstance(type);
-                FieldInfo fi = null;
-
-                fi = getField(type, sc.fieldName);
-                Assert.True((fi.GetValue(obj)).Equals(sc.initialValue), "Get Value should return value that was set for generic type: " + sc.fieldName);
-
-                fi.SetValue(obj, sc.changedValue);
-                Assert.True((fi.GetValue(obj)).Equals(sc.changedValue), "Get Value should return value that was set for generic type: " + sc.fieldName);
-
-                fi.SetValue(obj, null);
-                Assert.True((fi.GetValue(obj)).Equals(sc.initialValue), "Get Value should return value that was set for generic type: " + sc.fieldName);
-            }
+            verifyFields(openType);
         }
-
-
 
         //Verify FieldInfo for static generic Types
         [Fact]
@@ -50,47 +30,8 @@ namespace System.Reflection.Tests
             myInstance.populateScenarioForStaticTests();
 
             Type openType = typeof(StaticFieldGeneric<>);
-            foreach (Scenario sc in list)
-            {
-                Type type = openType.MakeGenericType(new Type[] { sc.gaType });
-                Object obj = Activator.CreateInstance(type);
-                FieldInfo fi = null;
-
-                fi = getField(type, sc.fieldName);
-                Assert.True((fi.GetValue(obj)).Equals(sc.initialValue), "Get Value should return value that was set for generic type: " + sc.fieldName);
-
-                fi.SetValue(obj, sc.changedValue);
-                Assert.True((fi.GetValue(obj)).Equals(sc.changedValue), "Get Value should return value that was set for generic type: " + sc.fieldName);
-
-                fi.SetValue(obj, null);
-                Assert.True((fi.GetValue(obj)).Equals(sc.initialValue), "Get Value should return value that was set for generic type: " + sc.fieldName);
-            }
+            verifyFields(openType);
         }
-
-
-
-
-        // Helper method to get field from class FieldInfoRTGenericTests
-        private static FieldInfo getField(string field)
-        {
-            Type t = typeof(FieldInfoRTGenericTests);
-            TypeInfo ti = t.GetTypeInfo();
-            IEnumerator<FieldInfo> alldefinedFields = ti.DeclaredFields.GetEnumerator();
-            FieldInfo fi = null, found = null;
-
-            while (alldefinedFields.MoveNext())
-            {
-                fi = alldefinedFields.Current;
-                if (fi.Name.Equals(field))
-                {
-                    //found type
-                    found = fi;
-                    break;
-                }
-            }
-            return found;
-        }
-
 
         // Helper method to get field from Type type
         private static FieldInfo getField(Type ptype, string field)
@@ -112,8 +53,28 @@ namespace System.Reflection.Tests
             return found;
         }
 
+        // Helper method to test fields of a given type
+        private static void verifyFields(Type openType)
+        {
+            foreach (Scenario sc in list)
+            {
+                Type type = openType.MakeGenericType(new Type[] { sc.gaType });
+                object obj = Activator.CreateInstance(type);
+                FieldInfo fi = null;
 
+                fi = getField(type, sc.fieldName);
+                Assert.True(Equals(fi.GetValue(obj), sc.initialValue), "Get Value should return value that was set for generic type: " + sc.fieldName);
 
+                fi.SetValue(obj, sc.changedValue);
+                Assert.True(Equals(fi.GetValue(obj), sc.changedValue), "Get Value should return value that was set for generic type: " + sc.fieldName);
+
+                fi.SetValue(obj, null);
+                Assert.True(Equals(fi.GetValue(obj), sc.initialValue), "Get Value should return value that was set for generic type: " + sc.fieldName);
+            }
+
+            // Restore the static list to empty
+            list.Clear();
+        }
 
         private void populateScenario()
         {
@@ -136,8 +97,6 @@ namespace System.Reflection.Tests
             PublicFieldGeneric<FieldInfoGeneric<object>> pfg_g_object = new PublicFieldGeneric<FieldInfoGeneric<object>>();
             FieldInfoGeneric<object>[] gpa_g_object = new FieldInfoGeneric<object>[] { g_object, g_object };
             FieldInfoGeneric<FieldInfoGeneric<object>>[] ga_g_object = new FieldInfoGeneric<FieldInfoGeneric<object>>[] { g_g_object, g_g_object, g_g_object, g_g_object };
-
-            List<Scenario> list = new List<Scenario>();
 
             list.Add(new Scenario(typeof(int), "genparamField", 0, -300));
             list.Add(new Scenario(typeof(int), "dependField", null, g_int));
@@ -165,12 +124,8 @@ namespace System.Reflection.Tests
             list.Add(new Scenario(typeof(FieldInfoGeneric<object>), "selfField", null, pfg_g_object));
         }
 
-
-
         private void populateScenarioForStaticTests()
         {
-            List<Scenario> list = new List<Scenario>();
-
             StaticFieldGeneric<int> sfg_int = new StaticFieldGeneric<int>();
             StaticFieldGeneric<string> sfg_string = new StaticFieldGeneric<string>();
             StaticFieldGeneric<object> sfg_object = new StaticFieldGeneric<object>();
