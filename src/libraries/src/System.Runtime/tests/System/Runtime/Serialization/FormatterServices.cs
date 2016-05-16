@@ -20,7 +20,7 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(typeof(String))]
+        [InlineData(typeof(string))]
         [InlineData(typeof(int*))]
         public static void StringsAndPointers_Throw_ArgumentException(Type type)
         {
@@ -60,13 +60,13 @@ namespace System.Tests
 
         public static IEnumerable<object[]> TestData()
         {
-            yield return new object[] { typeof(Int32), 0 };
+            yield return new object[] { typeof(int), 0 };
             yield return new object[] { typeof(short), 0 };
         }
 
         [Theory]
         [MemberData(nameof(TestData))]
-        public static void PrimitiveTypes_Success(Type type, Object value)
+        public static void PrimitiveTypes_Success(Type type, object value)
         {
             Assert.Equal(value.ToString(), FormatterServices.GetUninitializedObject(type).ToString());
             Assert.Equal(type, FormatterServices.GetUninitializedObject(type).GetType());
@@ -75,7 +75,7 @@ namespace System.Tests
         [Fact]
         public static void Nullable_BecomesNonNullable_Success()
         {
-            Assert.Equal(typeof(Int32), FormatterServices.GetUninitializedObject(typeof(Int32?)).GetType());
+            Assert.Equal(typeof(int), FormatterServices.GetUninitializedObject(typeof(int?)).GetType());
         }
 
         [Fact]
