@@ -322,9 +322,6 @@ function create_core_overlay {
     if [ ! -d "$coreClrBinDir" ]; then
         exit_with_error "$errorSource" "Directory specified by --coreClrBinDir does not exist: $coreClrBinDir"
     fi
-    if [ -z "$mscorlibDir" ]; then
-        mscorlibDir=$coreClrBinDir
-    fi
     if [ ! -f "$mscorlibDir/mscorlib.dll" ]; then
         exit_with_error "$errorSource" "mscorlib.dll was not found in: $mscorlibDir"
     fi
@@ -427,27 +424,31 @@ declare -a failingTests
 declare -a playlistTests
 ((runFailingTestsOnly = 0))
 
+# Get an array of items by reading the specified file line by line.
+function read_array {
+    local theArray=()
+
+    # bash in Mac OS X doesn't support 'readarray', so using alternate way instead.
+    # readarray -t theArray < "$1"
+    while IFS='' read -r line || [ -n "$line" ]; do
+        theArray[${#theArray[@]}]=$line
+    done < "$1"
+    echo ${theArray[@]}
+}
+
 function load_unsupported_tests {
     # Load the list of tests that are not supported on this platform. These tests are disabled (skipped) permanently.
-    # 'readarray' is not used here, as it includes the trailing linefeed in lines placed in the array.
-    while IFS='' read -r line || [ -n "$line" ]; do
-        unsupportedTests[${#unsupportedTests[@]}]=$line
-    done <"$(dirname "$0")/testsUnsupportedOutsideWindows.txt"
+    unsupportedTests=($(read_array "$(dirname "$0")/testsUnsupportedOutsideWindows.txt"))
 }
 
 function load_failing_tests {
     # Load the list of tests that fail on this platform. These tests are disabled (skipped) temporarily, pending investigation.
-    # 'readarray' is not used here, as it includes the trailing linefeed in lines placed in the array.
-    while IFS='' read -r line || [ -n "$line" ]; do
-        failingTests[${#failingTests[@]}]=$line
-    done <"$(dirname "$0")/testsFailingOutsideWindows.txt"
+    failingTests=($(read_array "$(dirname "$0")/testsFailingOutsideWindows.txt"))
 }
 
 function load_playlist_tests {
     # Load the list of tests that are enabled as a part of this test playlist.
-    while IFS='' read -r line || [ -n "$line" ]; do
-        playlistTests[${#playlistTests[@]}]=$line
-    done <"${playlistFile}"
+    playlistTests=($(read_array "${playlistFile}"))
 }
 
 function is_unsupported_test {
@@ -600,6 +601,19 @@ function finish_remaining_tests {
     ((nextProcessIndex = 0))
 }
 
+function prep_test {
+    local scriptFilePath=$1
+
+    test "$verbose" == 1 && echo "Preparing $scriptFilePath"
+
+    # Convert DOS line endings to Unix if needed
+    perl -pi -e 's/\r\n|\n|\r/\n/g' "$scriptFilePath"
+    
+    # Add executable file mode bit if needed
+    chmod +x "$scriptFilePath"
+
+}
+
 function start_test {
     local scriptFilePath=$1
     if ((runFailingTestsOnly == 1)) && ! is_failing_test "$scriptFilePath"; then
@@ -646,13 +660,18 @@ function set_test_directories {
     then
         exit_with_error "$errorSource" "Test directories file not found at $listFileName"
     fi
-
-    readarray testDirectories < "$listFileName"
+    testDirectories=($(read_array "$listFileName"))
 }
 
 function run_tests_in_directory {
     local testDir=$1
 
+    # Recursively search through directories for .sh files to prepare them.
+    for scriptFilePath in $(find "$testDir" -type f -iname '*.sh' | sort)
+    do
+        prep_test "${scriptFilePath:2}"
+    done
+    echo "The tests have been prepared"
     # Recursively search through directories for .sh files to run.
     for scriptFilePath in $(find "$testDir" -type f -iname '*.sh' | sort)
     do
@@ -814,6 +833,9 @@ fi
 
 # Copy native interop test libraries over to the mscorlib path in
 # order for interop tests to run on linux.
+if [ -z "$mscorlibDir" ]; then
+	mscorlibDir=$coreClrBinDir
+fi
 if [ -d $mscorlibDir/bin ]; then
     cp $mscorlibDir/bin/* $mscorlibDir   
 fi

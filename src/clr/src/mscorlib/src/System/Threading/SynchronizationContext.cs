@@ -169,29 +169,26 @@ namespace System.Threading
 
 #if FEATURE_CORECLR
 
-        [ThreadStatic]
-        private static SynchronizationContext s_threadStaticContext;
-
         [System.Security.SecurityCritical]
         public static void SetSynchronizationContext(SynchronizationContext syncContext)
         {
-            s_threadStaticContext = syncContext;
+            Thread.CurrentThread.SynchronizationContext = syncContext;
         }
 
         [System.Security.SecurityCritical]
         public static void SetThreadStaticContext(SynchronizationContext syncContext)
         {
-            s_threadStaticContext = syncContext;
+            Thread.CurrentThread.SynchronizationContext = syncContext;
         }
 
         public static SynchronizationContext Current 
         {
             get      
             {
-                SynchronizationContext context = s_threadStaticContext;
+                SynchronizationContext context = Thread.CurrentThread.SynchronizationContext;
 
 #if FEATURE_APPX
-                if (context == null && Environment.IsWinRTSupported)
+                if (context == null && AppDomain.IsAppXModel())
                     context = GetWinRTContext();
 #endif
 
@@ -244,7 +241,7 @@ namespace System.Threading
             SynchronizationContext context = null;
             
 #if FEATURE_APPX
-            if (context == null && Environment.IsWinRTSupported)
+            if (context == null && AppDomain.IsAppXModel())
                 context = GetWinRTContext();
 #endif
 
@@ -258,13 +255,8 @@ namespace System.Threading
         private static SynchronizationContext GetWinRTContext()
         {
             Contract.Assert(Environment.IsWinRTSupported);
-
-            // Temporary workaround to avoid loading a bunch of DLLs in every managed process.
-            // This disables this feature for non-AppX processes that happen to use CoreWindow/CoreDispatcher,
-            // which is not what we want.
-            if (!AppDomain.IsAppXModel())
-                return null;
-
+            Contract.Assert(AppDomain.IsAppXModel());
+    
             //
             // We call into the VM to get the dispatcher.  This is because:
             //

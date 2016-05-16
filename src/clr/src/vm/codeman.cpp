@@ -987,7 +987,7 @@ PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntimeFuncti
     _ASSERTE((pRuntimeFunction->UnwindData & 0x3) == 0);
 
     // compute the size of the unwind info
-    PTR_TADDR xdata = dac_cast<PTR_TADDR>(pRuntimeFunction->UnwindData + moduleBase);
+    PTR_ULONG xdata = dac_cast<PTR_ULONG>(pRuntimeFunction->UnwindData + moduleBase);
 
     ULONG epilogScopes = 0;
     ULONG unwindWords = 0;
@@ -1016,6 +1016,46 @@ PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntimeFuncti
 
     *pSize = size;
     return xdata;
+
+#elif defined(_TARGET_ARM64_)
+	// if this function uses packed unwind data then at least one of the two least significant bits
+	// will be non-zero.  if this is the case then there will be no xdata record to enumerate.
+	_ASSERTE((pRuntimeFunction->UnwindData & 0x3) == 0);
+
+    // compute the size of the unwind info
+    PTR_ULONG xdata    = dac_cast<PTR_ULONG>(pRuntimeFunction->UnwindData + moduleBase);
+    ULONG epilogScopes = 0;
+    ULONG unwindWords  = 0;
+    ULONG size = 0;
+
+    //If both Epilog Count and Code Word is not zero
+    //Info of Epilog and Unwind scopes are given by 1 word header
+    //Otherwise this info is given by a 2 word header
+    if ((xdata[0] >> 27) != 0) 
+    {
+        size = 4;
+        epilogScopes = (xdata[0] >> 22) & 0x1f;
+        unwindWords = (xdata[0] >> 27) & 0x0f;
+    }
+    else 
+    {
+        size = 8;
+        epilogScopes = xdata[1] & 0xffff;
+        unwindWords = (xdata[1] >> 16) & 0xff;
+    }
+
+    if (!(xdata[0] & (1 << 21))) 
+        size += 4 * epilogScopes;
+
+    size += 4 * unwindWords;
+
+    _ASSERTE(xdata[0] & (1 << 20)); // personality routine should be always present
+    size += 4;                      // exception handler RVA
+
+    *pSize = size;
+    return xdata;
+
+
 #else
     PORTABILITY_ASSERT("GetUnwindDataBlob");
     return NULL;
@@ -1439,6 +1479,8 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT I
 
         EX_TRY
         {
+            bool fContinueToLoadJIT = false;
+#if !defined(FEATURE_CORECLR)
             typedef void (__stdcall* psxsJitStartup) (CoreClrCallbacks const &);
             psxsJitStartup sxsJitStartupFn = (psxsJitStartup) GetProcAddress(*phJit, "sxsJitStartup");
 
@@ -1450,7 +1492,16 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT I
                 (*sxsJitStartupFn) (cccallbacks);
 
                 pJitLoadData->jld_status = JIT_LOAD_STATUS_DONE_CALL_SXSJITSTARTUP;
+                fContinueToLoadJIT = true;
+            }
+#else // FEATURE_CORECLR
+            // For CoreCLR, we never use "sxsJitStartup" as that is Desktop utilcode initialization
+            // specific. Thus, assume we always got 
+            fContinueToLoadJIT = true;
+#endif // !defined(FEATURE_CORECLR)
 
+            if (fContinueToLoadJIT)
+            {
                 typedef void (__stdcall* pjitStartup)(ICorJitHost*);
                 pjitStartup jitStartupFn = (pjitStartup) GetProcAddress(*phJit, "jitStartup");
 

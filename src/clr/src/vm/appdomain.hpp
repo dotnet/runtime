@@ -2529,7 +2529,6 @@ public:
         AssemblyLoadSecurity *pLoadSecurity = NULL,
         BOOL fUseHostBinderIfAvailable = TRUE) DAC_EMPTY_RET(NULL);
 
-#ifdef FEATURE_HOSTED_BINDER
     HRESULT BindAssemblySpecForHostedBinder(
         AssemblySpec *   pSpec, 
         IAssemblyName *  pAssemblyName, 
@@ -2542,7 +2541,6 @@ public:
         IAssemblyName *    pAssemblyName, 
         PEAssembly **      ppAssembly, 
         BOOL               fIsIntrospectionOnly = FALSE) DAC_EMPTY_RET(S_OK);
-#endif // FEATURE_HOSTED_BINDER
 
 #ifdef FEATURE_REFLECTION_ONLY_LOAD    
     virtual DomainAssembly *BindAssemblySpecForIntrospectionDependencies(AssemblySpec *pSpec) DAC_EMPTY_RET(NULL);
@@ -3949,7 +3947,6 @@ public:
     COMNlsHashProvider *m_pNlsHashProvider;
 #endif // !FEATURE_CORECLR
 
-#ifdef FEATURE_HOSTED_BINDER
 private:
     // This is the root-level default load context root binder. If null, then
     // the Fusion binder is used; otherwise this binder is used.
@@ -4154,7 +4151,6 @@ private:
         DomainAssembly* pAssembly);
 #endif // DACCESS_COMPILE
 
-#endif //FEATURE_HOSTED_BINDER
 #ifdef FEATURE_PREJIT
     friend void DomainFile::InsertIntoDomainFileWithNativeImageList();
     Volatile<DomainFile *> m_pDomainFileWithNativeImageList;
@@ -4372,12 +4368,7 @@ public:
 #endif
     static void ActivateApplication(int *pReturnValue);
 
-    static void InitializeDefaultDomain(
-        BOOL allowRedirects
-#ifdef FEATURE_HOSTED_BINDER
-        , ICLRPrivBinder * pBinder = NULL
-#endif
-        );
+    static void InitializeDefaultDomain(BOOL allowRedirects, ICLRPrivBinder * pBinder = NULL);
     static void SetupDefaultDomain();
     static HRESULT SetupDefaultDomainNoThrow();
 

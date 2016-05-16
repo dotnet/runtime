@@ -12,7 +12,7 @@ using Xunit;
 [assembly: OptimizeForBenchmarks]
 [assembly: MeasureInstructionsRetired]
 
-public static class Adams
+public static class Regula
 {
 #if DEBUG
     public const int Iterations = 1;

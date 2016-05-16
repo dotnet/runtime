@@ -50,7 +50,9 @@ BOOL IsCompilationProcess();
 #include "clrprivbindercoreclr.h"
 #include "clrprivbinderassemblyloadcontext.h"
 // Helper function in the VM, invoked by the Binder, to invoke the host assembly resolver
-extern HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToBindWithin, IAssemblyName *pIAssemblyName, ICLRPrivAssembly **ppLoadedAssembly);
+extern HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToBindWithin, 
+                                                IAssemblyName *pIAssemblyName, CLRPrivBinderCoreCLR *pTPABinder,
+                                                BINDER_SPACE::AssemblyName *pAssemblyName, ICLRPrivAssembly **ppLoadedAssembly);
 
 // Helper to check if we have a host assembly resolver set
 extern BOOL RuntimeCanUseAppPathAssemblyResolver(DWORD adid);
@@ -1814,6 +1816,7 @@ namespace BINDER_SPACE
 HRESULT AssemblyBinder::BindUsingHostAssemblyResolver (/* in */ INT_PTR pManagedAssemblyLoadContextToBindWithin,
                                                        /* in */ AssemblyName       *pAssemblyName,
                                                       /* in */ IAssemblyName      *pIAssemblyName,
+                                                      /* in */ CLRPrivBinderCoreCLR *pTPABinder,
                                                       /* out */ Assembly           **ppAssembly)
 {
     HRESULT hr = E_FAIL;
@@ -1821,9 +1824,10 @@ HRESULT AssemblyBinder::BindUsingHostAssemblyResolver (/* in */ INT_PTR pManaged
     
     _ASSERTE(pManagedAssemblyLoadContextToBindWithin != NULL);
     
-    // Call into the VM to use the HostAssemblyResolver and load the assembly
+    // RuntimeInvokeHostAssemblyResolver will perform steps 2-4 of CLRPrivBinderAssemblyLoadContext::BindAssemblyByName.
     ICLRPrivAssembly *pLoadedAssembly = NULL;
-    hr = RuntimeInvokeHostAssemblyResolver(pManagedAssemblyLoadContextToBindWithin, pIAssemblyName, &pLoadedAssembly);
+    hr = RuntimeInvokeHostAssemblyResolver(pManagedAssemblyLoadContextToBindWithin, pIAssemblyName, 
+                                           pTPABinder, pAssemblyName, &pLoadedAssembly);
     if (SUCCEEDED(hr))
     {
         _ASSERTE(pLoadedAssembly != NULL);

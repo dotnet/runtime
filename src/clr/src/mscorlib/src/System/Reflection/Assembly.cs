@@ -1367,7 +1367,8 @@ namespace System.Reflection
                                                         String name, 
                                                         bool throwOnError, 
                                                         bool ignoreCase,
-                                                        ObjectHandleOnStack type);
+                                                        ObjectHandleOnStack type,
+                                                        ObjectHandleOnStack keepAlive);
         
         [System.Security.SecuritySafeCritical]
         public override Type GetType(String name, bool throwOnError, bool ignoreCase) 
@@ -1377,7 +1378,10 @@ namespace System.Reflection
                 throw new ArgumentNullException("name");
 
             RuntimeType type = null;
-            GetType(GetNativeHandle(), name, throwOnError, ignoreCase, JitHelpers.GetObjectHandleOnStack(ref type));
+            Object keepAlive = null;
+            GetType(GetNativeHandle(), name, throwOnError, ignoreCase, JitHelpers.GetObjectHandleOnStack(ref type), JitHelpers.GetObjectHandleOnStack(ref keepAlive));
+            GC.KeepAlive(keepAlive);
+            
             return type;
         }
 
@@ -1589,8 +1593,7 @@ namespace System.Reflection
             return InternalLoadAssemblyName(an, securityEvidence, null, ref stackMark, true /*thrownOnFileNotFound*/, forIntrospection, suppressSecurityChecks);
         }
 
-#if FEATURE_HOSTED_BINDER
-        // Wrapper function to wrap the typical use of InternalLoad. Matches exactly with the signature below if FEATURE_HOSTED_BINDER is not set
+        // Wrapper function to wrap the typical use of InternalLoad.
         [System.Security.SecurityCritical]  // auto-generated
         internal static RuntimeAssembly InternalLoad(String assemblyString,
                                                      Evidence assemblySecurity,
@@ -1599,15 +1602,13 @@ namespace System.Reflection
         {
             return InternalLoad(assemblyString, assemblySecurity,  ref stackMark, IntPtr.Zero, forIntrospection);
         }
-#endif
+
         [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         internal static RuntimeAssembly InternalLoad(String assemblyString,
                                                      Evidence assemblySecurity,
                                                      ref StackCrawlMark stackMark,
-#if FEATURE_HOSTED_BINDER
                                                      IntPtr pPrivHostBinder,
-#endif
                                                      bool forIntrospection)
         {
             RuntimeAssembly assembly;
@@ -1619,9 +1620,7 @@ namespace System.Reflection
             }
 
             return InternalLoadAssemblyName(an, assemblySecurity, null, ref stackMark, 
-#if FEATURE_HOSTED_BINDER
                                             pPrivHostBinder,
-#endif
                                             true  /*thrownOnFileNotFound*/, forIntrospection, false /* suppressSecurityChecks */);
         }
         
@@ -1651,8 +1650,7 @@ namespace System.Reflection
             return an;
         }
         
-#if FEATURE_HOSTED_BINDER
-        // Wrapper function to wrap the typical use of InternalLoadAssemblyName. Matches exactly with the signature below if FEATURE_HOSTED_BINDER is not set
+        // Wrapper function to wrap the typical use of InternalLoadAssemblyName.
         [System.Security.SecurityCritical]  // auto-generated
         internal static RuntimeAssembly InternalLoadAssemblyName(
             AssemblyName assemblyRef,
@@ -1665,7 +1663,6 @@ namespace System.Reflection
         {
             return InternalLoadAssemblyName(assemblyRef, assemblySecurity, reqAssembly, ref stackMark, IntPtr.Zero, true /*throwOnError*/, forIntrospection, suppressSecurityChecks);
         }
-#endif
 
         [System.Security.SecurityCritical]  // auto-generated
         internal static RuntimeAssembly InternalLoadAssemblyName(
@@ -1673,9 +1670,7 @@ namespace System.Reflection
             Evidence assemblySecurity,
             RuntimeAssembly reqAssembly,
             ref StackCrawlMark stackMark,
-#if FEATURE_HOSTED_BINDER
             IntPtr pPrivHostBinder,
-#endif
             bool throwOnFileNotFound, 
             bool forIntrospection,
             bool suppressSecurityChecks)
@@ -1735,9 +1730,7 @@ namespace System.Reflection
             }
 
             return nLoad(assemblyRef, codeBase, assemblySecurity, reqAssembly, ref stackMark,
-#if FEATURE_HOSTED_BINDER
                 pPrivHostBinder,
-#endif
                 throwOnFileNotFound, forIntrospection, suppressSecurityChecks);
         }
 
@@ -1784,11 +1777,8 @@ namespace System.Reflection
                                                      String codeBase,
                                                      Evidence assemblySecurity,
                                                      RuntimeAssembly locationHint,
-                                                     ref StackCrawlMark stackMark,
-                                              
-#if FEATURE_HOSTED_BINDER
+                                                     ref StackCrawlMark stackMark,                                              
                                                      IntPtr pPrivHostBinder,
-#endif
                                                      bool throwOnFileNotFound,        
                                                      bool forIntrospection,
                                                      bool suppressSecurityChecks);
@@ -1810,17 +1800,13 @@ namespace System.Reflection
                                              Evidence assemblySecurity,
                                              RuntimeAssembly locationHint,
                                              ref StackCrawlMark stackMark,
-#if FEATURE_HOSTED_BINDER
                                              IntPtr pPrivHostBinder,
-#endif
                                              bool throwOnFileNotFound,
                                              bool forIntrospection,
                                              bool suppressSecurityChecks)
         {
             return _nLoad(fileName, codeBase, assemblySecurity, locationHint, ref stackMark,
-#if FEATURE_HOSTED_BINDER
                 pPrivHostBinder,
-#endif
                 throwOnFileNotFound, forIntrospection, suppressSecurityChecks);
         }
 
@@ -1857,9 +1843,7 @@ namespace System.Reflection
                 // also try versionless bind from the package
                 an.Version = null;
                 return nLoad(an, null, null, null, ref stackMark, 
-#if FEATURE_HOSTED_BINDER
                        IntPtr.Zero,
-#endif
                        false, false, false);
             }
             return null;
@@ -1893,9 +1877,7 @@ namespace System.Reflection
             RuntimeAssembly result = null;
             try {
                 result = nLoad(an, null, securityEvidence, null, ref stackMark, 
-#if FEATURE_HOSTED_BINDER
                                IntPtr.Zero,
-#endif
                                true, false, false);
             }
             catch(Exception e) {
@@ -1919,9 +1901,7 @@ namespace System.Reflection
                 {
                     an.Version = null;
                     result = nLoad(an, null, securityEvidence, null, ref stackMark, 
-#if FEATURE_HOSTED_BINDER
                                    IntPtr.Zero,
-#endif
                                    false, false, false);
                 }   
            }
@@ -2784,9 +2764,7 @@ namespace System.Reflection
                     {
                         // present in the GAC, load it from there
                         retAssembly = nLoad(an, null, null, this, ref stackMark, 
-#if FEATURE_HOSTED_BINDER
                                             IntPtr.Zero,
-#endif
                                             throwOnFileNotFound, false, false);
                     }
                 }
@@ -2814,9 +2792,7 @@ namespace System.Reflection
                     else if (!bIsAppXDevMode)
                     {
                         retAssembly = nLoad(an, null, null, this, ref stackMark, 
-#if FEATURE_HOSTED_BINDER
                                             IntPtr.Zero,
-#endif
                                             throwOnFileNotFound, false, false);
                     }
                 }
@@ -2825,9 +2801,7 @@ namespace System.Reflection
 #endif // !FEATURE_CORECLR
             {
                 retAssembly = nLoad(an, null, null, this,  ref stackMark, 
-#if FEATURE_HOSTED_BINDER
                                     IntPtr.Zero,
-#endif
                                     throwOnFileNotFound, false, false);
             }
 
@@ -2886,9 +2860,7 @@ namespace System.Reflection
                 {
                     retAssembly = useLoadFile ? nLoadFile(fileNameOrCodeBase, null) :
                                                 nLoad(loadFromAsmName, fileNameOrCodeBase, null, this, ref stackMark,
-#if FEATURE_HOSTED_BINDER
                                                 IntPtr.Zero,
-#endif
                                                 throwOnFileNotFound, false, false);
                 }
                 catch (FileNotFoundException)
@@ -2919,9 +2891,7 @@ namespace System.Reflection
                     {
                         retAssembly = useLoadFile ? nLoadFile(fileNameOrCodeBase, null) :
                                                     nLoad(loadFromAsmName, fileNameOrCodeBase,  null, this, ref stackMark,
-#if FEATURE_HOSTED_BINDER
                                                           IntPtr.Zero,
-#endif
                                                           false /* do not throw on file not found */, false, false);
                             
                     }

@@ -1,6 +1,6 @@
 <!--
 ***********************************************************************************************
-CLRTest.Execute.targets
+CLRTest.Execute.Bash.targets
 
 WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and have
           created a backup copy.  Incorrect changes to this file will make it
@@ -35,27 +35,13 @@ WARNING:   When setting properties based on their current state (for example:
     
     <PropertyGroup>
       <!-- CrossGen will create output if it needs to crossgen. Otherwise there will be silence. -->
-      <CrossgenBashScript Condition="'$(CLRTestKind)' == 'RunOnly'">
-        <![CDATA[
-if [ ! -f $([MSBuild]::MakeRelative($(OutputPath), $(_CLRTestToRunFileFullPath)).Replace("\","/").Replace(".exe", ".ni.exe")) ]; then
-  "$CORE_ROOT/crossgen" /Platform_Assemblies_Paths $CORE_ROOT%3A$PWD $([MSBuild]::MakeRelative($(OutputPath), $(_CLRTestToRunFileFullPath)).Replace("\","/"))
-  __cgExitCode=$?
-  if [ ! $__cgExitCode == 0 ]
-  then
-    echo Crossgen failed with exitcode: $__cgExitCode
-    exit 1
-  fi
-fi
-        ]]>
-      </CrossgenBashScript>
-      
       <CrossgenBashScript Condition="'$(CLRTestKind)' == 'BuildAndRun'">
         <![CDATA[
 if [ ! -f $(MSBuildProjectName).ni.exe ]; then
   echo "$CORE_ROOT/crossgen" /Platform_Assemblies_Paths $CORE_ROOT%3A$PWD $(MSBuildProjectName).exe
   "$CORE_ROOT/crossgen" /Platform_Assemblies_Paths $CORE_ROOT%3A$PWD $(MSBuildProjectName).exe
   __cgExitCode=$?
-  if [ ! $__cgExitCode == 0 ]
+  if [ $__cgExitCode -ne 0 ]
   then
     echo Crossgen failed with exitcode: $__cgExitCode
     exit 1
@@ -82,7 +68,7 @@ fi
 echo "$CORE_ROOT/ildasm" -raweh -out=$(DisassemblyName) $(InputAssemblyName)
 "$CORE_ROOT/ildasm" -raweh -out=$(DisassemblyName) $(InputAssemblyName)
 _ERRORLEVEL=$?
-if [ ! $ERRORLEVEL == 0 ]
+if [  $ERRORLEVEL -ne 0 ]
 then
   echo EXECUTION OF ILDASM - FAILED $ERRORLEVEL
   exit 1
@@ -91,7 +77,7 @@ fi
 echo "$CORE_ROOT/ilasm" -output=$(TargetAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
 "$CORE_ROOT/ilasm" -output=$(TargetAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
 _ERRORLEVEL=$?
-if [ ! $ERRORLEVEL == 0 ]
+if [ $ERRORLEVEL -ne 0 ]
 then
   echo EXECUTION OF ILASM - FAILED $ERRORLEVEL
   exit 1
@@ -102,9 +88,12 @@ fi
   </Target>
 
   <!-- This is here because of this bug: http://blogs.msdn.com/b/msbuild/archive/2006/01/03/508629.aspx-->
-  <Target Name="FetchExternalProperties">
+  <Target Name="FetchExternalPropertiesForXpalt">
     <!--Call GetExecuteShFullPath to get ToRunProject cmd file Path  -->
-    <MSBuild Projects="$(CLRTestProjectToRun)" Targets="GetExecuteShFullPath" Condition="'$(_CLRTestNeedsProjectToRun)' == 'True'">
+    <MSBuild Projects="$(CLRTestProjectToRun)" 
+             Targets="GetExecuteShFullPath"
+             Properties="GenerateRunScript=True"
+             Condition="'$(_CLRTestNeedsProjectToRun)' == 'True'">
       <Output TaskParameter="TargetOutputs" PropertyName="_CLRTestToRunFileFullPath"/>
     </MSBuild>
   </Target>
@@ -144,7 +133,7 @@ fi
   <Target Name="GenerateBashExecutionScript"
     Inputs="$(MSBuildProjectFullPath)"
     Outputs="$(OutputPath)\$(MSBuildProjectName).sh"
-    DependsOnTargets="FetchExternalProperties;GetCrossgenBashScript;GetIlasmRoundTripBashScript">
+    DependsOnTargets="FetchExternalPropertiesForXpalt;GetCrossgenBashScript;GetIlasmRoundTripBashScript">
 
     <Message Text="Project depends on $(_CLRTestToRunFileFullPath)." Condition="'$(_CLRTestNeedsProjectToRun)' == 'True'" />
 
@@ -174,19 +163,20 @@ echo "Skipping execution because long-running GC tests are not enabled"
 exit 0
       ]]></BashCLRTestGCLongTestSkipCondition>
       <BashCLRTestExitCodePrep Condition="$(_CLRTestNeedsToRun)">
-<![CDATA[CLRTestExpectedExitCode=$(CLRTestExitCode)
+<![CDATA[
+if [ -z ${CLRTestExpectedExitCode+x} ]%3B then export CLRTestExpectedExitCode=$(CLRTestExitCode)%3B fi
 echo BEGIN EXECUTION]]>
       </BashCLRTestExitCodePrep>
     
       <BashCLRTestArgPrep Condition=" '$(CLRTestExecutionArguments)'!='' ">
-<![CDATA[CLRTestExecutionArguments='$(CLRTestExecutionArguments)']]>
+<![CDATA[if [ -z ${CLRTestExecutionArguments+x} ]%3B then export CLRTestExecutionArguments='$(CLRTestExecutionArguments)'%3B fi]]>
       </BashCLRTestArgPrep>
     
       <!-- By default, be prepared to do a full check -->
       <BashCLRTestExitCodeCheck><![CDATA[
 echo Expected: $CLRTestExpectedExitCode
 echo Actual: $CLRTestExitCode
-if [ ! $CLRTestExitCode == $CLRTestExpectedExitCode ]
+if [ $CLRTestExitCode -ne $CLRTestExpectedExitCode ]
 then
   echo END EXECUTION - FAILED
   exit 1
@@ -204,7 +194,7 @@ fi
         <HasParam>true</HasParam>
         <ParamText>=*</ParamText> <!-- Bash specific -->
         <ParamName>debuggerFullPath</ParamName>
-        <Command><![CDATA[        _DebuggerFullPath="${i#*=}"
+        <Command><![CDATA[        export _DebuggerFullPath="${i#*=}"
         if [ ! -f "$_DebuggerFullPath" ]
         then
             echo The Debugger FullPath \"$_DebuggerFullPath\" doesn\'t exist
@@ -231,9 +221,9 @@ fi
     <PropertyGroup>
       <_CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"$CORE_ROOT/corerun"</_CLRTestRunFile>
       <BashCLRTestLaunchCmds Condition="'$(IlasmRoundTrip)'=='true'"><![CDATA[
-echo $(_CLRTestRunFile) $(TargetAssemblyName) $CLRTestExecutionArguments $Host_Args
-$(_CLRTestRunFile) $(TargetAssemblyName) $CLRTestExecutionArguments $Host_Args
-if [ ! $? == $CLRTestExpectedExitCode ]
+echo $(_CLRTestRunFile) $(TargetAssemblyName) $CLRTestExecutionArguments 
+$(_CLRTestRunFile) $(TargetAssemblyName) $CLRTestExecutionArguments 
+if [  $? -ne $CLRTestExpectedExitCode ]
 then
   echo END EXECUTION OF IL{D}ASM BINARY - FAILED $? vs $CLRTestExpectedExitCode
   echo FAILED
@@ -241,11 +231,20 @@ then
 fi
       ]]></BashCLRTestLaunchCmds>
 
-      <BashCLRTestLaunchCmds><![CDATA[
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun'"><![CDATA[
 $(BashCLRTestLaunchCmds)
-echo $_DebuggerFullPath $(_CLRTestRunFile) $(InputAssemblyName) $CLRTestExecutionArguments $Host_Args
-$_DebuggerFullPath $(_CLRTestRunFile) $(InputAssemblyName) $CLRTestExecutionArguments $Host_Args
+echo $_DebuggerFullPath $(_CLRTestRunFile) $(InputAssemblyName) $CLRTestExecutionArguments 
+$_DebuggerFullPath $(_CLRTestRunFile) $(InputAssemblyName) $CLRTestExecutionArguments 
 CLRTestExitCode=$?
+      ]]></BashCLRTestLaunchCmds>
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'RunOnly'"><![CDATA[
+$(BashCLRTestLaunchCmds)
+echo export CDPATH="$%28dirname "$0")"
+export CDPATH="$%28dirname "$0")"
+echo /bin/sh -c  $(InputAssemblyName) 
+/bin/sh -c $(InputAssemblyName)
+CLRTestExitCode=$?
+CLRTestExpectedExitCode=0
       ]]></BashCLRTestLaunchCmds>
     </PropertyGroup>
 

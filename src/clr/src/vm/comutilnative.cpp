@@ -1454,10 +1454,13 @@ FCIMPL5(VOID, Buffer::BlockCopy, ArrayBase *src, int srcOffset, ArrayBase *dst, 
     }
     else
     {
-        const CorElementType dstET = dst->GetArrayElementType();
-        if (!CorTypeInfo::IsPrimitiveType_NoThrow(dstET))
-            FCThrowArgumentVoid(W("dest"), W("Arg_MustBePrimArray"));
         dstLen = dst->GetNumComponents() * dst->GetComponentSize();
+        if (dst->GetMethodTable() != src->GetMethodTable())
+        {
+            const CorElementType dstET = dst->GetArrayElementType();
+            if (!CorTypeInfo::IsPrimitiveType_NoThrow(dstET))
+                FCThrowArgumentVoid(W("dest"), W("Arg_MustBePrimArray"));
+        }
     }
 
     if (srcOffset < 0 || dstOffset < 0 || count < 0) {

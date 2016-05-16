@@ -548,7 +548,7 @@ are prefaced by '*' have been prototyped in an earlier version of the JIT, and t
 being re-integrated and tested, but may require some cleanup and/or phasing with other work items
 before a PR is submitted.
 
-  ### Mostly-Independent work items
+### Mostly-Independent work items
 1.	*Replace block ops with assignments & new nodes.
 
 2.	*Add new fixed-size types, and normalize them in the importer (might be best to do this with or after #1, but not really dependent)
@@ -560,7 +560,7 @@ before a PR is submitted.
       Note that this work item is specifically intended for call arguments. It is likely the case that
       utilizing ldp for general-purpose code sequences would be handled separately.
 
-4.	Arm64 & x64/ux: aggressively promote lclVar struct incoming or outgoing args with two 8-byte fields
+4.	X64/ux: aggressively promote lclVar struct incoming or outgoing args with two 8-byte fields
 
 5.	X64/ux:
     * modify the handling of multireg struct args to use GT_LIST of GT_IND
@@ -569,13 +569,14 @@ before a PR is submitted.
     * stop adding extra lclVar copies
 
 6.	Arm64:
-    * Promote 16-byte struct lclVars that are incoming or outgoing register arguments only if they have 2 8-byte fields.
+    * Promote 16-byte struct lclVars that are incoming or outgoing register arguments only if they have 2 8-byte fields (DONE).
       Pass those using GT_LIST of GT_LCL_VAR (as above for x64/ux).
       Note that, if the types do not match, e.g. a TYP_DOUBLE field that will be passed in an integer register,
       it will require special handling in Lowering and LSRA, as is currently done in the TYP_SIMD8 case.
-    * For other cases, pass as GT_LIST of GT_IND
+    * For other cases, pass as GT_LIST of GT_IND (DONE)
     * The GT_LIST would be created in fgMorphArgs(). Then in Lower, putarg_reg nodes will be inserted between
-      the GT_LIST and the list item (GT_LCL_VAR or GT_IND).
+      the GT_LIST and the list item (GT_LCL_VAR or GT_IND). (DONE)
+    * Add support for HFAs.
     
     ### Dependent work items:
     

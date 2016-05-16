@@ -20,8 +20,6 @@
 
     void                genCodeForMulHi(GenTreeOp* treeNode);
 
-    void                genCodeForPow2Div(GenTreeOp* treeNode);
-
     void                genLeaInstruction(GenTreeAddrMode *lea);
 
     void                genSetRegToCond(regNumber dstReg, GenTreePtr tree);
@@ -41,9 +39,9 @@
     void                genPutArgStk(GenTreePtr treeNode);
     unsigned            getBaseVarForPutArgStk(GenTreePtr treeNode);
 
-#ifdef _TARGET_XARCH_
+#if defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
     unsigned            getFirstArgWithStackSlot();
-#endif // !_TARGET_XARCH_
+#endif // _TARGET_XARCH_ || _TARGET_ARM64_
 
     void                genCompareFloat(GenTreePtr treeNode);
 

@@ -14,6 +14,8 @@
 //
 inline static int ComputeNameHashCode(LPCUTF8 src)
 {
+    LIMITED_METHOD_CONTRACT;
+
     if (src == NULL || *src == '\0')
         return 0;
 
@@ -39,6 +41,8 @@ inline static int ComputeNameHashCode(LPCUTF8 src)
 
 inline static int ComputeNameHashCode(LPCUTF8 pszNamespace, LPCUTF8 pszName)
 {
+    LIMITED_METHOD_CONTRACT;
+
     // DIFFERENT FROM CORERT: CoreRT hashes the full name as one string ("namespace.name"),
     // as the full name is already available. In CoreCLR we normally only have separate
     // strings for namespace and name, thus we hash them separately.
@@ -47,6 +51,8 @@ inline static int ComputeNameHashCode(LPCUTF8 pszNamespace, LPCUTF8 pszName)
 
 inline static int ComputeArrayTypeHashCode(int elementTypeHashcode, int rank)
 {
+    LIMITED_METHOD_CONTRACT;
+
     // DIFFERENT FROM CORERT: This is much simplified compared to CoreRT, to avoid converting.rank to string.
     // For single-dimensinal array, the result is identical to CoreRT.
     int hashCode = 0xd5313556 + rank;
@@ -59,22 +65,30 @@ inline static int ComputeArrayTypeHashCode(int elementTypeHashcode, int rank)
 
 inline static int ComputePointerTypeHashCode(int pointeeTypeHashcode)
 {
+    LIMITED_METHOD_CONTRACT;
+
     return (pointeeTypeHashcode + _rotl(pointeeTypeHashcode, 5)) ^ 0x12D0;
 }
 
 inline static int ComputeByrefTypeHashCode(int parameterTypeHashcode)
 {
+    LIMITED_METHOD_CONTRACT;
+
     return (parameterTypeHashcode + _rotl(parameterTypeHashcode, 7)) ^ 0x4C85;
 }
 
 inline static int ComputeNestedTypeHashCode(int enclosingTypeHashcode, int nestedTypeNameHash)
 {
+    LIMITED_METHOD_CONTRACT;
+
     return (enclosingTypeHashcode + _rotl(enclosingTypeHashcode, 11)) ^ nestedTypeNameHash;
 }
 
 template <typename TA, typename TB>
 inline static int ComputeGenericInstanceHashCode(int definitionHashcode, int arity, const TA& genericTypeArguments, int (*getHashCode)(TB))
 {
+    LIMITED_METHOD_CONTRACT;
+
     int hashcode = definitionHashcode;
     for (int i = 0; i < arity; i++)
     {

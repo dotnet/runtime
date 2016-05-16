@@ -648,7 +648,7 @@ namespace System.Reflection.Emit
                 requiredLength = inArray.Length*2;
 
             byte[] outArray = new byte[requiredLength];
-            Array.Copy(inArray, outArray, inArray.Length);
+            Buffer.BlockCopy(inArray, 0, outArray, 0, inArray.Length);
             return outArray;
         }
     
@@ -712,7 +712,7 @@ namespace System.Reflection.Emit
             //so we just copy that byte.  Then copy the rest of the array, shifting everything
             //to make room for the new number of elements.
             temp[0] = m_signature[0];
-            Array.Copy(m_signature, m_sizeLoc + 1, temp, m_sizeLoc + newSigSize, currSigHolder - (m_sizeLoc + 1));
+            Buffer.BlockCopy(m_signature, m_sizeLoc + 1, temp, m_sizeLoc + newSigSize, currSigHolder - (m_sizeLoc + 1));
             m_signature = temp;
             
             //Use the AddData method to add the number of elements appropriately compressed.
@@ -807,7 +807,7 @@ namespace System.Reflection.Emit
             else
                 throw new ArgumentException(Environment.GetResourceString("Argument_LargeInteger"));
             // copy the sig part of the sig
-            Array.Copy(m_signature, 2, temp, sigCopyIndex, currSigLength - 2);
+            Buffer.BlockCopy(m_signature, 2, temp, sigCopyIndex, currSigLength - 2);
             // mark the end of sig
             temp[newSigSize - 1] = (byte)CorElementType.End;
     
@@ -935,7 +935,7 @@ namespace System.Reflection.Emit
             if (m_signature.Length > m_currSig) 
             {
                 byte[] temp = new byte[m_currSig];
-                Array.Copy(m_signature, temp, m_currSig);
+                Array.Copy(m_signature, 0, temp, 0, m_currSig);
                 m_signature = temp;
             }
 

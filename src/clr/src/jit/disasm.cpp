@@ -1543,13 +1543,13 @@ void    DisAssembler::disAsmCode(BYTE* hotCodePtr, size_t hotCodeSize, BYTE* col
         }
     }
 #else // !DEBUG
-    // NOTE: non-DEBUG builds always use stdout currently!
-    disAsmFile = stdout;
+    // NOTE: non-DEBUG builds always use jitstdout currently!
+    disAsmFile = jitstdout;
 #endif // !DEBUG
 
     if (disAsmFile == nullptr)
     {
-        disAsmFile = stdout;
+        disAsmFile = jitstdout;
     }
 
     // As this writes to a common file, this is not reentrant.
@@ -1591,7 +1591,7 @@ void    DisAssembler::disAsmCode(BYTE* hotCodePtr, size_t hotCodeSize, BYTE* col
     DisasmBuffer(disAsmFile, /* printIt */ true);
     fprintf(disAsmFile, "\n");
 
-    if (disAsmFile != stdout)
+    if (disAsmFile != jitstdout)
     {
         fclose(disAsmFile);
     }

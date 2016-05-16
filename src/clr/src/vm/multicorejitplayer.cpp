@@ -373,7 +373,7 @@ MulticoreJitProfilePlayer::MulticoreJitProfilePlayer(AppDomain * pDomain, ICLRPr
     LIMITED_METHOD_CONTRACT;
 
     m_DomainID           = pDomain->GetId();
-#if defined(FEATURE_CORECLR) && defined(FEATURE_HOSTED_BINDER)
+#if defined(FEATURE_CORECLR)
     m_pBinderContext     = pBinderContext;
 #endif
     m_nMySession         = nSession;
@@ -464,7 +464,7 @@ bool MulticoreJitManager::IsSupportedModule(Module * pModule, bool fMethodJit, b
         return false;
     }
 
-#if defined(FEATURE_CORECLR) && defined(FEATURE_HOSTED_BINDER)
+#if defined(FEATURE_CORECLR)
     if (pFile->GetPath().IsEmpty()) // Ignore in-memory modules
     {
         return false;
@@ -550,7 +550,7 @@ bool MulticoreJitProfilePlayer::CompileMethodDesc(Module * pModule, MethodDesc *
 
         m_stats.m_nTryCompiling ++;
 
-#if defined(FEATURE_CORECLR) && defined(FEATURE_HOSTED_BINDER)
+#if defined(FEATURE_CORECLR)
         // Reset the flag to allow managed code to be called in multicore JIT background thread from this routine
         ThreadStateNCStackHolder holder(-1, Thread::TSNC_CallingManagedCodeDisabled);
 #endif
@@ -886,7 +886,7 @@ bool MulticoreJitProfilePlayer::HandleModuleDependency(unsigned jitInfo)
 
         PlayerModuleInfo & mod = m_pModules[moduleTo];
 
-#if defined(FEATURE_CORECLR) && defined(FEATURE_HOSTED_BINDER)
+#if defined(FEATURE_CORECLR)
         // Load the module if necessary.
         if (!mod.m_pModule)
         {
@@ -941,7 +941,7 @@ bool MulticoreJitProfilePlayer::HandleModuleDependency(unsigned jitInfo)
     return true;
 }
 
-#if defined(FEATURE_CORECLR) && defined(FEATURE_HOSTED_BINDER)
+#if defined(FEATURE_CORECLR)
 DomainAssembly * MulticoreJitProfilePlayer::LoadAssembly(SString & assemblyName)
 {
     STANDARD_VM_CONTRACT;
@@ -1093,7 +1093,7 @@ HRESULT MulticoreJitProfilePlayer::HandleMethodRecord(unsigned * buffer, int cou
 
                             PlayerModuleInfo & mod = m_pModules[inst >> 24];
 
-#if defined(FEATURE_CORECLR) && defined(FEATURE_HOSTED_BINDER)
+#if defined(FEATURE_CORECLR)
                             _ASSERTE(mod.IsModuleLoaded());
 #else
                             _ASSERTE(mod.IsModuleLoaded() && ! mod.IsLowerLevel());
@@ -1313,7 +1313,7 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
                 const ModuleRecord * pRec = (const ModuleRecord * ) pBuffer;
 
                 if (((unsigned)(pRec->lenModuleName
-#if defined(FEATURE_CORECLR) && defined(FEATURE_HOSTED_BINDER)
+#if defined(FEATURE_CORECLR)
                     + pRec->lenAssemblyName
 #endif
                     ) > (rcdLen - sizeof(ModuleRecord))) || 

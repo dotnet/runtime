@@ -325,9 +325,9 @@ DEFINE_DACVAR(ULONG, HRESULT, dac__g_hrFatalError, ::g_hrFatalError)
 DEFINE_DACVAR(ULONG, DWORD, AssemblyUsageLogManager__s_UsageLogFlags, AssemblyUsageLogManager::s_UsageLogFlags)
 #endif // FEATURE_CORECLR
 
-#if defined(FEATURE_HOSTED_BINDER) && defined(FEATURE_APPX_BINDER)
+#if defined(FEATURE_APPX_BINDER)
 DEFINE_DACVAR(ULONG, PTR_CLRPrivBinderAppX, CLRPrivBinderAppX__s_pSingleton, CLRPrivBinderAppX::s_pSingleton)
-#endif //defined(FEATURE_HOSTED_BINDER) && defined(FEATURE_APPX)
+#endif //defined(FEATURE_APPX)
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 DEFINE_DACVAR(ULONG, DWORD, dac__g_MiniMetaDataBuffMaxSize, ::g_MiniMetaDataBuffMaxSize)

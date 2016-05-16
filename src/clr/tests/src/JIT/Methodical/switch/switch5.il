@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 // Stack implementation
 
 .assembly extern legacy library mscorlib {}
@@ -153,7 +156,9 @@
     IL_001b:  ldloc.0
     IL_001c:  ldc.i4.3
     IL_001d:  call       instance void TestStack::DoSwitch(int32)
-    IL_0022:  ret
+    IL_0022:  call       int32 ['mscorlib']System.Environment::get_ExitCode()
+              call       void ['mscorlib']System.Environment::Exit(int32)
+              ret
   } 
 
 } 

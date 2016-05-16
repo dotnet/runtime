@@ -2075,7 +2075,10 @@ private:
 #ifdef FEATURE_REMOTING    
     OBJECTREF     m_ExposedContext;
 #endif    
-#ifndef FEATURE_CORECLR
+#ifdef FEATURE_CORECLR
+    OBJECTREF     m_ExecutionContext;
+    OBJECTREF     m_SynchronizationContext;
+#else
     EXECUTIONCONTEXTREF     m_ExecutionContext;
 #endif
     OBJECTREF     m_Name;

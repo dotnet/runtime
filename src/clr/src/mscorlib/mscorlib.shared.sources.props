@@ -123,6 +123,7 @@
     <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SEHException.cs" />
     <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SafeBuffer.cs" />
     <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SafeHandle.cs" />
+    <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SafeHeapHandle.cs" />
     <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\BStrWrapper.cs" />
     <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CurrencyWrapper.cs" />
     <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ErrorWrapper.cs" />
@@ -134,6 +135,8 @@
     <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\InvalidComObjectException.cs" />
     <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SafeArrayRankMismatchException.cs" />
     <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SafeArrayTypeMismatchException.cs" />
+    <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\NativeBuffer.cs" />
+    <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\StringBuffer.cs" />
     <InteropSources Condition="'$(FeatureCoreClr)'=='true'"  Include="$(BclSourcesRoot)\System\Runtime\InteropServices\NativeCallableAttribute.cs" />
     <InteropSources Condition="'$(FeatureCominterop)' != 'true'" Include="$(BclSourcesRoot)\System\Runtime\InteropServices\NonPortable.cs" />
     <InteropSources Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\InteropServices\DispatchWrapper.cs" />
@@ -781,6 +784,8 @@
     <IoSources Include="$(BclSourcesRoot)\System\IO\MemoryStream.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\Path.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\PathHelper.cs" />
+    <IoSources Include="$(BclSourcesRoot)\System\IO\LongPathHelper.cs" />
+    <IoSources Include="$(BclSourcesRoot)\System\IO\PathInternal.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\PathTooLongException.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\PinnedBufferMemoryStream.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\ReadLinesIterator.cs" />

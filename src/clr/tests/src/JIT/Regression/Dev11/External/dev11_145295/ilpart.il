@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 .module extern CSharpPart.netmodule
 
@@ -12,10 +15,10 @@
 .assembly extern CSharpPart {}
 
 
-.assembly ILPart {}
+.assembly ilpart {}
 
 
-.module ILPart.dll
+.module ilpart.dll
 .imagebase 0x00400000
 .file alignment 0x00000200
 .stackreserve 0x00100000
@@ -211,4 +214,3 @@
     }
 
 }
-

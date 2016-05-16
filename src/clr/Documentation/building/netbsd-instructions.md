@@ -80,7 +80,7 @@ Build CoreFX
 The CoreFX package is located in pkgsrc-wip as corefx-git. In order to build it you need to perform the following command:
 
 ```
-cd /usr/pkgsrc/wip/coreclr-git
+cd /usr/pkgsrc/wip/corefx-git
 make
 ```
 

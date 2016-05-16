@@ -770,6 +770,10 @@ do                                                      \
                         case NATIVE_TYPE_LPWSTR:
                             INITFIELDMARSHALER(NFT_STRINGUNI, FieldMarshaler_StringUni, ());
                             break;
+                        
+                        case NATIVE_TYPE_LPUTF8STR:
+							INITFIELDMARSHALER(NFT_STRINGUTF8, FieldMarshaler_StringUtf8, ());
+							break;
 
                         case NATIVE_TYPE_LPTSTR:
                             // We no longer support Win9x so LPTSTR always maps to a Unicode string.
@@ -3158,7 +3162,113 @@ VOID FieldMarshaler_StringAnsi::DestroyNativeImpl(LPVOID pNativeValue) const
         CoTaskMemFree(sz);
 }
 
+//=======================================================================
+// CoTask Utf8 <--> System.String
+// See FieldMarshaler for details.
+//=======================================================================
+VOID FieldMarshaler_StringUtf8::UpdateNativeImpl(OBJECTREF* pCLRValue, LPVOID pNativeValue, OBJECTREF *ppCleanupWorkListOnStack) const
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+        INJECT_FAULT(COMPlusThrowOM());
+        PRECONDITION(CheckPointer(pNativeValue));
+    }
+    CONTRACTL_END;
 
+    STRINGREF pString = (STRINGREF)(*pCLRValue);
+    if (pString == NULL)
+    {
+        MAYBE_UNALIGNED_WRITE(pNativeValue, _PTR, NULL);
+    }
+    else
+    {
+        DWORD nc = pString->GetStringLength();
+        if (nc > MAX_SIZE_FOR_INTEROP)
+            COMPlusThrow(kMarshalDirectiveException, IDS_EE_STRING_TOOLONG);
+
+        // Characters would be # of characters + 1 in case left over high surrogate is ?
+        // Max 3 bytes per char for basic multi-lingual plane.
+        nc = (nc + 1) * MAX_UTF8_CHAR_SIZE;
+        // +1 for '\0'
+        LPUTF8  lpBuffer = (LPUTF8)CoTaskMemAlloc(nc + 1);
+        if (!lpBuffer)
+        {
+            COMPlusThrowOM();
+        }
+
+        // UTF8Marshaler.ConvertToNative
+        MethodDescCallSite convertToNative(METHOD__CUTF8MARSHALER__CONVERT_TO_NATIVE);
+        
+        ARG_SLOT args[] =
+        {
+            ((ARG_SLOT)(CLR_I4)0),
+            ObjToArgSlot(*pCLRValue),
+            PtrToArgSlot(lpBuffer)
+        };
+        convertToNative.Call(args);
+        MAYBE_UNALIGNED_WRITE(pNativeValue, _PTR, lpBuffer);
+    }
+}
+
+
+//=======================================================================
+// CoTask Utf8 <--> System.String
+// See FieldMarshaler for details.
+//=======================================================================
+VOID FieldMarshaler_StringUtf8::UpdateCLRImpl(const VOID *pNativeValue, OBJECTREF *ppProtectedCLRValue, OBJECTREF *ppProtectedOldCLRValue) const
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+        INJECT_FAULT(COMPlusThrowOM());
+        PRECONDITION(CheckPointer(pNativeValue));
+        PRECONDITION(CheckPointer(ppProtectedCLRValue));
+    }
+    CONTRACTL_END;
+
+    STRINGREF pString = NULL;
+    LPCUTF8  sz = (LPCUTF8)MAYBE_UNALIGNED_READ(pNativeValue, _PTR);
+    if (!sz)
+    {
+        pString = NULL;
+    }
+    else
+    {
+        MethodDescCallSite convertToManaged(METHOD__CUTF8MARSHALER__CONVERT_TO_MANAGED);
+        ARG_SLOT args[] =
+        {
+            PtrToArgSlot(pNativeValue),
+        };
+        pString = convertToManaged.Call_RetSTRINGREF(args);
+    }
+    *((STRINGREF*)ppProtectedCLRValue) = pString;
+}
+
+//=======================================================================
+// CoTask Utf8 <--> System.String
+// See FieldMarshaler for details.
+//=======================================================================
+VOID FieldMarshaler_StringUtf8::DestroyNativeImpl(LPVOID pNativeValue) const
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        PRECONDITION(CheckPointer(pNativeValue));
+    }
+    CONTRACTL_END;
+
+    LPCUTF8 lpBuffer = (LPCUTF8)MAYBE_UNALIGNED_READ(pNativeValue, _PTR);
+    MAYBE_UNALIGNED_WRITE(pNativeValue, _PTR, NULL);
+    if (lpBuffer)
+        CoTaskMemFree((LPVOID)lpBuffer);
+}
 
 //=======================================================================
 // FixedString <--> System.String
@@ -4607,6 +4717,7 @@ VOID NStructFieldTypeToString(FieldMarshaler* pFM, SString& strNStructFieldType)
         switch (GetNStructFieldType()) { \
         case NFT_STRINGUNI: rettype ((FieldMarshaler_StringUni*)this)->name##Impl args; break; \
         case NFT_STRINGANSI: rettype ((FieldMarshaler_StringAnsi*)this)->name##Impl args; break; \
+        case NFT_STRINGUTF8: rettype ((FieldMarshaler_StringUtf8*)this)->name##Impl args; break; \
         case NFT_FIXEDSTRINGUNI: rettype ((FieldMarshaler_FixedStringUni*)this)->name##Impl args; break; \
         case NFT_FIXEDSTRINGANSI: rettype ((FieldMarshaler_FixedStringAnsi*)this)->name##Impl args; break; \
         case NFT_FIXEDCHARARRAYANSI: rettype ((FieldMarshaler_FixedCharArrayAnsi*)this)->name##Impl args; break; \
@@ -4649,6 +4760,7 @@ VOID NStructFieldTypeToString(FieldMarshaler* pFM, SString& strNStructFieldType)
         switch (GetNStructFieldType()) { \
         case NFT_STRINGUNI: rettype ((FieldMarshaler_StringUni*)this)->name##Impl args; break; \
         case NFT_STRINGANSI: rettype ((FieldMarshaler_StringAnsi*)this)->name##Impl args; break; \
+        case NFT_STRINGUTF8: rettype ((FieldMarshaler_StringUtf8*)this)->name##Impl args; break; \
         case NFT_FIXEDSTRINGUNI: rettype ((FieldMarshaler_FixedStringUni*)this)->name##Impl args; break; \
         case NFT_FIXEDSTRINGANSI: rettype ((FieldMarshaler_FixedStringAnsi*)this)->name##Impl args; break; \
         case NFT_FIXEDCHARARRAYANSI: rettype ((FieldMarshaler_FixedCharArrayAnsi*)this)->name##Impl args; break; \
