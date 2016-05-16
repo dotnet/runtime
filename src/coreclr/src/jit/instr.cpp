@@ -1483,7 +1483,7 @@ AGAIN:
 
         assert(!instIsFP(ins));
 
-#ifndef _TARGET_64BIT_
+#if CPU_LONG_USES_REGPAIR
         if  (tree->gtType == TYP_LONG)
         {
             if  (offs)
@@ -1497,7 +1497,7 @@ AGAIN:
             }
         }
         else
-#endif // !_TARGET_64BIT_
+#endif // CPU_LONG_USES_REGPAIR
         {
             reg = tree->gtRegNum;
         }
@@ -1663,6 +1663,8 @@ AGAIN:
 #ifdef _TARGET_XARCH_
         assert(!instIsFP(ins));
 #endif
+
+#if CPU_LONG_USES_REGPAIR
         if  (tree->gtType == TYP_LONG)
         {
             if  (offs)
@@ -1676,6 +1678,7 @@ AGAIN:
             }
         }
         else
+#endif // CPU_LONG_USES_REGPAIR
         {
             rg2 = tree->gtRegNum;
         }
@@ -1899,7 +1902,7 @@ LONGREG_TT_IV:
 
         assert(instIsFP(ins) == 0);
 
-#ifndef _TARGET_64BIT_
+#if CPU_LONG_USES_REGPAIR
         if  (tree->gtType == TYP_LONG)
         {
             if  (offs == 0)
@@ -1921,7 +1924,7 @@ LONGREG_TT_IV:
 #endif
         }
         else
-#endif // !_TARGET_64BIT_
+#endif // CPU_LONG_USES_REGPAIR
         {
             reg = tree->gtRegNum;
         }
@@ -2347,6 +2350,7 @@ LONGREG_RVTT:
 
         regNumber rg2;
 
+#if CPU_LONG_USES_REGPAIR
         if  (tree->gtType == TYP_LONG)
         {
             if  (offs)
@@ -2361,6 +2365,7 @@ LONGREG_RVTT:
             }
         }
         else
+#endif // LEGACY_BACKEND
         {
             rg2 = tree->gtRegNum;
         }

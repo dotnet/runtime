@@ -337,7 +337,16 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
 #if defined(_TARGET_X86_)
 
   #define CPU_LOAD_STORE_ARCH      0
+
+#ifdef LEGACY_BACKEND
   #define CPU_LONG_USES_REGPAIR    1
+#else
+  #define CPU_LONG_USES_REGPAIR    0       // RyuJIT x86 doesn't use the regPairNo field to record register pairs for long
+                                           // type tree nodes, and instead either decomposes them (for non-atomic operations)
+                                           // or stores multiple regNumber values for operations such as calls where the
+                                           // register definitions are effectively "atomic".
+#endif // LEGACY_BACKEND
+
   #define CPU_HAS_FP_SUPPORT       1
   #define ROUND_FLOAT              1       // round intermed float expression results
   #define CPU_HAS_BYTE_REGS        1
