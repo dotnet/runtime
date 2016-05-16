@@ -315,6 +315,8 @@ typedef struct MonoAotFileInfo
 	guint32 trampoline_size [MONO_AOT_TRAMP_NUM];
 	/* The offset where the trampolines begin on a trampoline page */
 	guint32 tramp_page_code_offsets [MONO_AOT_TRAMP_NUM];
+	/* GUID of aot compilation */
+	guint8 aotid[16];
 } MonoAotFileInfo;
 
 /* Number of symbols in the MonoAotFileInfo structure */

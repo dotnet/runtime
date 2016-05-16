@@ -51,6 +51,7 @@
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-mmap.h>
+#include <mono/utils/mono-rand.h>
 #include <mono/utils/json.h>
 #include <mono/utils/mono-threads-coop.h>
 
@@ -8868,6 +8869,21 @@ emit_extra_methods (MonoAotCompile *acfg)
 }	
 
 static void
+generate_aotid (guint8* aotid)
+{
+	gpointer *rand_handle;
+	MonoError error;
+
+	mono_rand_open ();
+	rand_handle = mono_rand_init (NULL, 0);
+
+	mono_rand_try_get_bytes (rand_handle, aotid, 16, &error);
+	mono_error_assert_ok (&error);
+
+	mono_rand_close (rand_handle);
+}
+
+static void
 emit_exception_info (MonoAotCompile *acfg)
 {
 	int i;
@@ -9360,6 +9376,8 @@ init_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 	info->nshared_got_entries = acfg->nshared_got_entries;
 	for (i = 0; i < MONO_AOT_TRAMP_NUM; ++i)
 		info->tramp_page_code_offsets [i] = acfg->tramp_page_code_offsets [i];
+
+	generate_aotid(&info->aotid);
 }
 
 static void
