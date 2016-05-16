@@ -205,7 +205,7 @@ def osShortName = ['Windows 10': 'win10',
 // **************************
 // Define outerloop testing for linux OSes that can't build.  Run locally on each machine.
 // **************************
-def outerloopLinuxOSes = ['Ubuntu16.04', 'CentOS7.1', 'OpenSUSE13.2', 'RHEL7.2', 'Fedora23']
+def outerloopLinuxOSes = ['Ubuntu16.04', 'CentOS7.1', 'OpenSUSE13.2', 'RHEL7.2', 'Fedora23', 'Debian8.4']
 [true, false].each { isPR ->
     ['Debug', 'Release'].each { configurationGroup ->
         outerloopLinuxOSes.each { os ->
@@ -469,7 +469,7 @@ def static addCopyCoreClrAndRunTestSteps(def job, def coreclrBranch, String os, 
 // and then a build for the test of corefx on the target platform.  Then we link them with a build
 // flow job.
 
-def innerLoopNonWindowsOSs = ['Ubuntu16.04', 'Debian8.2', 'Debian8.4', 'CentOS7.1', 'OpenSUSE13.2', 'RHEL7.2', 'Fedora23']
+def innerLoopNonWindowsOSs = ['Ubuntu16.04', 'Debian8.2', 'CentOS7.1', 'OpenSUSE13.2', 'RHEL7.2', 'Fedora23']
 [true, false].each { isPR ->
     ['Debug', 'Release'].each { configurationGroup ->
         innerLoopNonWindowsOSs.each { os ->
