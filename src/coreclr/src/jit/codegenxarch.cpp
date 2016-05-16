@@ -3008,7 +3008,7 @@ CodeGen::genLclHeap(GenTreePtr tree)
             
             goto ALLOC_DONE;
         }
-        else if (!compiler->info.compInitMem && (amount < CORINFO_PAGE_SIZE))  // must be < not <=
+        else if (!compiler->info.compInitMem && (amount < compiler->eeGetPageSize()))  // must be < not <=
         {               
             // Since the size is less than a page, simply adjust ESP.
             // ESP might already be in the guard page, so we must touch it BEFORE
@@ -3118,7 +3118,7 @@ CodeGen::genLclHeap(GenTreePtr tree)
         regNumber regTmp = genRegNumFromMask(tmpRegsMask);
 
         inst_RV_RV(INS_mov, regTmp, REG_SPBASE, TYP_I_IMPL);
-        inst_RV_IV(INS_sub, regTmp, CORINFO_PAGE_SIZE, EA_PTRSIZE);
+        inst_RV_IV(INS_sub, regTmp, compiler->eeGetPageSize(), EA_PTRSIZE);
         inst_RV_RV(INS_mov, REG_SPBASE, regTmp, TYP_I_IMPL);
 
         inst_RV_RV(INS_cmp, REG_SPBASE, regCnt, TYP_I_IMPL);

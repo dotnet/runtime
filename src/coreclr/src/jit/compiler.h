@@ -6361,6 +6361,25 @@ public :
 
     GenTreePtr                  eeGetPInvokeCookie(CORINFO_SIG_INFO *szMetaSig);
 
+    // Returns the page size for the target machine as reported by the EE.
+    inline size_t               eeGetPageSize() const
+    {
+        return CORINFO_PAGE_SIZE;
+    }
+
+    // Returns the frame size at which we will generate a loop to probe the stack.
+    inline size_t               getVeryLargeFrameSize() const
+    {
+#ifdef _TARGET_ARM_
+        // The looping probe code is 40 bytes, whereas the straight-line probing for
+        // the (0x2000..0x3000) case is 44, so use looping for anything 0x2000 bytes
+        // or greater, to generate smaller code.
+        return 2 * eeGetPageSize();
+#else
+        return 3 * eeGetPageSize();
+#endif
+    }
+
     // Exceptions
 
     unsigned                    eeGetEHcount        (CORINFO_METHOD_HANDLE handle);
@@ -9101,18 +9120,8 @@ extern const BYTE          genActualTypes[];
 
 /*****************************************************************************/
 
-// Define the frame size at which we will generate a loop to probe the stack.
-// VERY_LARGE_FRAME_SIZE_REG_MASK is the set of registers we need to use for the probing loop.
-
-#ifdef _TARGET_ARM_
-// The looping probe code is 40 bytes, whereas the straight-line probing for
-// the (0x2000..0x3000) case is 44, so use looping for anything 0x2000 bytes
-// or greater, to generate smaller code.
-
-#define VERY_LARGE_FRAME_SIZE           (2 * CORINFO_PAGE_SIZE)
-#else
-#define VERY_LARGE_FRAME_SIZE           (3 * CORINFO_PAGE_SIZE)
-#endif
+// VERY_LARGE_FRAME_SIZE_REG_MASK is the set of registers we need to use for
+// the probing loop generated for very large stack frames (see `getVeryLargeFrameSize`).
 
 #ifdef _TARGET_ARM_
 #define VERY_LARGE_FRAME_SIZE_REG_MASK  (RBM_R4 | RBM_R5 | RBM_R6)
