@@ -188,7 +188,7 @@ static gboolean concurrent_sweep = TRUE;
 #define BLOCK_TAG(bl)				((bl)->has_references ? BLOCK_TAG_HAS_REFERENCES ((bl)) : (bl))
 
 /* all allocated blocks in the system */
-static SgenArrayList allocated_blocks = SGEN_ARRAY_LIST_INIT (NULL, NULL, NULL, INTERNAL_MEM_PIN_QUEUE);
+static SgenArrayList allocated_blocks = SGEN_ARRAY_LIST_INIT (NULL, sgen_array_list_default_is_slot_set, sgen_array_list_default_cas_setter, INTERNAL_MEM_PIN_QUEUE);
 
 /* non-allocated block free-list */
 static void *empty_blocks = NULL;
@@ -1417,8 +1417,6 @@ sweep_start (void)
 		for (j = 0; j < num_block_obj_sizes; ++j)
 			free_blocks [j] = NULL;
 	}
-
-	sgen_array_list_remove_nulls (&allocated_blocks);
 }
 
 static void sweep_finish (void);
@@ -1560,6 +1558,7 @@ ensure_block_is_checked_for_sweeping (guint32 block_index, gboolean wait, gboole
 		ms_free_block (block);
 
 		SGEN_ATOMIC_ADD_P (num_major_sections, -1);
+		SGEN_ATOMIC_ADD_P (num_major_sections_freed_in_sweep, 1);
 
 		tagged_block = NULL;
 	}
@@ -1606,13 +1605,8 @@ sweep_job_func (void *thread_data_untyped, SgenThreadPoolJob *job)
 	 * cooperate with the sweep thread to finish sweeping, and they will traverse from
 	 * low to high, to avoid constantly colliding on the same blocks.
 	 */
-	for (block_index = num_blocks; block_index-- > 0;) {
-		/*
-		 * The block might have been freed by another thread doing some checking
-		 * work.
-		 */
-		if (!ensure_block_is_checked_for_sweeping (block_index, TRUE, NULL))
-			++num_major_sections_freed_in_sweep;
+	for (block_index = allocated_blocks.next_slot; block_index-- > 0;) {
+		ensure_block_is_checked_for_sweeping (block_index, TRUE, NULL);
 	}
 
 	while (!try_set_sweep_state (SWEEP_STATE_COMPACTING, SWEEP_STATE_SWEEPING)) {
@@ -1680,8 +1674,6 @@ major_sweep (void)
 	set_sweep_state (SWEEP_STATE_SWEEPING, SWEEP_STATE_NEED_SWEEPING);
 
 	sweep_start ();
-
-	SGEN_ASSERT (0, num_major_sections == allocated_blocks.next_slot, "We don't know how many blocks we have?");
 
 	num_major_sections_before_sweep = num_major_sections;
 	num_major_sections_freed_in_sweep = 0;
