@@ -14,48 +14,28 @@ namespace System.Reflection.Tests
     public class PropertyInfoPropertyTests
     {
         [Theory]
-        [InlineData("MyPropAA", "Failed!  CanRead Failed for read write property. Expected True , returned False")]
-        [InlineData("MyPropBB", "Failed!  CanRead Failed for read only property. Expected True , returned False")]
-        public static void TestCanRead(String propName, String message)
+        [InlineData("MyPropAA", true)]
+        [InlineData("MyPropBB", true)]
+        [InlineData("MyPropCC", false)]
+        public static void TestCanRead(String propName, String message, bool boolean)
         {
             PropertyInfo pi = GetProperty(typeof(SampleProperty), propName);
 
             Assert.NotNull(pi);
-            Assert.True(pi.CanRead, message);
-        }
-
-        //Verify CanRead for writeonly PropertyInfo
-        [Fact]
-        public static void TestCanRead2()
-        {
-            string propName = "MyPropCC";
-            PropertyInfo pi = GetProperty(typeof(SampleProperty), propName);
-
-            Assert.NotNull(pi);
-            Assert.False(pi.CanRead, "Failed!  CanRead Failed for write only property. Expected False , returned True");
+            Assert.Equal(boolean, pi.CanRead);
         }
 
         [Theory]
-        [InlineData("MyPropAA", "Failed!  CanWrite Failed for read write property. Expected True , returned False")]
-        [InlineData("MyPropCC", "Failed!  CanWrite Failed for write only property. Expected True , returned False")]
-        public static void TestCanWrite(String propName, String message)
+        [InlineData("MyPropAA", true)]
+        [InlineData("MyPropBB", false)]
+        [InlineData("MyPropCC", true)]
+        public static void TestCanWrite(String propName, bool boolean)
         {
             PropertyInfo pi = GetProperty(typeof(SampleProperty), propName);
 
             Assert.NotNull(pi);
-            Assert.True(pi.CanWrite, message);
+            Assert.Equal(boolean, pi.CanWrite);
 
-        }
-
-        //Verify CanWrite for readonly PropertyInfo
-        [Fact]
-        public static void TestCanWrite2()
-        {
-            string propName = "MyPropBB";
-            PropertyInfo pi = GetProperty(typeof(SampleProperty), propName);
-
-            Assert.NotNull(pi);
-            Assert.False(pi.CanWrite, "Failed!  CanWrite Failed for read only property. Expected False , returned True");
         }
 
         [Theory]
