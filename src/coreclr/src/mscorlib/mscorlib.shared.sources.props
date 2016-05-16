@@ -261,6 +261,7 @@
     <SystemSources Include="$(BclSourcesRoot)\System\AppContext\AppContext.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\AppContext\AppContextSwitches.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\AppContext\AppContextDefaultValues.cs" />
+    <SystemSources Condition="'$(FeatureCoreClr)'=='true'" Include="$(BclSourcesRoot)\System\AppContext\AppContextDefaultValues.CoreClrOverrides.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\AppContext\AppContextDefaultValues.Defaults.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\AppContext\AppContextDefaultValues.Defaults.Central.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\Object.cs" />
