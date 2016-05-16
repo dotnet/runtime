@@ -10,10 +10,21 @@ internal partial class Interop
 {
     internal partial class BCrypt
     {
-        internal static NTSTATUS BCryptGenRandom(byte[] pbBuffer, int cbBuffer)
+        internal static unsafe NTSTATUS BCryptGenRandom(byte[] pbBuffer, int cbBuffer)
         {
             Debug.Assert(pbBuffer != null);
             Debug.Assert(cbBuffer >= 0 && cbBuffer <= pbBuffer.Length);
+
+            fixed (byte* pb = pbBuffer)
+            {
+                return BCryptGenRandom(pb, cbBuffer);
+            }
+        }
+
+        internal static unsafe NTSTATUS BCryptGenRandom(byte* pbBuffer, int cbBuffer)
+        {
+            Debug.Assert(pbBuffer != null);
+            Debug.Assert(cbBuffer >= 0);
 
             return BCryptGenRandom(IntPtr.Zero, pbBuffer, cbBuffer, BCRYPT_USE_SYSTEM_PREFERRED_RNG);
         }
@@ -21,6 +32,6 @@ internal partial class Interop
         private const int BCRYPT_USE_SYSTEM_PREFERRED_RNG = 0x00000002;
 
         [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
-        private static extern NTSTATUS BCryptGenRandom(IntPtr hAlgorithm, [In, Out] byte[] pbBuffer, int cbBuffer, int dwFlags);
+        private static unsafe extern NTSTATUS BCryptGenRandom(IntPtr hAlgorithm, byte* pbBuffer, int cbBuffer, int dwFlags);
     }
 }
