@@ -22,10 +22,10 @@ namespace System.Tests
         [Theory]
         [InlineData(typeof(String))]
         [InlineData(typeof(int*))]
-    	public static void StringsAndPointers_Throw_ArgumentException(Type type)
-    	{
+        public static void StringsAndPointers_Throw_ArgumentException(Type type)
+        {
             Assert.Throws<ArgumentException>(null /* really should be 'type' */, () => FormatterServices.GetUninitializedObject(type));
-    	}
+        }
 
         [Fact]
         public static void InstantiatedArrays_Throw_ArgumentException()
@@ -34,13 +34,13 @@ namespace System.Tests
         }
 
         [Theory]
-    	[InlineData(typeof(Array))]
+        [InlineData(typeof(Array))]
         [InlineData(typeof(ICollection))]
         [InlineData(typeof(Stream))]
         public static void InterfacesAndAbstractClasses_Throw_MemberAccessException(Type type)
-    	{
-    		Assert.Throws<MemberAccessException>(() => FormatterServices.GetUninitializedObject(type));
-    	}
+        {
+            Assert.Throws<MemberAccessException>(() => FormatterServices.GetUninitializedObject(type));
+        }
 
         [Theory]
         [InlineData(typeof(object))]
@@ -67,10 +67,10 @@ namespace System.Tests
         [Theory]
         [MemberData(nameof(TestData))]
         public static void PrimitiveTypes_Success(Type type, Object value)
-    	{
-    		Assert.Equal(value.ToString(), FormatterServices.GetUninitializedObject(type).ToString());
-    		Assert.Equal(type, FormatterServices.GetUninitializedObject(type).GetType());
-    	}
+        {
+            Assert.Equal(value.ToString(), FormatterServices.GetUninitializedObject(type).ToString());
+            Assert.Equal(type, FormatterServices.GetUninitializedObject(type).GetType());
+        }
 
         [Fact]
         public static void Nullable_BecomesNonNullable_Success()
@@ -90,6 +90,6 @@ namespace System.Tests
         private class MyClass
         {
             public string MyMember { get; set; }
-    	}
+        }
     }
 }
