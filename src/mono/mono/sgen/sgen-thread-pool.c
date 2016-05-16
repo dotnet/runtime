@@ -17,11 +17,14 @@
 #include "mono/utils/mono-threads.h"
 #endif
 
+#define MAX_NUM_THREADS 8
+
 static mono_mutex_t lock;
 static mono_cond_t work_cond;
 static mono_cond_t done_cond;
 
-static MonoNativeThreadId thread;
+static int threads_num = 0;
+static MonoNativeThreadId threads [MAX_NUM_THREADS];
 
 /* Only accessed with the lock held. */
 static SgenPointerQueue job_queue;
@@ -31,7 +34,7 @@ static SgenThreadPoolIdleJobFunc idle_job_func;
 static SgenThreadPoolContinueIdleJobFunc continue_idle_job_func;
 
 static volatile gboolean threadpool_shutdown;
-static volatile gboolean thread_finished;
+static volatile int threads_finished = 0;
 
 enum {
 	STATE_WAITING,
@@ -140,7 +143,7 @@ thread_func (void *thread_data)
 		} else {
 			SGEN_ASSERT (0, threadpool_shutdown, "Why did we unlock if no jobs and not shutting down?");
 			mono_os_mutex_lock (&lock);
-			thread_finished = TRUE;
+			threads_finished++;
 			mono_os_cond_signal (&done_cond);
 			mono_os_mutex_unlock (&lock);
 			return 0;
@@ -153,7 +156,9 @@ thread_func (void *thread_data)
 void
 sgen_thread_pool_init (int num_threads, SgenThreadPoolThreadInitFunc init_func, SgenThreadPoolIdleJobFunc idle_func, SgenThreadPoolContinueIdleJobFunc continue_idle_func, void **thread_datas)
 {
-	SGEN_ASSERT (0, num_threads == 1, "We only support 1 thread pool thread for now.");
+	int i;
+
+	threads_num = (num_threads < MAX_NUM_THREADS) ? num_threads : MAX_NUM_THREADS;
 
 	mono_os_mutex_init (&lock);
 	mono_os_cond_init (&work_cond);
@@ -163,19 +168,20 @@ sgen_thread_pool_init (int num_threads, SgenThreadPoolThreadInitFunc init_func, 
 	idle_job_func = idle_func;
 	continue_idle_job_func = continue_idle_func;
 
-	mono_native_thread_create (&thread, thread_func, thread_datas ? thread_datas [0] : NULL);
+	for (i = 0; i < threads_num; i++)
+		mono_native_thread_create (&threads [i], thread_func, thread_datas ? thread_datas [i] : NULL);
 }
 
 void
 sgen_thread_pool_shutdown (void)
 {
-	if (!thread)
+	if (!threads_num)
 		return;
 
 	mono_os_mutex_lock (&lock);
 	threadpool_shutdown = TRUE;
-	mono_os_cond_signal (&work_cond);
-	while (!thread_finished)
+	mono_os_cond_broadcast (&work_cond);
+	while (threads_finished < threads_num)
 		mono_os_cond_wait (&done_cond, &lock);
 	mono_os_mutex_unlock (&lock);
 
@@ -207,10 +213,6 @@ sgen_thread_pool_job_enqueue (SgenThreadPoolJob *job)
 	mono_os_mutex_lock (&lock);
 
 	sgen_pointer_queue_add (&job_queue, job);
-	/*
-	 * FIXME: We could check whether there is a job in progress.  If there is, there's
-	 * no need to signal the condition, at least as long as we have only one thread.
-	 */
 	mono_os_cond_signal (&work_cond);
 
 	mono_os_mutex_unlock (&lock);
@@ -237,7 +239,7 @@ sgen_thread_pool_idle_signal (void)
 	mono_os_mutex_lock (&lock);
 
 	if (continue_idle_job_func ())
-		mono_os_cond_signal (&work_cond);
+		mono_os_cond_broadcast (&work_cond);
 
 	mono_os_mutex_unlock (&lock);
 }
@@ -269,7 +271,14 @@ sgen_thread_pool_wait_for_all_jobs (void)
 gboolean
 sgen_thread_pool_is_thread_pool_thread (MonoNativeThreadId some_thread)
 {
-	return some_thread == thread;
+	int i;
+
+	for (i = 0; i < threads_num; i++) {
+		if (some_thread == threads [i])
+			return TRUE;
+	}
+
+	return FALSE;
 }
 
 #endif
