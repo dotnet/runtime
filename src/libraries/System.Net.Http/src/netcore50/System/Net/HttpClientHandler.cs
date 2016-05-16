@@ -321,7 +321,10 @@ namespace System.Net.Http
 
         public int MaxResponseHeadersLength
         {
-            get { return 0; } // TODO: Issue #8541 - return default value used in Wininet.
+            // Windows.Web.Http is built on WinINet. There is no maximum limit (except for out of memory)
+            // for received response headers. So, returning 0 (indicating no limit) is appropriate.
+            get { return 0; }
+
             set
             {
                 throw new PlatformNotSupportedException(String.Format(CultureInfo.InvariantCulture,
