@@ -6009,7 +6009,7 @@
       <Member Name="ZeroFreeCoTaskMemAnsi(System.IntPtr)" />
       <Member Name="ZeroFreeGlobalAllocAnsi(System.IntPtr)" />
       <Member Name="ZeroFreeGlobalAllocUnicode(System.IntPtr)" />
-      <Member Name="ZeroFreeMemoryUTF8(System.IntPtr)" />
+      <Member Name="ZeroFreeCoTaskMemUTF8(System.IntPtr)" />
     </Type>
     <Type Name="System.Runtime.InteropServices.MarshalAsAttribute">
       <Member MemberType="Field" Name="ArraySubType" />
