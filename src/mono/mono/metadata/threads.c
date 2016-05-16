@@ -257,8 +257,14 @@ mono_thread_get_tls_key (void)
 gint32
 mono_thread_get_tls_offset (void)
 {
-	int offset;
+	int offset = -1;
+
+#ifdef HOST_WIN32
+	if (current_object_key)
+		offset = current_object_key;
+#else
 	MONO_THREAD_VAR_OFFSET (tls_current_object,offset);
+#endif
 	return offset;
 }
 

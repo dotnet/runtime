@@ -3780,6 +3780,73 @@ mono_amd64_emit_tls_get (guint8* code, int dreg, int tls_offset)
 	return code;
 }
 
+#ifdef TARGET_WIN32
+
+#define MAX_TEB_TLS_SLOTS 64
+#define TEB_TLS_SLOTS_OFFSET 0x1480
+#define TEB_TLS_EXPANSION_SLOTS_OFFSET 0x1780
+
+static guint8*
+emit_tls_get_reg_windows (guint8* code, int dreg, int offset_reg)
+{
+	int tmp_reg = -1;
+	guint8 * more_than_64_slots = NULL;
+	guint8 * empty_slot = NULL;
+	guint8 * tls_get_reg_done = NULL;
+	
+	//Use temporary register for offset calculation?
+	if (dreg == offset_reg) {
+		tmp_reg = dreg == AMD64_RAX ? AMD64_RCX : AMD64_RAX;
+		amd64_push_reg (code, tmp_reg);
+		amd64_mov_reg_reg (code, tmp_reg, offset_reg, sizeof (gpointer));
+		offset_reg = tmp_reg;
+	}
+
+	//TEB TLS slot array only contains MAX_TEB_TLS_SLOTS items, if more is used the expansion slots must be addressed.
+	amd64_alu_reg_imm (code, X86_CMP, offset_reg, MAX_TEB_TLS_SLOTS);
+	more_than_64_slots = code;
+	amd64_branch8 (code, X86_CC_GE, 0, TRUE);
+
+	//TLS slot array, _TEB.TlsSlots, is at offset TEB_TLS_SLOTS_OFFSET and index is offset * 8 in Windows 64-bit _TEB structure.
+	amd64_shift_reg_imm (code, X86_SHL, offset_reg, 3);
+	amd64_alu_reg_imm (code, X86_ADD, offset_reg, TEB_TLS_SLOTS_OFFSET);
+
+	//TEB pointer is stored in GS segment register on Windows x64. TLS slot is located at calculated offset from that pointer.
+	x86_prefix (code, X86_GS_PREFIX);
+	amd64_mov_reg_membase (code, dreg, offset_reg, 0, sizeof (gpointer));
+		
+	tls_get_reg_done = code;
+	amd64_jump8 (code, 0);
+
+	amd64_patch (more_than_64_slots, code);
+
+	//TLS expansion slots, _TEB.TlsExpansionSlots, is at offset TEB_TLS_EXPANSION_SLOTS_OFFSET in Windows 64-bit _TEB structure.
+	x86_prefix (code, X86_GS_PREFIX);
+	amd64_mov_reg_mem (code, dreg, TEB_TLS_EXPANSION_SLOTS_OFFSET, sizeof (gpointer));
+	
+	//Check for NULL in _TEB.TlsExpansionSlots.
+	amd64_test_reg_reg (code, dreg, dreg);
+	empty_slot = code;
+	amd64_branch8 (code, X86_CC_EQ, 0, TRUE);
+	
+	//TLS expansion slots are at index offset into the expansion array.
+	//Calculate for the MAX_TEB_TLS_SLOTS offsets, since the interessting offset is offset_reg - MAX_TEB_TLS_SLOTS.
+	amd64_alu_reg_imm (code, X86_SUB, offset_reg, MAX_TEB_TLS_SLOTS);
+	amd64_shift_reg_imm (code, X86_SHL, offset_reg, 3);
+	
+	amd64_mov_reg_memindex (code, dreg, dreg, 0, offset_reg, 0, sizeof (gpointer));
+	
+	amd64_patch (empty_slot, code);
+	amd64_patch (tls_get_reg_done, code);
+
+	if (tmp_reg != -1)
+		amd64_pop_reg (code, tmp_reg);
+
+	return code;
+}
+
+#endif
+
 static guint8*
 emit_tls_get_reg (guint8* code, int dreg, int offset_reg)
 {
@@ -3804,6 +3871,8 @@ emit_tls_get_reg (guint8* code, int dreg, int offset_reg)
 	amd64_mov_reg_memindex (code, dreg, dreg, 0, offset_reg, 0, 8);
 	if (tmpreg != -1)
 		amd64_mov_reg_membase (code, tmpreg, AMD64_RSP, -8, 8);
+#elif defined(TARGET_WIN32)
+	code = emit_tls_get_reg_windows (code, dreg, offset_reg);
 #else
 	g_assert_not_reached ();
 #endif
