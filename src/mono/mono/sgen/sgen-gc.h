@@ -679,9 +679,6 @@ struct _SgenMajorCollector {
 extern SgenMajorCollector major_collector;
 
 void sgen_marksweep_init (SgenMajorCollector *collector);
-void sgen_marksweep_fixed_init (SgenMajorCollector *collector);
-void sgen_marksweep_par_init (SgenMajorCollector *collector);
-void sgen_marksweep_fixed_par_init (SgenMajorCollector *collector);
 void sgen_marksweep_conc_init (SgenMajorCollector *collector);
 SgenMajorCollector* sgen_get_major_collector (void);
 
