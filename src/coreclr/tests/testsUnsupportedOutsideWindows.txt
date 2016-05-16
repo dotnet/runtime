@@ -219,8 +219,6 @@ JIT/Methodical/cctor/xassem/xprecise3_cs_do/xprecise3_cs_do.sh
 JIT/Methodical/cctor/xassem/xprecise3_cs_r/xprecise3_cs_r.sh
 JIT/Methodical/cctor/xassem/xprecise3_cs_ro/xprecise3_cs_ro.sh
 JIT/Methodical/Coverage/arglist_pos/arglist_pos.sh
-JIT/Methodical/delegate/_simpleoddpower_il_d/_simpleoddpower_il_d.sh
-JIT/Methodical/delegate/_simpleoddpower_il_r/_simpleoddpower_il_r.sh
 JIT/Methodical/delegate/_XModuledeleg1_d/_XModuledeleg1_d.sh
 JIT/Methodical/delegate/_XModuledeleg1_do/_XModuledeleg1_do.sh
 JIT/Methodical/delegate/_XModuledeleg1_r/_XModuledeleg1_r.sh
