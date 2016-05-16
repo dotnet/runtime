@@ -21064,7 +21064,7 @@ regNumber           CodeGen::genLclHeap(GenTreePtr size)
                 // Re-bias amount to be number of bytes to adjust the SP 
                 amount <<= STACK_ALIGN_SHIFT;
                 size->gtIntCon.gtIconVal = amount;  // update the GT_CNS value in the node
-                if (amount < CORINFO_PAGE_SIZE)   // must be < not <=
+                if (amount < compiler->eeGetPageSize())   // must be < not <=
                 {
                     // Since the size is a page or less, simply adjust ESP 
                     
@@ -21249,7 +21249,7 @@ regNumber           CodeGen::genLclHeap(GenTreePtr size)
         inst_RV_RV(INS_mov, regTemp, REG_SPBASE, TYP_I_IMPL);
         regTracker.rsTrackRegTrash(regTemp);
 
-        inst_RV_IV(INS_sub, regTemp, CORINFO_PAGE_SIZE, EA_PTRSIZE);
+        inst_RV_IV(INS_sub, regTemp, compiler->eeGetPageSize(), EA_PTRSIZE);
         inst_RV_RV(INS_mov, REG_SPBASE, regTemp, TYP_I_IMPL);
 
         genRecoverReg(size, RBM_ALLINT, RegSet::KEEP_REG); // not purely the 'size' tree anymore; though it is derived from 'size'
