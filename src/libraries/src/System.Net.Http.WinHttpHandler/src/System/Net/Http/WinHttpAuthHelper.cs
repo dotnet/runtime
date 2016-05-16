@@ -304,7 +304,6 @@ namespace System.Net.Http
         {
             string userName;
             string password;
-            string domain;
 
             Debug.Assert(credentials != null);
             Debug.Assert(authScheme != 0);
@@ -329,7 +328,7 @@ namespace System.Net.Http
             {
                 userName = networkCredential.UserName;
                 password = networkCredential.Password;
-                domain = networkCredential.Domain;
+                string domain = networkCredential.Domain;
 
                 // WinHTTP does not support a blank username.  So, we will throw an exception.
                 if (string.IsNullOrEmpty(userName))
