@@ -3,26 +3,21 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
-using System;
-using System.Reflection;
 using System.Collections.Generic;
 
-
 #pragma warning disable 0414
-
 
 namespace System.Reflection.Tests
 {
     public class FieldInfoRTArrayTests
     {
-        //Verify FieldInfo for Array Field
+        //Verify FieldInfo for aArray Field
         [Fact]
         public static void TestSetValue_Field1()
         {
             FieldInfo fi = null;
             Type type = typeof(ArrayAsField);
-            Object obj = null;
-
+            object obj = null;
 
             obj = Activator.CreateInstance(type);
             A[] ATypeWithMixedAB = new A[] { new A(), new FieldInfoArrayB() };
@@ -49,15 +44,13 @@ namespace System.Reflection.Tests
             Assert.True((fi.GetValue(obj)).Equals(BTypeWithAllB_Contra), "Failed!! Could not set ArrayField aArray using FieldInfo");
         }
 
-
-        //Verify FieldInfo for Array Field
+        //Verify FieldInfo for bArray Field
         [Fact]
         public static void TestSetValue_Field2()
         {
             FieldInfo fi = null;
             Type type = typeof(ArrayAsField);
-            Object obj = null;
-
+            object obj = null;
 
             obj = Activator.CreateInstance(type);
             A[] ATypeWithMixedAB = new A[] { new A(), new FieldInfoArrayB() };
@@ -69,7 +62,6 @@ namespace System.Reflection.Tests
             fi = getField(type, "bArray");
             Assert.Throws<ArgumentException>(() => fi.SetValue(obj, ATypeWithMixedAB));
             Assert.Throws<ArgumentException>(() => fi.SetValue(obj, ATypeWithAllA));
-
             Assert.Throws<ArgumentException>(() => fi.SetValue(obj, ATypeWithAllB));
 
             fi.SetValue(obj, BTypeWithAllB);
@@ -79,19 +71,15 @@ namespace System.Reflection.Tests
             Assert.True((fi.GetValue(obj)).Equals(BTypeWithAllB_Contra), "Failed!! Could not set ArrayField bArray using FieldInfo");
         }
 
-
-
-        //Verify FieldInfo for Array Field
+        //Verify FieldInfo for iArray Field
         [Fact]
         public static void TestSetValue_Field3()
         {
             FieldInfo fi = null;
             Type type = typeof(ArrayAsField);
-            Object obj = Activator.CreateInstance(type);
+            object obj = Activator.CreateInstance(type);
 
             I[] mixedMN = new I[] { new M(), new N() };
-            int[] mixedInt = new int[] { 200, -200, (byte)30, (ushort)2 };
-            byte[] allByte = new byte[] { 2, 3, 4 };
 
             fi = getField(type, "iArray");
             fi.SetValue(obj, mixedMN);
@@ -99,16 +87,14 @@ namespace System.Reflection.Tests
             Assert.True((fi.GetValue(obj)).Equals(mixedMN), "Failed!! Could not set ArrayField iArray using FieldInfo");
         }
 
-
-        //Verify FieldInfo for Array Field
+        //Verify FieldInfo for intArray Field
         [Fact]
         public static void TestSetValue_Field4()
         {
             FieldInfo fi = null;
             Type type = typeof(ArrayAsField);
-            Object obj = Activator.CreateInstance(type);
+            object obj = Activator.CreateInstance(type);
 
-            I[] mixedMN = new I[] { new M(), new N() };
             int[] mixedInt = new int[] { 200, -200, (byte)30, (ushort)2 };
             byte[] allByte = new byte[] { 2, 3, 4 };
 
@@ -119,14 +105,13 @@ namespace System.Reflection.Tests
             Assert.Throws<ArgumentException>(() => fi.SetValue(obj, allByte));
         }
 
-
         //Verify FieldInfo for Array Field
         [Fact]
         public static void TestSetValue_Field5()
         {
             FieldInfo fi = null;
             Type type = typeof(ArrayAsField);
-            Object obj = Activator.CreateInstance(type);
+            object obj = Activator.CreateInstance(type);
 
             I[] mixedMN = new I[] { new M(), new N() };
             int[] mixedInt = new int[] { 200, -200, (byte)30, (ushort)2 };
@@ -145,30 +130,7 @@ namespace System.Reflection.Tests
             Assert.Throws<ArgumentException>(() => fi.SetValue(obj, allByte));
         }
 
-
-
-
-        private static FieldInfo getField(string field)
-        {
-            Type t = typeof(FieldInfoRTArrayTests);
-            TypeInfo ti = t.GetTypeInfo();
-            IEnumerator<FieldInfo> alldefinedFields = ti.DeclaredFields.GetEnumerator();
-            FieldInfo fi = null, found = null;
-
-            while (alldefinedFields.MoveNext())
-            {
-                fi = alldefinedFields.Current;
-                if (fi.Name.Equals(field))
-                {
-                    //found type
-                    found = fi;
-                    break;
-                }
-            }
-            return found;
-        }
-
-
+        // Helper method to get field from Type type
         private static FieldInfo getField(Type type, string field)
         {
             TypeInfo ti = type.GetTypeInfo();
