@@ -58,8 +58,8 @@ namespace System.Net.NetworkInformation.Tests
             {
                 _log.WriteLine("- NetworkInterface -");
                 _log.WriteLine("Name: " + nic.Name);
-                Assert.Throws<PlatformNotSupportedException>(() => nic.Description);
-                Assert.Throws<PlatformNotSupportedException>(() => nic.Id);
+                _log.WriteLine("Description: " + nic.Description);
+                _log.WriteLine("ID: " + nic.Id);
                 Assert.Throws<PlatformNotSupportedException>(() => nic.IsReceiveOnly);
                 _log.WriteLine("Type: " + nic.NetworkInterfaceType);
                 _log.WriteLine("Status: " + nic.OperationalStatus);
@@ -88,7 +88,7 @@ namespace System.Net.NetworkInformation.Tests
             {
                 _log.WriteLine("- NetworkInterface -");
                 _log.WriteLine("Name: " + nic.Name);
-                Assert.Throws<PlatformNotSupportedException>(() => nic.Description);
+                _log.WriteLine("Description: " + nic.Description);
                 _log.WriteLine("ID: " + nic.Id);
                 Assert.Throws<PlatformNotSupportedException>(() => nic.IsReceiveOnly);
                 _log.WriteLine("Type: " + nic.NetworkInterfaceType);
