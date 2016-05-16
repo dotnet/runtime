@@ -2539,7 +2539,7 @@ post_param_init (SgenMajorCollector *collector)
 }
 
 static void
-sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurrent)
+sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurrent, gboolean is_parallel)
 {
 	int i;
 
@@ -2586,6 +2586,7 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 
 	concurrent_mark = is_concurrent;
 	collector->is_concurrent = is_concurrent;
+	collector->is_parallel = is_parallel;
 	collector->needs_thread_pool = is_concurrent || concurrent_sweep;
 	collector->get_and_reset_num_major_objects_marked = major_get_and_reset_num_major_objects_marked;
 	collector->supports_cardtable = TRUE;
@@ -2647,6 +2648,12 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 		collector->major_ops_concurrent_finish.scan_vtype = major_scan_vtype_with_evacuation;
 		collector->major_ops_concurrent_finish.scan_ptr_field = major_scan_ptr_field_with_evacuation;
 		collector->major_ops_concurrent_finish.drain_gray_stack = drain_gray_stack;
+
+		if (is_parallel) {
+			/* FIXME use parallel obj ops */
+			collector->major_ops_conc_par_start = collector->major_ops_concurrent_start;
+			collector->major_ops_conc_par_finish = collector->major_ops_concurrent_finish;
+		}
 	}
 
 #ifdef HEAVY_STATISTICS
@@ -2680,13 +2687,19 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 void
 sgen_marksweep_init (SgenMajorCollector *collector)
 {
-	sgen_marksweep_init_internal (collector, FALSE);
+	sgen_marksweep_init_internal (collector, FALSE, FALSE);
 }
 
 void
 sgen_marksweep_conc_init (SgenMajorCollector *collector)
 {
-	sgen_marksweep_init_internal (collector, TRUE);
+	sgen_marksweep_init_internal (collector, TRUE, FALSE);
+}
+
+void
+sgen_marksweep_conc_par_init (SgenMajorCollector *collector)
+{
+	sgen_marksweep_init_internal (collector, TRUE, TRUE);
 }
 
 #endif

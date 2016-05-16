@@ -620,6 +620,7 @@ typedef struct _SgenMajorCollector SgenMajorCollector;
 struct _SgenMajorCollector {
 	size_t section_size;
 	gboolean is_concurrent;
+	gboolean is_parallel;
 	gboolean needs_thread_pool;
 	gboolean supports_cardtable;
 	gboolean sweeps_lazily;
@@ -632,6 +633,8 @@ struct _SgenMajorCollector {
 	SgenObjectOperations major_ops_serial;
 	SgenObjectOperations major_ops_concurrent_start;
 	SgenObjectOperations major_ops_concurrent_finish;
+	SgenObjectOperations major_ops_conc_par_start;
+	SgenObjectOperations major_ops_conc_par_finish;
 
 	GCObject* (*alloc_object) (GCVTable vtable, size_t size, gboolean has_references);
 	void (*free_pinned_object) (GCObject *obj, size_t size);
@@ -680,6 +683,7 @@ extern SgenMajorCollector major_collector;
 
 void sgen_marksweep_init (SgenMajorCollector *collector);
 void sgen_marksweep_conc_init (SgenMajorCollector *collector);
+void sgen_marksweep_conc_par_init (SgenMajorCollector *collector);
 SgenMajorCollector* sgen_get_major_collector (void);
 
 

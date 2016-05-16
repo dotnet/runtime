@@ -1907,7 +1907,11 @@ major_start_collection (SgenGrayQueue *gc_thread_gray_queue, const char *reason,
 		g_assert (major_collector.is_concurrent);
 		concurrent_collection_in_progress = TRUE;
 
-		object_ops = &major_collector.major_ops_concurrent_start;
+		if (major_collector.is_parallel)
+			object_ops = &major_collector.major_ops_conc_par_start;
+		else
+			object_ops = &major_collector.major_ops_concurrent_start;
+
 	} else {
 		object_ops = &major_collector.major_ops_serial;
 	}
@@ -1943,7 +1947,10 @@ major_finish_collection (SgenGrayQueue *gc_thread_gray_queue, const char *reason
 	TV_GETTIME (btv);
 
 	if (concurrent_collection_in_progress) {
-		object_ops = &major_collector.major_ops_concurrent_finish;
+		if (major_collector.is_parallel)
+			object_ops = &major_collector.major_ops_conc_par_finish;
+		else
+			object_ops = &major_collector.major_ops_concurrent_finish;
 
 		major_copy_or_mark_from_roots (gc_thread_gray_queue, NULL, COPY_OR_MARK_FROM_ROOTS_FINISH_CONCURRENT, object_ops);
 
@@ -2850,6 +2857,8 @@ sgen_gc_init (void)
 		sgen_marksweep_init (&major_collector);
 	} else if (!strcmp (major_collector_opt, "marksweep-conc")) {
 		sgen_marksweep_conc_init (&major_collector);
+	} else if (!strcmp (major_collector_opt, "marksweep-conc-par")) {
+		sgen_marksweep_conc_par_init (&major_collector);
 	} else {
 		sgen_env_var_error (MONO_GC_PARAMS_NAME, "Using `" DEFAULT_MAJOR_NAME "` instead.", "Unknown major collector `%s'.", major_collector_opt);
 		goto use_default_major;
