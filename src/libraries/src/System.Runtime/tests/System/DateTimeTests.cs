@@ -204,42 +204,211 @@ namespace System.Tests
         [Theory]
         [InlineData(2004, true)]
         [InlineData(2005, false)]
-        public static void LeapYears(int year, bool expected)
+        public static void IsLeapYear(int year, bool expected)
         {
             Assert.Equal(expected, DateTime.IsLeapYear(year));
         }
 
         [Fact]
-        public static void LeapYears_InvalidYear_ThrowsArgumentOutOfRangeException()
+        public static void IsLeapYear_InvalidYear_ThrowsArgumentOutOfRangeException()
         {
             Assert.Throws<ArgumentOutOfRangeException>("year", () => DateTime.IsLeapYear(0));
             Assert.Throws<ArgumentOutOfRangeException>("year", () => DateTime.IsLeapYear(10000));
         }
 
-        [Fact]
-        public static void Addition()
+        public static IEnumerable<object[]> Add_TimeSpan_TestData()
         {
-            var dateTime = new DateTime(1986, 8, 15, 10, 20, 5, 70);
-            Assert.Equal(17, dateTime.AddDays(2).Day);
-            Assert.Equal(13, dateTime.AddDays(-2).Day);
+            yield return new object[] { new DateTime(1000), new TimeSpan(10), new DateTime(1010) };
+            yield return new object[] { new DateTime(1000), TimeSpan.Zero, new DateTime(1000) };
+            yield return new object[] { new DateTime(1000), new TimeSpan(-10), new DateTime(990) };
+        }
 
-            Assert.Equal(10, dateTime.AddMonths(2).Month);
-            Assert.Equal(6, dateTime.AddMonths(-2).Month);
+        [Theory]
+        [MemberData(nameof(Add_TimeSpan_TestData))]
+        public static void Add_TimeSpan(DateTime dateTime, TimeSpan timeSpan, DateTime expected)
+        {
+            Assert.Equal(expected, dateTime.Add(timeSpan));
+        }
 
-            Assert.Equal(1996, dateTime.AddYears(10).Year);
-            Assert.Equal(1976, dateTime.AddYears(-10).Year);
+        [Fact]
+        public static void Add_TimeSpan_NewDateOutOfRange_ThrowsArgumentOutOfRangeException()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => DateTime.MinValue.Add(TimeSpan.FromTicks(-1)));
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => DateTime.MaxValue.Add(TimeSpan.FromTicks(11)));
+        }
 
-            Assert.Equal(13, dateTime.AddHours(3).Hour);
-            Assert.Equal(7, dateTime.AddHours(-3).Hour);
+        public static IEnumerable<object[]> AddYears_TestData()
+        {
+            yield return new object[] { new DateTime(1986, 8, 15, 10, 20, 5, 70), 10, new DateTime(1996, 8, 15, 10, 20, 5, 70) };
+            yield return new object[] { new DateTime(1986, 8, 15, 10, 20, 5, 70), 0, new DateTime(1986, 8, 15, 10, 20, 5, 70) };
+            yield return new object[] { new DateTime(1986, 8, 15, 10, 20, 5, 70), -10, new DateTime(1976, 8, 15, 10, 20, 5, 70) };
+        }
 
-            Assert.Equal(25, dateTime.AddMinutes(5).Minute);
-            Assert.Equal(15, dateTime.AddMinutes(-5).Minute);
+        [Theory]
+        [MemberData(nameof(AddYears_TestData))]
+        public static void AddYears(DateTime dateTime, int years, DateTime expected)
+        {
+            Assert.Equal(expected, dateTime.AddYears(years));
+        }
 
-            Assert.Equal(35, dateTime.AddSeconds(30).Second);
-            Assert.Equal(2, dateTime.AddSeconds(-3).Second);
+        [Fact]
+        public static void AddYears_NewDateOutOfRange_ThrowsArgumentOutOfRangeException()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("years", () => DateTime.Now.AddYears(10001));
+            Assert.Throws<ArgumentOutOfRangeException>("years", () => DateTime.Now.AddYears(-10001));
 
-            Assert.Equal(80, dateTime.AddMilliseconds(10).Millisecond);
-            Assert.Equal(60, dateTime.AddMilliseconds(-10).Millisecond);
+            Assert.Throws<ArgumentOutOfRangeException>("months", () => DateTime.MaxValue.AddYears(1));
+            Assert.Throws<ArgumentOutOfRangeException>("months", () => DateTime.MinValue.AddYears(-1));
+        }
+
+        public static IEnumerable<object[]> AddMonths_TestData()
+        {
+            yield return new object[] { new DateTime(1986, 8, 15, 10, 20, 5, 70), 2, new DateTime(1986, 10, 15, 10, 20, 5, 70) };
+            yield return new object[] { new DateTime(1986, 8, 15, 10, 20, 5, 70), 0, new DateTime(1986, 8, 15, 10, 20, 5, 70) };
+            yield return new object[] { new DateTime(1986, 8, 15, 10, 20, 5, 70), -2, new DateTime(1986, 6, 15, 10, 20, 5, 70) };
+        }
+
+        [Theory]
+        [MemberData(nameof(AddMonths_TestData))]
+        public static void AddMonths(DateTime dateTime, int months, DateTime expected)
+        {
+            Assert.Equal(expected, dateTime.AddMonths(months));
+        }
+
+        [Fact]
+        public static void AddMonths_NewDateOutOfRange_ThrowsArgumentOutOfRangeException()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("months", () => DateTime.Now.AddMonths(120001));
+            Assert.Throws<ArgumentOutOfRangeException>("months", () => DateTime.Now.AddMonths(-120001));
+
+            Assert.Throws<ArgumentOutOfRangeException>("months", () => DateTime.MaxValue.AddMonths(1));
+            Assert.Throws<ArgumentOutOfRangeException>("months", () => DateTime.MinValue.AddMonths(-1));
+        }
+
+        public static IEnumerable<object[]> AddDays_TestData()
+        {
+            yield return new object[] { new DateTime(1986, 8, 15, 10, 20, 5, 70), 2, new DateTime(1986, 8, 17, 10, 20, 5, 70) };
+            yield return new object[] { new DateTime(1986, 8, 15, 10, 20, 5, 70), 0, new DateTime(1986, 8, 15, 10, 20, 5, 70) };
+            yield return new object[] { new DateTime(1986, 8, 15, 10, 20, 5, 70), -2, new DateTime(1986, 8, 13, 10, 20, 5, 70) };
+        }
+
+        [Theory]
+        [MemberData(nameof(AddDays_TestData))]
+        public static void AddDays(DateTime dateTime, double days, DateTime expected)
+        {
+            Assert.Equal(expected, dateTime.AddDays(days));
+        }
+
+        [Fact]
+        public static void AddDays_NewDateOutOfRange_ThrowsArgumentOutOfRangeException()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => DateTime.MaxValue.AddDays(1));
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => DateTime.MinValue.AddDays(-1));
+        }
+
+        public static IEnumerable<object[]> AddHours_TestData()
+        {
+            yield return new object[] { new DateTime(1986, 8, 15, 10, 20, 5, 70), 3, new DateTime(1986, 8, 15, 13, 20, 5, 70) };
+            yield return new object[] { new DateTime(1986, 8, 15, 10, 20, 5, 70), 0, new DateTime(1986, 8, 15, 10, 20, 5, 70) };
+            yield return new object[] { new DateTime(1986, 8, 15, 10, 20, 5, 70), -3, new DateTime(1986, 8, 15, 7, 20, 5, 70) };
+        }
+
+        [Theory]
+        [MemberData(nameof(AddHours_TestData))]
+        public static void AddHours(DateTime dateTime, double hours, DateTime expected)
+        {
+            Assert.Equal(expected, dateTime.AddHours(hours));
+        }
+
+        [Fact]
+        public static void AddHours_NewDateOutOfRange_ThrowsArgumentOutOfRangeException()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => DateTime.MaxValue.AddHours(1));
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => DateTime.MinValue.AddHours(-1));
+        }
+
+        public static IEnumerable<object[]> AddMinutes_TestData()
+        {
+            yield return new object[] { new DateTime(1986, 8, 15, 10, 20, 5, 70), 5, new DateTime(1986, 8, 15, 10, 25, 5, 70) };
+            yield return new object[] { new DateTime(1986, 8, 15, 10, 20, 5, 70), 0, new DateTime(1986, 8, 15, 10, 20, 5, 70) };
+            yield return new object[] { new DateTime(1986, 8, 15, 10, 20, 5, 70), -5, new DateTime(1986, 8, 15, 10, 15, 5, 70) };
+        }
+
+        [Theory]
+        [MemberData(nameof(AddMinutes_TestData))]
+        public static void AddMinutes(DateTime dateTime, double minutes, DateTime expected)
+        {
+            Assert.Equal(expected, dateTime.AddMinutes(minutes));
+        }
+
+        [Fact]
+        public static void AddMinutes_NewDateOutOfRange_ThrowsArgumentOutOfRangeException()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => DateTime.MaxValue.AddMinutes(1));
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => DateTime.MinValue.AddMinutes(-1));
+        }
+
+        public static IEnumerable<object[]> AddSeconds_TestData()
+        {
+            yield return new object[] { new DateTime(1986, 8, 15, 10, 20, 5, 70), 30, new DateTime(1986, 8, 15, 10, 20, 35, 70) };
+            yield return new object[] { new DateTime(1986, 8, 15, 10, 20, 5, 70), 0, new DateTime(1986, 8, 15, 10, 20, 5, 70) };
+            yield return new object[] { new DateTime(1986, 8, 15, 10, 20, 5, 70), -3, new DateTime(1986, 8, 15, 10, 20, 2, 70) };
+        }
+
+        [Theory]
+        [MemberData(nameof(AddSeconds_TestData))]
+        public static void AddSeconds(DateTime dateTime, double seconds, DateTime expected)
+        {
+            Assert.Equal(expected, dateTime.AddSeconds(seconds));
+        }
+
+        [Fact]
+        public static void AddSeconds_NewDateOutOfRange_ThrowsArgumentOutOfRangeException()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => DateTime.MaxValue.AddSeconds(1));
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => DateTime.MinValue.AddSeconds(-1));
+        }
+
+        public static IEnumerable<object[]> AddMilliseconds_TestData()
+        {
+            yield return new object[] { new DateTime(1986, 8, 15, 10, 20, 5, 70), 10, new DateTime(1986, 8, 15, 10, 20, 5, 80) };
+            yield return new object[] { new DateTime(1986, 8, 15, 10, 20, 5, 70), 0, new DateTime(1986, 8, 15, 10, 20, 5, 70) };
+            yield return new object[] { new DateTime(1986, 8, 15, 10, 20, 5, 70), -10, new DateTime(1986, 8, 15, 10, 20, 5, 60) };
+        }
+
+        [Theory]
+        [MemberData(nameof(AddMilliseconds_TestData))]
+        public static void AddMilliseconds(DateTime dateTime, double milliseconds, DateTime expected)
+        {
+            Assert.Equal(expected, dateTime.AddMilliseconds(milliseconds));
+        }
+
+        [Fact]
+        public static void AddMilliseconds_NewDateOutOfRange_ThrowsArgumentOutOfRangeException()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => DateTime.MaxValue.AddMilliseconds(1));
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => DateTime.MinValue.AddMilliseconds(-1));
+        }
+
+        public static IEnumerable<object[]> AddTicks_TestData()
+        {
+            yield return new object[] { new DateTime(1000), 10, new DateTime(1010) };
+            yield return new object[] { new DateTime(1000), 0, new DateTime(1000) };
+            yield return new object[] { new DateTime(1000), -10, new DateTime(990) };
+        }
+
+        [Theory]
+        [MemberData(nameof(AddTicks_TestData))]
+        public static void AddTicks(DateTime dateTime, long ticks, DateTime expected)
+        {
+            Assert.Equal(expected, dateTime.AddTicks(ticks));
+        }
+
+        [Fact]
+        public static void AddTicks_NewDateOutOfRange_ThrowsArgumentOutOfRangeException()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => DateTime.MaxValue.AddTicks(1));
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => DateTime.MinValue.AddTicks(-1));
         }
 
         [Fact]

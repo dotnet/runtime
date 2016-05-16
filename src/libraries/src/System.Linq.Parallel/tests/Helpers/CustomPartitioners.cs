@@ -99,7 +99,7 @@ namespace System.Linq.Parallel.Tests
         public override IList<IEnumerator<KeyValuePair<long, int>>> GetOrderablePartitions(int partitionCount)
         {
             IEnumerator<KeyValuePair<long, int>>[] partitions = new IEnumerator<KeyValuePair<long, int>>[partitionCount];
-            int partitionSize = Math.Max(1, _count / partitionCount);
+            int partitionSize = Math.Max(1, (int)Math.Ceiling(_count / (double)partitionCount));
             for (int i = 0; i < partitionCount; i++)
             {
                 int start = partitionSize * i;

@@ -3,7 +3,13 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using System.Linq;
+using System.Net.NetworkInformation;
+using System.Net.Security;
 using System.Net.Sockets;
+using System.Net.Tests;
+using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,35 +18,37 @@ namespace System.Net.Http.Functional.Tests
 {
     public class LoopbackServer
     {
-        public static Task CreateClientAndServerAsync(Func<HttpClientHandler, HttpClient, Socket, Uri, Task> funcAsync, int backlog = 1)
+        public static Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> AllowAllCertificates = (_, __, ___, ____) => true;
+
+        public class Options
         {
-            return CreateServerAsync(async (server, url) =>
-            {
-                using (var handler = new HttpClientHandler())
-                using (var client = new HttpClient(handler))
-                {
-                    await funcAsync(handler, client, server, url).ConfigureAwait(false);
-                }
-            });
+            public IPAddress Address { get; set; } = IPAddress.Loopback;
+            public int ListenBacklog { get; set; } = 1;
+            public bool UseSsl { get; set; } = false;
+            public SslProtocols SslProtocols { get; set; } = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12;
         }
 
-        public static Task CreateServerAsync(Func<Socket, Uri, Task> funcAsync)
+        public static Task CreateServerAsync(Func<Socket, Uri, Task> funcAsync, Options options = null)
         {
             IPEndPoint ignored;
-            return CreateServerAsync(funcAsync, out ignored);
+            return CreateServerAsync(funcAsync, out ignored, options);
         }
 
-        public static Task CreateServerAsync(Func<Socket, Uri, Task> funcAsync, out IPEndPoint localEndPoint)
+        public static Task CreateServerAsync(Func<Socket, Uri, Task> funcAsync, out IPEndPoint localEndPoint, Options options = null)
         {
+            options = options ?? new Options();
             try
             {
-                var server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                var server = new Socket(options.Address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
 
-                server.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-                server.Listen(1);
+                server.Bind(new IPEndPoint(options.Address, 0));
+                server.Listen(options.ListenBacklog);
 
                 localEndPoint = (IPEndPoint)server.LocalEndPoint;
-                var url = new Uri($"http://{localEndPoint.Address}:{localEndPoint.Port}/");
+                string host = options.Address.AddressFamily == AddressFamily.InterNetworkV6 ? 
+                    $"[{localEndPoint.Address}]" :
+                    localEndPoint.Address.ToString();
+                var url = new Uri($"{(options.UseSsl ? "https" : "http")}://{host}:{localEndPoint.Port}/");
 
                 return funcAsync(server, url).ContinueWith(t =>
                 {
@@ -55,14 +63,53 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        public static async Task AcceptSocketAsync(Socket server, Func<Socket, NetworkStream, StreamReader, StreamWriter, Task> funcAsync)
+        public static string DefaultHttpResponse => $"HTTP/1.1 200 OK\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 0\r\n\r\n";
+
+        public static IPAddress GetIPv6LinkLocalAddress() =>
+            NetworkInterface
+                .GetAllNetworkInterfaces()
+                .SelectMany(i => i.GetIPProperties().UnicastAddresses)
+                .Select(a => a.Address)
+                .Where(a => a.IsIPv6LinkLocal)
+                .FirstOrDefault();
+
+        public static Task ReadRequestAndSendResponseAsync(Socket server, string response = null, Options options = null)
         {
+            return AcceptSocketAsync(server, (s, stream, reader, writer) => ReadWriteAcceptedAsync(s, reader, writer, response), options);
+        }
+
+        public static async Task ReadWriteAcceptedAsync(Socket s, StreamReader reader, StreamWriter writer, string response = null)
+        {
+            while (!string.IsNullOrEmpty(await reader.ReadLineAsync().ConfigureAwait(false))) ;
+            await writer.WriteAsync(response ?? DefaultHttpResponse).ConfigureAwait(false);
+            s.Shutdown(SocketShutdown.Send);
+        }
+
+        public static async Task AcceptSocketAsync(Socket server, Func<Socket, Stream, StreamReader, StreamWriter, Task> funcAsync, Options options = null)
+        {
+            options = options ?? new Options();
             using (Socket s = await server.AcceptAsync().ConfigureAwait(false))
-            using (var stream = new NetworkStream(s, ownsSocket: false))
-            using (var reader = new StreamReader(stream, Encoding.ASCII))
-            using (var writer = new StreamWriter(stream, Encoding.ASCII))
             {
-                await funcAsync(s, stream, reader, writer).ConfigureAwait(false);
+                Stream stream = new NetworkStream(s, ownsSocket: false);
+                if (options.UseSsl)
+                {
+                    var sslStream = new SslStream(stream);
+                    using (var cert = CertificateConfiguration.GetServerCertificate())
+                    {
+                        await sslStream.AuthenticateAsServerAsync(
+                            cert, 
+                            clientCertificateRequired: false, 
+                            enabledSslProtocols: options.SslProtocols, 
+                            checkCertificateRevocation: false).ConfigureAwait(false);
+                    }
+                    stream = sslStream;
+                }
+
+                using (var reader = new StreamReader(stream, Encoding.ASCII))
+                using (var writer = new StreamWriter(stream, Encoding.ASCII) { AutoFlush = true })
+                {
+                    await funcAsync(s, stream, reader, writer).ConfigureAwait(false);
+                }
             }
         }
 
@@ -133,7 +180,6 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await writer.WriteAsync($"{content}\r\n").ConfigureAwait(false);
                 }
-                await writer.FlushAsync().ConfigureAwait(false);
 
                 client.Shutdown(SocketShutdown.Both);
             }), out localEndPoint);

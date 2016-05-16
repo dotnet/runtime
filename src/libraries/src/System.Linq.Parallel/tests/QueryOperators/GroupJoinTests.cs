@@ -8,14 +8,36 @@ using Xunit;
 
 namespace System.Linq.Parallel.Tests
 {
-    public class GroupJoinTests
+    public static class GroupJoinTests
     {
         private const int KeyFactor = 8;
         private const int ElementFactor = 4;
 
-        public static IEnumerable<object[]> GroupJoinData(int[] leftCounts, int[] rightCounts)
+        public static IEnumerable<object[]> GroupJoinUnorderedData(int[] counts)
         {
-            foreach (object[] parms in UnorderedSources.BinaryRanges(leftCounts, rightCounts))
+            foreach (int leftCount in counts)
+            {
+                foreach (int rightCount in counts)
+                {
+                    yield return new object[] { leftCount, rightCount };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> GroupJoinData(int[] counts)
+        {
+            counts = counts.DefaultIfEmpty(Sources.OuterLoopCount / 64).ToArray();
+            // When dealing with joins, if there aren't multiple matches the ordering of the second operand is immaterial.
+            foreach (object[] parms in Sources.Ranges(counts, i => counts))
+            {
+                yield return parms;
+            }
+        }
+
+        public static IEnumerable<object[]> GroupJoinMultipleData(int[] counts)
+        {
+            counts = counts.DefaultIfEmpty(Sources.OuterLoopCount / 64).ToArray();
+            foreach (object[] parms in UnorderedSources.BinaryRanges(counts, counts))
             {
                 yield return new object[] { ((Labeled<ParallelQuery<int>>)parms[0]).Order(), parms[1], ((Labeled<ParallelQuery<int>>)parms[2]).Order(), parms[3] };
             }
@@ -25,11 +47,11 @@ namespace System.Linq.Parallel.Tests
         // GroupJoin
         //
         [Theory]
-        [MemberData(nameof(UnorderedSources.BinaryRanges), new[] { 0, 1, 2, 16 }, new[] { 0, 1, 16 }, MemberType = typeof(UnorderedSources))]
-        public static void GroupJoin_Unordered(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
+        [MemberData(nameof(GroupJoinUnorderedData), new[] { 0, 1, 2, KeyFactor * 2 })]
+        public static void GroupJoin_Unordered(int leftCount, int rightCount)
         {
-            ParallelQuery<int> leftQuery = left.Item;
-            ParallelQuery<int> rightQuery = right.Item;
+            ParallelQuery<int> leftQuery = UnorderedSources.Default(leftCount);
+            ParallelQuery<int> rightQuery = UnorderedSources.Default(rightCount);
             IntegerRangeSet seen = new IntegerRangeSet(0, leftCount);
             foreach (var p in leftQuery.GroupJoin(rightQuery, x => x * KeyFactor, y => y, (x, y) => KeyValuePair.Create(x, y)))
             {
@@ -46,22 +68,20 @@ namespace System.Linq.Parallel.Tests
             seen.AssertComplete();
         }
 
-        [Theory]
+        [Fact]
         [OuterLoop]
-        [MemberData(nameof(UnorderedSources.BinaryRanges), new[] { 1024 * 4, 1024 * 8 }, new[] { 0, 1, 1024 * 4, 1024 * 8 }, MemberType = typeof(UnorderedSources))]
-        public static void GroupJoin_Unordered_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
+        public static void GroupJoin_Unordered_Longrunning()
         {
-            GroupJoin_Unordered(left, leftCount, right, rightCount);
+            GroupJoin_Unordered(Sources.OuterLoopCount / 64, Sources.OuterLoopCount / 64);
         }
 
         [Theory]
-        [MemberData(nameof(GroupJoinData), new[] { 0, 1, 2, 16 }, new[] { 0, 1, 16 })]
-        public static void GroupJoin(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
+        [MemberData(nameof(GroupJoinData), new[] { 0, 1, 2, KeyFactor * 2 })]
+        public static void GroupJoin(Labeled<ParallelQuery<int>> left, int leftCount, int rightCount)
         {
             ParallelQuery<int> leftQuery = left.Item;
-            ParallelQuery<int> rightQuery = right.Item;
             int seen = 0;
-            foreach (var p in leftQuery.GroupJoin(rightQuery, x => x * KeyFactor, y => y, (x, y) => KeyValuePair.Create(x, y)))
+            foreach (var p in leftQuery.GroupJoin(UnorderedSources.Default(rightCount), x => x * KeyFactor, y => y, (x, y) => KeyValuePair.Create(x, y)))
             {
                 Assert.Equal(seen++, p.Key);
                 if (p.Key < (rightCount + (KeyFactor - 1)) / KeyFactor)
@@ -78,18 +98,18 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(GroupJoinData), new[] { 1024 * 4, 1024 * 8 }, new[] { 0, 1, 1024 * 4, 1024 * 8 })]
-        public static void GroupJoin_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
+        [MemberData(nameof(GroupJoinData), new int[] { /* Sources.OuterLoopCount */ })]
+        public static void GroupJoin_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, int rightCount)
         {
-            GroupJoin(left, leftCount, right, rightCount);
+            GroupJoin(left, leftCount, rightCount);
         }
 
         [Theory]
-        [MemberData(nameof(UnorderedSources.BinaryRanges), new[] { 0, 1, 2, 16 }, new[] { 0, 1, 16 }, MemberType = typeof(UnorderedSources))]
-        public static void GroupJoin_Unordered_NotPipelined(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
+        [MemberData(nameof(GroupJoinUnorderedData), new[] { 0, 1, 2, KeyFactor * 2 })]
+        public static void GroupJoin_Unordered_NotPipelined(int leftCount, int rightCount)
         {
-            ParallelQuery<int> leftQuery = left.Item;
-            ParallelQuery<int> rightQuery = right.Item;
+            ParallelQuery<int> leftQuery = UnorderedSources.Default(leftCount);
+            ParallelQuery<int> rightQuery = UnorderedSources.Default(rightCount);
             IntegerRangeSet seen = new IntegerRangeSet(0, leftCount);
             Assert.All(leftQuery.GroupJoin(rightQuery, x => x * KeyFactor, y => y, (x, y) => KeyValuePair.Create(x, y)).ToList(),
                 p =>
@@ -107,22 +127,20 @@ namespace System.Linq.Parallel.Tests
             seen.AssertComplete();
         }
 
-        [Theory]
+        [Fact]
         [OuterLoop]
-        [MemberData(nameof(UnorderedSources.BinaryRanges), new[] { 1024 * 4, 1024 * 8 }, new[] { 0, 1, 1024 * 4, 1024 * 8 }, MemberType = typeof(UnorderedSources))]
-        public static void GroupJoin_Unordered_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
+        public static void GroupJoin_Unordered_NotPipelined_Longrunning()
         {
-            GroupJoin_Unordered_NotPipelined(left, leftCount, right, rightCount);
+            GroupJoin_Unordered_NotPipelined(Sources.OuterLoopCount / 64, Sources.OuterLoopCount / 64);
         }
 
         [Theory]
-        [MemberData(nameof(GroupJoinData), new[] { 0, 1, 2, 16 }, new[] { 0, 1, 16 })]
-        public static void GroupJoin_NotPipelined(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
+        [MemberData(nameof(GroupJoinData), new[] { 0, 1, 2, KeyFactor * 2 })]
+        public static void GroupJoin_NotPipelined(Labeled<ParallelQuery<int>> left, int leftCount, int rightCount)
         {
             ParallelQuery<int> leftQuery = left.Item;
-            ParallelQuery<int> rightQuery = right.Item;
             int seen = 0;
-            Assert.All(leftQuery.GroupJoin(rightQuery, x => x * KeyFactor, y => y, (x, y) => KeyValuePair.Create(x, y)).ToList(),
+            Assert.All(leftQuery.GroupJoin(UnorderedSources.Default(rightCount), x => x * KeyFactor, y => y, (x, y) => KeyValuePair.Create(x, y)).ToList(),
                 p =>
                 {
                     Assert.Equal(seen++, p.Key);
@@ -140,18 +158,18 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(GroupJoinData), new[] { 1024 * 4, 1024 * 8 }, new[] { 0, 1, 1024 * 4, 1024 * 8 })]
-        public static void GroupJoin_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
+        [MemberData(nameof(GroupJoinData), new int[] { /* Sources.OuterLoopCount */ })]
+        public static void GroupJoin_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, int rightCount)
         {
-            GroupJoin_NotPipelined(left, leftCount, right, rightCount);
+            GroupJoin_NotPipelined(left, leftCount, rightCount);
         }
 
         [Theory]
-        [MemberData(nameof(UnorderedSources.BinaryRanges), new[] { 0, 1, 2, 15, 16 }, new[] { 0, 1, 16 }, MemberType = typeof(UnorderedSources))]
-        public static void GroupJoin_Unordered_Multiple(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
+        [MemberData(nameof(GroupJoinUnorderedData), new[] { 0, 1, 2, KeyFactor * 2 })]
+        public static void GroupJoin_Unordered_Multiple(int leftCount, int rightCount)
         {
-            ParallelQuery<int> leftQuery = left.Item;
-            ParallelQuery<int> rightQuery = right.Item;
+            ParallelQuery<int> leftQuery = UnorderedSources.Default(leftCount);
+            ParallelQuery<int> rightQuery = UnorderedSources.Default(rightCount);
             IntegerRangeSet seenOuter = new IntegerRangeSet(0, leftCount);
             Assert.All(leftQuery.GroupJoin(rightQuery, x => x, y => y / KeyFactor, (x, y) => KeyValuePair.Create(x, y)),
                 p =>
@@ -171,18 +189,16 @@ namespace System.Linq.Parallel.Tests
             seenOuter.AssertComplete();
         }
 
-        [Theory]
+        [Fact]
         [OuterLoop]
-        [MemberData(nameof(UnorderedSources.BinaryRanges), new[] { 1024 * 4, 1024 * 8 }, new[] { 0, 1, 1024 * 4, 1024 * 8 }, MemberType = typeof(UnorderedSources))]
-        public static void GroupJoin_Unordered_Multiple_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
+        public static void GroupJoin_Unordered_Multiple_Longrunning()
         {
-            GroupJoin_Unordered_Multiple(left, leftCount, right, rightCount);
+            GroupJoin_Unordered_Multiple(Sources.OuterLoopCount / 64, Sources.OuterLoopCount / 64);
         }
 
         [Theory]
         [ActiveIssue(1155)]
-        [MemberData(nameof(GroupJoinData), new[] { 0, 1, 2, 15, 16 }, new[] { 0, 1, 16 })]
-        // GroupJoin doesn't always return elements from the right in order.  See Issue #1155
+        [MemberData(nameof(GroupJoinMultipleData), new[] { 0, 1, 2, KeyFactor * 2 - 1, KeyFactor * 2 })]
         public static void GroupJoin_Multiple(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -213,18 +229,18 @@ namespace System.Linq.Parallel.Tests
         [Theory]
         [ActiveIssue(1155)]
         [OuterLoop]
-        [MemberData(nameof(GroupJoinData), new[] { 1024 * 4, 1024 * 8 }, new[] { 0, 1, 1024 * 4, 1024 * 8 })]
+        [MemberData(nameof(GroupJoinMultipleData), new int[] { /* Sources.OuterLoopCount */ })]
         public static void GroupJoin_Multiple_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             GroupJoin_Multiple(left, leftCount, right, rightCount);
         }
 
         [Theory]
-        [MemberData(nameof(UnorderedSources.BinaryRanges), new[] { 0, 1, 2, 16 }, new[] { 0, 1, 16 }, MemberType = typeof(UnorderedSources))]
-        public static void GroupJoin_Unordered_CustomComparator(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
+        [MemberData(nameof(GroupJoinUnorderedData), new[] { 0, 1, 2, KeyFactor * 2 })]
+        public static void GroupJoin_Unordered_CustomComparator(int leftCount, int rightCount)
         {
-            ParallelQuery<int> leftQuery = left.Item;
-            ParallelQuery<int> rightQuery = right.Item;
+            ParallelQuery<int> leftQuery = UnorderedSources.Default(leftCount);
+            ParallelQuery<int> rightQuery = UnorderedSources.Default(rightCount);
             IntegerRangeSet seenOuter = new IntegerRangeSet(0, leftCount);
             Assert.All(leftQuery.GroupJoin(rightQuery, x => x, y => y % ElementFactor, (x, y) => KeyValuePair.Create(x, y), new ModularCongruenceComparer(KeyFactor)),
                 p =>
@@ -244,17 +260,16 @@ namespace System.Linq.Parallel.Tests
             seenOuter.AssertComplete();
         }
 
-        [Theory]
+        [Fact]
         [OuterLoop]
-        [MemberData(nameof(UnorderedSources.BinaryRanges), new[] { 512, 1024 }, new[] { 0, 1, 1024, 1024 * 4 }, MemberType = typeof(UnorderedSources))]
-        public static void GroupJoin_Unordered_CustomComparator_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
+        public static void GroupJoin_Unordered_CustomComparator_Longrunning()
         {
-            GroupJoin_Unordered_CustomComparator(left, leftCount, right, rightCount);
+            GroupJoin_Unordered_CustomComparator(Sources.OuterLoopCount / 64, Sources.OuterLoopCount / 64);
         }
 
         [Theory]
         [ActiveIssue(1155)]
-        [MemberData(nameof(GroupJoinData), new[] { 0, 1, 2, 16 }, new[] { 0, 1, 16 })]
+        [MemberData(nameof(GroupJoinMultipleData), new[] { 0, 1, 2, KeyFactor * 2 })]
         public static void GroupJoin_CustomComparator(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -285,7 +300,7 @@ namespace System.Linq.Parallel.Tests
         [Theory]
         [ActiveIssue(1155)]
         [OuterLoop]
-        [MemberData(nameof(GroupJoinData), new[] { 512, 1024 }, new[] { 0, 1, 1024, 1024 * 4 })]
+        [MemberData(nameof(GroupJoinMultipleData), new int[] { /* Sources.OuterLoopCount */ })]
         public static void GroupJoin_CustomComparator_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             GroupJoin_CustomComparator(left, leftCount, right, rightCount);
@@ -314,16 +329,16 @@ namespace System.Linq.Parallel.Tests
         [Fact]
         public static void GroupJoin_ArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<int>)null).GroupJoin(ParallelEnumerable.Range(0, 1), i => i, i => i, (i, j) => i));
-            Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Range(0, 1).GroupJoin((ParallelQuery<int>)null, i => i, i => i, (i, j) => i));
-            Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Range(0, 1).GroupJoin(ParallelEnumerable.Range(0, 1), (Func<int, int>)null, i => i, (i, j) => i));
-            Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Range(0, 1).GroupJoin(ParallelEnumerable.Range(0, 1), i => i, (Func<int, int>)null, (i, j) => i));
-            Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Range(0, 1).GroupJoin(ParallelEnumerable.Range(0, 1), i => i, i => i, (Func<int, IEnumerable<int>, int>)null));
-            Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<int>)null).GroupJoin(ParallelEnumerable.Range(0, 1), i => i, i => i, (i, j) => i, EqualityComparer<int>.Default));
-            Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Range(0, 1).GroupJoin((ParallelQuery<int>)null, i => i, i => i, (i, j) => i, EqualityComparer<int>.Default));
-            Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Range(0, 1).GroupJoin(ParallelEnumerable.Range(0, 1), (Func<int, int>)null, i => i, (i, j) => i, EqualityComparer<int>.Default));
-            Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Range(0, 1).GroupJoin(ParallelEnumerable.Range(0, 1), i => i, (Func<int, int>)null, (i, j) => i, EqualityComparer<int>.Default));
-            Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Range(0, 1).GroupJoin(ParallelEnumerable.Range(0, 1), i => i, i => i, (Func<int, IEnumerable<int>, int>)null, EqualityComparer<int>.Default));
+            Assert.Throws<ArgumentNullException>("outer", () => ((ParallelQuery<int>)null).GroupJoin(ParallelEnumerable.Range(0, 1), i => i, i => i, (i, j) => i));
+            Assert.Throws<ArgumentNullException>("inner", () => ParallelEnumerable.Range(0, 1).GroupJoin((ParallelQuery<int>)null, i => i, i => i, (i, j) => i));
+            Assert.Throws<ArgumentNullException>("outerKeySelector", () => ParallelEnumerable.Range(0, 1).GroupJoin(ParallelEnumerable.Range(0, 1), (Func<int, int>)null, i => i, (i, j) => i));
+            Assert.Throws<ArgumentNullException>("innerKeySelector", () => ParallelEnumerable.Range(0, 1).GroupJoin(ParallelEnumerable.Range(0, 1), i => i, (Func<int, int>)null, (i, j) => i));
+            Assert.Throws<ArgumentNullException>("resultSelector", () => ParallelEnumerable.Range(0, 1).GroupJoin(ParallelEnumerable.Range(0, 1), i => i, i => i, (Func<int, IEnumerable<int>, int>)null));
+            Assert.Throws<ArgumentNullException>("outer", () => ((ParallelQuery<int>)null).GroupJoin(ParallelEnumerable.Range(0, 1), i => i, i => i, (i, j) => i, EqualityComparer<int>.Default));
+            Assert.Throws<ArgumentNullException>("inner", () => ParallelEnumerable.Range(0, 1).GroupJoin((ParallelQuery<int>)null, i => i, i => i, (i, j) => i, EqualityComparer<int>.Default));
+            Assert.Throws<ArgumentNullException>("outerKeySelector", () => ParallelEnumerable.Range(0, 1).GroupJoin(ParallelEnumerable.Range(0, 1), (Func<int, int>)null, i => i, (i, j) => i, EqualityComparer<int>.Default));
+            Assert.Throws<ArgumentNullException>("innerKeySelector", () => ParallelEnumerable.Range(0, 1).GroupJoin(ParallelEnumerable.Range(0, 1), i => i, (Func<int, int>)null, (i, j) => i, EqualityComparer<int>.Default));
+            Assert.Throws<ArgumentNullException>("resultSelector", () => ParallelEnumerable.Range(0, 1).GroupJoin(ParallelEnumerable.Range(0, 1), i => i, i => i, (Func<int, IEnumerable<int>, int>)null, EqualityComparer<int>.Default));
         }
     }
 }

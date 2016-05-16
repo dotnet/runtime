@@ -71,7 +71,7 @@ namespace System.Numerics
             }
             if (index < 0 || index >= array.Length)
             {
-                throw new ArgumentOutOfRangeException(SR.Format(SR.Arg_ArgumentOutOfRangeException, index));
+                throw new ArgumentOutOfRangeException(nameof(index), SR.Format(SR.Arg_ArgumentOutOfRangeException, index));
             }
             if ((array.Length - index) < 2)
             {

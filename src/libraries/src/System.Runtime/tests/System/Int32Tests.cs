@@ -163,12 +163,15 @@ namespace System.Tests
             yield return new object[] { "0", NumberStyles.None, null, 0 };
             yield return new object[] { "123", NumberStyles.None, null, 123 };
             yield return new object[] { "2147483647", NumberStyles.None, null, 2147483647 };
+            yield return new object[] { "123\0\0", NumberStyles.None, null, 123 };
 
             // HexNumber
             yield return new object[] { "123", NumberStyles.HexNumber, null, 0x123 };
             yield return new object[] { "abc", NumberStyles.HexNumber, null, 0xabc };
             yield return new object[] { "ABC", NumberStyles.HexNumber, null, 0xabc };
             yield return new object[] { "12", NumberStyles.HexNumber, null, 0x12 };
+            yield return new object[] { "80000000", NumberStyles.HexNumber, null, -2147483648 };
+            yield return new object[] { "FFFFFFFF", NumberStyles.HexNumber, null, -1 };
 
             // Currency
             NumberFormatInfo currencyFormat = new NumberFormatInfo()
@@ -306,15 +309,25 @@ namespace System.Tests
 
         public static IEnumerable<object[]> Parse_Invalid_TestData()
         {
-            // Garbage strings
+            // String is null, empty or entirely whitespace
             yield return new object[] { null, NumberStyles.Integer, null, typeof(ArgumentNullException) };
             yield return new object[] { null, NumberStyles.Any, null, typeof(ArgumentNullException) };
             yield return new object[] { "", NumberStyles.Integer, null, typeof(FormatException) };
-            yield return new object[] { null, NumberStyles.Any, null, typeof(ArgumentNullException) };
+            yield return new object[] { "", NumberStyles.Any, null, typeof(FormatException) };
             yield return new object[] { " \t \n \r ", NumberStyles.Integer, null, typeof(FormatException) };
-            yield return new object[] { null, NumberStyles.Any, null, typeof(ArgumentNullException) };
+            yield return new object[] { " \t \n \r ", NumberStyles.Any, null, typeof(FormatException) };
+
+            // String is garbage
             yield return new object[] { "Garbage", NumberStyles.Integer, null, typeof(FormatException) };
             yield return new object[] { "Garbage", NumberStyles.Any, null, typeof(FormatException) };
+
+            // String has leading zeros
+            yield return new object[] { "\0\0123", NumberStyles.Integer, null, typeof(FormatException) };
+            yield return new object[] { "\0\0123", NumberStyles.Any, null, typeof(FormatException) };
+
+            // String has internal zeros
+            yield return new object[] { "1\023", NumberStyles.Integer, null, typeof(FormatException) };
+            yield return new object[] { "1\023", NumberStyles.Any, null, typeof(FormatException) };
 
             // Integer doesn't allow hex, exponents, paretheses, currency, thousands, decimal
             yield return new object[] { "abc", NumberStyles.Integer, null, typeof(FormatException) };
@@ -417,6 +430,12 @@ namespace System.Tests
             yield return new object[] { "-2147483649", NumberStyles.Integer, null, typeof(OverflowException) };
             yield return new object[] { "2147483649-", NumberStyles.AllowTrailingSign, null, typeof(OverflowException) };
             yield return new object[] { "(2147483649)", NumberStyles.AllowParentheses, null, typeof(OverflowException) };
+            yield return new object[] { "2E10", NumberStyles.AllowExponent, null, typeof(OverflowException) };
+            yield return new object[] { "800000000", NumberStyles.AllowHexSpecifier, null, typeof(OverflowException) };
+
+            yield return new object[] { "9223372036854775808", NumberStyles.Integer, null, typeof(OverflowException) };
+            yield return new object[] { "-9223372036854775809", NumberStyles.Integer, null, typeof(OverflowException) };
+            yield return new object[] { "8000000000000000", NumberStyles.AllowHexSpecifier, null, typeof(OverflowException) };
         }
 
         [Theory]

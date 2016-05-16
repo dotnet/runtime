@@ -263,7 +263,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void ReRegisterFoFinalize()
+        public static void ReRegisterFoFinalize_NullObject_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("obj", () => GC.ReRegisterForFinalize(null)); // Obj is null
         }

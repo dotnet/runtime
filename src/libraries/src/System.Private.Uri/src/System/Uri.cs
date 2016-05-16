@@ -45,69 +45,69 @@ namespace System
         [Flags]
         private enum Flags : ulong
         {
-            Zero                = 0x00000000,
+            Zero = 0x00000000,
 
-            SchemeNotCanonical     = 0x1,
-            UserNotCanonical       = 0x2,
-            HostNotCanonical       = 0x4,
-            PortNotCanonical       = 0x8,
-            PathNotCanonical       = 0x10,
-            QueryNotCanonical      = 0x20,
-            FragmentNotCanonical   = 0x40,
+            SchemeNotCanonical = 0x1,
+            UserNotCanonical = 0x2,
+            HostNotCanonical = 0x4,
+            PortNotCanonical = 0x8,
+            PathNotCanonical = 0x10,
+            QueryNotCanonical = 0x20,
+            FragmentNotCanonical = 0x40,
             CannotDisplayCanonical = 0x7F,
 
-            E_UserNotCanonical      = 0x80,
-            E_HostNotCanonical      = 0x100,
-            E_PortNotCanonical      = 0x200,
-            E_PathNotCanonical      = 0x400,
-            E_QueryNotCanonical     = 0x800,
-            E_FragmentNotCanonical  = 0x1000,
+            E_UserNotCanonical = 0x80,
+            E_HostNotCanonical = 0x100,
+            E_PortNotCanonical = 0x200,
+            E_PathNotCanonical = 0x400,
+            E_QueryNotCanonical = 0x800,
+            E_FragmentNotCanonical = 0x1000,
             E_CannotDisplayCanonical = 0x1F80,
 
 
-            ShouldBeCompressed      = 0x2000,
-            FirstSlashAbsent        = 0x4000,
-            BackslashInPath         = 0x8000,
+            ShouldBeCompressed = 0x2000,
+            FirstSlashAbsent = 0x4000,
+            BackslashInPath = 0x8000,
 
-            IndexMask           = 0x0000FFFF,
-            HostTypeMask        = 0x00070000,
-            HostNotParsed   = 0x00000000,
-            IPv6HostType    = 0x00010000,
-            IPv4HostType    = 0x00020000,
-            DnsHostType     = 0x00030000,
-            UncHostType     = 0x00040000,
-            BasicHostType   = 0x00050000,
-            UnusedHostType  = 0x00060000,
+            IndexMask = 0x0000FFFF,
+            HostTypeMask = 0x00070000,
+            HostNotParsed = 0x00000000,
+            IPv6HostType = 0x00010000,
+            IPv4HostType = 0x00020000,
+            DnsHostType = 0x00030000,
+            UncHostType = 0x00040000,
+            BasicHostType = 0x00050000,
+            UnusedHostType = 0x00060000,
             UnknownHostType = 0x00070000,
 
-            UserEscaped         = 0x00080000,
-            AuthorityFound      = 0x00100000,
-            HasUserInfo         = 0x00200000,
-            LoopbackHost        = 0x00400000,
-            NotDefaultPort      = 0x00800000,
+            UserEscaped = 0x00080000,
+            AuthorityFound = 0x00100000,
+            HasUserInfo = 0x00200000,
+            LoopbackHost = 0x00400000,
+            NotDefaultPort = 0x00800000,
 
-            UserDrivenParsing   = 0x01000000,
-            CanonicalDnsHost    = 0x02000000,
+            UserDrivenParsing = 0x01000000,
+            CanonicalDnsHost = 0x02000000,
             ErrorOrParsingRecursion = 0x04000000,   // Used to signal a default parser error and also to confirm Port 
                                                     // and Host values in case of a custom user Parser
-            DosPath             = 0x08000000,
-            UncPath             = 0x10000000,
-            ImplicitFile        = 0x20000000,
-            MinimalUriInfoSet   = 0x40000000,
-            AllUriInfoSet       = unchecked(0x80000000),
-            IdnHost             = 0x100000000,
-            HasUnicode          = 0x200000000,
+            DosPath = 0x08000000,
+            UncPath = 0x10000000,
+            ImplicitFile = 0x20000000,
+            MinimalUriInfoSet = 0x40000000,
+            AllUriInfoSet = unchecked(0x80000000),
+            IdnHost = 0x100000000,
+            HasUnicode = 0x200000000,
             HostUnicodeNormalized = 0x400000000,
             RestUnicodeNormalized = 0x800000000,
-            UnicodeHost         = 0x1000000000,
-            IntranetUri         = 0x2000000000,
-            UseOrigUncdStrOffset= 0x4000000000,
+            UnicodeHost = 0x1000000000,
+            IntranetUri = 0x2000000000,
+            UseOrigUncdStrOffset = 0x4000000000,
             // Is this component Iri canonical
-            UserIriCanonical =          0x8000000000,
-            PathIriCanonical =          0x10000000000,
-            QueryIriCanonical =         0x20000000000,
-            FragmentIriCanonical =      0x40000000000,
-            IriCanonical =              0x78000000000,
+            UserIriCanonical = 0x8000000000,
+            PathIriCanonical = 0x10000000000,
+            QueryIriCanonical = 0x20000000000,
+            FragmentIriCanonical = 0x40000000000,
+            IriCanonical = 0x78000000000,
         }
 
         private Flags _flags;
@@ -1310,14 +1310,6 @@ namespace System
         }
 
         //
-        // Is this a gen delim char from RFC 3986
-        //
-        internal static bool IsGenDelim(char ch)
-        {
-            return (ch == ':' || ch == '/' || ch == '?' || ch == '#' || ch == '[' || ch == ']' || ch == '@');
-        }
-
-        //
         // CheckSchemeName
         //
         //  Determines whether a string is a valid scheme name according to RFC 2396.
@@ -1328,13 +1320,13 @@ namespace System
         {
             if (((object)schemeName == null)
                 || (schemeName.Length == 0)
-                || !IsAsciiLetter(schemeName[0]))
+                || !UriHelper.IsAsciiLetter(schemeName[0]))
             {
                 return false;
             }
             for (int i = schemeName.Length - 1; i > 0; --i)
             {
-                if (!(IsAsciiLetterOrDigit(schemeName[i])
+                if (!(UriHelper.IsAsciiLetterOrDigit(schemeName[i])
                     || (schemeName[i] == '+')
                     || (schemeName[i] == '-')
                     || (schemeName[i] == '.')))
@@ -1343,52 +1335,6 @@ namespace System
                 }
             }
             return true;
-        }
-
-        //
-        // IsHexDigit
-        //
-        //  Determines whether a character is a valid hexadecimal digit in the range
-        //  [0..9] | [A..F] | [a..f]
-        //
-        // Inputs:
-        //  <argument>  character
-        //      Character to test
-        //
-        // Returns:
-        //  true if <character> is a hexadecimal digit character
-        //
-        // Throws:
-        //  Nothing
-        //
-        internal static bool IsHexDigit(char character)
-        {
-            return ((character >= '0') && (character <= '9'))
-                || ((character >= 'A') && (character <= 'F'))
-                || ((character >= 'a') && (character <= 'f'));
-        }
-
-        //
-        // Returns:
-        //  Number in the range 0..15
-        //
-        // Throws:
-        //  ArgumentException
-        //
-        internal static int FromHex(char digit)
-        {
-            if (((digit >= '0') && (digit <= '9'))
-                || ((digit >= 'A') && (digit <= 'F'))
-                || ((digit >= 'a') && (digit <= 'f')))
-            {
-                return (digit <= '9')
-                    ? ((int)digit - (int)'0')
-                    : (((digit <= 'F')
-                    ? ((int)digit - (int)'A')
-                    : ((int)digit - (int)'a'))
-                    + 10);
-            }
-            throw new ArgumentOutOfRangeException(nameof(digit));
         }
 
         //
@@ -1852,10 +1798,10 @@ namespace System
                                         ((_flags & Flags.HostUnicodeNormalized) == 0)) ? _originalUnicodeString : _string))
             {
                 // Cut trailing spaces in m_String
-                if (length > idx && IsLWS(pUriString[length - 1]))
+                if (length > idx && UriHelper.IsLWS(pUriString[length - 1]))
                 {
                     --length;
-                    while (length != idx && IsLWS(pUriString[--length]))
+                    while (length != idx && UriHelper.IsLWS(pUriString[--length]))
                         ;
                     ++length;
                 }
@@ -1889,7 +1835,7 @@ namespace System
                         }
                         // DOS-like path?
                         if (i + 1 < (ushort)length && ((c = pUriString[i + 1]) == ':' || c == '|') &&
-                            IsAsciiLetter(pUriString[i]))
+                            UriHelper.IsAsciiLetter(pUriString[i]))
                         {
                             if (i + 2 >= (ushort)length || ((c = pUriString[i + 2]) != '\\' && c != '/'))
                             {
@@ -2051,9 +1997,9 @@ namespace System
 
         //
         //
-        // The method is called when we have to access m_Info members
-        // This will create the m_Info based on the copied parser context
-        // Under multi-threading race this method may do duplicated yet harmless work
+        // The method is called when we have to access m_Info members.
+        // This will create the m_Info based on the copied parser context.
+        // If multi-threading, this method may do duplicated yet harmless work.
         //
         private unsafe void CreateUriInfo(Flags cF)
         {
@@ -2073,7 +2019,7 @@ namespace System
             if ((cF & Flags.ImplicitFile) != 0)
             {
                 idx = (ushort)0;
-                while (IsLWS(_string[idx]))
+                while (UriHelper.IsLWS(_string[idx]))
                 {
                     ++idx;
                     ++info.Offset.Scheme;
@@ -3083,10 +3029,10 @@ namespace System
             fixed (char* str = _string)
             {
                 // Cut trailing spaces in m_String
-                if (length > idx && IsLWS(str[length - 1]))
+                if (length > idx && UriHelper.IsLWS(str[length - 1]))
                 {
                     --length;
-                    while (length != idx && IsLWS(str[--length]))
+                    while (length != idx && UriHelper.IsLWS(str[--length]))
                         ;
                     ++length;
                 }
@@ -3439,7 +3385,7 @@ namespace System
             ushort idx = 0;
 
             //skip whitespace
-            while (idx < length && IsLWS(uriString[idx]))
+            while (idx < length && UriHelper.IsLWS(uriString[idx]))
             {
                 ++idx;
             }
@@ -3448,7 +3394,6 @@ namespace System
             // file, ftp, http, https, uuid, etc
             // Note that we don't support one-letter schemes that will be put into a DOS path bucket
 
-            // TODO: change this to be more effective for relative Uris
             ushort end = idx;
             while (end < length && uriString[end] != ':')
             {
@@ -3481,7 +3426,7 @@ namespace System
                 if ((c = uriString[idx + 1]) == ':' || c == '|')
                 {
                     //DOS-like path?
-                    if (IsAsciiLetter(uriString[idx]))
+                    if (UriHelper.IsAsciiLetter(uriString[idx]))
                     {
                         if ((c = uriString[idx + 2]) == '\\' || c == '/')
                         {
@@ -4155,7 +4100,7 @@ namespace System
             {
                 if (hasUnicode)
                 {
-                    string temp = StripBidiControlCharacter(pString, start, end - start);
+                    string temp = UriHelper.StripBidiControlCharacter(pString, start, end - start);
                     try
                     {
                         newHost += ((temp != null) ? temp.Normalize(NormalizationForm.FormC) : null);
@@ -5111,54 +5056,6 @@ namespace System
             {
                 return InFact(Flags.AuthorityFound);
             }
-        }
-
-        private static readonly char[] s_WSchars = new char[] { ' ', '\n', '\r', '\t' };
-        private static bool IsLWS(char ch)
-        {
-            return (ch <= ' ') && (ch == ' ' || ch == '\n' || ch == '\r' || ch == '\t');
-        }
-
-        //Only consider ASCII characters
-        private static bool IsAsciiLetter(char character)
-        {
-            return (character >= 'a' && character <= 'z') ||
-                   (character >= 'A' && character <= 'Z');
-        }
-
-        internal static bool IsAsciiLetterOrDigit(char character)
-        {
-            return IsAsciiLetter(character) || (character >= '0' && character <= '9');
-        }
-
-        //
-        // Is this a Bidirectional control char.. These get stripped
-        //
-        internal static bool IsBidiControlCharacter(char ch)
-        {
-            return (ch == '\u200E' /*LRM*/ || ch == '\u200F' /*RLM*/ || ch == '\u202A' /*LRE*/ ||
-                    ch == '\u202B' /*RLE*/ || ch == '\u202C' /*PDF*/ || ch == '\u202D' /*LRO*/ ||
-                    ch == '\u202E' /*RLO*/);
-        }
-
-        //
-        // Strip Bidirectional control characters from this string
-        //
-        internal static unsafe string StripBidiControlCharacter(char* strToClean, int start, int length)
-        {
-            if (length <= 0) return "";
-
-            char[] cleanStr = new char[length];
-            int count = 0;
-            for (int i = 0; i < length; ++i)
-            {
-                char c = strToClean[start + i];
-                if (c < '\u200E' || c > '\u202E' || !IsBidiControlCharacter(c))
-                {
-                    cleanStr[count++] = c;
-                }
-            }
-            return new string(cleanStr, 0, count);
         }
     } // class Uri
 } // namespace System

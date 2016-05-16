@@ -95,7 +95,7 @@ namespace System.Net.Http
             private static void SetSslVersion(EasyRequest easy, IntPtr sslCtx = default(IntPtr))
             {
                 // Get the requested protocols.
-                System.Security.Authentication.SslProtocols protocols = easy._handler.SslProtocols;
+                System.Security.Authentication.SslProtocols protocols = easy._handler.ActualSslProtocols;
 
                 // We explicitly disallow choosing SSL2/3. Make sure they were filtered out.
                 Debug.Assert((protocols & ~SecurityProtocol.AllowedSecurityProtocols) == 0, 
@@ -143,7 +143,7 @@ namespace System.Net.Http
                 {
                     return CURLcode.CURLE_ABORTED_BY_CALLBACK;
                 }
-                Interop.Ssl.SetProtocolOptions(sslCtx, easy._handler.SslProtocols);
+                Interop.Ssl.SetProtocolOptions(sslCtx, easy._handler.ActualSslProtocols);
 
                 // Configure the SSL server certificate verification callback.
                 Interop.Ssl.SslCtxSetCertVerifyCallback(sslCtx, s_sslVerifyCallback, curl);

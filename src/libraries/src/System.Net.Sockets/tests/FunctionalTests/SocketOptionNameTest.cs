@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Text;
+using System.Collections.Generic;
 using System.Net.Test.Common;
 using System.Runtime.InteropServices;
+using System.Text;
 
 using Xunit;
 
@@ -129,6 +129,55 @@ namespace System.Net.Sockets.Tests
             {
                 Assert.Throws<SocketException>(() =>
                     s.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastInterface, IPAddress.HostToNetworkOrder(interfaceIndex)));
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void FailedConnect_GetSocketOption_SocketOptionNameError(bool simpleGet)
+        {
+            using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp) { Blocking = false })
+            {
+                // Fail a Connect
+                using (var server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+                {
+                    server.Bind(new IPEndPoint(IPAddress.Loopback, 0)); // bind but don't listen
+                    Assert.ThrowsAny<Exception>(() => client.Connect(server.LocalEndPoint));
+                }
+
+                // Verify via Select that there's an error
+                const int FailedTimeout = 10 * 1000 * 1000; // 10 seconds
+                var errorList = new List<Socket> { client };
+                Socket.Select(null, null, errorList, FailedTimeout);
+                Assert.Equal(1, errorList.Count);
+
+                // Get the last error and validate it's what's expected
+                int errorCode;
+                if (simpleGet)
+                {
+                    errorCode = (int)client.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Error);
+                }
+                else
+                {
+                    byte[] optionValue = new byte[sizeof(int)];
+                    client.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Error, optionValue);
+                    errorCode = BitConverter.ToInt32(optionValue, 0);
+                }
+                Assert.Equal((int)SocketError.ConnectionRefused, errorCode);
+
+                // Then get it again
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    // The Windows implementation doesn't clear the error code after retrieved.
+                    // https://github.com/dotnet/corefx/issues/8464
+                    Assert.Equal(errorCode, (int)client.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Error));
+                }
+                else
+                {
+                    // The Unix implementation matches the getsockopt and MSDN docs and clears the error code as part of retrieval.
+                    Assert.Equal((int)SocketError.Success, (int)client.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Error));
+                }
             }
         }
 

@@ -39,8 +39,11 @@ namespace System.Security.Cryptography
 
             unsafe
             {
-                byte[] signature = Key.Handle.SignHash(hash, AsymmetricPaddingMode.None, null, estimatedSize);
-                return signature;
+                using (SafeNCryptKeyHandle keyHandle = Key.Handle)
+                {
+                    byte[] signature = keyHandle.SignHash(hash, AsymmetricPaddingMode.None, null, estimatedSize);
+                    return signature;
+                }
             }
         }
 
@@ -56,8 +59,11 @@ namespace System.Security.Cryptography
 
             unsafe
             {
-                bool verified = Key.Handle.VerifyHash(hash, signature, AsymmetricPaddingMode.None, null);
-                return verified;
+                using (SafeNCryptKeyHandle keyHandle = Key.Handle)
+                {
+                    bool verified = keyHandle.VerifyHash(hash, signature, AsymmetricPaddingMode.None, null);
+                    return verified;
+                }
             }
         }
     }

@@ -7,24 +7,26 @@ using Xunit;
 
 namespace System.Linq.Parallel.Tests
 {
-    public class ElementAtElementAtOrDefaultTests
+    public static class ElementAtElementAtOrDefaultTests
     {
+        private static readonly Func<int, IEnumerable<int>> Positions = x => new[] { 0, x / 2, Math.Max(0, x - 1) }.Distinct();
+        private static readonly Func<int, IEnumerable<int>> InvalidPositions = x => new[] { -1, x, x * 2 }.Distinct();
+
         public static IEnumerable<object[]> ElementAtUnorderedData(int[] counts)
         {
-            Func<int, IEnumerable<int>> positions = x => new[] { 0, x / 2, Math.Max(0, x - 1) }.Distinct();
-            foreach (object[] results in UnorderedSources.Ranges(counts.Cast<int>(), positions)) yield return results;
+            // A deliberate decision was made here to test with all types, because this reflects partitioning/indexing
+            foreach (object[] results in UnorderedSources.Ranges(counts.DefaultIfEmpty(Sources.OuterLoopCount), Positions)) yield return results;
         }
 
         public static IEnumerable<object[]> ElementAtData(int[] counts)
         {
-            Func<int, IEnumerable<int>> positions = x => new[] { 0, x / 2, Math.Max(0, x - 1) }.Distinct();
-            foreach (object[] results in Sources.Ranges(counts.Cast<int>(), positions)) yield return results;
+            foreach (object[] results in Sources.Ranges(counts.DefaultIfEmpty(Sources.OuterLoopCount), Positions)) yield return results;
         }
 
         public static IEnumerable<object[]> ElementAtOutOfRangeData(int[] counts)
         {
-            Func<int, IEnumerable<int>> positions = x => new[] { -1, x, x * 2 }.Distinct();
-            foreach (object[] results in UnorderedSources.Ranges(counts.Cast<int>(), positions)) yield return results;
+            foreach (object[] results in UnorderedSources.Ranges(counts.DefaultIfEmpty(Sources.OuterLoopCount), InvalidPositions)) yield return results;
+            foreach (object[] results in Sources.Ranges(counts.DefaultIfEmpty(Sources.OuterLoopCount), InvalidPositions)) yield return results;
         }
 
         //
@@ -43,8 +45,8 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(ElementAtUnorderedData), new[] { 1024 * 1024, 1024 * 1024 * 4 })]
-        [MemberData(nameof(ElementAtData), new[] { 1024 * 1024, 1024 * 1024 * 4 })]
+        [MemberData(nameof(ElementAtUnorderedData), new int[] { /* Sources.OuterLoopCount */ })]
+        [MemberData(nameof(ElementAtData), new int[] { /* Sources.OuterLoopCount */ })]
         public static void ElementAt_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int position)
         {
             ElementAt(labeled, count, position);
@@ -60,7 +62,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(ElementAtOutOfRangeData), new[] { 1024 * 1024, 1024 * 1024 * 4 })]
+        [MemberData(nameof(ElementAtOutOfRangeData), new int[] { /* Sources.OuterLoopCount */ })]
         public static void ElementAt_OutOfRange_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int position)
         {
             ElementAt_OutOfRange(labeled, count, position);
@@ -79,8 +81,8 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(ElementAtUnorderedData), new[] { 1024 * 1024, 1024 * 1024 * 4 })]
-        [MemberData(nameof(ElementAtData), new[] { 1024 * 1024, 1024 * 1024 * 4 })]
+        [MemberData(nameof(ElementAtUnorderedData), new int[] { /* Sources.OuterLoopCount */ })]
+        [MemberData(nameof(ElementAtData), new int[] { /* Sources.OuterLoopCount */ })]
         public static void ElementAtOrDefault_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int position)
         {
             ElementAtOrDefault(labeled, count, position);
@@ -96,7 +98,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(ElementAtOutOfRangeData), new[] { 1024 * 1024, 1024 * 1024 * 4 })]
+        [MemberData(nameof(ElementAtOutOfRangeData), new int[] { /* Sources.OuterLoopCount */ })]
         public static void ElementAtOrDefault_OutOfRange_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int position)
         {
             ElementAtOrDefault_OutOfRange(labeled, count, position);
@@ -112,8 +114,8 @@ namespace System.Linq.Parallel.Tests
         [Fact]
         public static void ElementAt_ArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<object>)null).ElementAt(0));
-            Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<object>)null).ElementAtOrDefault(0));
+            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<object>)null).ElementAt(0));
+            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<object>)null).ElementAtOrDefault(0));
         }
     }
 }

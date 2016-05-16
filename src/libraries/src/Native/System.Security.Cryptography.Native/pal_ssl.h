@@ -369,11 +369,6 @@ Shims the SSL_CTX_set_client_cert_cb method
 extern "C" void CryptoNative_SslCtxSetClientCertCallback(SSL_CTX* ctx, SslClientCertCallback callback);
 
 /*
-Gets the SSL stream sizes to use.
-*/
-extern "C" void CryptoNative_GetStreamSizes(int32_t* header, int32_t* trailer, int32_t* maximumMessage);
-
-/*
 Shims the SSL_get_finished method.
 */
 extern "C" int32_t CryptoNative_SslGetFinished(SSL* ssl, void* buf, int32_t count);

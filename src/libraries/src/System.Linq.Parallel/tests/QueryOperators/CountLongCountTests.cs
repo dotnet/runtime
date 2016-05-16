@@ -7,121 +7,120 @@ using Xunit;
 
 namespace System.Linq.Parallel.Tests
 {
-    public class CountLongCountTests
+    public static class CountLongCountTests
     {
         public static IEnumerable<object[]> OnlyOneData(int[] counts)
         {
-            Func<int, IEnumerable<int>> positions = x => new[] { 0, x / 2, Math.Max(0, x - 1) }.Distinct();
-            foreach (object[] results in UnorderedSources.Ranges(counts.Cast<int>(), positions)) yield return results;
+            foreach (int count in counts.DefaultIfEmpty(Sources.OuterLoopCount))
+            {
+                foreach (int position in new[] { 0, count / 2, Math.Max(0, count - 1) }.Distinct())
+                {
+                    yield return new object[] { count, position };
+                }
+            }
         }
 
         //
         // Count and LongCount
         //
         [Theory]
-        [MemberData(nameof(Sources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(Sources))]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(UnorderedSources))]
-        public static void Count_All(Labeled<ParallelQuery<int>> labeled, int count)
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(16)]
+        public static void Count_All(int count)
         {
-            ParallelQuery<int> query = labeled.Item;
-            Assert.Equal(count, query.Count());
-            Assert.Equal(count, query.Count(i => i < count));
+            Assert.Equal(count, ParallelEnumerable.Range(0, count).Count());
+            Assert.Equal(count, ParallelEnumerable.Range(0, count).Count(i => i < count));
         }
 
-        [Theory]
+        [Fact]
         [OuterLoop]
-        [MemberData(nameof(Sources.Ranges), new[] { 1024 * 1024, 1024 * 1024 * 4 }, MemberType = typeof(Sources))]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 1024 * 1024, 1024 * 1024 * 4 }, MemberType = typeof(UnorderedSources))]
-        public static void Count_All_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
+        public static void Count_All_Longrunning()
         {
-            Count_All(labeled, count);
+            Count_All(Sources.OuterLoopCount);
         }
 
         [Theory]
-        [MemberData(nameof(Sources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(Sources))]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(UnorderedSources))]
-        public static void LongCount_All(Labeled<ParallelQuery<int>> labeled, long count)
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(16)]
+        public static void LongCount_All(int count)
         {
-            ParallelQuery<int> query = labeled.Item;
-            Assert.Equal(count, query.LongCount());
-            Assert.Equal(count, query.LongCount(i => i < count));
+            Assert.Equal(count, ParallelEnumerable.Range(0, count).LongCount());
+            Assert.Equal(count, ParallelEnumerable.Range(0, count).LongCount(i => i < count));
         }
 
-        [Theory]
+        [Fact]
         [OuterLoop]
-        [MemberData(nameof(Sources.Ranges), new[] { 1024 * 1024, 1024 * 1024 * 4 }, MemberType = typeof(Sources))]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 1024 * 1024, 1024 * 1024 * 4 }, MemberType = typeof(UnorderedSources))]
-        public static void LongCount_All_Longrunning(Labeled<ParallelQuery<int>> labeled, long count)
+        public static void LongCount_All_Longrunning()
         {
-            LongCount_All(labeled, count);
+            LongCount_All(Sources.OuterLoopCount);
         }
 
         [Theory]
-        [MemberData(nameof(Sources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(Sources))]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(UnorderedSources))]
-        public static void Count_None(Labeled<ParallelQuery<int>> labeled, int count)
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(16)]
+        public static void Count_None(int count)
         {
-            ParallelQuery<int> query = labeled.Item;
-            Assert.Equal(0, query.Count(i => i == -1));
+            Assert.Equal(0, ParallelEnumerable.Range(0, count).Count(i => i == -1));
         }
 
-        [Theory]
+        [Fact]
         [OuterLoop]
-        [MemberData(nameof(Sources.Ranges), new[] { 1024 * 1024, 1024 * 1024 * 4 }, MemberType = typeof(Sources))]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 1024 * 1024, 1024 * 1024 * 4 }, MemberType = typeof(UnorderedSources))]
-        public static void Count_None_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
+        public static void Count_None_Longrunning()
         {
-            Count_None(labeled, count);
+            Count_None(Sources.OuterLoopCount);
         }
 
         [Theory]
-        [MemberData(nameof(Sources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(Sources))]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(UnorderedSources))]
-        public static void LongCount_None(Labeled<ParallelQuery<int>> labeled, long count)
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(16)]
+        public static void LongCount_None(int count)
         {
-            ParallelQuery<int> query = labeled.Item;
-            Assert.Equal(0, query.LongCount(i => i == -1));
+            Assert.Equal(0, ParallelEnumerable.Range(0, count).LongCount(i => i == -1));
         }
 
-        [Theory]
+        [Fact]
         [OuterLoop]
-        [MemberData(nameof(Sources.Ranges), new[] { 1024 * 1024, 1024 * 1024 * 4 }, MemberType = typeof(Sources))]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 1024 * 1024, 1024 * 1024 * 4 }, MemberType = typeof(UnorderedSources))]
-        public static void LongCount_None_Longrunning(Labeled<ParallelQuery<int>> labeled, long count)
+        public static void LongCount_None_Longrunning()
         {
-            LongCount_None(labeled, count);
+            LongCount_None(Sources.OuterLoopCount);
         }
 
         [Theory]
         [MemberData(nameof(OnlyOneData), new[] { 0, 1, 2, 16 })]
-        public static void Count_One(Labeled<ParallelQuery<int>> labeled, int count, int position)
+        public static void Count_One(int count, int position)
         {
-            ParallelQuery<int> query = labeled.Item;
-            Assert.Equal(Math.Min(1, count), query.Count(i => i == position));
+            Assert.Equal(Math.Min(1, count), ParallelEnumerable.Range(0, count).Count(i => i == position));
         }
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(OnlyOneData), new[] { 1024 * 1024, 1024 * 1024 * 4 })]
-        public static void Count_One_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int position)
+        [MemberData(nameof(OnlyOneData), new int[] { /* Sources.OuterLoopCount */ })]
+        public static void Count_One_Longrunning(int count, int position)
         {
-            Count_One(labeled, count, position);
+            Count_One(count, position);
         }
 
         [Theory]
         [MemberData(nameof(OnlyOneData), new[] { 0, 1, 2, 16 })]
-        public static void LongCount_One(Labeled<ParallelQuery<int>> labeled, int count, long position)
+        public static void LongCount_One(int count, long position)
         {
-            ParallelQuery<int> query = labeled.Item;
-            Assert.Equal(Math.Min(1, count), query.LongCount(i => i == position));
+            Assert.Equal(Math.Min(1, count), ParallelEnumerable.Range(0, count).LongCount(i => i == position));
         }
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(OnlyOneData), new[] { 1024 * 1024, 1024 * 1024 * 4 })]
-        public static void LongCount_One_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, long position)
+        [MemberData(nameof(OnlyOneData), new int[] { /* Sources.OuterLoopCount */ })]
+        public static void LongCount_One_Longrunning(int count, long position)
         {
-            LongCount_One(labeled, count, position);
+            LongCount_One(count, position);
         }
 
         [Fact]
@@ -150,24 +149,23 @@ namespace System.Linq.Parallel.Tests
             AssertThrows.AlreadyCanceled(source => source.LongCount(x => true));
         }
 
-        [Theory]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 1 }, MemberType = typeof(UnorderedSources))]
-        public static void CountLongCount_AggregateException(Labeled<ParallelQuery<int>> labeled, int count)
+        [Fact]
+        public static void CountLongCount_AggregateException()
         {
-            Functions.AssertThrowsWrapped<DeliberateTestException>(() => labeled.Item.Count(x => { throw new DeliberateTestException(); }));
-            Functions.AssertThrowsWrapped<DeliberateTestException>(() => labeled.Item.LongCount(x => { throw new DeliberateTestException(); }));
+            AssertThrows.Wrapped<DeliberateTestException>(() => ParallelEnumerable.Range(0, 1).Count(x => { throw new DeliberateTestException(); }));
+            AssertThrows.Wrapped<DeliberateTestException>(() => ParallelEnumerable.Range(0, 1).LongCount(x => { throw new DeliberateTestException(); }));
         }
 
         [Fact]
         public static void CountLongCount_ArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<bool>)null).Count());
-            Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<bool>)null).Count(x => x));
-            Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Empty<bool>().Count(null));
+            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<bool>)null).Count());
+            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<bool>)null).Count(x => x));
+            Assert.Throws<ArgumentNullException>("predicate", () => ParallelEnumerable.Empty<bool>().Count(null));
 
-            Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<bool>)null).LongCount());
-            Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<bool>)null).LongCount(x => x));
-            Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Empty<bool>().LongCount(null));
+            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<bool>)null).LongCount());
+            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<bool>)null).LongCount(x => x));
+            Assert.Throws<ArgumentNullException>("predicate", () => ParallelEnumerable.Empty<bool>().LongCount(null));
         }
     }
 }

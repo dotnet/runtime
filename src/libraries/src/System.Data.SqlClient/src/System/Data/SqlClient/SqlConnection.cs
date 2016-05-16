@@ -40,6 +40,9 @@ namespace System.Data.SqlClient
         internal bool _supressStateChangeForReconnection;
         private int _reconnectCount;
 
+        // diagnostics listener
+        private readonly static DiagnosticListener s_diagnosticListener = new DiagnosticListener(SqlClientDiagnosticListenerExtensions.DiagnosticListenerName);
+
         // Transient Fault handling flag. This is needed to convey to the downstream mechanism of connection establishment, if Transient Fault handling should be used or not
         // The downstream handling of Connection open is the same for idle connection resiliency. Currently we want to apply transient fault handling only to the connections opened
         // using SqlConnection.Open() method. 
@@ -748,7 +751,7 @@ namespace System.Data.SqlClient
         public override Task OpenAsync(CancellationToken cancellationToken)
         {
             PrepareStatisticsForNewConnection();
-
+            
             SqlStatistics statistics = null;
             try
             {
@@ -876,7 +879,8 @@ namespace System.Data.SqlClient
 
         private void PrepareStatisticsForNewConnection()
         {
-            if (StatisticsEnabled)
+            if (StatisticsEnabled ||
+                s_diagnosticListener.IsEnabled(SqlClientDiagnosticListenerExtensions.SqlAfterExecuteCommand))
             {
                 if (null == _statistics)
                 {
@@ -919,7 +923,8 @@ namespace System.Data.SqlClient
                 GC.ReRegisterForFinalize(this);
             }
 
-            if (StatisticsEnabled)
+            if (StatisticsEnabled ||
+                s_diagnosticListener.IsEnabled(SqlClientDiagnosticListenerExtensions.SqlAfterExecuteCommand))
             {
                 ADP.TimerCurrent(out _statistics._openTimestamp);
                 tdsInnerConnection.Parser.Statistics = _statistics;

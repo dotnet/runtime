@@ -11,6 +11,10 @@
       <OSGroup>debian.8</OSGroup>
       <Platform>amd64</Platform>
     </Project>
+    <Project Include="fedora\23\runtime.native.System.IO.Compression.pkgproj">
+      <OSGroup>fedora.23</OSGroup>
+      <Platform>amd64</Platform>
+    </Project>
     <Project Include="ubuntu\14.04\runtime.native.System.IO.Compression.pkgproj">
       <OSGroup>ubuntu.14.04</OSGroup>
       <Platform>amd64</Platform>
@@ -31,7 +35,7 @@
       <OSGroup>Windows_NT</OSGroup>
       <Platform>amd64</Platform>
     </Project>
-    <Project Include="win7\runtime.native.System.IO.Compression.pkgproj">
+    <Project Include="win8\runtime.native.System.IO.Compression.pkgproj">
       <OSGroup>Windows_NT</OSGroup>
       <Platform>arm</Platform>
     </Project>

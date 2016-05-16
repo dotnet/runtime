@@ -89,8 +89,7 @@ namespace System.Net
 
                 if (input[i] == ':')
                 {
-                    Debug.Assert(i >= 1);
-                    if (input[i - 1] == ']')
+                    if (i >= 1 && input[i - 1] == ']')
                     {
                         trailingBracketIndex = i - 1;
                         portSeparatorIndex = i;

@@ -1,0 +1,49 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{B0FFC4A8-BAC3-4A7F-8FD5-5B680209371C}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.Private.Uri.Tests</AssemblyName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <ItemGroup>
+    <Compile Include="AppxUriValue.cs" />
+    <Compile Include="IdnCheckHostNameTest.cs" />
+    <Compile Include="IdnDnsSafeHostTest.cs" />
+    <Compile Include="IdnHostNameValidationTest.cs" />
+    <Compile Include="IriRelativeFileResolutionTest.cs" />
+    <Compile Include="IriTest.cs" />
+    <Compile Include="UriBuilderParameterTest.cs" />
+    <Compile Include="UriBuilderRefreshTest.cs" />
+    <Compile Include="UriBuilderTests.cs" />
+    <Compile Include="UriEscapingTest.cs" />
+    <Compile Include="UriGetComponentsTest.cs" />
+    <Compile Include="UriIpHostTest.cs" />
+    <Compile Include="UriIsWellFormedUriStringTest.cs" />
+    <Compile Include="UriMailToTest.cs" />
+    <Compile Include="UriParameterValidationTest.cs" />
+    <Compile Include="UriRelativeResolutionTest.cs" />
+    <Compile Include="UriTests.cs" />
+    <Compile Include="WebSocketsUriParserTest.cs" />
+    
+    <!-- Test common -->
+    <Compile Include="$(CommonTestPath)\System\ThreadCultureChange.cs">
+      <Link>Common\System\ThreadCultureChange.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\System.Private.Uri.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>Content</OutputItemType>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

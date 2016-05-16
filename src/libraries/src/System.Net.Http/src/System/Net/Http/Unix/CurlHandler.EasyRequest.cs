@@ -199,9 +199,33 @@ namespace System.Net.Http
 
             private void SetUrl()
             {
-                EventSourceTrace("Url: {0}", _requestMessage.RequestUri);
-                SetCurlOption(CURLoption.CURLOPT_URL, _requestMessage.RequestUri.AbsoluteUri);
+                Uri requestUri = _requestMessage.RequestUri;
+
+                long scopeId;
+                if (IsLinkLocal(requestUri, out scopeId))
+                {
+                    // Uri.AbsoluteUri doesn't include the ScopeId/ZoneID, so if it is link-local,
+                    // we separately pass the scope to libcurl.
+                    EventSourceTrace("ScopeId: {0}", scopeId);
+                    SetCurlOption(CURLoption.CURLOPT_ADDRESS_SCOPE, scopeId);
+                }
+
+                EventSourceTrace("Url: {0}", requestUri);
+                SetCurlOption(CURLoption.CURLOPT_URL, requestUri.AbsoluteUri);
                 SetCurlOption(CURLoption.CURLOPT_PROTOCOLS, (long)(CurlProtocols.CURLPROTO_HTTP | CurlProtocols.CURLPROTO_HTTPS));
+            }
+
+            private static bool IsLinkLocal(Uri url, out long scopeId)
+            {
+                IPAddress ip;
+                if (IPAddress.TryParse(url.DnsSafeHost, out ip) && ip.IsIPv6LinkLocal)
+                {
+                    scopeId = ip.ScopeId;
+                    return true;
+                }
+
+                scopeId = 0;
+                return false;
             }
 
             private void SetMultithreading()
@@ -212,9 +236,7 @@ namespace System.Net.Http
             private void SetTimeouts()
             {
                 // Set timeout limit on the connect phase.
-                SetCurlOption(CURLoption.CURLOPT_CONNECTTIMEOUT_MS, _handler.ConnectTimeout == Timeout.InfiniteTimeSpan ? 
-                    int.MaxValue : 
-                    Math.Max(1, (long)_handler.ConnectTimeout.TotalMilliseconds));
+                SetCurlOption(CURLoption.CURLOPT_CONNECTTIMEOUT_MS, int.MaxValue);
 
                 // Override the default DNS cache timeout.  libcurl defaults to a 1 minute
                 // timeout, but we extend that to match the Windows timeout of 10 minutes.
@@ -420,10 +442,22 @@ namespace System.Net.Http
 
                 // Configure libcurl with the gathered proxy information
 
+                // uri.AbsoluteUri/ToString() omit IPv6 scope IDs.  SerializationInfoString ensures these details 
+                // are included, but does not properly handle international hosts.  As a workaround we check whether 
+                // the host is a link-local IP address, and based on that either return the SerializationInfoString 
+                // or the AbsoluteUri. (When setting the request Uri itself, we instead use CURLOPT_ADDRESS_SCOPE to
+                // set the scope id and the url separately, avoiding these issues and supporting versions of libcurl
+                // prior to v7.37 that don't support parsing scope IDs out of the url's host.  As similar feature
+                // doesn't exist for proxies.)
+                IPAddress ip;
+                string proxyUrl = IPAddress.TryParse(proxyUri.DnsSafeHost, out ip) && ip.IsIPv6LinkLocal ?
+                    proxyUri.GetComponents(UriComponents.SerializationInfoString, UriFormat.UriEscaped) :
+                    proxyUri.AbsoluteUri;
+
+                EventSourceTrace<string>("Proxy: {0}", proxyUrl);
                 SetCurlOption(CURLoption.CURLOPT_PROXYTYPE, (long)CURLProxyType.CURLPROXY_HTTP);
-                SetCurlOption(CURLoption.CURLOPT_PROXY, proxyUri.AbsoluteUri);
+                SetCurlOption(CURLoption.CURLOPT_PROXY, proxyUrl);
                 SetCurlOption(CURLoption.CURLOPT_PROXYPORT, proxyUri.Port);
-                EventSourceTrace("Proxy: {0}", proxyUri);
 
                 KeyValuePair<NetworkCredential, CURLAUTH> credentialScheme = GetCredentials(
                     proxyUri, _handler.Proxy.Credentials, s_orderedAuthTypes);

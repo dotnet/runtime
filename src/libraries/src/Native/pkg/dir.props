@@ -4,6 +4,7 @@
   <PropertyGroup>
     <OSGroupPath Condition="$(OSGroup.StartsWith('windows', StringComparison.OrdinalIgnoreCase))">Windows_NT</OSGroupPath>
     <OSGroupPath Condition="$(OSGroup.StartsWith('debian'))">Linux</OSGroupPath>
+    <OSGroupPath Condition="$(OSGroup.StartsWith('fedora'))">Linux</OSGroupPath>
     <OSGroupPath Condition="$(OSGroup.StartsWith('osx'))">OSX</OSGroupPath>
     <OSGroupPath Condition="$(OSGroup.StartsWith('rhel'))">Linux</OSGroupPath>
     <OSGroupPath Condition="$(OSGroup.StartsWith('ubuntu'))">Linux</OSGroupPath>
@@ -15,6 +16,7 @@
     <WinNativePath Condition="'$(WinNativePath)' == ''">$(BuildNativePath)</WinNativePath>
     <RHELNativePath Condition="'$(RHELNativePath)' == ''">$(BuildNativePath)</RHELNativePath>
     <DebianNativePath Condition="'$(DebianNativePath)' == ''">$(BuildNativePath)</DebianNativePath>
+    <Fedora23NativePath Condition="'$(Fedora23NativePath)' == ''">$(BuildNativePath)</Fedora23NativePath>
     <OSXNativePath Condition="'$(OSXNativePath)' == ''">$(BuildNativePath)</OSXNativePath>
     <Ubuntu1404NativePath Condition="'$(Ubuntu1404NativePath)' == ''">$(BuildNativePath)</Ubuntu1404NativePath>
     <Ubuntu1604NativePath Condition="'$(Ubuntu1604NativePath)' == ''">$(BuildNativePath)</Ubuntu1604NativePath>

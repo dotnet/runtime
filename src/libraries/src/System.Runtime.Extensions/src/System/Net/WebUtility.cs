@@ -330,24 +330,25 @@ namespace System.Net
             if (string.IsNullOrEmpty(value))
                 return value;
 
-            int cSafe = 0;
-            int cSpaces = 0;
+            int safeCount = 0;
+            int spaceCount = 0;
             for (int i = 0; i < value.Length; i++)
             {
                 char ch = value[i];
                 if (IsUrlSafeChar(ch))
                 {
-                    cSafe++;
+                    safeCount++;
                 }
                 else if (ch == ' ')
                 {
-                    cSpaces++;
+                    spaceCount++;
                 }
             }
 
-            if (cSafe + cSpaces == value.Length)
+            int unexpandedCount = safeCount + spaceCount;
+            if (unexpandedCount == value.Length)
             {
-                if (cSpaces != 0)
+                if (spaceCount != 0)
                 {
                     // Only spaces to encode
                     return value.Replace(' ', '+');
@@ -357,21 +358,21 @@ namespace System.Net
                 return value;
             }
 
-            int unsafeByteCount = Encoding.UTF8.GetByteCount(value) - cSafe - cSpaces;
+            int byteCount = Encoding.UTF8.GetByteCount(value);
+            int unsafeByteCount = byteCount - unexpandedCount;
             int byteIndex = unsafeByteCount * 2;
 
-            // Instead of allocating one array of length Encoding.UTF8.GetByteCount(value) to store
-            // the UTF8 encoded bytes and then a second array of length 
-            // cSafe + cSpaces + 3 * (Encoding.UTF8.GetByteCount(value) - cSafe - cSpaces) 
-            // to store the URL encoded UTF8 bytes, we allocate a single array of length
-            // cSafe + cSpaces + 3 * Encoding.UTF8.GetByteCount(value), 
-            // saving Encoding.UTF8.GetByteCount(value) - 3 * (cSafe +cSpaces) bytes allocated.
-            // We encode the UTF8 to the end of this array, and then URL encode to the
+            // Instead of allocating one array of length `byteCount` to store
+            // the UTF-8 encoded bytes, and then a second array of length 
+            // `3 * byteCount - 2 * unexpandedCount`
+            // to store the URL-encoded UTF-8 bytes, we allocate a single array of
+            // the latter and encode the data in place, saving the first allocation.
+            // We store the UTF-8 bytes to the end of this array, and then URL encode to the
             // beginning of the array.
-            byte[] newBytes = new byte[cSafe + cSpaces + unsafeByteCount + byteIndex];
+            byte[] newBytes = new byte[byteCount + byteIndex];
             Encoding.UTF8.GetBytes(value, 0, value.Length, newBytes, byteIndex);
             
-            GetEncodedBytes(newBytes, byteIndex, newBytes.Length - byteIndex, newBytes);
+            GetEncodedBytes(newBytes, byteIndex, byteCount, newBytes);
             return Encoding.UTF8.GetString(newBytes);
         }
 
@@ -382,8 +383,8 @@ namespace System.Net
                 return null;
             }
 
-            int cSpaces = 0;
-            int cUnsafe = 0;
+            bool foundSpaces = false;
+            int unsafeCount = 0;
 
             // count them first
             for (int i = 0; i < count; i++)
@@ -391,28 +392,21 @@ namespace System.Net
                 char ch = (char)value[offset + i];
 
                 if (ch == ' ')
-                    cSpaces++;
+                    foundSpaces = true;
                 else if (!IsUrlSafeChar(ch))
-                    cUnsafe++;
+                    unsafeCount++;
             }
 
             // nothing to expand?
-            if (cSpaces == 0 && cUnsafe == 0)
+            if (!foundSpaces && unsafeCount == 0)
             {
-                if (offset == 0 && value.Length == count)
-                {
-                    return (byte[])value.Clone();
-                }
-                else
-                {
-                    var subarray = new byte[count];
-                    Buffer.BlockCopy(value, offset, subarray, 0, count);
-                    return subarray;
-                }
+                var subarray = new byte[count];
+                Buffer.BlockCopy(value, offset, subarray, 0, count);
+                return subarray;
             }
 
             // expand not 'safe' characters into %XX, spaces to +s
-            byte[] expandedBytes = new byte[count + cUnsafe * 2];
+            byte[] expandedBytes = new byte[count + unsafeCount * 2];
             GetEncodedBytes(value, offset, count, expandedBytes);
             return expandedBytes;
         }

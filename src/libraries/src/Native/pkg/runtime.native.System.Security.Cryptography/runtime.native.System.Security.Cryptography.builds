@@ -11,6 +11,10 @@
       <OSGroup>debian.8</OSGroup>
       <Platform>amd64</Platform>
     </Project>
+    <Project Include="fedora\23\runtime.native.System.Security.Cryptography.pkgproj">
+      <OSGroup>fedora.23</OSGroup>
+      <Platform>amd64</Platform>
+    </Project>
     <Project Include="ubuntu\14.04\runtime.native.System.Security.Cryptography.pkgproj">
       <OSGroup>ubuntu.14.04</OSGroup>
       <Platform>amd64</Platform>

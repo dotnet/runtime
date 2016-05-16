@@ -15,6 +15,7 @@ namespace System.Net.NetworkInformation
         private static NetworkAddressChangedEventHandler s_addressChangedSubscribers;
         private static volatile int s_socket = 0;
         private static readonly object s_lockObj = new object();
+        private static readonly Interop.Sys.NetworkChangeEvent s_networkChangeCallback = ProcessEvent;
 
         public static event NetworkAddressChangedEventHandler NetworkAddressChanged
         {
@@ -82,19 +83,19 @@ namespace System.Net.NetworkInformation
         {
             while (socket == s_socket)
             {
-                Interop.Sys.NetworkChangeKind kind = Interop.Sys.ReadSingleEvent(socket);
-                if (kind == Interop.Sys.NetworkChangeKind.None)
+                Interop.Sys.ReadEvents(socket, s_networkChangeCallback);
+            }
+        }
+        
+        private static void ProcessEvent(int socket, Interop.Sys.NetworkChangeKind kind)
+        {
+            if (kind != Interop.Sys.NetworkChangeKind.None)
+            {
+                lock (s_lockObj)
                 {
-                    continue;
-                }
-                else
-                {
-                    lock (s_lockObj)
+                    if (socket == s_socket)
                     {
-                        if (socket == s_socket)
-                        {
-                            OnSocketEvent(kind);
-                        }
+                        OnSocketEvent(kind);
                     }
                 }
             }

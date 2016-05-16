@@ -56,6 +56,29 @@ namespace System.Tests
             Assert.Equal(typeof(int), t);
         }
 
+        [Fact]
+        public static void ImplicitCast_T()
+        {
+            int? nullable = 5;
+            Assert.True(nullable.HasValue);
+            Assert.Equal(5, nullable.GetValueOrDefault());
+
+            nullable = null;
+            Assert.False(nullable.HasValue);
+            Assert.Equal(0, nullable.GetValueOrDefault());
+        }
+
+        [Fact]
+        public static void ExplicitCast_T()
+        {
+            int? nullable = 5;
+            int value = (int)nullable;
+            Assert.Equal(5, value);
+
+            nullable = null;
+            Assert.Throws<InvalidOperationException>(() => (int)nullable);
+        }
+
         [Theory]
         [InlineData(typeof(int?), typeof(int))]
         [InlineData(typeof(int), null)]
@@ -86,6 +109,7 @@ namespace System.Tests
         public static void Compare_Equals(int? n1, int? n2, int expected)
         {
             Assert.Equal(expected == 0, Nullable.Equals(n1, n2));
+            Assert.Equal(expected == 0, n1.Equals(n2));
             Assert.Equal(expected, Nullable.Compare(n1, n2));
         }
 

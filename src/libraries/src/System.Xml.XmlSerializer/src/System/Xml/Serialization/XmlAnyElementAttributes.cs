@@ -2,11 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection;
 using System.Collections;
 using System.Collections.Generic;
-using System.ComponentModel;
 
 
 namespace System.Xml.Serialization
@@ -17,7 +14,7 @@ namespace System.Xml.Serialization
     /// </devdoc>
     public class XmlAnyElementAttributes : IList
     {
-        private List<object> _list;
+        private List<XmlAnyElementAttribute> _list = new List<XmlAnyElementAttribute>();
 
         /// <include file='doc\XmlAnyElementAttributes.uex' path='docs/doc[@for="XmlAnyElementAttributes.this"]/*' />
         /// <devdoc>
@@ -25,53 +22,81 @@ namespace System.Xml.Serialization
         /// </devdoc>
         public XmlAnyElementAttribute this[int index]
         {
-            get { return (XmlAnyElementAttribute)List[index]; }
-            set { List[index] = value; }
+            get { return _list[index]; }
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentNullException(nameof(value));
+                }
+
+                _list[index] = value;
+            }
         }
 
         /// <include file='doc\XmlAnyElementAttributes.uex' path='docs/doc[@for="XmlAnyElementAttributes.Add"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public int Add(XmlAnyElementAttribute attribute)
+        public int Add(XmlAnyElementAttribute value)
         {
-            return List.Add(attribute);
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
+            int index = _list.Count;
+            _list.Add(value);
+            return index;
         }
 
         /// <include file='doc\XmlAnyElementAttributes.uex' path='docs/doc[@for="XmlAnyElementAttributes.Insert"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public void Insert(int index, XmlAnyElementAttribute attribute)
+        public void Insert(int index, XmlAnyElementAttribute value)
         {
-            List.Insert(index, attribute);
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
+            _list.Insert(index, value);
         }
 
         /// <include file='doc\XmlAnyElementAttributes.uex' path='docs/doc[@for="XmlAnyElementAttributes.IndexOf"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public int IndexOf(XmlAnyElementAttribute attribute)
+        public int IndexOf(XmlAnyElementAttribute value)
         {
-            return List.IndexOf(attribute);
+            return _list.IndexOf(value);
         }
 
         /// <include file='doc\XmlAnyElementAttributes.uex' path='docs/doc[@for="XmlAnyElementAttributes.Contains"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public bool Contains(XmlAnyElementAttribute attribute)
+        public bool Contains(XmlAnyElementAttribute value)
         {
-            return List.Contains(attribute);
+            return _list.Contains(value);
         }
 
         /// <include file='doc\XmlAnyElementAttributes.uex' path='docs/doc[@for="XmlAnyElementAttributes.Remove"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public void Remove(XmlAnyElementAttribute attribute)
+        public void Remove(XmlAnyElementAttribute value)
         {
-            List.Remove(attribute);
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
+            if (!_list.Remove(value))
+            {
+                throw new ArgumentException(SR.Arg_RemoveArgNotFound);
+            }
         }
 
         /// <include file='doc\XmlAnyElementAttributes.uex' path='docs/doc[@for="XmlAnyElementAttributes.CopyTo"]/*' />
@@ -80,21 +105,12 @@ namespace System.Xml.Serialization
         /// </devdoc>
         public void CopyTo(XmlAnyElementAttribute[] array, int index)
         {
-            List.CopyTo(array, index);
-        }
-        private List<object> InnerList
-        {
-            get
-            {
-                if (_list == null)
-                    _list = new List<object>();
-                return _list;
-            }
+            _list.CopyTo(array, index);
         }
 
         private IList List
         {
-            get { return InnerList; }
+            get { return _list; }
         }
 
         public int Count
@@ -107,32 +123,32 @@ namespace System.Xml.Serialization
 
         public void Clear()
         {
-            InnerList.Clear();
+            _list.Clear();
         }
 
         public void RemoveAt(int index)
         {
-            InnerList.RemoveAt(index);
+            _list.RemoveAt(index);
         }
 
         bool IList.IsReadOnly
         {
-            get { return false; }
+            get { return List.IsReadOnly; }
         }
 
         bool IList.IsFixedSize
         {
-            get { return false; }
+            get { return List.IsFixedSize; }
         }
 
         bool ICollection.IsSynchronized
         {
-            get { return false; }
+            get { return List.IsSynchronized; }
         }
 
         Object ICollection.SyncRoot
         {
-            get { throw new NotSupportedException(); }
+            get { return List.SyncRoot; }
         }
 
         void ICollection.CopyTo(Array array, int index)
@@ -144,43 +160,67 @@ namespace System.Xml.Serialization
         {
             get
             {
-                return InnerList[index];
+                return List[index];
             }
             set
             {
-                InnerList[index] = value;
+                if (value == null)
+                {
+                    throw new ArgumentNullException(nameof(value));
+                }
+
+                List[index] = value;
             }
         }
 
         bool IList.Contains(Object value)
         {
-            return InnerList.Contains(value);
+            return List.Contains(value);
         }
 
         int IList.Add(Object value)
         {
+            if (value == null)
+            {
+                throw new ArgumentException(nameof(value));
+            }
+
             return List.Add(value);
         }
 
         void IList.Remove(Object value)
         {
-            int index = InnerList.IndexOf(value);
-            InnerList.RemoveAt(index);
+            if (value == null)
+            {
+                throw new ArgumentException(nameof(value));
+            }
+
+            var attribute = value as XmlAnyElementAttribute;
+            if (attribute == null)
+            {
+                throw new ArgumentException(SR.Arg_RemoveArgNotFound);
+            }
+            Remove(attribute);
         }
 
         int IList.IndexOf(Object value)
         {
-            return InnerList.IndexOf(value);
+            return List.IndexOf(value);
         }
 
         void IList.Insert(int index, Object value)
         {
-            InnerList.Insert(index, value);
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
+            List.Insert(index, value);
         }
 
         public IEnumerator GetEnumerator()
         {
-            return InnerList.GetEnumerator();
+            return List.GetEnumerator();
         }
     }
 }

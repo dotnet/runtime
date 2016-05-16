@@ -238,7 +238,10 @@ namespace System.Tests
             Action<string> validate = result =>
             {
                 Assert.Equal(expected, result);
-                // if (result.Length == 0) Assert.Same(string.Empty, result);
+                if (result.Length == 0)
+                {
+                    Assert.Same(string.Empty, result);
+                }
             };
 
             if (values.Length == 2)
@@ -1020,6 +1023,7 @@ namespace System.Tests
         }
 
         [Theory]
+        [ActiveIssue("dotnet/coreclr#2051", Xunit.PlatformID.AnyUnix)]
         [InlineData("He\0lo", "He\0lo", 0)]
         [InlineData("He\0lo", "He\0", 0)]
         [InlineData("He\0lo", "\0", 2)]
@@ -1467,6 +1471,7 @@ namespace System.Tests
         }
 
         [Theory]
+        [ActiveIssue("dotnet/coreclr#2051", Xunit.PlatformID.AnyUnix)]
         [InlineData("He\0lo", "He\0lo", 0)]
         [InlineData("He\0lo", "He\0", 0)]
         [InlineData("He\0lo", "\0", 2)]

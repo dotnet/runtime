@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
@@ -203,6 +202,50 @@ namespace System.Tests
             yield return new object[] { s_testGuid, new Guid("98a110d5-fc49-43c5-bf46-802db8f843ff"), 1 };
             yield return new object[] { s_testGuid, new Guid("e8a110d5-fc49-43c5-bf46-802db8f843ff"), -1 };
 
+            // a
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), 1 };
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(2, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), -1 };
+
+            // b
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 1, 3, 4, 5, 6, 7, 8, 9, 10, 11), 1 };
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 3, 3, 4, 5, 6, 7, 8, 9, 10, 11), -1 };
+
+            // c
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 2, 4, 5, 6, 7, 8, 9, 10, 11), 1 };
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 4, 4, 5, 6, 7, 8, 9, 10, 11), -1 };
+
+            // d
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 3, 5, 6, 7, 8, 9, 10, 11), 1 };
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 5, 4, 6, 7, 8, 9, 10, 11), -1 };
+
+            // e
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 4, 4, 6, 7, 8, 9, 10, 11), 1 };
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 4, 6, 6, 7, 8, 9, 10, 11), -1 };
+
+            // f
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 4, 5, 5, 7, 8, 9, 10, 11), 1 };
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 4, 5, 7, 7, 8, 9, 10, 11), -1 };
+
+            // g
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 4, 5, 6, 6, 8, 9, 10, 11), 1 };
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 4, 5, 6, 8, 8, 9, 10, 11), -1 };
+
+            // h
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 4, 5, 6, 7, 7, 9, 10, 11), 1 };
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 4, 5, 6, 7, 9, 9, 10, 11), -1 };
+
+            // i
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 4, 5, 6, 7, 8, 8, 10, 11), 1 };
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 4, 5, 6, 7, 8, 10, 10, 11), -1 };
+
+            // j
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 11), 1 };
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 11), -1 };
+
+            // k
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10), 1 };
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12), -1 };
+
             yield return new object[] { s_testGuid, null, 1 };
         }
 
@@ -227,17 +270,32 @@ namespace System.Tests
 
         public static IEnumerable<object[]> Equals_TestData()
         {
-            yield return new object[] { s_testGuid, s_testGuid, true };
-            yield return new object[] { s_testGuid, new Guid("a8a110d5-fc49-43c5-bf46-802db8f843ff"), true };
-            yield return new object[] { s_testGuid, Guid.Empty, false };
+            yield return new object[] { s_testGuid, s_testGuid, true, true };
+            yield return new object[] { s_testGuid, new Guid("a8a110d5-fc49-43c5-bf46-802db8f843ff"), true, true };
+            yield return new object[] { s_testGuid, Guid.Empty, false, false };
 
-            yield return new object[] { s_testGuid, "a8a110d5-fc49-43c5-bf46-802db8f843ff", false };
-            yield return new object[] { s_testGuid, null, false };
+            yield return new object[] { s_testGuid, "a8a110d5-fc49-43c5-bf46-802db8f843ff", false, false };
+
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), true, true };
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), false, false };
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 0, 3, 4, 5, 6, 7, 8, 9, 10, 11), false, false };
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11), false, false };
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 0, 5, 6, 7, 8, 9, 10, 11), false, true };
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 4, 0, 6, 7, 8, 9, 10, 11), false, true };
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 4, 5, 0, 7, 8, 9, 10, 11), false, false };
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 4, 5, 6, 0, 8, 9, 10, 11), false, true };
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 4, 5, 6, 7, 0, 9, 10, 11), false, true };
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 4, 5, 6, 7, 8, 0, 10, 11), false, true };
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 11), false, true };
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0), false, false };
+
+            yield return new object[] { s_testGuid, new object(), false, false };
+            yield return new object[] { s_testGuid, null, false, false };
         }
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public static void Equals(Guid guid1, object obj, bool expected)
+        public static void Equals(Guid guid1, object obj, bool expected, bool hashExpected)
         {
             if (obj is Guid)
             {
@@ -245,7 +303,7 @@ namespace System.Tests
                 Assert.Equal(expected, guid1.Equals(guid2));
                 Assert.Equal(expected, guid1 == guid2);
                 Assert.Equal(!expected, guid1 != guid2);
-                Assert.Equal(expected, guid1.GetHashCode().Equals(guid2.GetHashCode()));
+                Assert.Equal(hashExpected, guid1.GetHashCode().Equals(guid2.GetHashCode()));
             }
             Assert.Equal(expected, guid1.Equals(obj));
         }
@@ -410,6 +468,33 @@ namespace System.Tests
             yield return new object[] { "{0xdddddddd, 0xdddd, 0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd0xdd,0xdd,0xdd}}", typeof(FormatException) }; // 8-4-4-{2-2-2-2-2-2-2-2} without comma
             yield return new object[] { "{0xdddddddd, 0xdddd, 0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd0xdd,0xdd}}", typeof(FormatException) }; // 8-4-4-{2-2-2-2-2-2-2-2} without comma
             yield return new object[] { "{0xdddddddd, 0xdddd, 0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd0xdd}}", typeof(FormatException) }; // 8-4-4-{2-2-2-2-2-2-2-2} without comma
+
+            yield return new object[] { "{0xdddddddd,0xdddd,0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}abc", typeof(FormatException) };
+
+            // Invalid hex
+            yield return new object[] { "Gdddddddddddddddddddddddddddddddd", typeof(FormatException) };
+            yield return new object[] { "ddddddddGdddddddddddddddddddddddd", typeof(FormatException) };
+            yield return new object[] { "ddddddddddddGdddddddddddddddddddd", typeof(FormatException) };
+            yield return new object[] { "ddddddddddddddddGdddddddddddddddd", typeof(FormatException) };
+            yield return new object[] { "ddddddddddddddddddddGdddddddddddd", typeof(FormatException) };
+
+            yield return new object[] { "Gddddddd-dddd-dddd-dddd-dddddddddddd", typeof(FormatException) };
+            yield return new object[] { "dddddddd-Gddd-dddd-dddd-dddddddddddd", typeof(FormatException) };
+            yield return new object[] { "dddddddd-dddd-Gddd-dddd-dddddddddddd", typeof(FormatException) };
+            yield return new object[] { "dddddddd-dddd-dddd-Gddd-dddddddddddd", typeof(FormatException) };
+            yield return new object[] { "dddddddd-dddd-dddd-dddd-Gddddddddddd", typeof(FormatException) };
+
+            yield return new object[] { "{0xGddddddd,0xdddd,0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}", typeof(FormatException) };
+            yield return new object[] { "{0xdddddddd,0xGddd,0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}", typeof(FormatException) };
+            yield return new object[] { "{0xdddddddd,0xdddd,0Gdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}", typeof(FormatException) };
+            yield return new object[] { "{0xdddddddd,0xdddd,0xdddd,{0xGd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}", typeof(FormatException) };
+            yield return new object[] { "{0xdddddddd,0xdddd,0xdddd,{0xdd,0xGd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}", typeof(FormatException) };
+            yield return new object[] { "{0xdddddddd,0xdddd,0xdddd,{0xdd,0xdd,0xGd,0xdd,0xdd,0xdd,0xdd,0xdd}}", typeof(FormatException) };
+            yield return new object[] { "{0xdddddddd,0xdddd,0xdddd,{0xdd,0xdd,0xdd,0xGd,0xdd,0xdd,0xdd,0xdd}}", typeof(FormatException) };
+            yield return new object[] { "{0xdddddddd,0xdddd,0xdddd,{0xdd,0xdd,0xdd,0xdd,0xGd,0xdd,0xdd,0xdd}}", typeof(FormatException) };
+            yield return new object[] { "{0xdddddddd,0xdddd,0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xGd,0xdd,0xdd}}", typeof(FormatException) };
+            yield return new object[] { "{0xdddddddd,0xdddd,0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xGd,0xdd}}", typeof(FormatException) };
+            yield return new object[] { "{0xdddddddd,0xdddd,0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xGd}}", typeof(FormatException) };
         }
 
         public static IEnumerable<object[]> GuidStrings_Format_Invalid_TestData()

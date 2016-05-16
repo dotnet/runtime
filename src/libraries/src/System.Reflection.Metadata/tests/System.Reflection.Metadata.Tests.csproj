@@ -35,6 +35,7 @@
   <ItemGroup>
     <Compile Include="Metadata\BlobTests.cs" />
     <Compile Include="Metadata\BlobUtilitiesTests.cs" />
+    <Compile Include="Metadata\LargeTablesAndHeapsTests.cs" />
     <Compile Include="Metadata\TypeSystem\ClassLayoutRow.cs" />
     <Compile Include="Metadata\Decoding\CustomAttributeDecoderTests.cs" />
     <Compile Include="Metadata\Decoding\DisassemblingTypeProvider.cs" />

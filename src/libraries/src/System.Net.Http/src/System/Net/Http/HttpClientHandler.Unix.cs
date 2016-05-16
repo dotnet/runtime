@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Net.Security;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
@@ -106,12 +107,6 @@ namespace System.Net.Http
             set { _curlHandler.AutomaticRedirection = value; }
         }
 
-        public TimeSpan ConnectTimeout
-        {
-            get { return _curlHandler.ConnectTimeout; }
-            set { _curlHandler.ConnectTimeout = value; }
-        }
-
         public int MaxAutomaticRedirections
         {
             get { return _curlHandler.MaxAutomaticRedirections; }
@@ -137,6 +132,10 @@ namespace System.Net.Http
             set { _curlHandler.MaxResponseHeadersLength = value; }
         }
 
+        public IDictionary<String, object> Properties
+        {
+            get { return _curlHandler.Properties; }
+        }
         #endregion Properties
 
         #region De/Constructors
