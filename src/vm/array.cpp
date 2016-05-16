@@ -1128,7 +1128,7 @@ void GenerateArrayOpScript(ArrayMethodDesc *pMD, ArrayOpScript *paos)
     MetaSig msig(pMD);
     _ASSERTE(!msig.IsVarArg());     // No array signature is varargs, code below does not expect it.
 
-    switch (pcls->GetArrayElementType())
+    switch (pMT->GetApproxArrayElementTypeHandle().GetInternalCorElementType())
     {
         // These are all different because of sign extension
 

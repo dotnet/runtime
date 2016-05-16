@@ -100,7 +100,7 @@ namespace System.Reflection.Emit
             // bit unfortunate, since it means that we need to allocate
             // yet another array of bytes...  
             mungedSig = new byte[sigLength - 1];
-            Array.Copy(signature, 1, mungedSig, 0, sigLength - 1);
+            Buffer.BlockCopy(signature, 1, mungedSig, 0, sigLength - 1);
             
             index = methodBuilder.GetILGenerator().m_ScopeTree.GetCurrentActiveScopeIndex();
             if (index == -1)

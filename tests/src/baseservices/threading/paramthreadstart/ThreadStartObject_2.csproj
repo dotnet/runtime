@@ -16,7 +16,6 @@
     <CLRTestKind>RunOnly</CLRTestKind>
     <CLRTestPriority>1</CLRTestPriority>
     <CLRTestProjectToRun>ThreadStartObject.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>""</CLRTestExecutionArguments>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

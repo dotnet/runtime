@@ -14,10 +14,10 @@
     <CCompile Include="$(IntermediateOutputDirectory)/fusionpriv_i.c" />
     <CCompile Include="$(IntermediateOutputDirectory)/mscorsvc_i.c" Condition="'$(FeaturePrejit)'=='true'" />
     <CCompile Include="$(IntermediateOutputDirectory)/tlbimpexp_i.c" />
-    <CCompile Include="$(IntermediateOutputDirectory)/CLRPrivAppXHosting_i.c" Condition="'$(FeatureHostedBinder)'=='true'" />
-    <CCompile Include="$(IntermediateOutputDirectory)/CLRPrivBinding_i.c" Condition="'$(FeatureHostedBinder)'=='true'" />
-    <CCompile Include="$(IntermediateOutputDirectory)/CLRPrivHosting_i.c" Condition="'$(FeatureHostedBinder)'=='true'" />
-    <CCompile Include="$(IntermediateOutputDirectory)/CLRPrivRuntimeBinders_i.c" Condition="'$(FeatureHostedBinder)'=='true'" />
+    <CCompile Include="$(IntermediateOutputDirectory)/CLRPrivAppXHosting_i.c" />
+    <CCompile Include="$(IntermediateOutputDirectory)/CLRPrivBinding_i.c" />
+    <CCompile Include="$(IntermediateOutputDirectory)/CLRPrivHosting_i.c" />
+    <CCompile Include="$(IntermediateOutputDirectory)/CLRPrivRuntimeBinders_i.c" />
   </ItemGroup>
   <ItemGroup>
     <Idl Include="$(Clrbase)\src\inc\metahost.idl" />
@@ -41,10 +41,10 @@
     <Idl Include="$(Clrbase)\src\inc\gchost.idl" />
     <Idl Include="$(Clrbase)\src\inc\mscoruef.idl" />
     <Idl Include="$(Clrbase)\src\inc\assemblyusagelog.idl" Condition="'$(FeatureCoreclr)'!='true'" />
-    <Idl Include="$(Clrbase)\src\inc\CLRPrivAppXHosting.idl" Condition="'$(FeatureHostedBinder)'=='true'" />
+    <Idl Include="$(Clrbase)\src\inc\CLRPrivAppXHosting.idl" />
     <Idl Include="$(Clrbase)\src\inc\CLRPrivBinding.idl" />
-    <Idl Include="$(Clrbase)\src\inc\CLRPrivHosting.idl" Condition="'$(FeatureHostedBinder)'=='true'" />
-    <Idl Include="$(Clrbase)\src\inc\CLRPrivRuntimeBinders.idl" Condition="'$(FeatureHostedBinder)'=='true'" />
+    <Idl Include="$(Clrbase)\src\inc\CLRPrivHosting.idl" />
+    <Idl Include="$(Clrbase)\src\inc\CLRPrivRuntimeBinders.idl" />
     <Idl Include="$(ClrBase)\src\inc\corsym.idl">
       <CompileInterface>true</CompileInterface>
       <CompileProxy>false</CompileProxy>

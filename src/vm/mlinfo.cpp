@@ -2171,6 +2171,10 @@ MarshalInfo::MarshalInfo(Module* pModule,
                         case NATIVE_TYPE_LPSTR:
                             m_type = builder ? MARSHAL_TYPE_LPSTR_BUFFER : MARSHAL_TYPE_LPSTR;
                             break;
+
+                        case NATIVE_TYPE_LPUTF8STR:
+                            m_type = builder ? MARSHAL_TYPE_UTF8_BUFFER : MARSHAL_TYPE_LPUTF8STR;
+                            break;
     
                         case NATIVE_TYPE_LPTSTR:
                         {
@@ -4463,6 +4467,9 @@ VOID MarshalInfo::MarshalTypeToString(SString& strMarshalType, BOOL fSizeIsSpeci
             case MARSHAL_TYPE_LPSTR:
                 strRetVal = W("LPSTR");
                 break;
+            case MARSHAL_TYPE_LPUTF8STR:
+                strRetVal = W("LPUTF8STR");
+                break;
 #ifdef FEATURE_COMINTEROP
             case MARSHAL_TYPE_ANSIBSTR:
                 strRetVal = W("AnsiBStr");
@@ -4473,6 +4480,9 @@ VOID MarshalInfo::MarshalTypeToString(SString& strMarshalType, BOOL fSizeIsSpeci
                 break;
             case MARSHAL_TYPE_LPSTR_BUFFER:
                 strRetVal = W("LPSTR buffer");
+                break;
+            case MARSHAL_TYPE_UTF8_BUFFER:
+                strRetVal = W("UTF8 buffer");
                 break;
             case MARSHAL_TYPE_ASANYA:
                 strRetVal = W("AsAnyA");

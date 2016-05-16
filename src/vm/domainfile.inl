@@ -105,11 +105,7 @@ inline void DomainAssembly::UpdatePEFile(PTR_PEFile pFile)
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_HOSTED_BINDER
     GetAppDomain()->UpdatePublishHostedAssembly(this, pFile);
-#else
-    this->UpdatePEFileWorker(pFile);
-#endif
 }
 
 #ifdef FEATURE_MULTIMODULE_ASSEMBLIES

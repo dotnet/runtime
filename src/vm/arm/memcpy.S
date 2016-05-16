@@ -22,9 +22,9 @@
         ldr r3, [r0]
         ldr r3, [r1]
         
-        push {lr}
+        push {r7, lr} // r7 as a dummy to make SP aligned
         blx C_FUNC(memcpy)
-        pop {lr}
+        pop {r7, lr}
 
 LOCAL_LABEL(GC_POLL):
         ldr r0, =g_TrapReturningThreads

@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 //Nested Switch
 
 .assembly extern legacy library mscorlib {}
@@ -80,8 +83,9 @@
     IL_0001:  ldc.i4.1
     IL_0002:  call       void Test::DoSwitch(int32,
                                              int32)
-    IL_0007:  ret
+    IL_0007:  call       int32 ['mscorlib']System.Environment::get_ExitCode()
+              call       void ['mscorlib']System.Environment::Exit(int32)
+              ret
   } 
  
 } 
-

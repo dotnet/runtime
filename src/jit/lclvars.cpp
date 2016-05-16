@@ -46,10 +46,9 @@ void                Compiler::lvaInit()
     lvaShadowSPslotsVar = BAD_VAR_NUM;
 #endif // !FEATURE_EH_FUNCLETS
     lvaInlinedPInvokeFrameVar = BAD_VAR_NUM;
+    lvaReversePInvokeFrameVar = BAD_VAR_NUM;
 #if FEATURE_FIXED_OUT_ARGS
-#if INLINE_NDIRECT
     lvaPInvokeFrameRegSaveVar = BAD_VAR_NUM;
-#endif // !INLINE_NDIRECT
     lvaOutgoingArgSpaceVar = BAD_VAR_NUM;
 #endif // FEATURE_FIXED_OUT_ARGS
 #ifdef _TARGET_ARM_
@@ -1796,6 +1795,14 @@ void   Compiler::lvaPromoteLongVars()
             fieldVarDsc->lvIsParam        = isParam;
         }
     }
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("\nlvaTable after lvaPromoteLongVars\n");
+        lvaTableDump();
+    }
+#endif // DEBUG
 }
 #endif // !_TARGET_64BIT_
 
@@ -2829,7 +2836,6 @@ var_types           LclVarDsc::lvaArgType()
 
 void                Compiler::lvaMarkLclRefs(GenTreePtr tree)
 {
-#if INLINE_NDIRECT
     /* Is this a call to unmanaged code ? */
     if (tree->gtOper == GT_CALL && tree->gtFlags & GTF_CALL_UNMANAGED) 
     {
@@ -2848,7 +2854,6 @@ void                Compiler::lvaMarkLclRefs(GenTreePtr tree)
             varDsc->incRefCnts(lvaMarkRefsWeight, this);
         }
     }
-#endif
         
     /* Is this an assigment? */
 
@@ -3190,9 +3195,6 @@ void                Compiler::lvaMarkLocalVars()
         printf("\n*************** In lvaMarkLocalVars()");
 #endif
 
-
-#if INLINE_NDIRECT
-
     /* If there is a call to an unmanaged target, we already grabbed a
        local slot for the current thread control block.
      */
@@ -3213,7 +3215,6 @@ void                Compiler::lvaMarkLocalVars()
             lvaTable[info.compLvFrameListRoot].lvRefCntWtd  = 2 * BB_UNITY_WEIGHT;
         }
     }
-#endif
 
     lvaAllocOutgoingArgSpace();
 

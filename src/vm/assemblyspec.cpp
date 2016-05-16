@@ -1403,7 +1403,6 @@ DomainAssembly *AssemblySpec::LoadDomainAssembly(FileLoadLevel targetLevel,
 
     DomainAssembly *pAssembly = nullptr;
 
-#ifdef FEATURE_HOSTED_BINDER
     ICLRPrivBinder * pBinder = GetHostBinder();
     
     // If no binder was explicitly set, check if parent assembly has a binder.
@@ -1430,7 +1429,7 @@ DomainAssembly *AssemblySpec::LoadDomainAssembly(FileLoadLevel targetLevel,
             pAssembly = pDomain->FindAssembly(pPrivAssembly);
         }
     }
-#endif
+
     if ((pAssembly == nullptr) && CanUseWithBindingCache())
     {
         pAssembly = pDomain->FindCachedAssembly(this);
@@ -2090,10 +2089,8 @@ BOOL AssemblySpecBindingCache::StoreAssembly(AssemblySpec *pSpec, DomainAssembly
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-#ifdef FEATURE_HOSTED_BINDER
         // Host binder based assembly spec's cannot currently be safely inserted into caches.
         PRECONDITION(pSpec->GetHostBinder() == nullptr);
-#endif // FEATURE_HOSTED_BINDER
         POSTCONDITION(UnsafeContains(this, pSpec));
         POSTCONDITION(UnsafeVerifyLookupAssembly(this, pSpec, pAssembly));
         INJECT_FAULT(COMPlusThrowOM(););
@@ -2175,10 +2172,8 @@ BOOL AssemblySpecBindingCache::StoreFile(AssemblySpec *pSpec, PEAssembly *pFile)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-#ifdef FEATURE_HOSTED_BINDER
         // Host binder based assembly spec's cannot currently be safely inserted into caches.
         PRECONDITION(pSpec->GetHostBinder() == nullptr);
-#endif // FEATURE_HOSTED_BINDER
         POSTCONDITION((!RETVAL) || (UnsafeContains(this, pSpec) && UnsafeVerifyLookupFile(this, pSpec, pFile)));
         INJECT_FAULT(COMPlusThrowOM(););
     }
@@ -2250,10 +2245,8 @@ BOOL AssemblySpecBindingCache::StoreException(AssemblySpec *pSpec, Exception* pE
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-#ifdef FEATURE_HOSTED_BINDER
         // Host binder based assembly spec's cannot currently be safely inserted into caches.
         PRECONDITION(pSpec->GetHostBinder() == nullptr);
-#endif // FEATURE_HOSTED_BINDER
         DISABLED(POSTCONDITION(UnsafeContains(this, pSpec))); //<TODO>@todo: Getting violations here - StoreExceptions could happen anywhere so this is possibly too aggressive.</TODO>
         INJECT_FAULT(COMPlusThrowOM(););
     }
@@ -2340,7 +2333,7 @@ BOOL AssemblySpecBindingCache::CompareSpecs(UPTR u1, UPTR u2)
     AssemblySpec *a1 = (AssemblySpec *) (u1 << 1);
     AssemblySpec *a2 = (AssemblySpec *) u2;
 
-#if defined(FEATURE_HOSTED_BINDER) && defined(FEATURE_APPX_BINDER)
+#if defined(FEATURE_APPX_BINDER)
     _ASSERTE(a1->GetAppDomain() == a2->GetAppDomain());
     if (a1->GetAppDomain()->HasLoadContextHostBinder())
         return (CLRPrivBinderUtil::CompareHostBinderSpecs(a1,a2));
@@ -2362,7 +2355,7 @@ BOOL DomainAssemblyCache::CompareBindingSpec(UPTR spec1, UPTR spec2)
     AssemblySpec* pSpec1 = (AssemblySpec*) (spec1 << 1);
     AssemblyEntry* pEntry2 = (AssemblyEntry*) spec2;
 
-#if defined(FEATURE_HOSTED_BINDER) && defined(FEATURE_FUSION)
+#if defined(FEATURE_FUSION)
     AssemblySpec* pSpec2 = &pEntry2->spec;
     _ASSERTE(pSpec1->GetAppDomain() == pSpec2->GetAppDomain());
     if (pSpec1->GetAppDomain()->HasLoadContextHostBinder())
@@ -2461,11 +2454,9 @@ LPCVOID AssemblySpec::GetParentAssemblyPtr()
     LIMITED_METHOD_CONTRACT;
     if(m_pParentAssembly)
     {
-#ifdef FEATURE_HOSTED_BINDER
         if (m_pParentAssembly->GetFile()->HasHostAssembly())
             return m_pParentAssembly->GetFile()->GetHostAssembly();
         else
-#endif
             return m_pParentAssembly->GetFile()->GetFusionAssembly();
     }
     return NULL;

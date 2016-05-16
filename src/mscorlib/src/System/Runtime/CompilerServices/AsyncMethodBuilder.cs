@@ -73,16 +73,17 @@ namespace System.Runtime.CompilerServices
             // This allows us to undo any ExecutionContext changes made in MoveNext,
             // so that they won't "leak" out of the first await.
 
+            Thread currentThread = Thread.CurrentThread;
             ExecutionContextSwitcher ecs = default(ExecutionContextSwitcher);
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
-                ExecutionContext.EstablishCopyOnWriteScope(ref ecs);
+                ExecutionContext.EstablishCopyOnWriteScope(currentThread, ref ecs);
                 stateMachine.MoveNext();
             }
             finally
             {
-                ecs.Undo();
+                ecs.Undo(currentThread);
             }
         }
 
@@ -307,16 +308,17 @@ namespace System.Runtime.CompilerServices
             // This allows us to undo any ExecutionContext changes made in MoveNext,
             // so that they won't "leak" out of the first await.
 
+            Thread currentThread = Thread.CurrentThread;
             ExecutionContextSwitcher ecs = default(ExecutionContextSwitcher);
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
-                ExecutionContext.EstablishCopyOnWriteScope(ref ecs);
+                ExecutionContext.EstablishCopyOnWriteScope(currentThread, ref ecs);
                 stateMachine.MoveNext();
             }
             finally
             {
-                ecs.Undo();
+                ecs.Undo(currentThread);
             }
         }
 
@@ -462,16 +464,17 @@ namespace System.Runtime.CompilerServices
             // This allows us to undo any ExecutionContext changes made in MoveNext,
             // so that they won't "leak" out of the first await.
 
+            Thread currentThread = Thread.CurrentThread;
             ExecutionContextSwitcher ecs = default(ExecutionContextSwitcher);
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
-                ExecutionContext.EstablishCopyOnWriteScope(ref ecs);
+                ExecutionContext.EstablishCopyOnWriteScope(currentThread, ref ecs);
                 stateMachine.MoveNext();
             }
             finally
             {
-                ecs.Undo();
+                ecs.Undo(currentThread);
             }
         }
 
@@ -868,12 +871,12 @@ namespace System.Runtime.CompilerServices
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
-                ExecutionContext.EstablishCopyOnWriteScope(ref ecs);
+                ExecutionContext.EstablishCopyOnWriteScope(currentThread, ref ecs);
                 stateMachine.MoveNext();
             }
             finally
             {
-                ecs.Undo();
+                ecs.Undo(currentThread);
             }
         }
 #endif

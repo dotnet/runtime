@@ -172,7 +172,6 @@ GC/Scenarios/GCSimulator/GCSimulator_254/GCSimulator_254.sh
 GC/Scenarios/GCSimulator/GCSimulator_255/GCSimulator_255.sh
 GC/Scenarios/GCSimulator/GCSimulator_256/GCSimulator_256.sh
 GC/Scenarios/GCSimulator/GCSimulator_257/GCSimulator_257.sh
-GC/Scenarios/GCSimulator/GCSimulator_258/GCSimulator_258.sh
 GC/Scenarios/GCSimulator/GCSimulator_259/GCSimulator_259.sh
 GC/Scenarios/GCSimulator/GCSimulator_25/GCSimulator_25.sh
 GC/Scenarios/GCSimulator/GCSimulator_260/GCSimulator_260.sh

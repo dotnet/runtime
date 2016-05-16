@@ -6,6 +6,8 @@
 #include <assert.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdlib.h>
+#include <locale.h>
 
 #include "locale.hpp"
 
@@ -110,6 +112,41 @@ int32_t FixupLocaleName(UChar* value, int32_t valueLength)
     return i;
 }
 
+bool IsEnvVarSet(const char* name)
+{
+    const char* value = getenv(name);
+
+    return (value != nullptr) && (strcmp("", value) != 0);
+}
+
+// The behavior of uloc_getDefault() on POSIX systems is to query
+// setlocale(LC_MESSAGES) and use that value, unless it is C or
+// POSIX. In that case it tries to read LC_ALL, LC_MESSAGES and LANG
+// and then falls back to en_US_POSIX if none of them are set.
+//
+// en_US_POSIX is a weird locale since the collation rules treat 'a'
+// and 'A' as different letters even when ignoring case. Furthermore
+// it's common for LC_ALL, LC_MESSAGES and LANG to be unset when
+// running under Docker.
+//
+// We'd rather default to invariant in this case. If any of these
+// are set, we'll just call into ICU and let it do whatever
+// normalization it would do.
+const char* DetectDefaultLocaleName()
+{
+    char* loc = setlocale(LC_MESSAGES, nullptr);
+
+    if (loc != nullptr && (strcmp("C", loc) == 0 || strcmp("POSIX", loc) == 0))
+    {
+        if (!IsEnvVarSet("LC_ALL") && !IsEnvVarSet("LC_MESSAGES") && !IsEnvVarSet("LANG"))
+        {
+            return "";
+        }
+    }
+
+    return uloc_getDefault();
+}
+
 extern "C" int32_t GlobalizationNative_GetLocaleName(const UChar* localeName, UChar* value, int32_t valueLength)
 {
     UErrorCode status = U_ZERO_ERROR;
@@ -135,7 +172,7 @@ extern "C" int32_t GlobalizationNative_GetDefaultLocaleName(UChar* value, int32_
     char localeNameBuffer[ULOC_FULLNAME_CAPACITY];
     UErrorCode status = U_ZERO_ERROR;
 
-    const char* defaultLocale = uloc_getDefault();
+    const char* defaultLocale = DetectDefaultLocaleName();
 
     uloc_getBaseName(defaultLocale, localeNameBuffer, ULOC_FULLNAME_CAPACITY, &status);
 

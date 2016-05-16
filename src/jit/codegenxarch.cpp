@@ -211,15 +211,15 @@ void                CodeGen::genEmitGSCookieCheck(bool pushReg)
         // ... all other cases.
         else
         {
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-            // For System V structs that are not returned in registers are always 
+#ifdef _TARGET_AMD64_
+            // For x64, structs that are not returned in registers are always 
             // returned in implicit RetBuf. If we reached here, we should not have
             // a RetBuf and the return type should not be a struct.
             assert(compiler->info.compRetBuffArg == BAD_VAR_NUM);
             assert(!varTypeIsStruct(compiler->info.compRetNativeType));
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // _TARGET_AMD64_
 
-            // For Windows we can't make such assertions since we generate code for returning of 
+            // For x86 Windows we can't make such assertions since we generate code for returning of 
             // the RetBuf in REG_INTRET only when the ProfilerHook is enabled. Otherwise
             // compRetNativeType could be TYP_STRUCT.
             gcInfo.gcMarkRegPtrVal(REG_INTRET, compiler->info.compRetNativeType);
@@ -1284,42 +1284,31 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
             gcInfo.gcMarkRegSetNpt(RBM_RDX);
         }
 
-        if (divisor->isContainedIntOrIImmed())
+        // Perform the 'targetType' (64-bit or 32-bit) divide instruction
+        instruction ins;
+        if (oper == GT_UMOD || oper == GT_UDIV)
+            ins = INS_div;
+        else
+            ins = INS_idiv;
+            
+        emit->emitInsBinary(ins, size, treeNode, divisor);
+            
+        // Signed divide RDX:RAX by r/m64, with result
+        //    stored in RAX := Quotient, RDX := Remainder.
+        // Move the result to the desired register, if necessary
+        if (oper == GT_DIV || oper == GT_UDIV)
         {
-            GenTreeIntConCommon* divImm = divisor->AsIntConCommon();
-            assert(divImm->IsIntCnsFitsInI32());
-            ssize_t imm = divImm->IconValue();
-            assert(isPow2(abs(imm)));
-            genCodeForPow2Div(treeNode->AsOp());
+            if (targetReg != REG_RAX)
+            {
+                inst_RV_RV(INS_mov, targetReg, REG_RAX, targetType);
+            }
         }
         else
         {
-            // Perform the 'targetType' (64-bit or 32-bit) divide instruction
-            instruction ins;
-            if (oper == GT_UMOD || oper == GT_UDIV)
-                ins = INS_div;
-            else
-                ins = INS_idiv;
-            
-            emit->emitInsBinary(ins, size, treeNode, divisor);
-            
-            // Signed divide RDX:RAX by r/m64, with result
-            //    stored in RAX := Quotient, RDX := Remainder.
-            // Move the result to the desired register, if necessary
-            if (oper == GT_DIV || oper == GT_UDIV)
+            assert((oper == GT_MOD) || (oper == GT_UMOD));
+            if (targetReg != REG_RDX)
             {
-                if (targetReg != REG_RAX)
-                {
-                    inst_RV_RV(INS_mov, targetReg, REG_RAX, targetType);
-                }
-            }
-            else
-            {
-                assert((oper == GT_MOD) || (oper == GT_UMOD));
-                if (targetReg != REG_RDX)
-                {
-                    inst_RV_RV(INS_mov, targetReg, REG_RDX, targetType);
-                }
+                inst_RV_RV(INS_mov, targetReg, REG_RDX, targetType);
             }
         }
     }
@@ -1524,13 +1513,10 @@ CodeGen::genStructReturn(GenTreePtr treeNode)
 {
     assert(treeNode->OperGet() == GT_RETURN);
     GenTreePtr op1 = treeNode->gtGetOp1();
-    var_types targetType = treeNode->TypeGet();
 
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
     if (op1->OperGet() == GT_LCL_VAR)
     {
-        assert(op1->isContained());
-
         GenTreeLclVarCommon* lclVar = op1->AsLclVarCommon();
         LclVarDsc* varDsc = &(compiler->lvaTable[lclVar->gtLclNum]);
         assert(varDsc->lvIsMultiRegArgOrRet);
@@ -1540,22 +1526,69 @@ CodeGen::genStructReturn(GenTreePtr treeNode)
         unsigned regCount = retTypeDesc.GetReturnRegCount();
         assert(regCount == MAX_RET_REG_COUNT);
 
-        // Move the value into ABI return registers     
-        int offset = 0;
-        for (unsigned i = 0; i < regCount; ++i)
+        if (varTypeIsEnregisterableStruct(op1))
         {
-            var_types type = retTypeDesc.GetReturnRegType(i);
-            regNumber reg = retTypeDesc.GetABIReturnReg(i);
-            getEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), reg, lclVar->gtLclNum, offset);
-            offset += genTypeSize(type);
+            // Right now the only enregistrable structs supported are SIMD vector types.
+            assert(varTypeIsSIMD(op1));
+            assert(!op1->isContained());
+
+            // This is a case of operand is in a single reg and needs to be
+            // returned in multiple ABI return registers.
+            regNumber opReg = genConsumeReg(op1);
+            regNumber reg0 = retTypeDesc.GetABIReturnReg(0);
+            regNumber reg1 = retTypeDesc.GetABIReturnReg(1);
+
+            if (opReg != reg0 && opReg != reg1)
+            {
+                // Operand reg is different from return regs.
+                // Copy opReg to reg0 and let it to be handled by one of the
+                // two cases below.
+                inst_RV_RV(ins_Copy(TYP_DOUBLE), reg0, opReg, TYP_DOUBLE);
+                opReg = reg0;
+            }
+
+            if (opReg == reg0)
+            {
+                assert(opReg != reg1);
+
+                // reg0 - already has required 8-byte in bit position [63:0].
+                // reg1 = opReg.
+                // swap upper and lower 8-bytes of reg1 so that desired 8-byte is in bit position [63:0].
+                inst_RV_RV(ins_Copy(TYP_DOUBLE), reg1, opReg, TYP_DOUBLE);
+            }
+            else
+            {
+                assert(opReg == reg1);
+
+                // reg0 = opReg.
+                // swap upper and lower 8-bytes of reg1 so that desired 8-byte is in bit position [63:0].
+                inst_RV_RV(ins_Copy(TYP_DOUBLE), reg0, opReg, TYP_DOUBLE);                
+            }
+            inst_RV_RV_IV(INS_shufpd, EA_16BYTE, reg1, reg1, 0x01);
+        }
+        else
+        {
+            assert(op1->isContained());
+
+            // Copy var on stack into ABI return registers     
+            int offset = 0;
+            for (unsigned i = 0; i < regCount; ++i)
+            {
+                var_types type = retTypeDesc.GetReturnRegType(i);
+                regNumber reg = retTypeDesc.GetABIReturnReg(i);
+                getEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), reg, lclVar->gtLclNum, offset);
+                offset += genTypeSize(type);
+            }
         }
     }
     else
     {
-        assert(op1->IsMultiRegCall());
+        assert(op1->IsMultiRegCall() || op1->IsCopyOrReloadOfMultiRegCall());
+
         genConsumeRegs(op1);
 
-        GenTreeCall* call = op1->AsCall();
+        GenTree* actualOp1 = op1->gtSkipReloadOrCopy();
+        GenTreeCall* call = actualOp1->AsCall();
         ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
         unsigned regCount = retTypeDesc->GetReturnRegCount();
         assert(regCount == MAX_RET_REG_COUNT);
@@ -1576,6 +1609,23 @@ CodeGen::genStructReturn(GenTreePtr treeNode)
         regNumber returnReg1 = retTypeDesc->GetABIReturnReg(1);
         regNumber allocatedReg1 = call->GetRegNumByIdx(1);
         
+        if (op1->IsCopyOrReload())
+        {
+            // GT_COPY/GT_RELOAD will have valid reg for those positions
+            // that need to be copied or reloaded.
+            regNumber reloadReg = op1->AsCopyOrReload()->GetRegNumByIdx(0);
+            if (reloadReg != REG_NA)
+            {
+                allocatedReg0 = reloadReg;
+            }
+
+            reloadReg = op1->AsCopyOrReload()->GetRegNumByIdx(1);
+            if (reloadReg != REG_NA)
+            {
+                allocatedReg1 = reloadReg;
+            }
+        }
+
         if (allocatedReg0 == returnReg1 &&
             allocatedReg1 == returnReg0)
         {
@@ -2096,11 +2146,11 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
                         emit->emitInsBinary(ins_Move_Extend(targetType, true), emitTypeSize(treeNode), treeNode, op1);
                     }
                 }
+            }
 
-                if (treeNode->gtRegNum != REG_NA)
-                {
-                    genProduceReg(treeNode);
-                }
+            if (treeNode->gtRegNum != REG_NA)
+            {
+                genProduceReg(treeNode);
             }
         }
         break;
@@ -2706,18 +2756,16 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
 //
 // Assumption:
 //    The child of store is a multi-reg call node.
+//    genProduceReg() on treeNode is made by caller of this routine.
 //
 void
 CodeGen::genMultiRegCallStoreToLocal(GenTreePtr treeNode)
 {
-    assert(treeNode->OperGet() == GT_STORE_LCL_VAR);    
+    assert(treeNode->OperGet() == GT_STORE_LCL_VAR);
 
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
     // Structs of size >=9 and <=16 are returned in two return registers on x64 Unix.
     assert(varTypeIsStruct(treeNode));
-
-    // Assumption: struct local var needs to be in memory
-    noway_assert(!treeNode->InReg());
 
     // Assumption: current x64 Unix implementation requires that a multi-reg struct
     // var in 'var = call' is flagged as lvIsMultiRegArgOrRet to prevent it from
@@ -2725,7 +2773,7 @@ CodeGen::genMultiRegCallStoreToLocal(GenTreePtr treeNode)
     unsigned lclNum = treeNode->AsLclVarCommon()->gtLclNum;
     LclVarDsc* varDsc = &(compiler->lvaTable[lclNum]);
     noway_assert(varDsc->lvIsMultiRegArgOrRet);
-    
+
     GenTree* op1 = treeNode->gtGetOp1();
     GenTree* actualOp1 = op1->gtSkipReloadOrCopy();
     GenTreeCall* call = actualOp1->AsCall();
@@ -2737,143 +2785,100 @@ CodeGen::genMultiRegCallStoreToLocal(GenTreePtr treeNode)
     assert(retTypeDesc->GetReturnRegCount() == MAX_RET_REG_COUNT);
     unsigned regCount = retTypeDesc->GetReturnRegCount();
 
-    int offset = 0;
-    for (unsigned i = 0; i < regCount; ++i)
-    {
-        var_types type = retTypeDesc->GetReturnRegType(i);
-        regNumber reg = call->GetRegNumByIdx(i);
+    if (treeNode->gtRegNum != REG_NA)
+    {        
+        // Right now the only enregistrable structs supported are SIMD types.
+        assert(varTypeIsSIMD(treeNode));
+        assert(varTypeIsFloating(retTypeDesc->GetReturnRegType(0)));
+        assert(varTypeIsFloating(retTypeDesc->GetReturnRegType(1)));
+
+        // This is a case of two 8-bytes that comprise the operand is in
+        // two different xmm registers and needs to assembled into a single
+        // xmm register.
+        regNumber targetReg = treeNode->gtRegNum;
+        regNumber reg0 = call->GetRegNumByIdx(0);
+        regNumber reg1 = call->GetRegNumByIdx(1);
+
         if (op1->IsCopyOrReload())
         {
             // GT_COPY/GT_RELOAD will have valid reg for those positions
             // that need to be copied or reloaded.
-            regNumber reloadReg = op1->AsCopyOrReload()->GetRegNumByIdx(i);
+            regNumber reloadReg = op1->AsCopyOrReload()->GetRegNumByIdx(0);
             if (reloadReg != REG_NA)
             {
-                reg = reloadReg;
+                reg0 = reloadReg;
+            }
+
+            reloadReg = op1->AsCopyOrReload()->GetRegNumByIdx(1);
+            if (reloadReg != REG_NA)
+            {
+                reg1 = reloadReg;
             }
         }
 
-        assert(reg != REG_NA);
-        getEmitter()->emitIns_S_R(ins_Store(type), emitTypeSize(type), reg, lclNum, offset);
-        offset += genTypeSize(type);
-    }
-#else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
-    assert(!"Unreached");
-#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
-}
-
-// Generate code for division (or mod) by power of two
-// or negative powers of two.  (meaning -1 * a power of two, not 2^(-1))
-// Op2 must be a contained integer constant.
-void
-CodeGen::genCodeForPow2Div(GenTreeOp* tree)
-{
-    GenTree *dividend = tree->gtOp.gtOp1;
-    GenTree *divisor  = tree->gtOp.gtOp2;
-    genTreeOps  oper  = tree->OperGet();
-    emitAttr    size  = emitTypeSize(tree);
-    emitter    *emit  = getEmitter();
-    regNumber targetReg  = tree->gtRegNum;
-    var_types targetType = tree->TypeGet();
-
-    bool isSigned = oper == GT_MOD || oper == GT_DIV;
-
-    // precondition: extended dividend is in RDX:RAX
-    // which means it is either all zeros or all ones
-
-    noway_assert(divisor->isContained());
-    GenTreeIntConCommon* divImm = divisor->AsIntConCommon();
-    ssize_t imm = divImm->IconValue();
-    ssize_t abs_imm = abs(imm);
-    noway_assert(isPow2(abs_imm));
-    
-
-    if (isSigned)
-    {
-        if (imm == 1)
+        if (targetReg != reg0 && targetReg != reg1)
         {
-            if (oper == GT_DIV)
-            {
-                if (targetReg != REG_RAX)
-                    inst_RV_RV(INS_mov, targetReg, REG_RAX, targetType);
-            }
-            else
-            {
-                assert(oper == GT_MOD);
-                instGen_Set_Reg_To_Zero(size, targetReg);
-            }
-
-            return;
+            // Copy reg0 into targetReg and let it to be handled by one
+            // of the cases below.
+            inst_RV_RV(ins_Copy(TYP_DOUBLE), targetReg, reg0, TYP_DOUBLE);
+            targetReg = reg0;
         }
 
-        if (abs_imm == 2)
+        if (targetReg == reg0)
         {
-            if (oper == GT_MOD)
-            {
-                emit->emitIns_R_I(INS_and, size, REG_RAX, 1); // result is 0 or 1
-                // xor with rdx will flip all bits if negative
-                emit->emitIns_R_R(INS_xor, size, REG_RAX, REG_RDX); // 111.11110 or 0
-            }
-            else
-            {
-                assert(oper == GT_DIV);
-                // add 1 if it's negative
-                emit->emitIns_R_R(INS_sub, size, REG_RAX, REG_RDX);
-            }
+            // targeReg[63:0] = targetReg[63:0]
+            // targetReg[127:64] = reg1[127:64]
+            inst_RV_RV_IV(INS_shufpd, EA_16BYTE, targetReg, reg1, 0x00);
         }
-        else
+        else 
         {
-            // add imm-1 if negative
-            emit->emitIns_R_I(INS_and, size, REG_RDX, abs_imm - 1);
-            emit->emitIns_R_R(INS_add, size, REG_RAX, REG_RDX);
-        }
+            assert(targetReg == reg1);
 
-        if (oper == GT_DIV)
-        {
-            unsigned shiftAmount = genLog2(unsigned(abs_imm));
-            inst_RV_SH(INS_sar, size, REG_RAX, shiftAmount);
-
-            if (imm < 0)
-            {
-                emit->emitIns_R(INS_neg, size, REG_RAX);
-            }
-        }
-        else
-        {
-            assert(oper == GT_MOD);
-            if (abs_imm > 2)
-            {
-                emit->emitIns_R_I(INS_and, size, REG_RAX, abs_imm - 1);
-            }
-            // RDX contains 'imm-1' if negative
-            emit->emitIns_R_R(INS_sub, size, REG_RAX, REG_RDX);
-        }
-
-        if (targetReg != REG_RAX)
-        {
-            inst_RV_RV(INS_mov, targetReg, REG_RAX, targetType);
+            // We need two shuffles to achieve this
+            // First:
+            // targeReg[63:0] = targetReg[63:0]
+            // targetReg[127:64] = reg0[63:0]
+            //
+            // Second:
+            // targeReg[63:0] = targetReg[127:64]
+            // targetReg[127:64] = targetReg[63:0]
+            //
+            // Essentially copy low 8-bytes from reg0 to high 8-bytes of targetReg
+            // and next swap low and high 8-bytes of targetReg to have them
+            // rearranged in the right order.
+            inst_RV_RV_IV(INS_shufpd, EA_16BYTE, targetReg, reg0, 0x00);
+            inst_RV_RV_IV(INS_shufpd, EA_16BYTE, targetReg, targetReg, 0x01);
         }
     }
     else
     {
-        assert (imm > 0);
-
-        if (targetReg != dividend->gtRegNum)
+        // Stack store
+        int offset = 0;
+        for (unsigned i = 0; i < regCount; ++i)
         {
-            inst_RV_RV(INS_mov, targetReg, dividend->gtRegNum, targetType);
+            var_types type = retTypeDesc->GetReturnRegType(i);
+            regNumber reg = call->GetRegNumByIdx(i);
+            if (op1->IsCopyOrReload())
+            {
+                // GT_COPY/GT_RELOAD will have valid reg for those positions
+                // that need to be copied or reloaded.
+                regNumber reloadReg = op1->AsCopyOrReload()->GetRegNumByIdx(i);
+                if (reloadReg != REG_NA)
+                {
+                    reg = reloadReg;
+                }
+            }
+
+            assert(reg != REG_NA);
+            getEmitter()->emitIns_S_R(ins_Store(type), emitTypeSize(type), reg, lclNum, offset);
+            offset += genTypeSize(type);
         }
 
-        if (oper == GT_UDIV)
-        {
-            inst_RV_SH(INS_shr, size, targetReg, genLog2(unsigned(imm)));
-        }
-        else 
-        {
-            assert(oper == GT_UMOD);
-
-            emit->emitIns_R_I(INS_and, size, targetReg, imm -1);
-        }
+        varDsc->lvRegNum = REG_STK;
     }
+#else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
+    assert(!"Unreached");
+#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
 }
 
 
@@ -5870,21 +5875,7 @@ void CodeGen::genCallInstruction(GenTreePtr node)
         else
         {
             // Direct call to a non-virtual user function.
-            CORINFO_ACCESS_FLAGS  aflags = CORINFO_ACCESS_ANY;
-            if (call->IsSameThis())
-            {
-                aflags = (CORINFO_ACCESS_FLAGS)(aflags | CORINFO_ACCESS_THIS);
-            }
-
-            if ((call->NeedsNullCheck()) == 0)
-            {
-                aflags = (CORINFO_ACCESS_FLAGS)(aflags | CORINFO_ACCESS_NONNULL);
-            }
-
-            CORINFO_CONST_LOOKUP addrInfo;
-            compiler->info.compCompHnd->getFunctionEntryPoint(methHnd, &addrInfo, aflags);
-
-            addr = addrInfo.addr;
+            addr = call->gtDirectCallAddress;
         }
 
         // Non-virtual direct calls to known addresses
@@ -7991,62 +7982,6 @@ CodeGen::genIntrinsic(GenTreePtr treeNode)
     }
     
     genProduceReg(treeNode);
-}
-
-//------------------------------------------------------------------------------------------------ //
-// getFirstArgWithStackSlot - returns the first argument with stack slot on the caller's frame.
-//
-// Return value:
-//    The number of the first argument with stack slot on the caller's frame.
-//
-// Note:
-//    On Windows the caller always creates slots (homing space) in its frame for the 
-//    first 4 arguments of a calee (register passed args). So, the the variable number
-//    (lclNum) for the first argument with a stack slot is always 0.
-//    For System V systems there is no such calling convention requirement, and the code needs to find
-//    the first stack passed argument from the caller. This is done by iterating over 
-//    all the lvParam variables and finding the first with lvArgReg equals to REG_STK.
-//    
-unsigned
-CodeGen::getFirstArgWithStackSlot()
-{
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-    unsigned baseVarNum = compiler->lvaFirstStackIncomingArgNum;
-
-    if (compiler->lvaFirstStackIncomingArgNum != BAD_VAR_NUM)
-    {
-        baseVarNum = compiler->lvaFirstStackIncomingArgNum;
-    }
-    else
-    {
-        // Iterate over all the local variables in the lclvartable. 
-        // They contain all the implicit argumets - thisPtr, retBuf, 
-        // generic context, PInvoke cookie, var arg cookie,no-standard args, etc.
-        LclVarDsc* varDsc = nullptr;
-        for (unsigned i = 0; i < compiler->lvaCount; i++)
-        {
-            varDsc = &(compiler->lvaTable[i]);
-
-            // We are iterating over the arguments only.
-            assert(varDsc->lvIsParam);
-
-            if (varDsc->lvArgReg == REG_STK)
-            {
-                baseVarNum = compiler->lvaFirstStackIncomingArgNum = i;
-                break;
-            }
-        }
-        assert(varDsc != nullptr);
-    }
-
-    return baseVarNum;
-#elif defined(_TARGET_AMD64_)
-    return 0;
-#else
-    // Not implemented for x86.
-    NYI_X86("getFirstArgWithStackSlot not yet implemented for x86.");
-    return BAD_VAR_NUM;
-#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
 }
 
 //-------------------------------------------------------------------------- //

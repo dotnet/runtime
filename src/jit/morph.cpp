@@ -2696,12 +2696,12 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
         // convention for x86/SSE.
         if (!lateArgsComputed)
         {
-            if (call->IsUnmanaged())
+            if (call->IsUnmanaged() && !opts.ShouldUsePInvokeHelpers())
             {
                 assert(!call->gtCallCookie);
                 // Add a conservative estimate of the stack size in a special parameter (r11) at the call site.
                 // It will be used only on the intercepted-for-host code path to copy the arguments.             
-                
+
                 GenTree* cns = new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, fgEstimateCallStackSize(call));
                 call->gtCallArgs = gtNewListNode(cns, call->gtCallArgs);
                 NonStandardArg nsa = {REG_PINVOKE_COOKIE_PARAM, cns};
@@ -2868,7 +2868,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
             maxRegArgs++;
     }
 
-#if INLINE_NDIRECT
     if (call->IsUnmanaged())
     {
         noway_assert(intArgRegNum == 0);
@@ -2889,7 +2888,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
         if (callHasRetBuffArg)
             maxRegArgs++;
     }
-#endif // INLINE_NDIRECT
 #endif // _TARGET_X86_
 
     /* Morph the user arguments */
@@ -6217,30 +6215,31 @@ bool                Compiler::fgCanFastTailCall(GenTreeCall* callee)
             // Get the size of the struct and see if it is register passable.
             if (argx->OperGet() == GT_OBJ)
             {
-#ifdef _TARGET_AMD64_
+#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
 
                 unsigned typeSize = 0;
                 hasMultiByteArgs = !VarTypeIsMultiByteAndCanEnreg(argx->TypeGet(), argx->gtObj.gtClass, &typeSize, false);
 
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-                // On System V the args could be a 2 eightbyte struct that is passed in two registers.
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING) || defined(_TARGET_ARM64_)
+                // On System V/arm64 the args could be a 2 eightbyte struct that is passed in two registers.
                 // Account for the second eightbyte in the nCalleeArgs.
-                // TODO-CQ-Amd64-Unix:  Structs of size between 9 to 16 bytes are conservatively estimated
-                //                      as two args, since they need two registers. Whereas nCallerArgs is
-                //                      counting such an arg as one.This would mean we will not be optimizing 
-                //                      certain calls  though technically possible.
+                // https://github.com/dotnet/coreclr/issues/2666
+                // TODO-CQ-Amd64-Unix/arm64:  Structs of size between 9 to 16 bytes are conservatively estimated
+                //                            as two args, since they need two registers whereas nCallerArgs is
+                //                            counting such an arg as one. This would mean we will not be optimizing
+                //                            certain calls though technically possible.
 
                 if (typeSize > TARGET_POINTER_SIZE)
                 {
                     unsigned extraArgRegsToAdd = (typeSize / TARGET_POINTER_SIZE);
                     nCalleeArgs += extraArgRegsToAdd;
                 }
-#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING || _TARGET_ARM64_
 
 #else
                 assert(!"Target platform ABI rules regarding passing struct type args in registers");
                 unreached();
-#endif //_TARGET_AMD64_
+#endif //_TARGET_AMD64_ || _TARGET_ARM64_
 
             }
             else
@@ -6962,6 +6961,14 @@ GenTreePtr          Compiler::fgMorphCall(GenTreeCall* call)
                     // in Stublinkerx86.cpp.
                     szFailReason = "Method with non-standard args passed in callee trash register cannot be tail called via helper";
                 }
+#ifdef _TARGET_ARM64_
+                else
+                {
+                    // NYI - TAILCALL_RECURSIVE/TAILCALL_HELPER.
+                    // So, bail out if we can't make fast tail call.
+                    szFailReason = "Non-qualified fast tail call";
+                }
+#endif
 #endif //LEGACY_BACKEND
             }
         }
@@ -12593,7 +12600,7 @@ bool Compiler::fgShouldUseMagicNumberDivide(GenTreeOp* tree)
         return false;
 
     // codegen will expand these
-    if (isPow2(cons))
+    if (cons == SSIZE_T_MIN || isPow2(abs(cons)))
         return false;
 
     // someone else will fold this away, so don't make it complicated for them
@@ -14707,12 +14714,10 @@ void                Compiler::fgSetOptions()
         codeGen->setFramePointerRequiredGCInfo(true);
     }
 
-#if INLINE_NDIRECT
     if (info.compCallUnmanaged)
     {
         codeGen->setFramePointerRequired(true);  // Setup of Pinvoke frame currently requires an EBP style frame
     }
-#endif
 
     if (info.compPublishStubParam)
     {
@@ -15555,43 +15560,54 @@ void                Compiler::fgPromoteStructs()
     //
 
     lvaStructPromotionInfo structPromotionInfo;
+    bool tooManyLocals = false;
 
     for (unsigned lclNum = 0;
-        lclNum < startLvaCount;
-        lclNum++)
+         lclNum < startLvaCount;
+         lclNum++)
     {
+        // Whether this var got promoted
+        bool promotedVar = false;
         LclVarDsc*  varDsc = &lvaTable[lclNum];
-
-        // Don't promote if we have reached the tracking limit.
-        if (lvaHaveManyLocals())
-        {
-            JITDUMP("Stopped promoting struct fields, due to too many locals.\n");
-            break;
-        }
-#if !FEATURE_MULTIREG_STRUCT_PROMOTE
-        if (varDsc->lvIsMultiRegArgOrRet)
-        {
-            JITDUMP("Skipping V%02u: marked lvIsMultiRegArgOrRet.\n", lclNum);
-            continue;
-        }
-#endif // !FEATURE_MULTIREG_STRUCT_PROMOTE
 
 #ifdef FEATURE_SIMD
         if (varDsc->lvSIMDType && varDsc->lvUsedInSIMDIntrinsic)
         {
             // If we have marked this as lvUsedInSIMDIntrinsic, then we do not want to promote
             // its fields.  Instead, we will attempt to enregister the entire struct.
-            // Note, however, that if the code below does not decide to promote this struct,
-            // we will still set lvRegStruct if its fields have not been accessed.
             varDsc->lvRegStruct = true;
         }
         else
-#endif // FEATURE_SIMD
-        if (varTypeIsStruct(varDsc))
+#endif //FEATURE_SIMD
+        // Don't promote if we have reached the tracking limit.
+        if (lvaHaveManyLocals())
+        {
+            // Print the message first time when we detected this condition
+            if (!tooManyLocals)
+            {
+                JITDUMP("Stopped promoting struct fields, due to too many locals.\n");
+            }
+            tooManyLocals = true;
+        }
+#if !FEATURE_MULTIREG_STRUCT_PROMOTE
+        else if (varDsc->lvIsMultiRegArgOrRet)
+        {
+            JITDUMP("Skipping V%02u: marked lvIsMultiRegArgOrRet.\n", lclNum);
+        }
+#endif // !FEATURE_MULTIREG_STRUCT_PROMOTE
+        else if (varTypeIsStruct(varDsc))
         {
             lvaCanPromoteStructVar(lclNum, &structPromotionInfo);
-            if (structPromotionInfo.canPromote)
+            bool canPromote = structPromotionInfo.canPromote;            
+
+            // We start off with shouldPromote same as canPromote.
+            // Based on further profitablity checks done below, shouldPromote
+            // could be set to false.
+            bool shouldPromote = canPromote;
+
+            if (canPromote)
             {
+                
                 // We *can* promote; *should* we promote?
                 // We should only do so if promotion has potential savings.  One source of savings
                 // is if a field of the struct is accessed, since this access will be turned into
@@ -15605,7 +15621,7 @@ void                Compiler::fgPromoteStructs()
                 {
                     JITDUMP("Not promoting promotable struct local V%02u: #fields = %d, fieldAccessed = %d.\n",
                         lclNum, structPromotionInfo.fieldCnt, varDsc->lvFieldAccessed);
-                    continue;
+                    shouldPromote = false;
                 }
 #if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
                 // TODO-PERF - Only do this when the LclVar is used in an argument context
@@ -15616,29 +15632,29 @@ void                Compiler::fgPromoteStructs()
                 // Promoting it can cause us to shuffle it back and forth between the int and 
                 //  the float regs when it is used as a argument, which is very expensive for XARCH
                 //
-                if (structPromotionInfo.fieldCnt==1
-                    && varTypeIsFloating(structPromotionInfo.fields[0].fldType))
+                else if ((structPromotionInfo.fieldCnt == 1) &&
+                          varTypeIsFloating(structPromotionInfo.fields[0].fldType))
                 {
                     JITDUMP("Not promoting promotable struct local V%02u: #fields = %d because it is a struct with single float field.\n",
                             lclNum, structPromotionInfo.fieldCnt);
-                    continue;
+                    shouldPromote = false;
                 }
 #endif // _TARGET_AMD64_ || _TARGET_ARM64_
+
 #if !FEATURE_MULTIREG_STRUCT_PROMOTE
 #if defined(_TARGET_ARM64_)
                 //
                 // For now we currently don't promote structs that could be passed in registers
                 //
-                if (varDsc->lvIsMultiregStruct())
+                else if (varDsc->lvIsMultiregStruct())
                 {
                     JITDUMP("Not promoting promotable struct local V%02u (size==%d): ",
                             lclNum, lvaLclExactSize(lclNum));
-                    continue;
+                    shouldPromote = false;
                 }
 #endif // _TARGET_ARM64_
 #endif // !FEATURE_MULTIREG_STRUCT_PROMOTE
-
-                if (varDsc->lvIsParam)
+                else if (varDsc->lvIsParam)
                 {
 #if FEATURE_MULTIREG_STRUCT_PROMOTE                   
                     if (varDsc->lvIsMultiregStruct() &&         // Is this a variable holding a value that is passed in multiple registers?
@@ -15646,8 +15662,9 @@ void                Compiler::fgPromoteStructs()
                     {
                         JITDUMP("Not promoting multireg struct local V%02u, because lvIsParam is true and #fields != 2\n",
                                 lclNum);
-                        continue;
+                        shouldPromote = false;
                     }
+                    else
 #endif  // !FEATURE_MULTIREG_STRUCT_PROMOTE
 
                     // TODO-PERF - Implement struct promotion for incoming multireg structs
@@ -15657,7 +15674,7 @@ void                Compiler::fgPromoteStructs()
                     {
                         JITDUMP("Not promoting promotable struct local V%02u, because lvIsParam is true and #fields = %d.\n",
                                 lclNum, structPromotionInfo.fieldCnt);
-                        continue;
+                        shouldPromote = false;
                     }
                 }
 
@@ -15676,9 +15693,14 @@ void                Compiler::fgPromoteStructs()
                 if (atoi(getenv("structpromovarnumlo")) <= structPromoVarNum && structPromoVarNum <= atoi(getenv("structpromovarnumhi")))
 #endif // 0
 
+                if (shouldPromote)
                 {
+                    assert(canPromote);
+
                     // Promote the this struct local var.
                     lvaPromoteStructVar(lclNum, &structPromotionInfo);
+                    promotedVar = true;
+
 #ifdef _TARGET_ARM_
                     if (structPromotionInfo.requiresScratchVar)
                     {
@@ -15694,15 +15716,17 @@ void                Compiler::fgPromoteStructs()
 #endif // _TARGET_ARM_
                 }
             }
-#ifdef FEATURE_SIMD
-            else if (varDsc->lvSIMDType && !varDsc->lvFieldAccessed)
-            {
-                // Even if we have not used this in a SIMD intrinsic, if it is not being promoted,
-                // we will treat it as a reg struct.
-                varDsc->lvRegStruct = true;
-            }
-#endif // FEATURE_SIMD
         }
+
+#ifdef FEATURE_SIMD
+        if (!promotedVar && varDsc->lvSIMDType && !varDsc->lvFieldAccessed)
+        {
+            // Even if we have not used this in a SIMD intrinsic, if it is not being promoted,
+            // we will treat it as a reg struct.
+            varDsc->lvRegStruct = true;
+        }
+#endif // FEATURE_SIMD
+
     }
 }
 

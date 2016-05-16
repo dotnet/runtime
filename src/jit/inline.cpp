@@ -7,6 +7,8 @@
 #pragma hdrstop
 #endif
 
+#include "inlinepolicy.h"
+
 // Lookup table for inline description strings
 
 static const char* InlineDescriptions[] =
@@ -345,7 +347,7 @@ InlineContext::InlineContext(InlineStrategy* strategy)
 #if defined(DEBUG) || defined(INLINE_DATA)
 
 //------------------------------------------------------------------------
-// Dump: Dump an InlineContext entry and all descendants to stdout
+// Dump: Dump an InlineContext entry and all descendants to jitstdout
 //
 // Arguments:
 //    indent   - indentation level for this node
@@ -441,7 +443,7 @@ void InlineContext::DumpData(unsigned indent)
     if (m_Parent == nullptr)
     {
         // Root method... cons up a policy so we can display the name
-        InlinePolicy* policy = InlinePolicy::GetPolicy(compiler, true);
+        InlinePolicy* policy = InlinePolicy::GetPolicy(compiler, nullptr, true);
         printf("\nInlines [%u] into \"%s\" [%s]\n",
                m_InlineStrategy->GetInlineCount(),
                calleeName,
@@ -451,7 +453,7 @@ void InlineContext::DumpData(unsigned indent)
     {
         const char* inlineReason = InlGetObservationString(m_Observation);
         printf("%*s%u,\"%s\",\"%s\"", indent, "", m_Ordinal, inlineReason, calleeName);
-        m_Policy->DumpData(stdout);
+        m_Policy->DumpData(jitstdout);
         printf("\n");
     }
 
@@ -531,20 +533,23 @@ void InlineContext::DumpXml(FILE* file, unsigned indent)
 // InlineResult: Construct an InlineResult to evaluate a particular call
 // for inlining.
 //
-// Arguments
-//   compiler - the compiler instance examining a call for inlining
-//   call     - the call in question
-//   context  - descrptive string to describe the context of the decision
+// Arguments:
+//   compiler      - the compiler instance examining a call for inlining
+//   call          - the call in question
+//   inlineContext - the inline context for the inline, if known
+//   description   - string describing the context of the decision
 
-InlineResult::InlineResult(Compiler*    compiler,
-                           GenTreeCall* call,
-                           const char*  context)
+InlineResult::InlineResult(Compiler*      compiler,
+                           GenTreeCall*   call,
+                           InlineContext* inlineContext,
+                           const char*    description)
     : m_RootCompiler(nullptr)
     , m_Policy(nullptr)
     , m_Call(call)
+    , m_InlineContext(inlineContext)
     , m_Caller(nullptr)
     , m_Callee(nullptr)
-    , m_Context(context)
+    , m_Description(description)
     , m_Reported(false)
 {
     // Set the compiler instance
@@ -552,7 +557,7 @@ InlineResult::InlineResult(Compiler*    compiler,
 
     // Set the policy
     const bool isPrejitRoot = false;
-    m_Policy = InlinePolicy::GetPolicy(m_RootCompiler, isPrejitRoot);
+    m_Policy = InlinePolicy::GetPolicy(m_RootCompiler, m_InlineContext, isPrejitRoot);
 
     // Get method handle for caller. Note we use the
     // handle for the "immediate" caller here.
@@ -570,9 +575,9 @@ InlineResult::InlineResult(Compiler*    compiler,
 // method as a possible inline candidate, while prejtting.
 //
 // Arguments:
-//    compiler - the compiler instance doing the prejitting
-//    method   - the method in question
-//    context  - descrptive string to describe the context of the decision
+//    compiler    - the compiler instance doing the prejitting
+//    method      - the method in question
+//    description - string describing the context of the decision
 //
 // Notes:
 //    Used only during prejitting to try and pre-identify methods that
@@ -583,13 +588,14 @@ InlineResult::InlineResult(Compiler*    compiler,
 
 InlineResult::InlineResult(Compiler*              compiler,
                            CORINFO_METHOD_HANDLE  method,
-                           const char*            context)
+                           const char*            description)
     : m_RootCompiler(nullptr)
     , m_Policy(nullptr)
     , m_Call(nullptr)
+    , m_InlineContext(nullptr)
     , m_Caller(nullptr)
     , m_Callee(method)
-    , m_Context(context)
+    , m_Description(description)
     , m_Reported(false)
 {
     // Set the compiler instance
@@ -597,7 +603,7 @@ InlineResult::InlineResult(Compiler*              compiler,
 
     // Set the policy
     const bool isPrejitRoot = true;
-    m_Policy = InlinePolicy::GetPolicy(m_RootCompiler, isPrejitRoot);
+    m_Policy = InlinePolicy::GetPolicy(m_RootCompiler, nullptr, isPrejitRoot);
 }
 
 //------------------------------------------------------------------------
@@ -637,7 +643,7 @@ void InlineResult::Report()
 
         callee = (m_Callee == nullptr) ? "n/a" : m_RootCompiler->eeGetMethodFullName(m_Callee);
 
-        JITDUMP(format, m_Context, ResultString(), ReasonString(), caller, callee);
+        JITDUMP(format, m_Description, ResultString(), ReasonString(), caller, callee);
     }
 
     // If the inline failed, leave information on the call so we can
@@ -686,7 +692,7 @@ void InlineResult::Report()
     if (IsDecided())
     {
         const char* format = "INLINER: during '%s' result '%s' reason '%s'\n";
-        JITLOG_THIS(m_RootCompiler, (LL_INFO100000, format, m_Context, ResultString(), ReasonString()));
+        JITLOG_THIS(m_RootCompiler, (LL_INFO100000, format, m_Description, ResultString(), ReasonString()));
         COMP_HANDLE comp = m_RootCompiler->info.compCompHnd;
         comp->reportInliningDecision(m_Caller, m_Callee, Result(), ReasonString());
     }
@@ -1214,7 +1220,7 @@ void InlineStrategy::DumpData()
     {
         assert(limit <= 0);
         const bool isPrejitRoot = (opts.eeFlags & CORJIT_FLG_PREJIT) != 0;
-        m_LastSuccessfulPolicy = InlinePolicy::GetPolicy(m_Compiler, isPrejitRoot);
+        m_LastSuccessfulPolicy = InlinePolicy::GetPolicy(m_Compiler, nullptr, isPrejitRoot);
 
         // Add in a bit of data....
         const bool isForceInline = (info.compFlags & CORINFO_FLG_FORCEINLINE) != 0;
@@ -1371,6 +1377,9 @@ void InlineStrategy::FinalizeXml(FILE* file)
         // Workaroud compShutdown getting called twice.
         s_HasDumpedXmlHeader = false;
     }
+
+    // Finalize reading inline xml
+    ReplayPolicy::FinalizeXml();
 }
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)

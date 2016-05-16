@@ -44,7 +44,6 @@
         <CDefines Condition="'$(FeatureFusion)' == 'true'">$(CDefines);FEATURE_FUSION</CDefines>
         <CDefines Condition="'$(FeatureHijack)' == 'true'">$(CDefines);FEATURE_HIJACK</CDefines>
         <CDefines Condition="'$(FeatureHostAssemblyResolver)' == 'true'">$(CDefines);FEATURE_HOST_ASSEMBLY_RESOLVER</CDefines>
-        <CDefines Condition="'$(FeatureHostedBinder)' == 'true'">$(CDefines);FEATURE_HOSTED_BINDER</CDefines>
         <CDefines Condition="'$(FeatureImpersonation)' == 'true'">$(CDefines);FEATURE_IMPERSONATION</CDefines>
         <CDefines Condition="'$(FeatureIncludeAllInterfaces)' == 'true'">$(CDefines);FEATURE_INCLUDE_ALL_INTERFACES</CDefines>
         <CDefines Condition="'$(FeatureInteropDebugging)' == 'true'">$(CDefines);FEATURE_INTEROP_DEBUGGING</CDefines>
@@ -159,7 +158,6 @@
         <DefineConstants Condition="'$(FeatureExceptionNotifications)' == 'true'">$(DefineConstants);FEATURE_EXCEPTION_NOTIFICATIONS</DefineConstants>
         <DefineConstants Condition="'$(FeatureFusion)' == 'true'">$(DefineConstants);FEATURE_FUSION</DefineConstants>
         <DefineConstants Condition="'$(FeatureHostAssemblyResolver)' == 'true'">$(DefineConstants);FEATURE_HOST_ASSEMBLY_RESOLVER</DefineConstants>
-        <DefineConstants Condition="'$(FeatureHostedBinder)' == 'true'">$(DefineConstants);FEATURE_HOSTED_BINDER</DefineConstants>
         <DefineConstants Condition="'$(FeatureHosting)' == 'true'">$(DefineConstants);FEATURE_HOSTING</DefineConstants>
         <DefineConstants Condition="'$(FeatureIdentityReference)' == 'true'">$(DefineConstants);FEATURE_IDENTITY_REFERENCE</DefineConstants>
         <DefineConstants Condition="'$(FeatureImpersonation)' == 'true'">$(DefineConstants);FEATURE_IMPERSONATION</DefineConstants>

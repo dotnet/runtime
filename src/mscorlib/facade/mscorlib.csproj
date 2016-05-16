@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <AssemblyName>mscorlib</AssemblyName>
+    <ProjectGuid>{263342A6-FC48-4CFC-B16A-2AF964D3536C}</ProjectGuid>
+    <ClsCompliant>true</ClsCompliant>
+    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <OutputType>Library</OutputType>
+    <ExcludeMscorlibFacade>true</ExcludeMscorlibFacade>
+
+    <!-- This prevents the default MsBuild targets from referencing System.Core.dll -->
+    <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
+    <!-- These prevent the default MsBuild targets from referencing System.dll and mscorlib.dll -->
+    <NoStdLib>true</NoStdLib>
+    <NoCompilerStandardLib>true</NoCompilerStandardLib>
+
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the options -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net462_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net462_Release|AnyCPU'" />
+
+  <!-- Roslyn does not support writing PDBs on Unix -->
+  <PropertyGroup Condition="'$(OsEnvironment)' == 'Unix'">
+    <DebugSymbols>false</DebugSymbols>
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+
+  <!-- Output paths -->
+  <PropertyGroup>
+    <BaseIntermediateOutputPath>$(RootBinDir)\obj</BaseIntermediateOutputPath>
+    <!-- Note the trailing '\\' - they are needed so that genfacade does not fail due to an invalid path
+         In particular, the facadepath is sent in quotes. 
+         And the IntermediateOutputPath is required to end in a '\' in the coreclr repo. This means that the 
+         facadepath ends up being sent as 'mypath\"' and that trips the Path normalization.
+         Introducing a second '\' tricks the normalization logic to treat this '\\"' as '\"' and not complain.    -->
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)\$(BuildOS).$(BuildArch).$(Configuration)\facade\\</IntermediateOutputPath>
+    <OutputPath>$(BinDir)\facade</OutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\System.Private.CoreLib.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+
+ <PropertyGroup>
+    <!-- Overwrite the key that we are going to use for signing -->
+    <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)..\Tools\Signing\mscorlib.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+</Project>

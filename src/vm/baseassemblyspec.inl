@@ -260,9 +260,7 @@ inline void BaseAssemblySpec::CopyFrom(const BaseAssemblySpec *pSpec)
     
     m_context = pSpec->m_context;
 
-#ifdef FEATURE_HOSTED_BINDER
     m_pHostBinder = pSpec->m_pHostBinder;
-#endif
 
 #ifdef FEATURE_CORECLR
     if ((pSpec->m_ownedFlags & BAD_NAME_OWNED) != 0)

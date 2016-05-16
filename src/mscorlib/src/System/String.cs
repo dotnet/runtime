@@ -1441,6 +1441,16 @@ namespace System {
 
             return s;
         }
+                
+        [System.Security.SecuritySafeCritical]  // auto-generated
+        unsafe internal int GetBytesFromEncoding(byte* pbNativeBuffer, int cbNativeBuffer,Encoding encoding)
+        {
+            // encoding == Encoding.UTF8
+            fixed (char* pwzChar = &this.m_firstChar)
+            {
+                return encoding.GetBytes(pwzChar, m_stringLength, pbNativeBuffer, cbNativeBuffer);
+            }            
+        }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
         unsafe internal int ConvertToAnsi(byte *pbNativeBuffer, int cbNativeBuffer, bool fBestFit, bool fThrowOnUnmappableChar)
@@ -2532,28 +2542,63 @@ namespace System {
         //
         [Pure]
         public String PadLeft(int totalWidth) {
-            return PadHelper(totalWidth, ' ', false);
+            return PadLeft(totalWidth, ' ');
         }
 
         [Pure]
+        [System.Security.SecuritySafeCritical]  // auto-generated
         public String PadLeft(int totalWidth, char paddingChar) {
-            return PadHelper(totalWidth, paddingChar, false);
+            if (totalWidth < 0)
+                throw new ArgumentOutOfRangeException("totalWidth", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+            int oldLength = Length;
+            int count = totalWidth - oldLength;
+            if (count <= 0)
+                return this;
+            String result = FastAllocateString(totalWidth);
+            unsafe
+            {
+                fixed (char* dst = &result.m_firstChar)
+                {
+                    for (int i = 0; i < count; i++)
+                        dst[i] = paddingChar;
+                    fixed (char* src = &m_firstChar)
+                    {
+                        wstrcpy(dst + count, src, oldLength);
+                    }
+                }
+            }
+            return result;
         }
 
         [Pure]
         public String PadRight(int totalWidth) {
-            return PadHelper(totalWidth, ' ', true);
+            return PadRight(totalWidth, ' ');
         }
 
         [Pure]
-        public String PadRight(int totalWidth, char paddingChar) {
-            return PadHelper(totalWidth, paddingChar, true);
-        }
-    
-    
         [System.Security.SecuritySafeCritical]  // auto-generated
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern String PadHelper(int totalWidth, char paddingChar, bool isRightPadded);
+        public String PadRight(int totalWidth, char paddingChar) {
+            if (totalWidth < 0)
+                throw new ArgumentOutOfRangeException("totalWidth", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+            int oldLength = Length;
+            int count = totalWidth - oldLength;
+            if (count <= 0)
+                return this;
+            String result = FastAllocateString(totalWidth);
+            unsafe
+            {
+                fixed (char* dst = &result.m_firstChar)
+                {
+                    fixed (char* src = &m_firstChar)
+                    {
+                        wstrcpy(dst, src, oldLength);
+                    }
+                    for (int i = 0; i < count; i++)
+                        dst[oldLength + i] = paddingChar;
+                }
+            }
+            return result;
+        }
     
         // Determines whether a specified string is a prefix of the current instance
         //

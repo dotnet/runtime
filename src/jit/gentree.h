@@ -2884,9 +2884,10 @@ struct GenTreeCall final : public GenTree
         // only used for CALLI unmanaged calls (CT_INDIRECT)
         GenTreePtr      gtCallCookie;           
         // gtInlineCandidateInfo is only used when inlining methods 
-        InlineCandidateInfo * gtInlineCandidateInfo;
-        void *  gtStubCallStubAddr;             // GTF_CALL_VIRT_STUB - these are never inlined                
+        InlineCandidateInfo* gtInlineCandidateInfo;
+        void* gtStubCallStubAddr;             // GTF_CALL_VIRT_STUB - these are never inlined                
         CORINFO_GENERIC_HANDLE compileTimeHelperArgumentHandle; // Used to track type handle argument of dynamic helpers
+        void* gtDirectCallAddress; // Used to pass direct call address between lower and codegen
     };
 
     // expression evaluated after args are placed which determines the control target

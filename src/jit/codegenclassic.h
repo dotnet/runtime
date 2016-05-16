@@ -13,6 +13,22 @@
 
 #ifdef LEGACY_BACKEND // Not necessary (it's this way in the #include location), but helpful to IntelliSense
 
+public:
+
+    regNumber           genIsEnregisteredIntVariable(GenTreePtr tree);
+
+    void                sched_AM        (instruction    ins,
+                                         emitAttr       size,
+                                         regNumber      ireg,
+                                         bool           rdst,
+                                         GenTreePtr     tree,
+                                         unsigned       offs,
+                                         bool           cons  = false,
+                                         int            cval  = 0,
+                                         insFlags       flags = INS_FLAGS_DONT_CARE);
+
+protected:
+
 #if FEATURE_STACK_FP_X87
     VARSET_TP           genFPregVars;       // mask corresponding to genFPregCnt
     unsigned            genFPdeadRegCnt;    // The dead unpopped part of genFPregCnt
@@ -47,6 +63,18 @@
     //
     // Prolog functions and data (there are a few exceptions for more generally used things)
     //
+
+    regMaskTP           genPInvokeMethodProlog(regMaskTP    initRegs);
+
+    void                genPInvokeMethodEpilog();    
+
+    regNumber           genPInvokeCallProlog(LclVarDsc *    varDsc,
+                                             int            argSize,
+                                      CORINFO_METHOD_HANDLE methodToken,
+                                             BasicBlock *   returnLabel);
+
+    void                genPInvokeCallEpilog(LclVarDsc *    varDsc,
+                                             regMaskTP      retVal);
 
     regNumber           genLclHeap          (GenTreePtr     size);
 
@@ -702,6 +730,23 @@ protected :
     void restoreLiveness (genLivenessSet * ls);
     void checkLiveness   (genLivenessSet * ls);
     void unspillLiveness (genLivenessSet * ls);
+
+    //-------------------------------------------------------------------------
+    //
+    //  If we know that the flags register is set to a value that corresponds
+    //  to the current value of a register or variable, the following values
+    //  record that information.
+    //
+
+    emitLocation        genFlagsEqLoc;
+    regNumber           genFlagsEqReg;
+    unsigned            genFlagsEqVar;
+
+    void                genFlagsEqualToNone ();
+    void                genFlagsEqualToReg  (GenTreePtr tree, regNumber reg);
+    void                genFlagsEqualToVar  (GenTreePtr tree, unsigned  var);
+    bool                genFlagsAreReg      (regNumber reg);
+    bool                genFlagsAreVar      (unsigned  var);
 
 #endif // LEGACY_BACKEND
 

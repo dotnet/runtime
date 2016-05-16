@@ -201,6 +201,20 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
         case GT_CNS_DBL:
             info->srcCount = 0;
             info->dstCount = 1;
+            {
+                GenTreeDblCon *dblConst = tree->AsDblCon();
+                double constValue = dblConst->gtDblCon.gtDconVal;
+
+                if (emitter::emitIns_valid_imm_for_fmov(constValue))
+                {
+                    // Directly encode constant to instructions.
+                }
+                else
+                {
+                    // Reserve int to load constant from memory (IF_LARGELDC)
+                    info->internalIntCount = 1;
+                }
+            }
             break;
 
         case GT_QMARK:
@@ -353,7 +367,6 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
         case GT_MULHI:
         case GT_UDIV:
             {
-                // TODO-ARM64-CQ: Optimize a divide by power of 2 as we do for AMD64
                 info->srcCount = 2;
                 info->dstCount = 1;
             }
@@ -526,10 +539,7 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
                     {
                         // Fast tail call - make sure that call target is always computed in IP0
                         // so that epilog sequence can generate "br xip0" to achieve fast tail call.
-                        
-                        NYI_ARM64("Lower - Fast tail call");
-
-                        ctrlExpr->gtLsraInfo.setSrcCandidates(l, genRegMask(REG_IP0));  // ip0?
+                        ctrlExpr->gtLsraInfo.setSrcCandidates(l, genRegMask(REG_IP0));
                     }
                 }
 

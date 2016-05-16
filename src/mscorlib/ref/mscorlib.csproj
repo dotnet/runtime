@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+
+  <!-- Include common build properties -->
+  <Import Project="..\..\..\dir.props" />
+
+  <!-- Compilation options -->
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">$(BuildType)</Configuration>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+
+    <ProjectGuid>{B8ADD332-40B6-4916-B418-FBB79E5898B3}</ProjectGuid>
+
+    <OutputType>Library</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    
+    <!-- This prevents the default MsBuild targets from referencing System.Core.dll -->
+    <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
+    <!-- These prevent the default MsBuild targets from referencing System.dll and mscorlib.dll -->
+    <NoStdLib>true</NoStdLib>
+    <NoCompilerStandardLib>true</NoCompilerStandardLib>
+    
+    <ErrorReport>prompt</ErrorReport>
+    <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
+    <GenerateNativeVersionInfo Condition="'$(OsEnvironment)'=='Windows_NT'">true</GenerateNativeVersionInfo>
+    <CLSCompliant>true</CLSCompliant>
+    <WarningLevel>4</WarningLevel>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);618</WarningsNotAsErrors>
+    <NoWarn>618,649,3019,414,169,3015,3021</NoWarn>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+
+    <SignAssembly>true</SignAssembly>
+    <DelaySign>true</DelaySign>
+  </PropertyGroup>
+
+  <!-- On Windows we support FEATURE_COMINTEROP and FEATURE_COREFX_GLOBALIZATION -->
+  <PropertyGroup Condition="'$(TargetsUnix)'!='true'">
+    <DefineConstants>$(DefineConstants);FEATURE_COREFX_GLOBALIZATION;FEATURE_COMINTEROP</DefineConstants>
+  </PropertyGroup>
+ 
+  <!-- Roslyn does not support writing PDBs on Unix -->
+  <PropertyGroup Condition="'$(OsEnvironment)' == 'Unix'">
+    <DebugSymbols>false</DebugSymbols>
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+
+  <!-- Assembly attributes -->
+  <PropertyGroup>
+    <AssemblyName>mscorlib</AssemblyName>
+    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <MajorVersion>4</MajorVersion>
+    <MinorVersion>6</MinorVersion>
+  </PropertyGroup>
+
+  <!-- Output paths -->
+  <PropertyGroup>
+    <BaseIntermediateOutputPath>$(RootBinDir)\obj</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)\$(BuildOS).$(BuildArch).$(Configuration)\ref</IntermediateOutputPath>
+    <OutputPath>$(BinDir)\ref</OutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="mscorlib.cs">
+    </Compile>
+  </ItemGroup>
+
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.Targets" />
+
+  <!-- Import signing tools -->
+  <Import Condition="Exists('$(ToolsDir)\sign.targets')" Project="$(ToolsDir)\sign.targets" />
+
+  <!-- Overwrite the key that we are going to use for signing -->
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)..\Tools\Signing\mscorlib.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+
+  <Import Project="$(MSBuildThisFileDirectory)..\Tools\Versioning\GenerateVersionInfo.targets"/>
+  <!-- Override versioning targets -->
+  <Import Condition="Exists('$(ToolsDir)versioning.targets')" Project="$(ToolsDir)versioning.targets" />
+  <Import Project="..\GenerateCompilerResponseFile.targets"/>
+</Project>

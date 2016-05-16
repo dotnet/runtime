@@ -5546,11 +5546,11 @@ public:
     // object associated with them (e.g., the bgc thread).
     void SetGCSpecial(bool fGCSpecial);
 
-#if !defined(FEATURE_CORECLR)
+#ifndef FEATURE_PAL
 private:
     WORD m_wCPUGroup;
     DWORD_PTR m_pAffinityMask;
-#endif
+#endif // !FEATURE_PAL
 
 public:
     void ChooseThreadCPUGroupAffinity();

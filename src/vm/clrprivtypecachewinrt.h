@@ -8,8 +8,6 @@
 // 
 //=====================================================================================================================
 
-#ifdef FEATURE_HOSTED_BINDER
-
 #pragma once
 
 #include "internalunknownimpl.h"
@@ -70,5 +68,3 @@ private:
 };  // class CLRPrivTypeCaheWinRT
 
 typedef DPTR(CLRPrivTypeCacheWinRT) PTR_CLRPrivTypeCacheWinRT;
-
-#endif // FEATURE_HOSTED_BINDER

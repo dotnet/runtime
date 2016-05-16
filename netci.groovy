@@ -89,6 +89,13 @@ def static setMachineAffinity(def job, def os, def architecture) {
 }
 
 def static isGCStressRelatedTesting(def scenario) {
+    // The 'gcstress15_pri1r2r' scenario is a basic scenario.
+    // Detect it and make it a GCStress related.
+    if (scenario == 'gcstress15_pri1r2r')
+    {
+        return true;
+    }
+
     def gcStressTestEnvVars = [ 'COMPlus_GCStress', 'COMPlus_ZapDisable', 'COMPlus_HeapVerify']
     def scenarioName = scenario.toLowerCase()
     def isGCStressTesting = false
@@ -122,7 +129,7 @@ def static isLongGc(def scenario) {
 
 def static setTestJobTimeOut(newJob, scenario) {
     if (isGCStressRelatedTesting(scenario)) {
-        Utilities.setJobTimeout(newJob, 1440)
+        Utilities.setJobTimeout(newJob, 4320)
     }
     else if (isCorefxTesting(scenario)) {
         Utilities.setJobTimeout(newJob, 360)
@@ -135,6 +142,9 @@ def static setTestJobTimeOut(newJob, scenario) {
     }
     else if (isCoverage(scenario)) {
         Utilities.setJobTimeout(newJob, 1440)  
+    }
+    else if (isLongGc(scenario)) {
+        Utilities.setJobTimeout(newJob, 1440)
     }
     // Non-test jobs use the default timeout value.
 }
@@ -353,13 +363,14 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     if (architecture == 'x64') {
                         //Flow jobs should be Windows, Ubuntu, OSX, or CentOS
                         if (isFlowJob || os == 'Windows_NT') {
-                            Utilities.addGithubPushTrigger(job)
+                            // Add a weekly periodic trigger
+                            Utilities.addPeriodicTrigger(job, 'H H * * 3,6') // some time every Wednesday and Saturday
                         }
                     }
                     // For x86, only add per-commit jobs for Windows
                     else if (architecture == 'x86ryujit' || architecture == 'x86lb') {
                         if (os == 'Windows_NT') {
-                            Utilities.addGithubPushTrigger(job)
+                            Utilities.addPeriodicTrigger(job, 'H H * * 3,6') // some time every Wednesday and Saturday
                         }
                     }
                 }
@@ -372,7 +383,11 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                 addEmailPublisher(job, 'dotnetgctests@microsoft.com')
                 break
             case 'gcsimulator':
-                // GCSimulator is currently only triggered by PR
+                assert (os == 'Ubuntu' || os == 'Windows_NT' || os == 'OSX')
+                assert configuration == 'Release'
+                assert architecture == 'x64'
+                Utilities.addPeriodicTrigger(job, 'H H * * 3,6') // some time every Wednesday and Saturday
+                addEmailPublisher(job, 'dotnetgctests@microsoft.com')
                 break
             case 'ilrt':
                 assert !(os in bidailyCrossList)
