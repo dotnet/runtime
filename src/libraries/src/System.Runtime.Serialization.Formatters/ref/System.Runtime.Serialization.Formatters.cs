@@ -127,6 +127,7 @@ namespace System.Runtime.Serialization
 
     public sealed class SerializationInfoEnumerator : IEnumerator
     {
+        private SerializationInfoEnumerator() { }
         public SerializationEntry Current { get { throw null; } }
         public string Name { get { throw null; } }
         public Type ObjectType { get { throw null; } }
