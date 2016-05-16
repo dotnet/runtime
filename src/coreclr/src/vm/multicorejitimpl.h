@@ -179,7 +179,7 @@ public:
     unsigned short flags;
     unsigned short wLoadLevel;
     unsigned short lenModuleName;
-#if defined(FEATURE_CORECLR) && defined(FEATURE_HOSTED_BINDER)
+#if defined(FEATURE_CORECLR)
     unsigned short lenAssemblyName;
 #endif
 
@@ -201,7 +201,7 @@ public:
         return (const char *) (this + 1); // after this record
     }
 
-#if defined(FEATURE_CORECLR) && defined(FEATURE_HOSTED_BINDER)
+#if defined(FEATURE_CORECLR)
     unsigned AssemblyNameLen() const
     {
         LIMITED_METHOD_CONTRACT;
@@ -250,7 +250,7 @@ friend class MulticoreJitRecorder;
 
 private:
     ADID                               m_DomainID;
-#if defined(FEATURE_CORECLR) && defined(FEATURE_HOSTED_BINDER)
+#if defined(FEATURE_CORECLR)
     ICLRPrivBinder * m_pBinderContext;
 #endif
     LONG                               m_nMySession;
@@ -300,7 +300,7 @@ private:
 
     HRESULT ReadCheckFile(const wchar_t * pFileName);
 
-#if defined(FEATURE_CORECLR) && defined(FEATURE_HOSTED_BINDER)
+#if defined(FEATURE_CORECLR)
     DomainAssembly * LoadAssembly(SString & assemblyName);
 #endif
 
@@ -344,7 +344,7 @@ class MulticoreJitRecorder
 {
 private:
     AppDomain               * m_pDomain;            // AutoStartProfile could be called from SystemDomain
-#if defined(FEATURE_CORECLR) && defined(FEATURE_HOSTED_BINDER)
+#if defined(FEATURE_CORECLR)
     ICLRPrivBinder * m_pBinderContext;
 #endif
     SString                   m_fullFileName;
@@ -393,7 +393,7 @@ public:
         LIMITED_METHOD_CONTRACT;
 
         m_pDomain           = pDomain;
-#if defined(FEATURE_CORECLR) && defined(FEATURE_HOSTED_BINDER)
+#if defined(FEATURE_CORECLR)
         m_pBinderContext    = pBinderContext;
 #endif
         m_JitInfoCount      = 0;

@@ -46,20 +46,26 @@ namespace System.Threading
         internal ExecutionContext m_ec;
         internal SynchronizationContext m_sc;
 
-        internal void Undo()
+        internal void Undo(Thread currentThread)
         {
-            SynchronizationContext.SetSynchronizationContext(m_sc);
-            ExecutionContext.Restore(m_ec);
+            Contract.Assert(currentThread == Thread.CurrentThread);
+
+            // The common case is that these have not changed, so avoid the cost of a write if not needed.
+            if (currentThread.SynchronizationContext != m_sc)
+            {
+                currentThread.SynchronizationContext = m_sc;
+            }
+            
+            if (currentThread.ExecutionContext != m_ec)
+            {
+                ExecutionContext.Restore(currentThread, m_ec);
+            }
         }
     }
 
     public sealed class ExecutionContext : IDisposable
     {
         private static readonly ExecutionContext Default = new ExecutionContext();
-
-        [ThreadStatic]
-        [SecurityCritical]
-        static ExecutionContext t_currentMaybeNull;
 
         private readonly Dictionary<IAsyncLocal, object> m_localValues;
         private readonly IAsyncLocal[] m_localChangeNotifications;
@@ -79,19 +85,22 @@ namespace System.Threading
         [SecuritySafeCritical]
         public static ExecutionContext Capture()
         {
-            return t_currentMaybeNull ?? ExecutionContext.Default;
+            return Thread.CurrentThread.ExecutionContext ?? ExecutionContext.Default;
         }
 
         [SecurityCritical]
         [HandleProcessCorruptedStateExceptions]
         public static void Run(ExecutionContext executionContext, ContextCallback callback, Object state)
         {
+            if (executionContext == null)
+                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_NullContext"));
+
+            Thread currentThread = Thread.CurrentThread;
             ExecutionContextSwitcher ecsw = default(ExecutionContextSwitcher);
             try
             {
-                EstablishCopyOnWriteScope(ref ecsw);
-
-                ExecutionContext.Restore(executionContext);
+                EstablishCopyOnWriteScope(currentThread, ref ecsw);
+                ExecutionContext.Restore(currentThread, executionContext);
                 callback(state);
             }
             catch
@@ -100,38 +109,47 @@ namespace System.Threading
                 // to stop the first pass of EH here.  That way we can restore the previous
                 // context before any of our callers' EH filters run.  That means we need to 
                 // end the scope separately in the non-exceptional case below.
-                ecsw.Undo();
+                ecsw.Undo(currentThread);
                 throw;
             }
-            ecsw.Undo();
+            ecsw.Undo(currentThread);
         }
 
         [SecurityCritical]
-        internal static void Restore(ExecutionContext executionContext)
+        internal static void Restore(Thread currentThread, ExecutionContext executionContext)
         {
-            if (executionContext == null)
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_NullContext"));
+            Contract.Assert(currentThread == Thread.CurrentThread);
 
-            ExecutionContext previous = t_currentMaybeNull ?? Default;
-            t_currentMaybeNull = executionContext;
-
+            ExecutionContext previous = currentThread.ExecutionContext ?? Default;
+            currentThread.ExecutionContext = executionContext;
+            
+            // New EC could be null if that's what ECS.Undo saved off.
+            // For the purposes of dealing with context change, treat this as the default EC
+            executionContext = executionContext ?? Default;
+            
             if (previous != executionContext)
+            {
                 OnContextChanged(previous, executionContext);
+            }
         }
 
         [SecurityCritical]
-        static internal void EstablishCopyOnWriteScope(ref ExecutionContextSwitcher ecsw)
+        static internal void EstablishCopyOnWriteScope(Thread currentThread, ref ExecutionContextSwitcher ecsw)
         {
-            ecsw.m_ec = Capture();
-            ecsw.m_sc = SynchronizationContext.CurrentNoFlow;
+            Contract.Assert(currentThread == Thread.CurrentThread);
+            
+            ecsw.m_ec = currentThread.ExecutionContext; 
+            ecsw.m_sc = currentThread.SynchronizationContext;
         }
 
         [SecurityCritical]
         [HandleProcessCorruptedStateExceptions]
         private static void OnContextChanged(ExecutionContext previous, ExecutionContext current)
         {
-            previous = previous ?? Default;
-
+            Contract.Assert(previous != null);
+            Contract.Assert(current != null);
+            Contract.Assert(previous != current);
+            
             foreach (IAsyncLocal local in previous.m_localChangeNotifications)
             {
                 object previousValue;
@@ -174,7 +192,7 @@ namespace System.Threading
         [SecurityCritical]
         internal static object GetLocalValue(IAsyncLocal local)
         {
-            ExecutionContext current = t_currentMaybeNull;
+            ExecutionContext current = Thread.CurrentThread.ExecutionContext;
             if (current == null)
                 return null;
 
@@ -186,7 +204,7 @@ namespace System.Threading
         [SecurityCritical]
         internal static void SetLocalValue(IAsyncLocal local, object newValue, bool needChangeNotifications)
         {
-            ExecutionContext current = t_currentMaybeNull ?? ExecutionContext.Default;
+            ExecutionContext current = Thread.CurrentThread.ExecutionContext ?? ExecutionContext.Default;
 
             object previousValue;
             bool hadPreviousValue = current.m_localValues.TryGetValue(local, out previousValue);
@@ -223,7 +241,7 @@ namespace System.Threading
                 }
             }
 
-            t_currentMaybeNull = new ExecutionContext(newValues, newChangeNotifications);
+            Thread.CurrentThread.ExecutionContext = new ExecutionContext(newValues, newChangeNotifications);
 
             if (needChangeNotifications)
             {
@@ -321,11 +339,11 @@ namespace System.Threading
 #if FEATURE_CORRUPTING_EXCEPTIONS
         [HandleProcessCorruptedStateExceptions]
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
-        internal bool UndoNoThrow()
+        internal bool UndoNoThrow(Thread currentThread)
         {
             try
             {
-                Undo();
+                Undo(currentThread);
             }
             catch
             {
@@ -336,7 +354,7 @@ namespace System.Threading
         
         [System.Security.SecurityCritical]  // auto-generated
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
-        internal void Undo()
+        internal void Undo(Thread currentThread)
         {
             //
             // Don't use an uninitialized switcher, or one that's already been used.
@@ -345,7 +363,6 @@ namespace System.Threading
                 return; // Don't do anything
 
             Contract.Assert(Thread.CurrentThread == this.thread);
-            Thread currentThread = this.thread;
 
             // 
             // Restore the HostExecutionContext before restoring the ExecutionContext.
@@ -972,14 +989,14 @@ namespace System.Threading
             }
             finally
             {
-                ecsw.Undo();
+                ecsw.Undo(currentThread);
             }
         }
 
         [SecurityCritical]
-        static internal void EstablishCopyOnWriteScope(ref ExecutionContextSwitcher ecsw)
+        static internal void EstablishCopyOnWriteScope(Thread currentThread, ref ExecutionContextSwitcher ecsw)
         {
-            EstablishCopyOnWriteScope(Thread.CurrentThread, false, ref ecsw);
+            EstablishCopyOnWriteScope(currentThread, false, ref ecsw);
         }
 
         [SecurityCritical]
@@ -1068,7 +1085,7 @@ namespace System.Threading
             }
             catch
             {
-                ecsw.UndoNoThrow();
+                ecsw.UndoNoThrow(currentThread);
                 throw;
             }
             return ecsw;    

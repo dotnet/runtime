@@ -63,10 +63,6 @@ performing one suspension or resumption in the PAL at a time. */
 static LONG g_ssSuspensionLock = 0;
 #endif
 
-#if !HAVE_MACH_EXCEPTIONS
-static sigset_t smDefaultmask; // masks signals that the PAL handles as exceptions.
-#endif // !HAVE_MACH_EXCEPTIONS
-
 /*++
 Function:
   InternalSuspendNewThreadFromData
@@ -769,56 +765,6 @@ CThreadSuspensionInfo::WaitOnResumeSemaphore()
 #endif // USE_POSIX_SEMAPHORES
 }
 
-#if !HAVE_MACH_EXCEPTIONS
-/*++
-Function:
-  InitializeSignalSets
-  
-InitializeSignalSets initializes the signal masks used for thread
-suspension operations. Each thread's signal mask is initially set
-to smDefaultMask in InitializePreCreate. This mask blocks SIGUSR2,
-and SIGUSR1 if suspension using signals is off. This mask
-also blocks common signals so they will be handled by the PAL's
-signal handling thread. 
---*/
-VOID
-CThreadSuspensionInfo::InitializeSignalSets()
-{
-    sigemptyset(&smDefaultmask);
-
-#ifndef DO_NOT_USE_SIGNAL_HANDLING_THREAD
-    // The default signal mask masks all common signals except those that represent 
-    // synchronous exceptions in the PAL or are used by the system (e.g. SIGPROF on BSD).
-    // Note that SIGPROF is used by the BSD thread scheduler and masking it caused a 
-    // significant reduction in performance. Note that SIGCHLD is used by Linux
-    // for parent->child process notifications, and masking it caused parents
-    // not to recognize their children had died. Masking SIGTSTP and SIGCONT causes
-    // problems for job management.
-    sigaddset(&smDefaultmask, SIGHUP);
-    sigaddset(&smDefaultmask, SIGABRT);
-#ifdef SIGEMT
-    sigaddset(&smDefaultmask, SIGEMT);
-#endif
-    sigaddset(&smDefaultmask, SIGSYS);
-    sigaddset(&smDefaultmask, SIGALRM);
-    sigaddset(&smDefaultmask, SIGURG);
-    sigaddset(&smDefaultmask, SIGTTIN);
-    sigaddset(&smDefaultmask, SIGTTOU);
-    sigaddset(&smDefaultmask, SIGIO);
-    sigaddset(&smDefaultmask, SIGXCPU);
-    sigaddset(&smDefaultmask, SIGXFSZ);
-    sigaddset(&smDefaultmask, SIGVTALRM);
-    sigaddset(&smDefaultmask, SIGWINCH);
-#ifdef SIGINFO
-    sigaddset(&smDefaultmask, SIGINFO);
-#endif
-    sigaddset(&smDefaultmask, SIGPIPE);
-    sigaddset(&smDefaultmask, SIGUSR1);
-    sigaddset(&smDefaultmask, SIGUSR2);
-#endif // DO_NOT_USE_SIGNAL_HANDLING_THREAD
-}
-#endif // !HAVE_MACH_EXCEPTIONS
-
 /*++
 Function:
   InitializeSuspensionLock
@@ -986,25 +932,6 @@ CThreadSuspensionInfo::InitializePreCreate()
 
     m_fSemaphoresInitialized = TRUE;
 #endif // USE_POSIX_SEMAPHORES
-
-#if !HAVE_MACH_EXCEPTIONS
-    // This signal mask blocks SIGUSR2 when signal suspension is turned on
-    // (SIGUSR2 must be blocked for signal suspension), and masks other signals
-    // when the signal waiting thread is turned on. We must use SIG_SETMASK 
-    // so all threads start with the same signal mask. Otherwise, issues can arise.
-    // For example, on BSD using suspension with signals, the control handler 
-    // routine thread, spawned from the signal handling thread, inherits the 
-    // signal handling thread's mask which blocks SIGUSR1. Thus, the
-    // control handler routine thread cannot be suspended. Using SETMASK 
-    // ensures that SIGUSR1 is not blocked.
-    
-    iError = pthread_sigmask(SIG_SETMASK, &smDefaultmask, NULL);
-    if (iError != 0)
-    {
-        ASSERT("pthread sigmask(SIG_SETMASK, &smDefaultmask) returned %d\n", iError);
-        goto InitializePreCreateExit;
-    }
-#endif // !HAVE_MACH_EXCEPTIONS
 
     // Initialization was successful.
     palError = NO_ERROR;

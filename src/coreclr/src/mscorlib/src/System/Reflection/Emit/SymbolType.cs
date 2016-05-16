@@ -251,9 +251,9 @@ namespace System.Reflection.Emit
             {
                 // resize the bound array
                 int[]  iaTemp = new int[m_cRank * 2];
-                Array.Copy(m_iaLowerBound, iaTemp, m_cRank);
+                Array.Copy(m_iaLowerBound, 0, iaTemp, 0, m_cRank);
                 m_iaLowerBound = iaTemp;            
-                Array.Copy(m_iaUpperBound, iaTemp, m_cRank);
+                Array.Copy(m_iaUpperBound, 0, iaTemp, 0, m_cRank);
                 m_iaUpperBound = iaTemp;            
             }
 

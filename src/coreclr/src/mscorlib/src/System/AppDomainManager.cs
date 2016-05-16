@@ -59,7 +59,7 @@ namespace System {
                                                        Evidence securityInfo,
                                                        AppDomainSetup appDomainInfo) {
             if (friendlyName == null)
-                throw new ArgumentNullException(Environment.GetResourceString("ArgumentNull_String"));
+                throw new ArgumentNullException("friendlyName", Environment.GetResourceString("ArgumentNull_String"));
 
             Contract.EndContractBlock();
             // If evidence is provided, we check to make sure that is allowed.

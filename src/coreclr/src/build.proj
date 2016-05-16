@@ -4,6 +4,9 @@
   <!-- List the projects that need to be built -->
   <ItemGroup>
     <Project Include="mscorlib\mscorlib.csproj" />
+    <Project Include="mscorlib\ref\mscorlib.csproj" />
+    <Project Include="mscorlib\facade\mscorlib.csproj" />
+    <Project Include="mscorlib\System.Private.CoreLib.csproj" />
   </ItemGroup>
 
   <Import Project="..\dir.targets" />
@@ -12,6 +15,7 @@
 
   <ItemGroup>
     <PDBSToMove Include="$(BinDir)mscorlib.pdb"/>
+    <PDBSToMove Include="$(BinDir)System.Private.CoreLib.pdb"/>
   </ItemGroup>
 
   <PropertyGroup>
@@ -21,7 +25,6 @@
   <Target Name="MovePDB" AfterTargets="Build">
     <Move Condition="Exists($(MscorlibPDBPath))"
         SourceFiles="@(PDBSToMove)"
-        DestinationFolder="$(BinDir)PDB"
-    />
+        DestinationFolder="$(BinDir)PDB" />
   </Target>
 </Project>

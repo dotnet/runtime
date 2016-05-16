@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 .assembly extern System.Console
 {
@@ -39,7 +42,7 @@
                                                                                class System.String)
       IL_0039:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_003e:  ldc.i4     0x65
-      IL_0043:  call       void [mscorlib]System.Environment::set_ExitCode(int32)
+      IL_0043:  call       void [mscorlib]System.Environment::Exit(int32)
       IL_0048:  ret
 
       IL_0049:  ldsfld     int32 JitTest.Test::m
@@ -78,4 +81,3 @@
   } 
 
 } 
-

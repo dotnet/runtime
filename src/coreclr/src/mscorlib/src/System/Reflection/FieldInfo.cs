@@ -36,7 +36,7 @@ namespace System.Reflection
         public static FieldInfo GetFieldFromHandle(RuntimeFieldHandle handle)
         {
             if (handle.IsNullHandle())
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidHandle"));
+                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidHandle"), "handle");
                 
             FieldInfo f = RuntimeType.GetFieldInfo(handle.GetRuntimeFieldInfo());
                        

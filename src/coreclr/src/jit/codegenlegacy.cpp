@@ -5341,8 +5341,6 @@ void                CodeGen::genCodeForTreeLeaf_GT_JMP(GenTreePtr tree)
     }
 #endif // PROFILING_SUPPORTED
 
-#if INLINE_NDIRECT
-
     /* This code is cloned from the regular processing of GT_RETURN values.  We have to remember to
      * call genPInvokeMethodEpilog anywhere that we have a method return.  We should really
      * generate trees for the PInvoke prolog and epilog so we can remove these special cases.
@@ -5352,8 +5350,6 @@ void                CodeGen::genCodeForTreeLeaf_GT_JMP(GenTreePtr tree)
     {
         genPInvokeMethodEpilog();
     }
-
-#endif
 
     // Make sure register arguments are in their initial registers
     // and stack arguments are put back as well.
@@ -9800,8 +9796,6 @@ void                CodeGen::genCodeForTreeSmpOp(GenTreePtr tree,
 
         case GT_RETURN:
 
-#if INLINE_NDIRECT
-
             // TODO: this should be done AFTER we called exit mon so that
             //       we are sure that we don't have to keep 'this' alive
 
@@ -9813,8 +9807,6 @@ void                CodeGen::genCodeForTreeSmpOp(GenTreePtr tree,
 
                 genPInvokeMethodEpilog();
             }
-
-#endif
 
             /* Is there a return value and/or an exit statement? */
 
@@ -12626,15 +12618,13 @@ void                CodeGen::genCodeForBBlist()
         regSet.rsSetRegsModified(RBM_INT_CALLEE_SAVED & ~RBM_FPBASE);
     }
 
-#if INLINE_NDIRECT
     /* If we have any pinvoke calls, we might potentially trash everything */
 
-    if  (compiler->info.compCallUnmanaged)
+    if (compiler->info.compCallUnmanaged)
     {
         noway_assert(isFramePointerUsed());  // Setup of Pinvoke frame currently requires an EBP style frame
         regSet.rsSetRegsModified(RBM_INT_CALLEE_SAVED & ~RBM_FPBASE);
     }
-#endif // INLINE_NDIRECT
 
     /* Initialize the pointer tracking code */
 
@@ -15361,7 +15351,6 @@ USE_SAR_FOR_CAST:
 
         case GT_RETURN:
 
-#if INLINE_NDIRECT
             /* TODO: 
              * This code is cloned from the regular processing of GT_RETURN values.  We have to remember to
              * call genPInvokeMethodEpilog anywhere that we have a GT_RETURN statement.  We should really
@@ -15379,8 +15368,6 @@ USE_SAR_FOR_CAST:
 
                 genPInvokeMethodEpilog();
             }
-
-#endif
 
 #if CPU_LONG_USES_REGPAIR
             /* There must be a long return value */
@@ -15787,7 +15774,6 @@ void                CodeGen::genCodeForTreeFlt(GenTreePtr tree,
     if (tree->OperGet() == GT_RETURN)
     {
         //Make sure to get ALL THE EPILOG CODE
-#if INLINE_NDIRECT
 
         // TODO: this should be done AFTER we called exit mon so that
         //       we are sure that we don't have to keep 'this' alive
@@ -15800,8 +15786,6 @@ void                CodeGen::genCodeForTreeFlt(GenTreePtr tree,
 
             genPInvokeMethodEpilog();
         }
-
-#endif
 
         //The profiling hook does not trash registers, so it's safe to call after we emit the code for
         //the GT_RETURN tree.
@@ -18958,9 +18942,7 @@ regMaskTP           CodeGen::genCodeForCall(GenTreePtr  call,
 
     unsigned        saveStackLvl;
 
-#if     INLINE_NDIRECT
     BasicBlock  *   returnLabel = DUMMY_INIT(NULL);
-#endif
     LclVarDsc   *   frameListRoot = NULL;
 
     unsigned        savCurIntArgReg;
@@ -19039,8 +19021,6 @@ regMaskTP           CodeGen::genCodeForCall(GenTreePtr  call,
 
     argSize = 0;
 
-#if INLINE_NDIRECT
-
     /* We need to get a label for the return address with the proper stack depth. */
     /* For the callee pops case (the default) that is before the args are pushed. */
 
@@ -19049,8 +19029,6 @@ regMaskTP           CodeGen::genCodeForCall(GenTreePtr  call,
     {
        returnLabel = genCreateTempLabel();
     }
-#endif
-
 
     /*
         Make sure to save the current argument register status
@@ -19070,8 +19048,6 @@ regMaskTP           CodeGen::genCodeForCall(GenTreePtr  call,
         argSize += genPushArgList(call);
     }
 
-#if INLINE_NDIRECT
-
     /* We need to get a label for the return address with the proper stack depth. */
     /* For the caller pops case (cdecl) that is after the args are pushed. */
 
@@ -19083,7 +19059,6 @@ regMaskTP           CodeGen::genCodeForCall(GenTreePtr  call,
         /* Make sure that we now have a label */
         noway_assert(returnLabel != DUMMY_INIT(NULL));
     }
-#endif
 
     if (callType == CT_INDIRECT)
     {
@@ -19139,14 +19114,11 @@ regMaskTP           CodeGen::genCodeForCall(GenTreePtr  call,
 
     regMaskTP       spillRegs = calleeTrashedRegs & regSet.rsMaskUsed;
 
-#if     INLINE_NDIRECT
-
     /* We need to save all GC registers to the InlinedCallFrame.
        Instead, just spill them to temps. */
 
     if (call->gtFlags & GTF_CALL_UNMANAGED)
         spillRegs |= (gcInfo.gcRegGCrefSetCur|gcInfo.gcRegByrefSetCur) & regSet.rsMaskUsed;
-#endif
 
     // Ignore fptrRegs as it is needed only to perform the indirect call
 
@@ -19756,7 +19728,6 @@ regMaskTP           CodeGen::genCodeForCall(GenTreePtr  call,
 #endif
             }
 
-#if INLINE_NDIRECT
             if (call->gtFlags & GTF_CALL_UNMANAGED)
             {
                 //------------------------------------------------------
@@ -19905,7 +19876,6 @@ regMaskTP           CodeGen::genCodeForCall(GenTreePtr  call,
                 // Done with PInvoke calls
                 break;
             }
-#endif // INLINE_NDIRECT
 
             if  (callType == CT_INDIRECT)
             {
@@ -20542,8 +20512,6 @@ regMaskTP           CodeGen::genCodeForCall(GenTreePtr  call,
     }
 #endif // _TARGET_X86_
 
-#if     INLINE_NDIRECT
-
     if (call->gtFlags & GTF_CALL_UNMANAGED)
     {
         genDefineTempLabel(returnLabel);
@@ -20593,11 +20561,10 @@ regMaskTP           CodeGen::genCodeForCall(GenTreePtr  call,
             genDefineTempLabel(esp_check);
         }
     }
-#endif
 
     /* Are we supposed to pop the arguments? */
 
-#if defined(_TARGET_X86_) && defined(INLINE_NDIRECT)
+#if defined(_TARGET_X86_)
     if (call->gtFlags & GTF_CALL_UNMANAGED)
     {
         if ((compiler->opts.eeFlags & CORJIT_FLG_PINVOKE_RESTORE_ESP) ||
@@ -20637,7 +20604,7 @@ regMaskTP           CodeGen::genCodeForCall(GenTreePtr  call,
             }
         }
     }
-#endif // _TARGET_X86_ && INLINE_NDIRECT
+#endif // _TARGET_X86_
 
     if  (call->gtFlags & GTF_CALL_POP_ARGS)
     {
@@ -20714,7 +20681,6 @@ regMaskTP           CodeGen::genCodeForCall(GenTreePtr  call,
         noway_assert(!"unexpected/unhandled fn return type");
     }
 
-#if INLINE_NDIRECT
     // We now have to generate the "call epilog" (if it was a call to unmanaged code).
     /* if it is a call to unmanaged code, frameListRoot must be set */
 
@@ -20732,8 +20698,6 @@ regMaskTP           CodeGen::genCodeForCall(GenTreePtr  call,
             genUpdateRegLife(frameListRoot, isBorn, isDying DEBUGARG(call));
         }
     }
-
-#endif  //INLINE_NDIRECT
 
 #ifdef DEBUG
     if (compiler->opts.compStackCheckOnCall
@@ -21743,8 +21707,6 @@ GenTreePtr Compiler::fgLegacyPerStatementLocalVarLiveness(GenTreePtr startNode, 
                 }
             }
 
-#if INLINE_NDIRECT
-
             // If this is a p/invoke unmanaged call or if this is a tail-call
             // and we have an unmanaged p/invoke call in the method,
             // then we're going to run the p/invoke epilog.
@@ -21768,8 +21730,6 @@ GenTreePtr Compiler::fgLegacyPerStatementLocalVarLiveness(GenTreePtr startNode, 
                     }
                 }
             }
-
-#endif // INLINE_NDIRECT
 
             break;
 
@@ -21808,4 +21768,999 @@ GenTreePtr Compiler::fgLegacyPerStatementLocalVarLiveness(GenTreePtr startNode, 
 _return:
     return tree;
 }
+
+/*****************************************************************************/
+
+/*****************************************************************************
+ * Initialize the TCB local and the NDirect stub, afterwards "push"
+ * the hoisted NDirect stub.
+ *
+ * 'initRegs' is the set of registers which will be zeroed out by the prolog
+ *             typically initRegs is zero
+ *
+ * The layout of the NDirect Inlined Call Frame is as follows:
+ * (see VM/frames.h and VM/JITInterface.cpp for more information)
+ *
+ *   offset     field name                        when set
+ *  --------------------------------------------------------------
+ *    +00h      vptr for class InlinedCallFrame   method prolog
+ *    +04h      m_Next                            method prolog
+ *    +08h      m_Datum                           call site
+ *    +0ch      m_pCallSiteTracker (callsite ESP) call site and zeroed in method prolog
+ *    +10h      m_pCallerReturnAddress            call site
+ *    +14h      m_pCalleeSavedRegisters           not set by JIT
+ *    +18h      JIT retval spill area (int)       before call_gc
+ *    +1ch      JIT retval spill area (long)      before call_gc
+ *    +20h      Saved value of EBP                method prolog
+ */
+
+regMaskTP           CodeGen::genPInvokeMethodProlog(regMaskTP initRegs)
+{
+    assert(compiler->compGeneratingProlog);
+    noway_assert(!compiler->opts.ShouldUsePInvokeHelpers());
+    noway_assert(compiler->info.compCallUnmanaged);
+
+    CORINFO_EE_INFO * pInfo = compiler->eeGetEEInfo();
+    noway_assert(compiler->lvaInlinedPInvokeFrameVar != BAD_VAR_NUM);
+
+    /* let's find out if compLvFrameListRoot is enregistered */
+
+    LclVarDsc *     varDsc = &compiler->lvaTable[compiler->info.compLvFrameListRoot];
+
+    noway_assert(!varDsc->lvIsParam);
+    noway_assert(varDsc->lvType == TYP_I_IMPL);
+
+    DWORD threadTlsIndex, *pThreadTlsIndex;
+
+    threadTlsIndex = compiler->info.compCompHnd->getThreadTLSIndex((void**) &pThreadTlsIndex);
+#if defined(_TARGET_X86_)
+    if (threadTlsIndex == (DWORD)-1 || pInfo->osType != CORINFO_WINNT)
+#else
+    if (true)
+#endif
+    {
+        // Instead of calling GetThread(), and getting GS cookie and
+        // InlinedCallFrame vptr through indirections, we'll call only one helper.
+        // The helper takes frame address in REG_PINVOKE_FRAME, returns TCB in REG_PINVOKE_TCB
+        // and uses REG_PINVOKE_SCRATCH as scratch register.
+        getEmitter()->emitIns_R_S (INS_lea,
+                                 EA_PTRSIZE,
+                                 REG_PINVOKE_FRAME,
+                                 compiler->lvaInlinedPInvokeFrameVar,
+                                 pInfo->inlinedCallFrameInfo.offsetOfFrameVptr);
+        regTracker.rsTrackRegTrash(REG_PINVOKE_FRAME);
+
+        // We're about to trask REG_PINVOKE_TCB, it better not be in use!
+        assert((regSet.rsMaskUsed & RBM_PINVOKE_TCB) == 0);
+
+        // Don't use the argument registers (including the special argument in
+        // REG_PINVOKE_FRAME) for computing the target address.
+        regSet.rsLockReg(RBM_ARG_REGS|RBM_PINVOKE_FRAME);
+
+        genEmitHelperCall(CORINFO_HELP_INIT_PINVOKE_FRAME, 0, EA_UNKNOWN);
+
+        regSet.rsUnlockReg(RBM_ARG_REGS|RBM_PINVOKE_FRAME);
+
+        if (varDsc->lvRegister)
+        {
+            regNumber regTgt = varDsc->lvRegNum;
+
+            // we are about to initialize it. So turn the bit off in initRegs to prevent
+            // the prolog reinitializing it.
+            initRegs &= ~genRegMask(regTgt);
+
+            if (regTgt != REG_PINVOKE_TCB)
+            {
+                // move TCB to the its register if necessary
+                getEmitter()->emitIns_R_R(INS_mov, EA_PTRSIZE, regTgt, REG_PINVOKE_TCB);
+                regTracker.rsTrackRegTrash(regTgt);
+            }
+        }
+        else
+        {
+            // move TCB to its stack location
+            getEmitter()->emitIns_S_R (ins_Store(TYP_I_IMPL),
+                                     EA_PTRSIZE,
+                                     REG_PINVOKE_TCB,
+                                     compiler->info.compLvFrameListRoot,
+                                     0);
+        }
+
+        // We are done, the rest of this function deals with the inlined case.
+        return initRegs;
+    }
+
+    regNumber      regTCB;
+
+    if (varDsc->lvRegister)
+    {
+        regTCB = varDsc->lvRegNum;
+
+        // we are about to initialize it. So turn the bit off in initRegs to prevent
+        // the prolog reinitializing it.
+        initRegs &= ~genRegMask(regTCB);
+    }
+    else // varDsc is allocated on the Stack
+    {
+        regTCB = REG_PINVOKE_TCB;
+    }
+
+    /* get TCB,  mov reg, FS:[compiler->info.compEEInfo.threadTlsIndex] */
+
+    // TODO-ARM-CQ: should we inline TlsGetValue here?
+#if !defined(_TARGET_ARM_) && !defined(_TARGET_AMD64_)
+#define WIN_NT_TLS_OFFSET (0xE10)
+#define WIN_NT5_TLS_HIGHOFFSET (0xf94)
+
+    if (threadTlsIndex < 64)
+    {
+        //  mov  reg, FS:[0xE10+threadTlsIndex*4]
+        getEmitter()->emitIns_R_C (ins_Load(TYP_I_IMPL),
+                                 EA_PTRSIZE,
+                                 regTCB,
+                                 FLD_GLOBAL_FS,
+                                 WIN_NT_TLS_OFFSET + threadTlsIndex * sizeof(int));
+        regTracker.rsTrackRegTrash(regTCB);
+    }
+    else
+    {
+        noway_assert(pInfo->osMajor >= 5);
+
+        DWORD basePtr   = WIN_NT5_TLS_HIGHOFFSET;
+        threadTlsIndex -= 64;
+
+        // mov reg, FS:[0x2c] or mov reg, fs:[0xf94]
+        // mov reg, [reg+threadTlsIndex*4]
+
+        getEmitter()->emitIns_R_C (ins_Load(TYP_I_IMPL),
+                                 EA_PTRSIZE,
+                                 regTCB,
+                                 FLD_GLOBAL_FS,
+                                 basePtr);
+        getEmitter()->emitIns_R_AR(ins_Load(TYP_I_IMPL),
+                                 EA_PTRSIZE,
+                                 regTCB,
+                                 regTCB,
+                                 threadTlsIndex*sizeof(int));
+        regTracker.rsTrackRegTrash(regTCB);
+    }
+#endif
+
+    /* save TCB in local var if not enregistered */
+
+    if (!varDsc->lvRegister)
+    {
+        getEmitter()->emitIns_S_R (ins_Store(TYP_I_IMPL),
+                                 EA_PTRSIZE,
+                                 regTCB,
+                                 compiler->info.compLvFrameListRoot,
+                                 0);
+    }
+
+    /* set frame's vptr */
+
+    const void * inlinedCallFrameVptr, **pInlinedCallFrameVptr;
+    inlinedCallFrameVptr = compiler->info.compCompHnd->getInlinedCallFrameVptr((void**) &pInlinedCallFrameVptr);
+    noway_assert(inlinedCallFrameVptr != NULL); // if we have the TLS index, vptr must also be known
+
+    instGen_Store_Imm_Into_Lcl(TYP_I_IMPL, EA_HANDLE_CNS_RELOC, (ssize_t) inlinedCallFrameVptr,
+                               compiler->lvaInlinedPInvokeFrameVar, 
+                               pInfo->inlinedCallFrameInfo.offsetOfFrameVptr,
+                               REG_PINVOKE_SCRATCH);
+
+    // Set the GSCookie
+    GSCookie gsCookie, * pGSCookie;
+    compiler->info.compCompHnd->getGSCookie(&gsCookie, &pGSCookie);
+    noway_assert(gsCookie != 0); // if we have the TLS index, GS cookie must also be known
+
+    instGen_Store_Imm_Into_Lcl(TYP_I_IMPL, EA_PTRSIZE, (ssize_t) gsCookie,
+                               compiler->lvaInlinedPInvokeFrameVar,
+                               pInfo->inlinedCallFrameInfo.offsetOfGSCookie,
+                               REG_PINVOKE_SCRATCH);
+
+    /* Get current frame root (mov reg2, [reg+offsetOfThreadFrame]) and
+       set next field in frame */
+
+    getEmitter()->emitIns_R_AR (ins_Load(TYP_I_IMPL),
+                              EA_PTRSIZE,
+                              REG_PINVOKE_SCRATCH,
+                              regTCB,
+                              pInfo->offsetOfThreadFrame);
+    regTracker.rsTrackRegTrash(REG_PINVOKE_SCRATCH);
+
+    getEmitter()->emitIns_S_R (ins_Store(TYP_I_IMPL),
+                             EA_PTRSIZE,
+                             REG_PINVOKE_SCRATCH,
+                             compiler->lvaInlinedPInvokeFrameVar,
+                             pInfo->inlinedCallFrameInfo.offsetOfFrameLink);
+
+    noway_assert(isFramePointerUsed());  // Setup of Pinvoke frame currently requires an EBP style frame
+
+    /* set EBP value in frame */
+    getEmitter()->emitIns_S_R (ins_Store(TYP_I_IMPL),
+                             EA_PTRSIZE,
+                             genFramePointerReg(),
+                             compiler->lvaInlinedPInvokeFrameVar,
+                             pInfo->inlinedCallFrameInfo.offsetOfCalleeSavedFP);
+
+    /* reset track field in frame */
+    instGen_Store_Imm_Into_Lcl(TYP_I_IMPL, EA_PTRSIZE, 0,
+                               compiler->lvaInlinedPInvokeFrameVar,
+                               pInfo->inlinedCallFrameInfo.offsetOfReturnAddress,
+                               REG_PINVOKE_SCRATCH);
+
+    /* get address of our frame */
+
+    getEmitter()->emitIns_R_S (INS_lea,
+                             EA_PTRSIZE,
+                             REG_PINVOKE_SCRATCH,
+                             compiler->lvaInlinedPInvokeFrameVar,
+                             pInfo->inlinedCallFrameInfo.offsetOfFrameVptr);
+    regTracker.rsTrackRegTrash(REG_PINVOKE_SCRATCH);
+
+    /* now "push" our N/direct frame */
+
+    getEmitter()->emitIns_AR_R (ins_Store(TYP_I_IMPL),
+                              EA_PTRSIZE,
+                              REG_PINVOKE_SCRATCH,
+                              regTCB,
+                              pInfo->offsetOfThreadFrame);
+
+    return initRegs;
+}
+
+
+/*****************************************************************************
+ *  Unchain the InlinedCallFrame.
+ *  Technically, this is not part of the epilog; it is called when we are generating code for a GT_RETURN node
+ *  or tail call.
+ */
+void                CodeGen::genPInvokeMethodEpilog()
+{
+    noway_assert(compiler->info.compCallUnmanaged);
+    noway_assert(!compiler->opts.ShouldUsePInvokeHelpers());
+    noway_assert(compiler->compCurBB == compiler->genReturnBB ||
+                 (compiler->compTailCallUsed && (compiler->compCurBB->bbJumpKind == BBJ_THROW)) ||
+                 (compiler->compJmpOpUsed && (compiler->compCurBB->bbFlags & BBF_HAS_JMP)));
+
+    CORINFO_EE_INFO *   pInfo = compiler->eeGetEEInfo();
+    noway_assert(compiler->lvaInlinedPInvokeFrameVar != BAD_VAR_NUM);
+
+    getEmitter()->emitDisableRandomNops();
+    //debug check to make sure that we're not using ESI and/or EDI across this call, except for
+    //compLvFrameListRoot.
+    unsigned regTrashCheck = 0;
+
+    /* XXX Tue 5/29/2007
+     * We explicitly add interference for these in CodeGen::rgPredictRegUse.  If you change the code
+     * sequence or registers used, make sure to update the interference for compiler->genReturnLocal.
+     */
+    LclVarDsc   *       varDsc = &compiler->lvaTable[compiler->info.compLvFrameListRoot];
+    regNumber           reg;
+    regNumber           reg2 = REG_PINVOKE_FRAME;
+
+
+    //
+    // Two cases for epilog invocation:
+    //
+    // 1. Return
+    //    We can trash the ESI/EDI registers.
+    //
+    // 2. Tail call
+    //    When tail called, we'd like to preserve enregistered args,
+    //    in ESI/EDI so we can pass it to the callee.
+    //
+    // For ARM, don't modify SP for storing and restoring the TCB/frame registers.
+    // Instead use the reserved local variable slot.
+    //
+    if (compiler->compCurBB->bbFlags & BBF_HAS_JMP)
+    {
+        if (compiler->rpMaskPInvokeEpilogIntf & RBM_PINVOKE_TCB)
+        {
+#if FEATURE_FIXED_OUT_ARGS
+            // Save the register in the reserved local var slot.
+            getEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_PINVOKE_TCB, compiler->lvaPInvokeFrameRegSaveVar, 0);
+#else
+            inst_RV(INS_push, REG_PINVOKE_TCB, TYP_I_IMPL);
+#endif
+        }
+        if (compiler->rpMaskPInvokeEpilogIntf & RBM_PINVOKE_FRAME)
+        {
+#if FEATURE_FIXED_OUT_ARGS
+            // Save the register in the reserved local var slot.
+            getEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_PINVOKE_FRAME, compiler->lvaPInvokeFrameRegSaveVar, REGSIZE_BYTES);
+#else
+            inst_RV(INS_push, REG_PINVOKE_FRAME, TYP_I_IMPL);
+#endif
+        }
+    }
+
+    if (varDsc->lvRegister)
+    {
+        reg = varDsc->lvRegNum;
+        if (reg == reg2)
+            reg2 = REG_PINVOKE_TCB;
+
+        regTrashCheck |= genRegMask(reg2);
+    }
+    else
+    {
+        /* mov esi, [tcb address]    */
+
+        getEmitter()->emitIns_R_S (ins_Load(TYP_I_IMPL),
+                                 EA_PTRSIZE,
+                                 REG_PINVOKE_TCB,
+                                 compiler->info.compLvFrameListRoot,
+                                 0);
+        regTracker.rsTrackRegTrash(REG_PINVOKE_TCB);
+        reg = REG_PINVOKE_TCB;
+
+        regTrashCheck = RBM_PINVOKE_TCB | RBM_PINVOKE_FRAME;
+    }
+
+    /* mov edi, [ebp-frame.next] */
+
+    getEmitter()->emitIns_R_S  (ins_Load(TYP_I_IMPL),
+                              EA_PTRSIZE,
+                              reg2,
+                              compiler->lvaInlinedPInvokeFrameVar,
+                              pInfo->inlinedCallFrameInfo.offsetOfFrameLink);
+    regTracker.rsTrackRegTrash(reg2);
+
+    /* mov [esi+offsetOfThreadFrame], edi */
+
+    getEmitter()->emitIns_AR_R (ins_Store(TYP_I_IMPL),
+                              EA_PTRSIZE,
+                              reg2,
+                              reg,
+                              pInfo->offsetOfThreadFrame);
+
+    noway_assert(!(regSet.rsMaskUsed & regTrashCheck));
+
+    if (compiler->genReturnLocal != BAD_VAR_NUM &&
+        compiler->lvaTable[compiler->genReturnLocal].lvTracked &&
+        compiler->lvaTable[compiler->genReturnLocal].lvRegister)
+    {
+        //really make sure we're not clobbering compiler->genReturnLocal.
+        noway_assert(!(genRegMask(compiler->lvaTable[compiler->genReturnLocal].lvRegNum)
+                       & ( (varDsc->lvRegister ? genRegMask(varDsc->lvRegNum) : 0)
+                           | RBM_PINVOKE_TCB | RBM_PINVOKE_FRAME)));
+    }
+
+    (void)regTrashCheck;
+
+    // Restore the registers ESI and EDI.
+    if (compiler->compCurBB->bbFlags & BBF_HAS_JMP)
+    {
+        if (compiler->rpMaskPInvokeEpilogIntf & RBM_PINVOKE_FRAME)
+        {
+#if FEATURE_FIXED_OUT_ARGS
+            // Restore the register from the reserved local var slot.
+            getEmitter()->emitIns_R_S(ins_Load(TYP_I_IMPL), EA_PTRSIZE, REG_PINVOKE_FRAME, compiler->lvaPInvokeFrameRegSaveVar, REGSIZE_BYTES);
+#else
+            inst_RV(INS_pop, REG_PINVOKE_FRAME, TYP_I_IMPL);
+#endif
+            regTracker.rsTrackRegTrash(REG_PINVOKE_FRAME);
+        }
+        if (compiler->rpMaskPInvokeEpilogIntf & RBM_PINVOKE_TCB)
+        {
+#if FEATURE_FIXED_OUT_ARGS
+            // Restore the register from the reserved local var slot.
+            getEmitter()->emitIns_R_S(ins_Load(TYP_I_IMPL), EA_PTRSIZE, REG_PINVOKE_TCB, compiler->lvaPInvokeFrameRegSaveVar, 0);
+#else
+            inst_RV(INS_pop, REG_PINVOKE_TCB, TYP_I_IMPL);
+#endif
+            regTracker.rsTrackRegTrash(REG_PINVOKE_TCB);
+        }
+    }
+    getEmitter()->emitEnableRandomNops();
+}
+
+
+/*****************************************************************************
+    This function emits the call-site prolog for direct calls to unmanaged code.
+    It does all the necessary setup of the InlinedCallFrame.
+    frameListRoot specifies the local containing the thread control block.
+    argSize or methodToken is the value to be copied into the m_datum
+            field of the frame (methodToken may be indirected & have a reloc)
+    The function returns  the register now containing the thread control block,
+    (it could be either enregistered or loaded into one of the scratch registers)
+*/
+
+regNumber          CodeGen::genPInvokeCallProlog(LclVarDsc*            frameListRoot,
+                                                  int                   argSize,
+                                                  CORINFO_METHOD_HANDLE methodToken,
+                                                  BasicBlock*           returnLabel)
+{
+    // Some stack locals might be 'cached' in registers, we need to trash them
+    // from the regTracker *and* also ensure the gc tracker does not consider
+    // them live (see the next assert).  However, they might be live reg vars
+    // that are non-pointers CSE'd from pointers.
+    // That means the register will be live in rsMaskVars, so we can't just
+    // call gcMarkSetNpt().
+    {
+        regMaskTP deadRegs = regTracker.rsTrashRegsForGCInterruptability() & ~RBM_ARG_REGS;
+        gcInfo.gcRegGCrefSetCur &= ~deadRegs;
+        gcInfo.gcRegByrefSetCur &= ~deadRegs;
+
+#ifdef DEBUG
+        deadRegs &= regSet.rsMaskVars;
+        if (deadRegs)
+        {
+            for (LclVarDsc * varDsc = compiler->lvaTable;
+                 ((varDsc < (compiler->lvaTable + compiler->lvaCount)) && deadRegs);
+                 varDsc++ )
+            {
+                if (!varDsc->lvTracked || !varDsc->lvRegister)
+                    continue;
+
+                if (!VarSetOps::IsMember(compiler, compiler->compCurLife, varDsc->lvVarIndex))
+                    continue;
+
+                regMaskTP varRegMask = genRegMask(varDsc->lvRegNum);
+                if (isRegPairType(varDsc->lvType) && varDsc->lvOtherReg != REG_STK)
+                    varRegMask |= genRegMask(varDsc->lvOtherReg);
+
+                if (varRegMask & deadRegs)
+                {
+                    // We found the enregistered var that should not be live if it
+                    // was a GC pointer.
+                    noway_assert(!varTypeIsGC(varDsc));
+                    deadRegs &= ~varRegMask;
+                }
+            }
+        }
+#endif // DEBUG
+    }
+
+    /* Since we are using the InlinedCallFrame, we should have spilled all
+       GC pointers to it - even from callee-saved registers */
+
+    noway_assert(((gcInfo.gcRegGCrefSetCur|gcInfo.gcRegByrefSetCur) & ~RBM_ARG_REGS) == 0);
+
+    /* must specify only one of these parameters */
+    noway_assert((argSize == 0) || (methodToken == NULL));
+
+    /* We are about to call unmanaged code directly.
+       Before we can do that we have to emit the following sequence:
+
+       mov  dword ptr [frame.callTarget], MethodToken
+       mov  dword ptr [frame.callSiteTracker], esp
+       mov  reg, dword ptr [tcb_address]
+       mov  byte  ptr [tcb+offsetOfGcState], 0
+
+     */
+
+    CORINFO_EE_INFO * pInfo = compiler->eeGetEEInfo();
+
+    noway_assert(compiler->lvaInlinedPInvokeFrameVar != BAD_VAR_NUM);
+    
+    /* mov   dword ptr [frame.callSiteTarget], value */
+
+    if (methodToken == NULL)
+    {
+        /* mov   dword ptr [frame.callSiteTarget], argSize */
+        instGen_Store_Imm_Into_Lcl(TYP_INT, EA_4BYTE, argSize,
+                                   compiler->lvaInlinedPInvokeFrameVar,
+                                   pInfo->inlinedCallFrameInfo.offsetOfCallTarget);
+    }
+    else
+    {
+        void * embedMethHnd, * pEmbedMethHnd;
+
+        embedMethHnd = (void*)compiler->info.compCompHnd->embedMethodHandle(
+                                          methodToken,
+                                          &pEmbedMethHnd);
+
+        noway_assert((!embedMethHnd) != (!pEmbedMethHnd));
+
+        if (embedMethHnd != NULL)
+        {
+            /* mov   dword ptr [frame.callSiteTarget], "MethodDesc" */
+
+            instGen_Store_Imm_Into_Lcl(TYP_I_IMPL, EA_HANDLE_CNS_RELOC, (ssize_t) embedMethHnd,
+                                      compiler->lvaInlinedPInvokeFrameVar,
+                                      pInfo->inlinedCallFrameInfo.offsetOfCallTarget);
+        }
+        else
+        {
+            /* mov   reg, dword ptr [MethodDescIndir]
+               mov   dword ptr [frame.callSiteTarget], reg */
+
+            regNumber reg = regSet.rsPickFreeReg();
+
+#if CPU_LOAD_STORE_ARCH
+            instGen_Set_Reg_To_Imm (EA_HANDLE_CNS_RELOC,
+                                    reg,
+                                    (ssize_t) pEmbedMethHnd);
+            getEmitter()->emitIns_R_AR(ins_Load(TYP_I_IMPL), EA_PTRSIZE, reg, reg, 0);
+#else // !CPU_LOAD_STORE_ARCH
+#ifdef _TARGET_AMD64_
+            if (reg != REG_RAX)
+            {
+                instGen_Set_Reg_To_Imm (EA_HANDLE_CNS_RELOC,
+                                        reg,
+                                        (ssize_t) pEmbedMethHnd);
+                getEmitter()->emitIns_R_AR(ins_Load(TYP_I_IMPL), EA_PTRSIZE, reg, reg, 0);
+            }
+            else
+#endif // _TARGET_AMD64_
+            {
+                getEmitter()->emitIns_R_AI(ins_Load(TYP_I_IMPL), EA_PTR_DSP_RELOC,
+                                         reg, (ssize_t) pEmbedMethHnd);
+            }
+#endif // !CPU_LOAD_STORE_ARCH
+            regTracker.rsTrackRegTrash(reg);
+            getEmitter()->emitIns_S_R (ins_Store(TYP_I_IMPL),
+                                     EA_PTRSIZE,
+                                     reg,
+                                     compiler->lvaInlinedPInvokeFrameVar,
+                                     pInfo->inlinedCallFrameInfo.offsetOfCallTarget);
+        }
+    }
+
+    regNumber tcbReg = REG_NA;
+
+    if (frameListRoot->lvRegister)
+    {
+        tcbReg = frameListRoot->lvRegNum;
+    }
+    else
+    {
+        tcbReg = regSet.rsGrabReg(RBM_ALLINT);
+
+        /* mov reg, dword ptr [tcb address]    */
+
+        getEmitter()->emitIns_R_S  (ins_Load(TYP_I_IMPL),
+                                  EA_PTRSIZE,
+                                  tcbReg,
+                                  (unsigned)(frameListRoot - compiler->lvaTable),
+                                  0);
+        regTracker.rsTrackRegTrash(tcbReg);
+    }
+
+#ifdef _TARGET_X86_
+    /* mov   dword ptr [frame.callSiteTracker], esp */
+
+    getEmitter()->emitIns_S_R  (ins_Store(TYP_I_IMPL),
+                              EA_PTRSIZE,
+                              REG_SPBASE,
+                              compiler->lvaInlinedPInvokeFrameVar,
+                              pInfo->inlinedCallFrameInfo.offsetOfCallSiteSP);
+#endif // _TARGET_X86_
+
+    /* mov   dword ptr [frame.callSiteReturnAddress], label */
+    
+#if CPU_LOAD_STORE_ARCH
+    regNumber tmpReg = regSet.rsGrabReg(RBM_ALLINT & ~genRegMask(tcbReg));
+    getEmitter()->emitIns_J_R (INS_adr,
+                             EA_PTRSIZE,
+                             returnLabel,
+                             tmpReg);
+    regTracker.rsTrackRegTrash(tmpReg);
+    getEmitter()->emitIns_S_R (ins_Store(TYP_I_IMPL),
+                             EA_PTRSIZE,
+                             tmpReg,
+                             compiler->lvaInlinedPInvokeFrameVar,
+                             pInfo->inlinedCallFrameInfo.offsetOfReturnAddress);
+#else // !CPU_LOAD_STORE_ARCH
+    // TODO-AMD64-CQ: Consider changing to a rip relative sequence on x64.
+    getEmitter()->emitIns_J_S (ins_Store(TYP_I_IMPL),
+                             EA_PTRSIZE,
+                             returnLabel,
+                             compiler->lvaInlinedPInvokeFrameVar,
+                             pInfo->inlinedCallFrameInfo.offsetOfReturnAddress);
+#endif // !CPU_LOAD_STORE_ARCH
+
+#if CPU_LOAD_STORE_ARCH
+    instGen_Set_Reg_To_Zero(EA_1BYTE, tmpReg);
+
+    noway_assert(tmpReg != tcbReg);
+
+    getEmitter()->emitIns_AR_R(ins_Store(TYP_BYTE),
+                             EA_1BYTE,
+                             tmpReg,
+                             tcbReg,
+                             pInfo->offsetOfGCState);
+#else // !CPU_LOAD_STORE_ARCH
+    /* mov   byte  ptr [tcbReg+offsetOfGcState], 0 */
+
+    getEmitter()->emitIns_I_AR (ins_Store(TYP_BYTE),
+                              EA_1BYTE,
+                              0,
+                              tcbReg,
+                              pInfo->offsetOfGCState);
+#endif // !CPU_LOAD_STORE_ARCH
+
+    return tcbReg;
+}
+
+/*****************************************************************************
+ *
+   First we have to mark in the hoisted NDirect stub that we are back
+   in managed code. Then we have to check (a global flag) whether GC is
+   pending or not. If so, we just call into a jit-helper.
+   Right now we have this call always inlined, i.e. we always skip around
+   the jit-helper call.
+   Note:
+   The tcb address is a regular local (initialized in the prolog), so it is either
+   enregistered or in the frame:
+
+        tcb_reg = [tcb_address is enregistered] OR [mov ecx, tcb_address]
+        mov  byte ptr[tcb_reg+offsetOfGcState], 1
+        cmp  'global GC pending flag', 0
+        je   @f
+        [mov  ECX, tcb_reg]  OR [ecx was setup above]     ; we pass the tcb value to callGC
+        [mov  [EBP+spill_area+0], eax]                    ; spill the int  return value if any
+        [mov  [EBP+spill_area+4], edx]                    ; spill the long return value if any
+        call @callGC
+        [mov  eax, [EBP+spill_area+0] ]                   ; reload the int  return value if any
+        [mov  edx, [EBP+spill_area+4] ]                   ; reload the long return value if any
+    @f:
+ */
+
+void                CodeGen::genPInvokeCallEpilog(LclVarDsc *  frameListRoot,
+                                                  regMaskTP    retVal)
+{
+    BasicBlock  *       clab_nostop;
+    CORINFO_EE_INFO *   pInfo = compiler->eeGetEEInfo();
+    regNumber           reg2;
+    regNumber           reg3;
+#ifdef _TARGET_ARM_
+        reg3 = REG_R3;
+#else
+        reg3 = REG_EDX;
+#endif
+#ifdef _TARGET_AMD64_
+    TempDsc * retTmp = NULL;
+#endif
+
+    getEmitter()->emitDisableRandomNops();
+
+    if (frameListRoot->lvRegister)
+    {
+        /* make sure that register is live across the call */
+
+        reg2 = frameListRoot->lvRegNum;
+        noway_assert(genRegMask(reg2) & RBM_INT_CALLEE_SAVED);
+    }
+    else
+    {
+        /* mov   reg2, dword ptr [tcb address]    */
+#ifdef _TARGET_ARM_
+        reg2 = REG_R2;
+#else
+        reg2 = REG_ECX;
+#endif
+
+        getEmitter()->emitIns_R_S  (ins_Load(TYP_I_IMPL),
+                                  EA_PTRSIZE,
+                                  reg2,
+                                  (unsigned)(frameListRoot - compiler->lvaTable),
+                                  0);
+        regTracker.rsTrackRegTrash(reg2);
+    }
+
+
+#ifdef _TARGET_ARM_
+    /* mov   r3, 1 */
+    /* strb  [r2+offsetOfGcState], r3 */
+    instGen_Set_Reg_To_Imm(EA_PTRSIZE, reg3, 1);
+    getEmitter()->emitIns_AR_R (ins_Store(TYP_BYTE),
+                              EA_1BYTE,
+                              reg3,
+                              reg2,
+                              pInfo->offsetOfGCState);
+#else
+    /* mov   byte ptr [tcb+offsetOfGcState], 1 */
+    getEmitter()->emitIns_I_AR (ins_Store(TYP_BYTE),
+                              EA_1BYTE,
+                              1,
+                              reg2,
+                              pInfo->offsetOfGCState);
+#endif
+
+    /* test global flag (we return to managed code) */
+
+    LONG * addrOfCaptureThreadGlobal, **pAddrOfCaptureThreadGlobal;
+
+    addrOfCaptureThreadGlobal = compiler->info.compCompHnd->getAddrOfCaptureThreadGlobal((void**) &pAddrOfCaptureThreadGlobal);
+    noway_assert((!addrOfCaptureThreadGlobal) != (!pAddrOfCaptureThreadGlobal));
+
+    // Can we directly use addrOfCaptureThreadGlobal?
+
+    if (addrOfCaptureThreadGlobal)
+    {
+#ifdef _TARGET_ARM_
+        instGen_Set_Reg_To_Imm (EA_HANDLE_CNS_RELOC,
+                                reg3,
+                                (ssize_t)addrOfCaptureThreadGlobal);
+        getEmitter()->emitIns_R_R_I (ins_Load(TYP_INT),
+                                   EA_4BYTE,
+                                   reg3,
+                                   reg3,
+                                   0);
+        regTracker.rsTrackRegTrash(reg3);
+        getEmitter()->emitIns_R_I (INS_cmp,
+                                 EA_4BYTE,
+                                 reg3,
+                                 0);
+#elif defined(_TARGET_AMD64_)
+
+        if (IMAGE_REL_BASED_REL32 != compiler->eeGetRelocTypeHint(addrOfCaptureThreadGlobal))
+        {
+            instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, reg3, (ssize_t)addrOfCaptureThreadGlobal);
+
+            getEmitter()->emitIns_I_AR(INS_cmp, EA_4BYTE, 0, reg3, 0);
+        }
+        else
+        {
+            getEmitter()->emitIns_I_AI(INS_cmp, EA_4BYTE_DSP_RELOC, 0, (ssize_t)addrOfCaptureThreadGlobal);
+        }
+
+#else
+        getEmitter()->emitIns_C_I  (INS_cmp,
+                                  EA_PTR_DSP_RELOC,
+                                  FLD_GLOBAL_DS,
+                                  (ssize_t) addrOfCaptureThreadGlobal,
+                                  0);
+#endif
+    }
+    else
+    {
+#ifdef _TARGET_ARM_
+        instGen_Set_Reg_To_Imm (EA_HANDLE_CNS_RELOC,
+                                reg3,
+                                (ssize_t)pAddrOfCaptureThreadGlobal);
+        getEmitter()->emitIns_R_R_I (ins_Load(TYP_INT),
+                                   EA_4BYTE,
+                                   reg3,
+                                   reg3,
+                                   0);
+        regTracker.rsTrackRegTrash(reg3);
+        getEmitter()->emitIns_R_R_I (ins_Load(TYP_INT),
+                                   EA_4BYTE,
+                                   reg3,
+                                   reg3,
+                                   0);
+        getEmitter()->emitIns_R_I (INS_cmp,
+                                 EA_4BYTE,
+                                 reg3,
+                                 0);
+#else // !_TARGET_ARM_
+
+#ifdef _TARGET_AMD64_
+        if (IMAGE_REL_BASED_REL32 != compiler->eeGetRelocTypeHint(pAddrOfCaptureThreadGlobal))
+        {
+            instGen_Set_Reg_To_Imm(EA_PTR_DSP_RELOC, REG_ECX, (ssize_t)pAddrOfCaptureThreadGlobal);
+            getEmitter()->emitIns_R_AR(ins_Load(TYP_I_IMPL), EA_PTRSIZE, REG_ECX, REG_ECX, 0);
+            regTracker.rsTrackRegTrash(REG_ECX);
+        }
+        else
+#endif // _TARGET_AMD64_
+        {
+            getEmitter()->emitIns_R_AI(ins_Load(TYP_I_IMPL), EA_PTR_DSP_RELOC, REG_ECX,
+                                     (ssize_t)pAddrOfCaptureThreadGlobal);
+            regTracker.rsTrackRegTrash(REG_ECX);
+        }
+
+        getEmitter()->emitIns_I_AR(INS_cmp, EA_4BYTE, 0, REG_ECX, 0);
+#endif // !_TARGET_ARM_
+    }
+
+    /* */
+    clab_nostop = genCreateTempLabel();
+
+    /* Generate the conditional jump */
+    emitJumpKind jmpEqual = genJumpKindForOper(GT_EQ, CK_SIGNED);
+    inst_JMP(jmpEqual, clab_nostop);
+
+#ifdef _TARGET_ARM_
+    // The helper preserves the return value on ARM
+#else
+    /* save return value (if necessary) */
+    if  (retVal != RBM_NONE)
+    {
+        if (retVal == RBM_INTRET || retVal == RBM_LNGRET)
+        {
+#ifdef _TARGET_AMD64_
+            retTmp = compiler->tmpGetTemp(TYP_LONG);
+            inst_ST_RV(INS_mov, retTmp, 0, REG_INTRET, TYP_LONG);
+#elif defined(_TARGET_X86_)
+            /* push eax */
+
+            inst_RV(INS_push, REG_INTRET, TYP_INT);
+
+            if (retVal == RBM_LNGRET)
+            {
+                /* push edx */
+
+                inst_RV(INS_push, REG_EDX, TYP_INT);
+            }
+#endif // _TARGET_AMD64_
+        }
+    }
+#endif
+
+    /* emit the call to the EE-helper that stops for GC (or other reasons) */
+
+    genEmitHelperCall(CORINFO_HELP_STOP_FOR_GC,
+                      0,             /* argSize */
+                      EA_UNKNOWN);   /* retSize */
+
+#ifdef _TARGET_ARM_
+    // The helper preserves the return value on ARM
+#else
+    /* restore return value (if necessary) */
+
+    if  (retVal != RBM_NONE)
+    {
+        if (retVal == RBM_INTRET || retVal == RBM_LNGRET)
+        {
+#ifdef _TARGET_AMD64_
+
+            assert(retTmp != NULL);
+            inst_RV_ST(INS_mov, REG_INTRET, retTmp, 0, TYP_LONG);
+            regTracker.rsTrackRegTrash(REG_INTRET);
+            compiler->tmpRlsTemp(retTmp);
+
+#elif defined(_TARGET_X86_)
+            if (retVal == RBM_LNGRET)
+            {
+                /* pop edx */
+
+                inst_RV(INS_pop, REG_EDX, TYP_INT);
+                regTracker.rsTrackRegTrash(REG_EDX);
+            }
+
+            /* pop eax */
+
+            inst_RV(INS_pop, REG_INTRET, TYP_INT);
+            regTracker.rsTrackRegTrash(REG_INTRET);
+#endif // _TARGET_AMD64_
+        }
+    }
+#endif
+
+    /* genCondJump() closes the current emitter block */
+
+    genDefineTempLabel(clab_nostop);
+
+    // This marks the InlinedCallFrame as "inactive".  In fully interruptible code, this is not atomic with
+    // the above code.  So the process is:
+    // 1) Return to cooperative mode
+    // 2) Check to see if we need to stop for GC
+    // 3) Return from the p/invoke (as far as the stack walker is concerned).
+
+    /* mov  dword ptr [frame.callSiteTracker], 0 */
+
+    instGen_Store_Imm_Into_Lcl(TYP_I_IMPL, EA_PTRSIZE, 0,
+                              compiler->lvaInlinedPInvokeFrameVar,
+                              pInfo->inlinedCallFrameInfo.offsetOfReturnAddress);
+
+    getEmitter()->emitEnableRandomNops();
+}
+
+/*****************************************************************************/
+
+/*****************************************************************************
+*           TRACKING OF FLAGS
+*****************************************************************************/
+
+void                CodeGen::genFlagsEqualToNone()
+{
+    genFlagsEqReg = REG_NA;
+    genFlagsEqVar = (unsigned)-1;
+    genFlagsEqLoc.Init();
+}
+
+/*****************************************************************************
+ *
+ *  Record the fact that the flags register has a value that reflects the
+ *  contents of the given register.
+ */
+
+void                CodeGen::genFlagsEqualToReg(GenTreePtr tree,
+                                                regNumber  reg)
+{
+    genFlagsEqLoc.CaptureLocation(getEmitter());
+    genFlagsEqReg = reg;
+
+    /* previous setting of flags by a var becomes invalid */
+
+    genFlagsEqVar = 0xFFFFFFFF;
+
+    /* Set appropriate flags on the tree */
+
+    if (tree)
+    {
+        tree->gtFlags |= GTF_ZSF_SET;
+        assert(tree->gtSetFlags());
+    }
+}
+
+/*****************************************************************************
+ *
+ *  Record the fact that the flags register has a value that reflects the
+ *  contents of the given local variable.
+ */
+
+void                CodeGen::genFlagsEqualToVar(GenTreePtr tree,
+                                                unsigned   var)
+{
+    genFlagsEqLoc.CaptureLocation(getEmitter());
+    genFlagsEqVar = var;
+
+    /* previous setting of flags by a register becomes invalid */
+
+    genFlagsEqReg = REG_NA;
+
+    /* Set appropriate flags on the tree */
+
+    if (tree)
+    {
+        tree->gtFlags |= GTF_ZSF_SET;
+        assert(tree->gtSetFlags());
+    }
+}
+
+/*****************************************************************************
+ *
+ *  Return an indication of whether the flags register is set to the current
+ *  value of the given register/variable. The return value is as follows:
+ *
+ *      false  ..  nothing
+ *      true   ..  the zero flag (ZF) and sign flag (SF) is set
+ */
+
+bool                 CodeGen::genFlagsAreReg(regNumber reg)
+{
+    if  ((genFlagsEqReg == reg) && genFlagsEqLoc.IsCurrentLocation(getEmitter()))
+    {
+        return true;
+    }
+
+    return false;
+}
+
+bool                 CodeGen::genFlagsAreVar(unsigned  var)
+{
+    if  ((genFlagsEqVar == var) && genFlagsEqLoc.IsCurrentLocation(getEmitter()))
+    {
+        return true;
+    }
+
+    return false;
+}
+
+/*****************************************************************************
+ * This utility function returns true iff the execution path from "from"
+ * (inclusive) to "to" (exclusive) contains a death of the given var
+ */
+bool
+CodeGen::genContainsVarDeath(GenTreePtr from, GenTreePtr to, unsigned varNum)
+{
+    GenTreePtr tree;
+    for (tree = from; tree != NULL && tree != to; tree = tree->gtNext)
+    {
+        if (tree->IsLocal() && (tree->gtFlags & GTF_VAR_DEATH))
+        {
+            unsigned dyingVarNum = tree->gtLclVarCommon.gtLclNum;
+            if (dyingVarNum == varNum) return true;
+            LclVarDsc * varDsc = &(compiler->lvaTable[varNum]);
+            if (varDsc->lvPromoted)
+            {
+                assert(varDsc->lvType == TYP_STRUCT);
+                unsigned firstFieldNum = varDsc->lvFieldLclStart;
+                if (varNum >= firstFieldNum && varNum < firstFieldNum + varDsc->lvFieldCnt)
+                {
+                    return true;
+                }
+            }
+        }
+    }
+    assert(tree != NULL);
+    return false;
+}
+
 #endif // LEGACY_BACKEND

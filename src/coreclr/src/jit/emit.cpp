@@ -2188,7 +2188,7 @@ void                emitter::emitSetFrameRangeGCRs(int offsLo, int offsHi)
             printf("-%04X ... %04X\n", -offsLo, offsHi);
 #else
             printf("-%04X ... -%04X\n", -offsLo, -offsHi);
-            assert(offsHi <  0);
+            assert(offsHi <= 0);
 #endif
           
         }
@@ -3721,6 +3721,8 @@ AGAIN:
         else if (emitIsUncondJump(jmp))
         {
             // Nothing to do; we don't shrink these.
+            assert(jmp->idjShort);
+            ssz = JMP_SIZE_SMALL;
         }
         else if (emitIsCmpJump(jmp))
         {
@@ -3731,6 +3733,12 @@ AGAIN:
             ssz = LBL_SIZE_SMALL;
             nsd = LBL_DIST_SMALL_MAX_NEG;
             psd = LBL_DIST_SMALL_MAX_POS;
+        }
+        else if (emitIsLoadConstant(jmp))
+        {
+            ssz = LDC_SIZE_SMALL;
+            nsd = LDC_DIST_SMALL_MAX_NEG;
+            psd = LDC_DIST_SMALL_MAX_POS;
         }
         else
         {
@@ -3792,6 +3800,41 @@ AGAIN:
         jmp->idjOffs -= adjLJ;
 
         // If this is a jump via register, the instruction size does not change, so we are done.
+
+#if defined(_TARGET_ARM64_)
+        // JIT code and data will be allocated together for arm64 so the relative offset to JIT data is known.
+        // In case such offset can be encodeable for `ldr` (+-1MB), shorten it.
+        if (jmp->idAddr()->iiaIsJitDataOffset())
+        {
+            // Reference to JIT data
+            assert(jmp->idIsBound());
+            UNATIVE_OFFSET srcOffs = jmpIG->igOffs + jmp->idjOffs;
+
+            int doff = jmp->idAddr()->iiaGetJitDataOffset();
+            assert(doff >= 0);
+            ssize_t imm = emitGetInsSC(jmp);
+            assert((imm >= 0) && (imm < 0x1000));   // 0x1000 is arbitrary, currently 'imm' is always 0
+
+            unsigned dataOffs = (unsigned)(doff + imm);
+            assert(dataOffs < emitDataSize());
+
+            // Conservately assume JIT data starts after the entire code size.
+            // TODO-ARM64: we might consider only hot code size which will be computed later in emitComputeCodeSizes().
+            assert(emitTotalCodeSize > 0);
+            UNATIVE_OFFSET maxDstOffs = emitTotalCodeSize + dataOffs;
+
+            // Check if the distance is within the encoding length.
+            jmpDist = maxDstOffs - srcOffs;
+            extra = jmpDist - psd;
+            if (extra <= 0)
+            {
+                goto SHORT_JMP;
+            }
+
+            // Keep the large form.
+            continue;
+        }
+#endif
 
         /* Have we bound this jump's target already? */
 
@@ -3981,10 +4024,6 @@ AGAIN:
             }
         }
 
-        // TODO-ARM64-NYI: we couldn't shorten the branch/label load into a size that fits a single b.cond or adr instruction. 
-        // We need to implement multiple-instruction sequences to handle large ranges, e.g. b.!cond / b, and adrp/adr.
-        NYI_ARM64("Implement pseudo-instructions for large conditional branch and large load label address");
-
         /* We arrive here if the jump couldn't be made short, at least for now */
 
         /* We had better not have eagerly marked the jump as short
@@ -4109,7 +4148,9 @@ AGAIN:
         //    insSize isz = emitInsSize(jmp->idInsFmt());
         //    jmp->idInsSize(isz);
 #elif defined(_TARGET_ARM64_)
-        // TODO-ARM64-NYI: Support large conditional pseudo-op branches
+        // The size of IF_LARGEJMP/IF_LARGEADR/IF_LARGELDC are 8 or 12.
+        // All other code size is 4.
+        assert((sizeDif == 4) || (sizeDif == 8));
 #else
   #error Unsupported or unset target architecture
 #endif
@@ -4246,6 +4287,14 @@ void                emitter::emitCheckFuncletBranch(instrDesc * jmp, insGroup * 
         return;
     }
 #endif // _TARGET_ARMARCH_
+
+#ifdef _TARGET_ARM64_
+    // No interest if it's not jmp.
+    if (emitIsLoadLabel(jmp) || emitIsLoadConstant(jmp))
+    {
+        return;
+    }
+#endif // _TARGET_ARM64_
 
     insGroup * tgtIG = jmp->idAddr()->iiaIGlabel;
     assert(tgtIG);
@@ -4505,14 +4554,21 @@ unsigned            emitter::emitEndCodeGen(Compiler *comp,
         NYI_ARM64("Need to handle fix-up to data from cold code.");
     }
 
-    emitCmpHandle->allocMem(emitTotalHotCodeSize + emitConsDsc.dsdOffs, emitTotalColdCodeSize,
+    UNATIVE_OFFSET roDataAlignmentDelta = 0;
+    if (emitConsDsc.dsdOffs)
+    {
+        UNATIVE_OFFSET roDataAlignment = sizeof(void*); // 8 Byte align by default.
+        roDataAlignmentDelta = (UNATIVE_OFFSET)ALIGN_UP(emitTotalHotCodeSize, roDataAlignment) - emitTotalHotCodeSize;
+        assert((roDataAlignmentDelta == 0) || (roDataAlignmentDelta == 4));
+    }
+    emitCmpHandle->allocMem(emitTotalHotCodeSize + roDataAlignmentDelta + emitConsDsc.dsdOffs, emitTotalColdCodeSize,
         0,
         xcptnsCount,
         allocMemFlag,
         (void**)&codeBlock, (void**)&coldCodeBlock,
         (void**)&consBlock);
 
-    consBlock = codeBlock + emitTotalHotCodeSize;
+    consBlock = codeBlock + emitTotalHotCodeSize + roDataAlignmentDelta;
 
 #else
     emitCmpHandle->allocMem( emitTotalHotCodeSize, emitTotalColdCodeSize,
@@ -4973,7 +5029,8 @@ unsigned            emitter::emitEndCodeGen(Compiler *comp,
                     // Presumably we could also just call "emitOutputLJ(NULL, adr, jmp)", like for long jumps?
                     *(short int *)adr -= (short)adj;
 #elif defined(_TARGET_ARM64_)
-                    NYI_ARM64("Fill this in for Arm64");
+                    assert(!jmp->idAddr()->iiaHasInstrCount());
+                    emitOutputLJ(NULL, adr, jmp);
 #else
   #error Unsupported or unset target architecture
 #endif
@@ -4983,12 +5040,9 @@ unsigned            emitter::emitEndCodeGen(Compiler *comp,
                     // Patch Forward non-Short Jump
 #if defined(_TARGET_XARCH_)
                     *(int  *)adr -= adj;
-#elif defined(_TARGET_ARM_)
+#elif defined(_TARGET_ARMARCH_)
                     assert(!jmp->idAddr()->iiaHasInstrCount());
-                    // This handles both medium and long jumps
                     emitOutputLJ(NULL, adr, jmp);
-#elif defined(_TARGET_ARM64_)
-                    NYI_ARM64("Fill this in for Arm64");
 #else
   #error Unsupported or unset target architecture
 #endif

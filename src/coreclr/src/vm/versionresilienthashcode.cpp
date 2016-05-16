@@ -8,6 +8,15 @@
 
 int GetVersionResilientTypeHashCode(IMDInternalImport *pMDImport, mdExportedType token)
 {
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        SO_TOLERANT;
+        MODE_ANY;
+    }
+    CONTRACTL_END
+
     _ASSERTE(TypeFromToken(token) == mdtTypeDef ||
         TypeFromToken(token) == mdtTypeRef ||
         TypeFromToken(token) == mdtExportedType);
@@ -63,6 +72,8 @@ int GetVersionResilientTypeHashCode(IMDInternalImport *pMDImport, mdExportedType
 #ifndef DACCESS_COMPILE
 int GetVersionResilientTypeHashCode(TypeHandle type)
 {
+    STANDARD_VM_CONTRACT;
+
     if (!type.IsTypeDesc())
     {
         MethodTable *pMT = type.AsMethodTable();
@@ -114,6 +125,8 @@ int GetVersionResilientTypeHashCode(TypeHandle type)
 
 int GetVersionResilientMethodHashCode(MethodDesc *pMD)
 {
+    STANDARD_VM_CONTRACT;
+
     int hashCode = GetVersionResilientTypeHashCode(TypeHandle(pMD->GetMethodTable()));
 
     // Todo: Add signature to hash.

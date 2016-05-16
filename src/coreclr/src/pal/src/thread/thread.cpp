@@ -1783,14 +1783,6 @@ CorUnix::InitializeGlobalThreadData(
         InternalFree(pszStackSize);
     }
 
-#if !HAVE_MACH_EXCEPTIONS
-    //
-    // Initialize the thread suspension signal sets.
-    //
-    
-    CThreadSuspensionInfo::InitializeSignalSets();
-#endif // !HAVE_MACH_EXCEPTIONS
-
     return palError;
 }
 

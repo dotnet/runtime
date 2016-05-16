@@ -73,14 +73,12 @@ void Compiler::JitLogEE(unsigned level, const char* fmt, ...)
 {
     va_list args;
 
-#ifndef CROSSGEN_COMPILE
     if (verbose)
     {
         va_start(args, fmt);
-        logf_stdout(fmt, args);
+        vflogf(jitstdout, fmt, args);
         va_end(args);
     }
-#endif
 
     va_start(args, fmt);
     vlogf(level, fmt, args);
@@ -657,7 +655,7 @@ void                Compiler::compStartup()
     // Static vars of ValueNumStore
     ValueNumStore::InitValueNumStoreStatics();
 
-    compDisplayStaticSizes(stdout);
+    compDisplayStaticSizes(jitstdout);
 }
 
 /*****************************************************************************
@@ -683,7 +681,7 @@ void                Compiler::compShutdown()
     emitter::emitDone();
 
 #if defined(DEBUG) || defined(INLINE_DATA)
-    // Finish off any in-progress inline xml
+    // Finish reading and/or writing inline xml
     InlineStrategy::FinalizeXml();
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
@@ -695,7 +693,7 @@ void                Compiler::compShutdown()
 #endif
 
     // Where should we write our statistics output?
-    FILE* fout = stdout;
+    FILE* fout = jitstdout;
 
 #ifdef FEATURE_JIT_METHOD_PERF
     if (compJitTimeLogFilename != NULL)
@@ -926,10 +924,10 @@ void                Compiler::compShutdown()
 #endif
     {
         fprintf(fout, "\nAll allocations:\n");
-        s_aggMemStats.Print(stdout);
+        s_aggMemStats.Print(jitstdout);
 
         fprintf(fout, "\nLargest method:\n");
-        s_maxCompMemStats.Print(stdout);
+        s_maxCompMemStats.Print(jitstdout);
     }
 
 #endif // MEASURE_MEM_ALLOC
@@ -939,7 +937,7 @@ void                Compiler::compShutdown()
     if (JitConfig.DisplayLoopHoistStats() != 0)
 #endif // DEBUG
     {
-        PrintAggregateLoopHoistStats(stdout);
+        PrintAggregateLoopHoistStats(jitstdout);
     }
 #endif // LOOP_HOIST_STATS
 
@@ -1871,7 +1869,6 @@ unsigned ReinterpretHexAsDecimal(unsigned in)
     return result;
 }
 
-inline
 void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
 {
 #ifdef UNIX_AMD64_ABI
@@ -2465,7 +2462,7 @@ void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
     opts.disAsm2        = false;
     opts.dspUnwind      = false;
     s_dspMemStats       = false;
-    opts.compLargeBranches = false;
+    opts.compLongAddress = false;
     opts.compJitELTHookEnabled = false;
 
 #ifdef LATE_DISASM
@@ -2534,8 +2531,8 @@ void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
         if (JitConfig.DisplayMemStats() != 0)
             s_dspMemStats = true;
 
-        if (JitConfig.JitLargeBranches() != 0)
-            opts.compLargeBranches = true;
+        if (JitConfig.JitLongAddress() != 0)
+            opts.compLongAddress = true;
     }
 
     if (verboseDump)
@@ -2826,7 +2823,7 @@ void JitDump(const char* pcFormat, ...)
 {
     va_list lst;    
     va_start(lst, pcFormat);
-    logf_stdout(pcFormat, lst);
+    vflogf(jitstdout, pcFormat, lst);
     va_end(lst);
 }
 
@@ -3412,6 +3409,53 @@ bool  Compiler::compRsvdRegCheck(FrameLayoutState curState)
 }
 #endif // _TARGET_ARMARCH_
 
+void                Compiler::compFunctionTraceStart()
+{
+#ifdef DEBUG
+    if (compIsForInlining())
+        return;
+
+    if ((JitConfig.JitFunctionTrace() != 0) && !opts.disDiffable)
+    {
+        LONG newJitNestingLevel = InterlockedIncrement(&Compiler::jitNestingLevel);
+        if (newJitNestingLevel <= 0)
+        {
+            printf("{ Illegal nesting level %d }\n", newJitNestingLevel);
+        }
+
+        for (LONG i = 0; i < newJitNestingLevel - 1; i++)
+            printf("  ");
+        printf("{ Start Jitting %s\n", info.compFullName); /* } editor brace matching workaround for this printf */
+    }
+#endif // DEBUG
+}
+
+void                Compiler::compFunctionTraceEnd(void* methodCodePtr, ULONG methodCodeSize, bool isNYI)
+{
+#ifdef DEBUG
+    assert(!compIsForInlining());
+
+    if ((JitConfig.JitFunctionTrace() != 0) && !opts.disDiffable)
+    {
+        LONG newJitNestingLevel = InterlockedDecrement(&Compiler::jitNestingLevel);
+        if (newJitNestingLevel < 0)
+        {
+            printf("{ Illegal nesting level %d }\n", newJitNestingLevel);
+        }
+
+        for (LONG i = 0; i < newJitNestingLevel; i++)
+            printf("  ");
+        /* { editor brace-matching workaround for following printf */
+        printf("} Jitted Entry %03x at" FMT_ADDR "method %s size %08x%s\n", 
+            Compiler::jitTotalMethodCompiled,
+            DBG_ADDR(methodCodePtr),
+            info.compFullName,
+            methodCodeSize,
+            isNYI ? " NYI" : (compIsForImportOnly() ? " import only" : ""));
+    }
+#endif // DEBUG 
+}
+
 //*********************************************************************************************
 // #Phases
 // 
@@ -3441,21 +3485,7 @@ void                 Compiler::compCompile(void * * methodCodePtr,
 
     EndPhase(PHASE_PRE_IMPORT);
 
-#ifdef DEBUG
-    bool funcTrace = JitConfig.JitFunctionTrace() != 0;
-
-    if (!compIsForInlining())
-    {
-        LONG newJitNestingLevel = InterlockedIncrement(&Compiler::jitNestingLevel);
-        assert(newJitNestingLevel > 0);
-        if (funcTrace && !opts.disDiffable)
-        {
-            for (LONG i = 0; i < newJitNestingLevel - 1; i++)
-                printf("  ");
-            printf("{ Start Jitting %s\n", info.compFullName); /* } editor brace matching workaround for this printf */
-        }
-    }
-#endif // DEBUG
+    compFunctionTraceStart();
 
     /* Convert the instrs in each basic block to a tree based intermediate representation */
 
@@ -3489,7 +3519,10 @@ void                 Compiler::compCompile(void * * methodCodePtr,
 
     // Maybe the caller was not interested in generating code
     if (compIsForImportOnly())
+    {
+        compFunctionTraceEnd(nullptr, 0, false);
         return;
+    }
 
 #if !FEATURE_EH
     // If we aren't yet supporting EH in a compiler bring-up, remove as many EH handlers as possible, so
@@ -3889,28 +3922,17 @@ void                 Compiler::compCompile(void * * methodCodePtr,
     ++Compiler::jitTotalMethodCompiled;
 #endif // defined(DEBUG)
 
-#ifdef DEBUG
-    LONG newJitNestingLevel = InterlockedDecrement(&Compiler::jitNestingLevel);
-    assert(newJitNestingLevel >= 0);
-
-    if (funcTrace && !opts.disDiffable)
-    {
-        for (LONG i = 0; i < newJitNestingLevel; i++)
-            printf("  ");
-        /* { editor brace-matching workaround for following printf */
-        printf("} Jitted Entry %03x at" FMT_ADDR "method %s size %08x\n", 
-               Compiler::jitTotalMethodCompiled, DBG_ADDR(*methodCodePtr),
-               info.compFullName, *methodCodeSize);
-    }
+    compFunctionTraceEnd(*methodCodePtr, *methodCodeSize, false);
 
 #if FUNC_INFO_LOGGING
+#ifdef DEBUG // We only have access to info.compFullName in DEBUG builds.
     if (compJitFuncInfoFile != NULL)
     {
         assert(!compIsForInlining());
         fprintf(compJitFuncInfoFile, "%s\n", info.compFullName);
     }
+#endif // DEBUG
 #endif // FUNC_INFO_LOGGING
-#endif // DEBUG 
 }
 
 /*****************************************************************************/
@@ -4110,7 +4132,7 @@ int           Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
     }
 #endif // FUNC_INFO_LOGGING
 
-//  if (s_compMethodsCount==0) setvbuf(stdout, NULL, _IONBF, 0);
+//  if (s_compMethodsCount==0) setvbuf(jitstdout, NULL, _IONBF, 0);
 
     info.compCompHnd     = compHnd;
     info.compMethodHnd   = methodHnd;
@@ -4338,7 +4360,7 @@ void Compiler::compCompileFinish()
     {
         printf("\nAllocations for %s (MethodHash=%08x)\n",
                info.compFullName, info.compMethodHash());
-        genMemStats.Print(stdout);
+        genMemStats.Print(jitstdout);
     }
 #endif // DEBUG
 #endif // MEASURE_MEM_ALLOC
@@ -4731,10 +4753,8 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
         }
         info.compRetNativeType = info.compRetType         = JITtype2varType(methodInfo->args.retType);
 
-#if INLINE_NDIRECT
         info.compCallUnmanaged   = 0;
         info.compLvFrameListRoot = BAD_VAR_NUM;
-#endif
 
 #if FEATURE_FIXED_OUT_ARGS
         lvaOutgoingArgSpaceSize  = 0;

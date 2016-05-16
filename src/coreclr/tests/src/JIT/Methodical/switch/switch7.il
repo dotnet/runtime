@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 // calling switch in a loop
 
 .assembly extern legacy library mscorlib {}
@@ -84,8 +87,9 @@
     IL_002e:  call       void ['mscorlib']System.Environment::set_ExitCode(int32)
     IL_0033:  ldstr      "Test failed"
     IL_0038:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
-    IL_003d:  ret
+    IL_003d:  call       int32 ['mscorlib']System.Environment::get_ExitCode()
+              call       void ['mscorlib']System.Environment::Exit(int32)
+              ret
   } 
 
 } 
-

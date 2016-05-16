@@ -116,7 +116,7 @@ namespace System.Runtime.InteropServices
         //====================================================================
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern int GetSystemMaxDBCSCharSize();
-
+        
         [System.Security.SecurityCritical]  // auto-generated_required
         unsafe public static String PtrToStringAnsi(IntPtr ptr)
         {
@@ -185,7 +185,40 @@ namespace System.Runtime.InteropServices
         {
             // Ansi platforms are no longer supported
             return PtrToStringUni(ptr);
-        }            
+        }
+
+        [System.Security.SecurityCritical]  // auto-generated_required
+        unsafe public static String PtrToStringUTF8(IntPtr ptr)
+        {
+            int nbBytes = System.StubHelpers.StubHelpers.strlen((sbyte*)ptr.ToPointer());
+            return PtrToStringUTF8(ptr, nbBytes);
+        }
+
+        [System.Security.SecurityCritical]  // auto-generated_required
+        unsafe public static String PtrToStringUTF8(IntPtr ptr,int byteLen)
+        {
+            if (byteLen < 0)
+            {
+                throw new ArgumentException("byteLen");
+            }
+            else if (IntPtr.Zero == ptr)
+            {
+                return null;
+            }
+            else if (IsWin32Atom(ptr))
+            {
+                return null;
+            }
+            else if (byteLen == 0)
+            {
+                return string.Empty;
+            }
+            else
+            {
+                byte* pByte = (byte*)ptr.ToPointer();
+                return Encoding.UTF8.GetString(pByte, byteLen);
+            }
+        }
 
         //====================================================================
         // SizeOf()
@@ -1060,7 +1093,7 @@ namespace System.Runtime.InteropServices
             }
 
             if (rtModule == null)
-                throw new ArgumentNullException(Environment.GetResourceString("Argument_MustBeRuntimeModule"));
+                throw new ArgumentNullException("m",Environment.GetResourceString("Argument_MustBeRuntimeModule"));
 
             return GetHINSTANCE(rtModule.GetNativeHandle());
         }    
@@ -1872,6 +1905,38 @@ namespace System.Runtime.InteropServices
         }
 
         [System.Security.SecurityCritical]  // auto-generated_required
+        unsafe public static IntPtr StringToCoTaskMemUTF8(String s)
+        {
+            const int MAX_UTF8_CHAR_SIZE = 3;
+            if (s == null)
+            {
+                return IntPtr.Zero;
+            }
+            else
+            {
+                int nb = (s.Length + 1) * MAX_UTF8_CHAR_SIZE;
+
+                // Overflow checking
+                if (nb < s.Length)
+                    throw new ArgumentOutOfRangeException("s");
+
+                IntPtr pMem = Win32Native.CoTaskMemAlloc(new UIntPtr((uint)nb +1));
+
+                if (pMem == IntPtr.Zero)
+                {
+                    throw new OutOfMemoryException();
+                }
+                else
+                {
+                    byte* pbMem = (byte*)pMem;
+                    int nbWritten = s.GetBytesFromEncoding(pbMem, nb, Encoding.UTF8);
+                    pbMem[nbWritten] = 0;
+                    return pMem;
+                }
+            }
+        }
+
+        [System.Security.SecurityCritical]  // auto-generated_required
         public static IntPtr StringToCoTaskMemAuto(String s)
         {
             // Ansi platforms are no longer supported
@@ -2656,6 +2721,13 @@ namespace System.Runtime.InteropServices
         public static void ZeroFreeCoTaskMemUnicode(IntPtr s)
         {
             Win32Native.ZeroMemory(s, (UIntPtr)(Win32Native.lstrlenW(s) * 2));
+            FreeCoTaskMem(s);
+        }
+
+        [System.Security.SecurityCritical]  // auto-generated_required
+        unsafe public static void ZeroFreeMemoryUTF8(IntPtr s)
+        {
+            Win32Native.ZeroMemory(s, (UIntPtr)System.StubHelpers.StubHelpers.strlen((sbyte*)s));
             FreeCoTaskMem(s);
         }
 

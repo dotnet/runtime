@@ -50,7 +50,6 @@ public:
                                                                 Object* securityUNSAFE);
     static FCDECL6(Object*,         LoadImage,                  U1Array* PEByteArrayUNSAFE, U1Array* SymByteArrayUNSAFE, Object* securityUNSAFE, StackCrawlMark* stackMark, CLR_BOOL fForIntrospection, SecurityContextSource securityContextSource);
 
-#ifdef FEATURE_HOSTED_BINDER
     static FCDECL9(Object*,         Load,                       AssemblyNameBaseObject* assemblyNameUNSAFE, 
                                                                 StringObject* codeBaseUNSAFE, 
                                                                 Object* securityUNSAFE, 
@@ -60,17 +59,6 @@ public:
                                                                 CLR_BOOL fThrowOnFileNotFound,
                                                                 CLR_BOOL fForIntrospection,
                                                                 CLR_BOOL fSuppressSecurityChecks);
-
-#else //!FEATURE_HOSTED_BINDER
-    static FCDECL8(Object*,         Load,                       AssemblyNameBaseObject* assemblyNameUNSAFE, 
-                                                                StringObject* codeBaseUNSAFE, 
-                                                                Object* securityUNSAFE, 
-                                                                AssemblyBaseObject* requestingAssemblyUNSAFE,
-                                                                StackCrawlMark* stackMark,
-                                                                CLR_BOOL fThrowOnFileNotFound,
-                                                                CLR_BOOL fForIntrospection,
-                                                                CLR_BOOL fSuppressSecurityChecks);
-#endif // FEATURE_HOSTED_BINDER
 
     static FCDECL1(FC_BOOL_RET, IsFrameworkAssembly, AssemblyNameBaseObject* refAssemblyNameUNSAFE);
     static FCDECL1(FC_BOOL_RET, IsNewPortableAssembly, AssemblyNameBaseObject* refAssemblyNameUNSAFE);
@@ -131,7 +119,7 @@ public:
                                              QCall::ObjectHandleOnStack retModule);
 
     static 
-    void QCALLTYPE GetType(QCall::AssemblyHandle pAssembly, LPCWSTR wszName, BOOL bThrowOnError, BOOL bIgnoreCase, QCall::ObjectHandleOnStack retType);
+    void QCALLTYPE GetType(QCall::AssemblyHandle pAssembly, LPCWSTR wszName, BOOL bThrowOnError, BOOL bIgnoreCase, QCall::ObjectHandleOnStack retType, QCall::ObjectHandleOnStack keepAlive);
     
     static 
     INT32 QCALLTYPE GetManifestResourceInfo(QCall::AssemblyHandle pAssembly, LPCWSTR wszName, QCall::ObjectHandleOnStack retAssembly, QCall::StringHandleOnStack retFileName, QCall::StackCrawlMarkHandle stackMark);

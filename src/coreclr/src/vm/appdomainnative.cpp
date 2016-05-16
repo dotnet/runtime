@@ -22,10 +22,10 @@
 #if defined(FEATURE_APPX)
 #include "appxutil.h"
 #endif // FEATURE_APPX
-#if defined(FEATURE_APPX_BINDER) && defined(FEATURE_HOSTED_BINDER)
+#if defined(FEATURE_APPX_BINDER)
 #include "clrprivbinderappx.h"
 #include "clrprivtypecachewinrt.h"
-#endif // FEATURE_APPX_BINDER && FEATURE_HOSTED_BINDER
+#endif // FEATURE_APPX_BINDER
 #ifdef FEATURE_VERSIONING
 #include "../binder/inc/clrprivbindercoreclr.h"
 #endif
@@ -1728,7 +1728,7 @@ FCIMPL0(INT64, AppDomainNative::GetLastSurvivedProcessMemorySize)
 FCIMPLEND
 #endif // FEATURE_APPDOMAIN_RESOURCE_MONITORING
 
-#if defined(FEATURE_HOSTED_BINDER) && defined(FEATURE_APPX_BINDER)
+#if defined(FEATURE_APPX_BINDER)
 ICLRPrivBinder * QCALLTYPE AppDomainNative::CreateDesignerContext(LPCWSTR *rgPaths, 
                                                             UINT cPaths,
                                                             BOOL fShared)
@@ -1778,5 +1778,5 @@ void QCALLTYPE AppDomainNative::SetCurrentDesignerContext(BOOL fDesignerContext,
 
     END_QCALL;
 }
-#endif // defined(FEATURE_HOSTED_BINDER) && defined(FEATURE_APPX_BINDER)
+#endif // defined(FEATURE_APPX_BINDER)
 

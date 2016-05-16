@@ -1370,7 +1370,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(Environment.GetResourceString("Argument_NativeResourceAlreadyDefined"));
                         
             m_moduleData.m_resourceBytes = new byte[resource.Length];
-            System.Array.Copy(resource, m_moduleData.m_resourceBytes, resource.Length);
+            Buffer.BlockCopy(resource, 0, m_moduleData.m_resourceBytes, 0, resource.Length);
         }
 
 #if FEATURE_CORECLR
@@ -2200,7 +2200,7 @@ namespace System.Reflection.Emit
             Contract.EndContractBlock();
 
             byte[] localSigBytes = new byte[sigBytes.Length];
-            Array.Copy(sigBytes, localSigBytes, sigBytes.Length);
+            Buffer.BlockCopy(sigBytes, 0, localSigBytes, 0, sigBytes.Length);
 
             return new SignatureToken(TypeBuilder.GetTokenFromSig(GetNativeHandle(), localSigBytes, sigLength), this);
         }

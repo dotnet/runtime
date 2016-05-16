@@ -1996,6 +1996,35 @@ protected:
     DWORD m_dwLocalBuffer;      // localloc'ed temp buffer variable or -1 if not used
 };
 
+class ILUTF8BufferMarshaler : public ILOptimizedAllocMarshaler
+{
+public:
+	enum
+	{
+		c_fInOnly = FALSE,
+		c_nativeSize = sizeof(void *),
+		c_CLRSize = sizeof(OBJECTREF),
+	};
+
+	enum
+	{
+		// If required buffer length > MAX_LOCAL_BUFFER_LENGTH, don't optimize by allocating memory on stack
+		MAX_LOCAL_BUFFER_LENGTH = MAX_PATH_FNAME + 1
+	};
+
+	ILUTF8BufferMarshaler() :
+		ILOptimizedAllocMarshaler(METHOD__WIN32NATIVE__COTASKMEMFREE)
+	{
+		LIMITED_METHOD_CONTRACT;
+	}
+
+	virtual LocalDesc GetManagedType();
+	virtual void EmitConvertSpaceCLRToNative(ILCodeStream* pslILEmit);
+	virtual void EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit);
+	virtual void EmitConvertSpaceNativeToCLR(ILCodeStream* pslILEmit);
+	virtual void EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit);
+};
+
 class ILWSTRBufferMarshaler : public ILOptimizedAllocMarshaler
 {
 public:
@@ -2521,6 +2550,37 @@ protected:
     virtual void EmitClearNative(ILCodeStream* pslILEmit);
 };
 #endif // FEATURE_COMINTEROP
+
+
+class ILCUTF8Marshaler : public ILOptimizedAllocMarshaler
+{
+public:
+	enum
+	{
+		c_fInOnly = TRUE,
+		c_nativeSize = sizeof(void *),
+		c_CLRSize = sizeof(OBJECTREF),
+	};
+
+	enum
+	{
+		// If required buffer length > MAX_LOCAL_BUFFER_LENGTH, don't optimize by allocating memory on stack
+		MAX_LOCAL_BUFFER_LENGTH = MAX_PATH_FNAME + 1
+	};
+
+	ILCUTF8Marshaler() :
+		ILOptimizedAllocMarshaler(METHOD__CSTRMARSHALER__CLEAR_NATIVE)
+	{
+		LIMITED_METHOD_CONTRACT;
+	}
+
+protected:
+	virtual LocalDesc GetManagedType();
+	virtual void EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit);
+	virtual void EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit);
+};
+
+
 
 class ILCSTRMarshaler : public ILOptimizedAllocMarshaler
 {

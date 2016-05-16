@@ -132,8 +132,9 @@ namespace System.Threading {
 #if FEATURE_REMOTING        
         private Context         m_Context;
 #endif 
-#if !FEATURE_CORECLR
         private ExecutionContext m_ExecutionContext;    // this call context follows the logical thread
+#if FEATURE_CORECLR
+        private SynchronizationContext m_SynchronizationContext;    // On CoreCLR, this is maintained separately from ExecutionContext
 #endif
 
         private String          m_Name;
@@ -354,7 +355,19 @@ namespace System.Threading {
         }
 
 
-#if !FEATURE_CORECLR
+#if FEATURE_CORECLR
+        internal ExecutionContext ExecutionContext
+        {
+            get { return m_ExecutionContext; } 
+            set { m_ExecutionContext = value; }
+        }
+
+        internal SynchronizationContext SynchronizationContext
+        {
+            get { return m_SynchronizationContext; }
+            set { m_SynchronizationContext = value; }
+        }	
+#else // !FEATURE_CORECLR
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal ExecutionContext.Reader GetExecutionContextReader()
         {

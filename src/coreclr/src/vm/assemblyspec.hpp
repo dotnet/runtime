@@ -150,9 +150,7 @@ class AssemblySpec  : public BaseAssemblySpec
 #ifdef FEATURE_FUSION
         if (pAssembly)
         {
-#ifdef FEATURE_HOSTED_BINDER
             _ASSERTE(GetHostBinder() == nullptr);
-#endif // FEATURE_HOSTED_BINDER
             m_fParentLoadContext=pAssembly->GetFile()->GetLoadContext();
         }
         else
@@ -330,14 +328,13 @@ class AssemblySpec  : public BaseAssemblySpec
     inline BOOL CanUseWithBindingCache() const
     {
         STATIC_CONTRACT_LIMITED_METHOD;
-#if defined(FEATURE_HOSTED_BINDER) && defined(FEATURE_APPX_BINDER)
+#if defined(FEATURE_APPX_BINDER)
         return (GetHostBinder() == nullptr) && HasUniqueIdentity();
 #else
         return HasUniqueIdentity(); 
 #endif
     }
 
-#ifdef FEATURE_HOSTED_BINDER
     inline ICLRPrivBinder *GetHostBinder() const
     {
         LIMITED_METHOD_CONTRACT;
@@ -349,7 +346,6 @@ class AssemblySpec  : public BaseAssemblySpec
         LIMITED_METHOD_CONTRACT;
         m_pHostBinder = pHostBinder;
     }
-#endif
 
 };
 

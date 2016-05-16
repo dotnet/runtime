@@ -1,3 +1,7 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 .assembly extern legacy library mscorlib {}
 
 
@@ -167,13 +171,13 @@ END2:
 	ldc.i8			0xFFFFFFFF80000000
 	ldc.i4			0x80000000
 	call		int32 conv_ovf_i4::conv_un(int64,int32)
-	ldc.i4			0x11111111
+	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
 	ldc.i8			0xFFFFFFFFFFFFFFFF
 	ldc.i4			0xFFFFFFFF
 	call		int32 conv_ovf_i4::conv_un(int64,int32)
-	ldc.i4			0x11111111
+	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
 	ldc.i8			0x0000000000000000
@@ -196,7 +200,7 @@ END2:
 	brfalse			FAIL
 
 PASS:
-	ldc.i4	0xAAAA
+	ldc.i4	100
 	br		END
 
 FAIL:

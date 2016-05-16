@@ -757,6 +757,19 @@ public:
     ELEMENT_SIZE_IMPL(sizeof(LPWSTR), sizeof(LPWSTR))
 };
 
+//=======================================================================
+// LPUTF8STR <--> System.String
+//=======================================================================
+class FieldMarshaler_StringUtf8 : public FieldMarshaler
+{
+public:
+
+	VOID UpdateNativeImpl(OBJECTREF* pCLRValue, LPVOID pNativeValue, OBJECTREF *ppCleanupWorkListOnStack) const;
+	VOID UpdateCLRImpl(const VOID *pNativeValue, OBJECTREF *ppProtectedCLRValue, OBJECTREF *ppProtectedOldCLRValue) const;
+	VOID DestroyNativeImpl(LPVOID pNativeValue) const;
+
+	ELEMENT_SIZE_IMPL(sizeof(LPSTR), sizeof(LPSTR))
+};
 
 //=======================================================================
 // LPSTR <--> System.String
