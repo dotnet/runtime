@@ -70,24 +70,6 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\regress\vsw\102754\test2\test2.cmd" >
              <Issue>2414</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\cctor\misc\tail_il_d\tail_il_d.cmd" >
-             <Issue>2414</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\cctor\misc\tail_il_r\tail_il_r.cmd" >
-             <Issue>2414</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\cctor\misc\threads3_il_d\threads3_il_d.cmd" >
-             <Issue>2414</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\cctor\misc\threads3_il_r\threads3_il_r.cmd" >
-             <Issue>2414</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\cctor\simple\precise3_il_d\precise3_il_d.cmd" >
-             <Issue>2414</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\cctor\simple\precise3_il_r\precise3_il_r.cmd" >
-             <Issue>2414</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\switch\switch1\switch1.cmd" >
              <Issue>2414</Issue>
         </ExcludeList>
