@@ -128,6 +128,15 @@ namespace System.Security.Cryptography.Encoding.Tests
         }
 
         [Fact]
+        public void CopyTo_NonZeroLowerBound_ThrowsIndexOutOfRangeException()
+        {
+            Oid item = new Oid(Sha1Oid, Sha1Name);
+            ICollection ic = new OidCollection { item };
+            Array array = Array.CreateInstance(typeof(object), new int[] { 10 }, new int[] { 10 });
+            Assert.Throws<IndexOutOfRangeException>(() => ic.CopyTo(array, 0));
+        }
+
+        [Fact]
         public void GetEnumerator_Success()
         {
             ValidateEnumerator(c => c.GetEnumerator(), e => e.Current);
