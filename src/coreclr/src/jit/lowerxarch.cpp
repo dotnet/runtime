@@ -1399,7 +1399,7 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
                     else if (!compiler->info.compInitMem)
                     {
                         // No need to initialize allocated stack space.
-                        if (sizeVal < CORINFO_PAGE_SIZE)
+                        if (sizeVal < compiler->eeGetPageSize())
                         {
                             info->internalIntCount = 0;
                         }
