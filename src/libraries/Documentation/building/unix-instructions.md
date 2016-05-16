@@ -12,9 +12,10 @@ download) so managed components can only be built on a subset of distros.
 
 ### Prerequsites (native build)
 
-The native build produces shims over libc, openssl, libcurl and libz. The build
-system uses CMake (2.8.12 or higher) to generate Makefiles using clang (3.5 or
-higher).  The build also uses git for generating some version information.
+The native build produces shims over libc, openssl, gssapi, libcurl and
+libz. The build system uses CMake (2.8.12 or higher) to generate Makefiles using
+clang (3.5 or higher).  The build also uses git for generating some version
+information.
 
 For Ubuntu 14.04, the following packages should be installed to build the native
 components
