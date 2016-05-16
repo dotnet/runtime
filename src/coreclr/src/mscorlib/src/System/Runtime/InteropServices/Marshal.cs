@@ -2725,7 +2725,7 @@ namespace System.Runtime.InteropServices
         }
 
         [System.Security.SecurityCritical]  // auto-generated_required
-        unsafe public static void ZeroFreeMemoryUTF8(IntPtr s)
+        unsafe public static void ZeroFreeCoTaskMemUTF8(IntPtr s)
         {
             Win32Native.ZeroMemory(s, (UIntPtr)System.StubHelpers.StubHelpers.strlen((sbyte*)s));
             FreeCoTaskMem(s);
