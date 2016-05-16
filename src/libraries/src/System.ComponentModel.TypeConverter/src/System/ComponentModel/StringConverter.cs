@@ -6,28 +6,24 @@ using System.Globalization;
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///    <para>Provides a type converter to convert string objects to and from various other
     ///       representations.</para>
-    /// </devdoc>
+    /// </summary>
     public class StringConverter : TypeConverter
     {
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets a value indicating whether this converter can convert an object in the
         ///       given source type to a string using the specified context.</para>
-        /// </devdoc>
+        /// </summary>
         public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
         {
-            if (sourceType == typeof(string))
-            {
-                return true;
-            }
-            return base.CanConvertFrom(context, sourceType);
+            return sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Converts the specified value object to a string object.</para>
-        /// </devdoc>
+        /// </summary>
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
             if (value is string)

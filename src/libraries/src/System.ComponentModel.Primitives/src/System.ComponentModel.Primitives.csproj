@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -15,12 +15,30 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net45_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net45_Release|AnyCPU'" />
-  
   <ItemGroup Condition="'$(TargetGroup)'==''">
+    <Compile Include="System\ComponentModel\BrowsableAttribute.cs" />
+    <Compile Include="System\ComponentModel\CategoryAttribute.cs" />
     <Compile Include="System\ComponentModel\ComponentCollection.cs" />
+    <Compile Include="System\ComponentModel\ComponentModelExtensions.cs" />
+    <Compile Include="System\ComponentModel\DescriptionAttribute.cs" />
+    <Compile Include="System\ComponentModel\DesignerCategoryAttribute.cs" />
+    <Compile Include="System\ComponentModel\DesignerSerializationVisibility.cs" />
+    <Compile Include="System\ComponentModel\DesignerSerializationVisibilityAttribute.cs" />
+    <Compile Include="System\ComponentModel\DesignOnlyAttribute.cs" />
+    <Compile Include="System\ComponentModel\DisplayNameAttribute.cs" />
+    <Compile Include="System\ComponentModel\EventHandlerList.cs" />
     <Compile Include="System\ComponentModel\IComponent.cs" />
     <Compile Include="System\ComponentModel\IContainer.cs" />
+    <Compile Include="System\ComponentModel\ImmutableObjectAttribute.cs" />
+    <Compile Include="System\ComponentModel\InitializationEventAttribute.cs" />
     <Compile Include="System\ComponentModel\ISite.cs" />
+    <Compile Include="System\ComponentModel\LocalizableAttribute.cs" />
+    <Compile Include="System\ComponentModel\MergablePropertyAttribute.cs" />
+    <Compile Include="System\ComponentModel\NotifyParentPropertyAttribute.cs" />
+    <Compile Include="System\ComponentModel\ParenthesizePropertyNameAttribute.cs" />
+    <Compile Include="System\ComponentModel\ReadOnlyAttribute.cs" />
+    <Compile Include="System\ComponentModel\RefreshProperties.cs" />
+    <Compile Include="System\ComponentModel\RefreshPropertiesAttribute.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='net45'">
     <TargetingPackReference Include="mscorlib" />

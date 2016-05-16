@@ -10,14 +10,14 @@ namespace System
     /// <summary>Static helper class for performance tests</summary>
     public class PerfUtils
     {
-        private Random rand;
+        private Random _rand;
 
         /// <summary>
         /// Initializes a new PerfUtils object with the default random seed.
         /// </summary>
         public PerfUtils()
         {
-            rand = new Random(1234132);
+            _rand = new Random(1234132);
         }
 
         /// <summary>
@@ -27,7 +27,7 @@ namespace System
         /// </summary>
         public PerfUtils(int seed)
         {
-            rand = new Random(seed);
+            _rand = new Random(seed);
         }
 
         /// <summary>
@@ -37,7 +37,7 @@ namespace System
         public string CreateString(int length)
         {
             byte[] bytes = new byte[length];
-            rand.NextBytes(bytes);
+            _rand.NextBytes(bytes);
             return System.Convert.ToBase64String(bytes);
         }
 
@@ -49,7 +49,7 @@ namespace System
         {
             return Path.Combine(Path.GetTempPath(), string.Format(
                 index.HasValue ? "{0}_{1}_{2}_{3}" : "{0}_{1}_{2}",
-                memberName ?? "TestBase", lineNumber, Path.GetRandomFileName(), 
+                memberName ?? "TestBase", lineNumber, Path.GetRandomFileName(),
                 index.GetValueOrDefault()));
         }
     }

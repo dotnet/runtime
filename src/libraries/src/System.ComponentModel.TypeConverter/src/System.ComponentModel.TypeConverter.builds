@@ -6,6 +6,12 @@
     <Project Include="System.ComponentModel.TypeConverter.csproj">
       <TargetGroup>net45</TargetGroup>
     </Project>
+    <Project Include="System.ComponentModel.TypeConverter.csproj">
+      <TargetGroup>net462</TargetGroup>
+    </Project>
+    <Project Include="System.ComponentModel.TypeConverter.csproj">
+      <TargetGroup>netstandard1.0</TargetGroup>
+    </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>

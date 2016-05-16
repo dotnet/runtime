@@ -6,30 +6,28 @@ using System.Globalization;
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     ///    <para>Provides a type converter to convert
     ///       Boolean objects to and from various other representations.</para>
-    /// </devdoc>
+    /// </summary>
     public class BooleanConverter : TypeConverter
     {
-        /// <devdoc>
+        private static volatile StandardValuesCollection s_values;
+
+        /// <summary>
         ///    <para>Gets a value indicating whether this converter can
         ///       convert an object in the given source type to a Boolean object using the
         ///       specified context.</para>
-        /// </devdoc>
+        /// </summary>
         public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
         {
-            if (sourceType == typeof(string))
-            {
-                return true;
-            }
-            return base.CanConvertFrom(context, sourceType);
+            return sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Converts the given value
         ///       object to a Boolean object.</para>
-        /// </devdoc>
+        /// </summary>
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
             string text = value as string;
@@ -46,6 +44,40 @@ namespace System.ComponentModel
                 }
             }
             return base.ConvertFrom(context, culture, value);
+        }
+
+        /// <summary>
+        ///    <para>Gets a collection of standard values for the Boolean data type.</para>
+        /// </summary>
+        public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext context)
+        {
+            if (s_values == null)
+            {
+                s_values = new StandardValuesCollection(new object[] { true, false });
+            }
+            return s_values;
+        }
+
+        /// <summary>
+        ///    <para>
+        ///        Gets a value indicating whether the list of standard values returned from
+        ///        <see cref='System.ComponentModel.BooleanConverter.GetStandardValues'/> is an exclusive list.
+        ///    </para>
+        /// </summary>
+        public override bool GetStandardValuesExclusive(ITypeDescriptorContext context)
+        {
+            return true;
+        }
+
+        /// <summary>
+        ///    <para>
+        ///        Gets a value indicating whether this object supports a standard set of values that can
+        ///        be picked from a list.
+        ///    </para>
+        /// </summary>
+        public override bool GetStandardValuesSupported(ITypeDescriptorContext context)
+        {
+            return true;
         }
     }
 }

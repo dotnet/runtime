@@ -7,16 +7,16 @@ using System.Globalization;
 
 namespace System
 {
-    /// <devdoc>
+    /// <summary>
     ///    <para>Provides a type converter to convert Uri objects to and
     ///       from various other representations.</para>
-    /// </devdoc>
+    /// </summary>
     public class UriTypeConverter : TypeConverter
     {
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets a value indicating whether this converter can convert an object in the
         ///       given source type to a Uri.</para>
-        /// </devdoc>
+        /// </summary>
         public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
         {
             if (sourceType == null)
@@ -25,18 +25,18 @@ namespace System
             return (sourceType == typeof(string) || sourceType == typeof(Uri));
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets a value indicating whether this converter can
         ///       convert an object to the given destination type using the context.</para>
-        /// </devdoc>
+        /// </summary>
         public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
         {
             return (destinationType == typeof(string) || destinationType == typeof(Uri));
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Converts the given object to the a Uri.</para>
-        /// </devdoc>
+        /// </summary>
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
             string uriString = value as string;
@@ -58,10 +58,10 @@ namespace System
             throw GetConvertFromException(value);
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    <para>Converts the given value object to
         ///       the specified destination type using the specified context and arguments.</para>
-        /// </devdoc>
+        /// </summary>
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
             if (destinationType == null)

@@ -4,11 +4,16 @@
   <PropertyGroup>
     <AssemblyVersion>4.1.0.0</AssemblyVersion>
     <OutputType>Library</OutputType>
-    <PackageTargetFramework>netstandard1.0</PackageTargetFramework>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.0</NuGetTargetMoniker>
+    <PackageTargetFramework>netstandard1.5</PackageTargetFramework>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.5</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.ComponentModel.TypeConverter.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'==''">
+    <ProjectReference Include="..\..\System.ComponentModel.Primitives\src\System.ComponentModel.Primitives.csproj">
+      <Name>System.ComponentModel.TypeConverter.Primitives</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

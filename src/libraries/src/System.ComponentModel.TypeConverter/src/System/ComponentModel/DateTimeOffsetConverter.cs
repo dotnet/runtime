@@ -8,31 +8,44 @@ using System.Globalization;
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
+    /// <summary>
     /// <para>Provides a type converter to convert <see cref='System.DateTimeOffset'/>
     /// objects to and from various other representations.</para>
-    /// </devdoc>
+    /// </summary>
     public class DateTimeOffsetConverter : TypeConverter
     {
-        /// <devdoc>
+        /// <summary>
         ///    <para>Gets a value indicating whether this converter can
         ///       convert an object in the given source type to a <see cref='System.DateTimeOffset'/>
         ///       object using the
         ///       specified context.</para>
-        /// </devdoc>
+        /// </summary>
         public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
         {
-            if (sourceType == typeof(string))
+             return sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
+        }
+
+        /// <summary>
+        ///    <para>
+        ///        Gets a value indicating whether this converter can
+        ///        convert an object to the given destination type using the context.
+        ///    </para>
+        /// </summary>
+        public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
+        {
+#if FEATURE_INSTANCEDESCRIPTOR
+            if (destinationType == typeof(InstanceDescriptor))
             {
                 return true;
             }
-            return base.CanConvertFrom(context, sourceType);
+#endif
+            return base.CanConvertTo(context, destinationType);
         }
 
-        /// <devdoc>
+        /// <summary>
         /// <para>Converts the given value object to a <see cref='System.DateTime'/>
         /// object.</para>
-        /// </devdoc>
+        /// </summary>
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
             string text = value as string;
@@ -73,11 +86,11 @@ namespace System.ComponentModel
             return base.ConvertFrom(context, culture, value);
         }
 
-        /// <devdoc>
+        /// <summary>
         /// <para>Converts the given value object to a <see cref='System.DateTimeOffset'/>
         /// object
         /// using the arguments.</para>
-        /// </devdoc>
+        /// </summary>
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
             // logic is exactly as in DateTimeConverter, only the offset pattern ' zzz' is added to the default
