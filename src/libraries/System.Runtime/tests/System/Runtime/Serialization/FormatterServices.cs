@@ -58,14 +58,9 @@ namespace System.Tests
             Assert.Equal(type, FormatterServices.GetUninitializedObject(type).GetType());
         }
 
-        public static IEnumerable<object[]> TestData()
-        {
-            yield return new object[] { typeof(int), 0 };
-            yield return new object[] { typeof(short), 0 };
-        }
-
         [Theory]
-        [MemberData(nameof(TestData))]
+        [InlineData(typeof(int), 0)]
+        [InlineData(typeof(short), 0)]
         public static void PrimitiveTypes_Success(Type type, object value)
         {
             Assert.Equal(value.ToString(), FormatterServices.GetUninitializedObject(type).ToString());
