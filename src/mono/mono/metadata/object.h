@@ -156,9 +156,11 @@ mono_string_to_utf16	    (MonoString *string_obj);
 MONO_API mono_unichar4 *
 mono_string_to_utf32	    (MonoString *string_obj);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoString *
 mono_string_from_utf16	    (mono_unichar2 *data);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoString *
 mono_string_from_utf32	    (mono_unichar4 *data);
 
