@@ -26,9 +26,9 @@ namespace System.Reflection.Tests
         // Verify SetValue method cannot set value for constant Fields using Reflection
         [Theory]
         [MemberData(nameof(FieldInfoConstants_TestData))]
-        public void TestSetValue_constantField(string field, object newValue)
+        public void TestSetValue_ConstantField(string field, object newValue)
         {
-            FieldInfo fi = getField(field);
+            FieldInfo fi = GetField(field);
             FieldInfoConstantTests myInstance = new FieldInfoConstantTests();
 
             Assert.NotNull(fi);
@@ -38,9 +38,9 @@ namespace System.Reflection.Tests
 
         // Verify SetValue method _does_ set value for RO Field
         [Fact]
-        public void TestSetValue_roIntField()
+        public void TestSetValue_RoIntField()
         {
-            FieldInfo fi = typeof(FieldInfoConstantTests).GetTypeInfo().GetDeclaredField("rointField");
+            FieldInfo fi = typeof(FieldInfoConstantTests).GetTypeInfo().GetDeclaredField("roIntField");
             FieldInfoConstantTests myInstance = new FieldInfoConstantTests();
 
             Assert.NotNull(fi);
@@ -55,7 +55,7 @@ namespace System.Reflection.Tests
         }
 
         // Helper method to get field from Type type
-        private static FieldInfo getField(string field)
+        private static FieldInfo GetField(string field)
         {
             Type t = typeof(FieldInfoConstantTests);
             TypeInfo ti = t.GetTypeInfo();
@@ -78,7 +78,7 @@ namespace System.Reflection.Tests
 
         //Fields for Reflection
 
-        public readonly int rointField = 1;
+        public readonly int roIntField = 1;
         public const int constIntField = 1222;
         public const string constStrField = "Hello";
         public const char charField = 'c';

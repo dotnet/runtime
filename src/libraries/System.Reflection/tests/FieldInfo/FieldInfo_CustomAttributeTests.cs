@@ -54,27 +54,14 @@ namespace System.Reflection.Tests
         // Test that custom attributes are correct
         [Theory]
         [MemberData(nameof(FieldInfoCustomAttributes_TestData))]
-        private static void verifyCustomAttribute(Type type, string attributeStr)
+        public static void VerifyCustomAttribute(Type type, string attributeStr)
         {
-            FieldInfo fi = getField("MyField");
-            IEnumerator<CustomAttributeData> customAttrs = fi.CustomAttributes.GetEnumerator();
-            CustomAttributeData current = null;
-            bool result = false;
-            while (customAttrs.MoveNext())
-            {
-                current = customAttrs.Current;
-                if (current.AttributeType.Equals(type) && current.ToString().Equals(attributeStr))
-                {
-                    result = true;
-                    break;
-                }
-            }
-
-            Assert.True(result);
+            FieldInfo fi = GetField("MyField");
+            Assert.Contains(fi.CustomAttributes, attr => attr.AttributeType.Equals(type) && attr.ToString().Equals(attributeStr));
         }
 
         // Helper method to get field from Type type
-        private static FieldInfo getField(string field)
+        private static FieldInfo GetField(string field)
         {
             Type t = typeof(FieldInfoTestClass);
             TypeInfo ti = t.GetTypeInfo();

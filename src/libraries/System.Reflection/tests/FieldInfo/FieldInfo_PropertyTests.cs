@@ -62,7 +62,7 @@ namespace System.Reflection.Tests
             yield return new object[] { "intFieldNonStatic", FieldAttributes.Public };
             yield return new object[] { "intFieldStatic", FieldAttributes.Public | FieldAttributes.Static };
             yield return new object[] { "_privateInt", FieldAttributes.Private };
-            yield return new object[] { "rointField", FieldAttributes.Public | FieldAttributes.InitOnly };
+            yield return new object[] { "roIntField", FieldAttributes.Public | FieldAttributes.InitOnly };
         }
 
         // Verify static and non-static FieldTypes
@@ -70,7 +70,7 @@ namespace System.Reflection.Tests
         [MemberData(nameof(TestFieldType_TestData))]
         public void TestFieldTypeAndIsStatic(string fieldName, bool expectedIsStatic)
         {
-            FieldInfo fi = getField(fieldName);
+            FieldInfo fi = GetField(fieldName);
             Assert.NotNull(fi);
             Assert.Equal(fieldName, fi.Name);
             Assert.Equal(expectedIsStatic, fi.IsStatic);
@@ -81,7 +81,7 @@ namespace System.Reflection.Tests
         [MemberData(nameof(TestIsAssemblyAndIsFamily_TestData))]
         public void TestIsAssemblyAndIsFamily(string fieldName, bool expectedIsAssembly, bool expectedIsFamily)
         {
-            FieldInfo fi = getField(fieldName);
+            FieldInfo fi = GetField(fieldName);
             Assert.NotNull(fi);
             Assert.Equal(expectedIsAssembly, fi.IsAssembly);
             Assert.Equal(expectedIsFamily, fi.IsFamily);
@@ -92,7 +92,7 @@ namespace System.Reflection.Tests
         [MemberData(nameof(TestIsFamilyAndAssembly_TestData))]
         public void TestIsFamilyAndAssembly(string fieldName, bool expectedIsFamilyAndAssembly)
         {
-            FieldInfo fi = getField(fieldName);
+            FieldInfo fi = GetField(fieldName);
             Assert.NotNull(fi);
             Assert.Equal(expectedIsFamilyAndAssembly, fi.IsFamilyAndAssembly);
         }
@@ -102,7 +102,7 @@ namespace System.Reflection.Tests
         [MemberData(nameof(TestIsFamilyOrAssembly_TestData))]
         public void TestIsFamilyOrAssembly(string fieldName, bool expectedIsFamilyOrAssembly)
         {
-            FieldInfo fi = getField(fieldName);
+            FieldInfo fi = GetField(fieldName);
             Assert.NotNull(fi);
             Assert.Equal(expectedIsFamilyOrAssembly, fi.IsFamilyOrAssembly);
         }
@@ -112,7 +112,7 @@ namespace System.Reflection.Tests
         [MemberData(nameof(TestIsPublicAndIsPrivate_TestData))]
         public void TestIsPublicAndIsPrivate(string fieldName, bool expectedIsPublic)
         {
-            FieldInfo fi = getField(fieldName);
+            FieldInfo fi = GetField(fieldName);
             Assert.NotNull(fi);
             Assert.Equal(expectedIsPublic, fi.IsPublic);
             Assert.Equal(!expectedIsPublic, fi.IsPrivate);
@@ -120,11 +120,11 @@ namespace System.Reflection.Tests
 
         // Verify IsInitOnly for readonly and non-readonly fields
         [Theory]
-        [InlineData("rointField", true)]
+        [InlineData("roIntField", true)]
         [InlineData("intFieldNonStatic", false)]
         public void TestIsInitOnly(string fieldName, bool expectedIsInitOnly)
         {
-            FieldInfo fi = getField(fieldName);
+            FieldInfo fi = GetField(fieldName);
             Assert.NotNull(fi);
             Assert.Equal(expectedIsInitOnly, fi.IsInitOnly);
         }
@@ -135,7 +135,7 @@ namespace System.Reflection.Tests
         [InlineData("intFieldNonStatic", false)]
         public void TestIsLiteral(string fieldName, bool expectedIsLiteral)
         {
-            FieldInfo fi = getField(fieldName);
+            FieldInfo fi = GetField(fieldName);
             Assert.NotNull(fi);
             Assert.Equal(expectedIsLiteral, fi.IsLiteral);
         }
@@ -147,7 +147,7 @@ namespace System.Reflection.Tests
         [InlineData("s_field_Assembly1", "System.Object")]
         public void TestFieldType(string fieldName, string expectedFieldType)
         {
-            FieldInfo fi = getField(fieldName);
+            FieldInfo fi = GetField(fieldName);
             Assert.NotNull(fi);
             Assert.Equal(expectedFieldType, fi.FieldType.ToString());
         }
@@ -157,7 +157,7 @@ namespace System.Reflection.Tests
         [MemberData(nameof(TestFieldAttributes_TestData))]
         public void TestFieldAttributes(string fieldName, FieldAttributes expectedAttributes)
         {
-            FieldInfo fi = getField(fieldName);
+            FieldInfo fi = GetField(fieldName);
             Assert.NotNull(fi);
             Assert.Equal(expectedAttributes, fi.Attributes);
         }
@@ -167,13 +167,13 @@ namespace System.Reflection.Tests
         public void TestIsSpecialName()
         {
             string fieldname = "intFieldNonStatic";
-            FieldInfo fi = getField(fieldname);
+            FieldInfo fi = GetField(fieldname);
             Assert.NotNull(fi);
             Assert.False(fi.IsSpecialName, "Failed: FieldInfo IsSpecialName returned True for field: " + fieldname);
         }
 
         // Helper method to get field from Type type
-        private static FieldInfo getField(string field)
+        private static FieldInfo GetField(string field)
         {
             Type t = typeof(FieldInfoPropertyTests);
             TypeInfo ti = t.GetTypeInfo();
@@ -226,7 +226,7 @@ namespace System.Reflection.Tests
 
         internal static object Field_FamilyOrAssembly5 = null;			// with internal keyword
 
-        public readonly int rointField = 1;
+        public readonly int roIntField = 1;
 
         public const int constIntField = 1222;
     }

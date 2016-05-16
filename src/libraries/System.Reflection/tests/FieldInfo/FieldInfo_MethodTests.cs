@@ -128,8 +128,8 @@ namespace System.Reflection.Tests
         [InlineData("nonstatic_strField", "intFieldStatic", false)]
         public void TestEquals(string fieldName1, string fieldName2, bool expectedResult)
         {
-            FieldInfo info1 = getField(fieldName1);
-            FieldInfo info2 = getField(fieldName2);
+            FieldInfo info1 = GetField(fieldName1);
+            FieldInfo info2 = GetField(fieldName2);
 
             Assert.NotNull(info1);
             Assert.NotNull(info2);
@@ -141,7 +141,7 @@ namespace System.Reflection.Tests
         public void TestGetHashCode()
         {
             string fieldName = "nonstatic_strField";
-            FieldInfo info = getField(fieldName);
+            FieldInfo info = GetField(fieldName);
             Assert.NotNull(info);
             Assert.NotEqual(0, info.GetHashCode());
         }
@@ -149,14 +149,14 @@ namespace System.Reflection.Tests
         // Helper method to test correctness of FieldInfo, and returns it 
         public FieldInfo GetAndTestFieldInfo(string fieldName)
         {
-            FieldInfo fi = getField(fieldName);
+            FieldInfo fi = GetField(fieldName);
             Assert.NotNull(fi);
             Assert.Equal(fieldName, fi.Name);
             return fi;
         }
 
         // Helper method to get field from Type type
-        private static FieldInfo getField(string field)
+        private static FieldInfo GetField(string field)
         {
             Type t = typeof(FieldInfoMethodTests);
             TypeInfo ti = t.GetTypeInfo();
@@ -201,9 +201,5 @@ namespace System.Reflection.Tests
         protected static object Field_FamilyOrAssembly3 = null;			// with protected keyword
         public static object Field_FamilyOrAssembly4 = null;			// with public keyword
         internal static object Field_FamilyOrAssembly5 = null;			// with internal keyword
-
-        public readonly int rointField = 1;
-
-        public const int constIntField = 1222;
     }
 }

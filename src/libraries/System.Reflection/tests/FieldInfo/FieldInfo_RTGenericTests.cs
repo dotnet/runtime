@@ -16,10 +16,10 @@ namespace System.Reflection.Tests
         public static void TestGenericFields()
         {
             FieldInfoRTGenericTests myInstance = new FieldInfoRTGenericTests();
-            myInstance.populateScenario();
+            myInstance.PopulateScenario();
 
             Type openType = typeof(PublicFieldGeneric<>);
-            verifyFields(openType);
+            VerifyFields(openType);
         }
 
         //Verify FieldInfo for static generic Types
@@ -27,14 +27,14 @@ namespace System.Reflection.Tests
         public static void TestStaticGenericFields()
         {
             FieldInfoRTGenericTests myInstance = new FieldInfoRTGenericTests();
-            myInstance.populateScenarioForStaticTests();
+            myInstance.PopulateScenarioForStaticTests();
 
             Type openType = typeof(StaticFieldGeneric<>);
-            verifyFields(openType);
+            VerifyFields(openType);
         }
 
         // Helper method to get field from Type type
-        private static FieldInfo getField(Type ptype, string field)
+        private static FieldInfo GetField(Type ptype, string field)
         {
             TypeInfo ti = ptype.GetTypeInfo();
             IEnumerator<FieldInfo> alldefinedFields = ti.DeclaredFields.GetEnumerator();
@@ -54,7 +54,7 @@ namespace System.Reflection.Tests
         }
 
         // Helper method to test fields of a given type
-        private static void verifyFields(Type openType)
+        private static void VerifyFields(Type openType)
         {
             foreach (Scenario sc in list)
             {
@@ -62,7 +62,7 @@ namespace System.Reflection.Tests
                 object obj = Activator.CreateInstance(type);
                 FieldInfo fi = null;
 
-                fi = getField(type, sc.fieldName);
+                fi = GetField(type, sc.fieldName);
                 Assert.True(Equals(fi.GetValue(obj), sc.initialValue), "Get Value should return value that was set for generic type: " + sc.fieldName);
 
                 fi.SetValue(obj, sc.changedValue);
@@ -76,7 +76,7 @@ namespace System.Reflection.Tests
             list.Clear();
         }
 
-        private void populateScenario()
+        private void PopulateScenario()
         {
             FieldInfoGeneric<int> g_int = new FieldInfoGeneric<int>();
             PublicFieldGeneric<int> pfg_int = new PublicFieldGeneric<int>();
@@ -124,7 +124,7 @@ namespace System.Reflection.Tests
             list.Add(new Scenario(typeof(FieldInfoGeneric<object>), "selfField", null, pfg_g_object));
         }
 
-        private void populateScenarioForStaticTests()
+        private void PopulateScenarioForStaticTests()
         {
             StaticFieldGeneric<int> sfg_int = new StaticFieldGeneric<int>();
             StaticFieldGeneric<string> sfg_string = new StaticFieldGeneric<string>();

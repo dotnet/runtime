@@ -26,7 +26,7 @@ namespace System.Reflection.Tests
             FieldInfoArrayB[] BTypeWithAllB = new FieldInfoArrayB[] { new FieldInfoArrayB(), new FieldInfoArrayB() };
             A[] BTypeWithAllB_Contra = new FieldInfoArrayB[] { new FieldInfoArrayB(), new FieldInfoArrayB() };
 
-            fi = getField(type, "aArray");
+            fi = GetField(type, "aArray");
 
             fi.SetValue(obj, ATypeWithMixedAB);
             Assert.True((fi.GetValue(obj)).Equals(ATypeWithMixedAB), "Failed!! Could not set ArrayField aArray using FieldInfo");
@@ -59,7 +59,7 @@ namespace System.Reflection.Tests
             FieldInfoArrayB[] BTypeWithAllB = new FieldInfoArrayB[] { new FieldInfoArrayB(), new FieldInfoArrayB() };
             A[] BTypeWithAllB_Contra = new FieldInfoArrayB[] { new FieldInfoArrayB(), new FieldInfoArrayB() };
 
-            fi = getField(type, "bArray");
+            fi = GetField(type, "bArray");
             Assert.Throws<ArgumentException>(() => fi.SetValue(obj, ATypeWithMixedAB));
             Assert.Throws<ArgumentException>(() => fi.SetValue(obj, ATypeWithAllA));
             Assert.Throws<ArgumentException>(() => fi.SetValue(obj, ATypeWithAllB));
@@ -81,7 +81,7 @@ namespace System.Reflection.Tests
 
             I[] mixedMN = new I[] { new M(), new N() };
 
-            fi = getField(type, "iArray");
+            fi = GetField(type, "iArray");
             fi.SetValue(obj, mixedMN);
 
             Assert.True((fi.GetValue(obj)).Equals(mixedMN), "Failed!! Could not set ArrayField iArray using FieldInfo");
@@ -98,7 +98,7 @@ namespace System.Reflection.Tests
             int[] mixedInt = new int[] { 200, -200, (byte)30, (ushort)2 };
             byte[] allByte = new byte[] { 2, 3, 4 };
 
-            fi = getField(type, "intArray");
+            fi = GetField(type, "intArray");
             fi.SetValue(obj, mixedInt);
             Assert.True((fi.GetValue(obj)).Equals(mixedInt), "Failed!! Could not set ArrayField intArray using FieldInfo");
 
@@ -119,7 +119,7 @@ namespace System.Reflection.Tests
             A[] BTypeWithAllB_Contra = new FieldInfoArrayB[] { new FieldInfoArrayB(), new FieldInfoArrayB() };
 
 
-            fi = getField(type, "objectArray");
+            fi = GetField(type, "objectArray");
             fi.SetValue(obj, mixedMN);
             Assert.True((fi.GetValue(obj)).Equals(mixedMN), "Failed!! Could not set ArrayField objectArray using FieldInfo");
 
@@ -131,7 +131,7 @@ namespace System.Reflection.Tests
         }
 
         // Helper method to get field from Type type
-        private static FieldInfo getField(Type type, string field)
+        private static FieldInfo GetField(Type type, string field)
         {
             TypeInfo ti = type.GetTypeInfo();
             IEnumerator<FieldInfo> alldefinedFields = ti.DeclaredFields.GetEnumerator();
