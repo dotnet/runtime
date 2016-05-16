@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Reflection;
 using Xunit;
 
@@ -88,6 +87,9 @@ namespace System.Tests
 
             Assert.ThrowsAny<MissingMemberException>(() => Activator.CreateInstance<TypeWithoutDefaultCtor>()); // Type has no default constructor
             Assert.Throws<TargetInvocationException>(() => Activator.CreateInstance<TypeWithDefaultCtorThatThrows>()); // Type has a default constructor throws an exception
+
+            // Type is not a valid RuntimeType
+            Assert.Throws<ArgumentException>("type", () => Activator.CreateInstance(Helpers.NonRuntimeType()));
         }
 
         [Fact]
@@ -108,7 +110,6 @@ namespace System.Tests
             Assert.ThrowsAny<MissingMemberException>(() => Activator.CreateInstance<TypeWithoutDefaultCtor>()); // Type has no default constructor
             Assert.Throws<TargetInvocationException>(() => Activator.CreateInstance<TypeWithDefaultCtorThatThrows>()); // Type has a default constructor that throws
         }
-
 
         class PrivateType
         {
@@ -186,21 +187,13 @@ namespace System.Tests
             public int I;
         }
 
-        public class VarArgs
-        {
-        }
+        public class VarArgs { }
 
-        public class VarStringArgs
-        {
-        }
+        public class VarStringArgs { }
 
-        public class VarIntArgs
-        {
-        }
+        public class VarIntArgs { }
 
-        public struct StructTypeWithoutReflectionMetadata
-        {
-        }
+        public struct StructTypeWithoutReflectionMetadata { }
 
         public class TypeWithoutDefaultCtor
         {

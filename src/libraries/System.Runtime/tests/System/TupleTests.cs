@@ -91,8 +91,7 @@ namespace System.Tests
 
             public void Ctor(params object[] expectedValue)
             {
-                if (expectedValue.Length != _nItems)
-                    throw new ArgumentOutOfRangeException("expectedValues", "You must provide " + _nItems + " expectedvalues");
+                Assert.Equal(_nItems, expectedValue.Length);
 
                 switch (_nItems)
                 {
@@ -229,7 +228,7 @@ namespace System.Tests
             internal void CompareToThrows()
             {
                 Tuple<int> tupleB = new Tuple<int>((int)10000);
-                Assert.Throws<ArgumentException>(() => ((IComparable)Tuple).CompareTo(tupleB));
+                Assert.Throws<ArgumentException>("other", () => ((IComparable)Tuple).CompareTo(tupleB));
             }
         }
 

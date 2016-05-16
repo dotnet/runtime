@@ -65,8 +65,6 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
 
         public static uint? WinHttpOptionRedirectPolicy { get; set; }
 
-        public static int? WinHttpOptionConnectTimeout { get; set; }
-
         public static int? WinHttpOptionSendTimeout { get; set; }
 
         public static int? WinHttpOptionReceiveTimeout { get; set; }
@@ -94,7 +92,6 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             WinHttpOptionSecurityFlags = null;
             WinHttpOptionMaxHttpAutomaticRedirects = null;
             WinHttpOptionRedirectPolicy = null;
-            WinHttpOptionConnectTimeout = null;
             WinHttpOptionSendTimeout = null;
             WinHttpOptionReceiveTimeout = null;
             winHttpOptionClientCertContextList.Clear();

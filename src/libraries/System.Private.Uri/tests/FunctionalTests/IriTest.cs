@@ -1,0 +1,526 @@
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System.Text;
+using System.Common.Tests;
+
+using Xunit;
+
+namespace System.PrivateUri.Tests
+{
+    /// <summary>
+    /// Testing IRI (RFC 3987) related parsing code.
+    /// </summary>
+    public class IriTest
+    {
+        // List built based on http://msdn.microsoft.com/en-us/library/aa292086(v=vs.71).aspx
+        private string[] _testedLocales =
+        {
+            "en-us",
+            "zh-cn",
+            "de-ch",
+            "de-lu",
+            "ja-jp"
+        };
+
+        private const int maxUriLength = 0xFFF0 - 1;
+
+        [Fact]
+        public void Iri_Validate_LongUriWithQuery()
+        {
+            string uriString = "http://www.contos.com/abcde?fghijklm=noprstuvx&ab=CDEFG#hi=jk&lmn=o&p="
+                              + "%F4%80%80%9C%F4%80%80%99&cp=18&pf=p&sclient=psy&site=webhp&source=hp&rlz=1R2ADRA_enUS"
+                              + "435&aq=f&aqi=&aql=&oq=%F4%80%80%BA%F4%80%80%94%F4%80%80%93%F4%80%80%94%F4%80%80%95%F4"
+                              + "%80%80%97%F4%80%80%93%F4%80%80%9C%F4%80%80%99&pbx=1&bav=on.2,or.r_gc.r_pw.&fp=fb838c8"
+                              + "df90b57b2&biw=1600&bih=718";
+            try
+            {
+                Uri u = new Uri(uriString);
+            }
+            catch
+            { }
+
+            GC.Collect(2);
+        }
+
+        [Fact]
+        public void Iri_Uri_ShouldNotThrowArgumentOutOfRange()
+        {
+            string u1string = "http://ab.contos.com/search?query=" + "%F0%B3%BF%BF";
+            Uri u1 = new Uri(u1string);
+            Assert.Equal(u1string, u1.AbsoluteUri);
+
+            string u2string = "http://www.contos.com/abcdefghijklmn-" + "%B4%F3%BF%AA%B4%D4.html";
+            Uri u2 = new Uri(u2string);
+            Assert.Equal(u2string, u2.AbsoluteUri);
+
+            string u4string = "http://www.contoso-abcdefg.de/abcdefg" + "%F3%BE%8C%B5.html";
+            Uri u3;
+            Assert.True(Uri.TryCreate(u4string, UriKind.Absolute, out u3));
+        }
+
+        [Fact]
+        public void Iri_Uri_SchemaParsing_ShouldNotThrowArgumentOutOfRange()
+        {
+            string root = "viewcode://./codeschema_class?";
+            string uriDataFra = root + Uri.EscapeDataString("Type=\u00E9");
+
+            // TODO #8330 : Uri should not throw ArgumentOutOfRangeException. 
+            // This test is documenting current behavior.
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+           {
+               Uri u1 = new Uri(uriDataFra);
+               Assert.Equal(root + "Type=%C3%A9", u1.AbsoluteUri);
+           });
+        }
+
+        [Fact]
+        public void Iri_IncorrectNormalization()
+        {
+            Uri u1 = new Uri(@"http://test.com/%2c");
+            Uri u2 = new Uri(@"http://test.com/,");
+
+            // TODO #8330 : Normalization should produce the same result for escaped/unescaped URIs.
+            //Assert.Equal(
+            //    u1.ToString(),
+            //    u2.ToString());
+
+            Assert.NotEqual(
+                u1.ToString(),
+                u2.ToString());
+        }
+
+        [Fact]
+        public void Iri_804110_TryCreateUri_ShouldNotThrowIndexOutOfRange()
+        {
+            string u1 = "http://b.contos.oc.om/entry/d.contos.oc.om/AbcDefg/21234567/1234567890";
+            string u2 = "http://d.contos.oc.om/keyword/" + "%C6%F3%BC%A1%B8%B5";
+            Uri baseUri = new Uri(u1);
+            Uri resultUri;
+            Uri.TryCreate(baseUri, u2, out resultUri);
+            Assert.Equal(u2, resultUri.AbsoluteUri);
+
+            string u3 = "http://con.tosoco.ntosoc.com/abcdefghi/jk" + "%c8%f3%b7%a2%b7%bf%b2%fa";
+            Uri.TryCreate(u3, UriKind.Absolute, out resultUri);
+
+            Assert.Equal(
+                "http://con.tosoco.ntosoc.com/abcdefghi/jk" + "%C8%F3%B7%A2%B7%BF%B2%FA",
+                resultUri.ToString());
+
+            string u4 = "http://co.ntsosocon.com/abcd/" + "%A2%F3%BD%CB%FC%FB%D5%E9%F3%B7%AA%B5";
+            Uri uri4 = new Uri(u4);
+            Uri.TryCreate(
+                "http://co.ntsosocon.com/abcd/" + "%A2%F3%BD%CB%FC%FB%D5%E9%F3%B7%AA%B5",
+                UriKind.Absolute,
+                out resultUri);
+            Assert.Equal(u4, resultUri.ToString());
+
+            string[] sctiTeamReproUris = new string[] {
+                "http://con.toso.com/abc/defg.html?n=12345678&ab="
+                    + "%BF%E4%C1%F2%B3%AF%BE%BE%B4%F5%BF%EE%C0%CC%C0%AF",
+                "http://contos.com/abcdef_ghijklm/" + "%8E%E8%90%F4%82%A2%8A%ED/?abcdefgh=0123",
+                "http://www.conto.com/abcd/" + "%D7%F3%B1%A6%B9%F3",
+                "http://c.ontoso.co.mc/abcdefg/" + "%C6%F3%B8%AB%B1%CD%CD%FD%BB%D2",
+                "http://www.conto.com/abcd/" + "%D6%E2%BA%F3%B1%B8%BC%B1%B7%BD",
+                "http://www.conto.com/abcd/" + "%A1%B6%B4%F3%BA%BD%BA%A3%A1%B7"
+            };
+
+            foreach (string uristring in sctiTeamReproUris)
+            {
+                Uri u = new Uri(uristring);
+                Assert.Equal(uristring, u.AbsoluteUri);
+            }
+
+            Uri uri5 = new Uri("http://contos.com/abcdef_ghijklm/"
+                    + "%90H%8A%ED%90%F4%82%A2%8B%40+%90%98%82%A6%92u%82%AB/?abcdefgh=0002%5F0042");
+            Assert.Equal(
+                "http://contos.com/abcdef_ghijklm/"
+                + "%90H%8A%ED%90%F4%82%A2%8B%40+%90%98%82%A6%92u%82%AB/?abcdefgh=0002_0042",
+                uri5.ToString());
+        }
+
+        [Fact]
+        public void Iri_FragmentInvalidCharacters()
+        {
+            string input = "%F4%80%80%BA";
+            VerifyUriNormalizationForEscapedCharacters(input);
+        }
+
+        [Fact]
+        public void Iri_EscapedAscii()
+        {
+            string input = "%%%01%35%36";
+            VerifyUriNormalizationForEscapedCharacters(input);
+        }
+
+        [Fact]
+        public void Iri_EscapedAsciiFollowedByUnescaped()
+        {
+            string input = "%ABabc";
+            VerifyUriNormalizationForEscapedCharacters(input);
+        }
+
+        [Fact]
+        public void Iri_InvalidHexSequence()
+        {
+            string input = "%AB%FG%GF";
+            VerifyUriNormalizationForEscapedCharacters(input);
+        }
+
+        [Fact]
+        public void Iri_InvalidUTF8Sequence()
+        {
+            string input = "%F4%80%80%7F";
+            VerifyUriNormalizationForEscapedCharacters(input);
+        }
+
+        [Fact]
+        public void Iri_IncompleteEscapedCharacter()
+        {
+            string input = "%F4%80%80%B";
+            VerifyUriNormalizationForEscapedCharacters(input);
+        }
+
+        [Fact]
+        public void Iri_ReservedCharacters()
+        {
+            string input = "/?#??#%[]";
+            VerifyUriNormalizationForEscapedCharacters(input);
+        }
+
+        [Fact]
+        public void Iri_EscapedReservedCharacters()
+        {
+            string input = "%2F%3F%23%3F%3F%23%25%5B%5D";
+            VerifyUriNormalizationForEscapedCharacters(input);
+        }
+
+        [Fact]
+        public void Iri_BidiCharacters()
+        {
+            string input = "\u200E";
+            VerifyUriNormalizationForEscapedCharacters(input);
+        }
+
+        [Fact]
+        public void Iri_IncompleteSurrogate()
+        {
+            string input = "\uDBC0\uDC3A\uDBC0";
+            VerifyUriNormalizationForEscapedCharacters(input);
+        }
+
+        [Fact]
+        public void Iri_InIriRange_AfterEscapingBufferInitialized()
+        {
+            string input = "\uDBC0\uDC3A\u00A1";
+            VerifyUriNormalizationForEscapedCharacters(input);
+        }
+
+        [Fact]
+        public void Iri_BidiCharacter_AfterEscapingBufferInitialized()
+        {
+            string input = "\uDBC0\uDC3A\u200E";
+            VerifyUriNormalizationForEscapedCharacters(input);
+        }
+
+        [Fact]
+        public void Iri_UnicodePlane0()
+        {
+            EscapeUnescapeTestUnicodePlane(0x0, 0xFFFF, 1);
+        }
+
+        [Fact]
+        public void Iri_UnicodePlane1()
+        {
+            EscapeUnescapeTestUnicodePlane(0x10000, 0x1FFFF, 1);
+        }
+
+        [Fact]
+        public void Iri_UnicodePlane2()
+        {
+            EscapeUnescapeTestUnicodePlane(0x20000, 0x2FFFF, 1);
+        }
+
+        [Fact]
+        public void Iri_UnicodePlane3_13()
+        {
+            EscapeUnescapeTestUnicodePlane(0x30000, 0xDFFFF, 1);
+        }
+
+        [Fact]
+        public void Iri_UnicodePlane14()
+        {
+            EscapeUnescapeTestUnicodePlane(0xE0000, 0xEFFFF, 1);
+        }
+
+        [Fact]
+        public void Iri_UnicodePlane15_16()
+        {
+            EscapeUnescapeTestUnicodePlane(0xF0000, 0x10FFFF, 1);
+        }
+
+        private void EscapeUnescapeTestUnicodePlane(int start, int end, int step)
+        {
+            string input = GetUnicodeString(start, end, step);
+
+            VerifyUriNormalizationForEscapedCharacters(input);
+        }
+
+        private static string GetUnicodeString(int start, int end, int step, int minLength = 1)
+        {
+            StringBuilder sb = new StringBuilder();
+            for (int i = start; i < end; i += step)
+            {
+                if (i < 0xFFFF)
+                {
+                    // ConvertFromUtf32 doesn't allow surrogate codepoint values.
+                    // This may generate invalid Unicode sequences when i is between 0xd800 and 0xdfff.
+                    sb.Append((char)i);
+                }
+                else
+                {
+                    sb.Append(char.ConvertFromUtf32(i));
+                }
+            }
+
+            string input = sb.ToString();
+
+            while (sb.Length < minLength)
+            {
+                sb.Append(input);
+            }
+
+            input = sb.ToString();
+            return input;
+        }
+
+        private void VerifyUriNormalizationForEscapedCharacters(string uriInput)
+        {
+            UriComponents[] components = new UriComponents[]
+            {
+                UriComponents.Fragment,
+                UriComponents.Host,
+                UriComponents.Path,
+                UriComponents.Port,
+                UriComponents.Query,
+                UriComponents.Scheme,
+                UriComponents.UserInfo,
+            };
+
+            using (ThreadCultureChange helper = new ThreadCultureChange())
+            {
+                string[] results1 = new string[components.Length];
+
+                helper.ChangeCultureInfo(_testedLocales[0]);
+                for (int i = 0; i < components.Length; i++)
+                {
+                    results1[i] = EscapeUnescapeTestComponent(uriInput, components[i]);
+                }
+
+                for (int j = 1; j < _testedLocales.Length; j++)
+                {
+                    helper.ChangeCultureInfo(_testedLocales[j]);
+
+                    string[] results2 = new string[components.Length];
+                    for (int i = 0; i < components.Length; i++)
+                    {
+                        results2[i] = EscapeUnescapeTestComponent(uriInput, components[i]);
+                    }
+
+                    for (int i = 0; i < components.Length; i++)
+                    {
+                        Assert.Equal(
+                            0,
+                            String.CompareOrdinal(results1[i], results2[i]));
+                    }
+                }
+            }
+        }
+
+        private string EscapeUnescapeTestComponent(string uriInput, UriComponents component)
+        {
+            string ret = null;
+            string uriString = null;
+
+            switch (component)
+            {
+                case UriComponents.Fragment:
+                    uriString = String.Format(
+                        "http://userInfo@server:80/path/resource.ext?query=qvalue#{0}",
+                        uriInput);
+                    break;
+                case UriComponents.Host:
+                    uriString = String.Format(
+                        "http://userInfo@{0}:80/path/resource.ext?query=qvalue#fragment",
+                        uriInput);
+                    break;
+                case UriComponents.Path:
+                    uriString = String.Format(
+                        "http://userInfo@server:80/{0}/{0}/resource.ext?query=qvalue#fragment",
+                        uriInput);
+                    break;
+                case UriComponents.Port:
+                    uriString = String.Format(
+                        "http://userInfo@server:{0}/path/resource.ext?query=qvalue#fragment",
+                        uriInput);
+                    break;
+                case UriComponents.Query:
+                    uriString = String.Format(
+                        "http://userInfo@server:80/path/resource.ext?query{0}=qvalue{0}#fragment",
+                        uriInput);
+                    break;
+                case UriComponents.Scheme:
+                    uriString = String.Format(
+                        "{0}://userInfo@server:80/path/resource.ext?query=qvalue#fragment",
+                        uriInput);
+                    break;
+                case UriComponents.UserInfo:
+                    uriString = String.Format(
+                        "http://{0}@server:80/path/resource.ext?query=qvalue#fragment",
+                        uriInput);
+                    break;
+                default:
+                    Assert.False(true, "Unknown Uri component: " + component.ToString());
+                    break;
+            }
+
+            try
+            {
+                Uri u = new Uri(uriString);
+                ret = u.AbsoluteUri;
+            }
+            catch (ArgumentNullException)
+            {
+                ret = "";
+            }
+            catch (FormatException)
+            {
+                ret = "";
+            }
+
+            return ret;
+        }
+
+        /// <summary>
+        /// First column contains input characters found to be potential issues with the current implementation.
+        /// The second column contains the current (.Net 4.5.2) Uri behavior for Uri normalization.
+        /// </summary>
+        private static string[,] s_checkIsReservedEscapingStrings =
+        {
+            // : [ ] in host
+            {"http://user@ser%3Aver.srv:123/path/path/resource.ext?query=expression#fragment", null},
+            {"http://user@server.srv%3A999/path/path/resource.ext?query=expression#fragment", null},
+            {"http://user@server.%5Bsrv:123/path/path/resource.ext?query=expression#fragment", null},
+            {"http://user@ser%5Dver.srv:123/path/path/resource.ext?query=expression#fragment", null},
+
+            // [ ] in userinfo
+            {"http://us%5Ber@server.srv:123/path/path/resource.ext?query=expression#fragment",
+                "http://us%5Ber@server.srv:123/path/path/resource.ext?query=expression#fragment"},
+            {"http://u%5Dser@server.srv:123/path/path/resource.ext?query=expression#fragment",
+                "http://u%5Dser@server.srv:123/path/path/resource.ext?query=expression#fragment"},
+            {"http://us%5B%5Der@server.srv:123/path/path/resource.ext?query=expression#fragment",
+                "http://us%5B%5Der@server.srv:123/path/path/resource.ext?query=expression#fragment"},
+            
+            // [ ] in path
+            {"http://user@server.srv:123/path/pa%5Bth/resource.ext?query=expression#fragment",
+                "http://user@server.srv:123/path/pa[th/resource.ext?query=expression#fragment"},
+            {"http://user@server.srv:123/pa%5Dth/path%5D/resource.ext?query=expression#fragment",
+                "http://user@server.srv:123/pa]th/path]/resource.ext?query=expression#fragment"},
+            {"http://user@server.srv:123/path/p%5Ba%5Dth/resource.ext?query=expression#fragment",
+                "http://user@server.srv:123/path/p[a]th/resource.ext?query=expression#fragment"},
+            
+            // [ ] in query
+            {"http://user@server.srv:123/path/path/resource.ext?que%5Bry=expression#fragment",
+                "http://user@server.srv:123/path/path/resource.ext?que[ry=expression#fragment"},
+            {"http://user@server.srv:123/path/path/resource.ext?query=exp%5Dression#fragment",
+                "http://user@server.srv:123/path/path/resource.ext?query=exp]ression#fragment"},
+            {"http://user@server.srv:123/path/path/resource.ext?que%5Bry=exp%5Dression#fragment",
+                "http://user@server.srv:123/path/path/resource.ext?que[ry=exp]ression#fragment"},
+            
+            // [ ] in fragment
+            {"http://user@server.srv:123/path/path/resource.ext?query=expression#fr%5Bagment",
+                "http://user@server.srv:123/path/path/resource.ext?query=expression#fr[agment"},
+            {"http://user@server.srv:123/path/path/resource.ext?query=expression#fragment%5D",
+                "http://user@server.srv:123/path/path/resource.ext?query=expression#fragment]"},
+            {"http://user@server.srv:123/path/path/resource.ext?query=expression#fr%5Bagment%5D",
+                "http://user@server.srv:123/path/path/resource.ext?query=expression#fr[agment]"}
+        };
+
+        /// <summary>
+        /// This test validates behavior differences caused by the incorrect conditional expression found in function
+        /// CheckIsReserved().
+        /// </summary>
+        [Fact]
+        public void Iri_CheckIsReserved_EscapingBehavior()
+        {
+            for (int i = 0; i < s_checkIsReservedEscapingStrings.GetLength(0); i++)
+            {
+                try
+                {
+                    string uriInput = s_checkIsReservedEscapingStrings[i, 0];
+                    string expectedToString = s_checkIsReservedEscapingStrings[i, 1];
+                    Uri uri = new Uri(uriInput);
+                    Assert.Equal(uriInput, uri.AbsoluteUri); //"Unexpected URI normalization behavior."
+                    Assert.Equal(expectedToString, uri.ToString()); //"Unexpected URI normalization behavior."
+                }
+                catch (FormatException)
+                { }
+            }
+        }
+
+        [Fact]
+        public void Iri_ValidateVeryLongInputString_Ctor()
+        {
+            string validUriStart = "http://host/q=";
+
+            string bigString1 = GetUnicodeString(0x1000, 0x1001, 1, maxUriLength - validUriStart.Length);
+            string test = validUriStart + bigString1;
+            Assert.True(test.Length == maxUriLength);
+
+            Uri u1 = new Uri(validUriStart + bigString1);
+            Assert.True(u1.ToString().Length > bigString1.Length);
+
+            try
+            {
+                string bigString2 = GetUnicodeString(0, maxUriLength + 1, 1);
+                Uri u = new Uri(bigString2);
+                Assert.False(true, "Expected UriFormatException: Uri too large");
+            }
+            catch (FormatException)
+            { }
+        }
+
+        [Fact]
+        public void Iri_ValidateVeryLongInputString_EscapeDataString()
+        {
+            string bigString1 = GetUnicodeString(0, maxUriLength, 1);
+            Assert.True(Uri.EscapeDataString(bigString1).Length > bigString1.Length);
+
+            try
+            {
+                string bigString2 = GetUnicodeString(0, maxUriLength + 1, 1);
+                Uri.EscapeDataString(bigString2);
+                Assert.False(true, "Expected UriFormatException: Uri too large");
+            }
+            catch (FormatException)
+            { }
+        }
+
+        [Fact]
+        public void Iri_ValidateVeryLongInputString_EscapeUriString()
+        {
+            string bigString1 = GetUnicodeString(0, maxUriLength, 1);
+            Assert.True(Uri.EscapeUriString(bigString1).Length > bigString1.Length);
+
+            try
+            {
+                string bigString2 = GetUnicodeString(0, maxUriLength + 1, 1);
+                Uri.EscapeUriString(bigString2);
+                Assert.False(true, "Expected UriFormatException: Uri too large");
+            }
+            catch (FormatException)
+            { }
+        }
+    }
+}

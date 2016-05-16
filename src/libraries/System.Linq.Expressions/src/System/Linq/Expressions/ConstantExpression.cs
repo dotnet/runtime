@@ -21,18 +21,6 @@ namespace System.Linq.Expressions
             _value = value;
         }
 
-        internal static ConstantExpression Make(object value, Type type)
-        {
-            if (value == null ? type == typeof(object) : value.GetType() == type)
-            {
-                return new ConstantExpression(value);
-            }
-            else
-            {
-                return new TypedConstantExpression(value, type);
-            }
-        }
-
         /// <summary>
         /// Gets the static type of the expression that this <see cref="Expression" /> represents.
         /// </summary>
@@ -105,7 +93,7 @@ namespace System.Linq.Expressions
         /// </returns>
         public static ConstantExpression Constant(object value)
         {
-            return ConstantExpression.Make(value, value == null ? typeof(object) : value.GetType());
+            return new ConstantExpression(value);
         }
 
         /// <summary>
@@ -122,12 +110,44 @@ namespace System.Linq.Expressions
         public static ConstantExpression Constant(object value, Type type)
         {
             ContractUtils.RequiresNotNull(type, nameof(type));
-            if (value == null ? type.GetTypeInfo().IsValueType && !TypeUtils.IsNullableType(type) : !type.IsAssignableFrom(value.GetType()))
+            TypeUtils.ValidateType(type);
+            if (type.IsByRef)
             {
-                throw Error.ArgumentTypesMustMatch();
+                throw Error.TypeMustNotBeByRef();
             }
 
-            return ConstantExpression.Make(value, type);
+            if (type.IsPointer)
+            {
+                throw Error.TypeMustNotBePointer();
+            }
+
+            if (value == null)
+            {
+                if (type == typeof(object))
+                {
+                    return new ConstantExpression(null);
+                }
+
+                if (!type.GetTypeInfo().IsValueType || type.IsNullableType())
+                {
+                    return new TypedConstantExpression(null, type);
+                }
+            }
+            else
+            {
+                Type valueType = value.GetType();
+                if (type == valueType)
+                {
+                    return new ConstantExpression(value);
+                }
+
+                if (type.IsAssignableFrom(valueType))
+                {
+                    return new TypedConstantExpression(value, type);
+                }
+            }
+
+            throw Error.ArgumentTypesMustMatch();
         }
     }
 }

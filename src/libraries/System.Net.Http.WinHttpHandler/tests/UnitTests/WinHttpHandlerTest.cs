@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -38,7 +39,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         {
             var handler = new WinHttpHandler();
 
-            Assert.Equal(SslProtocolSupport.DefaultSslProtocols, handler.SslProtocols);
+            Assert.Equal(SslProtocols.None, handler.SslProtocols);
             Assert.Equal(true, handler.AutomaticRedirection);
             Assert.Equal(50, handler.MaxAutomaticRedirections);
             Assert.Equal(DecompressionMethods.Deflate | DecompressionMethods.GZip, handler.AutomaticDecompression);
@@ -52,15 +53,15 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             Assert.Equal(false, handler.PreAuthenticate);
             Assert.Equal(null, handler.ServerCredentials);
             Assert.Equal(WindowsProxyUsePolicy.UseWinHttpProxy, handler.WindowsProxyUsePolicy);
-            Assert.Equal(CredentialCache.DefaultCredentials, handler.DefaultProxyCredentials);
+            Assert.Equal(null, handler.DefaultProxyCredentials);
             Assert.Equal(null, handler.Proxy);
             Assert.Equal(Int32.MaxValue, handler.MaxConnectionsPerServer);
-            Assert.Equal(TimeSpan.FromSeconds(60), handler.ConnectTimeout);
             Assert.Equal(TimeSpan.FromSeconds(30), handler.SendTimeout);
             Assert.Equal(TimeSpan.FromSeconds(30), handler.ReceiveHeadersTimeout);
             Assert.Equal(TimeSpan.FromSeconds(30), handler.ReceiveDataTimeout);
             Assert.Equal(64 * 1024, handler.MaxResponseHeadersLength);
             Assert.Equal(64 * 1024, handler.MaxResponseDrainSize);
+            Assert.NotNull(handler.Properties);
         }
 
         [Fact]
@@ -118,39 +119,6 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             SendRequestHelper.Send(handler, delegate { handler.CheckCertificateRevocationList = false; });
 
             Assert.Equal(false, APICallHistory.WinHttpOptionEnableSslRevocation.HasValue);
-        }
-
-        [Fact]
-        public void ConnectTimeout_SetNegativeValue_ThrowsArgumentOutOfRangeException()
-        {
-            var handler = new WinHttpHandler();
-
-            Assert.Throws<ArgumentOutOfRangeException>(() => { handler.ConnectTimeout = TimeSpan.FromMinutes(-10); });
-        }
-
-        [Fact]
-        public void ConnectTimeout_SetTooLargeValue_ThrowsArgumentOutOfRangeException()
-        {
-            var handler = new WinHttpHandler();
-
-            Assert.Throws<ArgumentOutOfRangeException>(
-                () => { handler.ConnectTimeout = TimeSpan.FromMilliseconds(int.MaxValue + 1.0); });
-        }
-
-        [Fact]
-        public void ConnectTimeout_SetZeroValue_ThrowsArgumentOutOfRangeException()
-        {
-            var handler = new WinHttpHandler();
-
-            Assert.Throws<ArgumentOutOfRangeException>(() => { handler.ConnectTimeout = TimeSpan.FromSeconds(0); });
-        }
-
-        [Fact]
-        public void ConnectTimeout_SetInfiniteValue_NoExceptionThrown()
-        {
-            var handler = new WinHttpHandler();
-
-            handler.ConnectTimeout = Timeout.InfiniteTimeSpan;
         }
 
         [Fact]
@@ -252,6 +220,29 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
                 });
 
             Assert.Equal(true, APICallHistory.WinHttpOptionDisableCookies.HasValue);
+        }
+
+        [Fact]
+        public void Properties_Get_CountIsZero()
+        {
+            var handler = new WinHttpHandler();
+            IDictionary<String, object> dict = handler.Properties;
+            Assert.Equal(0, dict.Count);
+        }
+
+        [Fact]
+        public void Properties_AddItemToDictionary_ItemPresent()
+        {
+            var handler = new WinHttpHandler();
+            IDictionary<String, object> dict = handler.Properties;
+            Assert.Same(dict, handler.Properties);
+
+            var item = new Object();
+            dict.Add("item", item);
+
+            object value;
+            Assert.True(dict.TryGetValue("item", out value));
+            Assert.Equal(item, value);
         }
 
         [Fact]
@@ -438,7 +429,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         {
             var handler = new WinHttpHandler();
 
-            handler.ConnectTimeout = Timeout.InfiniteTimeSpan;
+            handler.ReceiveHeadersTimeout = Timeout.InfiniteTimeSpan;
         }
 
         [Theory]
@@ -459,11 +450,11 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         }
 
         [Fact]
-        public void SslProtocols_SetUsingNone_Throws()
+        public void SslProtocols_SetUsingNone_Success()
         {
             var handler = new WinHttpHandler();
 
-            Assert.Throws<NotSupportedException>(() => { handler.SslProtocols = SslProtocols.None; });
+            handler.SslProtocols = SslProtocols.None;
         }
 
         [Fact]

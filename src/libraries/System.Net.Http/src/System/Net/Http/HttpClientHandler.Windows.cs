@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Net.Http.Headers;
 using System.Net.Security;
+using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
@@ -69,6 +70,12 @@ namespace System.Net.Http
             set { _winHttpHandler.Proxy = value; }
         }
 
+        public ICredentials DefaultProxyCredentials
+        {
+            get { return _winHttpHandler.DefaultProxyCredentials; }
+            set { _winHttpHandler.DefaultProxyCredentials = value; }
+        }
+
         public bool PreAuthenticate
         {
             get { return _winHttpHandler.PreAuthenticate; }
@@ -79,6 +86,8 @@ namespace System.Net.Http
         {
             // WinHttpHandler doesn't have a separate UseDefaultCredentials property.  There
             // is just a ServerCredentials property.  So, we need to map the behavior.
+            //
+            // This property only affect .ServerCredentials and not .DefaultProxyCredentials.
 
             get { return (_winHttpHandler.ServerCredentials == CredentialCache.DefaultCredentials); }
 
@@ -86,13 +95,10 @@ namespace System.Net.Http
             {
                 if (value)
                 {
-                    _winHttpHandler.DefaultProxyCredentials = CredentialCache.DefaultCredentials;
                     _winHttpHandler.ServerCredentials = CredentialCache.DefaultCredentials;
                 }
                 else
                 {
-                    _winHttpHandler.DefaultProxyCredentials = null;
-
                     if (_winHttpHandler.ServerCredentials == CredentialCache.DefaultCredentials)
                     {
                         // Only clear out the ServerCredentials property if it was a DefaultCredentials.
@@ -126,6 +132,12 @@ namespace System.Net.Http
             set { _winHttpHandler.MaxAutomaticRedirections = value; }
         }
 
+        public int MaxConnectionsPerServer
+        {
+            get { return _winHttpHandler.MaxConnectionsPerServer; }
+            set { _winHttpHandler.MaxConnectionsPerServer = value; }
+        }
+
         public long MaxRequestContentBufferSize
         {
             // This property has been deprecated. In the .NET Desktop it was only used when the handler needed to 
@@ -139,6 +151,12 @@ namespace System.Net.Http
             // TODO (#7879): Add message/link to exception explaining the deprecation. 
             // Update corresponding exception in HttpClientHandler.Unix.cs if/when this is updated.
             set { throw new PlatformNotSupportedException(); }
+        }
+
+        public int MaxResponseHeadersLength
+        {
+            get { return _winHttpHandler.MaxResponseHeadersLength; }
+            set { _winHttpHandler.MaxResponseHeadersLength = value; }
         }
 
         public X509CertificateCollection ClientCertificates
@@ -158,6 +176,17 @@ namespace System.Net.Http
             set { _winHttpHandler.CheckCertificateRevocationList = value; }
         }
 
+        public SslProtocols SslProtocols
+        {
+            get { return _winHttpHandler.SslProtocols; }
+            set { _winHttpHandler.SslProtocols = value; }
+        }
+
+        public IDictionary<String, object> Properties
+        {
+            get { return _winHttpHandler.Properties; }
+        }
+
         #endregion Properties
 
         #region De/Constructors
@@ -171,6 +200,8 @@ namespace System.Net.Http
             UseProxy = true;
             UseCookies = true;
             CookieContainer = new CookieContainer();
+            _winHttpHandler.DefaultProxyCredentials = null;
+            _winHttpHandler.ServerCredentials = null;
 
             // The existing .NET Desktop HttpClientHandler based on the HWR stack uses only WinINet registry
             // settings for the proxy.  This also includes supporting the "Automatic Detect a proxy" using
@@ -180,7 +211,6 @@ namespace System.Net.Http
             
             // Since the granular WinHttpHandler timeout properties are not exposed via the HttpClientHandler API,
             // we need to set them to infinite and allow the HttpClient.Timeout property to have precedence.
-            _winHttpHandler.ConnectTimeout = Timeout.InfiniteTimeSpan;
             _winHttpHandler.ReceiveHeadersTimeout = Timeout.InfiniteTimeSpan;
             _winHttpHandler.ReceiveDataTimeout = Timeout.InfiniteTimeSpan;
             _winHttpHandler.SendTimeout = Timeout.InfiniteTimeSpan;

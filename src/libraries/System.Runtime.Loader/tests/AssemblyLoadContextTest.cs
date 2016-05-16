@@ -80,6 +80,7 @@ namespace System.Runtime.Loader.Tests
                 () => loadContext.LoadFromAssemblyName(asmName));
         }
 
+        [ActiveIssue(8563, PlatformID.AnyUnix)]
         [Fact]
         public static void LoadFromAssemblyName_ValidTrustedPlatformAssembly()
         {

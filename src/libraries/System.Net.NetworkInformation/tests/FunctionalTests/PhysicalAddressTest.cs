@@ -19,7 +19,20 @@ namespace System.Net.NetworkInformation.Tests
             Assert.Equal(address1, address2);
             Assert.Equal(address1.GetHashCode(), address2.GetHashCode());
         }
-        
+
+        [Fact]
+        public void PhysicalAddress_EqualAddresses_Pass()
+        {
+            byte[] byteAddress1 = { 0x01, 0x20, 0x03, 0x40, 0x05, 0x60 };
+            byte[] byteAddress2 = { 0x01, 0x20, 0x03, 0x40, 0x05, 0x60 };
+
+            PhysicalAddress address1 = new PhysicalAddress(byteAddress1);
+            PhysicalAddress address2 = new PhysicalAddress(byteAddress2);
+
+            Assert.Equal(address1, address2);
+            Assert.Equal(address1.GetHashCode(), address2.GetHashCode());
+        }
+
         [Fact]
         public void PhysicalAddress_DifferentAddresses_SameSize_Pass()
         {

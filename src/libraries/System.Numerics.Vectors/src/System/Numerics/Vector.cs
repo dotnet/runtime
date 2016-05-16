@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -783,7 +783,7 @@ namespace System.Numerics
             }
             if (startIndex < 0 || startIndex >= destination.Length)
             {
-                throw new ArgumentOutOfRangeException(SR.Format(SR.Arg_ArgumentOutOfRangeException, startIndex));
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.Format(SR.Arg_ArgumentOutOfRangeException, startIndex));
             }
             if ((destination.Length - startIndex) < Count)
             {

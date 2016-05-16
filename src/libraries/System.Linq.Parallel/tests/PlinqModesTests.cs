@@ -89,7 +89,7 @@ namespace System.Linq.Parallel.Tests
                 var partitionedRanges = new Labeled<ParallelQuery<int>>[]
                 {
                     Labeled.Label("ParallelEnumerable.Range", ParallelEnumerable.Range(0, count)),
-                    Labeled.Label("Partitioner.Create", Partitioner.Create(UnorderedSources.GetRangeArray(0, count), loadBalance: false).AsParallel())
+                    Labeled.Label("Partitioner.Create", Partitioner.Create(Enumerable.Range(0, count).ToArray(), loadBalance: false).AsParallel())
                 };
 
                 // For each source and mode, get both unordered and ordered queries that should easily parallelize for all execution modes
@@ -154,7 +154,7 @@ namespace System.Linq.Parallel.Tests
         public static void WithExecutionMode_ArgumentException(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ParallelQuery<int> query = labeled.Item;
-            Assert.Throws<ArgumentException>(() => query.WithExecutionMode((ParallelExecutionMode)2));
+            Assert.Throws<ArgumentException>(null, () => query.WithExecutionMode((ParallelExecutionMode)2));
         }
 
         [Theory]
@@ -167,7 +167,7 @@ namespace System.Linq.Parallel.Tests
         [Fact]
         public static void WithExecutionMode_ArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<int>)null).WithExecutionMode(ParallelExecutionMode.Default));
+            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<int>)null).WithExecutionMode(ParallelExecutionMode.Default));
         }
 
         /// <summary>Tracks all of the Tasks from which AddCurrent is called.</summary>

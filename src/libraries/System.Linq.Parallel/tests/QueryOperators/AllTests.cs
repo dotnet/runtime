@@ -7,81 +7,86 @@ using Xunit;
 
 namespace System.Linq.Parallel.Tests
 {
-    public class AllTests
+    public static class AllTests
     {
         public static IEnumerable<object[]> OnlyOneData(int[] counts)
         {
-            Func<int, IEnumerable<int>> positions = x => new[] { 0, x / 2, Math.Max(0, x - 1) }.Distinct();
-            foreach (object[] results in UnorderedSources.Ranges(counts.Cast<int>(), positions)) yield return results;
+            foreach (int count in counts.DefaultIfEmpty(Sources.OuterLoopCount))
+            {
+                foreach (int position in new[] { 0, count / 2, Math.Max(0, count - 1) }.Distinct())
+                {
+                    yield return new object[] { count, position };
+                }
+            }
         }
 
         //
         // All
         //
         [Theory]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(UnorderedSources))]
-        public static void All_AllFalse(Labeled<ParallelQuery<int>> labeled, int count)
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(16)]
+        public static void All_AllFalse(int count)
         {
-            ParallelQuery<int> query = labeled.Item;
-            Assert.Equal(count == 0, query.All(x => x < 0));
+            Assert.Equal(count == 0, UnorderedSources.Default(count).All(x => x < 0));
         }
 
-        [Theory]
+        [Fact]
         [OuterLoop]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 1024 * 1024, 1024 * 1024 * 4 }, MemberType = typeof(UnorderedSources))]
-        public static void All_AllFalse_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
+        public static void All_AllFalse_Longrunning()
         {
-            All_AllFalse(labeled, count);
+            All_AllFalse(Sources.OuterLoopCount);
         }
 
         [Theory]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(UnorderedSources))]
-        public static void All_AllTrue(Labeled<ParallelQuery<int>> labeled, int count)
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(16)]
+        public static void All_AllTrue(int count)
         {
-            ParallelQuery<int> query = labeled.Item;
             IntegerRangeSet seen = new IntegerRangeSet(0, count);
-            Assert.True(query.All(x => seen.Add(x)));
+            Assert.True(UnorderedSources.Default(count).All(x => seen.Add(x)));
             seen.AssertComplete();
         }
 
-        [Theory]
+        [Fact]
         [OuterLoop]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 1024 * 1024, 1024 * 1024 * 4 }, MemberType = typeof(UnorderedSources))]
-        public static void All_AllTrue_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
+        public static void All_AllTrue_Longrunning()
         {
-            All_AllTrue(labeled, count);
+            All_AllTrue(Sources.OuterLoopCount);
         }
 
         [Theory]
         [MemberData(nameof(OnlyOneData), new[] { 2, 16 })]
-        public static void All_OneFalse(Labeled<ParallelQuery<int>> labeled, int count, int position)
+        public static void All_OneFalse(int count, int position)
         {
-            ParallelQuery<int> query = labeled.Item;
-            Assert.False(query.All(x => !(x == position)));
+            Assert.False(UnorderedSources.Default(count).All(x => !(x == position)));
         }
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(OnlyOneData), new[] { 1024 * 1024, 1024 * 1024 * 4 })]
-        public static void All_OneFalse_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int position)
+        [MemberData(nameof(OnlyOneData), new int[] {/* Sources.OuterLoopCount */ })]
+        public static void All_OneFalse_Longrunning(int count, int position)
         {
-            All_OneFalse(labeled, count, position);
+            All_OneFalse(count, position);
         }
 
         [Theory]
         [MemberData(nameof(OnlyOneData), new[] { 2, 16 })]
-        public static void All_OneTrue(Labeled<ParallelQuery<int>> labeled, int count, int position)
+        public static void All_OneTrue(int count, int position)
         {
-            ParallelQuery<int> query = labeled.Item;
-            Assert.False(query.All(x => x == position));
+            Assert.False(UnorderedSources.Default(count).All(x => x == position));
         }
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(OnlyOneData), new[] { 1024 * 1024, 1024 * 1024 * 4 })]
-        public static void All_OneTrue_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int position)
+        [MemberData(nameof(OnlyOneData), new int[] {/* Sources.OuterLoopCount */ })]
+        public static void All_OneTrue_Longrunning(int count, int position)
         {
-            All_OneTrue(labeled, count, position);
+            All_OneTrue(count, position);
         }
 
         [Fact]
@@ -103,18 +108,17 @@ namespace System.Linq.Parallel.Tests
             AssertThrows.AlreadyCanceled(source => source.All(x => true));
         }
 
-        [Theory]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 1 }, MemberType = typeof(UnorderedSources))]
-        public static void All_AggregateException(Labeled<ParallelQuery<int>> labeled, int count)
+        [Fact]
+        public static void All_AggregateException()
         {
-            Functions.AssertThrowsWrapped<DeliberateTestException>(() => labeled.Item.All(x => { throw new DeliberateTestException(); }));
+            AssertThrows.Wrapped<DeliberateTestException>(() => UnorderedSources.Default(1).All(x => { throw new DeliberateTestException(); }));
         }
 
         [Fact]
         public static void All_ArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<bool>)null).All(x => x));
-            Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Empty<bool>().All(null));
+            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<bool>)null).All(x => x));
+            Assert.Throws<ArgumentNullException>("predicate", () => ParallelEnumerable.Empty<bool>().All(null));
         }
     }
 }

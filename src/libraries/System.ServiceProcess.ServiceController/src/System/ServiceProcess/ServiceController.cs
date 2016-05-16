@@ -755,7 +755,7 @@ namespace System.ServiceProcess
                     for (i = 0; i < args.Length; i++)
                     {
                         if (args[i] == null)
-                            throw new ArgumentNullException(SR.ArgsCantBeNull, nameof(args));
+                            throw new ArgumentNullException($"{nameof(args)}[{i}]", SR.ArgsCantBeNull);
 
                         argPtrs[i] = Marshal.StringToHGlobalUni(args[i]);
                     }

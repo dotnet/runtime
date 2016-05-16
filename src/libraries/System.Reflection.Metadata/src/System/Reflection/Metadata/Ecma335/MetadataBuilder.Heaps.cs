@@ -12,26 +12,46 @@ namespace System.Reflection.Metadata.Ecma335
 {
     public sealed partial class MetadataBuilder
     {
+        private sealed class HeapBlobBuilder : BlobBuilder
+        {
+            private int _capacityExpansion;
+
+            public HeapBlobBuilder(int capacity)
+                : base(capacity)
+            {
+            }
+
+            protected override BlobBuilder AllocateChunk(int minimalSize)
+            {
+                return new HeapBlobBuilder(Math.Max(Math.Max(minimalSize, ChunkCapacity), _capacityExpansion));
+            }
+
+            internal void SetCapacity(int capacity)
+            {
+                _capacityExpansion = Math.Max(0, capacity - Count - FreeBytes);
+            }
+        }
+
         // #US heap
         private const int UserStringHeapSizeLimit = 0x01000000;
-        private readonly Dictionary<string, int> _userStrings = new Dictionary<string, int>();
-        private readonly BlobBuilder _userStringWriter = new BlobBuilder(1024);
+        private readonly Dictionary<string, int> _userStrings = new Dictionary<string, int>(256);
+        private readonly HeapBlobBuilder _userStringBuilder = new HeapBlobBuilder(4 * 1024);
         private readonly int _userStringHeapStartOffset;
 
         // #String heap
-        private Dictionary<string, StringHandle> _strings = new Dictionary<string, StringHandle>(128);
+        private Dictionary<string, StringHandle> _strings = new Dictionary<string, StringHandle>(256);
         private int[] _stringIndexToResolvedOffsetMap;
-        private BlobBuilder _stringWriter;
+        private readonly HeapBlobBuilder _stringBuilder = new HeapBlobBuilder(4 * 1024);
         private readonly int _stringHeapStartOffset;
 
         // #Blob heap
-        private readonly Dictionary<ImmutableArray<byte>, BlobHandle> _blobs = new Dictionary<ImmutableArray<byte>, BlobHandle>(ByteSequenceComparer.Instance);
+        private readonly Dictionary<ImmutableArray<byte>, BlobHandle> _blobs = new Dictionary<ImmutableArray<byte>, BlobHandle>(1024, ByteSequenceComparer.Instance);
         private readonly int _blobHeapStartOffset;
         private int _blobHeapSize;
 
         // #GUID heap
         private readonly Dictionary<Guid, GuidHandle> _guids = new Dictionary<Guid, GuidHandle>();
-        private readonly BlobBuilder _guidWriter = new BlobBuilder(16); // full metadata has just a single guid
+        private readonly HeapBlobBuilder _guidBuilder = new HeapBlobBuilder(16); // full metadata has just a single guid
 
         private bool _streamsAreComplete;
 
@@ -52,7 +72,7 @@ namespace System.Reflection.Metadata.Ecma335
             // In both full and delta metadata all nil heap handles should have zero value.
             // There should be no blob handle that references the 0 byte added at the 
             // beginning of the delta blob.
-            _userStringWriter.WriteByte(0);
+            _userStringBuilder.WriteByte(0);
 
             _blobs.Add(ImmutableArray<byte>.Empty, default(BlobHandle));
             _blobHeapSize = 1;
@@ -65,7 +85,49 @@ namespace System.Reflection.Metadata.Ecma335
             _blobHeapStartOffset = blobHeapStartOffset;
 
             // Unlike other heaps, #Guid heap in EnC delta is zero-padded.
-            _guidWriter.WriteBytes(0, guidHeapStartOffset);
+            _guidBuilder.WriteBytes(0, guidHeapStartOffset);
+        }
+
+        /// <summary>
+        /// Sets the capacity of the specified table. 
+        /// </summary>
+        /// <param name="heap">Heap index.</param>
+        /// <param name="byteCount">Number of bytes.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="heap"/> is not a valid heap index.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="byteCount"/> is negative or zero.</exception>
+        /// <remarks>
+        /// Use to reduce allocations if the approximate number of bytes is known ahead of time.
+        /// </remarks>
+        public void SetCapacity(HeapIndex heap, int byteCount)
+        {
+            if (byteCount <= 0)
+            {
+                Throw.ArgumentOutOfRange(nameof(byteCount));
+            }
+
+            switch (heap)
+            {
+                case HeapIndex.Blob:
+                    // Not useful to set capacity.
+                    // By the time the blob heap is serialized we know the exact size we need.
+                    break;
+
+                case HeapIndex.Guid:
+                    _guidBuilder.SetCapacity(byteCount);
+                    break;
+
+                case HeapIndex.String:
+                    _stringBuilder.SetCapacity(byteCount);
+                    break;
+
+                case HeapIndex.UserString:
+                    _userStringBuilder.SetCapacity(byteCount);
+                    break;
+
+                default:
+                    Throw.ArgumentOutOfRange(nameof(heap));
+                    break;
+            }
         }
 
         public BlobHandle GetOrAddBlob(BlobBuilder builder)
@@ -138,14 +200,14 @@ namespace System.Reflection.Metadata.Ecma335
 
             result = GetNextGuid();
             _guids.Add(guid, result);
-            _guidWriter.WriteBytes(guid.ToByteArray());
+            _guidBuilder.WriteBytes(guid.ToByteArray());
             return result;
         }
 
         public GuidHandle ReserveGuid(out Blob reservedBlob)
         {
             var handle = GetNextGuid();
-            reservedBlob = _guidWriter.ReserveBytes(16);
+            reservedBlob = _guidBuilder.ReserveBytes(16);
             return handle;
         }
 
@@ -163,7 +225,7 @@ namespace System.Reflection.Metadata.Ecma335
             // Metadata Spec: 
             // The Guid heap is an array of GUIDs, each 16 bytes wide. 
             // Its first element is numbered 1, its second 2, and so on.
-            return MetadataTokens.GuidHandle((_guidWriter.Count >> 4) + 1);
+            return MetadataTokens.GuidHandle((_guidBuilder.Count >> 4) + 1);
         }
 
         public StringHandle GetOrAddString(string str)
@@ -212,7 +274,7 @@ namespace System.Reflection.Metadata.Ecma335
             {
                 Debug.Assert(!_streamsAreComplete);
 
-                int startPosition = _userStringWriter.Count;
+                int startPosition = _userStringBuilder.Count;
                 int encodedLength = str.Length * 2 + 1;
                 index = startPosition + _userStringHeapStartOffset;
 
@@ -224,8 +286,8 @@ namespace System.Reflection.Metadata.Ecma335
                 }
 
                 _userStrings.Add(str, index);
-                _userStringWriter.WriteCompressedInteger(encodedLength);
-                _userStringWriter.WriteUTF16(str);
+                _userStringBuilder.WriteCompressedInteger(encodedLength);
+                _userStringBuilder.WriteUTF16(str);
 
                 // Write out a trailing byte indicating if the string is really quite simple
                 byte stringKind = 0;
@@ -277,7 +339,7 @@ namespace System.Reflection.Metadata.Ecma335
                     break;
                 }
 
-                _userStringWriter.WriteByte(stringKind);
+                _userStringBuilder.WriteByte(stringKind);
             }
 
             return MetadataTokens.UserStringHandle(index);
@@ -294,10 +356,10 @@ namespace System.Reflection.Metadata.Ecma335
         {
             var heapSizes = new int[MetadataTokens.HeapCount];
 
-            heapSizes[(int)HeapIndex.UserString] = _userStringWriter.Count;
-            heapSizes[(int)HeapIndex.String] = _stringWriter.Count;
+            heapSizes[(int)HeapIndex.UserString] = _userStringBuilder.Count;
+            heapSizes[(int)HeapIndex.String] = _stringBuilder.Count;
             heapSizes[(int)HeapIndex.Blob] = _blobHeapSize;
-            heapSizes[(int)HeapIndex.Guid] = _guidWriter.Count;
+            heapSizes[(int)HeapIndex.Guid] = _guidBuilder.Count;
 
             return ImmutableArray.CreateRange(heapSizes);
         }
@@ -313,19 +375,17 @@ namespace System.Reflection.Metadata.Ecma335
             sorted.Sort(new SuffixSort());
             _strings = null;
 
-            _stringWriter = new BlobBuilder(1024);
-
             // Create VirtIdx to Idx map and add entry for empty string
             _stringIndexToResolvedOffsetMap = new int[sorted.Count + 1];
 
             _stringIndexToResolvedOffsetMap[0] = 0;
-            _stringWriter.WriteByte(0);
+            _stringBuilder.WriteByte(0);
 
             // Find strings that can be folded
             string prev = string.Empty;
             foreach (KeyValuePair<string, StringHandle> entry in sorted)
             {
-                int position = _stringHeapStartOffset + _stringWriter.Count;
+                int position = _stringHeapStartOffset + _stringBuilder.Count;
                 
                 // It is important to use ordinal comparison otherwise we'll use the current culture!
                 if (prev.EndsWith(entry.Key, StringComparison.Ordinal) && !BlobUtilities.IsLowSurrogateChar(entry.Key[0]))
@@ -336,8 +396,8 @@ namespace System.Reflection.Metadata.Ecma335
                 else
                 {
                     _stringIndexToResolvedOffsetMap[MetadataTokens.GetHeapOffset(entry.Value)] = position;
-                    _stringWriter.WriteUTF8(entry.Key, allowUnpairedSurrogates: false);
-                    _stringWriter.WriteByte(0);
+                    _stringBuilder.WriteUTF8(entry.Key, allowUnpairedSurrogates: false);
+                    _stringBuilder.WriteByte(0);
                 }
 
                 prev = entry.Key;
@@ -374,9 +434,9 @@ namespace System.Reflection.Metadata.Ecma335
 
         public void WriteHeapsTo(BlobBuilder writer)
         {
-            WriteAligned(_stringWriter, writer);
-            WriteAligned(_userStringWriter, writer);
-            WriteAligned(_guidWriter, writer);
+            WriteAligned(_stringBuilder, writer);
+            WriteAligned(_userStringBuilder, writer);
+            WriteAligned(_guidBuilder, writer);
             WriteAlignedBlobHeap(writer);
         }
 

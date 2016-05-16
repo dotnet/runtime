@@ -13,11 +13,11 @@ namespace System.Net.Http.Functional.Tests
     public class HttpClientHandler_DefaultProxyCredentials_Test : RemoteExecutorTestBase
     {
         [Fact]
-        public void Default_CredentialCacheDefaultCredentials_Same()
+        public void Default_Get_Null()
         {
             using (var handler = new HttpClientHandler())
             {
-                Assert.Same(CredentialCache.DefaultCredentials, handler.DefaultProxyCredentials);
+                Assert.Null(handler.DefaultProxyCredentials);
             }
         }
 
@@ -65,7 +65,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [PlatformSpecific(PlatformID.AnyUnix)] // proxies set via the http_proxy environment variable are specific to Unix
-        public void ProxySetViaEnvironmentVariable_DefaultCredentialsUsed()
+        public void ProxySetViaEnvironmentVariable_DefaultProxyCredentialsUsed()
         {
             int port;
             Task<LoopbackGetRequestHttpProxy.ProxyResult> proxyTask = LoopbackGetRequestHttpProxy.StartAsync(out port, requireAuth: true, expectCreds: true);

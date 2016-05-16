@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Net.Sockets;
+using System.Net.Tests;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
@@ -16,9 +17,9 @@ namespace System.Net.Security.Tests
         [Fact]
         public async void SslStream_SendReceiveOverNetworkStream_Ok()
         {
-            X509Certificate2 serverCertificate = TestConfiguration.GetServerCertificate();
             TcpListener listener = new TcpListener(IPAddress.Any, 0);
 
+            using (X509Certificate2 serverCertificate = CertificateConfiguration.GetServerCertificate())
             using (TcpClient client = new TcpClient())
             {
                 listener.Start();

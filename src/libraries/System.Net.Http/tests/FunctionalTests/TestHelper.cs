@@ -5,7 +5,8 @@
 using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
-
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Net.Http.Functional.Tests
@@ -78,6 +79,33 @@ namespace System.Net.Http.Functional.Tests
             {
                 return md5.ComputeHash(data);
             }        
+        }
+
+        public static Task WhenAllCompletedOrAnyFailed(params Task[] tasks)
+        {
+            var tcs = new TaskCompletionSource<bool>();
+
+            int remaining = tasks.Length;
+            foreach (var task in tasks)
+            {
+                task.ContinueWith(t =>
+                {
+                    if (t.IsFaulted)
+                    {
+                        tcs.SetException(t.Exception.InnerExceptions);
+                    }
+                    else if (t.IsCanceled)
+                    {
+                        tcs.SetCanceled();
+                    }
+                    else if (Interlocked.Decrement(ref remaining) == 0)
+                    {
+                        tcs.SetResult(true);
+                    }
+                }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+            }
+
+            return tcs.Task;
         }
     }
 }

@@ -12,7 +12,7 @@ namespace System.Globalization
         private unsafe string GetAsciiCore(char* unicode, int count)
         {
             uint flags = Flags;
-            
+
             // Determine the required length
             int length = Interop.mincore.IdnToAscii(flags, unicode, count, null, 0);
             if (length == 0)

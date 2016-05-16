@@ -135,7 +135,7 @@ namespace System.Net.Http
         private IWebProxy _proxy = null;
         private ICredentials _serverCredentials = null;
         private bool _useProxy = HttpHandlerDefaults.DefaultUseProxy;
-        private ICredentials _defaultProxyCredentials = CredentialCache.DefaultCredentials;
+        private ICredentials _defaultProxyCredentials = null;
         private DecompressionMethods _automaticDecompression = HttpHandlerDefaults.DefaultAutomaticDecompression;
         private bool _preAuthenticate = HttpHandlerDefaults.DefaultPreAuthenticate;
         private CredentialCache _credentialCache = null; // protected by LockObject
@@ -150,7 +150,8 @@ namespace System.Net.Http
         private X509Certificate2Collection _clientCertificates;
         private Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> _serverCertificateValidationCallback;
         private bool _checkCertificateRevocationList;
-        private SslProtocols _sslProtocols = SecurityProtocol.DefaultSecurityProtocols;
+        private SslProtocols _sslProtocols = SslProtocols.None; // use default
+        private IDictionary<String, Object> _properties; // Only create dictionary when required.
 
         private object LockObject { get { return _agent; } }
 
@@ -268,11 +269,13 @@ namespace System.Net.Http
             get { return _sslProtocols; }
             set
             {
-                SecurityProtocol.ThrowOnNotAllowed(value, allowNone: false);
+                SecurityProtocol.ThrowOnNotAllowed(value, allowNone: true);
                 CheckDisposedOrStarted();
                 _sslProtocols = value;
             }
         }
+
+        private SslProtocols ActualSslProtocols => this.SslProtocols != SslProtocols.None ? this.SslProtocols : SecurityProtocol.DefaultSecurityProtocols;
 
         internal bool SupportsAutomaticDecompression => s_supportsAutomaticDecompression;
 
@@ -317,21 +320,6 @@ namespace System.Net.Http
             {
                 CheckDisposedOrStarted();
                 _cookieContainer = value;
-            }
-        }
-
-        public TimeSpan ConnectTimeout
-        {
-            get { return _connectTimeout; }
-            set
-            {
-                if (value != Timeout.InfiniteTimeSpan && (value <= TimeSpan.Zero || value > s_maxTimeout))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
-
-                CheckDisposedOrStarted();
-                _connectTimeout = value;
             }
         }
 
@@ -400,6 +388,19 @@ namespace System.Net.Http
         {
             get { return false; }
             set { }
+        }
+
+        public IDictionary<string, object> Properties
+        {
+            get
+            {
+                if (_properties == null)
+                {
+                    _properties = new Dictionary<String, object>();
+                }
+
+                return _properties;
+            }
         }
         #endregion
 

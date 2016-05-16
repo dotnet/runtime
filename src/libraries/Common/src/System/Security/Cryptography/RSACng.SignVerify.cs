@@ -37,7 +37,10 @@ namespace System.Security.Cryptography
                     delegate (AsymmetricPaddingMode paddingMode, void* pPaddingInfo)
                     {
                         int estimatedSize = KeySize / 8;
-                        signature = GetKeyHandle().SignHash(hash, paddingMode, pPaddingInfo, estimatedSize);
+                        using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
+                        {
+                            signature = keyHandle.SignHash(hash, paddingMode, pPaddingInfo, estimatedSize);
+                        }
                     }
                 );
                 return signature;
@@ -60,7 +63,10 @@ namespace System.Security.Cryptography
                 SignOrVerify(padding, hashAlgorithm, hash,
                     delegate (AsymmetricPaddingMode paddingMode, void* pPaddingInfo)
                     {
-                        verified = GetKeyHandle().VerifyHash(hash, signature, paddingMode, pPaddingInfo);
+                        using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
+                        {
+                            verified = keyHandle.VerifyHash(hash, signature, paddingMode, pPaddingInfo);
+                        }
                     }
                 );
                 return verified;

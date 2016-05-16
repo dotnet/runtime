@@ -636,12 +636,11 @@ nameof(binaryForm));
             int error;
             IntPtr byteArray = IntPtr.Zero;
             uint byteArraySize = 0;
-            const System.Int32 TRUE = 1;
             byte[] binaryForm = null;
 
             try
             {
-                if (TRUE != Interop.mincore.ConvertStringSdToSd(
+                if (!Interop.mincore.ConvertStringSdToSd(
                         sddlForm,
                         GenericSecurityDescriptor.Revision,
                         out byteArray,

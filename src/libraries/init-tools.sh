@@ -47,7 +47,7 @@ if [ ! -e $__PROJECT_JSON_FILE ]; then
     echo "Running: $__scriptpath/init-tools.sh" > $__init_tools_log
     if [ ! -e $__DOTNET_PATH ]; then
         echo "Installing dotnet cli..."
-        __DOTNET_LOCATION="https://dotnetcli.blob.core.windows.net/dotnet/beta/Binaries/${__DOTNET_TOOLS_VERSION}/${__DOTNET_PKG}.${__DOTNET_TOOLS_VERSION}.tar.gz"
+        __DOTNET_LOCATION="https://dotnetcli.blob.core.windows.net/dotnet/preview/Binaries/${__DOTNET_TOOLS_VERSION}/${__DOTNET_PKG}.${__DOTNET_TOOLS_VERSION}.tar.gz"
         # curl has HTTPS CA trust-issues less often than wget, so lets try that first.
         echo "Installing '${__DOTNET_LOCATION}' to '$__DOTNET_PATH/dotnet.tar'" >> $__init_tools_log
         which curl > /dev/null 2> /dev/null
@@ -82,6 +82,10 @@ if [ ! -e $__PROJECT_JSON_FILE ]; then
     echo "Initializing BuildTools..."
     echo "Running: $__BUILD_TOOLS_PATH/init-tools.sh $__scriptpath $__DOTNET_CMD $__TOOLRUNTIME_DIR" >> $__init_tools_log
     $__BUILD_TOOLS_PATH/init-tools.sh $__scriptpath $__DOTNET_CMD $__TOOLRUNTIME_DIR >> $__init_tools_log
+    if [ "$?" != "0" ]; then
+        echo "ERROR: An error occured when trying to initialize the tools. Please check '$__init_tools_log' for more details."
+        exit 1
+    fi
     echo "Done initializing tools."
 else
     echo "Tools are already initialized"

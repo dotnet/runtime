@@ -23,7 +23,7 @@ namespace System.Xml
         public XmlDictionaryString Add(int id, string value)
         {
             if (id < 0)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(SR.Format(SR.XmlInvalidID)));
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(id), SR.Format(SR.XmlInvalidID)));
             if (value == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("value");
             XmlDictionaryString xmlString;

@@ -80,6 +80,7 @@ namespace System.Net.NetworkInformation
         protected unsafe void ProcessIpv6Address(Interop.Sys.IpAddressInfo* addressInfo, uint scopeId)
         {
             IPAddress address = IPAddressUtil.GetIPAddressFromNativeInfo(addressInfo);
+            address.ScopeId = scopeId;
             AddAddress(address);
             _ipv6ScopeId = scopeId;
         }

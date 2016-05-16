@@ -353,17 +353,13 @@ namespace System.Net.Http
                     // Continue processing as long as there are any active operations
                     while (true)
                     {
-                        // First handle any requests in the incoming requests queue. If any are
-                        // shutdown requests, exit.  (This method is factored out mostly to keep this
-                        // loop concise, but also partly to avoid keeping any references to EasyRequests
-                        // rooted by the stack and thus preventing them from being GC'd and the response
-                        // stream finalized.  That's mainly a concern for debug builds, where the JIT may
-                        // extend a local's lifetime.  The same logic applies to some of the other helpers
-                        // used later in this loop.)
-                        if (!HandleIncomingRequests())
-                        {
-                            return;
-                        }
+                        // First handle any requests in the incoming requests queue. 
+                        // (This method is factored out mostly to keep this loop concise, but also partly 
+                        // to avoid keeping any references to EasyRequests rooted by the stack and thus 
+                        // preventing them from being GC'd and the response stream finalized.  That's mainly
+                        // a concern for debug builds, where the JIT may extend a local's lifetime.  The same 
+                        // logic applies to some of the other helpers used later in this loop.)
+                        HandleIncomingRequests();
 
                         // If we have no active operations, there's no work to do right now.
                         if (_activeOperations.Count == 0)
@@ -413,8 +409,8 @@ namespace System.Net.Http
                 }
                 finally
                 {
-                    // There may still be active operations, if either an unexpected exception occurred or we received
-                    // a shutdown request. Make sure to clean up any remaining operations, failing them and releasing their resources.
+                    // There may still be active operations, if  an unexpected exception occurred.
+                    // Make sure to clean up any remaining operations, failing them and releasing their resources.
                     if (_activeOperations.Count > 0)
                     {
                         CleanUpRemainingActiveOperations(eventLoopError);
@@ -425,8 +421,7 @@ namespace System.Net.Http
             /// <summary>
             /// Drains the incoming requests queue, dequeueing each request and handling it according to its type.
             /// </summary>
-            /// <returns>true if processing should continue; false if a shutdown request came in such that processing should cease.</returns>
-            private bool HandleIncomingRequests()
+            private void HandleIncomingRequests()
             {
                 Debug.Assert(!Monitor.IsEntered(_incomingRequests), "Incoming requests lock should only be held while accessing the queue");
 
@@ -438,7 +433,7 @@ namespace System.Net.Http
                     {
                         if (_incomingRequests.Count == 0)
                         {
-                            return true;
+                            return;
                         }
 
                         request = _incomingRequests.Dequeue();
@@ -478,8 +473,13 @@ namespace System.Net.Http
                             break;
 
                         case IncomingRequestType.Shutdown:
+                            // When we get a shutdown request, we want to stop all operations that haven't had
+                            // their response message published.  Other operations may continue.
                             Debug.Assert(easy == null, "Expected null easy for a Shutdown request");
-                            return false; // exit processing
+                            CleanUpRemainingActiveOperations(
+                                new OperationCanceledException(SR.net_http_unix_handler_disposed), 
+                                onlyIfResponseMessageNotPublished: true);
+                            break;
 
                         default:
                             Debug.Fail("Invalid request type: " + request.Type);
@@ -558,7 +558,12 @@ namespace System.Net.Http
 
             /// <summary>When shutting down the multi agent worker, ensure any active operations are forcibly completed.</summary>
             /// <param name="error">The error to use to complete any remaining operations.</param>
-            private void CleanUpRemainingActiveOperations(Exception error)
+            /// <param name="onlyIfResponseMessageNotPublished">
+            /// true if the only active operations that should be canceled and cleaned up are those which have not
+            /// yet had their response message published. false if all active operations should be canceled regardless
+            /// of where they are in processing.
+            /// </param>
+            private void CleanUpRemainingActiveOperations(Exception error, bool onlyIfResponseMessageNotPublished = false)
             {
                 EventSourceTrace("Shutting down {0} active operations.", _activeOperations.Count);
                 try
@@ -575,13 +580,15 @@ namespace System.Net.Http
                         {
                             IntPtr failingOperationGcHandle = pair.Key;
                             ActiveRequest failingActiveRequest = pair.Value;
-
-                            // Deactivate the request, removing it from the multi handle and allowing it to be cleaned up
-                            DeactivateActiveRequest(failingActiveRequest, failingOperationGcHandle);
-
-                            // Complete the operation's task and clean up any of its resources, if it still exists.
                             EasyRequest easy = failingActiveRequest.EasyWrapper.Target; // may be null if the EasyRequest was already collected
-                            easy?.FailRequestAndCleanup(CreateHttpRequestException(error));
+                            if (!onlyIfResponseMessageNotPublished || (easy != null && !easy.Task.IsCompleted))
+                            {
+                                // Deactivate the request, removing it from the multi handle and allowing it to be cleaned up
+                                DeactivateActiveRequest(failingActiveRequest, failingOperationGcHandle);
+
+                                // Complete the operation's task and clean up any of its resources, if it still exists.
+                                easy?.FailRequestAndCleanup(CreateHttpRequestException(error));
+                            }
                         }
                         catch (Exception e)
                         {
@@ -599,8 +606,11 @@ namespace System.Net.Http
                 }
                 finally
                 {
-                    // Ensure the table is now cleared.
-                    _activeOperations.Clear();
+                    if (!onlyIfResponseMessageNotPublished)
+                    {
+                        // Ensure the table is now cleared.
+                        _activeOperations.Clear();
+                    }
                 }
             }
 

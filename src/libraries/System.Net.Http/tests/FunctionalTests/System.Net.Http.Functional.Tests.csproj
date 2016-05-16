@@ -10,6 +10,7 @@
     <ProjectGuid>{C85CF035-7804-41FF-9557-48B7C948B58D}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Net.Http.Functional.Tests</AssemblyName>
+    <KeepAllProjectReferences>true</KeepAllProjectReferences>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' and '$(ProjectJson)' == '' ">
@@ -26,6 +27,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
   <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
+      <Link>Common\System\PlatformDetection.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorTestBase.cs">
       <Link>Common\System\Diagnostics\RemoteExecutorTestBase.cs</Link>
     </Compile>
@@ -35,8 +39,14 @@
     <Compile Include="$(CommonTestPath)\System\IO\FileCleanupTestBase.cs">
       <Link>Common\System\IO\FileCleanupTestBase.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\CertificateConfiguration.cs">
+      <Link>Common\System\Net\CertificateConfiguration.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\HttpTestServers.cs">
       <Link>Common\System\Net\HttpTestServers.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\TestSettings.cs">
+      <Link>Common\System\Net\TestSettings.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\TestWebProxies.cs">
       <Link>Common\System\Net\TestWebProxies.cs</Link>
@@ -48,7 +58,11 @@
     <Compile Include="FakeDiagnosticSourceListenerObserver.cs" />
     <Compile Include="FormUrlEncodedContentTest.cs" />
     <Compile Include="HttpClientHandlerTest.cs" />
+    <Compile Include="HttpClientHandlerTest.DefaultProxyCredentials.cs" />
+    <Compile Include="HttpClientHandlerTest.MaxConnectionsPerServer.cs" />
+    <Compile Include="HttpClientHandlerTest.MaxResponseHeadersLength.cs" />
     <Compile Include="HttpClientHandlerTest.ServerCertificates.cs" />
+    <Compile Include="HttpClientHandlerTest.SslProtocols.cs" />
     <Compile Include="HttpClientTest.cs" />
     <Compile Include="HttpClientMiniStressTest.cs" />
     <Compile Include="HttpContentTest.cs" />
@@ -73,13 +87,6 @@
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="DefaultCredentialsTest.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
-    <Compile Include="HttpClientHandlerTest.DefaultProxyCredentials.cs" />
-    <Compile Include="HttpClientHandlerTest.MaxConnectionsPerServer.cs" />
-    <Compile Include="HttpClientHandlerTest.MaxResponseHeadersLength.cs" />
-    <Compile Include="HttpClientHandlerTest.SslProtocols.cs" />
-    <Compile Include="HttpClientHandlerTest.Timeouts.cs" />
-  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.Net.Http.csproj">
       <Project>{1D422B1D-D7C4-41B9-862D-EB3D98DF37DE}</Project>
@@ -90,6 +97,9 @@
       <Name>RemoteExecutorConsoleApp</Name>
       <OSGroup>$(InputOSGroup)</OSGroup>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <SupplementalTestData Include="$(PackagesDir)System.Net.TestData\1.0.0-prerelease\content\**\*.*" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

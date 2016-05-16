@@ -11,44 +11,39 @@ namespace System.Globalization
             uint flags = Flags;
             CheckInvalidIdnCharacters(unicode, count, flags, nameof(unicode));
 
-            const int StackAllocThreshold = 512;
-            if (count < StackAllocThreshold)
+            const int StackallocThreshold = 512;
+            // Each unicode character is represented by up to 3 ASCII chars
+            // and the whole string is prefixed by "xn--" (length 4)
+            int estimatedLength = (int)Math.Min(count * 3L + 4, StackallocThreshold);
+            int actualLength;
+            if (estimatedLength < StackallocThreshold)
             {
-                char* output = stackalloc char[count];
-                return GetAsciiCore(unicode, count, flags, output, count, reattempt: true);
+                char* outputStack = stackalloc char[estimatedLength];
+                actualLength = Interop.GlobalizationNative.ToAscii(flags, unicode, count, outputStack, estimatedLength);
+                if (actualLength > 0 && actualLength <= estimatedLength)
+                {
+                    return new string(outputStack, 0, actualLength);
+                }
             }
             else
             {
-                char[] output = new char[count];
-                fixed (char* pOutput = output)
-                {
-                    return GetAsciiCore(unicode, count, flags, pOutput, count, reattempt: true);
-                }
+                actualLength = Interop.GlobalizationNative.ToAscii(flags, unicode, count, null, 0);
             }
-        }
-
-        private unsafe string GetAsciiCore(char* unicode, int count, uint flags, char* output, int outputLength, bool reattempt)
-        {
-            int realLen = Interop.GlobalizationNative.ToAscii(flags, unicode, count, output, outputLength);
-
-            if (realLen == 0)
+            if (actualLength == 0)
             {
                 throw new ArgumentException(SR.Argument_IdnIllegalName, nameof(unicode));
             }
-            else if (realLen <= outputLength)
-            {
-                return new string(output, 0, realLen);
-            }
-            else if (reattempt)
-            {
-                char[] newOutput = new char[realLen];
-                fixed (char* pNewOutput = newOutput)
-                {
-                    return GetAsciiCore(unicode, count, flags, pNewOutput, realLen, reattempt: false);
-                }
-            }
 
-            throw new ArgumentException(SR.Argument_IdnIllegalName, nameof(unicode));
+            char[] outputHeap = new char[actualLength];
+            fixed (char* pOutputHeap = outputHeap)
+            {
+                actualLength = Interop.GlobalizationNative.ToAscii(flags, unicode, count, pOutputHeap, actualLength);
+                if (actualLength == 0 || actualLength > outputHeap.Length)
+                {
+                    throw new ArgumentException(SR.Argument_IdnIllegalName, nameof(unicode));
+                }
+                return new string(pOutputHeap, 0, actualLength);
+            }
         }
 
         private unsafe string GetUnicodeCore(char* ascii, int count)

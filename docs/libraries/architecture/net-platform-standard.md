@@ -1,10 +1,5 @@
 ﻿# .NET Platform Standard
 
-## Disclaimer
-We're sharing early plans for the future of building .NET class libraries. To track the progress of this work refer to https://github.com/dotnet/corefx/issues/4367
-
-**NOTE: The netstandard TFM does not work in packages as yet. It's still implemented as dotnet. Please follow the issues for more details and progress updates.**
-
 ## Why?
 To provide a more concrete guarantee of binary portability to future .NET-capable platforms with an easier-to-understand platform versioning plan.
 
@@ -254,7 +249,7 @@ Tooling support for the `netstandard` TFM is as follows. This list will be updat
 - **Visual Studio 2012**: With NuGet Extension `<TBD>` 
 - **NuGet CLI 3.x**: `<TBD>`
 - **NuGet CLI 2.x**: `<TBD>`
-- **DNU**: `<TBD>`
+- **.NET CLI**: `Preview 1`
 - **Xamarin Studio**: `<TBD>`
 
 ## List of Proposed Standard Platform Contracts from CoreFX (tentative)

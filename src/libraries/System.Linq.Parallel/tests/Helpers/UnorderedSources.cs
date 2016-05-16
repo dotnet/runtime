@@ -10,7 +10,41 @@ namespace System.Linq.Parallel.Tests
 {
     public static class UnorderedSources
     {
-        public const int AdditionalTypeLimit = 1024;
+        /// <summary>
+        /// Returns a default ParallelQuery source.
+        /// </summary>
+        /// For most instances when dealing with unordered input, the individual source does not matter.
+        ///
+        /// Instead, that is reserved for ordered, where partitioning and dealing with indices has important
+        /// secondary effects.  The goal of unordered input, then, is mostly to make sure the query works.
+        /// <param name="count">The count of elements.</param>
+        /// <returns>A ParallelQuery with elements running from 0 to count - 1</returns>
+        public static ParallelQuery<int> Default(int count)
+        {
+            return Default(0, count);
+        }
+
+        /// <summary>
+        /// Returns a default ParallelQuery source.
+        /// </summary>
+        /// For most instances when dealing with unordered input, the individual source does not matter.
+        ///
+        /// Instead, that is reserved for ordered, where partitioning and dealing with indices has important
+        /// secondary effects.  The goal of unordered input, then, is mostly to make sure the query works.
+        /// <param name="start">The starting element.</param>
+        /// <param name="count">The count of elements.</param>
+        /// <returns>A ParallelQuery with elements running from 0 to count - 1</returns>
+        public static ParallelQuery<int> Default(int start, int count)
+        {
+            // Of the underlying types used elsewhere, some have "problems",
+            // in the sense that they may be too-easily indexible.
+            // For instance, Array and List are both trivially range partitionable and indexible.
+            // A parallelized Enumerable.Range is being used (not easily partitionable or indexible),
+            // but at the moment ParallelEnumerable.Range is being used for speed and ease of use.
+            // ParallelEnumerable.Range is not trivially indexible, but is easily range partitioned.
+            return ParallelEnumerable.Range(start, count);
+        }
+
 
         // Get a set of ranges, of each count in `counts`.
         // The start of each range is determined by passing the count into the `start` predicate.
@@ -50,6 +84,17 @@ namespace System.Linq.Parallel.Tests
         public static IEnumerable<object[]> Ranges(int[] counts)
         {
             foreach (object[] parms in Ranges(counts.Cast<int>())) yield return parms;
+        }
+
+        /// <summary>
+        /// Get a set of ranges, starting at 0, and having OuterLoopCount elements.
+        /// </summary>
+        /// <returns>Entries for test data.
+        /// The first element is the Labeled{ParallelQuery{int}} range,
+        /// and the second element is the count</returns>
+        public static IEnumerable<object[]> OuterLoopRanges()
+        {
+            foreach (object[] parms in Ranges(new[] { Sources.OuterLoopCount })) yield return parms;
         }
 
         /// <summary>
@@ -102,9 +147,10 @@ namespace System.Linq.Parallel.Tests
         /// the third element is the right Labeled{ParallelQuery{int}} range, and the fourth element is the right count.</returns>
         public static IEnumerable<object[]> BinaryRanges(IEnumerable<int> leftCounts, IEnumerable<int> rightCounts)
         {
+            IEnumerable<object[]> rightRanges = Ranges(rightCounts);
             foreach (object[] left in Ranges(leftCounts))
             {
-                foreach (object[] right in Ranges(rightCounts))
+                foreach (object[] right in rightRanges)
                 {
                     yield return left.Concat(right).ToArray();
                 }
@@ -143,19 +189,12 @@ namespace System.Linq.Parallel.Tests
         /// <returns>Entries for test data.
         /// The first element is the Labeled{ParallelQuery{int}} range,
         /// the second element is the count, and one additional element for each modifier.</returns>
-        public static IEnumerable<object[]> Ranges<T>(IEnumerable<int> counts, params Func<int, T>[] modifiers)
+        public static IEnumerable<object[]> Ranges<T>(IEnumerable<int> counts, Func<int, T> modifiers)
         {
-            if (modifiers == null || !modifiers.Any())
+            foreach (object[] parms in Ranges(counts))
             {
-                foreach (object[] parms in Ranges(counts)) yield return parms;
-            }
-            else
-            {
-                foreach (object[] parms in Ranges(counts))
-                {
-                    int count = (int)parms[1];
-                    yield return parms.Concat(modifiers.Select(f => f(count)).Cast<object>()).ToArray();
-                }
+                int count = (int)parms[1];
+                yield return parms.Append(modifiers(count)).ToArray();
             }
         }
 
@@ -172,22 +211,13 @@ namespace System.Linq.Parallel.Tests
         /// <returns>Entries for test data.
         /// The first element is the Labeled{ParallelQuery{int}} range,
         /// the second element is the count, and one additional element for each modifier.</returns>
-        public static IEnumerable<object[]> Ranges<T>(IEnumerable<int> counts, params Func<int, IEnumerable<T>>[] modifiers)
+        public static IEnumerable<object[]> Ranges<T>(IEnumerable<int> counts, Func<int, IEnumerable<T>> modifiers)
         {
-            if (modifiers == null || !modifiers.Any())
+            foreach (object[] parms in Ranges(counts))
             {
-                foreach (object[] parms in Ranges(counts)) yield return parms;
-            }
-            else
-            {
-                foreach (object[] parms in Ranges(counts))
+                foreach (T mod in modifiers((int)parms[1]))
                 {
-                    IEnumerable<IEnumerable<T>> mod = modifiers.Select(f => f((int)parms[1]));
-
-                    for (int i = 0, count = mod.Max(e => e.Count()); i < count; i++)
-                    {
-                        yield return parms.Concat(mod.Select(e => e.ElementAt(i % e.Count())).Cast<object>()).ToArray();
-                    }
+                    yield return parms.Append(mod).ToArray();
                 }
             }
         }
@@ -203,22 +233,12 @@ namespace System.Linq.Parallel.Tests
         {
             yield return Labeled.Label("ParallelEnumerable.Range", ParallelEnumerable.Range(start, count));
             yield return Labeled.Label("Enumerable.Range", Enumerable.Range(start, count).AsParallel());
-            int[] rangeArray = GetRangeArray(start, count);
+            int[] rangeArray = Enumerable.Range(start, count).ToArray();
             yield return Labeled.Label("Array", rangeArray.AsParallel());
             IList<int> rangeList = rangeArray.ToList();
             yield return Labeled.Label("List", rangeList.AsParallel());
-            if (count < AdditionalTypeLimit + 1)
-            {
-                yield return Labeled.Label("Partitioner", Partitioner.Create(rangeArray).AsParallel());
-                yield return Labeled.Label("ReadOnlyCollection", new ReadOnlyCollection<int>(rangeList).AsParallel());
-            }
-        }
-
-        internal static int[] GetRangeArray(int start, int count)
-        {
-            int[] range = new int[count];
-            for (int i = 0; i < count; i++) range[i] = start + i;
-            return range;
+            yield return Labeled.Label("Partitioner", Partitioner.Create(rangeArray).AsParallel());
+            yield return Labeled.Label("ReadOnlyCollection", new ReadOnlyCollection<int>(rangeList).AsParallel());
         }
     }
 }

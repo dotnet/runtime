@@ -193,6 +193,24 @@ namespace System.Collections.Tests
             }
         }
 
+        /// <summary>
+        /// Used in IDictionary_Generic_Values_Enumeration_ParentDictionaryModifiedInvalidates and 
+        /// IDictionary_Generic_Keys_Enumeration_ParentDictionaryModifiedInvalidates.
+        /// Some collections (e.g. ConcurrentDictionary) do not throw an InvalidOperationException
+        /// when enumerating the Keys or Values property and the parent is modified.
+        /// </summary>
+        protected virtual bool IDictionary_Generic_Keys_Values_Enumeration_ThrowsInvalidOperation_WhenParentModified => true;
+
+        /// <summary>
+        /// Used in IDictionary_Generic_Values_ModifyingTheDictionaryUpdatesTheCollection and 
+        /// IDictionary_Generic_Keys_ModifyingTheDictionaryUpdatesTheCollection/
+        /// Some collections (e..g ConcurrentDictionary) use iterators in the Keys and Values properties,
+        /// and do not respond to updates in the base collection.
+        /// </summary>
+        protected virtual bool IDictionary_Generic_Keys_Values_ModifyingTheDictionaryUpdatesTheCollection => true;
+
+        protected virtual bool IDictionary_Generic_Keys_Values_ResetImplemented => ResetImplemented;
+
         #endregion
 
         #region Item Getter
@@ -323,23 +341,34 @@ namespace System.Collections.Tests
         {
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
             ICollection<TKey> keys = dictionary.Keys;
+            int previousCount = keys.Count;
             if (count > 0)
                 Assert.NotEmpty(keys);
             dictionary.Clear();
-            Assert.Empty(keys);
+            if (IDictionary_Generic_Keys_Values_ModifyingTheDictionaryUpdatesTheCollection)
+            {
+                Assert.Empty(keys);
+            }
+            else
+            {
+                Assert.Equal(previousCount, keys.Count);
+            }
         }
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_Generic_Keys_Enumeration_ParentDictionaryModifiedInvalidates(int count)
         {
-            IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
-            ICollection<TKey> keys = dictionary.Keys;
-            IEnumerator<TKey> keysEnum = keys.GetEnumerator();
-            dictionary.Add(GetNewKey(dictionary), CreateTValue(3432));
-            Assert.Throws<InvalidOperationException>(() => keysEnum.MoveNext());
-            Assert.Throws<InvalidOperationException>(() => keysEnum.Reset());
-            var cur = keysEnum.Current;
+            if (IDictionary_Generic_Keys_Values_Enumeration_ThrowsInvalidOperation_WhenParentModified)
+            {
+                IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
+                ICollection<TKey> keys = dictionary.Keys;
+                IEnumerator<TKey> keysEnum = keys.GetEnumerator();
+                dictionary.Add(GetNewKey(dictionary), CreateTValue(3432));
+                Assert.Throws<InvalidOperationException>(() => keysEnum.MoveNext());
+                Assert.Throws<InvalidOperationException>(() => keysEnum.Reset());
+                var cur = keysEnum.Current;
+            }
         }
 
         [Theory]
@@ -361,7 +390,7 @@ namespace System.Collections.Tests
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
             ICollection<TKey> keys = dictionary.Keys;
             var enumerator = keys.GetEnumerator();
-            if (ResetImplemented)
+            if (IDictionary_Generic_Keys_Values_ResetImplemented)
                 enumerator.Reset();
             else
                 Assert.Throws<NotSupportedException>(() => enumerator.Reset());
@@ -402,23 +431,34 @@ namespace System.Collections.Tests
         {
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
             ICollection<TValue> values = dictionary.Values;
+            int previousCount = values.Count;
             if (count > 0)
                 Assert.NotEmpty(values);
             dictionary.Clear();
-            Assert.Empty(values);
+            if (IDictionary_Generic_Keys_Values_ModifyingTheDictionaryUpdatesTheCollection)
+            {
+                Assert.Empty(values);
+            }
+            else
+            {
+                Assert.Equal(previousCount, values.Count);
+            }
         }
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_Generic_Values_Enumeration_ParentDictionaryModifiedInvalidates(int count)
         {
-            IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
-            ICollection<TValue> values = dictionary.Values;
-            IEnumerator<TValue> valuesEnum = values.GetEnumerator();
-            dictionary.Add(GetNewKey(dictionary), CreateTValue(3432));
-            Assert.Throws<InvalidOperationException>(() => valuesEnum.MoveNext());
-            Assert.Throws<InvalidOperationException>(() => valuesEnum.Reset());
-            var cur = valuesEnum.Current;
+            if (IDictionary_Generic_Keys_Values_Enumeration_ThrowsInvalidOperation_WhenParentModified)
+            {
+                IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
+                ICollection<TValue> values = dictionary.Values;
+                IEnumerator<TValue> valuesEnum = values.GetEnumerator();
+                dictionary.Add(GetNewKey(dictionary), CreateTValue(3432));
+                Assert.Throws<InvalidOperationException>(() => valuesEnum.MoveNext());
+                Assert.Throws<InvalidOperationException>(() => valuesEnum.Reset());
+                var cur = valuesEnum.Current;
+            }
         }
 
         [Theory]
@@ -440,7 +480,7 @@ namespace System.Collections.Tests
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
             ICollection<TValue> values = dictionary.Values;
             var enumerator = values.GetEnumerator();
-            if (ResetImplemented)
+            if (IDictionary_Generic_Keys_Values_ResetImplemented)
                 enumerator.Reset();
             else
                 Assert.Throws<NotSupportedException>(() => enumerator.Reset());

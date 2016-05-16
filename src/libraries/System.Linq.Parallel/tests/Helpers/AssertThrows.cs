@@ -74,7 +74,8 @@ namespace System.Linq.Parallel.Tests
         public static T Wrapped<T>(Action action) where T : Exception
         {
             AggregateException ae = Assert.Throws<AggregateException>(action);
-            return Assert.IsType<T>(Assert.Single(ae.InnerExceptions));
+            Assert.All(ae.InnerExceptions, e => Assert.IsType<T>(e));
+            return ae.InnerExceptions.Cast<T>().First();
         }
     }
 }

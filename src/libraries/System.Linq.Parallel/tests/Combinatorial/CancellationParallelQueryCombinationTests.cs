@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Linq.Parallel.Tests
 {
-    public partial class ParallelQueryCombinationTests
+    public static partial class ParallelQueryCombinationTests
     {
         private const int EventualCancellationSize = 128;
 

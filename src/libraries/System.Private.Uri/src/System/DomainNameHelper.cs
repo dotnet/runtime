@@ -330,7 +330,7 @@ namespace System
             {
                 IdnMapping map = new IdnMapping();
                 string asciiForm;
-                bidiStrippedHost = Uri.StripBidiControlCharacter(hostname, start, end - start);
+                bidiStrippedHost = UriHelper.StripBidiControlCharacter(hostname, start, end - start);
                 try
                 {
                     asciiForm = map.GetAscii(bidiStrippedHost);
@@ -399,7 +399,7 @@ namespace System
             if (end <= start)
                 return idn;
 
-            string unescapedHostname = Uri.StripBidiControlCharacter(hostname, start, (end - start));
+            string unescapedHostname = UriHelper.StripBidiControlCharacter(hostname, start, (end - start));
 
             string unicodeEqvlHost = null;
             int curPos = 0;

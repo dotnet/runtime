@@ -194,11 +194,6 @@ namespace System.Linq.Expressions.Interpreter
                     throw Error.ExpressionNotSupportedForType("Div", type);
             }
         }
-
-        public override string ToString()
-        {
-            return "Div()";
-        }
     }
 
     internal abstract class ModuloInstruction : Instruction
@@ -385,11 +380,6 @@ namespace System.Linq.Expressions.Interpreter
                 default:
                     throw Error.ExpressionNotSupportedForType("Modulo", type);
             }
-        }
-
-        public override string ToString()
-        {
-            return "Modulo()";
         }
     }
 }

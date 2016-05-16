@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Threading;
 using Xunit;
 
 namespace System.Tests
@@ -117,6 +118,10 @@ namespace System.Tests
             Assert.Throws<ArgumentOutOfRangeException>(null, () => new DateTimeOffset(new DateTime(max.Year, max.Month, max.Day, max.Hour, max.Minute + 1, max.Second, max.Millisecond, DateTimeKind.Utc), TimeSpan.Zero));
             Assert.Throws<ArgumentOutOfRangeException>(null, () => new DateTimeOffset(new DateTime(max.Year, max.Month, max.Day, max.Hour, max.Minute, max.Second + 1, max.Millisecond, DateTimeKind.Utc), TimeSpan.Zero));
             Assert.Throws<ArgumentOutOfRangeException>("millisecond", () => new DateTimeOffset(new DateTime(max.Year, max.Month, max.Day, max.Hour, max.Minute, max.Second, max.Millisecond + 1, DateTimeKind.Utc), TimeSpan.Zero));
+
+            // Invalid offset
+            Assert.Throws<ArgumentException>("offset", () => new DateTimeOffset(DateTime.Now, TimeSpan.FromTicks(1)));
+            Assert.Throws<ArgumentException>("offset", () => new DateTimeOffset(DateTime.UtcNow, TimeSpan.FromTicks(1)));
         }
 
         [Fact]
@@ -260,6 +265,14 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void ImplicitCast_DateTime()
+        {
+            DateTime dateTime = new DateTime(2012, 6, 11, 0, 0, 0, 0, DateTimeKind.Utc);
+            DateTimeOffset dateTimeOffset = dateTime;
+            VerifyDateTimeOffset(dateTimeOffset, 2012, 6, 11, 0, 0, 0, 0, TimeSpan.Zero);
+        }
+
+        [Fact]
         public static void AddSubtract_TimeSpan()
         {
             var dateTimeOffset = new DateTimeOffset(new DateTime(2012, 6, 18, 10, 5, 1, 0));
@@ -305,37 +318,200 @@ namespace System.Tests
             Assert.Equal(expected, dt1.Subtract(dt2));
         }
 
-        [Fact]
-        public static void Addition()
+        public static IEnumerable<object[]> Add_TimeSpan_TestData()
         {
-            var dateTimeOffset = new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70));
-            Assert.Equal(17, dateTimeOffset.AddDays(2).Day);
-            Assert.Equal(13, dateTimeOffset.AddDays(-2).Day);
+            yield return new object[] { new DateTimeOffset(new DateTime(1000)), new TimeSpan(10), new DateTimeOffset(new DateTime(1010)) };
+            yield return new object[] { new DateTimeOffset(new DateTime(1000)), TimeSpan.Zero, new DateTimeOffset(new DateTime(1000)) };
+            yield return new object[] { new DateTimeOffset(new DateTime(1000)), new TimeSpan(-10), new DateTimeOffset(new DateTime(990)) };
+        }
 
-            Assert.Equal(10, dateTimeOffset.AddMonths(2).Month);
-            Assert.Equal(6, dateTimeOffset.AddMonths(-2).Month);
-
-            Assert.Equal(1996, dateTimeOffset.AddYears(10).Year);
-            Assert.Equal(1976, dateTimeOffset.AddYears(-10).Year);
-
-            Assert.Equal(13, dateTimeOffset.AddHours(3).Hour);
-            Assert.Equal(7, dateTimeOffset.AddHours(-3).Hour);
-
-            Assert.Equal(25, dateTimeOffset.AddMinutes(5).Minute);
-            Assert.Equal(15, dateTimeOffset.AddMinutes(-5).Minute);
-
-            Assert.Equal(35, dateTimeOffset.AddSeconds(30).Second);
-            Assert.Equal(2, dateTimeOffset.AddSeconds(-3).Second);
-
-            Assert.Equal(80, dateTimeOffset.AddMilliseconds(10).Millisecond);
-            Assert.Equal(60, dateTimeOffset.AddMilliseconds(-10).Millisecond);
+        [Theory]
+        [MemberData(nameof(Add_TimeSpan_TestData))]
+        public static void Add_TimeSpan(DateTimeOffset dateTimeOffset, TimeSpan timeSpan, DateTimeOffset expected)
+        {
+            Assert.Equal(expected, dateTimeOffset.Add(timeSpan));
+            Assert.Equal(expected, dateTimeOffset + timeSpan);
         }
 
         [Fact]
-        public static void DayOfWeekTest()
+        public static void Add_TimeSpan_NewDateOutOfRange_ThrowsArgumentOutOfRangeException()
         {
-            var dateTimeOffset = new DateTimeOffset(new DateTime(2012, 6, 18));
-            Assert.Equal(DayOfWeek.Monday, dateTimeOffset.DayOfWeek);
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => DateTimeOffset.MinValue.Add(TimeSpan.FromTicks(-1)));
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => DateTimeOffset.MaxValue.Add(TimeSpan.FromTicks(11)));
+        }
+
+        public static IEnumerable<object[]> AddYears_TestData()
+        {
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), 10, new DateTimeOffset(new DateTime(1996, 8, 15, 10, 20, 5, 70)) };
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), 0, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)) };
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), -10, new DateTimeOffset(new DateTime(1976, 8, 15, 10, 20, 5, 70)) };
+        }
+
+        [Theory]
+        [MemberData(nameof(AddYears_TestData))]
+        public static void AddYears(DateTimeOffset dateTimeOffset, int years, DateTimeOffset expected)
+        {
+            Assert.Equal(expected, dateTimeOffset.AddYears(years));
+        }
+
+        [Fact]
+        public static void AddYears_NewDateOutOfRange_ThrowsArgumentOutOfRangeException()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("years", () => DateTimeOffset.Now.AddYears(10001));
+            Assert.Throws<ArgumentOutOfRangeException>("years", () => DateTimeOffset.Now.AddYears(-10001));
+
+            Assert.Throws<ArgumentOutOfRangeException>("months", () => DateTimeOffset.MaxValue.AddYears(1));
+            Assert.Throws<ArgumentOutOfRangeException>("months", () => DateTimeOffset.MinValue.AddYears(-1));
+        }
+
+        public static IEnumerable<object[]> AddMonths_TestData()
+        {
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), 2, new DateTimeOffset(new DateTime(1986, 10, 15, 10, 20, 5, 70)) };
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), 0, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)) };
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), -2, new DateTimeOffset(new DateTime(1986, 6, 15, 10, 20, 5, 70)) };
+        }
+
+        [Theory]
+        [MemberData(nameof(AddMonths_TestData))]
+        public static void AddMonths(DateTimeOffset dateTimeOffset, int months, DateTimeOffset expected)
+        {
+            Assert.Equal(expected, dateTimeOffset.AddMonths(months));
+        }
+
+        [Fact]
+        public static void AddMonths_NewDateOutOfRange_ThrowsArgumentOutOfRangeException()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("months", () => DateTimeOffset.Now.AddMonths(120001));
+            Assert.Throws<ArgumentOutOfRangeException>("months", () => DateTimeOffset.Now.AddMonths(-120001));
+
+            Assert.Throws<ArgumentOutOfRangeException>("months", () => DateTimeOffset.MaxValue.AddMonths(1));
+            Assert.Throws<ArgumentOutOfRangeException>("months", () => DateTimeOffset.MinValue.AddMonths(-1));
+        }
+
+        public static IEnumerable<object[]> AddDays_TestData()
+        {
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), 2, new DateTimeOffset(new DateTime(1986, 8, 17, 10, 20, 5, 70)) };
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), 0, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)) };
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), -2, new DateTimeOffset(new DateTime(1986, 8, 13, 10, 20, 5, 70)) };
+        }
+
+        [Theory]
+        [MemberData(nameof(AddDays_TestData))]
+        public static void AddDays(DateTimeOffset dateTimeOffset, double days, DateTimeOffset expected)
+        {
+            Assert.Equal(expected, dateTimeOffset.AddDays(days));
+        }
+
+        [Fact]
+        public static void AddDays_NewDateOutOfRange_ThrowsArgumentOutOfRangeException()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => DateTimeOffset.MaxValue.AddDays(1));
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => DateTimeOffset.MinValue.AddDays(-1));
+        }
+
+        public static IEnumerable<object[]> AddHours_TestData()
+        {
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), 3, new DateTimeOffset(new DateTime(1986, 8, 15, 13, 20, 5, 70)) };
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), 0, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)) };
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), -3, new DateTimeOffset(new DateTime(1986, 8, 15, 7, 20, 5, 70)) };
+        }
+
+        [Theory]
+        [MemberData(nameof(AddHours_TestData))]
+        public static void AddHours(DateTimeOffset dateTimeOffset, double hours, DateTimeOffset expected)
+        {
+            Assert.Equal(expected, dateTimeOffset.AddHours(hours));
+        }
+
+        [Fact]
+        public static void AddHours_NewDateOutOfRange_ThrowsArgumentOutOfRangeException()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => DateTimeOffset.MaxValue.AddHours(1));
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => DateTimeOffset.MinValue.AddHours(-1));
+        }
+
+        public static IEnumerable<object[]> AddMinutes_TestData()
+        {
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), 5, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 25, 5, 70)) };
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), 0, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)) };
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), -5, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 15, 5, 70)) };
+        }
+
+        [Theory]
+        [MemberData(nameof(AddMinutes_TestData))]
+        public static void AddMinutes(DateTimeOffset dateTimeOffset, double minutes, DateTimeOffset expected)
+        {
+            Assert.Equal(expected, dateTimeOffset.AddMinutes(minutes));
+        }
+
+        [Fact]
+        public static void AddMinutes_NewDateOutOfRange_ThrowsArgumentOutOfRangeException()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => DateTimeOffset.MaxValue.AddMinutes(1));
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => DateTimeOffset.MinValue.AddMinutes(-1));
+        }
+
+        public static IEnumerable<object[]> AddSeconds_TestData()
+        {
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), 30, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 35, 70)) };
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), 0, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)) };
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), -3, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 2, 70)) };
+        }
+
+        [Theory]
+        [MemberData(nameof(AddSeconds_TestData))]
+        public static void AddSeconds(DateTimeOffset dateTimeOffset, double seconds, DateTimeOffset expected)
+        {
+            Assert.Equal(expected, dateTimeOffset.AddSeconds(seconds));
+        }
+
+        [Fact]
+        public static void AddSeconds_NewDateOutOfRange_ThrowsArgumentOutOfRangeException()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => DateTimeOffset.MaxValue.AddSeconds(1));
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => DateTimeOffset.MinValue.AddSeconds(-1));
+        }
+
+        public static IEnumerable<object[]> AddMilliseconds_TestData()
+        {
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), 10, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 80)) };
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), 0, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)) };
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), -10, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 60)) };
+        }
+
+        [Theory]
+        [MemberData(nameof(AddMilliseconds_TestData))]
+        public static void AddMilliseconds(DateTimeOffset dateTimeOffset, double milliseconds, DateTimeOffset expected)
+        {
+            Assert.Equal(expected, dateTimeOffset.AddMilliseconds(milliseconds));
+        }
+
+        [Fact]
+        public static void AddMilliseconds_NewDateOutOfRange_ThrowsArgumentOutOfRangeException()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => DateTimeOffset.MaxValue.AddMilliseconds(1));
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => DateTimeOffset.MinValue.AddMilliseconds(-1));
+        }
+
+        public static IEnumerable<object[]> AddTicks_TestData()
+        {
+            yield return new object[] { new DateTimeOffset(new DateTime(1000)), 10, new DateTimeOffset(new DateTime(1010)) };
+            yield return new object[] { new DateTimeOffset(new DateTime(1000)), 0, new DateTimeOffset(new DateTime(1000)) };
+            yield return new object[] { new DateTimeOffset(new DateTime(1000)), -10, new DateTimeOffset(new DateTime(990)) };
+        }
+
+        [Theory]
+        [MemberData(nameof(AddTicks_TestData))]
+        public static void AddTicks(DateTimeOffset dateTimeOffset, long ticks, DateTimeOffset expected)
+        {
+            Assert.Equal(expected, dateTimeOffset.AddTicks(ticks));
+        }
+
+        [Fact]
+        public static void AddTicks_NewDateOutOfRange_ThrowsArgumentOutOfRangeException()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => DateTimeOffset.MaxValue.AddTicks(1));
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => DateTimeOffset.MinValue.AddTicks(-1));
         }
 
         [Fact]
@@ -355,6 +531,36 @@ namespace System.Tests
             Assert.Equal(DateTime.Today, dateTimeOffset.Date);
             Assert.Equal(now, dateTimeOffset.DateTime);
             Assert.Equal(now.ToUniversalTime(), dateTimeOffset.UtcDateTime);
+        }
+
+        [Fact]
+        public static void UtcNow()
+        {
+            DateTimeOffset start = DateTimeOffset.UtcNow;
+            Assert.True(
+                SpinWait.SpinUntil(() => DateTimeOffset.UtcNow > start, TimeSpan.FromSeconds(2)),
+                "Expected UtcNow to changes");
+        }
+
+        [Fact]
+        public static void DayOfYear()
+        {
+            DateTimeOffset dateTimeOffset = new DateTimeOffset();
+            Assert.Equal(dateTimeOffset.DateTime.DayOfYear, dateTimeOffset.DayOfYear);
+        }
+
+        [Fact]
+        public static void DayOfWeekTest()
+        {
+            DateTimeOffset dateTimeOffset = new DateTimeOffset();
+            Assert.Equal(dateTimeOffset.DateTime.DayOfWeek, dateTimeOffset.DayOfWeek);
+        }
+
+        [Fact]
+        public static void TimeOfDay()
+        {
+            DateTimeOffset dateTimeOffset = new DateTimeOffset();
+            Assert.Equal(dateTimeOffset.DateTime.TimeOfDay, dateTimeOffset.TimeOfDay);
         }
 
         private static IEnumerable<object[]> UnixTime_TestData()
@@ -383,7 +589,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(UnixTime_TestData))]
-        public static void oUnixTimeMilliseconds_RountTrip(TestTime test)
+        public static void ToUnixTimeMilliseconds_RoundTrip(TestTime test)
         {
             long unixTimeMilliseconds = test.DateTimeOffset.ToUnixTimeMilliseconds();
             FromUnixTimeMilliseconds(TestTime.FromMilliseconds(test.DateTimeOffset, unixTimeMilliseconds));
@@ -463,6 +669,81 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void ToLocalTime()
+        {
+            DateTimeOffset dateTimeOffset = new DateTimeOffset(new DateTime(1000));
+            Assert.Equal(new DateTimeOffset(dateTimeOffset.UtcDateTime.ToLocalTime()), dateTimeOffset.ToLocalTime());
+        }
+        
+        public static IEnumerable<object[]> Equals_TestData()
+        {
+            yield return new object[] { DateTimeOffset.MinValue, DateTimeOffset.MinValue, true, true };
+            yield return new object[] { DateTimeOffset.MinValue, DateTimeOffset.MaxValue, false, false };
+
+            yield return new object[] { DateTimeOffset.Now, new object(), false, false };
+            yield return new object[] { DateTimeOffset.Now, null, false, false };
+        }
+
+        [Theory]
+        [MemberData(nameof(Equals_TestData))]
+        public static void Equals(DateTimeOffset dateTimeOffset1, object obj, bool expectedEquals, bool expectedEqualsExact)
+        {
+            Assert.Equal(expectedEquals, dateTimeOffset1.Equals(obj));
+            if (obj is DateTimeOffset)
+            {
+                DateTimeOffset dateTimeOffset2 = (DateTimeOffset)obj;
+                Assert.Equal(expectedEquals, dateTimeOffset1.Equals(dateTimeOffset2));
+                Assert.Equal(expectedEquals, DateTimeOffset.Equals(dateTimeOffset1, dateTimeOffset2));
+
+                Assert.Equal(expectedEquals, dateTimeOffset1.GetHashCode().Equals(dateTimeOffset2.GetHashCode()));
+                Assert.Equal(expectedEqualsExact, dateTimeOffset1.EqualsExact(dateTimeOffset2));
+
+                Assert.Equal(expectedEquals, dateTimeOffset1 == dateTimeOffset2);
+                Assert.Equal(!expectedEquals, dateTimeOffset1 != dateTimeOffset2);
+            }
+        }
+
+        public static IEnumerable<object[]> Compare_TestData()
+        {
+            yield return new object[] { new DateTimeOffset(new DateTime(1000)), new DateTimeOffset(new DateTime(1000)), 0 };
+            yield return new object[] { new DateTimeOffset(new DateTime(1000)), new DateTimeOffset(new DateTime(1001)), -1 };
+            yield return new object[] { new DateTimeOffset(new DateTime(1000)), new DateTimeOffset(new DateTime(999)), 1 };
+        }
+
+        [Theory]
+        [MemberData(nameof(Compare_TestData))]
+        public static void Compare(DateTimeOffset dateTimeOffset1, DateTimeOffset dateTimeOffset2, int expected)
+        {
+            Assert.Equal(expected, Math.Sign(dateTimeOffset1.CompareTo(dateTimeOffset2)));
+            Assert.Equal(expected, Math.Sign(DateTimeOffset.Compare(dateTimeOffset1, dateTimeOffset2)));
+
+            IComparable comparable = dateTimeOffset1;
+            Assert.Equal(expected, Math.Sign(comparable.CompareTo(dateTimeOffset2)));
+
+            if (expected > 0)
+            {
+                Assert.True(dateTimeOffset1 > dateTimeOffset2);
+                Assert.Equal(expected >= 0, dateTimeOffset1 >= dateTimeOffset2);
+                Assert.False(dateTimeOffset1 < dateTimeOffset2);
+                Assert.Equal(expected == 0, dateTimeOffset1 <= dateTimeOffset2);
+            }
+            else if (expected < 0)
+            {
+                Assert.False(dateTimeOffset1 > dateTimeOffset2);
+                Assert.Equal(expected == 0, dateTimeOffset1 >= dateTimeOffset2);
+                Assert.True(dateTimeOffset1 < dateTimeOffset2);
+                Assert.Equal(expected <= 0, dateTimeOffset1 <= dateTimeOffset2);
+            }
+            else if (expected == 0)
+            {
+                Assert.False(dateTimeOffset1 > dateTimeOffset2);
+                Assert.True(dateTimeOffset1 >= dateTimeOffset2);
+                Assert.False(dateTimeOffset1 < dateTimeOffset2);
+                Assert.True(dateTimeOffset1 <= dateTimeOffset2);
+            }
+        }
+
+        [Fact]
         public static void Parse_String()
         {
             DateTimeOffset expected = DateTimeOffset.MaxValue;
@@ -479,7 +760,7 @@ namespace System.Tests
             string expectedString = expected.ToString();
 
             DateTimeOffset result = DateTimeOffset.Parse(expectedString, null);
-            Assert.Equal(expectedString, result.ToString());
+            Assert.Equal(expectedString, result.ToString((IFormatProvider)null));
         }
 
         [Fact]
@@ -632,6 +913,22 @@ namespace System.Tests
             DateTimeOffset result;
             Assert.True(DateTimeOffset.TryParseExact(expectedString, formats, null, DateTimeStyles.AssumeUniversal, out result));
             Assert.Equal(expectedString, result.ToString("g"));
+        }
+
+        [Theory]
+        [InlineData(~(DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite | DateTimeStyles.AllowInnerWhite | DateTimeStyles.NoCurrentDateDefault | DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeLocal | DateTimeStyles.AssumeUniversal | DateTimeStyles.RoundtripKind))]
+        [InlineData(DateTimeStyles.NoCurrentDateDefault)]
+        public static void Parse_InvalidDateTimeStyle_ThrowsArgumentException(DateTimeStyles style)
+        {
+            Assert.Throws<ArgumentException>("styles", () => DateTimeOffset.Parse("06/08/1990", null, style));
+            Assert.Throws<ArgumentException>("styles", () => DateTimeOffset.ParseExact("06/08/1990", "Y", null, style));
+
+            DateTimeOffset dateTimeOffset;
+            Assert.Throws<ArgumentException>("styles", () => DateTimeOffset.TryParse("06/08/1990", null, style, out dateTimeOffset));
+            Assert.Equal(default(DateTimeOffset), dateTimeOffset);
+
+            Assert.Throws<ArgumentException>("styles", () => DateTimeOffset.TryParseExact("06/08/1990", "Y", null, style, out dateTimeOffset));
+            Assert.Equal(default(DateTimeOffset), dateTimeOffset);
         }
 
         private static void VerifyDateTimeOffset(DateTimeOffset dateTimeOffset, int year, int month, int day, int hour, int minute, int second, int millisecond, TimeSpan? offset)

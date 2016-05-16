@@ -146,9 +146,20 @@ namespace System.Linq.Expressions
         {
             ContractUtils.RequiresNotNull(type, nameof(type));
             ContractUtils.RequiresNotNull(initializers, nameof(initializers));
-            if (type.Equals(typeof(void)))
+            if (type == typeof(void))
             {
                 throw Error.ArgumentCannotBeOfTypeVoid();
+            }
+
+            TypeUtils.ValidateType(type);
+            if (type.IsByRef)
+            {
+                throw Error.TypeMustNotBeByRef();
+            }
+
+            if (type.IsPointer)
+            {
+                throw Error.TypeMustNotBePointer();
             }
 
             ReadOnlyCollection<Expression> initializerList = initializers.ToReadOnly();
@@ -215,9 +226,20 @@ namespace System.Linq.Expressions
             ContractUtils.RequiresNotNull(type, nameof(type));
             ContractUtils.RequiresNotNull(bounds, nameof(bounds));
 
-            if (type.Equals(typeof(void)))
+            if (type == typeof(void))
             {
                 throw Error.ArgumentCannotBeOfTypeVoid();
+            }
+
+            TypeUtils.ValidateType(type);
+            if (type.IsByRef)
+            {
+                throw Error.TypeMustNotBeByRef();
+            }
+
+            if (type.IsPointer)
+            {
+                throw Error.TypeMustNotBePointer();
             }
 
             ReadOnlyCollection<Expression> boundsList = bounds.ToReadOnly();

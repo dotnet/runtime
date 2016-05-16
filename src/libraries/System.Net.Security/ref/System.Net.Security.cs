@@ -119,6 +119,12 @@ namespace System.Security.Authentication
         public AuthenticationException(string message) { }
         public AuthenticationException(string message, System.Exception innerException) { }
     }
+    public partial class InvalidCredentialException : System.Security.Authentication.AuthenticationException
+    {
+        public InvalidCredentialException() { }
+        public InvalidCredentialException(string message) { }
+        public InvalidCredentialException(string message, System.Exception innerException) { }
+    }
 }
 namespace System.Security.Authentication.ExtendedProtection
 {

@@ -594,11 +594,6 @@ namespace System.Linq.Expressions.Interpreter
                 }
             }
         }
-
-        public override string ToString()
-        {
-            return "NotEqual()";
-        }
     }
 }
 

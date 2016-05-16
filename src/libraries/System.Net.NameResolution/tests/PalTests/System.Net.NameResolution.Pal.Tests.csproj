@@ -47,8 +47,8 @@
       <Link>Common\System\Net\IPEndPointStatics.cs</Link>
     </Compile>
 
-    <Compile Include="$(CommonTestPath)\System\Net\HttpTestServers.cs">
-      <Link>Common\System\Net\HttpTestServers.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\Net\TestSettings.cs">
+      <Link>Common\System\Net\TestSettings.cs</Link>
     </Compile>
   </ItemGroup>
 

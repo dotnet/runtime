@@ -43,6 +43,8 @@ namespace System.IO
         protected void OnDeleted(System.IO.FileSystemEventArgs e) { }
         protected void OnError(System.IO.ErrorEventArgs e) { }
         protected void OnRenamed(System.IO.RenamedEventArgs e) { }
+        public System.IO.WaitForChangedResult WaitForChanged(System.IO.WatcherChangeTypes changeType) { return default(System.IO.WaitForChangedResult); }
+        public System.IO.WaitForChangedResult WaitForChanged(System.IO.WatcherChangeTypes changeType, int timeout) { return default(System.IO.WaitForChangedResult); }
     }
     [System.FlagsAttribute]
     public enum NotifyFilters
@@ -63,6 +65,13 @@ namespace System.IO
         public string OldName { get { return default(string); } }
     }
     public delegate void RenamedEventHandler(object sender, System.IO.RenamedEventArgs e);
+    public struct WaitForChangedResult
+    {
+        public System.IO.WatcherChangeTypes ChangeType { get { return default(System.IO.WatcherChangeTypes); } set { } }
+        public string Name { get { return default(string); } set { } }
+        public string OldName { get { return default(string); } set { } }
+        public bool TimedOut { get { return false; } set { } }
+    }
     [System.FlagsAttribute]
     public enum WatcherChangeTypes
     {
