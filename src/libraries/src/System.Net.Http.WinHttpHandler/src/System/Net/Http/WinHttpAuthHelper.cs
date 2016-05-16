@@ -302,6 +302,9 @@ namespace System.Net.Http
             uint authScheme,
             uint authTarget)
         {
+            string userName;
+            string password;
+
             Debug.Assert(credentials != null);
             Debug.Assert(authScheme != 0);
             Debug.Assert(authTarget == Interop.WinHttp.WINHTTP_AUTH_TARGET_PROXY || 
@@ -318,22 +321,25 @@ namespace System.Net.Http
             {
                 // Allow WinHTTP to transmit the default credentials.
                 ChangeDefaultCredentialsPolicy(requestHandle, authTarget, allowDefaultCredentials:true);
-                return;
+                userName = null;
+                password = null;
             }
-
-            string userName = networkCredential.UserName;
-            string password = networkCredential.Password;
-            string domain = networkCredential.Domain;
-
-            // WinHTTP does not support a blank username.  So, we will throw an exception.
-            if (string.IsNullOrEmpty(userName))
+            else
             {
-                throw new InvalidOperationException(SR.net_http_username_empty_string);
-            }
+                userName = networkCredential.UserName;
+                password = networkCredential.Password;
+                string domain = networkCredential.Domain;
 
-            if (!string.IsNullOrEmpty(domain))
-            {
-                userName = domain + "\\" + userName;
+                // WinHTTP does not support a blank username.  So, we will throw an exception.
+                if (string.IsNullOrEmpty(userName))
+                {
+                    throw new InvalidOperationException(SR.net_http_username_empty_string);
+                }
+
+                if (!string.IsNullOrEmpty(domain))
+                {
+                    userName = domain + "\\" + userName;
+                }
             }
 
             if (!Interop.WinHttp.WinHttpSetCredentials(
