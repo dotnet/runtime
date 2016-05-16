@@ -144,7 +144,6 @@ namespace System.Reflection.Tests
         [Theory]
         [InlineData("PropertyC", typeof(MyCoVariantTest), new Object[] { 1, "2", 3 })]
         [InlineData("PropertyC", typeof(MyCoVariantTest), null)]
-        [InlineData("PropertyC", typeof(MyCoVariantTest), null)]
         public static void TestGet_ThrowsTargetParameterCountException(String propertyName, Type type, Object[]testObj)
         {
             Object obj = Activator.CreateInstance(type);
@@ -159,7 +158,6 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [InlineData("Property1", typeof(LaterClass), null)]
         [InlineData("Property1", typeof(LaterClass), null)]
         [InlineData("PropertyC", typeof(MyCoVariantTest), new Object[] { "1", "2" })]
         public static void TestGet_ThrowsArgumentException(String propertyName, Type type, Object[] testObj)
