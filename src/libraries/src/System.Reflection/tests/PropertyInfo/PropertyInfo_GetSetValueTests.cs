@@ -16,7 +16,7 @@ namespace System.Reflection.Tests
         public static void TestGetSet_PropertyA()
         {
             string propertyName = "PropertyA";
-            Object obj = (MyCoVariantTest)new MyCoVariantTest();
+            MyCoVariantTest obj = new MyCoVariantTest();
             PropertyInfo pi = GetProperty(typeof(MyCoVariantTest), propertyName);
 
             Assert.Equal(pi.Name, propertyName);
@@ -25,25 +25,24 @@ namespace System.Reflection.Tests
 
             Assert.NotNull(value);
 
-            String[] strs = new String[1];
+            string[] strs = new string[1];
             strs[0] = "hello";
 
             //set value
             pi.SetValue(obj, strs);
             value = pi.GetValue(obj);
 
-            String[] strs2 = (String[])value;
+            string[] strs2 = (string[])value;
 
             Assert.Equal(strs2[0], strs[0]);
         }
 
 
-        //Verify PropertyInfo.GetValue(Object obj , object[] index) returns correct value for non-static property.
         [Fact]
         public static void TestGetSet_PropertyB()
         {
             string propertyName = "PropertyB";
-            Object obj = (MyCoVariantTest)new MyCoVariantTest();
+            MyCoVariantTest obj = new MyCoVariantTest();
             PropertyInfo pi = GetProperty(typeof(MyCoVariantTest), propertyName);
 
             Assert.Equal(pi.Name, propertyName);
@@ -52,24 +51,23 @@ namespace System.Reflection.Tests
 
             Assert.Null(value);
 
-            String[] strs = new String[1];
+            string[] strs = new string[1];
             strs[0] = "hello";
 
             //set value
             pi.SetValue(obj, strs);
             value = pi.GetValue(obj);
 
-            String[] strs2 = (String[])value;
+            string[] strs2 = (string[])value;
 
             Assert.Equal(strs2[0], strs[0]);
         }
 
-        //Verify PropertyInfo.GetValue(Object obj , object[] index)returns correct value for Interface property
         [Fact]
         public static void TestGetSet_Name()
         {
             string propertyName = "Name";
-            Object obj = (InterfacePropertyImpl)new InterfacePropertyImpl();
+            InterfacePropertyImpl obj = new InterfacePropertyImpl();
             PropertyInfo pi = GetProperty(typeof(InterfacePropertyImpl), propertyName);
 
             Assert.Equal(pi.Name, propertyName);
@@ -79,20 +77,19 @@ namespace System.Reflection.Tests
             Assert.Null(value);
 
             //set value
-            String strs1 = "hello";
+            string strs1 = "hello";
 
             pi.SetValue(obj, strs1);
             value = pi.GetValue(obj);
-            String strs2 = (String)value;
+            string strs2 = (string)value;
             Assert.Equal(strs2, strs1);
         }
 
-        //Verify PropertyInfo.GetValue(Object obj , object[] index) returns correct value for  property
         [Fact]
         public static void TestGet_PropertyC()
         {
             string propertyName = "PropertyC";
-            Object obj = (MyCoVariantTest)new MyCoVariantTest();
+            MyCoVariantTest obj = new MyCoVariantTest();
             PropertyInfo pi = GetProperty(typeof(MyCoVariantTest), propertyName);
 
             Assert.Equal(pi.Name, propertyName);
@@ -102,12 +99,11 @@ namespace System.Reflection.Tests
             Assert.Null(value);
         }
 
-        //Verify PropertyInfo.GetValue() returns hardcoded value
         [Fact]
         public static void TestGet_Property2()
         {
             string propertyName = "Property2";
-            Object obj = new LaterClass();
+            LaterClass obj = new LaterClass();
             PropertyInfo pi = GetProperty(typeof(LaterClass), propertyName);
 
             Assert.Equal(pi.Name, propertyName);
@@ -144,7 +140,7 @@ namespace System.Reflection.Tests
         [Theory]
         [InlineData("PropertyC", typeof(MyCoVariantTest), new Object[] { 1, "2", 3 })]
         [InlineData("PropertyC", typeof(MyCoVariantTest), null)]
-        public static void TestGet_ThrowsTargetParameterCountException(String propertyName, Type type, Object[]testObj)
+        public static void TestGet_ThrowsTargetParameterCountException(string propertyName, Type type, Object[]testObj)
         {
             Object obj = Activator.CreateInstance(type);
             PropertyInfo pi = GetProperty(type, propertyName);
@@ -160,7 +156,7 @@ namespace System.Reflection.Tests
         [Theory]
         [InlineData("Property1", typeof(LaterClass), null)]
         [InlineData("PropertyC", typeof(MyCoVariantTest), new Object[] { "1", "2" })]
-        public static void TestGet_ThrowsArgumentException(String propertyName, Type type, Object[] testObj)
+        public static void TestGet_ThrowsArgumentException(string propertyName, Type type, Object[] testObj)
         {
             Object obj = Activator.CreateInstance(type);
             PropertyInfo pi = GetProperty(type, propertyName);
@@ -174,7 +170,7 @@ namespace System.Reflection.Tests
         }
 
 
-        //Verify PropertyInfo.GetValue throws TargetException
+        //Verify PropertyInfo.GetValue throws Exception
         [Fact]
         public static void TestGet_ThrowsException()
         {
@@ -192,10 +188,10 @@ namespace System.Reflection.Tests
 
 
         [Theory]
-        [InlineData("nosetterprop", 100, null)]
+        [InlineData("NoSetterProp", 100, null)]
         [InlineData("Item", "pw", new Object[] { 99, 2, "hello", "SOME  string" })]
-        [InlineData("Item", 100, new Object[] { 99, 2, new String[] { "hello" }, "SOME  string" })]
-        public static void TestSet_ThrowsArgumentException(String propertyName, Object setValue, Object[] index)
+        [InlineData("Item", 100, new Object[] { 99, 2, new string[] { "hello" }, "SOME  string" })]
+        public static void TestSet_ThrowsArgumentException(string propertyName, Object setValue, Object[] index)
         {
             TypeWithProperties obj = new TypeWithProperties();
             PropertyInfo pi = GetProperty(typeof(TypeWithProperties), propertyName);
@@ -210,9 +206,9 @@ namespace System.Reflection.Tests
         
         //Try to set instance Property with null object 
         [Theory]
-        [InlineData("hassetterprop", null, null)]
+        [InlineData("HasSetterProp", null, null)]
         [InlineData("Item", "pw", new Object[] { 99, 2, "SOME string" })]
-        public static void TestSetNull_ThrowsException(String propertyName, Object setValue, Object[] index)
+        public static void TestSetNull_ThrowsException(string propertyName, Object setValue, Object[] index)
         {
             PropertyInfo pi = GetProperty(typeof(TypeWithProperties), propertyName);
 
@@ -226,7 +222,7 @@ namespace System.Reflection.Tests
         [Fact]
         public static void TestSet_ThrowsException()
         {
-            string propertyName = "hassetterprop";
+            string propertyName = "HasSetterProp";
             TypeWithProperties obj = new TypeWithProperties();
             PropertyInfo pi = GetProperty(typeof(TypeWithProperties), propertyName);
 
@@ -250,7 +246,7 @@ namespace System.Reflection.Tests
 
             Assert.Throws<TargetParameterCountException>(() =>
             {
-                pi.SetValue(obj, "pw", new Object[] { 99, 2, new String[] { "SOME string" } });  // Incorrect number of parameters
+                pi.SetValue(obj, "pw", new Object[] { 99, 2, new string[] { "SOME string" } });  // Incorrect number of parameters
             });
         }
        
@@ -297,7 +293,7 @@ namespace System.Reflection.Tests
         }
 
         [System.Runtime.CompilerServices.IndexerNameAttribute("PropertyC")]   // will make the property name be MyPropAA instead of default Item
-        public Object[] this[int index, String s]
+        public Object[] this[int index, string s]
         {
             get { return objArr2; }
             set { objArr2 = value; }
@@ -306,21 +302,21 @@ namespace System.Reflection.Tests
 
     public class TypeWithProperties
     {
-        public int nosetterprop
+        public int NoSetterProp
         {
             get { return 0; }
         }
 
-        public int hassetterprop
+        public int HasSetterProp
         {
             set { }
         }
 
-        public String this[int index, int index2, string[] h, String myStr]
+        public string this[int index, int index2, string[] h, string myStr]
         {
             get
             {
-                String strHashLength = "null";
+                string strHashLength = "null";
                 if (h != null)
                 {
                     strHashLength = h.Length.ToString();
@@ -330,7 +326,7 @@ namespace System.Reflection.Tests
 
             set
             {
-                String strHashLength = "null";
+                string strHashLength = "null";
                 if (h != null)
                 {
                     strHashLength = h.Length.ToString();
@@ -338,12 +334,12 @@ namespace System.Reflection.Tests
                 setValue = setValue = index.ToString() + index2.ToString() + myStr + strHashLength + value;
             }
         }
-        public String setValue = null;
+        public string setValue = null;
     }
 
     public interface InterfaceProperty
     {
-        String Name
+        string Name
         {
             get;
             set;
@@ -352,9 +348,9 @@ namespace System.Reflection.Tests
 
     public class InterfacePropertyImpl : InterfaceProperty
     {
-        private String _name = null;
+        private string _name = null;
 
-        public String Name
+        public string Name
         {
             get { return _name; }
             set { _name = value; }
