@@ -2352,7 +2352,32 @@ namespace System.Xml.Serialization
                 switch (special.TypeDesc.Kind)
                 {
                     case TypeKind.Node:
-                        if (special.TypeDesc.Kind == TypeKind.Node) throw Globals.NotSupported("SL");
+                        MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
+                            "get_Reader",
+                            CodeGenerator.InstanceBindingFlags,
+                            Array.Empty<Type>()
+                            );
+                        MethodInfo XmlReader_ReadString = typeof(XmlReader).GetMethod(
+                            "ReadContentAsString",
+                            CodeGenerator.InstanceBindingFlags,
+                            Array.Empty<Type>()
+                            );
+                        MethodInfo XmlSerializationReader_get_Document = typeof(XmlSerializationReader).GetMethod(
+                            "get_Document",
+                            CodeGenerator.InstanceBindingFlags,
+                            Array.Empty<Type>()
+                            );
+                        MethodInfo XmlDocument_CreateTextNode = typeof(XmlDocument).GetMethod(
+                            "CreateTextNode",
+                            CodeGenerator.InstanceBindingFlags,
+                            new Type[] { typeof(String) }
+                            );
+                        ilg.Ldarg(0);
+                        ilg.Call(XmlSerializationReader_get_Document);
+                        ilg.Ldarg(0);
+                        ilg.Call(XmlSerializationReader_get_Reader);
+                        ilg.Call(XmlReader_ReadString);
+                        ilg.Call(XmlDocument_CreateTextNode);
                         break;
                     default:
                         throw new InvalidOperationException(SR.XmlInternalError);
