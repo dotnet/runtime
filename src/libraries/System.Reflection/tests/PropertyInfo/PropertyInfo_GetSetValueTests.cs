@@ -15,7 +15,7 @@ namespace System.Reflection.Tests
         [InlineData(typeof(ClassWithObjectArrayProperties), "PropertyA", null, new string[] { "hello" })]
         [InlineData(typeof(ClassWithObjectArrayProperties), "PropertyB", null, null)]
         [InlineData(typeof(ClassWithObjectArrayProperties), "PropertyC", new object[] { 1, "2" }, null)]
-        [InlineData(typeof(LaterClass), "Property2", null, 100)]
+        [InlineData(typeof(ClassWithPrivateMethod), "Property2", null, 100)]
         [InlineData(typeof(InterfacePropertyClassImplementation), "Name", (object[])null, null)]
         public static void GetValue(Type type, string propertyName, object[] index, object expectedValue)
         {
@@ -94,7 +94,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [InlineData("Property1", typeof(LaterClass), null)]
+        [InlineData("Property1", typeof(ClassWithPrivateMethod), null)]
         [InlineData("PropertyC", typeof(ClassWithObjectArrayProperties), new object[] { "1", "2" })]
         public static void GetValue_ThrowsArgumentException(string propertyName, Type type, object[] testObj)
         {
@@ -233,7 +233,7 @@ namespace System.Reflection.Tests
     }
 
 
-    public class LaterClass
+    public class ClassWithPrivateMethod
     {
         public int Property1
         {
