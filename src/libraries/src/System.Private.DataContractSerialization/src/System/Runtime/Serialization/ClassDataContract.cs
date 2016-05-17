@@ -282,8 +282,12 @@ namespace System.Runtime.Serialization
             return _helper.GetNonAttributedTypeConstructor();
         }
 
-#if !NET_NATIVE
+#if NET_NATIVE
+        private XmlFormatClassWriterDelegate _xmlFormatWriterDelegate;
+        public XmlFormatClassWriterDelegate XmlFormatWriterDelegate
+#else
         internal XmlFormatClassWriterDelegate XmlFormatWriterDelegate
+#endif
         {
             /// <SecurityNote>
             /// Critical - fetches the critical xmlFormatWriterDelegate property
@@ -292,6 +296,13 @@ namespace System.Runtime.Serialization
             [SecuritySafeCritical]
             get
             {
+#if NET_NATIVE
+                if (DataContractSerializer.Option == SerializationOption.CodeGenOnly
+                || (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup && _xmlFormatWriterDelegate != null))
+                {
+                    return _xmlFormatWriterDelegate;
+                }
+#endif
                 if (_helper.XmlFormatWriterDelegate == null)
                 {
                     lock (this)
@@ -306,13 +317,20 @@ namespace System.Runtime.Serialization
                 }
                 return _helper.XmlFormatWriterDelegate;
             }
-        }
-#else
-        public XmlFormatClassWriterDelegate XmlFormatWriterDelegate { get; set; }
+            set
+            {
+#if NET_NATIVE
+                _xmlFormatWriterDelegate = value;
 #endif
+            }
+        }
 
-#if !NET_NATIVE
+#if NET_NATIVE
+        private XmlFormatClassReaderDelegate _xmlFormatReaderDelegate;
+        public XmlFormatClassReaderDelegate XmlFormatReaderDelegate
+#else
         internal XmlFormatClassReaderDelegate XmlFormatReaderDelegate
+#endif
         {
             /// <SecurityNote>
             /// Critical - fetches the critical xmlFormatReaderDelegate property
@@ -321,6 +339,13 @@ namespace System.Runtime.Serialization
             [SecuritySafeCritical]
             get
             {
+#if NET_NATIVE
+                if (DataContractSerializer.Option == SerializationOption.CodeGenOnly
+                || (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup && _xmlFormatReaderDelegate != null))
+                {
+                    return _xmlFormatReaderDelegate;
+                }
+#endif
                 if (_helper.XmlFormatReaderDelegate == null)
                 {
                     lock (this)
@@ -335,10 +360,13 @@ namespace System.Runtime.Serialization
                 }
                 return _helper.XmlFormatReaderDelegate;
             }
-        }
-#else
-        public XmlFormatClassReaderDelegate XmlFormatReaderDelegate { get; set; }
+            set
+            {
+#if NET_NATIVE
+                _xmlFormatReaderDelegate = value;
 #endif
+            }
+        }
 
         internal static ClassDataContract CreateClassDataContractForKeyValue(Type type, XmlDictionaryString ns, string[] memberNames)
         {

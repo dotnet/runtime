@@ -453,8 +453,12 @@ namespace System.Runtime.Serialization
             { return _helper.InvalidCollectionInSharedContractMessage; }
         }
 
-#if !NET_NATIVE
+#if NET_NATIVE
+        private XmlFormatCollectionWriterDelegate _xmlFormatWriterDelegate;
+        public XmlFormatCollectionWriterDelegate XmlFormatWriterDelegate
+#else
         internal XmlFormatCollectionWriterDelegate XmlFormatWriterDelegate
+#endif
         {
             /// <SecurityNote>
             /// Critical - fetches the critical xmlFormatWriterDelegate property
@@ -463,6 +467,13 @@ namespace System.Runtime.Serialization
             [SecuritySafeCritical]
             get
             {
+#if NET_NATIVE
+                if (DataContractSerializer.Option == SerializationOption.CodeGenOnly
+                || (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup && _xmlFormatWriterDelegate != null))
+                {
+                    return _xmlFormatWriterDelegate;
+                }
+#endif
                 if (_helper.XmlFormatWriterDelegate == null)
                 {
                     lock (this)
@@ -477,13 +488,20 @@ namespace System.Runtime.Serialization
                 }
                 return _helper.XmlFormatWriterDelegate;
             }
-        }
-#else
-        public XmlFormatCollectionWriterDelegate XmlFormatWriterDelegate { get; set; }
+            set
+            {
+#if NET_NATIVE
+                _xmlFormatWriterDelegate = value;
 #endif
+            }
+        }
 
-#if !NET_NATIVE
+#if NET_NATIVE
+        private XmlFormatCollectionReaderDelegate _xmlFormatReaderDelegate;
+        public XmlFormatCollectionReaderDelegate XmlFormatReaderDelegate
+#else
         internal XmlFormatCollectionReaderDelegate XmlFormatReaderDelegate
+#endif
         {
             /// <SecurityNote>
             /// Critical - fetches the critical xmlFormatReaderDelegate property
@@ -492,6 +510,13 @@ namespace System.Runtime.Serialization
             [SecuritySafeCritical]
             get
             {
+#if NET_NATIVE
+                if (DataContractSerializer.Option == SerializationOption.CodeGenOnly
+                || (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup && _xmlFormatReaderDelegate != null))
+                {
+                    return _xmlFormatReaderDelegate;
+                }
+#endif
                 if (_helper.XmlFormatReaderDelegate == null)
                 {
                     lock (this)
@@ -506,13 +531,20 @@ namespace System.Runtime.Serialization
                 }
                 return _helper.XmlFormatReaderDelegate;
             }
-        }
-#else
-        public XmlFormatCollectionReaderDelegate XmlFormatReaderDelegate { get; set; }
+            set
+            {
+#if NET_NATIVE
+                _xmlFormatReaderDelegate = value;
 #endif
+            }
+        }
 
-#if !NET_NATIVE
+#if NET_NATIVE
+        private XmlFormatGetOnlyCollectionReaderDelegate _xmlFormatGetOnlyCollectionReaderDelegate;
+        public XmlFormatGetOnlyCollectionReaderDelegate XmlFormatGetOnlyCollectionReaderDelegate
+#else
         internal XmlFormatGetOnlyCollectionReaderDelegate XmlFormatGetOnlyCollectionReaderDelegate
+#endif
         {
             /// <SecurityNote>
             /// Critical - fetches the critical xmlFormatReaderDelegate property
@@ -521,6 +553,13 @@ namespace System.Runtime.Serialization
             [SecuritySafeCritical]
             get
             {
+#if NET_NATIVE
+                if (DataContractSerializer.Option == SerializationOption.CodeGenOnly
+                || (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup && _xmlFormatGetOnlyCollectionReaderDelegate != null))
+                {
+                    return _xmlFormatGetOnlyCollectionReaderDelegate;
+                }
+#endif
                 if (_helper.XmlFormatGetOnlyCollectionReaderDelegate == null)
                 {
                     lock (this)
@@ -540,10 +579,13 @@ namespace System.Runtime.Serialization
                 }
                 return _helper.XmlFormatGetOnlyCollectionReaderDelegate;
             }
-        }
-#else
-        public XmlFormatGetOnlyCollectionReaderDelegate XmlFormatGetOnlyCollectionReaderDelegate { get; set; }
+            set
+            {
+#if NET_NATIVE
+                _xmlFormatGetOnlyCollectionReaderDelegate = value;
 #endif
+            }
+        }
 
         [SecurityCritical]
         /// <SecurityNote>

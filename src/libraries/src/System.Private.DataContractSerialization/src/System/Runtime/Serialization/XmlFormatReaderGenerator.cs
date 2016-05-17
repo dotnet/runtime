@@ -41,7 +41,6 @@ namespace System.Runtime.Serialization
 
         private static readonly ConcurrentDictionary<Type, bool> s_typeHasDefaultConstructorMap = new ConcurrentDictionary<Type, bool>();
 
-#if !NET_NATIVE
         [SecurityCritical]
         /// <SecurityNote>
         /// Critical - holds instance of CriticalHelper which keeps state that was produced within an assert
@@ -91,6 +90,7 @@ namespace System.Runtime.Serialization
         /// </SecurityNote>
         private class CriticalHelper
         {
+#if !NET_NATIVE
             private CodeGenerator _ilg;
             private LocalBuilder _objectLocal;
             private Type _objectType;
@@ -99,17 +99,19 @@ namespace System.Runtime.Serialization
             private ArgBuilder _memberNamesArg;
             private ArgBuilder _memberNamespacesArg;
             private ArgBuilder _collectionContractArg;
-
-            private bool _useReflection = true;
+#endif
 
             public XmlFormatClassReaderDelegate GenerateClassReader(ClassDataContract classContract)
             {
-                if (_useReflection)
+                if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup || DataContractSerializer.Option == SerializationOption.ReflectionOnly)
                 {
                     return new ReflectionXmlFormatReader(classContract).ReflectionReadClass;
                 }
                 else
                 {
+#if NET_NATIVE
+                    throw new InvalidOperationException("Cannot generate class reader");
+#else
                     _ilg = new CodeGenerator();
                     bool memberAccessFlag = classContract.RequiresMemberAccessForRead(null);
                     try
@@ -162,39 +164,49 @@ namespace System.Runtime.Serialization
                         }
                     }
                     return (XmlFormatClassReaderDelegate)_ilg.EndMethod();
+#endif
                 }
             }
 
             public XmlFormatCollectionReaderDelegate GenerateCollectionReader(CollectionDataContract collectionContract)
             {
-                if (_useReflection)
+                if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup || DataContractSerializer.Option == SerializationOption.ReflectionOnly)
                 {
                     return new ReflectionXmlFormatReader(collectionContract).ReflectionReadCollection;
                 }
                 else
                 {
+#if NET_NATIVE
+                    throw new InvalidOperationException("Cannot generate class reader");
+#else
                     _ilg = GenerateCollectionReaderHelper(collectionContract, false /*isGetOnlyCollection*/);
                     ReadCollection(collectionContract);
                     _ilg.Load(_objectLocal);
                     _ilg.ConvertValue(_objectLocal.LocalType, _ilg.CurrentMethod.ReturnType);
                     return (XmlFormatCollectionReaderDelegate)_ilg.EndMethod();
+#endif
                 }
             }
 
             public XmlFormatGetOnlyCollectionReaderDelegate GenerateGetOnlyCollectionReader(CollectionDataContract collectionContract)
             {
-                if (_useReflection)
+                if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup || DataContractSerializer.Option == SerializationOption.ReflectionOnly)
                 {
                     return new ReflectionXmlFormatReader(collectionContract).ReflectionReadGetOnlyCollection;
                 }
                 else
                 {
+#if NET_NATIVE
+                    throw new InvalidOperationException("Cannot generate class reader");
+#else
                     _ilg = GenerateCollectionReaderHelper(collectionContract, true /*isGetOnlyCollection*/);
                     ReadGetOnlyCollection(collectionContract);
                     return (XmlFormatGetOnlyCollectionReaderDelegate)_ilg.EndMethod();
+#endif
                 }
             }
 
+#if !NET_NATIVE
             private CodeGenerator GenerateCollectionReaderHelper(CollectionDataContract collectionContract, bool isGetOnlyCollection)
             {
                 _ilg = new CodeGenerator();
@@ -883,8 +895,8 @@ namespace System.Runtime.Serialization
                 _ilg.Call(XmlFormatGeneratorStatics.CreateSerializationExceptionMethod);
                 _ilg.Throw();
             }
-        }
 #endif
+        }
 
         [SecuritySafeCritical]
         static internal object UnsafeGetUninitializedObject(Type type)

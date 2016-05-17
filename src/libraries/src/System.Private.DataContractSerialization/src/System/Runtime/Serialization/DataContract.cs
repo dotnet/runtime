@@ -36,7 +36,6 @@ namespace System.Runtime.Serialization
         /// </SecurityNote>
         private XmlDictionaryString _ns;
 
-#if NET_NATIVE
         // this the global dictionary for data contracts introduced for multi-file.
         private static Dictionary<Type, DataContract> s_dataContracts = new Dictionary<Type, DataContract>();
 
@@ -44,7 +43,6 @@ namespace System.Runtime.Serialization
         {
             return s_dataContracts;
         }
-#endif
 
         [SecurityCritical]
         /// <SecurityNote>
@@ -66,7 +64,6 @@ namespace System.Runtime.Serialization
             _ns = helper.Namespace;
         }
 
-#if NET_NATIVE
         private static DataContract GetGeneratedDataContract(Type type)
         {
             // this method used to be rewritten by an IL transform
@@ -83,6 +80,10 @@ namespace System.Runtime.Serialization
 
         internal static DataContract GetDataContractFromGeneratedAssembly(Type type)
         {
+            if (DataContractSerializer.Option == SerializationOption.ReflectionOnly)
+            {
+                return null;
+            }
             DataContract dataContract = GetGeneratedDataContract(type);
             if (dataContract == null)
             {
@@ -93,12 +94,14 @@ namespace System.Runtime.Serialization
                 }
                 if (dataContract == null)
                 {
-                    throw new InvalidDataContractException(SR.Format(SR.SerializationCodeIsMissingForType, type.ToString()));
+                    if (DataContractSerializer.Option == SerializationOption.CodeGenOnly)
+                    {
+                        throw new InvalidDataContractException(SR.Format(SR.SerializationCodeIsMissingForType, type.ToString()));
+                    }
                 }
             }
             return dataContract;
         }
-#endif
 
 #if !NET_NATIVE
         internal MethodInfo ParseMethod
@@ -670,11 +673,18 @@ namespace System.Runtime.Serialization
                         {
                             if (type == null)
                                 type = Type.GetTypeFromHandle(typeHandle);
-#if !NET_NATIVE
                             type = UnwrapNullableType(type);
-#endif
                             type = GetDataContractAdapterType(type);
-#if !NET_NATIVE
+
+#if NET_NATIVE
+                            dataContract = DataContract.GetDataContractFromGeneratedAssembly(type);
+                            if (dataContract != null)
+                            {
+                                AssignDataContractToId(dataContract, id);
+                                return dataContract;
+                            }
+#endif
+
                             dataContract = GetBuiltInDataContract(type);
                             if (dataContract == null)
                             {
@@ -703,12 +713,6 @@ namespace System.Runtime.Serialization
                                     }
                                 }
                             }
-#else
-                            dataContract = DataContract.GetDataContractFromGeneratedAssembly(type);
-#endif
-#if NET_NATIVE
-                            AssignDataContractToId(dataContract, id);
-#endif
                         }
                     }
                 }
@@ -761,12 +765,10 @@ namespace System.Runtime.Serialization
                 {
                     return Globals.TypeOfDateTimeOffsetAdapter;
                 }
-#if !NET_NATIVE
                 if (type.GetTypeInfo().IsGenericType && type.GetGenericTypeDefinition() == Globals.TypeOfKeyValuePair)
                 {
                     return Globals.TypeOfKeyValuePairAdapter.MakeGenericType(type.GetGenericArguments());
                 }
-#endif
                 return type;
             }
 
