@@ -58,8 +58,12 @@ namespace System.Net.NetworkInformation.Tests
             {
                 _log.WriteLine("- NetworkInterface -");
                 _log.WriteLine("Name: " + nic.Name);
-                Assert.Throws<PlatformNotSupportedException>(() => nic.Description);
-                Assert.Throws<PlatformNotSupportedException>(() => nic.Id);
+                string description = nic.Description;
+                Assert.False(string.IsNullOrEmpty(description), "NetworkInterface.Description should not be null or empty.");
+                _log.WriteLine("Description: " + description);
+                string id = nic.Id;
+                Assert.False(string.IsNullOrEmpty(id), "NetworkInterface.Id should not be null or empty.");
+                _log.WriteLine("ID: " + id);
                 Assert.Throws<PlatformNotSupportedException>(() => nic.IsReceiveOnly);
                 _log.WriteLine("Type: " + nic.NetworkInterfaceType);
                 _log.WriteLine("Status: " + nic.OperationalStatus);
@@ -88,8 +92,12 @@ namespace System.Net.NetworkInformation.Tests
             {
                 _log.WriteLine("- NetworkInterface -");
                 _log.WriteLine("Name: " + nic.Name);
-                Assert.Throws<PlatformNotSupportedException>(() => nic.Description);
-                _log.WriteLine("ID: " + nic.Id);
+                string description = nic.Description;
+                Assert.False(string.IsNullOrEmpty(description), "NetworkInterface.Description should not be null or empty.");
+                _log.WriteLine("Description: " + description);
+                string id = nic.Id;
+                Assert.False(string.IsNullOrEmpty(id), "NetworkInterface.Id should not be null or empty.");
+                _log.WriteLine("ID: " + id);
                 Assert.Throws<PlatformNotSupportedException>(() => nic.IsReceiveOnly);
                 _log.WriteLine("Type: " + nic.NetworkInterfaceType);
                 _log.WriteLine("Status: " + nic.OperationalStatus);

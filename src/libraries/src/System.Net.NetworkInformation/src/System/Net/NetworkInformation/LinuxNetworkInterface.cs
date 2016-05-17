@@ -91,10 +91,6 @@ namespace System.Net.NetworkInformation
 
         public override OperationalStatus OperationalStatus { get { return _operationalStatus; } }
 
-        public override string Id { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
-
-        public override string Description { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
-
         public override long Speed
         {
             get
