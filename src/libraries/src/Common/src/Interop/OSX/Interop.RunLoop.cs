@@ -61,5 +61,16 @@ internal static partial class Interop
         /// <param name="rl">The run loop mode of rl from which to remove source.</param>
         [DllImport(Interop.Libraries.CoreFoundationLibrary)]
         internal static extern void CFRunLoopRemoveSource(CFRunLoopRef rl, CFRunLoopSourceRef source, CFStringRef mode);
+        
+        /// <summary>
+        /// Returns a bool that indicates whether the run loop is waiting for an event.
+        /// </summary>
+        /// <param name="rl">The run loop to examine.</param>
+        /// <returns>true if rl has no events to process and is blocking,
+        /// waiting for a source or timer to become ready to fire;
+        /// false if rl either is not running or is currently processing
+        /// a source, timer, or observer.</returns>
+        [DllImport(Interop.Libraries.CoreFoundationLibrary)]
+        internal static extern bool CFRunLoopIsWaiting(CFRunLoopRef rl);
     }
 }
