@@ -14,6 +14,7 @@
 
 typedef struct _WorkerData WorkerData;
 struct _WorkerData {
+	gint32 state;
 	SgenGrayQueue private_gray_queue; /* only read/written by worker thread */
 };
 

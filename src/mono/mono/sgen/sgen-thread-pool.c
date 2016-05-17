@@ -81,11 +81,11 @@ remove_job (SgenThreadPoolJob *job)
 }
 
 static gboolean
-continue_idle_job (void)
+continue_idle_job (void *thread_data)
 {
 	if (!continue_idle_job_func)
 		return FALSE;
-	return continue_idle_job_func ();
+	return continue_idle_job_func (thread_data);
 }
 
 static mono_native_thread_return_t
@@ -101,7 +101,7 @@ thread_func (void *thread_data)
 		 * main thread might then set continue idle and signal us before we can take
 		 * the lock, and we'd lose the signal.
 		 */
-		gboolean do_idle = continue_idle_job ();
+		gboolean do_idle = continue_idle_job (thread_data);
 		SgenThreadPoolJob *job = get_job_and_set_in_progress ();
 
 		if (!job && !do_idle && !threadpool_shutdown) {
@@ -133,7 +133,7 @@ thread_func (void *thread_data)
 			SGEN_ASSERT (0, idle_job_func, "Why do we have idle work when there's no idle job function?");
 			do {
 				idle_job_func (thread_data);
-				do_idle = continue_idle_job ();
+				do_idle = continue_idle_job (thread_data);
 			} while (do_idle && !job_queue.next_slot);
 
 			mono_os_mutex_lock (&lock);
@@ -238,7 +238,7 @@ sgen_thread_pool_idle_signal (void)
 
 	mono_os_mutex_lock (&lock);
 
-	if (continue_idle_job_func ())
+	if (continue_idle_job_func (NULL))
 		mono_os_cond_broadcast (&work_cond);
 
 	mono_os_mutex_unlock (&lock);
@@ -251,7 +251,7 @@ sgen_thread_pool_idle_wait (void)
 
 	mono_os_mutex_lock (&lock);
 
-	while (continue_idle_job_func ())
+	while (continue_idle_job_func (NULL))
 		mono_os_cond_wait (&done_cond, &lock);
 
 	mono_os_mutex_unlock (&lock);
