@@ -249,6 +249,7 @@
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('net461'))">net461</TargetGroup>
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('net46'))">net46</TargetGroup>
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('net45'))">net45</TargetGroup>
+    <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('net451'))">net451</TargetGroup>
   </PropertyGroup>
 
   <!-- Set up Default symbol and optimization for Configuration -->
@@ -443,7 +444,7 @@
     </When>
     <When Condition="'$(TargetGroup)'=='net451'">
       <PropertyGroup>
-        <PackageTargetFramework>net45</PackageTargetFramework>
+        <PackageTargetFramework>net451</PackageTargetFramework>
         <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.5.1</TargetingPackNugetPackageId>
         <NuGetTargetMoniker>.NETFramework,Version=v4.5.1</NuGetTargetMoniker>
       </PropertyGroup>

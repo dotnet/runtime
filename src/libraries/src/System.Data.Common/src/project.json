@@ -1,6 +1,6 @@
 {
   "frameworks": {
-    "netstandard1.2": {
+    "netstandard1.0": {
       "dependencies": {
         "Microsoft.NETCore.Platforms": "1.0.1-rc3-24113-00",
         "System.Collections": "4.0.0",
@@ -15,7 +15,7 @@
         "System.Threading.Tasks": "4.0.0"
       },
       "imports": [
-        "dotnet5.3"
+        "dotnet5.1"
       ]
     },
     "net451": {
