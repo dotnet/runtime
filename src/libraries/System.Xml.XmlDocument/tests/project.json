@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0030",
+    "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0033",
     "Microsoft.NETCore.Platforms": "1.0.1-rc3-24113-00",
     "System.Linq.Expressions": "4.1.0-rc3-24113-00",
     "System.ObjectModel": "4.0.12-rc3-24113-00",
