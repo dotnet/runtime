@@ -924,11 +924,6 @@ processing_stw_step (void)
 #if defined (DUMP_GRAPH)
 	printf ("-----------------\n");
 #endif
-	/*
-	 * bridge_processing_in_progress must be set with the world
-	 * stopped.  If not there would be race conditions.
-	 */
-	bridge_processing_in_progress = TRUE;
 
 	SGEN_TV_GETTIME (curtime);
 
@@ -1134,7 +1129,6 @@ processing_after_callback (int generation)
 
 	cache_hits = cache_misses = 0;
 	ignored_objects = 0;
-	bridge_processing_in_progress = FALSE;
 }
 
 static void
