@@ -18,6 +18,7 @@
     <ArchitectureSpecificNativeFile Include="$(BinDir)mscordaccore.dll"/>
     <ArchitectureSpecificNativeFile Include="$(BinDir)mscordbi.dll"/>
     <ArchitectureSpecificNativeFile Include="$(BinDir)mscorlib.ni.dll"/>
+    <ArchitectureSpecificNativeFile Include="$(BinDir)System.Private.CoreLib.ni.dll"/>
     <ArchitectureSpecificNativeFile Include="$(BinDir)mscorrc.debug.dll"/>
     <ArchitectureSpecificNativeFile Include="$(BinDir)mscorrc.dll"/>
     <ArchitectureSpecificNativeFile Include="$(BinDir)sos.dll"/>
