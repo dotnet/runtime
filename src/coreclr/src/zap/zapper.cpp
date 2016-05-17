@@ -1950,7 +1950,7 @@ void Zapper::SetContextInfo(LPCWSTR assemblyName)
     // check for mscorlib, and isExe == true, then CompilationDomain::SetContextInfo will call
     // into mscorlib and cause the resulting mscorlib.ni.dll to be slightly different (checked
     // build only).
-    if (assemblyName != NULL && _wcsnicmp(assemblyName, W("mscorlib"), 8) == 0 && (wcslen(assemblyName) == 8 || assemblyName[8] == W(',')))
+    if (assemblyName != NULL && _wcsnicmp(assemblyName, CoreLibName_W, CoreLibNameLen) == 0 && (wcslen(assemblyName) == CoreLibNameLen || assemblyName[CoreLibNameLen] == W(',')))
     {
         return;
     }

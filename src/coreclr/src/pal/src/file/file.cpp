@@ -1094,7 +1094,6 @@ DeleteFileA(
         IN LPCSTR lpFileName)
 {
     PAL_ERROR palError = NO_ERROR;
-    DWORD dwShareMode = SHARE_MODE_NOT_INITALIZED;
     CPalThread *pThread;
     int     result;
     BOOL    bRet = FALSE;
@@ -1115,12 +1114,6 @@ DeleteFileA(
     
     FILEDosToUnixPathA( lpunixFileName );
     
-    if ( !FILEGetFileNameFromSymLink(lpunixFileName))
-    {
-        dwLastError = FILEGetLastErrorFromErrnoAndFilename(lpunixFileName);
-        goto done;
-    }
-    
     // Compute the absolute pathname to the file.  This pathname is used
     // to determine if two file names represent the same file.
     palError = InternalCanonicalizeRealPath(lpunixFileName, lpFullunixFileName);
@@ -1133,31 +1126,9 @@ DeleteFileA(
         }
     }
 
-    palError = g_pFileLockManager->GetFileShareModeForFile(lpFullunixFileName, &dwShareMode);
+    result = unlink( lpFullunixFileName );
 
-    // Use unlink if we succesfully found the file to be opened with
-    // a FILE_SHARE_DELETE mode.
-    // Note that there is a window here where a race condition can occur:
-    //   the check for the sharing mode and the unlink are two separate actions
-    //   (not a single atomic action). So it's possible that between the check
-    //   happening and the unlink happening, the file may have been closed. If 
-    //   it is just closed and not re-opened, no problems.
-    //   If it is closed and re-opened without any sharing, we should be calling
-    //   InternalDelete instead which would have failed.
-    //   Instead, we call unlink which will succeed.
-
-    if (palError == NO_ERROR &&
-    dwShareMode != SHARE_MODE_NOT_INITALIZED &&
-    (dwShareMode & FILE_SHARE_DELETE) != 0)
-    {
-      result = unlink( lpFullunixFileName );
-    }
-    else
-    {
-      result = InternalDeleteFile( lpFullunixFileName );
-    }
-
-    if ( result < 0 )
+    if (result < 0)
     {
         TRACE("unlink returns %d\n", result);
         dwLastError = FILEGetLastErrorFromErrnoAndFilename(lpFullunixFileName);
@@ -1172,11 +1143,11 @@ done:
     {
         pThread->SetLastError( dwLastError );
     }
+
     LOGEXIT("DeleteFileA returns BOOL %d\n", bRet);
     PERF_EXIT(DeleteFileA);
     return bRet;
 }
-
 
 /*++
 Function:
@@ -1350,15 +1321,8 @@ MoveFileExA(
         dwLastError = ERROR_NOT_ENOUGH_MEMORY;
         goto done;
     }
-    
-    FILEDosToUnixPathA( dest );
 
-    if ( !FILEGetFileNameFromSymLink(source))
-    {
-        TRACE( "FILEGetFileNameFromSymLink failed\n" );
-        dwLastError = FILEGetLastErrorFromErrnoAndFilename(source);
-        goto done;
-    }
+    FILEDosToUnixPathA( dest );
 
     if ( !(dwFlags & MOVEFILE_REPLACE_EXISTING) )
     {
@@ -1440,9 +1404,9 @@ MoveFileExA(
         case ENOENT:
             {
                 struct stat buf;
-                if (stat(source, &buf) == -1)
+                if (lstat(source, &buf) == -1)
                 {
-                    FILEGetProperNotFoundError(dest, &dwLastError);
+                    FILEGetProperNotFoundError(source, &dwLastError);
                 }
                 else
                 {
@@ -4754,7 +4718,6 @@ fail:
     return FALSE;
 }
 
-
 /*++
 FILECleanupStdHandles
 
@@ -4793,44 +4756,6 @@ void FILECleanupStdHandles(void)
         CloseHandle(stderr_handle);
     }
 }
-
-
-/*++
-FILEGetFileNameFromSymLink
-
-Input parameters:
-
-source  = path to the file on input, path to the file with all 
-          symbolic links traversed on return
-
-Return value:
-    TRUE on success, FALSE on failure
---*/
-BOOL FILEGetFileNameFromSymLink(PathCharString& source)
-{
-    int ret;
-    PathCharString sLinkDataString;
-    struct stat sb;
-
-    do
-    {
-        if (lstat(source, &sb) == -1) 
-        {
-            break;
-        }
-        
-        char * sLinkData = sLinkDataString.OpenStringBuffer(sb.st_size);
-        ret = readlink(source, sLinkData, sb.st_size);
-        if (ret > 0)
-        {
-            sLinkDataString.CloseBuffer(ret);
-            source.Set(sLinkDataString);
-        }
-    } while (ret > 0);
-
-    return (errno == EINVAL);
-}
-
 
 /*++
 Function:

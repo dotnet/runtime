@@ -1984,6 +1984,14 @@ PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADD
     p += 8;
     END_DYNAMIC_HELPER_EMIT();              
 }
+
+PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator, CORINFO_RUNTIME_LOOKUP * pLookup)
+{
+    STANDARD_VM_CONTRACT;
+
+    // TODO (NYI)
+    ThrowHR(E_NOTIMPL);
+}
 #endif // FEATURE_READYTORUN
 
 #endif // CROSSGEN_COMPILE

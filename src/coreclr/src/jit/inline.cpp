@@ -347,7 +347,7 @@ InlineContext::InlineContext(InlineStrategy* strategy)
 #if defined(DEBUG) || defined(INLINE_DATA)
 
 //------------------------------------------------------------------------
-// Dump: Dump an InlineContext entry and all descendants to stdout
+// Dump: Dump an InlineContext entry and all descendants to jitstdout
 //
 // Arguments:
 //    indent   - indentation level for this node
@@ -453,7 +453,7 @@ void InlineContext::DumpData(unsigned indent)
     {
         const char* inlineReason = InlGetObservationString(m_Observation);
         printf("%*s%u,\"%s\",\"%s\"", indent, "", m_Ordinal, inlineReason, calleeName);
-        m_Policy->DumpData(stdout);
+        m_Policy->DumpData(jitstdout);
         printf("\n");
     }
 

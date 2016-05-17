@@ -15,7 +15,7 @@
     <NuGetPackageImportStamp>7a9bfb7d</NuGetPackageImportStamp>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ReferenceLocalMscorlib>false</ReferenceLocalMscorlib>
-    <CLRTestKind>BuildOnly</CLRTestKind>
+    <CLRTestExecutionArguments>/loops:100 /addVar:-922337203685477</CLRTestExecutionArguments>
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->

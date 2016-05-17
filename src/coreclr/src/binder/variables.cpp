@@ -83,7 +83,8 @@ namespace BINDER_SPACE
             architectureARM.SetLiteral(W("ARM"));
             architectureARM64.SetLiteral(W("ARM64"));
             cultureNeutral.SetLiteral(W("neutral"));
-            mscorlib.SetLiteral(W("mscorlib"));
+            mscorlib.SetLiteral(CoreLibName_W);
+            
             emptyString.Clear();
 
 #ifdef FEATURE_VERSIONING_LOG

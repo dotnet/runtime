@@ -24,8 +24,12 @@
 #endif // __clang__
 #endif // !_MSC_VER
 
+#ifndef SIZE_T_MAX
 #define SIZE_T_MAX ((size_t)-1)
+#endif
+#ifndef SSIZE_T_MAX
 #define SSIZE_T_MAX ((ptrdiff_t)(SIZE_T_MAX / 2))
+#endif
 
 #ifndef _INC_WINDOWS
 // -----------------------------------------------------------------------------------------------------------
@@ -454,7 +458,6 @@ public:
 
     static bool IsCurrentThreadFinalizer();
     static void Wait(DWORD timeout, bool allowReentrantWait = false);
-    static bool WatchDog();
     static void SignalFinalizationDone(bool fFinalizer);
     static void SetFinalizerThread(Thread * pThread);
     static HANDLE GetFinalizerEvent();

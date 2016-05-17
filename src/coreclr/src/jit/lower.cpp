@@ -1679,27 +1679,19 @@ void Lowering::LowerCall(GenTree* node)
             break;
 
         case GTF_CALL_NONVIRT:
-        {
-
-#if INLINE_PINVOKE
             if (call->IsUnmanaged())
             {
                 result = LowerNonvirtPinvokeCall(call);
-                break;
             }
-#endif
-            if  (call->gtCallType == CT_INDIRECT)
+            else if (call->gtCallType == CT_INDIRECT)
             {
                 result = LowerIndirectNonvirtCall(call);
-                break;
             }
             else
             {
                 result = LowerDirectCall(call);
-                break;
             }
-        }
-        break;
+            break;
 
         default:
             noway_assert(!"strange call type");
@@ -1996,14 +1988,12 @@ void Lowering::LowerFastTailCall(GenTreeCall *call)
     // fgLastBB with block number > loop header block number.
     //assert((comp->compCurBB->bbFlags & BBF_GC_SAFE_POINT) || !comp->optReachWithoutCall(comp->fgFirstBB, comp->compCurBB) || comp->genInterruptible);
 
-#if INLINE_PINVOKE
     // If PInvokes are in-lined, we have to remember to execute PInvoke method epilog anywhere that
     // a method returns.  This is a case of caller method has both PInvokes and tail calls.
     if (comp->info.compCallUnmanaged)
     {
         InsertPInvokeMethodEpilog(comp->compCurBB DEBUGARG(call));
     }
-#endif
 
     // Args for tail call are setup in incoming arg area.  The gc-ness of args of
     // caller and callee (which being tail called) may not match.  Therefore, everything
@@ -2237,14 +2227,12 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree *callTarget
     // GC starvation.
     assert(comp->compCurBB->bbFlags & BBF_GC_SAFE_POINT);
 
-#if INLINE_PINVOKE
     // If PInvokes are in-lined, we have to remember to execute PInvoke method epilog anywhere that
     // a method returns.  This is a case of caller method has both PInvokes and tail calls.
     if (comp->info.compCallUnmanaged)
     {
         InsertPInvokeMethodEpilog(comp->compCurBB DEBUGARG(call));
     }
-#endif
 
     // Remove gtCallAddr from execution order if one present.
     GenTreeStmt* callStmt = comp->compCurStmt->AsStmt();     
@@ -2306,14 +2294,12 @@ void Lowering::LowerJmpMethod(GenTree* jmp)
     DISPTREE(jmp);
     JITDUMP("============");
 
-#if INLINE_PINVOKE
     // If PInvokes are in-lined, we have to remember to execute PInvoke method epilog anywhere that
     // a method returns.
     if (comp->info.compCallUnmanaged)
     {
         InsertPInvokeMethodEpilog(comp->compCurBB DEBUGARG(jmp));
     }
-#endif
 }
 
 // Lower GT_RETURN node to insert PInvoke method epilog if required.
@@ -2325,13 +2311,11 @@ void Lowering::LowerRet(GenTree* ret)
     DISPTREE(ret);
     JITDUMP("============");
 
-#if INLINE_PINVOKE
     // Method doing PInvokes has exactly one return block unless it has tail calls.
     if (comp->info.compCallUnmanaged && (comp->compCurBB == comp->genReturnBB))
     {
         InsertPInvokeMethodEpilog(comp->compCurBB DEBUGARG(ret));
     }
-#endif
 }
 
 GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
@@ -3994,7 +3978,6 @@ void Lowering::DoPhase()
        }
     }
 
-#if INLINE_PINVOKE
     // If we have any PInvoke calls, insert the one-time prolog code. We've already inserted the epilog code in the appropriate spots.
     // NOTE: there is a minor optimization opportunity here, as we still create p/invoke data structures and setup/teardown
     // even if we've eliminated all p/invoke calls due to dead code elimination.
@@ -4002,7 +3985,6 @@ void Lowering::DoPhase()
     {
         InsertPInvokeMethodProlog();
     }
-#endif
 
 #ifdef DEBUG
     JITDUMP("Lower has completed modifying nodes, proceeding to initialize LSRA TreeNodeInfo structs...\n");
