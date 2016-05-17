@@ -319,7 +319,7 @@ void    AsmMan::EmitFiles()
 
 void    AsmMan::StartAssembly(__in __nullterminated char* szName, __in_opt __nullterminated char* szAlias, DWORD dwAttr, BOOL isRef)
 {
-    if(!isRef && (0==strcmp(szName,"mscorlib"))) ((Assembler*)m_pAssembler)->m_fIsMscorlib = TRUE;
+    if(!isRef && (0==strcmp(szName, "mscorlib"))) ((Assembler*)m_pAssembler)->m_fIsMscorlib = TRUE;
     if(!isRef && (m_pAssembly != NULL))
     {
         if(strcmp(szName, m_pAssembly->szName))

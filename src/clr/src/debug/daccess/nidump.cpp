@@ -1179,8 +1179,9 @@ NativeImageDumper::DumpNativeImage()
                 break;
             }
         }
+        
         //If we're actually dumping mscorlib, remap the mscorlib dependency to our own native image.
-        if( mscorlib == NULL || !wcscmp(m_name, W("mscorlib")) )
+        if( (mscorlib == NULL) || !wcscmp(m_name, CoreLibName_W))
         {
             mscorlib = GetDependency(0);
             mscorlib->fIsMscorlib = TRUE;
@@ -2445,7 +2446,7 @@ mdAssemblyRef NativeImageDumper::MapAssemblyRefToManifest(mdAssemblyRef token, I
                 ret = currentRef;
                 break;
             }
-            else if (wcscmp(szAssemblyName, W("mscorlib")) == 0)
+            else if (wcscmp(szAssemblyName, CoreLibName_W) == 0)
             {
                 // Mscorlib is special - version number and public key token are ignored.
                 ret = currentRef;
@@ -2658,7 +2659,7 @@ NativeImageDumper::Dependency *NativeImageDumper::OpenDependency(int index)
             Dependency& dependency = m_dependencies[index];
             AppendTokenName(entry->dwAssemblyRef, buf, m_manifestImport, true);
             bool isHardBound = !!(entry->signNativeImage != INVALID_NGEN_SIGNATURE);
-            SString mscorlibStr(SString::Literal, W("mscorlib"));
+            SString mscorlibStr(SString::Literal, CoreLibName_W);
             bool isMscorlib = (0 == buf.Compare( mscorlibStr ));
             dependency.fIsHardbound = isHardBound;
             wcscpy_s(dependency.name, _countof(dependency.name),
@@ -4133,10 +4134,8 @@ void NativeImageDumper::DumpModule( PTR_Module module )
     //file
     //assembly
 
-#if !defined(FEATURE_CORECLR)
     DisplayWriteFieldInt( m_DefaultDllImportSearchPathsAttributeValue,
                           module->m_DefaultDllImportSearchPathsAttributeValue, Module, MODULE );
-#endif // !FEATURE_CORECLR
 
 
     DisplayEndStructure(MODULE); //Module

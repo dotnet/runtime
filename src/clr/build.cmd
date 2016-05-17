@@ -45,13 +45,15 @@ set "__RootBinDir=%__ProjectDir%\bin"
 set "__LogsDir=%__RootBinDir%\Logs"
 
 set __CleanBuild=
-set __MscorlibOnly=
+set __CoreLibOnly=
 set __ConfigureOnly=
 set __SkipConfigure=
-set __SkipMscorlibBuild=
+set __SkipCoreLibBuild=
 set __SkipNativeBuild=
 set __SkipTestBuild=
 set __BuildSequential=
+set __SkipRestore=
+set __SkipNuget=
 set __msbuildCleanBuildArgs=
 set __msbuildExtraArgs=
 set __SignTypeReal=
@@ -101,18 +103,20 @@ set __PassThroughArgs=%__PassThroughArgs% %1
 
 if /i "%1" == "clean"               (set __CleanBuild=1&shift&goto Arg_Loop)
 
-if /i "%1" == "freebsdmscorlib"     (set __MscorlibOnly=1&set __BuildOS=FreeBSD&shift&goto Arg_Loop)
-if /i "%1" == "linuxmscorlib"       (set __MscorlibOnly=1&set __BuildOS=Linux&shift&goto Arg_Loop)
-if /i "%1" == "netbsdmscorlib"      (set __MscorlibOnly=1&set __BuildOS=NetBSD&shift&goto Arg_Loop)
-if /i "%1" == "osxmscorlib"         (set __MscorlibOnly=1&set __BuildOS=OSX&shift&goto Arg_Loop)
-if /i "%1" == "windowsmscorlib"     (set __MscorlibOnly=1&set __BuildOS=Windows_NT&shift&goto Arg_Loop)
+if /i "%1" == "freebsdmscorlib"     (set __CoreLibOnly=1&set __BuildOS=FreeBSD&shift&goto Arg_Loop)
+if /i "%1" == "linuxmscorlib"       (set __CoreLibOnly=1&set __BuildOS=Linux&shift&goto Arg_Loop)
+if /i "%1" == "netbsdmscorlib"      (set __CoreLibOnly=1&set __BuildOS=NetBSD&shift&goto Arg_Loop)
+if /i "%1" == "osxmscorlib"         (set __CoreLibOnly=1&set __BuildOS=OSX&shift&goto Arg_Loop)
+if /i "%1" == "windowsmscorlib"     (set __CoreLibOnly=1&set __BuildOS=Windows_NT&shift&goto Arg_Loop)
 
 if /i "%1" == "vs2015"              (set __VSVersion=%1&shift&goto Arg_Loop)
-if /i "%1" == "configureonly"       (set __ConfigureOnly=1&set __SkipMscorlibBuild=1&set __SkipTestBuild=1&shift&goto Arg_Loop)
+if /i "%1" == "configureonly"       (set __ConfigureOnly=1&set __SkipCoreLibBuild=1&set __SkipTestBuild=1&shift&goto Arg_Loop)
 if /i "%1" == "skipconfigure"       (set __SkipConfigure=1&shift&goto Arg_Loop)
-if /i "%1" == "skipmscorlib"        (set __SkipMscorlibBuild=1&shift&goto Arg_Loop)
+if /i "%1" == "skipmscorlib"        (set __SkipCoreLibBuild=1&shift&goto Arg_Loop)
 if /i "%1" == "skipnative"          (set __SkipNativeBuild=1&shift&goto Arg_Loop)
 if /i "%1" == "skiptests"           (set __SkipTestBuild=1&shift&goto Arg_Loop)
+if /i "%1" == "skiprestore"         (set __SkipRestore=1&shift&goto Arg_Loop)
+if /i "%1" == "skipnuget"           (set __SkipNuget=1&shift&goto Arg_Loop)
 if /i "%1" == "sequential"          (set __BuildSequential=1&shift&goto Arg_Loop)
 if /i "%1" == "disableoss"          (set __SignTypeReal="/p:SignType=real"&shift&goto Arg_Loop)
 if /i "%1" == "priority"            (set __TestPriority=%2&set __PassThroughArgs=%__PassThroughArgs% %2&shift&shift&goto Arg_Loop)
@@ -155,7 +159,7 @@ if defined __ConfigureOnly if defined __SkipConfigure (
     goto Usage
 )
 
-if defined __SkipMscorlibBuild if defined __MscorlibOnly (
+if defined __SkipCoreLibBuild if defined __CoreLibOnly (
     echo Error: option 'skipmscorlib' is incompatible with 'freebsdmscorlib', 'linuxmscorlib', 'netbsdmscorlib', 'osxmscorlib' and 'windowsmscorlib'.
     goto Usage
 )
@@ -223,8 +227,8 @@ if not exist "%__BinDir%"           md "%__BinDir%"
 if not exist "%__IntermediatesDir%" md "%__IntermediatesDir%"
 if not exist "%__LogsDir%"          md "%__LogsDir%"
 
-:: CMake isn't a requirement when building mscorlib only
-if defined __MscorlibOnly goto CheckVS
+:: CMake isn't a requirement when building CoreLib only
+if defined __CoreLibOnly goto CheckVS
 
 echo %__MsgPrefix%Checking prerequisites
 
@@ -274,6 +278,10 @@ set __msbuildCommonArgs=/nologo /nodeReuse:false %__msbuildCleanBuildArgs% %__ms
 if not defined __BuildSequential (
     set __msbuildCommonArgs=%__msbuildCommonArgs% /maxcpucount
 )
+if defined __SkipRestore (
+    set __msbuildCommonArgs=%__msbuildCommonArgs% /p:RestoreDuringBuild=false
+) 
+
 
 REM =========================================================================================
 REM ===
@@ -295,7 +303,7 @@ REM ============================================================================
 :: Generate _version.h
 if exist "%__RootBinDir%\obj\_version.h" del "%__RootBinDir%\obj\_version.h"
 %_msbuildexe% "%__ProjectFilesDir%\build.proj" /t:GenerateVersionHeader /v:minimal /p:NativeVersionHeaderFile="%__RootBinDir%\obj\_version.h" /p:GenerateVersionHeader=true %__OfficialBuildIdArg%
-if defined __MscorlibOnly goto PerformMScorlibBuild
+if defined __CoreLibOnly goto PerformCoreLibBuild
 
 if defined __SkipNativeBuild (
     echo %__MsgPrefix%Skipping native components build
@@ -391,32 +399,32 @@ endlocal
 
 REM =========================================================================================
 REM ===
-REM === Mscorlib and NuGet package build section.
+REM === CoreLib and NuGet package build section.
 REM ===
 REM =========================================================================================
 
-:PerformMScorlibBuild
+:PerformCoreLibBuild
 
 REM setlocal to prepare for vsdevcmd.bat
 setlocal EnableDelayedExpansion EnableExtensions
 
-rem Explicitly set Platform causes conflicts in mscorlib project files. Clear it to allow building from VS x64 Native Tools Command Prompt
+rem Explicitly set Platform causes conflicts in CoreLib project files. Clear it to allow building from VS x64 Native Tools Command Prompt
 set Platform=
 
 :: Set the environment for the managed build
 echo %__MsgPrefix%Using environment: "%__VSToolsRoot%\VsDevCmd.bat"
 call                                 "%__VSToolsRoot%\VsDevCmd.bat"
 
-if defined __SkipMscorlibBuild (
-    echo %__MsgPrefix%Skipping Mscorlib build
-    goto SkipMscorlibBuild
+if defined __SkipCoreLibBuild (
+    echo %__MsgPrefix%Skipping System.Private.CoreLib build
+    goto SkipCoreLibBuild
 )
 
-echo %__MsgPrefix%Commencing build of mscorlib for %__BuildOS%.%__BuildArch%.%__BuildType%
+echo %__MsgPrefix%Commencing build of System.Private.CoreLib for %__BuildOS%.%__BuildArch%.%__BuildType%
 
-set "__BuildLog=%__LogsDir%\MScorlib_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
-set "__BuildWrn=%__LogsDir%\MScorlib_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
-set "__BuildErr=%__LogsDir%\MScorlib_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
+set "__BuildLog=%__LogsDir%\System.Private.CoreLib_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
+set "__BuildWrn=%__LogsDir%\System.Private.CoreLib_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
+set "__BuildErr=%__LogsDir%\System.Private.CoreLib_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
 set __msbuildLogArgs=^
 /fileloggerparameters:Verbosity=normal;LogFile="%__BuildLog%" ^
 /fileloggerparameters1:WarningsOnly;LogFile="%__BuildWrn%" ^
@@ -427,39 +435,51 @@ set __msbuildLogArgs=^
 set __msbuildArgs="%__ProjectFilesDir%\build.proj" %__msbuildCommonArgs% %__msbuildLogArgs% %__SignTypeReal%
 
 set __BuildNugetPackage=true
-if defined __MscorlibOnly       set __BuildNugetPackage=false
+if defined __CoreLibOnly       set __BuildNugetPackage=false
 if /i "%__BuildArch%" =="arm64" set __BuildNugetPackage=false
 if %__BuildNugetPackage%==false set __msbuildArgs=%__msbuildArgs% /p:BuildNugetPackage=false
 
 %_msbuildexe% %__msbuildArgs%
 if errorlevel 1 (
-    echo %__MsgPrefix%Error: MScorlib build failed. Refer to the build log files for details:
+    echo %__MsgPrefix%Error: System.Private.CoreLib build failed. Refer to the build log files for details:
     echo     %__BuildLog%
     echo     %__BuildWrn%
     echo     %__BuildErr%
     exit /b 1
 )
 
-if defined __MscorlibOnly (
-    echo %__MsgPrefix%Mscorlib successfully built.
+if defined __CoreLibOnly (
+    echo %__MsgPrefix%System.Private.CoreLib successfully built.
     exit /b 0
 )
 
-echo %__MsgPrefix%Generating native image of mscorlib for %__BuildOS%.%__BuildArch%.%__BuildType%
+echo %__MsgPrefix%Generating native image of System.Private.CoreLib for %__BuildOS%.%__BuildArch%.%__BuildType%
 
-set "__CrossGenMScorlibLog=%__LogsDir%\CrossgenMScorlib_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
+set "__CrossGenCoreLibLog=%__LogsDir%\CrossgenCoreLib_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
 set "__CrossgenExe=%__CrossComponentBinDir%\crossgen.exe"
-"%__CrossgenExe%" /Platform_Assemblies_Paths "%__BinDir%" /out "%__BinDir%\mscorlib.ni.dll" "%__BinDir%\mscorlib.dll" > "%__CrossGenMScorlibLog%" 2>&1
+"%__CrossgenExe%" /Platform_Assemblies_Paths "%__BinDir%" /out "%__BinDir%\System.Private.CoreLib.ni.dll" "%__BinDir%\System.Private.CoreLib.dll" > "%__CrossGenCoreLibLog%" 2>&1
 if NOT errorlevel 0 (
-    echo %__MsgPrefix%Error: CrossGen mscorlib build failed. Refer to the build log file for details:
-    echo     %__CrossGenMScorlibLog%
+    echo %__MsgPrefix%Error: CrossGen System.Private.CoreLib build failed. Refer to the build log file for details:
+    echo     %__CrossGenCoreLibLog%
     exit /b 1
 )
 
-:SkipMscorlibBuild
+echo %__MsgPrefix%Generating native image of MScorlib facade for %__BuildOS%.%__BuildArch%.%__BuildType%
+
+set "__CrossGenCoreLibLog=%__LogsDir%\CrossgenMSCoreLib_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
+set "__CrossgenExe=%__CrossComponentBinDir%\crossgen.exe"
+"%__CrossgenExe%" /Platform_Assemblies_Paths "%__BinDir%" /out "%__BinDir%\mscorlib.ni.dll" "%__BinDir%\mscorlib.dll" > "%__CrossGenCoreLibLog%" 2>&1
+if NOT errorlevel 0 (
+    echo %__MsgPrefix%Error: CrossGen mscorlib facade build failed. Refer to the build log file for details:
+    echo     %__CrossGenCoreLibLog%
+    exit /b 1
+)
+
+:SkipCoreLibBuild
 
 :GenerateNuget
 if /i "%__BuildArch%" =="arm64" goto :SkipNuget
+if /i "%__SkipNuget%" == 1 goto :SkipNuget
 
 set "__BuildLog=%__LogsDir%\Nuget_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
 set "__BuildWrn=%__LogsDir%\Nuget_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
@@ -471,7 +491,7 @@ set __msbuildLogArgs=^
 /consoleloggerparameters:Summary ^
 /verbosity:minimal
 
-if not defined __SkipMscorlibBuild (
+if not defined __SkipCoreLibBuild (
 	set __msbuildArgs="%__ProjectFilesDir%\src\.nuget\Microsoft.NETCore.Runtime.CoreClr\Microsoft.NETCore.Runtime.CoreCLR.builds" /p:Platform=%__BuildArch%
 	%_msbuildexe% !__msbuildArgs! %__msbuildLogArgs%
 	if errorlevel 1 (
@@ -656,7 +676,7 @@ echo Visual Studio version: ^(default: VS2015^).
 echo clean: force a clean build ^(default is to perform an incremental build^).
 echo msbuildargs ... : all arguments following this tag will be passed directly to msbuild.
 echo mscorlib version: one of freebsdmscorlib, linuxmscorlib, netbsdmscorlib, osxmscorlib,
-echo     or windowsmscorlib. If one of these is passed, only mscorlib is built,
+echo     or windowsmscorlib. If one of these is passed, only System.Private.CoreLib is built,
 echo     for the specified platform ^(FreeBSD, Linux, NetBSD, OS X or Windows,
 echo     respectively^).
 echo priority ^<N^> : specify a set of test that will be built and run, with priority N.
@@ -665,10 +685,12 @@ echo sequential: force a non-parallel build ^(default is to build in parallel
 echo     using all processors^).
 echo configureonly: skip all builds; only run CMake ^(default: CMake and builds are run^)
 echo skipconfigure: skip CMake ^(default: CMake is run^)
-echo skipmscorlib: skip building mscorlib ^(default: mscorlib is built^).
+echo skipmscorlib: skip building System.Private.CoreLib ^(default: System.Private.CoreLib is built^).
 echo skipnative: skip building native components ^(default: native components are built^).
 echo skiptests: skip building tests ^(default: tests are built^).
-echo disableoss: Disable Open Source Signing for mscorlib.
+echo skiprestore: skip restoring packages ^(default: packages are restored during build^).
+echo skipnuget: skip building nuget packages ^(default: packages are built^).
+echo disableoss: Disable Open Source Signing for System.Private.CoreLib.
 echo toolset_dir ^<dir^> : set the toolset directory -- Arm64 use only. Required for Arm64 builds.
 echo.
 echo If "all" is specified, then all build architectures and types are built. If, in addition,

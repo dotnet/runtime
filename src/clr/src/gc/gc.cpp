@@ -2330,8 +2330,6 @@ uint64_t    gc_heap::total_physical_mem;
 
 uint64_t    gc_heap::entry_available_physical_mem;
 
-bool        gc_heap::restricted_physical_memory_p = false;
-
 #ifdef BACKGROUND_GC
 CLREvent    gc_heap::bgc_start_event;
 
@@ -7017,11 +7015,9 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
         {
             //modify the higest address so the span covered
             //is twice the previous one.
-            GCMemoryStatus st;
-            GCToOSInterface::GetMemoryStatus (&st);
-            uint8_t* top = (uint8_t*)0 + Align ((size_t)(st.ullTotalVirtual));
-            // On non-Windows systems, we get only an approximate ullTotalVirtual
-            // value that can possibly be slightly lower than the saved_g_highest_address.
+            uint8_t* top = (uint8_t*)0 + Align (GCToOSInterface::GetVirtualMemoryLimit());
+            // On non-Windows systems, we get only an approximate value that can possibly be
+            // slightly lower than the saved_g_highest_address.
             // In such case, we set the top to the saved_g_highest_address so that the
             // card and brick tables always cover the whole new range.
             if (top < saved_g_highest_address)
@@ -19046,33 +19042,7 @@ void gc_heap::get_memory_info (uint32_t* memory_load,
                                uint64_t* available_physical,
                                uint64_t* available_page_file)
 {
-    if (restricted_physical_memory_p)
-    {
-        size_t working_set_size = GCToOSInterface::GetCurrentPhysicalMemory();
-        if (working_set_size)
-        {
-            if (memory_load)
-                *memory_load = (uint32_t)((float)working_set_size * 100.0 / (float)total_physical_mem);
-            if (available_physical)
-                *available_physical = total_physical_mem - working_set_size;
-            // Available page file doesn't mean much when physical memory is restricted since
-            // we don't know how much of it is available to this process so we are not going to 
-            // bother to make another OS call for it.
-            if (available_page_file)
-                *available_page_file = 0;
-
-            return;
-        }
-    }
-    
-    GCMemoryStatus ms;
-    GCToOSInterface::GetMemoryStatus(&ms);
-    if (memory_load)
-        *memory_load = ms.dwMemoryLoad;
-    if (available_physical)
-        *available_physical = ms.ullAvailPhys;
-    if (available_page_file)
-        *available_page_file = ms.ullAvailPageFile;
+    GCToOSInterface::GetMemoryStatus(memory_load, available_physical, available_page_file);
 }
 
 void fire_mark_event (int heap_num, int root_type, size_t bytes_marked)
@@ -33714,22 +33684,7 @@ HRESULT GCHeap::Initialize ()
     if (hr != S_OK)
         return hr;
 
-    // If there's a physical memory limit set on this process, it needs to be checked very early on, 
-    // before we set various memory info.
-    uint64_t physical_memory_limit = GCToOSInterface::GetRestrictedPhysicalMemoryLimit();
-
-    if (physical_memory_limit)
-        gc_heap::restricted_physical_memory_p = true;
-
-    GCMemoryStatus ms;
-    GCToOSInterface::GetMemoryStatus (&ms);
-    gc_heap::total_physical_mem = ms.ullTotalPhys;
-
-    if (gc_heap::restricted_physical_memory_p)
-    {
-        // A sanity check in case someone set a larger limit than there is actual physical memory.
-        gc_heap::total_physical_mem = min (gc_heap::total_physical_mem, physical_memory_limit);
-    }
+    gc_heap::total_physical_mem = GCToOSInterface::GetPhysicalMemoryLimit();
 
     gc_heap::mem_one_percent = gc_heap::total_physical_mem / 100;
 #ifndef MULTIPLE_HEAPS
@@ -35903,11 +35858,9 @@ size_t GCHeap::GetValidGen0MaxSize(size_t seg_size)
             GCToOSInterface::GetLargestOnDieCacheSize(TRUE),
             GCToOSInterface::GetLogicalCpuCount()));
 
-        GCMemoryStatus ms;
-        GCToOSInterface::GetMemoryStatus (&ms);
         // if the total min GC across heaps will exceed 1/6th of available memory,
         // then reduce the min GC size until it either fits or has been reduced to cache size.
-        while ((gen0size * gc_heap::n_heaps) > (ms.ullAvailPhys / 6))
+        while ((gen0size * gc_heap::n_heaps) > GCToOSInterface::GetPhysicalMemoryLimit() / 6)
         {
             gen0size = gen0size / 2;
             if (gen0size <= trueSize)

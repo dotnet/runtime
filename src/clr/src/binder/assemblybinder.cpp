@@ -50,7 +50,9 @@ BOOL IsCompilationProcess();
 #include "clrprivbindercoreclr.h"
 #include "clrprivbinderassemblyloadcontext.h"
 // Helper function in the VM, invoked by the Binder, to invoke the host assembly resolver
-extern HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToBindWithin, IAssemblyName *pIAssemblyName, ICLRPrivAssembly **ppLoadedAssembly);
+extern HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToBindWithin, 
+                                                IAssemblyName *pIAssemblyName, CLRPrivBinderCoreCLR *pTPABinder,
+                                                BINDER_SPACE::AssemblyName *pAssemblyName, ICLRPrivAssembly **ppLoadedAssembly);
 
 // Helper to check if we have a host assembly resolver set
 extern BOOL RuntimeCanUseAppPathAssemblyResolver(DWORD adid);
@@ -673,30 +675,30 @@ namespace BINDER_SPACE
 
         _ASSERTE(ppSystemAssembly != NULL);
 
-        StackSString sMscorlibDir(systemDirectory);
+        StackSString sCoreLibDir(systemDirectory);
         ReleaseHolder<Assembly> pSystemAssembly;
 
-        if(!sMscorlibDir.EndsWith(DIRECTORY_SEPARATOR_CHAR_W))
+        if(!sCoreLibDir.EndsWith(DIRECTORY_SEPARATOR_CHAR_W))
         {
-            sMscorlibDir.Append(DIRECTORY_SEPARATOR_CHAR_W);
+            sCoreLibDir.Append(DIRECTORY_SEPARATOR_CHAR_W);
         }
 
-        StackSString sMscorlib;
+        StackSString sCoreLib;
 
-        // At run-time, mscorlib.ni.dll is typically always available, and
-        // mscorlib.dll is typically not.  So check for the NI first.
-        sMscorlib = sMscorlibDir;
-        sMscorlib.Append(W("mscorlib.ni.dll"));
-        if (!fBindToNativeImage || FAILED(AssemblyBinder::GetAssembly(sMscorlib,
+        // At run-time, System.Private.CoreLib.ni.dll is typically always available, and
+        // System.Private.CoreLib.dll is typically not.  So check for the NI first.
+        sCoreLib = sCoreLibDir;
+        sCoreLib.Append(CoreLibName_NI_W);
+        if (!fBindToNativeImage || FAILED(AssemblyBinder::GetAssembly(sCoreLib,
                                                FALSE /* fInspectionOnly */,
                                                TRUE /* fIsInGAC */,
                                                TRUE /* fExplicitBindToNativeImage */,
                                                &pSystemAssembly)))
         {
-            // If mscorlib.ni.dll is unavailable, look for mscorlib.dll instead
-            sMscorlib = sMscorlibDir;
-            sMscorlib.Append(W("mscorlib.dll"));
-            IF_FAIL_GO(AssemblyBinder::GetAssembly(sMscorlib,
+            // If System.Private.CoreLib.ni.dll is unavailable, look for System.Private.CoreLib.dll instead
+            sCoreLib = sCoreLibDir;
+            sCoreLib.Append(CoreLibName_IL_W);
+            IF_FAIL_GO(AssemblyBinder::GetAssembly(sCoreLib,
                                                    FALSE /* fInspectionOnly */,
                                                    TRUE /* fIsInGAC */,
                                                    FALSE /* fExplicitBindToNativeImage */,
@@ -1814,6 +1816,7 @@ namespace BINDER_SPACE
 HRESULT AssemblyBinder::BindUsingHostAssemblyResolver (/* in */ INT_PTR pManagedAssemblyLoadContextToBindWithin,
                                                        /* in */ AssemblyName       *pAssemblyName,
                                                       /* in */ IAssemblyName      *pIAssemblyName,
+                                                      /* in */ CLRPrivBinderCoreCLR *pTPABinder,
                                                       /* out */ Assembly           **ppAssembly)
 {
     HRESULT hr = E_FAIL;
@@ -1821,9 +1824,10 @@ HRESULT AssemblyBinder::BindUsingHostAssemblyResolver (/* in */ INT_PTR pManaged
     
     _ASSERTE(pManagedAssemblyLoadContextToBindWithin != NULL);
     
-    // Call into the VM to use the HostAssemblyResolver and load the assembly
+    // RuntimeInvokeHostAssemblyResolver will perform steps 2-4 of CLRPrivBinderAssemblyLoadContext::BindAssemblyByName.
     ICLRPrivAssembly *pLoadedAssembly = NULL;
-    hr = RuntimeInvokeHostAssemblyResolver(pManagedAssemblyLoadContextToBindWithin, pIAssemblyName, &pLoadedAssembly);
+    hr = RuntimeInvokeHostAssemblyResolver(pManagedAssemblyLoadContextToBindWithin, pIAssemblyName, 
+                                           pTPABinder, pAssemblyName, &pLoadedAssembly);
     if (SUCCEEDED(hr))
     {
         _ASSERTE(pLoadedAssembly != NULL);

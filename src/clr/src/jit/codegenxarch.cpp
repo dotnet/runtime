@@ -1837,8 +1837,6 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
     {
         // All long enregistered nodes will have been decomposed into their
         // constituent lo and hi nodes.
-        regPairNo targetPair = treeNode->gtRegPair;
-        noway_assert(targetPair == REG_PAIR_NONE);
         targetReg = REG_NA;
     }
     else

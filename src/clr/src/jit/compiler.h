@@ -2218,11 +2218,10 @@ public :
     unsigned            lvaVarargsBaseOfStkArgs;    // Pointer (computed based on incoming varargs handle) to the start of the stack arguments
 #endif // _TARGET_X86_
 
-#if INLINE_NDIRECT
     unsigned            lvaInlinedPInvokeFrameVar;  // variable representing the InlinedCallFrame
+    unsigned            lvaReversePInvokeFrameVar;  // variable representing the reverse PInvoke frame
 #if FEATURE_FIXED_OUT_ARGS
     unsigned            lvaPInvokeFrameRegSaveVar;  // variable representing the RegSave for PInvoke inlining.
-#endif
 #endif
     unsigned            lvaMonAcquired; // boolean variable introduced into in synchronized methods 
                                         // that tracks whether the lock has been taken
@@ -2656,10 +2655,8 @@ protected :
                                                 unsigned mflags);
     GenTreePtr          impImportIndirectCall(CORINFO_SIG_INFO * sig,
                                               IL_OFFSETX ilOffset = BAD_IL_OFFSET);
-#ifdef INLINE_NDIRECT
     void                impPopArgsForUnmanagedCall(GenTreePtr call,
                                                    CORINFO_SIG_INFO * sig);
-#endif // INLINE_NDIRECT
 
     void                impInsertHelperCall(CORINFO_HELPER_DESC * helperCall);
     void                impHandleAccessAllowed(CorInfoIsAccessAllowedResult result,
@@ -2818,12 +2815,13 @@ public:
         return impTokenToHandle(pResolvedToken, pRuntimeLookup, mustRestoreHandle, TRUE);
     }
 
-    GenTreePtr          impLookupToTree(CORINFO_LOOKUP *pLookup,
+    GenTreePtr          impLookupToTree(CORINFO_RESOLVED_TOKEN *pResolvedToken, 
+                                        CORINFO_LOOKUP *pLookup,
                                         unsigned flags,
                                         void *compileTimeHandle);
 
-    GenTreePtr          impRuntimeLookupToTree(CORINFO_RUNTIME_LOOKUP_KIND kind,
-                                               CORINFO_RUNTIME_LOOKUP *pLookup,
+    GenTreePtr          impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN *pResolvedToken, 
+                                               CORINFO_LOOKUP *pLookup,
                                                void * compileTimeHandle);
 
     GenTreePtr          impReadyToRunLookupToTree(CORINFO_CONST_LOOKUP *pLookup,
@@ -2833,7 +2831,8 @@ public:
     GenTreePtr          impReadyToRunHelperToTree(CORINFO_RESOLVED_TOKEN * pResolvedToken,
                                         CorInfoHelpFunc helper,
                                         var_types type,
-                                        GenTreePtr arg = NULL);
+                                        GenTreeArgList* arg = NULL,
+                                        CORINFO_LOOKUP_KIND * pGenericLookupKind = NULL);
 
     GenTreePtr          impCastClassOrIsInstToTree(GenTreePtr op1, 
                                         GenTreePtr op2,
@@ -3410,6 +3409,8 @@ public :
     void                fgConvertSyncReturnToLeave(BasicBlock* block);
 
 #endif // !_TARGET_X86_
+
+    void                fgAddReversePInvokeEnterExit();
 
     bool                fgMoreThanOneReturnBlock();
 
@@ -7460,6 +7461,17 @@ public :
 #endif
         }
 
+        // true if we should use insert the REVERSE_PINVOKE_{ENTER,EXIT} helpers in the method
+        // prolog/epilog
+        inline bool         IsReversePInvoke()
+        {
+#if COR_JIT_EE_VERSION > 460
+            return (jitFlags->corJitFlags2 & CORJIT_FLG2_REVERSE_PINVOKE) != 0;
+#else
+            return false;
+#endif
+        }
+
         // true if we must generate compatible code with Jit64 quirks
         inline bool         IsJit64Compat()
         {
@@ -7803,10 +7815,8 @@ public :
         UNATIVE_OFFSET  compTotalHotCodeSize;       // Total number of bytes of Hot Code in the method
         UNATIVE_OFFSET  compTotalColdCodeSize;      // Total number of bytes of Cold Code in the method
 
-#if INLINE_NDIRECT
         unsigned        compCallUnmanaged;          // count of unmanaged calls
         unsigned        compLvFrameListRoot;        // lclNum for the Frame root
-#endif
         unsigned        compXcptnsCount;            // Number of exception-handling clauses read in the method's IL.
                                                     // You should generally use compHndBBtabCount instead: it is the
                                                     // current number of EH clauses (after additions like synchronized
@@ -8087,7 +8097,7 @@ public :
             nraTotalSizeUsed  += ms.nraTotalSizeUsed;
         }
 
-        void Print(FILE* f); // Print these stats to stdout.
+        void Print(FILE* f); // Print these stats to jitstdout.
     };
 
     static CritSecObject s_memStatsLock;    // This lock protects the data structures below.

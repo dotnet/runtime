@@ -999,6 +999,18 @@ void RandomPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     assert(InlDecisionIsCandidate(m_Decision));
     assert(m_Observation == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
 
+    // Budget check.
+    if (!m_IsPrejitRoot)
+    {
+        InlineStrategy* strategy = m_RootCompiler->m_inlineStrategy;
+        bool overBudget = strategy->BudgetCheck(m_CodeSize);
+        if (overBudget)
+        {
+            SetFailure(InlineObservation::CALLSITE_OVER_BUDGET);
+            return;
+        }
+    }
+
     // Use a probability curve that roughly matches the observed
     // behavior of the LegacyPolicy. That way we're inlining
     // differently but not creating enormous methods.

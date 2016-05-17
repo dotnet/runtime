@@ -22,11 +22,12 @@
       <_resolvedMscorlib Condition="'%(ReferencePath.FileName)' == 'mscorlib'">true</_resolvedMscorlib>
     </PropertyGroup>
 
+    <!-- TODO_SPC: ? -->
     <ItemGroup>
       <PossibleTargetFrameworks Include="$(_TargetFrameworkDirectories)" />
       <ReferencePath Include="%(PossibleTargetFrameworks.Identity)mscorlib.dll" 
                      Condition="'$(ReferenceLocalMscorlib)' != 'true' and '$(_resolvedMscorlib)' != 'true' and '%(PossibleTargetFrameworks.Identity)' != '' and Exists('%(PossibleTargetFrameworks.Identity)mscorlib.dll')" />
-      <ReferencePath Include="$(ProjectDir)\..\bin\Product\$(BuildOS).$(BuildArch).$(BuildType)\mscorlib.dll" 
+      <ReferencePath Include="$(ProjectDir)\..\bin\Product\$(BuildOS).$(BuildArch).$(BuildType)\ref\mscorlib.dll" 
                      Condition="'$(ReferenceLocalMscorlib)' == 'true' and '$(_resolvedMscorlib)' != 'true'" />
     </ItemGroup>
   </Target>

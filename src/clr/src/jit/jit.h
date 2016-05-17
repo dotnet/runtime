@@ -407,8 +407,6 @@ typedef ptrdiff_t   ssize_t;
 //=============================================================================
 
 #define REDUNDANT_LOAD      1       // track locals in regs, suppress loads
-#define INLINE_PINVOKE      1       // try to inline P/Invoke stubs
-#define INLINE_NDIRECT      INLINE_PINVOKE // ndirect is an archaic name for pinvoke
 #define LONG_MATH_REGPARAM  0       // args to long mul/div passed in registers
 #define STACK_PROBES        0       // Support for stack probes
 #define DUMP_FLOWGRAPHS     DEBUG   // Support for creating Xml Flowgraph reports in *.fgx files
