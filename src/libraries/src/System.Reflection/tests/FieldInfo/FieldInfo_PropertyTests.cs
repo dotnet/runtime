@@ -13,58 +13,12 @@ namespace System.Reflection.Tests
 {
     public class FieldInfoPropertyTests
     {
-        public static IEnumerable<object[]> TestFieldType_TestData()
-        {
-            yield return new object[] { "intFieldStatic", true };
-            yield return new object[] { "intFieldNonStatic", false };
-            yield return new object[] { "static_strField", true };
-            yield return new object[] { "nonstatic_strField", false };
-            yield return new object[] { "_privateInt", false };
-        }
-
-        public static IEnumerable<object[]> TestIsAssemblyAndIsFamily_TestData()
-        {
-            yield return new object[] { "s_field_Assembly1", false, false };
-            yield return new object[] { "Field_Assembly2", false, true };
-            yield return new object[] { "Field_Assembly3", false, false };
-            yield return new object[] { "Field_Assembly4", true, false };
-        }
-
-        public static IEnumerable<object[]> TestIsFamilyAndAssembly_TestData()
-        {
-            yield return new object[] { "s_field_FamilyAndAssembly1", false };
-            yield return new object[] { "Field_FamilyAndAssembly2", false };
-            yield return new object[] { "Field_FamilyAndAssembly3", false };
-            yield return new object[] { "Field_FamilyAndAssembly4", false };
-        }
-
-        public static IEnumerable<object[]> TestIsFamilyOrAssembly_TestData()
-        {
-            yield return new object[] { "s_field_FamilyOrAssembly1", false };
-            yield return new object[] { "Field_FamilyOrAssembly2", false };
-            yield return new object[] { "Field_FamilyOrAssembly3", false };
-            yield return new object[] { "Field_FamilyOrAssembly4", false };
-        }
-
-        public static IEnumerable<object[]> TestIsPublicAndIsPrivate_TestData()
-        {
-            yield return new object[] { "nonstatic_strField", true };
-            yield return new object[] { "intFieldStatic", true };
-            yield return new object[] { "_privateInt", false };
-            yield return new object[] { "_privateStr", false };
-        }
-
-        public static IEnumerable<object[]> TestFieldAttributes_TestData()
-        {
-            yield return new object[] { "intFieldNonStatic", FieldAttributes.Public };
-            yield return new object[] { "intFieldStatic", FieldAttributes.Public | FieldAttributes.Static };
-            yield return new object[] { "_privateInt", FieldAttributes.Private };
-            yield return new object[] { "roIntField", FieldAttributes.Public | FieldAttributes.InitOnly };
-        }
-
-        // Verify static and non-static FieldTypes
         [Theory]
-        [MemberData(nameof(TestFieldType_TestData))]
+        [InlineData("intFieldStatic", true)]
+        [InlineData("intFieldNonStatic", false)]
+        [InlineData("static_strField", true)]
+        [InlineData("nonstatic_strField", false)]
+        [InlineData("_privateInt", false)]
         public void TestFieldTypeAndIsStatic(string fieldName, bool expectedIsStatic)
         {
             FieldInfo fi = GetField(fieldName);
@@ -73,9 +27,11 @@ namespace System.Reflection.Tests
             Assert.Equal(expectedIsStatic, fi.IsStatic);
         }
 
-        // Verify IsAssembly and IsFamily for static and non-static objects
         [Theory]
-        [MemberData(nameof(TestIsAssemblyAndIsFamily_TestData))]
+        [InlineData("private_Field_Assembly", false, false)]
+        [InlineData("protected_Field_Assembly", false, true)]
+        [InlineData("public_Field_Assembly", false, false)]
+        [InlineData("internal_Field_Assembly", true, false)]
         public void TestIsAssemblyAndIsFamily(string fieldName, bool expectedIsAssembly, bool expectedIsFamily)
         {
             FieldInfo fi = GetField(fieldName);
@@ -84,9 +40,11 @@ namespace System.Reflection.Tests
             Assert.Equal(expectedIsFamily, fi.IsFamily);
         }
 
-        //Verify IsFamilyAndAssembly for static and non-static objects
         [Theory]
-        [MemberData(nameof(TestIsFamilyAndAssembly_TestData))]
+        [InlineData("private_Field_FamilyAndAssembly", false)]
+        [InlineData("protected_Field_FamilyAndAssembly", false)]
+        [InlineData("public_Field_FamilyAndAssembly", false)]
+        [InlineData("internal_Field_FamilyAndAssembly", false)]
         public void TestIsFamilyAndAssembly(string fieldName, bool expectedIsFamilyAndAssembly)
         {
             FieldInfo fi = GetField(fieldName);
@@ -94,9 +52,11 @@ namespace System.Reflection.Tests
             Assert.Equal(expectedIsFamilyAndAssembly, fi.IsFamilyAndAssembly);
         }
 
-        //Verify IsFamilyOrAssembly for static and non-static objects
         [Theory]
-        [MemberData(nameof(TestIsFamilyOrAssembly_TestData))]
+        [InlineData("private_Field_FamilyOrAssembly", false)]
+        [InlineData("protected_Field_FamilyOrAssembly", false)]
+        [InlineData("public_Field_FamilyOrAssembly", false)]
+        [InlineData("internal_Field_FamilyOrAssembly", false)]
         public void TestIsFamilyOrAssembly(string fieldName, bool expectedIsFamilyOrAssembly)
         {
             FieldInfo fi = GetField(fieldName);
@@ -104,9 +64,11 @@ namespace System.Reflection.Tests
             Assert.Equal(expectedIsFamilyOrAssembly, fi.IsFamilyOrAssembly);
         }
 
-        // Verify IsPublic and IsPrivate for public and private FieldTypes
         [Theory]
-        [MemberData(nameof(TestIsPublicAndIsPrivate_TestData))]
+        [InlineData("nonstatic_strField", true)]
+        [InlineData("intFieldStatic", true)]
+        [InlineData("_privateInt", false)]
+        [InlineData("_privateStr", false)]
         public void TestIsPublicAndIsPrivate(string fieldName, bool expectedIsPublic)
         {
             FieldInfo fi = GetField(fieldName);
@@ -115,9 +77,8 @@ namespace System.Reflection.Tests
             Assert.Equal(!expectedIsPublic, fi.IsPrivate);
         }
 
-        // Verify IsInitOnly for readonly and non-readonly fields
         [Theory]
-        [InlineData("roIntField", true)]
+        [InlineData("readOnlyIntField", true)]
         [InlineData("intFieldNonStatic", false)]
         public void TestIsInitOnly(string fieldName, bool expectedIsInitOnly)
         {
@@ -126,7 +87,6 @@ namespace System.Reflection.Tests
             Assert.Equal(expectedIsInitOnly, fi.IsInitOnly);
         }
 
-        //Verify IsLiteral for constant and non-constant fields 
         [Theory]
         [InlineData("constIntField", true)]
         [InlineData("intFieldNonStatic", false)]
@@ -137,11 +97,10 @@ namespace System.Reflection.Tests
             Assert.Equal(expectedIsLiteral, fi.IsLiteral);
         }
 
-        // Verify FieldType for a field
         [Theory]
         [InlineData("intFieldNonStatic", "System.Int32")]
         [InlineData("nonstatic_strField", "System.String")]
-        [InlineData("s_field_Assembly1", "System.Object")]
+        [InlineData("private_Field_Assembly", "System.Object")]
         public void TestFieldType(string fieldName, string expectedFieldType)
         {
             FieldInfo fi = GetField(fieldName);
@@ -149,9 +108,11 @@ namespace System.Reflection.Tests
             Assert.Equal(expectedFieldType, fi.FieldType.ToString());
         }
 
-        // Verify FieldAttributes
         [Theory]
-        [MemberData(nameof(TestFieldAttributes_TestData))]
+        [InlineData("intFieldNonStatic", FieldAttributes.Public)]
+        [InlineData("intFieldStatic", FieldAttributes.Public | FieldAttributes.Static)]
+        [InlineData("_privateInt", FieldAttributes.Private)]
+        [InlineData("readOnlyIntField", FieldAttributes.Public | FieldAttributes.InitOnly)]
         public void TestFieldAttributes(string fieldName, FieldAttributes expectedAttributes)
         {
             FieldInfo fi = GetField(fieldName);
@@ -159,7 +120,6 @@ namespace System.Reflection.Tests
             Assert.Equal(expectedAttributes, fi.Attributes);
         }
 
-        //Verify IsSpecialName for FieldInfo
         [Fact]
         public void TestIsSpecialName()
         {
@@ -170,55 +130,42 @@ namespace System.Reflection.Tests
         }
 
         // Helper method to get field from Type type
-        private static FieldInfo GetField(string field)
+        private static FieldInfo GetField(string fieldName)
         {
             Type t = typeof(FieldInfoPropertyTests);
             TypeInfo ti = t.GetTypeInfo();
             FieldInfo fi = null;
-            fi = ti.DeclaredFields.Single(x => x.Name == field);
+            fi = ti.DeclaredFields.Single(x => x.Name == fieldName);
 
             return fi;
         }
 
+        // Fields for Reflection Metadata
 
-        //Fields for Reflection Metadata
+        public static int intFieldStatic = 100;                             // Field for Reflection
+        public int intFieldNonStatic = 101;                                 // Field for Reflection
+        public static string static_strField = "Static string field";       // Field for Reflection
+        public string nonstatic_strField = "NonStatic string field";        // Field for Reflection
 
+        private int _privateInt = 1;                                        // Field for Reflection
+        private string _privateStr = "_privateStr";                         // Field for Reflection
 
-        public static int intFieldStatic = 100;    // Field for Reflection
-        public int intFieldNonStatic = 101; //Field for Reflection
-        public static string static_strField = "Static string field";   // Field for Reflection
-        public string nonstatic_strField = "NonStatic string field";   // Field for Reflection
+        private static object private_Field_Assembly = null;			    // with private keyword
+        protected static object protected_Field_Assembly = null;			// with protected keyword
+        public static object public_Field_Assembly = null;			        // with public keyword
+        internal static object internal_Field_Assembly = null;		        // with internal keyword
 
-        private int _privateInt = 1; // Field for Reflection
+        private static object private_Field_FamilyAndAssembly = null;	    // with private keyword
+        protected static object protected_Field_FamilyAndAssembly = null;	// with protected keyword
+        public static object public_Field_FamilyAndAssembly = null;		    // with public keyword
+        internal static object internal_Field_FamilyAndAssembly = null;		// with internal keyword
 
-        private string _privateStr = "_privateStr";        // Field for Reflection
+        private static object private_Field_FamilyOrAssembly = null;	    // with private keyword
+        protected static object protected_Field_FamilyOrAssembly = null;    // with protected keyword
+        public static object public_Field_FamilyOrAssembly = null;		    // with public keyword
+        internal static object internal_Field_FamilyOrAssembly = null;	    // with internal keyword
 
-        private static object s_field_Assembly1 = null;			// with private keyword
-
-        protected static object Field_Assembly2 = null;			// with protected keyword
-
-        public static object Field_Assembly3 = null;			// with public keyword
-
-        internal static object Field_Assembly4 = null;			// with internal keyword
-
-        private static object s_field_FamilyAndAssembly1 = null;			    // with private keyword
-
-        protected static object Field_FamilyAndAssembly2 = null;			// with protected keyword
-
-        public static object Field_FamilyAndAssembly3 = null;				// with public keyword
-
-        internal static object Field_FamilyAndAssembly4 = null;				// with internal keyword
-
-        private static object s_field_FamilyOrAssembly1 = null;			// with private keyword
-
-        protected static object Field_FamilyOrAssembly2 = null;			// with protected keyword
-
-        public static object Field_FamilyOrAssembly3 = null;			// with public keyword
-
-        internal static object Field_FamilyOrAssembly4 = null;			// with internal keyword
-
-        public readonly int roIntField = 1;
-
-        public const int constIntField = 1222;
+        public readonly int readOnlyIntField = 1;                           // with readonly keyword
+        public const int constIntField = 1222;                              // with constant keyword
     }
 }

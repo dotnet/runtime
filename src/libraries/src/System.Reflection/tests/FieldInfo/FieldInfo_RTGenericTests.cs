@@ -68,10 +68,9 @@ namespace System.Reflection.Tests
             } };
         }
 
-        // Verify FieldInfo for static and non-static generic Types
         [Theory]
         [MemberData(nameof(FieldInfoRTGenericTests_TestData))]
-        public static void TestGenericFields(Type openType, List<Scenario> list)
+        public static void TestFieldInfo_InstanceAndStaticGenericFields(Type openType, List<Scenario> list)
         {
             foreach (Scenario sc in list)
             {
@@ -91,7 +90,7 @@ namespace System.Reflection.Tests
         }
 
         // Helper method to get field from Type type
-        private static FieldInfo GetField(Type ptype, string field)
+        private static FieldInfo GetField(Type ptype, string fieldName)
         {
             TypeInfo ti = ptype.GetTypeInfo();
             IEnumerator<FieldInfo> alldefinedFields = ti.DeclaredFields.GetEnumerator();
@@ -100,7 +99,7 @@ namespace System.Reflection.Tests
             while (alldefinedFields.MoveNext())
             {
                 fi = alldefinedFields.Current;
-                if (fi.Name.Equals(field))
+                if (fi.Name.Equals(fieldName))
                 {
                     //found type
                     found = fi;
@@ -110,7 +109,7 @@ namespace System.Reflection.Tests
             return found;
         }
 
-        //Reflection Fields
+        // Reflection Fields
 
         public static FieldInfoGeneric<int> g_int = new FieldInfoGeneric<int>();
         public static PublicFieldGeneric<int> pfg_int = new PublicFieldGeneric<int>();
