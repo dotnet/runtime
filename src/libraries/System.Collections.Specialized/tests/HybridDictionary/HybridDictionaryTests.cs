@@ -18,9 +18,9 @@ namespace System.Collections.Specialized.Tests
 
     public abstract class HybridDictionaryTestBase : IDictionary_NonGeneric_Tests
     {
-        protected override bool ICollection_NonGeneric_CopyTo_ArrayOfEnumType_ThrowsArgumentException => false;
-        protected override bool ICollection_NonGeneric_CopyTo_ArrayOfIncorrectReferenceType_ThrowsArgumentException => false;
-        protected override bool ICollection_NonGeneric_CopyTo_ArrayOfIncorrectValueType_ThrowsArgumentException => false;
+        protected override Type ICollection_NonGeneric_CopyTo_ArrayOfEnumType_ThrowType => typeof(InvalidCastException);
+        protected override Type ICollection_NonGeneric_CopyTo_ArrayOfIncorrectReferenceType_ThrowType => typeof(InvalidCastException);
+        protected override Type ICollection_NonGeneric_CopyTo_ArrayOfIncorrectValueType_ThrowType => typeof(InvalidCastException);
 
         protected override object CreateTKey(int seed)
         {

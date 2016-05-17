@@ -13,7 +13,8 @@ namespace System.Collections.Tests
     {
         #region ICollection Helper Methods
 
-        protected override bool ICollection_NonGeneric_CopyTo_ArrayOfEnumType_ThrowsArgumentException { get { return true; } }
+        protected override Type ICollection_NonGeneric_CopyTo_ArrayOfEnumType_ThrowType => typeof(ArgumentException);
+
         protected override void AddToCollection(ICollection collection, int numberOfItemsToAdd)
         {
             int seed = numberOfItemsToAdd * 34;
