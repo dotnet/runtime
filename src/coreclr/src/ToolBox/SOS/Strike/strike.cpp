@@ -6105,8 +6105,11 @@ void IssueDebuggerBPCommand ( CLRDATA_ADDRESS addr )
 
     // on ARM the debugger requires breakpoint addresses to be sanitized
     if (IsDbgTargetArm())
-        addr &= ~THUMB_CODE;
-    
+#ifndef FEATURE_PAL
+      addr &= ~THUMB_CODE;
+#else
+      addr |= THUMB_CODE; // lldb expects thumb code bit set
+#endif      
 
     // if we overflowed our cache consider all new BPs unique...
     BOOL bUnique = curLimit >= MaxBPsCached;
