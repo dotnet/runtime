@@ -98,17 +98,11 @@ namespace System.Collections.Tests
 
         #region ICollection<T> Helper Methods
 
-        protected override bool DefaultValueWhenNotAllowed_Throws { get { return false; } }
+        protected override bool DefaultValueWhenNotAllowed_Throws => false;
 
-        protected override ICollection<T> GenericICollectionFactory()
-        {
-            return GenericIListFactory();
-        }
+        protected override ICollection<T> GenericICollectionFactory() => GenericIListFactory();
 
-        protected override ICollection<T> GenericICollectionFactory(int count)
-        {
-            return GenericIListFactory(count);
-        }
+        protected override ICollection<T> GenericICollectionFactory(int count) => GenericIListFactory(count);
 
         #endregion
 
