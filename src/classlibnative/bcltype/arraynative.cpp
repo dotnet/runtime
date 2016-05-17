@@ -39,13 +39,15 @@ FCIMPL2(INT32, ArrayNative::GetLowerBound, ArrayBase* array, unsigned int dimens
 
     if (array == NULL)
         FCThrow(kNullReferenceException);
-
-    // What is this an array of?
-    MethodTable *pArrayMT = array->GetMethodTable();
-    DWORD Rank = pArrayMT->GetRank();
-
-    if (dimension >= Rank)
-        FCThrowRes(kIndexOutOfRangeException, W("IndexOutOfRange_ArrayRankIndex"));
+    
+    if (dimension != 0)
+    {
+        // Check the dimension is within our rank
+        unsigned int rank = array->GetRank();
+    
+        if (dimension >= rank)
+            FCThrowRes(kIndexOutOfRangeException, W("IndexOutOfRange_ArrayRankIndex"));
+    }
 
     return array->GetLowerBoundsPtr()[dimension];
 }
@@ -61,13 +63,15 @@ FCIMPL2(INT32, ArrayNative::GetUpperBound, ArrayBase* array, unsigned int dimens
 
     if (array == NULL)
         FCThrow(kNullReferenceException);
-
-    // What is this an array of?
-    MethodTable *pArrayMT = array->GetMethodTable();
-    DWORD Rank = pArrayMT->GetRank();
-
-    if (dimension >= Rank)
-        FCThrowRes(kIndexOutOfRangeException, W("IndexOutOfRange_ArrayRankIndex"));
+    
+    if (dimension != 0)
+    {
+        // Check the dimension is within our rank
+        unsigned int rank = array->GetRank();
+    
+        if (dimension >= rank)
+            FCThrowRes(kIndexOutOfRangeException, W("IndexOutOfRange_ArrayRankIndex"));
+    }
 
     return array->GetBoundsPtr()[dimension] + array->GetLowerBoundsPtr()[dimension] - 1;
 }
@@ -82,9 +86,15 @@ FCIMPL2(INT32, ArrayNative::GetLength, ArrayBase* array, unsigned int dimension)
 
     if (array==NULL)
         FCThrow(kNullReferenceException);
-    unsigned int rank = array->GetRank();
-    if (dimension >= rank)
-        FCThrow(kIndexOutOfRangeException);
+    
+    if (dimension != 0)
+    {
+        // Check the dimension is within our rank
+        unsigned int rank = array->GetRank();
+        if (dimension >= rank)
+            FCThrow(kIndexOutOfRangeException);
+    }
+    
     return array->GetBoundsPtr()[dimension];
 }
 FCIMPLEND
