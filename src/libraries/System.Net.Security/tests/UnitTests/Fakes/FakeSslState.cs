@@ -245,22 +245,22 @@ namespace System.Net.Security
             throw new NotImplementedException();
         }
 
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState)
+        internal IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState)
         {
             throw new NotImplementedException();
         }
 
-        public override int EndRead(IAsyncResult asyncResult)
+        internal int EndRead(IAsyncResult asyncResult)
         {
             throw new NotImplementedException();
         }
 
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState)
+        internal IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState)
         {
             throw new NotImplementedException();
         }
 
-        public override void EndWrite(IAsyncResult asyncResult)
+        internal void EndWrite(IAsyncResult asyncResult)
         {
             throw new NotImplementedException();
         }
