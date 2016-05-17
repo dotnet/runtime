@@ -35,33 +35,21 @@ namespace System.Reflection.Tests
     // Test class for Custom Attribute Test
     public class FieldInfoCustomAttributeTests
     {
-        public static IEnumerable<object[]> FieldInfoCustomAttributes_TestData()
-        {
-            yield return new object[] { typeof(Int32Attr), 
-                "[System.Reflection.CustomAttributesTests.Data.Int32Attr((Int32)77, name = \"Int32AttrSimple\")]" }; 
-            yield return new object[] { typeof(Int64Attr), 
-                "[System.Reflection.CustomAttributesTests.Data.Int64Attr((Int64)77, name = \"Int64AttrSimple\")]" };
-            yield return new object[] { typeof(StringAttr),
-                "[System.Reflection.CustomAttributesTests.Data.StringAttr(\"hello\", name = \"StringAttrSimple\")]" };
-            yield return new object[] { typeof(EnumAttr),
-                "[System.Reflection.CustomAttributesTests.Data.EnumAttr((System.Reflection.CustomAttributesTests.Data.MyColorEnum)1, name = \"EnumAttrSimple\")]" };
-            yield return new object[] { typeof(TypeAttr),
-                "[System.Reflection.CustomAttributesTests.Data.TypeAttr(typeof(System.Object), name = \"TypeAttrSimple\")]" };
-            yield return new object[] { typeof(Attr),
-                "[System.Reflection.CustomAttributesTests.Data.Attr((Int32)77, name = \"AttrSimple\")]" };
-        }
-
-        // Test that custom attributes are correct
         [Theory]
-        [MemberData(nameof(FieldInfoCustomAttributes_TestData))]
-        public static void VerifyCustomAttribute(Type type, string attributeStr)
+        [InlineData(typeof(Int32Attr), "[System.Reflection.CustomAttributesTests.Data.Int32Attr((Int32)77, name = \"Int32AttrSimple\")]")]
+        [InlineData(typeof(Int64Attr), "[System.Reflection.CustomAttributesTests.Data.Int64Attr((Int64)77, name = \"Int64AttrSimple\")]")]
+        [InlineData(typeof(StringAttr), "[System.Reflection.CustomAttributesTests.Data.StringAttr(\"hello\", name = \"StringAttrSimple\")]")]
+        [InlineData(typeof(EnumAttr), "[System.Reflection.CustomAttributesTests.Data.EnumAttr((System.Reflection.CustomAttributesTests.Data.MyColorEnum)1, name = \"EnumAttrSimple\")]")]
+        [InlineData(typeof(TypeAttr), "[System.Reflection.CustomAttributesTests.Data.TypeAttr(typeof(System.Object), name = \"TypeAttrSimple\")]")]
+        [InlineData(typeof(Attr), "[System.Reflection.CustomAttributesTests.Data.Attr((Int32)77, name = \"AttrSimple\")]")]
+        public static void TestCustomAttributeDetails(Type type, string attributeStr)
         {
             FieldInfo fi = GetField("MyField");
             Assert.Contains(fi.CustomAttributes, attr => attr.AttributeType.Equals(type) && attr.ToString().Equals(attributeStr));
         }
 
         // Helper method to get field from Type type
-        private static FieldInfo GetField(string field)
+        private static FieldInfo GetField(string fieldName)
         {
             Type t = typeof(FieldInfoTestClass);
             TypeInfo ti = t.GetTypeInfo();
@@ -71,7 +59,7 @@ namespace System.Reflection.Tests
             while (alldefinedFields.MoveNext())
             {
                 fi = alldefinedFields.Current;
-                if (fi.Name.Equals(field))
+                if (fi.Name.Equals(fieldName))
                 {
                     //found type
                     found = fi;

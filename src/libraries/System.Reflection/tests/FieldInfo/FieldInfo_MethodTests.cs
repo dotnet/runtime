@@ -11,90 +11,68 @@ namespace System.Reflection.Tests
 {
     public class FieldInfoMethodTests
     {
-        // Verify GetValue method for fields
         [Theory]
         [InlineData("intFieldStatic", 100)]
         [InlineData("intFieldNonStatic", 101)]
         [InlineData("static_strField", "Static string field")]
         [InlineData("nonstatic_strField", "NonStatic string field")]
-        public void TestGetValue(string fieldName, object expectedFieldValue)
+        public void GetValue_InstanceAndStaticFields_Succeeds(string fieldName, object expectedFieldValue)
         {
             FieldInfoMethodTests myInstance = new FieldInfoMethodTests();
             FieldInfo fi = GetAndTestFieldInfo(fieldName);
             Assert.Equal(expectedFieldValue, fi.GetValue(myInstance));
         }
 
-        //Verify GetValue method throws Exception when null is passed for non-static fields
         [Fact]
-        public void TestGetValue_Exception1()
+        public void GetValue_NullInstanceField_TargetException()
         {
             FieldInfo fi = GetAndTestFieldInfo("nonstatic_strField");
-
-            // In Win8p Instead of TargetException , generic Exception is thrown.
-            // Refer http://msdn.microsoft.com/en-us/library/system.reflection.fieldinfo.getvalue.aspx
-            Assert.ThrowsAny<Exception>(() => fi.GetValue(null));
+            Assert.ThrowsAny<TargetException>(() => fi.GetValue(null));
         }
 
-        //Verify GetValue method does not throw Exception when null is passed for static fields
         [Fact]
-        public void TestGetValue_Exception2()
+        public void GetValue_NullStaticField_Succeeds()
         {
             FieldInfo fi = GetAndTestFieldInfo("static_strField");
-            string retValue = (string)fi.GetValue(null);
-            Assert.Equal("Static string field", retValue);
+            Assert.Equal("Static string field", (string)fi.GetValue(null));
         }
 
-        //Verify GetValue method throws Exception when invalid object is passed for non-static fields
         [Fact]
-        public void TestGetValue_Exception3()
+        public void GetValue_InvalidObject_ArgumentException()
         {
             FieldInfo fi = GetAndTestFieldInfo("nonstatic_strField");
             object objInstance = new object();
-            Assert.Throws<ArgumentException>(() => { string retValue = (string)fi.GetValue(objInstance); });
+            Assert.Throws<ArgumentException>(null, () => (string)fi.GetValue(objInstance));
         }
 
-        // Verify SetValue method for fields
         [Theory]
         [InlineData("intFieldStatic", 1000)]
         [InlineData("intFieldNonStatic", 1000)]
         [InlineData("static_strField", "new")]
         [InlineData("nonstatic_strField", "new")]
-        public void TestSetValue(string fieldName, object newFieldValue)
+        public void SetValueAndReset_InstanceAndStaticFields(string fieldName, object newFieldValue)
         {
             FieldInfo fi = GetAndTestFieldInfo(fieldName);
-            FieldInfoMethodTests myInstance = new FieldInfoMethodTests();
-
+            var myInstance = new FieldInfoMethodTests();
             object origFieldValue = fi.GetValue(myInstance);
+
             fi.SetValue(myInstance, newFieldValue);
             Assert.Equal(newFieldValue, fi.GetValue(myInstance));
 
-            //reset static field values to their original value
-            switch (fieldName)
-            {
-                case "intFieldStatic":
-                    intFieldStatic = (int)origFieldValue;
-                    break;
-                case "static_strField":
-                    static_strField = (string)origFieldValue;
-                    break;
-            }
+            fi.SetValue(myInstance, origFieldValue);
+            Assert.Equal(origFieldValue, fi.GetValue(myInstance));
         }
 
-        //Verify SetValue method throws Exception when null is passed for non-static fields
         [Fact]
-        public void TestSetValue_Exception1()
+        public void SetValue_NullInstanceField_TargetException()
         {
             FieldInfo fi = GetAndTestFieldInfo("nonstatic_strField");
             string newFieldValue = "new";
-
-            // In Win8p Instead of TargetException , generic Exception is thrown.
-            // Refer http://msdn.microsoft.com/en-us/library/system.reflection.fieldinfo.getvalue.aspx
-            Assert.ThrowsAny<Exception>(() => fi.SetValue(null, newFieldValue));
+            Assert.ThrowsAny<TargetException>(() => fi.SetValue(null, newFieldValue));
         }
 
-        //Verify SetValue method does not throw Exception when null is passed for static fields
         [Fact]
-        public void TestSetValue_Exception2()
+        public void SetValue_NullStaticField_Succeeds()
         {
             FieldInfo fi = GetAndTestFieldInfo("static_strField");
             string newFieldValue = "new";
@@ -109,24 +87,19 @@ namespace System.Reflection.Tests
             static_strField = origFieldValue;
         }
 
-        //Verify SetValue method throws ArgumentException when value type can not be converted to field type
         [Fact]
-        public void TestSetValue_ArgumentException1()
+        public void SetValue_InvalidFieldType_ArgumentException()
         {
             string fieldName = "nonstatic_strField";
             int newfieldValue = 100;
             FieldInfo fi = GetAndTestFieldInfo(fieldName);
-
-            // In Win8p Instead of TargetException, generic Exception is thrown.
-            // Refer http://msdn.microsoft.com/en-us/library/system.reflection.fieldinfo.setvalue.aspx
-            Assert.ThrowsAny<Exception>(() => fi.SetValue(null, newfieldValue));
+            var e = Assert.Throws<ArgumentException>(null, () => fi.SetValue(fieldName, newfieldValue));
         }
 
-        // Verifiy Equals method when two Fieldinfo objects are equal and are not equal
         [Theory]
         [InlineData("nonstatic_strField", "nonstatic_strField", true)]
         [InlineData("nonstatic_strField", "intFieldStatic", false)]
-        public void TestEquals(string fieldName1, string fieldName2, bool expectedResult)
+        public void TestEquals_EqualAndNotEqualFields(string fieldName1, string fieldName2, bool expectedResult)
         {
             FieldInfo info1 = GetField(fieldName1);
             FieldInfo info2 = GetField(fieldName2);
@@ -136,9 +109,8 @@ namespace System.Reflection.Tests
             Assert.Equal(expectedResult, info1.Equals(info2));
         }
 
-        //Verify GetHashCode method returns HashCode
         [Fact]
-        public void TestGetHashCode()
+        public void GetHashCode_Succeeds()
         {
             string fieldName = "nonstatic_strField";
             FieldInfo info = GetField(fieldName);
@@ -156,7 +128,7 @@ namespace System.Reflection.Tests
         }
 
         // Helper method to get field from Type type
-        private static FieldInfo GetField(string field)
+        private static FieldInfo GetField(string fieldName)
         {
             Type t = typeof(FieldInfoMethodTests);
             TypeInfo ti = t.GetTypeInfo();
@@ -166,7 +138,7 @@ namespace System.Reflection.Tests
             while (alldefinedFields.MoveNext())
             {
                 fi = alldefinedFields.Current;
-                if (fi.Name.Equals(field))
+                if (fi.Name.Equals(fieldName))
                 {
                     //found type
                     found = fi;
@@ -176,30 +148,13 @@ namespace System.Reflection.Tests
             return found;
         }
 
+        // Fields for Reflection
 
-        public static int intFieldStatic = 100;    // Field for Reflection
-        public int intFieldNonStatic = 101; //Field for Reflection
-        public static string static_strField = "Static string field";   // Field for Reflection
-        public string nonstatic_strField = "NonStatic string field";   // Field for Reflection
-        private int _privateInt = 1; // Field for Reflection
-        private string _privateStr = "privateStr"; // Field for Reflection
-
-        private static object s_field_Assembly1 = null;				    // without keyword
-        private static object s_field_Assembly2 = null;			// with private keyword
-        protected static object Field_Assembly3 = null;			// with protected keyword
-        public static object Field_Assembly4 = null;			// with public keyword
-        internal static object Field_Assembly5 = null;			// with internal keyword
-
-        private static object s_field_FamilyAndAssembly1 = null;						// without keyword
-        private static object s_field_FamilyAndAssembly2 = null;			    // with private keyword
-        protected static object Field_FamilyAndAssembly3 = null;			// with protected keyword
-        public static object Field_FamilyAndAssembly4 = null;				// with public keyword
-        internal static object Field_FamilyAndAssembly5 = null;				// with internal keyword
-
-        private static object s_field_FamilyOrAssembly1 = null;				    // without keyword
-        private static object s_field_FamilyOrAssembly2 = null;			// with private keyword
-        protected static object Field_FamilyOrAssembly3 = null;			// with protected keyword
-        public static object Field_FamilyOrAssembly4 = null;			// with public keyword
-        internal static object Field_FamilyOrAssembly5 = null;			// with internal keyword
+        public static int intFieldStatic = 100;        
+        public int intFieldNonStatic = 101;             
+        public static string static_strField = "Static string field";  
+        public string nonstatic_strField = "NonStatic string field";    
+        private int _privateInt = 1;                                    
+        private string _privateStr = "privateStr";                      
     }
 }

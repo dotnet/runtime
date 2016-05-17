@@ -11,9 +11,8 @@ namespace System.Reflection.Tests
 {
     public class FieldInfoRTArrayTests
     {
-        //Verify FieldInfo for aArray Field
         [Fact]
-        public static void TestSetValue_Field1()
+        public static void SetValue_aArray()
         {
             FieldInfo fi = GetField(type, "aArray");
 
@@ -33,9 +32,8 @@ namespace System.Reflection.Tests
             Assert.Equal(BTypeWithAllB_Contra, fi.GetValue(obj));
         }
 
-        //Verify FieldInfo for bArray Field
         [Fact]
-        public static void TestSetValue_Field2()
+        public static void SetValue_bArray()
         {
             FieldInfo fi = GetField(type, "bArray");
 
@@ -50,9 +48,8 @@ namespace System.Reflection.Tests
             Assert.Equal(BTypeWithAllB_Contra, fi.GetValue(obj));
         }
 
-        //Verify FieldInfo for iArray Field
         [Fact]
-        public static void TestSetValue_Field3()
+        public static void SetValue_iArray()
         {
             FieldInfo fi = GetField(type, "iArray");
 
@@ -60,9 +57,8 @@ namespace System.Reflection.Tests
             Assert.Equal(mixedMN, fi.GetValue(obj));
         }
 
-        //Verify FieldInfo for intArray Field
         [Fact]
-        public static void TestSetValue_Field4()
+        public static void SetValue_intArray()
         {
             FieldInfo fi = GetField(type, "intArray");
 
@@ -72,9 +68,8 @@ namespace System.Reflection.Tests
             Assert.Throws<ArgumentException>(() => fi.SetValue(obj, allByte));
         }
 
-        //Verify FieldInfo for Array Field
         [Fact]
-        public static void TestSetValue_Field5()
+        public static void SetValue_objectArray()
         {
             FieldInfo fi = GetField(type, "objectArray");
 
@@ -89,7 +84,7 @@ namespace System.Reflection.Tests
         }
 
         // Helper method to get field from Type type
-        private static FieldInfo GetField(Type type, string field)
+        private static FieldInfo GetField(Type type, string fieldName)
         {
             TypeInfo ti = type.GetTypeInfo();
             IEnumerator<FieldInfo> alldefinedFields = ti.DeclaredFields.GetEnumerator();
@@ -98,7 +93,7 @@ namespace System.Reflection.Tests
             while (alldefinedFields.MoveNext())
             {
                 fi = alldefinedFields.Current;
-                if (fi.Name.Equals(field))
+                if (fi.Name.Equals(fieldName))
                 {
                     //found type
                     found = fi;
