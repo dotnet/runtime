@@ -1144,15 +1144,13 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 {
     STANDARD_VM_CONTRACT;
 
-    // TODO: fix codegen for correct Unix ABI...
-
     // It's available only via the run-time helper function
     if (pLookup->indirections == CORINFO_USEHELPER)
     {
         BEGIN_DYNAMIC_HELPER_EMIT(15);
 
-        // rcx contains the generic context parameter
-        // mov rdx,pLookup->signature
+        // rcx/rdi contains the generic context parameter
+        // mov rdx/rsi,pLookup->signature
         // jmp pLookup->helper
         EmitHelperWithArg(p, pAllocator, (TADDR)pLookup->signature, CEEJitInfo::getHelperFtnStatic(pLookup->helper));
 
@@ -1170,24 +1168,41 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 
         if (pLookup->testForNull)
         {
-            // rcx contains the generic context parameter. Save a copy of it in the rax register
-            // mov rax,rcx
-            *(UINT32*)p = 0x00c88948; p += 3;
+            // rcx/rdi contains the generic context parameter. Save a copy of it in the rax register
+#ifdef UNIX_AMD64_ABI
+            *(UINT32*)p = 0x00f88948; p += 3;   // mov rax,rdi
+#else
+            *(UINT32*)p = 0x00c88948; p += 3;   // mov rax,rcx
+#endif
         }
 
         for (WORD i = 0; i < pLookup->indirections; i++)
         {
+#ifdef UNIX_AMD64_ABI
+            // mov rdi,qword ptr [rdi+offset]
+            if (pLookup->offsets[i] >= 0x80)
+            {
+                *(UINT32*)p = 0x00bf8b48; p += 3;
+                *(UINT32*)p = (UINT32)pLookup->offsets[i]; p += 4;
+            }
+            else
+            {
+                *(UINT32*)p = 0x007f8b48; p += 3;
+                *p++ = (BYTE)pLookup->offsets[i];
+            }
+#else
             // mov rcx,qword ptr [rcx+offset]
             if (pLookup->offsets[i] >= 0x80)
             {
                 *(UINT32*)p = 0x00898b48; p += 3;
-                *p = (UINT32)pLookup->offsets[i]; p += 4;
+                *(UINT32*)p = (UINT32)pLookup->offsets[i]; p += 4;
             }
             else
             {
                 *(UINT32*)p = 0x00498b48; p += 3;
                 *p++ = (BYTE)pLookup->offsets[i];
             }
+#endif
         }
 
         // No null test required
@@ -1195,31 +1210,43 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
         {
             // No fixups needed for R2R
 
-            // mov rax,rcx
-            *(UINT32*)p = 0x00c88948; p += 3;
+#ifdef UNIX_AMD64_ABI
+            *(UINT32*)p = 0x00f88948; p += 3;       // mov rax,rdi
+#else
+            *(UINT32*)p = 0x00c88948; p += 3;       // mov rax,rcx
+#endif
             *p++ = 0xC3;    // ret
         }
         else
         {
-            // rcx contains the value of the dictionary slot entry
+            // rcx/rdi contains the value of the dictionary slot entry
 
             _ASSERTE(pLookup->indirections != 0);
 
-            // test rcx,rcx
-            *(UINT32*)p = 0x00c98548; p += 3;
+#ifdef UNIX_AMD64_ABI
+            *(UINT32*)p = 0x00ff8548; p += 3;       // test rdi,rdi
+#else
+            *(UINT32*)p = 0x00c98548; p += 3;       // test rcx,rcx
+#endif
 
             // je 'HELPER_CALL' (a jump of 4 bytes)
             *(UINT16*)p = 0x0474; p += 2;
 
-            // mov rax,rcx
-            *(UINT32*)p = 0x00c88948; p += 3;
+#ifdef UNIX_AMD64_ABI
+            *(UINT32*)p = 0x00f88948; p += 3;       // mov rax,rdi
+#else
+            *(UINT32*)p = 0x00c88948; p += 3;       // mov rax,rcx
+#endif
             *p++ = 0xC3;    // ret
 
             // 'HELPER_CALL'
             {
                 // Put the generic context back into rcx (was previously saved in rax)
-                // mov rcx,rax
-                *(UINT32*)p = 0x00c18948; p += 3;
+#ifdef UNIX_AMD64_ABI
+                *(UINT32*)p = 0x00c78948; p += 3;   // mov rdi,rax
+#else
+                *(UINT32*)p = 0x00c18948; p += 3;   // mov rcx,rax
+#endif
 
                 // mov rdx,pLookup->signature
                 // jmp pLookup->helper
