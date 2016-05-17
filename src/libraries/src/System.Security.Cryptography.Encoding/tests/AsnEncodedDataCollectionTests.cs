@@ -123,6 +123,11 @@ namespace System.Security.Cryptography.Encoding.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => c.CopyTo(a, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => c.CopyTo(a, 3));
             Assert.Throws<ArgumentException>(() => c.CopyTo(a, 1));
+
+            // Array has non-zero lower bound
+            ICollection ic = c;
+            Array array = Array.CreateInstance(typeof(object), new int[] { 10 }, new int[] { 10 });
+            Assert.Throws<IndexOutOfRangeException>(() => ic.CopyTo(array, 0));
         }
 
 
