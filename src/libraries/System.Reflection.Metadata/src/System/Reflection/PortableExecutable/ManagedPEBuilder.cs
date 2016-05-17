@@ -12,6 +12,11 @@ namespace System.Reflection.PortableExecutable
 {
     public class ManagedPEBuilder : PEBuilder
     {
+        public const int ManagedResourcesDataAlignment = ManagedTextSection.ManagedResourcesDataAlignment;
+        public const int MappedFieldDataAlignment = ManagedTextSection.MappedFieldDataAlignment;
+
+        private const int DefaultStrongNameSignatureSize = 128;
+
         private const string TextSectionName = ".text";
         private const string ResourceSectionName = ".rsrc";
         private const string RelocationSectionName = ".reloc";
@@ -19,16 +24,14 @@ namespace System.Reflection.PortableExecutable
         private readonly PEDirectoriesBuilder _peDirectoriesBuilder;
         private readonly TypeSystemMetadataSerializer _metadataSerializer;
         private readonly BlobBuilder _ilStream;
-        private readonly BlobBuilder _mappedFieldData;
-        private readonly BlobBuilder _managedResourceData;
-        private readonly Action<BlobBuilder, SectionLocation> _nativeResourceSectionSerializerOpt;
+        private readonly BlobBuilder _mappedFieldDataOpt;
+        private readonly BlobBuilder _managedResourcesOpt;
+        private readonly ResourceSectionBuilder _nativeResourcesOpt;
         private readonly int _strongNameSignatureSize;
-        private readonly MethodDefinitionHandle _entryPoint;
-        private readonly string _pdbPathOpt;
-        private readonly ContentId _nativePdbContentId;
-        private readonly ContentId _portablePdbContentId;
+        private readonly MethodDefinitionHandle _entryPointOpt;
+        private readonly DebugDirectoryBuilder _debugDirectoryBuilderOpt;
         private readonly CorFlags _corFlags;
-       
+
         private int _lazyEntryPointAddress;
         private Blob _lazyStrongNameSignature;
 
@@ -36,31 +39,59 @@ namespace System.Reflection.PortableExecutable
             PEHeaderBuilder header,
             TypeSystemMetadataSerializer metadataSerializer,
             BlobBuilder ilStream,
-            BlobBuilder mappedFieldData,
-            BlobBuilder managedResourceData,
-            Action<BlobBuilder, SectionLocation> nativeResourceSectionSerializer, // opt
-            int strongNameSignatureSize,
-            MethodDefinitionHandle entryPoint,
-            string pdbPathOpt, // TODO: DebugTableBuilder
-            ContentId nativePdbContentId, // TODO: DebugTableBuilder
-            ContentId portablePdbContentId, // TODO: DebugTableBuilder
-            CorFlags corFlags, 
-            Func<IEnumerable<Blob>, ContentId> deterministicIdProvider = null)
+            BlobBuilder mappedFieldData = null,
+            BlobBuilder managedResources = null,
+            ResourceSectionBuilder nativeResources = null,
+            DebugDirectoryBuilder debugDirectoryBuilder = null,
+            int strongNameSignatureSize = DefaultStrongNameSignatureSize,
+            MethodDefinitionHandle entryPoint = default(MethodDefinitionHandle),
+            CorFlags flags = CorFlags.ILOnly,
+            Func<IEnumerable<Blob>, BlobContentId> deterministicIdProvider = null)
             : base(header, deterministicIdProvider)
         {
+            if (header == null)
+            {
+                Throw.ArgumentNull(nameof(header));
+            }
+
+            if (metadataSerializer == null)
+            {
+                Throw.ArgumentNull(nameof(metadataSerializer));
+            }
+
+            if (ilStream == null)
+            {
+                Throw.ArgumentNull(nameof(ilStream));
+            }
+
+            if (strongNameSignatureSize < 0)
+            {
+                Throw.ArgumentOutOfRange(nameof(strongNameSignatureSize));
+            }
+
             _metadataSerializer = metadataSerializer;
             _ilStream = ilStream;
-            _mappedFieldData = mappedFieldData;
-            _managedResourceData = managedResourceData;
-            _nativeResourceSectionSerializerOpt = nativeResourceSectionSerializer;
+            _mappedFieldDataOpt = mappedFieldData;
+            _managedResourcesOpt = managedResources;
+            _nativeResourcesOpt = nativeResources;
             _strongNameSignatureSize = strongNameSignatureSize;
-            _entryPoint = entryPoint;
-            _pdbPathOpt = pdbPathOpt;
-            _nativePdbContentId = nativePdbContentId;
-            _portablePdbContentId = portablePdbContentId;
-            _corFlags = corFlags;
+            _entryPointOpt = entryPoint;
+            _debugDirectoryBuilderOpt = debugDirectoryBuilder ?? CreateDefaultDebugDirectoryBuilder();
+            _corFlags = flags;
 
             _peDirectoriesBuilder = new PEDirectoriesBuilder();
+        }
+
+        private DebugDirectoryBuilder CreateDefaultDebugDirectoryBuilder()
+        {
+            if (IsDeterministic)
+            {
+                var builder = new DebugDirectoryBuilder();
+                builder.AddReproducibleEntry();
+                return builder;
+            }
+
+            return null;
         }
 
         protected override ImmutableArray<Section> CreateSections()
@@ -68,7 +99,7 @@ namespace System.Reflection.PortableExecutable
             var builder = ImmutableArray.CreateBuilder<Section>(3);
             builder.Add(new Section(TextSectionName, SectionCharacteristics.MemRead | SectionCharacteristics.MemExecute | SectionCharacteristics.ContainsCode));
 
-            if (_nativeResourceSectionSerializerOpt != null)
+            if (_nativeResourcesOpt != null)
             {
                 builder.Add(new Section(ResourceSectionName, SectionCharacteristics.MemRead | SectionCharacteristics.ContainsInitializedData));
             }
@@ -107,29 +138,36 @@ namespace System.Reflection.PortableExecutable
             var metadataSizes = _metadataSerializer.MetadataSizes;
 
             var textSection = new ManagedTextSection(
-                metadataSizes.MetadataSize,
-                ilStreamSize: _ilStream.Count,
-                mappedFieldDataSize: _mappedFieldData.Count,
-                resourceDataSize: _managedResourceData.Count,
-                strongNameSignatureSize: _strongNameSignatureSize,
                 imageCharacteristics: Header.ImageCharacteristics,
                 machine: Header.Machine,
-                pdbPathOpt: _pdbPathOpt,
-                isDeterministic: IsDeterministic);
+                ilStreamSize: _ilStream.Count,
+                metadataSize: metadataSizes.MetadataSize,
+                resourceDataSize: _managedResourcesOpt?.Count ?? 0,
+                strongNameSignatureSize: _strongNameSignatureSize,
+                debugDataSize: _debugDirectoryBuilderOpt?.Size ?? 0,
+                mappedFieldDataSize: _mappedFieldDataOpt?.Count ?? 0);
 
             int methodBodyStreamRva = location.RelativeVirtualAddress + textSection.OffsetToILStream;
             int mappedFieldDataStreamRva = location.RelativeVirtualAddress + textSection.CalculateOffsetToMappedFieldDataStream();
             _metadataSerializer.SerializeMetadata(metadataBuilder, methodBodyStreamRva, mappedFieldDataStreamRva);
 
+            DirectoryEntry debugDirectoryEntry;
             BlobBuilder debugTableBuilderOpt;
-            if (_pdbPathOpt != null || IsDeterministic)
+            if (_debugDirectoryBuilderOpt != null)
             {
-                debugTableBuilderOpt = new BlobBuilder();
-                textSection.WriteDebugTable(debugTableBuilderOpt, location, _nativePdbContentId, _portablePdbContentId);
+                int debugDirectoryOffset = textSection.ComputeOffsetToDebugDirectory();
+                debugTableBuilderOpt = new BlobBuilder(_debugDirectoryBuilderOpt.TableSize);
+                _debugDirectoryBuilderOpt.Serialize(debugTableBuilderOpt, location, debugDirectoryOffset);
+
+                // Only the size of the fixed part of the debug table goes here.
+                debugDirectoryEntry = new DirectoryEntry(
+                    location.RelativeVirtualAddress + debugDirectoryOffset,
+                    _debugDirectoryBuilderOpt.TableSize);
             }
             else
             {
                 debugTableBuilderOpt = null;
+                debugDirectoryEntry = default(DirectoryEntry);
             }
 
             _lazyEntryPointAddress = textSection.GetEntryPointAddress(location.RelativeVirtualAddress);
@@ -137,18 +175,18 @@ namespace System.Reflection.PortableExecutable
             textSection.Serialize(
                 sectionBuilder,
                 location.RelativeVirtualAddress,
-                _entryPoint.IsNil ? 0 : MetadataTokens.GetToken(_entryPoint),
+                _entryPointOpt.IsNil ? 0 : MetadataTokens.GetToken(_entryPointOpt),
                 _corFlags,
                 Header.ImageBase,
                 metadataBuilder,
                 _ilStream,
-                _mappedFieldData,
-                _managedResourceData,
+                _mappedFieldDataOpt,
+                _managedResourcesOpt,
                 debugTableBuilderOpt,
                 out _lazyStrongNameSignature);
 
             _peDirectoriesBuilder.AddressOfEntryPoint = _lazyEntryPointAddress;
-            _peDirectoriesBuilder.DebugTable = textSection.GetDebugDirectoryEntry(location.RelativeVirtualAddress);
+            _peDirectoriesBuilder.DebugTable = debugDirectoryEntry;
             _peDirectoriesBuilder.ImportAddressTable = textSection.GetImportAddressTableDirectoryEntry(location.RelativeVirtualAddress);
             _peDirectoriesBuilder.ImportTable = textSection.GetImportTableDirectoryEntry(location.RelativeVirtualAddress);
             _peDirectoriesBuilder.CorHeaderTable = textSection.GetCorHeaderDirectoryEntry(location.RelativeVirtualAddress);
@@ -158,8 +196,10 @@ namespace System.Reflection.PortableExecutable
 
         private BlobBuilder SerializeResourceSection(SectionLocation location)
         {
+            Debug.Assert(_nativeResourcesOpt != null);
+
             var sectionBuilder = new BlobBuilder();
-            _nativeResourceSectionSerializerOpt(sectionBuilder, location);
+            _nativeResourcesOpt.Serialize(sectionBuilder, location);
 
             _peDirectoriesBuilder.ResourceTable = new DirectoryEntry(location.RelativeVirtualAddress, sectionBuilder.Count);
             return sectionBuilder;
@@ -203,7 +243,7 @@ namespace System.Reflection.PortableExecutable
             // - PE header without its alignment padding
             // - all sections including their alignment padding and excluding strong name signature blob
 
-            int remainingHeader = Header.ComputeSizeOfPeHeaders(Sections.Length);
+            int remainingHeader = Header.ComputeSizeOfPeHeaders(GetSections().Length);
             foreach (var blob in peImage.GetBlobs())
             {
                 if (remainingHeader > 0)

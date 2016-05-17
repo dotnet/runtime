@@ -8,6 +8,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
 {
     public class MetadataTokensTests
     {
+        // MetadataReader handles:
         private static readonly EntityHandle s_assemblyRefHandle = AssemblyReferenceHandle.FromRowId(1);
         private static readonly EntityHandle s_virtualAssemblyRefHandle = AssemblyReferenceHandle.FromVirtualIndex(AssemblyReferenceHandle.VirtualIndex.System_Runtime);
         private static readonly Handle s_virtualBlobHandle = BlobHandle.FromVirtualIndex(BlobHandle.VirtualIndex.AttributeUsage_AllowSingle, 0);
@@ -15,8 +16,14 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         private static readonly Handle s_stringHandle = StringHandle.FromOffset(1);
         private static readonly Handle s_winrtPrefixedStringHandle = StringHandle.FromOffset(1).WithWinRTPrefix();
         private static readonly Handle s_blobHandle = BlobHandle.FromOffset(1);
-        private static readonly Handle s_guidHandle = GuidHandle.FromIndex(16);
+        private static readonly Handle s_guidHandle = GuidHandle.FromIndex(5);
         private static readonly EntityHandle s_exportedTypeHandle = ExportedTypeHandle.FromRowId(42);
+
+        // MetadataBuilder handles:
+        private static readonly Handle s_writerStringHandle = StringHandle.FromWriterVirtualIndex(1);
+        private static readonly Handle s_writerBlobHandle = BlobHandle.FromOffset(1);
+        private static readonly Handle s_writerGuidHandle = GuidHandle.FromIndex(1);
+        private static readonly Handle s_writerUserStringHandle = UserStringHandle.FromOffset(1);
 
         [Fact]
         public void GetRowNumber()
@@ -29,11 +36,26 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         public void GetHeapOffset()
         {
             Assert.Equal(-1, MetadataTokens.GetHeapOffset(s_virtualBlobHandle));
+            Assert.Equal(-1, MetadataTokens.GetHeapOffset((BlobHandle)s_virtualBlobHandle));
             Assert.Equal(1, MetadataTokens.GetHeapOffset(s_userStringHandle));
+            Assert.Equal(1, MetadataTokens.GetHeapOffset((UserStringHandle)s_userStringHandle));
             Assert.Equal(1, MetadataTokens.GetHeapOffset(s_stringHandle));
+            Assert.Equal(1, MetadataTokens.GetHeapOffset((StringHandle)s_stringHandle));
             Assert.Equal(-1, MetadataTokens.GetHeapOffset(s_winrtPrefixedStringHandle));
+            Assert.Equal(-1, MetadataTokens.GetHeapOffset((StringHandle)s_winrtPrefixedStringHandle));
             Assert.Equal(1, MetadataTokens.GetHeapOffset(s_blobHandle));
-            Assert.Equal(16, MetadataTokens.GetHeapOffset(s_guidHandle));
+            Assert.Equal(1, MetadataTokens.GetHeapOffset((BlobHandle)s_blobHandle));
+            Assert.Equal(5, MetadataTokens.GetHeapOffset(s_guidHandle));
+            Assert.Equal(5, MetadataTokens.GetHeapOffset((GuidHandle)s_guidHandle));
+
+            Assert.Equal(1, MetadataTokens.GetHeapOffset(s_writerUserStringHandle));
+            Assert.Equal(1, MetadataTokens.GetHeapOffset((UserStringHandle)s_writerUserStringHandle));
+            Assert.Equal(-1, MetadataTokens.GetHeapOffset(s_writerStringHandle));
+            Assert.Equal(-1, MetadataTokens.GetHeapOffset((StringHandle)s_writerStringHandle));
+            Assert.Equal(1, MetadataTokens.GetHeapOffset(s_writerBlobHandle));
+            Assert.Equal(1, MetadataTokens.GetHeapOffset((BlobHandle)s_writerBlobHandle));
+            Assert.Equal(1, MetadataTokens.GetHeapOffset(s_writerGuidHandle));
+            Assert.Equal(1, MetadataTokens.GetHeapOffset((GuidHandle)s_writerGuidHandle));
 
             Assert.Throws<ArgumentException>(() => MetadataTokens.GetHeapOffset(s_assemblyRefHandle));
             Assert.Throws<ArgumentException>(() => MetadataTokens.GetHeapOffset(s_virtualAssemblyRefHandle));

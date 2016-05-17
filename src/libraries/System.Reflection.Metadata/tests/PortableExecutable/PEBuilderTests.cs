@@ -4,6 +4,7 @@
 
 using System.Collections.Immutable;
 using System.IO;
+using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.Metadata.Tests;
@@ -13,6 +14,8 @@ namespace System.Reflection.PortableExecutable.Tests
 {
     public class PEBuilderTests
     {
+        #region Helpers
+
         private void VerifyPE(Stream peStream, byte[] expectedSignature = null)
         {
             peStream.Position = 0;
@@ -25,6 +28,9 @@ namespace System.Reflection.PortableExecutable.Tests
                 // TODO: more validation (can we use MetadataVisualizer until managed PEVerifier is available)?
 
                 VerifyStrongNameSignatureDirectory(peReader, expectedSignature);
+
+                Assert.Equal(s_contentId.Stamp, unchecked((uint)peReader.PEHeaders.CoffHeader.TimeDateStamp));
+                Assert.Equal(s_guid, mdReader.GetGuid(mdReader.GetModuleDefinition().Mvid));
             }
         }
 
@@ -58,37 +64,33 @@ namespace System.Reflection.PortableExecutable.Tests
         }
 
         private static readonly Guid s_guid = new Guid("97F4DBD4-F6D1-4FAD-91B3-1001F92068E5");
-        private static readonly ContentId s_contentId = new ContentId(s_guid.ToByteArray(), new byte[] { 1, 2, 3, 4 });
+        private static readonly BlobContentId s_contentId = new BlobContentId(s_guid, 0x04030201);
 
         private static void WritePEImage(
             Stream peStream, 
             MetadataBuilder metadataBuilder, 
             BlobBuilder ilBuilder, 
             MethodDefinitionHandle entryPointHandle,
+            Blob mvidFixup = default(Blob),
             byte[] privateKeyOpt = null)
         {
-            var mappedFieldDataBuilder = new BlobBuilder();
-            var managedResourceDataBuilder = new BlobBuilder();
-
             var peBuilder = new ManagedPEBuilder(
                 entryPointHandle.IsNil ? PEHeaderBuilder.CreateLibraryHeader() : PEHeaderBuilder.CreateExecutableHeader(),
                 new TypeSystemMetadataSerializer(metadataBuilder, "v4.0.30319", isMinimalDelta: false),
                 ilBuilder,
-                mappedFieldDataBuilder,
-                managedResourceDataBuilder,
-                nativeResourceSectionSerializer: null,
-                strongNameSignatureSize: 128,
                 entryPoint: entryPointHandle,
-                pdbPathOpt: null,
-                nativePdbContentId: default(ContentId),
-                portablePdbContentId: default(ContentId),
-                corFlags: CorFlags.ILOnly | (privateKeyOpt != null ? CorFlags.StrongNameSigned : 0),
+                flags: CorFlags.ILOnly | (privateKeyOpt != null ? CorFlags.StrongNameSigned : 0),
                 deterministicIdProvider: content => s_contentId);
 
             var peBlob = new BlobBuilder();
 
-            ContentId contentId;
+            BlobContentId contentId;
             peBuilder.Serialize(peBlob, out contentId);
+
+            if (!mvidFixup.IsDefault)
+            {
+                new BlobWriter(mvidFixup).WriteGuid(contentId.Guid);
+            }
 
             if (privateKeyOpt != null)
             {
@@ -96,6 +98,21 @@ namespace System.Reflection.PortableExecutable.Tests
             }
 
             peBlob.WriteContentTo(peStream);
+        }
+
+        #endregion
+
+        [Fact]
+        public void ManagedPEBuilder_Errors()
+        {
+            var hdr = new PEHeaderBuilder();
+            var ms = new TypeSystemMetadataSerializer(new MetadataBuilder(), "v4.0.30319", false);
+            var il = new BlobBuilder();
+
+            Assert.Throws<ArgumentNullException>(() => new ManagedPEBuilder(null, ms, il));
+            Assert.Throws<ArgumentNullException>(() => new ManagedPEBuilder(hdr, null, il));
+            Assert.Throws<ArgumentNullException>(() => new ManagedPEBuilder(hdr, ms, null));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new ManagedPEBuilder(hdr, ms, il, strongNameSignatureSize: -1));
         }
 
         [Fact]
@@ -120,7 +137,7 @@ namespace System.Reflection.PortableExecutable.Tests
                 var ilBuilder = new BlobBuilder();
                 var metadataBuilder = new MetadataBuilder();
                 var entryPoint = BasicValidationEmit(metadataBuilder, ilBuilder);
-                WritePEImage(peStream, metadataBuilder, ilBuilder, entryPoint, Misc.KeyPair);
+                WritePEImage(peStream, metadataBuilder, ilBuilder, entryPoint, privateKeyOpt: Misc.KeyPair);
 
                 VerifyPE(peStream, expectedSignature: new byte[] 
                 {
@@ -316,10 +333,10 @@ namespace System.Reflection.PortableExecutable.Tests
             {
                 var ilBuilder = new BlobBuilder();
                 var metadataBuilder = new MetadataBuilder();
-                var entryPoint = ComplexEmit(metadataBuilder, ilBuilder);
+                Blob mvidFixup;
+                var entryPoint = ComplexEmit(metadataBuilder, ilBuilder, out mvidFixup);
 
-                WritePEImage(peStream, metadataBuilder, ilBuilder, entryPoint);
-                peStream.Position = 0;
+                WritePEImage(peStream, metadataBuilder, ilBuilder, entryPoint, mvidFixup);
                 VerifyPE(peStream);
             }
         }
@@ -331,12 +348,12 @@ namespace System.Reflection.PortableExecutable.Tests
             return builder;
         }
 
-        private static MethodDefinitionHandle ComplexEmit(MetadataBuilder metadata, BlobBuilder ilBuilder)
+        private static MethodDefinitionHandle ComplexEmit(MetadataBuilder metadata, BlobBuilder ilBuilder, out Blob mvidFixup)
         {
             metadata.AddModule(
                 0,
                 metadata.GetOrAddString("ConsoleApplication.exe"),
-                metadata.GetOrAddGuid(Guid.NewGuid()),
+                metadata.ReserveGuid(out mvidFixup),
                 default(GuidHandle),
                 default(GuidHandle));
 
@@ -412,7 +429,7 @@ namespace System.Reflection.PortableExecutable.Tests
                 metadata.GetOrAddString("_sumCache"),
                 metadata.GetOrAddBlob(BuildSignature(e => 
                 {
-                    var inst = e.FieldSignature().GenericInstantiation(isValueType: false, typeRefDefSpec: dictionaryTypeRef, genericArgumentCount: 2);
+                    var inst = e.FieldSignature().GenericInstantiation(genericType: dictionaryTypeRef, genericArgumentCount: 2, isValueType: false);
                     inst.AddArgument().Int32();
                     inst.AddArgument().Object();
                 })));
@@ -427,7 +444,7 @@ namespace System.Reflection.PortableExecutable.Tests
             var derivedClassBCFieldDef = metadata.AddFieldDefinition(
               FieldAttributes.Assembly,
               metadata.GetOrAddString("_bc"),
-              metadata.GetOrAddBlob(BuildSignature(e => e.FieldSignature().TypeDefOrRefOrSpec(isValueType: false, typeRefDefSpec: baseClassTypeDef))));
+              metadata.GetOrAddBlob(BuildSignature(e => e.FieldSignature().Type(type: baseClassTypeDef, isValueType: false))));
 
             var methodBodies = new MethodBodiesEncoder(ilBuilder);
 
@@ -459,6 +476,86 @@ namespace System.Reflection.PortableExecutable.Tests
                 default(ParameterHandle));
 
             return default(MethodDefinitionHandle);
+        }
+
+        private class TestResourceSectionBuilder : ResourceSectionBuilder
+        {
+            public TestResourceSectionBuilder()
+            {
+            }
+
+            internal protected override void Serialize(BlobBuilder builder, SectionLocation location)
+            {
+                builder.WriteInt32(0x12345678);
+                builder.WriteInt32(location.PointerToRawData);
+                builder.WriteInt32(location.RelativeVirtualAddress);
+            }
+        }
+
+        [Fact]
+        public unsafe void NativeResources()
+        {
+            var peStream = new MemoryStream();
+            var ilBuilder = new BlobBuilder();
+            var metadataBuilder = new MetadataBuilder();
+            
+            var peBuilder = new ManagedPEBuilder(
+                PEHeaderBuilder.CreateLibraryHeader(),
+                new TypeSystemMetadataSerializer(metadataBuilder, "v4.0.30319", false),
+                ilBuilder,
+                nativeResources: new TestResourceSectionBuilder(),
+                deterministicIdProvider: content => s_contentId);
+            
+            var peBlob = new BlobBuilder();
+            
+            BlobContentId contentId;
+            peBuilder.Serialize(peBlob, out contentId);
+            
+            peBlob.WriteContentTo(peStream);
+
+            peStream.Position = 0;
+            var peReader = new PEReader(peStream);
+            var sectionHeader = peReader.PEHeaders.SectionHeaders.Single(s => s.Name == ".rsrc");
+
+            var image = peReader.GetEntireImage();
+
+            var reader = new BlobReader(image.Pointer + sectionHeader.PointerToRawData, sectionHeader.SizeOfRawData);
+            Assert.Equal(0x12345678, reader.ReadInt32());
+            Assert.Equal(sectionHeader.PointerToRawData, reader.ReadInt32());
+            Assert.Equal(sectionHeader.VirtualAddress, reader.ReadInt32());
+        }
+
+        private class BadResourceSectionBuilder : ResourceSectionBuilder
+        {
+            public BadResourceSectionBuilder()
+            {
+            }
+
+            internal protected override void Serialize(BlobBuilder builder, SectionLocation location)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        [Fact]
+        public unsafe void NativeResources_BadImpl()
+        {
+            var peStream = new MemoryStream();
+            var ilBuilder = new BlobBuilder();
+            var metadataBuilder = new MetadataBuilder();
+
+            var peBuilder = new ManagedPEBuilder(
+                PEHeaderBuilder.CreateLibraryHeader(),
+                new TypeSystemMetadataSerializer(metadataBuilder, "v4.0.30319", false),
+                ilBuilder,
+                nativeResources: new BadResourceSectionBuilder(),
+                deterministicIdProvider: content => s_contentId);
+
+            var peBlob = new BlobBuilder();
+
+            BlobContentId contentId;
+
+            Assert.Throws<NotImplementedException>(() => peBuilder.Serialize(peBlob, out contentId));
         }
     }
 }

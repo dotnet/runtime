@@ -183,7 +183,7 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Fact]
-        public void ToArray()
+        public void ToArray1()
         {
             var builder = new BlobBuilder(16);
 
@@ -219,6 +219,43 @@ namespace System.Reflection.Metadata.Tests
             AssertEx.Equal(new byte[] { 0xcc, 0xbb, 0xaa }, builder.ToArray(14, 3));
 
             AssertEx.Equal(new byte[] { 0xdd, 0xcc, 0xbb, 0xaa }, builder.ToArray(13, 4));
+        }
+
+        [Fact]
+        public void ToArray2()
+        {
+            var builder = new BlobBuilder(16);
+
+            AssertEx.Equal(new byte[] { }, builder.ToArray(0, 0));
+
+            for (int i = 0; i < 34; i++)
+            {
+                builder.WriteByte((byte)i);
+            }
+
+            AssertEx.Equal(new byte[] 
+            {
+                0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
+                0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F,
+                0x20, 0x21
+            }, builder.ToArray());
+
+            AssertEx.Equal(new byte[] 
+            {
+                0x0E, 0x0F,
+                0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F,
+                0x20, 0x21
+            }, builder.ToArray(0x0e, 20));
+
+            AssertEx.Equal(new byte[] { 0x0E }, builder.ToArray(0x0e, 1));
+            AssertEx.Equal(new byte[] { 0x0E, 0x0F }, builder.ToArray(0x0e, 2));
+            AssertEx.Equal(new byte[] { 0x0E, 0x0F, 0x10 }, builder.ToArray(0x0e, 3));
+            AssertEx.Equal(new byte[] { 0x0E, 0x0F, 0x10, 0x11 }, builder.ToArray(0x0e, 4));
+
+            AssertEx.Equal(new byte[] { 0x1E }, builder.ToArray(0x1e, 1));
+            AssertEx.Equal(new byte[] { 0x1E, 0x1F }, builder.ToArray(0x1e, 2));
+            AssertEx.Equal(new byte[] { 0x1E, 0x1F, 0x20 }, builder.ToArray(0x1e, 3));
+            AssertEx.Equal(new byte[] { 0x1E, 0x1F, 0x20, 0x21 }, builder.ToArray(0x1e, 4));
         }
 
         [Fact]
@@ -405,6 +442,77 @@ namespace System.Reflection.Metadata.Tests
             Assert.Equal(6, builder1.Count);
             Assert.Equal(2, builder3.Count);
             Assert.Equal(1, builder4.Count);
+        }
+
+        [Fact]
+        public void LinkSuffix2()
+        {
+            var builder1 = new BlobBuilder(16);
+            builder1.WriteBytes(1, 16);
+
+            var builder2 = new BlobBuilder(16);
+            builder2.WriteBytes(2, 16);
+
+            builder1.LinkSuffix(builder2);
+
+            AssertEx.Equal(new byte[]
+            {
+                0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+                0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02
+            }, builder1.ToArray());
+
+            Assert.Equal(32, builder1.Count);
+            Assert.Equal(16, builder2.Count);
+        }
+
+        [Fact]
+        public void LinkSuffix_Empty1()
+        {
+            var builder1 = new BlobBuilder(16);
+            var builder2 = new BlobBuilder(16);
+            builder2.WriteByte(2);
+
+            builder1.LinkSuffix(builder2);
+
+            AssertEx.Equal(new byte[] { 0x02 }, builder1.ToArray());
+
+            Assert.Equal(1, builder1.Count);
+            Assert.Equal(1, builder2.Count);
+        }
+
+        [Fact]
+        public void LinkSuffix_Empty2()
+        {
+            var builder1 = new BlobBuilder(16);
+            var builder2 = new BlobBuilder(16);
+            builder1.LinkSuffix(builder2);
+
+            AssertEx.Equal(new byte[0], builder1.ToArray());
+
+            Assert.Equal(0, builder1.Count);
+            Assert.Equal(0, builder2.Count);
+        }
+
+        [Fact]
+        public void LinkSuffix_Empty3()
+        {
+            var builder1 = new BlobBuilder(16);
+            builder1.ReserveBytes(16);
+            builder1.ReserveBytes(0);
+
+            var builder2 = new BlobBuilder(16);
+            builder2.ReserveBytes(16);
+            builder2.ReserveBytes(0);
+            builder1.LinkSuffix(builder2);
+
+            AssertEx.Equal(new byte[] 
+            {
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+            }, builder1.ToArray());
+
+            Assert.Equal(32, builder1.Count);
+            Assert.Equal(16, builder2.Count);
         }
 
         [Fact]
@@ -619,6 +727,10 @@ namespace System.Reflection.Metadata.Tests
             writer.WriteDouble(double.NaN);
             writer.WriteSingle(float.NegativeInfinity);
 
+            var guid = new Guid("01020304-0506-0708-090A-0B0C0D0E0F10");
+            writer.WriteBytes(guid.ToByteArray());
+            writer.WriteGuid(guid);
+
             AssertEx.Equal(new byte[]
             {
                 0x44, 0x33, 0x22, 0x11,
@@ -634,7 +746,9 @@ namespace System.Reflection.Metadata.Tests
                 0x56, 0x55, 0x44, 0x34, 0x33, 0x22, 0x12, 0x11,
                 0x02, 0xD6, 0xE0, 0x9A, 0x94, 0x47, 0x09, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF8, 0xFF,
-                0x00, 0x00, 0x80, 0xFF
+                0x00, 0x00, 0x80, 0xFF,
+                0x04, 0x03, 0x02, 0x01, 0x06, 0x05, 0x08, 0x07, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10,
+                0x04, 0x03, 0x02, 0x01, 0x06, 0x05, 0x08, 0x07, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10
             }, writer.ToArray());
         }
 

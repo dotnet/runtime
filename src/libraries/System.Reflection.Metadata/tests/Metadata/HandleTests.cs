@@ -204,7 +204,7 @@ namespace System.Reflection.Metadata.Tests
 
             Assert.Equal(1, ((GuidHandle)new Handle((byte)HandleType.Guid, 1)).Index);
             Assert.Equal(0x1fffffff, ((GuidHandle)new Handle((byte)HandleType.Guid, 0x1fffffff)).Index);
-
+            
             Assert.Equal(1, ((NamespaceDefinitionHandle)new Handle((byte)HandleType.Namespace, 1)).GetHeapOffset());
             Assert.Equal(0x1fffffff, ((NamespaceDefinitionHandle)new Handle((byte)HandleType.Namespace, 0x1fffffff)).GetHeapOffset());
 

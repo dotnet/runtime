@@ -19,7 +19,7 @@ namespace System.Reflection.PortableExecutable
     /// - Metadata
     /// - Managed Resource Data
     /// - Strong Name Signature
-    /// - Debug Table
+    /// - Debug Data (directory and extra info)
     /// - Import Table
     /// - Name Table
     /// - Runtime Startup Stub
@@ -29,13 +29,6 @@ namespace System.Reflection.PortableExecutable
     {
         public Characteristics ImageCharacteristics { get; }
         public Machine Machine { get; }
-        public bool IsDeterministic { get; }
-        public string PdbPathOpt { get; }
-
-        /// <summary>
-        /// Total size of metadata (header and all streams).
-        /// </summary>
-        public int MetadataSize { get; }
 
         /// <summary>
         /// The size of IL stream (unaligned).
@@ -43,10 +36,9 @@ namespace System.Reflection.PortableExecutable
         public int ILStreamSize { get; }
 
         /// <summary>
-        /// The size of mapped field data stream.
-        /// Aligned to <see cref="MappedFieldDataAlignment"/>.
+        /// Total size of metadata (header and all streams).
         /// </summary>
-        public int MappedFieldDataSize { get; }
+        public int MetadataSize { get; }
 
         /// <summary>
         /// The size of managed resource data stream.
@@ -59,16 +51,26 @@ namespace System.Reflection.PortableExecutable
         /// </summary>
         public int StrongNameSignatureSize { get; }
 
+        /// <summary>
+        /// Size of Debug data.
+        /// </summary>
+        public int DebugDataSize { get; }
+
+        /// <summary>
+        /// The size of mapped field data stream.
+        /// Aligned to <see cref="MappedFieldDataAlignment"/>.
+        /// </summary>
+        public int MappedFieldDataSize { get; }
+
         public ManagedTextSection(
-            int metadataSize,
+            Characteristics imageCharacteristics,
+            Machine machine,
             int ilStreamSize,
-            int mappedFieldDataSize,
+            int metadataSize,
             int resourceDataSize,
             int strongNameSignatureSize,
-            Characteristics imageCharacteristics,
-            Machine machine, 
-            string pdbPathOpt,
-            bool isDeterministic)
+            int debugDataSize,
+            int mappedFieldDataSize)
         {
             MetadataSize = metadataSize;
             ResourceDataSize = resourceDataSize;
@@ -77,8 +79,7 @@ namespace System.Reflection.PortableExecutable
             StrongNameSignatureSize = strongNameSignatureSize;
             ImageCharacteristics = imageCharacteristics;
             Machine = machine;
-            PdbPathOpt = pdbPathOpt;
-            IsDeterministic = isDeterministic;
+            DebugDataSize = debugDataSize;
         }
 
         /// <summary>
@@ -135,7 +136,7 @@ namespace System.Reflection.PortableExecutable
             return result;
         }
 
-        private int ComputeOffsetToDebugTable()
+        internal int ComputeOffsetToDebugDirectory()
         {
             Debug.Assert(MetadataSize % 4 == 0);
             Debug.Assert(ResourceDataSize % 4 == 0);
@@ -150,8 +151,8 @@ namespace System.Reflection.PortableExecutable
         private int ComputeOffsetToImportTable()
         {
             return
-                ComputeOffsetToDebugTable() +
-                ComputeSizeOfDebugDirectory();
+                ComputeOffsetToDebugDirectory() +
+                DebugDataSize;
         }
 
         private const int CorHeaderSize =
@@ -173,58 +174,6 @@ namespace System.Reflection.PortableExecutable
         private int ComputeOffsetToMetadata()
         {
             return OffsetToILStream + BitArithmetic.Align(ILStreamSize, 4);
-        }
-
-        /// <summary>
-        /// The size of a single entry in the "Debug Directory (Image Only)"
-        /// </summary>
-        private const int ImageDebugDirectoryEntrySize =
-            sizeof(uint) +   // Characteristics
-            sizeof(uint) +   // TimeDataStamp
-            sizeof(uint) +   // Version
-            sizeof(uint) +   // Type
-            sizeof(uint) +   // SizeOfData
-            sizeof(uint) +   // AddressOfRawData
-            sizeof(uint);    // PointerToRawData
-
-        private bool EmitPdb => PdbPathOpt != null;
-
-        /// <summary>
-        /// Minimal size of PDB path in Debug Directory. We pad the path to this minimal size to
-        /// allow some tools to patch the path without the need to rewrite the entire image.
-        /// This is a workaround put in place until these tools are retired.
-        /// </summary>
-        private int MinPdbPath => IsDeterministic ? 0 : 260;
-
-        /// <summary>
-        /// The size of our debug directory: one entry for debug information, and an optional second one indicating
-        /// that the timestamp is deterministic (i.e. not really a timestamp)
-        /// </summary>
-        private int ImageDebugDirectoryBaseSize =>
-            (IsDeterministic ? ImageDebugDirectoryEntrySize : 0) +
-            (EmitPdb ? ImageDebugDirectoryEntrySize : 0);
-
-        private int ComputeSizeOfDebugDirectoryData()
-        {
-            // The debug directory data is only needed if this.EmitPdb.
-            return (!EmitPdb) ? 0 :
-                4 +              // 4B signature "RSDS"
-                16 +             // GUID
-                sizeof(uint) +   // Age
-                Math.Max(BlobUtilities.GetUTF8ByteCount(PdbPathOpt) + 1, MinPdbPath);
-        }
-
-        private int ComputeSizeOfDebugDirectory()
-        {
-            return ImageDebugDirectoryBaseSize + ComputeSizeOfDebugDirectoryData();
-        }
-
-        public DirectoryEntry GetDebugDirectoryEntry(int rva)
-        {
-            // Only the size of the fixed part of the debug table goes here.
-            return (EmitPdb || IsDeterministic) ?
-                new DirectoryEntry(rva + ComputeOffsetToDebugTable(), ImageDebugDirectoryBaseSize) :
-                default(DirectoryEntry);
         }
 
         public int ComputeSizeOfTextSection()
@@ -273,9 +222,9 @@ namespace System.Reflection.PortableExecutable
         /// <param name="baseAddress">Base address of the PE image.</param>
         /// <param name="metadataBuilder"><see cref="BlobBuilder"/> containing metadata. Must be populated with data. Linked into the <paramref name="builder"/> and can't be expanded afterwards.</param>
         /// <param name="ilBuilder"><see cref="BlobBuilder"/> containing IL stream. Must be populated with data. Linked into the <paramref name="builder"/> and can't be expanded afterwards.</param>
-        /// <param name="mappedFieldDataBuilder"><see cref="BlobBuilder"/> containing mapped field data. Must be populated with data. Linked into the <paramref name="builder"/> and can't be expanded afterwards.</param>
-        /// <param name="resourceBuilder"><see cref="BlobBuilder"/> containing managed resource data. Must be populated with data. Linked into the <paramref name="builder"/> and can't be expanded afterwards.</param>
-        /// <param name="debugTableBuilderOpt"><see cref="BlobBuilder"/> containing debug table data. Must be populated with data. Linked into the <paramref name="builder"/> and can't be expanded afterwards.</param>
+        /// <param name="mappedFieldDataBuilderOpt"><see cref="BlobBuilder"/> containing mapped field data. Must be populated with data. Linked into the <paramref name="builder"/> and can't be expanded afterwards.</param>
+        /// <param name="resourceBuilderOpt"><see cref="BlobBuilder"/> containing managed resource data. Must be populated with data. Linked into the <paramref name="builder"/> and can't be expanded afterwards.</param>
+        /// <param name="debugDataBuilderOpt"><see cref="BlobBuilder"/> containing PE debug table and data. Must be populated with data. Linked into the <paramref name="builder"/> and can't be expanded afterwards.</param>
         /// <param name="strongNameSignature">Blob reserved in the <paramref name="builder"/> for strong name signature.</param>
         public void Serialize(
             BlobBuilder builder,
@@ -285,18 +234,18 @@ namespace System.Reflection.PortableExecutable
             ulong baseAddress,
             BlobBuilder metadataBuilder,
             BlobBuilder ilBuilder,
-            BlobBuilder mappedFieldDataBuilder,
-            BlobBuilder resourceBuilder,
-            BlobBuilder debugTableBuilderOpt,
+            BlobBuilder mappedFieldDataBuilderOpt,
+            BlobBuilder resourceBuilderOpt,
+            BlobBuilder debugDataBuilderOpt,
             out Blob strongNameSignature)
         {
             Debug.Assert(builder.Count == 0);
             Debug.Assert(metadataBuilder.Count == MetadataSize);
             Debug.Assert(metadataBuilder.Count % 4 == 0);
             Debug.Assert(ilBuilder.Count == ILStreamSize);
-            Debug.Assert(mappedFieldDataBuilder.Count == MappedFieldDataSize);
-            Debug.Assert(resourceBuilder.Count == ResourceDataSize);
-            Debug.Assert(resourceBuilder.Count % 4 == 0);
+            Debug.Assert((mappedFieldDataBuilderOpt?.Count ?? 0) == MappedFieldDataSize);
+            Debug.Assert((resourceBuilderOpt?.Count ?? 0) == ResourceDataSize);
+            Debug.Assert((resourceBuilderOpt?.Count ?? 0) % 4 == 0);
 
             // TODO: avoid recalculation
             int importTableRva = GetImportTableDirectoryEntry(relativeVirtualAddess).RelativeVirtualAddress;
@@ -317,7 +266,10 @@ namespace System.Reflection.PortableExecutable
             builder.LinkSuffix(metadataBuilder);
 
             // managed resources:
-            builder.LinkSuffix(resourceBuilder);
+            if (resourceBuilderOpt != null)
+            {
+                builder.LinkSuffix(resourceBuilderOpt);
+            }
 
             // strong name signature:
             strongNameSignature = builder.ReserveBytes(StrongNameSignatureSize);
@@ -326,9 +278,10 @@ namespace System.Reflection.PortableExecutable
             // when strong name signing.
             new BlobWriter(strongNameSignature).WriteBytes(0, StrongNameSignatureSize);
 
-            if (debugTableBuilderOpt != null)
+            // debug directory and data:
+            if (debugDataBuilderOpt != null)
             {
-                builder.LinkSuffix(debugTableBuilderOpt);
+                builder.LinkSuffix(debugDataBuilderOpt);
             }
 
             if (RequiresStartupStub)
@@ -339,7 +292,10 @@ namespace System.Reflection.PortableExecutable
             }
 
             // mapped field data:
-            builder.LinkSuffix(mappedFieldDataBuilder);
+            if (mappedFieldDataBuilderOpt != null)
+            {
+                builder.LinkSuffix(mappedFieldDataBuilderOpt);
+            }
 
             Debug.Assert(builder.Count == ComputeSizeOfTextSection());
         }
@@ -475,103 +431,6 @@ namespace System.Reflection.PortableExecutable
 
             Debug.Assert(builder.Count - start == CorHeaderSize);
             Debug.Assert(builder.Count % 4 == 0);
-        }
-
-        /// <summary>
-        /// Write one entry in the "Debug Directory (Image Only)"
-        /// See https://msdn.microsoft.com/en-us/windows/hardware/gg463119.aspx
-        /// section 5.1.1 (pages 71-72).
-        /// </summary>
-        private static void WriteDebugTableEntry(
-            BlobBuilder writer,
-            byte[] stamp,
-            uint version, // major and minor version, combined
-            uint debugType,
-            uint sizeOfData,
-            uint addressOfRawData,
-            uint pointerToRawData)
-        {
-            writer.WriteUInt32(0); // characteristics
-            Debug.Assert(stamp.Length == 4);
-            writer.WriteBytes(stamp);
-            writer.WriteUInt32(version);
-            writer.WriteUInt32(debugType);
-            writer.WriteUInt32(sizeOfData);
-            writer.WriteUInt32(addressOfRawData);
-            writer.WriteUInt32(pointerToRawData);
-        }
-
-        private readonly static byte[] zeroStamp = new byte[4]; // four bytes of zero
-
-        /// <summary>
-        /// Write the entire "Debug Directory (Image Only)" along with data that it points to.
-        /// </summary>
-        internal void WriteDebugTable(BlobBuilder builder, SectionLocation textSectionLocation, ContentId nativePdbContentId, ContentId portablePdbContentId)
-        {
-            Debug.Assert(builder.Count == 0);
-
-            int tableSize = ImageDebugDirectoryBaseSize;
-            Debug.Assert(tableSize != 0);
-            Debug.Assert(nativePdbContentId.IsDefault || portablePdbContentId.IsDefault);
-            Debug.Assert(!EmitPdb || (nativePdbContentId.IsDefault ^ portablePdbContentId.IsDefault));
-
-            int dataSize = ComputeSizeOfDebugDirectoryData();
-            if (EmitPdb)
-            {
-                const int IMAGE_DEBUG_TYPE_CODEVIEW = 2; // from PE spec
-                uint dataOffset = (uint)(ComputeOffsetToDebugTable() + tableSize);
-                WriteDebugTableEntry(builder,
-                    stamp: nativePdbContentId.Stamp ?? portablePdbContentId.Stamp,
-                    version: portablePdbContentId.IsDefault ? (uint)0 : ('P' << 24 | 'M' << 16 | 0x01 << 8 | 0x00),
-                    debugType: IMAGE_DEBUG_TYPE_CODEVIEW,
-                    sizeOfData: (uint)dataSize,
-                    addressOfRawData: (uint)textSectionLocation.RelativeVirtualAddress + dataOffset, // RVA of the data
-                    pointerToRawData: (uint)textSectionLocation.PointerToRawData + dataOffset); // position of the data in the PE stream
-            }
-
-            if (IsDeterministic)
-            {
-                const int IMAGE_DEBUG_TYPE_NO_TIMESTAMP = 16; // from PE spec
-                WriteDebugTableEntry(builder,
-                    stamp: zeroStamp,
-                    version: 0,
-                    debugType: IMAGE_DEBUG_TYPE_NO_TIMESTAMP,
-                    sizeOfData: 0,
-                    addressOfRawData: 0,
-                    pointerToRawData: 0);
-            }
-
-            // We should now have written all and precisely the data we said we'd write for the table entries.
-            Debug.Assert(builder.Count == tableSize);
-
-            // ====================
-            // The following is additional data beyond the debug directory at the offset `dataOffset`
-            // pointed to by the ImageDebugTypeCodeView entry.
-
-            if (EmitPdb)
-            {
-                builder.WriteByte((byte)'R');
-                builder.WriteByte((byte)'S');
-                builder.WriteByte((byte)'D');
-                builder.WriteByte((byte)'S');
-
-                // PDB id:
-                builder.WriteBytes(nativePdbContentId.Guid ?? portablePdbContentId.Guid);
-
-                // age
-                builder.WriteUInt32(1); // TODO: allow specify for native PDBs
-
-                // UTF-8 encoded zero-terminated path to PDB
-                int pathStart = builder.Count;
-                builder.WriteUTF8(PdbPathOpt, allowUnpairedSurrogates: true);
-                builder.WriteByte(0);
-
-                // padding:
-                builder.WriteBytes(0, Math.Max(0, MinPdbPath - (builder.Count - pathStart)));
-            }
-
-            // We should now have written all and precisely the data we said we'd write for the table and its data.
-            Debug.Assert(builder.Count == tableSize + dataSize);
         }
 
         private void WriteRuntimeStartupStub(BlobBuilder sectionBuilder, int importAddressTableRva, ulong baseAddress)

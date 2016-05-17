@@ -2315,6 +2315,11 @@ namespace System.Reflection.Metadata
             return new StringHandle(StringHandleType.VirtualString | (uint)virtualIndex);
         }
 
+        internal static StringHandle FromWriterVirtualIndex(int virtualIndex)
+        {
+            return new StringHandle(StringHandleType.VirtualString | (uint)virtualIndex);
+        }
+
         internal StringHandle WithWinRTPrefix()
         {
             Debug.Assert(StringKind == StringKind.Plain);
@@ -2381,6 +2386,12 @@ namespace System.Reflection.Metadata
         {
             Debug.Assert(IsVirtual && StringKind != StringKind.WinRTPrefixed);
             return (VirtualIndex)(_value & HeapHandleType.OffsetMask);
+        }
+
+        internal int GetWriterVirtualIndex()
+        {
+            Debug.Assert(IsNil || IsVirtual && StringKind == StringKind.Virtual);
+            return (int)(_value & HeapHandleType.OffsetMask);
         }
 
         internal StringKind StringKind
