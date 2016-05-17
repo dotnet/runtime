@@ -5,8 +5,11 @@ using System;
 using System.Collections.Generic;
 using System.Numerics;
 
-namespace VectorMathTests
+internal partial class VectorTest
 {
+    private const int Pass = 100;
+    private const int Fail = -1;
+
     class Program
     {		
         const float EPS = Single.Epsilon * 5;
@@ -70,9 +73,20 @@ namespace VectorMathTests
 
         static int Main(string[] args)
         {
+            int returnVal = Pass;
+            
             if (Vector2Ctors() != 100 || Vector3Ctors() != 100 || Vector4Ctors() != 100)
-                return 0;
-            return 100;
+            {
+                returnVal = Fail;
+            }
+
+            JitLog jitLog = new JitLog();
+            if (!jitLog.Check("System.Numerics.Vector2:.ctor(float,float)")) returnVal = Fail;
+            if (!jitLog.Check("System.Numerics.Vector3:.ctor(float,float,float)")) returnVal = Fail;
+            if (!jitLog.Check("System.Numerics.Vector4:.ctor(float,float,float,float)")) returnVal = Fail;
+            jitLog.Dispose();
+
+            return returnVal;
         }
     }
 }

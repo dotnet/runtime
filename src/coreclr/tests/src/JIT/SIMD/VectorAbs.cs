@@ -81,6 +81,22 @@ internal partial class VectorTest
         if (Vector2Test.VectorAbs() != Pass) returnVal = Fail;
         if (VectorAbsTest<ushort>.VectorAbs((ushort)0xffff, (ushort)0xffff) != Pass) returnVal = Fail;
         if (VectorAbsTest<byte>.VectorAbs((byte)0xff, (byte)0xff) != Pass) returnVal = Fail;
+        if (VectorAbsTest<uint>.VectorAbs(0x41000000u, 0x41000000u) != Pass) returnVal = Fail;
+        if (VectorAbsTest<ulong>.VectorAbs(0x4100000000000000ul, 0x4100000000000000ul) != Pass) returnVal = Fail;
+
+        JitLog jitLog = new JitLog();
+        if (!jitLog.Check("Abs", "Single")) returnVal = Fail;
+        if (!jitLog.Check("Abs", "Double")) returnVal = Fail;
+        // Abs is not an intrinsic for Int32 and Int64, but IS for UInt32 and UInt64
+        if (!jitLog.Check("System.Numerics.Vector4:Abs")) returnVal = Fail;
+        if (!jitLog.Check("System.Numerics.Vector3:Abs")) returnVal = Fail;
+        if (!jitLog.Check("System.Numerics.Vector2:Abs")) returnVal = Fail;
+        if (!jitLog.Check("Abs", "UInt16")) returnVal = Fail;
+        if (!jitLog.Check("Abs", "Byte")) returnVal = Fail;
+        if (!jitLog.Check("Abs", "UInt32")) returnVal = Fail;
+        if (!jitLog.Check("Abs", "UInt64")) returnVal = Fail;
+        jitLog.Dispose();
+
         return returnVal;
     }
 }

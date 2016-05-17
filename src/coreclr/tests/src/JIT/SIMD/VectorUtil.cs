@@ -5,6 +5,7 @@
 
 using System;
 using System.Numerics;
+using System.IO;
 
 internal partial class VectorTest
 {
@@ -211,5 +212,142 @@ internal partial class VectorTest
             result[i] = GetValueFromInt<T>(data);
         }
         return result;
+    }
+
+}
+
+class JitLog : IDisposable
+{
+    FileStream      fileStream;
+    bool            simdIntrinsicsSupported;
+
+    private static String GetLogFileName()
+    {
+        String jitLogFileName = Environment.GetEnvironmentVariable("COMPlus_JitFuncInfoLogFile");
+        return jitLogFileName;
+    }
+
+    public JitLog()
+    {
+        fileStream = null;
+        simdIntrinsicsSupported = Vector.IsHardwareAccelerated;
+        String jitLogFileName = GetLogFileName();
+        if (jitLogFileName == null)
+        {
+            Console.WriteLine("No JitLogFile");
+            return;
+        }
+        if (!File.Exists(jitLogFileName))
+        {
+            Console.WriteLine("JitLogFile " + jitLogFileName + " not found.");
+            return;
+        }
+        File.Copy(jitLogFileName, "Temp.log", true);
+        fileStream = new FileStream("Temp.log", FileMode.Open, FileAccess.Read, FileShare.Read);
+    }
+
+    public void Dispose()
+    {
+        if (fileStream != null)
+        {
+            fileStream.Dispose();
+        }
+    }
+    public bool IsEnabled()
+    {
+        return (fileStream != null);
+    }
+
+    //------------------------------------------------------------------------
+    // Check: Check to see whether 'method' was recognized as an intrinsic by the JIT.
+    //
+    // Arguments:
+    //    method - The method name, as a string
+    //
+    // Return Value:
+    //    If the JitLog is not enabled (either the environment variable is not set,
+    //    or the file was not found, e.g. if the JIT doesn't support it):
+    //     - Returns true
+    //    If SIMD intrinsics are enabled:
+    //     - Returns true if the method was NOT compiled, otherwise false
+    //    Else (if SIMD intrinsics are NOT enabled):
+    //     - Returns true.
+    //       Note that it might be useful to return false if the method was not compiled,
+    //       but it will not be logged as compiled if it is inlined.
+    //
+    // Assumptions:
+    //    The JitLog constructor queries Vector.IsHardwareAccelerated to determine
+    //    if SIMD intrinsics are enabled, and depends on its correctness.
+    //
+    // Notes:
+    //    It searches for the string verbatim. If 'method' is not fully qualified
+    //    or its signature is not provided, it may result in false matches.
+    //
+    // Example:
+    //    CheckJitLog("System.Numerics.Vector4:op_Addition(struct,struct):struct");
+    //
+    public bool Check(String method)
+    {
+        // Console.WriteLine("Checking for " + method + ":");
+        if (!IsEnabled())
+        {
+            Console.WriteLine("JitLog not enabled.");
+            return true;
+        }
+        try
+        {
+            fileStream.Position = 0;
+            StreamReader reader = new StreamReader(fileStream);
+            bool methodFound = false;
+            while ((reader.Peek() >= 0) && (methodFound == false))
+            {
+                String s = reader.ReadLine();
+                if (s.IndexOf(method) != -1)
+                {
+                    methodFound = true;
+                }
+            }
+            if (simdIntrinsicsSupported && methodFound)
+            {
+                Console.WriteLine("Method " + method + " was compiled but should not have been\n");
+                return false;
+            }
+            // Useful when developing / debugging just to be sure that we reached here:
+            // Console.WriteLine(method + ((methodFound) ? " WAS COMPILED" : " WAS NOT COMPILED"));
+            return true;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("Error checking JitLogFile: " + e.Message);
+            return false;
+        }
+    }
+
+    // Check: Check to see Vector<'elementType'>:'method' was recognized as an
+    //        intrinsic by the JIT.
+    //
+    // Arguments:
+    //    method - The method name, without its containing type (which is Vector<T>)
+    //    elementType - The type with which Vector<T> is instantiated.
+    //
+    // Return Value:
+    //    See the other overload, above.
+    //
+    // Assumptions:
+    //    The JitLog constructor queries Vector.IsHardwareAccelerated to determine
+    //    if SIMD intrinsics are enabled, and depends on its correctness.
+    //
+    // Notes:
+    //    It constructs the search string based on the way generic types are currently
+    //    dumped by the CLR. If the signature is not provided for the method, it
+    //    may result in false matches.
+    //
+    // Example:
+    //    CheckJitLog("op_Addition(struct,struct):struct", "Single");
+    //
+    public bool Check(String method, String elementType)
+    {
+        String checkString = "System.Numerics.Vector`1[" + elementType + "][System." + elementType + "]:" + method;
+        return Check(checkString);
     }
 }
