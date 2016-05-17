@@ -4113,8 +4113,16 @@ DWORD ProfToEEInterfaceImpl::GetModuleFlags(Module * pModule)
     }
     else
     {
-        // Not NGEN.
-
+#ifdef FEATURE_READYTORUN 
+        // pModule->HasNativeImage() returns false for ReadyToRun images
+        if (pModule->IsReadyToRun())
+        {
+            // Ready To Run
+            dwRet |= (COR_PRF_MODULE_DISK | COR_PRF_MODULE_NGEN);
+        }
+#endif
+        // Not NGEN or ReadyToRun.
+	    
         if (pPEFile->HasOpenedILimage())
         {
             PEImage * pILImage = pPEFile->GetOpenedILimage();
