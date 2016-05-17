@@ -104,6 +104,13 @@ internal partial class VectorTest
         int returnVal = Pass;
 
         if (VectorInitNTest.VectorInitN(0.5f, -0.5f, 0f, 1.0f) == Fail) returnVal = Fail;
+
+        JitLog jitLog = new JitLog();
+        if (!jitLog.Check("System.Numerics.Vector2:.ctor(float,float)")) returnVal = Fail;
+        if (!jitLog.Check("System.Numerics.Vector3:.ctor(float,float,float)")) returnVal = Fail;
+        if (!jitLog.Check("System.Numerics.Vector4:.ctor(float,float,float,float)")) returnVal = Fail;
+        jitLog.Dispose();
+
         return returnVal;
     }
 }
