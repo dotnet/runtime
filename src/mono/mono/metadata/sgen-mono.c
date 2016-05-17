@@ -2726,7 +2726,7 @@ sgen_client_log_timing (GGTimingInfo *info, mword last_major_num_sections, mword
 	full_timing_buff [0] = '\0';
 
 	if (!info->is_overflow)
-	        sprintf (full_timing_buff, "total %.2fms, bridge %.2fms", info->stw_time / 10000.0f, (int)info->bridge_time / 10000.0f);
+	        sprintf (full_timing_buff, "total %.2fms", info->stw_time / 10000.0f);
 	if (info->generation == GENERATION_OLD)
 	        mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_MAJOR%s: (%s) pause %.2fms, %s los %dK/%dK",
 	                info->is_overflow ? "_OVERFLOW" : "",

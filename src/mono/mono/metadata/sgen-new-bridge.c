@@ -65,9 +65,11 @@ typedef struct {
 
 
 /*
+ * Bridge data for a single managed object
+ *
  * FIXME: Optimizations:
  *
- * Don't allocate a scrs array for just one source.  Most objects have
+ * Don't allocate a srcs array for just one source.  Most objects have
  * just one source, so use the srcs pointer itself.
  */
 typedef struct _HashEntry {
@@ -80,10 +82,12 @@ typedef struct _HashEntry {
 			struct _HashEntry *forwarded_to;
 		} dfs1;
 		struct {
+			// Index in sccs array of SCC this object was folded into
 			int scc_index;
 		} dfs2;
 	} v;
 
+	// "Source" managed objects pointing at this destination
 	DynPtrArray srcs;
 } HashEntry;
 
@@ -92,12 +96,19 @@ typedef struct {
 	double weight;
 } HashEntryWithAccounting;
 
+// The graph of managed objects/HashEntries is reduced to a graph of strongly connected components
 typedef struct _SCC {
 	int index;
 	int api_index;
+
+	// How many bridged objects does this SCC hold references to?
 	int num_bridge_entries;
+
 	gboolean flag;
+
 	/*
+	 * Index in global sccs array of SCCs holding pointers to this SCC
+	 *
 	 * New and old xrefs are typically mutually exclusive.  Only when TEST_NEW_XREFS is
 	 * enabled we do both, and compare the results.  This should only be done for
 	 * debugging, obviously.
@@ -110,6 +121,7 @@ typedef struct _SCC {
 #endif
 } SCC;
 
+// Maps managed objects to corresponding HashEntry stricts
 static SgenHashTable hash_table = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_BRIDGE_HASH_TABLE, INTERNAL_MEM_BRIDGE_HASH_TABLE_ENTRY, sizeof (HashEntry), mono_aligned_addr_hash, NULL);
 
 static guint32 current_time;
