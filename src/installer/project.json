@@ -19,7 +19,7 @@
     "FluentAssertions": "4.0.0",
     "moq.netcore": "4.4.0-beta8",
     "xunit": "2.1.0",
-    "dotnet-test-xunit": "1.0.0-rc2-173361-36"
+    "dotnet-test-xunit": "1.0.0-rc2-192208-24"
   },
   "frameworks": {
     "netcoreapp1.0": {
