@@ -38,6 +38,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Ctors.cs" />
+    <Compile Include="VectorUtil.cs" />
   </ItemGroup>
   <!--  <PropertyGroup>
     <ProjectJson>$(JitPackagesConfigFileDirectory)threading+thread\project.json</ProjectJson>

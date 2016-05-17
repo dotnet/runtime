@@ -1,0 +1,21 @@
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\dir.props" />
+
+  <PropertyGroup>
+    <CLRTestBatchPreCommands>
+      <![CDATA[
+$(CLRTestBatchPreCommands)
+set COMPlus_JitFuncInfoLogFile=SIMD.log
+if EXIST SIMD.log (del SIMD.log)
+]]>
+    </CLRTestBatchPreCommands>
+    <BashCLRTestPreCommands>
+      <![CDATA[
+$(BashCLRTestPreCommands)
+export COMPlus_JitFuncInfoLogFile=SIMD.log
+rm -f SIMD.log
+]]>
+    </BashCLRTestPreCommands>
+  </PropertyGroup>
+
+</Project>
