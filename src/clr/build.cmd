@@ -53,7 +53,7 @@ set __SkipNativeBuild=
 set __SkipTestBuild=
 set __BuildSequential=
 set __SkipRestore=
-set __SkipNuget=
+set __SkipBuildPackages=
 set __msbuildCleanBuildArgs=
 set __msbuildExtraArgs=
 set __SignTypeReal=
@@ -116,7 +116,7 @@ if /i "%1" == "skipmscorlib"        (set __SkipCoreLibBuild=1&shift&goto Arg_Loo
 if /i "%1" == "skipnative"          (set __SkipNativeBuild=1&shift&goto Arg_Loop)
 if /i "%1" == "skiptests"           (set __SkipTestBuild=1&shift&goto Arg_Loop)
 if /i "%1" == "skiprestore"         (set __SkipRestore=1&shift&goto Arg_Loop)
-if /i "%1" == "skipnuget"           (set __SkipNuget=1&shift&goto Arg_Loop)
+if /i "%1" == "skipbuildpackages"   (set __SkipBuildPackages=1&shift&goto Arg_Loop)
 if /i "%1" == "sequential"          (set __BuildSequential=1&shift&goto Arg_Loop)
 if /i "%1" == "disableoss"          (set __SignTypeReal="/p:SignType=real"&shift&goto Arg_Loop)
 if /i "%1" == "priority"            (set __TestPriority=%2&set __PassThroughArgs=%__PassThroughArgs% %2&shift&shift&goto Arg_Loop)
@@ -479,7 +479,7 @@ if NOT errorlevel 0 (
 
 :GenerateNuget
 if /i "%__BuildArch%" =="arm64" goto :SkipNuget
-if /i "%__SkipNuget%" == 1 goto :SkipNuget
+if /i "%__SkipBuildPackages%" == 1 goto :SkipNuget
 
 set "__BuildLog=%__LogsDir%\Nuget_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
 set "__BuildWrn=%__LogsDir%\Nuget_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
@@ -689,7 +689,7 @@ echo skipmscorlib: skip building System.Private.CoreLib ^(default: System.Privat
 echo skipnative: skip building native components ^(default: native components are built^).
 echo skiptests: skip building tests ^(default: tests are built^).
 echo skiprestore: skip restoring packages ^(default: packages are restored during build^).
-echo skipnuget: skip building nuget packages ^(default: packages are built^).
+echo skipbuildpackages: skip building nuget packages ^(default: packages are built^).
 echo disableoss: Disable Open Source Signing for System.Private.CoreLib.
 echo toolset_dir ^<dir^> : set the toolset directory -- Arm64 use only. Required for Arm64 builds.
 echo.

@@ -30,6 +30,8 @@ echo Publishes the NuGet packages to the specified location.
 echo For publishing to Azure the following properties are required.
 echo   /p:CloudDropAccountName="account name"
 echo   /p:CloudDropAccessToken="access token"
-echo   /p:__BuildType="Configuration Group"
+echo   /p:__BuildType="Configuration"
 echo   /p:__BuildArch="Architecture"
+echo Architecture can be x64, x86, arm, or arm64
+echo Configuration can be Release, Debug, or Checked
 exit /b
