@@ -4,7 +4,7 @@
 
 using System.Net.Test.Common;
 using System.Threading;
-
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Net.Sockets.Tests
@@ -53,6 +53,27 @@ namespace System.Net.Sockets.Tests
             udpClient.BeginSend(sendBytes, sendBytes.Length, remoteServer, new AsyncCallback(AsyncCompleted), udpClient);
 
             Assert.True(_waitHandle.WaitOne(Configuration.PassingTestTimeout), "Timed out while waiting for connection");
+        }
+
+        [Fact]
+        public void Client_Idempotent()
+        {
+            using (var c = new UdpClient())
+            {
+                Socket client = c.Client;
+                Assert.NotNull(client);
+                Assert.Same(client, c.Client);
+            }
+        }
+
+        [ActiveIssue(4968)]    
+        [Fact]    
+        public async Task ConnectAsync_Success()
+        {
+            using (var c = new UdpClient())
+            {
+                await c.Client.ConnectAsync("114.114.114.114", 53);
+            }
         }
 
         private void AsyncCompleted(IAsyncResult ar)
