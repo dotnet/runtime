@@ -18,7 +18,6 @@ namespace System.Net.NetworkInformation
         protected Dictionary<IPAddress, IPAddress> _netMasks = new Dictionary<IPAddress, IPAddress>();
         // If this is an ipv6 device, contains the Scope ID.
         protected uint? _ipv6ScopeId = null;
-        private string _id;
 
         protected UnixNetworkInterface(string name)
         {
@@ -97,7 +96,6 @@ namespace System.Net.NetworkInformation
             PhysicalAddress physicalAddress = new PhysicalAddress(macAddress);
 
             _index = llAddr->InterfaceIndex;
-            _id = _index.ToString();
             _physicalAddress = physicalAddress;
             _networkInterfaceType = (NetworkInterfaceType)llAddr->HardwareType;
         }
