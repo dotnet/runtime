@@ -10,11 +10,6 @@
   <ItemGroup>
     <Compile Include="System.ComponentModel.TypeConverter.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'==''">
-    <ProjectReference Include="..\..\System.ComponentModel.Primitives\src\System.ComponentModel.Primitives.csproj">
-      <Name>System.ComponentModel.TypeConverter.Primitives</Name>
-    </ProjectReference>
-  </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
