@@ -4,6 +4,8 @@
 
 #include "pal_pkcs12.h"
 
+#include <openssl/err.h>
+
 extern "C" PKCS12* CryptoNative_DecodePkcs12(const uint8_t* buf, int32_t len)
 {
     if (!buf || !len)
@@ -45,5 +47,14 @@ extern "C" int32_t CryptoNative_EncodePkcs12(PKCS12* p12, uint8_t* buf)
 
 extern "C" int32_t CryptoNative_Pkcs12Parse(PKCS12* p12, const char* pass, EVP_PKEY** pkey, X509** cert, X509Stack** ca)
 {
-    return PKCS12_parse(p12, pass, pkey, cert, ca);
+    int32_t ret = PKCS12_parse(p12, pass, pkey, cert, ca);
+
+    if (ret)
+    {
+        // PKCS12_parse's main loop can put a lot of spurious errors into the
+        // error queue.  If we're returning success, clear the error queue.
+        ERR_clear_error();
+    }
+
+    return ret;
 }
