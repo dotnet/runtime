@@ -9,6 +9,9 @@ namespace System.Security.Cryptography
 {
     public abstract class AsymmetricAlgorithm : IDisposable
     {
+        protected int KeySizeValue;
+        protected KeySizes[] LegalKeySizesValue;
+
         protected AsymmetricAlgorithm()
         {
         }
@@ -17,14 +20,14 @@ namespace System.Security.Cryptography
         {
             get
             {
-                return _keySize;
+                return KeySizeValue;
             }
 
             set
             {
                 if (!value.IsLegalSize(this.LegalKeySizes))
                     throw new CryptographicException(SR.Cryptography_InvalidKeySize);
-                _keySize = value;
+                KeySizeValue = value;
                 return;
             }
         }
@@ -33,9 +36,8 @@ namespace System.Security.Cryptography
         {
             get
             {
-                // Desktop compat: Unless derived classes set the protected field "LegalKeySizesValue" to a non-null value, a NullReferenceException is what you get.
-                // In the Win8P profile, the "LegalKeySizesValue" field has been removed. So derived classes must override this property for the class to be any of any use.
-                throw new NullReferenceException();
+                // Desktop compat: No null check is performed
+                return (KeySizes[])LegalKeySizesValue.Clone();
             }
         }
 
@@ -49,6 +51,5 @@ namespace System.Security.Cryptography
         {
             return;
         }
-        private int _keySize;
     }
 }
