@@ -8,7 +8,7 @@ Getting Started
 
 If you are looking at getting your feet wet with some simple (but still beneficial) changes, check out _up for grabs_ issues on the [CoreCLR](https://github.com/dotnet/coreclr/labels/up for grabs) and [CoreFX](https://github.com/dotnet/corefx/labels/up for grabs) repos. 
 
-For new ideas, please always start with an issue before starting development of an implementation. See [project priorities](project-priorities.md) to understand the Microsoft team's approach to engagement on general improvements to the product. Use [CODE_OWNERS.TXT](https://github.com/dotnet/coreclr/blob/CODE_OWNERS.TXT) to find relevant maintainers and @ mention them to ask for feedback on your issue.
+For new ideas, please always start with an issue before starting development of an implementation. See [project priorities](project-priorities.md) to understand the Microsoft team's approach to engagement on general improvements to the product. Use [CODE_OWNERS.TXT](https://github.com/dotnet/coreclr/blob/master/CODE_OWNERS.TXT) to find relevant maintainers and @ mention them to ask for feedback on your issue.
 
 You do not need to file an issue for trivial changes (e.g. typo fixes). Just create a PR for those changes.
 
