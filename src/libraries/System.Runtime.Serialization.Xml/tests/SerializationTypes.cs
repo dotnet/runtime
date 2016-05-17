@@ -2885,3 +2885,10 @@ public class RecursiveCollection3 : List<RecursiveCollection>
 {
 
 }
+
+[XmlRoot()]
+public class TypeWithXmlNodeArrayProperty
+{
+    [XmlText]
+    public XmlNode[] CDATA { get; set; }
+}
