@@ -10,10 +10,15 @@ namespace System.Net.Sockets
     {
         private void InitializeClientSocket()
         {
-            _clientSocket = CreateSocket();
+            Client = CreateSocket();
         }
 
-        private Socket Client { get { return _clientSocket; } }
+        // Used by the class to provide the underlying network socket.
+        private Socket ClientCore
+        {
+            get { return _clientSocket; }
+            set { _clientSocket = value; }
+        }
 
         private int AvailableCore { get { return _clientSocket.Available; } }
 

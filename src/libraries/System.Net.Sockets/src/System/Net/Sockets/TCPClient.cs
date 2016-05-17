@@ -72,6 +72,22 @@ namespace System.Net.Sockets
 
         public int Available { get { return AvailableCore; } }
 
+        // Used by the class to provide the underlying network socket.
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)] // TODO: Remove once https://github.com/dotnet/corefx/issues/5868 is addressed.
+        public Socket Client
+        {
+            get
+            {
+                Socket s = ClientCore;
+                Debug.Assert(s != null);
+                return s;
+            }
+            set
+            {
+                ClientCore = value;
+            }
+        }
+
         public bool Connected { get { return ConnectedCore; } }
 
         public bool ExclusiveAddressUse
@@ -150,7 +166,7 @@ namespace System.Net.Sockets
 
             if (_dataStream == null)
             {
-                _dataStream = new NetworkStream(_clientSocket, true);
+                _dataStream = new NetworkStream(Client, true);
             }
 
             if (NetEventSource.Log.IsEnabled())
