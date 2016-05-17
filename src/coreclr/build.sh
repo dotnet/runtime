@@ -294,8 +294,6 @@ build_mscorlib()
     fi 
 }
 
-
-
 generate_NugetPackages()
 {
     # We can only generate nuget package if we also support building mscorlib as part of this build.
