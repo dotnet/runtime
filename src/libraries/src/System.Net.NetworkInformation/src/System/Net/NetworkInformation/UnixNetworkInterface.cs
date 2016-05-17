@@ -24,11 +24,11 @@ namespace System.Net.NetworkInformation
             _name = name;
         }
 
-        public override string Id { get { return _name; } }
+        public sealed override string Id { get { return _name; } }
 
         public sealed override string Name { get { return _name; } }
 
-        public override string Description { get { return _name; } }
+        public sealed override string Description { get { return _name; } }
 
         public sealed override NetworkInterfaceType NetworkInterfaceType { get { return _networkInterfaceType; } }
 

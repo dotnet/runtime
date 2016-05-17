@@ -93,8 +93,6 @@ namespace System.Net.NetworkInformation
 
         public override long Speed { get { return _speed; } }
 
-        public override string Description { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
-
         public override bool SupportsMulticast { get { return _ipProperties.MulticastAddresses.Count > 0; } }
 
         public override bool IsReceiveOnly { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
