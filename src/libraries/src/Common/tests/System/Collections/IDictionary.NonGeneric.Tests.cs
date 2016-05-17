@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using Xunit;
 
@@ -81,6 +79,22 @@ namespace System.Collections.Tests
             return missingKey;
         }
 
+        /// <summary>
+        /// Used in IDictionary_NonGeneric_Values_ModifyingTheDictionaryUpdatesTheCollection and 
+        /// IDictionary_NonGeneric_Keys_ModifyingTheDictionaryUpdatesTheCollection.
+        /// Some collections (e.g ConcurrentDictionary) use iterators in the Keys and Values properties,
+        /// and do not respond to updates in the base collection.
+        /// </summary>
+        protected virtual bool IDictionary_NonGeneric_Keys_Values_ModifyingTheDictionaryUpdatesTheCollection => true;
+
+        /// <summary>
+        /// Used in IDictionary_NonGeneric_Values_Enumeration_ParentDictionaryModifiedInvalidatesEnumerator and 
+        /// IDictionary_NonGeneric_Keys_Enumeration_ParentDictionaryModifiedInvalidatesEnumerator.
+        /// Some collections (e.g. ConcurrentDictionary) do not throw an InvalidOperationException
+        /// when enumerating the Keys or Values property and the parent is modified.
+        /// </summary>
+        protected virtual bool IDictionary_NonGeneric_Keys_Values_ParentDictionaryModifiedInvalidates => true;
+
         #endregion
 
         #region ICollection Helper Methods
@@ -90,10 +104,11 @@ namespace System.Collections.Tests
             return NonGenericIDictionaryFactory();
         }
 
-        protected override bool DuplicateValuesAllowed { get { return false; } }
-        protected override bool NullAllowed { get { return false; } }
-        protected override bool Enumerator_Current_UndefinedOperation_Throws { get { return true; } }
-        protected override bool ICollection_NonGeneric_CopyTo_ArrayOfEnumType_ThrowsArgumentException { get { return true; } }
+        protected override bool DuplicateValuesAllowed => false;
+        protected override bool NullAllowed => false;
+        protected override bool Enumerator_Current_UndefinedOperation_Throws => true;
+        protected override Type ICollection_NonGeneric_CopyTo_ArrayOfEnumType_ThrowType => typeof(ArgumentException);
+
         protected override void AddToCollection(ICollection collection, int numberOfItemsToAdd)
         {
             Assert.False(IsReadOnly);
@@ -148,6 +163,13 @@ namespace System.Collections.Tests
                 };
             }
         }
+
+        /// <summary>
+        /// Used in IDictionary_NonGeneric_Keys_Enumeration_Reset and IDictionary_NonGeneric_Values_Enumeration_Reset.
+        /// Typically, the support for Reset in enumerators for the Keys and Values depend on the support for it
+        /// in the parent dictionary. However, some collections (e.g. ConcurrentDictionary) don't.
+        /// </summary>
+        protected virtual bool IDictionary_NonGeneric_Keys_Values_Enumeration_ResetImplemented => ResetImplemented;
 
         #endregion
 
@@ -306,8 +328,16 @@ namespace System.Collections.Tests
         {
             IDictionary dictionary = NonGenericIDictionaryFactory(count);
             ICollection keys = dictionary.Keys;
+            int previousCount = keys.Count;
             dictionary.Clear();
-            Assert.Empty(keys);
+            if (IDictionary_NonGeneric_Keys_Values_ModifyingTheDictionaryUpdatesTheCollection)
+            {
+                Assert.Empty(keys);
+            }
+            else
+            {
+                Assert.Equal(previousCount, keys.Count);
+            }
         }
 
         [Theory]
@@ -318,9 +348,20 @@ namespace System.Collections.Tests
             ICollection keys = dictionary.Keys;
             IEnumerator keysEnum = keys.GetEnumerator();
             dictionary.Add(GetNewKey(dictionary), CreateTValue(3432));
-            Assert.Throws<InvalidOperationException>(() => keysEnum.MoveNext());
-            Assert.Throws<InvalidOperationException>(() => keysEnum.Reset());
-            Assert.Throws<InvalidOperationException>(() => keysEnum.Current);
+            if (IDictionary_NonGeneric_Keys_Values_ParentDictionaryModifiedInvalidates)
+            {
+                Assert.Throws<InvalidOperationException>(() => keysEnum.MoveNext());
+                Assert.Throws<InvalidOperationException>(() => keysEnum.Reset());
+            }
+            else
+            {
+                keysEnum.MoveNext();
+                if (count > 0)
+                {
+                    var cur = keysEnum.Current;
+                }
+                keysEnum.Reset();
+            }
         }
 
         [Theory]
@@ -328,7 +369,7 @@ namespace System.Collections.Tests
         public void IDictionary_NonGeneric_Keys_Enumeration_Reset(int count)
         {
             IEnumerator enumerator = NonGenericIDictionaryFactory(count).Keys.GetEnumerator();
-            if (ResetImplemented)
+            if (IDictionary_NonGeneric_Keys_Values_Enumeration_ResetImplemented)
                 enumerator.Reset();
             else
                 Assert.Throws<NotSupportedException>(() => enumerator.Reset());
@@ -373,8 +414,16 @@ namespace System.Collections.Tests
         {
             IDictionary dictionary = NonGenericIDictionaryFactory(count);
             ICollection values = dictionary.Values;
+            int previousCount = values.Count;
             dictionary.Clear();
-            Assert.Empty(values);
+            if (IDictionary_NonGeneric_Keys_Values_ModifyingTheDictionaryUpdatesTheCollection)
+            {
+                Assert.Empty(values);
+            }
+            else
+            {
+                Assert.Equal(previousCount, values.Count);
+            }
         }
 
         [Theory]
@@ -385,9 +434,21 @@ namespace System.Collections.Tests
             ICollection values = dictionary.Values;
             IEnumerator valuesEnum = values.GetEnumerator();
             dictionary.Add(GetNewKey(dictionary), CreateTValue(3432));
-            Assert.Throws<InvalidOperationException>(() => valuesEnum.MoveNext());
-            Assert.Throws<InvalidOperationException>(() => valuesEnum.Reset());
-            Assert.Throws<InvalidOperationException>(() => valuesEnum.Current);
+            if (IDictionary_NonGeneric_Keys_Values_ParentDictionaryModifiedInvalidates)
+            {
+                Assert.Throws<InvalidOperationException>(() => valuesEnum.MoveNext());
+                Assert.Throws<InvalidOperationException>(() => valuesEnum.Reset());
+                Assert.Throws<InvalidOperationException>(() => valuesEnum.Current);
+            }
+            else
+            {
+                valuesEnum.MoveNext();
+                if (count > 0)
+                {
+                    var cur = valuesEnum.Current;
+                }
+                valuesEnum.Reset();
+            }
         }
 
         [Theory]
@@ -395,7 +456,7 @@ namespace System.Collections.Tests
         public void IDictionary_NonGeneric_Values_Enumeration_Reset(int count)
         {
             IEnumerator enumerator = NonGenericIDictionaryFactory(count).Values.GetEnumerator();
-            if (ResetImplemented)
+            if (IDictionary_NonGeneric_Keys_Values_Enumeration_ResetImplemented)
                 enumerator.Reset();
             else
                 Assert.Throws<NotSupportedException>(() => enumerator.Reset());
@@ -622,14 +683,38 @@ namespace System.Collections.Tests
         public void IDictionary_NonGeneric_IDictionaryEnumerator_Current_FromStartToFinish(int count)
         {
             IDictionaryEnumerator enumerator = NonGenericIDictionaryFactory(count).GetEnumerator();
-            object current, key, value, entry;
-            while (enumerator.MoveNext())
+            for (int i = 0; i < 2; i++)
             {
-                current = enumerator.Current;
-                key = enumerator.Key;
-                value = enumerator.Value;
-                entry = enumerator.Entry;
+                int counter = 0;
+                while (enumerator.MoveNext())
+                {
+                    object current = enumerator.Current;
+                    object key = enumerator.Key;
+                    object value = enumerator.Value;
+                    DictionaryEntry entry = enumerator.Entry;
+                    Assert.Equal(current, entry);
+                    Assert.Equal(key, entry.Key);
+                    Assert.Equal(value, entry.Value);
+                    counter++;
+                }
+                Assert.Equal(count, counter);
+                if (!ResetImplemented)
+                {
+                    break;
+                }
+                enumerator.Reset();
             }
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void IDictionary_NonGeneric_IDictionaryEnumerator_Reset_BeforeIteration_Support(int count)
+        {
+            IDictionaryEnumerator enumerator = NonGenericIDictionaryFactory(count).GetEnumerator();
+            if (ResetImplemented)
+                enumerator.Reset();
+            else
+                Assert.Throws<NotSupportedException>(() => enumerator.Reset());
         }
 
         [Theory]

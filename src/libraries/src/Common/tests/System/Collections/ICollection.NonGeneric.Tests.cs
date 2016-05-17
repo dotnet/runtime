@@ -34,11 +34,12 @@ namespace System.Collections.Tests
             return collection;
         }
 
-        protected virtual bool DuplicateValuesAllowed { get { return true; } }
-        protected virtual bool IsReadOnly { get { return false; } }
-        protected virtual bool NullAllowed { get { return true; } }
-        protected virtual bool ExpectedIsSynchronized { get { return false; } }
-        protected virtual IEnumerable<object> InvalidValues { get { return new object[] { }; } }
+        protected virtual bool DuplicateValuesAllowed => true;
+        protected virtual bool IsReadOnly => false;
+        protected virtual bool NullAllowed => true;
+        protected virtual bool ExpectedIsSynchronized => false;
+        protected virtual IEnumerable<object> InvalidValues => new object[0];
+
         protected abstract void AddToCollection(ICollection collection, int numberOfItemsToAdd);
 
         /// <summary>
@@ -46,27 +47,27 @@ namespace System.Collections.Tests
         /// on an Array of Enum values. Some implementations special-case for this and throw an ArgumentException,
         /// while others just throw an InvalidCastExcepton.
         /// </summary>
-        protected virtual bool ICollection_NonGeneric_CopyTo_ArrayOfEnumType_ThrowsArgumentException { get { return false; } }
+        protected virtual Type ICollection_NonGeneric_CopyTo_ArrayOfEnumType_ThrowType => typeof(InvalidCastException);
 
         /// <summary>
         /// Used for the ICollection_NonGeneric_CopyTo_ArrayOfIncorrectReferenceType test where we try to call CopyTo
         /// on an Array of different reference values. Some implementations special-case for this and throw an ArgumentException,
-        /// while others just throw an InvalidCastExcepton.
+        /// while others just throw an InvalidCastExcepton or an ArrayTypeMismatchException.
         /// </summary>
-        protected virtual bool ICollection_NonGeneric_CopyTo_ArrayOfIncorrectReferenceType_ThrowsArgumentException { get { return true; } }
+        protected virtual Type ICollection_NonGeneric_CopyTo_ArrayOfIncorrectReferenceType_ThrowType => typeof(ArgumentException);
 
         /// <summary>
         /// Used for the ICollection_NonGeneric_CopyTo_ArrayOfIncorrectValueType test where we try to call CopyTo
         /// on an Array of different value values. Some implementations special-case for this and throw an ArgumentException,
         /// while others just throw an InvalidCastExcepton.
         /// </summary>
-        protected virtual bool ICollection_NonGeneric_CopyTo_ArrayOfIncorrectValueType_ThrowsArgumentException { get { return true; } }
+        protected virtual Type ICollection_NonGeneric_CopyTo_ArrayOfIncorrectValueType_ThrowType => typeof(ArgumentException);
 
         /// <summary>
         /// Used for ICollection_NonGeneric_SyncRoot tests. Some implementations (e.g. ConcurrentDictionary)
-        /// don't support the SyncRoot property of an ICollection and throw a NotSupportedException
+        /// don't support the SyncRoot property of an ICollection and throw a NotSupportedException.
         /// </summary>
-        public virtual bool ICollection_NonGeneric_SupportsSyncRoot => true;
+        protected virtual bool ICollection_NonGeneric_SupportsSyncRoot => true;
 
         #endregion
 
@@ -199,14 +200,7 @@ namespace System.Collections.Tests
                 ICollection collection = NonGenericICollectionFactory(count);
                 float[] array = new float[count * 3 / 2];
 
-                if (ICollection_NonGeneric_CopyTo_ArrayOfIncorrectValueType_ThrowsArgumentException)
-                {
-                    Assert.Throws<ArgumentException>(() => collection.CopyTo(array, 0));
-                }
-                else
-                {
-                    Assert.Throws<InvalidCastException>(() => collection.CopyTo(array, 0));
-                }
+                Assert.Throws(ICollection_NonGeneric_CopyTo_ArrayOfIncorrectValueType_ThrowType, () => collection.CopyTo(array, 0));
             }
         }
 
@@ -218,14 +212,7 @@ namespace System.Collections.Tests
             {
                 ICollection collection = NonGenericICollectionFactory(count);
                 StringBuilder[] array = new StringBuilder[count * 3 / 2];
-                if (ICollection_NonGeneric_CopyTo_ArrayOfIncorrectReferenceType_ThrowsArgumentException)
-                {
-                    Assert.Throws<ArgumentException>(() => collection.CopyTo(array, 0));
-                }
-                else
-                {
-                    Assert.Throws<InvalidCastException>(() => collection.CopyTo(array, 0));
-                }
+                Assert.Throws(ICollection_NonGeneric_CopyTo_ArrayOfIncorrectReferenceType_ThrowType, () => collection.CopyTo(array, 0));
             }
         }
 
@@ -237,10 +224,7 @@ namespace System.Collections.Tests
             if (count > 0 && count < enumArr.Length)
             {
                 ICollection collection = NonGenericICollectionFactory(count);
-                if (ICollection_NonGeneric_CopyTo_ArrayOfEnumType_ThrowsArgumentException)
-                    Assert.Throws<ArgumentException>(() => collection.CopyTo(enumArr, 0));
-                else
-                    Assert.Throws<InvalidCastException>(() => collection.CopyTo(enumArr, 0));
+                Assert.Throws(ICollection_NonGeneric_CopyTo_ArrayOfEnumType_ThrowType, () => collection.CopyTo(enumArr, 0));
             }
         }
 

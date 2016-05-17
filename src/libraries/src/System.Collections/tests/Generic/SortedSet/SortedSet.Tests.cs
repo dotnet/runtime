@@ -8,7 +8,7 @@ namespace System.Collections.Tests
 {
     public class SortedSet_ICollection_NonGeneric_Tests : ICollection_NonGeneric_Tests
     {
-        protected override bool ICollection_NonGeneric_CopyTo_ArrayOfEnumType_ThrowsArgumentException { get { return true; } }
+        protected override Type ICollection_NonGeneric_CopyTo_ArrayOfEnumType_ThrowType => typeof(ArgumentException);
         protected override bool Enumerator_Current_UndefinedOperation_Throws { get { return true; } }
 
         protected override void AddToCollection(ICollection collection, int numberOfItemsToAdd)
