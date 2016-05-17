@@ -139,7 +139,6 @@ BOOL MethodDesc::IsIntrospectionOnly()
 }
 
 /*********************************************************************/
-#ifndef FEATURE_CORECLR
 #ifndef DACCESS_COMPILE
 BOOL NDirectMethodDesc::HasDefaultDllImportSearchPathsAttribute()
 {
@@ -172,7 +171,6 @@ BOOL NDirectMethodDesc::HasDefaultDllImportSearchPathsAttribute()
     return (ndirect.m_wFlags  & kDefaultDllImportSearchPathsStatus) != 0;
 }
 #endif //!DACCESS_COMPILE
-#endif // !FEATURE_CORECLR
 
 //*******************************************************************************
 #ifndef DACCESS_COMPILE
@@ -3111,13 +3109,11 @@ void MethodDesc::Save(DataImage *image)
         // Make sure that the marshaling required flag is computed
         pNMD->MarshalingRequired();
         
-#ifndef FEATURE_CORECLR
         if (!pNMD->IsQCall())
         {
             //Cache DefaultImportDllImportSearchPaths attribute.
             pNMD->HasDefaultDllImportSearchPathsAttribute();
         }
-#endif
 
         image->StoreStructure(pNMD->GetWriteableData(),
                                 sizeof(NDirectWriteableData),
