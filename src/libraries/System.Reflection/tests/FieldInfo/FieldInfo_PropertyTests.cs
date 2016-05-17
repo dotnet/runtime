@@ -25,28 +25,25 @@ namespace System.Reflection.Tests
         public static IEnumerable<object[]> TestIsAssemblyAndIsFamily_TestData()
         {
             yield return new object[] { "s_field_Assembly1", false, false };
-            yield return new object[] { "s_field_Assembly2", false, false };
-            yield return new object[] { "Field_Assembly3", false, true };
-            yield return new object[] { "Field_Assembly4", false, false };
-            yield return new object[] { "Field_Assembly5", true, false };
+            yield return new object[] { "Field_Assembly2", false, true };
+            yield return new object[] { "Field_Assembly3", false, false };
+            yield return new object[] { "Field_Assembly4", true, false };
         }
 
         public static IEnumerable<object[]> TestIsFamilyAndAssembly_TestData()
         {
             yield return new object[] { "s_field_FamilyAndAssembly1", false };
-            yield return new object[] { "s_field_FamilyAndAssembly2", false };
+            yield return new object[] { "Field_FamilyAndAssembly2", false };
             yield return new object[] { "Field_FamilyAndAssembly3", false };
             yield return new object[] { "Field_FamilyAndAssembly4", false };
-            yield return new object[] { "Field_FamilyAndAssembly5", false };
         }
 
         public static IEnumerable<object[]> TestIsFamilyOrAssembly_TestData()
         {
             yield return new object[] { "s_field_FamilyOrAssembly1", false };
-            yield return new object[] { "s_field_FamilyOrAssembly2", false };
+            yield return new object[] { "Field_FamilyOrAssembly2", false };
             yield return new object[] { "Field_FamilyOrAssembly3", false };
             yield return new object[] { "Field_FamilyOrAssembly4", false };
-            yield return new object[] { "Field_FamilyOrAssembly5", false };
         }
 
         public static IEnumerable<object[]> TestIsPublicAndIsPrivate_TestData()
@@ -196,35 +193,29 @@ namespace System.Reflection.Tests
 
         private string _privateStr = "_privateStr";        // Field for Reflection
 
-        private static object s_field_Assembly1 = null;				    // without keyword
+        private static object s_field_Assembly1 = null;			// with private keyword
 
-        private static object s_field_Assembly2 = null;			// with private keyword
+        protected static object Field_Assembly2 = null;			// with protected keyword
 
-        protected static object Field_Assembly3 = null;			// with protected keyword
+        public static object Field_Assembly3 = null;			// with public keyword
 
-        public static object Field_Assembly4 = null;			// with public keyword
+        internal static object Field_Assembly4 = null;			// with internal keyword
 
-        internal static object Field_Assembly5 = null;			// with internal keyword
+        private static object s_field_FamilyAndAssembly1 = null;			    // with private keyword
 
-        private static object s_field_FamilyAndAssembly1 = null;						// without keyword
+        protected static object Field_FamilyAndAssembly2 = null;			// with protected keyword
 
-        private static object s_field_FamilyAndAssembly2 = null;			    // with private keyword
+        public static object Field_FamilyAndAssembly3 = null;				// with public keyword
 
-        protected static object Field_FamilyAndAssembly3 = null;			// with protected keyword
+        internal static object Field_FamilyAndAssembly4 = null;				// with internal keyword
 
-        public static object Field_FamilyAndAssembly4 = null;				// with public keyword
+        private static object s_field_FamilyOrAssembly1 = null;			// with private keyword
 
-        internal static object Field_FamilyAndAssembly5 = null;				// with internal keyword
+        protected static object Field_FamilyOrAssembly2 = null;			// with protected keyword
 
-        private static object s_field_FamilyOrAssembly1 = null;				    // without keyword
+        public static object Field_FamilyOrAssembly3 = null;			// with public keyword
 
-        private static object s_field_FamilyOrAssembly2 = null;			// with private keyword
-
-        protected static object Field_FamilyOrAssembly3 = null;			// with protected keyword
-
-        public static object Field_FamilyOrAssembly4 = null;			// with public keyword
-
-        internal static object Field_FamilyOrAssembly5 = null;			// with internal keyword
+        internal static object Field_FamilyOrAssembly4 = null;			// with internal keyword
 
         public readonly int roIntField = 1;
 
