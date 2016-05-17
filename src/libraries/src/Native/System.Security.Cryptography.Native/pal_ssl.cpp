@@ -7,6 +7,7 @@
 
 #include <assert.h>
 #include <string.h>
+#include <openssl/err.h>
 
 static_assert(PAL_SSL_ERROR_NONE == SSL_ERROR_NONE, "");
 static_assert(PAL_SSL_ERROR_SSL == SSL_ERROR_SSL, "");
@@ -413,11 +414,13 @@ err:
 
 extern "C" int32_t CryptoNative_SslWrite(SSL* ssl, const void* buf, int32_t num)
 {
+    ERR_clear_error();
     return SSL_write(ssl, buf, num);
 }
 
 extern "C" int32_t CryptoNative_SslRead(SSL* ssl, void* buf, int32_t num)
 {
+    ERR_clear_error();
     return SSL_read(ssl, buf, num);
 }
 
@@ -428,6 +431,7 @@ extern "C" int32_t CryptoNative_IsSslRenegotiatePending(SSL* ssl)
 
 extern "C" int32_t CryptoNative_SslShutdown(SSL* ssl)
 {
+    ERR_clear_error();
     return SSL_shutdown(ssl);
 }
 
@@ -438,6 +442,7 @@ extern "C" void CryptoNative_SslSetBio(SSL* ssl, BIO* rbio, BIO* wbio)
 
 extern "C" int32_t CryptoNative_SslDoHandshake(SSL* ssl)
 {
+    ERR_clear_error();
     return SSL_do_handshake(ssl);
 }
 
