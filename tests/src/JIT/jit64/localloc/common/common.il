@@ -13,12 +13,12 @@
 .assembly extern mscorlib
 {
 }
-.assembly Common
+.assembly common
 {
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module Common.dll
+.module common.dll
 .custom instance void [mscorlib]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 ) 
 .imagebase 0x00400000
 .subsystem 0x00000003

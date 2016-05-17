@@ -5341,8 +5341,6 @@ void                CodeGen::genCodeForTreeLeaf_GT_JMP(GenTreePtr tree)
     }
 #endif // PROFILING_SUPPORTED
 
-#if INLINE_NDIRECT
-
     /* This code is cloned from the regular processing of GT_RETURN values.  We have to remember to
      * call genPInvokeMethodEpilog anywhere that we have a method return.  We should really
      * generate trees for the PInvoke prolog and epilog so we can remove these special cases.
@@ -5352,8 +5350,6 @@ void                CodeGen::genCodeForTreeLeaf_GT_JMP(GenTreePtr tree)
     {
         genPInvokeMethodEpilog();
     }
-
-#endif
 
     // Make sure register arguments are in their initial registers
     // and stack arguments are put back as well.
@@ -9800,8 +9796,6 @@ void                CodeGen::genCodeForTreeSmpOp(GenTreePtr tree,
 
         case GT_RETURN:
 
-#if INLINE_NDIRECT
-
             // TODO: this should be done AFTER we called exit mon so that
             //       we are sure that we don't have to keep 'this' alive
 
@@ -9813,8 +9807,6 @@ void                CodeGen::genCodeForTreeSmpOp(GenTreePtr tree,
 
                 genPInvokeMethodEpilog();
             }
-
-#endif
 
             /* Is there a return value and/or an exit statement? */
 
@@ -12626,15 +12618,13 @@ void                CodeGen::genCodeForBBlist()
         regSet.rsSetRegsModified(RBM_INT_CALLEE_SAVED & ~RBM_FPBASE);
     }
 
-#if INLINE_NDIRECT
     /* If we have any pinvoke calls, we might potentially trash everything */
 
-    if  (compiler->info.compCallUnmanaged)
+    if (compiler->info.compCallUnmanaged)
     {
         noway_assert(isFramePointerUsed());  // Setup of Pinvoke frame currently requires an EBP style frame
         regSet.rsSetRegsModified(RBM_INT_CALLEE_SAVED & ~RBM_FPBASE);
     }
-#endif // INLINE_NDIRECT
 
     /* Initialize the pointer tracking code */
 
@@ -15361,7 +15351,6 @@ USE_SAR_FOR_CAST:
 
         case GT_RETURN:
 
-#if INLINE_NDIRECT
             /* TODO: 
              * This code is cloned from the regular processing of GT_RETURN values.  We have to remember to
              * call genPInvokeMethodEpilog anywhere that we have a GT_RETURN statement.  We should really
@@ -15379,8 +15368,6 @@ USE_SAR_FOR_CAST:
 
                 genPInvokeMethodEpilog();
             }
-
-#endif
 
 #if CPU_LONG_USES_REGPAIR
             /* There must be a long return value */
@@ -15787,7 +15774,6 @@ void                CodeGen::genCodeForTreeFlt(GenTreePtr tree,
     if (tree->OperGet() == GT_RETURN)
     {
         //Make sure to get ALL THE EPILOG CODE
-#if INLINE_NDIRECT
 
         // TODO: this should be done AFTER we called exit mon so that
         //       we are sure that we don't have to keep 'this' alive
@@ -15800,8 +15786,6 @@ void                CodeGen::genCodeForTreeFlt(GenTreePtr tree,
 
             genPInvokeMethodEpilog();
         }
-
-#endif
 
         //The profiling hook does not trash registers, so it's safe to call after we emit the code for
         //the GT_RETURN tree.
@@ -18958,9 +18942,7 @@ regMaskTP           CodeGen::genCodeForCall(GenTreePtr  call,
 
     unsigned        saveStackLvl;
 
-#if     INLINE_NDIRECT
     BasicBlock  *   returnLabel = DUMMY_INIT(NULL);
-#endif
     LclVarDsc   *   frameListRoot = NULL;
 
     unsigned        savCurIntArgReg;
@@ -19039,8 +19021,6 @@ regMaskTP           CodeGen::genCodeForCall(GenTreePtr  call,
 
     argSize = 0;
 
-#if INLINE_NDIRECT
-
     /* We need to get a label for the return address with the proper stack depth. */
     /* For the callee pops case (the default) that is before the args are pushed. */
 
@@ -19049,8 +19029,6 @@ regMaskTP           CodeGen::genCodeForCall(GenTreePtr  call,
     {
        returnLabel = genCreateTempLabel();
     }
-#endif
-
 
     /*
         Make sure to save the current argument register status
@@ -19070,8 +19048,6 @@ regMaskTP           CodeGen::genCodeForCall(GenTreePtr  call,
         argSize += genPushArgList(call);
     }
 
-#if INLINE_NDIRECT
-
     /* We need to get a label for the return address with the proper stack depth. */
     /* For the caller pops case (cdecl) that is after the args are pushed. */
 
@@ -19083,7 +19059,6 @@ regMaskTP           CodeGen::genCodeForCall(GenTreePtr  call,
         /* Make sure that we now have a label */
         noway_assert(returnLabel != DUMMY_INIT(NULL));
     }
-#endif
 
     if (callType == CT_INDIRECT)
     {
@@ -19139,14 +19114,11 @@ regMaskTP           CodeGen::genCodeForCall(GenTreePtr  call,
 
     regMaskTP       spillRegs = calleeTrashedRegs & regSet.rsMaskUsed;
 
-#if     INLINE_NDIRECT
-
     /* We need to save all GC registers to the InlinedCallFrame.
        Instead, just spill them to temps. */
 
     if (call->gtFlags & GTF_CALL_UNMANAGED)
         spillRegs |= (gcInfo.gcRegGCrefSetCur|gcInfo.gcRegByrefSetCur) & regSet.rsMaskUsed;
-#endif
 
     // Ignore fptrRegs as it is needed only to perform the indirect call
 
@@ -19756,7 +19728,6 @@ regMaskTP           CodeGen::genCodeForCall(GenTreePtr  call,
 #endif
             }
 
-#if INLINE_NDIRECT
             if (call->gtFlags & GTF_CALL_UNMANAGED)
             {
                 //------------------------------------------------------
@@ -19905,7 +19876,6 @@ regMaskTP           CodeGen::genCodeForCall(GenTreePtr  call,
                 // Done with PInvoke calls
                 break;
             }
-#endif // INLINE_NDIRECT
 
             if  (callType == CT_INDIRECT)
             {
@@ -20542,8 +20512,6 @@ regMaskTP           CodeGen::genCodeForCall(GenTreePtr  call,
     }
 #endif // _TARGET_X86_
 
-#if     INLINE_NDIRECT
-
     if (call->gtFlags & GTF_CALL_UNMANAGED)
     {
         genDefineTempLabel(returnLabel);
@@ -20593,11 +20561,10 @@ regMaskTP           CodeGen::genCodeForCall(GenTreePtr  call,
             genDefineTempLabel(esp_check);
         }
     }
-#endif
 
     /* Are we supposed to pop the arguments? */
 
-#if defined(_TARGET_X86_) && defined(INLINE_NDIRECT)
+#if defined(_TARGET_X86_)
     if (call->gtFlags & GTF_CALL_UNMANAGED)
     {
         if ((compiler->opts.eeFlags & CORJIT_FLG_PINVOKE_RESTORE_ESP) ||
@@ -20637,7 +20604,7 @@ regMaskTP           CodeGen::genCodeForCall(GenTreePtr  call,
             }
         }
     }
-#endif // _TARGET_X86_ && INLINE_NDIRECT
+#endif // _TARGET_X86_
 
     if  (call->gtFlags & GTF_CALL_POP_ARGS)
     {
@@ -20714,7 +20681,6 @@ regMaskTP           CodeGen::genCodeForCall(GenTreePtr  call,
         noway_assert(!"unexpected/unhandled fn return type");
     }
 
-#if INLINE_NDIRECT
     // We now have to generate the "call epilog" (if it was a call to unmanaged code).
     /* if it is a call to unmanaged code, frameListRoot must be set */
 
@@ -20732,8 +20698,6 @@ regMaskTP           CodeGen::genCodeForCall(GenTreePtr  call,
             genUpdateRegLife(frameListRoot, isBorn, isDying DEBUGARG(call));
         }
     }
-
-#endif  //INLINE_NDIRECT
 
 #ifdef DEBUG
     if (compiler->opts.compStackCheckOnCall
@@ -21743,8 +21707,6 @@ GenTreePtr Compiler::fgLegacyPerStatementLocalVarLiveness(GenTreePtr startNode, 
                 }
             }
 
-#if INLINE_NDIRECT
-
             // If this is a p/invoke unmanaged call or if this is a tail-call
             // and we have an unmanaged p/invoke call in the method,
             // then we're going to run the p/invoke epilog.
@@ -21768,8 +21730,6 @@ GenTreePtr Compiler::fgLegacyPerStatementLocalVarLiveness(GenTreePtr startNode, 
                     }
                 }
             }
-
-#endif // INLINE_NDIRECT
 
             break;
 
@@ -21810,7 +21770,6 @@ _return:
 }
 
 /*****************************************************************************/
-#if INLINE_NDIRECT
 
 /*****************************************************************************
  * Initialize the TCB local and the NDirect stub, afterwards "push"
@@ -22098,7 +22057,7 @@ void                CodeGen::genPInvokeMethodEpilog()
     {
         if (compiler->rpMaskPInvokeEpilogIntf & RBM_PINVOKE_TCB)
         {
-#if INLINE_NDIRECT && FEATURE_FIXED_OUT_ARGS
+#if FEATURE_FIXED_OUT_ARGS
             // Save the register in the reserved local var slot.
             getEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_PINVOKE_TCB, compiler->lvaPInvokeFrameRegSaveVar, 0);
 #else
@@ -22107,7 +22066,7 @@ void                CodeGen::genPInvokeMethodEpilog()
         }
         if (compiler->rpMaskPInvokeEpilogIntf & RBM_PINVOKE_FRAME)
         {
-#if INLINE_NDIRECT && FEATURE_FIXED_OUT_ARGS
+#if FEATURE_FIXED_OUT_ARGS
             // Save the register in the reserved local var slot.
             getEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_PINVOKE_FRAME, compiler->lvaPInvokeFrameRegSaveVar, REGSIZE_BYTES);
 #else
@@ -22175,7 +22134,7 @@ void                CodeGen::genPInvokeMethodEpilog()
     {
         if (compiler->rpMaskPInvokeEpilogIntf & RBM_PINVOKE_FRAME)
         {
-#if INLINE_NDIRECT && FEATURE_FIXED_OUT_ARGS
+#if FEATURE_FIXED_OUT_ARGS
             // Restore the register from the reserved local var slot.
             getEmitter()->emitIns_R_S(ins_Load(TYP_I_IMPL), EA_PTRSIZE, REG_PINVOKE_FRAME, compiler->lvaPInvokeFrameRegSaveVar, REGSIZE_BYTES);
 #else
@@ -22185,7 +22144,7 @@ void                CodeGen::genPInvokeMethodEpilog()
         }
         if (compiler->rpMaskPInvokeEpilogIntf & RBM_PINVOKE_TCB)
         {
-#if INLINE_NDIRECT && FEATURE_FIXED_OUT_ARGS
+#if FEATURE_FIXED_OUT_ARGS
             // Restore the register from the reserved local var slot.
             getEmitter()->emitIns_R_S(ins_Load(TYP_I_IMPL), EA_PTRSIZE, REG_PINVOKE_TCB, compiler->lvaPInvokeFrameRegSaveVar, 0);
 #else
@@ -22683,7 +22642,6 @@ void                CodeGen::genPInvokeCallEpilog(LclVarDsc *  frameListRoot,
 }
 
 /*****************************************************************************/
-#endif // INLINE_NDIRECT
 
 /*****************************************************************************
 *           TRACKING OF FLAGS

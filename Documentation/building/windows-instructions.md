@@ -100,6 +100,7 @@ You will see several files. The interesting ones are:
 
 Copy these files into the demo directory.
 
+	C:\git\coreclr>copy bin\Product\Windows_NT.x64.debug\clrjit.dll \coreclr-demo\runtime
 	C:\git\coreclr>copy bin\Product\Windows_NT.x64.debug\CoreRun.exe \coreclr-demo\runtime
 	C:\git\coreclr>copy bin\Product\Windows_NT.x64.debug\coreclr.dll \coreclr-demo\runtime
 	C:\git\coreclr>copy bin\Product\Windows_NT.x64.debug\mscorlib.dll \coreclr-demo\runtime
@@ -122,24 +123,14 @@ It's also possible to add /t:rebuild to build.cmd to force it to delete the prev
 
 For the purposes of this demo, you need to copy a few required assemblies to the demo folder.
 
-	C:\git\corefx>copy bin\Windows_NT.AnyCPU.Debug\System.Console\System.Console.dll \coreclr-demo
-	C:\git\corefx>copy bin\Windows_NT.AnyCPU.Debug\System.Diagnostics.Debug\System.Diagnostics.Debug.dll \coreclr-demo
-
-The runtime directory should now look like the following:
-
-	c:\git\corefx>dir \coreclr-demo
-
-```
- Directory of C:\coreclr-demo
-
-05/15/2015  03:58 PM    <DIR>          .
-05/15/2015  03:58 PM    <DIR>          ..
-05/15/2015  02:43 PM    <DIR>          packages
-05/15/2015  03:36 PM    <DIR>          runtime
-05/15/2015  02:44 PM         1,664,512 nuget.exe
-05/15/2015  03:37 PM            51,712 System.Console.dll
-05/15/2015  03:37 PM            21,504 System.Diagnostics.Debug.dll
-```
+	C:\git\corefx>copy bin\Windows_NT.AnyCPU.Debug\System.Console\System.Console.dll \coreclr-demo\runtime
+	C:\git\corefx>copy bin\Windows_NT.AnyCPU.Debug\System.Diagnostics.Debug\System.Diagnostics.Debug.dll \coreclr-demo\runtime
+	C:\git\corefx>copy bin\Windows_NT.AnyCPU.Debug\System.Threading\System.Threading.dll \coreclr-demo\runtime
+	C:\git\corefx>copy bin\Windows_NT.AnyCPU.Debug\System.IO\System.IO.dll \coreclr-demo\runtime
+	C:\git\corefx>copy bin\Windows_NT.AnyCPU.Debug\System.IO.FileSystem.Primitives\System.IO.FileSystem.Primitives.dll \coreclr-demo\runtime
+	C:\git\corefx>copy bin\Windows_NT.AnyCPU.Debug\System.Runtime\System.Runtime.dll \coreclr-demo\runtime
+	C:\git\corefx>copy bin\Windows_NT.AnyCPU.Debug\System.Runtime.Extensions\System.Runtime.Extensions.dll \coreclr-demo\runtime	C:\git\corefx>copy bin\Windows_NT.AnyCPU.Debug\System.Runtime.InteropServices\System.Runtime.InteropServices.dll \coreclr-demo\runtime
+	C:\git\corefx>copy bin\Windows_NT.AnyCPU.Debug\System.Threading.Tasks\System.Threading.Tasks.dll \coreclr-demo\runtime	
 
 Restore NuGet Packages
 ======================
@@ -148,30 +139,30 @@ You need to restore/download the rest of the demo dependencies via NuGet, as the
 
 Make a packages/packages.config file with the following XML. These packages are the required dependencies of this particular app. Different apps will have different dependencies and require different packages.config - see [Issue #480](https://github.com/dotnet/coreclr/issues/480).
 
-	<?xml version="1.0" encoding="utf-8"?>
-	<packages>
-	  <package id="System.Console" version="4.0.0-beta-22703" />
-	  <package id="System.Diagnostics.Contracts" version="4.0.0-beta-22703" />
-	  <package id="System.Diagnostics.Debug" version="4.0.10-beta-22703" />
-	  <package id="System.Diagnostics.Tools" version="4.0.0-beta-22703" />
-	  <package id="System.Globalization" version="4.0.10-beta-22703" />
-	  <package id="System.IO" version="4.0.10-beta-22703" />
-	  <package id="System.IO.FileSystem.Primitives" version="4.0.0-beta-22703" />
-	  <package id="System.Reflection" version="4.0.10-beta-22703" />
-	  <package id="System.Resources.ResourceManager" version="4.0.0-beta-22703" />
-	  <package id="System.Runtime" version="4.0.20-beta-22703" />
-	  <package id="System.Runtime.Extensions" version="4.0.10-beta-22703" />
-	  <package id="System.Runtime.Handles" version="4.0.0-beta-22703" />
-	  <package id="System.Runtime.InteropServices" version="4.0.20-beta-22703" />
-	  <package id="System.Text.Encoding" version="4.0.10-beta-22703" />
-	  <package id="System.Text.Encoding.Extensions" version="4.0.10-beta-22703" />
-	  <package id="System.Threading" version="4.0.10-beta-22703" />
-	  <package id="System.Threading.Tasks" version="4.0.10-beta-22703" />
-	</packages>
+```
+<?xml version="1.0" encoding="utf-8"?>
+<packages>
+  <package id="System.Console" version="4.0.0-beta-23516" />
+  <package id="System.Diagnostics.Contracts" version="4.0.1-beta-23516" />
+  <package id="System.Diagnostics.Debug" version="4.0.11-beta-23516" />
+  <package id="System.Diagnostics.Tools" version="4.0.1-beta-23516" />
+  <package id="System.Globalization" version="4.0.11-beta-23516" />
+  <package id="System.IO" version="4.0.11-beta-23516" />
+  <package id="System.IO.FileSystem.Primitives" version="4.0.1-beta-23516" />
+  <package id="System.Runtime" version="4.0.21-beta-23516" />
+  <package id="System.Runtime.Extensions" version="4.0.11-beta-23516" />
+  <package id="System.Runtime.Handles" version="4.0.1-beta-23516" />
+  <package id="System.Runtime.InteropServices" version="4.0.21-beta-23516" />
+  <package id="System.Text.Encoding" version="4.0.11-beta-23516" />
+  <package id="System.Text.Encoding.Extensions" version="4.0.11-beta-23516" />
+  <package id="System.Threading" version="4.0.11-beta-23516" />
+  <package id="System.Threading.Tasks" version="4.0.11-beta-23516" />
+</packages>
+```
 
 And restore the packages with the packages.config:
 
-	C:\coreclr-demo>nuget restore packages\packages.config -Source https://www.myget.org/F/dotnet-corefx/ -PackagesDirectory packages
+	C:\coreclr-demo>nuget restore packages\packages.config -Source https://api.nuget.org/v3/index.json -PackagesDirectory packages
 
 Compile the Demo
 ================
@@ -193,17 +184,17 @@ Personally, I'm partial to the one on corefxlab which will print a picture for y
 
 Then you just need to build it, with csc, the .NET Framework C# compiler. It may be easier to do this step within the "Developer Command Prompt for VS2013", if csc is not in your path. Because you need to compile the app against the .NET Core surface area, you need to pass references to the contract assemblies you restored using NuGet:
 
-	C:\coreclr-demo>csc /nostdlib /noconfig /r:packages\System.Runtime.4.0.20-beta-2
-	2703\lib\contract\System.Runtime.dll /r:packages\System.Console.4.0.0-beta-22703
-	\lib\contract\System.Console.dll /out:runtime\HelloWorld.exe HelloWorld.cs
+```
+csc /nostdlib /noconfig /r:packages\System.Runtime.4.0.21-beta-23516\ref\dotnet5.1\System.Runtime.dll /r:packages\System.Console.4.0.0-beta-23516\ref\dotnet5.1\System.Console.dll /out:runtime\hello.exe hello.cs
+```
 
 Run the demo
 ============
 
-You need to copy the NuGet package assemblies over to the runtime folder. 
-The easiest way to do this is with a little batch magic. Say "no" to any requests to overwrite files, to avoid overwriting the CoreFX files you just built.
+You'll also need the following facade assemblies from your packages folder:
 
-	for /f %k in ('dir /s /b packages\*.dll') do echo %k | findstr "\aspnetcore50" && copy /-Y %k runtime
+    C:\coreclr-demo>copy packages\System.Text.Encoding.4.0.11-beta-23516\lib\netcore50\System.Text.Encoding.dll runtime
+    C:\coreclr-demo>copy packages\System.Text.Encoding.Extensions.4.0.11-beta-23516\lib\netcore50\System.Text.Encoding.Extensions.dll runtime
 
 You're ready to run Hello World! To do that, run corerun, passing the path to the managed exe, plus any arguments. In this case, no arguments are necessary.
 

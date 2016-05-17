@@ -32,7 +32,7 @@ namespace System.Runtime.Serialization
     public sealed class SerializationInfo
     {
         private const int defaultSize = 4;
-        private const string s_mscorlibAssemblySimpleName = "mscorlib";
+        private const string s_mscorlibAssemblySimpleName = System.CoreLib.Name;
         private const string s_mscorlibFileName = s_mscorlibAssemblySimpleName + ".dll";
         
         // Even though we have a dictionary, we're still keeping all the arrays around for back-compat. 

@@ -192,15 +192,6 @@ namespace CorUnix
         );
 
     /*++
-    InternalDeleteFile
-    Wraps SYS_delete
-    --*/
-    int 
-    InternalDeleteFile(
-        const char *szPath
-        );
-
-    /*++
     InternalFgets
     Wraps fgets
     --*/
@@ -354,20 +345,6 @@ Close primary handles for stdin, stdout and stderr
 (no parameters, no return value)
 --*/
 void FILECleanupStdHandles(void);
-
-/*++
-FILEGetFileNameFromSymLink
-
-Input paramters:
-
-source  = path to the file on input, path to the file with all 
-          symbolic links traversed on return
-
-
-Return value:
-    TRUE on success, FALSE on failure
-BOOL FILEGetFileNameFromSymLink(PathCharString& source);
---*/
 
 /*++
 

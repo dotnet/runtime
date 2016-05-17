@@ -2553,9 +2553,7 @@ public:
         NDirectImportThunkGlue      m_ImportThunkGlue;
 #endif // HAS_NDIRECT_IMPORT_PRECODE
 
-#ifndef FEATURE_CORECLR
         ULONG       m_DefaultDllImportSearchPathsAttributeValue; // DefaultDllImportSearchPathsAttribute is saved.
-#endif
 
         // Various attributes needed at runtime.
         WORD        m_wFlags;
@@ -2588,9 +2586,7 @@ public:
 
         kHasSuppressUnmanagedCodeAccess = 0x0002,
 
-#ifndef FEATURE_CORECLR
         kDefaultDllImportSearchPathsIsCached = 0x0004, // set if we cache attribute value.
-#endif
 
         // kUnusedMask                  = 0x0008
 
@@ -2614,9 +2610,7 @@ public:
 
         kIsQCall                        = 0x1000,
 
-#if !defined(FEATURE_CORECLR)
         kDefaultDllImportSearchPathsStatus = 0x2000, // either method has custom attribute or not.
-#endif
 
         kHasCopyCtorArgs                = 0x4000,
 
@@ -2749,7 +2743,6 @@ public:
         return (ndirect.m_wFlags & kIsQCall) != 0;
     }
 
-#ifndef FEATURE_CORECLR
     BOOL HasDefaultDllImportSearchPathsAttribute();
 
     BOOL IsDefaultDllImportSearchPathsAttributeCached()
@@ -2769,7 +2762,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         return (ndirect.m_DefaultDllImportSearchPathsAttributeValue & 0x2) != 0;
     }
-#endif // !FEATURE_CORECLR
 
     BOOL HasCopyCtorArgs() const
     {

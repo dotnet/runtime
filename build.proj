@@ -11,12 +11,19 @@
 
   <Import Project="dir.traversal.targets" />
 
+  <!-- The following properties are in place to keep the behavior of build.cmd while we work on the dev workflow steps. -->
+  <PropertyGroup>
+    <!-- To disable the restoration of packages, set RestoreDuringBuild=false or pass /p:RestoreDuringBuild=false.-->
+    <RestoreDuringBuild Condition="'$(RestoreDuringBuild)'==''">true</RestoreDuringBuild>
+  </PropertyGroup>
+
   <!-- Override clean from dir.traversal.targets and just remove the full BinDir -->
   <Target Name="Clean">
     <Delete Files="$(BinDir)mscorlib.*" />
+    <Delete Files="$(BinDir)System.Private.CoreLib.*" />
   </Target>
 
-  <Target Name="RestoreNETCorePlatforms" AfterTargets="Build">
+  <Target Name="RestoreNETCorePlatforms" AfterTargets="Build" Condition="'$(RestoreDuringBuild)'=='true'">
     <Exec Command="$(DnuRestoreCommand) &quot;$(SourceDir).nuget/init/project.json&quot; --source https://dotnet.myget.org/F/dotnet-core/api/v3/index.json" />
   </Target>
   

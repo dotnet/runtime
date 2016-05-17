@@ -12,12 +12,8 @@
   .ver 4:0:0:0
 }
 
-.assembly extern mscorlib
-{
-  .hash = (1C E2 9F D4 68 FA BD 67 1C 9F 39 8F 2F E3 3A 67   // ....h..g..9./.:g
-           05 AC 47 E0 )                                     // ..G.
-  .ver 2000:14:2009:0
-}
+.assembly extern mscorlib {}
+
 .assembly test
 {
   .hash algorithm 0x00008004

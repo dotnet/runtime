@@ -93,8 +93,8 @@ namespace System.Security {
 #if FEATURE_CAS_POLICY
         private static volatile ReflectionPermission s_reflectPerm = null;
 #endif // FEATURE_CAS_POLICY
-        private const string c_mscorlibName = "mscorlib";
 
+        private const string c_mscorlibName = System.CoreLib.Name;
         internal int    m_index;
         internal volatile PermissionTokenType m_type;
 #if FEATURE_CAS_POLICY
@@ -104,7 +104,7 @@ namespace System.Security {
 
         internal static bool IsMscorlibClassName (string className) {
             Contract.Assert( c_mscorlibName == ((RuntimeAssembly)Assembly.GetExecutingAssembly()).GetSimpleName(),
-                "mscorlib name mismatch" );
+                System.CoreLib.Name+" name mismatch" );
 
             // If the class name does not look like a fully qualified name, we cannot simply determine if it's 
             // an mscorlib.dll type so we should return true so the type can be matched with the
@@ -119,7 +119,12 @@ namespace System.Security {
 
             // Search for the string 'mscorlib' in the classname. If we find it, we will conservatively assume it's an mscorlib.dll type and load it.
             for (int i = index; i < className.Length; i++) {
-                if (className[i] == 'm' || className[i] == 'M') {
+#if FEATURE_CORECLR
+                if (className[i] == 's' || className[i] == 'S') 
+#else
+                if (className[i] == 'm' || className[i] == 'M') 
+#endif                 
+                {
                     if (String.Compare(className, i, c_mscorlibName, 0, c_mscorlibName.Length, StringComparison.OrdinalIgnoreCase) == 0)
                         return true;
                 }

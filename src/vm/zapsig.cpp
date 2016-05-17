@@ -992,9 +992,9 @@ MethodDesc *ZapSig::DecodeMethod(Module *pReferencingModule,
 }
 
 FieldDesc * ZapSig::DecodeField(Module *pReferencingModule,
-    Module *pInfoModule,
-    PCCOR_SIGNATURE pBuffer,
-    TypeHandle * ppTH /*=NULL*/)
+                                Module *pInfoModule,
+                                PCCOR_SIGNATURE pBuffer,
+                                TypeHandle * ppTH /*=NULL*/)
 {
     CONTRACTL
     {
@@ -1201,11 +1201,11 @@ BOOL ZapSig::EncodeMethod(
                 methodFlags &= ~ENCODE_METHOD_SIG_OwnerType;
             }
             else
-            if (!(methodFlags & ENCODE_METHOD_SIG_InstantiatingStub))
-            {
-                if (SigPointer(pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec).IsPolyType(NULL) == hasNoVars)
-                    methodFlags &= ~ENCODE_METHOD_SIG_OwnerType;
-            }
+                if (!(methodFlags & ENCODE_METHOD_SIG_InstantiatingStub))
+                {
+                    if (SigPointer(pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec).IsPolyType(NULL) == hasNoVars)
+                        methodFlags &= ~ENCODE_METHOD_SIG_OwnerType;
+                }
             break;
 
         default:
