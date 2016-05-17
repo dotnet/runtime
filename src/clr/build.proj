@@ -14,6 +14,7 @@
   <!-- Override clean from dir.traversal.targets and just remove the full BinDir -->
   <Target Name="Clean">
     <Delete Files="$(BinDir)mscorlib.*" />
+    <Delete Files="$(BinDir)System.Private.CoreLib.*" />
   </Target>
 
   <Target Name="RestoreNETCorePlatforms" AfterTargets="Build">

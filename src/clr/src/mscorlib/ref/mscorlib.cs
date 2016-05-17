@@ -9947,6 +9947,10 @@ namespace System.Runtime.InteropServices
         [System.Security.SecurityCriticalAttribute]
         public static string PtrToStringAnsi(System.IntPtr ptr, int len) { return default(string); }
         [System.Security.SecurityCriticalAttribute]
+        public static string PtrToStringUTF8(System.IntPtr ptr) { return default(string); }
+        [System.Security.SecurityCriticalAttribute]
+        public static string PtrToStringUTF8(System.IntPtr ptr, int len) { return default(string); }
+        [System.Security.SecurityCriticalAttribute]
         public static string PtrToStringBSTR(System.IntPtr ptr) { return default(string); }
         [System.Security.SecurityCriticalAttribute]
         public static string PtrToStringUni(System.IntPtr ptr) { return default(string); }
@@ -10024,6 +10028,8 @@ namespace System.Runtime.InteropServices
         public static System.IntPtr StringToHGlobalAnsi(string s) { return default(System.IntPtr); }
         [System.Security.SecurityCriticalAttribute]
         public static System.IntPtr StringToHGlobalUni(string s) { return default(System.IntPtr); }
+        [System.Security.SecurityCriticalAttribute]
+        public static System.IntPtr StringToCoTaskMemUTF8(string s) { return default(System.IntPtr); }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
         [System.Runtime.InteropServices.ComVisibleAttribute(true)]
         [System.Security.SecurityCriticalAttribute]
@@ -10084,6 +10090,7 @@ namespace System.Runtime.InteropServices
         public static void ZeroFreeGlobalAllocAnsi(System.IntPtr s) { }
         [System.Security.SecurityCriticalAttribute]
         public static void ZeroFreeGlobalAllocUnicode(System.IntPtr s) { }
+        public static void ZeroFreeMemoryUTF8(System.IntPtr s) { }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(10496), Inherited=false)]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
@@ -10307,6 +10314,8 @@ namespace System.Runtime.InteropServices
         U8 = 10,
         VariantBool = 37,
         VBByRefStr = 34,
+        [System.Runtime.InteropServices.ComVisible(false)]
+        LPUTF8Str = 48,        // UTF8 string
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public enum VarEnum

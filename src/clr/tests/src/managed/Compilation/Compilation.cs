@@ -19,7 +19,7 @@ class Program
 
         var sourceTree = new List<SyntaxTree>(){SyntaxFactory.ParseSyntaxTree(File.ReadAllText(codeFile))};
 
-        string mscorlibFile = Path.Combine(Environment.GetEnvironmentVariable("CORE_ROOT"), "mscorlib.dll");
+        string mscorlibFile = Path.Combine(Environment.GetEnvironmentVariable("CORE_ROOT"), "System.Private.CoreLib.dll");
         Console.WriteLine("Using reference to: {0}", mscorlibFile);
         var reference = new List<MetadataReference>(){ MetadataReference.CreateFromFile(mscorlibFile)};
 

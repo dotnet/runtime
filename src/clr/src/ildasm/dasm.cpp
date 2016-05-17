@@ -1493,7 +1493,7 @@ mdToken ResolveReflectionNotation(BYTE* dataPtr,
         char* szNamespace = szNamespaceDefault;
         char* szName = str;
         char* szAssembly = NULL;
-        char  szAssemblyMscorlib[] = "mscorlib";
+        char  szAssemblyMscorlib[] = "mscorlib"; 
         char* pch;
         memcpy(str,dataPtr,Lstr);
         str[Lstr] = 0;

@@ -168,7 +168,7 @@
   
   <!-- Resources -->
   <ItemGroup>
-    <SplitTextStringResource Include="$(BclSourcesRoot)\mscorlib.txt">
+    <SplitTextStringResource Include="$(BclSourcesRoot)\System.Private.CoreLib.txt">
       <ResFile>System.Private.CoreLib</ResFile>
       <ResGenDefines>$(DefineConstants)</ResGenDefines>
     </SplitTextStringResource>
