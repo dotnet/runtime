@@ -55,6 +55,7 @@
       <Link>Common\System\Net\Http\LoopbackServer.cs</Link>
     </Compile>
     <Compile Include="ByteArrayContentTest.cs" />
+    <Compile Include="CancellationTest.cs" />
     <Compile Include="ChannelBindingAwareContent.cs" />
     <Compile Include="CustomContent.cs" />
     <Compile Include="DelegatingHandlerTest.cs" />
