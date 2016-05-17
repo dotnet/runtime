@@ -18,19 +18,19 @@ namespace System.Reflection.Tests
             FieldInfo fi = GetField(type, "aArray");
 
             fi.SetValue(obj, ATypeWithMixedAB);
-            Assert.True((fi.GetValue(obj)).Equals(ATypeWithMixedAB), "Failed!! Could not set ArrayField aArray using FieldInfo");
+            Assert.Equal(ATypeWithMixedAB, fi.GetValue(obj));
 
             fi.SetValue(obj, ATypeWithAllA);
-            Assert.True((fi.GetValue(obj)).Equals(ATypeWithAllA), "Failed!! Could not set ArrayField aArray using FieldInfo");
+            Assert.Equal(ATypeWithAllA, fi.GetValue(obj));
 
             fi.SetValue(obj, ATypeWithAllB);
-            Assert.True((fi.GetValue(obj)).Equals(ATypeWithAllB), "Failed!! Could not set ArrayField aArray using FieldInfo");
+            Assert.Equal(ATypeWithAllB, fi.GetValue(obj));
 
             fi.SetValue(obj, BTypeWithAllB);
-            Assert.True((fi.GetValue(obj)).Equals(BTypeWithAllB), "Failed!! Could not set ArrayField aArray using FieldInfo");
+            Assert.Equal(BTypeWithAllB, fi.GetValue(obj));
 
             fi.SetValue(obj, BTypeWithAllB_Contra);
-            Assert.True((fi.GetValue(obj)).Equals(BTypeWithAllB_Contra), "Failed!! Could not set ArrayField aArray using FieldInfo");
+            Assert.Equal(BTypeWithAllB_Contra, fi.GetValue(obj));
         }
 
         //Verify FieldInfo for bArray Field
@@ -44,10 +44,10 @@ namespace System.Reflection.Tests
             Assert.Throws<ArgumentException>(() => fi.SetValue(obj, ATypeWithAllB));
 
             fi.SetValue(obj, BTypeWithAllB);
-            Assert.True((fi.GetValue(obj)).Equals(BTypeWithAllB), "Failed!! Could not set ArrayField bArray using FieldInfo");
+            Assert.Equal(BTypeWithAllB, fi.GetValue(obj));
 
             fi.SetValue(obj, BTypeWithAllB_Contra);
-            Assert.True((fi.GetValue(obj)).Equals(BTypeWithAllB_Contra), "Failed!! Could not set ArrayField bArray using FieldInfo");
+            Assert.Equal(BTypeWithAllB_Contra, fi.GetValue(obj));
         }
 
         //Verify FieldInfo for iArray Field
@@ -57,7 +57,7 @@ namespace System.Reflection.Tests
             FieldInfo fi = GetField(type, "iArray");
 
             fi.SetValue(obj, mixedMN);
-            Assert.True((fi.GetValue(obj)).Equals(mixedMN), "Failed!! Could not set ArrayField iArray using FieldInfo");
+            Assert.Equal(mixedMN, fi.GetValue(obj));
         }
 
         //Verify FieldInfo for intArray Field
@@ -67,7 +67,7 @@ namespace System.Reflection.Tests
             FieldInfo fi = GetField(type, "intArray");
 
             fi.SetValue(obj, mixedInt);
-            Assert.True((fi.GetValue(obj)).Equals(mixedInt), "Failed!! Could not set ArrayField intArray using FieldInfo");
+            Assert.Equal(mixedInt, fi.GetValue(obj));
 
             Assert.Throws<ArgumentException>(() => fi.SetValue(obj, allByte));
         }
@@ -79,11 +79,11 @@ namespace System.Reflection.Tests
             FieldInfo fi = GetField(type, "objectArray");
 
             fi.SetValue(obj, mixedMN);
-            Assert.True((fi.GetValue(obj)).Equals(mixedMN), "Failed!! Could not set ArrayField objectArray using FieldInfo");
+            Assert.Equal(mixedMN, fi.GetValue(obj));
 
             fi.SetValue(obj, BTypeWithAllB_Contra);
 
-            Assert.True((fi.GetValue(obj)).Equals(BTypeWithAllB_Contra), "Failed!! Could not set ArrayField objectArray using FieldInfo");
+            Assert.Equal(BTypeWithAllB_Contra, fi.GetValue(obj));
             Assert.Throws<ArgumentException>(() => fi.SetValue(obj, mixedInt));
             Assert.Throws<ArgumentException>(() => fi.SetValue(obj, allByte));
         }
