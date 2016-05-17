@@ -159,15 +159,14 @@ namespace System.IO
         // used as either a folder name or a file name.
         public static unsafe string GetRandomFileName()
         {
-            // 9 random bytes provides 12 chars in our encoding for the 8.3 name.
-            const int KeyLength = 9;
+            // 8 random bytes provides 12 chars in our encoding for the 8.3 name.
+            const int KeyLength = 8;
             byte* pKey = stackalloc byte[KeyLength];
             GetCryptoRandomBytes(pKey, KeyLength);
 
             const int RandomFileNameLength = 12;
             char* pRandomFileName = stackalloc char[RandomFileNameLength];
-            GetBase32CharsSuitableForDirName(pKey, KeyLength, pRandomFileName, RandomFileNameLength);
-            pRandomFileName[8] = '.';
+            Populate83FileNameFromRandomBytes(pKey, KeyLength, pRandomFileName, RandomFileNameLength);
             return new string(pRandomFileName, 0, RandomFileNameLength);
         }
 
@@ -351,24 +350,20 @@ namespace System.IO
             }
         }
 
-        private static readonly char[] s_Base32Char = {
+        private static readonly char[] s_base32Char = {
                 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h',
                 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p',
                 'q', 'r', 's', 't', 'u', 'v', 'w', 'x',
                 'y', 'z', '0', '1', '2', '3', '4', '5'};
 
-        private static unsafe void GetBase32CharsSuitableForDirName(byte* bytes, int byteCount, char* chars, int charCount)
+        private static unsafe void Populate83FileNameFromRandomBytes(byte* bytes, int byteCount, char* chars, int charCount)
         {
             Debug.Assert(bytes != null);
             Debug.Assert(chars != null);
 
-            // This routine is optimized to be used with bytes of length 9 and chars of length 12.
-            Debug.Assert(byteCount == 9, $"Unexpected {nameof(byteCount)}");
+            // This method requires bytes of length 8 and chars of length 12.
+            Debug.Assert(byteCount == 8, $"Unexpected {nameof(byteCount)}");
             Debug.Assert(charCount == 12, $"Unexpected {nameof(charCount)}");
-
-            // For every 5 bytes, 8 characters are appended.
-            // Create l char for each of the last 5 bits of each byte.
-            // Consume 3 MSB bits 5 bytes at a time.
 
             byte b0 = bytes[0];
             byte b1 = bytes[1];
@@ -377,18 +372,18 @@ namespace System.IO
             byte b4 = bytes[4];
 
             // Consume the 5 Least significant bits of the first 5 bytes
-            chars[0] = s_Base32Char[b0 & 0x1F];
-            chars[1] = s_Base32Char[b1 & 0x1F];
-            chars[2] = s_Base32Char[b2 & 0x1F];
-            chars[3] = s_Base32Char[b3 & 0x1F];
-            chars[4] = s_Base32Char[b4 & 0x1F];
+            chars[0] = s_base32Char[b0 & 0x1F];
+            chars[1] = s_base32Char[b1 & 0x1F];
+            chars[2] = s_base32Char[b2 & 0x1F];
+            chars[3] = s_base32Char[b3 & 0x1F];
+            chars[4] = s_base32Char[b4 & 0x1F];
 
             // Consume 3 MSB of b0, b1, MSB bits 6, 7 of b3, b4
-            chars[5] = s_Base32Char[(
+            chars[5] = s_base32Char[(
                     ((b0 & 0xE0) >> 5) |
                     ((b3 & 0x60) >> 2))];
 
-            chars[6] = s_Base32Char[(
+            chars[6] = s_base32Char[(
                     ((b1 & 0xE0) >> 5) |
                     ((b4 & 0x60) >> 2))];
 
@@ -402,13 +397,15 @@ namespace System.IO
             if ((b4 & 0x80) != 0)
                 b2 |= 0x10;
 
-            chars[7] = s_Base32Char[b2];
+            chars[7] = s_base32Char[b2];
 
-            // Consume the 5 Least significant bits of the remaining 4 bytes
-            chars[8] = s_Base32Char[(bytes[5] & 0x1F)];
-            chars[9] = s_Base32Char[(bytes[6] & 0x1F)];
-            chars[10] = s_Base32Char[(bytes[7] & 0x1F)];
-            chars[11] = s_Base32Char[(bytes[8] & 0x1F)];
+            // Set the file extension separator
+            chars[8] = '.';
+
+            // Consume the 5 Least significant bits of the remaining 3 bytes
+            chars[9] = s_base32Char[(bytes[5] & 0x1F)];
+            chars[10] = s_base32Char[(bytes[6] & 0x1F)];
+            chars[11] = s_base32Char[(bytes[7] & 0x1F)];
         }
     }
 }
