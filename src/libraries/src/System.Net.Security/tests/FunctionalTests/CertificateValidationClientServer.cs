@@ -37,6 +37,7 @@ namespace System.Net.Security.Tests
         }
 
         [Theory]
+        [ActiveIssue(8437, PlatformID.Windows)]
         [InlineData(false)]
         [InlineData(true)]
         public async Task CertificateValidationClientServer_EndToEnd_Ok(bool useClientSelectionCallback)
