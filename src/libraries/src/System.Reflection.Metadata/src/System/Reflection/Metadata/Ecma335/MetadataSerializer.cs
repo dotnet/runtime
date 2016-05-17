@@ -2,27 +2,33 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection.PortableExecutable;
 
 namespace System.Reflection.Metadata.Ecma335
 {
     public sealed class StandaloneDebugMetadataSerializer : MetadataSerializer
     {
         private const string DebugMetadataVersionString = "PDB v1.0";
+        public ushort FormatVersion => 0x0100;
 
         private Blob _pdbIdBlob;
         private readonly MethodDefinitionHandle _entryPoint;
+        public Func<IEnumerable<Blob>, BlobContentId> IdProvider { get; }
 
         public StandaloneDebugMetadataSerializer(
             MetadataBuilder builder, 
             ImmutableArray<int> typeSystemRowCounts,
             MethodDefinitionHandle entryPoint,
-            bool isMinimalDelta)
+            bool isMinimalDelta,
+            Func<IEnumerable<Blob>, BlobContentId> deterministicIdProvider = null)
             : base(builder, CreateSizes(builder, typeSystemRowCounts, isMinimalDelta, isStandaloneDebugMetadata: true), DebugMetadataVersionString)
         {
             _entryPoint = entryPoint;
+            IdProvider = deterministicIdProvider ?? BlobContentId.GetTimeBasedProvider();
         }
 
         /// <summary>
@@ -44,16 +50,16 @@ namespace System.Reflection.Metadata.Ecma335
             Debug.Assert(MetadataSizes.CalculateStandalonePdbStreamSize() == endPosition - startPosition);
         }
 
-        public void SerializeMetadata(BlobBuilder builder, Func<BlobBuilder, ContentId> idProvider, out ContentId contentId)
+        public void SerializeMetadata(BlobBuilder builder, out BlobContentId contentId)
         {
             SerializeMetadataImpl(builder, methodBodyStreamRva: 0, mappedFieldDataStreamRva: 0);
 
-            contentId = idProvider(builder);
+            contentId = IdProvider(builder.GetBlobs());
 
             // fill in the id:
             var idWriter = new BlobWriter(_pdbIdBlob);
-            idWriter.WriteBytes(contentId.Guid);
-            idWriter.WriteBytes(contentId.Stamp);
+            idWriter.WriteGuid(contentId.Guid);
+            idWriter.WriteUInt32(contentId.Stamp);
             Debug.Assert(idWriter.RemainingBytes == 0);
         }
     }

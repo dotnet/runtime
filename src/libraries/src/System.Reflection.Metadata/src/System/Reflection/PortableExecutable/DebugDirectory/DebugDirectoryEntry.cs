@@ -9,6 +9,15 @@ namespace System.Reflection.PortableExecutable
     /// </summary>
     public struct DebugDirectoryEntry
     {
+        internal const int Size =
+            sizeof(uint) +   // Characteristics
+            sizeof(uint) +   // TimeDataStamp
+            sizeof(uint) +   // Version
+            sizeof(uint) +   // Type
+            sizeof(uint) +   // SizeOfData
+            sizeof(uint) +   // AddressOfRawData
+            sizeof(uint);    // PointerToRawData
+
         /// <summary>
         /// The time and date that the debug data was created if the PE/COFF file is not deterministic,
         /// otherwise a value based on the hash of the content. 

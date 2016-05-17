@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Reflection.Internal;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace System.Reflection.Metadata.Ecma335
@@ -34,15 +35,18 @@ namespace System.Reflection.Metadata.Ecma335
 
         // #US heap
         private const int UserStringHeapSizeLimit = 0x01000000;
-        private readonly Dictionary<string, int> _userStrings = new Dictionary<string, int>(256);
+        private readonly Dictionary<string, UserStringHandle> _userStrings = new Dictionary<string, UserStringHandle>(256);
         private readonly HeapBlobBuilder _userStringBuilder = new HeapBlobBuilder(4 * 1024);
         private readonly int _userStringHeapStartOffset;
 
         // #String heap
         private Dictionary<string, StringHandle> _strings = new Dictionary<string, StringHandle>(256);
-        private int[] _stringIndexToResolvedOffsetMap;
         private readonly HeapBlobBuilder _stringBuilder = new HeapBlobBuilder(4 * 1024);
         private readonly int _stringHeapStartOffset;
+
+        // map allocated when the String heap is serialized:
+        private int[] _stringVirtualIndexToHeapOffsetMap;
+        private bool HeapsCompleted => _stringVirtualIndexToHeapOffsetMap != null;
 
         // #Blob heap
         private readonly Dictionary<ImmutableArray<byte>, BlobHandle> _blobs = new Dictionary<ImmutableArray<byte>, BlobHandle>(1024, ByteSequenceComparer.Instance);
@@ -53,8 +57,28 @@ namespace System.Reflection.Metadata.Ecma335
         private readonly Dictionary<Guid, GuidHandle> _guids = new Dictionary<Guid, GuidHandle>();
         private readonly HeapBlobBuilder _guidBuilder = new HeapBlobBuilder(16); // full metadata has just a single guid
 
-        private bool _streamsAreComplete;
-
+        /// <summary>
+        /// Creates a builder for metadata tables and heaps.
+        /// </summary>
+        /// <param name="userStringHeapStartOffset">
+        /// Start offset of the User String heap. 
+        /// The cumulative size of User String heaps of all previous EnC generations. Should be 0 unless the metadata is EnC delta metadata.
+        /// </param>
+        /// <param name="stringHeapStartOffset">
+        /// Start offset of the String heap. 
+        /// The cumulative size of String heaps of all previous EnC generations. Should be 0 unless the metadata is EnC delta metadata.
+        /// </param>
+        /// <param name="blobHeapStartOffset">
+        /// Start offset of the Blob heap. 
+        /// The cumulative size of Blob heaps of all previous EnC generations. Should be 0 unless the metadata is EnC delta metadata.
+        /// </param>
+        /// <param name="guidHeapStartOffset">
+        /// Start offset of the Guid heap. 
+        /// The cumulative size of Guid heaps of all previous EnC generations. Should be 0 unless the metadata is EnC delta metadata.
+        /// </param>
+        /// <exception cref="ImageFormatLimitationException">Offset is too big.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Offset is negative.</exception>
+        /// <exception cref="ArgumentException"><paramref name="guidHeapStartOffset"/> is not a multiple of size of GUID.</exception>
         public MetadataBuilder(
             int userStringHeapStartOffset = 0,
             int stringHeapStartOffset = 0,
@@ -64,7 +88,32 @@ namespace System.Reflection.Metadata.Ecma335
             // -1 for the 0 we always write at the beginning of the heap:
             if (userStringHeapStartOffset >= UserStringHeapSizeLimit - 1)
             {
-                throw ImageFormatLimitationException.HeapSizeLimitExceeded(HeapIndex.UserString);
+                Throw.HeapSizeLimitExceeded(HeapIndex.UserString);
+            }
+
+            if (userStringHeapStartOffset < 0)
+            {
+                Throw.ArgumentOutOfRange(nameof(userStringHeapStartOffset));
+            }
+
+            if (stringHeapStartOffset < 0)
+            {
+                Throw.ArgumentOutOfRange(nameof(stringHeapStartOffset));
+            }
+
+            if (blobHeapStartOffset < 0)
+            {
+                Throw.ArgumentOutOfRange(nameof(blobHeapStartOffset));
+            }
+
+            if (guidHeapStartOffset < 0)
+            {
+                Throw.ArgumentOutOfRange(nameof(guidHeapStartOffset));
+            }
+
+            if (guidHeapStartOffset % BlobUtilities.SizeOfGuid != 0)
+            {
+                throw new ArgumentException(SR.Format(SR.ValueMustBeMultiple, BlobUtilities.SizeOfGuid), nameof(guidHeapStartOffset));
             }
 
             // Add zero-th entry to all heaps, even in EnC delta.
@@ -94,13 +143,13 @@ namespace System.Reflection.Metadata.Ecma335
         /// <param name="heap">Heap index.</param>
         /// <param name="byteCount">Number of bytes.</param>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="heap"/> is not a valid heap index.</exception>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="byteCount"/> is negative or zero.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="byteCount"/> is negative.</exception>
         /// <remarks>
         /// Use to reduce allocations if the approximate number of bytes is known ahead of time.
         /// </remarks>
         public void SetCapacity(HeapIndex heap, int byteCount)
         {
-            if (byteCount <= 0)
+            if (byteCount < 0)
             {
                 Throw.ArgumentOutOfRange(nameof(byteCount));
             }
@@ -130,36 +179,87 @@ namespace System.Reflection.Metadata.Ecma335
             }
         }
 
-        public BlobHandle GetOrAddBlob(BlobBuilder builder)
-        {
-            // TODO: avoid making a copy if the blob exists in the index
-            return GetOrAddBlob(builder.ToImmutableArray());
-        }
+        // internal for testing
+        internal int SerializeHandle(StringHandle handle) => _stringVirtualIndexToHeapOffsetMap[handle.GetWriterVirtualIndex()];
+        internal int SerializeHandle(BlobHandle handle) => handle.GetHeapOffset();
+        internal int SerializeHandle(GuidHandle handle) => handle.Index;
+        internal int SerializeHandle(UserStringHandle handle) => handle.GetHeapOffset();
 
-        public BlobHandle GetOrAddBlob(ImmutableArray<byte> blob)
+        /// <summary>
+        /// Adds specified blob to Blob heap, if it's not there already.
+        /// </summary>
+        /// <param name="value"><see cref="BlobBuilder"/> containing the blob.</param>
+        /// <returns>Handle to the added or existing blob.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
+        public BlobHandle GetOrAddBlob(BlobBuilder value)
         {
-            BlobHandle index;
-            if (!_blobs.TryGetValue(blob, out index))
+            if (value == null)
             {
-                Debug.Assert(!_streamsAreComplete);
-
-                index = MetadataTokens.BlobHandle(_blobHeapSize);
-                _blobs.Add(blob, index);
-
-                _blobHeapSize += BlobWriterImpl.GetCompressedIntegerSize(blob.Length) + blob.Length;
+                Throw.ArgumentNull(nameof(value));
             }
 
-            return index;
+            // TODO: avoid making a copy if the blob exists in the index
+            return GetOrAddBlob(value.ToImmutableArray());
         }
 
-        public BlobHandle GetOrAddConstantBlob(object value)
+        /// <summary>
+        /// Adds specified blob to Blob heap, if it's not there already.
+        /// </summary>
+        /// <param name="value">Array containing the blob.</param>
+        /// <returns>Handle to the added or existing blob.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
+        public BlobHandle GetOrAddBlob(byte[] value)
+        {
+            if (value == null)
+            {
+                Throw.ArgumentNull(nameof(value));
+            }
+
+            // TODO: avoid making a copy if the blob exists in the index
+            return GetOrAddBlob(ImmutableArray.Create(value));
+        }
+
+        /// <summary>
+        /// Adds specified blob to Blob heap, if it's not there already.
+        /// </summary>
+        /// <param name="value">Array containing the blob.</param>
+        /// <returns>Handle to the added or existing blob.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
+        public BlobHandle GetOrAddBlob(ImmutableArray<byte> value)
+        {
+            if (value.IsDefault)
+            {
+                Throw.ArgumentNull(nameof(value));
+            }
+
+            BlobHandle handle;
+            if (!_blobs.TryGetValue(value, out handle))
+            {
+                Debug.Assert(!HeapsCompleted);
+
+                handle = BlobHandle.FromOffset(_blobHeapStartOffset + _blobHeapSize);
+                _blobs.Add(value, handle);
+
+                _blobHeapSize += BlobWriterImpl.GetCompressedIntegerSize(value.Length) + value.Length;
+            }
+
+            return handle;
+        }
+
+        /// <summary>
+        /// Encodes a constant value to a blob and adds it to the Blob heap, if it's not there already.
+        /// Uses UTF16 to encode string constants.
+        /// </summary>
+        /// <param name="value">Constant value.</param>
+        /// <returns>Handle to the added or existing blob.</returns>
+        public unsafe BlobHandle GetOrAddConstantBlob(object value)
         {
             string str = value as string;
             if (str != null)
             {
-                return GetOrAddBlob(str);
+                return GetOrAddBlobUTF16(str);
             }
-
+            
             var builder = PooledBlobBuilder.GetInstance();
             builder.WriteConstant(value);
             var result = GetOrAddBlob(builder);
@@ -167,24 +267,44 @@ namespace System.Reflection.Metadata.Ecma335
             return result;
         }
 
-        public BlobHandle GetOrAddBlob(string str)
+        /// <summary>
+        /// Encodes a string using UTF16 encoding to a blob and adds it to the Blob heap, if it's not there already.
+        /// </summary>
+        /// <param name="value">String.</param>
+        /// <returns>Handle to the added or existing blob.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
+        public BlobHandle GetOrAddBlobUTF16(string value)
         {
-            byte[] byteArray = new byte[str.Length * 2];
-            int i = 0;
-            foreach (char ch in str)
-            {
-                byteArray[i++] = (byte)(ch & 0xFF);
-                byteArray[i++] = (byte)(ch >> 8);
-            }
-
-            return GetOrAddBlob(ImmutableArray.Create(byteArray));
+            var builder = PooledBlobBuilder.GetInstance();
+            builder.WriteUTF16(value);
+            var handle = GetOrAddBlob(builder);
+            builder.Free();
+            return handle;
         }
 
-        public BlobHandle GetOrAddBlobUtf8(string str)
+        /// <summary>
+        /// Encodes a string using UTF8 encoding to a blob and adds it to the Blob heap, if it's not there already.
+        /// </summary>
+        /// <param name="value">Constant value.</param>
+        /// <param name="allowUnpairedSurrogates">
+        /// True to encode unpaired surrogates as specified, otherwise replace them with U+FFFD character.
+        /// </param>
+        /// <returns>Handle to the added or existing blob.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
+        public BlobHandle GetOrAddBlobUTF8(string value, bool allowUnpairedSurrogates = true)
         {
-            return GetOrAddBlob(ImmutableArray.Create(Encoding.UTF8.GetBytes(str)));
+            var builder = PooledBlobBuilder.GetInstance();
+            builder.WriteUTF8(value, allowUnpairedSurrogates);
+            var handle = GetOrAddBlob(builder);
+            builder.Free();
+            return handle;
         }
 
+        /// <summary>
+        /// Adds specified Guid to Guid heap, if it's not there already.
+        /// </summary>
+        /// <param name="guid">Guid to add.</param>
+        /// <returns>Handle to the added or existing Guid.</returns>
         public GuidHandle GetOrAddGuid(Guid guid)
         {
             if (guid == Guid.Empty)
@@ -198,157 +318,144 @@ namespace System.Reflection.Metadata.Ecma335
                 return result;
             }
 
-            result = GetNextGuid();
+            result = GetNewGuidHandle();
             _guids.Add(guid, result);
-            _guidBuilder.WriteBytes(guid.ToByteArray());
+            _guidBuilder.WriteGuid(guid);
             return result;
         }
 
-        public GuidHandle ReserveGuid(out Blob reservedBlob)
+        /// <summary>
+        /// Reserves space on the Guid heap for a GUID.
+        /// </summary>
+        /// <param name="content">
+        /// <see cref="Blob"/> representing the GUID blob as stored on the heap.
+        /// </param>
+        /// <returns>Handle to the reserved Guid.</returns>
+        /// <exception cref="ImageFormatLimitationException">The remaining space on the heap is too small to fit the string.</exception>
+        public GuidHandle ReserveGuid(out Blob content)
         {
-            var handle = GetNextGuid();
-            reservedBlob = _guidBuilder.ReserveBytes(16);
+            var handle = GetNewGuidHandle();
+            content = _guidBuilder.ReserveBytes(BlobUtilities.SizeOfGuid);
             return handle;
         }
 
-        private GuidHandle GetNextGuid()
+        private GuidHandle GetNewGuidHandle()
         {
-            Debug.Assert(!_streamsAreComplete);
+            Debug.Assert(!HeapsCompleted);
 
-            // The only GUIDs that are serialized are MVID, EncId, and EncBaseId in the
-            // Module table. Each of those GUID offsets are relative to the local heap,
-            // even for deltas, so there's no need for a GetGuidStreamPosition() method
-            // to offset the positions by the size of the original heap in delta metadata.
             // Unlike #Blob, #String and #US streams delta #GUID stream is padded to the 
             // size of the previous generation #GUID stream before new GUIDs are added.
+            // The first GUID added in a delta will thus have an index that equals the number 
+            // of GUIDs in all previous generations + 1.
 
             // Metadata Spec: 
             // The Guid heap is an array of GUIDs, each 16 bytes wide. 
             // Its first element is numbered 1, its second 2, and so on.
-            return MetadataTokens.GuidHandle((_guidBuilder.Count >> 4) + 1);
+            return GuidHandle.FromIndex((_guidBuilder.Count >> 4) + 1);
         }
 
-        public StringHandle GetOrAddString(string str)
+        /// <summary>
+        /// Adds specified string to String heap, if it's not there already.
+        /// </summary>
+        /// <param name="value">Array containing the blob.</param>
+        /// <returns>Handle to the added or existing blob.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
+        public StringHandle GetOrAddString(string value)
         {
-            StringHandle index;
-            if (str.Length == 0)
+            if (value == null)
             {
-                index = default(StringHandle);
+                Throw.ArgumentNull(nameof(value));
             }
-            else if (!_strings.TryGetValue(str, out index))
+
+            StringHandle handle;
+            if (value.Length == 0)
             {
-                Debug.Assert(!_streamsAreComplete);
-                index = MetadataTokens.StringHandle(_strings.Count + 1); // idx 0 is reserved for empty string
-                _strings.Add(str, index);
+                handle = default(StringHandle);
+            }
+            else if (!_strings.TryGetValue(value, out handle))
+            {
+                Debug.Assert(!HeapsCompleted);
+                handle = StringHandle.FromWriterVirtualIndex(_strings.Count + 1); // idx 0 is reserved for empty string
+                _strings.Add(value, handle);
             }
 
-            return index;
+            return handle;
         }
 
-        public int GetHeapOffset(StringHandle handle)
-        {
-            return _stringIndexToResolvedOffsetMap[MetadataTokens.GetHeapOffset(handle)];
-        }
-
-        public int GetHeapOffset(BlobHandle handle)
-        {
-            int offset = MetadataTokens.GetHeapOffset(handle);
-            return (offset == 0) ? 0 : _blobHeapStartOffset + offset;
-        }
-        
-        public int GetHeapOffset(GuidHandle handle)
-        {
-            return MetadataTokens.GetHeapOffset(handle);
-        }
-
-        public int GetHeapOffset(UserStringHandle handle)
-        {
-            return MetadataTokens.GetHeapOffset(handle);
-        }
-
+        /// <summary>
+        /// Reserves space on the User String heap for a string of specified length.
+        /// </summary>
+        /// <param name="length">The number of characters to reserve.</param>
+        /// <param name="reservedUserString">
+        /// <see cref="Blob"/> representing the entire User String blob (including its length and terminal character).
+        /// Use <see cref="BlobWriter.WriteUserString(string)"/> to fill in the content.
+        /// </param>
+        /// <returns>
+        /// Handle to the reserved User String.
+        /// May be used in <see cref="InstructionEncoder.LoadString(UserStringHandle)"/>.
+        /// </returns>
         /// <exception cref="ImageFormatLimitationException">The remaining space on the heap is too small to fit the string.</exception>
-        public UserStringHandle GetOrAddUserString(string str)
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="length"/> is negative.</exception>
+        public UserStringHandle ReserveUserString(int length, out Blob reservedUserString)
         {
-            int index;
-            if (!_userStrings.TryGetValue(str, out index))
+            if (length < 0)
             {
-                Debug.Assert(!_streamsAreComplete);
-
-                int startPosition = _userStringBuilder.Count;
-                int encodedLength = str.Length * 2 + 1;
-                index = startPosition + _userStringHeapStartOffset;
-
-                // Native metadata emitter allows strings to exceed the heap size limit as long 
-                // as the index is within the limits (see https://github.com/dotnet/roslyn/issues/9852)
-                if (index >= UserStringHeapSizeLimit)
-                {
-                    throw ImageFormatLimitationException.HeapSizeLimitExceeded(HeapIndex.UserString);
-                }
-
-                _userStrings.Add(str, index);
-                _userStringBuilder.WriteCompressedInteger(encodedLength);
-                _userStringBuilder.WriteUTF16(str);
-
-                // Write out a trailing byte indicating if the string is really quite simple
-                byte stringKind = 0;
-                foreach (char ch in str)
-                {
-                    if (ch >= 0x7F)
-                    {
-                        stringKind = 1;
-                    }
-                    else
-                    {
-                        switch ((int)ch)
-                        {
-                            case 0x1:
-                            case 0x2:
-                            case 0x3:
-                            case 0x4:
-                            case 0x5:
-                            case 0x6:
-                            case 0x7:
-                            case 0x8:
-                            case 0xE:
-                            case 0xF:
-                            case 0x10:
-                            case 0x11:
-                            case 0x12:
-                            case 0x13:
-                            case 0x14:
-                            case 0x15:
-                            case 0x16:
-                            case 0x17:
-                            case 0x18:
-                            case 0x19:
-                            case 0x1A:
-                            case 0x1B:
-                            case 0x1C:
-                            case 0x1D:
-                            case 0x1E:
-                            case 0x1F:
-                            case 0x27:
-                            case 0x2D:
-                                stringKind = 1;
-                                break;
-                            default:
-                                continue;
-                        }
-                    }
-
-                    break;
-                }
-
-                _userStringBuilder.WriteByte(stringKind);
+                Throw.ArgumentOutOfRange(nameof(length));
             }
 
-            return MetadataTokens.UserStringHandle(index);
+            var handle = GetNewUserStringHandle();
+            int encodedLength = BlobUtilities.GetUserStringByteLength(length);
+            reservedUserString = _userStringBuilder.ReserveBytes(BlobWriterImpl.GetCompressedIntegerSize(encodedLength) + encodedLength);
+            return handle;
+        }
+
+        /// <summary>
+        /// Adds specified string to User String heap, if it's not there already.
+        /// </summary>
+        /// <param name="value">String to add.</param>
+        /// <returns>
+        /// Handle to the added or existing string.
+        /// May be used in <see cref="InstructionEncoder.LoadString(UserStringHandle)"/>.
+        /// </returns>
+        /// <exception cref="ImageFormatLimitationException">The remaining space on the heap is too small to fit the string.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
+        public UserStringHandle GetOrAddUserString(string value)
+        {
+            if (value == null)
+            {
+                Throw.ArgumentNull(nameof(value));
+            }
+
+            UserStringHandle handle;
+            if (!_userStrings.TryGetValue(value, out handle))
+            {
+                Debug.Assert(!HeapsCompleted);
+                handle = GetNewUserStringHandle();
+
+                _userStrings.Add(value, handle);
+                _userStringBuilder.WriteUserString(value);
+            }
+
+            return handle;
+        }
+
+        private UserStringHandle GetNewUserStringHandle()
+        {
+            int offset = _userStringHeapStartOffset + _userStringBuilder.Count;
+
+            // Native metadata emitter allows strings to exceed the heap size limit as long 
+            // as the index is within the limits (see https://github.com/dotnet/roslyn/issues/9852)
+            if (offset >= UserStringHeapSizeLimit)
+            {
+                Throw.HeapSizeLimitExceeded(HeapIndex.UserString);
+            }
+
+            return UserStringHandle.FromOffset(offset);
         }
 
         internal void CompleteHeaps()
         {
-            Debug.Assert(!_streamsAreComplete);
-            _streamsAreComplete = true;
+            Debug.Assert(!HeapsCompleted);
             SerializeStringHeap();
         }
 
@@ -376,9 +483,9 @@ namespace System.Reflection.Metadata.Ecma335
             _strings = null;
 
             // Create VirtIdx to Idx map and add entry for empty string
-            _stringIndexToResolvedOffsetMap = new int[sorted.Count + 1];
+            _stringVirtualIndexToHeapOffsetMap = new int[sorted.Count + 1];
 
-            _stringIndexToResolvedOffsetMap[0] = 0;
+            _stringVirtualIndexToHeapOffsetMap[0] = 0;
             _stringBuilder.WriteByte(0);
 
             // Find strings that can be folded
@@ -391,11 +498,11 @@ namespace System.Reflection.Metadata.Ecma335
                 if (prev.EndsWith(entry.Key, StringComparison.Ordinal) && !BlobUtilities.IsLowSurrogateChar(entry.Key[0]))
                 {
                     // Map over the tail of prev string. Watch for null-terminator of prev string.
-                    _stringIndexToResolvedOffsetMap[MetadataTokens.GetHeapOffset(entry.Value)] = position - (BlobUtilities.GetUTF8ByteCount(entry.Key) + 1);
+                    _stringVirtualIndexToHeapOffsetMap[entry.Value.GetWriterVirtualIndex()] = position - (BlobUtilities.GetUTF8ByteCount(entry.Key) + 1);
                 }
                 else
                 {
-                    _stringIndexToResolvedOffsetMap[MetadataTokens.GetHeapOffset(entry.Value)] = position;
+                    _stringVirtualIndexToHeapOffsetMap[entry.Value.GetWriterVirtualIndex()] = position;
                     _stringBuilder.WriteUTF8(entry.Key, allowUnpairedSurrogates: false);
                     _stringBuilder.WriteByte(0);
                 }
@@ -408,7 +515,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// Sorts strings such that a string is followed immediately by all strings
         /// that are a suffix of it.  
         /// </summary>
-        private class SuffixSort : IComparer<KeyValuePair<string, StringHandle>>
+        private sealed class SuffixSort : IComparer<KeyValuePair<string, StringHandle>>
         {
             public int Compare(KeyValuePair<string, StringHandle> xPair, KeyValuePair<string, StringHandle> yPair)
             {
@@ -432,12 +539,14 @@ namespace System.Reflection.Metadata.Ecma335
             }
         }
 
-        public void WriteHeapsTo(BlobBuilder writer)
+        internal void WriteHeapsTo(BlobBuilder builder)
         {
-            WriteAligned(_stringBuilder, writer);
-            WriteAligned(_userStringBuilder, writer);
-            WriteAligned(_guidBuilder, writer);
-            WriteAlignedBlobHeap(writer);
+            Debug.Assert(HeapsCompleted);
+
+            WriteAligned(_stringBuilder, builder);
+            WriteAligned(_userStringBuilder, builder);
+            WriteAligned(_guidBuilder, builder);
+            WriteAlignedBlobHeap(builder);
         }
 
         private void WriteAlignedBlobHeap(BlobBuilder builder)
@@ -450,12 +559,14 @@ namespace System.Reflection.Metadata.Ecma335
             // since the order of entries in _blobs dictionary depends on the hash of the array values, 
             // which is not correlated to the heap index. If we observe such issue we should order 
             // the entries by heap position before running this loop.
+
+            int startOffset = _blobHeapStartOffset;
             foreach (var entry in _blobs)
             {
-                int heapOffset = MetadataTokens.GetHeapOffset(entry.Value);
+                int heapOffset = entry.Value.GetHeapOffset();
                 var blob = entry.Key;
 
-                writer.Offset = heapOffset;
+                writer.Offset = (heapOffset == 0) ? 0 : heapOffset - startOffset;
                 writer.WriteCompressedInteger(blob.Length);
                 writer.WriteBytes(blob);
             }

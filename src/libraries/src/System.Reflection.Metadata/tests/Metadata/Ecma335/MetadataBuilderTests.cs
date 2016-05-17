@@ -2,13 +2,27 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Reflection.Metadata.Ecma335;
+using System.Collections.Immutable;
+using System.Reflection.Metadata.Tests;
 using Xunit;
 
-namespace System.Reflection.Metadata.Tests
+namespace System.Reflection.Metadata.Ecma335.Tests
 {
     public class MetadataBuilderTests
     {
+        [Fact]
+        public void Ctor_Errors()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new MetadataBuilder(-1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new MetadataBuilder(0, -1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new MetadataBuilder(0, 0, -1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new MetadataBuilder(0, 0, 0, -1));
+            Assert.Throws<ArgumentException>(() => new MetadataBuilder(0, 0, 0, 1));
+
+            new MetadataBuilder(userStringHeapStartOffset: 0x00fffffe);
+            Assert.Throws<ImageFormatLimitationException>(() => new MetadataBuilder(userStringHeapStartOffset: 0x00ffffff));
+        }
+
         [Fact]
         public void Add()
         {
@@ -190,6 +204,212 @@ namespace System.Reflection.Metadata.Tests
             Assert.Throws<ArgumentException>(() => builder.AddCustomDebugInformation(badHandleKind, default(GuidHandle), default(BlobHandle)));
         }
 
+        [Fact]
+        public void GetOrAddErrors()
+        {
+            var mdBuilder = new MetadataBuilder();
+            Assert.Throws<ArgumentNullException>("value", () => mdBuilder.GetOrAddBlob((BlobBuilder)null));
+            Assert.Throws<ArgumentNullException>("value", () => mdBuilder.GetOrAddBlob((byte[])null));
+            Assert.Throws<ArgumentNullException>("value", () => mdBuilder.GetOrAddBlob(default(ImmutableArray<byte>)));
+            Assert.Throws<ArgumentNullException>("value", () => mdBuilder.GetOrAddBlobUTF8(null));
+            Assert.Throws<ArgumentNullException>("value", () => mdBuilder.GetOrAddBlobUTF16(null));
+            Assert.Throws<ArgumentNullException>("value", () => mdBuilder.GetOrAddString(null));
+        }
+
+        [Fact]
+        public void Heaps_Empty()
+        {
+            var mdBuilder = new MetadataBuilder();
+            mdBuilder.CompleteHeaps();
+
+            var builder = new BlobBuilder();
+            mdBuilder.WriteHeapsTo(builder);
+
+            AssertEx.Equal(new byte[]
+            {
+                0x00, 0x00, 0x00, 0x00, // #String
+                0x00, 0x00, 0x00, 0x00, // #US
+                // #Guid
+                0x00, 0x00, 0x00, 0x00  // #Blob
+            }, builder.ToArray());
+        }
+
+        [Fact]
+        public void Heaps()
+        {
+            var mdBuilder = new MetadataBuilder();
+
+            var g0 = mdBuilder.GetOrAddGuid(default(Guid));
+            Assert.True(g0.IsNil);
+            Assert.Equal(0, g0.Index);
+
+            var g1 = mdBuilder.GetOrAddGuid(new Guid("D39F3559-476A-4D1E-B6D2-88E66395230B"));
+            Assert.Equal(1, g1.Index);
+
+            var s0 = mdBuilder.GetOrAddString("");
+            Assert.False(s0.IsVirtual);
+            Assert.Equal(0, s0.GetWriterVirtualIndex());
+
+            var s1 = mdBuilder.GetOrAddString("foo");
+            Assert.True(s1.IsVirtual);
+            Assert.Equal(1, s1.GetWriterVirtualIndex());
+
+            var us0 = mdBuilder.GetOrAddUserString("");
+            Assert.Equal(1, us0.GetHeapOffset());
+
+            var us1 = mdBuilder.GetOrAddUserString("bar");
+            Assert.Equal(3, us1.GetHeapOffset());
+
+            var b0 = mdBuilder.GetOrAddBlob(new byte[0]);
+            Assert.Equal(0, b0.GetHeapOffset());
+
+            var b1 = mdBuilder.GetOrAddBlob(new byte[] { 1, 2 });
+            Assert.Equal(1, b1.GetHeapOffset());
+
+            mdBuilder.CompleteHeaps();
+
+            Assert.Equal(0, mdBuilder.SerializeHandle(g0));
+            Assert.Equal(1, mdBuilder.SerializeHandle(g1));
+            Assert.Equal(0, mdBuilder.SerializeHandle(s0));
+            Assert.Equal(1, mdBuilder.SerializeHandle(s1));
+            Assert.Equal(1, mdBuilder.SerializeHandle(us0));
+            Assert.Equal(3, mdBuilder.SerializeHandle(us1));
+            Assert.Equal(0, mdBuilder.SerializeHandle(b0));
+            Assert.Equal(1, mdBuilder.SerializeHandle(b1));
+
+            var heaps = new BlobBuilder();
+            mdBuilder.WriteHeapsTo(heaps);
+
+            AssertEx.Equal(new byte[] 
+            {
+                // #String
+                0x00, 
+                0x66, 0x6F, 0x6F, 0x00,
+                0x00, 0x00, 0x00,
+                // #US
+                0x00,
+                0x01, 0x00,
+                0x07, 0x62, 0x00, 0x61, 0x00, 0x72, 0x00, 0x00,
+                0x00, 
+                // #Guid
+                0x59, 0x35, 0x9F, 0xD3, 0x6A, 0x47, 0x1E, 0x4D, 0xB6, 0xD2, 0x88, 0xE6, 0x63, 0x95, 0x23, 0x0B,
+                // #Blob
+                0x00, 0x02, 0x01, 0x02
+            }, heaps.ToArray());
+        }
+
+        [Fact]
+        public void Heaps_StartOffsets()
+        {
+            var mdBuilder = new MetadataBuilder(
+                userStringHeapStartOffset: 0x10,
+                stringHeapStartOffset: 0x20, 
+                blobHeapStartOffset: 0x30,
+                guidHeapStartOffset: 0x40);
+
+            var g = mdBuilder.GetOrAddGuid(new Guid("D39F3559-476A-4D1E-B6D2-88E66395230B"));
+            Assert.Equal(5, g.Index);
+
+            var s0 = mdBuilder.GetOrAddString("");
+            Assert.False(s0.IsVirtual);
+            Assert.Equal(0, s0.GetWriterVirtualIndex());
+
+            var s1 = mdBuilder.GetOrAddString("foo");
+            Assert.True(s1.IsVirtual);
+            Assert.Equal(1, s1.GetWriterVirtualIndex());
+
+            var us0 = mdBuilder.GetOrAddUserString("");
+            Assert.Equal(0x11, us0.GetHeapOffset());
+
+            var us1 = mdBuilder.GetOrAddUserString("bar");
+            Assert.Equal(0x13, us1.GetHeapOffset());
+
+            var b0 = mdBuilder.GetOrAddBlob(new byte[0]);
+            Assert.Equal(0, b0.GetHeapOffset());
+
+            var b1 = mdBuilder.GetOrAddBlob(new byte[] { 1, 2 });
+            Assert.Equal(0x31, b1.GetHeapOffset());
+
+            mdBuilder.CompleteHeaps();
+
+            Assert.Equal(5, mdBuilder.SerializeHandle(g));
+            Assert.Equal(0, mdBuilder.SerializeHandle(s0));
+            Assert.Equal(0x21, mdBuilder.SerializeHandle(s1));
+            Assert.Equal(0x11, mdBuilder.SerializeHandle(us0));
+            Assert.Equal(0x13, mdBuilder.SerializeHandle(us1));
+            Assert.Equal(0, mdBuilder.SerializeHandle(b0));
+            Assert.Equal(0x31, mdBuilder.SerializeHandle(b1));
+
+            var heaps = new BlobBuilder();
+            mdBuilder.WriteHeapsTo(heaps);
+
+            AssertEx.Equal(new byte[]
+            {
+                // #String
+                0x00,
+                0x66, 0x6F, 0x6F, 0x00,
+                0x00, 0x00, 0x00,
+                // #US
+                0x00,
+                0x01, 0x00,
+                0x07, 0x62, 0x00, 0x61, 0x00, 0x72, 0x00, 0x00,
+                0x00, 
+                // #Guid
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x59, 0x35, 0x9F, 0xD3, 0x6A, 0x47, 0x1E, 0x4D, 0xB6, 0xD2, 0x88, 0xE6, 0x63, 0x95, 0x23, 0x0B,
+                // #Blob
+                0x00, 0x02, 0x01, 0x02
+            }, heaps.ToArray());
+
+            Assert.Throws<ArgumentNullException>(() => mdBuilder.GetOrAddString(null));
+        }
+
+        [Fact]
+        public void Heaps_Reserve()
+        {
+            var mdBuilder = new MetadataBuilder();
+
+            Blob guidFixup, usFixup;
+
+            Assert.Equal(MetadataTokens.GuidHandle(1), mdBuilder.ReserveGuid(out guidFixup));
+            Assert.Equal(MetadataTokens.UserStringHandle(1), mdBuilder.ReserveUserString(3, out usFixup));
+
+            mdBuilder.CompleteHeaps();
+
+            var builder = new BlobBuilder();
+            mdBuilder.WriteHeapsTo(builder);
+
+            AssertEx.Equal(new byte[]
+            {
+                // #String
+                0x00, 0x00, 0x00, 0x00,
+                // #US
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+                // #Guid
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+                // #Blob
+                0x00, 0x00, 0x00, 0x00
+            }, builder.ToArray());
+
+            new BlobWriter(guidFixup).WriteGuid(new Guid("D39F3559-476A-4D1E-B6D2-88E66395230B"));
+            new BlobWriter(usFixup).WriteUserString("bar");
+
+            AssertEx.Equal(new byte[]
+            {
+                // #String
+                0x00, 0x00, 0x00, 0x00,
+                // #US
+                0x00, 0x07, 0x62, 0x00, 0x61, 0x00, 0x72, 0x00, 0x00, 0x00, 0x00, 0x00,
+                // #Guid
+                0x59, 0x35, 0x9F, 0xD3, 0x6A, 0x47, 0x1E, 0x4D, 0xB6, 0xD2, 0x88, 0xE6, 0x63, 0x95, 0x23, 0x0B,
+                // #Blob
+                0x00, 0x00, 0x00, 0x00
+            }, builder.ToArray());
+        }
+
         [Fact, ActiveIssue("https://github.com/dotnet/roslyn/issues/9852")]
         public void HeapOverflow_UserString()
         {
@@ -216,6 +436,7 @@ namespace System.Reflection.Metadata.Tests
             var builder4 = new MetadataBuilder(userStringHeapStartOffset: 0x00fffff7);
             Assert.Equal(0x70fffff8, MetadataTokens.GetToken(builder4.GetOrAddUserString("1"))); // 4B
             Assert.Equal(0x70fffffc, MetadataTokens.GetToken(builder4.GetOrAddUserString("2"))); // 4B 
+            Assert.Throws<ImageFormatLimitationException>(() => builder4.GetOrAddUserString("3")); // hits the limit exactly 
 
             var builder5 = new MetadataBuilder(userStringHeapStartOffset: 0x00fffff8);
             Assert.Equal(0x70fffff9, MetadataTokens.GetToken(builder5.GetOrAddUserString("1"))); // 4B
@@ -231,16 +452,16 @@ namespace System.Reflection.Metadata.Tests
 
             builder.GetOrAddString("11111");
             builder.GetOrAddGuid(Guid.NewGuid());
-            builder.GetOrAddBlob("2222");
+            builder.GetOrAddBlobUTF8("2222");
             builder.GetOrAddUserString("3333");
 
             builder.AddMethodDefinition(0, 0, default(StringHandle), default(BlobHandle), 0, default(ParameterHandle));
             builder.AddMethodDefinition(0, 0, default(StringHandle), default(BlobHandle), 0, default(ParameterHandle));
             builder.AddMethodDefinition(0, 0, default(StringHandle), default(BlobHandle), 0, default(ParameterHandle));
 
+            builder.SetCapacity(TableIndex.MethodDef, 0);
             builder.SetCapacity(TableIndex.MethodDef, 1);
             builder.SetCapacity(TableIndex.MethodDef, 1000);
-            Assert.Throws<ArgumentOutOfRangeException>(() => builder.SetCapacity(TableIndex.MethodDef, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => builder.SetCapacity(TableIndex.MethodDef, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => builder.SetCapacity((TableIndex)0xff, 10));
 
@@ -252,7 +473,7 @@ namespace System.Reflection.Metadata.Tests
             builder.SetCapacity(HeapIndex.Guid, 1000);
             builder.SetCapacity(HeapIndex.UserString, 3);
             builder.SetCapacity(HeapIndex.UserString, 1000);
-            Assert.Throws<ArgumentOutOfRangeException>(() => builder.SetCapacity(HeapIndex.String, 0));
+            builder.SetCapacity(HeapIndex.String, 0);
             Assert.Throws<ArgumentOutOfRangeException>(() => builder.SetCapacity(HeapIndex.String, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => builder.SetCapacity((HeapIndex)0xff, 10));
         }
