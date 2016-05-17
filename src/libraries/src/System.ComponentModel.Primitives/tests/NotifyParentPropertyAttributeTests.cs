@@ -33,17 +33,16 @@ namespace System.ComponentModel.Primitives.Tests
 
         [Theory]
         [MemberData(nameof(NotifyParentPropertyAttributeData))]
-        public void NameTests(NotifyParentPropertyAttribute attribute, bool isNotifyParent, bool isDefault)
+        public void NameTests(NotifyParentPropertyAttribute attribute, bool isNotifyParent)
         {
             Assert.Equal(isNotifyParent, attribute.NotifyParent);
-            Assert.Equal(isDefault, attribute.IsDefaultAttribute());
         }
 
         private static IEnumerable<object[]> NotifyParentPropertyAttributeData()
         {
-            yield return new object[] { NotifyParentPropertyAttribute.Default, false, true };
-            yield return new object[] { new NotifyParentPropertyAttribute(true), true, false };
-            yield return new object[] { new NotifyParentPropertyAttribute(false), false, true };
+            yield return new object[] { NotifyParentPropertyAttribute.Default, false };
+            yield return new object[] { new NotifyParentPropertyAttribute(true), true };
+            yield return new object[] { new NotifyParentPropertyAttribute(false), false };
         }
     }
 }

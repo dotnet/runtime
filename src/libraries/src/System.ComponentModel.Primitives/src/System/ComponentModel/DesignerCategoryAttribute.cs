@@ -8,11 +8,8 @@ namespace System.ComponentModel
     ///    <para>Specifies that the designer for a class belongs to a certain category.</para>
     /// </devdoc>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
-    public sealed class DesignerCategoryAttribute : Attribute, IIsDefaultAttribute, ITypeId
+    public sealed class DesignerCategoryAttribute : Attribute
     {
-        private readonly string _category;
-        private string _typeId;
-
         /// <devdoc>
         ///    <para>
         ///       Specifies that a component marked with this category uses a
@@ -53,7 +50,7 @@ namespace System.ComponentModel
         /// </devdoc>
         public DesignerCategoryAttribute()
         {
-            _category = string.Empty;
+            Category = string.Empty;
         }
 
         /// <devdoc>
@@ -64,7 +61,7 @@ namespace System.ComponentModel
         /// </devdoc>
         public DesignerCategoryAttribute(string category)
         {
-            _category = category;
+            Category = category;
         }
 
         /// <devdoc>
@@ -72,29 +69,7 @@ namespace System.ComponentModel
         ///       Gets the name of the category.
         ///    </para>
         /// </devdoc>
-        public string Category => _category;
-
-        /// <internalonly/>
-        /// <devdoc>
-        ///    <para>
-        ///       This defines a unique ID for this attribute type. It is used
-        ///       by filtering algorithms to identify two attributes that are
-        ///       the same type. For most attributes, this just returns the
-        ///       Type instance for the attribute. DesignerAttribute overrides
-        ///       this to include the name of the category
-        ///    </para>
-        /// </devdoc>
-        object ITypeId.TypeId
-        {
-            get
-            {
-                if (_typeId == null)
-                {
-                    _typeId = GetType().FullName + Category;
-                }
-                return _typeId;
-            }
-        }
+        public string Category { get; }
 
         public override bool Equals(object obj)
         {
@@ -104,17 +79,12 @@ namespace System.ComponentModel
             }
 
             DesignerCategoryAttribute other = obj as DesignerCategoryAttribute;
-            return (other != null) && other._category == _category;
+            return other != null && other.Category == Category;
         }
 
         public override int GetHashCode()
         {
-            return _category.GetHashCode();
-        }
-
-        bool IIsDefaultAttribute.IsDefaultAttribute()
-        {
-            return _category.Equals(Default.Category);
+            return Category.GetHashCode();
         }
     }
 }

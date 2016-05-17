@@ -33,17 +33,16 @@ namespace System.ComponentModel.Primitives.Tests
 
         [Theory]
         [MemberData(nameof(MergablePropertyAttributeData))]
-        public void NameTests(MergablePropertyAttribute attribute, bool isMergable, bool isDefault)
+        public void NameTests(MergablePropertyAttribute attribute, bool isMergable)
         {
             Assert.Equal(isMergable, attribute.AllowMerge);
-            Assert.Equal(isDefault, attribute.IsDefaultAttribute());
         }
 
         private static IEnumerable<object[]> MergablePropertyAttributeData()
         {
-            yield return new object[] { MergablePropertyAttribute.Default, true, true };
-            yield return new object[] { new MergablePropertyAttribute(true), true, true };
-            yield return new object[] { new MergablePropertyAttribute(false), false, false };
+            yield return new object[] { MergablePropertyAttribute.Default, true };
+            yield return new object[] { new MergablePropertyAttribute(true), true };
+            yield return new object[] { new MergablePropertyAttribute(false), false };
         }
     }
 }
