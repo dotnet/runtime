@@ -9,7 +9,7 @@ namespace System.ComponentModel
     ///       properties window.</para>
     /// </summary>
     [AttributeUsage(AttributeTargets.All)]
-    public sealed class ParenthesizePropertyNameAttribute : Attribute, IIsDefaultAttribute
+    public sealed class ParenthesizePropertyNameAttribute : Attribute
     {
         /// <summary>
         ///    <para>
@@ -70,14 +70,6 @@ namespace System.ComponentModel
         public override int GetHashCode()
         {
             return base.GetHashCode();
-        }
-
-        /// <summary>
-        /// <para>Gets a value indicating whether this attribute is set to <see langword='true'/> by default.</para>
-        /// </summary>
-        bool IIsDefaultAttribute.IsDefaultAttribute()
-        {
-            return this.Equals(Default);
         }
     }
 }

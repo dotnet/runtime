@@ -42,17 +42,16 @@ namespace System.ComponentModel.Primitives.Tests
 
         [Theory]
         [MemberData(nameof(ParenthesizePropertyNameAttributeData))]
-        public void NameTests(ParenthesizePropertyNameAttribute attribute, bool needParenthesis, bool isDefault)
+        public void NameTests(ParenthesizePropertyNameAttribute attribute, bool needParenthesis)
         {
             Assert.Equal(needParenthesis, attribute.NeedParenthesis);
-            Assert.Equal(isDefault, attribute.IsDefaultAttribute());
         }
 
         private static IEnumerable<object[]> ParenthesizePropertyNameAttributeData()
         {
-            yield return new object[] { ParenthesizePropertyNameAttribute.Default, false, true };
-            yield return new object[] { new ParenthesizePropertyNameAttribute(true), true, false };
-            yield return new object[] { new ParenthesizePropertyNameAttribute(false), false, true };
+            yield return new object[] { ParenthesizePropertyNameAttribute.Default, false };
+            yield return new object[] { new ParenthesizePropertyNameAttribute(true), true };
+            yield return new object[] { new ParenthesizePropertyNameAttribute(false), false };
         }
     }
 }

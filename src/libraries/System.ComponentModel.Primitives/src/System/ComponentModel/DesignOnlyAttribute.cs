@@ -9,7 +9,7 @@ namespace System.ComponentModel
     ///       design time.</para>
     /// </summary>
     [AttributeUsage(AttributeTargets.All)]
-    public sealed class DesignOnlyAttribute : Attribute, IIsDefaultAttribute
+    public sealed class DesignOnlyAttribute : Attribute
     {
         /// <summary>
         ///    <para>
@@ -54,14 +54,6 @@ namespace System.ComponentModel
         ///    </para>
         /// </summary>
         public static readonly DesignOnlyAttribute Default = No;
-
-        /// <summary>
-        /// </summary>
-        /// <internalonly/>
-        bool IIsDefaultAttribute.IsDefaultAttribute()
-        {
-            return IsDesignOnly == Default.IsDesignOnly;
-        }
 
         public override bool Equals(object obj)
         {

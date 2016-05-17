@@ -33,17 +33,16 @@ namespace System.ComponentModel.Primitives.Tests
 
         [Theory]
         [MemberData(nameof(LocalizableAttributeData))]
-        public void NameTests(LocalizableAttribute attribute, bool isLocalizable, bool isDefault)
+        public void NameTests(LocalizableAttribute attribute, bool isLocalizable)
         {
             Assert.Equal(isLocalizable, attribute.IsLocalizable);
-            Assert.Equal(isDefault, attribute.IsDefaultAttribute());
         }
 
         private static IEnumerable<object[]> LocalizableAttributeData()
         {
-            yield return new object[] { LocalizableAttribute.Default, false, true };
-            yield return new object[] { new LocalizableAttribute(true), true, false };
-            yield return new object[] { new LocalizableAttribute(false), false, true };
+            yield return new object[] { LocalizableAttribute.Default, false };
+            yield return new object[] { new LocalizableAttribute(true), true };
+            yield return new object[] { new LocalizableAttribute(false), false };
         }
     }
 }

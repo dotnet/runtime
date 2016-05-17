@@ -10,7 +10,7 @@ namespace System.ComponentModel
     ///       other objects in a properties window.</para>
     /// </summary>
     [AttributeUsage(AttributeTargets.All)]
-    public sealed class MergablePropertyAttribute : Attribute, IIsDefaultAttribute
+    public sealed class MergablePropertyAttribute : Attribute
     {
         /// <summary>
         ///    <para>
@@ -79,14 +79,6 @@ namespace System.ComponentModel
         public override int GetHashCode()
         {
             return base.GetHashCode();
-        }
-
-        /// <summary>
-        /// </summary>
-        /// <internalonly/>
-        bool IIsDefaultAttribute.IsDefaultAttribute()
-        {
-            return this.Equals(Default);
         }
     }
 }

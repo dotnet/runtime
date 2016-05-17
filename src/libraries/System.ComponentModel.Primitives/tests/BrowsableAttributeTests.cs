@@ -21,10 +21,9 @@ namespace System.ComponentModel.Primitives.Tests
 
         [Theory]
         [MemberData(nameof(DefaultData))]
-        public void GetBrowsable(BrowsableAttribute attribute, bool expectedBrowsable, bool expectedIsDefaultValue)
+        public void GetBrowsable(BrowsableAttribute attribute, bool expectedBrowsable)
         {
             Assert.Equal(expectedBrowsable, attribute.Browsable);
-            Assert.Equal(expectedIsDefaultValue, attribute.IsDefaultAttribute());
         }
 
         [Fact]
@@ -39,21 +38,11 @@ namespace System.ComponentModel.Primitives.Tests
             Assert.True(BrowsableAttribute.Yes.Equals(BrowsableAttribute.Yes));
         }
 
-        [Fact]
-        public void DefaultValue()
-        {
-            Assert.True(BrowsableAttribute.Default.IsDefaultAttribute());
-            Assert.True(BrowsableAttribute.Yes.IsDefaultAttribute());
-            Assert.False(BrowsableAttribute.No.IsDefaultAttribute());
-            Assert.True(new BrowsableAttribute(true).IsDefaultAttribute());
-            Assert.False(new BrowsableAttribute(false).IsDefaultAttribute());
-        }
-
         private static IEnumerable<object[]> DefaultData()
         {
-            yield return new object[] { BrowsableAttribute.Yes, true, true };
-            yield return new object[] { BrowsableAttribute.Default, true, true };
-            yield return new object[] { BrowsableAttribute.No, false, false };
+            yield return new object[] { BrowsableAttribute.Yes, true };
+            yield return new object[] { BrowsableAttribute.Default, true };
+            yield return new object[] { BrowsableAttribute.No, false };
         }
     }
 }

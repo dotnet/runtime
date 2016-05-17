@@ -33,17 +33,16 @@ namespace System.ComponentModel.Primitives.Tests
 
         [Theory]
         [MemberData(nameof(ImmutableAttributesData))]
-        public void NameTests(ImmutableObjectAttribute attribute, bool isImmutable, bool isDefault)
+        public void NameTests(ImmutableObjectAttribute attribute, bool isImmutable)
         {
             Assert.Equal(isImmutable, attribute.Immutable);
-            Assert.Equal(isDefault, attribute.IsDefaultAttribute());
         }
 
         private static IEnumerable<object[]> ImmutableAttributesData()
         {
-            yield return new object[] { ImmutableObjectAttribute.Default, false, true };
-            yield return new object[] { new ImmutableObjectAttribute(true), true, false };
-            yield return new object[] { new ImmutableObjectAttribute(false), false, true };
+            yield return new object[] { ImmutableObjectAttribute.Default, false };
+            yield return new object[] { new ImmutableObjectAttribute(true), true };
+            yield return new object[] { new ImmutableObjectAttribute(false), false };
         }
     }
 }
