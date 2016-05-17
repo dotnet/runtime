@@ -1,0 +1,1 @@
+PermitImplementation=.NETCore,Version=v4.5;WindowsPhone,Version=v8.0

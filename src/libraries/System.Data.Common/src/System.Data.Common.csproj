@@ -9,16 +9,13 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.0</NuGetTargetMoniker>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net451'">true</IsPartialFacadeAssembly>
-    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.2</PackageTargetFramework>
-    <PackageTargetFramework Condition="'$(TargetGroup)' == 'net451'">net451</PackageTargetFramework>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.2</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup Condition="'$(PackageTargetFramework)' == ''">
-    <PackageDestination Include="lib/netstandard1.0">
-      <TargetFramework>netstandard1.0</TargetFramework>
+    <PackageDestination Include="lib/netstandard1.2">
+      <TargetFramework>netstandard1.2</TargetFramework>
     </PackageDestination>
-    <PackageDestination Include="lib/portable-net45+win8+wp8+wpa81">
-      <TargetFramework>portable-net45+win8+wp8+wpa81</TargetFramework>
+    <PackageDestination Include="lib/portable-net451+win8+wp8+wpa81">
+      <TargetFramework>portable-net451+win8+wp8+wpa81</TargetFramework>
     </PackageDestination>
   </ItemGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
