@@ -6,23 +6,21 @@ using System.Collections.Tests;
 
 namespace System.Collections.Specialized.Tests
 {
-    public class HybridDictionary_CaseSensitive_Tests : HybridDictionaryTestBase
+    public class ListDictionary_NoComparer_Tests : ListDictionaryTestBase
     {
-        protected override IDictionary NonGenericIDictionaryFactory() => new HybridDictionary(false);
+        protected override IDictionary NonGenericIDictionaryFactory() => new ListDictionary();
     }
 
-    public class HybridDictionary_CaseInsensitive_Tests : HybridDictionaryTestBase
+    public class ListDictionary_CustomComparer_Tests : ListDictionaryTestBase
     {
-        protected override IDictionary NonGenericIDictionaryFactory() => new HybridDictionary(true);
+        protected override IDictionary NonGenericIDictionaryFactory() => new ListDictionary(StringComparer.Ordinal);
     }
 
-    public abstract class HybridDictionaryTestBase : IDictionary_NonGeneric_Tests
+    public abstract class ListDictionaryTestBase : IDictionary_NonGeneric_Tests
     {
         protected override Type ICollection_NonGeneric_CopyTo_ArrayOfEnumType_ThrowType => typeof(InvalidCastException);
         protected override Type ICollection_NonGeneric_CopyTo_ArrayOfIncorrectReferenceType_ThrowType => typeof(InvalidCastException);
         protected override Type ICollection_NonGeneric_CopyTo_ArrayOfIncorrectValueType_ThrowType => typeof(InvalidCastException);
-
-        protected override Type ICollection_NonGeneric_SyncRootType => typeof(HybridDictionary);
 
         protected override object CreateTKey(int seed)
         {
