@@ -675,30 +675,30 @@ namespace BINDER_SPACE
 
         _ASSERTE(ppSystemAssembly != NULL);
 
-        StackSString sMscorlibDir(systemDirectory);
+        StackSString sCoreLibDir(systemDirectory);
         ReleaseHolder<Assembly> pSystemAssembly;
 
-        if(!sMscorlibDir.EndsWith(DIRECTORY_SEPARATOR_CHAR_W))
+        if(!sCoreLibDir.EndsWith(DIRECTORY_SEPARATOR_CHAR_W))
         {
-            sMscorlibDir.Append(DIRECTORY_SEPARATOR_CHAR_W);
+            sCoreLibDir.Append(DIRECTORY_SEPARATOR_CHAR_W);
         }
 
-        StackSString sMscorlib;
+        StackSString sCoreLib;
 
-        // At run-time, mscorlib.ni.dll is typically always available, and
-        // mscorlib.dll is typically not.  So check for the NI first.
-        sMscorlib = sMscorlibDir;
-        sMscorlib.Append(W("mscorlib.ni.dll"));
-        if (!fBindToNativeImage || FAILED(AssemblyBinder::GetAssembly(sMscorlib,
+        // At run-time, System.Private.CoreLib.ni.dll is typically always available, and
+        // System.Private.CoreLib.dll is typically not.  So check for the NI first.
+        sCoreLib = sCoreLibDir;
+        sCoreLib.Append(CoreLibName_NI_W);
+        if (!fBindToNativeImage || FAILED(AssemblyBinder::GetAssembly(sCoreLib,
                                                FALSE /* fInspectionOnly */,
                                                TRUE /* fIsInGAC */,
                                                TRUE /* fExplicitBindToNativeImage */,
                                                &pSystemAssembly)))
         {
-            // If mscorlib.ni.dll is unavailable, look for mscorlib.dll instead
-            sMscorlib = sMscorlibDir;
-            sMscorlib.Append(W("mscorlib.dll"));
-            IF_FAIL_GO(AssemblyBinder::GetAssembly(sMscorlib,
+            // If System.Private.CoreLib.ni.dll is unavailable, look for System.Private.CoreLib.dll instead
+            sCoreLib = sCoreLibDir;
+            sCoreLib.Append(CoreLibName_IL_W);
+            IF_FAIL_GO(AssemblyBinder::GetAssembly(sCoreLib,
                                                    FALSE /* fInspectionOnly */,
                                                    TRUE /* fIsInGAC */,
                                                    FALSE /* fExplicitBindToNativeImage */,
