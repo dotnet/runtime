@@ -21,6 +21,7 @@
 
     <ArchitectureSpecificNativeFile Include="$(BinDir)sosdocsunix.txt"/>
     <ArchitectureSpecificNativeFile Include="$(BinDir)mscorlib.ni.dll"/>
+    <ArchitectureSpecificNativeFile Include="$(BinDir)System.Private.CoreLib.ni.dll"/>
     <ArchitectureSpecificLibFile Include="$(BinDir)mscorlib.dll"/>
     <ArchitectureSpecificLibFile Include="$(BinDir)System.Private.CoreLib.dll"/>
     <ArchitectureSpecificToolFile Include="$(BinDir)crossgen"/>

@@ -50,6 +50,32 @@ const WCHAR kWatsonName2[] = W("drwtsn32");
 #define WINDOWS_KERNEL32_DLLNAME_A "kernel32"
 #define WINDOWS_KERNEL32_DLLNAME_W W("kernel32")
 
+#if defined(FEATURE_CORECLR)
+#define CoreLibName_W W("System.Private.CoreLib")
+#define CoreLibName_IL_W W("System.Private.CoreLib.dll")
+#define CoreLibName_NI_W W("System.Private.CoreLib.ni.dll")
+#define CoreLibName_TLB_W W("System.Private.CoreLib.tlb")
+#define CoreLibName_A "System.Private.CoreLib"
+#define CoreLibName_IL_A "System.Private.CoreLib.dll"
+#define CoreLibName_NI_A "System.Private.CoreLib.ni.dll"
+#define CoreLibName_TLB_A "System.Private.CoreLib.tlb"
+#define CoreLibNameLen 22
+#define CoreLibSatelliteName_A "System.Private.CoreLib.resources"
+#define CoreLibSatelliteNameLen 32
+#else // !defined(FEATURE_CORECLR)
+#define CoreLibName_W W("mscorlib")
+#define CoreLibName_IL_W W("mscorlib.dll")
+#define CoreLibName_NI_W W("mscorlib.ni.dll")
+#define CoreLibName_TLB_W W("mscorlib.tlb")
+#define CoreLibName_A "mscorlib"
+#define CoreLibName_IL_A "mscorlib.dll"
+#define CoreLibName_NI_A "mscorlib.ni.dll"
+#define CoreLibName_TLB_A "mscorlib.tlb"
+#define CoreLibNameLen 8
+#define CoreLibSatelliteName_A "mscorlib.resources"
+#define CoreLibSatelliteNameLen 18
+#endif // defined(FEATURE_CORECLR)
+
 class StringArrayList;
 
 #if !defined(_DEBUG_IMPL) && defined(_DEBUG) && !defined(DACCESS_COMPILE)
