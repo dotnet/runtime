@@ -74,7 +74,7 @@ void
 sgen_set_bridge_implementation (const char *name)
 {
 	if (!init_bridge_processor (&bridge_processor, name))
-		g_warning ("Invalid value for bridge implementation, valid values are: 'new' and 'old'.");
+		g_warning ("Invalid value for bridge implementation, valid values are: 'new', 'old' and 'tarjan'.");
 }
 
 gboolean
