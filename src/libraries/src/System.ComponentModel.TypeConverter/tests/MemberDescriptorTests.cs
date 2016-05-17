@@ -10,6 +10,7 @@ namespace System.ComponentModel.Tests
     public class MemberDescriptorTests
     {
         [Fact]
+        [ActiveIssue(8606, PlatformID.AnyUnix)]
         public void CopiedMemberDescriptorEqualsItsSource()
         {
             var attributes = new Attribute[]
