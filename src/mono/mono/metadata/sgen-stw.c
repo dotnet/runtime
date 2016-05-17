@@ -33,6 +33,18 @@
 static void sgen_unified_suspend_restart_world (void);
 static void sgen_unified_suspend_stop_world (void);
 
+static TV_DECLARE (end_of_last_stw);
+
+guint64 mono_time_since_last_stw ()
+{
+	if (end_of_last_stw == 0)
+		return 0;
+
+	TV_DECLARE (current_time);
+	TV_GETTIME (current_time);
+	return TV_ELAPSED (end_of_last_stw, current_time);
+}
+
 unsigned int sgen_global_stop_count = 0;
 
 inline static void*
@@ -234,8 +246,7 @@ sgen_client_restart_world (int generation, GGTimingInfo *timing)
 {
 	TV_DECLARE (end_sw);
 	TV_DECLARE (start_handshake);
-	TV_DECLARE (end_bridge);
-	unsigned long usec, bridge_usec;
+	unsigned long usec;
 
 	/* notify the profiler of the leftovers */
 	/* FIXME this is the wrong spot at we can STW for non collection reasons. */
@@ -258,6 +269,7 @@ sgen_client_restart_world (int generation, GGTimingInfo *timing)
 	time_restart_world += TV_ELAPSED (start_handshake, end_sw);
 	usec = TV_ELAPSED (stop_world_time, end_sw);
 	max_pause_usec = MAX (usec, max_pause_usec);
+	end_of_last_stw = end_sw;
 
 	SGEN_LOG (2, "restarted (pause time: %d usec, max: %d)", (int)usec, (int)max_pause_usec);
 
@@ -273,12 +285,8 @@ sgen_client_restart_world (int generation, GGTimingInfo *timing)
 	 */
 	release_gc_locks ();
 
-	TV_GETTIME (end_bridge);
-	bridge_usec = TV_ELAPSED (end_sw, end_bridge);
-
 	if (timing) {
 		timing [0].stw_time = usec;
-		timing [0].bridge_time = bridge_usec;
 	}
 }
 

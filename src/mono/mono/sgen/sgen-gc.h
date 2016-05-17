@@ -817,7 +817,6 @@ typedef struct {
 	gboolean is_overflow;
 	gint64 total_time;
 	gint64 stw_time;
-	gint64 bridge_time;
 } GGTimingInfo;
 
 void sgen_stop_world (int generation);
