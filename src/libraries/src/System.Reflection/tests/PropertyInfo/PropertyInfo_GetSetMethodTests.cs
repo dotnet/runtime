@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Xunit;
-using System;
-using System.Reflection;
 using System.Collections.Generic;
+using Xunit;
 
 #pragma warning disable 0414
 
@@ -13,7 +11,6 @@ namespace System.Reflection.Tests
 {
     public class PropertyInfoGetSetMethodTests
     {
-
         [Theory]
         [InlineData(typeof(ReferenceTypeHelper), "PropertyGetterSetter", true, true)]
         [InlineData(typeof(ReferenceTypeHelper), "PropertyGetter", true, false)]
@@ -29,38 +26,25 @@ namespace System.Reflection.Tests
         [InlineData(typeof(InterfaceHelper), "Item", false, true)]
         public void GetSetMethod(Type type, string propertyName, bool getter, bool setter)
         {
-            PropertyInfo pi = getProperty(type, propertyName);
-            Assert.NotNull(pi);
+            PropertyInfo pi = type.GetTypeInfo().GetProperty(propertyName);
 
             if (getter)
             {
                 Assert.NotNull(pi.GetMethod);
+            }
+            else
+            {
+                Assert.Null(pi.GetMethod);
             }
 
             if (setter)
             {
                 Assert.NotNull(pi.SetMethod);
             }
-        }
-
-
-        //Gets PropertyInfo object from a Type
-        public static PropertyInfo getProperty(Type t, string property)
-        {
-            TypeInfo ti = t.GetTypeInfo();
-            IEnumerator<PropertyInfo> allproperties = ti.DeclaredProperties.GetEnumerator();
-            PropertyInfo pi = null;
-
-            while (allproperties.MoveNext())
+            else
             {
-                if (allproperties.Current.Name.Equals(property))
-                {
-                    //found property
-                    pi = allproperties.Current;
-                    break;
-                }
+                Assert.Null(pi.SetMethod);
             }
-            return pi;
         }
     }
 
