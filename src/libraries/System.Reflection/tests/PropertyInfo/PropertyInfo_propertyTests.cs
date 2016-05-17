@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Xunit;
-using System;
-using System.Reflection;
 using System.Collections.Generic;
+using Xunit;
 
 #pragma warning disable 0414
 
@@ -17,61 +15,49 @@ namespace System.Reflection.Tests
         [InlineData("MyPropAA", true)]
         [InlineData("MyPropBB", true)]
         [InlineData("MyPropCC", false)]
-        public static void TestCanRead(String propName, bool boolean)
+        public static void CanRead(String propName, bool expected)
         {
-            PropertyInfo pi = GetProperty(typeof(SampleProperty), propName);
-
-            Assert.NotNull(pi);
-            Assert.Equal(boolean, pi.CanRead);
+            PropertyInfo pi = typeof(SampleProperty).GetTypeInfo().GetProperty(propName);
+            Assert.Equal(expected, pi.CanRead);
         }
 
         [Theory]
         [InlineData("MyPropAA", true)]
         [InlineData("MyPropBB", false)]
         [InlineData("MyPropCC", true)]
-        public static void TestCanWrite(String propName, bool boolean)
+        public static void CanWrite(String propName, bool expected)
         {
-            PropertyInfo pi = GetProperty(typeof(SampleProperty), propName);
-
-            Assert.NotNull(pi);
-            Assert.Equal(boolean, pi.CanWrite);
+            PropertyInfo pi = typeof(SampleProperty).GetTypeInfo().GetProperty(propName);
+            Assert.Equal(expected, pi.CanWrite);
 
         }
 
         [Theory]
-        [InlineData("DerivedPropertyProperty", typeof(DerivedProperty), "DerivedProperty")]
-        [InlineData("BasePropertyProperty", typeof(BaseProperty), "BaseProperty")]
-        public static void TestDeclaringType(String propName, Type type, String typeName)
+        [InlineData("DerivedPropertyProperty", typeof(DerivedProperty), typeof(DerivedProperty))]
+        [InlineData("BasePropertyProperty", typeof(BaseProperty), typeof(BaseProperty))]
+        public static void DeclaringType(String propName, Type type, Type expectedType)
         {
-            PropertyInfo pi = GetProperty(type, propName);
-
-            Assert.NotNull(pi);
-            Assert.NotNull(pi.DeclaringType.Name);
-            Assert.Equal(typeName, pi.DeclaringType.Name);
+            PropertyInfo pi = type.GetTypeInfo().GetProperty(propName);
+            Assert.Equal(expectedType, pi.DeclaringType);
         }
 
         [Theory]
-        [InlineData("DerivedPropertyProperty", typeof(DerivedProperty), "Int32")]
-        [InlineData("BasePropertyProperty", typeof(BaseProperty), "Int32")]
-        [InlineData("MyPropAA", typeof(SampleProperty), "Int16")]
-        public static void TestPropertyType(String propName, Type type, String typeName)
+        [InlineData("DerivedPropertyProperty", typeof(DerivedProperty), typeof(int))]
+        [InlineData("BasePropertyProperty", typeof(BaseProperty), typeof(int))]
+        [InlineData("MyPropAA", typeof(SampleProperty), typeof(short))]
+        public static void PropertyType(String propName, Type type, Type expectedType)
         {
-            PropertyInfo pi = GetProperty(type, propName);
-
-            Assert.NotNull(pi);
-            Assert.NotNull(pi.PropertyType);
-            Assert.Equal(typeName, pi.PropertyType.Name);
+            PropertyInfo pi = type.GetTypeInfo().GetProperty(propName);
+            Assert.Equal(expectedType, pi.PropertyType);
         }
 
         [Theory]
         [InlineData("MyPropAA")]
         [InlineData("MyPropBB")]
         [InlineData("MyPropCC")]
-        public static void TestName(String propName)
+        public static void Name(String propName)
         {
-            PropertyInfo pi = GetProperty(typeof(SampleProperty), propName);
-
-            Assert.NotNull(pi);
+            PropertyInfo pi = typeof(SampleProperty).GetTypeInfo().GetProperty(propName);
             Assert.Equal(propName, pi.Name);
         }
 
@@ -80,11 +66,9 @@ namespace System.Reflection.Tests
         [InlineData("MyPropAA")]
         [InlineData("MyPropBB")]
         [InlineData("MyPropCC")]
-        public static void TestIsSpecialName(String propName)
+        public static void IsSpecialName(String propName)
         {
-            PropertyInfo pi = GetProperty(typeof(SampleProperty), propName);
-
-            Assert.NotNull(pi);
+            PropertyInfo pi = typeof(SampleProperty).GetTypeInfo().GetProperty(propName);
             Assert.False(pi.IsSpecialName, "Failed: PropertyInfo IsSpecialName returned True for property: " + propName);
         }
 
@@ -92,34 +76,12 @@ namespace System.Reflection.Tests
         [Theory]
         [InlineData("Description")]
         [InlineData("DerivedPropertyProperty")]
-        public static void TestAttributes(String propName)
+        public static void Attributes(String propName)
         {
-            PropertyInfo pi = GetProperty(typeof(DerivedProperty), propName);
-
-            Assert.NotNull(pi);
+            PropertyInfo pi = typeof(DerivedProperty).GetTypeInfo().GetProperty(propName);
 
             PropertyAttributes pa = pi.Attributes;
             Assert.Equal((object)pa, (object)PropertyAttributes.None);
-        }
-
-
-        //Gets PropertyInfo object from a Type
-        public static PropertyInfo GetProperty(Type t, string property)
-        {
-            TypeInfo ti = t.GetTypeInfo();
-            IEnumerator<PropertyInfo> allproperties = ti.DeclaredProperties.GetEnumerator();
-            PropertyInfo pi = null;
-
-            while (allproperties.MoveNext())
-            {
-                if (allproperties.Current.Name.Equals(property))
-                {
-                    //found property
-                    pi = allproperties.Current;
-                    break;
-                }
-            }
-            return pi;
         }
     }
 
