@@ -2,29 +2,26 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Tests;
-
-namespace System.Collections.Specialized.Tests
+namespace System.Collections.Tests
 {
-    public class HybridDictionary_CaseSensitive_Tests : HybridDictionaryTestBase
+    public class HashtableBasicTestBase : HashtableIDictionaryTestBase
     {
-        protected override IDictionary NonGenericIDictionaryFactory() => new HybridDictionary(false);
+        protected override IDictionary NonGenericIDictionaryFactory() => new Hashtable();
     }
 
-    public class HybridDictionary_CaseInsensitive_Tests : HybridDictionaryTestBase
+    public class HashtableSynchronizedTestBase : HashtableIDictionaryTestBase
     {
-        protected override IDictionary NonGenericIDictionaryFactory() => new HybridDictionary(true);
+        protected override bool ExpectedIsSynchronized => true;
+
+        protected override IDictionary NonGenericIDictionaryFactory() => Hashtable.Synchronized(new Hashtable());
     }
 
-    public abstract class HybridDictionaryTestBase : IDictionary_NonGeneric_Tests
+    public abstract class HashtableIDictionaryTestBase : IDictionary_NonGeneric_Tests
     {
         protected override Type ICollection_NonGeneric_CopyTo_ArrayOfEnumType_ThrowType => typeof(InvalidCastException);
         protected override Type ICollection_NonGeneric_CopyTo_ArrayOfIncorrectReferenceType_ThrowType => typeof(InvalidCastException);
         protected override Type ICollection_NonGeneric_CopyTo_ArrayOfIncorrectValueType_ThrowType => typeof(InvalidCastException);
-
-        protected override bool ICollection_NonGeneric_CopyTo_TestNonZeroLowerBound => false;
-
-        protected override Type ICollection_NonGeneric_SyncRootType => typeof(HybridDictionary);
+        protected override Type ICollection_NonGeneric_CopyTo_NonZeroLowerBound_ThrowType => typeof(IndexOutOfRangeException);
 
         protected override object CreateTKey(int seed)
         {
@@ -34,7 +31,7 @@ namespace System.Collections.Specialized.Tests
             rand.NextBytes(bytes);
             return Convert.ToBase64String(bytes);
         }
-
+        
         protected override object CreateTValue(int seed) => CreateTKey(seed);
     }
 }

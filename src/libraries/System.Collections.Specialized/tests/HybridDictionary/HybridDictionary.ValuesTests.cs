@@ -13,6 +13,8 @@ namespace System.Collections.Specialized.Tests
         protected override Type ICollection_NonGeneric_CopyTo_ArrayOfEnumType_ThrowType => typeof(InvalidCastException);
         protected override Type ICollection_NonGeneric_CopyTo_ArrayOfIncorrectReferenceType_ThrowType => typeof(InvalidCastException);
         protected override Type ICollection_NonGeneric_CopyTo_ArrayOfIncorrectValueType_ThrowType => typeof(InvalidCastException);
+        
+        protected override bool ICollection_NonGeneric_CopyTo_TestNonZeroLowerBound => false;
 
         protected override bool Enumerator_Current_UndefinedOperation_Throws => true;
 

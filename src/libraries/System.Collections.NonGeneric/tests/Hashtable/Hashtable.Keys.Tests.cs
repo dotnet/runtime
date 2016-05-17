@@ -3,32 +3,32 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Collections.Tests;
 using System.Diagnostics;
 
-namespace System.Collections.Specialized.Tests
+namespace System.Collections.Tests
 {
-    public class HybridDictionaryKeysTests : ICollection_NonGeneric_Tests
+    public class HashtableKeysTests : ICollection_NonGeneric_Tests
     {
         protected override Type ICollection_NonGeneric_CopyTo_ArrayOfEnumType_ThrowType => typeof(InvalidCastException);
         protected override Type ICollection_NonGeneric_CopyTo_ArrayOfIncorrectReferenceType_ThrowType => typeof(InvalidCastException);
         protected override Type ICollection_NonGeneric_CopyTo_ArrayOfIncorrectValueType_ThrowType => typeof(InvalidCastException);
-        
-        protected override bool ICollection_NonGeneric_CopyTo_TestNonZeroLowerBound => false;
 
-        protected override bool Enumerator_Current_UndefinedOperation_Throws => true;
+        protected override Type ICollection_NonGeneric_CopyTo_NonZeroLowerBound_ThrowType => typeof(IndexOutOfRangeException);
 
         protected override bool IsReadOnly => true;
 
-        protected override ICollection NonGenericICollectionFactory() => new HybridDictionary().Keys;
+        protected override bool Enumerator_Current_UndefinedOperation_Throws => true;
+        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables => new List<ModifyEnumerable>();
+
+        protected override ICollection NonGenericICollectionFactory() => new Hashtable().Keys;
 
         protected override ICollection NonGenericICollectionFactory(int count)
         {
-            HybridDictionary list = new HybridDictionary();
+            Hashtable hashtable = new Hashtable();
             int seed = 13453;
             for (int i = 0; i < count; i++)
-                list.Add(CreateT(seed++), CreateT(seed++));
-            return list.Keys;
+                hashtable.Add(CreateT(seed++), CreateT(seed++));
+            return hashtable.Keys;
         }
 
         private string CreateT(int seed)
@@ -41,7 +41,5 @@ namespace System.Collections.Specialized.Tests
         }
 
         protected override void AddToCollection(ICollection collection, int numberOfItemsToAdd) => Debug.Assert(false);
-
-        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables => new List<ModifyEnumerable>();
     }
 }
