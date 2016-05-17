@@ -11610,7 +11610,7 @@ DO_LDFTN:
 #ifdef FEATURE_CORECLR
                 // In coreclr the delegate transparency rule needs to be enforced even if verification is disabled
                 typeInfo tiActualFtn = impStackTop(0).seTypeInfo;
-                CORINFO_METHOD_HANDLE delegateMethodHandle = tiActualFtn.GetMethod();
+                CORINFO_METHOD_HANDLE delegateMethodHandle = tiActualFtn.GetMethod2();
                             
                 impInsertCalloutForDelegate(info.compMethodHnd,
                                             delegateMethodHandle,
