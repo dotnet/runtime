@@ -60,7 +60,7 @@ extern "C" void SystemNative_ReadEvents(int32_t sock, NetworkChangeEvent onNetwo
         return;
     }
 
-    for (nlmsghdr* hdr = reinterpret_cast<nlmsghdr*>(buffer); NLMSG_OK(hdr, len); NLMSG_NEXT(hdr, len))
+    for (nlmsghdr* hdr = reinterpret_cast<nlmsghdr*>(buffer); NLMSG_OK(hdr, UnsignedCast(len)); NLMSG_NEXT(hdr, len))
     {
         switch (hdr->nlmsg_type)
         {
