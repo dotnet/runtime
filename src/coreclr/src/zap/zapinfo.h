@@ -547,10 +547,10 @@ public:
     CorInfoHelpFunc getUnBoxHelper(CORINFO_CLASS_HANDLE cls);
 
     bool getReadyToRunHelper(
-            CORINFO_RESOLVED_TOKEN * pResolvedToken,
-            CORINFO_LOOKUP_KIND *    pGenericLookupKind,
-            CorInfoHelpFunc          id,
-            CORINFO_CONST_LOOKUP *   pLookup
+            CORINFO_RESOLVED_TOKEN *        pResolvedToken,
+            CORINFO_LOOKUP_KIND *           pGenericLookupKind,
+            CorInfoHelpFunc                 id,
+            CORINFO_CONST_LOOKUP *          pLookup
             );
 
     void getReadyToRunDelegateCtorHelper(

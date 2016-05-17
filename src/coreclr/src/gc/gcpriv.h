@@ -2959,9 +2959,6 @@ public:
     uint64_t entry_available_physical_mem;
 
     PER_HEAP_ISOLATED
-    bool restricted_physical_memory_p;
-
-    PER_HEAP_ISOLATED
     size_t last_gc_index;
 
     PER_HEAP_ISOLATED

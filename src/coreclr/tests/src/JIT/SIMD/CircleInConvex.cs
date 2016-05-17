@@ -17,7 +17,7 @@ namespace ClassLibrary
 
     public class test
     {
-        const float EPS = 1E-9F;
+        const float EPS = Single.Epsilon;
         const int steps = 100;
         const float INF = Single.PositiveInfinity;
 
@@ -259,8 +259,9 @@ namespace ClassLibrary
             float r;
             FindCircle(points, out O, out r);
 
-            float expRes = 7.565624E7F;
-            if (Math.Abs(r - expRes) > EPS)
+            float expRes = 75656240.0F;
+            float ulp    =        8.0F;
+            if (Math.Abs(r - expRes) <= ulp)
                 return 100;
             return 0;
         }

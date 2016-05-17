@@ -47,7 +47,7 @@ inline BOOL CoreBindResult::IsMscorlib()
 #ifndef CROSSGEN_COMPILE
     return pAssembly->GetAssemblyName()->IsMscorlib();
 #else
-    return (pAssembly->GetPath()).EndsWithCaseInsensitive(SString(W("mscorlib.dll")), PEImage::GetFileSystemLocale());
+    return (pAssembly->GetPath()).EndsWithCaseInsensitive(SString(CoreLibName_IL_W), PEImage::GetFileSystemLocale());
 #endif
 }
 

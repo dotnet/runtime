@@ -555,6 +555,13 @@ public:
         return m_method;
     }
 
+    // If FEATURE_CORECLR is enabled, GetMethod can be called
+    // before the pointer type is known to be a method pointer type.
+    CORINFO_METHOD_HANDLE GetMethod2()  const
+    {
+        return m_method;
+    }    
+    
     // Get this item's type
     // If primitive, returns the primitive type (TI_*)
     // If not primitive, returns:

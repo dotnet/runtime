@@ -85,8 +85,8 @@ LOOP1:
 
 .class auto ansi Pin1_Test
 {
-  .method public static pinvokeimpl("Mirror" cdecl) int32 Ret_Ptr(void *) il managed preservesig{ }
-  .method public static pinvokeimpl("Mirror" cdecl) void Set_Val(void*,int32 c) il managed preservesig { }
+  .method public static pinvokeimpl("mirror" cdecl) int32 Ret_Ptr(void *) il managed preservesig{ }
+  .method public static pinvokeimpl("mirror" cdecl) void Set_Val(void*,int32 c) il managed preservesig { }
   .method public static int32 Main(class [mscorlib]System.String[] args) il managed
   {
     .entrypoint

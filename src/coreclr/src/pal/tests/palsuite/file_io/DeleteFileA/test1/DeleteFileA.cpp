@@ -19,8 +19,12 @@
 //  delete a file without proper permissions
 //
 
+#define PAL_STDCPP_COMPAT
 #include <palsuite.h>
+#undef PAL_STDCPP_COMPAT
 
+#include <unistd.h>
+#include <sys/stat.h>
 
 
 int __cdecl main(int argc, char *argv[])
@@ -35,7 +39,7 @@ int __cdecl main(int argc, char *argv[])
     }
 
     //
-    // deleting an existing file
+    // create a test file
     //
     tempFile = fopen("testFile01.txt", "w");
     if (tempFile == NULL)
@@ -51,6 +55,34 @@ int __cdecl main(int argc, char *argv[])
             " testFile01.txt\"\n");
     }
 
+    //
+    // delete a symlink to an existing file
+    //
+    if (symlink("testFile01.txt", "testFile01_symlink") != 0)
+    {
+        Fail("DeleteFileA: ERROR: Failed to create a symlink to testFile01.txt.\n");
+    }
+
+    bRc = DeleteFileA("testFile01_symlink");
+    if (bRc != TRUE)
+    {
+        Fail ("DeleteFileA: ERROR: Couldn't delete symlink!\n Error is %d\n", GetLastError());
+    }
+
+    struct stat statBuffer;
+    if (lstat("testFile01.txt", &statBuffer) != 0)
+    {
+        Fail("DeleteFileA: ERROR: Deleting a symlink deleted the file it was pointing to.\n");
+    }
+
+    if (lstat("testFile01_symlink", &statBuffer) == 0)
+    {
+        Fail("DeleteFileA: ERROR: Failed to delete a symlink.\n");
+    }
+
+    //
+    // deleting an existing file
+    //
     bRc = DeleteFileA("testFile01.txt");
     if (bRc != TRUE)
     {
