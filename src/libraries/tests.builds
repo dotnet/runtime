@@ -5,6 +5,13 @@
     <_OriginalOSGroup>$(OSGroup)</_OriginalOSGroup>
   </PropertyGroup>
   
+  <PropertyGroup>
+    <TraversalBuildDependsOn>
+      CreateOrUpdateCurrentVersionFile;
+      $(TraversalBuildDependsOn)
+    </TraversalBuildDependsOn>
+  </PropertyGroup>
+  
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="*\tests\**\*.builds">
