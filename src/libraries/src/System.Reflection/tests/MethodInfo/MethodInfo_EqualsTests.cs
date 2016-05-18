@@ -11,16 +11,12 @@ namespace System.Reflection.Tests
 {
     public class MethodInfoEqualsTests
     {
-        public static IEnumerable<object[]> TestEqualsMethodData1()
-        {
-            //Verify two same MethodInfo objects are equal 
-            yield return new object[] { "DummyMethod1", "DummyMethod1" , true};
-            //Verify two different MethodInfo objects are not equal 
-            yield return new object[] { "DummyMethod1", "DummyMethod2" , false};
-        }
 
         [Theory]
-        [MemberData(nameof(TestEqualsMethodData1))]
+        //Verify two same MethodInfo objects are equal 
+        [InlineData("DummyMethod1", "DummyMethod1", true)]
+        //Verify two different MethodInfo objects are not equal 
+        [InlineData("DummyMethod1", "DummyMethod2", false)]
 
         public void TestEqualsMethod1(string str1, string str2, bool expected)
         {

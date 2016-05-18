@@ -13,41 +13,33 @@ namespace System.Reflection.Tests
 {
     public class MethodInfoPropertyTests
     {
-        public static IEnumerable<object> TestReturnTypeData()
-        {
-            yield return new object[] { "GetMethod", "MethodInfo" };
-            yield return new object[] { "DummyMethod1", "void" };
-            yield return new object[] { "DummyMethod2", "Int32" };
-            yield return new object[] { "DummyMethod3", "string" };
-            yield return new object[] { "DummyMethod4", "String[]" };
-            yield return new object[] { "DummyMethod5", "Boolean" };
-        }
 
         //Verify ReturnType for Methods
         [Theory]
-        [MemberData(nameof(TestReturnTypeData))]
+        [InlineData("GetMethod", "MethodInfo")]
+        [InlineData("DummyMethod1", "void")]
+        [InlineData("DummyMethod2", "Int32")]
+        [InlineData("DummyMethod3", "string")]
+        [InlineData("DummyMethod4", "String[]")]
+        [InlineData("DummyMethod5", "Boolean")]
 
         public static void TestReturnType(string methodName, string returnType)
         {
             MethodInfo mi = GetMethod(typeof(MethodInfoPropertyTests), methodName);
 
             Assert.NotNull(mi);
-            Assert.True(mi.Name.Equals(methodName, StringComparison.CurrentCultureIgnoreCase));
-            Assert.True(mi.ReturnType.Name.Equals(returnType, StringComparison.CurrentCultureIgnoreCase));
+            Assert.True(mi.Name.Equals(methodName, StringComparison.CurrentCultureIgnoreCase), "methodName");
+            Assert.True(mi.ReturnType.Name.Equals(returnType, StringComparison.CurrentCultureIgnoreCase), "returnType");
         }
 
-        public static IEnumerable<object> TestReturnParamData()
-        {
-            yield return new object[] { "DummyMethod5"};
-            yield return new object[] { "DummyMethod4"};
-            yield return new object[] { "DummyMethod3"};
-            yield return new object[] { "DummyMethod2"};
-            yield return new object[] { "DummyMethod1"};
-        }
 
         //Verify ReturnParameter for Methods
         [Theory]
-        [MemberData(nameof(TestReturnParamData))]
+        [InlineData("DummyMethod5")]
+        [InlineData("DummyMethod4")]
+        [InlineData("DummyMethod3")]
+        [InlineData("DummyMethod2")]
+        [InlineData("DummyMethod1")]
 
         public static void TestReturnParam(string methodName)
         {
@@ -71,38 +63,55 @@ namespace System.Reflection.Tests
             Assert.Equal(-1, returnParam.Position);
         }
 
-        public static IEnumerable<object> TestPropertyData()
+        //Verify DummyMethod1 properties
+        [Fact]
+        public static void TestProperty()
         {
-            yield return new object[] { GetMethod(typeof(MethodInfoPropertyTests), "DummyMethod5").IsVirtual, true};
-            yield return new object[] { GetMethod(typeof(MethodInfoPropertyTests), "DummyMethod1").IsVirtual, false};
-            yield return new object[] { GetMethod(typeof(MethodInfoPropertyTests), "DummyMethod1").IsPublic, true };
-            yield return new object[] { GetMethod(typeof(MethodInfoPropertyTests), "DummyMethod1").IsPrivate, false };
-            yield return new object[] { GetMethod(typeof(classA), "method1").IsStatic, true };
-            yield return new object[] { GetMethod(typeof(MethodInfoPropertyTests), "DummyMethod1").IsStatic, false };
-            yield return new object[] { GetMethod(typeof(classA), "GenericMethod").IsGenericMethod, true};
-            yield return new object[] { GetMethod(typeof(classA), "method1").IsGenericMethod, false };
-            yield return new object[] { GetMethod(typeof(classA), "method1").IsGenericMethodDefinition, false };
-            yield return new object[] { GetMethod(typeof(MethodInfoPropertyTests), "DummyMethod1").IsFinal, false };
-            yield return new object[] { GetMethod(typeof(classC), "virtualMethod").IsFinal, true };
-            yield return new object[] { GetMethod(typeof(MethodInfoPropertyTests), "DummyMethod1").IsConstructor, false};
-            yield return new object[] { GetMethod(typeof(MethodInfoPropertyTests), "DummyMethod1").IsAbstract, false};
-            yield return new object[] { GetMethod(typeof(classB), "abstractMethod").IsAbstract, true};
-            yield return new object[] { GetMethod(typeof(MethodInfoPropertyTests), "DummyMethod1").IsAssembly, false};
-            yield return new object[] { GetMethod(typeof(MethodInfoPropertyTests), "DummyMethod1").IsFamily, false};
-            yield return new object[] { GetMethod(typeof(MethodInfoPropertyTests), "DummyMethod1").IsFamilyAndAssembly, false };
-            yield return new object[] { GetMethod(typeof(MethodInfoPropertyTests), "DummyMethod1").IsFamilyOrAssembly, false };
-            yield return new object[] { GetMethod(typeof(MethodInfoPropertyTests), "DummyMethod1").ContainsGenericParameters, false};
-            yield return new object[] { GetMethod(typeof(classA), "GenericMethod").ContainsGenericParameters, true };
-            yield return new object[] { GetMethod(typeof(MethodInfoPropertyTests), "DummyMethod1").IsSpecialName, false};
-            yield return new object[] { GetMethod(typeof(classC), "abstractMethod").IsHideBySig, true};
+            
+            MethodInfo dummyMethodInfo1 = GetMethod(typeof(MethodInfoPropertyTests), "DummyMethod1");
+
+            Assert.False(dummyMethodInfo1.IsVirtual, "IsVirtual");
+            Assert.True(dummyMethodInfo1.IsPublic, "IsPublic");
+            Assert.False(dummyMethodInfo1.IsPrivate, "IsPrivate");
+            Assert.False(dummyMethodInfo1.IsStatic, "IsStatic");
+            Assert.False(dummyMethodInfo1.IsFinal, "IsFinal");
+            Assert.False(dummyMethodInfo1.IsConstructor, "IsConstructor");
+            Assert.False(dummyMethodInfo1.IsAbstract, "IsAbstract");
+            Assert.False(dummyMethodInfo1.IsAssembly, "IsAssembly");
+            Assert.False(dummyMethodInfo1.IsFamily, "IsFamily");
+            Assert.False(dummyMethodInfo1.IsFamilyAndAssembly, "IsFamilyAndAssembly");
+            Assert.False(dummyMethodInfo1.IsFamilyOrAssembly, "IsFamilyOrAssembly");
+            Assert.False(dummyMethodInfo1.ContainsGenericParameters, "ContainsGenericParameters");
+            Assert.False(dummyMethodInfo1.IsSpecialName, "IsSpecialName");
         }
 
-        //Verify Properties
-        [Theory]
-        [MemberData(nameof(TestPropertyData))]
-        public static void TestProperty(bool actual, bool expected)
+        public static void TestProperty2()
         {
-            Assert.Equal(expected, actual);
+            MethodInfo dummyMethodInfo5 = GetMethod(typeof(MethodInfoPropertyTests), "DummyMethod5");
+            MethodInfo methodInfo1 = GetMethod(typeof(classA), "method1");
+            MethodInfo genericMethodInfo = GetMethod(typeof(classA), "GenericMethod");
+            MethodInfo abstractMethodInfoB = GetMethod(typeof(classB), "abstractMethod");
+            MethodInfo virtualMethodInfo = GetMethod(typeof(classC), "virtualMethod");
+            MethodInfo abstractMethodInfoC = GetMethod(typeof(classC), "abstractMethod");
+
+            //Verify method1 properties
+            Assert.True(methodInfo1.IsStatic, "IsStatic");
+            Assert.False(methodInfo1.IsGenericMethod, "IsGenericMethod");
+            Assert.False(methodInfo1.IsGenericMethodDefinition, "IsGenericMethodDefinition");
+
+            //Verify DummyMethod5 properties
+            Assert.True(dummyMethodInfo5.IsVirtual, "IsVirtual");
+
+            //Verify genericMethod properties
+            Assert.True(genericMethodInfo.IsGenericMethodDefinition, "IsGenericMethodDefinition");
+            Assert.True(genericMethodInfo.ContainsGenericParameters, "ContainsGenericParameters");
+
+            //Verify abstractMethod Properties for classB and classC
+            Assert.True(abstractMethodInfoB.IsAbstract, "IsAbstract");
+            Assert.True(abstractMethodInfoC.IsHideBySig, "IsHideBySig");
+
+            //Verify virtualMethod properties
+            Assert.True(virtualMethodInfo.IsFinal, "IsFinal");
         }
 
         //Verify IsGenericMethodDefinition Property

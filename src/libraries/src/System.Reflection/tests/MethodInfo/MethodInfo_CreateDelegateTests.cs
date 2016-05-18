@@ -42,10 +42,7 @@ namespace System.Reflection.Tests
         public void TestCreateDelegate4()
         {
             MethodInfo miPublicInstanceMethod = GetMethod(typeof(ClassA), "PublicInstanceMethod");
-            Assert.Throws<ArgumentException>(() =>
-            {
-                miPublicInstanceMethod.CreateDelegate(typeof(Delegate_Void_Int));
-            });
+            Assert.Throws<ArgumentException>(null, () => miPublicInstanceMethod.CreateDelegate(typeof(Delegate_Void_Int)));
         }
 
         //Verify ArgumentNullExcpeption when type is null
@@ -53,10 +50,7 @@ namespace System.Reflection.Tests
         public void TestCreateDelegate5()
         {
             MethodInfo miPublicInstanceMethod = GetMethod(typeof(ClassA), "PublicInstanceMethod");
-            Assert.Throws<ArgumentNullException>(() =>
-            {
-                miPublicInstanceMethod.CreateDelegate(null);
-            });
+            Assert.Throws<ArgumentNullException>("delegateType", () => miPublicInstanceMethod.CreateDelegate(null));
         }
 
         //create closed instance delegate with incorrect delegate type
@@ -65,10 +59,7 @@ namespace System.Reflection.Tests
         {
             ClassA TestClass = (ClassA)Activator.CreateInstance(typeof(ClassA));
             MethodInfo miPublicInstanceMethod = GetMethod(typeof(ClassA), "PublicInstanceMethod");
-            Assert.Throws<ArgumentException>(() =>
-            {
-                miPublicInstanceMethod.CreateDelegate(typeof(Delegate_TC_Int), TestClass);
-            });
+            Assert.Throws<ArgumentException>(null, () => miPublicInstanceMethod.CreateDelegate(typeof(Delegate_TC_Int), TestClass));
         }
 
         //Verify ArgumentNullExcpeption when type is null
@@ -77,29 +68,19 @@ namespace System.Reflection.Tests
         {
             ClassA TestClass = (ClassA)Activator.CreateInstance(typeof(ClassA));
             MethodInfo miPublicInstanceMethod = GetMethod(typeof(ClassA), "PublicInstanceMethod");
-            Assert.Throws<ArgumentNullException>(() =>
-            {
-                miPublicInstanceMethod.CreateDelegate(null, TestClass);
-            });
-        }
-
-        public static IEnumerable<object[]> TestCreateDelegateData()
-        {
-            //closed instance delegate with incorrect object type
-            yield return new object[] { typeof(Delegate_Void_Int) };
-            //create closed static method with incorrect argument
-            yield return new object[] { typeof(Delegate_Void_Str) };
+            Assert.Throws<ArgumentNullException>("delegateType", () => miPublicInstanceMethod.CreateDelegate(null, TestClass));
         }
 
         [Theory]
-        [MemberData(nameof(TestCreateDelegateData))]
+        //closed instance delegate with incorrect object type
+        [InlineData(typeof(Delegate_Void_Int))]
+        //create closed static method with incorrect argument
+        [InlineData(typeof(Delegate_Void_Str))]
+
         public void TestCreateDelegate(Type testData)
         {
             MethodInfo miPublicInstanceMethod = GetMethod(typeof(ClassA), "PublicInstanceMethod");
-            Assert.Throws<ArgumentException>(() =>
-            {
-                miPublicInstanceMethod.CreateDelegate(testData, new DummyClass());
-            });
+            Assert.Throws<ArgumentException>(null, () => miPublicInstanceMethod.CreateDelegate(testData, new DummyClass()));
         }
         
         [Fact]

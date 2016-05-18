@@ -46,19 +46,16 @@ namespace System.Reflection.Tests
 
     public class AssemblyMethodInfoCustomAttributeTest
     {
-        //Test for custom Attribute of type  Int32AttrSimple
-        public static IEnumerable<object[]> Test_Type()
-        {
-            yield return new object[] { typeof(Int32Attr), "[System.Reflection.CustomAttributesTests.Data.Int32Attr((Int32)77, name = \"Int32AttrSimple\")]" };
-            yield return new object[] { typeof(Int64Attr), "[System.Reflection.CustomAttributesTests.Data.Int64Attr((Int64)77, name = \"Int64AttrSimple\")]" };
-            yield return new object[] { typeof(StringAttr), "[System.Reflection.CustomAttributesTests.Data.StringAttr(\"hello\", name = \"StringAttrSimple\")]" };
-            yield return new object[] { typeof(EnumAttr), "[System.Reflection.CustomAttributesTests.Data.EnumAttr((System.Reflection.CustomAttributesTests.Data.MyColorEnum)1, name = \"EnumAttrSimple\")]" };
-            yield return new object[] { typeof(TypeAttr), "[System.Reflection.CustomAttributesTests.Data.TypeAttr(typeof(System.Object), name = \"TypeAttrSimple\")]" };
-            yield return new object[] { typeof(Attr), "[System.Reflection.CustomAttributesTests.Data.Attr((Int32)77, name = \"AttrSimple\")]" };
-        }
 
+        //Test for custom Attribute of type  Int32AttrSimple
         [Theory]
-        [MemberData(nameof(Test_Type))]
+        [InlineData(typeof(Int32Attr), "[System.Reflection.CustomAttributesTests.Data.Int32Attr((Int32)77, name = \"Int32AttrSimple\")]")]
+        [InlineData(typeof(Int64Attr), "[System.Reflection.CustomAttributesTests.Data.Int64Attr((Int64)77, name = \"Int64AttrSimple\")]")]
+        [InlineData(typeof(StringAttr), "[System.Reflection.CustomAttributesTests.Data.StringAttr(\"hello\", name = \"StringAttrSimple\")]")]
+        [InlineData(typeof(EnumAttr), "[System.Reflection.CustomAttributesTests.Data.EnumAttr((System.Reflection.CustomAttributesTests.Data.MyColorEnum)1, name = \"EnumAttrSimple\")]")]
+        [InlineData(typeof(TypeAttr), "[System.Reflection.CustomAttributesTests.Data.TypeAttr(typeof(System.Object), name = \"TypeAttrSimple\")]")]
+        [InlineData(typeof(Attr), "[System.Reflection.CustomAttributesTests.Data.Attr((Int32)77, name = \"AttrSimple\")]")]
+
 
         private void Test_Attr(Type type, string attributeStr)
         {
