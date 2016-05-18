@@ -4216,7 +4216,9 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 				mono_lookup_pinvoke_call (method, NULL, NULL);
 		}
 		nm = mono_marshal_get_native_wrapper (method, TRUE, mono_aot_only);
-		code = mono_get_addr_from_ftnptr (mono_compile_method (nm));
+		gpointer compiled_method = mono_compile_method_checked (nm, error);
+		return_val_if_nok (error, NULL);
+		code = mono_get_addr_from_ftnptr (compiled_method);
 		jinfo = mono_jit_info_table_find (target_domain, (char *)code);
 		if (!jinfo)
 			jinfo = mono_jit_info_table_find (mono_domain_get (), (char *)code);
@@ -4246,15 +4248,21 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 			} else if (*name == 'I' && (strcmp (name, "Invoke") == 0)) {
 				if (mono_llvm_only) {
 					nm = mono_marshal_get_delegate_invoke (method, NULL);
-					return mono_get_addr_from_ftnptr (mono_compile_method (nm));
+					gpointer compiled_ptr = mono_compile_method_checked (nm, error);
+					mono_error_assert_ok (error);
+					return mono_get_addr_from_ftnptr (compiled_ptr);
 				}
 				return mono_create_delegate_trampoline (target_domain, method->klass);
 			} else if (*name == 'B' && (strcmp (name, "BeginInvoke") == 0)) {
 				nm = mono_marshal_get_delegate_begin_invoke (method);
-				return mono_get_addr_from_ftnptr (mono_compile_method (nm));
+				gpointer compiled_ptr = mono_compile_method_checked (nm, error);
+				mono_error_assert_ok (error);
+				return mono_get_addr_from_ftnptr (compiled_ptr);
 			} else if (*name == 'E' && (strcmp (name, "EndInvoke") == 0)) {
 				nm = mono_marshal_get_delegate_end_invoke (method);
-				return mono_get_addr_from_ftnptr (mono_compile_method (nm));
+				gpointer compiled_ptr = mono_compile_method_checked (nm, error);
+				mono_error_assert_ok (error);
+				return mono_get_addr_from_ftnptr (compiled_ptr);
 			}
 		}
 

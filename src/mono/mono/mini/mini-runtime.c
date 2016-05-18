@@ -616,6 +616,7 @@ mono_debug_count (void)
 gconstpointer
 mono_icall_get_wrapper_full (MonoJitICallInfo* callinfo, gboolean do_compile)
 {
+	MonoError error;
 	char *name;
 	MonoMethod *wrapper;
 	gconstpointer trampoline;
@@ -637,9 +638,9 @@ mono_icall_get_wrapper_full (MonoJitICallInfo* callinfo, gboolean do_compile)
 	g_free (name);
 
 	if (do_compile) {
-		trampoline = mono_compile_method (wrapper);
+		trampoline = mono_compile_method_checked (wrapper, &error);
+		mono_error_assert_ok (&error);
 	} else {
-		MonoError error;
 
 		trampoline = mono_create_jit_trampoline (domain, wrapper, &error);
 		mono_error_assert_ok (&error);
@@ -3031,6 +3032,7 @@ MONO_SIG_HANDLER_FUNC (, mono_sigint_signal_handler)
 static gpointer
 mono_jit_create_remoting_trampoline (MonoDomain *domain, MonoMethod *method, MonoRemotingTarget target)
 {
+	MonoError error;
 	MonoMethod *nm;
 	guint8 *addr = NULL;
 
@@ -3042,10 +3044,12 @@ mono_jit_create_remoting_trampoline (MonoDomain *domain, MonoMethod *method, Mon
 	if ((method->flags & METHOD_ATTRIBUTE_ABSTRACT) ||
 	    (mono_method_signature (method)->hasthis && (mono_class_is_marshalbyref (method->klass) || method->klass == mono_defaults.object_class))) {
 		nm = mono_marshal_get_remoting_invoke_for_target (method, target);
-		addr = (guint8 *)mono_compile_method (nm);
+		addr = (guint8 *)mono_compile_method_checked (nm, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
 	} else
 	{
-		addr = (guint8 *)mono_compile_method (method);
+		addr = (guint8 *)mono_compile_method_checked (method, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
 	}
 	return mono_get_addr_from_ftnptr (addr);
 }
@@ -4308,15 +4312,21 @@ mono_precompile_assembly (MonoAssembly *ass, void *user_data)
 			g_print ("Compiling %d %s\n", count, desc);
 			g_free (desc);
 		}
-		mono_compile_method (method);
+		mono_compile_method_checked (method, &error);
+		if (!is_ok (&error)) {
+			mono_error_cleanup (&error); /* FIXME don't swallow the error */
+			continue;
+		}
 		if (strcmp (method->name, "Finalize") == 0) {
 			invoke = mono_marshal_get_runtime_invoke (method, FALSE);
-			mono_compile_method (invoke);
+			mono_compile_method_checked (invoke, &error);
+			mono_error_assert_ok (&error);
 		}
 #ifndef DISABLE_REMOTING
 		if (mono_class_is_marshalbyref (method->klass) && mono_method_signature (method)->hasthis) {
 			invoke = mono_marshal_get_remoting_invoke_with_check (method);
-			mono_compile_method (invoke);
+			mono_compile_method_checked (invoke, &error);
+			mono_error_assert_ok (&error);
 		}
 #endif
 	}

@@ -612,18 +612,34 @@ mono_set_always_build_imt_thunks (gboolean value)
 gpointer 
 mono_compile_method (MonoMethod *method)
 {
-	gpointer res;
 	MonoError error;
+	gpointer result = mono_compile_method_checked (method, &error);
+	mono_error_cleanup (&error);
+	return result;
+}
+
+/**
+ * mono_compile_method:
+ * @method: The method to compile.
+ * @error: set on error.
+ *
+ * This JIT-compiles the method, and returns the pointer to the native code
+ * produced.  On failure returns NULL and sets @error.
+ */
+gpointer
+mono_compile_method_checked (MonoMethod *method, MonoError *error)
+{
+	gpointer res;
 
 	MONO_REQ_GC_NEUTRAL_MODE
+
+	mono_error_init (error);
 
 	if (!callbacks.compile_method) {
 		g_error ("compile method called on uninitialized runtime");
 		return NULL;
 	}
-	res = callbacks.compile_method (method, &error);
-	if (!mono_error_ok (&error))
-		mono_error_raise_exception (&error);
+	res = callbacks.compile_method (method, error);
 	return res;
 }
 
@@ -3113,13 +3129,15 @@ mono_method_get_unmanaged_thunk (MonoMethod *method)
 	MONO_REQ_GC_NEUTRAL_MODE;
 	MONO_REQ_API_ENTRYPOINT;
 
+	MonoError error;
 	gpointer res;
 
 	g_assert (!mono_threads_is_coop_enabled ());
 
 	MONO_ENTER_GC_UNSAFE;
 	method = mono_marshal_get_thunk_invoke_wrapper (method);
-	res = mono_compile_method (method);
+	res = mono_compile_method_checked (method, &error);
+	mono_error_cleanup (&error);
 	MONO_EXIT_GC_UNSAFE;
 
 	return res;
@@ -7011,11 +7029,13 @@ mono_wait_handle_get_handle (MonoWaitHandle *handle)
 
 
 static MonoObject*
-mono_runtime_capture_context (MonoDomain *domain)
+mono_runtime_capture_context (MonoDomain *domain, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	RuntimeInvokeFunction runtime_invoke;
+
+	mono_error_init (error);
 
 	if (!domain->capture_context_runtime_invoke || !domain->capture_context_method) {
 		MonoMethod *method = mono_get_context_capture_method ();
@@ -7023,8 +7043,10 @@ mono_runtime_capture_context (MonoDomain *domain)
 		if (!method)
 			return NULL;
 		wrapper = mono_marshal_get_runtime_invoke (method, FALSE);
-		domain->capture_context_runtime_invoke = mono_compile_method (wrapper);
-		domain->capture_context_method = mono_compile_method (method);
+		domain->capture_context_runtime_invoke = mono_compile_method_checked (wrapper, error);
+		return_val_if_nok (error, NULL);
+		domain->capture_context_method = mono_compile_method_checked (method, error);
+		return_val_if_nok (error, NULL);
 	}
 
 	runtime_invoke = (RuntimeInvokeFunction)domain->capture_context_runtime_invoke;
@@ -7050,7 +7072,8 @@ mono_async_result_new (MonoDomain *domain, HANDLE handle, MonoObject *state, gpo
 	MonoError error;
 	MonoAsyncResult *res = (MonoAsyncResult *)mono_object_new_checked (domain, mono_defaults.asyncresult_class, &error);
 	mono_error_raise_exception (&error); /* FIXME don't raise here */
-	MonoObject *context = mono_runtime_capture_context (domain);
+	MonoObject *context = mono_runtime_capture_context (domain, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	/* we must capture the execution context from the original thread */
 	if (context) {
 		MONO_OBJECT_SETREF (res, execution_context, context);
@@ -7438,6 +7461,7 @@ mono_delegate_ctor_with_method (MonoObject *this_obj, MonoObject *target, gpoint
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	MonoError error;
 	MonoDelegate *delegate = (MonoDelegate *)this_obj;
 
 	g_assert (this_obj);
@@ -7454,7 +7478,8 @@ mono_delegate_ctor_with_method (MonoObject *this_obj, MonoObject *target, gpoint
 	if (target && target->vtable->klass == mono_defaults.transparent_proxy_class) {
 		g_assert (method);
 		method = mono_marshal_get_remoting_invoke (method);
-		delegate->method_ptr = mono_compile_method (method);
+		delegate->method_ptr = mono_compile_method_checked (method, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
 		MONO_OBJECT_SETREF (delegate, target, target);
 	} else
 #endif

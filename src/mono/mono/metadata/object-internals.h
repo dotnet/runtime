@@ -1706,6 +1706,8 @@ mono_runtime_try_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 MonoObject*
 mono_runtime_invoke_checked (MonoMethod *method, void *obj, void **params, MonoError *error);
 
+void* 
+mono_compile_method_checked (MonoMethod *method, MonoError *error);
 
 MonoArray*
 mono_runtime_get_main_args_checked (MonoError *error);

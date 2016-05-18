@@ -936,9 +936,10 @@ class_type_info (MonoDomain *domain, MonoClass *klass, MonoRgctxInfoType info_ty
 				memcpy_method [size] = m;
 			}
 			if (!domain_info->memcpy_addr [size]) {
-				gpointer addr = mono_compile_method (memcpy_method [size]);
+				gpointer addr = mono_compile_method_checked (memcpy_method [size], error);
 				mono_memory_barrier ();
 				domain_info->memcpy_addr [size] = (gpointer *)addr;
+				mono_error_assert_ok (error);
 			}
 			return domain_info->memcpy_addr [size];
 		} else {
@@ -956,9 +957,10 @@ class_type_info (MonoDomain *domain, MonoClass *klass, MonoRgctxInfoType info_ty
 				bzero_method [size] = m;
 			}
 			if (!domain_info->bzero_addr [size]) {
-				gpointer addr = mono_compile_method (bzero_method [size]);
+				gpointer addr = mono_compile_method_checked (bzero_method [size], error);
 				mono_memory_barrier ();
 				domain_info->bzero_addr [size] = (gpointer *)addr;
+				mono_error_assert_ok (error);
 			}
 			return domain_info->bzero_addr [size];
 		}
@@ -1418,6 +1420,7 @@ mini_get_gsharedvt_wrapper (gboolean gsharedvt_in, gpointer addr, MonoMethodSign
 {
 	static gboolean inited = FALSE;
 	static int num_trampolines;
+	MonoError error;
 	gpointer res, info;
 	MonoDomain *domain = mono_domain_get ();
 	MonoJitDomainInfo *domain_info;
@@ -1436,7 +1439,8 @@ mini_get_gsharedvt_wrapper (gboolean gsharedvt_in, gpointer addr, MonoMethodSign
 			wrapper = mini_get_gsharedvt_in_sig_wrapper (normal_sig);
 		else
 			wrapper = mini_get_gsharedvt_out_sig_wrapper (normal_sig);
-		res = mono_compile_method (wrapper);
+		res = mono_compile_method_checked (wrapper, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
 		return res;
 	}
 
@@ -1469,8 +1473,9 @@ mini_get_gsharedvt_wrapper (gboolean gsharedvt_in, gpointer addr, MonoMethodSign
 
 		if (!tramp_addr) {
 			wrapper = mono_marshal_get_gsharedvt_in_wrapper ();
-			addr = mono_compile_method (wrapper);
+			addr = mono_compile_method_checked (wrapper, &error);
 			mono_memory_barrier ();
+			mono_error_assert_ok (&error);
 			tramp_addr = addr;
 		}
 		addr = tramp_addr;
@@ -1480,8 +1485,9 @@ mini_get_gsharedvt_wrapper (gboolean gsharedvt_in, gpointer addr, MonoMethodSign
 
 		if (!tramp_addr) {
 			wrapper = mono_marshal_get_gsharedvt_out_wrapper ();
-			addr = mono_compile_method (wrapper);
+			addr = mono_compile_method_checked (wrapper, &error);
 			mono_memory_barrier ();
+			mono_error_assert_ok (&error);
 			tramp_addr = addr;
 		}
 		addr = tramp_addr;
@@ -1578,13 +1584,15 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		gpointer arg = NULL;
 
 		if (mono_llvm_only) {
-			addr = mono_compile_method (m);
+			addr = mono_compile_method_checked (m, error);
+			return_val_if_nok (error, NULL);
 			addr = mini_add_method_wrappers_llvmonly (m, addr, FALSE, FALSE, &arg);
 
 			/* Returns an ftndesc */
 			return mini_create_llvmonly_ftndesc (domain, addr, arg);
 		} else {
-			addr = mono_compile_method ((MonoMethod *)data);
+			addr = mono_compile_method_checked ((MonoMethod *)data, error);
+			return_val_if_nok (error, NULL);
 			return mini_add_method_trampoline ((MonoMethod *)data, addr, mono_method_needs_static_rgctx_invoke ((MonoMethod *)data, FALSE), FALSE);
 		}
 	}
@@ -1595,7 +1603,8 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 
 		g_assert (mono_llvm_only);
 
-		addr = mono_compile_method (m);
+		addr = mono_compile_method_checked (m, error);
+		return_val_if_nok (error, NULL);
 
 		MonoJitInfo *ji;
 		gboolean callee_gsharedvt;
@@ -1636,9 +1645,9 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		method = info->klass->vtable [ioffset + slot];
 
 		method = mono_class_inflate_generic_method_checked (method, context, error);
-		if (!mono_error_ok (error))
-			return NULL;
-		addr = mono_compile_method (method);
+		return_val_if_nok (error, NULL);
+		addr = mono_compile_method_checked (method, error);
+		return_val_if_nok (error, NULL);
 		return mini_add_method_trampoline (method, addr, mono_method_needs_static_rgctx_invoke (method, FALSE), FALSE);
 	}
 	case MONO_RGCTX_INFO_VIRT_METHOD_BOX_TYPE: {
@@ -1671,7 +1680,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 	}
 #ifndef DISABLE_REMOTING
 	case MONO_RGCTX_INFO_REMOTING_INVOKE_WITH_CHECK:
-		return mono_compile_method (mono_marshal_get_remoting_invoke_with_check ((MonoMethod *)data));
+		return mono_compile_method_checked (mono_marshal_get_remoting_invoke_with_check ((MonoMethod *)data), error);
 #endif
 	case MONO_RGCTX_INFO_METHOD_DELEGATE_CODE:
 		return mono_domain_alloc0 (domain, sizeof (gpointer));
@@ -1749,9 +1758,10 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 
 		g_assert (method->is_inflated);
 
-		if (!virtual_)
-			addr = mono_compile_method (method);
-		else
+		if (!virtual_) {
+			addr = mono_compile_method_checked (method, error);
+			return_val_if_nok (error, NULL);
+		} else
 			addr = NULL;
 
 		if (virtual_) {

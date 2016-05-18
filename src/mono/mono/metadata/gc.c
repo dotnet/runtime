@@ -244,7 +244,8 @@ mono_gc_run_finalize (void *obj, void *data)
 	if (!domain->finalize_runtime_invoke) {
 		MonoMethod *invoke = mono_marshal_get_runtime_invoke (mono_class_get_method_from_name_flags (mono_defaults.object_class, "Finalize", 0, 0), TRUE);
 
-		domain->finalize_runtime_invoke = mono_compile_method (invoke);
+		domain->finalize_runtime_invoke = mono_compile_method_checked (invoke, &error);
+		mono_error_assert_ok (&error); /* expect this not to fail */
 	}
 
 	runtime_invoke = (RuntimeInvokeFunction)domain->finalize_runtime_invoke;

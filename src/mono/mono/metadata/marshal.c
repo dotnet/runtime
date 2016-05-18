@@ -87,6 +87,9 @@ static void
 delegate_hash_table_add (MonoDelegate *d);
 
 static void
+delegate_hash_table_remove (MonoDelegate *d);
+
+static void
 emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object);
 
 static void
@@ -314,7 +317,6 @@ mono_marshal_init (void)
 		register_icall (mono_struct_delete_old, "mono_struct_delete_old", "void ptr ptr", FALSE);
 		register_icall (mono_delegate_begin_invoke, "mono_delegate_begin_invoke", "object object ptr", FALSE);
 		register_icall (mono_delegate_end_invoke, "mono_delegate_end_invoke", "object object ptr", FALSE);
-		register_icall (mono_compile_method, "mono_compile_method", "ptr ptr", FALSE);
 		register_icall (mono_context_get, "mono_context_get", "object", FALSE);
 		register_icall (mono_context_set, "mono_context_set", "void object", FALSE);
 		register_icall (mono_gc_wbarrier_generic_nostore, "wb_generic", "void ptr", FALSE);
@@ -395,19 +397,26 @@ mono_delegate_to_ftnptr (MonoDelegate *delegate)
 
 	wrapper = mono_marshal_get_managed_wrapper (method, klass, target_handle);
 
-	delegate->delegate_trampoline = mono_compile_method (wrapper);
+	delegate->delegate_trampoline = mono_compile_method_checked (wrapper, &error);
+	if (!is_ok (&error))
+		goto fail;
 
 	// Add the delegate to the delegate hash table
 	delegate_hash_table_add (delegate);
 
 	/* when the object is collected, collect the dynamic method, too */
 	mono_object_register_finalizer ((MonoObject*)delegate, &error);
-	if (!mono_error_ok (&error)) {
-		mono_error_set_pending_exception (&error);
-		return NULL;
-	}
+	if (!is_ok (&error))
+		goto fail2;
 
 	return delegate->delegate_trampoline;
+
+fail2:
+	delegate_hash_table_remove (delegate);
+fail:
+	mono_gchandle_free (target_handle);
+	mono_error_set_pending_exception (&error);
+	return NULL;
 }
 
 /* 
@@ -572,7 +581,10 @@ mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn)
 			mono_error_set_pending_exception (&error);
 			return NULL;
 		}
-		mono_delegate_ctor_with_method ((MonoObject*)d, this_obj, mono_compile_method (wrapper), wrapper);
+		gpointer compiled_ptr = mono_compile_method_checked (wrapper, &error);
+		if (mono_error_set_pending_exception (&error))
+			return NULL;
+		mono_delegate_ctor_with_method ((MonoObject*)d, this_obj, compiled_ptr, wrapper);
 	}
 
 	if (d->object.vtable->domain != mono_domain_get ()) {
@@ -8501,7 +8513,9 @@ mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type)
 				mono_metadata_free_marshal_spec (mspecs [i]);
 		g_free (mspecs);
 
-		return mono_compile_method (method);
+		gpointer compiled_ptr = mono_compile_method_checked (method, &error);
+		mono_error_assert_ok (&error);
+		return compiled_ptr;
 	}
 
 	sig = mono_method_signature (method);
@@ -8524,7 +8538,9 @@ mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type)
 	method = mono_mb_create (mb, sig, param_count, NULL);
 	mono_mb_free (mb);
 
-	return mono_compile_method (method);
+	gpointer compiled_ptr = mono_compile_method_checked (method, &error);
+	mono_error_assert_ok (&error);
+	return compiled_ptr;
 }
 
 #ifndef DISABLE_JIT

@@ -6559,7 +6559,9 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, Mon
 
 	if (method_is_dynamic (method)) {
 		/* Creating a trampoline would leak memory */
-		func = mono_compile_method (method);
+		func = mono_compile_method_checked (method, &error);
+		if (mono_error_set_pending_exception (&error))
+			return NULL;
 	} else {
 		if (target && method->flags & METHOD_ATTRIBUTE_VIRTUAL && method->klass != mono_object_class (target))
 			method = mono_object_get_virtual_method (target, method);
@@ -7489,7 +7491,10 @@ ves_icall_System_IO_DriveInfo_GetDriveType (MonoString *root_path_name)
 ICALL_EXPORT gpointer
 ves_icall_RuntimeMethodHandle_GetFunctionPointer (MonoMethod *method)
 {
-	return mono_compile_method (method);
+	MonoError error;
+	gpointer result = mono_compile_method_checked (method, &error);
+	mono_error_set_pending_exception (&error);
+	return result;
 }
 
 ICALL_EXPORT MonoString *
