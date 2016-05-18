@@ -41,6 +41,7 @@ __host_ver=
 __fxr_ver=
 __policy_ver=
 __build_major=
+__build_minor=
 __version_tag=
 
 # parse arguments
@@ -71,9 +72,13 @@ while [ "$1" != "" ]; do
             shift
             __policy_ver=$1
             ;;
-        --build)
+        --build-major)
             shift
             __build_major=$1
+            ;;
+        --build-minor)
+            shift
+            __build_minor=$1
             ;;
         --vertag)
             shift
@@ -116,7 +121,7 @@ else
     init_distro_name
 fi
 
-__common_parameters="/p:Platform=$__build_arch /p:DotNetHostBinDir=$__dotnet_host_bin_dir /p:$__targets_param /p:DistroName=$__distro_name /p:HostVersion=$__host_ver /p:HostResolverVersion=$__fxr_ver /p:HostPolicyVersion=$__policy_ver /p:BuildNumberMajor=$__build_major /p:PreReleaseLabel=$__version_tag /p:CLIBuildVersion=$__build_major /verbosity:minimal"
+__common_parameters="/p:Platform=$__build_arch /p:DotNetHostBinDir=$__dotnet_host_bin_dir /p:$__targets_param /p:DistroName=$__distro_name /p:HostVersion=$__host_ver /p:HostResolverVersion=$__fxr_ver /p:HostPolicyVersion=$__policy_ver /p:BuildNumberMajor=$__build_major /p:BuildNumberMinor=$__build_minor /p:PreReleaseLabel=$__version_tag /p:CLIBuildVersion=$__build_major /verbosity:minimal"
 
 $__corerun $__msbuild $__project_dir/projects/packages.builds $__common_parameters || exit 1
 
