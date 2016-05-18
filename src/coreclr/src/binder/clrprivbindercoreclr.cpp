@@ -80,8 +80,7 @@ HRESULT CLRPrivBinderCoreCLR::BindAssemblyByName(IAssemblyName     *pIAssemblyNa
             INT_PTR pManagedAssemblyLoadContext = GetManagedAssemblyLoadContext();
             if (pManagedAssemblyLoadContext != NULL)
             {
-              hr = AssemblyBinder::BindUsingHostAssemblyResolver(pManagedAssemblyLoadContext, pAssemblyName, pIAssemblyName, 
-              NULL, &pCoreCLRFoundAssembly);
+              hr = AssemblyBinder::BindUsingHostAssemblyResolver(pManagedAssemblyLoadContext, pAssemblyName, pIAssemblyName, &pCoreCLRFoundAssembly);
               if (SUCCEEDED(hr))
               {
                   // We maybe returned an assembly that was bound to a different AssemblyLoadContext instance.
