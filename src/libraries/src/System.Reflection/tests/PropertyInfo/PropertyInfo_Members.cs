@@ -3,9 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
-using System;
-using System.Reflection;
-using System.Collections.Generic;
 
 #pragma warning disable 0414
 
@@ -26,13 +23,10 @@ namespace System.Reflection.Tests
         {
             PropertyInfo pi = typeof(SamplePropertyInfo).GetTypeInfo().GetProperty(propName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
 
-            Assert.NotNull(pi);
             Type[] types = pi.GetRequiredCustomModifiers();
-            Assert.NotNull(types);
             Assert.Equal(0, types.Length);
 
             types = pi.GetOptionalCustomModifiers();
-            Assert.NotNull(types);
             Assert.Equal(0, types.Length);
         }
 
@@ -75,6 +69,7 @@ namespace System.Reflection.Tests
             Assert.True(nonpublicset ? pi.GetSetMethod(true).Name.Equals("set_" + propName) : pi.GetSetMethod() == null);
             Assert.True(nonpublicset ? pi.GetSetMethod(true).Name.Equals("set_" + propName) : pi.GetSetMethod(false) == null);
         }
+
         public struct SamplePropertyInfo
         {
             public int intPublicProperty { get; }

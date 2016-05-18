@@ -67,11 +67,10 @@
     <Compile Include="ParameterInfoTests.cs" />
     <Compile Include="PropertyInfo\PropertyInfo_GetConstantValueTests.cs" />
     <Compile Include="PropertyInfo\PropertyInfo_GetSetMethodTests.cs" />
-    <Compile Include="PropertyInfo\PropertyInfo_GetValueTests.cs" />
+    <Compile Include="PropertyInfo\PropertyInfo_GetSetValueTests.cs" />
     <Compile Include="PropertyInfo\PropertyInfo_Members.cs" />
     <Compile Include="PropertyInfo\PropertyInfo_MethodTests.cs" />
     <Compile Include="PropertyInfo\PropertyInfo_propertyTests.cs" />
-    <Compile Include="PropertyInfo\PropertyInfo_SetValueTests.cs" />
     <Compile Include="ReflectionContext\ReflectionContext.cs" />
     <Compile Include="TypeInfo\TypeInfo_DeclaredCtorTests.cs" />
     <Compile Include="TypeInfo\TypeInfo_DeclaredEventTests.cs" />

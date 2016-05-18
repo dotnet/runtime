@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Xunit;
-using System;
-using System.Reflection;
 using System.Collections.Generic;
+using Xunit;
 
 #pragma warning disable 0414
 
@@ -13,106 +11,56 @@ namespace System.Reflection.Tests
 {
     public class PropertyInfoMethodTests
     {
-        //Verify Equals Method for two different properties
         [Fact]
-        public static void TestEqualsMethod1()
+        public static void EqualsMethod_False()
         {
-            string propName1 = "MyPropAA";
-            PropertyInfo pi1 = getProperty(typeof(SampleMethod), propName1);
-
-            string propName2 = "MyPropBB";
-            PropertyInfo pi2 = getProperty(typeof(SampleMethod), propName2);
-
-
-            Assert.NotNull(pi1);
-
-            Assert.NotNull(pi2);
+            PropertyInfo pi1 = typeof(SampleMethod).GetTypeInfo().GetProperty("MyPropAA");
+            PropertyInfo pi2 = typeof(SampleMethod).GetTypeInfo().GetProperty("MyPropBB");
 
             Assert.False(pi1.Equals(pi2));
         }
 
         //Verify Equals Method for same properties
         [Fact]
-        public static void TestEqualsMethod2()
+        public static void EqualsMethod_True()
         {
-            string propName1 = "MyPropAA";
-            PropertyInfo pi1 = getProperty(typeof(SampleMethod), propName1);
-
-            string propName2 = "MyPropAA";
-            PropertyInfo pi2 = getProperty(typeof(SampleMethod), propName2);
-
-
-            Assert.NotNull(pi1);
-
-            Assert.NotNull(pi2);
+            PropertyInfo pi1 = typeof(SampleMethod).GetTypeInfo().GetProperty("MyPropAA");
+            PropertyInfo pi2 = typeof(SampleMethod).GetTypeInfo().GetProperty("MyPropAA");
 
             Assert.True(pi1.Equals(pi2));
         }
 
-        //Verify GetHashCode Method for propertyInfo object
         [Fact]
         public static void TestGetHashCode()
         {
-            string propName = "MyPropAA";
-            PropertyInfo pi = getProperty(typeof(SampleMethod), propName);
-
-            Assert.NotNull(pi);
+            PropertyInfo pi = typeof(SampleMethod).GetTypeInfo().GetProperty("MyPropAA");
 
             int hcode = pi.GetHashCode();
 
             Assert.NotEqual(hcode, 0);
         }
 
-        //Verify GetIndexParameter Method for propertyInfo object
         [Fact]
-        public static void TestGetIndexParameters1()
+        public static void GetIndexParameters_Item()
         {
-            string propName = "Item";
-            PropertyInfo pi = getProperty(typeof(SampleMethod), propName);
-
-            Assert.NotNull(pi);
+            PropertyInfo pi = typeof(SampleMethod).GetTypeInfo().GetProperty("Item");
 
             ParameterInfo[] allparams = pi.GetIndexParameters();
-
 
             Assert.Equal(1, allparams.Length);
 
             Assert.Equal("Index", allparams[0].Name);
         }
 
-
         //Verify GetIndexParameter Method for propertyInfo object
         [Fact]
-        public static void TestGetIndexParameters2()
+        public static void GetIndexParameters_MyPropAA()
         {
-            string propName = "MyPropAA";
-            PropertyInfo pi = getProperty(typeof(SampleMethod), propName);
-
-            Assert.NotNull(pi);
+            PropertyInfo pi = typeof(SampleMethod).GetTypeInfo().GetProperty("MyPropAA");
 
             ParameterInfo[] allparams = pi.GetIndexParameters();
 
             Assert.Equal(0, allparams.Length);
-        }
-
-
-        //Gets PropertyInfo object from a Type
-        public static PropertyInfo getProperty(Type t, string property)
-        {
-            TypeInfo ti = t.GetTypeInfo();
-            IEnumerator<PropertyInfo> allproperties = ti.DeclaredProperties.GetEnumerator();
-            PropertyInfo pi = null;
-
-            while (allproperties.MoveNext())
-            {
-                if (allproperties.Current.Name.Equals(property))
-                {
-                    //found property
-                    pi = allproperties.Current;
-                    break;
-                }
-            }
-            return pi;
         }
     }
 

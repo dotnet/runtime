@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Xunit;
-using System;
-using System.Reflection;
 using System.Collections.Generic;
+using Xunit;
 
 #pragma warning disable 0414
 
@@ -13,125 +11,39 @@ namespace System.Reflection.Tests
 {
     public class PropertyInfoGetSetMethodTests
     {
-        //Verify GetMethod , SetMethod properties for PropertyInfo
-        [Fact]
-        public static void TestGetSetMethod1()
+        [Theory]
+        [InlineData(typeof(ReferenceTypeHelper), "PropertyGetterSetter", true, true)]
+        [InlineData(typeof(ReferenceTypeHelper), "PropertyGetter", true, false)]
+        [InlineData(typeof(ReferenceTypeHelper), "PropertySetter", false, true)]
+        [InlineData(typeof(ReferenceTypeHelper), "Item", true, true)]
+        [InlineData(typeof(ValueTypeHelper), "PropertyGetterSetter", true, true)]
+        [InlineData(typeof(ValueTypeHelper), "PropertyGetter", true, false)]
+        [InlineData(typeof(ValueTypeHelper), "PropertySetter", false, true)]
+        [InlineData(typeof(ValueTypeHelper), "Item", true, false)]
+        [InlineData(typeof(InterfaceHelper), "PropertyGetterSetter", true, true)]
+        [InlineData(typeof(InterfaceHelper), "PropertyGetter", true, false)]
+        [InlineData(typeof(InterfaceHelper), "PropertySetter", false, true)]
+        [InlineData(typeof(InterfaceHelper), "Item", false, true)]
+        public void GetSetMethod(Type type, string propertyName, bool getter, bool setter)
         {
-            VerifyGetSetMethod(typeof(ReferenceTypeHelper), "PropertyGetterSetter", true, true);
-        }
-
-        //Verify GetMethod , SetMethod properties for PropertyInfo
-        [Fact]
-        public static void TestGetSetMethod2()
-        {
-            VerifyGetSetMethod(typeof(ReferenceTypeHelper), "PropertyGetter", true, false);
-        }
-
-        //Verify GetMethod , SetMethod properties for PropertyInfo
-        [Fact]
-        public static void TestGetSetMethod3()
-        {
-            VerifyGetSetMethod(typeof(ReferenceTypeHelper), "PropertySetter", false, true);
-        }
-
-
-        //Verify GetMethod , SetMethod properties for PropertyInfo
-        [Fact]
-        public static void TestGetSetMethod4()
-        {
-            VerifyGetSetMethod(typeof(ReferenceTypeHelper), "Item", true, true);
-        }
-
-        //Verify GetMethod , SetMethod properties for PropertyInfo
-        [Fact]
-        public static void TestGetSetMethod5()
-        {
-            VerifyGetSetMethod(typeof(ValueTypeHelper), "PropertyGetterSetter", true, true);
-        }
-
-        //Verify GetMethod , SetMethod properties for PropertyInfo
-        [Fact]
-        public static void TestGetSetMethod6()
-        {
-            VerifyGetSetMethod(typeof(ValueTypeHelper), "PropertyGetter", true, false);
-        }
-
-        //Verify GetMethod , SetMethod properties for PropertyInfo
-        [Fact]
-        public static void TestGetSetMethod7()
-        {
-            VerifyGetSetMethod(typeof(ValueTypeHelper), "PropertySetter", false, true);
-        }
-
-        //Verify GetMethod , SetMethod properties for PropertyInfo
-        [Fact]
-        public static void TestGetSetMethod8()
-        {
-            VerifyGetSetMethod(typeof(ValueTypeHelper), "Item", true, false);
-        }
-
-        //Verify GetMethod , SetMethod properties for PropertyInfo
-        [Fact]
-        public static void TestGetSetMethod9()
-        {
-            VerifyGetSetMethod(typeof(InterfaceHelper), "PropertyGetterSetter", true, true);
-        }
-
-        //Verify GetMethod , SetMethod properties for PropertyInfo
-        [Fact]
-        public static void TestGetSetMethod10()
-        {
-            VerifyGetSetMethod(typeof(InterfaceHelper), "PropertyGetter", true, false);
-        }
-
-        //Verify GetMethod , SetMethod properties for PropertyInfo
-        [Fact]
-        public static void TestGetSetMethod11()
-        {
-            VerifyGetSetMethod(typeof(InterfaceHelper), "PropertySetter", false, true);
-        }
-
-        //Verify GetMethod , SetMethod properties for PropertyInfo
-        [Fact]
-        public static void TestGetSetMethod12()
-        {
-            VerifyGetSetMethod(typeof(InterfaceHelper), "Item", false, true);
-        }
-
-
-        //Gets PropertyInfo object from a Type
-        public static PropertyInfo getProperty(Type t, string property)
-        {
-            TypeInfo ti = t.GetTypeInfo();
-            IEnumerator<PropertyInfo> allproperties = ti.DeclaredProperties.GetEnumerator();
-            PropertyInfo pi = null;
-
-            while (allproperties.MoveNext())
-            {
-                if (allproperties.Current.Name.Equals(property))
-                {
-                    //found property
-                    pi = allproperties.Current;
-                    break;
-                }
-            }
-            return pi;
-        }
-
-        public static void VerifyGetSetMethod(Type type, String propertyName, Boolean getter, Boolean setter)
-        {
-            PropertyInfo pi = getProperty(type, propertyName);
-
-            Assert.NotNull(pi);
+            PropertyInfo pi = type.GetTypeInfo().GetProperty(propertyName);
 
             if (getter)
             {
                 Assert.NotNull(pi.GetMethod);
             }
+            else
+            {
+                Assert.Null(pi.GetMethod);
+            }
 
             if (setter)
             {
                 Assert.NotNull(pi.SetMethod);
+            }
+            else
+            {
+                Assert.Null(pi.SetMethod);
             }
         }
     }

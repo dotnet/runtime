@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Xunit;
-using System;
-using System.Reflection;
 using System.Collections.Generic;
+using Xunit;
 
 #pragma warning disable 0414
 
@@ -13,255 +11,77 @@ namespace System.Reflection.Tests
 {
     public class PropertyInfoPropertyTests
     {
-        //Verify CanRead for read write PropertyInfo
-        [Fact]
-        public static void TestCanRead1()
+        [Theory]
+        [InlineData("MyPropAA", true)]
+        [InlineData("MyPropBB", true)]
+        [InlineData("MyPropCC", false)]
+        public static void CanRead(String propName, bool expected)
         {
-            string propName = "MyPropAA";
-            PropertyInfo pi = GetProperty(typeof(SampleProperty), propName);
-
-
-            Assert.NotNull(pi);
-            Assert.True(pi.CanRead, "Failed!  CanRead Failed for read write property. Expected True , returned False");
+            PropertyInfo pi = typeof(SampleProperty).GetTypeInfo().GetProperty(propName);
+            Assert.Equal(expected, pi.CanRead);
         }
 
-        //Verify CanRead for readonly PropertyInfo
-        [Fact]
-        public static void TestCanRead2()
+        [Theory]
+        [InlineData("MyPropAA", true)]
+        [InlineData("MyPropBB", false)]
+        [InlineData("MyPropCC", true)]
+        public static void CanWrite(String propName, bool expected)
         {
-            string propName = "MyPropBB";
-            PropertyInfo pi = GetProperty(typeof(SampleProperty), propName);
+            PropertyInfo pi = typeof(SampleProperty).GetTypeInfo().GetProperty(propName);
+            Assert.Equal(expected, pi.CanWrite);
 
-            Assert.NotNull(pi);
-            Assert.True(pi.CanRead, "Failed!  CanRead Failed for read only property. Expected True , returned False");
         }
 
-
-        //Verify CanRead for writeonly PropertyInfo
-        [Fact]
-        public static void TestCanRead3()
+        [Theory]
+        [InlineData("DerivedPropertyProperty", typeof(DerivedProperty), typeof(DerivedProperty))]
+        [InlineData("BasePropertyProperty", typeof(BaseProperty), typeof(BaseProperty))]
+        public static void DeclaringType(String propName, Type type, Type expectedType)
         {
-            string propName = "MyPropCC";
-            PropertyInfo pi = GetProperty(typeof(SampleProperty), propName);
-
-            Assert.NotNull(pi);
-            Assert.False(pi.CanRead, "Failed!  CanRead Failed for write only property. Expected False , returned True");
+            PropertyInfo pi = type.GetTypeInfo().GetProperty(propName);
+            Assert.Equal(expectedType, pi.DeclaringType);
         }
 
-        //Verify CanWrite for read write PropertyInfo
-        [Fact]
-        public static void TestCanWrite1()
+        [Theory]
+        [InlineData("DerivedPropertyProperty", typeof(DerivedProperty), typeof(int))]
+        [InlineData("BasePropertyProperty", typeof(BaseProperty), typeof(int))]
+        [InlineData("MyPropAA", typeof(SampleProperty), typeof(short))]
+        public static void PropertyType(String propName, Type type, Type expectedType)
         {
-            string propName = "MyPropAA";
-            PropertyInfo pi = GetProperty(typeof(SampleProperty), propName);
-
-
-            Assert.NotNull(pi);
-            Assert.True(pi.CanWrite, "Failed!  CanWrite Failed for read write property. Expected True , returned False");
+            PropertyInfo pi = type.GetTypeInfo().GetProperty(propName);
+            Assert.Equal(expectedType, pi.PropertyType);
         }
 
-        //Verify CanWrite for readonly PropertyInfo
-        [Fact]
-        public static void TestCanWrite2()
+        [Theory]
+        [InlineData("MyPropAA")]
+        [InlineData("MyPropBB")]
+        [InlineData("MyPropCC")]
+        public static void Name(String propName)
         {
-            string propName = "MyPropBB";
-            PropertyInfo pi = GetProperty(typeof(SampleProperty), propName);
-
-            Assert.NotNull(pi);
-            Assert.False(pi.CanWrite, "Failed!  CanWrite Failed for read only property. Expected False , returned True");
-        }
-
-
-        //Verify CanWrite for writeonly PropertyInfo
-        [Fact]
-        public static void TestCanWrite3()
-        {
-            string propName = "MyPropCC";
-            PropertyInfo pi = GetProperty(typeof(SampleProperty), propName);
-
-            Assert.NotNull(pi);
-            Assert.True(pi.CanWrite, "Failed!  CanWrite Failed for write only property. Expected True , returned False");
-        }
-
-        //Verify DeclaringType for PropertyInfo
-        [Fact]
-        public static void TestDeclaringType1()
-        {
-            string propName = "DerivedProeprtyProperty";
-            PropertyInfo pi = GetProperty(typeof(DerivedProeprty), propName);
-
-            Assert.NotNull(pi);
-            Assert.NotNull(pi.DeclaringType.Name);
-            Assert.Equal("DerivedProeprty", pi.DeclaringType.Name);
-        }
-
-        //Verify DeclaringType for PropertyInfo
-        [Fact]
-        public static void TestDeclaringType2()
-        {
-            string propName = "BasePropertyProperty";
-            PropertyInfo pi = GetProperty(typeof(BaseProperty), propName);
-
-            Assert.NotNull(pi);
-            Assert.NotNull(pi.DeclaringType.Name);
-            Assert.Equal("BaseProperty", pi.DeclaringType.Name);
-        }
-
-
-        //Verify PropertyType for PropertyInfo
-        [Fact]
-        public static void TestPropertyType1()
-        {
-            string propName = "DerivedProeprtyProperty";
-            PropertyInfo pi = GetProperty(typeof(DerivedProeprty), propName);
-
-            Assert.NotNull(pi);
-            Assert.NotNull(pi.PropertyType);
-            Assert.Equal("Int32", pi.PropertyType.Name);
-        }
-
-        //Verify PropertyType for PropertyInfo
-        [Fact]
-        public static void TestPropertyType2()
-        {
-            string propName = "BasePropertyProperty";
-            PropertyInfo pi = GetProperty(typeof(BaseProperty), propName);
-
-            Assert.NotNull(pi);
-            Assert.NotNull(pi.PropertyType);
-            Assert.Equal("Int32", pi.PropertyType.Name);
-        }
-
-        //Verify PropertyType for PropertyInfo
-        [Fact]
-        public static void TestPropertyType3()
-        {
-            string propName = "MyPropAA";
-            PropertyInfo pi = GetProperty(typeof(SampleProperty), propName);
-
-
-            Assert.NotNull(pi);
-            Assert.NotNull(pi.PropertyType);
-            Assert.Equal("Int16", pi.PropertyType.Name);
-        }
-
-
-        //Verify Name for PropertyInfo
-        [Fact]
-        public static void TestName1()
-        {
-            string propName = "MyPropAA";
-            PropertyInfo pi = GetProperty(typeof(SampleProperty), propName);
-
-
-            Assert.NotNull(pi);
+            PropertyInfo pi = typeof(SampleProperty).GetTypeInfo().GetProperty(propName);
             Assert.Equal(propName, pi.Name);
         }
 
-        //Verify Name for PropertyInfo
-        [Fact]
-        public static void TestName2()
-        {
-            string propName = "MyPropBB";
-            PropertyInfo pi = GetProperty(typeof(SampleProperty), propName);
-
-            Assert.NotNull(pi);
-            Assert.Equal(propName, pi.Name);
-        }
-
-
-        //Verify Name for PropertyInfo
-        [Fact]
-        public static void TestName3()
-        {
-            string propName = "MyPropCC";
-            PropertyInfo pi = GetProperty(typeof(SampleProperty), propName);
-
-            Assert.NotNull(pi);
-            Assert.Equal(propName, pi.Name);
-        }
-
-
         //Verify IsSpecialName for PropertyInfo
-        [Fact]
-        public static void TestIsSpecialName1()
+        [Theory]
+        [InlineData("MyPropAA")]
+        [InlineData("MyPropBB")]
+        [InlineData("MyPropCC")]
+        public static void IsSpecialName(String propName)
         {
-            string propName = "MyPropCC";
-            PropertyInfo pi = GetProperty(typeof(SampleProperty), propName);
-
-            Assert.NotNull(pi);
+            PropertyInfo pi = typeof(SampleProperty).GetTypeInfo().GetProperty(propName);
             Assert.False(pi.IsSpecialName, "Failed: PropertyInfo IsSpecialName returned True for property: " + propName);
         }
-
-        //Verify IsSpecialName for PropertyInfo
-        [Fact]
-        public static void TestIsSpecialName2()
-        {
-            string propName = "MyPropBB";
-            PropertyInfo pi = GetProperty(typeof(SampleProperty), propName);
-
-            Assert.NotNull(pi);
-            Assert.False(pi.IsSpecialName, "Failed: PropertyInfo IsSpecialName returned True for property: " + propName);
-        }
-
-
-        //Verify IsSpecialName for PropertyInfo
-        [Fact]
-        public static void TestIsSpecialName3()
-        {
-            string propName = "MyPropAA";
-            PropertyInfo pi = GetProperty(typeof(SampleProperty), propName);
-
-            Assert.NotNull(pi);
-            Assert.False(pi.IsSpecialName, "Failed: PropertyInfo IsSpecialName returned True for property: " + propName);
-        }
-
 
         //Verify Attributes for Property
-        [Fact]
-        public static void TestAttributes1()
+        [Theory]
+        [InlineData("Description")]
+        [InlineData("DerivedPropertyProperty")]
+        public static void Attributes(String propName)
         {
-            string propName = "Description";
-            PropertyInfo pi = GetProperty(typeof(DerivedProeprty), propName);
-
-            Assert.NotNull(pi);
+            PropertyInfo pi = typeof(DerivedProperty).GetTypeInfo().GetProperty(propName);
 
             PropertyAttributes pa = pi.Attributes;
             Assert.Equal((object)pa, (object)PropertyAttributes.None);
-        }
-
-
-        //Verify Attributes for Property
-        [Fact]
-        public static void TestAttributes2()
-        {
-            string propName = "DerivedProeprtyProperty";
-            PropertyInfo pi = GetProperty(typeof(DerivedProeprty), propName);
-
-            Assert.NotNull(pi);
-
-            PropertyAttributes pa = pi.Attributes;
-            Assert.Equal((object)pa, (object)PropertyAttributes.None);
-        }
-
-
-        //Gets PropertyInfo object from a Type
-        public static PropertyInfo GetProperty(Type t, string property)
-        {
-            TypeInfo ti = t.GetTypeInfo();
-            IEnumerator<PropertyInfo> allproperties = ti.DeclaredProperties.GetEnumerator();
-            PropertyInfo pi = null;
-
-            while (allproperties.MoveNext())
-            {
-                if (allproperties.Current.Name.Equals(property))
-                {
-                    //found property
-                    pi = allproperties.Current;
-                    break;
-                }
-            }
-            return pi;
         }
     }
 
@@ -321,12 +141,12 @@ namespace System.Reflection.Tests
         }
     }
 
-    public class DerivedProeprty : BaseProperty
+    public class DerivedProperty : BaseProperty
     {
         private int _derivedprop = 100;
         private string _description;
 
-        public int DerivedProeprtyProperty
+        public int DerivedPropertyProperty
         {
             get { return _derivedprop; }
             set { _derivedprop = value; }
