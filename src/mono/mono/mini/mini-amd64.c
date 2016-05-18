@@ -174,277 +174,10 @@ amd64_use_imm32 (gint64 val)
 	return amd64_is_imm32 (val);
 }
 
-#ifdef __native_client_codegen__
-
-/* Keep track of instruction "depth", that is, the level of sub-instruction */
-/* for any given instruction.  For instance, amd64_call_reg resolves to     */
-/* amd64_call_reg_internal, which uses amd64_alu_* macros, etc.             */
-/* We only want to force bundle alignment for the top level instruction,    */
-/* so NaCl pseudo-instructions can be implemented with sub instructions.    */
-static MonoNativeTlsKey nacl_instruction_depth;
-
-static MonoNativeTlsKey nacl_rex_tag;
-static MonoNativeTlsKey nacl_legacy_prefix_tag;
-
-void
-amd64_nacl_clear_legacy_prefix_tag ()
-{
-	mono_native_tls_set_value (nacl_legacy_prefix_tag, NULL);
-}
-
-void
-amd64_nacl_tag_legacy_prefix (guint8* code)
-{
-	if (mono_native_tls_get_value (nacl_legacy_prefix_tag) == NULL)
-		mono_native_tls_set_value (nacl_legacy_prefix_tag, code);
-}
-
-void
-amd64_nacl_tag_rex (guint8* code)
-{
-	mono_native_tls_set_value (nacl_rex_tag, code);
-}
-
-guint8*
-amd64_nacl_get_legacy_prefix_tag ()
-{
-	return (guint8*)mono_native_tls_get_value (nacl_legacy_prefix_tag);
-}
-
-guint8*
-amd64_nacl_get_rex_tag ()
-{
-	return (guint8*)mono_native_tls_get_value (nacl_rex_tag);
-}
-
-/* Increment the instruction "depth" described above */
-void
-amd64_nacl_instruction_pre ()
-{
-	intptr_t depth = (intptr_t) mono_native_tls_get_value (nacl_instruction_depth);
-	depth++;
-	mono_native_tls_set_value (nacl_instruction_depth, (gpointer)depth);
-}
-
-/* amd64_nacl_instruction_post: Decrement instruction "depth", force bundle */
-/* alignment if depth == 0 (top level instruction)                          */
-/* IN: start, end    pointers to instruction beginning and end              */
-/* OUT: start, end   pointers to beginning and end after possible alignment */
-/* GLOBALS: nacl_instruction_depth     defined above                        */
-void
-amd64_nacl_instruction_post (guint8 **start, guint8 **end)
-{
-	intptr_t depth = (intptr_t) mono_native_tls_get_value (nacl_instruction_depth);
-	depth--;
-	mono_native_tls_set_value (nacl_instruction_depth, (void*)depth);
-
-	g_assert ( depth >= 0 );
-	if (depth == 0) {
-  		uintptr_t space_in_block;
-		uintptr_t instlen;
-		guint8 *prefix = amd64_nacl_get_legacy_prefix_tag ();
-		/* if legacy prefix is present, and if it was emitted before */
-		/* the start of the instruction sequence, adjust the start   */
-		if (prefix != NULL && prefix < *start) {
-			g_assert (*start - prefix <= 3);/* only 3 are allowed */
-			*start = prefix;
-		}
-		space_in_block = kNaClAlignment - ((uintptr_t)(*start) & kNaClAlignmentMask);
-		instlen = (uintptr_t)(*end - *start);
-		/* Only check for instructions which are less than        */
-		/* kNaClAlignment. The only instructions that should ever */
-		/* be that long are call sequences, which are already     */
-		/* padded out to align the return to the next bundle.     */
-		if (instlen > space_in_block && instlen < kNaClAlignment) {
-			const size_t MAX_NACL_INST_LENGTH = kNaClAlignment;
-  			guint8 copy_of_instruction[MAX_NACL_INST_LENGTH];
-  			const size_t length = (size_t)((*end)-(*start));
-  			g_assert (length < MAX_NACL_INST_LENGTH);
-			
-  			memcpy (copy_of_instruction, *start, length);
-			*start = mono_arch_nacl_pad (*start, space_in_block);
-			memcpy (*start, copy_of_instruction, length);
-			*end = *start + length;
-		}
-		amd64_nacl_clear_legacy_prefix_tag ();
-		amd64_nacl_tag_rex (NULL);
-	}
-}
-
-/* amd64_nacl_membase_handler: ensure all access to memory of the form      */
-/*   OFFSET(%rXX) is sandboxed.  For allowable base registers %rip, %rbp,   */
-/*   %rsp, and %r15, emit the membase as usual.  For all other registers,   */
-/*   make sure the upper 32-bits are cleared, and use that register in the  */
-/*   index field of a new address of this form: OFFSET(%r15,%eXX,1)         */
-/* IN:      code                                                            */
-/*             pointer to current instruction stream (in the                */
-/*             middle of an instruction, after opcode is emitted)           */
-/*          basereg/offset/dreg                                             */
-/*             operands of normal membase address                           */
-/* OUT:     code                                                            */
-/*             pointer to the end of the membase/memindex emit              */
-/* GLOBALS: nacl_rex_tag                                                    */
-/*             position in instruction stream that rex prefix was emitted   */
-/*          nacl_legacy_prefix_tag                                          */
-/*             (possibly NULL) position in instruction of legacy x86 prefix */
-void
-amd64_nacl_membase_handler (guint8** code, gint8 basereg, gint32 offset, gint8 dreg)
-{
-	gint8 true_basereg = basereg;
-
-	/* Cache these values, they might change  */
- 	/* as new instructions are emitted below. */
-	guint8* rex_tag = amd64_nacl_get_rex_tag ();
-	guint8* legacy_prefix_tag = amd64_nacl_get_legacy_prefix_tag ();
-
-	/* 'basereg' is given masked to 0x7 at this point, so check */
-	/* the rex prefix to see if this is an extended register.   */
-	if ((rex_tag != NULL) && IS_REX(*rex_tag) && (*rex_tag & AMD64_REX_B)) {
-		true_basereg |= 0x8;
-	}
-
-#define X86_LEA_OPCODE (0x8D)
-
-	if (!amd64_is_valid_nacl_base (true_basereg) && (*(*code-1) != X86_LEA_OPCODE)) {
-		guint8* old_instruction_start;
-		
-		/* This will hold the 'mov %eXX, %eXX' that clears the upper */
-		/* 32-bits of the old base register (new index register)     */
-		guint8 buf[32];
-		guint8* buf_ptr = buf;
-		size_t insert_len;
-
-		g_assert (rex_tag != NULL);
-
-		if (IS_REX(*rex_tag)) {
-			/* The old rex.B should be the new rex.X */
-			if (*rex_tag & AMD64_REX_B) {
-				*rex_tag |= AMD64_REX_X;
-			}
-			/* Since our new base is %r15 set rex.B */
-			*rex_tag |= AMD64_REX_B;
-		} else {
-			/* Shift the instruction by one byte  */
-			/* so we can insert a rex prefix      */
-			memmove (rex_tag + 1, rex_tag, (size_t)(*code - rex_tag));
-			*code += 1;
-			/* New rex prefix only needs rex.B for %r15 base */
-			*rex_tag = AMD64_REX(AMD64_REX_B);
-		}
-
-		if (legacy_prefix_tag) {
-			old_instruction_start = legacy_prefix_tag;
-		} else {
-			old_instruction_start = rex_tag;
-		}
-		
-		/* Clears the upper 32-bits of the previous base register */
-		amd64_mov_reg_reg_size (buf_ptr, true_basereg, true_basereg, 4);
-		insert_len = buf_ptr - buf;
-		
-		/* Move the old instruction forward to make */
-		/* room for 'mov' stored in 'buf_ptr'       */
-		memmove (old_instruction_start + insert_len, old_instruction_start, (size_t)(*code - old_instruction_start));
-		*code += insert_len;
-		memcpy (old_instruction_start, buf, insert_len);
-
-		/* Sandboxed replacement for the normal membase_emit */
-		x86_memindex_emit (*code, dreg, AMD64_R15, offset, basereg, 0);
-		
-	} else {
-		/* Normal default behavior, emit membase memory location */
-		x86_membase_emit_body (*code, dreg, basereg, offset);
-	}
-}
-
-
-static inline unsigned char*
-amd64_skip_nops (unsigned char* code)
-{
-	guint8 in_nop;
-	do {
-		in_nop = 0;
-		if (   code[0] == 0x90) {
-			in_nop = 1;
-			code += 1;
-		}
-		if (   code[0] == 0x66 && code[1] == 0x90) {
-			in_nop = 1;
-			code += 2;
-		}
-		if (code[0] == 0x0f && code[1] == 0x1f
-		 && code[2] == 0x00) {
-			in_nop = 1;
-			code += 3;
-		}
-		if (code[0] == 0x0f && code[1] == 0x1f
-		 && code[2] == 0x40 && code[3] == 0x00) {
-			in_nop = 1;
-			code += 4;
-		}
-		if (code[0] == 0x0f && code[1] == 0x1f
-		 && code[2] == 0x44 && code[3] == 0x00
-		 && code[4] == 0x00) {
-			in_nop = 1;
-			code += 5;
-		}
-		if (code[0] == 0x66 && code[1] == 0x0f
-		 && code[2] == 0x1f && code[3] == 0x44
-		 && code[4] == 0x00 && code[5] == 0x00) {
-			in_nop = 1;
-			code += 6;
-		}
-		if (code[0] == 0x0f && code[1] == 0x1f
-		 && code[2] == 0x80 && code[3] == 0x00
-		 && code[4] == 0x00 && code[5] == 0x00
-		 && code[6] == 0x00) {
-			in_nop = 1;
-			code += 7;
-		}
-		if (code[0] == 0x0f && code[1] == 0x1f
-		 && code[2] == 0x84 && code[3] == 0x00
-		 && code[4] == 0x00 && code[5] == 0x00
-		 && code[6] == 0x00 && code[7] == 0x00) {
-			in_nop = 1;
-			code += 8;
-		}
-	} while ( in_nop );
-	return code;
-}
-
-guint8*
-mono_arch_nacl_skip_nops (guint8* code)
-{
-  return amd64_skip_nops(code);
-}
-
-#endif /*__native_client_codegen__*/
-
 static void
 amd64_patch (unsigned char* code, gpointer target)
 {
 	guint8 rex = 0;
-
-#ifdef __native_client_codegen__
-	code = amd64_skip_nops (code);
-#endif
-#if defined(__native_client_codegen__) && defined(__native_client__)
-	if (nacl_is_code_address (code)) {
-		/* For tail calls, code is patched after being installed */
-		/* but not through the normal "patch callsite" method.   */
-		unsigned char buf[kNaClAlignment];
-		unsigned char *aligned_code = (uintptr_t)code & ~kNaClAlignmentMask;
-		int ret;
-		memcpy (buf, aligned_code, kNaClAlignment);
-		/* Patch a temp buffer of bundle size, */
-		/* then install to actual location.    */
-		amd64_patch (buf + ((uintptr_t)code - (uintptr_t)aligned_code), target);
-		ret = nacl_dyncode_modify (aligned_code, buf, kNaClAlignment);
-		g_assert (ret == 0);
-		return;
-	}
-	target = nacl_modify_patch_target (target);
-#endif
 
 	/* Skip REX */
 	if ((code [0] >= 0x40) && (code [0] <= 0x4f)) {
@@ -604,30 +337,6 @@ merge_argument_class_from_type (MonoType *type, ArgumentClass class1)
 
 	return class1;
 }
-#ifdef __native_client_codegen__
-
-/* Default alignment for Native Client is 32-byte. */
-gint8 nacl_align_byte = -32; /* signed version of 0xe0 */
-
-/* mono_arch_nacl_pad: Add pad bytes of alignment instructions at code,  */
-/* Check that alignment doesn't cross an alignment boundary.             */
-guint8*
-mono_arch_nacl_pad(guint8 *code, int pad)
-{
-	const int kMaxPadding = 8; /* see amd64-codegen.h:amd64_padding_size() */
-
-	if (pad == 0) return code;
-	/* assertion: alignment cannot cross a block boundary */
-	g_assert (((uintptr_t)code & (~kNaClAlignmentMask)) ==
-	         (((uintptr_t)code + pad - 1) & (~kNaClAlignmentMask)));
-	while (pad >= kMaxPadding) {
-		amd64_padding (code, kMaxPadding);
-		pad -= kMaxPadding;
-	}
-	if (pad != 0) amd64_padding (code, pad);
-	return code;
-}
-#endif
 
 static int
 count_fields_nested (MonoClass *klass)
@@ -1413,12 +1122,6 @@ void
 mono_arch_init (void)
 {
 	mono_os_mutex_init_recursive (&mini_arch_mutex);
-#if defined(__native_client_codegen__)
-	mono_native_tls_alloc (&nacl_instruction_depth, NULL);
-	mono_native_tls_set_value (nacl_instruction_depth, (gpointer)0);
-	mono_native_tls_alloc (&nacl_rex_tag, NULL);
-	mono_native_tls_alloc (&nacl_legacy_prefix_tag, NULL);
-#endif
 
 	mono_aot_register_jit_icall ("mono_amd64_throw_exception", mono_amd64_throw_exception);
 	mono_aot_register_jit_icall ("mono_amd64_throw_corlib_exception", mono_amd64_throw_corlib_exception);
@@ -1439,11 +1142,6 @@ void
 mono_arch_cleanup (void)
 {
 	mono_os_mutex_destroy (&mini_arch_mutex);
-#if defined(__native_client_codegen__)
-	mono_native_tls_free (nacl_instruction_depth);
-	mono_native_tls_free (nacl_rex_tag);
-	mono_native_tls_free (nacl_legacy_prefix_tag);
-#endif
 }
 
 /*
@@ -1567,13 +1265,6 @@ mono_arch_compute_omit_fp (MonoCompile *cfg)
 	cfg->arch.omit_fp = TRUE;
 	cfg->arch.omit_fp_computed = TRUE;
 
-#ifdef __native_client_codegen__
-	/* NaCl modules may not change the value of RBP, so it cannot be */
-	/* used as a normal register, but it can be used as a frame pointer*/
-	cfg->disable_omit_fp = TRUE;
-	cfg->arch.omit_fp = FALSE;
-#endif
-
 	if (cfg->disable_omit_fp)
 		cfg->arch.omit_fp = FALSE;
 
@@ -1630,9 +1321,7 @@ mono_arch_get_global_int_regs (MonoCompile *cfg)
 	regs = g_list_prepend (regs, (gpointer)AMD64_R12);
 	regs = g_list_prepend (regs, (gpointer)AMD64_R13);
 	regs = g_list_prepend (regs, (gpointer)AMD64_R14);
-#ifndef __native_client_codegen__
 	regs = g_list_prepend (regs, (gpointer)AMD64_R15);
-#endif
 #ifdef TARGET_WIN32
 	regs = g_list_prepend (regs, (gpointer)AMD64_RDI);
 	regs = g_list_prepend (regs, (gpointer)AMD64_RSI);
@@ -1667,9 +1356,7 @@ mono_arch_get_iregs_clobbered_by_call (MonoCallInst *call)
 		regs = g_list_prepend (regs, (gpointer)AMD64_R12);
 		regs = g_list_prepend (regs, (gpointer)AMD64_R13);
 		regs = g_list_prepend (regs, (gpointer)AMD64_R14);
-#ifndef __native_client_codegen__
 		regs = g_list_prepend (regs, (gpointer)AMD64_R15);
-#endif
 
 		regs = g_list_prepend (regs, (gpointer)AMD64_R10);
 		regs = g_list_prepend (regs, (gpointer)AMD64_R9);
@@ -2725,14 +2412,8 @@ mono_arch_dyn_call_free (MonoDynCallInfo *info)
 	g_free (ainfo);
 }
 
-#if !defined(__native_client__)
 #define PTR_TO_GREG(ptr) (mgreg_t)(ptr)
 #define GREG_TO_PTR(greg) (gpointer)(greg)
-#else
-/* Correctly handle casts to/from 32-bit pointers without compiler warnings */
-#define PTR_TO_GREG(ptr) (mgreg_t)(uintptr_t)(ptr)
-#define GREG_TO_PTR(greg) (gpointer)(guint32)(greg)
-#endif
 
 /*
  * mono_arch_get_start_dyn_call:
@@ -3089,10 +2770,6 @@ emit_call_body (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gco
 #ifdef MONO_ARCH_NOMAP32BIT
 		near_call = FALSE;
 #endif
-#if defined(__native_client__)
-		/* Always use near_call == TRUE for Native Client */
-		near_call = TRUE;
-#endif
 		/* The 64bit XEN kernel does not honour the MAP_32BIT flag. (#522894) */
 		if (optimize_for_xen)
 			near_call = FALSE;
@@ -3374,7 +3051,6 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LOAD_MEMBASE:
 #endif
 		case OP_LOADI8_MEMBASE:
-#ifndef __native_client_codegen__
 		/*  Don't generate memindex opcodes (to simplify */
 		/*  read sandboxing) */
 			if (!amd64_use_imm32 (ins->inst_offset)) {
@@ -3384,7 +3060,6 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				ins->opcode = OP_AMD64_LOADI8_MEMINDEX;
 				ins->inst_indexreg = temp->dreg;
 			}
-#endif
 			break;
 #ifndef __mono_ilp32__
 		case OP_STORE_MEMBASE_IMM:
@@ -3545,20 +3220,8 @@ mono_emit_stack_alloc (MonoCompile *cfg, guchar *code, MonoInst* tree)
 		if (cfg->param_area)
 			amd64_alu_reg_imm (code, X86_ADD, AMD64_RDI, cfg->param_area);
 		amd64_cld (code);
-#if defined(__default_codegen__)
 		amd64_prefix (code, X86_REP_PREFIX);
 		amd64_stosl (code);
-#elif defined(__native_client_codegen__)
-		/* NaCl stos pseudo-instruction */
-		amd64_codegen_pre(code);
-		/* First, clear the upper 32 bits of RDI (mov %edi, %edi)  */
-		amd64_mov_reg_reg (code, AMD64_RDI, AMD64_RDI, 4);
-		/* Add %r15 to %rdi using lea, condition flags unaffected. */
-		amd64_lea_memindex_size (code, AMD64_RDI, AMD64_R15, 0, AMD64_RDI, 0, 8);
-		amd64_prefix (code, X86_REP_PREFIX);
-		amd64_stosl (code);
-		amd64_codegen_post(code);
-#endif /* __native_client_codegen__ */
 		
 		if (tree->dreg != AMD64_RDI && sreg != AMD64_RDI)
 			amd64_pop_reg (code, AMD64_RDI);
@@ -3924,21 +3587,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 	}
 
-#if defined(__native_client_codegen__)
-	/* For Native Client, all indirect call/jump targets must be */
-	/* 32-byte aligned.  Exception handler blocks are jumped to  */
-	/* indirectly as well.                                       */
-	gboolean bb_needs_alignment = (bb->flags & BB_INDIRECT_JUMP_TARGET) ||
-				      (bb->flags & BB_EXCEPTION_HANDLER);
-
-	if ( bb_needs_alignment && ((cfg->code_len & kNaClAlignmentMask) != 0)) {
-		int pad = kNaClAlignment - (cfg->code_len & kNaClAlignmentMask);
-		if (pad != kNaClAlignment) code = mono_arch_nacl_pad(code, pad);
-		cfg->code_len += pad;
-		bb->native_offset = cfg->code_len;
-	}
-#endif  /*__native_client_codegen__*/
-
 	if (cfg->verbose_level > 2)
 		g_print ("Basic block %d starting at offset 0x%x\n", bb->block_num, bb->native_offset);
 
@@ -3964,7 +3612,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		max_len = ((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN];
 
-#define EXTRA_CODE_SPACE (NACL_SIZE (16, 16 + kNaClAlignment))
+#define EXTRA_CODE_SPACE (16)
 
 		if (G_UNLIKELY (offset > (cfg->code_size - max_len - EXTRA_CODE_SPACE))) {
 			cfg->code_size *= 2;
@@ -4013,14 +3661,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_mov_membase_reg (code, ins->inst_destbasereg, ins->inst_offset, ins->sreg1, 4);
 			break;
 		case OP_STORE_MEMBASE_IMM:
-#ifndef __native_client_codegen__
 			/* In NaCl, this could be a PCONST type, which could */
 			/* mean a pointer type was copied directly into the  */
 			/* lower 32-bits of inst_imm, so for InvalidPtr==-1  */
 			/* the value would be 0x00000000FFFFFFFF which is    */
 			/* not proper for an imm32 unless you cast it.       */
 			g_assert (amd64_is_imm32 (ins->inst_imm));
-#endif
 			amd64_mov_membase_imm (code, ins->inst_destbasereg, ins->inst_offset, (gint32)ins->inst_imm, sizeof(gpointer));
 			break;
 		case OP_STOREI8_MEMBASE_IMM:
@@ -4493,10 +4139,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_LDIV:
 		case OP_LREM:
-#if defined( __native_client_codegen__ )
-			amd64_alu_reg_imm (code, X86_CMP, ins->sreg2, 0);
-			EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, TRUE, "DivideByZeroException");
-#endif
 			/* Regalloc magic makes the div/rem cases the same */
 			if (ins->sreg2 == AMD64_RDX) {
 				amd64_mov_membase_reg (code, AMD64_RSP, -8, AMD64_RDX, 8);
@@ -4509,10 +4151,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_LDIV_UN:
 		case OP_LREM_UN:
-#if defined( __native_client_codegen__ )
-			amd64_alu_reg_imm (code, X86_CMP, ins->sreg2, 0);
-			EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, TRUE, "DivideByZeroException");
-#endif
 			if (ins->sreg2 == AMD64_RDX) {
 				amd64_mov_membase_reg (code, AMD64_RSP, -8, AMD64_RDX, 8);
 				amd64_alu_reg_reg (code, X86_XOR, AMD64_RDX, AMD64_RDX);
@@ -4524,10 +4162,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_IDIV:
 		case OP_IREM:
-#if defined( __native_client_codegen__ )
-			amd64_alu_reg_imm (code, X86_CMP, ins->sreg2, 0);
-			EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, TRUE, "DivideByZeroException");
-#endif
 			if (ins->sreg2 == AMD64_RDX) {
 				amd64_mov_membase_reg (code, AMD64_RSP, -8, AMD64_RDX, 8);
 				amd64_cdq_size (code, 4);
@@ -4539,10 +4173,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_IDIV_UN:
 		case OP_IREM_UN:
-#if defined( __native_client_codegen__ )
-			amd64_alu_reg_imm_size (code, X86_CMP, ins->sreg2, 0, 4);
-			EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, TRUE, "DivideByZeroException");
-#endif
 			if (ins->sreg2 == AMD64_RDX) {
 				amd64_mov_membase_reg (code, AMD64_RSP, -8, AMD64_RDX, 8);
 				amd64_alu_reg_reg (code, X86_XOR, AMD64_RDX, AMD64_RDX);
@@ -6730,22 +6360,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_GC_SAFE_POINT: {
-			const char *polling_func = NULL;
-			int compare_val = 0;
 			guint8 *br [1];
 
-#if defined(__native_client_codegen__) && defined(__native_client_gc__)
-			polling_func = "mono_nacl_gc";
-			compare_val = 0xFFFFFFFF;
-#else
 			g_assert (mono_threads_is_coop_enabled ());
-			polling_func = "mono_threads_state_poll";
-			compare_val = 1;
-#endif
 
-			amd64_test_membase_imm_size (code, ins->sreg1, 0, compare_val, 4);
+			amd64_test_membase_imm_size (code, ins->sreg1, 0, 1, 4);
 			br[0] = code; x86_branch8 (code, X86_CC_EQ, 0, FALSE);
-			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, polling_func, FALSE);
+			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, "mono_threads_state_poll", FALSE);
 			amd64_patch (br[0], code);
 			break;
 		}
@@ -6765,11 +6386,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 
 		if ((code - cfg->native_code - offset) > max_len) {
-#if !defined(__native_client_codegen__)
 			g_warning ("wrong maximal instruction length of instruction %s (expected %d, got %ld)",
 				   mono_inst_name (ins->opcode), max_len, code - cfg->native_code - offset);
 			g_assert_not_reached ();
-#endif
 		}
 	}
 
@@ -6863,27 +6482,10 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	MonoInst *lmf_var = cfg->lmf_var;
 	gboolean args_clobbered = FALSE;
 	gboolean trace = FALSE;
-#ifdef __native_client_codegen__
-	guint alignment_check;
-#endif
 
 	cfg->code_size = MAX (cfg->header->code_size * 4, 1024);
 
-#if defined(__default_codegen__)
 	code = cfg->native_code = (unsigned char *)g_malloc (cfg->code_size);
-#elif defined(__native_client_codegen__)
-	/* native_code_alloc is not 32-byte aligned, native_code is. */
-	cfg->native_code_alloc = g_malloc (cfg->code_size + kNaClAlignment);
-
-	/* Align native_code to next nearest kNaclAlignment byte. */
-	cfg->native_code = (uintptr_t)cfg->native_code_alloc + kNaClAlignment;
-	cfg->native_code = (uintptr_t)cfg->native_code & ~kNaClAlignmentMask;
-
-	code = cfg->native_code;
-
-	alignment_check = (guint)cfg->native_code & kNaClAlignmentMask;
-	g_assert (alignment_check == 0);
-#endif
 
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
 		trace = TRUE;
@@ -7050,20 +6652,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		amd64_mov_reg_reg (code, AMD64_RDI, AMD64_RSP, 8);
 
 		amd64_cld (code);
-#if defined(__default_codegen__)
 		amd64_prefix (code, X86_REP_PREFIX);
 		amd64_stosl (code);
-#elif defined(__native_client_codegen__)
-		/* NaCl stos pseudo-instruction */
-		amd64_codegen_pre (code);
-		/* First, clear the upper 32 bits of RDI (mov %edi, %edi)  */
-		amd64_mov_reg_reg (code, AMD64_RDI, AMD64_RDI, 4);
-		/* Add %r15 to %rdi using lea, condition flags unaffected. */
-		amd64_lea_memindex_size (code, AMD64_RDI, AMD64_R15, 0, AMD64_RDI, 0, 8);
-		amd64_prefix (code, X86_REP_PREFIX);
-		amd64_stosl (code);
-		amd64_codegen_post (code);
-#endif /* __native_client_codegen__ */
 
 		amd64_mov_reg_membase (code, AMD64_RDI, AMD64_RSP, -8, 8);
 		amd64_mov_reg_membase (code, AMD64_RCX, AMD64_RSP, -16, 8);
@@ -7125,22 +6715,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			/* max alignment for loops */
 			if ((cfg->opt & MONO_OPT_LOOP) && bb_is_loop_start (bb))
 				max_length += LOOP_ALIGNMENT;
-#ifdef __native_client_codegen__
-			/* max alignment for native client */
-			max_length += kNaClAlignment;
-#endif
 
 			MONO_BB_FOR_EACH_INS (bb, ins) {
-#ifdef __native_client_codegen__
-				{
-					int space_in_block = kNaClAlignment -
-						((max_length + cfg->code_len) & kNaClAlignmentMask);
-					int max_len = ((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN];
-					if (space_in_block < max_len && max_len < kNaClAlignment) {
-						max_length += space_in_block;
-					}
-				}
-#endif  /*__native_client_codegen__*/
 				max_length += ((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN];
 			}
 
@@ -7518,13 +7094,6 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			code_size += 8 + 7; /*sizeof (void*) + alignment */
 	}
 
-#ifdef __native_client_codegen__
-	/* Give us extra room on Native Client.  This could be   */
-	/* more carefully calculated, but bundle alignment makes */
-	/* it much trickier, so *2 like other places is good.    */
-	code_size *= 2;
-#endif
-
 	while (cfg->code_len + code_size > (cfg->code_size - 16)) {
 		cfg->code_size *= 2;
 		cfg->native_code = (unsigned char *)mono_realloc_native_code (cfg);
@@ -7602,32 +7171,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			guint32 target_pos;
 
 			/* The SSE opcodes require a 16 byte alignment */
-#if defined(__default_codegen__)
 			code = (guint8*)ALIGN_TO (code, 16);
-#elif defined(__native_client_codegen__)
-			{
-				/* Pad this out with HLT instructions  */
-				/* or we can get garbage bytes emitted */
-				/* which will fail validation          */
-				guint8 *aligned_code;
-				/* extra align to make room for  */
-				/* mov/push below 		       */
-				int extra_align = patch_info->type == MONO_PATCH_INFO_R8 ? 2 : 1;
-				aligned_code = (guint8*)ALIGN_TO (code + extra_align, 16);
-				/* The technique of hiding data in an  */
-				/* instruction has a problem here: we  */
-				/* need the data aligned to a 16-byte  */
-				/* boundary but the instruction cannot */
-				/* cross the bundle boundary. so only  */
-				/* odd multiples of 16 can be used     */
-				if ((intptr_t)aligned_code % kNaClAlignment == 0) {
-					aligned_code += 16;
-				}
-				while (code < aligned_code) {
-					*(code++) = 0xf4; /* hlt */
-				}
-			}	
-#endif
 
 			pos = cfg->native_code + patch_info->ip.i;
 			if (IS_REX (pos [1])) {
@@ -7640,22 +7184,9 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			}
 
 			if (patch_info->type == MONO_PATCH_INFO_R8) {
-#ifdef __native_client_codegen__
-				/* Hide 64-bit data in a         */
-				/* "mov imm64, r11" instruction. */
-				/* write it before the start of  */
-				/* the data*/
-				*(code-2) = 0x49; /* prefix      */
-				*(code-1) = 0xbb; /* mov X, %r11 */
-#endif
 				*(double*)code = *(double*)patch_info->data.target;
 				code += sizeof (double);
 			} else {
-#ifdef __native_client_codegen__
-				/* Hide 32-bit data in a        */
-				/* "push imm32" instruction.    */
-				*(code-1) = 0x68; /* push */
-#endif
 				*(float*)code = *(float*)patch_info->data.target;
 				code += sizeof (float);
 			}
@@ -7964,46 +7495,6 @@ mono_breakpoint_clean_code (guint8 *method_start, guint8 *code, int offset, guin
 	return TRUE;
 }
 
-#if defined(__native_client_codegen__)
-/* For membase calls, we want the base register. for Native Client,  */
-/* all indirect calls have the following sequence with the given sizes: */
-/* mov %eXX,%eXX				[2-3]	*/
-/* mov disp(%r15,%rXX,scale),%r11d		[4-8]	*/
-/* and $0xffffffffffffffe0,%r11d		[4]	*/
-/* add %r15,%r11				[3]	*/
-/* callq *%r11					[3]	*/
-
-
-/* Determine if code points to a NaCl call-through-register sequence, */
-/* (i.e., the last 3 instructions listed above) */
-int
-is_nacl_call_reg_sequence(guint8* code)
-{
-	const char *sequence = "\x41\x83\xe3\xe0" /* and */
-			       "\x4d\x03\xdf"     /* add */
-			       "\x41\xff\xd3";   /* call */
-	return memcmp(code, sequence, 10) == 0;
-}
-
-/* Determine if code points to the first opcode of the mov membase component */
-/* of an indirect call sequence (i.e. the first 2 instructions listed above) */
-/* (there could be a REX prefix before the opcode but it is ignored) */
-static int
-is_nacl_indirect_call_membase_sequence(guint8* code)
-{
-	       /* Check for mov opcode, reg-reg addressing mode (mod = 3), */
-	return code[0] == 0x8b && amd64_modrm_mod(code[1]) == 3 &&
-	       /* and that src reg = dest reg */
-	       amd64_modrm_reg(code[1]) == amd64_modrm_rm(code[1]) &&
-	       /* Check that next inst is mov, uses SIB byte (rm = 4), */
-	       IS_REX(code[2]) &&
-	       code[3] == 0x8b && amd64_modrm_rm(code[4]) == 4 &&
-	       /* and has dst of r11 and base of r15 */
-	       (amd64_modrm_reg(code[4]) + amd64_rex_r(code[2])) == AMD64_R11 &&
-	       (amd64_sib_base(code[5]) + amd64_rex_b(code[2])) == AMD64_R15;
-}
-#endif /* __native_client_codegen__ */
-
 int
 mono_arch_get_this_arg_reg (guint8 *code)
 {
@@ -8060,7 +7551,6 @@ get_delegate_invoke_impl (MonoTrampInfo **info, gboolean has_target, guint32 par
 		g_assert ((code - start) < 64);
 	}
 
-	nacl_global_codeman_validate (&start, 64, &code);
 	mono_arch_flush_icache (start, code - start);
 
 	if (has_target) {
@@ -8244,7 +7734,6 @@ mono_arch_free_jit_tls_data (MonoJitTlsData *tls)
 {
 }
 
-#if defined(__default_codegen__)
 #define CMP_SIZE (6 + 1)
 #define CMP_REG_REG_SIZE (4 + 1)
 #define BR_SMALL_SIZE 2
@@ -8252,20 +7741,6 @@ mono_arch_free_jit_tls_data (MonoJitTlsData *tls)
 #define MOV_REG_IMM_SIZE 10
 #define MOV_REG_IMM_32BIT_SIZE 6
 #define JUMP_REG_SIZE (2 + 1)
-#elif defined(__native_client_codegen__)
-/* NaCl N-byte instructions can be padded up to N-1 bytes */
-#define CMP_SIZE ((6 + 1) * 2 - 1)
-#define CMP_REG_REG_SIZE ((4 + 1) * 2 - 1)
-#define BR_SMALL_SIZE (2 * 2 - 1)
-#define BR_LARGE_SIZE (6 * 2 - 1)
-#define MOV_REG_IMM_SIZE (10 * 2 - 1)
-#define MOV_REG_IMM_32BIT_SIZE (6 * 2 - 1)
-/* Jump reg for NaCl adds a mask (+4) and add (+3) */
-#define JUMP_REG_SIZE ((2 + 1 + 4 + 3) * 2 - 1)
-/* Jump membase's size is large and unpredictable    */
-/* in native client, just pad it out a whole bundle. */
-#define JUMP_MEMBASE_SIZE (kNaClAlignment)
-#endif
 
 static int
 imt_branch_distance (MonoIMTCheckItem **imt_entries, int start, int target)
@@ -8306,9 +7781,6 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 						item->chunk_size += MOV_REG_IMM_32BIT_SIZE;
 					else
 						item->chunk_size += MOV_REG_IMM_SIZE;
-#ifdef __native_client_codegen__
-					item->chunk_size += JUMP_MEMBASE_SIZE;
-#endif
 				}
 				item->chunk_size += BR_SMALL_SIZE + JUMP_REG_SIZE;
 			} else {
@@ -8324,9 +7796,6 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 					/* with assert below:
 					 * item->chunk_size += CMP_SIZE + BR_SMALL_SIZE + 1;
 					 */
-#ifdef __native_client_codegen__
-					item->chunk_size += JUMP_MEMBASE_SIZE;
-#endif
 				}
 			}
 		} else {
@@ -8339,16 +7808,10 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 		}
 		size += item->chunk_size;
 	}
-#if defined(__native_client__) && defined(__native_client_codegen__)
-	/* In Native Client, we don't re-use thunks, allocate from the */
-	/* normal code manager paths. */
-	code = mono_domain_code_reserve (domain, size);
-#else
 	if (fail_tramp)
 		code = (guint8 *)mono_method_alloc_generic_virtual_thunk (domain, size);
 	else
 		code = (guint8 *)mono_domain_code_reserve (domain, size);
-#endif
 	start = code;
 
 	unwind_ops = mono_arch_get_cie_program ();
@@ -8440,7 +7903,6 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 		mono_stats.imt_thunks_size += code - start;
 	g_assert (code - start <= size);
 
-	nacl_domain_code_validate(domain, &start, size, &code);
 	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_IMT_TRAMPOLINE, NULL);
 
 	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, unwind_ops), domain);

@@ -1083,9 +1083,7 @@ mono_arch_regalloc_cost (MonoCompile *cfg, MonoMethodVar *vmv)
 void
 mono_arch_flush_icache (guint8 *code, gint size)
 {
-#if defined(MONO_CROSS_COMPILE) || defined(__native_client__)
-  // For Native Client we don't have to flush i-cache here,
-  // as it's being done by dyncode interface.
+#if defined(MONO_CROSS_COMPILE)
 #elif __APPLE__
 	sys_icache_invalidate (code, size);
 #else
@@ -5834,17 +5832,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			bb->spill_slot_defs = g_slist_prepend_mempool (cfg->mempool, bb->spill_slot_defs, ins);
 			break;
 		case OP_GC_SAFE_POINT: {
-			const char *polling_func = NULL;
 			guint8 *buf [1];
 
 			g_assert (mono_threads_is_coop_enabled ());
 
-			polling_func = "mono_threads_state_poll";
 			ARM_LDR_IMM (code, ARMREG_IP, ins->sreg1, 0);
 			ARM_CMP_REG_IMM (code, ARMREG_IP, 0, 0);
 			buf [0] = code;
 			ARM_B_COND (code, ARMCOND_EQ, 0);
-			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, polling_func);
+			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, "mono_threads_state_poll");
 			code = emit_call_seq (cfg, code);
 			arm_patch (buf [0], code);
 			break;

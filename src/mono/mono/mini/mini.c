@@ -95,111 +95,8 @@ MonoBackend *current_backend;
 gpointer
 mono_realloc_native_code (MonoCompile *cfg)
 {
-#if defined(__default_codegen__)
 	return g_realloc (cfg->native_code, cfg->code_size);
-#elif defined(__native_client_codegen__)
-	guint old_padding;
-	gpointer native_code;
-	guint alignment_check;
-
-	/* Save the old alignment offset so we can re-align after the realloc. */
-	old_padding = (guint)(cfg->native_code - cfg->native_code_alloc);
-	cfg->code_size = NACL_BUNDLE_ALIGN_UP (cfg->code_size);
-
-	cfg->native_code_alloc = g_realloc ( cfg->native_code_alloc,
-										 cfg->code_size + kNaClAlignment );
-
-	/* Align native_code to next nearest kNaClAlignment byte. */
-	native_code = (guint)cfg->native_code_alloc + kNaClAlignment;
-	native_code = (guint)native_code & ~kNaClAlignmentMask;
-
-	/* Shift the data to be 32-byte aligned again. */
-	memmove (native_code, cfg->native_code_alloc + old_padding, cfg->code_size);
-
-	alignment_check = (guint)native_code & kNaClAlignmentMask;
-	g_assert (alignment_check == 0);
-	return native_code;
-#else
-	g_assert_not_reached ();
-	return cfg->native_code;
-#endif
 }
-
-#ifdef __native_client_codegen__
-
-/* Prevent instructions from straddling a 32-byte alignment boundary.   */
-/* Instructions longer than 32 bytes must be aligned internally.        */
-/* IN: pcode, instlen                                                   */
-/* OUT: pcode                                                           */
-void mono_nacl_align_inst(guint8 **pcode, int instlen) {
-  int space_in_block;
-
-  space_in_block = kNaClAlignment - ((uintptr_t)(*pcode) & kNaClAlignmentMask);
-
-  if (G_UNLIKELY (instlen >= kNaClAlignment)) {
-    g_assert_not_reached();
-  } else if (instlen > space_in_block) {
-    *pcode = mono_arch_nacl_pad(*pcode, space_in_block);
-  }
-}
-
-/* Move emitted call sequence to the end of a kNaClAlignment-byte block.  */
-/* IN: start    pointer to start of call sequence                         */
-/* IN: pcode    pointer to end of call sequence (current "IP")            */
-/* OUT: start   pointer to the start of the call sequence after padding   */
-/* OUT: pcode   pointer to the end of the call sequence after padding     */
-void mono_nacl_align_call(guint8 **start, guint8 **pcode) {
-  const size_t MAX_NACL_CALL_LENGTH = kNaClAlignment;
-  guint8 copy_of_call[MAX_NACL_CALL_LENGTH];
-  guint8 *temp;
-
-  const size_t length = (size_t)((*pcode)-(*start));
-  g_assert(length < MAX_NACL_CALL_LENGTH);
-
-  memcpy(copy_of_call, *start, length);
-  temp = mono_nacl_pad_call(*start, (guint8)length);
-  memcpy(temp, copy_of_call, length);
-  (*start) = temp;
-  (*pcode) = temp + length;
-}
-
-/* mono_nacl_pad_call(): Insert padding for Native Client call instructions */
-/*    code     pointer to buffer for emitting code                          */
-/*    ilength  length of call instruction                                   */
-guint8 *mono_nacl_pad_call(guint8 *code, guint8 ilength) {
-  int freeSpaceInBlock = kNaClAlignment - ((uintptr_t)code & kNaClAlignmentMask);
-  int padding = freeSpaceInBlock - ilength;
-
-  if (padding < 0) {
-    /* There isn't enough space in this block for the instruction. */
-    /* Fill this block and start a new one.                        */
-    code = mono_arch_nacl_pad(code, freeSpaceInBlock);
-    freeSpaceInBlock = kNaClAlignment;
-    padding = freeSpaceInBlock - ilength;
-  }
-  g_assert(ilength > 0);
-  g_assert(padding >= 0);
-  g_assert(padding < kNaClAlignment);
-  if (0 == padding) return code;
-  return mono_arch_nacl_pad(code, padding);
-}
-
-guint8 *mono_nacl_align(guint8 *code) {
-  int padding = kNaClAlignment - ((uintptr_t)code & kNaClAlignmentMask);
-  if (padding != kNaClAlignment) code = mono_arch_nacl_pad(code, padding);
-  return code;
-}
-
-void mono_nacl_fix_patches(const guint8 *code, MonoJumpInfo *ji)
-{
-  MonoJumpInfo *patch_info;
-  for (patch_info = ji; patch_info; patch_info = patch_info->next) {
-    unsigned char *ip = patch_info->ip.i + code;
-    ip = mono_arch_nacl_skip_nops(ip);
-    patch_info->ip.i = ip - code;
-  }
-}
-#endif  /* __native_client_codegen__ */
 
 typedef struct {
 	MonoExceptionClause *clause;
@@ -2330,12 +2227,6 @@ mono_postprocess_patches (MonoCompile *cfg)
 			MonoJumpList *jlist;
 			MonoDomain *domain = cfg->domain;
 			unsigned char *ip = cfg->native_code + patch_info->ip.i;
-#if defined(__native_client__) && defined(__native_client_codegen__)
-			/* When this jump target gets evaluated, the method */
-			/* will be installed in the dynamic code section,   */
-			/* not at the location of cfg->native_code.         */
-			ip = nacl_inverse_modify_patch_target (cfg->native_code) + patch_info->ip.i;
-#endif
 
 			mono_domain_lock (domain);
 			jlist = (MonoJumpList *)g_hash_table_lookup (domain_jit_info (domain)->jump_target_hash, patch_info->data.method);
@@ -2372,15 +2263,6 @@ mono_codegen (MonoCompile *cfg)
 		code_domain = mono_get_root_domain ();
 	else
 		code_domain = cfg->domain;
-
-#if defined(__native_client_codegen__) && defined(__native_client__)
-	void *code_dest;
-
-	/* This keeps patch targets from being transformed during
-	 * ordinary method compilation, for local branches and jumps.
-	 */
-	nacl_allow_target_modification (FALSE);
-#endif
 
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
 		cfg->spill_count = 0;
@@ -2428,18 +2310,13 @@ mono_codegen (MonoCompile *cfg)
 		}
 	}
 
-#ifdef __native_client_codegen__
-	mono_nacl_fix_patches (cfg->native_code, cfg->patch_info);
-#endif
 	mono_arch_emit_exceptions (cfg);
 
 	max_epilog_size = 0;
 
 	/* we always allocate code in cfg->domain->code_mp to increase locality */
 	cfg->code_size = cfg->code_len + max_epilog_size;
-#ifdef __native_client_codegen__
-	cfg->code_size = NACL_BUNDLE_ALIGN_UP (cfg->code_size);
-#endif
+
 	/* fixme: align to MONO_ARCH_CODE_ALIGNMENT */
 
 #ifdef MONO_ARCH_HAVE_UNWIND_TABLE
@@ -2462,9 +2339,7 @@ mono_codegen (MonoCompile *cfg)
 	} else {
 		code = (guint8 *)mono_domain_code_reserve (code_domain, cfg->code_size + cfg->thunk_area + unwindlen);
 	}
-#if defined(__native_client_codegen__) && defined(__native_client__)
-	nacl_allow_target_modification (TRUE);
-#endif
+
 	if (cfg->thunk_area) {
 		cfg->thunks_offset = cfg->code_size + unwindlen;
 		cfg->thunks = code + cfg->thunks_offset;
@@ -2473,17 +2348,7 @@ mono_codegen (MonoCompile *cfg)
 
 	g_assert (code);
 	memcpy (code, cfg->native_code, cfg->code_len);
-#if defined(__default_codegen__)
 	g_free (cfg->native_code);
-#elif defined(__native_client_codegen__)
-	if (cfg->native_code_alloc) {
-		g_free (cfg->native_code_alloc);
-		cfg->native_code_alloc = 0;
-	}
-	else if (cfg->native_code) {
-		g_free (cfg->native_code);
-	}
-#endif /* __native_client_codegen__ */
 	cfg->native_code = code;
 	code = cfg->native_code + cfg->code_len;
   
@@ -2523,20 +2388,6 @@ mono_codegen (MonoCompile *cfg)
 
 #ifdef MONO_ARCH_HAVE_SAVE_UNWIND_INFO
 	mono_arch_save_unwind_info (cfg);
-#endif
-
-#if defined(__native_client_codegen__) && defined(__native_client__)
-	if (!cfg->compile_aot) {
-		if (cfg->method->dynamic) {
-			code_dest = nacl_code_manager_get_code_dest(cfg->dynamic_info->code_mp, cfg->native_code);
-		} else {
-			code_dest = nacl_domain_get_code_dest(cfg->domain, cfg->native_code);
-		}
-	}
-#endif
-
-#if defined(__native_client_codegen__)
-	mono_nacl_fix_patches (cfg->native_code, cfg->patch_info);
 #endif
 
 #ifdef MONO_ARCH_HAVE_PATCH_CODE_NEW
@@ -4432,10 +4283,6 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 			patch_info.data.method = method;
 			g_hash_table_remove (domain_jit_info (target_domain)->jump_target_hash, method);
 
-#if defined(__native_client_codegen__) && defined(__native_client__)
-			/* These patches are applied after a method has been installed, no target munging is needed. */
-			nacl_allow_target_modification (FALSE);
-#endif
 #ifdef MONO_ARCH_HAVE_PATCH_CODE_NEW
 			for (tmp = jlist->list; tmp; tmp = tmp->next) {
 				gpointer target = mono_resolve_patch_target (NULL, target_domain, (guint8 *)tmp->data, &patch_info, TRUE, error);
@@ -4446,9 +4293,6 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 #else
 			for (tmp = jlist->list; tmp; tmp = tmp->next)
 				mono_arch_patch_code (NULL, NULL, target_domain, tmp->data, &patch_info, TRUE);
-#endif
-#if defined(__native_client_codegen__) && defined(__native_client__)
-			nacl_allow_target_modification (TRUE);
 #endif
 		}
 	}

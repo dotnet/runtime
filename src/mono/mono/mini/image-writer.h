@@ -64,10 +64,6 @@ void mono_img_writer_emit_alignment (MonoImageWriter *w, int size);
 
 void mono_img_writer_emit_alignment_fill (MonoImageWriter *w, int size, int fill);
 
-#ifdef __native_client_codegen__
-void mono_img_writer_emit_nacl_call_alignment (MonoImageWriter *w);
-#endif
-
 void mono_img_writer_emit_pointer_unaligned (MonoImageWriter *w, const char *target);
 
 void mono_img_writer_emit_pointer (MonoImageWriter *w, const char *target);

@@ -10,12 +10,6 @@
 #include <mono/utils/mono-context.h>
 #include <glib.h>
 
-#ifdef __native_client_codegen__
-#define kNaClAlignmentARM 16
-#define kNaClAlignmentMaskARM (kNaClAlignmentARM - 1)
-#define kNaClLengthOfCallImm 4
-#endif
-
 #if defined(ARM_FPU_NONE)
 #define MONO_ARCH_SOFT_FLOAT_FALLBACK 1
 #endif
@@ -312,7 +306,7 @@ typedef struct MonoCompileArch {
 
 #define MONO_ARCH_USE_SIGACTION 1
 
-#if defined(__native_client__) || defined(HOST_WATCHOS)
+#if defined(HOST_WATCHOS)
 #undef MONO_ARCH_USE_SIGACTION
 #endif
 
@@ -352,12 +346,6 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_HAVE_SDB_TRAMPOLINES 1
 #define MONO_ARCH_HAVE_PATCH_CODE_NEW 1
 #define MONO_ARCH_HAVE_OP_GENERIC_CLASS_INIT 1
-
-#if defined(__native_client__)
-#undef MONO_ARCH_SOFT_DEBUG_SUPPORTED
-#undef MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX
-#undef MONO_ARCH_HAVE_CONTEXT_SET_INT_REG
-#endif
 
 #define MONO_ARCH_HAVE_TLS_GET (mono_arm_have_tls_get ())
 #define MONO_ARCH_HAVE_TLS_GET_REG 1
