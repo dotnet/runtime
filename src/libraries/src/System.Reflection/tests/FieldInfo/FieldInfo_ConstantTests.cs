@@ -11,67 +11,29 @@ namespace System.Reflection.Tests
 {
     public class FieldInfoConstantTests
     {
-        //Verify SetValue method does not set value for constant Fields
-        [Fact]
-        public void TestSetValue_constIntField()
+        [Theory]
+        [InlineData("constIntField", 222)]
+        [InlineData("constStrField", "new value")]
+        [InlineData("charField", 'A')]
+        [InlineData("boolField", false)]
+        [InlineData("floatField", 4.56)]
+        [InlineData("doubleField", double.MaxValue)]
+        [InlineData("int64Field", long.MaxValue)]
+        [InlineData("byteField", byte.MaxValue)]
+        public void SetValue_ConstantField_Fails(string fieldName, object newValue)
         {
-            TestSetValue_constantField("constIntField", (object)222);
+            FieldInfo fi = GetField(fieldName);
+            FieldInfoConstantTests myInstance = new FieldInfoConstantTests();
+
+            Assert.NotNull(fi);
+            Assert.Equal(fieldName, fi.Name);
+            Assert.Throws<FieldAccessException>(() => fi.SetValue(myInstance, newValue));
         }
 
-        //Verify SetValue method does not set value for constant Fields
         [Fact]
-        public void TestSetValue_constStrField()
+        public void SetValue_ReadOnlyIntField_Succeeds()
         {
-            TestSetValue_constantField("constStrField", (object)"new value");
-        }
-
-        //Verify SetValue method does not set value for constant Fields
-        [Fact]
-        public void TestSetValue_constCharField()
-        {
-            TestSetValue_constantField("charField", (object)'A');
-        }
-
-        //Verify SetValue method does not set value for constant Fields
-        [Fact]
-        public void TestSetValue_constboolField()
-        {
-            TestSetValue_constantField("boolField", (object)false);
-        }
-
-        //Verify SetValue method does not set value for constant Fields
-        [Fact]
-        public void TestSetValue_constfloatField()
-        {
-            TestSetValue_constantField("floatField", (object)4.56);
-        }
-
-        //Verify SetValue method does not set value for constant Fields
-        [Fact]
-        public void TestSetValue_constdoubleField()
-        {
-            TestSetValue_constantField("doubleField", (object)Double.MaxValue);
-        }
-
-        //Verify SetValue method does not set value for constant Fields
-        [Fact]
-        public void TestSetValue_constInt64Field()
-        {
-            TestSetValue_constantField("int64Field", (object)Int64.MaxValue);
-        }
-
-        //Verify SetValue method does not set value for constant Fields
-        [Fact]
-        public void TestSetValue_constbyteField()
-        {
-            TestSetValue_constantField("byteField", (object)byte.MaxValue);
-        }
-
-        //Verify SetValue method _does_ set value for RO Field
-        [Fact]
-        public void TestSetValue_roIntField()
-        {
-            FieldInfo fi = typeof(FieldInfoConstantTests).GetTypeInfo().GetDeclaredField("rointField");
+            FieldInfo fi = typeof(FieldInfoConstantTests).GetTypeInfo().GetDeclaredField("readOnlyIntField");
             FieldInfoConstantTests myInstance = new FieldInfoConstantTests();
 
             Assert.NotNull(fi);
@@ -80,23 +42,13 @@ namespace System.Reflection.Tests
             object current = fi.GetValue(myInstance);
             Assert.Equal(1, current);
 
-            fi.SetValue(myInstance, Int32.MinValue);
+            fi.SetValue(myInstance, int.MinValue);
 
-            Assert.Equal(Int32.MinValue, fi.GetValue(myInstance));
+            Assert.Equal(int.MinValue, fi.GetValue(myInstance));
         }
 
-        //Helper method to Verify constant Field can not be set using Reflection
-        public void TestSetValue_constantField(string field, object newvalue)
-        {
-            FieldInfo fi = GetField(field);
-            FieldInfoConstantTests myInstance = new FieldInfoConstantTests();
-
-            Assert.NotNull(fi);
-            Assert.True(fi.Name.Equals(field));
-            Assert.Throws<FieldAccessException>(() => fi.SetValue(myInstance, newvalue));
-        }
-
-        private static FieldInfo GetField(string field)
+        // Helper method to get field from Type type
+        private static FieldInfo GetField(string fieldName)
         {
             Type t = typeof(FieldInfoConstantTests);
             TypeInfo ti = t.GetTypeInfo();
@@ -106,7 +58,7 @@ namespace System.Reflection.Tests
             while (alldefinedFields.MoveNext())
             {
                 fi = alldefinedFields.Current;
-                if (fi.Name.Equals(field))
+                if (fi.Name.Equals(fieldName))
                 {
                     //found type
                     found = fi;
@@ -117,16 +69,16 @@ namespace System.Reflection.Tests
             return found;
         }
 
-        //Fields for Reflection
+        // Fields for Reflection
 
-        public readonly int rointField = 1;
+        public readonly int readOnlyIntField = 1;
         public const int constIntField = 1222;
         public const string constStrField = "Hello";
         public const char charField = 'c';
         public const bool boolField = true;
         public const float floatField = (float)22 / 7;
-        public const double doubleField = (double)22.33;
-        public const Int64 int64Field = 1000;
+        public const double doubleField = 22.33;
+        public const long int64Field = 1000;
         public const byte byteField = 0;
     }
 }
