@@ -3523,7 +3523,7 @@ CodeGen::genLclHeap(GenTreePtr tree)
             
             goto ALLOC_DONE;
         }
-        else if (!compiler->info.compInitMem && (amount < CORINFO_PAGE_SIZE))  // must be < not <=
+        else if (!compiler->info.compInitMem && (amount < compiler->eeGetPageSize()))  // must be < not <=
         {               
             // Since the size is a page or less, simply adjust the SP value              
             // The SP might already be in the guard page, must touch it BEFORE
@@ -3636,7 +3636,7 @@ CodeGen::genLclHeap(GenTreePtr tree)
         getEmitter()->emitIns_R_R_I(INS_ldr, EA_4BYTE, REG_ZR, REG_SPBASE, 0);
 
         // decrement SP by PAGE_SIZE
-        getEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, regTmp, REG_SPBASE, CORINFO_PAGE_SIZE);
+        getEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, regTmp, REG_SPBASE, compiler->eeGetPageSize());
 
         getEmitter()->emitIns_R_R(INS_cmp, EA_PTRSIZE, regTmp, regCnt);
         emitJumpKind jmpLTU = genJumpKindForOper(GT_LT, CK_UNSIGNED);
