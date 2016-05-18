@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Xunit;
-using System;
-using System.Reflection;
 using System.Collections.Generic;
+using Xunit;
 
 #pragma warning disable 0414
 
@@ -13,110 +11,44 @@ namespace System.Reflection.Tests
 {
     public class PropertyInfoGetConstantValueTests
     {
-        //Verify GetConstantValue for int property
         [Fact]
-        public static void TestGetConstantValue1()
+        public static void GetConstantValue_int_ThrowsInvalidOperationException()
         {
-            string propName = "intProperty";
-            PropertyInfo pi = GetProperty(typeof(SamplePropertyInfo), propName);
+            PropertyInfo pi = typeof(SamplePropertyInfo).GetTypeInfo().GetProperty("intProperty");
 
-            Assert.NotNull(pi);
+            Assert.Throws<InvalidOperationException>(() => (int)pi.GetConstantValue());
 
-            Assert.Throws<InvalidOperationException>(() =>
-            {
-                int value = (int)pi.GetConstantValue();
-            });
-
-            Assert.Throws<InvalidOperationException>(() =>
-            {
-                int value = (int)pi.GetRawConstantValue();
-            });
+            Assert.Throws<InvalidOperationException>(() => (int)pi.GetRawConstantValue());
         }
 
-
-
-        //Verify GetConstantValue for string property
         [Fact]
-        public static void TestGetConstantValue2()
+        public static void GetConstantValue_string_ThrowsInvalidOperationException()
         {
-            string propName = "strProperty";
-            PropertyInfo pi = GetProperty(typeof(SamplePropertyInfo), propName);
+            PropertyInfo pi = typeof(SamplePropertyInfo).GetTypeInfo().GetProperty("strProperty");
 
-            Assert.NotNull(pi);
+            Assert.Throws<InvalidOperationException>(() => (string)pi.GetConstantValue());
 
-            Assert.Throws<InvalidOperationException>(() =>
-            {
-                string value = (string)pi.GetConstantValue();
-            });
-
-            Assert.Throws<InvalidOperationException>(() =>
-            {
-                string value = (string)pi.GetRawConstantValue();
-            });
-
+            Assert.Throws<InvalidOperationException>(() => (string)pi.GetRawConstantValue());
         }
 
-
-        //Verify GetConstantValue for double  property
         [Fact]
-        public static void TestGetConstantValue3()
+        public static void GetConstantValue_double_ThrowsInvalidOperationException()
         {
-            string propName = "doubleProperty";
-            PropertyInfo pi = GetProperty(typeof(SamplePropertyInfo), propName);
+            PropertyInfo pi = typeof(SamplePropertyInfo).GetTypeInfo().GetProperty("doubleProperty");
 
-            Assert.NotNull(pi);
+            Assert.Throws<InvalidOperationException>(() => (double)pi.GetConstantValue());
 
-            Assert.Throws<InvalidOperationException>(() =>
-            {
-                double value = (double)pi.GetConstantValue();
-            });
-
-            Assert.Throws<InvalidOperationException>(() =>
-            {
-                double value = (double)pi.GetRawConstantValue();
-            });
+            Assert.Throws<InvalidOperationException>(() => (double)pi.GetRawConstantValue());
         }
 
-
-        //Verify GetConstantValue for float  property
         [Fact]
-        public static void TestGetConstantValue4()
+        public static void GetConstantValue_float_ThrowsInvalidOperationException()
         {
-            string propName = "floatProperty";
-            PropertyInfo pi = GetProperty(typeof(SamplePropertyInfo), propName);
+            PropertyInfo pi = typeof(SamplePropertyInfo).GetTypeInfo().GetProperty("floatProperty");
 
-            Assert.NotNull(pi);
+            Assert.Throws<InvalidOperationException>(() => (float)pi.GetConstantValue());
 
-            Assert.Throws<InvalidOperationException>(() =>
-            {
-                float value = (float)pi.GetConstantValue();
-            });
-
-            Assert.Throws<InvalidOperationException>(() =>
-            {
-                float value = (float)pi.GetRawConstantValue();
-            });
-        }
-
-
-
-        //Gets PropertyInfo object from a Type
-        public static PropertyInfo GetProperty(Type t, string property)
-        {
-            TypeInfo ti = t.GetTypeInfo();
-            IEnumerator<PropertyInfo> allproperties = ti.DeclaredProperties.GetEnumerator();
-            PropertyInfo pi = null;
-
-            while (allproperties.MoveNext())
-            {
-                if (allproperties.Current.Name.Equals(property))
-                {
-                    //found property
-                    pi = allproperties.Current;
-                    break;
-                }
-            }
-            return pi;
+            Assert.Throws<InvalidOperationException>(() => (float)pi.GetRawConstantValue());
         }
     }
 
