@@ -803,10 +803,6 @@ do { \
 #define IfFailGoLog(EXPR) IfFailGotoLog(EXPR, ErrExit)
 #endif
 
-#if defined(FEATURE_MERGE_JIT_AND_ENGINE)
-void            jitOnDllProcessAttach();
-#endif // defined(FEATURE_MERGE_JIT_AND_ENGINE)
-
 void EEStartupHelper(COINITIEE fFlags)
 {
     CONTRACTL
@@ -854,10 +850,6 @@ void EEStartupHelper(COINITIEE fFlags)
             IfFailGo(g_pConfig->SetupConfiguration());
 #endif // !FEATURE_CORECLR && !CROSSGEN_COMPILE
         }
-
-#if defined(CROSSGEN_COMPILE) && defined(FEATURE_MERGE_JIT_AND_ENGINE)
-        jitOnDllProcessAttach();
-#endif // defined(CROSSGEN_COMPILE) && defined(FEATURE_MERGE_JIT_AND_ENGINE)
 
 #ifndef CROSSGEN_COMPILE
         // Initialize Numa and CPU group information
