@@ -10389,6 +10389,8 @@
       <Member Status="ImplRoot" Name="GetDelegateContinuationsForDebugger" />
       <Member Status="ImplRoot" Name="GetActiveTaskFromId(System.Int32)" />
       <Member Status="ImplRoot" Name="GetActiveTasks" />
+      <Member Status="ImplRoot" Name="get_ParentForDebugger" />
+      <Member Status="ImplRoot" Name="get_StateFlagsForDebugger" />
     </Type>
     <Type Status="ImplRoot" Name="System.Threading.Tasks.SystemThreadingTasks_TaskDebugView">
       <Member Status="ImplRoot" Name="#ctor(System.Threading.Tasks.Task)" />

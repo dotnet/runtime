@@ -166,8 +166,10 @@ namespace System.Threading.Tasks
 
         internal readonly Task m_parent; // A task's parent, or null if parent-less.
 
-
         internal volatile int m_stateFlags;
+
+        private Task ParentForDebugger => m_parent; // Private property used by a debugger to access this Task's parent
+        private int StateFlagsForDebugger => m_stateFlags; // Private property used by a debugger to access this Task's state flags
 
         // State constants for m_stateFlags;
         // The bits of m_stateFlags are allocated as follows:
