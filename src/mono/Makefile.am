@@ -163,3 +163,7 @@ update-llvm-version:
 	REV=`$(LLVM_DIR)/bin/llvm-config --version` && sed -e "s,expected_llvm_version=.*,expected_llvm_version=\"$$REV\"," < configure.ac > tmp && mv tmp configure.ac && echo "Version set to $$REV."
 
 
+update-solution-files:
+	make update-csproj
+	make package-inputs
+	(cd msvc/scripts; make genproj.exe; mono genproj.exe)

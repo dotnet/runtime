@@ -70,11 +70,15 @@ class SlnGenerator {
 
 	public void Write (string filename)
 	{
+		var fullPath = Path.GetDirectoryName (filename) + "/";
+		
 		using (var sln = new StreamWriter (filename)) {
 			sln.WriteLine ();
 			sln.WriteLine (header);
 			foreach (var proj in libraries) {
-				sln.WriteLine (project_start, proj.library, proj.csProjFilename, proj.projectGuid);
+				var unixProjFile = proj.csProjFilename.Replace ("\\", "/");
+				var fullProjPath = Path.GetFullPath (unixProjFile);
+				sln.WriteLine (project_start, proj.library, MsbuildGenerator.GetRelativePath (fullPath, fullProjPath), proj.projectGuid);
 				sln.WriteLine (project_end);
 			}
 			sln.WriteLine ("Global");
@@ -1103,7 +1107,7 @@ public class Driver {
 			Console.WriteLine (sb.ToString ());
 		}
 
-		WriteSolution (four_five_sln_gen, MakeSolutionName (MsbuildGenerator.profile_4_x));
+		WriteSolution (four_five_sln_gen, Path.Combine ("..", "..", MakeSolutionName (MsbuildGenerator.profile_4_x)));
 
 		if (makefileDeps){
 			const string classDirPrefix = "./../../";
