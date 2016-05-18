@@ -917,6 +917,7 @@ class MsbuildGenerator {
 			Replace ("@FX_VERSION", fx_version).
 			Replace ("@ASSEMBLYNAME@", Path.GetFileNameWithoutExtension (output_name)).
 			Replace ("@OUTPUTDIR@", build_output_dir).
+			Replace ("@OUTPUTSUFFIX@", Path.GetFileName (build_output_dir)).
 			Replace ("@DEFINECONSTANTS@", defines.ToString ()).
 			Replace ("@DEBUG@", want_debugging_support ? "true" : "false").
 			Replace ("@DEBUGTYPE@", want_debugging_support ? "full" : "pdbonly").
