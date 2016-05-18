@@ -6,7 +6,6 @@
 //
 //  Ported from windows c_iscii.  If you find bugs here, there're likely similar
 //  bugs in the windows version
-#if FEATURE_ENCODINGNLS
 namespace System.Text
 {
     using System;
@@ -2626,4 +2625,3 @@ namespace System.Text
     }
 
 }
-#endif // FEATURE_ENCODINGNLS
