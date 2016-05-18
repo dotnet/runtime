@@ -4,57 +4,16 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography.EcDsa.Tests;
 using Test.Cryptography;
 using Xunit;
 
-namespace System.Security.Cryptography.EcDsaOpenSsl.Tests
+namespace System.Security.Cryptography.EcDsa.OpenSsl.Tests
 {
-    public static class EcDsaOpenSslTests
+    public class EcDsaOpenSslTests : ECDsaTestsBase
     {
-        // On CentOS, secp224r1 appears to be disabled. To prevent test failures on that platform, probe for this capability
-        // before depending on it. 
-        private static bool ECDsa224Available
-        {
-            get
-            {
-                using (ECDsaOpenSsl key = new ECDsaOpenSsl())
-                {
-                    KeySizes[] legalKeySizes = key.LegalKeySizes;
-                    return IsLegalSize(224, legalKeySizes);
-                }
-            }
-        }
-
-        private static bool IsLegalSize(int size, KeySizes[] legalSizes)
-        {
-            for (int i = 0; i < legalSizes.Length; i++)
-            {
-                KeySizes currentSizes = legalSizes[i];
-
-                // If a cipher has only one valid key size, MinSize == MaxSize and SkipSize will be 0
-                if (currentSizes.SkipSize == 0)
-                {
-                    if (currentSizes.MinSize == size)
-                        return true;
-                }
-                else if (size >= currentSizes.MinSize && size <= currentSizes.MaxSize)
-                {
-                    // If the number is in range, check to see if it's a legal increment above MinSize
-                    int delta = size - currentSizes.MinSize;
-
-                    // While it would be unusual to see KeySizes { 10, 20, 5 } and { 11, 14, 1 }, it could happen.
-                    // So don't return false just because this one doesn't match.
-                    if (delta % currentSizes.SkipSize == 0)
-                    {
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
-
         [Fact]
-        public static void DefaultCtor()
+        public void DefaultCtor()
         {
             using (ECDsaOpenSsl e = new ECDsaOpenSsl())
             {
@@ -64,10 +23,10 @@ namespace System.Security.Cryptography.EcDsaOpenSsl.Tests
             }
         }
 
-        [ConditionalFact(nameof(ECDsa224Available))]
-        public static void Ctor224()
+        [Fact]
+        public void Ctor256()
         {
-            int expectedKeySize = 224;
+            int expectedKeySize = 256;
             using (ECDsaOpenSsl e = new ECDsaOpenSsl(expectedKeySize))
             {
                 int keySize = e.KeySize;
@@ -77,7 +36,7 @@ namespace System.Security.Cryptography.EcDsaOpenSsl.Tests
         }
 
         [Fact]
-        public static void Ctor384()
+        public void Ctor384()
         {
             int expectedKeySize = 384;
             using (ECDsaOpenSsl e = new ECDsaOpenSsl(expectedKeySize))
@@ -89,7 +48,7 @@ namespace System.Security.Cryptography.EcDsaOpenSsl.Tests
         }
 
         [Fact]
-        public static void Ctor521()
+        public void Ctor521()
         {
             int expectedKeySize = 521;
             using (ECDsaOpenSsl e = new ECDsaOpenSsl(expectedKeySize))
@@ -101,9 +60,9 @@ namespace System.Security.Cryptography.EcDsaOpenSsl.Tests
         }
 
         [ConditionalFact(nameof(ECDsa224Available))]
-        public static void CtorHandle224()
+        public void CtorHandle224()
         {
-            IntPtr ecKey = Interop.Crypto.EcKeyCreateByCurveName(NID_secp224r1);
+            IntPtr ecKey = Interop.Crypto.EcKeyCreateByOid(ECDSA_P224_OID_VALUE);
             Assert.NotEqual(IntPtr.Zero, ecKey);
             int success = Interop.Crypto.EcKeyGenerateKey(ecKey);
             Assert.NotEqual(0, success);
@@ -119,9 +78,9 @@ namespace System.Security.Cryptography.EcDsaOpenSsl.Tests
         }
 
         [Fact]
-        public static void CtorHandle384()
+        public void CtorHandle384()
         {
-            IntPtr ecKey = Interop.Crypto.EcKeyCreateByCurveName(NID_secp384r1);
+            IntPtr ecKey = Interop.Crypto.EcKeyCreateByOid(ECDSA_P384_OID_VALUE);
             Assert.NotEqual(IntPtr.Zero, ecKey);
             int success = Interop.Crypto.EcKeyGenerateKey(ecKey);
             Assert.NotEqual(0, success);
@@ -137,9 +96,9 @@ namespace System.Security.Cryptography.EcDsaOpenSsl.Tests
         }
 
         [Fact]
-        public static void CtorHandle521()
+        public void CtorHandle521()
         {
-            IntPtr ecKey = Interop.Crypto.EcKeyCreateByCurveName(NID_secp521r1);
+            IntPtr ecKey = Interop.Crypto.EcKeyCreateByOid(ECDSA_P521_OID_VALUE);
             Assert.NotEqual(IntPtr.Zero, ecKey);
             int success = Interop.Crypto.EcKeyGenerateKey(ecKey);
             Assert.NotEqual(0, success);
@@ -155,9 +114,9 @@ namespace System.Security.Cryptography.EcDsaOpenSsl.Tests
         }
 
         [Fact]
-        public static void CtorHandleDuplicate()
+        public void CtorHandleDuplicate()
         {
-            IntPtr ecKey = Interop.Crypto.EcKeyCreateByCurveName(NID_secp521r1);
+            IntPtr ecKey = Interop.Crypto.EcKeyCreateByOid(ECDSA_P521_OID_VALUE);
             Assert.NotEqual(IntPtr.Zero, ecKey);
             int success = Interop.Crypto.EcKeyGenerateKey(ecKey);
             Assert.NotEqual(0, success);
@@ -173,23 +132,30 @@ namespace System.Security.Cryptography.EcDsaOpenSsl.Tests
             }
         }
 
-        [ConditionalFact(nameof(ECDsa224Available))]
-        public static void KeySizeProp()
+        [Fact]
+        public void KeySizePropWithExercise()
         {
             using (ECDsaOpenSsl e = new ECDsaOpenSsl())
             {
                 e.KeySize = 384;
                 Assert.Equal(384, e.KeySize);
                 e.Exercise();
+                ECParameters p384 = e.ExportParameters(false);
+                Assert.Equal(ECCurve.ECCurveType.Named, p384.Curve.CurveType);
 
-                e.KeySize = 224;
-                Assert.Equal(224, e.KeySize);
+                e.KeySize = 521;
+                Assert.Equal(521, e.KeySize);
                 e.Exercise();
+                ECParameters p521 = e.ExportParameters(false);
+                Assert.Equal(ECCurve.ECCurveType.Named, p521.Curve.CurveType);
+
+                // ensure the key was regenerated
+                Assert.NotEqual(p384.Curve.Oid.Value, p521.Curve.Oid.Value);
             }
         }
 
         [Fact]
-        public static void VerifyDuplicateKey_ValidHandle()
+        public void VerifyDuplicateKey_ValidHandle()
         {
             byte[] data = ByteUtils.RepeatByte(0x71, 11);
 
@@ -205,7 +171,7 @@ namespace System.Security.Cryptography.EcDsaOpenSsl.Tests
         }
 
         [Fact]
-        public static void VerifyDuplicateKey_DistinctHandles()
+        public void VerifyDuplicateKey_DistinctHandles()
         {
             using (ECDsaOpenSsl first = new ECDsaOpenSsl())
             using (SafeEvpPKeyHandle firstHandle = first.DuplicateKeyHandle())
@@ -216,7 +182,7 @@ namespace System.Security.Cryptography.EcDsaOpenSsl.Tests
         }
 
         [Fact]
-        public static void VerifyDuplicateKey_RefCounts()
+        public void VerifyDuplicateKey_RefCounts()
         {
             byte[] data = ByteUtils.RepeatByte(0x74, 11);
             byte[] signature;
@@ -237,14 +203,14 @@ namespace System.Security.Cryptography.EcDsaOpenSsl.Tests
         }
 
         [Fact]
-        public static void VerifyDuplicateKey_NullHandle()
+        public void VerifyDuplicateKey_NullHandle()
         {
             SafeEvpPKeyHandle pkey = null;
             Assert.Throws<ArgumentNullException>(() => new RSAOpenSsl(pkey));
         }
 
         [Fact]
-        public static void VerifyDuplicateKey_InvalidHandle()
+        public void VerifyDuplicateKey_InvalidHandle()
         {
             using (ECDsaOpenSsl ecdsa = new ECDsaOpenSsl())
             {
@@ -259,7 +225,7 @@ namespace System.Security.Cryptography.EcDsaOpenSsl.Tests
         }
 
         [Fact]
-        public static void VerifyDuplicateKey_NeverValidHandle()
+        public void VerifyDuplicateKey_NeverValidHandle()
         {
             using (SafeEvpPKeyHandle pkey = new SafeEvpPKeyHandle(IntPtr.Zero, false))
             {
@@ -268,7 +234,7 @@ namespace System.Security.Cryptography.EcDsaOpenSsl.Tests
         }
 
         [Fact]
-        public static void VerifyDuplicateKey_RsaHandle()
+        public void VerifyDuplicateKey_RsaHandle()
         {
             using (RSAOpenSsl rsa = new RSAOpenSsl())
             using (SafeEvpPKeyHandle pkey = rsa.DuplicateKeyHandle())
@@ -277,24 +243,42 @@ namespace System.Security.Cryptography.EcDsaOpenSsl.Tests
             }
         }
 
-        private static void Exercise(this ECDsaOpenSsl e)
+        [Fact]
+        public void LookupCurveByOidValue()
         {
-            // Make a few calls on this to ensure we aren't broken due to bad/prematurely released handles.
-
-            int keySize = e.KeySize;
-
-            byte[] data = new byte[0x10];
-            byte[] sig = e.SignData(data, 0, data.Length, HashAlgorithmName.SHA1);
-            bool verified = e.VerifyData(data, sig, HashAlgorithmName.SHA1);
-            Assert.True(verified);
-            sig[sig.Length - 1]++;
-            verified = e.VerifyData(data, sig, HashAlgorithmName.SHA1);
-            Assert.False(verified);
+            ECDsaOpenSsl ec = null;
+            ec = new ECDsaOpenSsl(ECCurve.CreateFromValue(ECDSA_P256_OID_VALUE)); // Same as nistP256
+            ECParameters param = ec.ExportParameters(false);
+            param.Validate();
+            Assert.Equal(256, ec.KeySize);
+            Assert.True(param.Curve.IsNamed);
+            Assert.Equal("ECDSA_P256", param.Curve.Oid.FriendlyName);
+            Assert.Equal(ECDSA_P256_OID_VALUE, param.Curve.Oid.Value);
         }
 
-        private const int NID_secp224r1 = 713;
-        private const int NID_secp384r1 = 715;
-        private const int NID_secp521r1 = 716;
+        [Fact]
+        public void LookupCurveByOidFriendlyName()
+        {
+            ECDsaOpenSsl ec = null;
+
+            // prime256v1 is alias for nistP256 for OpenSsl
+            ec = new ECDsaOpenSsl(ECCurve.CreateFromFriendlyName("prime256v1"));
+            ECParameters param = ec.ExportParameters(false);
+            param.Validate();
+            Assert.Equal(256, ec.KeySize);
+            Assert.True(param.Curve.IsNamed);
+            Assert.Equal("ECDSA_P256", param.Curve.Oid.FriendlyName); // OpenSsl maps prime256v1 to ECDSA_P256
+            Assert.Equal(ECDSA_P256_OID_VALUE, param.Curve.Oid.Value);
+
+            // secp521r1 is same as nistP521; note Windows uses secP521r1 (uppercase P)
+            ec = new ECDsaOpenSsl(ECCurve.CreateFromFriendlyName("secp521r1"));
+            param = ec.ExportParameters(false);
+            param.Validate();
+            Assert.Equal(521, ec.KeySize);
+            Assert.True(param.Curve.IsNamed);
+            Assert.Equal("ECDSA_P521", param.Curve.Oid.FriendlyName); // OpenSsl maps secp521r1 to ECDSA_P521
+            Assert.Equal(ECDSA_P521_OID_VALUE, param.Curve.Oid.Value);
+        }
     }
 }
 
@@ -302,8 +286,8 @@ internal static partial class Interop
 {
     internal static class Crypto
     {
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyCreateByCurveName")]
-        internal static extern IntPtr EcKeyCreateByCurveName(int nid);
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyCreateByOid")]
+        internal static extern IntPtr EcKeyCreateByOid(string oid);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyGenerateKey")]
         internal static extern int EcKeyGenerateKey(IntPtr ecKey);

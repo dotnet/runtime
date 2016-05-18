@@ -3,9 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
-
+using System.Diagnostics;
 using Microsoft.Win32.SafeHandles;
-
 using Internal.Cryptography;
 
 using ErrorCode = Interop.NCrypt.ErrorCode;
@@ -164,7 +163,28 @@ namespace System.Security.Cryptography
         {
             get
             {
-                int keySize = _keyHandle.GetPropertyAsDword(KeyPropertyName.Length, CngPropertyOptions.None);
+                int keySize = 0;
+
+                // Attempt to use PublicKeyLength first as it returns the correct value for ECC keys
+                ErrorCode errorCode = Interop.NCrypt.NCryptGetIntProperty(
+                    _keyHandle,
+                    KeyPropertyName.PublicKeyLength,
+                    ref keySize);
+
+                if (errorCode != ErrorCode.ERROR_SUCCESS)
+                {
+                    // Fall back to Length (< Windows 10)
+                    errorCode = Interop.NCrypt.NCryptGetIntProperty(
+                        _keyHandle,
+                        KeyPropertyName.Length,
+                        ref keySize);
+                }
+
+                if (errorCode != ErrorCode.ERROR_SUCCESS)
+                {
+                    throw errorCode.ToCryptographicException();
+                }
+
                 return keySize;
             }
         }

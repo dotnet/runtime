@@ -106,6 +106,22 @@ namespace System.Security.Cryptography
             }
         }
 
+        public static CngKeyBlobFormat EccFullPrivateBlob
+        {
+            get
+            {
+                return s_eccFullPrivate ?? (s_eccFullPrivate = new CngKeyBlobFormat("ECCFULLPRIVATEBLOB")); // BCRYPT_ECCFULLPRIVATE_BLOB
+            }
+        }
+
+        public static CngKeyBlobFormat EccFullPublicBlob
+        {
+            get
+            {
+                return s_eccFullPublic ?? (s_eccFullPublic = new CngKeyBlobFormat("ECCFULLPUBLICBLOB")); // BCRYPT_ECCFULLPUBLIC_BLOB
+            }
+        }
+
         public static CngKeyBlobFormat GenericPrivateBlob
         {
             get
@@ -141,6 +157,8 @@ namespace System.Security.Cryptography
 
         private static CngKeyBlobFormat s_eccPrivate;
         private static CngKeyBlobFormat s_eccPublic;
+        private static CngKeyBlobFormat s_eccFullPrivate;
+        private static CngKeyBlobFormat s_eccFullPublic;
         private static CngKeyBlobFormat s_genericPrivate;
         private static CngKeyBlobFormat s_genericPublic;
         private static CngKeyBlobFormat s_opaqueTransport;

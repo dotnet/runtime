@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Text;
+using System.Security.Cryptography.EcDsa.Tests;
 using Test.Cryptography;
 
 namespace System.Security.Cryptography.Cng.Tests
@@ -17,11 +17,6 @@ namespace System.Security.Cryptography.Cng.Tests
     //   absolutely SHOULD NOT use these keys on anything that you actually want to be protected.
     internal static class TestData
     {
-        // AllowExport|AllowPlainTextExport,  CngKeyCreationOptions.NOne, UIPolicy(CngUIProtectionLevels.None), CngKeyUsages.Decryption
-        public static byte[] Key_ECDiffieHellmanP256 =
-           ("45434b3120000000d679ed064a01dacd012d24495795d4a3272fb6f6bd3d9baf8b40c0db26a81dfb8b4919d5477a07ae5c4b"
-          + "4b577f2221be085963abc7515bbbf6998919a34baefe").HexToByteArray();
-
         public static RSA CreateRsaCng(this RSAParameters rsaParameters)
         {
             RSA rsa = new RSACng();
@@ -31,21 +26,29 @@ namespace System.Security.Cryptography.Cng.Tests
 
         public static RSAParameters TestRsaKeyPair;
 
+        // AllowExport|AllowPlainTextExport,  CngKeyCreationOptions.NOne, UIPolicy(CngUIProtectionLevels.None), CngKeyUsages.Decryption
+        public static byte[] Key_ECDiffieHellmanP256 =
+           ("45434b3120000000d679ed064a01dacd012d24495795d4a3272fb6f6bd3d9baf8b40c0db26a81dfb8b4919d5477a07ae5c4b"
+          + "4b577f2221be085963abc7515bbbf6998919a34baefe").HexToByteArray();
 
-        public static readonly CngKey s_ECDsa256Key =
-            CngKey.Import(
+        internal static readonly byte[] s_ECDsa256KeyBlob =
                 ("454353322000000096e476f7473cb17c5b38684daae437277ae1efadceb380fad3d7072be2ffe5f0b54a94c2d6951f073bfc"
               + "25e7b81ac2a4c41317904929d167c3dfc99122175a9438e5fb3e7625493138d4149c9438f91a2fecc7f48f804a92b6363776"
-              + "892ee134").HexToByteArray(), CngKeyBlobFormat.GenericPrivateBlob);
+              + "892ee134").HexToByteArray();
 
-        public static readonly CngKey s_ECDsa384Key =
-            CngKey.Import(
+        public static readonly CngKey s_ECDsa256Key =
+            CngKey.Import(s_ECDsa256KeyBlob, CngKeyBlobFormat.GenericPrivateBlob);
+
+        internal static readonly byte[] s_ECDsa384KeyBlob =
                 ("45435334300000009dc6bb9cdc8dac31e3db6e6b5f58f8e3a304e5c08e632705ca9a236f1134646dca526b89f7ea98653962"
                + "f4a781f2fc9bf479a2d627561b1269548050e6d2c388018b837f4ceba8ee7fe2eefea67c8418ad1e84f60c1309385e573ea5"
                + "183e9ae8b6d5308a78da207c6e556af2053983321a5f8ac057b787089ee783c99093b9f2afb2f9a1e9a560ad3095b9667aa6"
-               + "99fa").HexToByteArray(), CngKeyBlobFormat.GenericPrivateBlob);
+               + "99fa").HexToByteArray();
 
-        internal static readonly byte[] s_ecdsa521KeyBlob =
+        public static readonly CngKey s_ECDsa384Key =
+            CngKey.Import(s_ECDsa384KeyBlob, CngKeyBlobFormat.GenericPrivateBlob);
+
+        internal static readonly byte[] s_ECDsa521KeyBlob =
              ("454353364200000001f9f06ea4e00fd3fecc1753af7983b43cb9b692941ee6364616c9c4168845fce804beca7aa23d0a5049"
             + "910db45dfb61112f4cb02e93ff62af1be203ad248dd70952015ddc31d1ad7411ca5996b8b76a40ea65f286c665225114bec8"
             + "557365aa4bc79358f8c68b873cb76a1c86a5a394185d8eeb9602b8b968db1e4ac49b7cc51f83c7170055ad9b0b2d0d5d2306"
@@ -53,13 +56,7 @@ namespace System.Security.Cryptography.Cng.Tests
             + "ceb06c987277").HexToByteArray();
 
         public static readonly CngKey s_ECDsa521Key =
-            CngKey.Import(
-                s_ecdsa521KeyBlob, CngKeyBlobFormat.GenericPrivateBlob);
-
-        public static readonly byte[] s_hashSha1 = ("77dbd8b3ef3084e1cc475c8bf955a972214b5f36").HexToByteArray();
-        public static readonly byte[] s_hashSha512 = 
-            ("a232cec7be26319e53db0d48470232d37793b06b99e8ed82fac1996b3d1596449087769927d64af657cce62d853c4cf7ff4c"
-           + "d069eda230d1c524d225756ffbaf").HexToByteArray();
+            CngKey.Import(s_ECDsa521KeyBlob, CngKeyBlobFormat.GenericPrivateBlob);
 
         static TestData()
         {
@@ -93,3 +90,4 @@ namespace System.Security.Cryptography.Cng.Tests
         }
     }
 }
+

@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
-using Test.Cryptography;
+using System.Security.Cryptography.EcDsa.Tests;
 using Xunit;
 
 namespace System.Security.Cryptography.Cng.Tests

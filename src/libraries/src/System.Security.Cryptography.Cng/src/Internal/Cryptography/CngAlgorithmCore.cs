@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics;
 using System.Security.Cryptography;
 using Microsoft.Win32.SafeHandles;
+using static Interop.NCrypt;
 
 namespace Internal.Cryptography
 {
@@ -22,13 +23,39 @@ namespace Internal.Cryptography
             }
         }
 
-        public CngKey GetOrGenerateKey(int keySize, CngAlgorithm algorithm)
+        public bool IsKeyGenerated
         {
-            // If our key size was changed from the key we're using, we need to generate a new key.
-            if (_lazyKey != null && _lazyKey.KeySize != keySize)
+            get
+            {
+                return (_lazyKey != null);
+            }
+        }
+
+        public bool IsKeyGeneratedNamedCurve()
+        {
+            return (_lazyKey != null && _lazyKey.IsECNamedCurve());
+        }
+
+        public void DisposeKey()
+        {
+            if (_lazyKey != null)
             {
                 _lazyKey.Dispose();
                 _lazyKey = null;
+            }
+        }
+
+        public CngKey GetOrGenerateKey(int keySize, CngAlgorithm algorithm)
+        {
+            // If our key size was changed, we need to generate a new key.
+            if (_lazyKey != null)
+            {
+                // Named curves do not get regenerated based on key size
+                if (!_lazyKey.IsECNamedCurve())
+                {
+                    if (_lazyKey.KeySize != keySize)
+                        DisposeKey();
+                }
             }
 
             // If we don't have a key yet, we need to generate a random one now.
@@ -41,9 +68,55 @@ namespace Internal.Cryptography
 
                 CngProperty keySizeProperty = new CngProperty(KeyPropertyName.Length, BitConverter.GetBytes(keySize), CngPropertyOptions.None);
                 creationParameters.Parameters.Add(keySizeProperty);
+
                 _lazyKey = CngKey.Create(algorithm, null, creationParameters);
             }
 
+            return _lazyKey;
+        }
+
+        public CngKey GetOrGenerateKey(ECCurve? curve)
+        {
+            // If we don't have a key yet, we need to generate a random one now.
+            if (_lazyKey == null)
+            {
+                Debug.Assert(curve.HasValue);
+
+                CngKeyCreationParameters creationParameters = new CngKeyCreationParameters()
+                {
+                    ExportPolicy = CngExportPolicies.AllowPlaintextExport,
+                };
+
+                if (curve.Value.IsNamed)
+                {
+                    creationParameters.Parameters.Add(CngKey.GetPropertyFromNamedCurve(curve.Value));
+                }
+                else if (curve.Value.IsPrime)
+                {
+                    creationParameters.Parameters.Add(CngKey.GetPropertyFromPrimeCurve(curve.Value));
+                }
+                else
+                {
+                    throw new PlatformNotSupportedException(string.Format(SR.Cryptography_CurveNotSupported, curve.Value.CurveType.ToString()));
+                }
+
+                try
+                {
+                    _lazyKey = CngKey.Create(CngAlgorithm.ECDsa, null, creationParameters);
+                }
+                catch (CryptographicException e)
+                {
+                    // Map to PlatformNotSupportedException if appropriate
+                    ErrorCode errorCode = (ErrorCode)e.HResult;
+
+                    if (curve.Value.IsNamed &&
+                        errorCode == ErrorCode.NTE_INVALID_PARAMETER || errorCode == ErrorCode.NTE_NOT_SUPPORTED)
+                    {
+                        throw new PlatformNotSupportedException(string.Format(SR.Cryptography_CurveNotSupported, curve.Value.Oid.FriendlyName), e);
+                    }
+                    throw;
+                }
+            }
             return _lazyKey;
         }
 
@@ -52,23 +125,16 @@ namespace Internal.Cryptography
             Debug.Assert(key != null);
 
             // If we already have a key, clear it out.
-            if (_lazyKey != null)
-            {
-                _lazyKey.Dispose();
-            }
+            DisposeKey();
 
             _lazyKey = key;
         }
 
         public void Dispose()
         {
-            if (_lazyKey != null)
-            {
-                _lazyKey.Dispose();
-            }
+            DisposeKey();
         }
 
         private CngKey _lazyKey;
     }
 }
-

@@ -30,5 +30,25 @@ namespace System.Security.Cryptography.EcDsa.Tests
         {
             throw new NotImplementedException();
         }
+
+        public override void ImportParameters(ECParameters parameters)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override ECParameters ExportParameters(bool includePrivateParameters)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override ECParameters ExportExplicitParameters(bool includePrivateParameters)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void GenerateKey(ECCurve curve)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

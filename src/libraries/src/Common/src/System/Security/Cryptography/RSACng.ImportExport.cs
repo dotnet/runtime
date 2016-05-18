@@ -93,13 +93,13 @@ namespace System.Security.Cryptography
 
                     int offset = sizeof(BCRYPT_RSAKEY_BLOB);
 
-                    Emit(rsaBlob, ref offset, parameters.Exponent);
-                    Emit(rsaBlob, ref offset, parameters.Modulus);
+                    Interop.BCrypt.Emit(rsaBlob, ref offset, parameters.Exponent);
+                    Interop.BCrypt.Emit(rsaBlob, ref offset, parameters.Modulus);
 
                     if (includePrivate)
                     {
-                        Emit(rsaBlob, ref offset, parameters.P);
-                        Emit(rsaBlob, ref offset, parameters.Q);
+                        Interop.BCrypt.Emit(rsaBlob, ref offset, parameters.P);
+                        Interop.BCrypt.Emit(rsaBlob, ref offset, parameters.Q);
                     }
 
                     // We better have computed the right allocation size above!
@@ -108,15 +108,6 @@ namespace System.Security.Cryptography
 
                 ImportKeyBlob(rsaBlob, includePrivate);
             }
-        }
-
-        /// <summary>
-        ///     Append "value" to the data already in "rsaBlob".
-        /// </summary>
-        private static void Emit(byte[] rsaBlob, ref int offset, byte[] value)
-        {
-            Buffer.BlockCopy(value, 0, rsaBlob, offset, value.Length);
-            offset += value.Length;
         }
 
         /// <summary>
@@ -164,17 +155,17 @@ namespace System.Security.Cryptography
                     int offset = sizeof(BCRYPT_RSAKEY_BLOB);
 
                     // Read out the exponent
-                    rsaParams.Exponent = Consume(rsaBlob, ref offset, pBcryptBlob->cbPublicExp);
-                    rsaParams.Modulus = Consume(rsaBlob, ref offset, pBcryptBlob->cbModulus);
+                    rsaParams.Exponent = Interop.BCrypt.Consume(rsaBlob, ref offset, pBcryptBlob->cbPublicExp);
+                    rsaParams.Modulus = Interop.BCrypt.Consume(rsaBlob, ref offset, pBcryptBlob->cbModulus);
 
                     if (includePrivateParameters)
                     {
-                        rsaParams.P = Consume(rsaBlob, ref offset, pBcryptBlob->cbPrime1);
-                        rsaParams.Q = Consume(rsaBlob, ref offset, pBcryptBlob->cbPrime2);
-                        rsaParams.DP = Consume(rsaBlob, ref offset, pBcryptBlob->cbPrime1);
-                        rsaParams.DQ = Consume(rsaBlob, ref offset, pBcryptBlob->cbPrime2);
-                        rsaParams.InverseQ = Consume(rsaBlob, ref offset, pBcryptBlob->cbPrime1);
-                        rsaParams.D = Consume(rsaBlob, ref offset, pBcryptBlob->cbModulus);
+                        rsaParams.P = Interop.BCrypt.Consume(rsaBlob, ref offset, pBcryptBlob->cbPrime1);
+                        rsaParams.Q = Interop.BCrypt.Consume(rsaBlob, ref offset, pBcryptBlob->cbPrime2);
+                        rsaParams.DP = Interop.BCrypt.Consume(rsaBlob, ref offset, pBcryptBlob->cbPrime1);
+                        rsaParams.DQ = Interop.BCrypt.Consume(rsaBlob, ref offset, pBcryptBlob->cbPrime2);
+                        rsaParams.InverseQ = Interop.BCrypt.Consume(rsaBlob, ref offset, pBcryptBlob->cbPrime1);
+                        rsaParams.D = Interop.BCrypt.Consume(rsaBlob, ref offset, pBcryptBlob->cbModulus);
                     }
                 }
             }
@@ -204,17 +195,6 @@ namespace System.Security.Cryptography
                     }
                 }
             }
-        }
-
-        /// <summary>
-        ///     Peel off the next "count" bytes in "rsaBlob" and return them in a byte array.
-        /// </summary>
-        private static byte[] Consume(byte[] rsaBlob, ref int offset, int count)
-        {
-            byte[] value = new byte[count];
-            Buffer.BlockCopy(rsaBlob, offset, value, 0, count);
-            offset += count;
-            return value;
         }
     }
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS

@@ -3,10 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using global::System;
-using global::System.Text;
 using global::System.Diagnostics;
-using global::System.Diagnostics.Contracts;
-using global::System.Collections.Generic;
 using global::System.Security.Cryptography;
 using global::System.Runtime.InteropServices;
 
@@ -45,6 +42,9 @@ namespace Internal.NativeCrypto
         CRYPT_OID_INFO_OID_KEY = 1,
         CRYPT_OID_INFO_NAME_KEY = 2,
         CRYPT_OID_INFO_ALGID_KEY = 3,
+        CRYPT_OID_INFO_SIGN_KEY = 4,
+        CRYPT_OID_INFO_CNG_ALGID_KEY = 5,
+        CRYPT_OID_INFO_CNG_SIGN_KEY = 6,
     }
 
     internal static partial class OidInfo

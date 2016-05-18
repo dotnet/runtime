@@ -15,6 +15,45 @@ namespace System.Security.Cryptography.EcDsa.Tests
         {
             return new ECDsaOpenSsl(keySize);
         }
+
+        public ECDsa Create(ECCurve curve)
+        {
+            return new ECDsaOpenSsl(curve);
+        }
+
+        public bool IsCurveValid(Oid oid)
+        {
+            if (!string.IsNullOrEmpty(oid.Value))
+            {
+                // Value is passed before FriendlyName
+                return IsValueOrFriendlyNameValid(oid.Value);
+            }
+            return IsValueOrFriendlyNameValid(oid.FriendlyName);
+        }
+
+        private static bool IsValueOrFriendlyNameValid(string friendlyNameOrValue)
+        {
+            if (string.IsNullOrEmpty(friendlyNameOrValue))
+            {
+                return false;
+            }
+
+            IntPtr key = Interop.Crypto.EcKeyCreateByOid(friendlyNameOrValue);
+            if (key != IntPtr.Zero)
+            {
+                Interop.Crypto.EcKeyDestroy(key);
+                return true;
+            }
+            return false;
+        }
+
+        public bool ExplicitCurvesSupported
+        {
+            get
+            {
+                return true;
+            }
+        }
     }
 
     public partial class ECDsaFactory

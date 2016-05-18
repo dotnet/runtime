@@ -246,7 +246,7 @@ namespace System.Security.Cryptography
                 Debug.Assert(CurveType == ECCurveType.Implicit);
                 if (HasAnyExplicitParameters() || Oid != null)
                 {
-                    throw new CryptographicException(string.Format(SR.Cryptography_InvalidCurve, CurveType.ToString()));
+                    throw new CryptographicException(string.Format(SR.Cryptography_CurveNotSupported, CurveType.ToString()));
                 }
             }
         }
