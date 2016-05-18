@@ -6071,13 +6071,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				reg_offset += 4;
 			}
 		}
-		if (iphone_abi) {
-			mono_emit_unwind_op_offset (cfg, code, ARMREG_LR, -4);
-			mini_gc_set_slot_type_from_cfa (cfg, -4, SLOT_NOREF);
-		} else {
-			mono_emit_unwind_op_offset (cfg, code, ARMREG_LR, -4);
-			mini_gc_set_slot_type_from_cfa (cfg, -4, SLOT_NOREF);
-		}
+		mono_emit_unwind_op_offset (cfg, code, ARMREG_LR, -4);
+		mini_gc_set_slot_type_from_cfa (cfg, -4, SLOT_NOREF);
 	} else {
 		ARM_MOV_REG_REG (code, ARMREG_IP, ARMREG_SP);
 		ARM_PUSH (code, 0x5ff0);
