@@ -27,13 +27,14 @@ namespace System.Reflection.Tests
         Int64Attr((Int64)77, name = "Int64AttrSimple"),
         StringAttr("hello", name = "StringAttrSimple"),
         EnumAttr(MyColorEnum.RED, name = "EnumAttrSimple"),
-        TypeAttr(typeof(Object), name = "TypeAttrSimple")]
+        TypeAttr(typeof(object), name = "TypeAttrSimple")]
         [return:Attr(77, name = "AttrSimple"),
         Int32Attr(77, name = "Int32AttrSimple"),
         Int64Attr((Int64)77, name = "Int64AttrSimple"),
         StringAttr("hello", name = "StringAttrSimple"),
         EnumAttr(MyColorEnum.RED, name = "EnumAttrSimple"),
-        TypeAttr(typeof(Object), name = "TypeAttrSimple")]
+        TypeAttr(typeof(object), name = "TypeAttrSimple")]
+
         public void MyMethod() { }
 
         public int Prop
@@ -59,12 +60,7 @@ namespace System.Reflection.Tests
         [Theory]
         [MemberData(nameof(Test_Type))]
 
-        public void Test_Attr(Type attrType, string attrstr)
-        {
-            VerifyCustomAttribute(attrType, attrstr);
-        }
-        
-        private static void VerifyCustomAttribute(Type type, String attributeStr)
+        private void Test_Attr(Type type, string attributeStr)
         {
             MethodInfo mi = GetMethod(typeof(MethodInfoTestClass), "MyMethod");
             IEnumerator<CustomAttributeData> customAttrs = mi.CustomAttributes.GetEnumerator();
@@ -86,7 +82,7 @@ namespace System.Reflection.Tests
             VerifyReturnTypeCustomAttribute(type, attributeStr);
         }
 
-        private static void VerifyReturnTypeCustomAttribute(Type type, String attributeStr)
+        private static void VerifyReturnTypeCustomAttribute(Type type, string attributeStr)
         {
             MethodInfo mi = GetMethod(typeof(MethodInfoTestClass), "MyMethod");
 

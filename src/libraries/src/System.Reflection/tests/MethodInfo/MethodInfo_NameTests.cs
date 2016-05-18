@@ -29,19 +29,7 @@ namespace System.Reflection.Tests
         [Theory]
         [MemberData(nameof(TestMethodNameData))]
 
-        public static void TestMethodName(Type type, string str1)
-        {
-            VerifyMethodName(type, str1);
-        }
-
-        //Helper Method to Verify Method Signature
-        public static void VerifyMethodName(string methodName)
-        {
-            VerifyMethodName(typeof(MethodInfoNameTests), methodName);
-        }
-
-        //Helper Method to Verify Signatures
-        public static void VerifyMethodName(Type type, string methodName)
+        public static void TestMethodName(Type type, string methodName)
         {
             MethodInfo mi = GetMethod(type, methodName);
             Assert.NotNull(mi);
@@ -73,7 +61,7 @@ namespace System.Reflection.Tests
 
 
         //Methods for Reflection Metadata  
-        public void DummyMethod1(String str, int iValue, long lValue)
+        public void DummyMethod1(string str, int iValue, long lValue)
         {
         }
 
@@ -81,7 +69,7 @@ namespace System.Reflection.Tests
         {
         }
 
-        public void PrintStringArray(String[] strArray)
+        public void PrintStringArray(string[] strArray)
         {
             for (int ii = 0; ii < strArray.Length; ++ii)
             {
@@ -104,7 +92,7 @@ namespace System.Reflection.Tests
         public static float Exchange(ref float location1, float value) { return 0; }
         public static float CompareExchange(ref float location1, float value, float comparand) { return 0; }
 
-        public static Object Exchange(ref Object location1, Object value) { return null; }
-        public static Object CompareExchange(ref Object location1, Object value, Object comparand) { return null; }
+        public static object Exchange(ref object location1, object value) { return null; }
+        public static object CompareExchange(ref object location1, object value, object comparand) { return null; }
     }
 }
