@@ -56,7 +56,7 @@ bool ParseArguments(
                         break;
                     }
                 }
-                else if (strcmp(argv[i], "--help") == 0)
+                else if (strcmp(argv[i], "-?") == 0 || strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0)
                 {
                     DisplayUsage();
                     break;
