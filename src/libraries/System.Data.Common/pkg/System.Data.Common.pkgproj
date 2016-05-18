@@ -3,6 +3,9 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Data.Common.csproj">
+      <!-- netcore45;wp8 are actually supported but not the corresponding netstandard versions,
+         so use suppression to permit an implementation until buildtools adds a way to specify
+         netstandard support explicitly -->
       <SupportedFramework>net451;netcore451;netcoreapp1.0;wpa81</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Data.Common.builds" />
