@@ -443,7 +443,7 @@
     </When>
     <When Condition="'$(TargetGroup)'=='net451'">
       <PropertyGroup>
-        <PackageTargetFramework>net45</PackageTargetFramework>
+        <PackageTargetFramework>net451</PackageTargetFramework>
         <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.5.1</TargetingPackNugetPackageId>
         <NuGetTargetMoniker>.NETFramework,Version=v4.5.1</NuGetTargetMoniker>
       </PropertyGroup>
