@@ -244,12 +244,12 @@ namespace System.PrivateUri.Tests
             ParseIPv6Address(IPAddress.IPv6Loopback.ToString());
         }
 
-        [Fact]
-        public void UriIPv6Host_Any_Success()
+        [Theory]
+        [InlineData("::")]
+        [InlineData("0000:0000:0000:0000:0000:0000:0000:0000")]
+        public void UriIPv6Host_Any_Success(string address)
         {
-            // IPv6Any/IPv6None
-            ParseIPv6Address("::");
-            ParseIPv6Address("0000:0000:0000:0000:0000:0000:0000:0000");
+            ParseIPv6Address(address);
         }
 
         [Fact]
@@ -264,82 +264,79 @@ namespace System.PrivateUri.Tests
             ParseIPv6Address("1::");
         }
 
-        [Fact]
-        public void UriIPv6Host_CompressionRangeSelection_Success()
+        [Theory]
+        [InlineData("0:0:0:0:0:0:0:0")]
+        [InlineData("1:0:0:0:0:0:0:0")]
+        [InlineData("0:1:0:0:0:0:0:0")]
+        [InlineData("0:0:1:0:0:0:0:0")]
+        [InlineData("0:0:0:1:0:0:0:0")]
+        [InlineData("0:0:0:0:1:0:0:0")]
+        [InlineData("0:0:0:0:0:1:0:0")]
+        [InlineData("0:0:0:0:0:0:1:0")]
+        [InlineData("0:0:0:0:0:0:0:1")]
+        [InlineData("1:0:0:0:0:0:0:1")]
+        [InlineData("1:0:0:0:0:0:0:1")]
+        [InlineData("1:1:0:0:0:0:0:1")]
+        [InlineData("1:0:1:0:0:0:0:1")]
+        [InlineData("1:0:0:1:0:0:0:1")]
+        [InlineData("1:0:0:0:1:0:0:1")]
+        [InlineData("1:0:0:0:0:1:0:1")]
+        [InlineData("1:0:0:0:0:0:1:1")]
+        [InlineData("1:1:0:0:1:0:0:1")]
+        [InlineData("1:0:1:0:0:1:0:1")]
+        [InlineData("1:0:0:1:0:0:1:1")]
+        [InlineData("1:1:0:0:0:1:0:1")]
+        [InlineData("1:0:0:0:1:0:1:1")]
+        public void UriIPv6Host_CompressionRangeSelection_Success(string address)
         {
-            ParseIPv6Address("0:0:0:0:0:0:0:0");
-            ParseIPv6Address("1:0:0:0:0:0:0:0");
-            ParseIPv6Address("0:1:0:0:0:0:0:0");
-            ParseIPv6Address("0:0:1:0:0:0:0:0");
-            ParseIPv6Address("0:0:0:1:0:0:0:0");
-            ParseIPv6Address("0:0:0:0:1:0:0:0");
-            ParseIPv6Address("0:0:0:0:0:1:0:0");
-            ParseIPv6Address("0:0:0:0:0:0:1:0");
-            ParseIPv6Address("0:0:0:0:0:0:0:1");
-            ParseIPv6Address("1:0:0:0:0:0:0:1");
-            ParseIPv6Address("1:0:0:0:0:0:0:1");
-            ParseIPv6Address("1:1:0:0:0:0:0:1");
-            ParseIPv6Address("1:0:1:0:0:0:0:1");
-            ParseIPv6Address("1:0:0:1:0:0:0:1");
-            ParseIPv6Address("1:0:0:0:1:0:0:1");
-            ParseIPv6Address("1:0:0:0:0:1:0:1");
-            ParseIPv6Address("1:0:0:0:0:0:1:1");
-            ParseIPv6Address("1:1:0:0:1:0:0:1");
-            ParseIPv6Address("1:0:1:0:0:1:0:1");
-            ParseIPv6Address("1:0:0:1:0:0:1:1");
-            ParseIPv6Address("1:1:0:0:0:1:0:1");
-            ParseIPv6Address("1:0:0:0:1:0:1:1");
+            ParseIPv6Address(address);
         }
 
-        [Fact]
-        public void UriIPv6Host_ScopeId_Success()
+        [Theory]
+        [InlineData("1::%1")]
+        [InlineData("::1%12")]
+        [InlineData("::%123")]
+        public void UriIPv6Host_ScopeId_Success(string address)
         {
-            ParseIPv6Address("1::%1");
-            ParseIPv6Address("::1%12");
-            ParseIPv6Address("::%123");
-
-            // Discrepency: IPAddrees doesn't accept bad scopes, Uri does
-            // ParseIPv6Address("::%1a"); // Alpha numeric Scope
+            ParseIPv6Address(address);
         }
 
-        [Fact]
+        [Theory]
         [ActiveIssue(8360, PlatformID.AnyUnix)]
-        public void UriIPv6Host_EmbeddedIPv4_Success()
+        [InlineData("FE08::192.168.0.1")] // Output is not IPv4 mapped
+        [InlineData("::192.168.0.1")]
+        [InlineData("::FFFF:192.168.0.1")] // SIIT
+        [InlineData("::FFFF:0:192.168.0.1")] // SIIT
+        [InlineData("::5EFE:192.168.0.1")] // ISATAP
+        [InlineData("1::5EFE:192.168.0.1")] // ISATAP
+        [InlineData("::192.168.0.010")] // Embedded IPv4 octal, read as decimal
+        public void UriIPv6Host_EmbeddedIPv4_Success(string address)
         {
-            ParseIPv6Address("FE08::192.168.0.1"); // Output is not IPv4 mapped
-            ParseIPv6Address("::192.168.0.1");
-            ParseIPv6Address("::FFFF:192.168.0.1"); // SIIT
-            ParseIPv6Address("::FFFF:0:192.168.0.1"); // SIIT
-
-            ParseIPv6Address("::5EFE:192.168.0.1"); // ISATAP
-            ParseIPv6Address("1::5EFE:192.168.0.1"); // ISATAP
-
-            ParseIPv6Address("::192.168.0.010"); // Embedded IPv4 octal, read as decimal
+            ParseIPv6Address(address);
         }
 
-        [Fact]
-        [ActiveIssue(8356, PlatformID.AnyUnix)]
-        public void UriIPv6Host_BadAddresses_AllFail()
+        [Theory]
+        [InlineData("")]
+        [InlineData(" ")]
+        [InlineData("1")]
+        [InlineData(":1")]
+        [InlineData("1:")]
+        [InlineData("::1 ")]
+        [InlineData(" ::1")]
+        [InlineData("1::1::1")] // Ambigious
+        [InlineData("1:1\u67081:1:1")] // Unicoded. Crashes .NET 4.0 IPAddress.TryParse
+        [InlineData("FE08::260.168.0.1")] // Embedded IPv4 out of range
+        [InlineData("::192.168.0.0x0")] // Embedded IPv4 hex
+        [InlineData("192.168.0.1")] // Raw IPv4
+        [InlineData("G::")] // Hex out of range
+        [InlineData("FFFFF::")] // Hex out of range
+        [InlineData(":%12")] // Colon Scope
+        [InlineData("%12")] // Just Scope
+        // TODO # 8330 Discrepency: IPAddress doesn't accept bad scopes, Uri does.
+        //[InlineData("::%1a")] // Alpha numeric Scope
+        public void UriIPv6Host_BadAddress(string address)
         {
-            ParseBadIPv6Address("");
-            ParseBadIPv6Address(" ");
-            ParseBadIPv6Address("1");
-            ParseBadIPv6Address(":1");
-            ParseBadIPv6Address("1:");
-            ParseBadIPv6Address(IPAddress.IPv6Loopback.ToString() + " ");
-            ParseBadIPv6Address(" " + IPAddress.IPv6Loopback.ToString());
-            ParseBadIPv6Address("1::1::1"); // Ambigious
-            ParseBadIPv6Address("1:1\u67081:1:1"); // Unicoded. Crashes .NET 4.0 IPAddress.TryParse
-            ParseBadIPv6Address("FE08::260.168.0.1"); // Embedded IPv4 out of range
-            ParseBadIPv6Address("::192.168.0.0x0"); // Embedded IPv4 hex
-            ParseBadIPv6Address("192.168.0.1"); // Raw IPv4
-            ParseBadIPv6Address("G::"); // Hex out of range
-            ParseBadIPv6Address("FFFFF::"); // Hex out of range
-            ParseBadIPv6Address(":%12"); // Colon Scope
-            ParseBadIPv6Address("%12"); // Just Scope
-
-            // TODO # 8330 Discrepency: IPAddress doesn't accept bad scopes, Uri does.
-            // ParseBadIPv6Address("::%1a"); // Alpha numeric Scope
+            ParseBadIPv6Address(address);
         }
 
         #region Helpers
