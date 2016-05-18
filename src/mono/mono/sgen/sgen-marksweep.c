@@ -1258,6 +1258,7 @@ mark_pinned_objects_in_block (MSBlockInfo *block, size_t first_entry, size_t las
 		if (!MS_OBJ_ALLOCED (obj, block))
 			continue;
 		MS_MARK_OBJECT_AND_ENQUEUE (obj, sgen_obj_get_descriptor (obj), block, queue);
+		sgen_pin_stats_register_object (obj, sgen_safe_object_get_size (obj));
 		last_index = index;
 	}
 
