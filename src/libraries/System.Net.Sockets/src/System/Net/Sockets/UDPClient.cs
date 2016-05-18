@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Threading.Tasks;
 
 namespace System.Net.Sockets
@@ -117,6 +118,19 @@ namespace System.Net.Sockets
             get
             {
                 return _clientSocket.Available;
+            }
+        }
+
+        public Socket Client
+        {
+            get
+            {
+                Debug.Assert(_clientSocket != null);
+                return _clientSocket;
+            }
+            set
+            {
+                _clientSocket = value;
             }
         }
 

@@ -51,8 +51,7 @@ namespace System.Net.Sockets
             // Nop.  We want to lazily-allocate the socket.
         }
 
-        [DebuggerBrowsable(DebuggerBrowsableState.Never)] // TODO: Remove once https://github.com/dotnet/corefx/issues/5868 is addressed.
-        private Socket Client
+        private Socket ClientCore
         {
             get
             {
@@ -68,6 +67,19 @@ namespace System.Net.Sockets
                         ApplyInitializedOptionsToSocket(_clientSocket);
                     }
                     return _clientSocket;
+                }
+                finally
+                {
+                    ExitClientLock();
+                }
+            }
+            set
+            {
+                EnterClientLock();
+                try
+                {
+                    _clientSocket = value;
+                    ClearInitializedValues();
                 }
                 finally
                 {
@@ -119,6 +131,23 @@ namespace System.Net.Sockets
             if (so._noDelayInitialized)
             {
                 socket.NoDelay = so._noDelay != 0;
+            }
+        }
+
+        private void ClearInitializedValues()
+        {
+            ShadowOptions so = _shadowOptions;
+            if (so != null)
+            {
+                // Clear the initialized fields for all of our shadow properties.
+                so._exclusiveAddressUseInitialized =
+                    so._receiveBufferSizeInitialized =
+                    so._sendBufferSizeInitialized =
+                    so._receiveTimeoutInitialized =
+                    so._sendTimeoutInitialized =
+                    so._lingerStateInitialized =
+                    so._noDelayInitialized =
+                    false;
             }
         }
 
