@@ -7041,6 +7041,14 @@ HINSTANCE NDirect::LoadLibraryModule(NDirectMethodDesc * pMD, LoadLibErrorTracke
     }
 #endif // FEATURE_CORESYSTEM && !FEATURE_PAL
 
+#ifdef FEATURE_CORECLR
+    if (hmod == NULL)
+    {
+        // NATIVE_DLL_SEARCH_DIRECTORIES set by host is considered well known path 
+        hmod = LoadFromNativeDllSearchDirectories(pDomain, wszLibName, loadWithAlteredPathFlags, pErrorTracker);
+    }
+#endif // FEATURE_CORECLR   
+
     DWORD dllImportSearchPathFlag = 0;
     BOOL searchAssemblyDirectory = TRUE;
     bool libNameIsRelativePath = Path::IsRelative(wszLibName);
@@ -7158,14 +7166,6 @@ HINSTANCE NDirect::LoadLibraryModule(NDirectMethodDesc * pMD, LoadLibErrorTracke
 #endif // !FEATURE_CORECLR
         }
     }
-
-#ifdef FEATURE_CORECLR
-    if (hmod == NULL)
-    {
-        LoadFromNativeDllSearchDirectories(pDomain, wszLibName, loadWithAlteredPathFlags, pErrorTracker);
-    }
-
-#endif // FEATURE_CORECLR
 
     // This call searches the application directory instead of the location for the library.
     if (hmod == NULL)
