@@ -59,7 +59,7 @@
       <Version>4.0.0</Version>
     </BaseLinePackage>
     <BaseLinePackage Include="System.Data.Common">
-      <Version>4.0.1</Version>
+      <Version>4.1.0</Version>
     </BaseLinePackage>
     <BaseLinePackage Include="System.Data.SqlClient">
       <Version>4.1.0</Version>
