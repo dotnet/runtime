@@ -77,7 +77,7 @@ BOOL
 SEHInitialize (CPalThread *pthrCurrent, DWORD flags)
 {
 #if !HAVE_MACH_EXCEPTIONS
-    if (!SEHInitializeSignals())
+    if (!SEHInitializeSignals(flags))
     {
         ERROR("SEHInitializeSignals failed!\n");
         SEHCleanup();
