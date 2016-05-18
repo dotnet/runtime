@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 using Internal.Cryptography;
+using static Interop;
 
 namespace Internal.NativeCrypto
 {
@@ -56,9 +57,6 @@ namespace Internal.NativeCrypto
     //
     internal static partial class Cng
     {
-        public const String CngDll = "BCrypt.dll";
-        public const String Capi2Dll = "Crypt32.dll";
-
         [Flags]
         public enum OpenAlgorithmProviderFlags : int
         {
@@ -223,21 +221,22 @@ namespace Internal.NativeCrypto
     {
         private static class Interop
         {
-            [DllImport(CngDll, CharSet = CharSet.Unicode)]
+            [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
             public static extern NTSTATUS BCryptOpenAlgorithmProvider(out SafeAlgorithmHandle phAlgorithm, String pszAlgId, String pszImplementation, int dwFlags);
 
-            [DllImport(CngDll, CharSet = CharSet.Unicode)]
+            [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
             public static extern unsafe NTSTATUS BCryptSetProperty(SafeAlgorithmHandle hObject, String pszProperty, String pbInput, int cbInput, int dwFlags);
-            [DllImport(CngDll, CharSet = CharSet.Unicode)]
+
+            [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
             public static extern NTSTATUS BCryptImportKey(SafeAlgorithmHandle hAlgorithm, IntPtr hImportKey, String pszBlobType, out SafeKeyHandle hKey, IntPtr pbKeyObject, int cbKeyObject, byte[] pbInput, int cbInput, int dwFlags);
 
-            [DllImport(CngDll, CharSet = CharSet.Unicode)]
+            [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
             public static extern unsafe NTSTATUS BCryptEncrypt(SafeKeyHandle hKey, byte* pbInput, int cbInput, IntPtr paddingInfo, [In,Out] byte [] pbIV, int cbIV, byte* pbOutput, int cbOutput, out int cbResult, int dwFlags);
 
-            [DllImport(CngDll, CharSet = CharSet.Unicode)]
+            [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
             public static extern unsafe NTSTATUS BCryptDecrypt(SafeKeyHandle hKey, byte* pbInput, int cbInput, IntPtr paddingInfo, [In, Out] byte[] pbIV, int cbIV, byte* pbOutput, int cbOutput, out int cbResult, int dwFlags);
 
-            [DllImport(Capi2Dll, CharSet = CharSet.Ansi, SetLastError = true, BestFitMapping = false)]
+            [DllImport(Libraries.Crypt32, CharSet = CharSet.Ansi, SetLastError = true, BestFitMapping = false)]
             public static extern bool CryptFormatObject(
                 [In]      int dwCertEncodingType,   // only valid value is X509_ASN_ENCODING
                 [In]      int dwFormatType,         // unused - pass 0.
@@ -277,7 +276,7 @@ namespace Internal.NativeCrypto
             return ntStatus == 0;
         }
 
-        [DllImport(Cng.CngDll)]
+        [DllImport(Libraries.BCrypt)]
         private static extern uint BCryptCloseAlgorithmProvider(IntPtr hAlgorithm, int dwFlags);
     }
 
@@ -289,7 +288,7 @@ namespace Internal.NativeCrypto
             return ntStatus == 0;
         }
 
-        [DllImport(Cng.CngDll)]
+        [DllImport(Libraries.BCrypt)]
         private static extern uint BCryptDestroyHash(IntPtr hHash);
     }
 
@@ -301,7 +300,7 @@ namespace Internal.NativeCrypto
             return ntStatus == 0;
         }
 
-        [DllImport(Cng.CngDll)]
+        [DllImport(Libraries.BCrypt)]
         private static extern uint BCryptDestroyKey(IntPtr hKey);
     }
 }

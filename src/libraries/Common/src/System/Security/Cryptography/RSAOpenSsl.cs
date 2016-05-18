@@ -53,7 +53,7 @@ namespace System.Security.Cryptography
                     return;
                 }
 
-                // Set the KeySize first so that an invalid value doesn't throw away the key
+                // Set the KeySize before FreeKey so that an invalid value doesn't throw away the key
                 base.KeySize = value;
 
                 FreeKey();

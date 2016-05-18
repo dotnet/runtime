@@ -1,6 +1,6 @@
 {
   "frameworks": {
-    "netstandard1.4": {
+    "netstandard1.6": {
       "imports": [
         "dotnet5.5"
       ],
@@ -13,7 +13,8 @@
         "System.Runtime": "4.0.20",
         "System.Runtime.Extensions": "4.0.0",
         "System.Runtime.InteropServices": "4.0.20",
-        "System.Security.Cryptography.Algorithms": "4.2.0-rc3-24117-00"
+        "System.Security.Cryptography.Algorithms": "4.2.0-rc3-24117-00",
+        "System.Security.Cryptography.Encoding": "4.0.0-rc3-24117-00"
       }
     },
     "net46": {
@@ -24,6 +25,11 @@
     "net461": {
       "dependencies": {
         "Microsoft.TargetingPack.NETFramework.v4.6.1": "1.0.1"
+      }
+    },
+    "net463": {
+      "dependencies": {
+        "Microsoft.TargetingPack.NETFramework.v4.6.2": "1.0.1"
       }
     }
   }

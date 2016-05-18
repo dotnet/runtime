@@ -25,6 +25,13 @@ Returns the new EC_KEY instance.
 extern "C" EC_KEY* CryptoNative_EcKeyCreateByCurveName(int32_t nid);
 
 /*
+Shims the EC_KEY_new_by_curve_name method.
+
+Returns the new EC_KEY instance.
+*/
+extern "C" EC_KEY* CryptoNative_EcKeyCreateByOid(const char* oid);
+
+/*
 Shims the EC_KEY_generate_key method.
 
 Returns 1 upon success, otherwise 0.
@@ -39,8 +46,20 @@ Returns 1 upon success, otherwise 0.
 extern "C" int32_t CryptoNative_EcKeyUpRef(EC_KEY* r);
 
 /*
-Gets the curve name for the specified EC_KEY.
+Gets the key size in bits for the specified EC_KEY.
 
-Returns the NID of the curve name.
+Returns 1 upon success, otherwise 0.
+*/
+extern "C" int32_t CryptoNative_EcKeyGetSize(const EC_KEY* key, int32_t* keySize);
+
+/*
+Gets the NID of the curve name as an oid value for the specified EC_KEY.
 */
 extern "C" int32_t CryptoNative_EcKeyGetCurveName(const EC_KEY* key);
+
+/*
+Gets the NID of the curve name as an oid value for the specified EC_KEY.
+
+Returns 1 upon success, otherwise 0.
+*/
+extern "C" int32_t CryptoNative_EcKeyGetCurveName2(const EC_KEY* key, int32_t* nidName);

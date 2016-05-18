@@ -2,13 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Diagnostics;
-
-using Internal.Cryptography;
-
 namespace System.Security.Cryptography
 {
+    using System.Diagnostics;
+
     public sealed partial class ECDsaCng : ECDsa
     {
         /// <summary>
@@ -23,33 +20,95 @@ namespace System.Security.Cryptography
         {
             get
             {
-                int keySize = KeySize;
+                return GetKey();
+            }
+
+            private set
+            {
+                if (value == null)
+                    throw new ArgumentNullException(nameof(value));
+
+                if (!IsEccAlgorithmGroup(value.AlgorithmGroup))
+                    throw new ArgumentException(SR.Cryptography_ArgECDsaRequiresECDsaKey, nameof(value));
+                _core.SetKey(value);
+
+                // LegalKeySizes stores the values for either the current named curve or for the three 
+                // curves that use size instead of name
+                ForceSetKeySize(value.KeySize);
+            }
+        }
+
+        public override void GenerateKey(ECCurve curve)
+        {
+            curve.Validate();
+            _core.DisposeKey();
+            GetKey(curve);
+        }
+
+        private CngKey GetKey(ECCurve? curve = null)
+        {
+            CngKey key = null;
+            CngAlgorithm algorithm = null;
+            int keySize = 0;
+
+            if (curve != null)
+            {
+                if (curve.Value.IsNamed)
+                {
+                    // Map curve name to algorithm to support pre-Win10 curves
+                    CngAlgorithm alg = CngKey.EcdsaCurveNameToAlgorithm(curve.Value.Oid.FriendlyName);
+                    if (CngKey.IsECNamedCurve(alg.Algorithm))
+                    {
+                        key = _core.GetOrGenerateKey(curve.Value);
+                    }
+                    else {
+                        // Get the proper KeySize from algorithm name
+                        if (alg == CngAlgorithm.ECDsaP256)
+                            keySize = 256;
+                        else if (alg == CngAlgorithm.ECDsaP384)
+                            keySize = 384;
+                        else if (alg == CngAlgorithm.ECDsaP521)
+                            keySize = 521;
+                        else
+                        {
+                            Debug.Fail(string.Format("Unknown algorithm {0}", alg.ToString()));
+                            throw new ArgumentException(SR.Cryptography_InvalidKeySize);
+                        }
+                        key = _core.GetOrGenerateKey(keySize, alg);
+                    }
+                    ForceSetKeySize(key.KeySize);
+                }
+                else if (curve.Value.IsExplicit)
+                {
+                    key = _core.GetOrGenerateKey(curve.Value);
+                    ForceSetKeySize(key.KeySize);
+                }
+                else
+                {
+                    throw new PlatformNotSupportedException(string.Format(SR.Cryptography_CurveNotSupported, curve.Value.CurveType.ToString()));
+                }
+            }
+            else if (_core.IsKeyGeneratedNamedCurve())
+            {
+                key = _core.GetOrGenerateKey(null);
+            }
+            else
+            {
                 // Map the current key size to a CNG algorithm name
-                CngAlgorithm algorithm = null;
+                keySize = KeySize;
                 switch (keySize)
                 {
                     case 256: algorithm = CngAlgorithm.ECDsaP256; break;
                     case 384: algorithm = CngAlgorithm.ECDsaP384; break;
                     case 521: algorithm = CngAlgorithm.ECDsaP521; break;
                     default:
-                        Debug.Assert(false, "Illegal key size set");
-                        break;
+                        Debug.Fail("Should not have invalid key size");
+                        throw new ArgumentException(SR.Cryptography_InvalidKeySize);
                 }
-
-                CngKey key = _core.GetOrGenerateKey(keySize, algorithm);
-                return key;
+                key = _core.GetOrGenerateKey(keySize, algorithm);
             }
 
-            private set
-            {
-                CngKey key = value;
-                Debug.Assert(key != null, "key != null");
-                if (!IsEccAlgorithmGroup(key.AlgorithmGroup))
-                    throw new ArgumentException(SR.Cryptography_ArgECDsaRequiresECDsaKey, nameof(value));
-                _core.SetKey(key);
-                KeySize = key.KeySize;
-            }
+            return key;
         }
     }
 }
-

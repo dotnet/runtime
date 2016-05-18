@@ -17,6 +17,7 @@ internal static partial class Interop
             NTE_BAD_KEYSET = unchecked((int)0x80090016),
             NTE_INVALID_PARAMETER = unchecked((int)0x80090027),
             NTE_BUFFER_TOO_SMALL = unchecked((int)0x80090028),
+            NTE_NOT_SUPPORTED = unchecked((int)0x80090029),
             NTE_NO_MORE_ITEMS = unchecked((int)0x8009002a),
             E_FAIL = unchecked((int)0x80004005),
         }

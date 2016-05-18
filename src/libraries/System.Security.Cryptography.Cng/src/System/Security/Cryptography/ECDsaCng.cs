@@ -2,15 +2,32 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Diagnostics;
-
 using Internal.Cryptography;
+using System.Diagnostics;
 
 namespace System.Security.Cryptography
 {
     public sealed partial class ECDsaCng : ECDsa
     {
+        private CngAlgorithmCore _core;
+        private bool _skipKeySizeCheck;
+
+        /// <summary>
+        /// Create an ECDsaCng algorithm with a named curve.
+        /// </summary>
+        /// <param name="curve">The <see cref="ECCurve"/> representing the curve.</param>
+        /// <exception cref="ArgumentNullException">if <paramref name="curve" /> is null.</exception>
+        /// <exception cref="PlatformNotSupportedException">if <paramref name="curve" /> does not contain an Oid with a FriendlyName.</exception>
+        public ECDsaCng(ECCurve curve)
+        {
+            // FriendlyName is required; an attempt was already made to default it in ECCurve
+            if (string.IsNullOrEmpty(curve.Oid.FriendlyName))
+                throw new PlatformNotSupportedException(string.Format(SR.Cryptography_InvalidCurveOid, curve.Oid.Value.ToString()));
+
+            // Named curves generate the key immediately
+            GenerateKey(curve);
+        }
+
         /// <summary>
         ///     Create an ECDsaCng algorithm with a random 521 bit key pair.
         /// </summary>
@@ -27,6 +44,25 @@ namespace System.Security.Cryptography
         public ECDsaCng(int keySize)
         {
             KeySize = keySize;
+        }
+
+        public override int KeySize
+        {
+            get
+            {
+                return base.KeySize;
+            }
+            set
+            {
+                if (KeySize == value)
+                {
+                    return;
+                }
+
+                base.KeySize = value;
+
+                // Key will be lazily re-created
+            }
         }
 
         /// <summary>
@@ -49,11 +85,47 @@ namespace System.Security.Cryptography
             Key = CngAlgorithmCore.Duplicate(key);
         }
 
+        /// <summary>
+        /// Set the KeySize without validating against LegalKeySizes.
+        /// </summary>
+        /// <param name="newKeySize">The value to set the KeySize to.</param>
+        private void ForceSetKeySize(int newKeySize)
+        {
+            // In the event that a key was loaded via ImportParameters, curve name, or an IntPtr/SafeHandle
+            // it could be outside of the bounds that we currently represent as "legal key sizes".
+            // Since that is our view into the underlying component it can be detached from the
+            // component's understanding.  If it said it has opened a key, and this is the size, trust it.
+            _skipKeySizeCheck = true;
+
+            try
+            {
+                // Set base.KeySize directly, since we don't want to free the key
+                // (which we would do if the keysize changed on import)
+                base.KeySize = newKeySize;
+            }
+            finally
+            {
+                _skipKeySizeCheck = false;
+            }
+        }
+
         public override KeySizes[] LegalKeySizes
         {
             get
             {
-                return (KeySizes[])(s_legalKeySizes.Clone());
+                if (_skipKeySizeCheck)
+                {
+                    // When size limitations are in bypass, accept any positive integer.
+                    // Many of them may not make sense (like 1), but we're just assigning
+                    // the field to whatever value was provided by the native component.
+                    return new[] { new KeySizes(minSize: 1, maxSize: int.MaxValue, skipSize: 1) };
+                }
+
+                // Return the three sizes that can be explicitly set (for backwards compatibility)
+                return new[] {
+                    new KeySizes(minSize: 256, maxSize: 384, skipSize: 128),
+                    new KeySizes(minSize: 521, maxSize: 521, skipSize: 0),
+                };
             }
         }
 
@@ -71,17 +143,5 @@ namespace System.Security.Cryptography
             // It is worth noting, however, that ECDSA-identified keys cannot be used for key exchange (ECDH) in CNG.
             return algorithmGroup == CngAlgorithmGroup.ECDsa || algorithmGroup == CngAlgorithmGroup.ECDiffieHellman;
         }
-
-        private CngAlgorithmCore _core;
-
-        // See https://msdn.microsoft.com/en-us/library/windows/desktop/bb931354(v=vs.85).aspx
-        private static readonly KeySizes[] s_legalKeySizes =
-            new KeySizes[]
-            {
-                // All values are in bits.
-                new KeySizes(minSize: 256, maxSize: 384, skipSize: 128),
-                new KeySizes(minSize: 521, maxSize: 521, skipSize: 0),
-            };
     }
 }
-

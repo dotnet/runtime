@@ -159,6 +159,12 @@
   <data name="Cryptography_InvalidCipherMode" xml:space="preserve">
     <value>Specified cipher mode is not valid for this algorithm.</value>
   </data>
+  <data name="Cryptography_CurveNotSupported" xml:space="preserve">
+    <value>The specified curve '{0}' or its parameters are not valid for this platform.</value>
+  </data>
+  <data name="Cryptography_InvalidCurveOid" xml:space="preserve">
+    <value>The specified Oid is not valid. The Oid.FriendlyName property must be set, or be determined from Oid.Value.</value>
+  </data>
   <data name="Cryptography_InvalidIVSize" xml:space="preserve">
     <value>Specified initialization vector (IV) does not match the block size for this algorithm.</value>
   </data>
@@ -227,6 +233,9 @@
   </data>
   <data name="Cryptography_UnexpectedTransformTruncation" xml:space="preserve">
     <value>CNG provider unexpectedly terminated encryption or decryption prematurely.</value>
+  </data>
+  <data name="Cryptography_UnknownHashAlgorithm" xml:space="preserve">
+    <value>'{0}' is not a known hash algorithm.</value>
   </data>
   <data name="Cryptography_UnknownPaddingMode" xml:space="preserve">
     <value>Unknown padding mode used.</value>

@@ -1,27 +1,47 @@
-// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
+using Internal.Cryptography;
+using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.IO;
 
-using Microsoft.Win32.SafeHandles;
-using Internal.Cryptography;
-
 namespace System.Security.Cryptography
 {
-    public sealed class ECDsaOpenSsl : ECDsa
+    public sealed partial class ECDsaOpenSsl : ECDsa
     {
+        internal const string ECDSA_P256_OID_VALUE = "1.2.840.10045.3.1.7"; // Also called nistP256 or secP256r1
+        internal const string ECDSA_P384_OID_VALUE = "1.3.132.0.34"; // Also called nistP384 or secP384r1
+        internal const string ECDSA_P521_OID_VALUE = "1.3.132.0.35"; // Also called nistP521or secP521r1
+
+        private Lazy<SafeEcKeyHandle> _key;
+        private bool _skipKeySizeCheck;
+
+        /// <summary>
+        /// Create an ECDsaOpenSsl algorithm with a named curve.
+        /// </summary>
+        /// <param name="curve">The <see cref="ECCurve"/> representing the curve.</param>
+        /// <exception cref="ArgumentNullException">if <paramref name="curve" /> is null.</exception>
+        public ECDsaOpenSsl(ECCurve curve)
+        {
+            GenerateKey(curve);
+        }
+
+        /// <summary>
+        ///     Create an ECDsaOpenSsl algorithm with a random 521 bit key pair.
+        /// </summary>
         public ECDsaOpenSsl()
             : this(521)
         {
         }
 
+        /// <summary>
+        ///     Creates a new ECDsaOpenSsl object that will use a randomly generated key of the specified size.
+        /// </summary>
+        /// <param name="keySize">Size of the key to generate, in bits.</param>
         public ECDsaOpenSsl(int keySize)
         {
             KeySize = keySize;
-            _key = new Lazy<SafeEcKeyHandle>(GenerateKey);
         }
 
         /// <summary>
@@ -40,10 +60,7 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(handle));
 
             SafeEcKeyHandle ecKeyHandle = SafeEcKeyHandle.DuplicateHandle(handle);
-
-            // Set base.KeySize rather than this.KeySize to avoid an unnecessary Lazy<> allocation.
-            base.KeySize = GetKeySize(ecKeyHandle);
-            _key = new Lazy<SafeEcKeyHandle>(() => ecKeyHandle);
+            SetKey(ecKeyHandle);
         }
 
         /// <summary>
@@ -62,16 +79,11 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(pkeyHandle));
 
             // If ecKey is valid it has already been up-ref'd, so we can just use this handle as-is.
-            SafeEcKeyHandle ecKey = Interop.Crypto.EvpPkeyGetEcKey(pkeyHandle);
-
-            if (ecKey.IsInvalid)
-            {
+            SafeEcKeyHandle key = Interop.Crypto.EvpPkeyGetEcKey(pkeyHandle);
+            if (key.IsInvalid)
                 throw Interop.Crypto.CreateOpenSslCryptographicException();
-            }
 
-            // Set base.KeySize rather than this.KeySize to avoid an unnecessary Lazy<> allocation.
-            base.KeySize = GetKeySize(ecKey);
-            _key = new Lazy<SafeEcKeyHandle>(() => ecKey);
+            SetKey(key);
         }
 
         /// <summary>
@@ -103,18 +115,27 @@ namespace System.Security.Cryptography
             }
         }
 
-        public override int KeySize
+        /// <summary>
+        /// Set the KeySize without validating against LegalKeySizes.
+        /// </summary>
+        /// <param name="newKeySize">The value to set the KeySize to.</param>
+        private void ForceSetKeySize(int newKeySize)
         {
-            set
-            {
-                if (KeySize == value)
-                {
-                    return;
-                }
+            // In the event that a key was loaded via ImportParameters, curve name, or an IntPtr/SafeHandle
+            // it could be outside of the bounds that we currently represent as "legal key sizes".
+            // Since that is our view into the underlying component it can be detached from the
+            // component's understanding.  If it said it has opened a key, and this is the size, trust it.
+            _skipKeySizeCheck = true;
 
-                FreeKey();
-                base.KeySize = value;
-                _key = new Lazy<SafeEcKeyHandle>(GenerateKey);
+            try
+            {
+                // Set base.KeySize directly, since we don't want to free the key
+                // (which we would do if the keysize changed on import)
+                base.KeySize = newKeySize;
+            }
+            finally
+            {
+                _skipKeySizeCheck = false;
             }
         }
 
@@ -122,13 +143,19 @@ namespace System.Security.Cryptography
         {
             get
             {
-                KeySizes[] legalKeySizes = new KeySizes[s_supportedAlgorithms.Length];
-                for (int i = 0; i < s_supportedAlgorithms.Length; i++)
+                if (_skipKeySizeCheck)
                 {
-                    int keySize = s_supportedAlgorithms[i].KeySize;
-                    legalKeySizes[i] = new KeySizes(minSize: keySize, maxSize: keySize, skipSize: 0);
+                    // When size limitations are in bypass, accept any positive integer.
+                    // Many of them may not make sense (like 1), but we're just assigning
+                    // the field to whatever value was provided by the native component.
+                    return new[] { new KeySizes(minSize: 1, maxSize: int.MaxValue, skipSize: 1) };
                 }
-                return legalKeySizes;
+
+                // Return the three sizes that can be explicitly set (for backwards compatibility)
+                return new[] {
+                    new KeySizes(minSize: 256, maxSize: 384, skipSize: 128),
+                    new KeySizes(minSize: 521, maxSize: 521, skipSize: 0),
+                };
             }
         }
 
@@ -230,7 +257,7 @@ namespace System.Security.Cryptography
 
                 CopySignatureField(rDer, response, 0, size);
                 CopySignatureField(sDer, response, size, size);
-                
+
                 return response;
             }
             catch (InvalidOperationException e)
@@ -265,107 +292,110 @@ namespace System.Security.Cryptography
             }
         }
 
+        public override int KeySize
+        {
+            get
+            {
+                return base.KeySize;
+            }
+            set
+            {
+                if (KeySize == value)
+                    return;
+
+                // Set the KeySize before FreeKey so that an invalid value doesn't throw away the key
+                base.KeySize = value;
+
+                FreeKey();
+                _key = new Lazy<SafeEcKeyHandle>(GenerateKeyLazy);
+            }
+        }
+
+        public override void GenerateKey(ECCurve curve)
+        {
+            curve.Validate();
+            FreeKey();
+
+            if (curve.IsNamed)
+            {
+                string oid = null;
+                // Use oid Value first if present, otherwise FriendlyName because Oid maintains a hard-coded
+                // cache that may have different casing for FriendlyNames than OpenSsl
+                oid = !string.IsNullOrEmpty(curve.Oid.Value) ? curve.Oid.Value : curve.Oid.FriendlyName;
+
+                SafeEcKeyHandle key = Interop.Crypto.EcKeyCreateByOid(oid);
+
+                if (key == null || key.IsInvalid)
+                    throw new PlatformNotSupportedException(string.Format(SR.Cryptography_CurveNotSupported, oid));
+
+                if (!Interop.Crypto.EcKeyGenerateKey(key))
+                    throw Interop.Crypto.CreateOpenSslCryptographicException();
+
+                SetKey(key);
+            }
+            else if (curve.IsExplicit)
+            {
+                SafeEcKeyHandle key = Interop.Crypto.EcKeyCreateByExplicitCurve(curve);
+
+                if (!Interop.Crypto.EcKeyGenerateKey(key))
+                    throw Interop.Crypto.CreateOpenSslCryptographicException();
+
+                SetKey(key);
+            }
+            else
+            {
+                throw new PlatformNotSupportedException(string.Format(SR.Cryptography_CurveNotSupported, curve.CurveType.ToString()));
+            }
+        }
+
+        private SafeEcKeyHandle GenerateKeyLazy()
+        {
+            string oid = null;
+            switch (KeySize)
+            {
+                case 256: oid = ECDSA_P256_OID_VALUE; break;
+                case 384: oid = ECDSA_P384_OID_VALUE; break;
+                case 521: oid = ECDSA_P521_OID_VALUE; break;
+                default:
+                    // Only above three sizes supported for backwards compatibility; named curves should be used instead
+                    throw new InvalidOperationException(SR.Cryptography_InvalidKeySize);
+            }
+
+            SafeEcKeyHandle key = Interop.Crypto.EcKeyCreateByOid(oid);
+
+            if (key == null || key.IsInvalid)
+                throw new PlatformNotSupportedException(string.Format(SR.Cryptography_CurveNotSupported, oid));
+
+            if (!Interop.Crypto.EcKeyGenerateKey(key))
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
+
+            return key;
+        }
+
         private void FreeKey()
         {
-            if (_key != null && _key.IsValueCreated)
+            if (_key != null)
             {
-                SafeEcKeyHandle handle = _key.Value;
-
-                if (handle != null)
+                if (_key.IsValueCreated)
                 {
-                    handle.Dispose();
+                    SafeEcKeyHandle handle = _key.Value;
+                    if (handle != null)
+                        handle.Dispose();
                 }
+                _key = null;
             }
         }
 
-        private static int GetKeySize(SafeEcKeyHandle ecKeyHandle)
+        private void SetKey(SafeEcKeyHandle newKey)
         {
-            int nid = Interop.Crypto.EcKeyGetCurveName(ecKeyHandle);
-            int keySize = 0;
+            // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
+            // with the already loaded key.
+            ForceSetKeySize(Interop.Crypto.EcKeyGetSize(newKey));
 
-            for (int i = 0; i < s_supportedAlgorithms.Length; i++)
-            {
-                if (s_supportedAlgorithms[i].Nid == nid)
-                {
-                    keySize = s_supportedAlgorithms[i].KeySize;
-                    break;
-                }
-            }
+            _key = new Lazy<SafeEcKeyHandle>(() => newKey);
 
-            if (keySize == 0)
-            {
-                string curveNameOid = Interop.Crypto.GetOidValue(Interop.Crypto.ObjNid2Obj(nid));
-                throw new NotSupportedException(SR.Format(SR.Cryptography_UnsupportedEcKeyAlgorithm, curveNameOid));
-            }
-
-            return keySize;
-        }
-
-        private SafeEcKeyHandle GenerateKey()
-        {
-            int keySize = KeySize;
-            for (int i = 0; i < s_supportedAlgorithms.Length; i++)
-            {
-                if (keySize == s_supportedAlgorithms[i].KeySize)
-                {
-                    int nid = s_supportedAlgorithms[i].Nid;
-                    SafeEcKeyHandle key = Interop.Crypto.EcKeyCreateByCurveName(nid);
-                    if (key == null || key.IsInvalid)
-                        throw Interop.Crypto.CreateOpenSslCryptographicException();
-
-                    if (!Interop.Crypto.EcKeyGenerateKey(key))
-                        throw Interop.Crypto.CreateOpenSslCryptographicException();
-
-                    return key;
-                }
-            }
-
-            // The KeySize property should have prevented a bad KeySize from being set.
-            Debug.Fail("GenerateKey: Unexpected KeySize: " + keySize);
-            throw new InvalidOperationException();  // This is to keep the compiler happy - we don't expect to hit this.
-        }
-
-        private Lazy<SafeEcKeyHandle> _key;
-
-        private struct SupportedAlgorithm
-        {
-            public SupportedAlgorithm(int keySize, int nid)
-                : this()
-            {
-                KeySize = keySize;
-                Nid = nid;
-            }
-
-            public int KeySize { get; private set; }
-            public int Nid { get; private set; }
-        }
-
-        private static readonly SupportedAlgorithm[] s_supportedAlgorithms =
-            RemoveAlgorithmsUnsupportedByOs(
-                new SupportedAlgorithm[]
-                {
-                    new SupportedAlgorithm(keySize: 224, nid: Interop.Crypto.NID_secp224r1),
-                    new SupportedAlgorithm(keySize: 256, nid: Interop.Crypto.NID_X9_62_prime256v1),
-                    new SupportedAlgorithm(keySize: 384, nid: Interop.Crypto.NID_secp384r1),
-                    new SupportedAlgorithm(keySize: 521, nid: Interop.Crypto.NID_secp521r1),
-                }
-            );
-
-        private static SupportedAlgorithm[] RemoveAlgorithmsUnsupportedByOs(SupportedAlgorithm[] supportedAlgorithms)
-        {
-            List<SupportedAlgorithm> filteredSupportedAlgorithms = new List<SupportedAlgorithm>(supportedAlgorithms.Length);
-            foreach (SupportedAlgorithm supportedAlgorithm in supportedAlgorithms)
-            {
-                int nid = supportedAlgorithm.Nid;
-                using (SafeEcKeyHandle key = Interop.Crypto.EcKeyCreateByCurveName(nid))
-                {
-                    if (key != null && !key.IsInvalid)
-                    {
-                        filteredSupportedAlgorithms.Add(supportedAlgorithm);
-                    }
-                }
-            }
-            return filteredSupportedAlgorithms.ToArray();
+            // Have Lazy<T> consider the key to be loaded
+            var dummy = _key.Value;
         }
     }
 }

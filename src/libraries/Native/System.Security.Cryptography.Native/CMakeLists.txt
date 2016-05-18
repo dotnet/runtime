@@ -20,6 +20,7 @@ set(NATIVECRYPTO_SOURCES
     pal_bignum.cpp
     pal_bio.cpp
     pal_ecdsa.cpp
+    pal_ecc_import_export.cpp
     pal_eckey.cpp
     pal_err.cpp
     pal_evp.cpp

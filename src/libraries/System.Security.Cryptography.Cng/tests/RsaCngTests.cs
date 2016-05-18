@@ -66,7 +66,6 @@ namespace System.Security.Cryptography.Cng.Tests
         {
             using (RSA rsa = TestData.TestRsaKeyPair.CreateRsaCng())
             {
-                byte[] message = "781021abcd982139a8bc91387870ac01".HexToByteArray();
                 byte[] hash = ("aecc72ccc8e3c3ff28ffd7acac7d3065225aa24e").HexToByteArray();
                 byte[] signature =
                     ("3bde39974a884c4ecbc7296063a2a96edc778435b7b277b594a0712dcc0ddcd00b2970473b2f1359c98535dbae41fe2fb9e7"

@@ -97,6 +97,14 @@ namespace System.Security.Cryptography
             }
         }
 
+        public static CngAlgorithm ECDiffieHellman
+        {
+            get
+            {
+                return s_ecdh ?? (s_ecdh = new CngAlgorithm("ECDH")); // BCRYPT_ECDH_ALGORITHM
+            }
+        }
+
         public static CngAlgorithm ECDiffieHellmanP256
         {
             get
@@ -118,6 +126,14 @@ namespace System.Security.Cryptography
             get
             {
                 return s_ecdhp521 ?? (s_ecdhp521 = new CngAlgorithm("ECDH_P521")); // BCRYPT_ECDH_P521_ALGORITHM
+            }
+        }
+
+        public static CngAlgorithm ECDsa
+        {
+            get
+            {
+                return s_ecdsa ?? (s_ecdsa = new CngAlgorithm("ECDSA")); // BCRYPT_ECDSA_ALGORITHM
             }
         }
 
@@ -185,9 +201,11 @@ namespace System.Security.Cryptography
             }
         }
 
+        private static CngAlgorithm s_ecdh;
         private static CngAlgorithm s_ecdhp256;
         private static CngAlgorithm s_ecdhp384;
         private static CngAlgorithm s_ecdhp521;
+        private static CngAlgorithm s_ecdsa;
         private static CngAlgorithm s_ecdsap256;
         private static CngAlgorithm s_ecdsap384;
         private static CngAlgorithm s_ecdsap521;
@@ -201,4 +219,3 @@ namespace System.Security.Cryptography
         private readonly string _algorithm;
     }
 }
-

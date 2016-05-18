@@ -138,8 +138,8 @@
   <data name="Cryptography_HashAlgorithmNameNullOrEmpty" xml:space="preserve">
     <value>The hash algorithm name cannot be null or empty.</value>
   </data>
-  <data name="Cryptography_InvalidCurve" xml:space="preserve">
-    <value>The specified curve '{0}' is not valid for this platform.</value>
+  <data name="Cryptography_CurveNotSupported" xml:space="preserve">
+    <value>The specified curve '{0}' or its parameters are not valid for this platform.</value>
   </data>
   <data name="Cryptography_InvalidCurveOid" xml:space="preserve">
     <value>The specified Oid is not valid. The Oid.FriendlyName or Oid.Value property must be set.</value>
