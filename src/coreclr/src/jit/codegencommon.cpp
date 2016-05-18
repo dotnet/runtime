@@ -5648,6 +5648,8 @@ void CodeGen::genAllocLclFrame(unsigned  frameSize,
     if  (frameSize == 0)
         return;
 
+    const size_t pageSize = compiler->eeGetPageSize();
+
 #ifdef _TARGET_ARM_
     assert(!compiler->info.compPublishStubParam || (REG_SECRET_STUB_PARAM != initReg));
 #endif // _TARGET_ARM_
@@ -5660,36 +5662,36 @@ void CodeGen::genAllocLclFrame(unsigned  frameSize,
     }
     else 
 #endif // _TARGET_XARCH_
-    if (frameSize < CORINFO_PAGE_SIZE)
+    if (frameSize < pageSize)
     {
 #ifndef _TARGET_ARM64_
         // Frame size is (0x0008..0x1000)
         inst_RV_IV(INS_sub, REG_SPBASE, frameSize, EA_PTRSIZE);
 #endif // !_TARGET_ARM64_
     }
-    else if (frameSize < VERY_LARGE_FRAME_SIZE)
+    else if (frameSize < compiler->getVeryLargeFrameSize())
     {
         // Frame size is (0x1000..0x3000)
 
 #if CPU_LOAD_STORE_ARCH
-        instGen_Set_Reg_To_Imm(EA_PTRSIZE, initReg, -CORINFO_PAGE_SIZE);
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, initReg, -(ssize_t)pageSize);
         getEmitter()->emitIns_R_R_R(INS_ldr, EA_4BYTE, initReg, REG_SPBASE, initReg);
         regTracker.rsTrackRegTrash(initReg);
         *pInitRegZeroed = false;  // The initReg does not contain zero
 #else
         getEmitter()->emitIns_AR_R(INS_TEST, EA_PTRSIZE,
-                                  REG_EAX, REG_SPBASE, -CORINFO_PAGE_SIZE);
+                                  REG_EAX, REG_SPBASE, -(int)pageSize);
 #endif
 
         if (frameSize >= 0x2000)
         {    
 #if CPU_LOAD_STORE_ARCH
-            instGen_Set_Reg_To_Imm(EA_PTRSIZE, initReg, -2 * CORINFO_PAGE_SIZE);
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, initReg, -2 * (ssize_t)pageSize);
             getEmitter()->emitIns_R_R_R(INS_ldr, EA_4BYTE, initReg, REG_SPBASE, initReg);
             regTracker.rsTrackRegTrash(initReg);
 #else
             getEmitter()->emitIns_AR_R(INS_TEST, EA_PTRSIZE,
-                                  REG_EAX, REG_SPBASE, -2 * CORINFO_PAGE_SIZE);
+                                  REG_EAX, REG_SPBASE, -2 * (int)pageSize);
 #endif
         }
 
@@ -5709,7 +5711,7 @@ void CodeGen::genAllocLclFrame(unsigned  frameSize,
     else
     {
         // Frame size >= 0x3000
-        assert(frameSize >= VERY_LARGE_FRAME_SIZE);
+        assert(frameSize >= compiler->getVeryLargeFrameSize());
 
         // Emit the following sequence to 'tickle' the pages.
         // Note it is important that stack pointer not change until this is
@@ -5772,9 +5774,9 @@ void CodeGen::genAllocLclFrame(unsigned  frameSize,
         getEmitter()->emitIns_R_R_R(INS_ldr, EA_4BYTE, rTemp, REG_SPBASE, rOffset);
         regTracker.rsTrackRegTrash(rTemp);
 #if defined(_TARGET_ARM_)
-        getEmitter()->emitIns_R_I(INS_sub, EA_PTRSIZE, rOffset, CORINFO_PAGE_SIZE);
+        getEmitter()->emitIns_R_I(INS_sub, EA_PTRSIZE, rOffset, pageSize);
 #elif defined(_TARGET_ARM64_)
-        getEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, rOffset, rOffset, CORINFO_PAGE_SIZE);
+        getEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, rOffset, rOffset, pageSize);
 #endif // _TARGET_ARM64_
         getEmitter()->emitIns_R_R(INS_cmp, EA_PTRSIZE, rOffset, rLimit);
         getEmitter()->emitIns_J(INS_bhi, NULL, -4);
@@ -5806,7 +5808,7 @@ void CodeGen::genAllocLclFrame(unsigned  frameSize,
         //      jge loop                    2
 
         getEmitter()->emitIns_R_ARR(INS_TEST, EA_PTRSIZE, initReg, REG_SPBASE, initReg, 0);
-        inst_RV_IV(INS_sub,  initReg, CORINFO_PAGE_SIZE, EA_PTRSIZE);
+        inst_RV_IV(INS_sub,  initReg, pageSize, EA_PTRSIZE);
         inst_RV_IV(INS_cmp,  initReg, -((ssize_t)frameSize), EA_PTRSIZE);
 
         int bytesForBackwardJump;
@@ -7712,7 +7714,7 @@ void                CodeGen::genFinalizeFrame()
 #if defined(_TARGET_ARMARCH_)
     // We need to determine if we will change SP larger than a specific amount to determine if we want to use a loop
     // to touch stack pages, that will require multiple registers. See genAllocLclFrame() for details.
-    if (compiler->compLclFrameSize >= VERY_LARGE_FRAME_SIZE)
+    if (compiler->compLclFrameSize >= compiler->getVeryLargeFrameSize())
     {
         regSet.rsSetRegsModified(VERY_LARGE_FRAME_SIZE_REG_MASK);
     }
@@ -8216,7 +8218,7 @@ void                CodeGen::genFnProlog()
 #endif // _TARGET_ARM_
 
 #if defined(_TARGET_XARCH_)
-    if (compiler->compLclFrameSize >= VERY_LARGE_FRAME_SIZE)
+    if (compiler->compLclFrameSize >= compiler->getVeryLargeFrameSize())
     {
         // We currently must use REG_EAX on x86 here
         // because the loop's backwards branch depends upon the size of EAX encodings
@@ -10166,7 +10168,7 @@ void CodeGen::genGenerateStackProbe()
     // of bytes, to set up a frame in the unmanaged code..
 
     static_assert_no_msg(
-        CORINFO_STACKPROBE_DEPTH + JIT_RESERVED_STACK < CORINFO_PAGE_SIZE);
+        CORINFO_STACKPROBE_DEPTH + JIT_RESERVED_STACK < compiler->eeGetPageSize());
 
     JITDUMP("Emitting stack probe:\n");
     getEmitter()->emitIns_AR_R(INS_TEST, EA_PTRSIZE,
