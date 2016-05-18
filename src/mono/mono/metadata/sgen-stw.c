@@ -56,8 +56,6 @@ align_pointer (void *ptr)
 	return (void*)p;
 }
 
-static MonoContext cur_thread_ctx;
-
 static void
 update_current_thread_stack (void *start)
 {
