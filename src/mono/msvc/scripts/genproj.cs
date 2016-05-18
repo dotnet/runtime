@@ -190,6 +190,7 @@ class MsbuildGenerator {
 	StringBuilder defines = new StringBuilder ();
 	bool Optimize = true;
 	bool want_debugging_support = false;
+	string main = null;
 	Dictionary<string, string> embedded_resources = new Dictionary<string, string> ();
 	List<string> warning_as_error = new List<string> ();
 	List<int> ignore_warning = new List<int> ();
@@ -198,7 +199,7 @@ class MsbuildGenerator {
 	List<string> references = new List<string> ();
 	List<string> libs = new List<string> ();
 	List<string> reference_aliases = new List<string> ();
-	bool showWarnings = false;
+	bool showWarnings = true;
 
 	// Currently unused
 #pragma warning disable 0219, 0414
@@ -210,7 +211,7 @@ class MsbuildGenerator {
 	string win32IconFile;
 	string StrongNameKeyFile;
 	bool copyLocal = true;
-	Target Target = Target.Exe;
+	Target Target = Target.Library;
 	string TargetExt = ".exe";
 	string OutputFile;
 	string StrongNameKeyContainer;
@@ -373,6 +374,9 @@ class MsbuildGenerator {
 				return true;
 			}
 		case "/main":
+			main = value;
+			return true;
+
 		case "/m":
 		case "/addmodule":
 		case "/win32res":
@@ -540,6 +544,9 @@ class MsbuildGenerator {
 			CodePage = value;
 			return true;
 
+		case "/publicsign":
+			return true;
+			
 		case "/-getresourcestrings":
 			return true;
 		}
@@ -640,9 +647,11 @@ class MsbuildGenerator {
 		boot = xproject.Element ("boot").Value;
 		flags = xproject.Element ("flags").Value;
 		output_name = xproject.Element ("output").Value;
+		if (output_name.EndsWith (".exe"))
+			Target = Target.Exe;
 		built_sources = xproject.Element ("built_sources").Value;
 		response = xproject.Element ("response").Value;
-		//if (library.EndsWith("-build")) fx_version = "2.0"; // otherwise problem if .NET4.5 is installed, seems. (https://github.com/nikhilk/scriptsharp/issues/156)
+
 		profile = xproject.Element ("profile").Value;
 		if (string.IsNullOrEmpty (response)) {
 			// Address the issue where entries are missing the fx_version
@@ -806,7 +815,8 @@ class MsbuildGenerator {
 			//</ProjectReference>
 			var refdistinct = references.Distinct ();
 			foreach (string r in refdistinct) {
-				var match = GetMatchingCsproj (Path.GetFileName (r), projects);
+				
+				var match = GetMatchingCsproj (r, projects);
 				if (match != null) {
 					AddProjectReference (refs, Csproj, match, r, null);
 				} else {
@@ -878,6 +888,7 @@ class MsbuildGenerator {
 				"  </PropertyGroup>", StrongNameKeyFile, StrongNameDelaySign ? "    <DelaySign>true</DelaySign>" + NewLine : "");
 		}
 		Csproj.output = template.
+			Replace ("@OUTPUTTYPE@", Target == Target.Library ? "Library" : "Exe").
 			Replace ("@SIGNATURE@", strongNameSection).
 			Replace ("@PROJECTGUID@", Csproj.projectGuid).
 			Replace ("@DEFINES@", defines.ToString ()).
@@ -894,6 +905,7 @@ class MsbuildGenerator {
 			Replace ("@DEBUGTYPE@", want_debugging_support ? "full" : "pdbonly").
 			Replace ("@REFERENCES@", refs.ToString ()).
 			Replace ("@PREBUILD@", prebuild).
+			Replace ("@STARTUPOBJECT@", main == null ? "" : $"<StartupObject>{main}</StartupObject>").
 			Replace ("@POSTBUILD@", postbuild).
 			//Replace ("@ADDITIONALLIBPATHS@", String.Format ("<AdditionalLibPaths>{0}</AdditionalLibPaths>", string.Join (",", libs.ToArray ()))).
 			Replace ("@ADDITIONALLIBPATHS@", String.Empty).
@@ -939,29 +951,25 @@ class MsbuildGenerator {
 		if (!dllReferenceName.EndsWith (".dll"))
 			dllReferenceName += ".dll";
 
-		if (explicitPath){
-			var probe = Path.GetFullPath (Path.Combine (base_dir, dllReferenceName));
-			foreach (var project in projects){
-				if (probe == project.Value.AbsoluteLibraryOutput)
-					return project.Value;
-			}
-		} 
+		var probe = Path.GetFullPath (Path.Combine (base_dir, dllReferenceName));
+		foreach (var project in projects){
+			if (probe == project.Value.AbsoluteLibraryOutput)
+				return project.Value;
+		}
 
 		// not explicit, search for the library in the lib path order specified
 
 		foreach (var libDir in libs) {
 			var abs = Path.GetFullPath (Path.Combine (base_dir, libDir));
 			foreach (var project in projects){
-				var probe = Path.Combine (abs, dllReferenceName);
+				probe = Path.Combine (abs, dllReferenceName);
 
 				if (probe == project.Value.AbsoluteLibraryOutput)
 					return project.Value;
 			}
 		}
 		Console.WriteLine ("Did not find referenced {0} with libs={1}", dllReferenceName, String.Join (", ", libs));
-		foreach (var p in projects) {
-			Console.WriteLine ("    => {0}", p.Value.AbsoluteLibraryOutput);
-		}
+
 		return null;
 	}
 
