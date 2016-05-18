@@ -16,10 +16,10 @@ public sealed class GetTotalMemoryTest {
         try {
             LargeObject lo = new LargeObject(size);
             long mem  = GC.GetTotalMemory(false);
-            long delta = (long)(size*LargeObject.GB)/(long)10;
+            long delta = (long)(size*LargeObject.MB)/(long)10;
 
-            if ( (mem - size*LargeObject.GB)> delta) {
-                Console.WriteLine("{0} {1} {2}", mem, size*LargeObject.GB, delta);
+            if ( (mem - size*LargeObject.MB)> delta) {
+                Console.WriteLine("{0} {1} {2}", mem, size*LargeObject.MB, delta);
                 return false;
             }
 
@@ -40,19 +40,24 @@ public sealed class GetTotalMemoryTest {
 
     public static int Main(string[] args) {
 
-        uint size = 0;
+        uint sizeInMB = 0;
         try {
-            size = UInt32.Parse(args[0]);
+            sizeInMB = UInt32.Parse(args[0]);
         } catch (Exception e) {
             if ( (e is IndexOutOfRangeException) || (e is FormatException) || (e is OverflowException) ) {
-                Console.WriteLine("args: uint - number of GB to allocate");
+                Console.WriteLine("args: uint - number of MB to allocate");
                 return 0;
             }
             throw;
         }
 
+        int availableMem = MemCheck.GetPhysicalMem();
+        if (availableMem != -1 && availableMem < sizeInMB){
+            sizeInMB = (uint)(availableMem > 300 ? 300 : (availableMem / 2));
+            Console.WriteLine("Not enough memory. Allocating " + sizeInMB + "MB instead.");
+        }
 
-        GetTotalMemoryTest test = new GetTotalMemoryTest(size);
+        GetTotalMemoryTest test = new GetTotalMemoryTest(sizeInMB);
         if (test.RunTests()) {
             Console.WriteLine("Test passed");
             return 100;
