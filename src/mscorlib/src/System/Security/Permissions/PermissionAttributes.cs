@@ -1113,9 +1113,7 @@ namespace System.Security.Permissions
         private PermissionSet BruteForceParseStream(Stream stream)
         {
             Encoding[] encodings = new Encoding[] { Encoding.UTF8, 
-#if FEATURE_ASCII
                                                     Encoding.ASCII, 
-#endif                                              
                                                     Encoding.Unicode };
 
             StreamReader reader = null;

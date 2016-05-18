@@ -132,7 +132,6 @@
         <DefineConstants Condition="'$(FeatureAptca)' == 'true'">$(DefineConstants);FEATURE_APTCA</DefineConstants>
         <DefineConstants Condition="'$(FeatureArrayStubAsIL)' == 'true'">$(DefineConstants);FEATURE_ARRAYSTUB_AS_IL</DefineConstants>
         <DefineConstants Condition="'$(FeatureStubsAsIL)' == 'true'">$(DefineConstants);FEATURE_STUBS_AS_IL</DefineConstants>
-        <DefineConstants Condition="'$(FeatureAscii)' == 'true'">$(DefineConstants);FEATURE_ASCII</DefineConstants>
         <DefineConstants Condition="'$(FeatureBclFormatting)' == 'true'">$(DefineConstants);FEATURE_BCL_FORMATTING</DefineConstants>
         <DefineConstants Condition="'$(FeatureCasPolicy)' == 'true'">$(DefineConstants);FEATURE_CAS_POLICY</DefineConstants>
         <DefineConstants Condition="'$(FeatureClassicCominterop)' == 'true'">$(DefineConstants);FEATURE_CLASSIC_COMINTEROP</DefineConstants>
@@ -153,7 +152,6 @@
         <DefineConstants Condition="'$(FeatureCrypto)' == 'true'">$(DefineConstants);FEATURE_CRYPTO</DefineConstants>
         <DefineConstants Condition="'$(FeatureDisplayCultureInfo)' == 'true'">$(DefineConstants);FEATURE_DISPLAY_CULTURE_INFO</DefineConstants>
         <DefineConstants Condition="'$(FeatureDisplayRegionInfo)' == 'true'">$(DefineConstants);FEATURE_DISPLAY_REGION_INFO</DefineConstants>
-        <DefineConstants Condition="'$(FeatureEncodingNls)' == 'true'">$(DefineConstants);FEATURE_ENCODINGNLS</DefineConstants>
         <DefineConstants Condition="'$(FeatureExceptionDispatchInfo)' == 'true'">$(DefineConstants);FEATURE_EXCEPTIONDISPATCHINFO</DefineConstants>
         <DefineConstants Condition="'$(FeatureExceptionNotifications)' == 'true'">$(DefineConstants);FEATURE_EXCEPTION_NOTIFICATIONS</DefineConstants>
         <DefineConstants Condition="'$(FeatureFusion)' == 'true'">$(DefineConstants);FEATURE_FUSION</DefineConstants>
@@ -166,7 +164,6 @@
         <DefineConstants Condition="'$(FeatureIsolatedStorageQuotaEnforcement)' == 'true'">$(DefineConstants);FEATURE_ISOLATED_STORAGE_QUOTA_ENFORCEMENT</DefineConstants>
         <DefineConstants Condition="'$(FeatureIsostore)' == 'true'">$(DefineConstants);FEATURE_ISOSTORE</DefineConstants>
         <DefineConstants Condition="'$(FeatureIsostoreLight)' == 'true'">$(DefineConstants);FEATURE_ISOSTORE_LIGHT</DefineConstants>
-        <DefineConstants Condition="'$(FeatureLatin1)' == 'true'">$(DefineConstants);FEATURE_LATIN1</DefineConstants>
         <DefineConstants Condition="'$(FeatureLeakCultureInfo)' == 'true'">$(DefineConstants);FEATURE_LEAK_CULTURE_INFO</DefineConstants>
         <DefineConstants Condition="'$(FeatureLegacySurface)' == 'true'">$(DefineConstants);FEATURE_LEGACYSURFACE</DefineConstants>
         <DefineConstants Condition="'$(FeatureLoaderOptimization)' == 'true'">$(DefineConstants);FEATURE_LOADER_OPTIMIZATION</DefineConstants>
@@ -194,8 +191,6 @@
         <DefineConstants Condition="'$(FeatureSyntheticCultures)' == 'true'">$(DefineConstants);FEATURE_SYNTHETIC_CULTURES</DefineConstants>
         <DefineConstants Condition="'$(FeatureTypeEquivalence)' == 'true'">$(DefineConstants);FEATURE_TYPEEQUIVALENCE</DefineConstants>
         <DefineConstants Condition="'$(FeatureUseLcid)' == 'true'">$(DefineConstants);FEATURE_USE_LCID</DefineConstants>
-        <DefineConstants Condition="'$(FeatureUtf32)' == 'true'">$(DefineConstants);FEATURE_UTF32</DefineConstants>
-        <DefineConstants Condition="'$(FeatureUtf7)' == 'true'">$(DefineConstants);FEATURE_UTF7</DefineConstants>
         <DefineConstants Condition="'$(FeatureValidator)' == 'true'">$(DefineConstants);FEATURE_VALIDATOR</DefineConstants>
         <DefineConstants Condition="'$(FeatureVersioning)' == 'true'">$(DefineConstants);FEATURE_VERSIONING</DefineConstants>
         <DefineConstants Condition="'$(FeatureWin32Registry)' == 'true'">$(DefineConstants);FEATURE_WIN32_REGISTRY</DefineConstants>
