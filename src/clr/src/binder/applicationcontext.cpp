@@ -265,8 +265,17 @@ namespace BINDER_SPACE
             
             if (!fileName.FindBack(iSimpleNameStart, DIRECTORY_SEPARATOR_CHAR_W))
             {
+#ifdef CROSSGEN_COMPILE
+                iSimpleNameStart = fileName.Begin();
+#else
                 // Couldn't find a directory separator.  File must have been specified as a relative path.  Not allowed.
                 GO_WITH_HRESULT(E_INVALIDARG);
+#endif
+            }
+            else
+            {
+                // Advance past the directory separator to the first character of the file name
+                iSimpleNameStart++;
             }
 
             if (iSimpleNameStart == fileName.End())
@@ -274,9 +283,6 @@ namespace BINDER_SPACE
                 GO_WITH_HRESULT(E_INVALIDARG);
             }
 
-            // Advance past the directory separator to the first character of the file name
-            iSimpleNameStart++;
-            
             SString simpleName;
             bool isNativeImage = false;
 
