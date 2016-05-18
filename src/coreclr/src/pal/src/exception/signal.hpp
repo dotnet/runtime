@@ -29,12 +29,12 @@ Function :
     Set-up signal handlers to catch signals and translate them to exceptions
 
 Parameters :
-    None
+    flags: PAL initialization flags
 
 Return :
     TRUE in case of a success, FALSE otherwise
 --*/
-BOOL SEHInitializeSignals();
+BOOL SEHInitializeSignals(DWORD flags);
 
 /*++
 Function :
