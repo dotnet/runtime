@@ -2281,6 +2281,17 @@ static PCODE getHelperForStaticBase(Module * pModule, CORCOMPILE_FIXUP_BLOB_KIND
     return pHelper;
 }
 
+TADDR GetFirstArgumentRegisterValuePtr(TransitionBlock * pTransitionBlock)
+{
+    TADDR pArgument = (TADDR)pTransitionBlock + TransitionBlock::GetOffsetOfArgumentRegisters();
+#ifdef _TARGET_X86_
+    // x86 is special as always
+    pArgument += offsetof(ArgumentRegisters, ECX);
+#endif
+
+    return pArgument;
+}
+
 PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWORD sectionIndex, Module * pModule, CORCOMPILE_FIXUP_BLOB_KIND * pKind, TypeHandle * pTH, MethodDesc ** ppMD, FieldDesc ** ppFD)
 {
     STANDARD_VM_CONTRACT;
@@ -2370,8 +2381,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
     case ENCODE_DICTIONARY_LOOKUP_TYPE:
     case ENCODE_DICTIONARY_LOOKUP_METHOD:
         {
-            // Generic context is the first argument on the pTransitionBlock (either a methodtable or a methoddesc pointer)
-            TADDR genericContextPtr = *(TADDR*)(((TADDR)pTransitionBlock + TransitionBlock::GetOffsetOfArgumentRegisters()));
+            TADDR genericContextPtr = *(TADDR*)GetFirstArgumentRegisterValuePtr(pTransitionBlock);
 
             DWORD numGenericArgs = 0;
             MethodTable* pContextMT = NULL;
@@ -2609,11 +2619,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
                 {
                     GCX_COOP();
 
-                    TADDR pArgument = (TADDR)pTransitionBlock + TransitionBlock::GetOffsetOfArgumentRegisters();
-#ifdef _TARGET_X86_
-                    // x86 is special as always
-                    pArgument += offsetof(ArgumentRegisters, ECX);
-#endif
+                    TADDR pArgument = GetFirstArgumentRegisterValuePtr(pTransitionBlock);
 
                     if (pArgument != NULL)
                     {
@@ -2742,11 +2748,7 @@ extern "C" SIZE_T STDCALL DynamicHelperWorker(TransitionBlock * pTransitionBlock
 
     if (pHelper == NULL)
     {
-        TADDR pArgument = (TADDR)pTransitionBlock + TransitionBlock::GetOffsetOfArgumentRegisters();
-#ifdef _TARGET_X86_
-        // x86 is special as always
-        pArgument += offsetof(ArgumentRegisters, ECX);
-#endif
+        TADDR pArgument = GetFirstArgumentRegisterValuePtr(pTransitionBlock);
 
         switch (kind)
         {
