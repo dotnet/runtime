@@ -784,7 +784,7 @@
     <IoSources Include="$(BclSourcesRoot)\System\IO\MemoryStream.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\Path.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\PathHelper.cs" />
-    <IoSources Include="$(BclSourcesRoot)\System\IO\LongPathHelper.cs" />
+    <IoSources Condition="'$(TargetsUnix)' != 'true'" Include="$(BclSourcesRoot)\System\IO\LongPathHelper.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\PathInternal.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\PathTooLongException.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\PinnedBufferMemoryStream.cs" />
