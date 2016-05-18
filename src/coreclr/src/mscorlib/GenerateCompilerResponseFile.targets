@@ -5,18 +5,18 @@
   </PropertyGroup>
 
   <Target Name="GenerateCompilerResponseFile">
-    <Message Text="Generating module name response file: $(IntermediateOutputPath)\moduleName.rsp" />
+    <Message Text="Generating module name response file: $(IntermediateOutputPath)\moduleName.$(AssemblyName).rsp" />
 
     <!-- We need to set the runtimemetadataversion -->
-    <WriteLinesToFile File="$(IntermediateOutputPath)\moduleName.rsp"
+    <WriteLinesToFile File="$(IntermediateOutputPath)\moduleName.$(AssemblyName).rsp"
                       Lines="/runtimemetadataversion:v4.0.30319"
                       Overwrite="true" />
 
     <ItemGroup>
-      <Clean Include="$(IntermediateOutputPath)\moduleName.rsp" />
+      <Clean Include="$(IntermediateOutputPath)\moduleName.$(AssemblyName).rsp" />
     </ItemGroup>
     <PropertyGroup>
-      <CompilerResponseFile>$(IntermediateOutputPath)\moduleName.rsp</CompilerResponseFile>
+      <CompilerResponseFile>$(IntermediateOutputPath)\moduleName.$(AssemblyName).rsp;$(CompilerResponseFile)</CompilerResponseFile>
     </PropertyGroup>
   </Target>
 </Project>

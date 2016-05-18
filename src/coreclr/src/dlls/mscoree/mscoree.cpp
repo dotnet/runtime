@@ -69,12 +69,6 @@ HINSTANCE g_hThisInst;  // This library.
 // Handle lifetime of loaded library.
 //*****************************************************************************
 
-#ifdef FEATURE_MERGE_JIT_AND_ENGINE
-void            jitOnDllProcessAttach();
-void            jitOnDllProcessDetach();
-#endif // FEATURE_MERGE_JIT_AND_ENGINE
-
-
 #ifdef FEATURE_CORECLR
 
 #include <shlwapi.h>
@@ -181,21 +175,12 @@ BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
             {
                 return FALSE;
             }
-
-#ifdef FEATURE_MERGE_JIT_AND_ENGINE
-            jitOnDllProcessAttach();
-#endif // FEATURE_MERGE_JIT_AND_ENGINE
         }
         break;
 
     case DLL_PROCESS_DETACH:
         {
             EEDllMain((HINSTANCE)hInstance, dwReason, lpReserved);
-
-#ifdef FEATURE_MERGE_JIT_AND_ENGINE
-            jitOnDllProcessDetach();
-#endif // FEATURE_MERGE_JIT_AND_ENGINE
-
         }
         break;
 

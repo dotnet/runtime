@@ -449,8 +449,8 @@ __CleanBuild=0
 __VerboseBuild=0
 __SignTypeReal=""
 __CrossBuild=0
-__ClangMajorVersion=3
-__ClangMinorVersion=5
+__ClangMajorVersion=0
+__ClangMinorVersion=0
 __MSBuildPath=$__ProjectRoot/Tools/MSBuild.exe
 __NuGetPath="$__PackagesDir/NuGet.exe"
 __DistroName=""
@@ -627,6 +627,17 @@ while :; do
 
     shift
 done
+
+# Set default clang version
+if [[ $__ClangMajorVersion == 0 && $__ClangMinorVersion == 0 ]]; then
+    if [ $__CrossBuild == 1 ]; then
+        __ClangMajorVersion=3
+        __ClangMinorVersion=6
+    else
+        __ClangMajorVersion=3
+        __ClangMinorVersion=5
+    fi
+fi
 
 # Set dependent variables
 __LogsDir="$__RootBinDir/Logs"
