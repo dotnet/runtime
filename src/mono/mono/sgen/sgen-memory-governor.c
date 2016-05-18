@@ -25,6 +25,11 @@
 
 #define MIN_MINOR_COLLECTION_ALLOWANCE	((mword)(DEFAULT_NURSERY_SIZE * default_allowance_nursery_size_ratio))
 
+mword total_promoted_size = 0;
+mword total_allocated_major = 0;
+static mword total_promoted_size_start;
+static mword total_allocated_major_end;
+
 /*Heap limits and allocation knobs*/
 static mword max_heap_size = ((mword)0)- ((mword)1);
 static mword soft_heap_limit = ((mword)0) - ((mword)1);
@@ -48,13 +53,11 @@ static mword major_collection_trigger_size;
 static mword major_pre_sweep_heap_size;
 static mword major_start_heap_size;
 
-static mword last_major_num_sections = 0;
-static mword last_los_memory_usage = 0;
-
 static gboolean need_calculate_minor_collection_allowance;
 
 /* The size of the LOS after the last major collection, after sweeping. */
 static mword last_collection_los_memory_usage = 0;
+static mword last_used_slots_size = 0;
 
 static mword sgen_memgov_available_free_space (void);
 
@@ -160,6 +163,7 @@ sgen_need_major_collection (mword space_needed)
 void
 sgen_memgov_minor_collection_start (void)
 {
+	total_promoted_size_start = total_promoted_size;
 }
 
 void
@@ -179,14 +183,14 @@ sgen_memgov_major_pre_sweep (void)
 }
 
 void
-sgen_memgov_major_post_sweep (void)
+sgen_memgov_major_post_sweep (mword used_slots_size)
 {
 	mword num_major_sections = major_collector.get_num_major_sections ();
 
-	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_MAJOR_SWEEP: major %dK/%dK",
+	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_MAJOR_SWEEP: major size: %dK in use: %dK",
 		num_major_sections * major_collector.section_size / 1024,
-		last_major_num_sections * major_collector.section_size / 1024);
-	last_major_num_sections = num_major_sections;
+		(used_slots_size + total_allocated_major - total_allocated_major_end) / 1024);
+	last_used_slots_size = used_slots_size;
 }
 
 void
@@ -205,6 +209,7 @@ sgen_memgov_major_collection_end (gboolean forced)
 {
 	last_collection_los_memory_usage = los_memory_usage;
 
+	total_allocated_major_end = total_allocated_major;
 	if (forced) {
 		sgen_get_major_collector ()->finish_sweeping ();
 		sgen_memgov_calculate_minor_collection_allowance ();
@@ -222,9 +227,8 @@ sgen_memgov_collection_end (int generation, GGTimingInfo* info, int info_count)
 	int i;
 	for (i = 0; i < info_count; ++i) {
 		if (info[i].generation != -1)
-			sgen_client_log_timing (&info [i], last_major_num_sections, last_los_memory_usage);
+			sgen_client_log_timing (&info [i], total_promoted_size - total_promoted_size_start, last_used_slots_size + total_allocated_major - total_allocated_major_end);
 	}
-	last_los_memory_usage = los_memory_usage;
 }
 
 /*

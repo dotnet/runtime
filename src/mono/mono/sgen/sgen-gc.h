@@ -840,6 +840,7 @@ struct _LOSObject {
 
 extern LOSObject *los_object_list;
 extern mword los_memory_usage;
+extern mword los_memory_usage_total;
 
 void sgen_los_free_object (LOSObject *obj);
 void* sgen_los_alloc_large_inner (GCVTable vtable, size_t size);
@@ -951,6 +952,8 @@ extern int default_nursery_size;
 extern guint32 tlab_size;
 extern NurseryClearPolicy nursery_clear_policy;
 extern gboolean sgen_try_free_some_memory;
+extern mword total_promoted_size;
+extern mword total_allocated_major;
 
 extern MonoCoopMutex gc_mutex;
 

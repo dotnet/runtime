@@ -100,17 +100,17 @@ probe_embedded (const char *program, int *ref_argc, char **ref_argv [])
 			if (entry_point == NULL)
 				entry_point = aname;
 		} else if (strncmp (kind, "config:", strlen ("config:")) == 0){
-			printf ("c-Found: %s %llx\n", kind, offset);
+			printf ("c-Found: %s %llx\n", kind, (long long)offset);
 			char *config = kind + strlen ("config:");
 			char *aname = g_strdup (config);
 			aname [strlen(aname)-strlen(".config")] = 0;
 			mono_register_config_for_assembly (aname, config);
 		} else if (strncmp (kind, "system_config:", strlen ("system_config:")) == 0){
-			printf ("TODO s-Found: %s %llx\n", kind, offset);
+			printf ("TODO s-Found: %s %llx\n", kind, (long long)offset);
 		} else if (strncmp (kind, "options:", strlen ("options:")) == 0){
 			mono_parse_options_from (kind + strlen("options:"), ref_argc, ref_argv);
 		} else if (strncmp (kind, "config_dir:", strlen ("config_dir:")) == 0){
-			printf ("TODO Found: %s %llx\n", kind, offset);
+			printf ("TODO Found: %s %llx\n", kind, (long long)offset);
 		} else {
 			fprintf (stderr, "Unknown stream on embedded package: %s\n", kind);
 			exit (1);
