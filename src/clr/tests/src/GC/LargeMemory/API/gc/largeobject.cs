@@ -8,26 +8,26 @@ using System;
 public sealed class LargeObject {
 
     private byte[][] data;
-    private uint sizeInGB;
+    private uint sizeInMB;
     private LargeObject next;
     public static int FinalizedCount = 0;
 
-    public const long GB = 1024*1024*1024;
+    public const long MB = 1024*1024;
 
-    public LargeObject(uint sizeInGB):this(sizeInGB, false)
+    public LargeObject(uint sizeInMB):this(sizeInMB, false)
     {
     }
 
-    public LargeObject(uint sizeInGB, bool finalize) {
-        this.sizeInGB = sizeInGB;
+    public LargeObject(uint sizeInMB, bool finalize) {
+        this.sizeInMB = sizeInMB;
 
         if (!finalize) {
             GC.SuppressFinalize(this);
         }
 
-        data = new byte[sizeInGB][];
-        for (int i=0; i<sizeInGB; i++) {
-            data[i] = new byte[GB];
+        data = new byte[sizeInMB][];
+        for (int i=0; i<sizeInMB; i++) {
+            data[i] = new byte[MB];
         }
     }
 
@@ -38,7 +38,7 @@ public sealed class LargeObject {
 
     public long Size {
         get {
-            return sizeInGB*GB;
+            return sizeInMB*MB;
         }
     }
 

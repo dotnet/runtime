@@ -31,9 +31,9 @@ FILE* jitstdout = nullptr;
 
 ICorJitHost* g_jitHost = nullptr;
 static CILJit* ILJitter = 0;        // The one and only JITTER I return
+bool g_jitInitialized = false;
 #ifndef FEATURE_MERGE_JIT_AND_ENGINE
 HINSTANCE g_hInst = NULL;
-BOOL g_fClrCallbacksInit = FALSE;
 #endif // FEATURE_MERGE_JIT_AND_ENGINE
 
 /*****************************************************************************/
@@ -57,15 +57,15 @@ JitOptions jitOpts =
 extern "C"
 void __stdcall jitStartup(ICorJitHost* jitHost)
 {
+    if (g_jitInitialized)
+    {
+        return;
+    }
+
     g_jitHost = jitHost;
 
-    // `jitStartup` may be called multiple times
-    // when pre-jitting. We should not reinitialize
-    // config values each time.
-    if (!JitConfig.isInitialized())
-    {
-        JitConfig.initialize(jitHost);
-    }
+    assert(!JitConfig.isInitialized());
+    JitConfig.initialize(jitHost);
 
 #if defined(PLATFORM_UNIX)
     jitstdout = procstdout();
@@ -83,10 +83,17 @@ void __stdcall jitStartup(ICorJitHost* jitHost)
     JitTelemetry::NotifyDllProcessAttach();
 #endif
     Compiler::compStartup();
+
+    g_jitInitialized = true;
 }
 
 void jitShutdown()
 {
+    if (!g_jitInitialized)
+    {
+        return;
+    }
+
     Compiler::compShutdown();
 
     if (jitstdout != procstdout())
@@ -99,27 +106,6 @@ void jitShutdown()
 #endif
 }
 
-
-/*****************************************************************************
- *  jitOnDllProcessAttach() called by DllMain() when jit.dll is loaded
- */
-
-void jitOnDllProcessAttach()
-{
-#if COR_JIT_EE_VERSION <= 460
-    jitStartup(JitHost::getJitHost());
-#endif
-}
-
-/*****************************************************************************
- *  jitOnDllProcessDetach() called by DllMain() when jit.dll is unloaded
- */
-
-void jitOnDllProcessDetach()
-{
-    jitShutdown();
-}
-
 #ifndef FEATURE_MERGE_JIT_AND_ENGINE
 
 extern "C"
@@ -129,15 +115,13 @@ BOOL WINAPI     DllMain(HANDLE hInstance, DWORD dwReason, LPVOID pvReserved)
     {
         g_hInst = (HINSTANCE)hInstance;
         DisableThreadLibraryCalls((HINSTANCE)hInstance);
-#ifdef SELF_NO_HOST
-        jitOnDllProcessAttach();
-        g_fClrCallbacksInit = TRUE;
+#if defined(SELF_NO_HOST) && COR_JIT_EE_VERSION <= 460
+        jitStartup(JitHost::getJitHost());
 #endif
     }
     else if (dwReason == DLL_PROCESS_DETACH)
     {
-        if (g_fClrCallbacksInit)
-            jitOnDllProcessDetach();
+        jitShutdown();
     }
 
     return TRUE;
@@ -153,9 +137,10 @@ void __stdcall sxsJitStartup(CoreClrCallbacks const & cccallbacks)
 {
 #ifndef SELF_NO_HOST
     InitUtilcode(cccallbacks);
+#endif
 
-    jitOnDllProcessAttach();
-    g_fClrCallbacksInit = TRUE;
+#if COR_JIT_EE_VERSION <= 460
+    jitStartup(JitHost::getJitHost());
 #endif
 }
 

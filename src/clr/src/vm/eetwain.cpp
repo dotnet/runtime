@@ -3002,12 +3002,12 @@ unsigned SKIP_ALLOC_FRAME(int size, PTR_CBYTE base, unsigned offset)
         return (SKIP_PUSH_REG(base, offset));
     }
 
-    if (size >= CORINFO_PAGE_SIZE)
+    if (size >= OS_PAGE_SIZE)
     {
-        if (size < (3 * CORINFO_PAGE_SIZE))
+        if (size < (3 * OS_PAGE_SIZE))
         {
-            // add 7 bytes for one or two TEST EAX, [ESP+CORINFO_PAGE_SIZE]
-            offset += (size / CORINFO_PAGE_SIZE) * 7;
+            // add 7 bytes for one or two TEST EAX, [ESP+OS_PAGE_SIZE]
+            offset += (size / OS_PAGE_SIZE) * 7;
         }
         else
         {
