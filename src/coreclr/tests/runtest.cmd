@@ -59,6 +59,7 @@ if /i "%1" == "crossgen"            (set __DoCrossgen=1&shift&goto Arg_Loop)
 if /i "%1" == "longgctests"         (set __LongGCTests=1&shift&goto Arg_Loop)
 if /i "%1" == "GenerateLayoutOnly"  (set __GenerateLayoutOnly=1&set __SkipWrapperGeneration=true&shift&goto Arg_Loop)
 if /i "%1" == "PerfTests"           (set __PerfTests=true&set __SkipWrapperGeneration=true&shift&goto Arg_Loop)
+if /i "%1" == "runcrossgentests"    (set __RunCrossgenTests=1&shift&goto Arg_Loop)
 
 if /i not "%1" == "msbuildargs" goto SkipMsbuildArgs
 :: All the rest of the args will be collected and passed directly to msbuild.
@@ -133,6 +134,12 @@ if not defined __Sequential (
     set __msbuildCommonArgs=%__msbuildCommonArgs% /p:ParallelRun=false
 )
 
+REM Prepare the Test Drop
+REM Cleans any NI from the last run
+powershell "Get-ChildItem -path %__TestWorkingDir% -Include '*.ni.*' -Recurse -Force | Remove-Item -force"
+REM Cleans up any lock folder used for synchronization from last run
+powershell "Get-ChildItem -path E:\git\coreclr\bin\tests\Windows_NT.x64.Debug\baseservices\threading  -Include 'lock' -Recurse -Force |  where {$_.Attributes -eq 'Directory'}| Remove-Item -force -Recurse"
+
 if defined CORE_ROOT goto SkipCoreRootSetup
 
 set "CORE_ROOT=%XunitTestBinBase%\Tests\Core_Root"
@@ -152,6 +159,8 @@ REM These log files are created automatically by the test run process. Q: what d
 set __TestRunHtmlLog=%__LogsDir%\TestRun_%__BuildOS%__%__BuildArch%__%__BuildType%.html
 set __TestRunXmlLog=%__LogsDir%\TestRun_%__BuildOS%__%__BuildArch%__%__BuildType%.xml
 
+REM set ENV variables here:
+if defined __RunCrossgenTests ( set RunCrossGen=true)
 if "%__PerfTests%"=="true" goto RunPerfTests
 if "%__SkipWrapperGeneration%"=="true" goto SkipWrapperGeneration
 
@@ -336,6 +345,7 @@ echo Exclude-  Optional parameter - this will exclude individual tests from runn
 echo TestEnv- Optional parameter - this will run a custom script to set custom test environment settings.
 echo VSVersion- Optional parameter - VS2013 or VS2015 ^(default: VS2015^)
 echo GenerateLayoutOnly - If specified will not run the tests and will only create the Runtime Dependency Layout
+echo RunCrossgenTests   - Runs ReadytoRun tests
 echo CORE_ROOT The path to the runtime  
 exit /b 1
 
