@@ -657,7 +657,7 @@ int __cdecl wmain(const int argc, const wchar_t* argv[])
         } else if ( stringsEqual(arg, W("/d")) || stringsEqual(arg, W("-d")) ) {
                 waitForDebugger = true;
                 return true;
-        } else if ( stringsEqual(arg, W("/?")) || stringsEqual(arg, W("-?")) ) {
+        } else if ( stringsEqual(arg, W("/?")) || stringsEqual(arg, W("-?")) || stringsEqual(arg, W("-h")) || stringsEqual(arg, W("--help")) ) {
             helpRequested = true;
             return true;
         } else {
