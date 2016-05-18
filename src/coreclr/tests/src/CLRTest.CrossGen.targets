@@ -38,9 +38,8 @@ WARNING:   When setting properties based on their current state (for example:
         <![CDATA[
 # CrossGen Script
 if [ ! -z ${RunCrossGen+x} ]%3B then
-    export complus_zaprequire=2
-    export complus_zaprequireexcludelist=corerun
-    export complus_zaprequirelist=$(MSBuildProjectName)
+    export COMPlus_ZapRequire=$(ZapRequire)
+    export COMPlus_ZapRequireList=$(MSBuildProjectName)
     if [ ! -f $(MSBuildProjectName).ni.exe ]%3B then
         TakeLock
         if [ ! -f $(MSBuildProjectName).ni.exe ]%3B then
@@ -72,9 +71,8 @@ fi
 
 REM CrossGen Script
 if defined RunCrossGen ( 
-    set complus_zaprequire=2
-    set complus_zaprequireexcludelist=corerun
-    set complus_zaprequirelist=$(MSBuildProjectName)
+    set COMPlus_ZapRequire=$(ZapRequire)
+    set COMPlus_ZapRequireList=$(MSBuildProjectName)
     if not exist "$(MSBuildProjectName).ni.exe" (
         call :TakeLock
         if not exist "$(MSBuildProjectName).ni.exe" (
