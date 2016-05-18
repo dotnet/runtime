@@ -611,7 +611,7 @@ mono_message_init	    (MonoDomain *domain, MonoMethodMessage *this_obj,
 
 MonoObject *
 mono_message_invoke	    (MonoObject *target, MonoMethodMessage *msg, 
-			     MonoObject **exc, MonoArray **out_args);
+			     MonoObject **exc, MonoArray **out_args, MonoError *error);
 
 MonoMethodMessage *
 mono_method_call_message_new (MonoMethod *method, gpointer *params, MonoMethod *invoke, 
@@ -1709,8 +1709,24 @@ mono_runtime_try_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 MonoObject*
 mono_runtime_invoke_checked (MonoMethod *method, void *obj, void **params, MonoError *error);
 
+MonoObject*
+mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
+			       MonoObject **exc, MonoError *error);
+
+MonoObject*
+mono_runtime_invoke_array_checked (MonoMethod *method, void *obj, MonoArray *params,
+				   MonoError *error);
+
 void* 
 mono_compile_method_checked (MonoMethod *method, MonoError *error);
+
+MonoObject*
+mono_runtime_delegate_try_invoke (MonoObject *delegate, void **params,
+				  MonoObject **exc, MonoError *error);
+
+MonoObject*
+mono_runtime_delegate_invoke_checked (MonoObject *delegate, void **params,
+				      MonoError *error);
 
 MonoArray*
 mono_runtime_get_main_args_checked (MonoError *error);
