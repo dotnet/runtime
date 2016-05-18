@@ -12,7 +12,7 @@ namespace System.IO
     {
         internal const int DefaultBufferSize = 4096;
         private const FileShare DefaultShare = FileShare.Read;
-        private const bool DefaultUseAsync = true;
+        private const bool DefaultUseAsync = false;
         private const bool DefaultIsAsync = false;
 
         private FileStreamBase _innerStream;
