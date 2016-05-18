@@ -6,8 +6,6 @@
 // Don't override IsAlwaysNormalized because it is just a Unicode Transformation and could be confused.
 //
 
-#if FEATURE_UTF32
-
 namespace System.Text
 {
 
@@ -1258,5 +1256,3 @@ namespace System.Text
         }
     }
 }
-
-#endif // FEATURE_UTF32

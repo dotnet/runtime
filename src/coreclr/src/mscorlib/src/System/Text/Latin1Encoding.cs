@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#if FEATURE_ENCODINGNLS
 namespace System.Text
 {
     using System;
@@ -914,4 +913,3 @@ namespace System.Text
         };
     }
 }
-#endif // FEATURE_ENCODINGNLS

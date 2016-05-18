@@ -89,19 +89,12 @@ namespace System.Text
         private static volatile Encoding defaultEncoding;
         private static volatile Encoding unicodeEncoding;
         private static volatile Encoding bigEndianUnicode;
-#if FEATURE_UTF7        
         private static volatile Encoding utf7Encoding;
-#endif
         private static volatile Encoding utf8Encoding;
-#if FEATURE_UTF32        
         private static volatile Encoding utf32Encoding;
-#endif
-#if FEATURE_ASCII
         private static volatile Encoding asciiEncoding;
-#endif
-#if FEATURE_LATIN1
         private static volatile Encoding latin1Encoding;
-#endif
+        
         static volatile Hashtable encodings;
 
         //
@@ -217,7 +210,7 @@ namespace System.Text
         }
 
         // This constructor is needed to allow any sub-classing implementation to provide encoder/decoder fallback objects 
-        // because the encoding object is always created as read-only object and don’t allow setting encoder/decoder fallback 
+        // because the encoding object is always created as read-only object and don't allow setting encoder/decoder fallback 
         // after the creation is done. 
         protected Encoding(int codePage, EncoderFallback encoderFallback, DecoderFallback decoderFallback)
         {
@@ -473,24 +466,17 @@ namespace System.Text
                             result = new SBCSCodePageEncoding(codepage);
                             break;
 #else
-
-#if FEATURE_UTF7
                             // on desktop, UTF7 is handled by GetEncodingRare.
                             // On Coreclr, we handle this directly without bringing GetEncodingRare, so that we get real UTF-7 encoding.
                         case CodePageUTF7:                      // 65000, UTF7
                             result = UTF7;
                             break;
-#endif 
-
-#if FEATURE_UTF32        
                         case CodePageUTF32:             // 12000
                             result = UTF32;
                             break;
                         case CodePageUTF32BE:           // 12001
                             result = new UTF32Encoding(true, true);
                             break;
-#endif
-
 #endif
                         case CodePageUTF8:                      // 65001, UTF8
                             result = UTF8;
@@ -511,17 +497,13 @@ namespace System.Text
                             // #define CP_SYMBOL                 42          // SYMBOL translations
                             throw new ArgumentException(Environment.GetResourceString(
                                 "Argument_CodepageNotSupported", codepage), "codepage");
-#if FEATURE_ASCII
                         // Have to do ASCII and Latin 1 first so they don't get loaded as code pages
                         case CodePageASCII:             // 20127
                             result = ASCII;
                             break;
-#endif
-#if FEATURE_LATIN1
                         case ISO_8859_1:                // 28591
                             result = Latin1;
                             break;
-#endif                      
                         default:
                         {
 #if FEATURE_CODEPAGES_FILE
@@ -908,7 +890,6 @@ namespace System.Text
             }
         }
 
-#if FEATURE_ASCII
 
         // Returns an encoding for the ASCII character set. The returned encoding
         // will be an instance of the ASCIIEncoding class.
@@ -922,9 +903,7 @@ namespace System.Text
                 return asciiEncoding;
             }
         }
-#endif 
 
-#if FEATURE_LATIN1
         // Returns an encoding for the Latin1 character set. The returned encoding
         // will be an instance of the Latin1Encoding class.
         //
@@ -937,7 +916,6 @@ namespace System.Text
                 return latin1Encoding;
             }
         }
-#endif  
 
         // Returns the number of bytes required to encode the given character
         // array.
@@ -1524,7 +1502,6 @@ namespace System.Text
             }
         }
 
-#if FEATURE_UTF7
         // Returns an encoding for the UTF-7 format. The returned encoding will be
         // an instance of the UTF7Encoding class.
         //
@@ -1534,7 +1511,7 @@ namespace System.Text
                 return utf7Encoding;
             }
         }
-#endif 
+        
         // Returns an encoding for the UTF-8 format. The returned encoding will be
         // an instance of the UTF8Encoding class.
         //
@@ -1549,15 +1526,12 @@ namespace System.Text
         // Returns an encoding for the UTF-32 format. The returned encoding will be
         // an instance of the UTF32Encoding class.
         //
-#if FEATURE_UTF32
         public static Encoding UTF32 {
             get {
                 if (utf32Encoding == null) utf32Encoding = new UTF32Encoding(false, true);
                 return utf32Encoding;
             }
         }
-#endif
-
 
         public override bool Equals(Object value) {
             Encoding that = value as Encoding;
