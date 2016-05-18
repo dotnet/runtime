@@ -345,6 +345,8 @@ uint32_t GCToOSInterface::GetCurrentProcessCpuCount()
 //  non zero if it has succeeded, 0 if it has failed
 size_t GCToOSInterface::GetVirtualMemoryLimit()
 {
+    LIMITED_METHOD_CONTRACT;
+
     MEMORYSTATUSEX memStatus;
     ::GetProcessMemoryLoad(&memStatus);
 
