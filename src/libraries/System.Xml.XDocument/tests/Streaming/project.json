@@ -25,7 +25,6 @@
   "runtimes": {
     "centos.7-x64": {},
     "debian.8-x64": {},
-    "debian.8.2-x64": {},
     "linux-x64": {},
     "osx.10.10-x64": {},
     "rhel.7-x64": {},
