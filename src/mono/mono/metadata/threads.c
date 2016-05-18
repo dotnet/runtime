@@ -3081,9 +3081,8 @@ remove_and_abort_threads (gpointer key, gpointer value, gpointer user)
 		if (handle == NULL)
 			return FALSE;
 
-		/* printf ("A: %d\n", wait->num); */
-		wait->handles[wait->num]=thread->handle;
-		wait->threads[wait->num]=thread;
+		wait->handles[wait->num] = handle;
+		wait->threads[wait->num] = thread;
 		wait->num++;
 
 		THREAD_DEBUG (g_print ("%s: Aborting id: %"G_GSIZE_FORMAT"\n", __func__, (gsize)thread->tid));
