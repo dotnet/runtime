@@ -215,9 +215,17 @@ namespace System.IO {
 
             int count = stackDir.Count;
 
-            if (stackDir.Count != 0)
+            if (stackDir.Count != 0
+#if FEATURE_CAS_POLICY
+                // All demands in full trust domains are no-ops, so skip
+                //
+                // The full path went through validity checks by being passed through FileIOPermissions already.
+                // As a sub string of the full path can't fail the checks if the full path passes.
+                && !CodeAccessSecurityEngine.QuickCheckForAllDemands()
+#endif
+            )
             {
-                String [] securityList = new String[stackDir.Count];
+                String[] securityList = new String[stackDir.Count];
                 stackDir.CopyTo(securityList, 0);
                 for (int j = 0 ; j < securityList.Length; j++)
                     securityList[j] += "\\."; // leaf will never have a slash at the end
@@ -225,7 +233,7 @@ namespace System.IO {
                 // Security check for all directories not present only.
 #if FEATURE_MACL
                 AccessControlActions control = (dirSecurity == null) ? AccessControlActions.None : AccessControlActions.Change;
-                new FileIOPermission(FileIOPermissionAccess.Write, control, securityList, false, false ).Demand();
+                FileIOPermission.QuickDemand(FileIOPermissionAccess.Write, control, securityList, false, false);
 #else
 #if FEATURE_CORECLR
                 if (checkHost)
@@ -237,7 +245,7 @@ namespace System.IO {
                     }
                 }
 #else
-                new FileIOPermission(FileIOPermissionAccess.Write, securityList, false, false ).Demand();
+                FileIOPermission.QuickDemand(FileIOPermissionAccess.Write, securityList, false, false);
 #endif
 #endif //FEATURE_MACL
             }
@@ -265,7 +273,7 @@ namespace System.IO {
             while (stackDir.Count > 0) {
                 String name = stackDir[stackDir.Count - 1];
                 stackDir.RemoveAt(stackDir.Count - 1);
-                if (name.Length >= Path.MAX_DIRECTORY_PATH)
+                if (PathInternal.IsDirectoryTooLong(name))
                     throw new PathTooLongException(Environment.GetResourceString("IO.PathTooLong"));
                 r = Win32Native.CreateDirectory(name, secAttrs);
                 if (!r && (firstError == 0)) {
@@ -293,7 +301,7 @@ namespace System.IO {
                                     state.EnsureState();
                                 }
 #else
-                                new FileIOPermission(FileIOPermissionAccess.PathDiscovery, GetDemandDir(name, true)).Demand();
+                                FileIOPermission.QuickDemand(FileIOPermissionAccess.PathDiscovery, GetDemandDir(name, true));
 #endif // FEATURE_CORECLR
                                 errorString = name;
                             }
@@ -950,8 +958,32 @@ namespace System.IO {
             return InternalGetCurrentDirectory(false);
         }
 
+        [System.Security.SecuritySafeCritical]
+        private static string InternalGetCurrentDirectory(bool checkHost)
+        {
+            string currentDirectory = (
+#if FEATURE_PATHCOMPAT
+                AppContextSwitches.UseLegacyPathHandling ? LegacyGetCurrentDirectory() : 
+#endif
+                NewGetCurrentDirectory());
+
+            string demandPath = GetDemandDir(currentDirectory, true);
+
+#if FEATURE_CORECLR
+            if (checkHost)
+            {
+                FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.PathDiscovery, String.Empty, demandPath);
+                state.EnsureState();
+            }
+#else
+            FileIOPermission.QuickDemand(FileIOPermissionAccess.PathDiscovery, demandPath, false, false);
+#endif
+            return currentDirectory;
+        }
+
+#if FEATURE_PATHCOMPAT
         [System.Security.SecurityCritical]
-        private static String InternalGetCurrentDirectory(bool checkHost)
+        private static String LegacyGetCurrentDirectory()
         {
             StringBuilder sb = StringBuilderCache.Acquire(Path.MaxPath + 1);
             if (Win32Native.GetCurrentDirectory(sb.Capacity, sb) == 0)
@@ -962,7 +994,7 @@ namespace System.IO {
             // this will return a short file name.
             if (currentDirectory.IndexOf('~') >= 0) {
                 int r = Win32Native.GetLongPathName(currentDirectory, sb, sb.Capacity);
-                if (r == 0 || r >= Path.MaxPath) {                    
+                if (r == 0 || r >= Path.MaxPath) {
                     int errorCode = Marshal.GetLastWin32Error();
                     if (r >= Path.MaxPath)
                         errorCode = Win32Native.ERROR_FILENAME_EXCED_RANGE;
@@ -977,19 +1009,36 @@ namespace System.IO {
             StringBuilderCache.Release(sb);
             String demandPath = GetDemandDir(currentDirectory, true);
 
-            
-#if FEATURE_CORECLR
-            if (checkHost) 
-            {
-                FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.PathDiscovery, String.Empty, demandPath);
-                state.EnsureState();
-            }
-#else
-            new FileIOPermission( FileIOPermissionAccess.PathDiscovery, new String[] { demandPath }, false, false ).Demand();
-#endif
             return currentDirectory;
         }
+#endif // FEATURE_PATHCOMPAT
 
+        [System.Security.SecurityCritical]
+        private static string NewGetCurrentDirectory()
+        {
+            using (StringBuffer buffer = new StringBuffer(PathInternal.MaxShortPath))
+            {
+                uint result = 0;
+                while ((result = Win32Native.GetCurrentDirectoryW(buffer.CharCapacity, buffer.GetHandle())) > buffer.CharCapacity)
+                {
+                    // Reported size is greater than the buffer size. Increase the capacity.
+                    // The size returned includes the null only if more space is needed (this case).
+                    buffer.EnsureCharCapacity(result);
+                }
+
+                if (result == 0)
+                    __Error.WinIOError();
+
+                buffer.Length = result;
+
+#if !PLATFORM_UNIX
+                if (buffer.Contains('~'))
+                    return LongPathHelper.GetLongPathName(buffer);
+#endif
+
+                return buffer.ToString();
+            }
+        }
 
         #if FEATURE_CORECLR
         [System.Security.SecurityCritical] // auto-generated
@@ -997,7 +1046,7 @@ namespace System.IO {
         [System.Security.SecuritySafeCritical]
         #endif
         public static void SetCurrentDirectory(String path)
-        {        
+        {
             if (path==null)
                 throw new ArgumentNullException("value");
             if (path.Length==0)
@@ -1050,16 +1099,16 @@ namespace System.IO {
 
             String fullsourceDirName = Path.GetFullPathInternal(sourceDirName);
             String sourcePath = GetDemandDir(fullsourceDirName, false);
-            
-            if (sourcePath.Length >= Path.MAX_DIRECTORY_PATH)
+
+            if (PathInternal.IsDirectoryTooLong(sourcePath))
                 throw new PathTooLongException(Environment.GetResourceString("IO.PathTooLong"));
 
             String fulldestDirName = Path.GetFullPathInternal(destDirName);
             String destPath = GetDemandDir(fulldestDirName, false);
 
-            if (destPath.Length >= Path.MAX_DIRECTORY_PATH)
+            if (PathInternal.IsDirectoryTooLong(destPath))
                 throw new PathTooLongException(Environment.GetResourceString("IO.PathTooLong"));
-            
+
 #if FEATURE_CORECLR
             if (checkHost) {
                 FileSecurityState sourceState = new FileSecurityState(FileSecurityStateAccess.Write | FileSecurityStateAccess.Read, sourceDirName, sourcePath);
@@ -1071,14 +1120,14 @@ namespace System.IO {
             FileIOPermission.QuickDemand(FileIOPermissionAccess.Write | FileIOPermissionAccess.Read, sourcePath, false, false);
             FileIOPermission.QuickDemand(FileIOPermissionAccess.Write, destPath, false, false);
 #endif
-           
+
             if (String.Compare(sourcePath, destPath, StringComparison.OrdinalIgnoreCase) == 0)
                 throw new IOException(Environment.GetResourceString("IO.IO_SourceDestMustBeDifferent"));
 
             String sourceRoot = Path.GetPathRoot(sourcePath);
             String destinationRoot = Path.GetPathRoot(destPath);
             if (String.Compare(sourceRoot, destinationRoot, StringComparison.OrdinalIgnoreCase) != 0)
-                throw new IOException(Environment.GetResourceString("IO.IO_SourceDestMustHaveSameRoot"));           
+                throw new IOException(Environment.GetResourceString("IO.IO_SourceDestMustHaveSameRoot"));
     
             if (!Win32Native.MoveFile(sourceDirName, destDirName))
             {

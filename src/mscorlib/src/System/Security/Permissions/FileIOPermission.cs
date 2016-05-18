@@ -220,9 +220,18 @@ namespace System.Security.Permissions {
                 Array.Copy(pathListOrig, pathList, pathListOrig.Length);
             }
 
-            CheckIllegalCharacters( pathList );
             ArrayList pathArrayList = StringExpressionSet.CreateListFromExpressions(pathList, needFullPath);
-            
+
+            // If we need the full path the standard illegal characters will be checked in StringExpressionSet.
+            CheckIllegalCharacters(pathList, onlyCheckExtras: needFullPath);
+
+            // StringExpressionSet will do minor normalization, trimming spaces and replacing alternate
+            // directory separators. It will make an attemt to expand short file names and will check
+            // for standard colon placement.
+            //
+            // If needFullPath is true it will call NormalizePath- which performs short name expansion
+            // and does the normal validity checks.
+
             if ((access & FileIOPermissionAccess.Read) != 0)
             {
                 if (m_read == null)
@@ -533,13 +542,53 @@ namespace System.Security.Permissions {
             }
         }
 
-        private static void CheckIllegalCharacters( String[] str )
+        private static void CheckIllegalCharacters(String[] str, bool onlyCheckExtras)
         {
+#if !PLATFORM_UNIX
             for (int i = 0; i < str.Length; ++i)
             {
-                Path.CheckInvalidPathChars(str[i], true);
+                // FileIOPermission doesn't allow for normalizing across various volume names. This means "C:\" and
+                // "\\?\C:\" won't be considered correctly. In addition there are many other aliases for the volume
+                // besides "C:" such as (in one concrete example) "\\?\Harddisk0Partition2\", "\\?\HarddiskVolume6\",
+                // "\\?\Volume{d1655348-0000-0000-0000-f01500000000}\", etc.
+                //
+                // We'll continue to explicitly block extended syntax here by disallowing wildcards no matter where
+                // they occur in the string (e.g. \\?\ isn't ok)
+                if (CheckExtraPathCharacters(str[i]))
+                    throw new ArgumentException(Environment.GetResourceString("Argument_InvalidPathChars"));
+
+                if (!onlyCheckExtras)
+                    Path.CheckInvalidPathChars(str[i]);
             }
+#else
+            // There are no "extras" on Unix
+            if (onlyCheckExtras)
+                return;
+
+            for (int i = 0; i < str.Length; ++i)
+            {
+            }
+#endif
         }
+
+#if !PLATFORM_UNIX
+        /// <summary>
+        /// Check for ?,* and null, ignoring extended syntax.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private unsafe static bool CheckExtraPathCharacters(string path)
+        {
+            char currentChar;
+            for (int i = 0; i < path.Length; i++)
+            {
+                currentChar = path[i];
+
+                // We also check for null here as StringExpressionSet will trim it out. (Ensuring we still throw as we always have.)
+                if (currentChar == '*' || currentChar == '?' || currentChar == '\0') return true;
+            }
+            return false;
+        }
+#endif
 
         private static bool AccessIsSet( FileIOPermissionAccess access, FileIOPermissionAccess question )
         {
@@ -942,12 +991,7 @@ namespace System.Security.Permissions {
         /// FileIOPermission object would have performed.
         /// 
         /// IMPORTANT: This method should only be used after calling GetFullPath on the path to verify
-        /// 
         /// </summary>
-        /// <param name="access"></param>
-        /// <param name="path"></param>
-        /// <param name="checkForDuplicates"></param>
-        /// <param name="needFullPath"></param>
         [System.Security.SecuritySafeCritical]
         internal static void QuickDemand(FileIOPermissionAccess access, string fullPath, bool checkForDuplicates, bool needFullPath)
         {
@@ -957,25 +1001,126 @@ namespace System.Security.Permissions {
                 new FileIOPermission(access, new string[] { fullPath }, checkForDuplicates, needFullPath).Demand();
             }
             else
-#endif 
+#endif
             {
-                //Emulate FileIOPermission checks
-                Path.CheckInvalidPathChars(fullPath, true);
+                EmulateFileIOPermissionChecks(fullPath);
+            }
+        }
 
-                if (fullPath.Length > 2 && fullPath.IndexOf(':', 2) != -1)
+        /// <summary>
+        /// Call this method if you don't need a the FileIOPermission for anything other than calling Demand() once.
+        /// 
+        /// This method tries to verify full access before allocating a FileIOPermission object.
+        /// If full access is there, then we still have to emulate the checks that creating the 
+        /// FileIOPermission object would have performed.
+        /// 
+        /// IMPORTANT: This method should only be used after calling GetFullPath on the path to verify
+        /// 
+        /// </summary>
+        [System.Security.SecuritySafeCritical]
+        internal static void QuickDemand(FileIOPermissionAccess access, string[] fullPathList, bool checkForDuplicates = false, bool needFullPath = true)
+        {
+#if FEATURE_CAS_POLICY
+            if (!CodeAccessSecurityEngine.QuickCheckForAllDemands())
+            {
+                new FileIOPermission(access, fullPathList, checkForDuplicates, needFullPath).Demand();
+            }
+            else
+#endif
+            {
+                foreach (string fullPath in fullPathList)
+                {
+                    EmulateFileIOPermissionChecks(fullPath);
+                }
+            }
+        }
+
+        [System.Security.SecuritySafeCritical]
+        internal static void QuickDemand(PermissionState state)
+        {
+            // Should be a no-op without CAS
+#if FEATURE_CAS_POLICY
+            if (!CodeAccessSecurityEngine.QuickCheckForAllDemands())
+            {
+                new FileIOPermission(state).Demand();
+            }
+#endif
+        }
+
+#if FEATURE_MACL
+        [System.Security.SecuritySafeCritical]
+        internal static void QuickDemand(FileIOPermissionAccess access, AccessControlActions control, string fullPath, bool checkForDuplicates = false, bool needFullPath = true)
+        {
+            if (!CodeAccessSecurityEngine.QuickCheckForAllDemands())
+            {
+                new FileIOPermission(access, control, new string[] { fullPath }, checkForDuplicates, needFullPath).Demand();
+            }
+            else
+            {
+                EmulateFileIOPermissionChecks(fullPath);
+            }
+        }
+
+        [System.Security.SecuritySafeCritical]
+        internal static void QuickDemand(FileIOPermissionAccess access, AccessControlActions control, string[] fullPathList, bool checkForDuplicates = true, bool needFullPath = true)
+        {
+            if (!CodeAccessSecurityEngine.QuickCheckForAllDemands())
+            {
+                new FileIOPermission(access, control, fullPathList, checkForDuplicates, needFullPath).Demand();
+            }
+            else
+            {
+                foreach (string fullPath in fullPathList)
+                {
+                    EmulateFileIOPermissionChecks(fullPath);
+                }
+            }
+        }
+#endif
+
+        /// <summary>
+        /// Perform the additional path checks that would normally happen when creating a FileIOPermission object.
+        /// </summary>
+        /// <param name="fullPath">A path that has already gone through GetFullPath or Normalize</param>
+        internal static void EmulateFileIOPermissionChecks(string fullPath)
+        {
+            // Callers should have already made checks for invalid path format via normalization. This method will only make the
+            // additional checks needed to throw the same exceptions that would normally throw when using FileIOPermission.
+            // These checks are done via CheckIllegalCharacters() and StringExpressionSet in AddPathList() above.
+            //
+            // We have to check the beginning as some paths may be passed in as path + @"\.", which will be normalized away.
+            BCLDebug.Assert(
+                fullPath.StartsWith(Path.NormalizePath(fullPath, fullCheck: false), StringComparison.OrdinalIgnoreCase),
+                string.Format("path isn't normalized: {0}", fullPath));
+
+            // Checking for colon / invalid characters on device paths blocks legitimate access to objects such as named pipes.
+            if (
+#if FEATURE_PATHCOMPAT
+                AppContextSwitches.UseLegacyPathHandling ||
+#endif
+                !PathInternal.IsDevice(fullPath))
+            {
+                // GetFullPath already checks normal invalid path characters. We need to just check additional (wildcard) characters here.
+                // (By calling the standard helper we can allow extended paths \\?\ through when the support is enabled.)
+                if (PathInternal.HasWildCardCharacters(fullPath))
+                {
+                    throw new ArgumentException(Environment.GetResourceString("Argument_InvalidPathChars"));
+                }
+
+                if (PathInternal.HasInvalidVolumeSeparator(fullPath))
                 {
                     throw new NotSupportedException(Environment.GetResourceString("Argument_PathFormatNotSupported"));
                 }
             }
         }
     }
-    
+
     [Serializable]
     internal sealed class FileIOAccess
     {
 #if !FEATURE_CASE_SENSITIVE_FILESYSTEM
         private bool m_ignoreCase = true;
-#else 
+#else
         private bool m_ignoreCase = false;
 #endif // !FEATURE_CASE_SENSITIVE_FILESYSTEM
         
@@ -1235,16 +1380,16 @@ namespace System.Security.Permissions {
             
             return true;
         }
-        
+
         private static String GetRoot( String path )
         {
-#if !PLATFORM_UNIX            
+#if !PLATFORM_UNIX
             String str = path.Substring( 0, 3 );
             if (str.EndsWith( ":\\", StringComparison.Ordinal))
 #else
             String str = path.Substring( 0, 1 );
             if(str ==  "/")
-#endif // !PLATFORM_UNIX                        
+#endif // !PLATFORM_UNIX
             {
                 return str;
             }
