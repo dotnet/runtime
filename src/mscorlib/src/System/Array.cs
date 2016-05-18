@@ -2693,10 +2693,6 @@ namespace System {
             //! Warning: "this" is an array, not an SZArrayHelper. See comments above
             //! or you may introduce a security hole!
 
-            if (array != null && array.Rank != 1)
-                throw new ArgumentException(Environment.GetResourceString("Rank_MultiDimNotSupported"));
-            Contract.EndContractBlock();
-
             T[] _this = JitHelpers.UnsafeCast<T[]>(this);
             Array.Copy(_this, 0, array, index, _this.Length);
         }
@@ -2795,8 +2791,7 @@ namespace System {
 
             internal SZGenericArrayEnumerator(T[] array, int endIndex) {
                 // We allow passing null array in case of empty enumerator. 
-                Contract.Assert((array == null && endIndex == -1) || (array.Rank == 1 && array.GetLowerBound(0) == 0), 
-                   "SZArrayEnumerator<T> only works on single dimension arrays w/ a lower bound of zero or with empty array for null enumerator.");
+                Contract.Assert(array != null || endIndex == -1, "endIndex should be -1 in the case of a null array (for the empty enumerator).");
                 _array = array;
                 _index = -1;
                 _endIndex = endIndex;
