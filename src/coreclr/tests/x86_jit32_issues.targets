@@ -277,5 +277,8 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Boxing\xlang\_relsin_il_il\_relsin_il_il.cmd" >
              <Issue>needs triage</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\tailcall_v4\smallFrame\smallFrame.cmd" >
+             <Issue>4548</Issue>
+        </ExcludeList>
     </ItemGroup>
 </Project>
