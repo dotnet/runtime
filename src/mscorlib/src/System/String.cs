@@ -552,16 +552,17 @@ namespace System {
 
         // Determines whether two strings match.
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
-        public override bool Equals(Object obj) {
-            if (this == null)                        //this is necessary to guard against reverse-pinvokes and
-                throw new NullReferenceException();  //other callers who do not use the callvirt instruction
+        public override bool Equals(Object obj)
+        {
+            if (this == null)                        // this is necessary to guard against reverse-pinvokes and
+                throw new NullReferenceException();  // other callers who do not use the callvirt instruction
 
-            String str = obj as String;
+            if (object.ReferenceEquals(this, obj))
+                return true;
+
+            string str = obj as string;
             if (str == null)
                 return false;
-
-            if (Object.ReferenceEquals(this, obj))
-                return true;
 
             if (this.Length != str.Length)
                 return false;
@@ -572,15 +573,20 @@ namespace System {
         // Determines whether two strings match.
         [Pure]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
-        public bool Equals(String value) {
-            if (this == null)                        //this is necessary to guard against reverse-pinvokes and
-                throw new NullReferenceException();  //other callers who do not use the callvirt instruction
+        public bool Equals(String value)
+        {
+            if (this == null)                        // this is necessary to guard against reverse-pinvokes and
+                throw new NullReferenceException();  // other callers who do not use the callvirt instruction
 
+            if (object.ReferenceEquals(this, value))
+                return true;
+
+            // NOTE: No need to worry about casting to object here.
+            // If either side of an == comparison between strings
+            // is null, Roslyn generates a simple ceq instruction
+            // instead of calling string.op_Equality.
             if (value == null)
                 return false;
-
-            if (Object.ReferenceEquals(this, value))
-                return true;
             
             if (this.Length != value.Length)
                 return false;
