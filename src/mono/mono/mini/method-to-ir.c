@@ -12769,11 +12769,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				g_assert (!mono_threads_is_coop_enabled ());
 
-				cfg->attach_cookie = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
-				cfg->attach_dummy = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+				cfg->orig_domain_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
 
 				EMIT_NEW_PCONST (cfg, ins, NULL);
-				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cfg->attach_cookie->dreg, ins->dreg);
+				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cfg->orig_domain_var->dreg, ins->dreg);
 
 				ad_ins = mono_get_domain_intrinsic (cfg);
 				jit_tls_ins = mono_get_jit_tls_intrinsic (cfg);
@@ -12802,12 +12801,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				/* AOT code is only used in the root domain */
 				EMIT_NEW_PCONST (cfg, args [0], cfg->compile_aot ? NULL : cfg->domain);
-				EMIT_NEW_PCONST (cfg, args [1], NULL);
 				ins = mono_emit_jit_icall (cfg, mono_jit_thread_attach, args);
-				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cfg->attach_cookie->dreg, ins->dreg);
+				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cfg->orig_domain_var->dreg, ins->dreg);
 
 				if (next_bb)
 					MONO_START_BB (cfg, next_bb);
+
 
 				ip += 2;
 				break;
@@ -12817,9 +12816,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				/* Restore the original domain */
 				dreg = alloc_ireg (cfg);
-				EMIT_NEW_UNALU (cfg, args [0], OP_MOVE, dreg, cfg->attach_cookie->dreg);
-				EMIT_NEW_VARLOADA (cfg, args [1], cfg->attach_dummy, cfg->attach_dummy->inst_vtype);
-				mono_emit_jit_icall (cfg, mono_jit_thread_detach, args);
+				EMIT_NEW_UNALU (cfg, args [0], OP_MOVE, dreg, cfg->orig_domain_var->dreg);
+				mono_emit_jit_icall (cfg, mono_jit_set_domain, args);
 				ip += 2;
 				break;
 			}

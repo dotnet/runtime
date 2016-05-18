@@ -837,13 +837,15 @@ mono_set_lmf_addr (gpointer lmf_addr)
 }
 
 /*
- * mono_jit_thread_attach: called by native->managed wrappers
+ * mono_jit_thread_attach:
  *
- * @dummy: is NULL
- * @return: the original domain which needs to be restored, or NULL.
+ * Called by Xamarin.Mac and other products. Attach thread to runtime if
+ * needed and switch to @domain.
+ *
+ * @return the original domain which needs to be restored, or NULL.
  */
-gpointer
-mono_jit_thread_attach (MonoDomain *domain, gpointer *dummy)
+MonoDomain*
+mono_jit_thread_attach (MonoDomain *domain)
 {
 	MonoDomain *orig;
 	gboolean attached;
@@ -878,21 +880,17 @@ mono_jit_thread_attach (MonoDomain *domain, gpointer *dummy)
 }
 
 /*
- * mono_jit_thread_detach: called by native->managed wrappers
+ * mono_jit_set_domain:
  *
- * @cookie: the original domain which needs to be restored, or NULL.
- * @dummy: is NULL
+ * Set domain to @domain if @domain is not null
  */
 void
-mono_jit_thread_detach (gpointer cookie, gpointer *dummy)
+mono_jit_set_domain (MonoDomain *domain)
 {
-	MonoDomain *orig;
-
 	g_assert (!mono_threads_is_coop_enabled ());
 
-	orig = (MonoDomain*) cookie;
-	if (orig)
-		mono_domain_set (orig, TRUE);
+	if (domain)
+		mono_domain_set (domain, TRUE);
 }
 
 /**
@@ -3730,8 +3728,8 @@ register_icalls (void)
 	register_icall (mono_trace_enter_method, "mono_trace_enter_method", NULL, TRUE);
 	register_icall (mono_trace_leave_method, "mono_trace_leave_method", NULL, TRUE);
 	register_icall (mono_get_lmf_addr, "mono_get_lmf_addr", "ptr", TRUE);
-	register_icall (mono_jit_thread_attach, "mono_jit_thread_attach", "ptr ptr ptr", TRUE);
-	register_icall (mono_jit_thread_detach, "mono_jit_thread_detach", "void ptr ptr", TRUE);
+	register_icall (mono_jit_thread_attach, "mono_jit_thread_attach", "ptr ptr", TRUE);
+	register_icall (mono_jit_set_domain, "mono_jit_set_domain", "void ptr", TRUE);
 	register_icall (mono_domain_get, "mono_domain_get", "ptr", TRUE);
 
 	register_icall (mono_llvm_throw_exception, "mono_llvm_throw_exception", "void object", TRUE);
