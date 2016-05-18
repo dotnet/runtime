@@ -377,6 +377,20 @@ mono_threads_assert_gc_unsafe_region (void)
 	MONO_REQ_GC_UNSAFE_MODE;
 }
 
+gboolean
+mono_threads_is_coop_enabled (void)
+{
+#if defined(USE_COOP_GC)
+	return TRUE;
+#else
+	static int is_coop_enabled = -1;
+	if (G_UNLIKELY (is_coop_enabled == -1))
+		is_coop_enabled = g_getenv ("MONO_ENABLE_COOP") != NULL ? 1 : 0;
+	return is_coop_enabled == 1;
+#endif
+}
+
+
 void
 mono_threads_init_coop (void)
 {

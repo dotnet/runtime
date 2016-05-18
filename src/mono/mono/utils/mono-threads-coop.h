@@ -23,18 +23,8 @@ extern volatile size_t mono_polling_required;
 
 /* Runtime consumable API */
 
-static gboolean G_GNUC_UNUSED
-mono_threads_is_coop_enabled (void)
-{
-#if defined(USE_COOP_GC)
-	return TRUE;
-#else
-	static gboolean is_coop_enabled = -1;
-	if (G_UNLIKELY (is_coop_enabled == -1))
-		is_coop_enabled = g_getenv ("MONO_ENABLE_COOP") != NULL ? TRUE : FALSE;
-	return is_coop_enabled;
-#endif
-}
+gboolean
+mono_threads_is_coop_enabled (void);
 
 /* Internal API */
 
