@@ -340,8 +340,16 @@ namespace System {
 
             // If we add very long file name support ("\\?\") to the Path class then this is unnecesary,
             // but we do not plan on doing this for now.
+
+            // Long path checks can be quirked, and as loading default quirks too early in the setup of an AppDomain is risky
+            // we'll avoid checking path lengths- we'll still fail at MAX_PATH later if we're !useAppBase when we call Path's
+            // NormalizePath.
             if (!useAppBase)
-                path = System.Security.Util.URLString.PreProcessForExtendedPathRemoval(path, false);
+                path = Security.Util.URLString.PreProcessForExtendedPathRemoval(
+                    checkPathLength: false,
+                    url: path,
+                    isFileUrl: false);
+
 
             int len = path.Length;
             if (len == 0)
