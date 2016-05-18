@@ -6,7 +6,6 @@ JIT/Directed/UnrollLoop/loop6_cs_d/loop6_cs_d.sh
 JIT/Directed/UnrollLoop/loop6_cs_do/loop6_cs_do.sh
 JIT/Directed/UnrollLoop/loop6_cs_r/loop6_cs_r.sh
 JIT/Directed/UnrollLoop/loop6_cs_ro/loop6_cs_ro.sh
-JIT/Directed/lifetime/lifetime2/lifetime2.sh
 JIT/Methodical/refany/_dbgstress1/_dbgstress1.sh
 JIT/Methodical/refany/_dbgstress3/_dbgstress3.sh
 JIT/Methodical/refany/_il_dbgseq/_il_dbgseq.sh
