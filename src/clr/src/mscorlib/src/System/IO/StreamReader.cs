@@ -460,13 +460,11 @@ namespace System.IO
                     CompressBuffer(2);
                     changedEncoding = true;
                 }
-#if FEATURE_UTF32   
                 else {
                     encoding = Encoding.UTF32;
                     CompressBuffer(4);
                 changedEncoding = true;
-            }
-#endif            
+                }
             }
          
             else if (byteLen >= 3 && byteBuffer[0]==0xEF && byteBuffer[1]==0xBB && byteBuffer[2]==0xBF) {
@@ -475,7 +473,6 @@ namespace System.IO
                 CompressBuffer(3);
                 changedEncoding = true;
             }
-#if FEATURE_UTF32            
             else if (byteLen >= 4 && byteBuffer[0] == 0 && byteBuffer[1] == 0 &&
                      byteBuffer[2] == 0xFE && byteBuffer[3] == 0xFF) {
                 // Big Endian UTF32
@@ -483,7 +480,6 @@ namespace System.IO
                 CompressBuffer(4);
                 changedEncoding = true;
             }
-#endif            
             else if (byteLen == 2)
                 _detectEncoding = true;
             // Note: in the future, if we change this algorithm significantly,
@@ -1117,7 +1113,7 @@ namespace System.IO
 
         #region Private properties for async method performance
         // Access to instance fields of MarshalByRefObject-derived types requires special JIT helpers that check
-        // if the instance operated on is remote. This is optimised for fields on “this” but if a method is Async
+        // if the instance operated on is remote. This is optimised for fields on this but if a method is Async
         // and is thus lifted to a state machine type, access will be slow.
         // As a workaround, we either cache instance fields in locals or use properties to access such fields.
         
