@@ -144,5 +144,13 @@ namespace System.Security.Cryptography
         protected virtual void Dispose(bool disposing) { }
         public abstract void GenerateIV();
         public abstract void GenerateKey();
+        protected CipherMode ModeValue;
+        protected PaddingMode PaddingValue;
+        protected byte[] KeyValue;
+        protected byte[] IVValue;
+        protected int BlockSizeValue;
+        protected int KeySizeValue;
+        protected KeySizes[] LegalBlockSizesValue;
+        protected KeySizes[] LegalKeySizesValue;
     }
 }
