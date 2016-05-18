@@ -1564,9 +1564,10 @@ namespace System {
         public static void Reverse(Array array, int index, int length) {
             if (array==null) 
                 throw new ArgumentNullException("array");
-            if (index < array.GetLowerBound(0) || length < 0)
+            int lowerBound = array.GetLowerBound(0);
+            if (index < lowerBound || length < 0)
                 throw new ArgumentOutOfRangeException((index<0 ? "index" : "length"), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
-            if (array.Length - (index - array.GetLowerBound(0)) < length)
+            if (array.Length - (index - lowerBound) < length)
                 throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
             if (array.Rank != 1)
                 throw new RankException(Environment.GetResourceString("Rank_MultiDimNotSupported"));
@@ -1706,11 +1707,12 @@ namespace System {
                 throw new ArgumentNullException("keys");
             if (keys.Rank != 1 || (items != null && items.Rank != 1))
                 throw new RankException(Environment.GetResourceString("Rank_MultiDimNotSupported"));
-            if (items != null && keys.GetLowerBound(0) != items.GetLowerBound(0))
+            int keysLowerBound = keys.GetLowerBound(0);
+            if (items != null && keysLowerBound != items.GetLowerBound(0))
                 throw new ArgumentException(Environment.GetResourceString("Arg_LowerBoundsMustMatch"));
-            if (index < keys.GetLowerBound(0) || length < 0)
+            if (index < keysLowerBound || length < 0)
                 throw new ArgumentOutOfRangeException((length<0 ? "length" : "index"), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
-            if (keys.Length - (index - keys.GetLowerBound(0)) < length || (items != null && (index - items.GetLowerBound(0)) > items.Length - length))
+            if (keys.Length - (index - keysLowerBound) < length || (items != null && (index - keysLowerBound) > items.Length - length))
                 throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
 
             Contract.EndContractBlock();
