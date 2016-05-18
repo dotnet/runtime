@@ -35,17 +35,16 @@ namespace System.ComponentModel.Primitives.Tests
 
         [Theory]
         [MemberData(nameof(DescriptionData))]
-        public void CategoryNames(DescriptionAttribute attribute, string name, bool isDefault)
+        public void CategoryNames(DescriptionAttribute attribute, string name)
         {
             Assert.Equal(name, attribute.Description);
-            Assert.Equal(isDefault, attribute.IsDefaultAttribute());
         }
 
         private static IEnumerable<object[]> DescriptionData()
         {
-            yield return new object[] { DescriptionAttribute.Default, "", true };
-            yield return new object[] { new DescriptionAttribute(""), "", true };
-            yield return new object[] { new DescriptionAttribute("other"), "other", false };
+            yield return new object[] { DescriptionAttribute.Default, "" };
+            yield return new object[] { new DescriptionAttribute(""), "" };
+            yield return new object[] { new DescriptionAttribute("other"), "other" };
         }
     }
 }

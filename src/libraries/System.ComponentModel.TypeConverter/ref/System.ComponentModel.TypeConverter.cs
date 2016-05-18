@@ -370,7 +370,7 @@ namespace System.ComponentModel
         protected virtual void OnValueChanged(object component, System.EventArgs e) { }
         public virtual void RemoveValueChanged(object component, System.EventHandler handler) { }
         public abstract void ResetValue(object component);
-        // public System.ComponentModel.DesignerSerializationVisibility SerializationVisibility { get { return default(System.ComponentModel.DesignerSerializationVisibility); } }
+        public System.ComponentModel.DesignerSerializationVisibility SerializationVisibility { get { return default(System.ComponentModel.DesignerSerializationVisibility); } }
         public abstract void SetValue(object component, object value);
         public abstract bool ShouldSerializeValue(object component);
     }

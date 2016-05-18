@@ -19,7 +19,6 @@
     <Compile Include="System\ComponentModel\BrowsableAttribute.cs" />
     <Compile Include="System\ComponentModel\CategoryAttribute.cs" />
     <Compile Include="System\ComponentModel\ComponentCollection.cs" />
-    <Compile Include="System\ComponentModel\ComponentModelExtensions.cs" />
     <Compile Include="System\ComponentModel\DescriptionAttribute.cs" />
     <Compile Include="System\ComponentModel\DesignerCategoryAttribute.cs" />
     <Compile Include="System\ComponentModel\DesignerSerializationVisibility.cs" />

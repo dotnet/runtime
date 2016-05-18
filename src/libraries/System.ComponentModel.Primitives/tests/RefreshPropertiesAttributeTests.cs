@@ -28,30 +28,28 @@ namespace System.ComponentModel.Primitives.Tests
         }
 
         [Theory]
-        [InlineData(RefreshProperties.All, false)]
-        [InlineData(RefreshProperties.None, true)]
-        [InlineData(RefreshProperties.Repaint, false)]
-        public void GetRefreshProperties(RefreshProperties value, bool isDefault)
+        [InlineData(RefreshProperties.All)]
+        [InlineData(RefreshProperties.None)]
+        [InlineData(RefreshProperties.Repaint)]
+        public void GetRefreshProperties(RefreshProperties value)
         {
             var attribute = new RefreshPropertiesAttribute(value);
 
             Assert.Equal(value, attribute.RefreshProperties);
-            Assert.Equal(isDefault, attribute.IsDefaultAttribute());
         }
 
         [Theory]
         [MemberData(nameof(RefreshPropertiesAttributeData))]
-        public void NameTests(RefreshPropertiesAttribute attribute, RefreshProperties refreshProperties, bool isDefault)
+        public void NameTests(RefreshPropertiesAttribute attribute, RefreshProperties refreshProperties)
         {
             Assert.Equal(refreshProperties, attribute.RefreshProperties);
-            Assert.Equal(isDefault, attribute.IsDefaultAttribute());
         }
 
         private static IEnumerable<object[]> RefreshPropertiesAttributeData()
         {
-            yield return new object[] { RefreshPropertiesAttribute.Default, RefreshProperties.None, true };
-            yield return new object[] { RefreshPropertiesAttribute.All, RefreshProperties.All, false };
-            yield return new object[] { RefreshPropertiesAttribute.Repaint, RefreshProperties.Repaint, false };
+            yield return new object[] { RefreshPropertiesAttribute.Default, RefreshProperties.None };
+            yield return new object[] { RefreshPropertiesAttribute.All, RefreshProperties.All };
+            yield return new object[] { RefreshPropertiesAttribute.Repaint, RefreshProperties.Repaint };
         }
     }
 }

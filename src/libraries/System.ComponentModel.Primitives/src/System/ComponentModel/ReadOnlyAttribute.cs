@@ -9,7 +9,7 @@ namespace System.ComponentModel
     ///       is read-only or read/write.</para>
     /// </summary>
     [AttributeUsage(AttributeTargets.All)]
-    public sealed class ReadOnlyAttribute : Attribute, IIsDefaultAttribute
+    public sealed class ReadOnlyAttribute : Attribute
     {
         /// <summary>
         ///    <para>
@@ -76,17 +76,6 @@ namespace System.ComponentModel
         public override int GetHashCode()
         {
             return base.GetHashCode();
-        }
-
-        /// <internalonly/>
-        /// <summary>
-        ///    <para>
-        ///       Determines if this attribute is the default.
-        ///    </para>
-        /// </summary>
-        bool IIsDefaultAttribute.IsDefaultAttribute()
-        {
-            return this.IsReadOnly == Default.IsReadOnly;
         }
     }
 }
