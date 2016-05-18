@@ -4,7 +4,7 @@
       <boot></boot>
       <flags>/codepage:65001 -r:System.dll -r:System.Core.dll -r:System.Xml.dll -debug -d:STATIC,NO_SYMBOL_WRITER,NO_AUTHENTICODE -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_PROCESS_START -d:NET_4_0 -d:NET_4_5 -d:MONO -d:BOOTSTRAP_BASIC -nowarn:1699 -d:DISABLE_CAS_USE -lib:./../class/lib/basic -optimize /noconfig</flags>
       <output>basic.exe</output>
-      <built_sources></built_sources>
+      <built_sources>cs-parser.cs</built_sources>
       <library_output>./../class/lib/basic/basic.exe</library_output>
       <fx_version>4.0</fx_version>
       <profile>basic</profile>
@@ -184,7 +184,7 @@
       <boot></boot>
       <flags>/codepage:65001 -debug -d:STATIC,NO_SYMBOL_WRITER,NO_AUTHENTICODE -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_PROCESS_START -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -r:./../class/lib/build/mscorlib.dll -optimize /noconfig -r:System -r:System.Core -r:System.Xml</flags>
       <output>mcs.exe</output>
-      <built_sources></built_sources>
+      <built_sources>cs-parser.cs</built_sources>
       <library_output>mcs.exe</library_output>
       <fx_version>4.5</fx_version>
       <profile>build</profile>
@@ -234,7 +234,7 @@
       <boot></boot>
       <flags>/codepage:65001 -debug -d:STATIC,NO_SYMBOL_WRITER,NO_AUTHENTICODE -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_PROCESS_START -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -r:./../class/lib/net_4_x/mscorlib.dll -debug -optimize /noconfig -r:System -r:System.Core -r:System.Xml</flags>
       <output>mcs.exe</output>
-      <built_sources></built_sources>
+      <built_sources>cs-parser.cs</built_sources>
       <library_output>mcs.exe</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_x</profile>
@@ -3904,7 +3904,7 @@
       <boot></boot>
       <flags>/codepage:65001 /lib:../class/lib/net_4_x /r:../class/lib/net_4_x/PEAPI.dll /r:Mono.CompilerServices.SymbolWriter.dll /r:Mono.Security.dll -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -r:./../class/lib/net_4_x/mscorlib.dll -debug -optimize /noconfig</flags>
       <output>ilasm.exe</output>
-      <built_sources></built_sources>
+      <built_sources>ILParser.cs</built_sources>
       <library_output>./../class/lib/net_4_x/ilasm.exe</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_x</profile>
@@ -4154,7 +4154,7 @@
       <boot></boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll -debug -optimize /noconfig -r:System.Xml -r:System</flags>
       <output>mconfig.exe</output>
-      <built_sources></built_sources>
+      <built_sources>Mono.MonoConfig/consts.cs</built_sources>
       <library_output>./../../class/lib/net_4_x/mconfig.exe</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_x</profile>

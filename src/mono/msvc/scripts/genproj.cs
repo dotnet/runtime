@@ -831,19 +831,19 @@ class MsbuildGenerator {
 			//  <Name>System-basic</Name>
 			//</ProjectReference>
 			var refdistinct = references.Distinct ();
-			foreach (string r in refdistinct) {
+			foreach (string reference in refdistinct) {
 				
-				var match = GetMatchingCsproj (r, projects);
+				var match = GetMatchingCsproj (reference, projects);
 				if (match != null) {
-					AddProjectReference (refs, Csproj, match, r, null);
+					AddProjectReference (refs, Csproj, match, reference, null);
 				} else {
 					if (showWarnings){
-						Console.WriteLine ("{0}: Could not find a matching project reference for {1}", library, Path.GetFileName (r));
+						Console.WriteLine ("{0}: Could not find a matching project reference for {1}", library, Path.GetFileName (reference));
 						Console.WriteLine ("  --> Adding reference with hintpath instead");
 					}
-					refs.Append ("    <Reference Include=\"" + r + "\">" + NewLine);
+					refs.Append ("    <Reference Include=\"" + reference + "\">" + NewLine);
 					refs.Append ("      <SpecificVersion>False</SpecificVersion>" + NewLine);
-					refs.Append ("      <HintPath>" + r + "</HintPath>" + NewLine);
+					refs.Append ("      <HintPath>" + reference + "</HintPath>" + NewLine);
 					refs.Append ("      <Private>False</Private>" + NewLine);
 					refs.Append ("    </Reference>" + NewLine);
 				}
@@ -965,7 +965,7 @@ class MsbuildGenerator {
 	{
 		// libDir would be "./../../class/lib/net_4_x for example
 		// project 
-		if (!dllReferenceName.EndsWith (".dll"))
+		if (!dllReferenceName.EndsWith (".dll") && !dllReferenceName.EndsWith (".exe"))
 			dllReferenceName += ".dll";
 
 		var probe = Path.GetFullPath (Path.Combine (base_dir, dllReferenceName));
@@ -984,6 +984,13 @@ class MsbuildGenerator {
 				if (probe == project.Value.AbsoluteLibraryOutput)
 					return project.Value;
 			}
+		}
+
+		// Last attempt, try to find the library in all the projects
+		foreach (var project in projects) {
+			if (project.Value.AbsoluteLibraryOutput.EndsWith (dllReferenceName))
+				return project.Value;
+
 		}
 		Console.WriteLine ("Did not find referenced {0} with libs={1}", dllReferenceName, String.Join (", ", libs));
 		foreach (var p in projects) {
@@ -1004,6 +1011,7 @@ public class Driver {
 			string library = project.Attribute ("library").Value;
 			var profile = project.Element ("profile").Value;
 
+#if true
 			// Skip facades for now, the tool doesn't know how to deal with them yet.
 			if (dir.Contains ("Facades"))
 				continue;
@@ -1023,7 +1031,7 @@ public class Driver {
 					yield return project;
 				continue;
 			}
-			
+#endif
 			//
 			// Do not do 2.1, it is not working yet
 			// Do not do basic, as there is no point (requires a system mcs to be installed).
@@ -1034,9 +1042,11 @@ public class Driver {
 			// The next ones are to make debugging easier for now
 			if (profile == "basic")
 				continue;
+#if true
 			if (profile != "net_4_x" || library.Contains ("tests"))
 				continue;
-
+#endif
+			//Console.WriteLine ("Going to handle {0}", library);
 			yield return project;
 		}
 	}
@@ -1078,6 +1088,7 @@ public class Driver {
 		}
 		foreach (var project in GetProjects (makefileDeps)){
 			var library_output = project.Element ("library_output").Value;
+			Console.WriteLine ("=== {0} ===", library_output);
 			var gen = projects [library_output];
 			try {
 				var csproj = gen.Generate (projects);
@@ -1131,7 +1142,7 @@ public class Driver {
 		
 		// A few other optional solutions
 		// Solutions with 'everything' and the most common libraries used in development may be of interest
-		//WriteSolution (sln_gen, "mcs_full.sln");
+		//WriteSolution (sln_gen, "./mcs_full.sln");
 		//WriteSolution (small_full_sln_gen, "small_full.sln");
 		// The following may be useful if lacking visual studio or MonoDevelop, to bootstrap mono compiler self-hosting
 		//WriteSolution (basic_sln_gen, "mcs_basic.sln");
