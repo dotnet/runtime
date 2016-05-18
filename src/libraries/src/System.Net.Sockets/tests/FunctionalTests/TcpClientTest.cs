@@ -46,6 +46,8 @@ namespace System.Net.Sockets.Tests
                 }
 
                 Assert.True(client.Connected);
+                Assert.NotNull(client.Client);
+                Assert.Same(client.Client, client.Client);
 
                 using (NetworkStream s = client.GetStream())
                 {
