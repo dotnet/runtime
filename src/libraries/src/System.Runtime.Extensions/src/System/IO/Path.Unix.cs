@@ -212,14 +212,15 @@ namespace System.IO
             return IsPathRooted(path) ? DirectorySeparatorCharAsString : String.Empty;
         }
 
-        private static byte[] CreateCryptoRandomByteArray(int byteLength)
+        private static unsafe void GetCryptoRandomBytes(byte* bytes, int byteCount)
         {
-            var arr = new byte[byteLength];
-            if (!Interop.Crypto.GetRandomBytes(arr, arr.Length))
+            Debug.Assert(bytes != null);
+            Debug.Assert(byteCount >= 0);
+
+            if (!Interop.Crypto.GetRandomBytes(bytes, byteCount))
             {
                 throw new InvalidOperationException(SR.InvalidOperation_Cryptography);
             }
-            return arr;
         }
     }
 }
