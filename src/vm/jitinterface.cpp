@@ -3056,10 +3056,10 @@ static BOOL IsTypeSpecForTypicalInstantiation(SigPointer sigptr)
 }
 
 void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entryKind,
-    CORINFO_RESOLVED_TOKEN * pResolvedToken,
-    CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken /* for ConstrainedMethodEntrySlot */,
-    MethodDesc * pTemplateMD /* for method-based slots */,
-    CORINFO_LOOKUP *pResultLookup)
+                                                        CORINFO_RESOLVED_TOKEN * pResolvedToken,
+                                                        CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken,
+                                                        MethodDesc * pTemplateMD /* for method-based slots */,
+                                                        CORINFO_LOOKUP *pResultLookup)
 {
     CONTRACTL{
         STANDARD_VM_CHECK;
@@ -3075,7 +3075,7 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
 #ifdef FEATURE_READYTORUN_COMPILER
     if (IsReadyToRunCompilation())
     {
-#if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_) || defined(_TARGET_X86_)
+#if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
         // TODO
         ThrowHR(E_NOTIMPL);
 #endif
