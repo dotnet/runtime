@@ -10,6 +10,22 @@ using Xunit;
 public class PathInternal_Windows_Tests
 {
     [Theory
+        InlineData(@"\\?\", false)
+        InlineData(@"\\?\?", true)
+        InlineData(@"//?/", false)
+        InlineData(@"//?/*", true)
+        InlineData(@"\\.\>", true)
+        InlineData(@"C:\", false)
+        InlineData(@"C:\<", true)
+        InlineData("\"MyFile\"", true)
+        ]
+    [PlatformSpecific(PlatformID.Windows)]
+    public void HasWildcardCharacters(string path, bool expected)
+    {
+        Assert.Equal(expected, PathInternal.HasWildCardCharacters(path));
+    }
+
+    [Theory
         InlineData(PathInternal.ExtendedPathPrefix, PathInternal.ExtendedPathPrefix)
         InlineData(@"Foo", @"Foo")
         InlineData(@"C:\Foo", @"\\?\C:\Foo")
