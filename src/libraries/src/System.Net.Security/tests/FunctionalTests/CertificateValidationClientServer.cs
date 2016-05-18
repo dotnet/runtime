@@ -54,11 +54,11 @@ namespace System.Net.Security.Tests
             {
                 // https://technet.microsoft.com/en-us/library/hh831771.aspx#BKMK_Changes2012R2
                 // Starting with Windows 8, the "Management of trusted issuers for client authentication" has changed:
-                // The behavior to send the Trusted Issuer List by default is off.
+                // The behavior to send the Trusted Issuers List by default is off.
                 //
-                // In Windows 7 the DN list is sent within the Server Hello. If the client selection callback isn't 
-                // used and the client certificate's issuer is not in the server's Trusted Root Authorities the client,
-                // not send the certificate.
+                // In Windows 7 the Trusted Issuers List is sent within the Server Hello TLS record. This list is built
+                // by the server using certificates from the Trusted Root Authorities certificate store.
+                // The client side will use the Trusted Issuers List, if not empty, to filter proposed certificates.
                 _clientCertificateRemovedByFilter = true;
             }
 
@@ -126,6 +126,13 @@ namespace System.Net.Security.Tests
                         Assert.True(sslServerStream.IsMutuallyAuthenticated, "sslServerStream.IsMutuallyAuthenticated");
 
                         Assert.Equal(sslServerStream.RemoteCertificate.Subject, _clientCertificate.Subject);
+                    }
+                    else
+                    {
+                        Assert.False(sslClientStream.IsMutuallyAuthenticated, "sslClientStream.IsMutuallyAuthenticated");
+                        Assert.False(sslServerStream.IsMutuallyAuthenticated, "sslServerStream.IsMutuallyAuthenticated");
+
+                        Assert.Null(sslServerStream.RemoteCertificate);
                     }
 
                     Assert.Equal(sslClientStream.RemoteCertificate.Subject, _serverCertificate.Subject);
