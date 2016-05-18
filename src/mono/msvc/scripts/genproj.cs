@@ -1,3 +1,16 @@
+//
+// Consumes the order.xml file that contains a list of all the assemblies to build
+// and produces a solution and the csproj files for it
+//
+// Currently this hardcodes a set of assemblies to build, the net-4.x series, but 
+// it can be extended to handle the command line tools.
+//
+// KNOWN ISSUES:
+//    * This fails to find matches for "System" and "System.xml" when processing the
+//      RabbitMQ executable, likely, because we do not process executables yet
+//
+//    * Has not been tested in a while with the command line tools
+//
 using System;
 using System.IO;
 using System.Collections.Generic;
@@ -969,7 +982,9 @@ class MsbuildGenerator {
 			}
 		}
 		Console.WriteLine ("Did not find referenced {0} with libs={1}", dllReferenceName, String.Join (", ", libs));
-
+		foreach (var p in projects) {
+		//	Console.WriteLine ("{0}", p.Value.AbsoluteLibraryOutput);
+		}
 		return null;
 	}
 
@@ -990,7 +1005,7 @@ public class Driver {
 				continue;
 
 			// These are currently broken, skip until they're fixed.
-			if (dir.StartsWith ("mcs") || dir.Contains ("Microsoft.Web.Infrastructure"))
+			if (dir.StartsWith ("mcs") || dir.Contains ("apigen"))
 				continue;
 
 			//
@@ -1079,12 +1094,14 @@ public class Driver {
 
 		FillSolution (four_five_sln_gen, MsbuildGenerator.profile_4_x, projects.Values, additionalFilter);
 
-		var sb = new StringBuilder ();
-		sb.AppendLine ("WARNING: Skipped some project references, apparent duplicates in order.xml:");
-		foreach (var item in duplicates) {
-			sb.AppendLine (item);
+		if (duplicates.Count () > 0) {
+			var sb = new StringBuilder ();
+			sb.AppendLine ("WARNING: Skipped some project references, apparent duplicates in order.xml:");
+			foreach (var item in duplicates) {
+				sb.AppendLine (item);
+			}
+			Console.WriteLine (sb.ToString ());
 		}
-		Console.WriteLine (sb.ToString ());
 
 		WriteSolution (four_five_sln_gen, MakeSolutionName (MsbuildGenerator.profile_4_x));
 

@@ -69,6 +69,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Web.Services-net_4_x
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Web-plainweb-net_4_x", "..\..\mcs\class/System.Web\System.Web-plainweb-net_4_x.csproj", "{DE51B021-D51C-4F26-99EE-B0729D97631E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Design-plaindesign-net_4_x", "..\..\mcs\class/System.Design\System.Design-plaindesign-net_4_x.csproj", "{6FC8169B-4128-46FE-8357-5D3CE8D6FA42}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Design-net_4_x", "..\..\mcs\class/System.Design\System.Design-net_4_x.csproj", "{EFEDC380-2CB0-4B40-9566-D2302867A4D9}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.Remoting-net_4_x", "..\..\mcs\class/System.Runtime.Remoting\System.Runtime.Remoting-net_4_x.csproj", "{F19F77AE-1A81-4676-BAB8-6C1DA243A961}"
@@ -149,6 +151,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.ServiceModel.Discove
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.Caching-net_4_x", "..\..\mcs\class/System.Runtime.Caching\System.Runtime.Caching-net_4_x.csproj", "{2FE2D8C6-B7B8-4067-A2C0-9D1DEA020FD8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Web.Infrastructure-net_4_x", "..\..\mcs\class/Microsoft.Web.Infrastructure\Microsoft.Web.Infrastructure-net_4_x.csproj", "{CD409902-9DA0-48A3-B360-C09060168CB5}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.ServiceModel.Web-net_4_x", "..\..\mcs\class/System.ServiceModel.Web\System.ServiceModel.Web-net_4_x.csproj", "{54F4FA23-5AF3-4312-9294-3DB109F644CC}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Http-net_4_x", "..\..\mcs\class/System.Net.Http\System.Net.Http-net_4_x.csproj", "{F1636C0A-FC68-4362-918F-9CCC789FED13}"
@@ -228,8 +232,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Parallel-net_4_x", "..\..\mcs\class/Mono.Parallel\Mono.Parallel-net_4_x.csproj", "{18E55AE4-6B9B-44EF-94C9-1084D5472E63}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Security.Win32-net_4_x", "..\..\mcs\class/Mono.Security.Win32\Mono.Security.Win32-net_4_x.csproj", "{994BF3A4-85FD-4FDB-9120-C3A3B44A57CD}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitMQ.Client.Apigen-net_4_x", "..\..\mcs\class/RabbitMQ.Client/src/apigen\RabbitMQ.Client.Apigen-net_4_x.csproj", "{D2A49790-9CFD-492B-9CFA-58B9AEDA1B75}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitMQ.Client-net_4_x", "..\..\mcs\class/RabbitMQ.Client/src/client\RabbitMQ.Client-net_4_x.csproj", "{8A378E82-8FA2-4DC9-A2F7-CD5CACC3F8F6}"
 EndProject
@@ -445,6 +447,10 @@ Global
 		{DE51B021-D51C-4F26-99EE-B0729D97631E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DE51B021-D51C-4F26-99EE-B0729D97631E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DE51B021-D51C-4F26-99EE-B0729D97631E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6FC8169B-4128-46FE-8357-5D3CE8D6FA42}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6FC8169B-4128-46FE-8357-5D3CE8D6FA42}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6FC8169B-4128-46FE-8357-5D3CE8D6FA42}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6FC8169B-4128-46FE-8357-5D3CE8D6FA42}.Release|Any CPU.Build.0 = Release|Any CPU
 		{EFEDC380-2CB0-4B40-9566-D2302867A4D9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{EFEDC380-2CB0-4B40-9566-D2302867A4D9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EFEDC380-2CB0-4B40-9566-D2302867A4D9}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -605,6 +611,10 @@ Global
 		{2FE2D8C6-B7B8-4067-A2C0-9D1DEA020FD8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2FE2D8C6-B7B8-4067-A2C0-9D1DEA020FD8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2FE2D8C6-B7B8-4067-A2C0-9D1DEA020FD8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CD409902-9DA0-48A3-B360-C09060168CB5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CD409902-9DA0-48A3-B360-C09060168CB5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CD409902-9DA0-48A3-B360-C09060168CB5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CD409902-9DA0-48A3-B360-C09060168CB5}.Release|Any CPU.Build.0 = Release|Any CPU
 		{54F4FA23-5AF3-4312-9294-3DB109F644CC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{54F4FA23-5AF3-4312-9294-3DB109F644CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{54F4FA23-5AF3-4312-9294-3DB109F644CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -765,10 +775,6 @@ Global
 		{994BF3A4-85FD-4FDB-9120-C3A3B44A57CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{994BF3A4-85FD-4FDB-9120-C3A3B44A57CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{994BF3A4-85FD-4FDB-9120-C3A3B44A57CD}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D2A49790-9CFD-492B-9CFA-58B9AEDA1B75}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D2A49790-9CFD-492B-9CFA-58B9AEDA1B75}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D2A49790-9CFD-492B-9CFA-58B9AEDA1B75}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D2A49790-9CFD-492B-9CFA-58B9AEDA1B75}.Release|Any CPU.Build.0 = Release|Any CPU
 		{8A378E82-8FA2-4DC9-A2F7-CD5CACC3F8F6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{8A378E82-8FA2-4DC9-A2F7-CD5CACC3F8F6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8A378E82-8FA2-4DC9-A2F7-CD5CACC3F8F6}.Release|Any CPU.ActiveCfg = Release|Any CPU
