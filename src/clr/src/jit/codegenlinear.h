@@ -20,6 +20,8 @@
 
     void                genCodeForMulHi(GenTreeOp* treeNode);
 
+    void                genCodeForPow2Div(GenTreeOp* treeNode);
+
     void                genLeaInstruction(GenTreeAddrMode *lea);
 
     void                genSetRegToCond(regNumber dstReg, GenTreePtr tree);
