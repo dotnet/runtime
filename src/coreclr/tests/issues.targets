@@ -202,9 +202,6 @@
         <ExcludeList Include="$(XunitTestBinBase)\GC\LargeMemory\API\gc\collect\*">
              <Issue>3392</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\baseservices\exceptions\regressions\Dev11\147911\test147911\*">
-             <Issue>3651</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\SIMD\Vector3Interop_r\Vector3Interop_r.cmd">
              <Issue>4529</Issue>
         </ExcludeList>
