@@ -99,7 +99,13 @@ This file contains the logic for providing Execution Script generation.
     <ExecutionScriptKind Include="Batch" />
     <ExecutionScriptKind Include="Bash" />
   </ItemGroup>
-  
+
+  <PropertyGroup>
+    <BashScriptSnippetGen></BashScriptSnippetGen>
+    <BatchScriptSnippetGen></BatchScriptSnippetGen>
+  </PropertyGroup>
+ 
+  <Import Project="CLRTest.CrossGen.targets" />
   <Import Project="CLRTest.Execute.*.targets" />
   
   <Target Name="GenerateExecutionScriptsInternal"
