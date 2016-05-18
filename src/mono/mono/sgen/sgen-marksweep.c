@@ -1086,17 +1086,6 @@ major_block_is_evacuating (MSBlockInfo *block)
 
 #define LOAD_VTABLE	SGEN_LOAD_VTABLE
 
-#define MS_MARK_OBJECT_AND_ENQUEUE_CHECKED(obj,desc,block,queue) do {	\
-		int __word, __bit;					\
-		MS_CALC_MARK_BIT (__word, __bit, (obj));		\
-		if (!MS_MARK_BIT ((block), __word, __bit) && MS_OBJ_ALLOCED ((obj), (block))) {	\
-			MS_SET_MARK_BIT ((block), __word, __bit);	\
-			if (sgen_gc_descr_has_references (desc))			\
-				GRAY_OBJECT_ENQUEUE ((queue), (obj), (desc)); \
-			binary_protocol_mark ((obj), (gpointer)LOAD_VTABLE ((obj)), sgen_safe_object_get_size ((obj))); \
-			INC_NUM_MAJOR_OBJECTS_MARKED ();		\
-		}							\
-	} while (0)
 #define MS_MARK_OBJECT_AND_ENQUEUE(obj,desc,block,queue) do {		\
 		int __word, __bit;					\
 		MS_CALC_MARK_BIT (__word, __bit, (obj));		\
@@ -1256,8 +1245,6 @@ mark_pinned_objects_in_block (MSBlockInfo *block, size_t first_entry, size_t las
 	if (first_entry == last_entry)
 		return;
 
-	block->has_pinned = TRUE;
-
 	entry = sgen_pinning_get_entry (first_entry);
 	end = sgen_pinning_get_entry (last_entry);
 
@@ -1268,9 +1255,18 @@ mark_pinned_objects_in_block (MSBlockInfo *block, size_t first_entry, size_t las
 		if (index == last_index)
 			continue;
 		obj = MS_BLOCK_OBJ (block, index);
-		MS_MARK_OBJECT_AND_ENQUEUE_CHECKED (obj, sgen_obj_get_descriptor (obj), block, queue);
+		if (!MS_OBJ_ALLOCED (obj, block))
+			continue;
+		MS_MARK_OBJECT_AND_ENQUEUE (obj, sgen_obj_get_descriptor (obj), block, queue);
 		last_index = index;
 	}
+
+	/*
+	 * There might have been potential pinning "pointers" into this block, but none of
+	 * them pointed to occupied slots, in which case we don't have to pin the block.
+	 */
+	if (last_index >= 0)
+		block->has_pinned = TRUE;
 }
 
 static inline void
