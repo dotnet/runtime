@@ -15,6 +15,7 @@ set __HostVer=%__WorkaroundCliCoreHostVer%
 set __FxrVer=%__WorkaroundCliCoreHostFxrVer%
 set __PolicyVer=%__WorkaroundCliCoreHostPolicyVer%
 set __BuildMajor=%__WorkaroundCliCoreHostBuildMajor%
+set __BuildMinor=%__WorkaroundCliCoreHostBuildMinor%
 set __VersionTag=%__WorkaroundCliCoreHostVersionTag%
 ::
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -37,7 +38,8 @@ if /i "%1" == "/hostbindir"         (set __DotNetHostBinDir=%2&shift&shift&goto 
 if /i "%1" == "/hostver"            (set __HostVer=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "/fxrver"             (set __FxrVer=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "/policyver"          (set __PolicyVer=%2&shift&shift&goto Arg_Loop)
-if /i "%1" == "/build"              (set __BuildMajor=%2&shift&shift&goto Arg_Loop)
+if /i "%1" == "/buildmajor"         (set __BuildMajor=%2&shift&shift&goto Arg_Loop)
+if /i "%1" == "/buildminor"         (set __BuildMinor=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "/vertag"             (set __VersionTag=%2&shift&shift&goto Arg_Loop)
 
 echo Invalid command line argument: %1
@@ -63,7 +65,7 @@ if exist "%__ProjectDir%\bin" (rmdir /s /q "%__ProjectDir%\bin")
 
 copy /y "%__DotNetHostBinDir%\corehost.exe" "%__DotNetHostBinDir%\dotnet.exe"
 
-"%__ProjectDir%\Tools\corerun" "%__ProjectDir%\Tools\MSBuild.exe" "%__ProjectDir%\projects\packages.builds" /p:Platform=%__BuildArch% /p:DotNetHostBinDir=%__DotNetHostBinDir% /p:TargetsWindows=true /p:HostVersion=%__HostVer% /p:HostResolverVersion=%__FxrVer% /p:HostPolicyVersion=%__PolicyVer% /p:BuildNumberMajor=%__BuildMajor% /p:PreReleaseLabel=%__VersionTag% /p:CLIBuildVersion=%__BuildMajor% /verbosity:minimal
+"%__ProjectDir%\Tools\corerun" "%__ProjectDir%\Tools\MSBuild.exe" "%__ProjectDir%\projects\packages.builds" /p:Platform=%__BuildArch% /p:DotNetHostBinDir=%__DotNetHostBinDir% /p:TargetsWindows=true /p:HostVersion=%__HostVer% /p:HostResolverVersion=%__FxrVer% /p:HostPolicyVersion=%__PolicyVer% /p:BuildNumberMajor=%__BuildMajor% /p:BuildNumberMinor=%__BuildMinor% /p:PreReleaseLabel=%__VersionTag% /p:CLIBuildVersion=%__BuildMajor% /verbosity:minimal
 
 if not ERRORLEVEL 0 goto :Error
 
