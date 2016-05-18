@@ -44,9 +44,9 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <HostPolicyFullVersion>$(HostPolicyVersion)-$(PreReleaseLabel)-$(BuildNumberMajor)</HostPolicyFullVersion>
-    <HostResolverFullVersion>$(HostResolverVersion)-$(PreReleaseLabel)-$(BuildNumberMajor)</HostResolverFullVersion>
-    <HostFullVersion>$(HostVersion)-$(PreReleaseLabel)-$(BuildNumberMajor)</HostFullVersion>
+    <HostPolicyFullVersion>$(HostPolicyVersion)-$(PreReleaseLabel)-$(BuildNumberMajor)-$(BuildNumberMinor)</HostPolicyFullVersion>
+    <HostResolverFullVersion>$(HostResolverVersion)-$(PreReleaseLabel)-$(BuildNumberMajor)-$(BuildNumberMinor)</HostResolverFullVersion>
+    <HostFullVersion>$(HostVersion)-$(PreReleaseLabel)-$(BuildNumberMajor)-$(BuildNumberMinor)</HostFullVersion>
   </PropertyGroup>
 
   <Target Name="ValidateArgs" Condition="'$(CLIBuildVersion)'==''">
@@ -55,5 +55,6 @@
     <Error Condition="$(HostVersion)==''" Text="HostVersion is undefined" />
     <Error Condition="$(PreReleaseLabel)==''" Text="PreReleaseLabel is undefined" />
     <Error Condition="$(BuildNumberMajor)==''" Text="BuildNumberMajor is undefined" />
+    <Error Condition="$(BuildNumberMinor)==''" Text="BuildNumberMinor is undefined" />
   </Target>
 </Project>
