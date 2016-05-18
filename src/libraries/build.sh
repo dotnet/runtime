@@ -87,8 +87,9 @@ prepare_native_build()
 
     # Generate version.c if specified, else have an empty one.
     __versionSourceFile=$__scriptpath/bin/obj/version.c
+    if [ -f "${__versionSourceFile}" ]; then __generateversionsource=false; fi
     if [ $__generateversionsource == true ]; then
-        $__scriptpath/Tools/corerun $__scriptpath/Tools/MSBuild.exe "$__scriptpath/build.proj" /t:GenerateVersionSourceFile /p:NativeVersionSourceFile=$__scriptpath/bin/obj/version.c /p:GenerateVersionSourceFile=true /v:minimal $__OfficialBuildIdArg
+        $__scriptpath/Tools/corerun $__scriptpath/Tools/MSBuild.exe "$__scriptpath/build.proj" /t:GenerateVersionSourceFile /p:NativeVersionSourceFile=$__scriptpath/bin/obj/version.c /p:GenerateVersionSourceFile=true /v:minimal
     else
         __versionSourceLine="static char sccsid[] __attribute__((used)) = \"@(#)No version information produced\";"
         echo $__versionSourceLine > $__versionSourceFile
@@ -167,7 +168,6 @@ __msbuildpath=$__packageroot/$__msbuildpackageid.$__msbuildpackageversion/lib/MS
 __buildmanaged=false
 __buildnative=false
 __TestNugetRuntimeId=win7-x64
-__OfficialBuildIdArg=
 
 # Use uname to determine what the CPU is.
 CPUName=$(uname -p)
@@ -363,11 +363,7 @@ while :; do
             __ServerGC=1
             ;;
         *)
-          if [[ $1 == "/p:OfficialBuildId="* ]]; then
-            __OfficialBuildIdArg=$1
-          else
             __UnprocessedBuildArgs="$__UnprocessedBuildArgs $1"
-          fi
     esac
 
     shift
