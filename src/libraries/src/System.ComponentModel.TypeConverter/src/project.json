@@ -11,9 +11,9 @@
         "System.Diagnostics.Tools": "4.0.0",
         "System.Globalization": "4.0.0",
         "System.Linq": "4.0.0",
-        "System.Reflection": "4.1.0-rc3-24113-00",
+        "System.Reflection": "4.1.0-rc3-24117-00",
         "System.Reflection.Extensions": "4.0.0",
-        "System.Reflection.TypeExtensions": "4.1.0-rc3-24113-00",
+        "System.Reflection.TypeExtensions": "4.1.0-rc3-24117-00",
         "System.Resources.ResourceManager": "4.0.0",
         "System.Runtime": "4.0.20",
         "System.Runtime.Extensions": "4.0.0",
@@ -22,7 +22,7 @@
       "imports": [
         "dotnet5.6"
       ]
-    },    
+    },
     "netstandard1.0": {
       "dependencies": {
         "System.Collections": "4.0.0",
