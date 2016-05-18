@@ -165,8 +165,6 @@ private:
     void LowerInd(GenTreePtr* ppTree);
     void LowerAddrMode(GenTreePtr* ppTree, GenTree* before, Compiler::fgWalkData* data, bool isIndir);
     void LowerAdd(GenTreePtr* ppTree, Compiler::fgWalkData* data);
-    void LowerUnsignedDivOrMod(GenTree* tree);
-    void LowerSignedDivOrMod(GenTreePtr* ppTree, Compiler::fgWalkData* data);
 
     // Remove the nodes that are no longer used after an addressing mode is constructed under a GT_IND
     void LowerIndCleanupHelper(GenTreeAddrMode* addrMode, GenTreePtr tree);
