@@ -331,9 +331,10 @@ namespace System.Resources
 
         private static byte[] EncodeStringName()
         {
-            var type = typeof(string);
-            var name = type.AssemblyQualifiedName;
-            int length = name.IndexOf(", Version=");
+            // ResourceWriter always write the resources with legacy core library name (i.e. mscorlib).
+            // Ensure that when we read the type name, we update the library name to be the same.
+            var name = "System.String, mscorlib";
+            int length = name.Length;
 
             var buffer = new byte[length + 1];
             var encoded = Encoding.UTF8.GetBytes(name, 0, length, buffer, 1);
