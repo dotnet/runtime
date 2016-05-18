@@ -120,6 +120,7 @@ MONO_RT_EXTERNAL_ONLY
 MONO_API MonoString*
 mono_string_new_size	    (MonoDomain *domain, int32_t len);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoString*
 mono_ldstr		    (MonoDomain *domain, MonoImage *image, uint32_t str_index);
 

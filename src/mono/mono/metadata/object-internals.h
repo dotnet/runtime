@@ -594,7 +594,7 @@ MONO_COLD void mono_set_pending_exception (MonoException *exc);
 
 MonoAsyncResult *
 mono_async_result_new	    (MonoDomain *domain, HANDLE handle, 
-			     MonoObject *state, gpointer data, MonoObject *object_data);
+			     MonoObject *state, gpointer data, MonoObject *object_data, MonoError *error);
 
 MonoObject *
 ves_icall_System_Runtime_Remoting_Messaging_AsyncResult_Invoke (MonoAsyncResult *ares);
@@ -605,9 +605,9 @@ mono_wait_handle_new	    (MonoDomain *domain, HANDLE handle, MonoError *error);
 HANDLE
 mono_wait_handle_get_handle (MonoWaitHandle *handle);
 
-void
+gboolean
 mono_message_init	    (MonoDomain *domain, MonoMethodMessage *this_obj, 
-			     MonoReflectionMethod *method, MonoArray *out_args);
+			     MonoReflectionMethod *method, MonoArray *out_args, MonoError *error);
 
 MonoObject *
 mono_message_invoke	    (MonoObject *target, MonoMethodMessage *msg, 
@@ -615,16 +615,16 @@ mono_message_invoke	    (MonoObject *target, MonoMethodMessage *msg,
 
 MonoMethodMessage *
 mono_method_call_message_new (MonoMethod *method, gpointer *params, MonoMethod *invoke, 
-			      MonoDelegate **cb, MonoObject **state);
+			      MonoDelegate **cb, MonoObject **state, MonoError *error);
 
 void
 mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoArray *out_args, MonoError *error);
 
-void
-mono_delegate_ctor_with_method (MonoObject *this_obj, MonoObject *target, gpointer addr, MonoMethod *method);
+gboolean
+mono_delegate_ctor_with_method (MonoObject *this_obj, MonoObject *target, gpointer addr, MonoMethod *method, MonoError *error);
 
-void
-mono_delegate_ctor	    (MonoObject *this_obj, MonoObject *target, gpointer addr);
+gboolean
+mono_delegate_ctor	    (MonoObject *this_obj, MonoObject *target, gpointer addr, MonoError *error);
 
 void*
 mono_class_get_allocation_ftn (MonoVTable *vtable, gboolean for_box, gboolean *pass_size_in_words);
@@ -1681,6 +1681,9 @@ mono_object_isinst_mbyref_checked   (MonoObject *obj, MonoClass *klass, MonoErro
 
 MonoString *
 mono_string_new_size_checked (MonoDomain *domain, gint32 len, MonoError *error);
+
+MonoString*
+mono_ldstr_checked (MonoDomain *domain, MonoImage *image, uint32_t str_index, MonoError *error);
 
 MonoString*
 mono_string_new_len_checked (MonoDomain *domain, const char *text, guint length, MonoError *error);
