@@ -9,7 +9,7 @@ namespace System.ComponentModel
     ///       properties.</para>
     /// </summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
-    public sealed class ProvidePropertyAttribute : Attribute, ITypeId
+    public sealed class ProvidePropertyAttribute : Attribute
     {
         private readonly string _propertyName;
         private readonly string _receiverTypeName;
@@ -55,17 +55,6 @@ namespace System.ComponentModel
             get
             {
                 return _receiverTypeName;
-            }
-        }
-
-        /// <summary>
-        ///    <para>ProvidePropertyAttribute implements this to include the type name and the property name</para>
-        /// </summary>
-        object ITypeId.TypeId
-        {
-            get
-            {
-                return GetType().FullName + _propertyName;
             }
         }
 

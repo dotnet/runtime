@@ -8,7 +8,7 @@ namespace System.ComponentModel
     ///    <para>Specifies whether a property should be localized.</para>
     /// </summary>
     [AttributeUsage(AttributeTargets.All)]
-    public sealed class LocalizableAttribute : Attribute, IIsDefaultAttribute
+    public sealed class LocalizableAttribute : Attribute
     {
         /// <summary>
         ///    <para>
@@ -52,14 +52,6 @@ namespace System.ComponentModel
         ///    </para>
         /// </summary>
         public static readonly LocalizableAttribute Default = No;
-
-        /// <internalonly/>
-        /// <summary>
-        /// </summary>
-        bool IIsDefaultAttribute.IsDefaultAttribute()
-        {
-            return IsLocalizable == Default.IsLocalizable;
-        }
 
         public override bool Equals(object obj)
         {

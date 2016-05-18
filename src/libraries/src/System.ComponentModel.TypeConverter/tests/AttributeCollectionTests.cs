@@ -122,7 +122,6 @@ namespace System.ComponentModel.Tests
         [Theory]
         [InlineData(typeof(TestAttribute1), true)]
         [InlineData(typeof(TestAttribute2), false)]
-        [InlineData(typeof(TestAttributeWithDefaultMethodTrue), true)] // Types that are default are created and returned
         public void ItemIndexByType(Type type, bool isInCollection)
         {
             var attributes = new Attribute[]
@@ -144,7 +143,8 @@ namespace System.ComponentModel.Tests
         {
             var collection = new AttributeCollection();
 
-            Assert.Same(TestAttributeWithDefaultFieldAndDefaultAttributeMethodTrue.Default, collection[typeof(TestAttributeWithDefaultFieldAndDefaultAttributeMethodTrue)]);
+            // ReadOnlyAttribute is used as an example of an attribute that has a default value
+            Assert.Same(ReadOnlyAttribute.No, collection[typeof(ReadOnlyAttribute)]);
         }
 
         [Fact]
@@ -185,9 +185,6 @@ namespace System.ComponentModel.Tests
 
                 // This attribute is not available, so we expect a null to be returned
                 Assert.Null(collection[typeof(TestAttribute6)]);
-
-                // Attributes that are marked as the 'Default' will always be returned
-                Assert.NotNull(collection[typeof(TestAttributeWithDefaultMethodTrue)]);
             }
         }
 
@@ -262,24 +259,6 @@ namespace System.ComponentModel.Tests
         private class TestAttribute5a : Attribute { }
         private class TestAttribute5b : TestAttribute5a { }
         private class TestAttribute6 : Attribute { }
-
-        private class TestAttributeWithDefaultMethodTrue : Attribute, IIsDefaultAttribute
-        {
-            bool IIsDefaultAttribute.IsDefaultAttribute()
-            {
-                return true;
-            }
-        }
-
-        private class TestAttributeWithDefaultFieldAndDefaultAttributeMethodTrue : Attribute, IIsDefaultAttribute
-        {
-            public static readonly TestAttributeWithDefaultFieldAndDefaultAttributeMethodTrue Default = new TestAttributeWithDefaultFieldAndDefaultAttributeMethodTrue();
-
-            bool IIsDefaultAttribute.IsDefaultAttribute()
-            {
-                return true;
-            }
-        }
 
         private class TestAttributeWithDefaultFieldButNotDefault : Attribute
         {

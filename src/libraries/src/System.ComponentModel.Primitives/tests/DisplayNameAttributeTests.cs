@@ -20,17 +20,16 @@ namespace System.ComponentModel.Primitives.Tests
 
         [Theory]
         [MemberData(nameof(NameData))]
-        public void NameTests(DisplayNameAttribute attribute, string name, bool isDefault)
+        public void NameTests(DisplayNameAttribute attribute, string name)
         {
             Assert.Equal(name, attribute.DisplayName);
-            Assert.Equal(isDefault, attribute.IsDefaultAttribute());
         }
 
         private static IEnumerable<object[]> NameData()
         {
-            yield return new object[] { DisplayNameAttribute.Default, "", true };
-            yield return new object[] { new DisplayNameAttribute(""), "", true };
-            yield return new object[] { new DisplayNameAttribute("other"), "other", false };
+            yield return new object[] { DisplayNameAttribute.Default, "" };
+            yield return new object[] { new DisplayNameAttribute(""), "" };
+            yield return new object[] { new DisplayNameAttribute("other"), "other" };
         }
     }
 }

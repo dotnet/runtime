@@ -33,17 +33,16 @@ namespace System.ComponentModel.Primitives.Tests
 
         [Theory]
         [MemberData(nameof(ReadOnlyAttributeData))]
-        public void NameTests(ReadOnlyAttribute attribute, bool isReadOnly, bool isDefault)
+        public void NameTests(ReadOnlyAttribute attribute, bool isReadOnly)
         {
             Assert.Equal(isReadOnly, attribute.IsReadOnly);
-            Assert.Equal(isDefault, attribute.IsDefaultAttribute());
         }
 
         private static IEnumerable<object[]> ReadOnlyAttributeData()
         {
-            yield return new object[] { ReadOnlyAttribute.Default, false, true };
-            yield return new object[] { new ReadOnlyAttribute(true), true, false };
-            yield return new object[] { new ReadOnlyAttribute(false), false, true };
+            yield return new object[] { ReadOnlyAttribute.Default, false };
+            yield return new object[] { new ReadOnlyAttribute(true), true };
+            yield return new object[] { new ReadOnlyAttribute(false), false };
         }
     }
 }

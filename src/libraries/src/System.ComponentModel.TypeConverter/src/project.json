@@ -6,6 +6,7 @@
         "System.Collections.NonGeneric": "4.0.0",
         "System.Collections.Specialized": "4.0.0",
         "System.ComponentModel": "4.0.0",
+        "System.ComponentModel.Primitives": "4.1.0-rc3-24117-00",
         "System.Diagnostics.Contracts": "4.0.0",
         "System.Diagnostics.Debug": "4.0.10",
         "System.Diagnostics.Tools": "4.0.0",
@@ -27,7 +28,7 @@
       "dependencies": {
         "System.Collections": "4.0.0",
         "System.ComponentModel": "4.0.0",
-        "System.ComponentModel.Primitives": "4.0.0",
+        "System.ComponentModel.Primitives": "4.1.0-rc3-24117-00",
         "System.Diagnostics.Contracts": "4.0.0",
         "System.Diagnostics.Debug": "4.0.0",
         "System.Diagnostics.Tools": "4.0.0",

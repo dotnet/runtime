@@ -9,7 +9,7 @@ namespace System.ComponentModel
     /// </summary>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1813:AvoidUnsealedAttributes")]
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Event | AttributeTargets.Class | AttributeTargets.Method)]
-    public class DisplayNameAttribute : Attribute, IIsDefaultAttribute
+    public class DisplayNameAttribute : Attribute
     {
         /// <summary>
         /// <para>Specifies the default value for the <see cref='System.ComponentModel.DisplayNameAttribute'/> , which is an
@@ -59,14 +59,6 @@ namespace System.ComponentModel
         public override int GetHashCode()
         {
             return DisplayName.GetHashCode();
-        }
-
-        /// <internalonly/>
-        /// <summary>
-        /// </summary>
-        bool IIsDefaultAttribute.IsDefaultAttribute()
-        {
-            return this.Equals(Default);
         }
     }
 }

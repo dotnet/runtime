@@ -32,35 +32,25 @@ namespace System.ComponentModel.Primitives.Tests
 
         [Theory]
         [MemberData(nameof(CategoryNameData))]
-        public void CategoryNames(CategoryAttribute attribute, string name, bool isDefault)
+        public void CategoryNames(CategoryAttribute attribute, string name)
         {
             Assert.Equal(name, attribute.Category);
-            Assert.Equal(isDefault, attribute.IsDefaultAttribute());
         }
 
         private static IEnumerable<object[]> CategoryNameData()
         {
-            yield return new object[] { CategoryAttribute.Appearance, "Appearance", false };
-            yield return new object[] { CategoryAttribute.Asynchronous, "Asynchronous", false };
-            yield return new object[] { CategoryAttribute.Behavior, "Behavior", false };
-            yield return new object[] { CategoryAttribute.Data, "Data", false };
-            yield return new object[] { CategoryAttribute.Default, "Misc", true };
-            yield return new object[] { CategoryAttribute.Design, "Design", false };
-            yield return new object[] { CategoryAttribute.DragDrop, "Drag Drop", false };
-            yield return new object[] { CategoryAttribute.Focus, "Focus", false };
-            yield return new object[] { CategoryAttribute.Key, "Key", false };
-            yield return new object[] { CategoryAttribute.Layout, "Layout", false };
-            yield return new object[] { CategoryAttribute.Mouse, "Mouse", false };
-            yield return new object[] { CategoryAttribute.WindowStyle, "Window Style", false };
-        }
-
-        [Theory]
-        [InlineData("Default", true)]
-        [InlineData("default", false)]
-        [InlineData("other", false)]
-        public void DefaultValue(string name, bool isDefault)
-        {
-            Assert.Equal(isDefault, new CategoryAttribute(name).IsDefaultAttribute());
+            yield return new object[] { CategoryAttribute.Appearance, "Appearance" };
+            yield return new object[] { CategoryAttribute.Asynchronous, "Asynchronous" };
+            yield return new object[] { CategoryAttribute.Behavior, "Behavior" };
+            yield return new object[] { CategoryAttribute.Data, "Data" };
+            yield return new object[] { CategoryAttribute.Default, "Misc" };
+            yield return new object[] { CategoryAttribute.Design, "Design" };
+            yield return new object[] { CategoryAttribute.DragDrop, "Drag Drop" };
+            yield return new object[] { CategoryAttribute.Focus, "Focus" };
+            yield return new object[] { CategoryAttribute.Key, "Key" };
+            yield return new object[] { CategoryAttribute.Layout, "Layout" };
+            yield return new object[] { CategoryAttribute.Mouse, "Mouse" };
+            yield return new object[] { CategoryAttribute.WindowStyle, "Window Style" };
         }
     }
 }

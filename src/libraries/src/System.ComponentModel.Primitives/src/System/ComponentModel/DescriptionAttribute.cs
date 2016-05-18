@@ -9,7 +9,7 @@ namespace System.ComponentModel
     ///       or event.</para>
     /// </summary>
     [AttributeUsage(AttributeTargets.All)]
-    public class DescriptionAttribute : Attribute, IIsDefaultAttribute
+    public class DescriptionAttribute : Attribute
     {
         /// <summary>
         /// <para>Specifies the default value for the <see cref='System.ComponentModel.DescriptionAttribute'/> , which is an
@@ -58,14 +58,6 @@ namespace System.ComponentModel
         public override int GetHashCode()
         {
             return Description.GetHashCode();
-        }
-
-        /// <internalonly/>
-        /// <summary>
-        /// </summary>
-        bool IIsDefaultAttribute.IsDefaultAttribute()
-        {
-            return this.Equals(Default);
         }
     }
 }
