@@ -23,6 +23,8 @@ LONG WINAPI ExcepFilter(struct _EXCEPTION_POINTERS *pExp)
 
 
 // This is an example of an exported function.
+// Disable optimization otherwise compiler removes dividebyzero operation
+#pragma optimize( "", off )
 extern "C" FPCW_API int RaiseFPException(void)
 {
     unsigned int fpcw;
