@@ -15,19 +15,14 @@ namespace System.Reflection.Tests
     {
 
         //Verify Method Signatures
-        public static IEnumerable<object> TestMethodNameData()
-        {
-            yield return new object[] { typeof(MethodInfoNameTests), "DummyMethod1" };
-            yield return new object[] { typeof(MethodInfoNameTests), "PrintStringArray" };
-            yield return new object[] { typeof(MethodInfoNameTests), "DummyMethod2" };
-            yield return new object[] { typeof(MethodInfoInterlocked2), "Increment" };
-            yield return new object[] { typeof(MethodInfoInterlocked2), "Decrement" };
-            yield return new object[] { typeof(MethodInfoInterlocked2), "Exchange" };
-            yield return new object[] { typeof(MethodInfoInterlocked2), "CompareExchange" };
-        }
-
         [Theory]
-        [MemberData(nameof(TestMethodNameData))]
+        [InlineData(typeof(MethodInfoNameTests), "DummyMethod1")]
+        [InlineData(typeof(MethodInfoNameTests), "PrintStringArray")]
+        [InlineData(typeof(MethodInfoNameTests), "DummyMethod2")]
+        [InlineData(typeof(MethodInfoInterlocked2), "Increment")]
+        [InlineData(typeof(MethodInfoInterlocked2), "Decrement")]
+        [InlineData(typeof(MethodInfoInterlocked2), "Exchange")]
+        [InlineData(typeof(MethodInfoInterlocked2), "CompareExchange")]
 
         public static void TestMethodName(Type type, string methodName)
         {

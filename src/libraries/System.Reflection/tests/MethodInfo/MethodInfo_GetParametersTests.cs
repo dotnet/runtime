@@ -13,21 +13,15 @@ namespace System.Reflection.Tests
 {
     public class MethodInfoParametersTests
     {
-        public static IEnumerable<object> FactParamsData()
-        {
-            //Verify Method Parameters
-            yield return new object[] { typeof(MethodInfoParametersTests), "DummyMethod1" , new string[] { "str", "iValue", "lValue" } };
-            //Verify Method Parameters
-            yield return new object[] { typeof(MethodInfoParametersTests), "PrintStringArray", new string[] { "strArray" } };
-            yield return new object[] { typeof(Interlocked2), "Increment", new string[] { "location" } };
-            yield return new object[] { typeof(Interlocked2), "Decrement", new string[] { "location" } };
-            yield return new object[] { typeof(Interlocked2), "Exchange", new string[] { "location1", "value" } };
-            yield return new object[] { typeof(Interlocked2), "CompareExchange", new string[] { "location1", "value", "comparand" } };
-        }
 
         //Verify Method Parameters
         [Theory]
-        [MemberData(nameof(FactParamsData))]
+        [InlineData(typeof(MethodInfoParametersTests), "DummyMethod1", new string[] { "str", "iValue", "lValue" })]
+        [InlineData(typeof(MethodInfoParametersTests), "PrintStringArray", new string[] { "strArray" })]
+        [InlineData(typeof(Interlocked2), "Increment", new string[] { "location" })]
+        [InlineData(typeof(Interlocked2), "Decrement", new string[] { "location" })]
+        [InlineData(typeof(Interlocked2), "Exchange", new string[] { "location1", "value" })]
+        [InlineData(typeof(Interlocked2), "CompareExchange", new string[] { "location1", "value", "comparand" })]
 
         public static void FactParams3(Type type, string methodName, string[] methodParams)
         {
@@ -43,7 +37,7 @@ namespace System.Reflection.Tests
             //Verify Names of all Params
             for (int i = 0; i < allparams.Length; i++)
             {
-                Assert.True(new string(allparams[i].Name.ToCharArray()).Trim().Equals(methodParams[i], StringComparison.CurrentCultureIgnoreCase));
+                Assert.True(allparams[i].Name.Trim().Equals(methodParams[i], StringComparison.CurrentCultureIgnoreCase));
             }
         }
 

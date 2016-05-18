@@ -11,18 +11,15 @@ namespace System.Reflection.Tests
 {
     public class MethodInfo_GetBaseDefinition
     {
-        public static IEnumerable<object[]> GetBaseDefinitionData()
-        { 
-            yield return new object[] { "ItfMethod1" , typeof(BaseClass), typeof(BaseClass) };
-            yield return new object[] { "ItfMethod1", typeof(DerivedClass), typeof(BaseClass) };
-            yield return new object[] { "BaseClassVirtualMethod", typeof(DerivedClass), typeof(BaseClass) };
-            yield return new object[] { "BaseClassMethod", typeof(DerivedClass), typeof(DerivedClass) };
-            yield return new object[] { "ToString", typeof(DerivedClass), typeof(object) };
-            yield return new object[] { "DerivedClassMethod", typeof(DerivedClass), typeof(DerivedClass) };
-        }
 
         [Theory]
-        [MemberData(nameof(GetBaseDefinitionData))]
+        [InlineData("ItfMethod1", typeof(BaseClass), typeof(BaseClass))]
+        [InlineData("ItfMethod1", typeof(DerivedClass), typeof(BaseClass))]
+        [InlineData("BaseClassVirtualMethod", typeof(DerivedClass), typeof(BaseClass))]
+        [InlineData("BaseClassMethod", typeof(DerivedClass), typeof(DerivedClass))]
+        [InlineData("ToString", typeof(DerivedClass), typeof(object))]
+        [InlineData("DerivedClassMethod", typeof(DerivedClass), typeof(DerivedClass))]
+
         public void GetBaseDefinition(string str1, Type typ1, Type typ2)
         {
             MethodInfo mi = typ1.GetTypeInfo().GetMethod(str1).GetBaseDefinition();
