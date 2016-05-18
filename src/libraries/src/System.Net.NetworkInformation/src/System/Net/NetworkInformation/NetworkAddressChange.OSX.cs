@@ -173,7 +173,7 @@ namespace System.Net.NetworkInformation
             Debug.Assert(s_dynamicStoreRef != null);
 
             // Allow RunLoop to finish current processing.
-            while (!Interop.RunLoop.CFRunLoopIsWaiting(s_runLoop)) { }
+            SpinWait.SpinUntil(() => Interop.RunLoop.CFRunLoopIsWaiting(s_runLoop));
 
             Interop.RunLoop.CFRunLoopStop(s_runLoop);
             s_runLoopEndedEvent.WaitOne();
