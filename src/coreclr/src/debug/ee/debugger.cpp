@@ -13502,7 +13502,17 @@ ExceptionHijackPersonalityRoutine(IN     PEXCEPTION_RECORD   pExceptionRecord
     CONTEXT * pHijackContext = NULL;
 
     // Get the 1st parameter (the Context) from hijack worker.
-    pHijackContext = *reinterpret_cast<CONTEXT **>(pDispatcherContext->EstablisherFrame);
+    // EstablisherFrame points to the stack slot 8 bytes above the
+    // return address to the ExceptionHijack. This would contain the
+    // parameters passed to ExceptionHijackWorker, which is marked
+    // STDCALL, but the x64 calling convention lets the
+    // ExceptionHijackWorker use that stack space, resulting in the
+    // context being overwritten. Instead, we get the context from the
+    // previous stack frame, which contains the arguments to
+    // ExceptionHijack, placed there by the debugger in
+    // DacDbiInterfaceImpl::Hijack. This works because ExceptionHijack
+    // allocates exactly 4 stack slots.
+    pHijackContext = *reinterpret_cast<CONTEXT **>(pDispatcherContext->EstablisherFrame + 0x20);
     
     // This copies pHijackContext into pDispatcherContext, which the OS can then
     // use to walk the stack.

@@ -48,6 +48,13 @@ NESTED_ENTRY ExceptionHijack, _TEXT, ExceptionHijackPersonalityRoutine
         ; So we allocate 4 stack slots as the outgoing argument home and just copy the 
         ; arguments set up by DacDbi into these stack slots.  We will take a perf hit,
         ; but this is not a perf critical code path anyway.
+
+        ; There is an additional dependency on this alloc_stack: the
+        ; ExceptionHijackPersonalityRoutine assumes that it can find
+        ; the first argument to HijackWorker in the stack frame of
+        ; ExceptionHijack, at an offset of exactly 0x20 bytes from
+        ; ExceptionHijackWorker's stack frame. Therefore it is
+        ; important that we move the stack pointer by the same amount.
         alloc_stack 20h
         END_PROLOGUE
 
@@ -56,6 +63,11 @@ NESTED_ENTRY ExceptionHijack, _TEXT, ExceptionHijackPersonalityRoutine
         ; stack for us.  However, the Orcas compilers don't like a 0-sized frame, so 
         ; we need to allocate something here and then just copy the stack arguments to 
         ; their new argument homes.
+
+        ; In x86, ExceptionHijackWorker is marked STDCALL, so it finds
+        ; its arguments on the stack. In x64, it gets its arguments in
+        ; registers (set up for us by DacDbiInterfaceImpl::Hijack),
+        ; and this stack space may be reused.
         mov     rax, [rsp + 20h]
         mov     [rsp], rax
         mov     rax, [rsp + 28h]
