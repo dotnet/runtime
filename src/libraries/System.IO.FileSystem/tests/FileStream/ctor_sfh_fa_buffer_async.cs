@@ -13,8 +13,7 @@ namespace System.IO.Tests
     {
         protected sealed override FileStream CreateFileStream(SafeFileHandle handle, FileAccess access, int bufferSize)
         {
-            // default for isAsync is platform specific, we need a better way to determine this
-            return CreateFileStream(handle, access, bufferSize, true);
+            return CreateFileStream(handle, access, bufferSize, false);
         }
 
         protected virtual FileStream CreateFileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)

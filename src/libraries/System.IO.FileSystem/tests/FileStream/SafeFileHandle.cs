@@ -59,12 +59,14 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
-        public async Task ThrowWhenHandlePositionIsChanged()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ThrowWhenHandlePositionIsChanged(bool useAsync)
         {
             string fileName = GetTestFilePath();
 
-            using (FileStream fs = new FileStream(fileName, FileMode.Create))
+            using (FileStream fs = new FileStream(fileName, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite, 0x100, useAsync))
             {
                 // write some data to move the position, flush to ensure OS position is updated
                 fs.Write(TestBuffer, 0, TestBuffer.Length);
@@ -76,7 +78,7 @@ namespace System.IO.Tests
                     return;
                 }
 
-                using (FileStream fsr = new FileStream(fs.SafeFileHandle, FileAccess.Read, TestBuffer.Length))
+                using (FileStream fsr = new FileStream(fs.SafeFileHandle, FileAccess.Read, TestBuffer.Length, useAsync))
                 {
                     Assert.Equal(TestBuffer.Length, fs.Position);
                     Assert.Equal(TestBuffer.Length, fsr.Position);
@@ -94,7 +96,7 @@ namespace System.IO.Tests
 
                     fs.WriteByte(0);
                     fsr.Position++;
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // Async I/O behaviors differ due to kernel-based implementation on Windows
+                    if (useAsync && RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // Async I/O behaviors differ due to kernel-based implementation on Windows
                     {
                         Assert.Throws<IOException>(() => FSAssert.CompletesSynchronously(fs.ReadAsync(new byte[1], 0, 1)));
                     }
