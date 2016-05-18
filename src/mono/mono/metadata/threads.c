@@ -41,6 +41,8 @@
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-memory-model.h>
+#include <mono/utils/mono-threads-coop.h>
+#include <mono/utils/mono-error-internals.h>
 
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/reflection-internals.h>
@@ -5005,4 +5007,104 @@ void
 ves_icall_System_Threading_Thread_GetStackTraces (MonoArray **out_threads, MonoArray **out_stack_traces)
 {
 	mono_threads_get_thread_dump (out_threads, out_stack_traces);
+}
+
+/*
+ * mono_threads_attach_coop: called by native->managed wrappers
+ *
+ * In non-coop mode:
+ *  - @dummy: is NULL
+ *  - @return: the original domain which needs to be restored, or NULL.
+ *
+ * In coop mode:
+ *  - @dummy: contains the original domain
+ *  - @return: a cookie containing current MonoThreadInfo*.
+ */
+gpointer
+mono_threads_attach_coop (MonoDomain *domain, gpointer *dummy)
+{
+	MonoError error;
+	MonoDomain *orig;
+	gboolean fresh_thread;
+
+	if (!domain) {
+		/* Happens when called from AOTed code which is only used in the root domain. */
+		domain = mono_get_root_domain ();
+	}
+
+	g_assert (domain);
+
+	/* On coop, when we detached, we moved the thread from  RUNNING->BLOCKING.
+	 * If we try to reattach we do a BLOCKING->RUNNING transition.  If the thread
+	 * is fresh, mono_thread_attach() will do a STARTING->RUNNING transition so
+	 * we're only responsible for making the cookie. */
+	if (mono_threads_is_coop_enabled ()) {
+		MonoThreadInfo *info = mono_thread_info_current_unchecked ();
+		fresh_thread = !info || !mono_thread_info_is_live (info);
+	}
+
+	if (!mono_thread_internal_current ()) {
+		mono_thread_attach_full (domain, FALSE, &error);
+		mono_error_assert_ok (&error);
+
+		// #678164
+		mono_thread_set_state (mono_thread_internal_current (), ThreadState_Background);
+	}
+
+	orig = mono_domain_get ();
+	if (orig != domain)
+		mono_domain_set (domain, TRUE);
+
+	if (!mono_threads_is_coop_enabled ())
+		return orig != domain ? orig : NULL;
+
+	if (fresh_thread) {
+		*dummy = NULL;
+		/* mono_thread_attach put the thread in RUNNING mode from STARTING, but we need to
+		 * return the right cookie. */
+		return mono_threads_enter_gc_unsafe_region_cookie (mono_thread_info_current ());
+	} else {
+		*dummy = orig;
+		/* thread state (BLOCKING|RUNNING) -> RUNNING */
+		return mono_threads_enter_gc_unsafe_region (dummy);
+	}
+}
+
+/*
+ * mono_threads_detach_coop: called by native->managed wrappers
+ *
+ * In non-coop mode:
+ *  - @cookie: the original domain which needs to be restored, or NULL.
+ *  - @dummy: is NULL
+ *
+ * In coop mode:
+ *  - @cookie: contains current MonoThreadInfo* if it was in BLOCKING mode, NULL otherwise
+ *  - @dummy: contains the original domain
+ */
+void
+mono_threads_detach_coop (gpointer cookie, gpointer *dummy)
+{
+	MonoDomain *domain, *orig;
+
+	if (!mono_threads_is_coop_enabled ()) {
+		orig = (MonoDomain*) cookie;
+		if (orig)
+			mono_domain_set (orig, TRUE);
+	} else {
+		orig = (MonoDomain*) *dummy;
+
+		domain = mono_domain_get ();
+		g_assert (domain);
+
+		/* it won't do anything if cookie is NULL
+		 * thread state RUNNING -> (RUNNING|BLOCKING) */
+		mono_threads_exit_gc_unsafe_region (cookie, dummy);
+
+		if (orig != domain) {
+			if (!orig)
+				mono_domain_unset ();
+			else
+				mono_domain_set (orig, TRUE);
+		}
+	}
 }

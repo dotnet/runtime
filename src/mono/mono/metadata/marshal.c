@@ -326,6 +326,8 @@ mono_marshal_init (void)
 		register_icall (mono_marshal_ftnptr_eh_callback, "mono_marshal_ftnptr_eh_callback", "void uint32", TRUE);
 		register_icall (mono_threads_enter_gc_safe_region_unbalanced, "mono_threads_enter_gc_safe_region_unbalanced", "ptr ptr", TRUE);
 		register_icall (mono_threads_exit_gc_safe_region_unbalanced, "mono_threads_exit_gc_safe_region_unbalanced", "void ptr ptr", TRUE);
+		register_icall (mono_threads_attach_coop, "mono_threads_attach_coop", "ptr ptr ptr", TRUE);
+		register_icall (mono_threads_detach_coop, "mono_threads_detach_coop", "void ptr ptr", TRUE);
 
 		mono_cominterop_init ();
 		mono_remoting_init ();
@@ -7955,7 +7957,7 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 #else
 	MonoMethodSignature *sig, *csig;
 	MonoExceptionClause *clauses, *clause_finally, *clause_catch;
-	int i, *tmp_locals, ex_local, e_local;
+	int i, *tmp_locals, ex_local, e_local, attach_cookie_local, attach_dummy_local;
 	int leave_try_pos, leave_catch_pos, ex_m1_pos;
 	gboolean closed = FALSE;
 
@@ -7990,10 +7992,14 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 	ex_local = mono_mb_add_local (mb, &mono_defaults.uint32_class->byval_arg);
 	e_local = mono_mb_add_local (mb, &mono_defaults.exception_class->byval_arg);
 
+	attach_cookie_local = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+	attach_dummy_local = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+
 	/*
 	 * guint32 ex = -1;
 	 * try {
-	 *   mono_jit_attach ();
+	 *   // does (STARTING|RUNNING|BLOCKING) -> RUNNING + set/switch domain
+	 *   mono_threads_attach_coop ();
 	 *
 	 *   <interrupt check>
 	 *
@@ -8001,7 +8007,8 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 	 * } catch (Exception e) {
 	 *   ex = mono_gchandle_new (e, false);
 	 * } finally {
-	 *   mono_jit_detach ();
+	 *   // does RUNNING -> (RUNNING|BLOCKING) + unset/switch domain
+	 *   mono_threads_detach_coop ();
 	 *
 	 *   if (ex != -1)
 	 *     mono_marshal_ftnptr_eh_callback (ex);
@@ -8029,16 +8036,17 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 	/* try { */
 	clause_catch->try_offset = clause_finally->try_offset = mono_mb_get_label (mb);
 
-	/*
-	 * Might need to attach the thread to the JIT or change the
-	 * domain for the callback.
-	 *
-	 * Also does the (STARTING|BLOCKING|RUNNING) -> RUNNING thread state transtion
-	 *
-	 * mono_jit_attach ();
-	 */
-	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_byte (mb, CEE_MONO_JIT_ATTACH);
+	if (!mono_threads_is_coop_enabled ()) {
+		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+		mono_mb_emit_byte (mb, CEE_MONO_JIT_ATTACH);
+	} else {
+		/* mono_threads_attach_coop (); */
+		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+		mono_mb_emit_byte (mb, CEE_MONO_LDDOMAIN);
+		mono_mb_emit_ldloc_addr (mb, attach_dummy_local);
+		mono_mb_emit_icall (mb, mono_threads_attach_coop);
+		mono_mb_emit_stloc (mb, attach_cookie_local);
+	}
 
 	/* <interrupt check> */
 	emit_thread_interrupt_checkpoint (mb);
@@ -8206,13 +8214,15 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 	clause_finally->try_len = mono_mb_get_label (mb) - clause_finally->try_offset;
 	clause_finally->handler_offset = mono_mb_get_label (mb);
 
-	/*
-	 * Also does the RUNNING -> (BLOCKING|RUNNING) thread state transition
-	 *
-	 * mono_jit_detach ();
-	 */
-	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_byte (mb, CEE_MONO_JIT_DETACH);
+	if (!mono_threads_is_coop_enabled ()) {
+		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+		mono_mb_emit_byte (mb, CEE_MONO_JIT_DETACH);
+	} else {
+		/* mono_threads_detach_coop (); */
+		mono_mb_emit_ldloc (mb, attach_cookie_local);
+		mono_mb_emit_ldloc_addr (mb, attach_dummy_local);
+		mono_mb_emit_icall (mb, mono_threads_detach_coop);
+	}
 
 	/* if (ex != -1) */
 	mono_mb_emit_ldloc (mb, ex_local);
