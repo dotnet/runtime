@@ -27,7 +27,7 @@ namespace System.Reflection.Tests
             MethodInfo mi1 = GetMethod(str1);
             MethodInfo mi2 = GetMethod(str2);
 
-            Assert.Equal(mi1.Equals(mi2), expected);
+            Assert.Equal(expected, mi1.Equals(mi2));
         }
 
         public static IEnumerable<object[]> TestEqualsMethodData2()
@@ -35,7 +35,7 @@ namespace System.Reflection.Tests
             //Verify two different MethodInfo objects with same name from two different classes are not equal 
             yield return new object[] { typeof(Sample), typeof(SampleG<>), "Method1", "Method1", false};
             //Verify two different MethodInfo objects with same name from two different classes are not equal 
-            yield return new object[] { typeof(Sample), typeof(SampleG<String>), "Method2", "Method2", false };
+            yield return new object[] { typeof(Sample), typeof(SampleG<string>), "Method2", "Method2", false };
         }
 
         [Theory]
@@ -45,7 +45,7 @@ namespace System.Reflection.Tests
             MethodInfo mi1 = GetMethod(sample1, str1);
             MethodInfo mi2 = GetMethod(sample2, str2);
 
-            Assert.Equal(mi1.Equals(mi2), expected);
+            Assert.Equal(expected, mi1.Equals(mi2));
         }
 
         // Gets MethodInfo object from current class
@@ -74,7 +74,7 @@ namespace System.Reflection.Tests
         }
 
         //Methods for Reflection Metadata  
-        public void DummyMethod1(String str, int iValue, long lValue)
+        public void DummyMethod1(string str, int iValue, long lValue)
         {
         }
 
@@ -82,7 +82,7 @@ namespace System.Reflection.Tests
         {
         }
 
-        public void PrintStringArray(String[] strArray)
+        public void PrintStringArray(string[] strArray)
         {
             for (int ii = 0; ii < strArray.Length; ++ii)
             {

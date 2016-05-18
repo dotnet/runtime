@@ -122,7 +122,7 @@ namespace System.Reflection.Tests
             Type[] types = null;
 
             types = mi.GetGenericArguments();
-            Assert.Equal(types.Length, len);
+            Assert.Equal(len, types.Length);
         }
 
         //Verify GetHashCode Method
@@ -132,7 +132,7 @@ namespace System.Reflection.Tests
             MethodInfo mi = GetMethod(typeof(SampleM), "NonGenericMethod");
             int hcode = mi.GetHashCode();
 
-            Assert.NotEqual(hcode, 0);
+            Assert.NotEqual(0, hcode);
         }
 
         //Gets MethodInfo object from a Type

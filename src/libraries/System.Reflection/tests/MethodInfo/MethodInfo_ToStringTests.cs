@@ -11,24 +11,12 @@ namespace System.Reflection.Tests
 {
     public class MethodInfoToStringTests
     {
-        
-        public static IEnumerable<object> TestMethodSignatureData1()
-        {
-            yield return new object[] { "DummyMethod1", "Void DummyMethod1(System.String, Int32, Int64)" };
-            yield return new object[] { "PrintStringArray", "Void PrintStringArray(System.String[])" };
-            yield return new object[] { "DummyMethod2", "Void DummyMethod2()" };
-        }
 
-        //Verify Method Signatures
-        [Theory]
-        [MemberData(nameof(TestMethodSignatureData1))]
-        public static void TestMethodSignature1(string str1, string str2)
+        public static IEnumerable<object> TestMethodData()
         {
-            VerifyMethodSignature(str1, str2);
-        }
-
-        public static IEnumerable<object> TestMethodData2()
-        {
+            yield return new object[] { typeof(MethodInfoToStringTests), "DummyMethod1", "Void DummyMethod1(System.String, Int32, Int64)" };
+            yield return new object[] { typeof(MethodInfoToStringTests), "PrintStringArray", "Void PrintStringArray(System.String[])" };
+            yield return new object[] { typeof(MethodInfoToStringTests), "DummyMethod2", "Void DummyMethod2()" };
             yield return new object[] { typeof(MethodInfoInterlocked3), "Increment", "Int32 Increment(Int32 ByRef)" };
             yield return new object[] { typeof(MethodInfoInterlocked3), "Decrement", "Int32 Decrement(Int32 ByRef)" };
             yield return new object[] { typeof(MethodInfoInterlocked3), "Exchange", "Int32 Exchange(Int32 ByRef, Int32)" };
@@ -43,34 +31,8 @@ namespace System.Reflection.Tests
 
         //Verify Method Signatures ref parameters
         [Theory]
-        [MemberData(nameof(TestMethodData2))]
-        public static void TestMethodSignature2(Type type, string str1, string str2)
-        {
-            VerifyMethodSignature(type, str1, str2);
-        }
-       
-        //Verify Method Signatures
-        [Fact]
-        public static void TestMethodSignature11()
-        {
-            //Make generic method
-            MethodInfo gmi = getMethod(typeof(MethodInfoToStringSampleG<string>), "Method2").MakeGenericMethod(new Type[] { typeof(DateTime) });
-            String sign = "System.String Method2[DateTime](System.DateTime, System.String, System.String)";
-
-            Assert.True(gmi.ToString().Equals(sign));
-        }
-
-
-
-        //Helper Method to Verify Method Signature
-        public static void VerifyMethodSignature(string methodName, string methodsign)
-        {
-            VerifyMethodSignature(typeof(MethodInfoToStringTests), methodName, methodsign);
-        }
-
-
-        //Helper Method to Verify Signatures
-        public static void VerifyMethodSignature(Type type, string methodName, string methodsign)
+        [MemberData(nameof(TestMethodData))]
+        public static void TestMethodSignature(Type type, string methodName, string methodSign)
         {
             MethodInfo mi = getMethod(type, methodName);
 
@@ -78,7 +40,18 @@ namespace System.Reflection.Tests
 
             Assert.True(mi.Name.Equals(methodName, StringComparison.CurrentCultureIgnoreCase));
 
-            Assert.True(mi.ToString().Equals(methodsign, StringComparison.CurrentCultureIgnoreCase));
+            Assert.True(mi.ToString().Equals(methodSign, StringComparison.CurrentCultureIgnoreCase));
+        }
+       
+        //Verify Method Signatures
+        [Fact]
+        public static void TestMethodSignature()
+        {
+            //Make generic method
+            MethodInfo gmi = getMethod(typeof(MethodInfoToStringSampleG<string>), "Method2").MakeGenericMethod(new Type[] { typeof(DateTime) });
+            string sign = "System.String Method2[DateTime](System.DateTime, System.String, System.String)";
+
+            Assert.True(gmi.ToString().Equals(sign));
         }
 
         public static MethodInfo getMethod(Type t, string method)
@@ -100,7 +73,7 @@ namespace System.Reflection.Tests
         }
 
         //Methods for Reflection Metadata  
-        public void DummyMethod1(String str, int iValue, long lValue)
+        public void DummyMethod1(string str, int iValue, long lValue)
         {
         }
 
@@ -108,7 +81,7 @@ namespace System.Reflection.Tests
         {
         }
 
-        public void PrintStringArray(String[] strArray)
+        public void PrintStringArray(string[] strArray)
         {
             for (int ii = 0; ii < strArray.Length; ++ii)
             {
@@ -131,8 +104,8 @@ namespace System.Reflection.Tests
         public static float Exchange(ref float location1, float value) { return 0; }
         public static float CompareExchange(ref float location1, float value, float comparand) { return 0; }
 
-        public static Object Exchange(ref Object location1, Object value) { return null; }
-        public static Object CompareExchange(ref Object location1, Object value, Object comparand) { return null; }
+        public static object Exchange(ref object location1, object value) { return null; }
+        public static object CompareExchange(ref object location1, object value, object comparand) { return null; }
     }
 
     public class MethodInfoToStringSample

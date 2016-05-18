@@ -24,9 +24,9 @@ namespace MethodInfoTests
             int expectedVal = 0;
 
             mi = getMethod(typeof(Co1333_b), "ReturnTheIntPlus");
-            retVal = (int)mi.Invoke(clsObj, (Object[])null);
+            retVal = (int)mi.Invoke(clsObj, null);
 
-            Assert.True(retVal.Equals(expectedVal), String.Format("Failed! MethodInfo.Invoke did not return correct result. Expected {0} , Got {1}", expectedVal, retVal));
+            Assert.True(retVal.Equals(expectedVal), string.Format("Failed! MethodInfo.Invoke did not return correct result. Expected {0} , Got {1}", expectedVal, retVal));
         }
 
         //Invoke a method using a matching MethodInfo from another/parent class. 
@@ -39,9 +39,9 @@ namespace MethodInfoTests
             int expectedVal = 1;
 
             mi = getMethod(typeof(Co1333_b), "ReturnTheIntPlus");
-            retVal = (int)mi.Invoke(clsObj, (Object[])null);
+            retVal = (int)mi.Invoke(clsObj, null);
 
-            Assert.True(retVal.Equals(expectedVal), String.Format("Failed! MethodInfo.Invoke did not return correct result. Expected {0} , Got {1}", expectedVal, retVal));
+            Assert.True(retVal.Equals(expectedVal), string.Format("Failed! MethodInfo.Invoke did not return correct result. Expected {0} , Got {1}", expectedVal, retVal));
         }
 
 
@@ -54,15 +54,15 @@ namespace MethodInfoTests
             Co1333Invoke clsObj = new Co1333Invoke();
             string retVal = "";
             string expectedVal = "42";
-            Object[] varParams =
+            object[] varParams =
             {
-                (int)42
+                ( 42 )
             };
 
             mi = getMethod(typeof(Co1333Invoke), "ConvertI4ObjToString");
-            retVal = (String)mi.Invoke(clsObj, varParams);
+            retVal = (string)mi.Invoke(clsObj, varParams);
 
-            Assert.True(retVal.Equals(expectedVal), String.Format("Failed! MethodInfo.Invoke did not return correct result. Expected {0} , Got {1}", expectedVal, retVal));
+            Assert.True(retVal.Equals(expectedVal), string.Format("Failed! MethodInfo.Invoke did not return correct result. Expected {0} , Got {1}", expectedVal, retVal));
         }
 
 
@@ -76,9 +76,9 @@ namespace MethodInfoTests
             int expectedVal = 3;
 
             mi = getMethod(typeof(Co1333Invoke), "Int4ReturnThree");
-            retVal = (int)mi.Invoke(clsObj, (Object[])null);
+            retVal = (int)mi.Invoke(clsObj, null);
 
-            Assert.True(retVal.Equals(expectedVal), String.Format("Failed! MethodInfo.Invoke did not return correct result. Expected {0} , Got {1}", expectedVal, retVal));
+            Assert.True(retVal.Equals(expectedVal), string.Format("Failed! MethodInfo.Invoke did not return correct result. Expected {0} , Got {1}", expectedVal, retVal));
         }
 
 
@@ -93,9 +93,9 @@ namespace MethodInfoTests
             Int64 expectedVal = Int64.MaxValue;
 
             mi = getMethod(typeof(Co1333Invoke), "ReturnLongMax");
-            retVal = (Int64)mi.Invoke(clsObj, (Object[])null);
+            retVal = (Int64)mi.Invoke(clsObj, null);
 
-            Assert.True(retVal.Equals(expectedVal), String.Format("Failed! MethodInfo.Invoke did not return correct result. Expected {0} , Got {1}", expectedVal, retVal));
+            Assert.True(retVal.Equals(expectedVal), string.Format("Failed! MethodInfo.Invoke did not return correct result. Expected {0} , Got {1}", expectedVal, retVal));
         }
 
 
@@ -107,7 +107,7 @@ namespace MethodInfoTests
             Co1333Invoke clsObj = new Co1333Invoke();
             long retVal = 0;
             long expectedVal = 100200L;
-            Object[] varParams =
+            object[] varParams =
             {
                 ( 200 ),
                 ( 100000 )
@@ -117,7 +117,7 @@ namespace MethodInfoTests
             mi = getMethod(typeof(Co1333Invoke), "ReturnI8Sum");
             retVal = (long)mi.Invoke(clsObj, varParams);
 
-            Assert.True(retVal.Equals(expectedVal), String.Format("Failed! MethodInfo.Invoke did not return correct result. Expected {0} , Got {1}", expectedVal, retVal));
+            Assert.True(retVal.Equals(expectedVal), string.Format("Failed! MethodInfo.Invoke did not return correct result. Expected {0} , Got {1}", expectedVal, retVal));
         }
 
 
@@ -128,7 +128,7 @@ namespace MethodInfoTests
             MethodInfo mi = null;
             int retVal = 0;
             int expectedVal = 110;
-            Object[] varParams =
+            object[] varParams =
             {
                 ( 10 ),
                 ( 100 )
@@ -137,7 +137,7 @@ namespace MethodInfoTests
             mi = getMethod(typeof(Co1333Invoke), "ReturnI4Sum");
             retVal = (int)mi.Invoke(null, varParams);
 
-            Assert.True(retVal.Equals(expectedVal), String.Format("Failed! MethodInfo.Invoke did not return correct result. Expected {0} , Got {1}", expectedVal, retVal));
+            Assert.True(retVal.Equals(expectedVal), string.Format("Failed! MethodInfo.Invoke did not return correct result. Expected {0} , Got {1}", expectedVal, retVal));
         }
 
 
@@ -150,7 +150,7 @@ namespace MethodInfoTests
             Co1333Invoke clsObj = new Co1333Invoke();
             int retVal = 0;
             int expectedVal = 110;
-            Object[] varParams =
+            object[] varParams =
             {
                 ( 10 ),
                 ( 100 )
@@ -159,7 +159,7 @@ namespace MethodInfoTests
             mi = getMethod(typeof(Co1333Invoke), "ReturnI4Sum");
             retVal = (int)mi.Invoke(clsObj, varParams);
 
-            Assert.True(retVal.Equals(expectedVal), String.Format("Failed! MethodInfo.Invoke did not return correct result. Expected {0} , Got {1}", expectedVal, retVal));
+            Assert.True(retVal.Equals(expectedVal), string.Format("Failed! MethodInfo.Invoke did not return correct result. Expected {0} , Got {1}", expectedVal, retVal));
         }
 
 
@@ -171,7 +171,7 @@ namespace MethodInfoTests
             Co1333Invoke clsObj = new Co1333Invoke();
             bool retVal = false;
             bool expectedVal = true;
-            Object[] varParams =
+            object[] varParams =
             {
                 ( 10 ),
             };
@@ -179,7 +179,7 @@ namespace MethodInfoTests
             mi = getMethod(typeof(Co1333_a), "IsEvenStatic");
             retVal = (bool)mi.Invoke(clsObj, varParams);
 
-            Assert.True(retVal.Equals(expectedVal), String.Format("Failed! MethodInfo.Invoke did not return correct result. Expected {0} , Got {1}", expectedVal, retVal));
+            Assert.True(retVal.Equals(expectedVal), string.Format("Failed! MethodInfo.Invoke did not return correct result. Expected {0} , Got {1}", expectedVal, retVal));
         }
 
 
@@ -191,14 +191,14 @@ namespace MethodInfoTests
             Co1333Invoke clsObj = new Co1333Invoke();
             int retVal = 0;
             int expectedVal = (Int32)MyColorEnum.GREEN;
-            Object[] vars = new Object[1];
+            object[] vars = new object[1];
             vars[0] = (MyColorEnum.RED);
 
             mi = getMethod(typeof(Co1333Invoke), "GetAndRetMyEnum");
 
             retVal = (int)mi.Invoke(clsObj, vars);
 
-            Assert.True(retVal.Equals(expectedVal), String.Format("Failed! MethodInfo.Invoke did not return correct result. Expected {0} , Got {1}", expectedVal, retVal));
+            Assert.True(retVal.Equals(expectedVal), string.Format("Failed! MethodInfo.Invoke did not return correct result. Expected {0} , Got {1}", expectedVal, retVal));
         }
 
 
@@ -216,7 +216,7 @@ namespace MethodInfoTests
 
             retVal = (int)mi.Invoke(clsObj, new object[] { });
 
-            Assert.True(retVal.Equals(expectedVal), String.Format("Failed! MethodInfo.Invoke did not return correct result. Expected {0} , Got {1}", expectedVal, retVal));
+            Assert.True(retVal.Equals(expectedVal), string.Format("Failed! MethodInfo.Invoke did not return correct result. Expected {0} , Got {1}", expectedVal, retVal));
         }
 
 
@@ -234,7 +234,7 @@ namespace MethodInfoTests
 
             retVal = (int)mi.Invoke(clsObj, new object[] { });
 
-            Assert.True(retVal.Equals(expectedVal), String.Format("Failed! MethodInfo.Invoke did not return correct result. Expected {0} , Got {1}", expectedVal, retVal));
+            Assert.True(retVal.Equals(expectedVal), string.Format("Failed! MethodInfo.Invoke did not return correct result. Expected {0} , Got {1}", expectedVal, retVal));
         }
 
 
@@ -312,7 +312,7 @@ namespace MethodInfoTests
                 return MyColorEnum.RED;
         }
 
-        public String ConvertI4ObjToString(Object p_obj)  // Bug 10829.  Expecting Integer4 type of obj.
+        public string ConvertI4ObjToString(object p_obj)  // Bug 10829.  Expecting Integer4 type of obj.
         {
             return (p_obj.ToString());
         }

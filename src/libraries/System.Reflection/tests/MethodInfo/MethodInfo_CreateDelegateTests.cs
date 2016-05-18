@@ -93,12 +93,12 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(TestCreateDelegateData))]
-        public void TestCreateDelegate(Type TestData)
+        public void TestCreateDelegate(Type testData)
         {
             MethodInfo miPublicInstanceMethod = GetMethod(typeof(ClassA), "PublicInstanceMethod");
             Assert.Throws<ArgumentException>(() =>
             {
-                miPublicInstanceMethod.CreateDelegate(TestData, new DummyClass());
+                miPublicInstanceMethod.CreateDelegate(testData, new DummyClass());
             });
         }
         
@@ -109,8 +109,8 @@ namespace System.Reflection.Tests
             MethodInfo miPublicStructMethod = GetMethod(typeof(ClassA), "PublicStructMethod");
             ClassA classAObj = new ClassA();
             Delegate dlgt = miPublicStructMethod.CreateDelegate(typeof(Delegate_DateTime_Str));
-            Object retValue = ((Delegate_DateTime_Str)dlgt).DynamicInvoke(new Object[] { classAObj, null });
-            Object actualReturnValue = classAObj.PublicStructMethod(new DateTime());
+            object retValue = ((Delegate_DateTime_Str)dlgt).DynamicInvoke(new object[] { classAObj, null });
+            object actualReturnValue = classAObj.PublicStructMethod(new DateTime());
             Assert.True(retValue.Equals(actualReturnValue));
         }
 
@@ -121,18 +121,18 @@ namespace System.Reflection.Tests
             MethodInfo miPrivateInstanceMethod = GetMethod(typeTestClass, "PrivateInstanceMethod");
             MethodInfo miPublicStaticMethod = GetMethod(typeTestClass, "PublicStaticMethod");
             Delegate dlgt = miPublicInstanceMethod.CreateDelegate(typeof(Delegate_TC_Int));
-            Object retValue = ((Delegate_TC_Int)dlgt).DynamicInvoke(new Object[] { TestClass });
+            object retValue = ((Delegate_TC_Int)dlgt).DynamicInvoke(new object[] { TestClass });
             Assert.True(retValue.Equals(TestClass.PublicInstanceMethod()));
             Assert.NotNull(miPrivateInstanceMethod);
             dlgt = miPrivateInstanceMethod.CreateDelegate(typeof(Delegate_TC_Int));
-            retValue = ((Delegate_TC_Int)dlgt).DynamicInvoke(new Object[] { TestClass });
+            retValue = ((Delegate_TC_Int)dlgt).DynamicInvoke(new object[] { TestClass });
             Assert.True(retValue.Equals(21));
             dlgt = miPublicInstanceMethod.CreateDelegate(typeof(Delegate_Void_Int), TestClass);
             retValue = ((Delegate_Void_Int)dlgt).DynamicInvoke(null);
 
             Assert.True(retValue.Equals(TestClass.PublicInstanceMethod()));
             dlgt = miPublicStaticMethod.CreateDelegate(typeof(Delegate_Str_Str));
-            retValue = ((Delegate_Str_Str)dlgt).DynamicInvoke(new Object[] { "85" });
+            retValue = ((Delegate_Str_Str)dlgt).DynamicInvoke(new object[] { "85" });
 
             Assert.True(retValue.Equals("85"));
 
@@ -148,7 +148,7 @@ namespace System.Reflection.Tests
             ClassA TestClass = (ClassA)Activator.CreateInstance(typeTestClass);
             MethodInfo miPublicInstanceMethod = GetMethod(typeTestClass, "PublicInstanceMethod");
             Delegate dlgt = miPublicInstanceMethod.CreateDelegate(typeof(Delegate_TC_Int));
-            object retValue = ((Delegate_TC_Int)dlgt).DynamicInvoke(new Object[] { TestSubClass });
+            object retValue = ((Delegate_TC_Int)dlgt).DynamicInvoke(new object[] { TestSubClass });
 
             Assert.True(retValue.Equals(TestSubClass.PublicInstanceMethod()));
             dlgt = miPublicInstanceMethod.CreateDelegate(typeof(Delegate_Void_Int), TestSubClass);
@@ -159,30 +159,30 @@ namespace System.Reflection.Tests
 
         public void RunGenericTestsHelper(Type typeGenericClassString)
         {
-            GenericClass<String> genericClass = (GenericClass<String>)Activator.CreateInstance(typeGenericClassString);
+            GenericClass<string> genericClass = (GenericClass<string>)Activator.CreateInstance(typeGenericClassString);
 
             MethodInfo miMethod1String = GetMethod(typeGenericClassString, "Method1");
             MethodInfo miMethod2String = GetMethod(typeGenericClassString, "Method2");
 
             MethodInfo miMethod2IntGeneric = miMethod2String.MakeGenericMethod(new Type[] { typeof(int) });
-            MethodInfo miMethod2StringGeneric = miMethod2String.MakeGenericMethod(new Type[] { typeof(String) });
+            MethodInfo miMethod2StringGeneric = miMethod2String.MakeGenericMethod(new Type[] { typeof(string) });
 
-            Delegate dlgt = miMethod1String.CreateDelegate(typeof(Delegate_GC_T_T<String>));
-            object retValue = ((Delegate_GC_T_T<String>)dlgt).DynamicInvoke(new Object[] { genericClass, "TestGeneric" });
+            Delegate dlgt = miMethod1String.CreateDelegate(typeof(Delegate_GC_T_T<string>));
+            object retValue = ((Delegate_GC_T_T<string>)dlgt).DynamicInvoke(new object[] { genericClass, "TestGeneric" });
 
             Assert.True(retValue.Equals(genericClass.Method1("TestGeneric")));
 
-            dlgt = miMethod1String.CreateDelegate(typeof(Delegate_T_T<String>), genericClass);
-            retValue = ((Delegate_T_T<String>)dlgt).DynamicInvoke(new Object[] { "TestGeneric" });
+            dlgt = miMethod1String.CreateDelegate(typeof(Delegate_T_T<string>), genericClass);
+            retValue = ((Delegate_T_T<string>)dlgt).DynamicInvoke(new object[] { "TestGeneric" });
 
             Assert.True(retValue.Equals(genericClass.Method1("TestGeneric")));
 
             dlgt = miMethod2IntGeneric.CreateDelegate(typeof(Delegate_T_T<int>));
-            retValue = ((Delegate_T_T<int>)dlgt).DynamicInvoke(new Object[] { 58 });
+            retValue = ((Delegate_T_T<int>)dlgt).DynamicInvoke(new object[] { 58 });
             Assert.True(retValue.Equals(58));
 
-            dlgt = miMethod2StringGeneric.CreateDelegate(typeof(Delegate_Void_T<String>), "firstArg");
-            retValue = ((Delegate_Void_T<String>)dlgt).DynamicInvoke();
+            dlgt = miMethod2StringGeneric.CreateDelegate(typeof(Delegate_Void_T<string>), "firstArg");
+            retValue = ((Delegate_Void_T<string>)dlgt).DynamicInvoke();
 
             Assert.True(retValue.Equals("firstArg"));
         }
@@ -215,9 +215,9 @@ namespace System.Reflection.Tests
 
     public delegate int Delegate_TC_Int(ClassA tc);
     public delegate int Delegate_Void_Int();
-    public delegate String Delegate_Str_Str(String x);
-    public delegate String Delegate_Void_Str();
-    public delegate String Delegate_DateTime_Str(ClassA tc, DateTime dt);
+    public delegate string Delegate_Str_Str(string x);
+    public delegate string Delegate_Void_Str();
+    public delegate string Delegate_DateTime_Str(ClassA tc, DateTime dt);
 
     public delegate T Delegate_GC_T_T<T>(GenericClass<T> gc, T x);
     public delegate T Delegate_T_T<T>(T x);
@@ -227,7 +227,7 @@ namespace System.Reflection.Tests
     {
         public virtual int PublicInstanceMethod() { return 17; }
         private int PrivateInstanceMethod() { return 21; }
-        public static String PublicStaticMethod(String x) { return x; }
+        public static string PublicStaticMethod(string x) { return x; }
         public string PublicStructMethod(DateTime dt) { return dt.ToString(); }
     }
 
@@ -239,7 +239,7 @@ namespace System.Reflection.Tests
     public class DummyClass
     {
         public int DummyMethod() { return -1; }
-        public override String ToString() { return "DummyClass"; }
+        public override string ToString() { return "DummyClass"; }
     }
 
     public class GenericClass<T>
