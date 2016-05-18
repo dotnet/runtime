@@ -105,7 +105,6 @@ int main(const int argc, const pal::char_t* argv[])
 {
     trace::setup();
 
-printf("%s\n", sccsid);
     if (trace::is_enabled())
     {
         trace::info(_X("--- Invoked dotnet [version: %s, commit hash: %s] main = {"), _STRINGIFY(HOST_PKG_VER), _STRINGIFY(REPO_COMMIT_HASH));
