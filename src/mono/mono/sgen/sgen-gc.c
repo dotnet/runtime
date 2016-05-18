@@ -326,6 +326,15 @@ nursery_canaries_enabled (void)
 
 #define safe_object_get_size	sgen_safe_object_get_size
 
+#if defined(PLATFORM_MACOSX) || defined(HOST_WIN32) || (defined(__linux__) && !defined(PLATFORM_ANDROID))
+/* Use concurrent major on deskstop platforms */
+#define DEFAULT_MAJOR_INIT sgen_marksweep_conc_init
+#define DEFAULT_MAJOR_NAME "marksweep-conc"
+#else
+#define DEFAULT_MAJOR_INIT sgen_marksweep_init
+#define DEFAULT_MAJOR_NAME "marksweep"
+#endif
+
 /*
  * ######################################################################
  * ########  Global data.
@@ -2811,14 +2820,16 @@ sgen_gc_init (void)
 		}
 	}
 
-	if (!major_collector_opt || !strcmp (major_collector_opt, "marksweep")) {
-	use_marksweep_major:
+	if (!major_collector_opt) {
+	use_default_major:
+		DEFAULT_MAJOR_INIT (&major_collector);
+	} else if (!strcmp (major_collector_opt, "marksweep")) {
 		sgen_marksweep_init (&major_collector);
-	} else if (!major_collector_opt || !strcmp (major_collector_opt, "marksweep-conc")) {
+	} else if (!strcmp (major_collector_opt, "marksweep-conc")) {
 		sgen_marksweep_conc_init (&major_collector);
 	} else {
-		sgen_env_var_error (MONO_GC_PARAMS_NAME, "Using `marksweep` instead.", "Unknown major collector `%s'.", major_collector_opt);
-		goto use_marksweep_major;
+		sgen_env_var_error (MONO_GC_PARAMS_NAME, "Using `" DEFAULT_MAJOR_NAME "` instead.", "Unknown major collector `%s'.", major_collector_opt);
+		goto use_default_major;
 	}
 
 	sgen_nursery_size = DEFAULT_NURSERY_SIZE;
