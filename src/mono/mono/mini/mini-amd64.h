@@ -407,7 +407,7 @@ typedef struct {
 #define MONO_ARCH_HAVE_UNWIND_BACKTRACE 1
 #endif
 
-#if defined(TARGET_OSX) || defined(__linux__)
+#if defined(TARGET_OSX) || defined(__linux__) || defined(TARGET_WIN32)
 #define MONO_ARCH_HAVE_TLS_GET_REG 1
 #endif
 
