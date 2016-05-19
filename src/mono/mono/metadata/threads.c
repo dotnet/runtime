@@ -2222,8 +2222,8 @@ mono_thread_current_check_pending_interrupt (void)
 	return throw_;
 }
 
-void
-ves_icall_System_Threading_Thread_Abort (MonoInternalThread *thread, MonoObject *state)
+static gboolean
+request_thread_abort (MonoInternalThread *thread, MonoObject *state)
 {
 	LOCK_THREAD (thread);
 	
@@ -2232,13 +2232,13 @@ ves_icall_System_Threading_Thread_Abort (MonoInternalThread *thread, MonoObject 
 		(thread->state & ThreadState_Stopped) != 0)
 	{
 		UNLOCK_THREAD (thread);
-		return;
+		return FALSE;
 	}
 
 	if ((thread->state & ThreadState_Unstarted) != 0) {
 		thread->state |= ThreadState_Aborted;
 		UNLOCK_THREAD (thread);
-		return;
+		return FALSE;
 	}
 
 	thread->state |= ThreadState_AbortRequested;
@@ -2260,11 +2260,36 @@ ves_icall_System_Threading_Thread_Abort (MonoInternalThread *thread, MonoObject 
 		mono_thread_resume (thread);
 
 	UNLOCK_THREAD (thread);
+	return TRUE;
+}
+
+void
+ves_icall_System_Threading_Thread_Abort (MonoInternalThread *thread, MonoObject *state)
+{
+	if (!request_thread_abort (thread, state))
+		return;
 
 	if (thread == mono_thread_internal_current ())
 		self_abort_internal ();
 	else
 		async_abort_internal (thread, TRUE);
+}
+
+/**
+ * mono_thread_internal_abort:
+ *
+ * Request thread @thread to be aborted.
+ *
+ * @thread MUST NOT be the current thread.
+ */
+void
+mono_thread_internal_abort (MonoInternalThread *thread)
+{
+	g_assert (thread != mono_thread_internal_current ());
+
+	if (!request_thread_abort (thread, NULL))
+		return;
+	async_abort_internal (thread, TRUE);
 }
 
 void
@@ -3839,7 +3864,7 @@ mono_threads_abort_appdomain_threads (MonoDomain *domain, int timeout)
 		if (user_data.wait.num > 0) {
 			/* Abort the threads outside the threads lock */
 			for (i = 0; i < user_data.wait.num; ++i)
-				ves_icall_System_Threading_Thread_Abort (user_data.wait.threads [i], NULL);
+				mono_thread_internal_abort (user_data.wait.threads [i]);
 
 			/*
 			 * We should wait for the threads either to abort, or to leave the
