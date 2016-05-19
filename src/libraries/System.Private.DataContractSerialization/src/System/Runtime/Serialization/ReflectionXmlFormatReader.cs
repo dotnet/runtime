@@ -152,7 +152,19 @@ namespace System.Runtime.Serialization
                         Type genericCollectionType = Globals.TypeOfICollectionGeneric.MakeGenericType(itemType);
                         if (genericCollectionType.IsAssignableFrom(propertyType))
                         {
-                             addMethod = genericCollectionType.GetMethod("Add");
+                            addMethod = genericCollectionType.GetMethod("Add");
+                        }
+                        else if (Globals.TypeOfIDictionary.IsAssignableFrom(propertyType) && Globals.TypeOfIDictionary.IsAssignableFrom(memberValue.GetType()))
+                        {
+                            var sourceDict = (IDictionary)memberValue;
+                            var targetDict = (IDictionary)property;
+                            foreach (var key in sourceDict.Keys)
+                            {
+                                var value = sourceDict[key];
+                                targetDict.Add(key, value);
+                            }
+
+                            return;
                         }
                         //else if (Globals.TypeOfIList.IsAssignableFrom(propertyType))
                         //{
@@ -160,7 +172,7 @@ namespace System.Runtime.Serialization
                         //}
                         else
                         {
-                             throw new InvalidOperationException("No 'Add' method taking 1 parameter exists for the colletion.");
+                            throw new InvalidOperationException(string.Format("Cannot set the member: {0} of type: {1}", memberInfo.Name, obj.GetType().Name));
                         }
                     }
 
@@ -303,6 +315,11 @@ namespace System.Runtime.Serialization
                 if (collectionContract.UnderlyingType.GetTypeInfo().IsValueType)
                 {
                     throw new NotImplementedException();
+                }
+                else if (collectionContract.UnderlyingType == Globals.TypeOfIDictionary)
+                {
+                    object newGenericDict = new Dictionary<object, object>();
+                    return newGenericDict;
                 }
                 else
                 {
