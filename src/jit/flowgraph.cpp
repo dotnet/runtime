@@ -7036,19 +7036,19 @@ GenTreePtr    Compiler::fgOptimizeDelegateConstructor(GenTreePtr call, CORINFO_C
             {
                 // The first argument of the helper is delegate this pointer
                 GenTreeArgList* helperArgs = gtNewArgList(call->gtCall.gtCallObjp);
+                CORINFO_CONST_LOOKUP entryPoint;
 
                 // The second argument of the helper is the target object pointers
                 helperArgs->gtOp.gtOp2 = gtNewArgList(call->gtCall.gtCallArgs->gtOp.gtOp1);
 
                 call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, GTF_EXCEPT, helperArgs);
 #if COR_JIT_EE_VERSION > 460
-                info.compCompHnd->getReadyToRunDelegateCtorHelper(targetMethod->gtFptrVal.gtLdftnResolvedToken, clsHnd, &call->gtCall.gtEntryPoint);
+                info.compCompHnd->getReadyToRunDelegateCtorHelper(targetMethod->gtFptrVal.gtLdftnResolvedToken, clsHnd, &entryPoint);
 #else
                 info.compCompHnd->getReadyToRunHelper(targetMethod->gtFptrVal.gtLdftnResolvedToken,
-                    CORINFO_HELP_READYTORUN_DELEGATE_CTOR, &call->gtCall.gtEntryPoint);
+                    CORINFO_HELP_READYTORUN_DELEGATE_CTOR, &entryPoint);
 #endif
-                // This is the case from GetDynamicHelperCell.
-                call->gtCall.setR2RRelativeIndir();
+                call->gtCall.setEntryPoint(entryPoint);
             }
         }
         else
