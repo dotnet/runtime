@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.IO;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Threading.Tests
 {
-    public class MutexTests
+    public class MutexTests : RemoteExecutorTestBase
     {
         private const int FailedWaitTimeout = 30000;
 
@@ -152,6 +154,55 @@ namespace System.Threading.Tests
                 AbandonedMutexException ame = Assert.Throws<AbandonedMutexException>(() => WaitHandle.WaitAny(new[] { m }, FailedWaitTimeout));
                 Assert.Equal(0, ame.MutexIndex);
                 Assert.Equal(m, ame.Mutex);
+            }
+        }
+
+        [PlatformSpecific(PlatformID.Windows)] // names aren't supported on Unix
+        [Theory]
+        [InlineData("")]
+        [InlineData("Local\\")]
+        [InlineData("Global\\")]
+        public void CrossProcess_NamedMutex_ProtectedFileAccessAtomic(string prefix)
+        {
+            string mutexName = prefix + Guid.NewGuid().ToString("N");
+            string fileName = GetTestFilePath();
+
+            Func<string, string, int> otherProcess = (m, f) =>
+            {
+                using (var mutex = Mutex.OpenExisting(m))
+                {
+                    mutex.WaitOne();
+                    try { File.WriteAllText(f, "0"); }
+                    finally { mutex.ReleaseMutex(); }
+
+                    IncrementValueInFileNTimes(mutex, f, 10);
+                }
+                return SuccessExitCode;
+            };
+
+            using (var mutex = new Mutex(false, mutexName))
+            using (var remote = RemoteInvoke(otherProcess, mutexName, fileName))
+            {
+                SpinWait.SpinUntil(() => File.Exists(fileName));
+
+                IncrementValueInFileNTimes(mutex, fileName, 10);
+            }
+
+            Assert.Equal(20, int.Parse(File.ReadAllText(fileName)));
+        }
+
+        private static void IncrementValueInFileNTimes(Mutex mutex, string fileName, int n)
+        {
+            for (int i = 0; i < n; i++)
+            {
+                mutex.WaitOne();
+                try
+                {
+                    int current = int.Parse(File.ReadAllText(fileName));
+                    Thread.Sleep(10);
+                    File.WriteAllText(fileName, (current + 1).ToString());
+                }
+                finally { mutex.ReleaseMutex(); }
             }
         }
     }
