@@ -55,7 +55,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void ByRefType()
         {
-            Assert.Throws<ArgumentException>(() => Expression.Default(typeof(int).MakeByRefType()));
+            Assert.Throws<ArgumentException>("type", () => Expression.Default(typeof(int).MakeByRefType()));
         }
 
         [Fact]
@@ -67,14 +67,14 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void GenericType()
         {
-            Assert.Throws<ArgumentException>(() => Expression.Default(typeof(List<>)));
+            Assert.Throws<ArgumentException>("type", () => Expression.Default(typeof(List<>)));
         }
 
         [Fact]
         public void TypeContainsGenericParameters()
         {
-            Assert.Throws<ArgumentException>(() => Expression.Default(typeof(List<>.Enumerator)));
-            Assert.Throws<ArgumentException>(() => Expression.Default(typeof(List<>).MakeGenericType(typeof(List<>))));
+            Assert.Throws<ArgumentException>("type", () => Expression.Default(typeof(List<>.Enumerator)));
+            Assert.Throws<ArgumentException>("type", () => Expression.Default(typeof(List<>).MakeGenericType(typeof(List<>))));
         }
     }
 }

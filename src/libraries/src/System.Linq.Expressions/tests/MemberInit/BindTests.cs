@@ -54,8 +54,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void ReadOnlyMember()
         {
-            Assert.Throws<ArgumentException>(null, () => Expression.Bind(typeof(string).GetProperty(nameof(string.Length)), Expression.Constant(0)));
-            Assert.Throws<ArgumentException>(null, () => Expression.Bind(typeof(string).GetMember(nameof(string.Length))[0], Expression.Constant(0)));
+            Assert.Throws<ArgumentException>("member", () => Expression.Bind(typeof(string).GetProperty(nameof(string.Length)), Expression.Constant(0)));
+            Assert.Throws<ArgumentException>("member", () => Expression.Bind(typeof(string).GetMember(nameof(string.Length))[0], Expression.Constant(0)));
         }
 
         [Fact]
@@ -73,8 +73,8 @@ namespace System.Linq.Expressions.Tests
         {
             MemberInfo member = typeof(PropertyAndFields).GetMember(nameof(object.ToString))[0];
             MethodInfo method = typeof(PropertyAndFields).GetMethod(nameof(object.ToString));
-            Assert.Throws<ArgumentException>(null, () => Expression.Bind(member, Expression.Constant("")));
-            Assert.Throws<ArgumentException>(null, () => Expression.Bind(method, Expression.Constant("")));
+            Assert.Throws<ArgumentException>("member", () => Expression.Bind(member, Expression.Constant("")));
+            Assert.Throws<ArgumentException>("propertyAccessor", () => Expression.Bind(method, Expression.Constant("")));
         }
 
         [Fact]
@@ -103,7 +103,7 @@ namespace System.Linq.Expressions.Tests
                 typeof(PropertyAndFields).GetProperty(nameof(PropertyAndFields.StringProperty)),
                 Expression.Constant("value")
                 );
-            Assert.Throws<ArgumentException>(() => Expression.MemberInit(newExp, bind));
+            Assert.Throws<ArgumentException>(null, () => Expression.MemberInit(newExp, bind));
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
@@ -148,7 +148,7 @@ namespace System.Linq.Expressions.Tests
         public void ConstantField()
         {
             MemberInfo member = typeof(PropertyAndFields).GetMember("Constant")[0];
-            Assert.Throws<ArgumentException>(() => Expression.Bind(member, Expression.Constant("")));
+            Assert.Throws<ArgumentException>("member", () => Expression.Bind(member, Expression.Constant("")));
         }
 
         [Fact]
@@ -156,7 +156,7 @@ namespace System.Linq.Expressions.Tests
         public void ReadonlyField()
         {
             MemberInfo member = typeof(PropertyAndFields).GetMember("ReadonlyStringField")[0];
-            Assert.Throws<ArgumentException>(() => Expression.Bind(member, Expression.Constant("")));
+            Assert.Throws<ArgumentException>("member", () => Expression.Bind(member, Expression.Constant("")));
         }
 
         [Fact]
@@ -164,8 +164,8 @@ namespace System.Linq.Expressions.Tests
         {
             MemberInfo member = typeof(PropertyAndFields).GetMember("ReadonlyStringProperty")[0];
             PropertyInfo property = typeof(PropertyAndFields).GetProperty("ReadonlyStringProperty");
-            Assert.Throws<ArgumentException>(() => Expression.Bind(member, Expression.Constant("")));
-            Assert.Throws<ArgumentException>(() => Expression.Bind(property, Expression.Constant("")));
+            Assert.Throws<ArgumentException>("member", () => Expression.Bind(member, Expression.Constant("")));
+            Assert.Throws<ArgumentException>("member", () => Expression.Bind(property, Expression.Constant("")));
         }
 
         [Fact]
@@ -173,7 +173,7 @@ namespace System.Linq.Expressions.Tests
         public void StaticField()
         {
             MemberInfo member = typeof(PropertyAndFields).GetMember("StaticStringField")[0];
-            Assert.Throws<ArgumentException>(() => Expression.Bind(member, Expression.Constant("")));
+            Assert.Throws<ArgumentException>("member", () => Expression.Bind(member, Expression.Constant("")));
         }
 
         [Fact]
@@ -182,8 +182,8 @@ namespace System.Linq.Expressions.Tests
         {
             MemberInfo member = typeof(PropertyAndFields).GetMember("StaticStringProperty")[0];
             PropertyInfo property = typeof(PropertyAndFields).GetProperty("StaticStringProperty");
-            Assert.Throws<ArgumentException>(() => Expression.Bind(member, Expression.Constant("")));
-            Assert.Throws<ArgumentException>(() => Expression.Bind(property, Expression.Constant("")));
+            Assert.Throws<ArgumentException>("member", () => Expression.Bind(member, Expression.Constant("")));
+            Assert.Throws<ArgumentException>("member", () => Expression.Bind(property, Expression.Constant("")));
         }
 
         [Fact]

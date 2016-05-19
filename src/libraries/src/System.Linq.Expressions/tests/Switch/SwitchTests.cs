@@ -255,7 +255,7 @@ namespace System.Linq.Expressions.Tests
         {
             var p = Expression.Parameter(typeof(int));
             // A SwitchExpression with neither a defaultBody nor any cases can not be any type except void.
-            Assert.Throws<ArgumentException>(() => Expression.Switch(typeof(int), p, null, null));
+            Assert.Throws<ArgumentException>("defaultBody", () => Expression.Switch(typeof(int), p, null, null));
         }
 
         private delegate int RefSettingDelegate(ref bool changed);
@@ -350,12 +350,12 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void VoidSwitchValue()
         {
-            Assert.Throws<ArgumentException>(() => Expression.Switch(Expression.Empty()));
-            Assert.Throws<ArgumentException>(() => Expression.Switch(Expression.Empty(), Expression.Empty()));
-            Assert.Throws<ArgumentException>(() => Expression.Switch(Expression.Empty(), Expression.Empty(), default(MethodInfo)));
-            Assert.Throws<ArgumentException>(() => Expression.Switch(Expression.Empty(), Expression.Empty(), default(MethodInfo), Enumerable.Empty<SwitchCase>()));
-            Assert.Throws<ArgumentException>(() => Expression.Switch(typeof(int), Expression.Empty(), Expression.Constant(1), default(MethodInfo)));
-            Assert.Throws<ArgumentException>(() => Expression.Switch(typeof(int), Expression.Empty(), Expression.Constant(1), default(MethodInfo), Enumerable.Empty<SwitchCase>()));
+            Assert.Throws<ArgumentException>("switchValue", () => Expression.Switch(Expression.Empty()));
+            Assert.Throws<ArgumentException>("switchValue", () => Expression.Switch(Expression.Empty(), Expression.Empty()));
+            Assert.Throws<ArgumentException>("switchValue", () => Expression.Switch(Expression.Empty(), Expression.Empty(), default(MethodInfo)));
+            Assert.Throws<ArgumentException>("switchValue", () => Expression.Switch(Expression.Empty(), Expression.Empty(), default(MethodInfo), Enumerable.Empty<SwitchCase>()));
+            Assert.Throws<ArgumentException>("switchValue", () => Expression.Switch(typeof(int), Expression.Empty(), Expression.Constant(1), default(MethodInfo)));
+            Assert.Throws<ArgumentException>("switchValue", () => Expression.Switch(typeof(int), Expression.Empty(), Expression.Constant(1), default(MethodInfo), Enumerable.Empty<SwitchCase>()));
         }
 
         private static IEnumerable<object[]> ComparisonsWithInvalidParmeterCounts()
@@ -373,10 +373,10 @@ namespace System.Linq.Expressions.Tests
         [Theory, MemberData(nameof(ComparisonsWithInvalidParmeterCounts))]
         public void InvalidComparisonMethodParameterCount(MethodInfo comparer)
         {
-            Assert.Throws<ArgumentException>(() => Expression.Switch(Expression.Constant(0), Expression.Empty(), comparer));
-            Assert.Throws<ArgumentException>(() => Expression.Switch(Expression.Constant(0), Expression.Empty(), comparer, Enumerable.Empty<SwitchCase>()));
-            Assert.Throws<ArgumentException>(() => Expression.Switch(typeof(int), Expression.Constant(0), Expression.Constant(1), comparer));
-            Assert.Throws<ArgumentException>(() => Expression.Switch(typeof(int), Expression.Constant(0), Expression.Constant(1), comparer, Enumerable.Empty<SwitchCase>()));
+            Assert.Throws<ArgumentException>(null, () => Expression.Switch(Expression.Constant(0), Expression.Empty(), comparer));
+            Assert.Throws<ArgumentException>(null, () => Expression.Switch(Expression.Constant(0), Expression.Empty(), comparer, Enumerable.Empty<SwitchCase>()));
+            Assert.Throws<ArgumentException>(null, () => Expression.Switch(typeof(int), Expression.Constant(0), Expression.Constant(1), comparer));
+            Assert.Throws<ArgumentException>(null, () => Expression.Switch(typeof(int), Expression.Constant(0), Expression.Constant(1), comparer, Enumerable.Empty<SwitchCase>()));
         }
 
         [Fact]
@@ -384,10 +384,10 @@ namespace System.Linq.Expressions.Tests
         {
             Func<string, int, bool> isLength = (x, y) => (x?.Length).GetValueOrDefault() == y;
             MethodInfo comparer = isLength.GetMethodInfo();
-            Assert.Throws<ArgumentException>(() => Expression.Switch(Expression.Constant(0), Expression.Empty(), comparer));
-            Assert.Throws<ArgumentException>(() => Expression.Switch(Expression.Constant(0), Expression.Empty(), comparer, Enumerable.Empty<SwitchCase>()));
-            Assert.Throws<ArgumentException>(() => Expression.Switch(typeof(int), Expression.Constant(0), Expression.Constant(1), comparer));
-            Assert.Throws<ArgumentException>(() => Expression.Switch(typeof(int), Expression.Constant(0), Expression.Constant(1), comparer, Enumerable.Empty<SwitchCase>()));
+            Assert.Throws<ArgumentException>(null, () => Expression.Switch(Expression.Constant(0), Expression.Empty(), comparer));
+            Assert.Throws<ArgumentException>(null, () => Expression.Switch(Expression.Constant(0), Expression.Empty(), comparer, Enumerable.Empty<SwitchCase>()));
+            Assert.Throws<ArgumentException>(null, () => Expression.Switch(typeof(int), Expression.Constant(0), Expression.Constant(1), comparer));
+            Assert.Throws<ArgumentException>(null, () => Expression.Switch(typeof(int), Expression.Constant(0), Expression.Constant(1), comparer, Enumerable.Empty<SwitchCase>()));
         }
 
         [Fact]
@@ -395,10 +395,10 @@ namespace System.Linq.Expressions.Tests
         {
             Func<int, string, bool> isLength = (x, y) => (y?.Length).GetValueOrDefault() == x;
             MethodInfo comparer = isLength.GetMethodInfo();
-            Assert.Throws<ArgumentException>(() => Expression.Switch(Expression.Constant(0), Expression.Empty(), comparer, Expression.SwitchCase(Expression.Empty(), Expression.Constant(0))));
-            Assert.Throws<ArgumentException>(() => Expression.Switch(Expression.Constant(0), Expression.Empty(), comparer, Enumerable.Repeat(Expression.SwitchCase(Expression.Empty(), Expression.Constant(0)), 1)));
-            Assert.Throws<ArgumentException>(() => Expression.Switch(typeof(int), Expression.Constant(0), Expression.Constant(1), comparer, Expression.SwitchCase(Expression.Empty(), Expression.Constant(0))));
-            Assert.Throws<ArgumentException>(() => Expression.Switch(typeof(int), Expression.Constant(0), Expression.Constant(1), comparer, Enumerable.Repeat(Expression.SwitchCase(Expression.Empty(), Expression.Constant(0)), 1)));
+            Assert.Throws<ArgumentException>(null, () => Expression.Switch(Expression.Constant(0), Expression.Empty(), comparer, Expression.SwitchCase(Expression.Empty(), Expression.Constant(0))));
+            Assert.Throws<ArgumentException>(null, () => Expression.Switch(Expression.Constant(0), Expression.Empty(), comparer, Enumerable.Repeat(Expression.SwitchCase(Expression.Empty(), Expression.Constant(0)), 1)));
+            Assert.Throws<ArgumentException>("cases", () => Expression.Switch(typeof(int), Expression.Constant(0), Expression.Constant(1), comparer, Expression.SwitchCase(Expression.Empty(), Expression.Constant(0))));
+            Assert.Throws<ArgumentException>("cases", () => Expression.Switch(typeof(int), Expression.Constant(0), Expression.Constant(1), comparer, Enumerable.Repeat(Expression.SwitchCase(Expression.Empty(), Expression.Constant(0)), 1)));
         }
 
         static bool WithinTen(int x, int y) => Math.Abs(x - y) < 10;
@@ -423,7 +423,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void LeftLiftedCall()
         {
-            Assert.Throws<ArgumentException>(() =>
+            Assert.Throws<ArgumentException>(null, () =>
                 Expression.Switch(
                     Expression.Constant(30, typeof(int?)),
                     Expression.Constant(0),
@@ -436,14 +436,14 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void CaseTypeMisMatch()
         {
-            Assert.Throws<ArgumentException>(() =>
+            Assert.Throws<ArgumentException>("cases", () =>
                 Expression.Switch(
                     Expression.Constant(30),
                     Expression.SwitchCase(Expression.Constant(1), Expression.Constant(0)),
                     Expression.SwitchCase(Expression.Constant(2), Expression.Constant("Foo"))
                     )
                 );
-            Assert.Throws<ArgumentException>(() =>
+            Assert.Throws<ArgumentException>("cases", () =>
                 Expression.Switch(
                     Expression.Constant(30),
                     Expression.SwitchCase(Expression.Constant(1), Expression.Constant(0), Expression.Constant("Foo"))
@@ -457,10 +457,10 @@ namespace System.Linq.Expressions.Tests
         public void NonBooleanComparer()
         {
             MethodInfo comparer = typeof(SwitchTests).GetMethod(nameof(NonBooleanMethod), BindingFlags.Static | BindingFlags.NonPublic);
-            Assert.Throws<ArgumentException>(() => Expression.Switch(Expression.Constant(0), Expression.Empty(), comparer, Expression.SwitchCase(Expression.Empty(), Expression.Constant(0))));
-            Assert.Throws<ArgumentException>(() => Expression.Switch(Expression.Constant(0), Expression.Empty(), comparer, Enumerable.Repeat(Expression.SwitchCase(Expression.Empty(), Expression.Constant(0)), 1)));
-            Assert.Throws<ArgumentException>(() => Expression.Switch(typeof(int), Expression.Constant(0), Expression.Constant(1), comparer, Expression.SwitchCase(Expression.Empty(), Expression.Constant(0))));
-            Assert.Throws<ArgumentException>(() => Expression.Switch(typeof(int), Expression.Constant(0), Expression.Constant(1), comparer, Enumerable.Repeat(Expression.SwitchCase(Expression.Empty(), Expression.Constant(0)), 1)));
+            Assert.Throws<ArgumentException>("comparison", () => Expression.Switch(Expression.Constant(0), Expression.Empty(), comparer, Expression.SwitchCase(Expression.Empty(), Expression.Constant(0))));
+            Assert.Throws<ArgumentException>("comparison", () => Expression.Switch(Expression.Constant(0), Expression.Empty(), comparer, Enumerable.Repeat(Expression.SwitchCase(Expression.Empty(), Expression.Constant(0)), 1)));
+            Assert.Throws<ArgumentException>("cases", () => Expression.Switch(typeof(int), Expression.Constant(0), Expression.Constant(1), comparer, Expression.SwitchCase(Expression.Empty(), Expression.Constant(0))));
+            Assert.Throws<ArgumentException>("cases", () => Expression.Switch(typeof(int), Expression.Constant(0), Expression.Constant(1), comparer, Enumerable.Repeat(Expression.SwitchCase(Expression.Empty(), Expression.Constant(0)), 1)));
         }
 
         [Fact]

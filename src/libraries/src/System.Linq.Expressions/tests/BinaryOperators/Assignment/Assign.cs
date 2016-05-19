@@ -139,19 +139,19 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void LeftMustBeWritable()
         {
-            Assert.Throws<ArgumentException>(() => Expression.Assign(Expression.Constant(0), Expression.Constant(1)));
+            Assert.Throws<ArgumentException>("left", () => Expression.Assign(Expression.Constant(0), Expression.Constant(1)));
         }
 
         [Fact]
         public void MismatchTypes()
         {
-            Assert.Throws<ArgumentException>(() => Expression.Assign(Expression.Variable(typeof(int)), Expression.Constant("Hello")));
+            Assert.Throws<ArgumentException>(null, () => Expression.Assign(Expression.Variable(typeof(int)), Expression.Constant("Hello")));
         }
 
         [Fact]
         public void AssignableButOnlyWithConversion()
         {
-            Assert.Throws<ArgumentException>(() => Expression.Assign(Expression.Variable(typeof(long)), Expression.Constant(1)));
+            Assert.Throws<ArgumentException>(null, () => Expression.Assign(Expression.Variable(typeof(long)), Expression.Constant(1)));
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
@@ -171,7 +171,7 @@ namespace System.Linq.Expressions.Tests
         [Theory, MemberData(nameof(ReadOnlyExpressions))]
         public void AttemptToAssignToNonWritable(Expression readonlyExp)
         {
-            Assert.Throws<ArgumentException>(() => Expression.Assign(readonlyExp, Expression.Default(readonlyExp.Type)));
+            Assert.Throws<ArgumentException>("left", () => Expression.Assign(readonlyExp, Expression.Default(readonlyExp.Type)));
         }
 
         [Theory, MemberData(nameof(WriteOnlyExpressions))]

@@ -107,32 +107,32 @@ namespace System.Linq.Expressions
             var argumentsRO = arguments.ToReadOnly();
 
             RequiresCanRead(argumentsRO, nameof(arguments));
-            ValidateElementInitAddMethodInfo(addMethod);
+            ValidateElementInitAddMethodInfo(addMethod, nameof(addMethod));
             ValidateArgumentTypes(addMethod, ExpressionType.Call, ref argumentsRO);
             return new ElementInit(addMethod, argumentsRO);
         }
 
-        private static void ValidateElementInitAddMethodInfo(MethodInfo addMethod)
+        private static void ValidateElementInitAddMethodInfo(MethodInfo addMethod, string paramName)
         {
-            ValidateMethodInfo(addMethod);
+            ValidateMethodInfo(addMethod, nameof(addMethod));
             ParameterInfo[] pis = addMethod.GetParametersCached();
             if (pis.Length == 0)
             {
-                throw Error.ElementInitializerMethodWithZeroArgs();
+                throw Error.ElementInitializerMethodWithZeroArgs(paramName);
             }
             if (!addMethod.Name.Equals("Add", StringComparison.OrdinalIgnoreCase))
             {
-                throw Error.ElementInitializerMethodNotAdd();
+                throw Error.ElementInitializerMethodNotAdd(paramName);
             }
             if (addMethod.IsStatic)
             {
-                throw Error.ElementInitializerMethodStatic();
+                throw Error.ElementInitializerMethodStatic(paramName);
             }
             foreach (ParameterInfo pi in pis)
             {
                 if (pi.ParameterType.IsByRef)
                 {
-                    throw Error.ElementInitializerMethodNoRefOutParam(pi.Name, addMethod.Name);
+                    throw Error.ElementInitializerMethodNoRefOutParam(pi.Name, addMethod.Name, paramName);
                 }
             }
         }

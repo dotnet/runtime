@@ -213,12 +213,12 @@ namespace System.Linq.Expressions
 
             if (type == typeof(void))
             {
-                throw Error.ArgumentCannotBeOfTypeVoid();
+                throw Error.ArgumentCannotBeOfTypeVoid(nameof(type));
             }
 
             if (type.IsPointer)
             {
-                throw Error.TypeMustNotBePointer();
+                throw Error.TypeMustNotBePointer(nameof(type));
             }
 
             bool byref = type.IsByRef;
@@ -239,12 +239,12 @@ namespace System.Linq.Expressions
         public static ParameterExpression Variable(Type type, string name)
         {
             ContractUtils.RequiresNotNull(type, nameof(type));
-            if (type == typeof(void)) throw Error.ArgumentCannotBeOfTypeVoid();
-            if (type.IsByRef) throw Error.TypeMustNotBeByRef();
+            if (type == typeof(void)) throw Error.ArgumentCannotBeOfTypeVoid(nameof(type));
+            if (type.IsByRef) throw Error.TypeMustNotBeByRef(nameof(type));
 
             if (type.IsPointer)
             {
-                throw Error.TypeMustNotBePointer();
+                throw Error.TypeMustNotBePointer(nameof(type));
             }
 
             return ParameterExpression.Make(type, name, false);

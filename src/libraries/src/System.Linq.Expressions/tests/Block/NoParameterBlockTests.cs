@@ -259,8 +259,8 @@ namespace System.Linq.Expressions.Tests
         {
             ConstantExpression constant = Expression.Constant(0);
             IEnumerable<Expression> expressions = PadBlock(blockSize - 1, Expression.Constant(0));
-            Assert.Throws<ArgumentException>(() => Expression.Block(typeof(string), expressions));
-            Assert.Throws<ArgumentException>(() => Expression.Block(typeof(string), expressions.ToArray()));
+            Assert.Throws<ArgumentException>(null, () => Expression.Block(typeof(string), expressions));
+            Assert.Throws<ArgumentException>(null, (() => Expression.Block(typeof(string), expressions.ToArray())));
         }
 
         [Theory]
@@ -275,8 +275,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void EmptyBlockWithNonVoidTypeNotAllowed()
         {
-            Assert.Throws<ArgumentException>(() => Expression.Block(typeof(int)));
-            Assert.Throws<ArgumentException>(() => Expression.Block(typeof(int), Enumerable.Empty<Expression>()));
+            Assert.Throws<ArgumentException>(null, () => Expression.Block(typeof(int)));
+            Assert.Throws<ArgumentException>(null, () => Expression.Block(typeof(int), Enumerable.Empty<Expression>()));
         }
 
         [Theory]

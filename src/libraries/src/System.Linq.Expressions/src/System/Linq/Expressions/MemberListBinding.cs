@@ -81,7 +81,7 @@ namespace System.Linq.Expressions
             Type memberType;
             ValidateGettableFieldOrPropertyMember(member, out memberType);
             var initList = initializers.ToReadOnly();
-            ValidateListInitArgs(memberType, initList);
+            ValidateListInitArgs(memberType, initList, nameof(member));
             return new MemberListBinding(member, initList);
         }
 
@@ -110,14 +110,14 @@ namespace System.Linq.Expressions
         {
             ContractUtils.RequiresNotNull(propertyAccessor, nameof(propertyAccessor));
             ContractUtils.RequiresNotNull(initializers, nameof(initializers));
-            return ListBind(GetProperty(propertyAccessor), initializers);
+            return ListBind(GetProperty(propertyAccessor, nameof(propertyAccessor)), initializers);
         }
 
-        private static void ValidateListInitArgs(Type listType, ReadOnlyCollection<ElementInit> initializers)
+        private static void ValidateListInitArgs(Type listType, ReadOnlyCollection<ElementInit> initializers, string listTypeParamName)
         {
             if (!typeof(IEnumerable).IsAssignableFrom(listType))
             {
-                throw Error.TypeNotIEnumerable(listType);
+                throw Error.TypeNotIEnumerable(listType, listTypeParamName);
             }
             for (int i = 0, n = initializers.Count; i < n; i++)
             {
