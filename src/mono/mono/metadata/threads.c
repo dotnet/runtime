@@ -197,7 +197,7 @@ static void mono_init_static_data_info (StaticDataInfo *static_data);
 static guint32 mono_alloc_static_data_slot (StaticDataInfo *static_data, guint32 size, guint32 align);
 static gboolean mono_thread_resume (MonoInternalThread* thread);
 static void async_abort_internal (MonoInternalThread *thread, gboolean install_async_abort);
-static void self_abort_internal (void);
+static void self_abort_internal (MonoError *error);
 static void async_suspend_internal (MonoInternalThread *thread, gboolean interrupt);
 static void self_suspend_internal (void);
 
@@ -2269,10 +2269,13 @@ ves_icall_System_Threading_Thread_Abort (MonoInternalThread *thread, MonoObject 
 	if (!request_thread_abort (thread, state))
 		return;
 
-	if (thread == mono_thread_internal_current ())
-		self_abort_internal ();
-	else
+	if (thread == mono_thread_internal_current ()) {
+		MonoError error;
+		self_abort_internal (&error);
+		mono_error_set_pending_exception (&error);
+	} else {
 		async_abort_internal (thread, TRUE);
+	}
 }
 
 /**
@@ -2536,10 +2539,17 @@ void mono_thread_stop (MonoThread *thread)
 	if (!request_thread_stop (internal))
 		return;
 	
-	if (internal == mono_thread_internal_current ())
-		self_abort_internal ();
-	else
+	if (internal == mono_thread_internal_current ()) {
+		MonoError error;
+		self_abort_internal (&error);
+		/*
+		This function is part of the embeding API and has no way to return the exception
+		to be thrown. So what we do is keep the old behavior and raise the exception.
+		*/
+		mono_error_raise_exception (&error);
+	} else {
 		async_abort_internal (internal, TRUE);
+	}
 }
 
 gint8
@@ -4844,18 +4854,20 @@ async_abort_internal (MonoInternalThread *thread, gboolean install_async_abort)
 }
 
 static void
-self_abort_internal (void)
+self_abort_internal (MonoError *error)
 {
 	MonoException *exc;
+
+	mono_error_init (error);
 
 	/* FIXME this is insanely broken, it doesn't cause interruption to happen synchronously
 	 * since passing FALSE to mono_thread_request_interruption makes sure it returns NULL */
 
 	exc = mono_thread_request_interruption (TRUE);
 	if (exc)
-		mono_raise_exception (exc);
-
-	mono_thread_info_self_interrupt ();
+		mono_error_set_exception_instance (error, exc);
+	else
+		mono_thread_info_self_interrupt ();
 }
 
 typedef struct {
