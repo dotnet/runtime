@@ -385,9 +385,17 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   #define FEATURE_FASTTAILCALL     0       // Tail calls made as epilog+jmp
   #define FEATURE_TAILCALL_OPT     0       // opportunistic Tail calls (without ".tail" prefix) made as fast tail calls.
   #define FEATURE_SET_FLAGS        0       // Set to true to force the JIT to mark the trees with GTF_SET_FLAGS when the flags need to be set
+#ifdef LEGACY_BACKEND
   #define FEATURE_MULTIREG_ARGS_OR_RET  0  // Support for passing and/or returning single values in more than one register
   #define FEATURE_MULTIREG_ARGS         0  // Support for passing a single argument in more than one register  
   #define FEATURE_MULTIREG_RET          0  // Support for returning a single value in more than one register  
+#else
+  #define FEATURE_MULTIREG_ARGS_OR_RET  1  // Support for passing and/or returning single values in more than one register
+  #define FEATURE_MULTIREG_ARGS         0  // Support for passing a single argument in more than one register  
+  #define FEATURE_MULTIREG_RET          1  // Support for returning a single value in more than one register  
+  #define MAX_RET_MULTIREG_BYTES        8  // Maximum size of a struct that could be returned in more than one register
+#endif
+
   #define MAX_ARG_REG_COUNT             2  // Maximum registers used to pass an argument.
   #define MAX_RET_REG_COUNT             2  // Maximum registers used to return a value.
 

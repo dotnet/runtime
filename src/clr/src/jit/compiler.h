@@ -1330,7 +1330,7 @@ public:
 #endif
 
 #if FEATURE_MULTIREG_RET
-    GenTreePtr               impAssignStructClassToVar(GenTreePtr op, CORINFO_CLASS_HANDLE hClass);
+    GenTreePtr               impAssignMultiRegTypeToVar(GenTreePtr op, CORINFO_CLASS_HANDLE hClass);
 #endif // FEATURE_MULTIREG_RET
 
 #ifdef _TARGET_ARM_
@@ -2643,6 +2643,9 @@ protected :
 
     GenTreePtr          impFixupCallStructReturn(GenTreePtr           call,
                                                  CORINFO_CLASS_HANDLE retClsHnd);
+
+    GenTreePtr          impFixupCallLongReturn(GenTreePtr           call,
+                                               CORINFO_CLASS_HANDLE retClsHnd);
 
     GenTreePtr          impFixupStructReturnType(GenTreePtr       op,
                                                  CORINFO_CLASS_HANDLE retClsHnd);
