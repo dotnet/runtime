@@ -2489,7 +2489,8 @@ is_running_protected_wrapper (void)
 	return found;
 }
 
-void mono_thread_internal_stop (MonoInternalThread *thread)
+static gboolean
+request_thread_stop (MonoInternalThread *thread)
 {
 	LOCK_THREAD (thread);
 
@@ -2497,7 +2498,7 @@ void mono_thread_internal_stop (MonoInternalThread *thread)
 		(thread->state & ThreadState_Stopped) != 0)
 	{
 		UNLOCK_THREAD (thread);
-		return;
+		return FALSE;
 	}
 	
 	/* Make sure the thread is awake */
@@ -2507,16 +2508,38 @@ void mono_thread_internal_stop (MonoInternalThread *thread)
 	thread->state &= ~ThreadState_AbortRequested;
 	
 	UNLOCK_THREAD (thread);
+	return TRUE;
+}
+
+/**
+ * mono_thread_internal_stop:
+ *
+ * Request thread @thread to stop.
+ *
+ * @thread MUST NOT be the current thread.
+ */
+void
+mono_thread_internal_stop (MonoInternalThread *thread)
+{
+	g_assert (thread != mono_thread_internal_current ());
+
+	if (!request_thread_stop (thread))
+		return;
 	
-	if (thread == mono_thread_internal_current ())
-		self_abort_internal ();
-	else
-		async_abort_internal (thread, TRUE);
+	async_abort_internal (thread, TRUE);
 }
 
 void mono_thread_stop (MonoThread *thread)
 {
-	mono_thread_internal_stop (thread->internal_thread);
+	MonoInternalThread *internal = thread->internal_thread;
+
+	if (!request_thread_stop (internal))
+		return;
+	
+	if (internal == mono_thread_internal_current ())
+		self_abort_internal ();
+	else
+		async_abort_internal (internal, TRUE);
 }
 
 gint8
