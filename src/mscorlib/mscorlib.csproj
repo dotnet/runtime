@@ -179,6 +179,10 @@
 
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.Targets" />
 
+  <PropertyGroup>
+    <StrongNameSig>Silverlight</StrongNameSig>
+  </PropertyGroup>
+
   <!-- Import signing tools -->
   <Import Condition="Exists('$(ToolsDir)\sign.targets')" Project="$(ToolsDir)\sign.targets" />
 
