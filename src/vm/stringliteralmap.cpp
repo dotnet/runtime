@@ -479,16 +479,6 @@ STRINGREF AllocateStringObject(EEStringData *pStringData)
         LPWSTR strDest = strObj->GetBuffer();
         memcpyNoGCRefs(strDest, pStringData->GetStringBuffer(), cCount*sizeof(WCHAR));
         strDest[cCount] = 0;
-
-        // IsOnlyLowChars actually incidicates if we can sort the string in a fast way.
-        // Take a look RegMeta::DefineUserString to see how we set the flag.
-        // The flag is persisited to assembly containing the string literals.
-        // We restore the flag when we load strings from assembly (MDInternalRO::GetUserString.) 
-        //
-        if (pStringData->GetIsOnlyLowChars()) 
-        {
-            strObj->SetHighCharState(STRING_STATE_FAST_OPS);
-        }
     }
     GCPROTECT_END();
 
