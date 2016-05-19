@@ -133,6 +133,7 @@ namespace System.Linq.Expressions.Tests
             Expression expression = Expression.Constant(0);
             TypeBinaryExpression typeExp = Expression.TypeEqual(expression, typeof(int));
             Assert.Same(typeExp, typeExp.Update(expression));
+            Assert.Same(typeExp, NoOpVisitor.Instance.Visit(typeExp));
         }
 
         [Fact]

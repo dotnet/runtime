@@ -557,6 +557,7 @@ namespace System.Linq.Expressions.Tests
                 Expression.SwitchCase(Expression.Constant(2), Expression.Constant(2))
                 );
             Assert.Same(sw, sw.Update(sw.SwitchValue, sw.Cases, sw.DefaultBody));
+            Assert.Same(sw, NoOpVisitor.Instance.Visit(sw));
         }
 
         [Fact]

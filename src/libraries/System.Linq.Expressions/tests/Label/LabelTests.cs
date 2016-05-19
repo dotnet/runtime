@@ -89,6 +89,7 @@ namespace System.Linq.Expressions.Tests
             ConstantExpression defaultVal = Expression.Constant(42);
             LabelExpression label = Expression.Label(target, defaultVal);
             Assert.Same(label, label.Update(target, defaultVal));
+            Assert.Same(label, NoOpVisitor.Instance.Visit(label));
         }
 
         [Fact]

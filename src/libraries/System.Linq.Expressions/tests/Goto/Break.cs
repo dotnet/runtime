@@ -170,6 +170,7 @@ namespace System.Linq.Expressions.Tests
             Expression value = Expression.Constant(0);
             GotoExpression ret = Expression.Break(target, value);
             Assert.Same(ret, ret.Update(target, value));
+            Assert.Same(ret, NoOpVisitor.Instance.Visit(ret));
         }
 
         [Fact]
