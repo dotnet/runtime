@@ -5224,6 +5224,19 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			ji = mono_aot_patch_info_dup (tmp_ji);
 			g_free (tmp_ji);
 
+			if (ji->type == MONO_PATCH_INFO_ICALL_ADDR) {
+				char *symbol = mono_aot_get_direct_call_symbol (MONO_PATCH_INFO_ICALL_ADDR_CALL, ji->data.target);
+				if (symbol) {
+					/*
+					 * Avoid emitting a got entry for these since the method is directly called, and it might not be
+					 * resolvable at runtime using dlsym ().
+					 */
+					g_free (symbol);
+					values [ins->dreg] = LLVMConstInt (IntPtrType (), 0, FALSE);
+					break;
+				}
+			}
+
 			ji->next = cfg->patch_info;
 			cfg->patch_info = ji;
 				   
@@ -7744,7 +7757,9 @@ static void
 add_intrinsic (LLVMModuleRef module, int id)
 {
 	const char *name;
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
 	LLVMTypeRef ret_type, arg_types [16];
+#endif
 
 	name = g_hash_table_lookup (intrins_id_to_name, GINT_TO_POINTER (id));
 	g_assert (name);
